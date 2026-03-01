@@ -55,20 +55,11 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": [
-        "Vertical",
-        "Horizontal",
-        "Mixed",
-        "Dual"
-      ]
+      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
     },
     "theme": {
       "title": "Theme Style",
-      "list": [
-        "Light",
-        "Dark",
-        "System"
-      ]
+      "list": ["Light", "Dark", "System"]
     },
     "menu": {
       "title": "Menu Style"
@@ -78,17 +69,11 @@
     },
     "box": {
       "title": "Box Style",
-      "list": [
-        "Border",
-        "Shadow"
-      ]
+      "list": ["Border", "Shadow"]
     },
     "container": {
       "title": "Container Width",
-      "list": [
-        "Full",
-        "Boxed"
-      ]
+      "list": ["Full", "Boxed"]
     },
     "basics": {
       "title": "Basic Config",
@@ -134,14 +119,8 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": [
-      "Notice",
-      "Message",
-      "Todo"
-    ],
-    "text": [
-      "No"
-    ],
+    "bar": ["Notice", "Message", "Todo"],
+    "text": ["No"],
     "viewAll": "View all"
   },
   "worktab": {
@@ -332,7 +311,12 @@
     "trainedLevel": "Trained Level",
     "skillSP": "Skill Points",
     "noSkillQueue": "No skills in training",
-    "noSkillData": "No skill data"
+    "noSkillData": "No skill data",
+    "totalSPLabel": "Total Skill Points",
+    "allSkills": "All Skills",
+    "unallocatedSPSuffix": " unallocated skill points.",
+    "totalTrainingTime": "Training Time",
+    "queuedSPSuffix": " skill points in queue"
   },
   "shop": {
     "products": "Products",
@@ -467,13 +451,23 @@
   "srp": {
     "apply": {
       "title": "My SRP Applications",
+      "formTitle": "Apply for SRP",
+      "infoText": "Select the killmail and fleet operation you wish to submit. If you can't find the killmail, verify your account is properly linked and wait up to 1 hour for refresh. If you can't find the fleet, contact the FC to update the operation info or issue PAP.",
+      "faqLink": "About how to apply for SRP and other FAQs",
       "dialogTitle": "Submit SRP Application",
       "submitBtn": "Submit SRP Application",
+      "submitBtnText": "Submit",
       "selectCharacter": "Select Lost Character",
       "associatedFleet": "Associated Fleet",
       "selectFleet": "Optional: select a fleet",
+      "fleetInfo": "Fleet Info",
+      "otherAction": "Other Action (contact SRP officer or FC first)",
+      "fleetNotePlaceholder": "Enter fleet details here.",
       "killmail": "KillMail",
       "selectKillmail": "Select a KillMail",
+      "previewKm": "Preview KM",
+      "kmPreviewTitle": "KM Details Preview",
+      "openZkillboard": "View on zKillboard",
       "loadingKm": "Loading KMs...",
       "noKmHint": "Select a character to load KMs",
       "recommendedAmount": "Recommended Amount",
@@ -487,17 +481,30 @@
       "submitSuccess": "Application submitted",
       "noKmFound": "No matching KMs found",
       "columns": {
+        "id": "ID",
         "character": "Character",
         "ship": "Ship",
         "system": "System",
         "killId": "KillID",
         "time": "Time",
+        "estimatedValue": "Est. Value",
+        "fleetId": "Fleet ID",
         "recommendedAmount": "Recommended",
         "finalAmount": "Final Amount",
+        "actualAmount": "Amount",
         "reviewStatus": "Review",
+        "paid": "Paid",
         "payoutStatus": "Payout",
+        "action": "Action",
         "note": "Note"
       }
+    },
+    "kmPreview": {
+      "title": "Killmail Detail",
+      "estimatedValue": "Est. Value",
+      "dropped": "Dropped",
+      "destroyed": "Destroyed",
+      "noData": "No data"
     },
     "manage": {
       "title": "SRP Applications",

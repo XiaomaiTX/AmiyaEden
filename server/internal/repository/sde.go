@@ -142,3 +142,24 @@ func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID stri
 	}
 	return result, nil
 }
+
+// FlagInfo invFlags 表行
+type FlagInfo struct {
+	FlagID   int    `json:"flag_id"   gorm:"column:flagID"`
+	FlagName string `json:"flag_name" gorm:"column:flagName"`
+	FlagText string `json:"flag_text" gorm:"column:flagText"`
+	OrderID  int    `json:"order_id"  gorm:"column:orderID"`
+}
+
+// GetFlags 批量查询 invFlags
+func (r *SdeRepository) GetFlags(flagIDs []int) ([]FlagInfo, error) {
+	var result []FlagInfo
+	if len(flagIDs) == 0 {
+		return result, nil
+	}
+	err := global.DB.Table(`"invFlags"`).
+		Where(`"flagID" IN ?`, flagIDs).
+		Order(`"orderID" ASC`).
+		Scan(&result).Error
+	return result, err
+}

@@ -11,7 +11,12 @@
                 <el-icon><ArrowLeft /></el-icon>
               </ElButton>
               <h2 class="text-lg font-medium">{{ fleet?.title || $t('fleet.fields.title') }}</h2>
-              <ElTag v-if="fleet" :type="importanceType(fleet.importance)" size="small" effect="dark">
+              <ElTag
+                v-if="fleet"
+                :type="importanceType(fleet.importance)"
+                size="small"
+                effect="dark"
+              >
                 {{ $t(`fleet.importance.${fleet.importance}`) }}
               </ElTag>
             </div>
@@ -27,11 +32,21 @@
           <ElDescriptionsItem :label="$t('fleet.fields.fc')">{{
             fleet.fc_character_name
           }}</ElDescriptionsItem>
-          <ElDescriptionsItem :label="$t('fleet.fields.papCount')">{{ fleet.pap_count }}</ElDescriptionsItem>
-          <ElDescriptionsItem :label="$t('fleet.fields.esiFleetId')">{{ fleet.esi_fleet_id ?? '-' }}</ElDescriptionsItem>
-          <ElDescriptionsItem :label="$t('fleet.fields.startAt')">{{ formatTime(fleet.start_at) }}</ElDescriptionsItem>
-          <ElDescriptionsItem :label="$t('fleet.fields.endAt')">{{ formatTime(fleet.end_at) }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="创建时间">{{ formatTime(fleet.created_at) }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('fleet.fields.papCount')">{{
+            fleet.pap_count
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('fleet.fields.esiFleetId')">{{
+            fleet.esi_fleet_id ?? '-'
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('fleet.fields.startAt')">{{
+            formatTime(fleet.start_at)
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('fleet.fields.endAt')">{{
+            formatTime(fleet.end_at)
+          }}</ElDescriptionsItem>
+          <ElDescriptionsItem label="创建时间">{{
+            formatTime(fleet.created_at)
+          }}</ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('fleet.fields.description')" :span="3">
             {{ fleet.description || '-' }}
           </ElDescriptionsItem>
@@ -51,9 +66,18 @@
         </template>
         <ElTable v-loading="membersLoading" :data="members" stripe border style="width: 100%">
           <ElTableColumn type="index" width="60" label="#" />
-          <ElTableColumn prop="character_name" :label="$t('fleet.members.characterName')" min-width="160" />
+          <ElTableColumn
+            prop="character_name"
+            :label="$t('fleet.members.characterName')"
+            min-width="160"
+          />
           <ElTableColumn prop="character_id" label="角色 ID" width="120" align="center" />
-          <ElTableColumn prop="ship_type_id" :label="$t('fleet.members.shipType')" width="120" align="center">
+          <ElTableColumn
+            prop="ship_type_id"
+            :label="$t('fleet.members.shipType')"
+            width="120"
+            align="center"
+          >
             <template #default="{ row }">
               {{ getName(row.ship_type_id) }}
             </template>
@@ -69,7 +93,10 @@
             </template>
           </ElTableColumn>
         </ElTable>
-        <ElEmpty v-if="!membersLoading && members.length === 0" :description="$t('fleet.members.empty')" />
+        <ElEmpty
+          v-if="!membersLoading && members.length === 0"
+          :description="$t('fleet.members.empty')"
+        />
       </ElCard>
 
       <!-- PAP 发放 -->
@@ -77,7 +104,12 @@
         <template #header>
           <div class="flex items-center justify-between">
             <span class="card-title">{{ $t('fleet.pap.title') }}</span>
-            <ElButton type="success" size="small" :loading="papIssueLoading" @click="handleIssuePap">
+            <ElButton
+              type="success"
+              size="small"
+              :loading="papIssueLoading"
+              @click="handleIssuePap"
+            >
               {{ $t('fleet.pap.issue') }}
             </ElButton>
           </div>
@@ -90,7 +122,12 @@
               <ElTag type="success" size="small">+{{ row.pap_count }}</ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="issued_by" :label="$t('fleet.pap.issuedBy')" width="120" align="center" />
+          <ElTableColumn
+            prop="issued_by"
+            :label="$t('fleet.pap.issuedBy')"
+            width="120"
+            align="center"
+          />
           <ElTableColumn prop="created_at" :label="$t('fleet.pap.issuedAt')" min-width="180">
             <template #default="{ row }">
               {{ formatTime(row.created_at) }}
@@ -105,7 +142,12 @@
         <template #header>
           <div class="flex items-center justify-between">
             <span class="card-title">{{ $t('fleet.invite.title') }}</span>
-            <ElButton type="primary" size="small" :loading="inviteCreateLoading" @click="handleCreateInvite">
+            <ElButton
+              type="primary"
+              size="small"
+              :loading="inviteCreateLoading"
+              @click="handleCreateInvite"
+            >
               <el-icon class="mr-1"><Plus /></el-icon>
               {{ $t('fleet.invite.create') }}
             </ElButton>
@@ -204,7 +246,11 @@
   const inviteCreateLoading = ref(false)
 
   // ---- 等级样式 ----
-  const IMPORTANCE_MAP: Record<string, string> = { strat_op: 'danger', cta: 'warning', other: 'info' }
+  const IMPORTANCE_MAP: Record<string, string> = {
+    strat_op: 'danger',
+    cta: 'warning',
+    other: 'info'
+  }
   const importanceType = (v: string) => (IMPORTANCE_MAP[v] || 'info') as any
 
   // ---- 时间格式化 ----
@@ -355,11 +401,15 @@
   // ---- 禁用邀请链接 ----
   const handleDeactivateInvite = async (invite: Api.Fleet.FleetInvite) => {
     try {
-      await ElMessageBox.confirm(t('fleet.invite.deactivateConfirm'), t('fleet.invite.deactivate'), {
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning'
-      })
+      await ElMessageBox.confirm(
+        t('fleet.invite.deactivateConfirm'),
+        t('fleet.invite.deactivate'),
+        {
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel'),
+          type: 'warning'
+        }
+      )
     } catch {
       return
     }

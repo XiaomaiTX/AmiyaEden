@@ -590,6 +590,43 @@ declare namespace Api {
       solar_system_id: number
       victim_name: string
     }
+
+    /** KM 装配详情请求 */
+    interface KillmailDetailRequest {
+      killmail_id: number
+      language?: string
+    }
+
+    /** KM 槽位中的物品 */
+    interface KillmailSlotItem {
+      item_id: number
+      item_name: string
+      quantity: number
+      dropped: boolean
+    }
+
+    /** KM 槽位分组 */
+    interface KillmailSlotGroup {
+      flag_id: number
+      flag_name: string
+      flag_text: string
+      order_id: number
+      items: KillmailSlotItem[]
+    }
+
+    /** KM 装配详情响应 */
+    interface KillmailDetailResponse {
+      killmail_id: number
+      killmail_time: string
+      ship_type_id: number
+      ship_name: string
+      solar_system_id: number
+      system_name: string
+      character_id: number
+      character_name: string
+      janice_amount: number | null
+      slots: KillmailSlotGroup[]
+    }
   }
 
   /** 商店系统类型 */

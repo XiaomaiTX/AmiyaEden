@@ -55,20 +55,11 @@
   "setting": {
     "menuType": {
       "title": "菜单布局",
-      "list": [
-        "垂直",
-        "水平",
-        "混合",
-        "双列"
-      ]
+      "list": ["垂直", "水平", "混合", "双列"]
     },
     "theme": {
       "title": "主题风格",
-      "list": [
-        "浅色",
-        "深色",
-        "系统"
-      ]
+      "list": ["浅色", "深色", "系统"]
     },
     "menu": {
       "title": "菜单风格"
@@ -78,17 +69,11 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": [
-        "边框",
-        "阴影"
-      ]
+      "list": ["边框", "阴影"]
     },
     "container": {
       "title": "容器宽度",
-      "list": [
-        "铺满",
-        "定宽"
-      ]
+      "list": ["铺满", "定宽"]
     },
     "basics": {
       "title": "基础配置",
@@ -134,14 +119,8 @@
   "notice": {
     "title": "通知",
     "btnRead": "标为已读",
-    "bar": [
-      "通知",
-      "消息",
-      "代办"
-    ],
-    "text": [
-      "暂无"
-    ],
+    "bar": ["通知", "消息", "代办"],
+    "text": ["暂无"],
     "viewAll": "查看全部"
   },
   "worktab": {
@@ -333,7 +312,12 @@
     "trainedLevel": "训练等级",
     "skillSP": "技能点",
     "noSkillQueue": "没有正在学习的技能",
-    "noSkillData": "暂无技能数据"
+    "noSkillData": "暂无技能数据",
+    "totalSPLabel": "总技能点",
+    "allSkills": "全部技能",
+    "unallocatedSPSuffix": " 未分配技能点。",
+    "totalTrainingTime": "训练时间",
+    "queuedSPSuffix": "个技能点排队中"
   },
   "shop": {
     "products": "商品列表",
@@ -468,13 +452,23 @@
   "srp": {
     "apply": {
       "title": "我的补损申请",
+      "formTitle": "申请补损",
+      "infoText": "在下框中选择欲提交的击杀报告和舰队行动。如果在列表中找不到击杀报告，请确认您对应的帐号已正确完成绑定后等待最多1小时刷新。如果找不到对应的舰队，请联系 FC 修改行动信息或发 PAP。",
+      "faqLink": "关于如何申请补损与其他常见问题的说明",
       "dialogTitle": "提交补损申请",
       "submitBtn": "提交补损申请",
+      "submitBtnText": "提交",
       "selectCharacter": "选择受损角色",
       "associatedFleet": "关联舰队",
       "selectFleet": "可选：关联舰队",
+      "fleetInfo": "集结信息",
+      "otherAction": "其他行动 (使用前先联系补损官或FC)",
+      "fleetNotePlaceholder": "把集结信息写在这里。",
       "killmail": "KillMail",
       "selectKillmail": "选择一个 KillMail",
+      "previewKm": "预览 KM",
+      "kmPreviewTitle": "KM 详情预览",
+      "openZkillboard": "在 zKillboard 中查看",
       "loadingKm": "加载 KM 中...",
       "noKmHint": "请先选择角色以加载 KM",
       "recommendedAmount": "推荐金额",
@@ -488,17 +482,30 @@
       "submitSuccess": "申请提交成功",
       "noKmFound": "未找到符合条件的 KM",
       "columns": {
+        "id": "ID",
         "character": "角色",
         "ship": "舰船",
         "system": "星系",
         "killId": "KillID",
         "time": "时间",
+        "estimatedValue": "估价",
+        "fleetId": "舰队ID",
         "recommendedAmount": "推荐金额",
         "finalAmount": "最终金额",
-        "reviewStatus": "审批状态",
+        "actualAmount": "实补金额",
+        "reviewStatus": "审核状态",
+        "paid": "已打款",
         "payoutStatus": "发放状态",
+        "action": "操作",
         "note": "备注"
       }
+    },
+    "kmPreview": {
+      "title": "击毁报告详情",
+      "estimatedValue": "估价",
+      "dropped": "掉落",
+      "destroyed": "摧毁",
+      "noData": "暂无数据"
     },
     "manage": {
       "title": "补损申请列表",

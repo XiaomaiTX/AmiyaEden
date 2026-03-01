@@ -58,6 +58,14 @@ export function fetchMyKillmails(characterId?: number) {
   })
 }
 
+/** 获取 KM 装配详情 */
+export function fetchKillmailDetail(data: Api.Srp.KillmailDetailRequest) {
+  return request.post<Api.Srp.KillmailDetailResponse>({
+    url: '/api/v1/srp/killmails/detail',
+    data
+  })
+}
+
 // ─── 补损申请（管理端）───
 
 /** 获取全部申请列表（管理端） */

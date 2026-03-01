@@ -1,6 +1,6 @@
 <template>
   <div class="info-skill-page art-full-height">
-    <!-- 角色切换器 + 技能概览 -->
+    <!-- 角色切换器 -->
     <ElCard shadow="never" class="mb-2">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center gap-4">
@@ -23,167 +23,183 @@
               </div>
             </ElOption>
           </ElSelect>
-        </div>
-        <div v-if="skillData" class="flex gap-6">
-          <div class="text-center">
-            <p class="text-sm text-gray-500">{{ $t('info.totalSP') }}</p>
-            <p class="text-xl font-bold text-blue-600">{{ formatNumber(skillData.total_sp) }}</p>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-500">{{ $t('info.unallocatedSP') }}</p>
-            <p class="text-xl font-bold text-orange-500">{{
-              formatNumber(skillData.unallocated_sp)
-            }}</p>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-500">{{ $t('info.skillCount') }}</p>
-            <p class="text-xl font-bold">{{ skillData.skill_count }}</p>
-          </div>
+          <ElButton :loading="loading" size="small" @click="loadData">
+            <el-icon class="mr-1"><Refresh /></el-icon>
+            {{ $t('common.refresh') }}
+          </ElButton>
         </div>
       </div>
     </ElCard>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <!-- 技能队列 -->
-      <ElCard class="lg:col-span-1" shadow="never">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <span class="card-title">{{ $t('info.skillQueue') }}</span>
-            <ElTag v-if="skillData?.skill_queue?.length" size="small" type="success">
-              {{ skillData.skill_queue.length }} {{ $t('info.inQueue') }}
-            </ElTag>
-          </div>
-        </template>
+    <!-- 主体区域：左侧技能 + 右侧队列 -->
+    <div v-loading="loading" class="skill-main">
+      <!-- ========== 左侧：技能面板 ========== -->
+      <div class="skill-panel">
+        <!-- 技能标题 + 总 SP -->
+        <div class="panel-header">
+          <span class="panel-title">{{ $t('info.skillList') }}</span>
+          <span class="total-sp">
+            {{ formatNumber(skillData?.total_sp ?? 0) }} {{ $t('info.totalSPLabel') }}
+          </span>
+        </div>
 
-        <div v-if="skillData?.skill_queue?.length" class="skill-queue-list">
-          <div
-            v-for="item in skillData.skill_queue"
-            :key="item.queue_position"
-            class="skill-queue-item"
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <ElSelect
+            v-model="selectedGroup"
+            :placeholder="$t('info.allSkills')"
+            clearable
+            style="width: 160px"
+            size="small"
           >
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="font-medium">{{ item.skill_name || `Type ${item.skill_id}` }}</span>
-                <ElTag size="small" class="ml-2" type="info">Lv {{ item.finished_level }}</ElTag>
-                <ElTag size="small" class="ml-1" effect="plain" v-if="item.queue_position === 1">
-                  {{ $t('info.inTraining') }}
-                </ElTag>
-              </div>
-              <span class="text-xs text-gray-400">#{{ item.queue_position }}</span>
-            </div>
-            <div class="mt-1">
-              <ElProgress
-                :percentage="calcQueueProgress(item)"
-                :stroke-width="6"
-                :show-text="false"
-                :status="item.queue_position === 0 ? undefined : 'warning'"
-              />
-              <div class="flex justify-between text-xs text-gray-400 mt-1">
-                <span
-                  >{{ formatSP(item.training_start_sp) }} /
-                  {{ formatSP(item.level_end_sp) }} SP</span
-                >
-                <span v-if="item.finish_date">{{ formatTimestamp(item.finish_date) }}</span>
-              </div>
-            </div>
+            <ElOption :label="$t('info.allSkills')" :value="''" />
+            <ElOption
+              v-for="group in skillGroups"
+              :key="group.groupName"
+              :label="group.groupName"
+              :value="group.groupName"
+            />
+          </ElSelect>
+          <ElInput
+            v-model="searchKeyword"
+            :placeholder="$t('info.searchSkill')"
+            clearable
+            style="width: 180px"
+            size="small"
+            :prefix-icon="Search"
+          />
+        </div>
+
+        <!-- 技能分类网格 -->
+        <div class="category-grid">
+          <div
+            v-for="group in skillGroups"
+            :key="group.groupName"
+            class="category-cell"
+            :class="{ active: selectedGroup === group.groupName }"
+            :style="{ '--progress': group.progress + '%' }"
+            @click="toggleGroup(group.groupName)"
+          >
+            <span class="category-name">{{ group.groupName }}</span>
+            <span class="category-count">{{ group.count }}</span>
           </div>
         </div>
-        <ElEmpty v-else :description="$t('info.noSkillQueue')" :image-size="80" />
-      </ElCard>
 
-      <!-- 技能列表 -->
-      <ElCard class="lg:col-span-2" shadow="never">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <span class="card-title">{{ $t('info.skillList') }}</span>
-            <div class="flex items-center gap-2">
-              <ElInput
-                v-model="searchKeyword"
-                :placeholder="$t('info.searchSkill')"
-                clearable
-                style="width: 200px"
-                size="small"
+        <!-- 技能列表 -->
+        <div v-if="filteredSkills.length > 0" class="skill-list">
+          <div
+            v-for="skill in filteredSkills"
+            :key="skill.skill_id"
+            class="skill-row"
+            :class="{ 'in-queue': isInQueue(skill.skill_id) }"
+          >
+            <div class="level-bars">
+              <span
+                v-for="i in 5"
+                :key="i"
+                class="level-bar"
+                :class="{
+                  trained: i <= skill.active_level,
+                  'partially-trained':
+                    i === skill.active_level + 1 && skill.trained_level > skill.active_level
+                }"
               />
-              <ElButton :loading="loading" size="small" @click="loadData">
-                <el-icon class="mr-1"><Refresh /></el-icon>
-                {{ $t('common.refresh') }}
-              </ElButton>
             </div>
+            <span class="skill-name">{{ skill.skill_name || `Type ${skill.skill_id}` }}</span>
+            <span class="skill-status">
+              <span v-if="getQueueRemainingTime(skill.skill_id)" class="training-time">
+                {{ getQueueRemainingTime(skill.skill_id) }}
+              </span>
+              <span v-else-if="skill.active_level >= 5" class="trained-check">✓</span>
+            </span>
           </div>
-        </template>
+        </div>
+        <ElEmpty v-else-if="!loading" :description="$t('info.noSkillData')" :image-size="60" />
+      </div>
 
-        <ElTable
-          v-loading="loading"
-          :data="filteredSkills"
-          stripe
-          border
-          style="width: 100%"
-          max-height="600"
-          :default-sort="{ prop: 'group_name', order: 'ascending' }"
-        >
-          <ElTableColumn prop="group_name" :label="$t('info.skillGroup')" width="180" sortable />
-          <ElTableColumn prop="skill_name" :label="$t('info.skillName')" min-width="200" sortable>
-            <template #default="{ row }">
-              {{ row.skill_name || `Type ${row.skill_id}` }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="active_level"
-            :label="$t('info.activeLevel')"
-            width="100"
-            align="center"
-            sortable
-          >
-            <template #default="{ row }">
-              <div class="flex items-center justify-center gap-0.5">
-                <span
-                  v-for="i in 5"
-                  :key="i"
-                  class="level-dot"
-                  :class="i <= row.active_level ? 'active' : ''"
-                />
-              </div>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="trained_level"
-            :label="$t('info.trainedLevel')"
-            width="100"
-            align="center"
-            sortable
-          >
-            <template #default="{ row }"> Lv {{ row.trained_level }} </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="skillpoints_in_skill"
-            :label="$t('info.skillSP')"
-            width="140"
-            align="right"
-            sortable
-          >
-            <template #default="{ row }">{{ formatNumber(row.skillpoints_in_skill) }}</template>
-          </ElTableColumn>
-        </ElTable>
+      <!-- ========== 右侧：技能队列面板 ========== -->
+      <div class="queue-panel">
+        <!-- 队列标题 -->
+        <div class="panel-header">
+          <span class="panel-title">{{ $t('info.skillQueue') }}</span>
+          <span class="queue-capacity">
+            {{ skillData?.skill_queue?.length ?? 0 }}<span class="queue-max">/150</span>
+          </span>
+        </div>
 
-        <ElEmpty
-          v-if="!loading && filteredSkills.length === 0"
-          :description="$t('info.noSkillData')"
-        />
-      </ElCard>
+        <!-- 当前训练进度（第一个） -->
+        <div v-if="currentTraining" class="current-training">
+          <div class="training-chevrons">
+            <span v-for="i in 8" :key="i" class="chevron">›</span>
+          </div>
+          <div class="training-info">
+            <span class="training-name">
+              {{ currentTraining.skill_name || `Type ${currentTraining.skill_id}` }}
+              {{ romanLevel(currentTraining.finished_level) }}
+            </span>
+            <span class="training-countdown">
+              {{ formatRemainingTime(currentTraining.finish_date) }}
+            </span>
+          </div>
+          <ElProgress
+            :percentage="calcTimeProgress(currentTraining)"
+            :stroke-width="4"
+            :show-text="false"
+            color="#5b9bd5"
+            class="mt-1"
+          />
+        </div>
+
+        <!-- 队列列表 -->
+        <div class="queue-list">
+          <div v-for="item in queueWithoutFirst" :key="item.queue_position" class="queue-item">
+            <div class="level-bars small">
+              <span
+                v-for="i in 5"
+                :key="i"
+                class="level-bar"
+                :class="{ trained: i < item.finished_level }"
+              />
+            </div>
+            <span class="queue-skill-name">
+              {{ item.skill_name || `Type ${item.skill_id}` }}
+              {{ romanLevel(item.finished_level) }}
+            </span>
+            <span class="queue-time">{{ formatRemainingTime(item.finish_date) }}</span>
+          </div>
+          <ElEmpty
+            v-if="!loading && (!skillData?.skill_queue || skillData.skill_queue.length === 0)"
+            :description="$t('info.noSkillQueue')"
+            :image-size="60"
+          />
+        </div>
+
+        <!-- 底部统计 -->
+        <div v-if="skillData" class="queue-footer">
+          <div class="unallocated-sp">
+            <span class="sp-value">{{ formatNumber(skillData.unallocated_sp) }}</span>
+            {{ $t('info.unallocatedSPSuffix') }}
+          </div>
+          <div class="total-training-time">
+            <span class="footer-label">{{ $t('info.totalTrainingTime') }}</span>
+            <span class="time-value">{{ totalQueueTime }}</span>
+          </div>
+          <div class="queued-sp">
+            {{ formatNumber(totalQueueSP) }}{{ $t('info.queuedSPSuffix') }}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { Refresh } from '@element-plus/icons-vue'
+  import { Refresh, Search } from '@element-plus/icons-vue'
   import {
     ElCard,
     ElSelect,
     ElOption,
     ElAvatar,
-    ElTable,
-    ElTableColumn,
-    ElTag,
     ElButton,
     ElEmpty,
     ElProgress,
@@ -191,46 +207,159 @@
   } from 'element-plus'
   import { fetchMyCharacters } from '@/api/auth'
   import { fetchInfoSkills } from '@/api/eve-info'
+  import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'EveInfoSkill' })
 
+  const userStore = useUserStore()
+
+  // ---- 数据 ----
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterId = ref<number>()
   const skillData = ref<Api.EveInfo.SkillResponse | null>(null)
   const loading = ref(false)
   const searchKeyword = ref('')
+  const selectedGroup = ref('')
 
+  // ---- 格式化工具 ----
   const formatNumber = (v: number) => new Intl.NumberFormat('en-US').format(v)
 
-  const formatSP = (v: number) =>
-    v >= 1_000_000
-      ? `${(v / 1_000_000).toFixed(1)}M`
-      : v >= 1_000
-        ? `${(v / 1_000).toFixed(0)}K`
-        : String(v)
-
-  const formatTimestamp = (ts: number) => {
-    if (!ts) return ''
-    // ESI 使用 Unix 秒时间戳
-    const d = new Date(ts * 1000)
-    return d.toLocaleString()
+  const romanLevel = (level: number): string => {
+    const numerals = ['', 'I', 'II', 'III', 'IV', 'V']
+    return numerals[level] || String(level)
   }
 
-  const calcQueueProgress = (item: Api.EveInfo.SkillQueueItem) => {
-    const total = item.level_end_sp - item.level_start_sp
-    if (total <= 0) return 100
-    const current = item.training_start_sp - item.level_start_sp
-    return Math.min(100, Math.max(0, Math.round((current / total) * 100)))
+  const formatRemainingTime = (finishDate: number): string => {
+    if (!finishDate) return ''
+    const now = Math.floor(Date.now() / 1000)
+    let remaining = finishDate - now
+    if (remaining <= 0) return '已完成'
+    const days = Math.floor(remaining / 86400)
+    remaining %= 86400
+    const hours = Math.floor(remaining / 3600)
+    remaining %= 3600
+    const minutes = Math.floor(remaining / 60)
+    const seconds = remaining % 60
+    let result = ''
+    if (days > 0) result += `${days}天 `
+    if (hours > 0 || days > 0) result += `${hours}小时`
+    if (days === 0) {
+      if (minutes > 0) result += ` ${minutes}分`
+      if (hours === 0 && minutes < 10) result += ` ${seconds}秒`
+    }
+    return result.trim()
   }
 
+  // ---- 计算属性 ----
+
+  /** 技能分组 */
+  interface SkillGroup {
+    groupName: string
+    count: number
+    skills: Api.EveInfo.SkillItem[]
+    progress: number
+  }
+
+  const skillGroups = computed<SkillGroup[]>(() => {
+    if (!skillData.value?.skills) return []
+    const map = new Map<string, SkillGroup>()
+    for (const s of skillData.value.skills) {
+      const key = s.group_name || 'Unknown'
+      if (!map.has(key)) {
+        map.set(key, { groupName: key, count: 0, skills: [], progress: 0 })
+      }
+      const g = map.get(key)!
+      g.count++
+      g.skills.push(s)
+    }
+    // 计算每个分类的训练完成度：已有等级之和 / (技能数 * 5)
+    for (const g of map.values()) {
+      const totalLevels = g.count * 5
+      const trainedLevels = g.skills.reduce((sum, s) => sum + (s.active_level ?? 0), 0)
+      g.progress = totalLevels > 0 ? Math.round((trainedLevels / totalLevels) * 100) : 0
+    }
+    return Array.from(map.values()).sort((a, b) => a.groupName.localeCompare(b.groupName))
+  })
+
+  /** 筛选后的技能列表 */
   const filteredSkills = computed(() => {
     if (!skillData.value?.skills) return []
-    if (!searchKeyword.value) return skillData.value.skills
-    const kw = searchKeyword.value.toLowerCase()
-    return skillData.value.skills.filter(
-      (s) => s.skill_name?.toLowerCase().includes(kw) || s.group_name?.toLowerCase().includes(kw)
+    let list = skillData.value.skills
+    if (selectedGroup.value) {
+      list = list.filter((s) => s.group_name === selectedGroup.value)
+    }
+    if (searchKeyword.value) {
+      const kw = searchKeyword.value.toLowerCase()
+      list = list.filter(
+        (s) => s.skill_name?.toLowerCase().includes(kw) || s.group_name?.toLowerCase().includes(kw)
+      )
+    }
+    // 按组名 -> 技能名排序
+    return [...list].sort(
+      (a, b) => a.group_name.localeCompare(b.group_name) || a.skill_name.localeCompare(b.skill_name)
     )
   })
+
+  /** 当前正在训练的技能 */
+  const currentTraining = computed(() => {
+    return skillData.value?.skill_queue?.find((q) => q.queue_position === 0) ?? null
+  })
+
+  /** 队列中除第一个之外的技能 */
+  const queueWithoutFirst = computed(() => {
+    return skillData.value?.skill_queue?.filter((q) => q.queue_position > 0) ?? []
+  })
+
+  /** 队列中 skill_id 集合（快速查找） */
+  const queueSkillMap = computed(() => {
+    const map = new Map<number, Api.EveInfo.SkillQueueItem>()
+    for (const q of skillData.value?.skill_queue ?? []) {
+      // 只保留第一个匹配（最近的）
+      if (!map.has(q.skill_id)) map.set(q.skill_id, q)
+    }
+    return map
+  })
+
+  /** 判断技能是否在队列中 */
+  const isInQueue = (skillId: number) => queueSkillMap.value.has(skillId)
+
+  /** 获取队列中该技能的剩余时间 */
+  const getQueueRemainingTime = (skillId: number): string => {
+    const q = queueSkillMap.value.get(skillId)
+    if (!q) return ''
+    return formatRemainingTime(q.finish_date)
+  }
+
+  /** 计算当前训练的时间进度百分比 */
+  const calcTimeProgress = (item: Api.EveInfo.SkillQueueItem): number => {
+    if (!item.start_date || !item.finish_date) return 0
+    const now = Math.floor(Date.now() / 1000)
+    const total = item.finish_date - item.start_date
+    if (total <= 0) return 100
+    const elapsed = now - item.start_date
+    return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)))
+  }
+
+  /** 队列总训练时间 */
+  const totalQueueTime = computed(() => {
+    if (!skillData.value?.skill_queue?.length) return '-'
+    const lastItem = skillData.value.skill_queue[skillData.value.skill_queue.length - 1]
+    if (!lastItem.finish_date) return '-'
+    return formatRemainingTime(lastItem.finish_date)
+  })
+
+  /** 队列总技能点 */
+  const totalQueueSP = computed(() => {
+    if (!skillData.value?.skill_queue?.length) return 0
+    return skillData.value.skill_queue.reduce((sum, item) => {
+      return sum + Math.max(0, item.level_end_sp - item.training_start_sp)
+    }, 0)
+  })
+
+  // ---- 交互 ----
+  const toggleGroup = (groupName: string) => {
+    selectedGroup.value = selectedGroup.value === groupName ? '' : groupName
+  }
 
   const loadCharacters = async () => {
     try {
@@ -249,7 +378,8 @@
     loading.value = true
     try {
       skillData.value = await fetchInfoSkills({
-        character_id: selectedCharacterId.value
+        character_id: selectedCharacterId.value,
+        language: userStore.language
       })
     } catch {
       skillData.value = null
@@ -259,6 +389,8 @@
   }
 
   const onCharacterChange = () => {
+    selectedGroup.value = ''
+    searchKeyword.value = ''
     loadData()
   }
 
@@ -268,31 +400,335 @@
 </script>
 
 <style scoped>
-  .card-title {
-    font-size: 15px;
-    font-weight: 500;
+  /* ===== 主体布局 ===== */
+  .skill-main {
+    display: flex;
+    gap: 12px;
+    min-height: 0;
+    flex: 1;
   }
-  .skill-queue-list {
+
+  .skill-panel {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
-    max-height: 600px;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 6px;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .queue-panel {
+    width: 420px;
+    min-width: 360px;
+    display: flex;
+    flex-direction: column;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 6px;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  /* ===== 面板头 ===== */
+  .panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+
+  .panel-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .total-sp {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .queue-capacity {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .queue-max {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    font-weight: 400;
+  }
+
+  /* ===== 筛选栏 ===== */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  /* ===== 分类网格 ===== */
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .category-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: var(--el-fill-color-light);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  .category-cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: var(--progress, 0%);
+    background: rgba(91, 164, 207, 0.18);
+    transition: width 0.4s ease;
+    pointer-events: none;
+  }
+
+  .category-cell:hover {
+    background: var(--el-fill-color);
+  }
+
+  .category-cell.active {
+    background: var(--el-color-primary-light-8);
+    color: var(--el-color-primary);
+    font-weight: 500;
+  }
+
+  .category-cell.active::before {
+    background: rgba(var(--el-color-primary-rgb), 0.15);
+  }
+
+  .category-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .category-count {
+    margin-left: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
     scrollbar-width: none;
   }
-  .skill-queue-item {
-    padding: 8px 12px;
-    border-radius: 6px;
+
+  /* ===== 技能列表 ===== */
+  .skill-list {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    align-content: start;
+    gap: 2px;
+  }
+
+  .skill-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .skill-row:hover {
     background: var(--el-fill-color-light);
   }
-  .level-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+
+  .skill-row.in-queue {
+    background: var(--el-color-primary-light-9);
+  }
+
+  .skill-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .skill-status {
+    flex-shrink: 0;
+    font-size: 12px;
+  }
+
+  .training-time {
+    color: var(--el-color-warning);
+  }
+
+  .trained-check {
+    color: var(--el-color-success);
+    font-weight: bold;
+  }
+
+  /* ===== 等级指示条 ===== */
+  .level-bars {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .level-bar {
+    width: 12px;
+    height: 10px;
+    border-radius: 1px;
     background: var(--el-border-color-lighter);
     display: inline-block;
   }
-  .level-dot.active {
-    background: var(--el-color-primary);
+
+  .level-bar.trained {
+    background: #5ba4cf;
+  }
+
+  .level-bar.partially-trained {
+    background: linear-gradient(90deg, #5ba4cf 50%, var(--el-border-color-lighter) 50%);
+  }
+
+  .level-bars.small .level-bar {
+    width: 10px;
+    height: 8px;
+  }
+
+  /* ===== 当前训练 ===== */
+  .current-training {
+    background: var(--el-fill-color-light);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .training-chevrons {
+    display: flex;
+    gap: 1px;
+    font-size: 12px;
+    color: #5ba4cf;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -2px;
+    font-weight: bold;
+  }
+
+  .training-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .training-name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .training-countdown {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+
+  /* ===== 队列列表 ===== */
+  .queue-list {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .queue-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .queue-item:hover {
+    background: var(--el-fill-color-light);
+  }
+
+  .queue-skill-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .queue-time {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    text-align: right;
+    min-width: 90px;
+  }
+
+  /* ===== 队列底部统计 ===== */
+  .queue-footer {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--el-border-color-lighter);
+    font-size: 13px;
+  }
+
+  .unallocated-sp {
+    text-align: right;
+    margin-bottom: 8px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .unallocated-sp .sp-value {
+    color: var(--el-color-success);
+    font-weight: 600;
+  }
+
+  .total-training-time {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .footer-label {
+    color: var(--el-text-color-secondary);
+  }
+
+  .time-value {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .queued-sp {
+    text-align: right;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 900px) {
+    .skill-main {
+      flex-direction: column;
+    }
+
+    .queue-panel {
+      width: 100%;
+      min-width: 0;
+    }
   }
 </style>

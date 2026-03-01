@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type SrpService struct {
 	repo      *repository.SrpRepository
 	fleetRepo *repository.FleetRepository
 	charRepo  *repository.EveCharacterRepository
+	sdeRepo   *repository.SdeRepository
 }
 
 func NewSrpService() *SrpService {
@@ -20,6 +22,7 @@ func NewSrpService() *SrpService {
 		repo:      repository.NewSrpRepository(),
 		fleetRepo: repository.NewFleetRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
+		sdeRepo:   repository.NewSdeRepository(),
 	}
 }
 
@@ -450,4 +453,224 @@ func (s *SrpService) GetFleetKillmails(userID uint, fleetID string) ([]FleetKill
 		})
 	}
 	return result, nil
+}
+
+// ─────────────────────────────────────────────
+//  KM 装配详情
+// ─────────────────────────────────────────────
+
+// KillmailDetailRequest 请求参数
+type KillmailDetailRequest struct {
+	KillmailID int64  `json:"killmail_id" binding:"required"`
+	Language   string `json:"language"` // "zh" / "en"
+}
+
+// KillmailSlotItem 单个槽位中合并后的物品
+type KillmailSlotItem struct {
+	ItemID   int    `json:"item_id"`
+	ItemName string `json:"item_name"`
+	Quantity int64  `json:"quantity"`
+	Dropped  bool   `json:"dropped"` // true=掉落, false=摧毁
+}
+
+// KillmailSlotGroup 按槽位分组
+type KillmailSlotGroup struct {
+	FlagID   int                `json:"flag_id"`
+	FlagName string             `json:"flag_name"`
+	FlagText string             `json:"flag_text"`
+	OrderID  int                `json:"order_id"`
+	Items    []KillmailSlotItem `json:"items"`
+}
+
+// KillmailDetailResponse KM 装配详情响应
+type KillmailDetailResponse struct {
+	KillmailID    int64               `json:"killmail_id"`
+	KillmailTime  time.Time           `json:"killmail_time"`
+	ShipTypeID    int64               `json:"ship_type_id"`
+	ShipName      string              `json:"ship_name"`
+	SolarSystemID int64               `json:"solar_system_id"`
+	SystemName    string              `json:"system_name"`
+	CharacterID   int64               `json:"character_id"`
+	CharacterName string              `json:"character_name"`
+	JaniceAmount  *float64            `json:"janice_amount"`
+	Slots         []KillmailSlotGroup `json:"slots"`
+}
+
+// slotCategory 将 HiSlot0, HiSlot1 等 flagName 归类为 "HiSlot"
+func slotCategory(flagName string) string {
+	return strings.TrimRight(flagName, "0123456789")
+}
+
+// slotCategoryNames 槽位类别的中英文显示名
+var slotCategoryNames = map[string]map[string]string{
+	"HiSlot":              {"zh": "高槽", "en": "High Slots"},
+	"MedSlot":             {"zh": "中槽", "en": "Medium Slots"},
+	"LoSlot":              {"zh": "低槽", "en": "Low Slots"},
+	"RigSlot":             {"zh": "改装件", "en": "Rig Slots"},
+	"SubSystemSlot":       {"zh": "子系统", "en": "Subsystem Slots"},
+	"DroneBay":            {"zh": "无人机舱", "en": "Drone Bay"},
+	"FighterBay":          {"zh": "战斗机机库", "en": "Fighter Bay"},
+	"Cargo":               {"zh": "货柜舱", "en": "Cargo"},
+	"FleetHangar":         {"zh": "舰队机库", "en": "Fleet Hangar"},
+	"Implant":             {"zh": "植入体", "en": "Implants"},
+	"SpecializedFuelBay":  {"zh": "燃料舱", "en": "Fuel Bay"},
+	"SpecializedOreHold":  {"zh": "矿石舱", "en": "Ore Hold"},
+	"SpecializedAmmoHold": {"zh": "弹药舱", "en": "Ammo Hold"},
+}
+
+// GetKillmailDetail 查询 KM 装配详情
+func (s *SrpService) GetKillmailDetail(req *KillmailDetailRequest) (*KillmailDetailResponse, error) {
+	lang := req.Language
+	if lang == "" {
+		lang = "zh"
+	}
+
+	// 1. 查询 KM 主记录
+	var km model.EveKillmailList
+	if err := global.DB.Where("kill_mail_id = ?", req.KillmailID).First(&km).Error; err != nil {
+		return nil, errors.New("KM 不存在")
+	}
+
+	// 2. 查询 KM 所有物品
+	var items []model.EveKillmailItem
+	if err := global.DB.Where("kill_mail_id = ?", req.KillmailID).Find(&items).Error; err != nil {
+		return nil, err
+	}
+
+	// 3. 收集所有 flagID 查 invFlags
+	flagIDSet := make(map[int]bool)
+	for _, it := range items {
+		flagIDSet[it.Flag] = true
+	}
+	flagIDs := make([]int, 0, len(flagIDSet))
+	for fid := range flagIDSet {
+		flagIDs = append(flagIDs, fid)
+	}
+	flags, err := s.sdeRepo.GetFlags(flagIDs)
+	if err != nil {
+		return nil, err
+	}
+	flagMap := make(map[int]repository.FlagInfo)
+	for _, f := range flags {
+		flagMap[f.FlagID] = f
+	}
+
+	// 4. 收集所有 typeID（物品 + 舰船），查翻译名
+	typeIDSet := make(map[int]bool)
+	typeIDSet[int(km.ShipTypeID)] = true
+	for _, it := range items {
+		typeIDSet[it.ItemID] = true
+	}
+	typeIDs := make([]int, 0, len(typeIDSet))
+	for tid := range typeIDSet {
+		typeIDs = append(typeIDs, tid)
+	}
+	nameMap, err := s.sdeRepo.GetNames(map[string][]int{"type": typeIDs}, lang)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. 查星系名
+	sysNameMap, _ := s.sdeRepo.GetNames(map[string][]int{"solar_system": {int(km.SolarSystemID)}}, lang)
+
+	// 6. 查角色名
+	charName := ""
+	var char model.EveCharacter
+	if err := global.DB.Where("character_id = ?", km.CharacterID).First(&char).Error; err == nil {
+		charName = char.CharacterName
+	}
+
+	// 7. 按 (槽位类别, item_id, dropped) 合并，同时按类别分组
+	type mergeKey struct {
+		Category string
+		ItemID   int
+		Dropped  bool
+	}
+	merged := make(map[mergeKey]*KillmailSlotItem)
+
+	catMap := make(map[string]*KillmailSlotGroup)
+	catOrder := make([]string, 0)
+
+	for _, it := range items {
+		dropped := it.DropType != nil && *it.DropType
+		fi := flagMap[it.Flag]
+		cat := slotCategory(fi.FlagName)
+
+		// 确保类别组已创建
+		if _, ok := catMap[cat]; !ok {
+			displayName := fi.FlagText
+			if names, exists := slotCategoryNames[cat]; exists {
+				if n, ok := names[lang]; ok {
+					displayName = n
+				}
+			}
+			catMap[cat] = &KillmailSlotGroup{
+				FlagID:   it.Flag,
+				FlagName: cat,
+				FlagText: displayName,
+				OrderID:  fi.OrderID,
+				Items:    []KillmailSlotItem{},
+			}
+			catOrder = append(catOrder, cat)
+		} else if fi.OrderID < catMap[cat].OrderID {
+			catMap[cat].OrderID = fi.OrderID
+		}
+
+		// 按 (category, item_id, dropped) 合并
+		key := mergeKey{Category: cat, ItemID: it.ItemID, Dropped: dropped}
+		if existing, ok := merged[key]; ok {
+			existing.Quantity += it.ItemNum
+		} else {
+			itemName := nameMap[it.ItemID]
+			if itemName == "" {
+				itemName = "Unknown"
+			}
+			si := &KillmailSlotItem{
+				ItemID:   it.ItemID,
+				ItemName: itemName,
+				Quantity: it.ItemNum,
+				Dropped:  dropped,
+			}
+			merged[key] = si
+			catMap[cat].Items = append(catMap[cat].Items, *si)
+		}
+	}
+
+	// 回写合并后数量（指针合并后 slice 中是副本，需要同步）
+	for cat, g := range catMap {
+		for i := range g.Items {
+			key := mergeKey{Category: cat, ItemID: g.Items[i].ItemID, Dropped: g.Items[i].Dropped}
+			g.Items[i].Quantity = merged[key].Quantity
+		}
+	}
+
+	// 按 orderID 排序
+	slots := make([]KillmailSlotGroup, 0, len(catOrder))
+	for _, cat := range catOrder {
+		slots = append(slots, *catMap[cat])
+	}
+	for i := 1; i < len(slots); i++ {
+		for j := i; j > 0 && slots[j].OrderID < slots[j-1].OrderID; j-- {
+			slots[j], slots[j-1] = slots[j-1], slots[j]
+		}
+	}
+
+	shipName := nameMap[int(km.ShipTypeID)]
+	if shipName == "" {
+		shipName = "Unknown"
+	}
+	sysName := sysNameMap[int(km.SolarSystemID)]
+
+	return &KillmailDetailResponse{
+		KillmailID:    km.KillmailID,
+		KillmailTime:  km.KillmailTime,
+		ShipTypeID:    km.ShipTypeID,
+		ShipName:      shipName,
+		SolarSystemID: km.SolarSystemID,
+		SystemName:    sysName,
+		CharacterID:   km.CharacterID,
+		CharacterName: charName,
+		JaniceAmount:  km.JaniceAmount,
+		Slots:         slots,
+	}, nil
 }

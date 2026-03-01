@@ -231,3 +231,18 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 	}
 	response.OK(c, app)
 }
+
+// GetKillmailDetail POST /srp/killmails/detail
+func (h *SrpHandler) GetKillmailDetail(c *gin.Context) {
+	var req service.KillmailDetailRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	detail, err := h.svc.GetKillmailDetail(&req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, detail)
+}
