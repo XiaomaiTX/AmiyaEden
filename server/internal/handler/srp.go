@@ -96,12 +96,7 @@ func (h *SrpHandler) ListMyApplications(c *gin.Context) {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{
-		"records": list,
-		"current": page,
-		"size":    size,
-		"total":   total,
-	})
+	response.OKWithPage(c, list, total, page, size)
 }
 
 // GetMyKillmails GET /srp/my-killmails?character_id=xxx
@@ -164,12 +159,7 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{
-		"records": list,
-		"current": page,
-		"size":    size,
-		"total":   total,
-	})
+	response.OKWithPage(c, list, total, page, size)
 }
 
 // GetApplication GET /srp/manage/applications/:id

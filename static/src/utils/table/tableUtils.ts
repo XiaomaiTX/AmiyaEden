@@ -23,9 +23,9 @@
  * ## 支持的响应格式
  *
  * 1. 直接数组: [item1, item2, ...]
- * 2. 标准对象: { records: [], total: 100 }
+ * 2. 标准对象: { list: [], total: 100 }
  * 3. 嵌套data: { data: { list: [], total: 100 } }
- * 4. 多种字段名: list/data/records/items/result/rows
+ * 4. 多种字段名: list/data/items/result/rows
  *
  * ## 核心功能
  *
@@ -116,11 +116,11 @@ export const defaultResponseAdapter = <T>(response: unknown): ApiResponse<T> => 
   const recordFields = tableConfig.recordFields
 
   if (!response) {
-    return { records: [], total: 0 }
+    return { list: [], total: 0 }
   }
 
   if (Array.isArray(response)) {
-    return { records: response, total: response.length }
+    return { list: response, total: response.length }
   }
 
   if (typeof response !== 'object') {
@@ -130,39 +130,39 @@ export const defaultResponseAdapter = <T>(response: unknown): ApiResponse<T> => 
         '字段的对象、嵌套data对象。当前格式:',
       response
     )
-    return { records: [], total: 0 }
+    return { list: [], total: 0 }
   }
 
   const res = response as Record<string, unknown>
-  let records: T[] = []
+  let list: T[] = []
   let total = 0
   let pagination: Pick<ApiResponse<unknown>, 'current' | 'size'> | undefined
 
   // 处理标准格式或直接列表
-  records = extractRecords(res, recordFields)
-  total = extractTotal(res, records, tableConfig.totalFields)
+  list = extractRecords(res, recordFields)
+  total = extractTotal(res, list, tableConfig.totalFields)
   pagination = extractPagination(res)
 
   // 如果没有找到，检查嵌套data
-  if (records.length === 0 && 'data' in res && typeof res.data === 'object') {
+  if (list.length === 0 && 'data' in res && typeof res.data === 'object') {
     const data = res.data as Record<string, unknown>
-    records = extractRecords(data, ['list', 'records', 'items'])
-    total = extractTotal(data, records, tableConfig.totalFields)
+    list = extractRecords(data, ['list', 'items'])
+    total = extractTotal(data, list, tableConfig.totalFields)
     pagination = extractPagination(res, data)
 
     if (Array.isArray(res.data)) {
-      records = res.data as T[]
-      total = records.length
+      list = res.data as T[]
+      total = list.length
     }
   }
 
-  if (!recordFields.some((field) => field in res) && records.length === 0) {
+  if (!recordFields.some((field) => field in res) && list.length === 0) {
     console.warn('[tableUtils] 无法识别的响应格式')
     console.warn('支持的字段包括: ' + recordFields.join('、'), response)
     console.warn('扩展字段请到 utils/table/tableConfig 文件配置')
   }
 
-  const result: ApiResponse<T> = { records, total }
+  const result: ApiResponse<T> = { list, total }
   if (pagination) {
     Object.assign(result, pagination)
   }
@@ -173,7 +173,7 @@ export const defaultResponseAdapter = <T>(response: unknown): ApiResponse<T> => 
  * 从标准化的API响应中提取表格数据
  */
 export const extractTableData = <T>(response: ApiResponse<T>): T[] => {
-  const data = response.records || response.data || []
+  const data = response.list || response.data || []
   return Array.isArray(data) ? data : []
 }
 

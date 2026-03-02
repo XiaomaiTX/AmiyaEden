@@ -394,7 +394,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
       if (err instanceof Error && err.message === '请求已取消') {
         // 请求被取消，回到 idle 状态
         loadingState.value = 'idle'
-        return { records: [], total: 0, current: 1, size: 10 }
+        return { list: [], total: 0, current: 1, size: 10 }
       }
 
       // 状态机：请求失败，进入 error 状态

@@ -1,0 +1,21 @@
+# Git
+.git
+.gitignore
+
+# 日志
+logs/
+*.log
+
+# 临时文件
+tmp/
+*.tmp
+
+# 配置（运行时通过挂载注入）
+config/config.yaml
+
+# IDE
+.vscode/
+.idea/
+
+# 测试
+*_test.go

@@ -28,7 +28,7 @@ func (h *RoleHandler) ListRoles(c *gin.Context) {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{"records": roles, "current": current, "size": size, "total": total})
+	response.OKWithPage(c, roles, total, current, size)
 }
 
 func (h *RoleHandler) ListAllRoles(c *gin.Context) {

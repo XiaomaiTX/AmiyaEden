@@ -62,12 +62,7 @@ func (h *ESIRefreshHandler) GetTasks(c *gin.Context) {
 func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
-		response.OK(c, gin.H{
-			"records": []interface{}{},
-			"current": 1,
-			"size":    20,
-			"total":   0,
-		})
+		response.OKWithPage(c, []interface{}{}, 0, 1, 20)
 		return
 	}
 
@@ -109,12 +104,7 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 		end = total
 	}
 
-	response.OK(c, gin.H{
-		"records": filtered[start:end],
-		"current": current,
-		"size":    size,
-		"total":   total,
-	})
+	response.OKWithPage(c, filtered[start:end], int64(total), current, size)
 }
 
 // RunTaskRequest 手动触发单个任务的请求（指定角色）

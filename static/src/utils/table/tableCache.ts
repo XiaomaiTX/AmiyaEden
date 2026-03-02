@@ -48,7 +48,7 @@ export enum CacheInvalidationStrategy {
 
 // 通用 API 响应接口（兼容不同的后端响应格式）
 export interface ApiResponse<T = unknown> {
-  records?: T[]
+  list?: T[]
   data?: T[]
   total?: number
   current?: number

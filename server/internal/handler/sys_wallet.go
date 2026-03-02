@@ -208,10 +208,5 @@ func (h *SysWalletHandler) GetWalletTransactions(c *gin.Context) {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{
-		"records": records,
-		"current": page,
-		"size":    size,
-		"total":   total,
-	})
+	response.OKWithPage(c, records, total, page, size)
 }

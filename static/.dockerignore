@@ -1,0 +1,24 @@
+# Git
+.git
+.gitignore
+
+# 依赖（构建时重新安装）
+node_modules/
+
+# 构建产物
+dist/
+
+# 日志、缓存
+*.log
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# 环境变量
+.env.local
+.env.*.local
+
+# Nginx 配置（已在 Dockerfile 中 COPY）
+# nginx.conf

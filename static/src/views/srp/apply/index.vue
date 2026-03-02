@@ -272,7 +272,7 @@
   const loadFleets = async () => {
     try {
       const res = await fetchFleetList({ size: 200 } as any)
-      fleets.value = res?.records ?? []
+      fleets.value = res?.list ?? []
     } catch {
       fleets.value = []
     }

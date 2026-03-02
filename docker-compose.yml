@@ -1,0 +1,40 @@
+services:
+  # ─────────────────── Backend (Go) ───────────────────
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: amiya-eden-backend
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      # 挂载配置文件
+      - ./server/config/config.yaml:/app/config/config.yaml:ro
+      # 持久化日志
+      - ./server/logs:/app/logs
+    ports:
+      - "8080:8080"
+    networks:
+      - amiya-net
+
+  # ─────────────────── Frontend (Nginx) ───────────────────
+  frontend:
+    build:
+      context: ./static
+      dockerfile: Dockerfile
+    container_name: amiya-eden-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - amiya-net
+
+# ─────────────────── Networks ───────────────────
+networks:
+  amiya-net:
+    driver: bridge
