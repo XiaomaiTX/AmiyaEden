@@ -338,6 +338,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 		char.Scopes = scopesStr
 		char.CharacterName = claims.Name
 		char.PortraitURL = portraitURL
+		char.TokenInvalid = false
 		if err := s.charRepo.Update(char); err != nil {
 			return nil, err
 		}
@@ -363,6 +364,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	char.Scopes = scopesStr
 	char.CharacterName = claims.Name
 	char.PortraitURL = portraitURL
+	char.TokenInvalid = false
 	if err := s.charRepo.Update(char); err != nil {
 		return nil, err
 	}

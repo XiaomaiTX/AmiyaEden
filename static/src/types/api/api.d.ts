@@ -83,7 +83,7 @@ declare namespace Api {
       user_id: number
       scopes: string
       token_expiry: string
-      token_valid: boolean
+      token_invalid: boolean
       corporation_id: number
       alliance_id: number
     }
