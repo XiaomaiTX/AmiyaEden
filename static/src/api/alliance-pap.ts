@@ -57,9 +57,11 @@ export function fetchMyAlliancePAP(params?: { year?: number; month?: number }) {
   })
 }
 
-/** 管理员：获取所有成员某月联盟 PAP 汇总 */
-export function fetchAllAlliancePAP(params?: { year?: number; month?: number }) {
-  return request.get<AlliancePAPAllResult>({
+/** 管理员：分页获取所有成员某月联盟 PAP 汇总 */
+export function fetchAllAlliancePAP(
+  params?: Api.Common.CommonSearchParams & { year?: number; month?: number }
+) {
+  return request.get<Api.Common.PaginatedResponse<AlliancePAPSummary>>({
     url: '/api/v1/system/pap',
     params
   })

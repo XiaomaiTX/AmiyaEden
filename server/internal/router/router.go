@@ -141,6 +141,7 @@ func RegisterRoutes(r *gin.Engine) {
 		srp.GET("/killmails/me", srpH.GetMyKillmails)
 		srp.GET("/killmails/fleet/:fleet_id", srpH.GetFleetKillmails)
 		srp.POST("/killmails/detail", srpH.GetKillmailDetail)
+		srp.POST("/open-info-window", srpH.OpenInfoWindow)
 
 		// 审核（需权限）
 		srpAdmin := srp.Group("", middleware.RequirePermission("srp:review"))

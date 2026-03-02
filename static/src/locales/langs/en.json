@@ -520,6 +520,7 @@
       "selectFleet": "Filter by fleet",
       "searchBtn": "Search",
       "resetBtn": "Reset",
+      "exportBtn": "Export Data",
       "approveBtn": "Approve",
       "rejectBtn": "Reject",
       "payoutBtn": "Payout",
@@ -542,6 +543,15 @@
       "rejectSuccess": "Rejected",
       "payoutSuccess": "Payout successful",
       "rejectRequired": "A note is required when rejecting",
+      "payoutKillId": "KillID",
+      "openInfoWindow": "Open Info Window",
+      "editBtn": "Edit",
+      "reRejectBtn": "Re-reject",
+      "reApproveBtn": "Re-approve",
+      "copied": "Copied",
+      "copyFailed": "Copy failed",
+      "noPrimaryCharacter": "Please set a primary character first",
+      "openInfoWindowSuccess": "Open window request sent",
       "columns": {
         "id": "#",
         "character": "Character",
@@ -563,6 +573,11 @@
       "searchPlaceholder": "Search by ship name",
       "refresh": "Refresh",
       "addPrice": "Add Price",
+      "exportBtn": "Export Prices",
+      "importBtn": "Import Prices",
+      "importSuccess": "Import complete: {count} records",
+      "importFailed": "Import failed",
+      "importNoData": "No valid data found, check columns (TypeID / 舰船名称 / 标准补损金额)",
       "addDialog": "Add Ship Price",
       "editDialog": "Edit Ship Price",
       "saveBtn": "Save",
@@ -597,6 +612,33 @@
       "rejected": "Rejected",
       "paid": "Paid",
       "unpaid": "Pending Payout"
+    }
+  },
+  "alliancePap": {
+    "title": "Alliance PAP - All Members",
+    "selectMonth": "Select month",
+    "memberCount": "{count} members have records",
+    "totalPap": "Total PAP",
+    "refresh": "Refresh",
+    "fetchLatest": "Fetch Latest Data",
+    "fetchTriggered": "Fetch triggered, please refresh later",
+    "fetchFailed": "Failed to trigger fetch",
+    "emptyData": "No alliance PAP data for this month",
+    "columns": {
+      "rank": "Rank",
+      "mainCharacter": "Main Character",
+      "monthlyPap": "Monthly PAP",
+      "yearlyPap": "Yearly PAP",
+      "corpMonthlyRank": "Corp Monthly",
+      "allianceMonthlyRank": "Alliance Monthly",
+      "corpYearlyRank": "Corp Yearly",
+      "allianceYearlyRank": "Alliance Yearly",
+      "calculatedAt": "Calculated At",
+      "status": "Status"
+    },
+    "status": {
+      "archived": "Archived",
+      "current": "Current"
     }
   },
   "sde": {

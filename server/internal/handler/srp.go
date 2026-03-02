@@ -232,6 +232,22 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 	response.OK(c, app)
 }
 
+// OpenInfoWindow POST /srp/open-info-window
+// 通过 ESI 在客户端打开角色信息窗口
+func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
+	var req service.OpenInfoWindowRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	userID := middleware.GetUserID(c)
+	if err := h.svc.OpenInfoWindow(userID, &req); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
 // GetKillmailDetail POST /srp/killmails/detail
 func (h *SrpHandler) GetKillmailDetail(c *gin.Context) {
 	var req service.KillmailDetailRequest

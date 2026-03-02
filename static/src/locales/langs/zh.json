@@ -521,6 +521,7 @@
       "selectFleet": "按舰队筛选",
       "searchBtn": "查询",
       "resetBtn": "重置",
+      "exportBtn": "导出当前数据",
       "approveBtn": "批准",
       "rejectBtn": "拒绝",
       "payoutBtn": "发放",
@@ -543,6 +544,15 @@
       "rejectSuccess": "已拒绝",
       "payoutSuccess": "发放成功",
       "rejectRequired": "拒绝时必须填写审批备注",
+      "payoutKillId": "KillID",
+      "openInfoWindow": "打开角色信息",
+      "editBtn": "编辑",
+      "reRejectBtn": "拒绝",
+      "reApproveBtn": "批准",
+      "copied": "已复制",
+      "copyFailed": "复制失败",
+      "noPrimaryCharacter": "请先设置主角色",
+      "openInfoWindowSuccess": "已发送打开信息窗口请求",
       "columns": {
         "id": "#",
         "character": "角色",
@@ -564,6 +574,11 @@
       "searchPlaceholder": "按舰船名搜索",
       "refresh": "刷新",
       "addPrice": "新增价格",
+      "exportBtn": "导出价格",
+      "importBtn": "导入价格",
+      "importSuccess": "导入完成，成功 {count} 条",
+      "importFailed": "导入失败",
+      "importNoData": "未找到有效数据，请检查列名（TypeID / 舰船名称 / 标准补损金额）",
       "addDialog": "新增舰船价格",
       "editDialog": "编辑舰船价格",
       "saveBtn": "保存",
@@ -598,6 +613,33 @@
       "rejected": "已拒绝",
       "paid": "已发放",
       "unpaid": "待发放"
+    }
+  },
+  "alliancePap": {
+    "title": "联盟 PAP - 全员视图",
+    "selectMonth": "选择月份",
+    "memberCount": "共 {count} 名成员有记录",
+    "totalPap": "总 PAP",
+    "refresh": "刷新",
+    "fetchLatest": "拉取最新数据",
+    "fetchTriggered": "已触发后台拉取，请稍后刷新查看",
+    "fetchFailed": "触发拉取失败",
+    "emptyData": "暂无该月联盟 PAP 数据",
+    "columns": {
+      "rank": "排名",
+      "mainCharacter": "主角色",
+      "monthlyPap": "月 PAP",
+      "yearlyPap": "年度 PAP",
+      "corpMonthlyRank": "军团月排",
+      "allianceMonthlyRank": "联盟月排",
+      "corpYearlyRank": "军团年排",
+      "allianceYearlyRank": "联盟年排",
+      "calculatedAt": "数据时间",
+      "status": "状态"
+    },
+    "status": {
+      "archived": "已归档",
+      "current": "当月"
     }
   },
   "sde": {

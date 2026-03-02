@@ -4,7 +4,11 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -15,6 +19,7 @@ type SrpService struct {
 	fleetRepo *repository.FleetRepository
 	charRepo  *repository.EveCharacterRepository
 	sdeRepo   *repository.SdeRepository
+	ssoSvc    *EveSSOService
 }
 
 func NewSrpService() *SrpService {
@@ -23,6 +28,7 @@ func NewSrpService() *SrpService {
 		fleetRepo: repository.NewFleetRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
 		sdeRepo:   repository.NewSdeRepository(),
+		ssoSvc:    NewEveSSOService(),
 	}
 }
 
@@ -226,13 +232,15 @@ type ReviewApplicationRequest struct {
 }
 
 // ReviewApplication 审批补损申请（srp/fc/admin 可操作）
+// 支持对已批准/已拒绝的申请重新审批（编辑/重新拒绝）
 func (s *SrpService) ReviewApplication(reviewerID uint, appID uint, req *ReviewApplicationRequest) (*model.SrpApplication, error) {
 	app, err := s.repo.GetApplicationByID(appID)
 	if err != nil {
 		return nil, errors.New("申请不存在")
 	}
-	if app.ReviewStatus != model.SrpReviewPending {
-		return nil, errors.New("该申请已被审批，不能重复操作")
+	// 已发放的申请不允许重新审批
+	if app.PayoutStatus == model.SrpPayoutPaid {
+		return nil, errors.New("该申请已发放，不能修改审批状态")
 	}
 	if req.Action == "reject" && req.ReviewNote == "" {
 		return nil, errors.New("拒绝时必须填写审批备注")
@@ -292,6 +300,56 @@ func (s *SrpService) Payout(payerID uint, appID uint, req *SrpPayoutRequest) (*m
 		return nil, err
 	}
 	return app, nil
+}
+
+// ─────────────────────────────────────────────
+//  ESI: Open Information Window
+// ─────────────────────────────────────────────
+
+// OpenInfoWindowRequest 打开角色信息窗口请求
+type OpenInfoWindowRequest struct {
+	CharacterID int64 `json:"character_id" binding:"required"` // 操作者角色 ID（用于获取 token）
+	TargetID    int64 `json:"target_id"    binding:"required"` // 要打开信息窗口的目标 ID
+}
+
+// OpenInfoWindow 通过 ESI 在客户端打开角色信息窗口
+// POST /ui/openwindow/information?target_id=xxx
+// 需要 scope: esi-ui.open_window.v1
+func (s *SrpService) OpenInfoWindow(userID uint, req *OpenInfoWindowRequest) error {
+	// 1. 验证角色属于当前用户
+	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
+	if err != nil || char.UserID != userID {
+		return errors.New("角色不属于当前用户或不存在")
+	}
+
+	// 2. 获取有效 token
+	ctx := context.Background()
+	token, err := s.ssoSvc.GetValidToken(ctx, req.CharacterID)
+	if err != nil {
+		return fmt.Errorf("获取 token 失败: %w", err)
+	}
+
+	// 3. 调用 ESI Open Information Window
+	url := fmt.Sprintf("https://esi.evetech.net/ui/openwindow/information/?target_id=%d", req.TargetID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return fmt.Errorf("构建请求失败: %w", err)
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+token)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("调用 ESI Open Window 失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("ESI error %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
 
 // ─────────────────────────────────────────────

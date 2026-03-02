@@ -40,7 +40,18 @@
     </ElCard>
 
     <ElCard class="art-table-card" shadow="never">
-      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
+      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
+        <template #left>
+          <ArtExcelExport
+            :data="exportManageData"
+            :headers="manageExportHeaders"
+            :filename="`srp-manage_${new Date().toLocaleDateString()}`"
+            sheet-name="补损申请"
+            :button-text="$t('srp.manage.exportBtn')"
+            type="success"
+          />
+        </template>
+      </ArtTableHeader>
 
       <ArtTable
         :loading="loading"
@@ -52,6 +63,7 @@
       />
     </ElCard>
 
+    <!-- 审批弹窗 -->
     <ElDialog
       v-model="reviewDialogVisible"
       :title="
@@ -99,32 +111,72 @@
       </template>
     </ElDialog>
 
-    <ElDialog v-model="payoutDialogVisible" :title="$t('srp.manage.payoutDialog')" width="420px">
-      <div class="mb-2"
-        >{{ $t('srp.manage.payoutCharacter')
-        }}<strong>{{ payoutTarget?.character_name }}</strong></div
-      >
-      <div class="mb-4"
-        >{{ $t('srp.manage.payoutAmount')
-        }}<strong class="text-blue-600"
-          >{{ formatISK(payoutTarget?.final_amount ?? 0) }} ISK</strong
-        ></div
-      >
-      <ElFormItem :label="$t('srp.manage.overrideAmount')">
-        <ElInputNumber
-          v-model="payoutOverrideAmount"
-          :min="0"
-          :precision="2"
-          :step="1000000"
-          style="width: 100%"
-        />
-        <div class="text-xs text-gray-400 mt-1">{{ $t('srp.manage.overrideAmountHint') }}</div>
-      </ElFormItem>
+    <!-- 发放弹窗 -->
+    <ElDialog v-model="payoutDialogVisible" :title="$t('srp.manage.payoutDialog')" width="480px">
+      <div class="payout-info-list" v-if="payoutTarget">
+        <!-- 角色（可复制） -->
+        <div class="payout-info-row">
+          <span class="payout-label">{{ $t('srp.manage.payoutCharacter') }}</span>
+          <span class="payout-value">
+            <strong>{{ payoutTarget.character_name }}</strong>
+            <ElButton
+              size="small"
+              :icon="CopyDocument"
+              type=""
+              @click="copyText(payoutTarget!.character_name)"
+              class="ml-2"
+            >
+            </ElButton>
+          </span>
+        </div>
+        <!-- 金额（可复制） -->
+        <div class="payout-info-row">
+          <span class="payout-label">{{ $t('srp.manage.payoutAmount') }}</span>
+          <span class="payout-value">
+            <strong>{{ formatISK(payoutTarget.final_amount) }} ISK</strong>
+            <ElButton
+              size="small"
+              :icon="CopyDocument"
+              type=""
+              @click="copyText(String(payoutTarget!.final_amount))"
+              class="ml-2"
+            >
+            </ElButton>
+          </span>
+        </div>
+        <!-- KillID（可复制） -->
+        <div class="payout-info-row">
+          <span class="payout-label">{{ $t('srp.manage.payoutKillId') }}</span>
+          <span class="payout-value">
+            <ElLink
+              :href="`https://zkillboard.com/kill/${payoutTarget.killmail_id}/`"
+              target="_blank"
+              type="primary"
+            >
+              {{ payoutTarget.killmail_id }}
+            </ElLink>
+            <ElButton
+              size="small"
+              :icon="CopyDocument"
+              type=""
+              @click="copyText(String(payoutTarget!.killmail_id))"
+              class="ml-2"
+            >
+            </ElButton>
+          </span>
+        </div>
+      </div>
       <template #footer>
-        <ElButton @click="payoutDialogVisible = false">{{ $t('srp.apply.cancelBtn') }}</ElButton>
-        <ElButton type="primary" :loading="actionLoading" @click="handlePayout">{{
-          $t('srp.manage.confirmPayout')
-        }}</ElButton>
+        <div class="flex justify-between w-full">
+          <div>
+            <ElButton @click="payoutDialogVisible = false">{{
+              $t('srp.apply.cancelBtn')
+            }}</ElButton>
+            <ElButton type="primary" :loading="actionLoading" @click="handlePayout">{{
+              $t('srp.manage.confirmPayout')
+            }}</ElButton>
+          </div>
+        </div>
       </template>
     </ElDialog>
 
@@ -151,15 +203,24 @@
   } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtExcelExport from '@/components/core/forms/art-excel-export/index.vue'
   import KmPreviewDialog from '@/components/business/KmPreviewDialog.vue'
   import { fetchFleetList } from '@/api/fleet'
-  import { fetchApplicationList, reviewApplication, payoutApplication } from '@/api/srp'
+  import {
+    fetchApplicationList,
+    reviewApplication,
+    payoutApplication,
+    openInfoWindow
+  } from '@/api/srp'
   import { useNameResolver } from '@/hooks'
+  import { useUserStore } from '@/store/modules/user'
+  import { CopyDocument } from '@element-plus/icons-vue'
 
   defineOptions({ name: 'SrpManage' })
 
   const { t } = useI18n()
   const { getName, resolve: resolveNames } = useNameResolver()
+  const userStore = useUserStore()
 
   const fleets = ref<Api.Fleet.FleetItem[]>([])
   const loadFleets = async () => {
@@ -306,13 +367,14 @@
         {
           prop: 'actions',
           label: t('srp.manage.columns.action'),
-          width: 220,
+          width: 300,
           fixed: 'right',
           formatter: (row: SrpApp) => {
             const btns: ReturnType<typeof h>[] = [
               h(ArtButtonTable, { type: 'view', onClick: () => openKmPreview(row) })
             ]
             if (row.review_status === 'pending') {
+              // 待审批：批准 + 拒绝
               btns.push(
                 h(
                   ElButton,
@@ -334,11 +396,43 @@
                 )
               )
             } else if (row.review_status === 'approved' && row.payout_status === 'pending') {
+              // 已批准 + 未发放：发放 + 编辑 + 重新拒绝
               btns.push(
                 h(
                   ElButton,
                   { size: 'small', type: 'primary', onClick: () => openPayoutDialog(row) },
                   () => t('srp.manage.payoutBtn')
+                ),
+                h(
+                  ElButton,
+                  {
+                    size: 'small',
+                    type: 'warning',
+                    onClick: () => openReviewDialog(row, 'approve')
+                  },
+                  () => t('srp.manage.editBtn')
+                ),
+                h(
+                  ElButton,
+                  {
+                    size: 'small',
+                    type: 'danger',
+                    onClick: () => openReviewDialog(row, 'reject')
+                  },
+                  () => t('srp.manage.reRejectBtn')
+                )
+              )
+            } else if (row.review_status === 'rejected') {
+              // 已拒绝：可重新批准
+              btns.push(
+                h(
+                  ElButton,
+                  {
+                    size: 'small',
+                    type: 'success',
+                    onClick: () => openReviewDialog(row, 'approve')
+                  },
+                  () => t('srp.manage.reApproveBtn')
                 )
               )
             }
@@ -403,7 +497,7 @@
     reviewTarget.value = row
     reviewAction.value = action
     reviewForm.review_note = ''
-    reviewForm.final_amount = 0
+    reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
     reviewDialogVisible.value = true
   }
 
@@ -436,19 +530,18 @@
 
   const payoutDialogVisible = ref(false)
   const payoutTarget = ref<Api.Srp.Application | null>(null)
-  const payoutOverrideAmount = ref(0)
 
   const openPayoutDialog = (row: Api.Srp.Application) => {
     payoutTarget.value = row
-    payoutOverrideAmount.value = 0
     payoutDialogVisible.value = true
+    handleOpenInfoWindow()
   }
 
   const handlePayout = async () => {
     if (!payoutTarget.value) return
     actionLoading.value = true
     try {
-      await payoutApplication(payoutTarget.value.id, { final_amount: payoutOverrideAmount.value })
+      await payoutApplication(payoutTarget.value.id)
       ElMessage.success(t('srp.manage.payoutSuccess'))
       payoutDialogVisible.value = false
       refreshData()
@@ -459,11 +552,78 @@
     }
   }
 
+  /* ── 复制到剪贴板 ── */
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      ElMessage.success(t('srp.manage.copied'))
+    } catch {
+      ElMessage.warning(t('srp.manage.copyFailed'))
+    }
+  }
+
+  /* ── Open Info Window (ESI) ── */
+  const openWindowLoading = ref(false)
+  const handleOpenInfoWindow = async () => {
+    if (!payoutTarget.value) return
+    const userInfo = userStore.getUserInfo
+    const primaryCharacterId = userInfo.primaryCharacterId
+    if (!primaryCharacterId) {
+      ElMessage.warning(t('srp.manage.noPrimaryCharacter'))
+      return
+    }
+    openWindowLoading.value = true
+    try {
+      await openInfoWindow({
+        character_id: primaryCharacterId,
+        target_id: payoutTarget.value.character_id
+      })
+      ElMessage.success(t('srp.manage.openInfoWindowSuccess'))
+    } catch {
+      /* handled */
+    } finally {
+      openWindowLoading.value = false
+    }
+  }
+
   const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
       v ?? 0
     )
+
+  // ─── 导出 ───
+  const manageExportHeaders = {
+    character_name: '角色',
+    ship_name: '舰船',
+    solar_system: '星系',
+    killmail_id: 'KillID',
+    killmail_time: 'KM时间',
+    corporation: '军团',
+    alliance: '联盟',
+    recommended_amount: '推荐金额',
+    final_amount: '最终金额',
+    review_status: '审批状态',
+    payout_status: '发放状态'
+  }
+  const exportManageData = computed(() =>
+    data.value.map((app) => ({
+      character_name: app.character_name,
+      ship_name: getName(app.ship_type_id, `TypeID: ${app.ship_type_id}`),
+      solar_system: getName(app.solar_system_id, String(app.solar_system_id)),
+      killmail_id: app.killmail_id,
+      killmail_time: formatTime(app.killmail_time),
+      corporation: getName(
+        app.corporation_id,
+        app.corporation_id ? `ID: ${app.corporation_id}` : '-'
+      ),
+      alliance: getName(app.alliance_id, app.alliance_id ? `ID: ${app.alliance_id}` : '-'),
+      recommended_amount: app.recommended_amount,
+      final_amount: app.final_amount,
+      review_status: reviewStatusLabel(app.review_status),
+      payout_status: app.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
+    }))
+  )
 
   /* ── KM 预览 ── */
   const kmPreviewVisible = ref(false)
@@ -478,4 +638,29 @@
   })
 </script>
 
-<style scoped></style>
+<style scoped>
+  .payout-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .payout-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .payout-label {
+    min-width: 80px;
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    flex-shrink: 0;
+  }
+
+  .payout-value {
+    font-size: 14px;
+    color: var(--el-text-color-primary);
+    word-break: break-all;
+  }
+</style>

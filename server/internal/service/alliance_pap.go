@@ -227,3 +227,8 @@ func (s *AlliancePAPService) GetMyPAP(mainChar string, year, month int) (*Allian
 func (s *AlliancePAPService) GetAllPAP(year, month int) ([]model.AlliancePAPSummary, error) {
 	return s.repo.ListAllSummaries(year, month)
 }
+
+// GetAllPAPPaged 分页获取所有成员某月联盟 PAP 汇总（管理员）
+func (s *AlliancePAPService) GetAllPAPPaged(year, month, page, pageSize int) ([]model.AlliancePAPSummary, int64, error) {
+	return s.repo.ListAllSummariesPaged(year, month, page, pageSize)
+}

@@ -98,3 +98,11 @@ export function payoutApplication(id: number, data?: Api.Srp.PayoutParams) {
     data: data ?? {}
   })
 }
+
+/** 通过 ESI 在客户端打开角色信息窗口 */
+export function openInfoWindow(data: { character_id: number; target_id: number }) {
+  return request.post({
+    url: '/api/v1/srp/open-info-window',
+    data
+  })
+}

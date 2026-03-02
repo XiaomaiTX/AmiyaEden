@@ -78,6 +78,20 @@ func (r *AlliancePAPRepository) ListAllSummaries(year, month int) ([]model.Allia
 	return list, err
 }
 
+// ListAllSummariesPaged 分页查询所有人某月的汇总（管理员视图）
+func (r *AlliancePAPRepository) ListAllSummariesPaged(year, month, page, pageSize int) ([]model.AlliancePAPSummary, int64, error) {
+	var list []model.AlliancePAPSummary
+	var total int64
+	offset := (page - 1) * pageSize
+
+	db := global.DB.Model(&model.AlliancePAPSummary{}).Where("year = ? AND month = ?", year, month)
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := db.Order("total_pap DESC").Offset(offset).Limit(pageSize).Find(&list).Error
+	return list, total, err
+}
+
 // ListAllMainCharacters 查询数据库中所有已有记录的主角色名列表
 func (r *AlliancePAPRepository) ListAllMainCharacters() ([]string, error) {
 	var names []string

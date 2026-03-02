@@ -15,6 +15,17 @@
           <ElButton type="primary" :icon="Plus" @click="openAddDialog">
             {{ $t('srp.prices.addPrice') }}
           </ElButton>
+          <ArtExcelExport
+            :data="exportPricesData"
+            :headers="pricesExportHeaders"
+            :filename="`srp-prices_${new Date().toLocaleDateString()}`"
+            sheet-name="SRP价格表"
+            :button-text="$t('srp.prices.exportBtn')"
+            type="success"
+          />
+          <ArtExcelImport @import-success="handleImport">
+            {{ $t('srp.prices.importBtn') }}
+          </ArtExcelImport>
         </template>
       </ArtTableHeader>
 
@@ -76,6 +87,8 @@
   } from 'element-plus'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtExcelExport from '@/components/core/forms/art-excel-export/index.vue'
+  import ArtExcelImport from '@/components/core/forms/art-excel-import/index.vue'
   import { fetchShipPrices, upsertShipPrice, deleteShipPrice } from '@/api/srp'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
 
@@ -131,6 +144,51 @@
         ])
     }
   ])
+
+  // ─── 导出 ───
+  const pricesExportHeaders = {
+    ship_type_id: 'TypeID',
+    ship_name: '舰船名称',
+    amount: '标准补损金额',
+    updated_at: '最后更新'
+  }
+  const exportPricesData = computed(() =>
+    prices.value.map((p) => ({
+      ship_type_id: p.ship_type_id,
+      ship_name: p.ship_name,
+      amount: p.amount,
+      updated_at: p.updated_at ? new Date(p.updated_at).toLocaleString() : '-'
+    }))
+  )
+
+  // ─── 导入 ───
+  const handleImport = async (rows: Record<string, unknown>[]) => {
+    const items = rows
+      .map((row) => ({
+        ship_type_id: Number(row['TypeID'] ?? row['ship_type_id'] ?? 0),
+        ship_name: String(row['舰船名称'] ?? row['ship_name'] ?? ''),
+        amount: Number(row['标准补损金额'] ?? row['amount'] ?? 0)
+      }))
+      .filter((item) => item.ship_type_id > 0 && item.ship_name)
+    if (!items.length) {
+      ElMessage.warning(t('srp.prices.importNoData'))
+      return
+    }
+    loading.value = true
+    let success = 0
+    try {
+      for (const item of items) {
+        await upsertShipPrice(item)
+        success++
+      }
+      ElMessage.success(t('srp.prices.importSuccess', { count: success }))
+      loadPrices()
+    } catch {
+      ElMessage.error(t('srp.prices.importFailed'))
+    } finally {
+      loading.value = false
+    }
+  }
 
   // ─── 数据 ───
   const prices = ref<ShipPrice[]>([])

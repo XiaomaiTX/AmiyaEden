@@ -67,11 +67,13 @@ func (h *AlliancePAPHandler) GetMyAlliancePAP(c *gin.Context) {
 }
 
 // GetAllAlliancePAP  GET /system/pap
-// 查询所有成员某月的联盟 PAP 汇总（管理员）
+// 分页查询所有成员某月的联盟 PAP 汇总（管理员）
 func (h *AlliancePAPHandler) GetAllAlliancePAP(c *gin.Context) {
 	now := time.Now()
 	year := now.Year()
 	month := int(now.Month())
+	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 
 	if y := c.Query("year"); y != "" {
 		if v, err := strconv.Atoi(y); err == nil {
@@ -84,16 +86,12 @@ func (h *AlliancePAPHandler) GetAllAlliancePAP(c *gin.Context) {
 		}
 	}
 
-	list, err := h.svc.GetAllPAP(year, month)
+	list, total, err := h.svc.GetAllPAPPaged(year, month, page, size)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{
-		"year":  year,
-		"month": month,
-		"list":  list,
-	})
+	response.OKWithPage(c, list, total, page, size)
 }
 
 // TriggerFetch  POST /system/pap/fetch
