@@ -22,24 +22,6 @@
                 :class="{ loading: loading }"
               />
             </div>
-
-            <ElButton
-              class="w-full sso-btn"
-              type="primary"
-              @click="handleEveLogin"
-              :loading="loading"
-              v-ripple
-            >
-              <img
-                v-if="!loading"
-                src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-black-small.png"
-                alt=""
-                class="btn-icon"
-              />
-              {{ loading ? $t('login.redirecting') : $t('login.btnText') }}
-            </ElButton>
-
-            <p class="hint-text">{{ $t('login.hint') }}</p>
           </div>
         </div>
       </div>
