@@ -95,3 +95,21 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 	response.OK(c, nil)
 }
+
+// ImpersonateUser 以指定用户身份签发 JWT（仅超级管理员可用）
+func (h *UserHandler) ImpersonateUser(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, "无效的用户ID")
+		return
+	}
+	token, user, err := h.svc.ImpersonateUser(uint(id))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, gin.H{
+		"token": token,
+		"user":  user,
+	})
+}

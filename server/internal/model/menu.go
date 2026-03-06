@@ -132,7 +132,7 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "SRP", Path: "/srp", Component: "/index/index", Title: "menus.srp.title", Icon: "ri:money-dollar-box-line", Sort: 80, Status: 1}},
 		{ParentName: "SRP", Menu: Menu{Type: MenuTypeMenu, Name: "SrpApply", Path: "srp-apply", Component: "/srp/apply", Title: "menus.srp.srpApply", Sort: 100, KeepAlive: true, Status: 1}},
 		{ParentName: "SRP", Menu: Menu{Type: MenuTypeMenu, Name: "SrpManage", Path: "srp-manage", Component: "/srp/manage", Title: "menus.srp.srpManage", Sort: 90, KeepAlive: true, Status: 1}},
-		{ParentName: "SrpManage", Menu: Menu{Type: MenuTypeButton, Name: "SrpManageReview", Permission: "srp:manage:review", Title: "审批", Sort: 100, Status: 1}},
+		{ParentName: "SrpManage", Menu: Menu{Type: MenuTypeButton, Name: "SrpManageReview", Permission: "srp:review", Title: "审批", Sort: 100, Status: 1}},
 		{ParentName: "SRP", Menu: Menu{Type: MenuTypeMenu, Name: "SrpPrices", Path: "srp-prices", Component: "/srp/prices", Title: "menus.srp.srpPrices", Sort: 80, KeepAlive: true, Status: 1}},
 		{ParentName: "SrpPrices", Menu: Menu{Type: MenuTypeButton, Name: "SrpPriceAdd", Permission: "srp:price:add", Title: "新增价格", Sort: 100, Status: 1}},
 		{ParentName: "SrpPrices", Menu: Menu{Type: MenuTypeButton, Name: "SrpPriceDelete", Permission: "srp:price:delete", Title: "删除价格", Sort: 90, Status: 1}},

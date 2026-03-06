@@ -352,21 +352,44 @@ func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
 			continue
 		}
 
-		// 如果角色已有菜单配置，跳过（不覆盖手动配置）
-		existing, _ := s.repo.GetRoleMenuIDs(role.ID)
-		if len(existing) > 0 {
+		// 计算 seed 中该角色应有的菜单 ID 集合
+		var seedMenuIDs []uint
+		for _, name := range menuNames {
+			if id, ok := nameToID[name]; ok {
+				seedMenuIDs = append(seedMenuIDs, id)
+			}
+		}
+		if len(seedMenuIDs) == 0 {
 			continue
 		}
 
-		var menuIDs []uint
-		for _, name := range menuNames {
-			if id, ok := nameToID[name]; ok {
-				menuIDs = append(menuIDs, id)
+		existing, _ := s.repo.GetRoleMenuIDs(role.ID)
+
+		if len(existing) == 0 {
+			// 角色尚无菜单，直接写入
+			if err := s.repo.SetRoleMenus(role.ID, seedMenuIDs); err != nil {
+				global.Logger.Error("设置默认角色菜单失败", zap.String("role", roleCode), zap.Error(err))
+			}
+			continue
+		}
+
+		// 角色已有菜单配置：增量补入 seed 中新增但尚未分配的菜单
+		existSet := make(map[uint]struct{}, len(existing))
+		for _, id := range existing {
+			existSet[id] = struct{}{}
+		}
+		var toAdd []uint
+		for _, id := range seedMenuIDs {
+			if _, ok := existSet[id]; !ok {
+				toAdd = append(toAdd, id)
 			}
 		}
-		if len(menuIDs) > 0 {
-			if err := s.repo.SetRoleMenus(role.ID, menuIDs); err != nil {
-				global.Logger.Error("设置默认角色菜单失败", zap.String("role", roleCode), zap.Error(err))
+		if len(toAdd) > 0 {
+			merged := append(existing, toAdd...)
+			if err := s.repo.SetRoleMenus(role.ID, merged); err != nil {
+				global.Logger.Error("增量更新角色菜单失败", zap.String("role", roleCode), zap.Error(err))
+			} else {
+				global.Logger.Info("角色菜单已增量更新", zap.String("role", roleCode), zap.Int("added", len(toAdd)))
 			}
 		}
 	}

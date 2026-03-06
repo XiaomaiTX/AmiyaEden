@@ -137,8 +137,8 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		// 价格表（查看公开，修改需权限）
 		srp.GET("/prices", srpH.ListShipPrices)
-		srp.POST("/prices", middleware.RequirePermission("srp:price:edit"), srpH.UpsertShipPrice)
-		srp.DELETE("/prices/:id", middleware.RequirePermission("srp:price:edit"), srpH.DeleteShipPrice)
+		srp.POST("/prices", middleware.RequirePermission("srp:price:add"), srpH.UpsertShipPrice)
+		srp.DELETE("/prices/:id", middleware.RequirePermission("srp:price:delete"), srpH.DeleteShipPrice)
 
 		// 个人申请
 		srp.POST("/applications", srpH.SubmitApplication)
@@ -220,6 +220,9 @@ func RegisterRoutes(r *gin.Engine) {
 		// 用户角色分配
 		adminUser.GET("/:id/roles", roleH.GetUserRoles)
 		adminUser.PUT("/:id/roles", roleH.SetUserRoles)
+
+		// 模拟登录（仅超级管理员）
+		adminUser.POST("/:id/impersonate", middleware.RequireRole(model.RoleSuperAdmin), userH.ImpersonateUser)
 	}
 
 	// 系统钱包管理（管理员）

@@ -29,6 +29,12 @@ export function fetchDeleteUser(id: number) {
   })
 }
 
+export function fetchImpersonateUser(id: number) {
+  return request.post<{ token: string; user: Api.SystemManage.UserListItem }>({
+    url: `/api/v1/system/user/${id}/impersonate`
+  })
+}
+
 // ─── 用户角色分配 ───
 
 export function fetchGetUserRoles(userId: number) {
