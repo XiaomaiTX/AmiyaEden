@@ -2,6 +2,7 @@
 package esi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -108,9 +109,7 @@ func (c *Client) PostJSON(ctx context.Context, path string, accessToken string, 
 	}
 
 	url := c.baseURL + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, io.NopCloser(
-		io.Reader(readerFromBytes(bodyBytes)),
-	))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("build ESI request: %w", err)
 	}
@@ -152,9 +151,7 @@ func (c *Client) PutJSON(ctx context.Context, path string, accessToken string, r
 	}
 
 	url := c.baseURL + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, io.NopCloser(
-		io.Reader(readerFromBytes(bodyBytes)),
-	))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("build ESI request: %w", err)
 	}
@@ -190,9 +187,7 @@ func (c *Client) PostNoContent(ctx context.Context, path string, accessToken str
 	}
 
 	url := c.baseURL + path
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, io.NopCloser(
-		io.Reader(readerFromBytes(bodyBytes)),
-	))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("build ESI request: %w", err)
 	}
@@ -218,23 +213,4 @@ func (c *Client) PostNoContent(ctx context.Context, path string, accessToken str
 		return fmt.Errorf("ESI error %d on POST %s: %s", resp.StatusCode, path, string(respBody))
 	}
 	return nil
-}
-
-// readerFromBytes 创建一个 bytes reader
-func readerFromBytes(b []byte) io.Reader {
-	return &bytesReader{data: b}
-}
-
-type bytesReader struct {
-	data []byte
-	pos  int
-}
-
-func (r *bytesReader) Read(p []byte) (n int, err error) {
-	if r.pos >= len(r.data) {
-		return 0, io.EOF
-	}
-	n = copy(p, r.data[r.pos:])
-	r.pos += n
-	return n, nil
 }
