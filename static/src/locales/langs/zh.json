@@ -327,6 +327,7 @@
     "skillSP": "技能点",
     "noSkillQueue": "没有正在学习的技能",
     "noSkillData": "暂无技能数据",
+    "skillNotLearned": "未吸收技能书",
     "totalSPLabel": "总技能点",
     "allSkills": "全部技能",
     "unallocatedSPSuffix": " 未分配技能点。",

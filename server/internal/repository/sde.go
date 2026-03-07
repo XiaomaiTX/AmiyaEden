@@ -143,6 +143,41 @@ func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID stri
 	return result, nil
 }
 
+// GetTypesByCategoryID 获取指定 categoryID 下所有已发布的物品（含翻译）
+// 主要用于技能模块获取 categoryID=16 的全量技能列表
+func (r *SdeRepository) GetTypesByCategoryID(categoryID int, languageID string) ([]TypeInfo, error) {
+	var result []TypeInfo
+
+	query := global.DB.Table(`"invTypes" t`).
+		Select(`
+            t."typeID"        AS type_id,
+            t_name.text       AS type_name,
+            g."groupID"       AS group_id,
+            g_name.text       AS group_name,
+            t."marketGroupID" AS market_group_id,
+            mg_name.text      AS market_group_name,
+            c."categoryID"    AS category_id,
+            c_name.text       AS category_name
+        `).
+		Joins(`LEFT JOIN "invGroups" g ON g."groupID" = t."groupID"`).
+		Joins(`LEFT JOIN "invCategories" c ON c."categoryID" = g."categoryID"`).
+		Joins(`LEFT JOIN "invMarketGroups" mg ON mg."marketGroupID" = t."marketGroupID"`).
+		Joins(`LEFT JOIN "trnTranslations" t_name ON t_name."tcID" = ? AND t_name."keyID" = t."typeID" AND t_name."languageID" = ?`,
+			TC_ID["type"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" g_name ON g_name."tcID" = ? AND g_name."keyID" = g."groupID" AND g_name."languageID" = ?`,
+			TC_ID["group"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" c_name ON c_name."tcID" = ? AND c_name."keyID" = c."categoryID" AND c_name."languageID" = ?`,
+			TC_ID["category"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" mg_name ON mg_name."tcID" = ? AND mg_name."keyID" = mg."marketGroupID" AND mg_name."languageID" = ?`,
+			TC_ID["market_group"], languageID).
+		Where(`c."categoryID" = ? AND t.published = 1`, categoryID)
+
+	if err := query.Scan(&result).Error; err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // FlagInfo invFlags 表行
 type FlagInfo struct {
 	FlagID   int    `json:"flag_id"   gorm:"column:flagID"`

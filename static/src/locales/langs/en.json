@@ -315,6 +315,7 @@
     "skillSP": "Skill Points",
     "noSkillQueue": "No skills in training",
     "noSkillData": "No skill data",
+    "skillNotLearned": "Skill book not injected",
     "totalSPLabel": "Total Skill Points",
     "allSkills": "All Skills",
     "unallocatedSPSuffix": " unallocated skill points.",

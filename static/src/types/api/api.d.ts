@@ -948,6 +948,7 @@ declare namespace Api {
       active_level: number
       trained_level: number
       skillpoints_in_skill: number
+      learned: boolean // 是否已注射：false = 未吸收技能书
     }
 
     /** 技能队列条目 */
