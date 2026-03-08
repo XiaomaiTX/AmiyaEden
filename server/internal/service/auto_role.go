@@ -153,11 +153,25 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 		return nil
 	}
 
-	// 收集所有角色的 ESI 军团角色
+	// 构建允许军团白名单（为空表示不限制）
+	allowCorps := global.Config.App.AllowCorporations
+	allowCorpSet := make(map[int64]struct{}, len(allowCorps))
+	for _, id := range allowCorps {
+		allowCorpSet[id] = struct{}{}
+	}
+
+	// 收集所有角色的 ESI 军团角色（仅限允许军团）
 	allEsiRoles := make(map[string]struct{})
 	hasDirector := false
 
 	for _, char := range chars {
+		// 跳过不在允许军团中的角色
+		if len(allowCorpSet) > 0 {
+			if _, ok := allowCorpSet[char.CorporationID]; !ok {
+				continue
+			}
+		}
+
 		corpRoles, err := s.autoRoleRepo.ListCharacterCorpRoles(char.CharacterID)
 		if err != nil {
 			global.Logger.Warn("[AutoRole] 查询角色军团角色失败",
@@ -200,10 +214,16 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 		}
 	}
 
-	// 查找 ESI 头衔映射
+	// 查找 ESI 头衔映射（仅限允许军团）
 	for _, char := range chars {
 		if char.CorporationID == 0 {
 			continue
+		}
+		// 跳过不在允许军团中的角色
+		if len(allowCorpSet) > 0 {
+			if _, ok := allowCorpSet[char.CorporationID]; !ok {
+				continue
+			}
 		}
 		// 查询角色头衔
 		var titles []model.EveCharacterTitle
