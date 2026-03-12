@@ -12,7 +12,13 @@
 
     <ElCard class="art-table-card" shadow="never">
       <!-- 工具栏 -->
-      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
+      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
+        <template #left>
+          <ElButton type="warning" :icon="Setting" @click="settleDialogVisible = true">
+            {{ t('alliancePap.settle.openBtn') }}
+          </ElButton>
+        </template>
+      </ArtTableHeader>
 
       <!-- 表格 -->
       <ArtTable
@@ -24,12 +30,16 @@
         @pagination:current-change="handleCurrentChange"
       />
     </ElCard>
+
+    <!-- 兑换配置 & 月度结算弹窗 -->
+    <PapSettle v-model="settleDialogVisible" />
   </div>
 </template>
 
 <script setup lang="ts">
   import { useTable } from '@/hooks/core/useTable'
-  import { ElTag, ElMessage } from 'element-plus'
+  import { ElTag, ElMessage, ElButton } from 'element-plus'
+  import { Setting } from '@element-plus/icons-vue'
   import { useI18n } from 'vue-i18n'
   import {
     fetchAllAlliancePAP,
@@ -37,6 +47,7 @@
     type AlliancePAPSummary
   } from '@/api/alliance-pap'
   import PapSearch from './modules/pap-search.vue'
+  import PapSettle from './modules/pap-settle.vue'
 
   defineOptions({ name: 'AlliancePAP' })
 
@@ -161,6 +172,7 @@
 
   // ─── 拉取最新数据 ───
   const fetching = ref(false)
+  const settleDialogVisible = ref(false)
 
   async function triggerFetch() {
     fetching.value = true

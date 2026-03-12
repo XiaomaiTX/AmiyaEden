@@ -248,6 +248,49 @@ declare namespace Api {
       role_ids: number[]
       roles: RoleItem[]
     }
+
+    /** ESI 军团角色 → 系统角色映射 */
+    interface EsiRoleMapping {
+      id: number
+      esi_role: string
+      role_id: number
+      role_code: string
+      role_name: string
+      created_at: string
+    }
+
+    /** 创建 ESI 角色映射请求 */
+    interface CreateEsiRoleMappingParams {
+      esi_role: string
+      role_id: number
+    }
+
+    /** ESI 头衔 → 系统角色映射 */
+    interface EsiTitleMapping {
+      id: number
+      corporation_id: number
+      title_id: number
+      title_name: string
+      role_id: number
+      role_code: string
+      role_name: string
+      created_at: string
+    }
+
+    /** 军团头衔信息（从头衔快照获取，用于前端下拉选择） */
+    interface CorpTitleInfo {
+      corporation_id: number
+      title_id: number
+      title_name: string
+    }
+
+    /** 创建 ESI 头衔映射请求 */
+    interface CreateEsiTitleMappingParams {
+      corporation_id: number
+      title_id: number
+      title_name?: string
+      role_id: number
+    }
   }
 
   /** ESI 刷新队列类型 */
@@ -547,6 +590,10 @@ declare namespace Api {
       paid_at: string | null
       created_at: string
       updated_at: string
+      /** 关联舰队标题（后端填充） */
+      fleet_title?: string
+      /** 关联舰队 FC 角色名（后端填充） */
+      fleet_fc_name?: string
     }
 
     /** 申请列表分页响应 */
@@ -901,6 +948,7 @@ declare namespace Api {
       active_level: number
       trained_level: number
       skillpoints_in_skill: number
+      learned: boolean // 是否已注射：false = 未吸收技能书
     }
 
     /** 技能队列条目 */
@@ -924,6 +972,136 @@ declare namespace Api {
       skills: SkillItem[]
       skill_queue: SkillQueueItem[]
     }
+
+    /** 可用舰船请求参数 */
+    interface ShipRequest {
+      character_id: number
+      language?: string
+    }
+
+    /** 舰船技能需求 */
+    interface ShipSkillReq {
+      skill_id: number
+      skill_name: string
+      required_level: number
+      current_level: number
+      met: boolean
+      depth: number
+    }
+
+    /** 舰船条目 */
+    interface ShipItem {
+      type_id: number
+      type_name: string
+      group_id: number
+      group_name: string
+      market_group_id: number
+      market_group_name: string
+      race_id: number
+      race_name: string
+      can_fly: boolean
+      skill_reqs: ShipSkillReq[]
+    }
+
+    /** 可用舰船响应 */
+    interface ShipResponse {
+      total_ships: number
+      flyable_ships: number
+      ships: ShipItem[]
+    }
+
+    /** 克隆体/植入体请求 */
+    interface ImplantsRequest {
+      character_id: number
+      language?: string
+    }
+
+    /** 位置信息 */
+    interface ImplantLocation {
+      location_id: number
+      location_type: string
+      location_name: string
+    }
+
+    /** 植入体条目 */
+    interface ImplantItem {
+      implant_id: number
+      implant_name: string
+    }
+
+    /** 跳跃克隆体信息 */
+    interface JumpCloneInfo {
+      jump_clone_id: number
+      location: ImplantLocation
+      implants: ImplantItem[]
+    }
+
+    /** 克隆体/植入体响应 */
+    interface ImplantsResponse {
+      home_location: ImplantLocation | null
+      last_clone_jump_date: string | null
+      last_station_change_date: string | null
+      jump_fatigue_expire: string | null
+      last_jump_date: string | null
+      active_implants: ImplantItem[]
+      jump_clones: JumpCloneInfo[]
+    }
+
+    /** 装配列表请求 */
+    interface FittingsRequest {
+      language?: string
+    }
+
+    /** 装配物品条目 */
+    interface FittingItemResponse {
+      type_id: number
+      type_name: string
+      quantity: number
+      flag: string
+    }
+
+    /** 按槽位分组的装配物品 */
+    interface FittingSlotGroup {
+      flag_name: string
+      flag_text: string
+      order_id: number
+      items: FittingItemResponse[]
+    }
+
+    /** 单个装配 */
+    interface FittingResponse {
+      fitting_id: number
+      character_id: number
+      name: string
+      description: string
+      ship_type_id: number
+      ship_name: string
+      group_id: number
+      group_name: string
+      race_id: number
+      race_name: string
+      slots: FittingSlotGroup[]
+    }
+
+    /** 装配列表响应 */
+    interface FittingsListResponse {
+      total: number
+      fittings: FittingResponse[]
+    }
+
+    /** 保存装配请求 */
+    interface SaveFittingRequest {
+      character_id: number
+      fitting_id?: number
+      name: string
+      description?: string
+      ship_type_id: number
+      items: {
+        type_id: number
+        quantity: number
+        flag: string
+      }[]
+    }
   }
 
   /** SDE 数据查询类型 */
@@ -945,6 +1123,115 @@ declare namespace Api {
       group_id: number
       group_name: string
       category: string // "type" | "character"
+    }
+  }
+
+  /** NPC 刷怪报表类型 */
+  namespace NpcKill {
+    /** 个人刷怪报表请求 */
+    interface NpcKillRequest {
+      character_id: number
+      start_date?: string
+      end_date?: string
+      language?: string
+      page?: number
+      page_size?: number
+    }
+
+    /** 个人刷怪报表请求（所有角色汇总） */
+    interface NpcKillAllRequest {
+      start_date?: string
+      end_date?: string
+      language?: string
+      page?: number
+      page_size?: number
+    }
+
+    /** 公司刷怪报表请求（管理员） */
+    interface NpcKillCorpRequest {
+      start_date?: string
+      end_date?: string
+      language?: string
+      page?: number
+      page_size?: number
+    }
+
+    /** 总览统计 */
+    interface Summary {
+      total_bounty: number
+      total_ess: number
+      total_tax: number
+      actual_income: number
+      total_records: number
+      estimated_hours: number
+    }
+
+    /** 按 NPC 分类统计 */
+    interface ByNpc {
+      npc_id: number
+      npc_name: string
+      count: number
+      amount: number
+    }
+
+    /** 按地点分类统计 */
+    interface BySystem {
+      solar_system_id: number
+      solar_system_name: string
+      count: number
+      amount: number
+    }
+
+    /** 时间趋势 */
+    interface Trend {
+      date: string
+      amount: number
+      count: number
+    }
+
+    /** 刷怪流水条目 */
+    interface JournalItem {
+      id: number
+      character_id: number
+      character_name: string
+      amount: number
+      tax: number
+      date: string
+      ref_type: string
+      solar_system_id: number
+      solar_system_name: string
+      reason: string
+    }
+
+    /** 个人刷怪报表响应 */
+    interface NpcKillResponse {
+      summary: Summary
+      by_npc: ByNpc[]
+      by_system: BySystem[]
+      trend: Trend[]
+      journals: JournalItem[]
+      total: number
+      page: number
+      page_size: number
+    }
+
+    /** 公司成员刷怪统计 */
+    interface CorpMemberSummary {
+      character_id: number
+      character_name: string
+      total_bounty: number
+      total_ess: number
+      total_tax: number
+      actual_income: number
+      record_count: number
+    }
+
+    /** 公司刷怪报表响应 */
+    interface NpcKillCorpResponse {
+      summary: Summary
+      members: CorpMemberSummary[]
+      by_system: BySystem[]
+      trend: Trend[]
     }
   }
 }

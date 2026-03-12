@@ -205,19 +205,76 @@ func (s *SrpService) SubmitApplication(userID uint, req *SubmitApplicationReques
 //  申请列表（管理端）
 // ─────────────────────────────────────────────
 
+// SrpApplicationResponse 补损申请响应（含舰队信息）
+type SrpApplicationResponse struct {
+	model.SrpApplication
+	FleetTitle  string `json:"fleet_title,omitempty"`
+	FleetFCName string `json:"fleet_fc_name,omitempty"`
+}
+
+// enrichWithFleetInfo 为申请列表填充舰队信息
+func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpApplicationResponse {
+	result := make([]SrpApplicationResponse, len(apps))
+	// 收集所有非空 fleet_id
+	fleetIDSet := make(map[string]bool)
+	for _, app := range apps {
+		if app.FleetID != nil && *app.FleetID != "" {
+			fleetIDSet[*app.FleetID] = true
+		}
+	}
+	// 批量查询舰队信息
+	fleetMap := make(map[string]*model.Fleet)
+	for fid := range fleetIDSet {
+		if fleet, err := s.fleetRepo.GetByID(fid); err == nil {
+			fleetMap[fid] = fleet
+		}
+	}
+	// 组装响应
+	for i, app := range apps {
+		resp := SrpApplicationResponse{SrpApplication: app}
+		if app.FleetID != nil && *app.FleetID != "" {
+			if fleet, ok := fleetMap[*app.FleetID]; ok {
+				resp.FleetTitle = fleet.Title
+				resp.FleetFCName = fleet.FCCharacterName
+			}
+		}
+		result[i] = resp
+	}
+	return result
+}
+
 // ListApplications 管理员端分页查询申请列表
-func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpApplicationFilter) ([]model.SrpApplication, int64, error) {
-	return s.repo.ListApplications(page, pageSize, filter)
+func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpApplicationFilter) ([]SrpApplicationResponse, int64, error) {
+	apps, total, err := s.repo.ListApplications(page, pageSize, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.enrichWithFleetInfo(apps), total, nil
 }
 
 // ListMyApplications 当前用户申请列表
-func (s *SrpService) ListMyApplications(userID uint, page, pageSize int) ([]model.SrpApplication, int64, error) {
-	return s.repo.ListMyApplications(userID, page, pageSize)
+func (s *SrpService) ListMyApplications(userID uint, page, pageSize int) ([]SrpApplicationResponse, int64, error) {
+	apps, total, err := s.repo.ListMyApplications(userID, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	return s.enrichWithFleetInfo(apps), total, nil
 }
 
 // GetApplication 查询单条申请
-func (s *SrpService) GetApplication(id uint) (*model.SrpApplication, error) {
-	return s.repo.GetApplicationByID(id)
+func (s *SrpService) GetApplication(id uint) (*SrpApplicationResponse, error) {
+	app, err := s.repo.GetApplicationByID(id)
+	if err != nil {
+		return nil, err
+	}
+	resp := &SrpApplicationResponse{SrpApplication: *app}
+	if app.FleetID != nil && *app.FleetID != "" {
+		if fleet, ferr := s.fleetRepo.GetByID(*app.FleetID); ferr == nil {
+			resp.FleetTitle = fleet.Title
+			resp.FleetFCName = fleet.FCCharacterName
+		}
+	}
+	return resp, nil
 }
 
 // ─────────────────────────────────────────────

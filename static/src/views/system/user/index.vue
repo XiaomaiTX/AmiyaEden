@@ -33,7 +33,9 @@
 <script setup lang="ts">
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { useTable } from '@/hooks/core/useTable'
-  import { fetchGetUserList, fetchDeleteUser } from '@/api/system-manage'
+  import { fetchGetUserList, fetchDeleteUser, fetchImpersonateUser } from '@/api/system-manage'
+  import { fetchGetUserInfo } from '@/api/auth'
+  import { useUserStore } from '@/store/modules/user'
   import UserSearch from './modules/user-search.vue'
   import UserRoleDialog from './modules/user-role-dialog.vue'
   import { ElTag, ElMessageBox, ElAvatar } from 'element-plus'
@@ -41,6 +43,11 @@
   defineOptions({ name: 'User' })
 
   type UserListItem = Api.SystemManage.UserListItem
+
+  const userStore = useUserStore()
+
+  // 是否超级管理员（仅超管可使用模拟登录）
+  const isSuperAdmin = computed(() => userStore.info?.roles?.includes('super_admin'))
 
   // 弹窗相关
   const dialogVisible = ref(false)
@@ -152,10 +159,17 @@
         {
           prop: 'operation',
           label: '操作',
-          width: 120,
+          width: 160,
           fixed: 'right',
           formatter: (row) =>
             h('div', [
+              isSuperAdmin.value &&
+                h(ArtButtonTable, {
+                  icon: 'ri:user-follow-line',
+                  iconClass: 'bg-purple/12 text-purple',
+                  title: '模拟登录',
+                  onClick: () => impersonateUser(row)
+                }),
               h(ArtButtonTable, {
                 type: 'edit',
                 onClick: () => showRoleDialog(row)
@@ -202,6 +216,33 @@
           refreshData()
         } catch (error) {
           console.error('删除失败:', error)
+        }
+      })
+      .catch(() => {})
+  }
+
+  /** 模拟以指定用户登录 */
+  const impersonateUser = (row: UserListItem): void => {
+    ElMessageBox.confirm(
+      `确定要以「${row.nickname || row.id}」的身份登录吗？当前管理员会话将被替换，请提前记录当前 Token 或在新标签页中操作。`,
+      '模拟登录确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+      .then(async () => {
+        try {
+          const res = await fetchImpersonateUser(row.id)
+          userStore.setToken(res.token)
+          userStore.setLoginStatus(true)
+          const userInfo = await fetchGetUserInfo()
+          userStore.setUserInfo(userInfo)
+          ElMessage.success(`已切换至用户「${row.nickname || row.id}」`)
+          window.location.href = '/'
+        } catch (error: any) {
+          ElMessage.error(error?.message ?? '模拟登录失败')
         }
       })
       .catch(() => {})

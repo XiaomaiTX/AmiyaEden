@@ -76,6 +76,7 @@ func RequireRole(codes ...string) gin.HandlerFunc {
 }
 
 // RequirePermission 要求用户拥有指定权限标识之一（super_admin 自动通过）
+// 支持前缀继承：用户拥有 "srp" 时，自动满足 "srp:review"、"srp:price:edit" 等子权限
 func RequirePermission(perms ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roles := GetUserRoles(c)
@@ -86,7 +87,8 @@ func RequirePermission(perms ...string) gin.HandlerFunc {
 		userPerms := GetUserPermissions(c)
 		for _, required := range perms {
 			for _, have := range userPerms {
-				if have == required {
+				// 精确匹配，或拥有父级权限（前缀 + ":" 匹配）
+				if have == required || strings.HasPrefix(required, have+":") {
 					c.Next()
 					return
 				}

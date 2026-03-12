@@ -11,7 +11,7 @@ import (
 )
 
 func RegisterRoleJobs(c *cron.Cron) {
-	id, err := c.AddFunc("0 0/30 * * * ?", roleCheckTask)
+	id, err := c.AddFunc("0 0/5 * * * ?", roleCheckTask)
 	if err != nil {
 		global.Logger.Error("注册角色检查定时任务失败", zap.Error(err))
 		return

@@ -98,8 +98,8 @@ const (
 )
 
 // OnNewCharacterFunc 新角色首次出现时触发的钩子（由 jobs 层注入以避免循环依赖）
-// 在后台 goroutine 中运行，用于全量 ESI 刷新。
-var OnNewCharacterFunc func(characterID int64)
+// 在后台 goroutine 中运行，用于全量 ESI 刷新。全量刷新完成后应执行一次权限检查。
+var OnNewCharacterFunc func(characterID int64, userID uint)
 
 // OnNewCharacterSyncFunc 新角色同步钩子：在返回 JWT 之前调用，仅执行 affiliation 拉取 + 军团准入检查。
 // 必须快速返回（< 1s），调用方不会使用 goroutine。
@@ -258,7 +258,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 			// 触发新角色全量 ESI 刷新（后台异步）
 			if OnNewCharacterFunc != nil {
-				go OnNewCharacterFunc(characterID)
+				go OnNewCharacterFunc(characterID, user.ID)
 			}
 
 			// 如果用户还没有主角色，自动设为主角色
@@ -314,7 +314,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 		// 触发新角色全量 ESI 刷新（后台异步）
 		if OnNewCharacterFunc != nil {
-			go OnNewCharacterFunc(characterID)
+			go OnNewCharacterFunc(characterID, user.ID)
 		}
 
 		jwtToken, err := jwt.GenerateToken(user.ID, characterID, user.Role, global.Config.JWT.ExpireDay)

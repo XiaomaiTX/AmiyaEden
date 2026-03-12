@@ -10,12 +10,14 @@ import (
 
 // EveInfoHandler EVE 角色信息处理器
 type EveInfoHandler struct {
-	svc *service.EveInfoService
+	svc      *service.EveInfoService
+	cloneSvc *service.CloneService
 }
 
 func NewEveInfoHandler() *EveInfoHandler {
 	return &EveInfoHandler{
-		svc: service.NewEveInfoService(),
+		svc:      service.NewEveInfoService(),
+		cloneSvc: service.NewCloneService(),
 	}
 }
 
@@ -50,6 +52,44 @@ func (h *EveInfoHandler) GetCharacterSkills(c *gin.Context) {
 	}
 
 	result, err := h.svc.GetCharacterSkills(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// GetCharacterShips POST /info/ships
+// 获取指定角色的可用舰船列表
+func (h *EveInfoHandler) GetCharacterShips(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.InfoShipRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.svc.GetCharacterShips(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// GetCharacterImplants POST /info/implants
+// 获取指定角色的克隆体/植入体/跳跃疲劳信息
+func (h *EveInfoHandler) GetCharacterImplants(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.InfoImplantsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.cloneSvc.GetCharacterImplants(userID, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

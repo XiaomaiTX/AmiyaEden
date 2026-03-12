@@ -126,12 +126,16 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "EveInfo", Path: "/info", Component: "/index/index", Title: "menus.info.title", Icon: "ri:user-star-line", Sort: 88, Status: 1}},
 		{ParentName: "EveInfo", Menu: Menu{Type: MenuTypeMenu, Name: "EveInfoWallet", Path: "wallet", Component: "/info/wallet", Title: "menus.info.wallet", Sort: 100, KeepAlive: true, Status: 1}},
 		{ParentName: "EveInfo", Menu: Menu{Type: MenuTypeMenu, Name: "EveInfoSkill", Path: "skill", Component: "/info/skill", Title: "menus.info.skill", Sort: 90, KeepAlive: true, Status: 1}},
+		{ParentName: "EveInfo", Menu: Menu{Type: MenuTypeMenu, Name: "NpcKillReport", Path: "npc-kills", Component: "/info/npc-kills", Title: "menus.info.npcKills", Sort: 80, KeepAlive: true, Status: 1}},
+		{ParentName: "EveInfo", Menu: Menu{Type: MenuTypeMenu, Name: "EveInfoShips", Path: "ships", Component: "/info/ships", Title: "menus.info.ships", Sort: 70, KeepAlive: true, Status: 1}},
+		{ParentName: "EveInfo", Menu: Menu{Type: MenuTypeMenu, Name: "EveInfoImplants", Path: "implants", Component: "/info/implants", Title: "menus.info.implants", Sort: 60, KeepAlive: true, Status: 1}},
+		{ParentName: "EveInfo", Menu: Menu{Type: MenuTypeMenu, Name: "EveInfoFittings", Path: "fittings", Component: "/info/fittings", Title: "menus.info.fittings", Sort: 50, KeepAlive: true, Status: 1}},
 
 		// ── SRP ──
 		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "SRP", Path: "/srp", Component: "/index/index", Title: "menus.srp.title", Icon: "ri:money-dollar-box-line", Sort: 80, Status: 1}},
 		{ParentName: "SRP", Menu: Menu{Type: MenuTypeMenu, Name: "SrpApply", Path: "srp-apply", Component: "/srp/apply", Title: "menus.srp.srpApply", Sort: 100, KeepAlive: true, Status: 1}},
 		{ParentName: "SRP", Menu: Menu{Type: MenuTypeMenu, Name: "SrpManage", Path: "srp-manage", Component: "/srp/manage", Title: "menus.srp.srpManage", Sort: 90, KeepAlive: true, Status: 1}},
-		{ParentName: "SrpManage", Menu: Menu{Type: MenuTypeButton, Name: "SrpManageReview", Permission: "srp:manage:review", Title: "审批", Sort: 100, Status: 1}},
+		{ParentName: "SrpManage", Menu: Menu{Type: MenuTypeButton, Name: "SrpManageReview", Permission: "srp:review", Title: "审批", Sort: 100, Status: 1}},
 		{ParentName: "SRP", Menu: Menu{Type: MenuTypeMenu, Name: "SrpPrices", Path: "srp-prices", Component: "/srp/prices", Title: "menus.srp.srpPrices", Sort: 80, KeepAlive: true, Status: 1}},
 		{ParentName: "SrpPrices", Menu: Menu{Type: MenuTypeButton, Name: "SrpPriceAdd", Permission: "srp:price:add", Title: "新增价格", Sort: 100, Status: 1}},
 		{ParentName: "SrpPrices", Menu: Menu{Type: MenuTypeButton, Name: "SrpPriceDelete", Permission: "srp:price:delete", Title: "删除价格", Sort: 90, Status: 1}},
@@ -157,6 +161,8 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "SystemWallet", Menu: Menu{Type: MenuTypeButton, Name: "WalletViewLog", Permission: "system:wallet:log", Title: "查看日志", Sort: 90, Status: 1}},
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "AlliancePAP", Path: "pap", Component: "/system/pap", Title: "menus.system.alliancePap", Sort: 63, KeepAlive: true, Status: 1}},
 		{ParentName: "AlliancePAP", Menu: Menu{Type: MenuTypeButton, Name: "AlliancePAPFetch", Permission: "system:pap:fetch", Title: "手动拉取", Sort: 100, Status: 1}},
+		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "CorpNpcKillReport", Path: "npc-kills", Component: "/system/npc-kills", Title: "menus.system.npcKills", Sort: 62, KeepAlive: true, Status: 1}},
+		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "AutoRole", Path: "auto-role", Component: "/system/auto-role", Title: "menus.system.autoRole", Sort: 61, KeepAlive: true, Status: 1}},
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "UserCenter", Path: "user-center", Component: "/system/user-center", Title: "menus.system.userCenter", Sort: 60, IsHide: true, KeepAlive: true, IsHideTab: true, Status: 1}},
 
 		// ── Result ──
@@ -172,7 +178,7 @@ func DefaultRoleMenuMap() map[string][]string {
 	return map[string][]string{
 		RoleAdmin: {
 			"Dashboard", "Console", "Characters",
-			"EveInfo", "EveInfoWallet", "EveInfoSkill",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings",
 			"Operation", "Fleets", "FleetDetail", "MyPap", "Wallet", "JoinFleet",
 			"ShopRoot", "Shop", "ShopManage", "ShopProductAdd", "ShopProductEdit", "ShopProductDelete", "ShopOrderReview",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview", "SrpPrices", "SrpPriceAdd", "SrpPriceDelete",
@@ -182,12 +188,14 @@ func DefaultRoleMenuMap() map[string][]string {
 			"ESIRefresh", "ESIRun",
 			"SystemWallet", "WalletAdjust", "WalletViewLog",
 			"AlliancePAP", "AlliancePAPFetch",
+			"CorpNpcKillReport",
+			"AutoRole",
 			"UserCenter",
 			"Result", "ResultSuccess", "ResultFail",
 		},
 		RoleFC: {
 			"Dashboard", "Console", "Characters",
-			"EveInfo", "EveInfoWallet", "EveInfoSkill",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings",
 			"Operation", "Fleets", "FleetDetail", "MyPap", "Wallet", "JoinFleet",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview",
@@ -195,7 +203,7 @@ func DefaultRoleMenuMap() map[string][]string {
 		},
 		RoleSRP: {
 			"Dashboard", "Console", "Characters",
-			"EveInfo", "EveInfoWallet", "EveInfoSkill",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings",
 			"Operation", "MyPap", "Wallet", "JoinFleet",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview", "SrpPrices", "SrpPriceAdd", "SrpPriceDelete",
@@ -203,7 +211,7 @@ func DefaultRoleMenuMap() map[string][]string {
 		},
 		RoleUser: {
 			"Dashboard", "Console", "Characters",
-			"EveInfo", "EveInfoWallet", "EveInfoSkill",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings",
 			"Operation", "MyPap", "Wallet", "JoinFleet",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply",
@@ -212,7 +220,7 @@ func DefaultRoleMenuMap() map[string][]string {
 		},
 		RoleGuest: {
 			"Dashboard", "Console", "Characters",
-			"EveInfo", "EveInfoWallet", "EveInfoSkill",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings",
 			"Result", "ResultSuccess", "ResultFail",
 		},
 	}

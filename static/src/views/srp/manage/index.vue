@@ -72,6 +72,22 @@
       width="460px"
     >
       <ElForm label-width="90px">
+        <!-- 申请备注 & 舰队信息（审批前可见） -->
+        <template v-if="reviewTarget">
+          <ElFormItem :label="$t('srp.manage.columns.note')" v-if="reviewTarget.note">
+            <span class="text-sm">{{ reviewTarget.note }}</span>
+          </ElFormItem>
+          <ElFormItem :label="$t('srp.manage.columns.fleet')" v-if="reviewTarget.fleet_id">
+            <div>
+              <span class="font-medium">{{
+                reviewTarget.fleet_title || reviewTarget.fleet_id
+              }}</span>
+              <span v-if="reviewTarget.fleet_fc_name" class="text-gray-400 ml-2 text-xs"
+                >FC: {{ reviewTarget.fleet_fc_name }}</span
+              >
+            </div>
+          </ElFormItem>
+        </template>
         <ElFormItem :label="$t('srp.manage.finalAmount')" v-if="reviewAction === 'approve'">
           <ElInputNumber
             v-model="reviewForm.final_amount"
@@ -334,6 +350,31 @@
             )
         },
         {
+          prop: 'fleet_title',
+          label: t('srp.manage.columns.fleet'),
+          width: 180,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) => {
+            if (!row.fleet_id) return h('span', { class: 'text-gray-400' }, '-')
+            const parts: ReturnType<typeof h>[] = []
+            if (row.fleet_title) {
+              parts.push(h('div', { class: 'font-medium' }, row.fleet_title))
+            }
+            if (row.fleet_fc_name) {
+              parts.push(h('div', { class: 'text-xs text-gray-400' }, `FC: ${row.fleet_fc_name}`))
+            }
+            return parts.length ? h('div', {}, parts) : h('span', {}, row.fleet_id)
+          }
+        },
+        {
+          prop: 'note',
+          label: t('srp.manage.columns.note'),
+          width: 180,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) =>
+            h('span', { class: row.note ? '' : 'text-gray-400' }, row.note || '-')
+        },
+        {
           prop: 'recommended_amount',
           label: t('srp.manage.columns.recommendedAmount'),
           width: 140,
@@ -493,10 +534,28 @@
   const reviewForm = reactive({ review_note: '', final_amount: 0 })
   const actionLoading = ref(false)
 
+  /** 当前操作人的主角色名（用于默认文案替换） */
+  const primaryCharName = computed(() => {
+    const info = userStore.getUserInfo
+    if (!info.characters || !info.primaryCharacterId) return ''
+    return (
+      info.characters.find((c) => c.character_id === info.primaryCharacterId)?.character_name ?? ''
+    )
+  })
+
+  const DEFAULT_APPROVE_NOTE =
+    '将钱包筛选项改为军团账户支取，找到最近的交易记录；或打开合同，在"我的合同"中将拥有者改为自己，状态设为未决，点击显示合同。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
+  const DEFAULT_REJECT_NOTE =
+    '不符合现有补损条例。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
+
+  const fillTemplate = (tpl: string) =>
+    tpl.replaceAll('{{mainChracterName}}', primaryCharName.value || t('srp.manage.unknownReviewer'))
+
   const openReviewDialog = (row: Api.Srp.Application, action: 'approve' | 'reject') => {
     reviewTarget.value = row
     reviewAction.value = action
-    reviewForm.review_note = ''
+    reviewForm.review_note =
+      action === 'approve' ? fillTemplate(DEFAULT_APPROVE_NOTE) : fillTemplate(DEFAULT_REJECT_NOTE)
     reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
     reviewDialogVisible.value = true
   }
@@ -601,6 +660,9 @@
     killmail_time: 'KM时间',
     corporation: '军团',
     alliance: '联盟',
+    fleet_title: '关联舰队',
+    fleet_fc_name: 'FC',
+    note: '备注',
     recommended_amount: '推荐金额',
     final_amount: '最终金额',
     review_status: '审批状态',
@@ -618,6 +680,9 @@
         app.corporation_id ? `ID: ${app.corporation_id}` : '-'
       ),
       alliance: getName(app.alliance_id, app.alliance_id ? `ID: ${app.alliance_id}` : '-'),
+      fleet_title: app.fleet_title || '-',
+      fleet_fc_name: app.fleet_fc_name || '-',
+      note: app.note || '-',
       recommended_amount: app.recommended_amount,
       final_amount: app.final_amount,
       review_status: reviewStatusLabel(app.review_status),

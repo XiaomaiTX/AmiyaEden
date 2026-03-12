@@ -17,6 +17,30 @@ export const infoRoutes: AppRouteRecord = {
       name: 'EveInfoSkill',
       component: '/info/skill',
       meta: { title: 'menus.info.skill', keepAlive: true }
+    },
+    {
+      path: 'ships',
+      name: 'EveInfoShips',
+      component: '/info/ships',
+      meta: { title: 'menus.info.ships', keepAlive: true }
+    },
+    {
+      path: 'implants',
+      name: 'EveInfoImplants',
+      component: '/info/implants',
+      meta: { title: 'menus.info.implants', keepAlive: true }
+    },
+    {
+      path: 'fittings',
+      name: 'EveInfoFittings',
+      component: '/info/fittings',
+      meta: { title: 'menus.info.fittings', keepAlive: true }
+    },
+    {
+      path: 'npc-kills',
+      name: 'NpcKillReport',
+      component: '/info/npc-kills',
+      meta: { title: 'menus.info.npcKills', keepAlive: true }
     }
   ]
 }

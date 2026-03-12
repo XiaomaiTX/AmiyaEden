@@ -29,6 +29,12 @@ export function fetchDeleteUser(id: number) {
   })
 }
 
+export function fetchImpersonateUser(id: number) {
+  return request.post<{ token: string; user: Api.SystemManage.UserListItem }>({
+    url: `/api/v1/system/user/${id}/impersonate`
+  })
+}
+
 // ─── 用户角色分配 ───
 
 export function fetchGetUserRoles(userId: number) {
@@ -133,5 +139,72 @@ export function fetchDeleteMenu(id: number) {
 export function fetchGetMenuList() {
   return request.get<AppRouteRecord[]>({
     url: '/api/v1/menu/list'
+  })
+}
+
+// ─── 自动权限映射 ───
+
+/** 获取所有 ESI 军团角色名列表 */
+export function fetchGetAllEsiRoles() {
+  return request.get<string[]>({
+    url: '/api/v1/system/auto-role/esi-roles'
+  })
+}
+
+/** 获取所有 ESI 军团角色映射 */
+export function fetchGetEsiRoleMappings() {
+  return request.get<Api.SystemManage.EsiRoleMapping[]>({
+    url: '/api/v1/system/auto-role/esi-role-mappings'
+  })
+}
+
+/** 创建 ESI 军团角色映射 */
+export function fetchCreateEsiRoleMapping(data: Api.SystemManage.CreateEsiRoleMappingParams) {
+  return request.post<Api.SystemManage.EsiRoleMapping>({
+    url: '/api/v1/system/auto-role/esi-role-mappings',
+    data
+  })
+}
+
+/** 删除 ESI 军团角色映射 */
+export function fetchDeleteEsiRoleMapping(id: number) {
+  return request.del({
+    url: `/api/v1/system/auto-role/esi-role-mappings/${id}`
+  })
+}
+
+/** 获取所有 ESI 头衔映射 */
+export function fetchGetEsiTitleMappings() {
+  return request.get<Api.SystemManage.EsiTitleMapping[]>({
+    url: '/api/v1/system/auto-role/esi-title-mappings'
+  })
+}
+
+/** 创建 ESI 头衔映射 */
+export function fetchCreateEsiTitleMapping(data: Api.SystemManage.CreateEsiTitleMappingParams) {
+  return request.post<Api.SystemManage.EsiTitleMapping>({
+    url: '/api/v1/system/auto-role/esi-title-mappings',
+    data
+  })
+}
+
+/** 删除 ESI 头衔映射 */
+export function fetchDeleteEsiTitleMapping(id: number) {
+  return request.del({
+    url: `/api/v1/system/auto-role/esi-title-mappings/${id}`
+  })
+}
+
+/** 获取数据库中所有军团头衔（用于前端下拉选择） */
+export function fetchGetCorpTitles() {
+  return request.get<Api.SystemManage.CorpTitleInfo[]>({
+    url: '/api/v1/system/auto-role/corp-titles'
+  })
+}
+
+/** 手动触发自动权限同步 */
+export function fetchTriggerAutoRoleSync() {
+  return request.post({
+    url: '/api/v1/system/auto-role/sync'
   })
 }

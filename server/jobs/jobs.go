@@ -12,6 +12,8 @@ func RegisterAll(c *cron.Cron) {
 	registerSdeJob(c)
 	registerESIRefreshJob(c)
 	registerAlliancePAPJob(c)
+	RegisterRoleJobs(c)
+	RegisterAutoRoleJobs(c)
 	// registerCleanupJob(c)
 	// registerReportJob(c)
 }

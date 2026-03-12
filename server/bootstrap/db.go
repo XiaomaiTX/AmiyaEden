@@ -68,7 +68,10 @@ func autoMigrate(db *gorm.DB) {
 		&model.EveCharacterAsset{},
 		&model.EveCharacterNotification{},
 		&model.EveCharacterTitle{},
-		&model.EveCharacterClone{},
+		&model.EveCharacterCloneBaseInfo{},
+		&model.EveCharacterImplants{},
+		&model.EveStructure{},
+		&model.CorpStructureInfo{},
 
 		&model.EveKillmailList{},
 		&model.EveKillmailItem{},
@@ -83,6 +86,9 @@ func autoMigrate(db *gorm.DB) {
 		&model.EveCharacterSkill{},
 		&model.EveCharacterSkills{},
 		&model.EveCharacterSkillQueue{},
+
+		&model.EveCharacterFitting{},
+		&model.EveCharacterFittingItem{},
 		// Fleet / Operation 相关表
 		&model.Fleet{},
 		&model.FleetMember{},
@@ -101,11 +107,17 @@ func autoMigrate(db *gorm.DB) {
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},
+		// 系统配置表
+		&model.SystemConfig{},
 		// RBAC 权限相关表
 		&model.Role{},
 		&model.Menu{},
 		&model.RoleMenu{},
 		&model.UserRole{},
+		// ESI 自动权限映射表
+		&model.EsiRoleMapping{},
+		&model.EsiTitleMapping{},
+		&model.EveCharacterCorpRole{},
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}

@@ -3,6 +3,7 @@ package handler
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
@@ -25,6 +26,16 @@ func NewAlliancePAPHandler() *AlliancePAPHandler {
 		charRepo: repository.NewEveCharacterRepository(),
 		userRepo: repository.NewUserRepository(),
 	}
+}
+
+// getAllowCorpFilter 根据调用者角色返回军团过滤列表
+// super_admin 返回 nil（不过滤），admin 返回配置的 allow_corporations
+func getAllowCorpFilter(c *gin.Context) []int64 {
+	roles := middleware.GetUserRoles(c)
+	if model.IsSuperAdmin(roles) {
+		return nil
+	}
+	return global.Config.App.AllowCorporations
 }
 
 // GetMyAlliancePAP  GET /operation/pap/alliance
@@ -86,7 +97,7 @@ func (h *AlliancePAPHandler) GetAllAlliancePAP(c *gin.Context) {
 		}
 	}
 
-	list, total, err := h.svc.GetAllPAPPaged(year, month, page, size)
+	list, total, err := h.svc.GetAllPAPPaged(year, month, page, size, getAllowCorpFilter(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -118,4 +129,55 @@ func (h *AlliancePAPHandler) TriggerFetch(c *gin.Context) {
 	}()
 
 	response.OK(c, gin.H{"message": "已触发后台拉取任务"})
+}
+
+// GetExchangeConfig  GET /system/pap/config
+// 查询 PAP 兑换系统钱包配置
+func (h *AlliancePAPHandler) GetExchangeConfig(c *gin.Context) {
+	cfg, err := h.svc.GetExchangeConfig()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, cfg)
+}
+
+// SetExchangeConfig  PUT /system/pap/config
+// 更新 PAP 兑换配置
+func (h *AlliancePAPHandler) SetExchangeConfig(c *gin.Context) {
+	var req service.SetExchangeConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	cfg, err := h.svc.SetExchangeConfig(&req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, cfg)
+}
+
+// settleMonthRequest 月度结算请求
+type settleMonthRequest struct {
+	Year          int  `json:"year"  binding:"required"`
+	Month         int  `json:"month" binding:"required,min=1,max=12"`
+	WalletConvert bool `json:"wallet_convert"` // 是否同时兑换系统钱包
+}
+
+// SettleMonth  POST /system/pap/settle
+// 管理员触发月度归档（可选同时兑换系统钱包）
+func (h *AlliancePAPHandler) SettleMonth(c *gin.Context) {
+	var req settleMonthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	operatorID := middleware.GetUserID(c)
+	result, err := h.svc.SettleMonth(req.Year, req.Month, req.WalletConvert, operatorID, getAllowCorpFilter(c))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
 }

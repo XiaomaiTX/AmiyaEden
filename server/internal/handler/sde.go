@@ -72,7 +72,7 @@ func (h *SdeHandler) GetTypes(c *gin.Context) {
 type GetNamesRequest struct {
 	Language string           `json:"language"`
 	IDs      map[string][]int `json:"ids"` // key 为 tcID 名称：type/group/category/region/constellation/solar_system/market_group/tech/description
-	ESI      []int32          `json:"esi"` // character/corporation/alliance id，调用 ESI /universe/names
+	ESI      []int64          `json:"esi"` // character/corporation/alliance id，调用 ESI /universe/names
 }
 
 func (h *SdeHandler) GetNames(c *gin.Context) {
@@ -114,24 +114,33 @@ func (h *SdeHandler) GetNames(c *gin.Context) {
 
 	// 调用 ESI /universe/names 查询 character/corporation/alliance
 	if len(req.ESI) > 0 {
-		type esiEntry struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
+		// 过滤掉无效 ID（0 或负数）
+		validESI := make([]int64, 0, len(req.ESI))
+		for _, id := range req.ESI {
+			if id > 0 {
+				validESI = append(validESI, id)
+			}
 		}
-		var esiResult []esiEntry
-		client := esi.NewClient()
-		if err := client.PostJSON(
-			context.Background(),
-			"/universe/names?datasource=tranquility",
-			"",
-			req.ESI,
-			&esiResult,
-		); err != nil {
-			response.Fail(c, response.CodeBizError, fmt.Sprintf("ESI 查询失败: %v", err))
-			return
-		}
-		for _, e := range esiResult {
-			result[e.ID] = e.Name
+		if len(validESI) > 0 {
+			type esiEntry struct {
+				ID   int    `json:"id"`
+				Name string `json:"name"`
+			}
+			var esiResult []esiEntry
+			client := esi.NewClient()
+			if err := client.PostJSON(
+				context.Background(),
+				"/universe/names?datasource=tranquility",
+				"",
+				validESI,
+				&esiResult,
+			); err != nil {
+				response.Fail(c, response.CodeBizError, fmt.Sprintf("ESI 查询失败: %v", err))
+				return
+			}
+			for _, e := range esiResult {
+				result[e.ID] = e.Name
+			}
 		}
 	}
 

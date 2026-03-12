@@ -143,6 +143,41 @@ func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID stri
 	return result, nil
 }
 
+// GetTypesByCategoryID 获取指定 categoryID 下所有已发布的物品（含翻译）
+// 主要用于技能模块获取 categoryID=16 的全量技能列表
+func (r *SdeRepository) GetTypesByCategoryID(categoryID int, languageID string) ([]TypeInfo, error) {
+	var result []TypeInfo
+
+	query := global.DB.Table(`"invTypes" t`).
+		Select(`
+            t."typeID"        AS type_id,
+            t_name.text       AS type_name,
+            g."groupID"       AS group_id,
+            g_name.text       AS group_name,
+            t."marketGroupID" AS market_group_id,
+            mg_name.text      AS market_group_name,
+            c."categoryID"    AS category_id,
+            c_name.text       AS category_name
+        `).
+		Joins(`LEFT JOIN "invGroups" g ON g."groupID" = t."groupID"`).
+		Joins(`LEFT JOIN "invCategories" c ON c."categoryID" = g."categoryID"`).
+		Joins(`LEFT JOIN "invMarketGroups" mg ON mg."marketGroupID" = t."marketGroupID"`).
+		Joins(`LEFT JOIN "trnTranslations" t_name ON t_name."tcID" = ? AND t_name."keyID" = t."typeID" AND t_name."languageID" = ?`,
+			TC_ID["type"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" g_name ON g_name."tcID" = ? AND g_name."keyID" = g."groupID" AND g_name."languageID" = ?`,
+			TC_ID["group"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" c_name ON c_name."tcID" = ? AND c_name."keyID" = c."categoryID" AND c_name."languageID" = ?`,
+			TC_ID["category"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" mg_name ON mg_name."tcID" = ? AND mg_name."keyID" = mg."marketGroupID" AND mg_name."languageID" = ?`,
+			TC_ID["market_group"], languageID).
+		Where(`c."categoryID" = ? AND t.published = 1`, categoryID)
+
+	if err := query.Scan(&result).Error; err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 // FlagInfo invFlags 表行
 type FlagInfo struct {
 	FlagID   int    `json:"flag_id"   gorm:"column:flagID"`
@@ -229,6 +264,143 @@ func (r *SdeRepository) GetFlags(flagIDs []int) ([]FlagInfo, error) {
 	err := global.DB.Table(`"invFlags"`).
 		Where(`"flagID" IN ?`, flagIDs).
 		Order(`"orderID" ASC`).
+		Scan(&result).Error
+	return result, err
+}
+
+// ---- 舰船 & 技能需求查询 ----
+
+// ShipInfo 舰船基础信息（含翻译 + raceID + marketGroupID）
+type ShipInfo struct {
+	TypeID          int    `json:"type_id"           gorm:"column:type_id"`
+	TypeName        string `json:"type_name"         gorm:"column:type_name"`
+	GroupID         int    `json:"group_id"           gorm:"column:group_id"`
+	GroupName       string `json:"group_name"         gorm:"column:group_name"`
+	MarketGroupID   int    `json:"market_group_id"    gorm:"column:market_group_id"`
+	MarketGroupName string `json:"market_group_name"  gorm:"column:market_group_name"`
+	RaceID          int    `json:"race_id"            gorm:"column:race_id"`
+}
+
+// GetShipsByCategoryID 获取 categoryID=6 的所有已发布舰船（含翻译、raceID、marketGroupID）
+func (r *SdeRepository) GetShipsByCategoryID(languageID string) ([]ShipInfo, error) {
+	const shipCategoryID = 6
+	var result []ShipInfo
+
+	err := global.DB.Table(`"invTypes" t`).
+		Select(`
+			t."typeID"        AS type_id,
+			t_name.text       AS type_name,
+			g."groupID"       AS group_id,
+			g_name.text       AS group_name,
+			t."marketGroupID" AS market_group_id,
+			mg_name.text      AS market_group_name,
+			t."raceID"        AS race_id
+		`).
+		Joins(`JOIN "invGroups" g ON g."groupID" = t."groupID"`).
+		Joins(`JOIN "invCategories" c ON c."categoryID" = g."categoryID"`).
+		Joins(`LEFT JOIN "invMarketGroups" mg ON mg."marketGroupID" = t."marketGroupID"`).
+		Joins(`LEFT JOIN "trnTranslations" t_name ON t_name."tcID" = ? AND t_name."keyID" = t."typeID" AND t_name."languageID" = ?`,
+			TC_ID["type"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" g_name ON g_name."tcID" = ? AND g_name."keyID" = g."groupID" AND g_name."languageID" = ?`,
+			TC_ID["group"], languageID).
+		Joins(`LEFT JOIN "trnTranslations" mg_name ON mg_name."tcID" = ? AND mg_name."keyID" = mg."marketGroupID" AND mg_name."languageID" = ?`,
+			TC_ID["market_group"], languageID).
+		Where(`c."categoryID" = ? AND t.published = 1`, shipCategoryID).
+		Scan(&result).Error
+	return result, err
+}
+
+// ShipSkillReq 舰船技能需求行（含递归层深）
+type ShipSkillReq struct {
+	ShipTypeID    int `json:"ship_type_id"    gorm:"column:ship_type_id"`
+	SkillTypeID   int `json:"skill_type_id"   gorm:"column:skill_type_id"`
+	RequiredLevel int `json:"required_level"  gorm:"column:required_level"`
+	Depth         int `json:"depth"           gorm:"column:depth"`
+}
+
+// GetShipSkillRequirements 批量获取舰船技能需求（含前置技能递归）
+func (r *SdeRepository) GetShipSkillRequirements(shipTypeIDs []int) ([]ShipSkillReq, error) {
+	if len(shipTypeIDs) == 0 {
+		return nil, nil
+	}
+	var result []ShipSkillReq
+
+	sql := `
+WITH RECURSIVE skill_tree AS (
+  SELECT
+    sk."typeID"   AS ship_type_id,
+    sk."valueInt" AS skill_type_id,
+    lv."valueInt" AS required_level,
+    1             AS depth
+  FROM "dgmTypeAttributes" sk
+  JOIN "dgmTypeAttributes" lv
+    ON sk."typeID" = lv."typeID"
+    AND lv."attributeID" = CASE sk."attributeID"
+      WHEN 182  THEN 277  WHEN 183 THEN 278  WHEN 184  THEN 279
+      WHEN 1285 THEN 1286 WHEN 1289 THEN 1287 WHEN 1290 THEN 1288
+    END
+  WHERE sk."typeID" IN ?
+    AND sk."attributeID" IN (182, 183, 184, 1285, 1289, 1290)
+    AND sk."valueInt" IS NOT NULL
+
+  UNION
+
+  SELECT
+    st.ship_type_id,
+    sk."valueInt" AS skill_type_id,
+    lv."valueInt" AS required_level,
+    st.depth + 1
+  FROM skill_tree st
+  JOIN "dgmTypeAttributes" sk
+    ON sk."typeID" = st.skill_type_id
+    AND sk."attributeID" IN (182, 183, 184, 1285, 1289, 1290)
+  JOIN "dgmTypeAttributes" lv
+    ON sk."typeID" = lv."typeID"
+    AND lv."attributeID" = CASE sk."attributeID"
+      WHEN 182  THEN 277  WHEN 183 THEN 278  WHEN 184  THEN 279
+      WHEN 1285 THEN 1286 WHEN 1289 THEN 1287 WHEN 1290 THEN 1288
+    END
+  WHERE sk."valueInt" IS NOT NULL
+    AND st.depth < 10
+)
+SELECT
+  ship_type_id,
+  skill_type_id,
+  MAX(required_level) AS required_level,
+  MIN(depth)          AS depth
+FROM skill_tree
+GROUP BY ship_type_id, skill_type_id`
+
+	err := global.DB.Raw(sql, shipTypeIDs).Scan(&result).Error
+	return result, err
+}
+
+// RaceInfo chrRaces 表行
+type RaceInfo struct {
+	RaceID   int    `json:"race_id"   gorm:"column:raceID"`
+	RaceName string `json:"race_name" gorm:"column:raceName"`
+}
+
+// GetAllRaces 获取所有种族
+func (r *SdeRepository) GetAllRaces() ([]RaceInfo, error) {
+	var result []RaceInfo
+	err := global.DB.Table(`"chrRaces"`).
+		Select(`"raceID", "raceName"`).
+		Scan(&result).Error
+	return result, err
+}
+
+// MarketGroupParent 返回 marketGroupID -> parentGroupID 映射
+type MarketGroupNode struct {
+	MarketGroupID int `gorm:"column:marketGroupID"`
+	ParentGroupID int `gorm:"column:parentGroupID"`
+}
+
+// GetMarketGroupTree 获取所有市场分组的父子关系
+func (r *SdeRepository) GetMarketGroupTree() ([]MarketGroupNode, error) {
+	var result []MarketGroupNode
+	err := global.DB.Table(`"invMarketGroups"`).
+		Select(`"marketGroupID", COALESCE("parentGroupID", 0) AS "parentGroupID"`).
 		Scan(&result).Error
 	return result, err
 }

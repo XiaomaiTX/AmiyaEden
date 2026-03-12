@@ -4,7 +4,6 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -84,32 +83,15 @@ func (t *ClonesTask) Execute(ctx *TaskContext) error {
 		zap.Int("jump_clones", len(clones.JumpClones)),
 	)
 
-	// 序列化跳跃克隆为 JSON
-	jumpClonesJSON, _ := json.Marshal(clones.JumpClones)
-
-	// 构造入库记录
-	record := model.EveCharacterClone{
-		CharacterID:           ctx.CharacterID,
-		LastCloneJumpDate:     clones.LastCloneJumpDate,
-		LastStationChangeDate: clones.LastStationChangeDate,
-		JumpClonesJSON:        string(jumpClonesJSON),
-	}
-	if clones.HomeLocation != nil {
-		record.HomeLocationID = clones.HomeLocation.LocationID
-		record.HomeLocationType = clones.HomeLocation.LocationType
-	}
-
-	// 2. 获取当前植入体
+	// 2. 获取当前活跃植入体
 	implantPath := fmt.Sprintf("/characters/%d/implants/", ctx.CharacterID)
-	var implants []int
-	if err := ctx.Client.Get(bgCtx, implantPath, ctx.AccessToken, &implants); err != nil {
+	var activeImplants []int
+	if err := ctx.Client.Get(bgCtx, implantPath, ctx.AccessToken, &activeImplants); err != nil {
 		global.Logger.Warn("[ESI] 获取植入体失败",
 			zap.Int64("character_id", ctx.CharacterID),
 			zap.Error(err),
 		)
-	} else {
-		implantsJSON, _ := json.Marshal(implants)
-		record.ImplantsJSON = string(implantsJSON)
+		activeImplants = nil
 	}
 
 	// 3. 获取跳跃疲劳
@@ -120,24 +102,74 @@ func (t *ClonesTask) Execute(ctx *TaskContext) error {
 			zap.Int64("character_id", ctx.CharacterID),
 			zap.Error(err),
 		)
-	} else {
-		record.JumpFatigueExpire = fatigue.JumpFatigueExpireDate
-		record.LastJumpDate = fatigue.LastJumpDate
 	}
 
-	// 4. Upsert 入库
-	var existing model.EveCharacterClone
-	result := global.DB.Where("character_id = ?", ctx.CharacterID).First(&existing)
-	if result.Error != nil {
-		// 新记录
-		if err := global.DB.Create(&record).Error; err != nil {
-			return fmt.Errorf("insert clone info: %w", err)
+	// 4. Upsert EveCharacterCloneBaseInfo
+	baseInfo := model.EveCharacterCloneBaseInfo{
+		CharacterID:           ctx.CharacterID,
+		LastCloneJumpDate:     clones.LastCloneJumpDate,
+		LastStationChangeDate: clones.LastStationChangeDate,
+		JumpFatigueExpire:     fatigue.JumpFatigueExpireDate,
+		LastJumpDate:          fatigue.LastJumpDate,
+	}
+	if clones.HomeLocation != nil {
+		baseInfo.HomeLocationID = clones.HomeLocation.LocationID
+		baseInfo.HomeLocationType = clones.HomeLocation.LocationType
+	}
+
+	var existingBase model.EveCharacterCloneBaseInfo
+	if err := global.DB.Where("character_id = ?", ctx.CharacterID).First(&existingBase).Error; err != nil {
+		if err := global.DB.Create(&baseInfo).Error; err != nil {
+			return fmt.Errorf("insert clone base info: %w", err)
 		}
 	} else {
-		// 更新
-		record.ID = existing.ID
-		if err := global.DB.Save(&record).Error; err != nil {
-			return fmt.Errorf("update clone info: %w", err)
+		baseInfo.ID = existingBase.ID
+		if err := global.DB.Save(&baseInfo).Error; err != nil {
+			return fmt.Errorf("update clone base info: %w", err)
+		}
+	}
+
+	// 5. 重建植入体记录：先清空旧数据，再批量插入
+	if err := global.DB.Where("character_id = ?", ctx.CharacterID).
+		Delete(&model.EveCharacterImplants{}).Error; err != nil {
+		return fmt.Errorf("delete old implants: %w", err)
+	}
+
+	var implantRecords []model.EveCharacterImplants
+	// 跳跃克隆的植入体
+	for _, jc := range clones.JumpClones {
+		if len(jc.Implants) == 0 {
+			// 没有植入体时插入占位行（ImplantID=0），保留位置信息
+			implantRecords = append(implantRecords, model.EveCharacterImplants{
+				JumpCloneID:  jc.JumpCloneID,
+				CharacterID:  ctx.CharacterID,
+				ImplantID:    0,
+				LocationID:   jc.LocationID,
+				LocationType: jc.LocationType,
+			})
+		} else {
+			for _, implantID := range jc.Implants {
+				implantRecords = append(implantRecords, model.EveCharacterImplants{
+					JumpCloneID:  jc.JumpCloneID,
+					CharacterID:  ctx.CharacterID,
+					ImplantID:    implantID,
+					LocationID:   jc.LocationID,
+					LocationType: jc.LocationType,
+				})
+			}
+		}
+	}
+	// 当前活跃植入体（JumpCloneID = 0 表示当前克隆体）
+	for _, implantID := range activeImplants {
+		implantRecords = append(implantRecords, model.EveCharacterImplants{
+			JumpCloneID: 0,
+			CharacterID: ctx.CharacterID,
+			ImplantID:   implantID,
+		})
+	}
+	if len(implantRecords) > 0 {
+		if err := global.DB.Create(&implantRecords).Error; err != nil {
+			return fmt.Errorf("insert implants: %w", err)
 		}
 	}
 

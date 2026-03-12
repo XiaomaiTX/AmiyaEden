@@ -49,6 +49,7 @@ func (WalletLog) TableName() string { return "wallet_log" }
 // 钱包流水类型常量
 const (
 	WalletRefPapReward   = "pap_reward"    // PAP 奖励
+	WalletRefPapConvert  = "pap_convert"   // 联盟 PAP 月度兑换
 	WalletRefManual      = "manual"        // 手动操作
 	WalletRefRedeem      = "redeem"        // 兑换消费
 	WalletRefAdminAdjust = "admin_adjust"  // 管理员调整

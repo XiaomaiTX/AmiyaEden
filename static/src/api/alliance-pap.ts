@@ -74,3 +74,35 @@ export function triggerAlliancePAPFetch(params?: { year?: number; month?: number
     params
   })
 }
+
+export interface PAPExchangeConfig {
+  wallet_per_pap: number
+  enabled: boolean
+}
+
+export interface SettleMonthResult {
+  year: number
+  month: number
+  total_users: number
+  skipped_users: number
+  total_wallet: number
+}
+
+/** 管理员：获取 PAP 兑换配置 */
+export function fetchPAPExchangeConfig() {
+  return request.get<PAPExchangeConfig>({ url: '/api/v1/system/pap/config' })
+}
+
+/** 管理员：更新 PAP 兑换配置 */
+export function updatePAPExchangeConfig(data: PAPExchangeConfig) {
+  return request.put<PAPExchangeConfig>({ url: '/api/v1/system/pap/config', data })
+}
+
+/** 管理员：月度归档 + 可选兑换系统钱包 */
+export function settleAlliancePAPMonth(data: {
+  year: number
+  month: number
+  wallet_convert: boolean
+}) {
+  return request.post<SettleMonthResult>({ url: '/api/v1/system/pap/settle', data })
+}

@@ -52,3 +52,10 @@ func (r *EveCharacterRepository) ListAllWithToken() ([]model.EveCharacter, error
 func (r *EveCharacterRepository) Delete(id uint) error {
 	return global.DB.Unscoped().Delete(&model.EveCharacter{}, id).Error
 }
+
+// GetByCharacterName 根据角色名称查询
+func (r *EveCharacterRepository) GetByCharacterName(name string) (*model.EveCharacter, error) {
+	var char model.EveCharacter
+	err := global.DB.Where("character_name = ?", name).First(&char).Error
+	return &char, err
+}

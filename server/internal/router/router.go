@@ -18,6 +18,7 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		sso.GET("/login", ssoH.Login)
 		sso.GET("/callback", ssoH.Callback)
+		sso.GET("/scopes", ssoH.GetScopes)
 	}
 
 	// ─── SDE 公开查询（API Key 鉴权）───
@@ -36,7 +37,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// SSO 角色管理（绑定/解绑/设主角色）
 	ssoAuth := auth.Group("/sso/eve")
 	{
-		ssoAuth.GET("/scopes", ssoH.GetScopes)
+		// ssoAuth.GET("/scopes", ssoH.GetScopes)
 		ssoAuth.GET("/characters", ssoH.GetMyCharacters)
 		ssoAuth.GET("/bind", ssoH.BindLogin)
 		ssoAuth.PUT("/primary/:character_id", ssoH.SetPrimary)
@@ -105,7 +106,19 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		info.POST("/wallet", infoH.GetWalletJournal)
 		info.POST("/skills", infoH.GetCharacterSkills)
+		info.POST("/ships", infoH.GetCharacterShips)
+		info.POST("/implants", infoH.GetCharacterImplants)
 	}
+
+	// ─── 装配 ───
+	fittingsH := handler.NewFittingsHandler()
+	info.POST("/fittings", fittingsH.GetFittings)
+	info.POST("/fittings/save", fittingsH.SaveFitting)
+
+	// ─── NPC 刷怪报表 ───
+	npcKillH := handler.NewNpcKillHandler()
+	info.POST("/npc-kills", npcKillH.GetNpcKills)
+	info.POST("/npc-kills/all", npcKillH.GetAllNpcKills)
 
 	// ─── 系统钱包（用户端）───
 	walletH := handler.NewSysWalletHandler()
@@ -132,8 +145,8 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		// 价格表（查看公开，修改需权限）
 		srp.GET("/prices", srpH.ListShipPrices)
-		srp.POST("/prices", middleware.RequirePermission("srp:price:edit"), srpH.UpsertShipPrice)
-		srp.DELETE("/prices/:id", middleware.RequirePermission("srp:price:edit"), srpH.DeleteShipPrice)
+		srp.POST("/prices", middleware.RequirePermission("srp:price:add"), srpH.UpsertShipPrice)
+		srp.DELETE("/prices/:id", middleware.RequirePermission("srp:price:delete"), srpH.DeleteShipPrice)
 
 		// 个人申请
 		srp.POST("/applications", srpH.SubmitApplication)
@@ -167,12 +180,20 @@ func RegisterRoutes(r *gin.Engine) {
 	// ─── 系统管理（需要 admin 角色）───
 	admin := auth.Group("/system", middleware.RequireRole(model.RoleAdmin))
 
+	// NPC 刷怪报表（管理员 — 公司级）
+	admin.POST("/npc-kills", npcKillH.GetCorpNpcKills)
+
 	// 联盟 PAP 管理（管理员）
 	alliancePAPAdminH := handler.NewAlliancePAPHandler()
 	alliancePAPAdmin := admin.Group("/pap")
 	{
 		alliancePAPAdmin.GET("", alliancePAPAdminH.GetAllAlliancePAP)
 		alliancePAPAdmin.POST("/fetch", alliancePAPAdminH.TriggerFetch)
+		// PAP 兑换配置
+		alliancePAPAdmin.GET("/config", alliancePAPAdminH.GetExchangeConfig)
+		alliancePAPAdmin.PUT("/config", alliancePAPAdminH.SetExchangeConfig)
+		// 月度归档 + 兑换系统钱包
+		alliancePAPAdmin.POST("/settle", alliancePAPAdminH.SettleMonth)
 	}
 
 	// 菜单管理
@@ -212,6 +233,9 @@ func RegisterRoutes(r *gin.Engine) {
 		// 用户角色分配
 		adminUser.GET("/:id/roles", roleH.GetUserRoles)
 		adminUser.PUT("/:id/roles", roleH.SetUserRoles)
+
+		// 模拟登录（仅超级管理员）
+		adminUser.POST("/:id/impersonate", middleware.RequireRole(model.RoleSuperAdmin), userH.ImpersonateUser)
 	}
 
 	// 系统钱包管理（管理员）
@@ -243,5 +267,25 @@ func RegisterRoutes(r *gin.Engine) {
 	adminShopRedeem := admin.Group("/shop/redeem")
 	{
 		adminShopRedeem.POST("/list", adminShopH.AdminListRedeemCodes)
+	}
+
+	// 自动权限映射管理（管理员）
+	autoRoleH := handler.NewAutoRoleHandler()
+	adminAutoRole := admin.Group("/auto-role")
+	{
+		// ESI 军团角色映射
+		adminAutoRole.GET("/esi-roles", autoRoleH.GetAllEsiRoles)
+		adminAutoRole.GET("/esi-role-mappings", autoRoleH.ListEsiRoleMappings)
+		adminAutoRole.POST("/esi-role-mappings", autoRoleH.CreateEsiRoleMapping)
+		adminAutoRole.DELETE("/esi-role-mappings/:id", autoRoleH.DeleteEsiRoleMapping)
+
+		// ESI 头衔映射
+		adminAutoRole.GET("/corp-titles", autoRoleH.ListCorpTitles)
+		adminAutoRole.GET("/esi-title-mappings", autoRoleH.ListEsiTitleMappings)
+		adminAutoRole.POST("/esi-title-mappings", autoRoleH.CreateEsiTitleMapping)
+		adminAutoRole.DELETE("/esi-title-mappings/:id", autoRoleH.DeleteEsiTitleMapping)
+
+		// 手动触发同步
+		adminAutoRole.POST("/sync", autoRoleH.TriggerSync)
 	}
 }
