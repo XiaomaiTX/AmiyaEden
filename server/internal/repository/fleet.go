@@ -117,9 +117,25 @@ func (r *FleetRepository) ListPapLogsByFleet(fleetID string) ([]model.FleetPapLo
 }
 
 // ListPapLogsByUser 查询某用户的所有 PAP 记录
-func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]model.FleetPapLog, error) {
-	var logs []model.FleetPapLog
-	err := global.DB.Where("user_id = ?", userID).Order("issued_at DESC").Find(&logs).Error
+func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]model.FleetPapLogDetail, error) {
+	var logs []model.FleetPapLogDetail
+	err := global.DB.Table("fleet_pap_log AS l").
+		Select(`
+			l.id,
+			l.fleet_id,
+			f.title AS fleet_title,
+			l.character_id,
+			COALESCE(m.character_name, '') AS character_name,
+			l.user_id,
+			l.pap_count,
+			l.issued_by,
+			l.issued_at
+		`).
+		Joins("LEFT JOIN fleet AS f ON f.id = l.fleet_id").
+		Joins("LEFT JOIN fleet_member AS m ON m.fleet_id = l.fleet_id AND m.character_id = l.character_id").
+		Where("l.user_id = ?", userID).
+		Order("l.issued_at DESC").
+		Scan(&logs).Error
 	return logs, err
 }
 

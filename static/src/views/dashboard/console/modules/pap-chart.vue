@@ -4,9 +4,7 @@
       <div class="title">
         <h4>{{ title }}</h4>
         <p>
-          近
-          <span class="text-theme font-medium">{{ chartData.length }}</span>
-          个月
+          {{ $t('dashboardConsole.papChart.recentMonths', { count: chartData.length }) }}
         </p>
       </div>
     </div>
@@ -19,11 +17,16 @@
         :showAxisLine="false"
       />
     </div>
-    <div v-else class="flex-cc h-[calc(100%-40px)] text-g-500 text-sm"> 暂无 PAP 数据 </div>
+    <div v-else class="flex-cc h-[calc(100%-40px)] text-g-500 text-sm">
+      {{ $t('dashboardConsole.papChart.empty') }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n'
+
+  const { t } = useI18n()
   const props = defineProps<{
     title: string
     data: Api.Dashboard.PapMonthly[]
@@ -38,7 +41,7 @@
   })
 
   const chartLabels = computed(() => {
-    return chartData.value.map((d) => `${d.month}月`)
+    return chartData.value.map((d) => t('dashboardConsole.papChart.monthLabel', { month: d.month }))
   })
 
   const chartValues = computed(() => {

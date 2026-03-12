@@ -8,10 +8,16 @@
         <FleetList :fleets="dashboardData?.fleets ?? []" />
       </ElCol>
       <ElCol :sm="24" :md="12" :lg="6">
-        <PapChart title="联盟 PAP" :data="dashboardData?.pap_stats?.alliance ?? []" />
+        <PapChart
+          :title="$t('dashboardConsole.alliancePapTitle')"
+          :data="dashboardData?.pap_stats?.alliance ?? []"
+        />
       </ElCol>
       <ElCol :sm="24" :md="12" :lg="6">
-        <PapChart title="内部 PAP" :data="dashboardData?.pap_stats?.internal ?? []" />
+        <PapChart
+          :title="$t('dashboardConsole.internalPapTitle')"
+          :data="dashboardData?.pap_stats?.internal ?? []"
+        />
       </ElCol>
     </ElRow>
 

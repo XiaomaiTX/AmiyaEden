@@ -426,7 +426,7 @@ func (s *FleetService) GetPapLogs(fleetID string) ([]model.FleetPapLog, error) {
 }
 
 // GetUserPapLogs 获取用户的 PAP 记录
-func (s *FleetService) GetUserPapLogs(userID uint) ([]model.FleetPapLog, error) {
+func (s *FleetService) GetUserPapLogs(userID uint) ([]model.FleetPapLogDetail, error) {
 	return s.repo.ListPapLogsByUser(userID)
 }
 

@@ -4,36 +4,38 @@
     <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
       <template #left>
         <div class="flex items-center gap-2">
-          <ElButton type="success" :icon="Plus" @click="openCreateDialog">新增商品</ElButton>
+          <ElButton type="success" :icon="Plus" @click="openCreateDialog">
+            {{ $t('shopAdmin.products.createProduct') }}
+          </ElButton>
           <ElInput
             v-model="nameFilter"
-            placeholder="商品名称"
+            :placeholder="$t('shopAdmin.products.searchNamePlaceholder')"
             clearable
             style="width: 160px"
             @keyup.enter="handleSearch"
           />
           <ElSelect
             v-model="typeFilter"
-            placeholder="商品类型"
+            :placeholder="$t('shopAdmin.products.typePlaceholder')"
             clearable
             style="width: 140px"
             @change="handleSearch"
           >
-            <ElOption label="普通商品" value="normal" />
-            <ElOption label="兑换码" value="redeem" />
+            <ElOption :label="$t('shopAdmin.products.typeNormal')" value="normal" />
+            <ElOption :label="$t('shopAdmin.products.typeRedeem')" value="redeem" />
           </ElSelect>
           <ElSelect
             v-model="statusFilter"
-            placeholder="状态"
+            :placeholder="$t('shopAdmin.products.statusPlaceholder')"
             clearable
             style="width: 120px"
             @change="handleSearch"
           >
-            <ElOption label="上架" :value="1" />
-            <ElOption label="下架" :value="0" />
+            <ElOption :label="$t('shopAdmin.products.statusOnSale')" :value="1" />
+            <ElOption :label="$t('shopAdmin.products.statusOffSale')" :value="0" />
           </ElSelect>
-          <ElButton type="primary" @click="handleSearch">查询</ElButton>
-          <ElButton @click="handleReset">重置</ElButton>
+          <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
+          <ElButton @click="handleReset">{{ $t('common.reset') }}</ElButton>
         </div>
       </template>
     </ArtTableHeader>
@@ -51,26 +53,34 @@
   <!-- 商品编辑对话框 -->
   <ElDialog
     v-model="dialogVisible"
-    :title="editingProduct ? '编辑商品' : '新增商品'"
+    :title="
+      editingProduct ? $t('shopAdmin.products.dialogEdit') : $t('shopAdmin.products.dialogCreate')
+    "
     width="560px"
     destroy-on-close
   >
     <ElForm ref="formRef" :model="formData" :rules="formRules" label-width="100px">
-      <ElFormItem label="商品名称" prop="name">
-        <ElInput v-model="formData.name" placeholder="请输入商品名称" />
+      <ElFormItem :label="$t('shopAdmin.products.fields.name')" prop="name">
+        <ElInput
+          v-model="formData.name"
+          :placeholder="$t('shopAdmin.products.placeholders.name')"
+        />
       </ElFormItem>
-      <ElFormItem label="描述">
+      <ElFormItem :label="$t('shopAdmin.products.fields.description')">
         <ElInput
           v-model="formData.description"
           type="textarea"
           :rows="3"
-          placeholder="商品描述（可选）"
+          :placeholder="$t('shopAdmin.products.placeholders.description')"
         />
       </ElFormItem>
-      <ElFormItem label="图片 URL">
-        <ElInput v-model="formData.image" placeholder="商品图片链接（可选）" />
+      <ElFormItem :label="$t('shopAdmin.products.fields.image')">
+        <ElInput
+          v-model="formData.image"
+          :placeholder="$t('shopAdmin.products.placeholders.image')"
+        />
       </ElFormItem>
-      <ElFormItem label="价格" prop="price">
+      <ElFormItem :label="$t('shopAdmin.products.fields.price')" prop="price">
         <ElInputNumber
           v-model="formData.price"
           :min="0.01"
@@ -79,37 +89,41 @@
           style="width: 200px"
         />
       </ElFormItem>
-      <ElFormItem label="类型" prop="type">
+      <ElFormItem :label="$t('shopAdmin.products.fields.type')" prop="type">
         <ElSelect v-model="formData.type" style="width: 200px">
-          <ElOption label="普通商品" value="normal" />
-          <ElOption label="兑换码/服务" value="redeem" />
+          <ElOption :label="$t('shopAdmin.products.typeNormal')" value="normal" />
+          <ElOption :label="$t('shopAdmin.products.typeRedeemService')" value="redeem" />
         </ElSelect>
       </ElFormItem>
-      <ElFormItem label="库存">
+      <ElFormItem :label="$t('shopAdmin.products.fields.stock')">
         <ElInputNumber v-model="formData.stock" :min="-1" style="width: 200px" />
-        <span class="ml-2 text-xs text-gray-400">-1 = 无限库存</span>
+        <span class="ml-2 text-xs text-gray-400">{{ $t('shopAdmin.products.hints.stock') }}</span>
       </ElFormItem>
-      <ElFormItem label="限购/人">
+      <ElFormItem :label="$t('shopAdmin.products.fields.maxPerUser')">
         <ElInputNumber v-model="formData.max_per_user" :min="0" style="width: 200px" />
-        <span class="ml-2 text-xs text-gray-400">0 = 不限购</span>
+        <span class="ml-2 text-xs text-gray-400">{{
+          $t('shopAdmin.products.hints.maxPerUser')
+        }}</span>
       </ElFormItem>
-      <ElFormItem label="需要审批">
+      <ElFormItem :label="$t('shopAdmin.products.fields.needApproval')">
         <ElSwitch v-model="formData.need_approval" />
       </ElFormItem>
-      <ElFormItem label="状态">
+      <ElFormItem :label="$t('shopAdmin.products.fields.status')">
         <ElSelect v-model="formData.status" style="width: 200px">
-          <ElOption label="上架" :value="1" />
-          <ElOption label="下架" :value="0" />
+          <ElOption :label="$t('shopAdmin.products.statusOnSale')" :value="1" />
+          <ElOption :label="$t('shopAdmin.products.statusOffSale')" :value="0" />
         </ElSelect>
       </ElFormItem>
-      <ElFormItem label="排序">
+      <ElFormItem :label="$t('shopAdmin.products.fields.sort')">
         <ElInputNumber v-model="formData.sort_order" :min="0" style="width: 200px" />
-        <span class="ml-2 text-xs text-gray-400">越大越靠前</span>
+        <span class="ml-2 text-xs text-gray-400">{{ $t('shopAdmin.products.hints.sort') }}</span>
       </ElFormItem>
     </ElForm>
     <template #footer>
-      <ElButton @click="dialogVisible = false">取消</ElButton>
-      <ElButton type="primary" :loading="submitLoading" @click="handleSubmit">确定</ElButton>
+      <ElButton @click="dialogVisible = false">{{ $t('common.cancel') }}</ElButton>
+      <ElButton type="primary" :loading="submitLoading" @click="handleSubmit">{{
+        $t('common.confirm')
+      }}</ElButton>
     </template>
   </ElDialog>
 </template>
@@ -127,6 +141,7 @@
   } from 'element-plus'
   import type { FormInstance, FormRules } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
+  import { useI18n } from 'vue-i18n'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import {
     adminListProducts,
@@ -137,18 +152,19 @@
   import { useTable } from '@/hooks/core/useTable'
 
   defineOptions({ name: 'ManageProducts' })
+  const { t } = useI18n()
 
   type Product = Api.Shop.Product
 
   // ─── 商品类型/状态映射 ───
   const PRODUCT_TYPE_CONFIG: Record<string, { label: string; type: string }> = {
-    normal: { label: '普通', type: 'primary' },
-    redeem: { label: '兑换码', type: 'warning' }
+    normal: { label: t('shopAdmin.products.values.normal'), type: 'primary' },
+    redeem: { label: t('shopAdmin.products.values.redeem'), type: 'warning' }
   }
 
   const PRODUCT_STATUS_CONFIG: Record<number, { label: string; type: string }> = {
-    1: { label: '上架', type: 'success' },
-    0: { label: '下架', type: 'danger' }
+    1: { label: t('shopAdmin.products.statusOnSale'), type: 'success' },
+    0: { label: t('shopAdmin.products.statusOffSale'), type: 'danger' }
   }
 
   const formatISK = (v: number) =>
@@ -180,13 +196,13 @@
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'name',
-          label: '商品名称',
+          label: t('shopAdmin.products.table.name'),
           minWidth: 160,
           showOverflowTooltip: true
         },
         {
           prop: 'type',
-          label: '类型',
+          label: t('common.type'),
           width: 100,
           formatter: (row: Product) => {
             const cfg = PRODUCT_TYPE_CONFIG[row.type] ?? { label: row.type, type: 'info' }
@@ -199,17 +215,18 @@
         },
         {
           prop: 'price',
-          label: '价格',
+          label: t('shopAdmin.products.table.price'),
           width: 130,
           formatter: (row: Product) =>
             h('span', { class: 'font-medium text-orange-600' }, formatISK(row.price))
         },
         {
           prop: 'stock',
-          label: '库存',
+          label: t('shopAdmin.products.table.stock'),
           width: 90,
           formatter: (row: Product) => {
-            if (row.stock < 0) return h('span', { class: 'text-gray-400' }, '无限')
+            if (row.stock < 0)
+              return h('span', { class: 'text-gray-400' }, t('shopAdmin.products.values.unlimited'))
             return h(
               'span',
               { class: row.stock === 0 ? 'text-red-500 font-bold' : '' },
@@ -219,25 +236,31 @@
         },
         {
           prop: 'max_per_user',
-          label: '限购',
+          label: t('shopAdmin.products.table.maxPerUser'),
           width: 80,
           formatter: (row: Product) =>
-            h('span', {}, row.max_per_user > 0 ? String(row.max_per_user) : '不限')
+            h(
+              'span',
+              {},
+              row.max_per_user > 0
+                ? String(row.max_per_user)
+                : t('shopAdmin.products.values.noLimit')
+            )
         },
         {
           prop: 'need_approval',
-          label: '需审批',
+          label: t('shopAdmin.products.table.needApproval'),
           width: 90,
           formatter: (row: Product) =>
             h(
               ElTag,
               { type: row.need_approval ? 'warning' : 'info', size: 'small', effect: 'plain' },
-              () => (row.need_approval ? '是' : '否')
+              () => (row.need_approval ? t('common.yes') : t('common.no'))
             )
         },
         {
           prop: 'status',
-          label: '状态',
+          label: t('common.status'),
           width: 90,
           formatter: (row: Product) => {
             const cfg = PRODUCT_STATUS_CONFIG[row.status] ?? {
@@ -253,12 +276,12 @@
         },
         {
           prop: 'sort_order',
-          label: '排序',
+          label: t('shopAdmin.products.fields.sort'),
           width: 80
         },
         {
           prop: 'actions',
-          label: '操作',
+          label: t('common.operation'),
           width: 120,
           fixed: 'right',
           formatter: (row: Product) =>
@@ -308,9 +331,15 @@
   })
 
   const formRules: FormRules = {
-    name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
-    price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
-    type: [{ required: true, message: '请选择类型', trigger: 'change' }]
+    name: [
+      { required: true, message: t('shopAdmin.products.messages.nameRequired'), trigger: 'blur' }
+    ],
+    price: [
+      { required: true, message: t('shopAdmin.products.messages.priceRequired'), trigger: 'blur' }
+    ],
+    type: [
+      { required: true, message: t('shopAdmin.products.messages.typeRequired'), trigger: 'change' }
+    ]
   }
 
   function resetForm() {
@@ -358,32 +387,36 @@
     try {
       if (editingProduct.value) {
         await adminUpdateProduct({ id: editingProduct.value.id, ...formData })
-        ElMessage.success('更新成功')
+        ElMessage.success(t('shopAdmin.products.messages.updateSuccess'))
       } else {
         await adminCreateProduct({ ...formData })
-        ElMessage.success('创建成功')
+        ElMessage.success(t('shopAdmin.products.messages.createSuccess'))
       }
       dialogVisible.value = false
       refreshData()
     } catch (e: any) {
-      ElMessage.error(e?.message ?? '操作失败')
+      ElMessage.error(e?.message ?? t('walletAdmin.messages.actionFailed'))
     } finally {
       submitLoading.value = false
     }
   }
 
   async function handleDelete(row: Product) {
-    await ElMessageBox.confirm(`确定要删除商品「${row.name}」吗？`, '确认删除', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
+    await ElMessageBox.confirm(
+      t('shopAdmin.products.messages.deleteConfirm', { name: row.name }),
+      t('common.tips'),
+      {
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning'
+      }
+    )
     try {
       await adminDeleteProduct(row.id)
-      ElMessage.success('删除成功')
+      ElMessage.success(t('shopAdmin.products.messages.deleteSuccess'))
       refreshData()
     } catch (e: any) {
-      ElMessage.error(e?.message ?? '删除失败')
+      ElMessage.error(e?.message ?? t('shopAdmin.products.messages.deleteFailed'))
     }
   }
 

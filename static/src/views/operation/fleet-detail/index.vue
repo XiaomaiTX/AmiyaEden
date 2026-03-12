@@ -44,7 +44,7 @@
           <ElDescriptionsItem :label="$t('fleet.fields.endAt')">{{
             formatTime(fleet.end_at)
           }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="创建时间">{{
+          <ElDescriptionsItem :label="$t('fleet.fields.createdAt')">{{
             formatTime(fleet.created_at)
           }}</ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('fleet.fields.description')" :span="3">
@@ -71,7 +71,12 @@
             :label="$t('fleet.members.characterName')"
             min-width="160"
           />
-          <ElTableColumn prop="character_id" label="角色 ID" width="120" align="center" />
+          <ElTableColumn
+            prop="character_id"
+            :label="$t('fleet.members.characterId')"
+            width="120"
+            align="center"
+          />
           <ElTableColumn
             prop="ship_type_id"
             :label="$t('fleet.members.shipType')"
@@ -82,7 +87,12 @@
               {{ getName(row.ship_type_id) }}
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="solar_system_id" label="星系" width="120" align="center">
+          <ElTableColumn
+            prop="solar_system_id"
+            :label="$t('fleet.members.solarSystem')"
+            width="120"
+            align="center"
+          >
             <template #default="{ row }">
               {{ getName(row.solar_system_id) }}
             </template>
@@ -116,7 +126,12 @@
         </template>
         <ElTable v-loading="papLoading" :data="papLogs" stripe border style="width: 100%">
           <ElTableColumn type="index" width="60" label="#" />
-          <ElTableColumn prop="character_id" label="角色 ID" width="120" align="center" />
+          <ElTableColumn
+            prop="character_id"
+            :label="$t('fleet.pap.characterId')"
+            width="120"
+            align="center"
+          />
           <ElTableColumn prop="pap_count" :label="$t('fleet.pap.count')" width="120" align="center">
             <template #default="{ row }">
               <ElTag type="success" size="small">+{{ row.pap_count }}</ElTag>
@@ -128,9 +143,9 @@
             width="120"
             align="center"
           />
-          <ElTableColumn prop="created_at" :label="$t('fleet.pap.issuedAt')" min-width="180">
+          <ElTableColumn prop="issued_at" :label="$t('fleet.pap.issuedAt')" min-width="180">
             <template #default="{ row }">
-              {{ formatTime(row.created_at) }}
+              {{ formatTime(row.issued_at) }}
             </template>
           </ElTableColumn>
         </ElTable>
