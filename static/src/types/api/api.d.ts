@@ -404,19 +404,23 @@ declare namespace Api {
       created_at: string
     }
 
-    /** PAP 记录 */
-    interface PapLog {
+    /** 舰队 PAP 记录 */
+    interface FleetPapLog {
       id: number
       fleet_id: string
-      fleet_title?: string
       character_id: number
-      character_name?: string
       user_id: number
       pap_count: number
       issued_by: number
-      issued_by_name: string
+      issued_at: string
+    }
+
+    /** 我的 PAP 记录 */
+    interface MyPapLog extends FleetPapLog {
+      fleet_title?: string
+      character_name?: string
+      issued_by_name?: string
       importance: 'strat_op' | 'cta' | 'other' | ''
-      created_at: string
     }
 
     /** 军团 PAP 汇总筛选周期 */

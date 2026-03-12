@@ -465,7 +465,7 @@ func (s *FleetService) GetPapLogs(fleetID string) ([]model.FleetPapLog, error) {
 }
 
 // GetUserPapLogs 获取用户的 PAP 记录
-func (s *FleetService) GetUserPapLogs(userID uint) ([]repository.UserPapLog, error) {
+func (s *FleetService) GetUserPapLogs(userID uint) ([]model.FleetPapLogDetail, error) {
 	return s.repo.ListPapLogsByUser(userID)
 }
 
@@ -474,8 +474,8 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	if pageSize < 1 || pageSize > 1000 {
+		pageSize = 200
 	}
 
 	now := time.Now()
@@ -488,11 +488,20 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 	if err != nil {
 		return nil, err
 	}
-
-	userIDs := make([]uint, 0, len(rows))
-	for _, row := range rows {
-		userIDs = append(userIDs, row.UserID)
+	lastMonthFilter, _, _, err := s.buildCorporationPapFilter(CorporationPapPeriodLastMonth, 0, now)
+	if err != nil {
+		return nil, err
 	}
+	lastMonthRows, err := s.repo.ListCorporationPapSummaryAll(lastMonthFilter)
+	if err != nil {
+		return nil, err
+	}
+	allRows, err := s.repo.ListCorporationPapSummaryAll(repository.FleetPapSummaryFilter{})
+	if err != nil {
+		return nil, err
+	}
+
+	userIDs := collectCorporationPapUserIDs(rows, lastMonthRows, allRows)
 
 	profileByUserID, err := s.resolveCorporationPapProfiles(userIDs)
 	if err != nil {
@@ -507,23 +516,9 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 		}
 	}
 
-	items := make([]CorporationPapSummaryItem, 0, len(rows))
-	for _, row := range rows {
-		profile := profileByUserID[row.UserID]
-		if len(allowedTickerSet) > 0 {
-			if _, ok := allowedTickerSet[strings.ToUpper(profile.CorpTicker)]; !ok {
-				continue
-			}
-		}
-		items = append(items, CorporationPapSummaryItem{
-			UserID:            row.UserID,
-			CorpTicker:        profile.CorpTicker,
-			MainCharacterName: profile.MainCharacterName,
-			CharacterCount:    profile.CharacterCount,
-			StratOpPaps:       row.StratOpPaps,
-			SkirmishPaps:      row.SkirmishPaps,
-		})
-	}
+	items, filteredPapTotal := buildCorporationPapItems(rows, profileByUserID, allowedTickerSet)
+	_, lastMonthPapTotal := buildCorporationPapItems(lastMonthRows, profileByUserID, allowedTickerSet)
+	_, allPapTotal := buildCorporationPapItems(allRows, profileByUserID, allowedTickerSet)
 
 	total := int64(len(items))
 	start := (page - 1) * pageSize
@@ -535,25 +530,6 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 		end = len(items)
 	}
 	pagedItems := items[start:end]
-
-	filteredPapTotal, err := s.repo.SumPapTotal(filter)
-	if err != nil {
-		return nil, err
-	}
-
-	lastMonthFilter, _, _, err := s.buildCorporationPapFilter(CorporationPapPeriodLastMonth, 0, now)
-	if err != nil {
-		return nil, err
-	}
-	lastMonthPapTotal, err := s.repo.SumPapTotal(lastMonthFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	allPapTotal, err := s.repo.SumPapTotal(repository.FleetPapSummaryFilter{})
-	if err != nil {
-		return nil, err
-	}
 
 	overview := CorporationPapOverview{
 		FilteredPapTotal:  filteredPapTotal,
@@ -573,6 +549,49 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 		PageSize: pageSize,
 		Overview: overview,
 	}, nil
+}
+
+func collectCorporationPapUserIDs(rowGroups ...[]repository.CorporationPapSummaryRow) []uint {
+	seen := make(map[uint]struct{})
+	userIDs := make([]uint, 0)
+
+	for _, rows := range rowGroups {
+		for _, row := range rows {
+			if _, ok := seen[row.UserID]; ok {
+				continue
+			}
+			seen[row.UserID] = struct{}{}
+			userIDs = append(userIDs, row.UserID)
+		}
+	}
+
+	return userIDs
+}
+
+func buildCorporationPapItems(rows []repository.CorporationPapSummaryRow, profileByUserID map[uint]corporationPapProfile, allowedTickerSet map[string]struct{}) ([]CorporationPapSummaryItem, float64) {
+	items := make([]CorporationPapSummaryItem, 0, len(rows))
+	totalPap := 0.0
+
+	for _, row := range rows {
+		profile := profileByUserID[row.UserID]
+		if len(allowedTickerSet) > 0 {
+			if _, ok := allowedTickerSet[strings.ToUpper(profile.CorpTicker)]; !ok {
+				continue
+			}
+		}
+
+		items = append(items, CorporationPapSummaryItem{
+			UserID:            row.UserID,
+			CorpTicker:        profile.CorpTicker,
+			MainCharacterName: profile.MainCharacterName,
+			CharacterCount:    profile.CharacterCount,
+			StratOpPaps:       row.StratOpPaps,
+			SkirmishPaps:      row.SkirmishPaps,
+		})
+		totalPap += row.TotalPaps
+	}
+
+	return items, totalPap
 }
 
 // ─────────────────────────────────────────────

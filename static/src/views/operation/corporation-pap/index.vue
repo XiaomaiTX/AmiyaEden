@@ -77,11 +77,6 @@
         <ElTable v-loading="loading" :data="records" stripe border style="width: 100%">
           <ElTableColumn type="index" width="60" label="#" :index="tableIndex" />
           <ElTableColumn
-            prop="user_id"
-            :label="t('fleet.corporationPap.columns.userId')"
-            min-width="120"
-          />
-          <ElTableColumn
             prop="corp_ticker"
             :label="t('fleet.corporationPap.columns.corpTicker')"
             min-width="140"

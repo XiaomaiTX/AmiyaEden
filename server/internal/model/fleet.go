@@ -66,6 +66,8 @@ type FleetPapLogDetail struct {
 	UserID        uint      `json:"user_id"`
 	PapCount      float64   `json:"pap_count"`
 	IssuedBy      uint      `json:"issued_by"`
+	IssuedByName  string    `json:"issued_by_name,omitempty"`
+	Importance    string    `json:"importance,omitempty"`
 	IssuedAt      time.Time `json:"issued_at"`
 }
 

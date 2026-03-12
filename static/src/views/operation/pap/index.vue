@@ -59,6 +59,13 @@
               {{ row.character_name || row.character_id }}
             </template>
           </ElTableColumn>
+          <ElTableColumn prop="importance" :label="$t('fleet.pap.type')" width="120" align="center">
+            <template #default="{ row }">
+              <ElTag :type="papImportanceTagType(row.importance)" size="small" effect="dark">
+                {{ row.importance ? $t(`fleet.importance.${row.importance}`) : '-' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
           <ElTableColumn prop="pap_count" :label="$t('fleet.pap.count')" width="120" align="center">
             <template #default="{ row }">
               <ElTag type="success" size="small">{{ row.pap_count }}</ElTag>
@@ -69,7 +76,11 @@
             :label="$t('fleet.pap.issuedBy')"
             min-width="140"
             align="center"
-          />
+          >
+            <template #default="{ row }">
+              {{ row.issued_by_name || row.issued_by }}
+            </template>
+          </ElTableColumn>
           <ElTableColumn prop="issued_at" :label="$t('fleet.pap.issuedAt')" width="200">
             <template #default="{ row }">
               {{ formatTime(row.issued_at) }}
@@ -257,7 +268,7 @@
   defineOptions({ name: 'MyPap' })
 
   // ── 本系统 PAP ──
-  const papLogs = ref<Api.Fleet.PapLog[]>([])
+  const papLogs = ref<Api.Fleet.MyPapLog[]>([])
   const loading = ref(false)
 
   const papPage = ref(1)
@@ -329,9 +340,11 @@
     return 'info'
   }
 
-  const papTypeTagType = (importance: string): 'danger' | 'warning' | 'info' | 'success' => {
-    if (importance === 'cta') return 'danger'
-    if (importance === 'strat_op') return 'warning'
+  const papImportanceTagType = (
+    importance: Api.Fleet.MyPapLog['importance']
+  ): 'danger' | 'warning' | 'info' | 'success' => {
+    if (importance === 'strat_op') return 'danger'
+    if (importance === 'cta') return 'warning'
     return 'info'
   }
 

@@ -542,6 +542,7 @@
       "fleetName": "舰队名",
       "characterId": "角色 ID",
       "characterName": "角色名",
+      "type": "PAP 类型",
       "count": "PAP 数量",
       "issuedBy": "发放人",
       "issuedAt": "发放时间",
@@ -556,7 +557,7 @@
       "filters": {
         "period": "时间范围",
         "year": "年份",
-        "corpTickers": "军团Ticker"
+        "corpTickers": "军团"
       },
       "periods": {
         "currentMonth": "本月",
@@ -572,7 +573,7 @@
       },
       "columns": {
         "userId": "用户 ID",
-        "corpTicker": "军团Ticker",
+        "corpTicker": "军团",
         "mainCharacter": "主角色名",
         "characterCount": "角色数量",
         "stratOpPaps": "战略OP",

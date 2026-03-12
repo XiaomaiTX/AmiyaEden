@@ -119,35 +119,26 @@ func (r *FleetRepository) ListPapLogsByFleet(fleetID string) ([]model.FleetPapLo
 	return logs, err
 }
 
-// UserPapLog 用户 PAP 记录（附带舰队类型）
-type UserPapLog struct {
-	ID           uint      `json:"id"`
-	FleetID      string    `json:"fleet_id"`
-	CharacterID  int64     `json:"character_id"`
-	UserID       uint      `json:"user_id"`
-	PapCount     float64   `json:"pap_count"`
-	IssuedBy     uint      `json:"issued_by"`
-	IssuedByName string    `json:"issued_by_name"`
-	Importance   string    `json:"importance"`
-	CreatedAt    time.Time `json:"created_at"`
-}
-
 // ListPapLogsByUser 查询某用户的所有 PAP 记录
-func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]UserPapLog, error) {
-	var logs []UserPapLog
+func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]model.FleetPapLogDetail, error) {
+	var logs []model.FleetPapLogDetail
 	err := global.DB.Model(&model.FleetPapLog{}).
 		Select(`
 			fleet_pap_log.id,
 			fleet_pap_log.fleet_id,
+			COALESCE(fleet.title, '') as fleet_title,
 			fleet_pap_log.character_id,
+			COALESCE(member.character_name, pap_character.character_name, '') as character_name,
 			fleet_pap_log.user_id,
 			fleet_pap_log.pap_count,
 			fleet_pap_log.issued_by,
 			COALESCE(issuer_main.character_name, pap_user.nickname, '') as issued_by_name,
 			COALESCE(fleet.importance, '') as importance,
-			fleet_pap_log.issued_at as created_at
+			fleet_pap_log.issued_at as issued_at
 		`).
 		Joins("LEFT JOIN fleet ON fleet.id = fleet_pap_log.fleet_id").
+		Joins("LEFT JOIN fleet_member member ON member.fleet_id = fleet_pap_log.fleet_id AND member.character_id = fleet_pap_log.character_id").
+		Joins("LEFT JOIN eve_character pap_character ON pap_character.character_id = fleet_pap_log.character_id").
 		Joins(`LEFT JOIN "user" pap_user ON pap_user.id = fleet_pap_log.issued_by`).
 		Joins("LEFT JOIN eve_character issuer_main ON issuer_main.character_id = pap_user.primary_character_id").
 		Where("fleet_pap_log.user_id = ?", userID).

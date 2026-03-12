@@ -530,6 +530,7 @@
       "fleetName": "Fleet Name",
       "characterId": "Character ID",
       "characterName": "Character Name",
+      "type": "PAP Type",
       "count": "PAP Count",
       "issuedBy": "Issued By",
       "issuedAt": "Issued At",
@@ -544,7 +545,7 @@
       "filters": {
         "period": "Period",
         "year": "Year",
-        "corpTickers": "Corp Tickers"
+        "corpTickers": "Corporation"
       },
       "periods": {
         "currentMonth": "Current Month",
@@ -560,7 +561,7 @@
       },
       "columns": {
         "userId": "User ID",
-        "corpTicker": "Corp Ticker",
+        "corpTicker": "Corporation",
         "mainCharacter": "Main Character",
         "characterCount": "Number of Characters",
         "stratOpPaps": "Start OP",
