@@ -171,6 +171,8 @@ func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "*/*")
+	req.Header.Set("User-Agent", "AmiyaEden/1.0")
 	if cfg.Type == "onebot" && cfg.OBToken != "" {
 		req.Header.Set("Authorization", "Bearer "+cfg.OBToken)
 	}
