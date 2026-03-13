@@ -300,7 +300,8 @@
       "wallet": "钱包管理",
       "alliancePap": "联盟 PAP",
       "npcKills": "刷怪报表",
-      "autoRole": "自动权限"
+      "autoRole": "自动权限",
+      "webhook": "Webhook 通知"
     }
   },
   "info": {
@@ -461,7 +462,9 @@
       "fcPlaceholder": "选择一个角色作为舰队指挥",
       "description": "详细信息",
       "descriptionPlaceholder": "关于此行动的额外信息",
-      "esiFleetId": "ESI 舰队 ID"
+      "esiFleetId": "ESI 舰队 ID",
+      "sendPing": "发送通知",
+      "sendPingHint": "创建后向频道发送舰队行动 Ping"
     },
     "importance": {
       "strat_op": "Strat Op",
@@ -475,7 +478,8 @@
       "syncSuccess": "成员同步成功",
       "characterName": "角色名",
       "shipType": "舰船",
-      "joinedAt": "加入时间"
+      "joinedAt": "加入时间",
+      "solarSystem": "星系"
     },
     "pap": {
       "title": "PAP 发放",
@@ -508,6 +512,10 @@
       "selectCharacterPlaceholder": "选择一个角色加入舰队",
       "joinSuccess": "已成功加入舰队",
       "invalidCode": "无效的邀请码"
+    },
+    "ping": {
+      "send": "发送 Ping",
+      "success": "Ping 已发送"
     },
     "wallet": {
       "title": "我的钱包",
@@ -591,7 +599,8 @@
         "paid": "已打款",
         "payoutStatus": "发放状态",
         "action": "操作",
-        "note": "备注"
+        "note": "备注",
+        "fleetNote": "舰队/备注"
       }
     },
     "kmPreview": {
@@ -787,5 +796,35 @@
     "zebra": "斑马纹",
     "border": "边框",
     "headerBackground": "表头背景"
+  },
+  "webhook": {
+    "title": "Webhook 通知设置",
+    "saveSuccess": "设置已保存",
+    "fields": {
+      "enabled": "启用",
+      "url": "Webhook URL",
+      "urlPlaceholder": "https://discord.com/api/webhooks/...",
+      "obUrlPlaceholder": "http://127.0.0.1:5700",
+      "type": "类型",
+      "template": "消息模板",
+      "templatePlaceholder": "输入消息模板，支持变量替换",
+      "templateHint": "可用变量",
+      "obTargetType": "目标类型",
+      "obGroup": "群组",
+      "obPrivate": "私聊",
+      "obTargetId": "目标 ID",
+      "obTargetIdPlaceholder": "群号或用户 QQ",
+      "obToken": "Access Token",
+      "obTokenPlaceholder": "留空则不使用身份验证"
+    },
+    "test": {
+      "title": "测试发送",
+      "url": "测试 URL",
+      "type": "类型",
+      "content": "测试内容",
+      "contentPlaceholder": "留空则使用默认测试文本",
+      "sendBtn": "发送测试",
+      "success": "测试消息已发送"
+    }
   }
 }

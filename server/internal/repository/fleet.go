@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"time"
 )
 
 // FleetRepository 舰队数据访问层
@@ -84,6 +85,34 @@ func (r *FleetRepository) ListMembers(fleetID string) ([]model.FleetMember, erro
 	var members []model.FleetMember
 	err := global.DB.Where("fleet_id = ?", fleetID).Order("joined_at ASC").Find(&members).Error
 	return members, err
+}
+
+// MemberWithPap 舰队成员 + PAP 信息
+type MemberWithPap struct {
+	model.FleetMember
+	PapCount *float64   `json:"pap_count"`
+	IssuedAt *time.Time `json:"issued_at"`
+}
+
+// ListMembersWithPap 分页查询舰队成员（左连接 PAP 记录）
+func (r *FleetRepository) ListMembersWithPap(fleetID string, page, pageSize int) ([]MemberWithPap, int64, error) {
+	var results []MemberWithPap
+	var total int64
+	offset := (page - 1) * pageSize
+
+	base := global.DB.Table("fleet_member").Where("fleet_member.fleet_id = ?", fleetID)
+	if err := base.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := global.DB.Table("fleet_member").
+		Select("fleet_member.*, fleet_pap_log.pap_count, fleet_pap_log.issued_at").
+		Joins("LEFT JOIN fleet_pap_log ON fleet_pap_log.fleet_id = fleet_member.fleet_id AND fleet_pap_log.character_id = fleet_member.character_id").
+		Where("fleet_member.fleet_id = ?", fleetID).
+		Order("fleet_member.joined_at ASC").
+		Offset(offset).Limit(pageSize).
+		Scan(&results).Error
+	return results, total, err
 }
 
 // RemoveMember 移除舰队成员

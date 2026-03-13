@@ -248,7 +248,8 @@
       "wallet": "Wallet Management",
       "alliancePap": "Alliance PAP",
       "npcKills": "NPC Kill Report",
-      "autoRole": "Auto Roles"
+      "autoRole": "Auto Roles",
+      "webhook": "Webhook Notifications"
     },
     "shop": {
       "title": "Shop",
@@ -449,7 +450,9 @@
       "fcPlaceholder": "Select a character as FC",
       "description": "Description",
       "descriptionPlaceholder": "Additional information about this operation",
-      "esiFleetId": "ESI Fleet ID"
+      "esiFleetId": "ESI Fleet ID",
+      "sendPing": "Send Notification",
+      "sendPingHint": "Send a fleet ping to the channel after creation"
     },
     "importance": {
       "strat_op": "Strat Op",
@@ -463,7 +466,8 @@
       "syncSuccess": "Members synced",
       "characterName": "Character",
       "shipType": "Ship",
-      "joinedAt": "Joined At"
+      "joinedAt": "Joined At",
+      "solarSystem": "Solar System"
     },
     "pap": {
       "title": "PAP Distribution",
@@ -496,6 +500,10 @@
       "selectCharacterPlaceholder": "Choose a character to join the fleet",
       "joinSuccess": "Successfully joined the fleet",
       "invalidCode": "Invalid invite code"
+    },
+    "ping": {
+      "send": "Send Ping",
+      "success": "Ping sent"
     },
     "wallet": {
       "title": "My Wallet",
@@ -579,7 +587,8 @@
         "paid": "Paid",
         "payoutStatus": "Payout",
         "action": "Action",
-        "note": "Note"
+        "note": "Note",
+        "fleetNote": "Fleet / Note"
       }
     },
     "kmPreview": {
@@ -775,5 +784,35 @@
     "zebra": "Zebra",
     "border": "Border",
     "headerBackground": "Header BG"
+  },
+  "webhook": {
+    "title": "Webhook Notification Settings",
+    "saveSuccess": "Settings saved",
+    "fields": {
+      "enabled": "Enabled",
+      "url": "Webhook URL",
+      "urlPlaceholder": "https://discord.com/api/webhooks/...",
+      "obUrlPlaceholder": "http://127.0.0.1:5700",
+      "type": "Type",
+      "template": "Message Template",
+      "templatePlaceholder": "Enter message template with variable placeholders",
+      "templateHint": "Available variables",
+      "obTargetType": "Target Type",
+      "obGroup": "Group",
+      "obPrivate": "Private",
+      "obTargetId": "Target ID",
+      "obTargetIdPlaceholder": "Group ID or User QQ",
+      "obToken": "Access Token",
+      "obTokenPlaceholder": "Leave blank for no authentication"
+    },
+    "test": {
+      "title": "Test",
+      "url": "Test URL",
+      "type": "Type",
+      "content": "Test Content",
+      "contentPlaceholder": "Leave blank for default test message",
+      "sendBtn": "Send Test",
+      "success": "Test message sent"
+    }
   }
 }
