@@ -6,6 +6,7 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -67,6 +68,17 @@ func (h *FleetHandler) ListFleets(c *gin.Context) {
 		"pageSize": size,
 		"total":    total,
 	})
+}
+
+// GetMyFleets 获取当前用户参与过的舰队列表
+func (h *FleetHandler) GetMyFleets(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	fleets, err := h.svc.GetMyFleets(userID)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, fleets)
 }
 
 // GetFleet 获取舰队详情
@@ -158,6 +170,29 @@ func (h *FleetHandler) GetMembers(c *gin.Context) {
 	response.OK(c, members)
 }
 
+// GetMembersWithPap 分页查询舰队成员（含 PAP 信息）
+func (h *FleetHandler) GetMembersWithPap(c *gin.Context) {
+	fleetID := c.Param("id")
+	if fleetID == "" {
+		response.Fail(c, response.CodeParamError, "缺少舰队ID")
+		return
+	}
+	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+
+	list, total, err := h.svc.ListMembersWithPap(fleetID, page, size)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, gin.H{
+		"list":     list,
+		"page":     page,
+		"pageSize": size,
+		"total":    total,
+	})
+}
+
 // SyncESIMembers 从 ESI 拉取当前舰队成员并同步到数据库
 func (h *FleetHandler) SyncESIMembers(c *gin.Context) {
 	fleetID := c.Param("id")
@@ -219,6 +254,27 @@ func (h *FleetHandler) GetMyPapLogs(c *gin.Context) {
 		return
 	}
 	response.OK(c, logs)
+}
+
+// GetCorporationPapSummary 获取军团 PAP 汇总
+func (h *FleetHandler) GetCorporationPapSummary(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	year, _ := strconv.Atoi(c.DefaultQuery("year", "0"))
+	period := c.DefaultQuery("period", service.CorporationPapPeriodLastMonth)
+	corpTickerParam := c.Query("corp_tickers")
+	var corpTickers []string
+	if corpTickerParam != "" {
+		corpTickers = strings.Split(corpTickerParam, ",")
+	}
+
+	result, err := h.svc.GetCorporationPapSummary(page, size, period, year, corpTickers)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, result)
 }
 
 // ─────────────────────────────────────────────
@@ -315,4 +371,24 @@ func (h *FleetHandler) GetCharacterFleetInfo(c *gin.Context) {
 		return
 	}
 	response.OK(c, info)
+}
+
+// ─────────────────────────────────────────────
+//  Webhook Ping
+// ─────────────────────────────────────────────
+
+// PingFleet 手动触发舰队 Webhook Ping
+func (h *FleetHandler) PingFleet(c *gin.Context) {
+	fleetID := c.Param("id")
+	if fleetID == "" {
+		response.Fail(c, response.CodeParamError, "缺少舰队ID")
+		return
+	}
+	userID := middleware.GetUserID(c)
+	userRole := middleware.GetUserRole(c)
+	if err := h.svc.PingFleet(fleetID, userID, userRole); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
 }

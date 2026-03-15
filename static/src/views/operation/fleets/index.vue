@@ -78,6 +78,10 @@
             :placeholder="$t('fleet.fields.descriptionPlaceholder')"
           />
         </ElFormItem>
+        <ElFormItem v-if="!editingFleet" :label="$t('fleet.fields.sendPing')">
+          <ElSwitch v-model="formData.send_ping" />
+          <span class="ml-2 text-xs text-gray-400">{{ $t('fleet.fields.sendPingHint') }}</span>
+        </ElFormItem>
       </ElForm>
       <template #footer>
         <ElButton @click="dialogVisible = false">{{ $t('common.cancel') }}</ElButton>
@@ -95,7 +99,7 @@
   import FleetSearch from './modules/fleet-search.vue'
   import { fetchFleetList, createFleet, updateFleet, deleteFleet } from '@/api/fleet'
   import { fetchMyCharacters } from '@/api/auth'
-  import { ElTag, ElButton, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+  import { ElTag, ElButton, ElMessageBox, ElSwitch, type FormInstance, type FormRules } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
   import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
@@ -120,6 +124,20 @@
     return new Date(v).toLocaleString()
   }
 
+  // 生成 YYYY-MM-DDTHH:mm:ssZ 格式的本地时间字符串（DatePicker value-format）
+  function fmtLocalISO(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const tz = -d.getTimezoneOffset()
+    const sign = tz >= 0 ? '+' : '-'
+    const tzH = Math.floor(Math.abs(tz) / 60)
+    const tzM = Math.abs(tz) % 60
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${sign}${pad(tzH)}:${pad(tzM)}`
+  }
+  function defaultTimeRange(): [string, string] {
+    const now = Date.now()
+    return [fmtLocalISO(new Date(now - 3_600_000)), fmtLocalISO(new Date(now + 3_600_000))]
+  }
+
   // ─── 表格 ───
   const {
     columns,
@@ -138,7 +156,7 @@
       apiFn: fetchFleetList,
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
-        { type: 'index', width: 60, label: '序号' },
+        { type: 'index', width: 60, label: '#' },
         {
           prop: 'title',
           label: t('fleet.fields.title'),
@@ -190,7 +208,7 @@
         },
         {
           prop: 'created_at',
-          label: '创建时间',
+          label: t('common.createdAt'),
           width: 180,
           formatter: (row: FleetItem) => h('span', {}, formatTime(row.created_at))
         },
@@ -247,7 +265,8 @@
     importance: 'other' as 'strat_op' | 'cta' | 'other',
     pap_count: 1,
     character_id: undefined as number | undefined,
-    time_range: null as [string, string] | null
+    time_range: null as [string, string] | null,
+    send_ping: true
   })
 
   const formRules: FormRules = {
@@ -265,11 +284,13 @@
     formData.pap_count = 1
     formData.character_id = undefined
     formData.time_range = null
+    formData.send_ping = true
     editingFleet.value = null
   }
 
   function openCreateDialog() {
     resetForm()
+    formData.time_range = defaultTimeRange()
     dialogVisible.value = true
   }
 
@@ -309,7 +330,8 @@
           pap_count: formData.pap_count,
           character_id: formData.character_id!,
           start_at,
-          end_at
+          end_at,
+          send_ping: formData.send_ping
         })
         ElMessage.success(t('fleet.createSuccess'))
       }

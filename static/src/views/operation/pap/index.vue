@@ -17,11 +17,11 @@
       <div class="flex items-center gap-6 mb-4 px-2">
         <div class="text-center">
           <p class="text-2xl font-bold text-primary">{{ totalPap }}</p>
-          <p class="text-xs text-gray-500 mt-1">总 PAP</p>
+          <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.totalPap') }}</p>
         </div>
         <div class="text-center">
           <p class="text-2xl font-bold text-green-600">{{ papLogs.length }}</p>
-          <p class="text-xs text-gray-500 mt-1">参与次数</p>
+          <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.participationCount') }}</p>
         </div>
       </div>
 
@@ -34,26 +34,56 @@
             width="60"
             label="#"
           />
-          <ElTableColumn prop="fleet_id" label="舰队 ID" min-width="260">
+          <ElTableColumn prop="fleet_id" :label="$t('fleet.pap.fleetId')" min-width="260">
             <template #default="{ row }">
               <code class="text-xs">{{ row.fleet_id }}</code>
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="character_id" label="角色 ID" width="120" align="center" />
-          <ElTableColumn prop="pap_count" :label="$t('fleet.pap.count')" width="120" align="center">
+          <ElTableColumn
+            prop="fleet_title"
+            :label="$t('fleet.pap.fleetName')"
+            min-width="180"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
-              <ElTag type="success" size="small">+{{ row.pap_count }}</ElTag>
+              {{ row.fleet_title || '-' }}
             </template>
           </ElTableColumn>
           <ElTableColumn
-            prop="issued_by"
-            :label="$t('fleet.pap.issuedBy')"
-            width="120"
-            align="center"
-          />
-          <ElTableColumn prop="created_at" :label="$t('fleet.pap.issuedAt')" width="200">
+            prop="character_name"
+            :label="$t('fleet.pap.characterName')"
+            min-width="140"
+            show-overflow-tooltip
+          >
             <template #default="{ row }">
-              {{ formatTime(row.created_at) }}
+              {{ row.character_name || row.character_id }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="importance" :label="$t('fleet.pap.type')" width="120" align="center">
+            <template #default="{ row }">
+              <ElTag :type="papImportanceTagType(row.importance)" size="small" effect="dark">
+                {{ row.importance ? $t(`fleet.importance.${row.importance}`) : '-' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="pap_count" :label="$t('fleet.pap.count')" width="120" align="center">
+            <template #default="{ row }">
+              <ElTag type="success" size="small">{{ row.pap_count }}</ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn
+            prop="issued_by_name"
+            :label="$t('fleet.pap.issuedBy')"
+            min-width="140"
+            align="center"
+          >
+            <template #default="{ row }">
+              {{ row.issued_by_name || row.issued_by }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="issued_at" :label="$t('fleet.pap.issuedAt')" width="200">
+            <template #default="{ row }">
+              {{ formatTime(row.issued_at) }}
             </template>
           </ElTableColumn>
         </ElTable>
@@ -83,13 +113,13 @@
       <template #header>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <h2 class="text-lg font-medium">联盟 PAP</h2>
+            <h2 class="text-lg font-medium">{{ $t('alliancePap.shortTitle') }}</h2>
             <ElDatePicker
               v-model="allianceMonth"
               type="month"
               format="YYYY-MM"
               value-format="YYYY-MM"
-              placeholder="选择月份"
+              :placeholder="$t('alliancePap.selectMonth')"
               style="width: 140px"
               @change="onAllianceMonthChange"
             />
@@ -106,35 +136,36 @@
         <div class="flex flex-wrap items-center gap-6 mb-4 px-2">
           <div class="text-center">
             <p class="text-2xl font-bold text-primary">{{ allianceSummary.total_pap }}</p>
-            <p class="text-xs text-gray-500 mt-1">月 PAP</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('alliancePap.columns.monthlyPap') }}</p>
           </div>
           <div class="text-center">
             <p class="text-2xl font-bold text-blue-500">{{ allianceSummary.yearly_total_pap }}</p>
-            <p class="text-xs text-gray-500 mt-1">年度 PAP</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('alliancePap.columns.yearlyPap') }}</p>
           </div>
           <div class="text-center">
             <p class="text-xl font-semibold text-green-600">#{{ allianceSummary.monthly_rank }}</p>
-            <p class="text-xs text-gray-500 mt-1"
-              >军团月排名 / {{ allianceSummary.total_in_corp }}</p
-            >
+            <p class="text-xs text-gray-500 mt-1">
+              {{ $t('alliancePap.corpMonthlySummary', { count: allianceSummary.total_in_corp }) }}
+            </p>
           </div>
           <div class="text-center">
             <p class="text-xl font-semibold text-yellow-500"
               >#{{ allianceSummary.global_monthly_rank }}</p
             >
-            <p class="text-xs text-gray-500 mt-1"
-              >联盟月排名 / {{ allianceSummary.total_global }}</p
-            >
+            <p class="text-xs text-gray-500 mt-1">
+              {{
+                $t('alliancePap.allianceMonthlySummary', { count: allianceSummary.total_global })
+              }}
+            </p>
           </div>
           <div class="text-center">
             <p class="text-xl font-semibold text-purple-500">#{{ allianceSummary.yearly_rank }}</p>
-            <p class="text-xs text-gray-500 mt-1">军团年排名</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('alliancePap.corpYearlySummary') }}</p>
           </div>
           <div class="ml-auto text-xs text-gray-400 text-right">
-            数据来源：联盟 PAP 系统<br />
-            最后计算：{{
-              allianceSummary.calculated_at ? formatTime(allianceSummary.calculated_at) : '-'
-            }}
+            {{ $t('alliancePap.sourceLabel') }}: {{ $t('alliancePap.sourceName') }}<br />
+            {{ $t('alliancePap.calculatedAtLabel') }}:
+            {{ allianceSummary.calculated_at ? formatTime(allianceSummary.calculated_at) : '-' }}
           </div>
         </div>
       </template>
@@ -154,9 +185,22 @@
             width="50"
             label="#"
           />
-          <ElTableColumn prop="title" label="行动名称" min-width="100" />
-          <ElTableColumn prop="character_name" label="角色" min-width="100" />
-          <ElTableColumn prop="level" label="等级" width="110" align="center">
+          <ElTableColumn
+            prop="title"
+            :label="$t('alliancePap.columns.operationTitle')"
+            min-width="100"
+          />
+          <ElTableColumn
+            prop="character_name"
+            :label="$t('alliancePap.columns.character')"
+            min-width="100"
+          />
+          <ElTableColumn
+            prop="level"
+            :label="$t('alliancePap.columns.level')"
+            width="110"
+            align="center"
+          >
             <template #default="{ row }">
               <ElTag :type="levelTagType(row.level)" size="small">{{ row.level }}</ElTag>
             </template>
@@ -166,23 +210,23 @@
               <ElTag type="success" size="small">{{ row.pap }}</ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="舰船" min-width="160">
+          <ElTableColumn :label="$t('alliancePap.columns.ship')" min-width="160">
             <template #default="{ row }">
               {{ row.ship_type_name }}
               <span class="text-xs text-gray-400 ml-1">({{ row.ship_group_name }})</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="开始时间" width="170">
+          <ElTableColumn :label="$t('alliancePap.columns.startTime')" width="170">
             <template #default="{ row }">{{ formatTime(row.start_at) }}</template>
           </ElTableColumn>
-          <ElTableColumn label="结束时间" width="170">
+          <ElTableColumn :label="$t('alliancePap.columns.endTime')" width="170">
             <template #default="{ row }">{{ row.end_at ? formatTime(row.end_at) : '-' }}</template>
           </ElTableColumn>
         </ElTable>
       </div>
       <ElEmpty
         v-if="!allianceLoading && allianceFleets.length === 0"
-        description="暂无联盟 PAP 记录"
+        :description="$t('alliancePap.noRecords')"
         class="my-4"
       />
 
@@ -224,7 +268,7 @@
   defineOptions({ name: 'MyPap' })
 
   // ── 本系统 PAP ──
-  const papLogs = ref<Api.Fleet.PapLog[]>([])
+  const papLogs = ref<Api.Fleet.MyPapLog[]>([])
   const loading = ref(false)
 
   const papPage = ref(1)
@@ -293,6 +337,14 @@
   const levelTagType = (level: string): 'danger' | 'warning' | 'info' | 'success' => {
     if (level === 'CTA') return 'danger'
     if (level === 'Strat Op') return 'warning'
+    return 'info'
+  }
+
+  const papImportanceTagType = (
+    importance: Api.Fleet.MyPapLog['importance']
+  ): 'danger' | 'warning' | 'info' | 'success' => {
+    if (importance === 'strat_op') return 'danger'
+    if (importance === 'cta') return 'warning'
     return 'info'
   }
 

@@ -377,6 +377,7 @@ declare namespace Api {
       importance: 'strat_op' | 'cta' | 'other'
       pap_count: number
       character_id: number
+      send_ping?: boolean
     }
 
     /** 更新舰队请求 */
@@ -404,15 +405,71 @@ declare namespace Api {
       created_at: string
     }
 
-    /** PAP 记录 */
-    interface PapLog {
+    /** 舰队成员（含 PAP 信息）*/
+    interface MemberWithPap extends FleetMember {
+      pap_count: number | null
+      issued_at: string | null
+    }
+
+    /** 舰队成员（含 PAP 信息）*/
+    interface MemberWithPap extends FleetMember {
+      pap_count: number | null
+      issued_at: string | null
+    }
+
+    /** 舰队 PAP 记录 */
+    interface FleetPapLog {
       id: number
       fleet_id: string
       character_id: number
       user_id: number
       pap_count: number
       issued_by: number
-      created_at: string
+      issued_at: string
+    }
+
+    /** 我的 PAP 记录 */
+    interface MyPapLog extends FleetPapLog {
+      fleet_title?: string
+      character_name?: string
+      issued_by_name?: string
+      importance: 'strat_op' | 'cta' | 'other' | ''
+    }
+
+    /** 军团 PAP 汇总筛选周期 */
+    type PapSummaryPeriod = 'current_month' | 'last_month' | 'at_year' | 'all'
+
+    /** 军团 PAP 汇总查询参数 */
+    type CorporationPapSummaryParams = Partial<Api.Common.CommonSearchParams> & {
+      period?: PapSummaryPeriod
+      year?: number
+      corp_tickers?: string
+    }
+
+    /** 军团 PAP 汇总项 */
+    interface CorporationPapSummaryItem {
+      user_id: number
+      corp_ticker: string
+      main_character_name: string
+      character_count: number
+      strat_op_paps: number
+      skirmish_paps: number
+    }
+
+    /** 军团 PAP 页头概览 */
+    interface CorporationPapOverview {
+      filtered_pap_total: number
+      all_pap_total: number
+      last_month_pap_total: number
+      filtered_user_count: number
+      period: PapSummaryPeriod
+      year?: number
+    }
+
+    /** 军团 PAP 汇总分页响应 */
+    interface CorporationPapSummaryList
+      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
+      overview: CorporationPapOverview
     }
 
     /** 邀请链接 */
@@ -1232,6 +1289,19 @@ declare namespace Api {
       members: CorpMemberSummary[]
       by_system: BySystem[]
       trend: Trend[]
+    }
+  }
+
+  /** Webhook 配置 */
+  namespace Webhook {
+    interface Config {
+      url: string
+      enabled: boolean
+      type: 'discord' | 'feishu' | 'dingtalk' | 'onebot' | string
+      fleet_template: string
+      ob_target_type: 'group' | 'private'
+      ob_target_id: number
+      ob_token: string
     }
   }
 }

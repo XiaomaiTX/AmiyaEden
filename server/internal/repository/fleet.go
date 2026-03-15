@@ -3,6 +3,9 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"time"
+
+	"gorm.io/gorm"
 )
 
 // FleetRepository 舰队数据访问层
@@ -86,6 +89,34 @@ func (r *FleetRepository) ListMembers(fleetID string) ([]model.FleetMember, erro
 	return members, err
 }
 
+// MemberWithPap 舰队成员 + PAP 信息
+type MemberWithPap struct {
+	model.FleetMember
+	PapCount *float64   `json:"pap_count"`
+	IssuedAt *time.Time `json:"issued_at"`
+}
+
+// ListMembersWithPap 分页查询舰队成员（左连接 PAP 记录）
+func (r *FleetRepository) ListMembersWithPap(fleetID string, page, pageSize int) ([]MemberWithPap, int64, error) {
+	var results []MemberWithPap
+	var total int64
+	offset := (page - 1) * pageSize
+
+	base := global.DB.Table("fleet_member").Where("fleet_member.fleet_id = ?", fleetID)
+	if err := base.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := global.DB.Table("fleet_member").
+		Select("fleet_member.*, fleet_pap_log.pap_count, fleet_pap_log.issued_at").
+		Joins("LEFT JOIN fleet_pap_log ON fleet_pap_log.fleet_id = fleet_member.fleet_id AND fleet_pap_log.character_id = fleet_member.character_id").
+		Where("fleet_member.fleet_id = ?", fleetID).
+		Order("fleet_member.joined_at ASC").
+		Offset(offset).Limit(pageSize).
+		Scan(&results).Error
+	return results, total, err
+}
+
 // RemoveMember 移除舰队成员
 func (r *FleetRepository) RemoveMember(fleetID string, characterID int64) error {
 	return global.DB.Where("fleet_id = ? AND character_id = ?", fleetID, characterID).
@@ -117,9 +148,30 @@ func (r *FleetRepository) ListPapLogsByFleet(fleetID string) ([]model.FleetPapLo
 }
 
 // ListPapLogsByUser 查询某用户的所有 PAP 记录
-func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]model.FleetPapLog, error) {
-	var logs []model.FleetPapLog
-	err := global.DB.Where("user_id = ?", userID).Order("issued_at DESC").Find(&logs).Error
+func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]model.FleetPapLogDetail, error) {
+	var logs []model.FleetPapLogDetail
+	err := global.DB.Model(&model.FleetPapLog{}).
+		Select(`
+			fleet_pap_log.id,
+			fleet_pap_log.fleet_id,
+			COALESCE(fleet.title, '') as fleet_title,
+			fleet_pap_log.character_id,
+			COALESCE(member.character_name, pap_character.character_name, '') as character_name,
+			fleet_pap_log.user_id,
+			fleet_pap_log.pap_count,
+			fleet_pap_log.issued_by,
+			COALESCE(issuer_main.character_name, pap_user.nickname, '') as issued_by_name,
+			COALESCE(fleet.importance, '') as importance,
+			fleet_pap_log.issued_at as issued_at
+		`).
+		Joins("LEFT JOIN fleet ON fleet.id = fleet_pap_log.fleet_id").
+		Joins("LEFT JOIN fleet_member member ON member.fleet_id = fleet_pap_log.fleet_id AND member.character_id = fleet_pap_log.character_id").
+		Joins("LEFT JOIN eve_character pap_character ON pap_character.character_id = fleet_pap_log.character_id").
+		Joins(`LEFT JOIN "user" pap_user ON pap_user.id = fleet_pap_log.issued_by`).
+		Joins("LEFT JOIN eve_character issuer_main ON issuer_main.character_id = pap_user.primary_character_id").
+		Where("fleet_pap_log.user_id = ?", userID).
+		Order("fleet_pap_log.issued_at DESC").
+		Scan(&logs).Error
 	return logs, err
 }
 
@@ -139,6 +191,20 @@ type MonthlyPapStat struct {
 	TotalPap float64 `json:"total_pap"`
 }
 
+// FleetPapSummaryFilter PAP 汇总筛选条件
+type FleetPapSummaryFilter struct {
+	StartAt *time.Time
+	EndAt   *time.Time
+}
+
+// CorporationPapSummaryRow 军团 PAP 汇总行
+type CorporationPapSummaryRow struct {
+	UserID       uint    `json:"user_id"`
+	StratOpPaps  float64 `json:"strat_op_paps"`
+	SkirmishPaps float64 `json:"skirmish_paps"`
+	TotalPaps    float64 `json:"-"`
+}
+
 // SumPapByUserGroupedByMonth 按月汇总用户 PAP
 func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapStat, error) {
 	var stats []MonthlyPapStat
@@ -150,6 +216,93 @@ func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapS
 		Limit(12).
 		Scan(&stats).Error
 	return stats, err
+}
+
+// ListCorporationPapSummary 分页查询军团 PAP 汇总
+func (r *FleetRepository) ListCorporationPapSummary(page, pageSize int, filter FleetPapSummaryFilter) ([]CorporationPapSummaryRow, int64, error) {
+	var rows []CorporationPapSummaryRow
+	var total int64
+
+	offset := (page - 1) * pageSize
+	baseDB := r.applyPapLogDateFilter(
+		global.DB.Model(&model.FleetPapLog{}).
+			Joins("LEFT JOIN fleet ON fleet.id = fleet_pap_log.fleet_id"),
+		filter,
+	)
+
+	countSubQuery := baseDB.Select("user_id").Group("user_id")
+	if err := global.DB.Table("(?) as pap_users", countSubQuery).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := baseDB.
+		Select(`
+			fleet_pap_log.user_id,
+			COALESCE(SUM(CASE WHEN fleet.importance IN ('cta', 'strat_op') THEN fleet_pap_log.pap_count ELSE 0 END), 0) as strat_op_paps,
+			COALESCE(SUM(CASE WHEN fleet.importance = 'other' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
+			COALESCE(SUM(fleet_pap_log.pap_count), 0) as total_paps
+		`).
+		Group("user_id").
+		Order("total_paps DESC, fleet_pap_log.user_id ASC").
+		Offset(offset).
+		Limit(pageSize).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return rows, total, nil
+}
+
+// ListCorporationPapSummaryAll 查询全部军团 PAP 汇总结果
+func (r *FleetRepository) ListCorporationPapSummaryAll(filter FleetPapSummaryFilter) ([]CorporationPapSummaryRow, error) {
+	var rows []CorporationPapSummaryRow
+
+	err := r.applyPapLogDateFilter(
+		global.DB.Model(&model.FleetPapLog{}).
+			Joins("LEFT JOIN fleet ON fleet.id = fleet_pap_log.fleet_id"),
+		filter,
+	).
+		Select(`
+			fleet_pap_log.user_id,
+			COALESCE(SUM(CASE WHEN fleet.importance IN ('cta', 'strat_op') THEN fleet_pap_log.pap_count ELSE 0 END), 0) as strat_op_paps,
+			COALESCE(SUM(CASE WHEN fleet.importance = 'other' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
+			COALESCE(SUM(fleet_pap_log.pap_count), 0) as total_paps
+		`).
+		Group("user_id").
+		Order("total_paps DESC, fleet_pap_log.user_id ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
+}
+
+// SumPapTotal 汇总某一时间范围内的 PAP 总量
+func (r *FleetRepository) SumPapTotal(filter FleetPapSummaryFilter) (float64, error) {
+	var result struct {
+		Total float64 `json:"total"`
+	}
+
+	err := r.applyPapLogDateFilter(global.DB.Model(&model.FleetPapLog{}), filter).
+		Select("COALESCE(SUM(pap_count), 0) as total").
+		Scan(&result).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return result.Total, nil
+}
+
+func (r *FleetRepository) applyPapLogDateFilter(db *gorm.DB, filter FleetPapSummaryFilter) *gorm.DB {
+	if filter.StartAt != nil {
+		db = db.Where("issued_at >= ?", *filter.StartAt)
+	}
+	if filter.EndAt != nil {
+		db = db.Where("issued_at < ?", *filter.EndAt)
+	}
+	return db
 }
 
 // ─────────────────────────────────────────────

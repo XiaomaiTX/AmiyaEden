@@ -56,6 +56,21 @@ type FleetPapLog struct {
 
 func (FleetPapLog) TableName() string { return "fleet_pap_log" }
 
+// FleetPapLogDetail 用于个人 PAP 记录展示
+type FleetPapLogDetail struct {
+	ID            uint      `json:"id"`
+	FleetID       string    `json:"fleet_id"`
+	FleetTitle    string    `json:"fleet_title,omitempty"`
+	CharacterID   int64     `json:"character_id"`
+	CharacterName string    `json:"character_name,omitempty"`
+	UserID        uint      `json:"user_id"`
+	PapCount      float64   `json:"pap_count"`
+	IssuedBy      uint      `json:"issued_by"`
+	IssuedByName  string    `json:"issued_by_name,omitempty"`
+	Importance    string    `json:"importance,omitempty"`
+	IssuedAt      time.Time `json:"issued_at"`
+}
+
 // FleetInvite 舰队邀请链接
 type FleetInvite struct {
 	ID        uint      `gorm:"primarykey"                 json:"id"`
