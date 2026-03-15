@@ -404,17 +404,59 @@ declare namespace Api {
       created_at: string
     }
 
-    /** PAP 记录 */
-    interface PapLog {
+    /** 舰队 PAP 记录 */
+    interface FleetPapLog {
       id: number
       fleet_id: string
-      fleet_title?: string
       character_id: number
-      character_name?: string
       user_id: number
       pap_count: number
       issued_by: number
       issued_at: string
+    }
+
+    /** 我的 PAP 记录 */
+    interface MyPapLog extends FleetPapLog {
+      fleet_title?: string
+      character_name?: string
+      issued_by_name?: string
+      importance: 'strat_op' | 'cta' | 'other' | ''
+    }
+
+    /** 军团 PAP 汇总筛选周期 */
+    type PapSummaryPeriod = 'current_month' | 'last_month' | 'at_year' | 'all'
+
+    /** 军团 PAP 汇总查询参数 */
+    type CorporationPapSummaryParams = Partial<Api.Common.CommonSearchParams> & {
+      period?: PapSummaryPeriod
+      year?: number
+      corp_tickers?: string
+    }
+
+    /** 军团 PAP 汇总项 */
+    interface CorporationPapSummaryItem {
+      user_id: number
+      corp_ticker: string
+      main_character_name: string
+      character_count: number
+      strat_op_paps: number
+      skirmish_paps: number
+    }
+
+    /** 军团 PAP 页头概览 */
+    interface CorporationPapOverview {
+      filtered_pap_total: number
+      all_pap_total: number
+      last_month_pap_total: number
+      filtered_user_count: number
+      period: PapSummaryPeriod
+      year?: number
+    }
+
+    /** 军团 PAP 汇总分页响应 */
+    interface CorporationPapSummaryList
+      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
+      overview: CorporationPapOverview
     }
 
     /** 邀请链接 */

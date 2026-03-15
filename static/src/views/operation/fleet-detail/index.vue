@@ -248,7 +248,7 @@
   // ---- 数据 ----
   const fleet = ref<Api.Fleet.FleetItem | null>(null)
   const members = ref<Api.Fleet.FleetMember[]>([])
-  const papLogs = ref<Api.Fleet.PapLog[]>([])
+  const papLogs = ref<Api.Fleet.FleetPapLog[]>([])
   const invites = ref<Api.Fleet.FleetInvite[]>([])
 
   // ---- 加载状态 ----
