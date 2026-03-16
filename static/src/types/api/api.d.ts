@@ -686,6 +686,15 @@ declare namespace Api {
       final_amount?: number
     }
 
+    /** 批量发放汇总项 */
+    interface BatchPayoutSummary {
+      user_id: number
+      main_character_id: number
+      main_character_name: string
+      total_amount: number
+      application_count: number
+    }
+
     /** 快捷 KM 列表条目 */
     interface FleetKillmailItem {
       killmail_id: number

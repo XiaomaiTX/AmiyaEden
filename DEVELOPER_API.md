@@ -815,6 +815,30 @@ PUT /srp/applications/:id/payout
 
 ---
 
+### 10.14 查询批量发放汇总
+
+```
+GET /srp/applications/batch-payout-summary
+```
+
+> 需要权限：`srp:review`
+
+返回按 `user_id` 聚合的未发放 SRP 汇总，仅统计 `review_status = approved` 且 `payout_status = pending` 的申请。
+
+---
+
+### 10.15 按用户批量发放补损
+
+```
+PUT /srp/applications/users/:user_id/payout
+```
+
+> 需要权限：`srp:review`
+
+将该用户所有 `review_status = approved` 且 `payout_status = pending` 的 SRP 申请统一标记为已发放。
+
+---
+
 ## 11. ESI 刷新队列
 
 > 基础路径：`/esi/refresh`，需要 JWT + **Admin 角色**
