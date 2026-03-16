@@ -42,6 +42,8 @@
     ![联盟PAP](./docs/img/alliance_pap.png)
 10. 可用舰船技能检查
     ![可用舰船技能检查](./docs/img/ship_check.png)
+11. 资产列表
+    ![资产列表](./docs/img/character_assets.png)
 
 ---
 

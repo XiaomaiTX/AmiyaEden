@@ -12,6 +12,7 @@ type EveCharacterAsset struct {
 	LocationFlag    string `gorm:"size:64"                                       json:"location_flag"`
 	IsSingleton     bool   `gorm:"default:false"                                 json:"is_singleton"`
 	IsBlueprintCopy *bool  `gorm:""                                             json:"is_blueprint_copy,omitempty"`
+	AssetName       string `gorm:"size:255"                                      json:"asset_name,omitempty"`
 }
 
 func (EveCharacterAsset) TableName() string { return "eve_character_asset" }

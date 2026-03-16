@@ -1221,6 +1221,42 @@ declare namespace Api {
         flag: string
       }[]
     }
+
+    /** 资产查询请求 */
+    interface AssetsRequest {
+      language?: string
+    }
+
+    /** 资产物品节点 */
+    interface AssetItemNode {
+      item_id: number
+      type_id: number
+      type_name: string
+      group_name: string
+      category_id: number
+      quantity: number
+      location_flag: string
+      is_singleton: boolean
+      is_blueprint_copy?: boolean
+      asset_name?: string
+      character_id: number
+      character_name: string
+      children?: AssetItemNode[]
+    }
+
+    /** 资产位置节点 */
+    interface AssetLocationNode {
+      location_id: number
+      location_type: string
+      location_name: string
+      items: AssetItemNode[]
+    }
+
+    /** 资产列表响应 */
+    interface AssetsResponse {
+      total_items: number
+      locations: AssetLocationNode[]
+    }
   }
 
   /** SDE 数据查询类型 */

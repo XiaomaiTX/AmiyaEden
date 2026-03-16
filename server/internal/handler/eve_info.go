@@ -12,12 +12,14 @@ import (
 type EveInfoHandler struct {
 	svc      *service.EveInfoService
 	cloneSvc *service.CloneService
+	assetSvc *service.AssetService
 }
 
 func NewEveInfoHandler() *EveInfoHandler {
 	return &EveInfoHandler{
 		svc:      service.NewEveInfoService(),
 		cloneSvc: service.NewCloneService(),
+		assetSvc: service.NewAssetService(),
 	}
 }
 
@@ -90,6 +92,25 @@ func (h *EveInfoHandler) GetCharacterImplants(c *gin.Context) {
 	}
 
 	result, err := h.cloneSvc.GetCharacterImplants(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// GetAssets POST /info/assets
+// 获取当前用户所有角色的资产汇总
+func (h *EveInfoHandler) GetAssets(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.InfoAssetsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.assetSvc.GetUserAssets(userID, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

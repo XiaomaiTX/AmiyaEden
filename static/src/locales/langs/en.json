@@ -320,7 +320,8 @@
       "ships": "Flyable Ships",
       "implants": "Implants/Clones",
       "npcKills": "NPC Kills",
-      "fittings": "My Fittings"
+      "fittings": "My Fittings",
+      "assets": "Assets"
     }
   },
   "info": {
@@ -381,7 +382,16 @@
     "searchFitting": "Search fittings",
     "noFittingData": "No fitting data, please wait for refresh",
     "fittingDetail": "Fitting Detail",
-    "fittingCount": "Fitting Count"
+    "fittingCount": "Fitting Count",
+    "assetsTitle": "Assets",
+    "searchAsset": "Search item / asset name",
+    "noAssetData": "No asset data, please wait for refresh",
+    "assetCount": "Total Assets",
+    "locationName": "Location",
+    "assetName": "Asset Name",
+    "typeName": "Item Name",
+    "quantity": "Quantity",
+    "owner": "Owner"
   },
   "npcKill": {
     "title": "NPC Kill Report",
