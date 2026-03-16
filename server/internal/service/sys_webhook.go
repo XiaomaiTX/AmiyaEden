@@ -87,9 +87,9 @@ func (s *WebhookService) SendFleetPing(fleet *model.Fleet) error {
 	}
 
 	importanceLabel := map[string]string{
-		model.FleetImportanceStratOp: "战略行动",
-		model.FleetImportanceCTA:     "全面集结",
-		model.FleetImportanceOther:   "其他行动",
+		model.FleetImportanceStratOp:  "战略行动",
+		model.FleetImportanceCTA:      "全面集结",
+		model.FleetImportanceSkirmish: "小队战",
 	}[fleet.Importance]
 	if importanceLabel == "" {
 		importanceLabel = fleet.Importance

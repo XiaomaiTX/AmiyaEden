@@ -4,9 +4,9 @@ import "time"
 
 // Fleet 重要等级
 const (
-	FleetImportanceStratOp = "strat_op" // 战略行动
-	FleetImportanceCTA     = "cta"      // 全面集结
-	FleetImportanceOther   = "other"    // 其他
+	FleetImportanceStratOp  = "strat_op" // 战略行动
+	FleetImportanceCTA      = "cta"      // 全面集结
+	FleetImportanceSkirmish = "skirmish" // 遭遇战
 )
 
 // Fleet 舰队记录
@@ -16,7 +16,7 @@ type Fleet struct {
 	Description     string     `gorm:"type:text"                  json:"description"`
 	StartAt         time.Time  `gorm:"not null"                   json:"start_at"`
 	EndAt           time.Time  `gorm:"not null"                   json:"end_at"`
-	Importance      string     `gorm:"size:32;not null"           json:"importance"` // strat_op / cta / other
+	Importance      string     `gorm:"size:32;not null"           json:"importance"` // strat_op / cta / skirmish
 	PapCount        float64    `gorm:"default:0"                  json:"pap_count"`
 	FCUserID        uint       `gorm:"not null;index"             json:"fc_user_id"`
 	FCCharacterID   int64      `gorm:"not null"                   json:"fc_character_id"`

@@ -36,9 +36,9 @@
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.importance')" prop="importance">
           <ElSelect v-model="formData.importance" style="width: 100%">
-            <ElOption label="Strat Op" value="strat_op" />
-            <ElOption label="CTA" value="cta" />
-            <ElOption label="Other" value="other" />
+            <ElOption :label="$t('fleet.importance.strat_op')" value="strat_op" />
+            <ElOption :label="$t('fleet.importance.cta')" value="cta" />
+            <ElOption :label="$t('fleet.importance.skirmish')" value="skirmish" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.papCount')" prop="pap_count">
@@ -99,7 +99,14 @@
   import FleetSearch from './modules/fleet-search.vue'
   import { fetchFleetList, createFleet, updateFleet, deleteFleet } from '@/api/fleet'
   import { fetchMyCharacters } from '@/api/auth'
-  import { ElTag, ElButton, ElMessageBox, ElSwitch, type FormInstance, type FormRules } from 'element-plus'
+  import {
+    ElTag,
+    ElButton,
+    ElMessageBox,
+    ElSwitch,
+    type FormInstance,
+    type FormRules
+  } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
   import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
@@ -115,7 +122,7 @@
   const IMPORTANCE_MAP: Record<string, string> = {
     strat_op: 'danger',
     cta: 'warning',
-    other: 'info'
+    skirmish: 'info'
   }
 
   // ─── 时间格式化 ───
@@ -262,7 +269,7 @@
   const formData = reactive({
     title: '',
     description: '',
-    importance: 'other' as 'strat_op' | 'cta' | 'other',
+    importance: 'skirmish' as 'strat_op' | 'cta' | 'skirmish',
     pap_count: 1,
     character_id: undefined as number | undefined,
     time_range: null as [string, string] | null,
@@ -280,7 +287,7 @@
   function resetForm() {
     formData.title = ''
     formData.description = ''
-    formData.importance = 'other'
+    formData.importance = 'skirmish'
     formData.pap_count = 1
     formData.character_id = undefined
     formData.time_range = null

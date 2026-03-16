@@ -24,24 +24,34 @@ const esiBaseURL = "https://esi.evetech.net/latest"
 
 // FleetService 舰队业务逻辑层
 type FleetService struct {
-	repo        *repository.FleetRepository
-	userRepo  *repository.UserRepository
-	charRepo    *repository.EveCharacterRepository
-	ssoSvc      *EveSSOService
-	walletSvc   *SysWalletService
-	webhookSvc  *WebhookService
-	http        *http.Client
+	repo       *repository.FleetRepository
+	userRepo   *repository.UserRepository
+	charRepo   *repository.EveCharacterRepository
+	ssoSvc     *EveSSOService
+	walletSvc  *SysWalletService
+	webhookSvc *WebhookService
+	http       *http.Client
 }
 
 func NewFleetService() *FleetService {
 	return &FleetService{
 		repo:       repository.NewFleetRepository(),
-		userRepo:  repository.NewUserRepository(),
+		userRepo:   repository.NewUserRepository(),
 		charRepo:   repository.NewEveCharacterRepository(),
 		ssoSvc:     NewEveSSOService(),
 		walletSvc:  NewSysWalletService(),
 		webhookSvc: NewWebhookService(),
 		http:       &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+// MigrateExistingImportanceValues 将旧 importance 值 other 迁移为 skirmish
+func (s *FleetService) MigrateExistingImportanceValues() {
+	if err := global.DB.Model(&model.Fleet{}).
+		Where("importance = ?", "other").
+		Update("importance", model.FleetImportanceSkirmish).Error; err != nil {
+		global.Logger.Error("迁移舰队重要等级失败", zap.Error(err))
+		return
 	}
 }
 
@@ -91,7 +101,7 @@ type CreateFleetRequest struct {
 	Description string  `json:"description"`
 	StartAt     string  `json:"start_at" binding:"required"` // RFC3339
 	EndAt       string  `json:"end_at" binding:"required"`   // RFC3339
-	Importance  string  `json:"importance" binding:"required,oneof=strat_op cta other"`
+	Importance  string  `json:"importance" binding:"required,oneof=strat_op cta skirmish"`
 	PapCount    float64 `json:"pap_count"`
 	CharacterID int64   `json:"character_id" binding:"required"` // FC 角色 ID
 	SendPing    bool    `json:"send_ping"`                       // 是否发送 Ping 通知
