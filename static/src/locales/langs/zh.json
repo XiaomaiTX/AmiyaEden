@@ -316,7 +316,8 @@
       "ships": "可用舰船",
       "implants": "植入体/克隆",
       "npcKills": "刷怪报表",
-      "fittings": "我的装配"
+      "fittings": "我的装配",
+      "assets": "角色资产"
     },
     "system": {
       "title": "系统管理",
@@ -392,7 +393,16 @@
     "searchFitting": "搜索装配",
     "noFittingData": "暂无装配数据，请等待数据刷新",
     "fittingDetail": "装配详情",
-    "fittingCount": "装配数量"
+    "fittingCount": "装配数量",
+    "assetsTitle": "角色资产",
+    "searchAsset": "搜索物品名 / 资产名称",
+    "noAssetData": "暂无资产数据，请等待数据刷新",
+    "assetCount": "资产总数",
+    "locationName": "位置",
+    "assetName": "资产名称",
+    "typeName": "物品名称",
+    "quantity": "数量",
+    "owner": "所属角色"
   },
   "npcKill": {
     "title": "刷怪报表",

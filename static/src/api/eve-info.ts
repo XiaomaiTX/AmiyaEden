@@ -29,3 +29,8 @@ export function fetchInfoFittings(data: Api.EveInfo.FittingsRequest) {
 export function saveInfoFitting(data: Api.EveInfo.SaveFittingRequest) {
   return request.post<Api.EveInfo.FittingResponse>({ url: '/api/v1/info/fittings/save', data })
 }
+
+/** 获取用户所有角色的资产列表 */
+export function fetchInfoAssets(data: Api.EveInfo.AssetsRequest) {
+  return request.post<Api.EveInfo.AssetsResponse>({ url: '/api/v1/info/assets', data })
+}

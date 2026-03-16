@@ -17,6 +17,7 @@ type EveCharacterImplants = esimodel.EveCharacterImplants
 
 type EveStructure = esimodel.EveStructure
 type CorpStructureInfo = esimodel.CorpStructureInfo
+type EveStation = esimodel.EveStation
 
 type EveKillmailList = esimodel.EveKillmailList
 type EveKillmailItem = esimodel.EveKillmailItem

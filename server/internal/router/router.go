@@ -115,6 +115,7 @@ func RegisterRoutes(r *gin.Engine) {
 		info.POST("/skills", infoH.GetCharacterSkills)
 		info.POST("/ships", infoH.GetCharacterShips)
 		info.POST("/implants", infoH.GetCharacterImplants)
+		info.POST("/assets", infoH.GetAssets)
 	}
 
 	// ─── 装配 ───
