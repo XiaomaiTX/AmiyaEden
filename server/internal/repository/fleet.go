@@ -209,9 +209,9 @@ type CorporationPapSummaryRow struct {
 func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapStat, error) {
 	var stats []MonthlyPapStat
 	err := global.DB.Model(&model.FleetPapLog{}).
-		Select("YEAR(issued_at) as year, MONTH(issued_at) as month, COALESCE(SUM(pap_count), 0) as total_pap").
+		Select("EXTRACT(YEAR FROM issued_at)::int as year, EXTRACT(MONTH FROM issued_at)::int as month, COALESCE(SUM(pap_count), 0) as total_pap").
 		Where("user_id = ?", userID).
-		Group("YEAR(issued_at), MONTH(issued_at)").
+		Group("EXTRACT(YEAR FROM issued_at), EXTRACT(MONTH FROM issued_at)").
 		Order("year DESC, month DESC").
 		Limit(12).
 		Scan(&stats).Error

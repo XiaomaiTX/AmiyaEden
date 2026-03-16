@@ -10,7 +10,7 @@
     </div>
     <div v-if="chartData.length > 0" class="mt-2">
       <ArtBarChart
-        height="calc(100% - 56px)"
+        height="13rem"
         :data="chartValues"
         :xAxisData="chartLabels"
         barWidth="50%"
