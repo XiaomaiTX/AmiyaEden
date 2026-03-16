@@ -99,7 +99,14 @@
   import FleetSearch from './modules/fleet-search.vue'
   import { fetchFleetList, createFleet, updateFleet, deleteFleet } from '@/api/fleet'
   import { fetchMyCharacters } from '@/api/auth'
-  import { ElTag, ElButton, ElMessageBox, ElSwitch, type FormInstance, type FormRules } from 'element-plus'
+  import {
+    ElTag,
+    ElButton,
+    ElMessageBox,
+    ElSwitch,
+    type FormInstance,
+    type FormRules
+  } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
   import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
@@ -135,7 +142,7 @@
   }
   function defaultTimeRange(): [string, string] {
     const now = Date.now()
-    return [fmtLocalISO(new Date(now - 3_600_000)), fmtLocalISO(new Date(now + 3_600_000))]
+    return [fmtLocalISO(new Date(now - 5_400_000)), fmtLocalISO(new Date(now + 5_400_000))]
   }
 
   // ─── 表格 ───
