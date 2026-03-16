@@ -706,7 +706,7 @@
       "rejectDialog": "Reject Application",
       "payoutDialog": "Confirm Payout",
       "batchPayoutDialog": "Batch Payout",
-      "batchPayoutHint": "Click a copy button below, then paste the content into an in-game note.",
+      "batchPayoutHint": "Click the copy button on the right, then paste the content into an in-game note.",
       "batchPayoutMainCharacter": "Main Character",
       "batchPayoutAmount": "Amount",
       "batchPayoutApprovedAmount": "Approved Amount",
