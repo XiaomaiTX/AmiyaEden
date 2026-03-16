@@ -239,7 +239,7 @@ func (r *FleetRepository) ListCorporationPapSummary(page, pageSize int, filter F
 		Select(`
 			fleet_pap_log.user_id,
 			COALESCE(SUM(CASE WHEN fleet.importance IN ('cta', 'strat_op') THEN fleet_pap_log.pap_count ELSE 0 END), 0) as strat_op_paps,
-			COALESCE(SUM(CASE WHEN fleet.importance = 'other' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
+			COALESCE(SUM(CASE WHEN fleet.importance = 'skirmish' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
 			COALESCE(SUM(fleet_pap_log.pap_count), 0) as total_paps
 		`).
 		Group("user_id").
@@ -266,7 +266,7 @@ func (r *FleetRepository) ListCorporationPapSummaryAll(filter FleetPapSummaryFil
 		Select(`
 			fleet_pap_log.user_id,
 			COALESCE(SUM(CASE WHEN fleet.importance IN ('cta', 'strat_op') THEN fleet_pap_log.pap_count ELSE 0 END), 0) as strat_op_paps,
-			COALESCE(SUM(CASE WHEN fleet.importance = 'other' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
+			COALESCE(SUM(CASE WHEN fleet.importance = 'skirmish' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
 			COALESCE(SUM(fleet_pap_log.pap_count), 0) as total_paps
 		`).
 		Group("user_id").

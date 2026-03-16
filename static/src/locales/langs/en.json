@@ -508,7 +508,7 @@
     "importance": {
       "strat_op": "Strat Op",
       "cta": "CTA",
-      "other": "Other"
+      "skirmish": "Skirmish"
     },
     "members": {
       "title": "Fleet Members",

@@ -185,7 +185,7 @@
   const IMPORTANCE_MAP: Record<string, string> = {
     strat_op: 'danger',
     cta: 'warning',
-    other: 'info'
+    skirmish: 'info'
   }
   const importanceType = (v: string) => (IMPORTANCE_MAP[v] || 'info') as any
   const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
@@ -241,8 +241,7 @@
           label: t('fleet.members.shipType'),
           width: 160,
           showOverflowTooltip: true,
-          formatter: (row: Api.Fleet.MemberWithPap) =>
-            h('span', {}, getName(row.ship_type_id, '-'))
+          formatter: (row: Api.Fleet.MemberWithPap) => h('span', {}, getName(row.ship_type_id, '-'))
         },
         {
           prop: 'solar_system_id',

@@ -348,7 +348,7 @@ declare namespace Api {
       description: string
       start_at: string
       end_at: string
-      importance: 'strat_op' | 'cta' | 'other'
+      importance: 'strat_op' | 'cta' | 'skirmish'
       pap_count: number
       fc_user_id: number
       fc_character_id: number
@@ -374,7 +374,7 @@ declare namespace Api {
       description?: string
       start_at: string
       end_at: string
-      importance: 'strat_op' | 'cta' | 'other'
+      importance: 'strat_op' | 'cta' | 'skirmish'
       pap_count: number
       character_id: number
       send_ping?: boolean
@@ -433,7 +433,7 @@ declare namespace Api {
       fleet_title?: string
       character_name?: string
       issued_by_name?: string
-      importance: 'strat_op' | 'cta' | 'other' | ''
+      importance: 'strat_op' | 'cta' | 'skirmish' | ''
     }
 
     /** 军团 PAP 汇总筛选周期 */

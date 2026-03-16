@@ -507,9 +507,9 @@
       "createdAt": "创建时间"
     },
     "importance": {
-      "strat_op": "Strat Op",
+      "strat_op": "战略",
       "cta": "CTA",
-      "other": "Other"
+      "skirmish": "散打"
     },
     "members": {
       "title": "舰队成员",

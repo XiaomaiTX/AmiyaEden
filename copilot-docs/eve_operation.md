@@ -23,7 +23,7 @@
             title             text,
             start_at          datetime,
             end_at            datetime,
-            importance        text,  # strat op/cta/other
+            importance        text,  # strat op/cta/skirmish
             pap_count         real,
             fc_user_id   text,
             fc_character_id text,
@@ -36,7 +36,7 @@
         标题 *
         行动的名称
         等级 *
-        strat op | CTA | other
+        strat op | CTA | skirmish
         PAP 数量 *
         0
         起止时间 *

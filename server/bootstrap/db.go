@@ -127,4 +127,7 @@ func autoMigrate(db *gorm.DB) {
 	roleSvc.SeedSystemRoles()
 	roleSvc.SeedSystemMenus()
 	roleSvc.MigrateExistingUsers()
+
+	fleetSvc := service.NewFleetService()
+	fleetSvc.MigrateExistingImportanceValues()
 }

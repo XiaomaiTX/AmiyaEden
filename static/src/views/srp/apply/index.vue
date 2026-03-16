@@ -50,7 +50,12 @@
               @change="onFleetChange"
             >
               <ElOption key="__other__" :label="$t('srp.apply.otherAction')" value="__other__" />
-              <ElOption v-for="f in fleets" :key="f.id" :label="formatFleetLabel(f)" :value="f.id" />
+              <ElOption
+                v-for="f in fleets"
+                :key="f.id"
+                :label="formatFleetLabel(f)"
+                :value="f.id"
+              />
             </ElSelect>
           </ElFormItem>
 
@@ -263,10 +268,8 @@
               const tooltipContent = fleet
                 ? formatFleetLabel(fleet)
                 : row.fleet_title || row.fleet_id
-              return h(
-                ElTooltip,
-                { content: tooltipContent, placement: 'top' },
-                () => h('span', { class: 'cursor-default' }, row.fleet_title || row.fleet_id || '')
+              return h(ElTooltip, { content: tooltipContent, placement: 'top' }, () =>
+                h('span', { class: 'cursor-default' }, row.fleet_title || row.fleet_id || '')
               )
             }
             return h('span', { class: row.note ? '' : 'text-gray-400' }, row.note || '-')
@@ -326,7 +329,7 @@
   })
 
   const importanceTagType = (v: string): TagType =>
-    (({ strat_op: 'danger', cta: 'warning', other: 'info' }) as Record<string, TagType>)[v] ??
+    (({ strat_op: 'danger', cta: 'warning', skirmish: 'info' }) as Record<string, TagType>)[v] ??
     'info'
 
   const rules: FormRules = {
