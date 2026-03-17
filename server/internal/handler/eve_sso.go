@@ -84,7 +84,8 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 			params.Set("conflict", "true")
 			params.Set("character_name", result.ConflictCharName)
 			params.Set("transfer_token", result.TransferToken)
-			c.Redirect(302, appendQuery(result.RedirectURL, params))
+			target := result.RedirectURL + "?" + params.Encode()
+			c.Redirect(302, target)
 			return
 		}
 		response.OK(c, gin.H{
@@ -97,7 +98,8 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 
 	// 如果有前端重定向地址，则带 token 跳转
 	if result.RedirectURL != "" {
-		c.Redirect(302, appendQuery(result.RedirectURL, url.Values{"token": {result.Token}}))
+		target := result.RedirectURL + "?token=" + url.QueryEscape(result.Token)
+		c.Redirect(302, target)
 		return
 	}
 
