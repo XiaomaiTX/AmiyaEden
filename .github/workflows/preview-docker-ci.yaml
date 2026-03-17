@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Docker Image CI [preview]
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            xiaomaitx/amiya-eden-backend:preview
+            ${{ secrets.DOCKER_HUB_REPO }}-backend:preview
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v2
@@ -45,4 +45,4 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            xiaomaitx/amiya-eden-frontend:preview
+            ${{ secrets.DOCKER_HUB_REPO }}-frontend:preview
