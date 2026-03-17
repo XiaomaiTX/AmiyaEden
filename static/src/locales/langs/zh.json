@@ -710,7 +710,7 @@
       "rejectDialog": "拒绝申请",
       "payoutDialog": "确认发放补损",
       "batchPayoutDialog": "批量发放",
-      "batchPayoutHint": "点击下方复制按钮，将内容粘贴至游戏内记事本",
+      "batchPayoutHint": "点击右侧复制按钮，将内容粘贴至游戏内记事本",
       "batchPayoutMainCharacter": "主角色",
       "batchPayoutAmount": "金额",
       "batchPayoutApprovedAmount": "已批准金额",

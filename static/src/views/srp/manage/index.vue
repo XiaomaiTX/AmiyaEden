@@ -204,8 +204,14 @@
       :title="$t('srp.manage.batchPayoutDialog')"
       width="760px"
     >
-      <div class="mb-3 text-sm text-gray-500">
-        {{ $t('srp.manage.batchPayoutHint') }}
+      <div class="mb-3 flex items-center gap-2 text-sm text-gray-500">
+        <span>{{ $t('srp.manage.batchPayoutHint') }}</span>
+        <ElButton
+          size="small"
+          :icon="CopyDocument"
+          :disabled="!batchPayoutList.length"
+          @click="copyBatchPayoutListText"
+        />
       </div>
       <ElTable
         v-loading="batchSummaryLoading"
@@ -219,21 +225,7 @@
           min-width="170"
         >
           <template #default="{ row }">
-            <span class="inline-flex items-center gap-2">
-              <span>{{ row.main_character_name || $t('srp.manage.unknownMainCharacter') }}</span>
-              <ElButton
-                size="small"
-                :icon="CopyDocument"
-                :disabled="!row.main_character_id || !row.main_character_name"
-                @click="
-                  copyBatchPayoutText(
-                    row.main_character_id,
-                    row.main_character_name,
-                    row.total_amount
-                  )
-                "
-              />
-            </span>
+            {{ row.main_character_name || $t('srp.manage.unknownMainCharacter') }}
           </template>
         </ElTableColumn>
         <ElTableColumn
@@ -764,7 +756,7 @@
     }
   }
 
-  const copyBatchPayoutText = async (
+  const formatBatchPayoutLine = (
     characterId: number,
     characterName: string,
     totalAmount: number
@@ -773,7 +765,22 @@
       maximumFractionDigits: 0,
       useGrouping: false
     }).format(totalAmount ?? 0)
-    await copyText(`<a href="showinfo:1376//${characterId}">${characterName}</a>  ${fullAmount}`)
+    return `<a href="showinfo:1376//${characterId}">${characterName}</a>  ${fullAmount}`
+  }
+
+  const copyBatchPayoutListText = async () => {
+    const lines = batchPayoutList.value
+      .filter((row) => row.main_character_id && row.main_character_name)
+      .map((row) =>
+        formatBatchPayoutLine(row.main_character_id, row.main_character_name, row.total_amount)
+      )
+
+    if (!lines.length) {
+      ElMessage.warning(t('srp.manage.batchPayoutEmpty'))
+      return
+    }
+
+    await copyText(lines.join('\r\n'))
   }
 
   /* ── Open Info Window (ESI) ── */
