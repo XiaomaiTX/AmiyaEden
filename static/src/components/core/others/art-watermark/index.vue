@@ -6,7 +6,7 @@
     :style="{ zIndex: zIndex }"
   >
     <ElWatermark
-      :content="content"
+      :content="content || siteTitle"
       :font="{ fontSize: fontSize, color: fontColor }"
       :rotate="rotate"
       :gap="[gapX, gapY]"
@@ -19,12 +19,19 @@
 
 <script setup lang="ts">
   import AppConfig from '@/config'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
   import { useSettingStore } from '@/store/modules/setting'
 
   defineOptions({ name: 'ArtWatermark' })
 
   const settingStore = useSettingStore()
+  const sysConfigStore = useSysConfigStore()
   const { watermarkVisible } = storeToRefs(settingStore)
+  const siteTitle = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
+
+  onMounted(() => {
+    sysConfigStore.ensureLoaded()
+  })
 
   interface WatermarkProps {
     /** 水印内容 */
@@ -50,7 +57,7 @@
   }
 
   withDefaults(defineProps<WatermarkProps>(), {
-    content: AppConfig.systemInfo.name,
+    content: '',
     visible: false,
     fontSize: 16,
     fontColor: 'rgba(128, 128, 128, 0.2)',

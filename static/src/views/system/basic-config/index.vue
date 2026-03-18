@@ -52,28 +52,27 @@
     ElButton,
     ElMessage
   } from 'element-plus'
-  import { fetchBasicConfig, updateBasicConfig } from '@/api/sys-config'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
 
   defineOptions({ name: 'BasicConfig' })
 
   const { t } = useI18n()
+  const sysConfigStore = useSysConfigStore()
 
   const loadingConfig = ref(false)
   const saving = ref(false)
 
   const form = reactive<Api.SysConfig.BasicConfig>({
-    corp_id: 98185110,
-    site_title: 'FUXI Legion'
+    corp_id: sysConfigStore.config.corp_id,
+    site_title: sysConfigStore.config.site_title
   })
 
   const loadConfig = async () => {
     loadingConfig.value = true
     try {
-      const cfg = await fetchBasicConfig()
-      if (cfg) {
-        form.corp_id = cfg.corp_id
-        form.site_title = cfg.site_title
-      }
+      await sysConfigStore.ensureLoaded()
+      form.corp_id = sysConfigStore.config.corp_id
+      form.site_title = sysConfigStore.config.site_title
     } catch {
       /* empty */
     } finally {
@@ -84,7 +83,7 @@
   const handleSave = async () => {
     saving.value = true
     try {
-      await updateBasicConfig({
+      await sysConfigStore.updateConfig({
         corp_id: form.corp_id,
         site_title: form.site_title
       })

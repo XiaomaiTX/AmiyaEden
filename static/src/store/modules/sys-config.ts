@@ -6,11 +6,12 @@ export const useSysConfigStore = defineStore(
   'sysConfig',
   () => {
     const config = ref<Api.SysConfig.BasicConfig>({
-      corp_id: 98185110,
-      site_title: 'FUXI Legion'
+      corp_id: 1,
+      site_title: 'Amiya eden'
     })
 
     const loading = ref(false)
+    const loaded = ref(false)
 
     const logoUrl = computed(
       () => `https://images.evetech.net/corporations/${config.value.corp_id}/logo?size=128`
@@ -26,8 +27,14 @@ export const useSysConfigStore = defineStore(
       } catch (error) {
         console.error('Failed to load sys config:', error)
       } finally {
+        loaded.value = true
         loading.value = false
       }
+    }
+
+    async function ensureLoaded() {
+      if (loaded.value || loading.value) return
+      await loadConfig()
     }
 
     async function updateConfig(data: Api.SysConfig.UpdateBasicConfigParams) {
@@ -40,7 +47,9 @@ export const useSysConfigStore = defineStore(
       logoUrl,
       siteTitle,
       loading,
+      loaded,
       loadConfig,
+      ensureLoaded,
       updateConfig
     }
   },

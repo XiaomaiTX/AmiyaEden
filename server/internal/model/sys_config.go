@@ -29,4 +29,7 @@ const (
 
 	SysConfigCorpID    = "corp.id"    // 军团ID (int64) - 用于获取Logo
 	SysConfigSiteTitle = "site.title" // 网站标题 (string)
+
+	SysConfigDefaultCorpID    int64  = 1
+	SysConfigDefaultSiteTitle string = "Amiya eden"
 )

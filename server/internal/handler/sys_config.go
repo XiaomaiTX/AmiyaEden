@@ -29,9 +29,13 @@ type UpdateBasicConfigRequest struct {
 }
 
 func (h *SysConfigHandler) GetBasicConfig(c *gin.Context) {
-	corpIDStr, _ := h.repo.Get(model.SysConfigCorpID, "98185110")
-	corpID, _ := strconv.ParseInt(corpIDStr, 10, 64)
-	siteTitle, _ := h.repo.Get(model.SysConfigSiteTitle, "FUXI Legion")
+	defaultCorpID := strconv.FormatInt(model.SysConfigDefaultCorpID, 10)
+	corpIDStr, _ := h.repo.Get(model.SysConfigCorpID, defaultCorpID)
+	corpID, err := strconv.ParseInt(corpIDStr, 10, 64)
+	if err != nil {
+		corpID = model.SysConfigDefaultCorpID
+	}
+	siteTitle, _ := h.repo.Get(model.SysConfigSiteTitle, model.SysConfigDefaultSiteTitle)
 
 	response.OK(c, BasicConfigResponse{
 		CorpID:    corpID,

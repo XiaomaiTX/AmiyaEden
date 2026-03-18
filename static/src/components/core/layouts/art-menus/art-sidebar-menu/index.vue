@@ -84,7 +84,7 @@
               opacity: !menuOpen ? 0 : 1
             }"
           >
-            {{ AppConfig.systemInfo.name }}
+            {{ siteTitle }}
           </p>
         </div>
 
@@ -131,6 +131,7 @@
 
 <script setup lang="ts">
   import AppConfig from '@/config'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
   import { useSettingStore } from '@/store/modules/setting'
   import { MenuTypeEnum, MenuWidth } from '@/enums/appEnum'
   import { useMenuStore } from '@/store/modules/menu'
@@ -149,6 +150,7 @@
   const route = useRoute()
   const router = useRouter()
   const settingStore = useSettingStore()
+  const sysConfigStore = useSysConfigStore()
 
   const { getMenuOpenWidth, menuType, uniqueOpened, dualMenuShowText, menuOpen, getMenuTheme } =
     storeToRefs(settingStore)
@@ -171,6 +173,7 @@
     () => menuType.value === MenuTypeEnum.LEFT || menuType.value === MenuTypeEnum.TOP_LEFT
   )
   const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU)
+  const siteTitle = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
 
   // 移动端屏幕判断（使用 computed 避免重复计算）
   const isMobileScreen = computed(() => width.value < MOBILE_BREAKPOINT)
@@ -331,6 +334,10 @@
         delayHideMobileModal()
       }
     }
+  })
+
+  onMounted(() => {
+    sysConfigStore.ensureLoaded()
   })
 </script>
 

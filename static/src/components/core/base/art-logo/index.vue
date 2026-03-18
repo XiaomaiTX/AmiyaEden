@@ -25,8 +25,6 @@
   const logoStyle = computed(() => ({ width: `${props.size}px` }))
 
   onMounted(() => {
-    if (!sysConfigStore.config.corp_id) {
-      sysConfigStore.loadConfig()
-    }
+    sysConfigStore.ensureLoaded()
   })
 </script>
