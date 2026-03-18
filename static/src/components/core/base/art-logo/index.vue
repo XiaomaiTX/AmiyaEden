@@ -1,16 +1,13 @@
 <!-- 系统logo -->
 <template>
   <div class="flex-cc">
-    <img
-      :style="logoStyle"
-      src="https://images.evetech.net/corporations/98185110/logo?size=128"
-      alt="logo"
-      class="w-full h-full"
-    />
+    <img v-if="logoUrl" :style="logoStyle" :src="logoUrl" alt="logo" class="w-full h-full" />
   </div>
 </template>
 
 <script setup lang="ts">
+  import { useSysConfigStore } from '@/store/modules/sys-config'
+
   defineOptions({ name: 'ArtLogo' })
 
   interface Props {
@@ -22,5 +19,12 @@
     size: 36
   })
 
+  const sysConfigStore = useSysConfigStore()
+
+  const logoUrl = computed(() => sysConfigStore.logoUrl)
   const logoStyle = computed(() => ({ width: `${props.size}px` }))
+
+  onMounted(() => {
+    sysConfigStore.ensureLoaded()
+  })
 </script>

@@ -42,19 +42,14 @@
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
         <template #left>
-          <div class="flex items-center gap-2">
-            <ArtExcelExport
-              :data="exportManageData"
-              :headers="manageExportHeaders"
-              :filename="`srp-manage_${new Date().toLocaleDateString()}`"
-              sheet-name="补损申请"
-              :button-text="$t('srp.manage.exportBtn')"
-              type="success"
-            />
-            <ElButton type="warning" :loading="batchSummaryLoading" @click="openBatchPayoutDialog">
-              {{ $t('srp.manage.batchPayoutBtn') }}
-            </ElButton>
-          </div>
+          <ArtExcelExport
+            :data="exportManageData"
+            :headers="manageExportHeaders"
+            :filename="`srp-manage_${new Date().toLocaleDateString()}`"
+            sheet-name="补损申请"
+            :button-text="$t('srp.manage.exportBtn')"
+            type="success"
+          />
         </template>
       </ArtTableHeader>
 
@@ -63,7 +58,6 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
-        :pagination-options="{ pageSizes: [200, 500, 1000] }"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -199,70 +193,6 @@
       </template>
     </ElDialog>
 
-    <ElDialog
-      v-model="batchPayoutDialogVisible"
-      :title="$t('srp.manage.batchPayoutDialog')"
-      width="760px"
-    >
-      <div class="mb-3 flex items-center gap-2 text-sm text-gray-500">
-        <span>{{ $t('srp.manage.batchPayoutHint') }}</span>
-        <ElButton
-          size="small"
-          :icon="CopyDocument"
-          :disabled="!batchPayoutList.length"
-          @click="copyBatchPayoutListText"
-        />
-      </div>
-      <ElTable
-        v-loading="batchSummaryLoading"
-        :data="batchPayoutList"
-        :empty-text="$t('srp.manage.batchPayoutEmpty')"
-        size="small"
-      >
-        <ElTableColumn
-          prop="main_character_name"
-          :label="$t('srp.manage.batchPayoutMainCharacter')"
-          min-width="170"
-        >
-          <template #default="{ row }">
-            {{ row.main_character_name || $t('srp.manage.unknownMainCharacter') }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn
-          prop="total_amount"
-          :label="$t('srp.manage.batchPayoutAmount')"
-          min-width="140"
-        >
-          <template #default="{ row }">
-            <span class="font-semibold text-blue-600">{{ formatISK(row.total_amount) }}</span>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn
-          prop="application_count"
-          :label="$t('srp.manage.batchPayoutCount')"
-          width="110"
-          align="center"
-        />
-        <ElTableColumn :label="$t('srp.manage.columns.action')" width="150" fixed="right">
-          <template #default="{ row }">
-            <ElButton
-              type="primary"
-              size="small"
-              :loading="batchPayoutLoadingUserId === row.user_id"
-              @click="handleBatchPayout(row)"
-            >
-              {{ $t('srp.manage.confirmPayout') }}
-            </ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-      <template #footer>
-        <ElButton @click="batchPayoutDialogVisible = false">{{
-          $t('srp.apply.cancelBtn')
-        }}</ElButton>
-      </template>
-    </ElDialog>
-
     <!-- KM 预览弹窗 -->
     <KmPreviewDialog v-model="kmPreviewVisible" :killmail-id="previewKillmailId" />
   </div>
@@ -282,10 +212,7 @@
     ElInputNumber,
     ElInput,
     ElLink,
-    ElMessageBox,
     ElMessage,
-    ElTable,
-    ElTableColumn,
     ElTooltip
   } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
@@ -295,9 +222,7 @@
   import { fetchFleetList } from '@/api/fleet'
   import {
     fetchApplicationList,
-    fetchBatchPayoutSummary,
     reviewApplication,
-    batchPayoutByUser,
     payoutApplication,
     openInfoWindow
   } from '@/api/srp'
@@ -325,7 +250,6 @@
   const filter = reactive({ review_status: 'pending', payout_status: '', fleet_id: '' })
 
   type SrpApp = Api.Srp.Application
-  type BatchPayoutSummary = Api.Srp.BatchPayoutSummary
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
   const reviewStatusType = (s: string): TagType =>
@@ -354,7 +278,7 @@
   } = useTable({
     core: {
       apiFn: fetchApplicationList,
-      apiParams: { current: 1, size: 200, payout_status: 'pending' },
+      apiParams: { current: 1, size: 20, review_status: 'pending' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {
@@ -399,19 +323,6 @@
           label: t('srp.manage.columns.kmTime'),
           width: 175,
           formatter: (row: SrpApp) => h('span', {}, formatTime(row.killmail_time))
-        },
-        {
-          prop: 'final_amount',
-          label: t('srp.manage.columns.finalAmount'),
-          width: 140,
-          formatter: (row: SrpApp) =>
-            h('span', { class: 'font-semibold text-blue-600' }, formatISK(row.final_amount))
-        },
-        {
-          prop: 'recommended_amount',
-          label: t('srp.manage.columns.recommendedAmount'),
-          width: 140,
-          formatter: (row: SrpApp) => h('span', {}, formatISK(row.recommended_amount))
         },
         {
           prop: 'corporation_id',
@@ -461,6 +372,19 @@
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', { class: row.note ? '' : 'text-gray-400' }, row.note || '-')
+        },
+        {
+          prop: 'recommended_amount',
+          label: t('srp.manage.columns.recommendedAmount'),
+          width: 140,
+          formatter: (row: SrpApp) => h('span', {}, formatISK(row.recommended_amount))
+        },
+        {
+          prop: 'final_amount',
+          label: t('srp.manage.columns.finalAmount'),
+          width: 140,
+          formatter: (row: SrpApp) =>
+            h('span', { class: 'font-semibold text-blue-600' }, formatISK(row.final_amount))
         },
         {
           prop: 'review_status',
@@ -606,11 +530,11 @@
   }
   const resetFilter = () => {
     filter.review_status = ''
-    filter.payout_status = 'pending'
+    filter.payout_status = ''
     filter.fleet_id = ''
     Object.assign(searchParams, {
       review_status: undefined,
-      payout_status: 'pending',
+      payout_status: undefined,
       fleet_id: undefined
     })
     getData()
@@ -687,10 +611,6 @@
 
   const payoutDialogVisible = ref(false)
   const payoutTarget = ref<Api.Srp.Application | null>(null)
-  const batchPayoutDialogVisible = ref(false)
-  const batchPayoutList = ref<BatchPayoutSummary[]>([])
-  const batchSummaryLoading = ref(false)
-  const batchPayoutLoadingUserId = ref<number | null>(null)
 
   const openPayoutDialog = (row: Api.Srp.Application) => {
     payoutTarget.value = row
@@ -713,52 +633,6 @@
     }
   }
 
-  const loadBatchPayoutSummary = async () => {
-    batchSummaryLoading.value = true
-    try {
-      batchPayoutList.value = await fetchBatchPayoutSummary()
-    } catch {
-      batchPayoutList.value = []
-    } finally {
-      batchSummaryLoading.value = false
-    }
-  }
-
-  const openBatchPayoutDialog = async () => {
-    batchPayoutDialogVisible.value = true
-    await loadBatchPayoutSummary()
-  }
-
-  const handleBatchPayout = async (row: BatchPayoutSummary) => {
-    try {
-      await ElMessageBox.confirm(
-        t('srp.manage.batchPayoutConfirmText', {
-          name: row.main_character_name || t('srp.manage.unknownMainCharacter'),
-          amount: formatISK(row.total_amount)
-        }),
-        t('srp.manage.batchPayoutConfirmTitle'),
-        {
-          type: 'warning',
-          confirmButtonText: t('srp.manage.confirmPayout'),
-          cancelButtonText: t('srp.apply.cancelBtn')
-        }
-      )
-    } catch {
-      return
-    }
-
-    batchPayoutLoadingUserId.value = row.user_id
-    try {
-      await batchPayoutByUser(row.user_id)
-      ElMessage.success(t('srp.manage.batchPayoutSuccess'))
-      await Promise.all([loadBatchPayoutSummary(), refreshData()])
-    } catch {
-      /* handled */
-    } finally {
-      batchPayoutLoadingUserId.value = null
-    }
-  }
-
   /* ── 复制到剪贴板 ── */
   const copyText = async (text: string) => {
     try {
@@ -767,33 +641,6 @@
     } catch {
       ElMessage.warning(t('srp.manage.copyFailed'))
     }
-  }
-
-  const formatBatchPayoutLine = (
-    characterId: number,
-    characterName: string,
-    totalAmount: number
-  ) => {
-    const fullAmount = new Intl.NumberFormat('en-US', {
-      maximumFractionDigits: 0,
-      useGrouping: false
-    }).format(totalAmount ?? 0)
-    return `<a href="showinfo:1376//${characterId}">${characterName}</a>  ${fullAmount}`
-  }
-
-  const copyBatchPayoutListText = async () => {
-    const lines = batchPayoutList.value
-      .filter((row) => row.main_character_id && row.main_character_name)
-      .map((row) =>
-        formatBatchPayoutLine(row.main_character_id, row.main_character_name, row.total_amount)
-      )
-
-    if (!lines.length) {
-      ElMessage.warning(t('srp.manage.batchPayoutEmpty'))
-      return
-    }
-
-    await copyText(lines.join('\r\n'))
   }
 
   /* ── Open Info Window (ESI) ── */
@@ -828,24 +675,10 @@
   }
   const formatFleetLabel = (f: Api.Fleet.FleetItem) =>
     `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatShortTime(f.start_at)}~${formatShortTime(f.end_at)}`
-  const formatISK = (v: number) => {
-    const value = Number(v ?? 0)
-    const abs = Math.abs(value)
-    const units = [
-      { threshold: 1_000_000_000_000, suffix: 'T' },
-      { threshold: 1_000_000_000, suffix: 'B' },
-      { threshold: 1_000_000, suffix: 'M' },
-      { threshold: 1_000, suffix: 'K' }
-    ]
-
-    for (const unit of units) {
-      if (abs >= unit.threshold) {
-        return `${(value / unit.threshold).toFixed(1)}${unit.suffix}`
-      }
-    }
-
-    return value.toFixed(1)
-  }
+  const formatISK = (v: number) =>
+    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+      v ?? 0
+    )
 
   // ─── 导出 ───
   const manageExportHeaders = {

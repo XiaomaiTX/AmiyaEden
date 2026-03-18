@@ -87,9 +87,9 @@ func (s *WebhookService) SendFleetPing(fleet *model.Fleet) error {
 	}
 
 	importanceLabel := map[string]string{
-		model.FleetImportanceStratOp:  "战略行动",
-		model.FleetImportanceCTA:      "全面集结",
-		model.FleetImportanceSkirmish: "小队战",
+		model.FleetImportanceStratOp: "战略行动",
+		model.FleetImportanceCTA:     "全面集结",
+		model.FleetImportanceOther:   "其他行动",
 	}[fleet.Importance]
 	if importanceLabel == "" {
 		importanceLabel = fleet.Importance
@@ -108,6 +108,24 @@ func (s *WebhookService) SendFleetPing(fleet *model.Fleet) error {
 	content = strings.ReplaceAll(content, "{start_at}", fleet.StartAt.Local().Format("01/02 15:04"))
 	content = strings.ReplaceAll(content, "{end_at}", fleet.EndAt.Local().Format("01/02 15:04"))
 	content = strings.ReplaceAll(content, "{description}", desc)
+
+	// 舰队配置信息
+	fleetConfigInfo := ""
+	if fleet.FleetConfigID != nil && *fleet.FleetConfigID > 0 {
+		fcRepo := repository.NewFleetConfigRepository()
+		if fc, fcErr := fcRepo.GetByID(*fleet.FleetConfigID); fcErr == nil {
+			fittings, _ := fcRepo.ListFittingsByConfigID(fc.ID)
+			fleetConfigInfo = fc.Name
+			if len(fittings) > 0 {
+				var names []string
+				for _, f := range fittings {
+					names = append(names, f.FittingName)
+				}
+				fleetConfigInfo += "\n  " + strings.Join(names, "\n  ")
+			}
+		}
+	}
+	content = strings.ReplaceAll(content, "{fleet_config}", fleetConfigInfo)
 
 	return s.sendMessage(cfg, content)
 }

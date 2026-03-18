@@ -334,7 +334,7 @@
   })
 
   const importanceTagType = (v: string): TagType =>
-    (({ strat_op: 'danger', cta: 'warning', skirmish: 'info' }) as Record<string, TagType>)[v] ??
+    (({ strat_op: 'danger', cta: 'warning', other: 'info' }) as Record<string, TagType>)[v] ??
     'info'
 
   const rules: FormRules = {

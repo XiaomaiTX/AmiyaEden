@@ -84,10 +84,15 @@
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
-        { prop: 'user_id', label: t('walletAdmin.fields.targetUserId'), width: 100 },
+        { prop: 'user_id', label: '用户 ID', width: 90 },
         {
-          prop: 'amount',
-          label: t('common.amount'),
+          prop: 'character_name',
+          label: '主角色',
+          minWidth: 140,
+          formatter: (row: WalletTransaction) => h('span', {}, row.character_name || '-')
+        },
+        {
+          label: '金额',
           width: 140,
           formatter: (row: WalletTransaction) =>
             h(

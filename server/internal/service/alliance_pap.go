@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -86,8 +87,9 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 		return fmt.Errorf("alliance_pap 配置不完整（base_url 或 api_key 为空）")
 	}
 
+	encodedCharacterName := url.QueryEscape(mainChar)
 	url := fmt.Sprintf("%s/api/pap/main?main_character=%s&year=%d&month=%d",
-		cfg.BaseURL, mainChar, year, month)
+		cfg.BaseURL, encodedCharacterName, year, month)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -155,24 +157,51 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 	totalPap, _ := strconv.ParseFloat(apiResp.TotalPap, 64)
 	yearlyTotalPap, _ := strconv.ParseFloat(apiResp.YearlyTotalPap, 64)
 
+	corporationID := ""
+	monthlyRank := 0
+	yearlyRank := 0
+	globalMonthlyRank := 0
+	globalYearlyRank := 0
+	totalInCorp := 0
+	totalGlobal := 0
+	// 默认使用当前时间
 	var calculatedAt time.Time
-	if apiResp.Ranking.CalculatedAt != "" {
-		calculatedAt, _ = time.ParseInLocation(alliancePAPTimeLayout, apiResp.Ranking.CalculatedAt, time.UTC)
+	calculatedAt = time.Now()
+
+	// Ranking不为空时才采用
+	if apiResp.Ranking.CorporationID != "" {
+		corporationID = apiResp.Ranking.CorporationID
+		monthlyRank = apiResp.Ranking.MonthlyRank
+		yearlyRank = apiResp.Ranking.YearlyRank
+		globalMonthlyRank = apiResp.Ranking.GlobalMonthlyRank
+		globalYearlyRank = apiResp.Ranking.GlobalYearlyRank
+		totalInCorp = apiResp.Ranking.TotalInCorp
+		totalGlobal = apiResp.Ranking.TotalGlobal
+		if apiResp.Ranking.CalculatedAt != "" {
+			calculatedAt, _ = time.ParseInLocation(alliancePAPTimeLayout, apiResp.Ranking.CalculatedAt, time.UTC)
+		}
+	}
+
+	// API 未返回 corporation_id 时，从数据库角色表中查找
+	if corporationID == "" {
+		if char, err := s.charRepo.GetByCharacterName(mainChar); err == nil && char.CorporationID != 0 {
+			corporationID = strconv.FormatInt(char.CorporationID, 10)
+		}
 	}
 
 	summary := &model.AlliancePAPSummary{
 		MainCharacter:     apiResp.MainCharacter,
 		Year:              year,
 		Month:             month,
-		CorporationID:     apiResp.Ranking.CorporationID,
+		CorporationID:     corporationID,
 		TotalPap:          totalPap,
 		YearlyTotalPap:    yearlyTotalPap,
-		MonthlyRank:       apiResp.Ranking.MonthlyRank,
-		YearlyRank:        apiResp.Ranking.YearlyRank,
-		GlobalMonthlyRank: apiResp.Ranking.GlobalMonthlyRank,
-		GlobalYearlyRank:  apiResp.Ranking.GlobalYearlyRank,
-		TotalInCorp:       apiResp.Ranking.TotalInCorp,
-		TotalGlobal:       apiResp.Ranking.TotalGlobal,
+		MonthlyRank:       monthlyRank,
+		YearlyRank:        yearlyRank,
+		GlobalMonthlyRank: globalMonthlyRank,
+		GlobalYearlyRank:  globalYearlyRank,
+		TotalInCorp:       totalInCorp,
+		TotalGlobal:       totalGlobal,
 		CalculatedAt:      calculatedAt,
 	}
 
@@ -208,9 +237,9 @@ func (s *AlliancePAPService) FetchAllUsers(year, month int) {
 
 // ─── 修改接口 ───
 type PAPImportInfo struct {
-	PrimaryCharacterName string `json:"primary_character_name" binding:"required"`
-	MonthlyPAP float64 `json:"monthly_pap,default=0" binding:"gte=0"`
-	CalculatedAt string `json:"calculated_at" binding:"required"`
+	PrimaryCharacterName string  `json:"primary_character_name" binding:"required"`
+	MonthlyPAP           float64 `json:"monthly_pap,default=0" binding:"gte=0"`
+	CalculatedAt         string  `json:"calculated_at" binding:"required"`
 }
 
 // ImportAlliancePAP 导入联盟 PAP 数据
@@ -219,7 +248,7 @@ func (s *AlliancePAPService) ImportAlliancePAP(year, month int, data *PAPImportI
 	if err != nil {
 		existingSummary = nil
 	}
-	
+
 	var totalPap float64 = data.MonthlyPAP
 	var yearlyTotalPap float64 = data.MonthlyPAP
 	var monthlyRank int = 1
@@ -246,7 +275,7 @@ func (s *AlliancePAPService) ImportAlliancePAP(year, month int, data *PAPImportI
 	}
 
 	corporationID := strconv.FormatInt(mainChar.CorporationID, 10)
-	
+
 	summary := &model.AlliancePAPSummary{
 		MainCharacter:     data.PrimaryCharacterName,
 		Year:              year,
@@ -409,6 +438,15 @@ func (s *AlliancePAPService) SettleMonth(year, month int, walletConvert bool, op
 			continue
 		}
 
+		// 检查该笔兑换是否已存在（防止重复入库）
+		refID := fmt.Sprintf("pap:%d:%d:%s", year, month, summary.MainCharacter)
+		if exists, _ := s.walletRepo.ExistsTransactionByRefID(refID); exists {
+			// 已存在同 RefID 的流水，直接标记已兑换并跳过
+			_ = s.repo.MarkSummaryRedeemed(summary.ID, walletAmount)
+			result.SkippedUsers++
+			continue
+		}
+
 		// 事务：获取钱包 → 加余额 → 写流水
 		wallet, err := s.walletRepo.GetOrCreateWallet(user.ID)
 		if err != nil {
@@ -434,7 +472,7 @@ func (s *AlliancePAPService) SettleMonth(year, month int, walletConvert bool, op
 			Amount:       walletAmount,
 			Reason:       fmt.Sprintf("%d年%d月联盟PAP兑换（%.2f PAP × %.2f）", year, month, summary.TotalPap, walletPerPAP),
 			RefType:      model.WalletRefPapConvert,
-			RefID:        fmt.Sprintf("pap:%d:%d:%s", year, month, summary.MainCharacter),
+			RefID:        refID,
 			BalanceAfter: newBalance,
 			OperatorID:   operatorID,
 		}

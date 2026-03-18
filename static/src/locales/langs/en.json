@@ -36,10 +36,7 @@
     "tips": "Prompt",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "save": "Save",
-    "add": "Add",
-    "search": "Search",
-    "reset": "Reset",
+    "close": "Close",
     "refresh": "Refresh",
     "operation": "Operation",
     "detail": "Detail",
@@ -49,15 +46,9 @@
     "role": "Role",
     "name": "Name",
     "status": "Status",
-    "type": "Type",
-    "amount": "Amount",
-    "reason": "Reason",
-    "time": "Time",
-    "source": "Source",
-    "createdAt": "Created At",
-    "yes": "Yes",
-    "no": "No",
+    "save": "Save",
     "updatedAt": "Updated At",
+    "createdAt": "Created At",
     "logOutTips": "Do you want to log out?"
   },
   "search": {
@@ -170,6 +161,15 @@
       "closeAll": "Close all"
     }
   },
+  "console": {
+    "alliancePap": "Alliance PAP",
+    "internalPap": "Internal PAP",
+    "papChart": {
+      "recentMonths": "Last {count} months",
+      "monthLabel": "M{month}",
+      "empty": "No PAP data"
+    }
+  },
   "login": {
     "leftView": {
       "title": "AmiyaEden \u2014 EVE Online Tools & Community",
@@ -186,10 +186,7 @@
       "success": "Login successful",
       "successSub": "Welcome back, {name}! Redirecting...",
       "error": "Login failed",
-      "retry": "Try again",
-      "conflictTitle": "Character Bound to Another Account",
-      "conflictDesc": "Character {name} is currently bound to another account. Confirming will unbind it from the original account and bind it to your current account.",
-      "confirmTransfer": "Confirm Transfer"
+      "retry": "Try again"
     },
     "success": {
       "title": "Login successful",
@@ -288,7 +285,8 @@
       "alliancePap": "Alliance PAP",
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
-      "webhook": "Webhook Notifications"
+      "webhook": "Webhook Notifications",
+      "basicConfig": "Basic Config"
     },
     "shop": {
       "title": "Shop",
@@ -303,7 +301,7 @@
       "title": "Fleet Operations",
       "fleets": "Fleet Management",
       "fleetDetail": "Fleet Detail",
-      "corporationPap": "Corporation PAP",
+      "fleetConfigs": "Fleet Configs",
       "pap": "My PAP",
       "join": "Join Fleet",
       "srpApply": "SRP Apply",
@@ -495,6 +493,11 @@
     "stockRemaining": "Stock: {n}",
     "limitPerUser": "Limit {n} per person",
     "needApproval": "Requires Approval",
+    "period": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
     "soldOut": "Sold Out",
     "buy": "Buy",
     "noProducts": "No products available",
@@ -516,7 +519,177 @@
     "remark": "Remark",
     "remarkPlaceholder": "Optional remark",
     "approvalNotice": "This product requires admin approval before payment",
-    "confirmBuy": "Confirm Purchase"
+    "confirmBuy": "Confirm Purchase",
+    "manage": {
+      "sdeSearch": "Search EVE Items",
+      "sdeSearchPlaceholder": "Search item name to auto-set image",
+      "namePlaceholder": "Enter product name",
+      "sdeSelected": "{name} selected, image updated",
+      "createProduct": "Add Product",
+      "editProduct": "Edit Product",
+      "filterName": "Product name",
+      "filterType": "Type",
+      "filterStatus": "Status",
+      "search": "Search",
+      "reset": "Reset",
+      "description": "Description",
+      "descriptionPlaceholder": "Product description (optional)",
+      "productImage": "Product Image",
+      "uploading": "Uploading...",
+      "uploadImage": "Click to upload",
+      "uploadHint": "JPG/PNG/GIF/WebP, max 5MB",
+      "price": "Price",
+      "type": "Type",
+      "typeNormal": "Normal",
+      "typeNormalShort": "Normal",
+      "typeRedeem": "Redeem / Service",
+      "typeRedeemShort": "Redeem",
+      "stock": "Stock",
+      "stockUnlimited": "Unlimited",
+      "stockUnlimitedHint": "-1 = unlimited stock",
+      "limitPerUser": "Limit per user",
+      "limitPerUserHint": "0 = no limit",
+      "limitPeriod": "Limit Period",
+      "limitPeriodHint": "Purchase limit reset period",
+      "periodForever": "Forever",
+      "periodDaily": "Daily",
+      "periodWeekly": "Weekly",
+      "periodMonthly": "Monthly",
+      "needApproval": "Requires Approval",
+      "status": "Status",
+      "statusOnSale": "On Sale",
+      "statusOffSale": "Off Sale",
+      "sortOrder": "Sort",
+      "sortHint": "Higher number = higher priority",
+      "yes": "Yes",
+      "no": "No",
+      "colImage": "Image",
+      "colType": "Type",
+      "colApproval": "Approval",
+      "colSort": "Sort",
+      "updateSuccess": "Updated",
+      "createSuccess": "Created",
+      "operationFailed": "Operation failed",
+      "deleteConfirm": "Delete product \"{name}\"?",
+      "deleteTitle": "Confirm Delete",
+      "deleteBtn": "Delete",
+      "deleteSuccess": "Deleted",
+      "deleteFailed": "Delete failed",
+      "imageTooLarge": "Image must be under 5MB",
+      "uploadSuccess": "Uploaded",
+      "uploadFailed": "Upload failed",
+      "validName": "Product name is required",
+      "validPrice": "Price is required",
+      "validType": "Please select a type"
+    }
+  },
+  "lottery": {
+    "noActivities": "No lottery activities available",
+    "startDraw": "Draw Now",
+    "points": "Points",
+    "perDraw": "draw",
+    "free": "Free",
+    "more": "more",
+    "myRecords": "My Lottery Records",
+    "draw": "Lottery",
+    "costLabel": "Cost per draw:",
+    "balance": "Balance",
+    "prizePool": "Prize Pool",
+    "drawing": "Drawing...",
+    "close": "Close",
+    "drawAgain": "Draw Again",
+    "loadFailed": "Failed to load",
+    "drawFailed": "Draw failed",
+    "tier": {
+      "normal": "Normal",
+      "rare": "Rare",
+      "legendary": "Legendary"
+    },
+    "status": {
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "manage": {
+      "activitiesTab": "Activities",
+      "createActivity": "Create Activity",
+      "editActivity": "Edit Activity",
+      "noActivities": "No activities",
+      "costPerDraw": "Cost per draw",
+      "startAt": "Start time",
+      "endAt": "End time",
+      "managePrizes": "Manage Prizes",
+      "prizeCount": "Prizes: {n}",
+      "noPrizes": "No prizes",
+      "recordsTab": "Records",
+      "filterActivity": "Filter by activity",
+      "uploading": "Uploading...",
+      "uploadCover": "Upload Cover",
+      "uploadImage": "Upload Image",
+      "managePrizesTitle": "Manage Prizes - {name}",
+      "addPrize": "Add Prize",
+      "editPrize": "Edit Prize",
+      "noPrizesHint": "No prizes yet. Click the button above to add one.",
+      "weight": "Weight",
+      "stock": "Stock",
+      "stockUnlimited": "Unlimited",
+      "totalWeight": "Total weight",
+      "loadFailed": "Failed to load",
+      "updateSuccess": "Updated",
+      "createSuccess": "Created",
+      "addSuccess": "Added",
+      "operationFailed": "Operation failed",
+      "deleteActivityConfirm": "Delete activity \"{name}\"? All associated prizes will also be removed.",
+      "deleteSuccess": "Deleted",
+      "deleteFailed": "Delete failed",
+      "imageTooLarge": "Image must be under 2MB",
+      "uploadSuccess": "Uploaded",
+      "uploadFailed": "Upload failed",
+      "validName": "Activity name is required",
+      "validCost": "Cost per draw is required",
+      "validPrizeName": "Prize name is required",
+      "validTier": "Please select a tier",
+      "deletePrizeConfirm": "Delete prize \"{name}\"?",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Activity name",
+        "description": "Description",
+        "descriptionPlaceholder": "Description (optional)",
+        "coverImage": "Cover Image",
+        "costPerDraw": "Cost per draw",
+        "costHint": "0 means free",
+        "status": "Status",
+        "startAt": "Start time",
+        "endAt": "End time",
+        "noLimit": "No limit",
+        "sortOrder": "Sort order",
+        "sortHint": "Higher number = higher priority"
+      },
+      "prizeFields": {
+        "name": "Prize name",
+        "namePlaceholder": "Enter prize name",
+        "image": "Prize image",
+        "sdeSearchPlaceholder": "Search EVE items to auto-set image",
+        "tier": "Tier",
+        "weight": "Probability weight",
+        "weightHint": "Higher weight = higher chance",
+        "totalStock": "Total stock",
+        "stockHint": "0 means unlimited"
+      },
+      "recordColumns": {
+        "userId": "User ID",
+        "activity": "Activity",
+        "prize": "Prize",
+        "cost": "Cost",
+        "time": "Time",
+        "deliveryStatus": "Delivery"
+      }
+    },
+    "delivery": {
+      "pending": "Pending",
+      "delivered": "Delivered",
+      "markDelivered": "Mark Delivered",
+      "markSuccess": "Marked as delivered"
+    }
   },
   "userAdmin": {
     "status": {
@@ -570,19 +743,27 @@
       "timeRange": "Time Range",
       "startAt": "Start Time",
       "endAt": "End Time",
+      "createdAt": "Created At",
       "fc": "Fleet Commander",
       "fcPlaceholder": "Select a character as FC",
       "description": "Description",
       "descriptionPlaceholder": "Additional information about this operation",
       "esiFleetId": "ESI Fleet ID",
-      "createdAt": "Created At",
       "sendPing": "Send Notification",
-      "sendPingHint": "Send a fleet ping to the channel after creation"
+      "sendPingHint": "Send a fleet ping to the channel after creation",
+      "fleetConfig": "Fleet Config",
+      "fleetConfigPlaceholder": "Select fleet config (optional)",
+      "autoSrpMode": "Auto SRP"
+    },
+    "autoSrp": {
+      "disabled": "Disabled",
+      "submitOnly": "Submit Only",
+      "autoApprove": "Auto Approve"
     },
     "importance": {
       "strat_op": "Strat Op",
       "cta": "CTA",
-      "skirmish": "Skirmish"
+      "other": "Other"
     },
     "members": {
       "title": "Fleet Members",
@@ -607,43 +788,33 @@
       "fleetName": "Fleet Name",
       "characterId": "Character ID",
       "characterName": "Character Name",
-      "type": "PAP Type",
       "count": "PAP Count",
       "issuedBy": "Issued By",
       "issuedAt": "Issued At",
-      "empty": "No PAP records"
-    },
-    "corporationPap": {
-      "title": "Corporation PAP",
-      "summaryTitle": "Corporation PAP Summary",
-      "empty": "No PAP summary records",
-      "search": "Search",
-      "reset": "Reset",
-      "filters": {
-        "period": "Period",
-        "year": "Year",
-        "corpTickers": "Corporation"
+      "empty": "No PAP records",
+      "operation": "Fleet Operation",
+      "character": "Character",
+      "ship": "Ship",
+      "fc": "FC",
+      "level": "Level",
+      "participations": "Participations",
+      "importance": {
+        "cta": "CTA",
+        "stratOp": "Strat Op",
+        "other": "Regular"
       },
-      "periods": {
-        "currentMonth": "Current Month",
-        "lastMonth": "Last Month",
-        "atYear": "At Year",
-        "all": "All"
-      },
-      "stats": {
-        "filteredPap": "Current Period PAP",
-        "lastMonthPap": "Last Month PAP",
-        "allPap": "All-Time PAP",
-        "users": "Users"
-      },
-      "columns": {
-        "userId": "User ID",
-        "corpTicker": "Corporation",
-        "mainCharacter": "Main Character",
-        "characterCount": "Number of Characters",
-        "stratOpPaps": "Start OP",
-        "skirmishPaps": "Skirmish PAP"
-      }
+      "allianceCard": "Alliance PAP",
+      "allianceEmpty": "No alliance PAP records",
+      "allianceMonthly": "Monthly PAP",
+      "allianceYearly": "Yearly PAP",
+      "allianceCorpMonthRank": "Corp Monthly Rank",
+      "allianceGlobalMonthRank": "Alliance Monthly Rank",
+      "allianceCorpYearRank": "Corp Yearly Rank",
+      "allianceDataSource": "Data source: Alliance PAP",
+      "allianceLastCalc": "Last calculated",
+      "allianceOperationName": "Operation Name",
+      "allianceStartTime": "Start Time",
+      "allianceEndTime": "End Time"
     },
     "invite": {
       "title": "Invite Links",
@@ -681,6 +852,72 @@
       "refType": "Type",
       "time": "Time",
       "empty": "No transactions"
+    }
+  },
+  "fleetConfig": {
+    "title": "Fleet Configs",
+    "subTitle": "Manage fleet operation fitting configurations",
+    "create": "Create Config",
+    "edit": "Edit Config",
+    "view": "View Config",
+    "delete": "Delete Config",
+    "deleteConfirm": "Are you sure you want to delete config \"{name}\"? This cannot be undone.",
+    "deleteSuccess": "Config deleted",
+    "createSuccess": "Config created",
+    "updateSuccess": "Config updated",
+    "fittingUnit": "fittings",
+    "newFitting": "New Fitting",
+    "addFitting": "Add Fitting",
+    "importFromFitting": "Import from My Fittings",
+    "importSuccess": "Fitting imported",
+    "importSelectRequired": "Please select a character and fitting",
+    "copyEFT": "Copy EFT",
+    "eftCopied": "EFT copied to clipboard",
+    "noFittings": "Please add at least one fitting",
+    "saveToGame": "Save to Game",
+    "saveToGameTitle": "Save Fitting to Game",
+    "saveToGameSuccess": "Fitting saved to game successfully",
+    "saveToGameCharacterRequired": "Please select a character",
+    "itemSettings": "Item Settings",
+    "itemSettingsTitle": "Item Importance & Penalty Settings",
+    "itemSettingsSaved": "Item settings saved",
+    "replacementSearch": "Search replacement item",
+    "importance": {
+      "required": "Required",
+      "optional": "Optional",
+      "replaceable": "Replaceable"
+    },
+    "penalty": {
+      "half": "Half",
+      "none": "None"
+    },
+    "replacementPenalty": {
+      "half": "Rep Half",
+      "none": "Rep None"
+    },
+    "slotGroup": {
+      "HiSlot": "High Slot",
+      "MedSlot": "Mid Slot",
+      "LoSlot": "Low Slot",
+      "RigSlot": "Rig Slot",
+      "SubSystem": "Subsystem"
+    },
+    "fields": {
+      "name": "Config Name",
+      "namePlaceholder": "Enter config name",
+      "description": "Description",
+      "descriptionPlaceholder": "About this configuration",
+      "fittings": "Fittings",
+      "fittingName": "Fitting Name",
+      "fittingNamePlaceholder": "Enter fitting name",
+      "shipName": "Ship",
+      "shipNamePlaceholder": "Ship name",
+      "srpAmount": "SRP Amount",
+      "eft": "EFT Format",
+      "eftPlaceholder": "Paste EFT format fitting text",
+      "character": "Character",
+      "fitting": "Fitting",
+      "fittingPlaceholder": "Select a fitting"
     }
   },
   "characters": {
@@ -772,25 +1009,12 @@
       "searchBtn": "Search",
       "resetBtn": "Reset",
       "exportBtn": "Export Data",
-      "batchPayoutBtn": "Batch Payout",
       "approveBtn": "Approve",
       "rejectBtn": "Reject",
       "payoutBtn": "Payout",
       "approveDialog": "Approve Application",
       "rejectDialog": "Reject Application",
       "payoutDialog": "Confirm Payout",
-      "batchPayoutDialog": "Batch Payout",
-      "batchPayoutHint": "Click the copy button on the right, then paste the content into an in-game note.",
-      "batchPayoutMainCharacter": "Main Character",
-      "batchPayoutAmount": "Amount",
-      "batchPayoutApprovedAmount": "Approved Amount",
-      "batchPayoutPendingAmount": "Pending Amount",
-      "batchPayoutTotalAmount": "Total Amount",
-      "batchPayoutCount": "Requests",
-      "batchPayoutEmpty": "No eligible SRP requests to batch payout",
-      "batchPayoutConfirmTitle": "Batch Payout",
-      "batchPayoutConfirmText": "Mark all approved unpaid SRP requests for {name} as paid? Total: {amount} ISK",
-      "batchPayoutSuccess": "Batch payout successful",
       "finalAmount": "Final Amount",
       "finalAmountHint": "Enter 0 to keep the current amount",
       "reviewNote": "Review Note",
@@ -817,7 +1041,6 @@
       "copyFailed": "Copy failed",
       "noPrimaryCharacter": "Please set a primary character first",
       "openInfoWindowSuccess": "Open window request sent",
-      "unknownMainCharacter": "Unknown",
       "columns": {
         "id": "#",
         "character": "Character",
@@ -828,7 +1051,7 @@
         "corporation": "Corporation",
         "alliance": "Alliance",
         "fleet": "Fleet",
-        "note": "Note",
+        "note": "App Note",
         "recommendedAmount": "Recommended",
         "finalAmount": "Final Amount",
         "review": "Review",
@@ -1335,6 +1558,17 @@
       "contentPlaceholder": "Leave blank for default test message",
       "sendBtn": "Send Test",
       "success": "Test message sent"
+    }
+  },
+  "system": {
+    "basicConfig": {
+      "title": "Basic Config",
+      "corpId": "Corporation ID",
+      "siteTitle": "Site Title",
+      "save": "Save",
+      "corpIdPlaceholder": "Please enter corporation ID",
+      "siteTitlePlaceholder": "Please enter site title",
+      "saveSuccess": "Configuration saved"
     }
   }
 }

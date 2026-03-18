@@ -21,7 +21,7 @@
         </div>
         <div class="text-center">
           <p class="text-2xl font-bold text-green-600">{{ papLogs.length }}</p>
-          <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.participationCount') }}</p>
+          <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.participations') }}</p>
         </div>
       </div>
 
@@ -34,56 +34,45 @@
             width="60"
             label="#"
           />
-          <ElTableColumn prop="fleet_id" :label="$t('fleet.pap.fleetId')" min-width="260">
+          <ElTableColumn :label="$t('fleet.pap.operation')" min-width="180">
             <template #default="{ row }">
-              <code class="text-xs">{{ row.fleet_id }}</code>
+              <div class="text-sm font-medium">{{ row.fleet_title || '-' }}</div>
+              <div class="text-xs text-gray-400 mt-0.5">{{ formatTime(row.fleet_start_at) }}</div>
             </template>
           </ElTableColumn>
-          <ElTableColumn
-            prop="fleet_title"
-            :label="$t('fleet.pap.fleetName')"
-            min-width="180"
-            show-overflow-tooltip
-          >
+          <ElTableColumn :label="$t('fleet.pap.level')" width="100" align="center">
             <template #default="{ row }">
-              {{ row.fleet_title || '-' }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="character_name"
-            :label="$t('fleet.pap.characterName')"
-            min-width="140"
-            show-overflow-tooltip
-          >
-            <template #default="{ row }">
-              {{ row.character_name || row.character_id }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="importance" :label="$t('fleet.pap.type')" width="120" align="center">
-            <template #default="{ row }">
-              <ElTag :type="papImportanceTagType(row.importance)" size="small" effect="dark">
-                {{ row.importance ? $t(`fleet.importance.${row.importance}`) : '-' }}
+              <ElTag :type="importanceTagType(row.fleet_importance)" size="small">
+                {{ importanceLabel(row.fleet_importance) }}
               </ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="pap_count" :label="$t('fleet.pap.count')" width="120" align="center">
+          <ElTableColumn :label="$t('fleet.pap.character')" min-width="130">
             <template #default="{ row }">
-              <ElTag type="success" size="small">{{ row.pap_count }}</ElTag>
+              <span>{{ row.character_name || row.character_id }}</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn
-            prop="issued_by_name"
-            :label="$t('fleet.pap.issuedBy')"
-            min-width="140"
-            align="center"
-          >
+          <ElTableColumn :label="$t('fleet.pap.ship')" min-width="160">
             <template #default="{ row }">
-              {{ row.issued_by_name || row.issued_by }}
+              <span v-if="row.ship_type_id">{{
+                getName(row.ship_type_id, String(row.ship_type_id))
+              }}</span>
+              <span v-else class="text-gray-400">-</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn prop="issued_at" :label="$t('fleet.pap.issuedAt')" width="200">
+          <ElTableColumn prop="pap_count" :label="$t('fleet.pap.count')" width="90" align="center">
             <template #default="{ row }">
-              {{ formatTime(row.issued_at) }}
+              <ElTag type="success" size="small">+{{ row.pap_count }}</ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn :label="$t('fleet.pap.fc')" min-width="130" align="center">
+            <template #default="{ row }">
+              <span>{{ row.fc_character_name || row.issued_by }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn :label="$t('fleet.pap.issuedAt')" width="175">
+            <template #default="{ row }">
+              {{ formatTime(row.issued_at || row.created_at) }}
             </template>
           </ElTableColumn>
         </ElTable>
@@ -113,7 +102,7 @@
       <template #header>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <h2 class="text-lg font-medium">{{ $t('alliancePap.shortTitle') }}</h2>
+            <h2 class="text-lg font-medium">{{ $t('fleet.pap.allianceCard') }}</h2>
             <ElDatePicker
               v-model="allianceMonth"
               type="month"
@@ -136,36 +125,35 @@
         <div class="flex flex-wrap items-center gap-6 mb-4 px-2">
           <div class="text-center">
             <p class="text-2xl font-bold text-primary">{{ allianceSummary.total_pap }}</p>
-            <p class="text-xs text-gray-500 mt-1">{{ $t('alliancePap.columns.monthlyPap') }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.allianceMonthly') }}</p>
           </div>
           <div class="text-center">
             <p class="text-2xl font-bold text-blue-500">{{ allianceSummary.yearly_total_pap }}</p>
-            <p class="text-xs text-gray-500 mt-1">{{ $t('alliancePap.columns.yearlyPap') }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.allianceYearly') }}</p>
           </div>
           <div class="text-center">
             <p class="text-xl font-semibold text-green-600">#{{ allianceSummary.monthly_rank }}</p>
-            <p class="text-xs text-gray-500 mt-1">
-              {{ $t('alliancePap.corpMonthlySummary', { count: allianceSummary.total_in_corp }) }}
-            </p>
+            <p class="text-xs text-gray-500 mt-1"
+              >{{ $t('fleet.pap.allianceCorpMonthRank') }} / {{ allianceSummary.total_in_corp }}</p
+            >
           </div>
           <div class="text-center">
             <p class="text-xl font-semibold text-yellow-500"
               >#{{ allianceSummary.global_monthly_rank }}</p
             >
-            <p class="text-xs text-gray-500 mt-1">
-              {{
-                $t('alliancePap.allianceMonthlySummary', { count: allianceSummary.total_global })
-              }}
-            </p>
+            <p class="text-xs text-gray-500 mt-1"
+              >{{ $t('fleet.pap.allianceGlobalMonthRank') }} / {{ allianceSummary.total_global }}</p
+            >
           </div>
           <div class="text-center">
             <p class="text-xl font-semibold text-purple-500">#{{ allianceSummary.yearly_rank }}</p>
-            <p class="text-xs text-gray-500 mt-1">{{ $t('alliancePap.corpYearlySummary') }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('fleet.pap.allianceCorpYearRank') }}</p>
           </div>
           <div class="ml-auto text-xs text-gray-400 text-right">
-            {{ $t('alliancePap.sourceLabel') }}: {{ $t('alliancePap.sourceName') }}<br />
-            {{ $t('alliancePap.calculatedAtLabel') }}:
-            {{ allianceSummary.calculated_at ? formatTime(allianceSummary.calculated_at) : '-' }}
+            {{ $t('fleet.pap.allianceDataSource') }}<br />
+            {{ $t('fleet.pap.allianceLastCalc') }}：{{
+              allianceSummary.calculated_at ? formatTime(allianceSummary.calculated_at) : '-'
+            }}
           </div>
         </div>
       </template>
@@ -187,20 +175,11 @@
           />
           <ElTableColumn
             prop="title"
-            :label="$t('alliancePap.columns.operationTitle')"
+            :label="$t('fleet.pap.allianceOperationName')"
             min-width="100"
           />
-          <ElTableColumn
-            prop="character_name"
-            :label="$t('alliancePap.columns.character')"
-            min-width="100"
-          />
-          <ElTableColumn
-            prop="level"
-            :label="$t('alliancePap.columns.level')"
-            width="110"
-            align="center"
-          >
+          <ElTableColumn prop="character_name" :label="$t('fleet.pap.character')" min-width="100" />
+          <ElTableColumn prop="level" :label="$t('fleet.pap.level')" width="110" align="center">
             <template #default="{ row }">
               <ElTag :type="levelTagType(row.level)" size="small">{{ row.level }}</ElTag>
             </template>
@@ -210,23 +189,23 @@
               <ElTag type="success" size="small">{{ row.pap }}</ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="$t('alliancePap.columns.ship')" min-width="160">
+          <ElTableColumn :label="$t('fleet.pap.ship')" min-width="160">
             <template #default="{ row }">
               {{ row.ship_type_name }}
               <span class="text-xs text-gray-400 ml-1">({{ row.ship_group_name }})</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="$t('alliancePap.columns.startTime')" width="170">
+          <ElTableColumn :label="$t('fleet.pap.allianceStartTime')" width="170">
             <template #default="{ row }">{{ formatTime(row.start_at) }}</template>
           </ElTableColumn>
-          <ElTableColumn :label="$t('alliancePap.columns.endTime')" width="170">
+          <ElTableColumn :label="$t('fleet.pap.allianceEndTime')" width="170">
             <template #default="{ row }">{{ row.end_at ? formatTime(row.end_at) : '-' }}</template>
           </ElTableColumn>
         </ElTable>
       </div>
       <ElEmpty
         v-if="!allianceLoading && allianceFleets.length === 0"
-        :description="$t('alliancePap.noRecords')"
+        :description="$t('fleet.pap.allianceEmpty')"
         class="my-4"
       />
 
@@ -247,6 +226,7 @@
 </template>
 
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n'
   import { Refresh } from '@element-plus/icons-vue'
   import {
     ElCard,
@@ -264,11 +244,15 @@
     type AlliancePAPSummary,
     type AlliancePAPFleet
   } from '@/api/alliance-pap'
+  import { useNameResolver } from '@/hooks'
 
   defineOptions({ name: 'MyPap' })
 
+  const { t } = useI18n()
+  const { getName, resolve: resolveNames } = useNameResolver()
+
   // ── 本系统 PAP ──
-  const papLogs = ref<Api.Fleet.MyPapLog[]>([])
+  const papLogs = ref<Api.Fleet.PapLog[]>([])
   const loading = ref(false)
 
   const papPage = ref(1)
@@ -286,6 +270,13 @@
     try {
       papLogs.value = (await fetchMyPapLogs()) ?? []
       papPage.value = 1
+      // 解析舰船名称
+      const shipIds = papLogs.value
+        .map((p) => p.ship_type_id)
+        .filter((id): id is number => id != null)
+      if (shipIds.length) {
+        resolveNames({ ids: { type: shipIds } })
+      }
     } catch {
       papLogs.value = []
     } finally {
@@ -340,12 +331,17 @@
     return 'info'
   }
 
-  const papImportanceTagType = (
-    importance: Api.Fleet.MyPapLog['importance']
-  ): 'danger' | 'warning' | 'info' | 'success' => {
-    if (importance === 'strat_op') return 'danger'
-    if (importance === 'cta') return 'warning'
+  const importanceTagType = (imp: string): 'danger' | 'warning' | 'info' => {
+    if (imp === 'cta') return 'danger'
+    if (imp === 'strat_op') return 'warning'
     return 'info'
+  }
+
+  const importanceLabel = (imp: string): string => {
+    if (imp === 'cta') return t('fleet.pap.importance.cta')
+    if (imp === 'strat_op') return t('fleet.pap.importance.stratOp')
+    if (imp === 'other') return t('fleet.pap.importance.other')
+    return imp || '-'
   }
 
   const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')

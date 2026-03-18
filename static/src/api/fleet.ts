@@ -92,23 +92,15 @@ export function issuePap(fleetId: string) {
 
 /** 获取舰队 PAP 记录 */
 export function fetchFleetPapLogs(fleetId: string) {
-  return request.get<Api.Fleet.FleetPapLog[]>({
+  return request.get<Api.Fleet.PapLog[]>({
     url: `/api/v1/operation/fleets/${fleetId}/pap`
   })
 }
 
 /** 获取我的 PAP 记录 */
 export function fetchMyPapLogs() {
-  return request.get<Api.Fleet.MyPapLog[]>({
+  return request.get<Api.Fleet.PapLog[]>({
     url: '/api/v1/operation/fleets/pap/me'
-  })
-}
-
-/** 获取军团 PAP 汇总 */
-export function fetchCorporationPapSummary(params?: Api.Fleet.CorporationPapSummaryParams) {
-  return request.get<Api.Fleet.CorporationPapSummaryList>({
-    url: '/api/v1/operation/fleets/pap/corporation',
-    params
   })
 }
 

@@ -3,7 +3,7 @@
   <div class="login-left-view">
     <div class="logo">
       <ArtLogo class="icon" size="46" />
-      <h1 class="title">{{ AppConfig.systemInfo.name }}</h1>
+      <h1 class="title">{{ siteTitle }}</h1>
     </div>
 
     <div class="left-img">
@@ -71,13 +71,19 @@
 </template>
 
 <script setup lang="ts">
-  import AppConfig from '@/config'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
   import loginIcon from '@imgs/svg/login_icon.svg'
   import { themeAnimation } from '@/utils/ui/animation'
 
-  // 定义 props
+  const sysConfigStore = useSysConfigStore()
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
+
+  onMounted(() => {
+    sysConfigStore.ensureLoaded()
+  })
+
   defineProps<{
-    hideContent?: boolean // 是否隐藏内容，只显示 logo
+    hideContent?: boolean
   }>()
 </script>
 

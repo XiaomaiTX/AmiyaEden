@@ -24,17 +24,6 @@ func (r *UserRepository) GetByID(id uint) (*model.User, error) {
 	return &user, err
 }
 
-// ListByIDs 批量查询用户
-func (r *UserRepository) ListByIDs(ids []uint) ([]model.User, error) {
-	if len(ids) == 0 {
-		return []model.User{}, nil
-	}
-
-	var users []model.User
-	err := global.DB.Where("id IN ?", ids).Find(&users).Error
-	return users, err
-}
-
 // Update 更新用户信息
 func (r *UserRepository) Update(user *model.User) error {
 	return global.DB.Save(user).Error
@@ -45,13 +34,6 @@ func (r *UserRepository) ListAllIDs() ([]uint, error) {
 	var ids []uint
 	err := global.DB.Model(&model.User{}).Pluck("id", &ids).Error
 	return ids, err
-}
-
-// GetByIDUnscoped 根据 ID 查询用户（包括软删除记录）
-func (r *UserRepository) GetByIDUnscoped(id uint) (*model.User, error) {
-	var user model.User
-	err := global.DB.Unscoped().First(&user, id).Error
-	return &user, err
 }
 
 // Delete 软删除用户

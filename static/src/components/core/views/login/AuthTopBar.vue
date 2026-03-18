@@ -5,7 +5,7 @@
   >
     <div class="flex-cc !hidden max-[1180px]:!flex ml-2 max-sm:ml-6">
       <ArtLogo class="icon" size="46" />
-      <h1 class="text-xl ont-mediumf ml-2">{{ AppConfig.systemInfo.name }}</h1>
+      <h1 class="text-xl ont-mediumf ml-2">{{ siteTitle }}</h1>
     </div>
 
     <div class="flex-cc gap-1.5 mr-2 max-sm:mr-5">
@@ -78,18 +78,25 @@
   import { themeAnimation } from '@/utils/ui/animation'
   import { languageOptions } from '@/locales'
   import { LanguageEnum } from '@/enums/appEnum'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
   import AppConfig from '@/config'
 
   defineOptions({ name: 'AuthTopBar' })
 
   const settingStore = useSettingStore()
   const userStore = useUserStore()
+  const sysConfigStore = useSysConfigStore()
   const { isDark, systemThemeColor } = storeToRefs(settingStore)
   const { shouldShowThemeToggle, shouldShowLanguage } = useHeaderBar()
   const { locale } = useI18n()
 
   const mainColors = AppConfig.systemMainColor
-  const color = systemThemeColor // css v-bind 使用
+  const color = systemThemeColor
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
+
+  onMounted(() => {
+    sysConfigStore.ensureLoaded()
+  })
 
   const changeLanguage = (lang: LanguageEnum) => {
     if (locale.value === lang) return

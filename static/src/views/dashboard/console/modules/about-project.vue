@@ -22,10 +22,15 @@
 </template>
 
 <script setup lang="ts">
-  import AppConfig from '@/config'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
   import { WEB_LINKS } from '@/utils/constants'
 
-  const systemName = AppConfig.systemInfo.name
+  const sysConfigStore = useSysConfigStore()
+  const systemName = computed(() => sysConfigStore.siteTitle)
+
+  onMounted(() => {
+    sysConfigStore.ensureLoaded()
+  })
 
   const linkList = [
     { label: '项目官网', url: WEB_LINKS.DOCS },

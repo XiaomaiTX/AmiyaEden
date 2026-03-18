@@ -10,9 +10,9 @@
         @update:model-value="(v) => emit('update:modelValue', { ...modelValue, importance: v })"
         @change="emit('search', { ...modelValue })"
       >
-        <ElOption :label="$t('fleet.importance.strat_op')" value="strat_op" />
-        <ElOption :label="$t('fleet.importance.cta')" value="cta" />
-        <ElOption :label="$t('fleet.importance.skirmish')" value="skirmish" />
+        <ElOption label="Strat Op" value="strat_op" />
+        <ElOption label="CTA" value="cta" />
+        <ElOption label="Other" value="other" />
       </ElSelect>
       <ElButton @click="emit('reset')">
         {{ $t('table.searchBar.reset') }}

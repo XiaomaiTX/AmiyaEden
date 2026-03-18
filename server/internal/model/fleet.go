@@ -4,9 +4,16 @@ import "time"
 
 // Fleet 重要等级
 const (
-	FleetImportanceStratOp  = "strat_op" // 战略行动
-	FleetImportanceCTA      = "cta"      // 全面集结
-	FleetImportanceSkirmish = "skirmish" // 遭遇战
+	FleetImportanceStratOp = "strat_op" // 战略行动
+	FleetImportanceCTA     = "cta"      // 全面集结
+	FleetImportanceOther   = "other"    // 其他
+)
+
+// Fleet 自动 SRP 模式
+const (
+	FleetAutoSrpDisabled    = "disabled"     // 不启用
+	FleetAutoSrpSubmitOnly  = "submit_only"  // 仅提交
+	FleetAutoSrpAutoApprove = "auto_approve" // 自动审批
 )
 
 // Fleet 舰队记录
@@ -16,12 +23,14 @@ type Fleet struct {
 	Description     string     `gorm:"type:text"                  json:"description"`
 	StartAt         time.Time  `gorm:"not null"                   json:"start_at"`
 	EndAt           time.Time  `gorm:"not null"                   json:"end_at"`
-	Importance      string     `gorm:"size:32;not null"           json:"importance"` // strat_op / cta / skirmish
+	Importance      string     `gorm:"size:32;not null"           json:"importance"` // strat_op / cta / other
 	PapCount        float64    `gorm:"default:0"                  json:"pap_count"`
 	FCUserID        uint       `gorm:"not null;index"             json:"fc_user_id"`
 	FCCharacterID   int64      `gorm:"not null"                   json:"fc_character_id"`
 	FCCharacterName string     `gorm:"size:128"                   json:"fc_character_name"`
 	ESIFleetID      *int64     `gorm:""                           json:"esi_fleet_id,omitempty"`
+	FleetConfigID   *uint      `gorm:""                           json:"fleet_config_id,omitempty"`
+	AutoSrpMode     string     `gorm:"size:32;not null;default:'disabled'" json:"auto_srp_mode"` // disabled/submit_only/auto_approve
 	CreatedAt       time.Time  `gorm:"autoCreateTime"             json:"created_at"`
 	UpdatedAt       time.Time  `gorm:"autoUpdateTime"             json:"updated_at"`
 	DeletedAt       *time.Time `gorm:"index"                      json:"deleted_at,omitempty"`
@@ -56,21 +65,6 @@ type FleetPapLog struct {
 }
 
 func (FleetPapLog) TableName() string { return "fleet_pap_log" }
-
-// FleetPapLogDetail 用于个人 PAP 记录展示
-type FleetPapLogDetail struct {
-	ID            uint      `json:"id"`
-	FleetID       string    `json:"fleet_id"`
-	FleetTitle    string    `json:"fleet_title,omitempty"`
-	CharacterID   int64     `json:"character_id"`
-	CharacterName string    `json:"character_name,omitempty"`
-	UserID        uint      `json:"user_id"`
-	PapCount      float64   `json:"pap_count"`
-	IssuedBy      uint      `json:"issued_by"`
-	IssuedByName  string    `json:"issued_by_name,omitempty"`
-	Importance    string    `json:"importance,omitempty"`
-	IssuedAt      time.Time `json:"issued_at"`
-}
 
 // FleetInvite 舰队邀请链接
 type FleetInvite struct {

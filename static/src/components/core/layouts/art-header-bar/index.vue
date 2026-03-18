@@ -18,7 +18,7 @@
         <!-- 系统信息  -->
         <div class="flex-c c-p" @click="toHome" v-if="isTopMenu">
           <ArtLogo class="pl-4.5" />
-          <p v-if="width >= 1400" class="my-0 mx-2 ml-2 text-lg">{{ AppConfig.systemInfo.name }}</p>
+          <p v-if="width >= 1400" class="my-0 mx-2 ml-2 text-lg">{{ siteTitle }}</p>
         </div>
 
         <ArtLogo
@@ -119,7 +119,7 @@
   import { useSettingStore } from '@/store/modules/setting'
   import { useUserStore } from '@/store/modules/user'
   import { useMenuStore } from '@/store/modules/menu'
-  import AppConfig from '@/config'
+  import { useSysConfigStore } from '@/store/modules/sys-config'
   import { languageOptions } from '@/locales'
   import { themeAnimation } from '@/utils/ui/animation'
   import { useCommon } from '@/hooks/core/useCommon'
@@ -136,6 +136,7 @@
   const settingStore = useSettingStore()
   const userStore = useUserStore()
   const menuStore = useMenuStore()
+  const sysConfigStore = useSysConfigStore()
 
   // 顶部栏功能配置
   const {
@@ -161,10 +162,12 @@
   const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU)
   const isTopMenu = computed(() => menuType.value === MenuTypeEnum.TOP)
   const isTopLeftMenu = computed(() => menuType.value === MenuTypeEnum.TOP_LEFT)
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
 
   onMounted(() => {
     initLanguage()
     loadUnreadCount()
+    sysConfigStore.ensureLoaded()
     document.addEventListener('click', bodyCloseNotice)
   })
 

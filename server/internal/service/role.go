@@ -352,6 +352,36 @@ func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
 			continue
 		}
 
+		// admin 角色自动获取所有菜单权限
+		if roleCode == model.RoleAdmin {
+			var allMenuIDs []uint
+			for _, id := range nameToID {
+				allMenuIDs = append(allMenuIDs, id)
+			}
+			if len(allMenuIDs) > 0 {
+				existing, _ := s.repo.GetRoleMenuIDs(role.ID)
+				existSet := make(map[uint]struct{}, len(existing))
+				for _, id := range existing {
+					existSet[id] = struct{}{}
+				}
+				var toAdd []uint
+				for _, id := range allMenuIDs {
+					if _, ok := existSet[id]; !ok {
+						toAdd = append(toAdd, id)
+					}
+				}
+				if len(toAdd) > 0 {
+					merged := append(existing, toAdd...)
+					if err := s.repo.SetRoleMenus(role.ID, merged); err != nil {
+						global.Logger.Error("设置管理员全部菜单失败", zap.String("role", roleCode), zap.Error(err))
+					} else {
+						global.Logger.Info("管理员菜单已增量更新", zap.String("role", roleCode), zap.Int("added", len(toAdd)))
+					}
+				}
+			}
+			continue
+		}
+
 		// 计算 seed 中该角色应有的菜单 ID 集合
 		var seedMenuIDs []uint
 		for _, name := range menuNames {

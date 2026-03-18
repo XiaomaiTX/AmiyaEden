@@ -348,12 +348,14 @@ declare namespace Api {
       description: string
       start_at: string
       end_at: string
-      importance: 'strat_op' | 'cta' | 'skirmish'
+      importance: 'strat_op' | 'cta' | 'other'
       pap_count: number
       fc_user_id: number
       fc_character_id: number
       fc_character_name: string
       esi_fleet_id: number | null
+      fleet_config_id: number | null
+      auto_srp_mode: 'disabled' | 'submit_only' | 'auto_approve'
       created_at: string
       updated_at: string
     }
@@ -374,10 +376,12 @@ declare namespace Api {
       description?: string
       start_at: string
       end_at: string
-      importance: 'strat_op' | 'cta' | 'skirmish'
+      importance: 'strat_op' | 'cta' | 'other'
       pap_count: number
       character_id: number
+      fleet_config_id?: number | null
       send_ping?: boolean
+      auto_srp_mode?: 'disabled' | 'submit_only' | 'auto_approve'
     }
 
     /** 更新舰队请求 */
@@ -390,6 +394,8 @@ declare namespace Api {
       pap_count?: number
       character_id?: number
       esi_fleet_id?: number
+      fleet_config_id?: number | null
+      auto_srp_mode?: 'disabled' | 'submit_only' | 'auto_approve'
     }
 
     /** 舰队成员 */
@@ -411,65 +417,24 @@ declare namespace Api {
       issued_at: string | null
     }
 
-    /** 舰队成员（含 PAP 信息）*/
-    interface MemberWithPap extends FleetMember {
-      pap_count: number | null
-      issued_at: string | null
-    }
-
-    /** 舰队 PAP 记录 */
-    interface FleetPapLog {
+    /** PAP 记录 */
+    interface PapLog {
       id: number
       fleet_id: string
+      fleet_title?: string
       character_id: number
+      character_name?: string
       user_id: number
       pap_count: number
       issued_by: number
-      issued_at: string
-    }
-
-    /** 我的 PAP 记录 */
-    interface MyPapLog extends FleetPapLog {
-      fleet_title?: string
-      character_name?: string
-      issued_by_name?: string
-      importance: 'strat_op' | 'cta' | 'skirmish' | ''
-    }
-
-    /** 军团 PAP 汇总筛选周期 */
-    type PapSummaryPeriod = 'current_month' | 'last_month' | 'at_year' | 'all'
-
-    /** 军团 PAP 汇总查询参数 */
-    type CorporationPapSummaryParams = Partial<Api.Common.CommonSearchParams> & {
-      period?: PapSummaryPeriod
-      year?: number
-      corp_tickers?: string
-    }
-
-    /** 军团 PAP 汇总项 */
-    interface CorporationPapSummaryItem {
-      user_id: number
-      corp_ticker: string
-      main_character_name: string
-      character_count: number
-      strat_op_paps: number
-      skirmish_paps: number
-    }
-
-    /** 军团 PAP 页头概览 */
-    interface CorporationPapOverview {
-      filtered_pap_total: number
-      all_pap_total: number
-      last_month_pap_total: number
-      filtered_user_count: number
-      period: PapSummaryPeriod
-      year?: number
-    }
-
-    /** 军团 PAP 汇总分页响应 */
-    interface CorporationPapSummaryList
-      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
-      overview: CorporationPapOverview
+      created_at: string
+      /** 以下为富化字段（联表查询返回） */
+      character_name: string
+      fleet_title: string
+      fleet_start_at: string
+      fc_character_name: string
+      fleet_importance: string
+      ship_type_id: number | null
     }
 
     /** 邀请链接 */
@@ -534,6 +499,127 @@ declare namespace Api {
     }
   }
 
+  /** 舰队配置类型 */
+  namespace FleetConfig {
+    /** 舰队配置装配条目（不含 EFT，通过专用端点获取） */
+    interface FittingItem {
+      id: number
+      fleet_config_id: number
+      ship_type_id: number
+      fitting_name: string
+      srp_amount: number
+    }
+
+    /** 舰队配置 */
+    interface FleetConfigItem {
+      id: number
+      name: string
+      description: string
+      created_by: number
+      created_at: string
+      updated_at: string
+      fittings: FittingItem[]
+    }
+
+    /** 舰队配置列表（分页） */
+    type FleetConfigList = Api.Common.PaginatedResponse<FleetConfigItem>
+
+    /** 创建/更新装配条目请求（输入英文 EFT，后端解析） */
+    interface FittingReq {
+      fitting_name: string
+      eft: string
+      srp_amount: number
+    }
+
+    /** 创建舰队配置请求 */
+    interface CreateFleetConfigParams {
+      name: string
+      description?: string
+      fittings: FittingReq[]
+    }
+
+    /** 更新舰队配置请求 */
+    interface UpdateFleetConfigParams {
+      name?: string
+      description?: string
+      fittings?: FittingReq[]
+    }
+
+    /** 从用户装配导入请求 */
+    interface ImportFittingParams {
+      character_id: number
+      fitting_id: number
+    }
+
+    /** 从用户装配导入响应（英文 EFT） */
+    interface ImportFittingResponse {
+      fitting_name: string
+      eft: string
+      srp_amount: number
+    }
+
+    /** 导出到 ESI 请求 */
+    interface ExportToESIParams {
+      character_id: number
+      fleet_config_id: number
+      fitting_item_id: number
+    }
+
+    /** 单个装配的本地化 EFT */
+    interface EFTFittingItem {
+      id: number
+      eft: string
+    }
+
+    /** GetFittingEFT 响应 */
+    interface EFTResponse {
+      fittings: EFTFittingItem[]
+    }
+
+    /** 装备替代品 */
+    interface FittingItemReplacement {
+      id: number
+      type_id: number
+      type_name: string
+    }
+
+    /** 装备物品详情 */
+    interface FittingItemDetail {
+      id: number
+      type_id: number
+      type_name: string
+      quantity: number
+      flag: string
+      flag_group: string
+      importance: 'required' | 'optional' | 'replaceable'
+      penalty: 'none' | 'half'
+      replacement_penalty: 'none' | 'half'
+      replacements: FittingItemReplacement[]
+    }
+
+    /** 装配物品详情响应 */
+    interface FittingItemsResponse {
+      fitting_id: number
+      fitting_name: string
+      ship_type_id: number
+      items: FittingItemDetail[]
+    }
+
+    /** 单个物品设置更新请求 */
+    interface ItemSettingUpdate {
+      id: number
+      importance: 'required' | 'optional' | 'replaceable'
+      penalty: 'none' | 'half'
+      replacement_penalty: 'none' | 'half'
+      replacements?: number[]
+    }
+
+    /** 批量更新装备设置请求 */
+    interface UpdateItemsSettingsParams {
+      items: ItemSettingUpdate[]
+    }
+  }
+
   /** 系统钱包类型（独立于 EVE Wallet） */
   namespace SysWallet {
     /** 钱包信息 */
@@ -542,6 +628,7 @@ declare namespace Api {
       user_id: number
       balance: number
       updated_at: string
+      character_name?: string
     }
 
     /** 钱包流水 */
@@ -555,6 +642,7 @@ declare namespace Api {
       balance_after: number
       operator_id: number
       created_at: string
+      character_name?: string
     }
 
     /** 钱包操作日志 */
@@ -568,6 +656,8 @@ declare namespace Api {
       after: number
       reason: string
       created_at: string
+      target_character_name?: string
+      operator_character_name?: string
     }
 
     /** 管理员调整余额请求 */
@@ -686,15 +776,6 @@ declare namespace Api {
       final_amount?: number
     }
 
-    /** 批量发放汇总项 */
-    interface BatchPayoutSummary {
-      user_id: number
-      main_character_id: number
-      main_character_name: string
-      total_amount: number
-      application_count: number
-    }
-
     /** 快捷 KM 列表条目 */
     interface FleetKillmailItem {
       killmail_id: number
@@ -754,6 +835,7 @@ declare namespace Api {
       price: number
       stock: number
       max_per_user: number
+      limit_period: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
       need_approval: boolean
       status: number
@@ -812,6 +894,7 @@ declare namespace Api {
       price: number
       stock?: number
       max_per_user?: number
+      limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
       need_approval?: boolean
       status?: number
@@ -827,6 +910,7 @@ declare namespace Api {
       price?: number
       stock?: number
       max_per_user?: number
+      limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type?: string
       need_approval?: boolean
       status?: number
@@ -864,6 +948,107 @@ declare namespace Api {
       product_id: number
       status: string
     }>
+
+    // ─── 抽奖活动 ───
+
+    /** 抽奖奖品稀有度 */
+    type LotteryPrizeTier = 'normal' | 'rare' | 'legendary'
+
+    /** 抽奖奖品 */
+    interface LotteryPrize {
+      id: number
+      activity_id: number
+      name: string
+      image: string
+      tier: LotteryPrizeTier
+      probability_weight: number
+      total_stock: number
+      drawn_count: number
+      created_at: string
+      updated_at: string
+    }
+
+    /** 抽奖活动 */
+    interface LotteryActivity {
+      id: number
+      name: string
+      description: string
+      image: string
+      cost_per_draw: number
+      status: number
+      start_at: string | null
+      end_at: string | null
+      sort_order: number
+      prizes: LotteryPrize[]
+      created_at: string
+      updated_at: string
+    }
+
+    /** 抽奖记录 */
+    interface LotteryRecord {
+      id: number
+      user_id: number
+      activity_id: number
+      activity_name: string
+      prize_id: number
+      prize_name: string
+      prize_tier: LotteryPrizeTier
+      prize_image: string
+      cost: number
+      delivery_status: 'pending' | 'delivered'
+      created_at: string
+      updated_at: string
+    }
+
+    /** 抽奖结果 */
+    interface DrawResult {
+      prize: LotteryPrize
+    }
+
+    /** 创建抽奖活动参数 */
+    interface LotteryActivityCreateParams {
+      name: string
+      description?: string
+      image?: string
+      cost_per_draw?: number
+      status?: number
+      start_at?: string | null
+      end_at?: string | null
+      sort_order?: number
+    }
+
+    /** 更新抽奖活动参数 */
+    interface LotteryActivityUpdateParams {
+      id: number
+      name?: string
+      description?: string
+      image?: string
+      cost_per_draw?: number
+      status?: number
+      start_at?: string | null
+      end_at?: string | null
+      sort_order?: number
+    }
+
+    /** 创建奖品参数 */
+    interface LotteryPrizeCreateParams {
+      activity_id: number
+      name: string
+      image?: string
+      tier?: LotteryPrizeTier
+      probability_weight?: number
+      total_stock?: number
+    }
+
+    /** 更新奖品参数 */
+    interface LotteryPrizeUpdateParams {
+      id: number
+      name?: string
+      image?: string
+      tier?: LotteryPrizeTier
+      probability_weight?: number
+      total_stock?: number
+    }
   }
 
   /** 通知相关类型 */
@@ -1419,6 +1604,19 @@ declare namespace Api {
       ob_target_type: 'group' | 'private'
       ob_target_id: number
       ob_token: string
+    }
+  }
+
+  /** 系统配置 */
+  namespace SysConfig {
+    interface BasicConfig {
+      corp_id: number
+      site_title: string
+    }
+
+    interface UpdateBasicConfigParams {
+      corp_id?: number
+      site_title?: string
     }
   }
 }

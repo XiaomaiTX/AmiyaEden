@@ -88,15 +88,29 @@
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'operator_id',
-          label: t('walletAdmin.logs.operator'),
-          width: 100,
-          formatter: (row: WalletLog) => h('span', {}, `#${row.operator_id}`)
+          label: '操作人',
+          minWidth: 140,
+          formatter: (row: WalletLog) =>
+            h(
+              'span',
+              {},
+              row.operator_character_name
+                ? `${row.operator_character_name} (#${row.operator_id})`
+                : `#${row.operator_id}`
+            )
         },
         {
           prop: 'target_uid',
-          label: t('walletAdmin.logs.targetUser'),
-          width: 100,
-          formatter: (row: WalletLog) => h('span', {}, `#${row.target_uid}`)
+          label: '目标用户',
+          minWidth: 140,
+          formatter: (row: WalletLog) =>
+            h(
+              'span',
+              {},
+              row.target_character_name
+                ? `${row.target_character_name} (#${row.target_uid})`
+                : `#${row.target_uid}`
+            )
         },
         {
           prop: 'action',

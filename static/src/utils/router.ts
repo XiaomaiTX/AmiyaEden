@@ -6,7 +6,7 @@
  * @module utils/router
  */
 import { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
-import AppConfig from '@/config'
+import { useSysConfigStore } from '@/store/modules/sys-config'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import i18n, { $t } from '@/locales'
@@ -34,7 +34,8 @@ export const setPageTitle = (to: RouteLocationNormalized): void => {
   const { title } = to.meta
   if (title) {
     setTimeout(() => {
-      document.title = `${formatMenuTitle(String(title))} - ${AppConfig.systemInfo.name}`
+      const sysConfigStore = useSysConfigStore()
+      document.title = `${formatMenuTitle(String(title))} - ${sysConfigStore.siteTitle}`
     }, 150)
   }
 }

@@ -44,7 +44,7 @@
           <ElDescriptionsItem :label="$t('fleet.fields.endAt')">{{
             formatTime(fleet.end_at)
           }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="创建时间">{{
+          <ElDescriptionsItem :label="$t('fleet.fields.createdAt')">{{
             formatTime(fleet.created_at)
           }}</ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('fleet.fields.description')" :span="3">
@@ -185,7 +185,7 @@
   const IMPORTANCE_MAP: Record<string, string> = {
     strat_op: 'danger',
     cta: 'warning',
-    skirmish: 'info'
+    other: 'info'
   }
   const importanceType = (v: string) => (IMPORTANCE_MAP[v] || 'info') as any
   const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
