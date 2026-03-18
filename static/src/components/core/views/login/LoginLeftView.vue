@@ -71,13 +71,12 @@
 </template>
 
 <script setup lang="ts">
-  import AppConfig from '@/config'
   import { useSysConfigStore } from '@/store/modules/sys-config'
   import loginIcon from '@imgs/svg/login_icon.svg'
   import { themeAnimation } from '@/utils/ui/animation'
 
   const sysConfigStore = useSysConfigStore()
-  const siteTitle = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
 
   onMounted(() => {
     sysConfigStore.ensureLoaded()

@@ -92,7 +92,7 @@
 
   const mainColors = AppConfig.systemMainColor
   const color = systemThemeColor
-  const siteTitle = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
 
   onMounted(() => {
     sysConfigStore.ensureLoaded()

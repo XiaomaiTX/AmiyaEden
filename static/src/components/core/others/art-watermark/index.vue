@@ -18,7 +18,6 @@
 </template>
 
 <script setup lang="ts">
-  import AppConfig from '@/config'
   import { useSysConfigStore } from '@/store/modules/sys-config'
   import { useSettingStore } from '@/store/modules/setting'
 
@@ -27,7 +26,7 @@
   const settingStore = useSettingStore()
   const sysConfigStore = useSysConfigStore()
   const { watermarkVisible } = storeToRefs(settingStore)
-  const siteTitle = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
 
   onMounted(() => {
     sysConfigStore.ensureLoaded()

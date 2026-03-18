@@ -22,12 +22,11 @@
 </template>
 
 <script setup lang="ts">
-  import AppConfig from '@/config'
   import { useSysConfigStore } from '@/store/modules/sys-config'
   import { WEB_LINKS } from '@/utils/constants'
 
   const sysConfigStore = useSysConfigStore()
-  const systemName = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
+  const systemName = computed(() => sysConfigStore.siteTitle)
 
   onMounted(() => {
     sysConfigStore.ensureLoaded()

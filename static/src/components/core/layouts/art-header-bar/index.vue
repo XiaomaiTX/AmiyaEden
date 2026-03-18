@@ -120,7 +120,6 @@
   import { useUserStore } from '@/store/modules/user'
   import { useMenuStore } from '@/store/modules/menu'
   import { useSysConfigStore } from '@/store/modules/sys-config'
-  import AppConfig from '@/config'
   import { languageOptions } from '@/locales'
   import { themeAnimation } from '@/utils/ui/animation'
   import { useCommon } from '@/hooks/core/useCommon'
@@ -163,7 +162,7 @@
   const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU)
   const isTopMenu = computed(() => menuType.value === MenuTypeEnum.TOP)
   const isTopLeftMenu = computed(() => menuType.value === MenuTypeEnum.TOP_LEFT)
-  const siteTitle = computed(() => sysConfigStore.siteTitle || AppConfig.systemInfo.name)
+  const siteTitle = computed(() => sysConfigStore.siteTitle)
 
   onMounted(() => {
     initLanguage()
