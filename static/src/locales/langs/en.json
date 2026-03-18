@@ -731,6 +731,7 @@
       "timeRange": "Time Range",
       "startAt": "Start Time",
       "endAt": "End Time",
+      "createdAt": "Created At",
       "fc": "Fleet Commander",
       "fcPlaceholder": "Select a character as FC",
       "description": "Description",
@@ -784,7 +785,6 @@
       "ship": "Ship",
       "fc": "FC",
       "level": "Level",
-      "totalPap": "Total PAP",
       "participations": "Participations",
       "importance": {
         "cta": "CTA",

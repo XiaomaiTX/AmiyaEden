@@ -733,6 +733,7 @@
       "timeRange": "起止时间",
       "startAt": "开始时间",
       "endAt": "结束时间",
+      "createdAt": "创建时间",
       "fc": "舰队指挥",
       "fcPlaceholder": "选择一个角色作为舰队指挥",
       "description": "详细信息",
@@ -786,7 +787,6 @@
       "ship": "舰船",
       "fc": "发放 FC",
       "level": "等级",
-      "totalPap": "总 PAP",
       "participations": "参与次数",
       "importance": {
         "cta": "CTA",
