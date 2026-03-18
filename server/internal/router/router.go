@@ -216,6 +216,11 @@ func RegisterRoutes(r *gin.Engine) {
 	// ─── 系统管理（需要 admin 角色）───
 	admin := auth.Group("/system", middleware.RequireRole(model.RoleAdmin))
 
+	// 系统基础配置
+	sysConfigH := handler.NewSysConfigHandler()
+	admin.GET("/basic-config", sysConfigH.GetBasicConfig)
+	admin.PUT("/basic-config", sysConfigH.UpdateBasicConfig)
+
 	// NPC 刷怪报表（管理员 — 公司级）
 	admin.POST("/npc-kills", npcKillH.GetCorpNpcKills)
 

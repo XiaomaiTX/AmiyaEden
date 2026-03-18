@@ -329,9 +329,10 @@
       "alliancePap": "联盟 PAP",
       "npcKills": "刷怪报表",
       "autoRole": "自动权限",
-      "webhook": "Webhook 通知"
+      "webhook": "Webhook 通知",
+      "basicConfig": "基础配置"
     }
-  },
+    },
   "info": {
     "selectCharacter": "选择角色",
     "selectCharacterPlaceholder": "请选择一个角色",
@@ -1548,6 +1549,17 @@
       "contentPlaceholder": "留空则使用默认测试文本",
       "sendBtn": "发送测试",
       "success": "测试消息已发送"
+    }
+  },
+  "system": {
+    "basicConfig": {
+      "title": "基础配置",
+      "corpId": "军团ID",
+      "siteTitle": "网站标题",
+      "save": "保存",
+      "corpIdPlaceholder": "请输入军团ID",
+      "siteTitlePlaceholder": "请输入网站标题",
+      "saveSuccess": "配置已保存"
     }
   }
 }

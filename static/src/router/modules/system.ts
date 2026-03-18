@@ -105,6 +105,16 @@ export const systemRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin']
       }
+    },
+    {
+      path: 'basic-config',
+      name: 'BasicConfig',
+      component: '/system/basic-config',
+      meta: {
+        title: 'menus.system.basicConfig',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
     }
   ]
 }

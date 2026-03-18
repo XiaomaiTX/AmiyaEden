@@ -1603,4 +1603,17 @@ declare namespace Api {
       ob_token: string
     }
   }
+
+  /** 系统配置 */
+  namespace SysConfig {
+    interface BasicConfig {
+      corp_id: number
+      site_title: string
+    }
+
+    interface UpdateBasicConfigParams {
+      corp_id?: number
+      site_title?: string
+    }
+  }
 }

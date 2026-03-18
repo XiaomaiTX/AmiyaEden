@@ -285,7 +285,8 @@
       "alliancePap": "Alliance PAP",
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
-      "webhook": "Webhook Notifications"
+      "webhook": "Webhook Notifications",
+      "basicConfig": "Basic Config"
     },
     "shop": {
       "title": "Shop",
@@ -1546,6 +1547,17 @@
       "contentPlaceholder": "Leave blank for default test message",
       "sendBtn": "Send Test",
       "success": "Test message sent"
+    }
+  },
+  "system": {
+    "basicConfig": {
+      "title": "Basic Config",
+      "corpId": "Corporation ID",
+      "siteTitle": "Site Title",
+      "save": "Save",
+      "corpIdPlaceholder": "Please enter corporation ID",
+      "siteTitlePlaceholder": "Please enter site title",
+      "saveSuccess": "Configuration saved"
     }
   }
 }
