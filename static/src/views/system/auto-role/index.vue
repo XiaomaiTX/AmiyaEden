@@ -5,38 +5,36 @@
     <ElCard class="mb-4" shadow="never">
       <div class="flex items-center justify-between">
         <div>
-          <div class="text-base font-semibold">{{ t('autoRolePage.title') }}</div>
+          <div class="text-base font-semibold">ESI 自动权限</div>
           <div class="mt-1 text-sm text-gray-500">
-            {{ t('autoRolePage.description') }}<br />
-            {{ t('autoRolePage.directorHint') }}
+            根据角色的 EVE 军团职位和头衔，自动分配系统权限。<br />
+            Director 始终自动映射为 admin 角色。
           </div>
         </div>
         <ElButton type="primary" :loading="syncLoading" @click="handleTriggerSync">
-          {{ t('autoRolePage.triggerSync') }}
+          手动触发同步
         </ElButton>
       </div>
     </ElCard>
 
     <ElTabs v-model="activeTab" type="border-card">
       <!-- ─── Tab 1：军团职位映射 ─── -->
-      <ElTabPane :label="t('autoRolePage.tabs.esiRole')" name="esi-role">
+      <ElTabPane label="军团职位映射" name="esi-role">
         <div class="flex items-center justify-between mb-3">
           <span class="text-sm text-gray-500">
-            {{ t('autoRolePage.descriptions.esiRole') }}
+            配置 EVE 军团职位（Corporation Role）与系统权限的对应关系。
           </span>
-          <ElButton type="primary" :icon="Plus" @click="openEsiRoleDialog">
-            {{ t('autoRolePage.addMapping') }}
-          </ElButton>
+          <ElButton type="primary" :icon="Plus" @click="openEsiRoleDialog"> 新增映射 </ElButton>
         </div>
 
         <ElTable v-loading="esiRoleLoading" :data="esiRoleMappings" border stripe>
-          <ElTableColumn :label="t('autoRolePage.columns.index')" type="index" width="60" />
-          <ElTableColumn :label="t('autoRolePage.columns.esiRole')" prop="esi_role" min-width="200">
+          <ElTableColumn label="序号" type="index" width="60" />
+          <ElTableColumn label="EVE 军团职位" prop="esi_role" min-width="200">
             <template #default="{ row }">
               <ElTag size="small" type="warning" effect="plain">{{ row.esi_role }}</ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="t('autoRolePage.columns.mappedRole')" min-width="200">
+          <ElTableColumn label="映射系统角色" min-width="200">
             <template #default="{ row }">
               <ElTag size="small" :type="getRoleTagType(row.role_code)" effect="dark">
                 {{ row.role_name || row.role_code }}
@@ -44,21 +42,21 @@
               <span class="ml-1 text-xs text-gray-400">{{ row.role_code }}</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="t('common.createdAt')" prop="created_at" width="180">
+          <ElTableColumn label="创建时间" prop="created_at" width="180">
             <template #default="{ row }">
               {{ formatDate(row.created_at) }}
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="t('common.operation')" width="100" fixed="right">
+          <ElTableColumn label="操作" width="100" fixed="right">
             <template #default="{ row }">
               <ElPopconfirm
-                :title="t('autoRolePage.deleteConfirm')"
-                :confirm-button-text="t('common.delete')"
-                :cancel-button-text="t('common.cancel')"
+                title="确认删除此映射？"
+                confirm-button-text="删除"
+                cancel-button-text="取消"
                 @confirm="handleDeleteEsiRole(row.id)"
               >
                 <template #reference>
-                  <ElButton size="small" type="danger" plain>{{ t('common.delete') }}</ElButton>
+                  <ElButton size="small" type="danger" plain>删除</ElButton>
                 </template>
               </ElPopconfirm>
             </template>
@@ -67,36 +65,25 @@
       </ElTabPane>
 
       <!-- ─── Tab 2：头衔映射 ─── -->
-      <ElTabPane :label="t('autoRolePage.tabs.title')" name="title">
+      <ElTabPane label="军团头衔映射" name="title">
         <div class="flex items-center justify-between mb-3">
           <span class="text-sm text-gray-500">
-            {{ t('autoRolePage.descriptions.title') }}
+            配置军团头衔（Corporation Title）与系统权限的对应关系，需指定军团 ID。
           </span>
-          <ElButton type="primary" :icon="Plus" @click="openTitleDialog">
-            {{ t('autoRolePage.addMapping') }}
-          </ElButton>
+          <ElButton type="primary" :icon="Plus" @click="openTitleDialog"> 新增映射 </ElButton>
         </div>
 
         <ElTable v-loading="titleLoading" :data="titleMappings" border stripe>
-          <ElTableColumn :label="t('autoRolePage.columns.index')" type="index" width="60" />
-          <ElTableColumn
-            :label="t('autoRolePage.columns.corporationId')"
-            prop="corporation_id"
-            width="160"
-          />
-          <ElTableColumn :label="t('autoRolePage.columns.titleId')" prop="title_id" width="100" />
-          <ElTableColumn
-            :label="t('autoRolePage.columns.titleName')"
-            prop="title_name"
-            min-width="180"
-            show-overflow-tooltip
-          >
+          <ElTableColumn label="序号" type="index" width="60" />
+          <ElTableColumn label="军团 ID" prop="corporation_id" width="160" />
+          <ElTableColumn label="头衔 ID" prop="title_id" width="100" />
+          <ElTableColumn label="头衔名称" prop="title_name" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">
               <span v-if="row.title_name" class="text-orange-400">{{ row.title_name }}</span>
               <span v-else class="text-gray-400">—</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="t('autoRolePage.columns.mappedRole')" min-width="180">
+          <ElTableColumn label="映射系统角色" min-width="180">
             <template #default="{ row }">
               <ElTag size="small" :type="getRoleTagType(row.role_code)" effect="dark">
                 {{ row.role_name || row.role_code }}
@@ -104,21 +91,21 @@
               <span class="ml-1 text-xs text-gray-400">{{ row.role_code }}</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="t('common.createdAt')" prop="created_at" width="180">
+          <ElTableColumn label="创建时间" prop="created_at" width="180">
             <template #default="{ row }">
               {{ formatDate(row.created_at) }}
             </template>
           </ElTableColumn>
-          <ElTableColumn :label="t('common.operation')" width="100" fixed="right">
+          <ElTableColumn label="操作" width="100" fixed="right">
             <template #default="{ row }">
               <ElPopconfirm
-                :title="t('autoRolePage.deleteConfirm')"
-                :confirm-button-text="t('common.delete')"
-                :cancel-button-text="t('common.cancel')"
+                title="确认删除此映射？"
+                confirm-button-text="删除"
+                cancel-button-text="取消"
                 @confirm="handleDeleteTitle(row.id)"
               >
                 <template #reference>
-                  <ElButton size="small" type="danger" plain>{{ t('common.delete') }}</ElButton>
+                  <ElButton size="small" type="danger" plain>删除</ElButton>
                 </template>
               </ElPopconfirm>
             </template>
@@ -130,7 +117,7 @@
     <!-- ─── 新增 ESI 角色映射对话框 ─── -->
     <ElDialog
       v-model="esiRoleDialogVisible"
-      :title="t('autoRolePage.createEsiRoleTitle')"
+      title="新增军团职位映射"
       width="460px"
       destroy-on-close
     >
@@ -140,20 +127,25 @@
         :rules="esiRoleFormRules"
         label-width="100px"
       >
-        <ElFormItem :label="t('autoRolePage.fields.esiRole')" prop="esi_role">
+        <ElFormItem label="EVE 职位" prop="esi_role">
           <ElSelect
             v-model="esiRoleForm.esi_role"
-            :placeholder="t('autoRolePage.placeholders.esiRole')"
+            placeholder="选择军团职位"
             filterable
             style="width: 100%"
           >
-            <ElOption v-for="role in allEsiRoles" :key="role" :label="role" :value="role" />
+            <ElOption
+              v-for="role in allEsiRoles"
+              :key="role"
+              :label="role"
+              :value="role"
+            />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('autoRolePage.fields.systemRole')" prop="role_id">
+        <ElFormItem label="系统角色" prop="role_id">
           <ElSelect
             v-model="esiRoleForm.role_id"
-            :placeholder="t('autoRolePage.placeholders.systemRole')"
+            placeholder="选择系统角色"
             filterable
             style="width: 100%"
           >
@@ -170,9 +162,9 @@
         </ElFormItem>
       </ElForm>
       <template #footer>
-        <ElButton @click="esiRoleDialogVisible = false">{{ t('common.cancel') }}</ElButton>
+        <ElButton @click="esiRoleDialogVisible = false">取消</ElButton>
         <ElButton type="primary" :loading="esiRoleSubmitting" @click="handleCreateEsiRole">
-          {{ t('common.confirm') }}
+          确定
         </ElButton>
       </template>
     </ElDialog>
@@ -180,40 +172,41 @@
     <!-- ─── 新增头衔映射对话框 ─── -->
     <ElDialog
       v-model="titleDialogVisible"
-      :title="t('autoRolePage.createTitleTitle')"
+      title="新增军团头衔映射"
       width="480px"
       destroy-on-close
     >
-      <ElForm ref="titleFormRef" :model="titleForm" :rules="titleFormRules" label-width="100px">
-        <ElFormItem :label="t('autoRolePage.fields.title')" prop="title_key">
+      <ElForm
+        ref="titleFormRef"
+        :model="titleForm"
+        :rules="titleFormRules"
+        label-width="100px"
+      >
+        <ElFormItem label="选择头衔" prop="title_key">
           <ElSelect
             v-model="titleForm.title_key"
             filterable
-            :placeholder="t('autoRolePage.placeholders.title')"
+            placeholder="选择军团头衔"
             style="width: 100%"
             @change="onTitleKeyChange"
           >
             <ElOption
               v-for="t in allCorpTitles"
               :key="`${t.corporation_id}_${t.title_id}`"
-              :label="t.title_name || $t('autoRolePage.titleFallback', { id: t.title_id })"
+              :label="t.title_name || `头衔 ${t.title_id}`"
               :value="`${t.corporation_id}_${t.title_id}`"
             >
               <div class="flex items-center justify-between">
-                <span>{{
-                  t.title_name || $t('autoRolePage.titleFallback', { id: t.title_id })
-                }}</span>
-                <span class="ml-3 text-xs text-gray-400">
-                  {{ $t('autoRolePage.corpPrefix', { id: t.corporation_id }) }}
-                </span>
+                <span>{{ t.title_name || `头衔 ${t.title_id}` }}</span>
+                <span class="ml-3 text-xs text-gray-400">Corp {{ t.corporation_id }}</span>
               </div>
             </ElOption>
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('autoRolePage.fields.systemRole')" prop="role_id">
+        <ElFormItem label="系统角色" prop="role_id">
           <ElSelect
             v-model="titleForm.role_id"
-            :placeholder="t('autoRolePage.placeholders.systemRole')"
+            placeholder="选择系统角色"
             filterable
             style="width: 100%"
           >
@@ -230,10 +223,10 @@
         </ElFormItem>
       </ElForm>
       <template #footer>
-        <ElButton @click="titleDialogVisible = false">{{ t('common.cancel') }}</ElButton>
-        <ElButton type="primary" :loading="titleSubmitting" @click="handleCreateTitle">{{
-          t('common.confirm')
-        }}</ElButton>
+        <ElButton @click="titleDialogVisible = false">取消</ElButton>
+        <ElButton type="primary" :loading="titleSubmitting" @click="handleCreateTitle">
+          确定
+        </ElButton>
       </template>
     </ElDialog>
   </div>
@@ -243,7 +236,6 @@
   import { ref, onMounted } from 'vue'
   import { Plus } from '@element-plus/icons-vue'
   import type { FormInstance, FormRules } from 'element-plus'
-  import { useI18n } from 'vue-i18n'
   import {
     fetchGetEsiRoleMappings,
     fetchCreateEsiRoleMapping,
@@ -258,7 +250,6 @@
   } from '@/api/system-manage'
 
   defineOptions({ name: 'AutoRole' })
-  const { t } = useI18n()
 
   type EsiRoleMapping = Api.SystemManage.EsiRoleMapping
   type EsiTitleMapping = Api.SystemManage.EsiTitleMapping
@@ -284,7 +275,7 @@
   // ─── 日期格式化 ───
   function formatDate(dateStr: string) {
     if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleString(undefined, {
+    return new Date(dateStr).toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -326,10 +317,10 @@
   async function handleDeleteEsiRole(id: number) {
     try {
       await fetchDeleteEsiRoleMapping(id)
-      ElMessage.success(t('autoRolePage.deleteSuccess'))
+      ElMessage.success('删除成功')
       await loadEsiRoleMappings()
     } catch (e: any) {
-      ElMessage.error(e?.message ?? t('autoRolePage.deleteFailed'))
+      ElMessage.error(e?.message ?? '删除失败')
     }
   }
 
@@ -342,8 +333,8 @@
     role_id: undefined as number | undefined
   })
   const esiRoleFormRules: FormRules = {
-    esi_role: [{ required: true, message: t('autoRolePage.rules.esiRole'), trigger: 'change' }],
-    role_id: [{ required: true, message: t('autoRolePage.rules.systemRole'), trigger: 'change' }]
+    esi_role: [{ required: true, message: '请选择 EVE 军团职位', trigger: 'change' }],
+    role_id: [{ required: true, message: '请选择系统角色', trigger: 'change' }]
   }
 
   function openEsiRoleDialog() {
@@ -361,11 +352,11 @@
         esi_role: esiRoleForm.esi_role,
         role_id: esiRoleForm.role_id!
       })
-      ElMessage.success(t('autoRolePage.mappingCreated'))
+      ElMessage.success('映射创建成功')
       esiRoleDialogVisible.value = false
       await loadEsiRoleMappings()
     } catch (e: any) {
-      ElMessage.error(e?.message ?? t('autoRolePage.createFailed'))
+      ElMessage.error(e?.message ?? '创建失败')
     } finally {
       esiRoleSubmitting.value = false
     }
@@ -387,10 +378,10 @@
   async function handleDeleteTitle(id: number) {
     try {
       await fetchDeleteEsiTitleMapping(id)
-      ElMessage.success(t('autoRolePage.deleteSuccess'))
+      ElMessage.success('删除成功')
       await loadTitleMappings()
     } catch (e: any) {
-      ElMessage.error(e?.message ?? t('autoRolePage.deleteFailed'))
+      ElMessage.error(e?.message ?? '删除失败')
     }
   }
 
@@ -406,8 +397,8 @@
     role_id: undefined as number | undefined
   })
   const titleFormRules: FormRules = {
-    title_key: [{ required: true, message: t('autoRolePage.rules.title'), trigger: 'change' }],
-    role_id: [{ required: true, message: t('autoRolePage.rules.systemRole'), trigger: 'change' }]
+    title_key: [{ required: true, message: '请选择头衔', trigger: 'change' }],
+    role_id: [{ required: true, message: '请选择系统角色', trigger: 'change' }]
   }
 
   function onTitleKeyChange(key: string) {
@@ -439,11 +430,11 @@
         title_name: titleForm.title_name || undefined,
         role_id: titleForm.role_id!
       })
-      ElMessage.success(t('autoRolePage.mappingCreated'))
+      ElMessage.success('映射创建成功')
       titleDialogVisible.value = false
       await loadTitleMappings()
     } catch (e: any) {
-      ElMessage.error(e?.message ?? t('autoRolePage.createFailed'))
+      ElMessage.error(e?.message ?? '创建失败')
     } finally {
       titleSubmitting.value = false
     }
@@ -456,9 +447,9 @@
     syncLoading.value = true
     try {
       await fetchTriggerAutoRoleSync()
-      ElMessage.success(t('autoRolePage.syncTriggered'))
+      ElMessage.success('同步任务已触发，将在后台执行')
     } catch (e: any) {
-      ElMessage.error(e?.message ?? t('autoRolePage.syncFailed'))
+      ElMessage.error(e?.message ?? '触发失败')
     } finally {
       syncLoading.value = false
     }

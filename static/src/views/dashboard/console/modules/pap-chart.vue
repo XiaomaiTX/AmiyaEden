@@ -4,7 +4,7 @@
       <div class="title">
         <h4>{{ title }}</h4>
         <p>
-          {{ $t('dashboardConsole.papChart.recentMonths', { count: chartData.length }) }}
+          {{ $t('console.papChart.recentMonths', { count: chartData.length }) }}
         </p>
       </div>
     </div>
@@ -18,7 +18,7 @@
       />
     </div>
     <div v-else class="flex-cc h-[calc(100%-40px)] text-g-500 text-sm">
-      {{ $t('dashboardConsole.papChart.empty') }}
+      {{ $t('console.papChart.empty') }}
     </div>
   </div>
 </template>
@@ -27,6 +27,7 @@
   import { useI18n } from 'vue-i18n'
 
   const { t } = useI18n()
+
   const props = defineProps<{
     title: string
     data: Api.Dashboard.PapMonthly[]
@@ -41,7 +42,7 @@
   })
 
   const chartLabels = computed(() => {
-    return chartData.value.map((d) => t('dashboardConsole.papChart.monthLabel', { month: d.month }))
+    return chartData.value.map((d) => t('console.papChart.monthLabel', { month: d.month }))
   })
 
   const chartValues = computed(() => {

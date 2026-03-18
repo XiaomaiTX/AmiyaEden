@@ -18,20 +18,6 @@
         <p class="sub">{{ $t('login.callback.successSub', { name: userName }) }}</p>
       </template>
 
-      <template v-else-if="status === 'conflict'">
-        <div class="icon-wrap warning">
-          <el-icon :size="48"><WarningFilled /></el-icon>
-        </div>
-        <p class="title">{{ $t('login.callback.conflictTitle') }}</p>
-        <p class="sub">{{ $t('login.callback.conflictDesc', { name: conflictCharName }) }}</p>
-        <div class="flex gap-3 mt-6">
-          <ElButton @click="goLogin">{{ $t('common.cancel') }}</ElButton>
-          <ElButton type="primary" :loading="transferring" @click="doConfirmTransfer">
-            {{ $t('login.callback.confirmTransfer') }}
-          </ElButton>
-        </div>
-      </template>
-
       <template v-else-if="status === 'error'">
         <div class="icon-wrap error">
           <el-icon :size="48"><CircleCloseFilled /></el-icon>
@@ -47,77 +33,26 @@
 </template>
 
 <script setup lang="ts">
-  import {
-    Loading,
-    CircleCheckFilled,
-    CircleCloseFilled,
-    WarningFilled
-  } from '@element-plus/icons-vue'
-  import { useI18n } from 'vue-i18n'
+  import { Loading, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchGetUserInfo, confirmCharacterTransfer } from '@/api/auth'
+  import { fetchGetUserInfo } from '@/api/auth'
 
   defineOptions({ name: 'AuthCallback' })
 
-  type Status = 'loading' | 'success' | 'error' | 'conflict'
+  type Status = 'loading' | 'success' | 'error'
 
   const status = ref<Status>('loading')
   const errMsg = ref('')
   const userName = ref('')
-  const conflictCharName = ref('')
-  const transferToken = ref('')
-  const transferring = ref(false)
-  const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
   const userStore = useUserStore()
 
   const goLogin = () => router.replace({ name: 'Login' })
 
-  /** 处理正常登录成功后的流程 */
-  async function handleLoginSuccess(token: string) {
-    userStore.setToken(token)
-    userStore.setLoginStatus(true)
-
-    const userInfo = await fetchGetUserInfo()
-    userStore.setUserInfo(userInfo)
-    userStore.checkAndClearWorktabs()
-
-    userName.value = userInfo.userName
-    status.value = 'success'
-
-    const redirect = (route.query.redirect as string) || '/'
-    setTimeout(() => {
-      router.replace(redirect)
-    }, 1200)
-  }
-
-  /** 确认角色转移 */
-  async function doConfirmTransfer() {
-    transferring.value = true
-    try {
-      const data = await confirmCharacterTransfer(transferToken.value)
-      await handleLoginSuccess(data.token)
-    } catch (err: any) {
-      status.value = 'error'
-      errMsg.value = err?.message ?? t('authCallback.verifyFailed')
-    } finally {
-      transferring.value = false
-    }
-  }
-
   onMounted(async () => {
     const token = route.query.token as string
     const error = route.query.error as string
-    const conflict = route.query.conflict as string
-
-    // 角色转移冲突：显示确认弹窗
-    if (conflict === 'true') {
-      conflictCharName.value = (route.query.character_name as string) || ''
-      transferToken.value = (route.query.transfer_token as string) || ''
-      status.value = 'conflict'
-      return
-    }
 
     // EVE 端拒绝授权
     if (error) {
@@ -128,18 +63,34 @@
 
     if (!token) {
       status.value = 'error'
-      errMsg.value = t('authCallback.missingToken')
+      errMsg.value = '未收到登录令牌，请重试'
       return
     }
 
     try {
-      await handleLoginSuccess(token)
+      // 1. 存储 token 并设置登录状态
+      userStore.setToken(token)
+      userStore.setLoginStatus(true)
+
+      // 2. 拉取用户信息
+      const userInfo = await fetchGetUserInfo()
+      userStore.setUserInfo(userInfo)
+      userStore.checkAndClearWorktabs()
+
+      userName.value = userInfo.userName
+      status.value = 'success'
+
+      // 3. 短暂停留后跳转
+      const redirect = (route.query.redirect as string) || '/'
+      setTimeout(() => {
+        router.replace(redirect)
+      }, 1200)
     } catch (err: any) {
       // token 无效或请求失败
       userStore.setToken('')
       userStore.setLoginStatus(false)
       status.value = 'error'
-      errMsg.value = err?.message ?? t('authCallback.verifyFailed')
+      errMsg.value = err?.message ?? '登录验证失败，请重试'
     }
   })
 </script>
@@ -162,10 +113,6 @@
 
       &.success :deep(.el-icon) {
         color: var(--el-color-success);
-      }
-
-      &.warning :deep(.el-icon) {
-        color: var(--el-color-warning);
       }
 
       &.error :deep(.el-icon) {

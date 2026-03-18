@@ -4,7 +4,7 @@
     <template #left>
       <ElInput
         v-model="filterForm.target_uid"
-        :placeholder="$t('walletAdmin.placeholders.targetUserId')"
+        placeholder="目标用户 ID"
         clearable
         style="width: 150px"
         @clear="handleSearch"
@@ -12,7 +12,7 @@
       />
       <ElInput
         v-model="filterForm.operator_id"
-        :placeholder="$t('walletAdmin.placeholders.operatorId')"
+        placeholder="操作人 ID"
         clearable
         style="width: 150px"
         @clear="handleSearch"
@@ -20,16 +20,16 @@
       />
       <ElSelect
         v-model="filterForm.action"
-        :placeholder="$t('walletAdmin.placeholders.action')"
+        placeholder="操作类型"
         clearable
         style="width: 130px"
         @change="handleSearch"
       >
-        <ElOption :label="$t('walletAdmin.actions.add')" value="add" />
-        <ElOption :label="$t('walletAdmin.actions.deduct')" value="deduct" />
-        <ElOption :label="$t('walletAdmin.actions.set')" value="set" />
+        <ElOption label="增加" value="add" />
+        <ElOption label="扣减" value="deduct" />
+        <ElOption label="设置" value="set" />
       </ElSelect>
-      <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
+      <ElButton type="primary" @click="handleSearch">查询</ElButton>
     </template>
   </ArtTableHeader>
 
@@ -45,19 +45,17 @@
 
 <script setup lang="ts">
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
-  import { useI18n } from 'vue-i18n'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListWalletLogs } from '@/api/sys-wallet'
 
   defineOptions({ name: 'WalletLogs' })
-  const { t } = useI18n()
 
   type WalletLog = Api.SysWallet.WalletLog
 
   const ACTION_MAP: Record<string, { label: string; tag: string }> = {
-    add: { label: t('walletAdmin.actions.add'), tag: 'success' },
-    deduct: { label: t('walletAdmin.actions.deduct'), tag: 'danger' },
-    set: { label: t('walletAdmin.actions.set'), tag: 'warning' }
+    add: { label: '增加', tag: 'success' },
+    deduct: { label: '扣减', tag: 'danger' },
+    set: { label: '设置', tag: 'warning' }
   }
   const getActionLabel = (a: string) => ACTION_MAP[a]?.label ?? a
   const getActionTag = (a: string): any => ACTION_MAP[a]?.tag ?? 'info'
@@ -88,19 +86,33 @@
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'operator_id',
-          label: t('walletAdmin.logs.operator'),
-          width: 100,
-          formatter: (row: WalletLog) => h('span', {}, `#${row.operator_id}`)
+          label: '操作人',
+          minWidth: 140,
+          formatter: (row: WalletLog) =>
+            h(
+              'span',
+              {},
+              row.operator_character_name
+                ? `${row.operator_character_name} (#${row.operator_id})`
+                : `#${row.operator_id}`
+            )
         },
         {
           prop: 'target_uid',
-          label: t('walletAdmin.logs.targetUser'),
-          width: 100,
-          formatter: (row: WalletLog) => h('span', {}, `#${row.target_uid}`)
+          label: '目标用户',
+          minWidth: 140,
+          formatter: (row: WalletLog) =>
+            h(
+              'span',
+              {},
+              row.target_character_name
+                ? `${row.target_character_name} (#${row.target_uid})`
+                : `#${row.target_uid}`
+            )
         },
         {
           prop: 'action',
-          label: t('common.operation'),
+          label: '操作',
           width: 100,
           formatter: (row: WalletLog) =>
             h(ElTag, { size: 'small', type: getActionTag(row.action) }, () =>
@@ -109,31 +121,31 @@
         },
         {
           prop: 'amount',
-          label: t('common.amount'),
+          label: '金额',
           width: 140,
           formatter: (row: WalletLog) => h('span', {}, formatISK(row.amount))
         },
         {
           prop: 'before',
-          label: t('walletAdmin.logs.before'),
+          label: '操作前余额',
           width: 140,
           formatter: (row: WalletLog) => h('span', {}, formatISK(row.before))
         },
         {
           prop: 'after',
-          label: t('walletAdmin.logs.after'),
+          label: '操作后余额',
           width: 140,
           formatter: (row: WalletLog) => h('span', {}, formatISK(row.after))
         },
         {
           prop: 'reason',
-          label: t('common.reason'),
+          label: '原因',
           minWidth: 200,
           showOverflowTooltip: true
         },
         {
           prop: 'created_at',
-          label: t('common.time'),
+          label: '时间',
           width: 200,
           formatter: (row: WalletLog) => h('span', {}, formatTime(row.created_at))
         }

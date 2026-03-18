@@ -11,8 +11,6 @@
 </template>
 
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n'
-
   interface Props {
     modelValue: Record<string, any>
   }
@@ -23,7 +21,6 @@
   }
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
-  const { t } = useI18n()
 
   // 表单数据双向绑定
   const searchBarRef = ref()
@@ -37,25 +34,25 @@
 
   // 状态选项
   const statusOptions = [
-    { label: t('userAdmin.status.active'), value: 1 },
-    { label: t('userAdmin.status.disabled'), value: 0 }
+    { label: '正常', value: 1 },
+    { label: '禁用', value: 0 }
   ]
 
   // 表单配置
   const formItems = computed(() => [
     {
-      label: t('userAdmin.search.nickname'),
+      label: '昵称',
       key: 'nickname',
       type: 'input',
-      placeholder: t('userAdmin.search.nicknamePlaceholder'),
+      placeholder: '请输入昵称',
       clearable: true
     },
     {
-      label: t('common.status'),
+      label: '状态',
       key: 'status',
       type: 'select',
       props: {
-        placeholder: t('userAdmin.search.statusPlaceholder'),
+        placeholder: '请选择状态',
         options: statusOptions,
         clearable: true
       }

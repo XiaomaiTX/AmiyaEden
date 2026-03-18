@@ -25,14 +25,11 @@
 </template>
 
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n'
-
   import { humanizeNumber } from '@/utils/common/text'
 
   const props = defineProps<{
     cards?: Api.Dashboard.Cards
   }>()
-  const { t } = useI18n()
 
   interface CardDataItem {
     label: string
@@ -47,7 +44,7 @@
     const c = props.cards
     return [
       {
-        label: t('dashboardConsole.cards.eveWalletBalance'),
+        label: 'EVE 钱包余额',
         icon: 'ri:wallet-3-line',
         value: c?.eve_wallet_balance ?? 0,
         decimals: 2,
@@ -55,7 +52,7 @@
         desc: humanizeNumber(c?.eve_wallet_balance ?? 0)
       },
       {
-        label: t('dashboardConsole.cards.eveSkillPoints'),
+        label: 'EVE 技能点',
         icon: 'ri:brain-line',
         value: c?.eve_skill_points ?? 0,
         decimals: 0,
@@ -63,7 +60,7 @@
         desc: humanizeNumber(c?.eve_skill_points ?? 0)
       },
       {
-        label: t('dashboardConsole.cards.systemWallet'),
+        label: '系统钱包',
         icon: 'ri:money-cny-circle-line',
         value: c?.system_wallet_balance ?? 0,
         decimals: 2,
@@ -71,7 +68,7 @@
         desc: ''
       },
       {
-        label: t('dashboardConsole.cards.currentAlliancePap'),
+        label: '当月联盟 PAP',
         icon: 'ri:shield-star-line',
         value: c?.alliance_pap ?? 0,
         decimals: 1,

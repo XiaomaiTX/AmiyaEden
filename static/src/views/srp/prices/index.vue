@@ -4,30 +4,28 @@
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="loadPrices">
         <template #left>
-          <div class="flex items-start gap-3 flex-wrap">
-            <ElInput
-              v-model="keyword"
-              :placeholder="$t('srp.prices.searchPlaceholder')"
-              clearable
-              style="width: 200px"
-              @keyup.enter="loadPrices"
-              @clear="loadPrices"
-            />
-            <ElButton type="primary" :icon="Plus" @click="openAddDialog">
-              {{ $t('srp.prices.addPrice') }}
-            </ElButton>
-            <ArtExcelExport
-              :data="exportPricesData"
-              :headers="pricesExportHeaders"
-              :filename="`srp-prices_${new Date().toLocaleDateString()}`"
-              sheet-name="SRP价格表"
-              :button-text="$t('srp.prices.exportBtn')"
-              type="success"
-            />
-            <ArtExcelImport @import-success="handleImport">
-              {{ $t('srp.prices.importBtn') }}
-            </ArtExcelImport>
-          </div>
+          <ElInput
+            v-model="keyword"
+            :placeholder="$t('srp.prices.searchPlaceholder')"
+            clearable
+            style="width: 200px"
+            @keyup.enter="loadPrices"
+            @clear="loadPrices"
+          />
+          <ElButton type="primary" :icon="Plus" @click="openAddDialog">
+            {{ $t('srp.prices.addPrice') }}
+          </ElButton>
+          <ArtExcelExport
+            :data="exportPricesData"
+            :headers="pricesExportHeaders"
+            :filename="`srp-prices_${new Date().toLocaleDateString()}`"
+            sheet-name="SRP价格表"
+            :button-text="$t('srp.prices.exportBtn')"
+            type="success"
+          />
+          <ArtExcelImport @import-success="handleImport">
+            {{ $t('srp.prices.importBtn') }}
+          </ArtExcelImport>
         </template>
       </ArtTableHeader>
 

@@ -7,15 +7,15 @@
       <ElCol :sm="24" :md="24" :lg="8">
         <FleetList :fleets="dashboardData?.fleets ?? []" />
       </ElCol>
-      <ElCol :sm="24" :md="12" :lg="6">
+      <ElCol :sm="24" :md="12" :lg="8">
         <PapChart
-          :title="$t('dashboardConsole.alliancePapTitle')"
+          :title="t('console.alliancePap')"
           :data="dashboardData?.pap_stats?.alliance ?? []"
         />
       </ElCol>
-      <ElCol :sm="24" :md="12" :lg="6">
+      <ElCol :sm="24" :md="12" :lg="8">
         <PapChart
-          :title="$t('dashboardConsole.internalPapTitle')"
+          :title="t('console.internalPap')"
           :data="dashboardData?.pap_stats?.internal ?? []"
         />
       </ElCol>
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-  // import { useI18n } from 'vue-i18n'
+  import { useI18n } from 'vue-i18n'
   import { fetchDashboard } from '@/api/dashboard'
   import CardList from './modules/card-list.vue'
   import FleetList from './modules/fleet-list.vue'
@@ -39,7 +39,7 @@
 
   defineOptions({ name: 'Console' })
 
-  // const { t } = useI18n()
+  const { t } = useI18n()
 
   const loading = ref(false)
   const dashboardData = ref<Api.Dashboard.DashboardResult>()

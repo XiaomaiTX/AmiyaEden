@@ -6,24 +6,24 @@
         <div class="flex items-center gap-4">
           <ElInput
             v-model="productIdFilter"
-            :placeholder="$t('shopAdmin.redeem.productIdPlaceholder')"
+            placeholder="商品 ID"
             clearable
             style="min-width: 140px"
             @keyup.enter="handleSearch"
           />
           <ElSelect
             v-model="statusFilter"
-            :placeholder="$t('shopAdmin.redeem.statusPlaceholder')"
+            placeholder="状态"
             clearable
             style="min-width: 120px"
             @change="handleSearch"
           >
-            <ElOption :label="$t('shopAdmin.redeem.status.unused')" value="unused" />
-            <ElOption :label="$t('shopAdmin.redeem.status.used')" value="used" />
-            <ElOption :label="$t('shopAdmin.redeem.status.expired')" value="expired" />
+            <ElOption label="未使用" value="unused" />
+            <ElOption label="已使用" value="used" />
+            <ElOption label="已过期" value="expired" />
           </ElSelect>
-          <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
-          <ElButton @click="handleReset">{{ $t('common.reset') }}</ElButton>
+          <ElButton type="primary" @click="handleSearch">查询</ElButton>
+          <ElButton @click="handleReset">重置</ElButton>
         </div>
       </template>
     </ArtTableHeader>
@@ -41,20 +41,18 @@
 
 <script setup lang="ts">
   import { ElTag, ElInput, ElSelect, ElOption, ElButton } from 'element-plus'
-  import { useI18n } from 'vue-i18n'
   import { adminListRedeemCodes } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
 
   defineOptions({ name: 'ManageRedeem' })
-  const { t } = useI18n()
 
   type RedeemCode = Api.Shop.RedeemCode
 
   // ─── 兑换码状态映射 ───
   const REDEEM_STATUS_CONFIG: Record<string, { label: string; type: string }> = {
-    unused: { label: t('shopAdmin.redeem.status.unused'), type: 'success' },
-    used: { label: t('shopAdmin.redeem.status.used'), type: 'info' },
-    expired: { label: t('shopAdmin.redeem.status.expired'), type: 'danger' }
+    unused: { label: '未使用', type: 'success' },
+    used: { label: '已使用', type: 'info' },
+    expired: { label: '已过期', type: 'danger' }
   }
 
   const formatTime = (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
@@ -84,29 +82,29 @@
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'product_id',
-          label: t('shopAdmin.redeem.table.productId'),
+          label: '商品ID',
           minWidth: 90
         },
         {
           prop: 'user_id',
-          label: t('shopAdmin.redeem.table.userId'),
+          label: '用户ID',
           minWidth: 90
         },
         {
           prop: 'order_id',
-          label: t('shopAdmin.redeem.table.orderId'),
+          label: '订单ID',
           minWidth: 90
         },
         {
           prop: 'code',
-          label: t('shopAdmin.redeem.table.code'),
+          label: '兑换码',
           minWidth: 220,
           showOverflowTooltip: true,
           formatter: (row: RedeemCode) => h('code', { class: 'text-sm font-mono' }, row.code)
         },
         {
           prop: 'status',
-          label: t('common.status'),
+          label: '状态',
           minWidth: 100,
           formatter: (row: RedeemCode) => {
             const cfg = REDEEM_STATUS_CONFIG[row.status] ?? { label: row.status, type: 'info' }
@@ -119,13 +117,13 @@
         },
         {
           prop: 'created_at',
-          label: t('shopAdmin.redeem.table.createdAt'),
+          label: '创建时间',
           minWidth: 180,
           formatter: (row: RedeemCode) => h('span', {}, formatTime(row.created_at))
         },
         {
           prop: 'expires_at',
-          label: t('shopAdmin.redeem.table.expiresAt'),
+          label: '过期时间',
           minWidth: 180,
           formatter: (row: RedeemCode) => h('span', {}, formatTime(row.expires_at))
         }

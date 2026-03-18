@@ -1,4 +1,4 @@
-﻿<!-- 商店页面（用户端） -->
+<!-- 商店页面（用户端） -->
 <template>
   <div class="shop-page art-full-height">
     <ElTabs v-model="activeTab" class="art-table-card p-4">
@@ -7,14 +7,14 @@
         <ShopProducts ref="productsRef" :balance="walletBalance" @buy="openBuyDialog" />
       </ElTabPane>
 
+      <!-- 抽奖 -->
+      <ElTabPane label="抽奖" name="lottery">
+        <ShopLottery ref="lotteryRef" />
+      </ElTabPane>
+
       <!-- 我的订单 -->
       <ElTabPane :label="$t('shop.myOrders')" name="orders">
         <ShopOrders ref="ordersRef" />
-      </ElTabPane>
-
-      <!-- 我的兑换码 -->
-      <ElTabPane :label="$t('shop.myRedeemCodes')" name="redeem">
-        <ShopRedeem ref="redeemRef" />
       </ElTabPane>
     </ElTabs>
 
@@ -75,23 +75,21 @@
     ElButton,
     ElMessage
   } from 'element-plus'
-  import { useI18n } from 'vue-i18n'
   import { buyProduct as apiBuyProduct } from '@/api/shop'
   import { fetchMyWallet } from '@/api/sys-wallet'
   import ShopProducts from './modules/shop-products.vue'
+  import ShopLottery from './modules/shop-lottery.vue'
   import ShopOrders from './modules/shop-orders.vue'
-  import ShopRedeem from './modules/shop-redeem.vue'
 
   defineOptions({ name: 'Shop' })
-  const { t } = useI18n()
 
   // ─── Tab ───
   const activeTab = ref('products')
 
   // ─── 子面板 refs ───
   const productsRef = ref<InstanceType<typeof ShopProducts>>()
+  const lotteryRef = ref<InstanceType<typeof ShopLottery>>()
   const ordersRef = ref<InstanceType<typeof ShopOrders>>()
-  const redeemRef = ref<InstanceType<typeof ShopRedeem>>()
 
   // ─── 钱包余额 ───
   const walletBalance = ref<number | null>(null)
@@ -142,12 +140,12 @@
         quantity: buyQuantity.value,
         remark: buyRemark.value
       })
-      ElMessage.success(t('shopBrowse.purchaseSuccess'))
+      ElMessage.success('购买成功')
       buyDialogVisible.value = false
       productsRef.value?.refresh()
       loadWallet()
     } catch (e: any) {
-      ElMessage.error(e?.message || t('shopBrowse.purchaseFailed'))
+      ElMessage.error(e?.message || '购买失败')
     } finally {
       buyLoading.value = false
     }
@@ -155,8 +153,8 @@
 
   // ─── Tab 切换懒加载 ───
   watch(activeTab, (tab) => {
+    if (tab === 'lottery') lotteryRef.value?.load()
     if (tab === 'orders') ordersRef.value?.load()
-    if (tab === 'redeem') redeemRef.value?.load()
   })
 
   // ─── 初始化 ───

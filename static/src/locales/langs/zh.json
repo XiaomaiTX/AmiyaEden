@@ -36,28 +36,16 @@
     "tips": "提示",
     "cancel": "取消",
     "confirm": "确定",
-    "save": "保存",
-    "add": "新增",
-    "search": "查询",
-    "reset": "重置",
+    "close": "关闭",
     "refresh": "刷新",
     "operation": "操作",
     "detail": "详情",
     "edit": "编辑",
     "delete": "删除",
-    "user": "用户",
-    "role": "角色",
-    "name": "名称",
     "status": "状态",
-    "type": "类型",
-    "amount": "金额",
-    "reason": "原因",
-    "time": "时间",
-    "source": "来源",
-    "createdAt": "创建时间",
-    "yes": "是",
-    "no": "否",
+    "save": "保存",
     "updatedAt": "更新时间",
+    "createdAt": "创建时间",
     "logOutTips": "您是否要退出登录?"
   },
   "search": {
@@ -159,6 +147,15 @@
     ],
     "viewAll": "查看全部"
   },
+  "console": {
+    "alliancePap": "联盟 PAP",
+    "internalPap": "内部 PAP",
+    "papChart": {
+      "recentMonths": "近 {count} 个月",
+      "monthLabel": "{month}月",
+      "empty": "暂无 PAP 数据"
+    }
+  },
   "worktab": {
     "btn": {
       "refresh": "刷新",
@@ -186,10 +183,7 @@
       "success": "登录成功",
       "successSub": "欢迎回来，{name}！正在跳转...",
       "error": "登录失败",
-      "retry": "重新登录",
-      "conflictTitle": "角色已绑定其他账号",
-      "conflictDesc": "角色 {name} 当前绑定在其他账号下。确认转移后，该角色将解除与原账号的绑定并绑定到当前账号。",
-      "confirmTransfer": "确认转移"
+      "retry": "重新登录"
     },
     "success": {
       "title": "登录成功",
@@ -289,7 +283,7 @@
       "title": "舰队行动",
       "fleets": "舰队管理",
       "fleetDetail": "舰队详情",
-      "corporationPap": "军团PAP",
+      "fleetConfigs": "舰队配置",
       "pap": "我的 PAP",
       "join": "加入舰队",
       "srpApply": "申请补损",
@@ -517,41 +511,172 @@
     "remark": "备注",
     "remarkPlaceholder": "备注信息（可选）",
     "approvalNotice": "此商品需管理员审批后才会扣款",
-    "confirmBuy": "确认购买"
+    "confirmBuy": "确认购买",
+    "manage": {
+      "sdeSearch": "搜索EVE物品",
+      "sdeSearchPlaceholder": "输入物品名称搜索以自动设置图片",
+      "namePlaceholder": "请输入商品名称",
+      "sdeSelected": "已选择 {name}，图片已更新",
+      "createProduct": "新增商品",
+      "editProduct": "编辑商品",
+      "filterName": "商品名称",
+      "filterType": "商品类型",
+      "filterStatus": "状态",
+      "search": "查询",
+      "reset": "重置",
+      "description": "描述",
+      "descriptionPlaceholder": "商品描述（可选）",
+      "productImage": "商品图片",
+      "uploading": "上传中...",
+      "uploadImage": "点击上传图片",
+      "uploadHint": "JPG/PNG/GIF/WebP，最大 5MB",
+      "price": "价格",
+      "type": "类型",
+      "typeNormal": "普通商品",
+      "typeNormalShort": "普通",
+      "typeRedeem": "兑换码/服务",
+      "typeRedeemShort": "兑换码",
+      "stock": "库存",
+      "stockUnlimited": "无限",
+      "stockUnlimitedHint": "-1 = 无限库存",
+      "limitPerUser": "限购/人",
+      "limitPerUserHint": "0 = 不限购",
+      "needApproval": "需要审批",
+      "status": "状态",
+      "statusOnSale": "上架",
+      "statusOffSale": "下架",
+      "sortOrder": "排序",
+      "sortHint": "越大越靠前",
+      "yes": "是",
+      "no": "否",
+      "colImage": "图片",
+      "colType": "类型",
+      "colApproval": "需审批",
+      "colSort": "排序",
+      "updateSuccess": "更新成功",
+      "createSuccess": "创建成功",
+      "operationFailed": "操作失败",
+      "deleteConfirm": "确定要删除商品「{name}」吗？",
+      "deleteTitle": "确认删除",
+      "deleteBtn": "删除",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败",
+      "imageTooLarge": "图片大小不能超过 5MB",
+      "uploadSuccess": "上传成功",
+      "uploadFailed": "上传失败",
+      "validName": "请输入商品名称",
+      "validPrice": "请输入价格",
+      "validType": "请选择类型"
+    }
   },
-  "userAdmin": {
+  "lottery": {
+    "noActivities": "暂无进行中的抽奖活动",
+    "startDraw": "开始抽奖",
+    "points": "积分",
+    "perDraw": "次",
+    "free": "免费",
+    "more": "更多",
+    "myRecords": "我的抽奖记录",
+    "draw": "抽奖",
+    "costLabel": "每次费用：",
+    "balance": "余额",
+    "prizePool": "奖品池",
+    "drawing": "抽奖中...",
+    "close": "关闭",
+    "drawAgain": "再抽一次",
+    "loadFailed": "加载失败",
+    "drawFailed": "抽奖失败",
+    "tier": {
+      "normal": "普通",
+      "rare": "稀有",
+      "legendary": "传说"
+    },
     "status": {
-      "active": "正常",
-      "disabled": "禁用",
-      "unknown": "未知"
+      "active": "进行中",
+      "closed": "已关闭"
     },
-    "search": {
-      "nickname": "昵称",
-      "nicknamePlaceholder": "请输入昵称",
-      "statusPlaceholder": "请选择状态"
+    "manage": {
+      "activitiesTab": "抽奖活动",
+      "createActivity": "创建活动",
+      "editActivity": "编辑活动",
+      "noActivities": "暂无活动",
+      "costPerDraw": "每次费用",
+      "startAt": "开始时间",
+      "endAt": "结束时间",
+      "managePrizes": "管理奖品",
+      "prizeCount": "奖品数: {n}",
+      "noPrizes": "暂无奖品",
+      "recordsTab": "抽奖记录",
+      "filterActivity": "筛选活动",
+      "uploading": "上传中...",
+      "uploadCover": "上传封面",
+      "uploadImage": "上传图片",
+      "managePrizesTitle": "管理奖品 - {name}",
+      "addPrize": "添加奖品",
+      "editPrize": "编辑奖品",
+      "noPrizesHint": "暂无奖品，请点击上方按钮添加",
+      "weight": "权重",
+      "stock": "库存",
+      "sdeSearch": "搜索 EVE 物品",
+      "stockUnlimited": "不限量",
+      "totalWeight": "总权重",
+      "loadFailed": "加载失败",
+      "updateSuccess": "更新成功",
+      "createSuccess": "创建成功",
+      "addSuccess": "添加成功",
+      "operationFailed": "操作失败",
+      "deleteActivityConfirm": "确定要删除活动「{name}」吗？关联的奖品也会被删除。",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败",
+      "imageTooLarge": "图片大小不能超过 2MB",
+      "uploadSuccess": "上传成功",
+      "uploadFailed": "上传失败",
+      "validName": "请输入活动名称",
+      "validCost": "请设置每次费用",
+      "validPrizeName": "请输入奖品名称",
+      "validTier": "请选择稀有度",
+      "deletePrizeConfirm": "确定要删除奖品「{name}」吗？",
+      "fields": {
+        "name": "活动名称",
+        "namePlaceholder": "请输入活动名称",
+        "description": "描述",
+        "descriptionPlaceholder": "活动描述（可选）",
+        "coverImage": "封面图片",
+        "costPerDraw": "每次费用",
+        "costHint": "0 表示免费",
+        "status": "状态",
+        "startAt": "开始时间",
+        "endAt": "结束时间",
+        "noLimit": "不限",
+        "sortOrder": "排序",
+        "sortHint": "数字越大越靠前"
+      },
+      "prizeFields": {
+        "name": "奖品名称",
+        "namePlaceholder": "请输入奖品名称",
+        "image": "奖品图片",
+        "sdeSearchPlaceholder": "搜索 EVE 物品自动设置图片",
+        "tier": "稀有度",
+        "weight": "概率权重",
+        "weightHint": "权重越高概率越大",
+        "totalStock": "总库存",
+        "stockHint": "0 表示不限量"
+      },
+      "recordColumns": {
+        "userId": "用户 ID",
+        "activity": "活动",
+        "prize": "奖品",
+        "cost": "花费",
+        "time": "时间",
+        "deliveryStatus": "发放状态"
+      }
     },
-    "roles": {
-      "super_admin": "超级管理员",
-      "admin": "管理员",
-      "srp": "SRP管理员",
-      "fc": "FC",
-      "user": "已认证用户",
-      "guest": "访客"
-    },
-    "table": {
-      "userInfo": "用户信息",
-      "lastLogin": "最后登录",
-      "loginIp": "登录IP",
-      "registeredAt": "注册时间"
-    },
-    "unnamed": "未命名",
-    "impersonate": "模拟登录",
-    "deleteConfirm": "确定要删除用户「{name}」吗？此操作不可恢复。",
-    "deleteSuccess": "删除成功",
-    "deleteFailed": "删除失败",
-    "impersonateConfirm": "确定要以「{name}」的身份登录吗？当前管理员会话将被替换，请提前记录当前 Token 或在新标签页中操作。",
-    "impersonateSuccess": "已切换至用户「{name}」",
-    "impersonateFailed": "模拟登录失败"
+    "delivery": {
+      "pending": "待发放",
+      "delivered": "已发放",
+      "markDelivered": "标记已发放",
+      "markSuccess": "已标记为已发放"
+    }
   },
   "fleet": {
     "title": "舰队管理",
@@ -578,12 +703,19 @@
       "esiFleetId": "ESI 舰队 ID",
       "sendPing": "发送通知",
       "sendPingHint": "创建后向频道发送舰队行动 Ping",
-      "createdAt": "创建时间"
+      "fleetConfig": "舰队配置",
+      "fleetConfigPlaceholder": "选择舰队配置（可选）",
+      "autoSrpMode": "自动补损"
+    },
+    "autoSrp": {
+      "disabled": "关闭",
+      "submitOnly": "仅提交",
+      "autoApprove": "自动审批"
     },
     "importance": {
-      "strat_op": "战略",
+      "strat_op": "Strat Op",
       "cta": "CTA",
-      "skirmish": "散打"
+      "other": "Other"
     },
     "members": {
       "title": "舰队成员",
@@ -591,7 +723,6 @@
       "syncESI": "从 ESI 同步",
       "syncSuccess": "成员同步成功",
       "characterName": "角色名",
-      "characterId": "角色 ID",
       "shipType": "舰船",
       "joinedAt": "加入时间",
       "solarSystem": "星系"
@@ -602,49 +733,34 @@
       "issueConfirm": "确定要向所有成员发放 PAP 吗？",
       "issueSuccess": "PAP 已发放",
       "myTitle": "军团 PAP",
-      "totalPap": "总 PAP",
-      "participationCount": "参与次数",
-      "fleetId": "舰队 ID",
-      "fleetName": "舰队名",
-      "characterId": "角色 ID",
-      "characterName": "角色名",
-      "type": "PAP 类型",
       "count": "PAP 数量",
       "issuedBy": "发放人",
       "issuedAt": "发放时间",
-      "empty": "暂无 PAP 记录"
-    },
-    "corporationPap": {
-      "title": "军团PAP",
-      "summaryTitle": "军团 PAP 汇总",
-      "empty": "暂无军团 PAP 汇总记录",
-      "search": "查询",
-      "reset": "重置",
-      "filters": {
-        "period": "时间范围",
-        "year": "年份",
-        "corpTickers": "军团"
+      "empty": "暂无 PAP 记录",
+      "operation": "舰队行动",
+      "character": "参与角色",
+      "ship": "舰船",
+      "fc": "发放 FC",
+      "level": "等级",
+      "totalPap": "总 PAP",
+      "participations": "参与次数",
+      "importance": {
+        "cta": "CTA",
+        "stratOp": "Strat Op",
+        "other": "普通"
       },
-      "periods": {
-        "currentMonth": "本月",
-        "lastMonth": "上月",
-        "atYear": "指定年份",
-        "all": "所有"
-      },
-      "stats": {
-        "filteredPap": "当前筛选 PAP",
-        "lastMonthPap": "最近一个月 PAP",
-        "allPap": "全部 PAP",
-        "users": "用户数"
-      },
-      "columns": {
-        "userId": "用户 ID",
-        "corpTicker": "军团",
-        "mainCharacter": "主角色名",
-        "characterCount": "角色数量",
-        "stratOpPaps": "战略OP",
-        "skirmishPaps": "散打"
-      }
+      "allianceCard": "联盟 PAP",
+      "allianceEmpty": "暂无联盟 PAP 记录",
+      "allianceMonthly": "月 PAP",
+      "allianceYearly": "年度 PAP",
+      "allianceCorpMonthRank": "军团月排名",
+      "allianceGlobalMonthRank": "联盟月排名",
+      "allianceCorpYearRank": "军团年排名",
+      "allianceDataSource": "数据来源：联盟 PAP 系统",
+      "allianceLastCalc": "最后计算",
+      "allianceOperationName": "行动名称",
+      "allianceStartTime": "开始时间",
+      "allianceEndTime": "结束时间"
     },
     "invite": {
       "title": "邀请链接",
@@ -665,8 +781,7 @@
       "selectCharacter": "选择角色",
       "selectCharacterPlaceholder": "选择一个角色加入舰队",
       "joinSuccess": "已成功加入舰队",
-      "invalidCode": "无效的邀请码",
-      "missingCode": "无效的邀请链接，缺少邀请码"
+      "invalidCode": "无效的邀请码"
     },
     "ping": {
       "send": "发送 Ping",
@@ -684,6 +799,72 @@
       "empty": "暂无交易记录"
     }
   },
+  "fleetConfig": {
+    "title": "舰队配置",
+    "subTitle": "管理舰队行动的装配配置方案",
+    "create": "创建配置",
+    "edit": "编辑配置",
+    "view": "查看配置",
+    "delete": "删除配置",
+    "deleteConfirm": "确定要删除配置「{name}」吗？此操作不可恢复。",
+    "deleteSuccess": "配置已删除",
+    "createSuccess": "配置创建成功",
+    "updateSuccess": "配置更新成功",
+    "fittingUnit": "个装配",
+    "newFitting": "新装配",
+    "addFitting": "添加装配",
+    "importFromFitting": "从我的装配导入",
+    "importSuccess": "装配导入成功",
+    "importSelectRequired": "请选择角色和装配",
+    "copyEFT": "复制 EFT",
+    "eftCopied": "EFT 已复制到剪贴板",
+    "noFittings": "请至少添加一个装配",
+    "saveToGame": "保存到游戏",
+    "saveToGameTitle": "保存装配到游戏",
+    "saveToGameSuccess": "装配已成功保存到游戏",
+    "saveToGameCharacterRequired": "请选择角色",
+    "itemSettings": "装备设置",
+    "itemSettingsTitle": "装备重要性与惩罚设置",
+    "itemSettingsSaved": "装备设置已保存",
+    "replacementSearch": "搜索替代装备",
+    "importance": {
+      "required": "必需",
+      "optional": "可选",
+      "replaceable": "可替换"
+    },
+    "penalty": {
+      "half": "半额",
+      "none": "不赔"
+    },
+    "replacementPenalty": {
+      "half": "替代半额",
+      "none": "替代不罚"
+    },
+    "slotGroup": {
+      "HiSlot": "高槽",
+      "MedSlot": "中槽",
+      "LoSlot": "低槽",
+      "RigSlot": "改装件",
+      "SubSystem": "子系统"
+    },
+    "fields": {
+      "name": "配置名称",
+      "namePlaceholder": "请输入配置名称",
+      "description": "描述",
+      "descriptionPlaceholder": "关于此配置的说明",
+      "fittings": "装配列表",
+      "fittingName": "装配名称",
+      "fittingNamePlaceholder": "请输入装配名称",
+      "shipName": "舰船",
+      "shipNamePlaceholder": "舰船名称",
+      "srpAmount": "补损额度",
+      "eft": "EFT 格式",
+      "eftPlaceholder": "粘贴 EFT 格式装配文本",
+      "character": "角色",
+      "fitting": "装配",
+      "fittingPlaceholder": "选择一个装配"
+    }
+  },
   "characters": {
     "title": "EVE 角色管理",
     "subTitle": "管理账号下绑定的 EVE Online 角色，可绑定多个角色并切换主角色",
@@ -694,7 +875,6 @@
     "empty": "暂无绑定角色",
     "noScopes": "无额外权限",
     "scopeCount": "项权限",
-    "tokenInvalid": "(已失效)",
     "bindFailed": "获取绑定链接失败",
     "setPrimarySuccess": "已将 {name} 设为主角色",
     "setPrimaryFailed": "设置主角色失败",
@@ -773,25 +953,12 @@
       "searchBtn": "查询",
       "resetBtn": "重置",
       "exportBtn": "导出当前数据",
-      "batchPayoutBtn": "批量发放",
       "approveBtn": "批准",
       "rejectBtn": "拒绝",
       "payoutBtn": "发放",
       "approveDialog": "批准申请",
       "rejectDialog": "拒绝申请",
       "payoutDialog": "确认发放补损",
-      "batchPayoutDialog": "批量发放",
-      "batchPayoutHint": "点击右侧复制按钮，将内容粘贴至游戏内记事本",
-      "batchPayoutMainCharacter": "主角色",
-      "batchPayoutAmount": "金额",
-      "batchPayoutApprovedAmount": "已批准金额",
-      "batchPayoutPendingAmount": "待审批金额",
-      "batchPayoutTotalAmount": "合计金额",
-      "batchPayoutCount": "申请数",
-      "batchPayoutEmpty": "暂无可批量发放的 SRP 申请",
-      "batchPayoutConfirmTitle": "批量发放",
-      "batchPayoutConfirmText": "确认将 {name} 的所有已批准且未发放 SRP 申请标记为已发放吗？合计：{amount} ISK",
-      "batchPayoutSuccess": "批量发放成功",
       "finalAmount": "最终金额",
       "finalAmountHint": "填 0 则保持原申请金额",
       "reviewNote": "审批备注",
@@ -818,7 +985,6 @@
       "copyFailed": "复制失败",
       "noPrimaryCharacter": "请先设置主角色",
       "openInfoWindowSuccess": "已发送打开信息窗口请求",
-      "unknownMainCharacter": "未知角色",
       "columns": {
         "id": "#",
         "character": "角色",
@@ -829,7 +995,7 @@
         "corporation": "军团",
         "alliance": "联盟",
         "fleet": "关联舰队",
-        "note": "备注",
+        "note": "申请备注",
         "recommendedAmount": "推荐金额",
         "finalAmount": "最终金额",
         "review": "审批",
@@ -886,7 +1052,6 @@
   },
   "alliancePap": {
     "title": "联盟 PAP - 全员视图",
-    "shortTitle": "联盟 PAP",
     "selectMonth": "选择月份",
     "memberCount": "共 {count} 名成员有记录",
     "totalPap": "总 PAP",
@@ -911,12 +1076,6 @@
     "columns": {
       "rank": "排名",
       "mainCharacter": "主角色",
-      "operationTitle": "行动名称",
-      "character": "角色",
-      "level": "等级",
-      "ship": "舰船",
-      "startTime": "开始时间",
-      "endTime": "结束时间",
       "monthlyPap": "月 PAP",
       "yearlyPap": "年度 PAP",
       "corpMonthlyRank": "军团月排",
@@ -930,13 +1089,6 @@
       "archived": "已归档",
       "current": "当月"
     },
-    "corpMonthlySummary": "军团月排名 / {count}",
-    "allianceMonthlySummary": "联盟月排名 / {count}",
-    "corpYearlySummary": "军团年排名",
-    "sourceLabel": "数据来源",
-    "sourceName": "联盟 PAP 系统",
-    "calculatedAtLabel": "最后计算",
-    "noRecords": "暂无联盟 PAP 记录",
     "settle": {
       "openBtn": "PAP 兑换设置",
       "title": "PAP 兑换配置 & 月度结算",
@@ -959,319 +1111,6 @@
       "resultSkipped": "跳过 {count} 人（无对应用户/已兑换）",
       "resultWallet": "共发放系统钱包 {amount}"
     }
-  },
-  "resultPage": {
-    "success": {
-      "title": "提交成功",
-      "message": "提交结果页用于反馈一系列操作任务的处理结果，如果仅是简单操作，使用 Message 全局提示反馈即可。灰色区域可以显示一些补充的信息。",
-      "content": "已提交申请，等待部门审核。",
-      "back": "返回修改",
-      "view": "查看",
-      "print": "打印"
-    },
-    "fail": {
-      "title": "提交失败",
-      "message": "请核对并修改以下信息后，再重新提交。",
-      "content": "您提交的内容有如下错误：",
-      "frozen": "您的账户已被冻结",
-      "ineligible": "您的账户还不具备申请资格",
-      "back": "返回修改",
-      "view": "查看"
-    }
-  },
-  "roleUi": {
-    "userRoleDialog": {
-      "title": "分配角色",
-      "unnamed": "未命名",
-      "systemTag": "(系统)",
-      "loadFailed": "加载角色数据失败",
-      "saveSuccess": "角色分配成功",
-      "saveFailed": "角色分配失败"
-    },
-    "permissionDialog": {
-      "title": "分配菜单权限",
-      "roleLabel": "角色：{name}",
-      "expandAll": "全部展开",
-      "collapseAll": "全部收起",
-      "selectAll": "全部选择",
-      "deselectAll": "取消全选",
-      "loadFailed": "加载菜单树失败",
-      "saveSuccess": "权限保存成功",
-      "saveFailed": "权限保存失败"
-    }
-  },
-  "autoRolePage": {
-    "title": "ESI 自动权限",
-    "description": "根据角色的 EVE 军团职位和头衔，自动分配系统权限。",
-    "directorHint": "Director 始终自动映射为 admin 角色。",
-    "triggerSync": "手动触发同步",
-    "syncTriggered": "同步任务已触发，将在后台执行",
-    "syncFailed": "触发失败",
-    "tabs": {
-      "esiRole": "军团职位映射",
-      "title": "军团头衔映射"
-    },
-    "descriptions": {
-      "esiRole": "配置 EVE 军团职位（Corporation Role）与系统权限的对应关系。",
-      "title": "配置军团头衔（Corporation Title）与系统权限的对应关系，需指定军团 ID。"
-    },
-    "columns": {
-      "index": "序号",
-      "esiRole": "EVE 军团职位",
-      "mappedRole": "映射系统角色",
-      "corporationId": "军团 ID",
-      "titleId": "头衔 ID",
-      "titleName": "头衔名称"
-    },
-    "addMapping": "新增映射",
-    "deleteConfirm": "确认删除此映射？",
-    "createEsiRoleTitle": "新增军团职位映射",
-    "createTitleTitle": "新增军团头衔映射",
-    "fields": {
-      "esiRole": "EVE 职位",
-      "systemRole": "系统角色",
-      "title": "选择头衔"
-    },
-    "placeholders": {
-      "esiRole": "选择军团职位",
-      "systemRole": "选择系统角色",
-      "title": "选择军团头衔"
-    },
-    "rules": {
-      "esiRole": "请选择 EVE 军团职位",
-      "systemRole": "请选择系统角色",
-      "title": "请选择头衔"
-    },
-    "titleFallback": "头衔 {id}",
-    "corpPrefix": "Corp {id}",
-    "mappingCreated": "映射创建成功",
-    "createFailed": "创建失败",
-    "deleteSuccess": "删除成功",
-    "deleteFailed": "删除失败"
-  },
-  "shopAdmin": {
-    "tabs": {
-      "products": "商品管理",
-      "orders": "订单管理",
-      "redeem": "兑换码管理"
-    },
-    "products": {
-      "createProduct": "新增商品",
-      "searchNamePlaceholder": "商品名称",
-      "typePlaceholder": "商品类型",
-      "statusPlaceholder": "状态",
-      "typeNormal": "普通商品",
-      "typeRedeem": "兑换码",
-      "typeRedeemService": "兑换码/服务",
-      "statusOnSale": "上架",
-      "statusOffSale": "下架",
-      "dialogCreate": "新增商品",
-      "dialogEdit": "编辑商品",
-      "fields": {
-        "name": "商品名称",
-        "description": "描述",
-        "image": "图片 URL",
-        "price": "价格",
-        "type": "类型",
-        "stock": "库存",
-        "maxPerUser": "限购/人",
-        "needApproval": "需要审批",
-        "status": "状态",
-        "sort": "排序"
-      },
-      "placeholders": {
-        "name": "请输入商品名称",
-        "description": "商品描述（可选）",
-        "image": "商品图片链接（可选）"
-      },
-      "hints": {
-        "stock": "-1 = 无限库存",
-        "maxPerUser": "0 = 不限购",
-        "sort": "越大越靠前"
-      },
-      "table": {
-        "name": "商品名称",
-        "price": "价格",
-        "stock": "库存",
-        "maxPerUser": "限购",
-        "needApproval": "需审批"
-      },
-      "values": {
-        "normal": "普通",
-        "redeem": "兑换码",
-        "unlimited": "无限",
-        "noLimit": "不限"
-      },
-      "messages": {
-        "createSuccess": "创建成功",
-        "updateSuccess": "更新成功",
-        "deleteConfirm": "确定要删除商品「{name}」吗？",
-        "deleteSuccess": "删除成功",
-        "deleteFailed": "删除失败",
-        "nameRequired": "请输入商品名称",
-        "priceRequired": "请输入价格",
-        "typeRequired": "请选择类型"
-      }
-    },
-    "orders": {
-      "userIdPlaceholder": "用户 ID",
-      "statusPlaceholder": "订单状态",
-      "dialogApprove": "审批通过",
-      "dialogReject": "拒绝订单",
-      "approveButton": "通过",
-      "rejectButton": "拒绝",
-      "approveConfirm": "确认通过",
-      "rejectConfirm": "确认拒绝",
-      "fields": {
-        "orderNo": "订单号",
-        "reviewRemark": "审批备注"
-      },
-      "placeholders": {
-        "reviewRemark": "审批备注（可选）"
-      },
-      "status": {
-        "pending": "待审批",
-        "paid": "已付款",
-        "approved": "已审批",
-        "rejected": "已拒绝",
-        "completed": "已完成",
-        "cancelled": "已取消",
-        "insufficient_funds": "余额不足"
-      },
-      "table": {
-        "orderNo": "订单号",
-        "userId": "用户ID",
-        "product": "商品",
-        "quantity": "数量",
-        "totalPrice": "总价",
-        "userRemark": "用户备注",
-        "reviewRemark": "审批备注",
-        "createdAt": "下单时间"
-      },
-      "messages": {
-        "approveSuccess": "审批通过",
-        "rejectSuccess": "已拒绝",
-        "actionFailed": "操作失败"
-      }
-    },
-    "redeem": {
-      "productIdPlaceholder": "商品 ID",
-      "statusPlaceholder": "状态",
-      "status": {
-        "unused": "未使用",
-        "used": "已使用",
-        "expired": "已过期"
-      },
-      "table": {
-        "productId": "商品ID",
-        "userId": "用户ID",
-        "orderId": "订单ID",
-        "code": "兑换码",
-        "createdAt": "创建时间",
-        "expiresAt": "过期时间"
-      }
-    }
-  },
-  "walletAdmin": {
-    "tabs": {
-      "wallets": "钱包列表",
-      "transactions": "流水查询",
-      "logs": "操作日志"
-    },
-    "adjustTitle": "调整用户钱包",
-    "adjustBalance": "手动调整余额",
-    "fields": {
-      "targetUserId": "目标用户 ID",
-      "action": "操作类型",
-      "amount": "金额",
-      "reason": "操作原因"
-    },
-    "placeholders": {
-      "reason": "请说明操作原因（必填）",
-      "userIdFilter": "按用户 ID 筛选",
-      "refType": "流水类型",
-      "targetUserId": "目标用户 ID",
-      "operatorId": "操作人 ID",
-      "action": "操作类型"
-    },
-    "actions": {
-      "add": "增加",
-      "deduct": "扣减",
-      "set": "设为",
-      "transactions": "流水",
-      "system": "系统"
-    },
-    "refTypes": {
-      "pap_reward": "PAP 奖励",
-      "admin_adjust": "管理员调整",
-      "manual": "手动操作",
-      "redeem": "兑换消费",
-      "srp_payout": "SRP 补损",
-      "shop_purchase": "商城购买"
-    },
-    "validation": {
-      "targetUserId": "请输入目标用户 ID",
-      "action": "请选择操作类型",
-      "amount": "请输入金额",
-      "reason": "请输入操作原因"
-    },
-    "messages": {
-      "adjustSuccess": "余额调整成功",
-      "actionFailed": "操作失败"
-    },
-    "wallets": {
-      "balance": "余额"
-    },
-    "transactions": {
-      "balanceAfter": "余额",
-      "operator": "操作人"
-    },
-    "logs": {
-      "operator": "操作人",
-      "targetUser": "目标用户",
-      "before": "操作前余额",
-      "after": "操作后余额"
-    }
-  },
-  "dashboardConsole": {
-    "alliancePapTitle": "联盟 PAP",
-    "internalPapTitle": "内部 PAP",
-    "cards": {
-      "eveWalletBalance": "EVE 钱包余额",
-      "eveSkillPoints": "EVE 技能点",
-      "systemWallet": "系统钱包",
-      "currentAlliancePap": "当月联盟 PAP"
-    },
-    "papChart": {
-      "recentMonths": "近 {count} 个月",
-      "monthLabel": "{month}月",
-      "empty": "暂无 PAP 数据"
-    },
-    "srpList": {
-      "title": "补损申请",
-      "recentCount": "最近 {count} 条",
-      "empty": "暂无补损申请记录",
-      "lossTime": "损失时间",
-      "recommendedAmount": "建议金额",
-      "finalAmount": "最终金额"
-    },
-    "fleetList": {
-      "title": "参与的舰队",
-      "records": "共 {count} 条记录",
-      "empty": "暂无舰队参与记录",
-      "source": {
-        "alliance": "联盟",
-        "internal": "内部"
-      }
-    }
-  },
-  "shopBrowse": {
-    "purchaseSuccess": "购买成功",
-    "purchaseFailed": "购买失败"
-  },
-  "authCallback": {
-    "missingToken": "未收到登录令牌，请重试",
-    "verifyFailed": "登录验证失败，请重试"
   },
   "sde": {
     "search": {

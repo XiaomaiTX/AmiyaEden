@@ -2,30 +2,20 @@
 <template>
   <ElDialog
     v-model="dialogVisible"
-    :title="$t('roleUi.permissionDialog.title')"
+    title="分配菜单权限"
     width="520px"
     align-center
     destroy-on-close
     @open="onOpen"
   >
     <div class="mb-3 flex items-center justify-between">
-      <span class="text-sm text-gray-500">
-        {{ $t('roleUi.permissionDialog.roleLabel', { name: roleName || '-' }) }}
-      </span>
+      <span class="text-sm text-gray-500">角色：{{ roleName }}</span>
       <div class="flex gap-2">
         <ElButton size="small" @click="toggleExpandAll">
-          {{
-            expandAll
-              ? $t('roleUi.permissionDialog.collapseAll')
-              : $t('roleUi.permissionDialog.expandAll')
-          }}
+          {{ expandAll ? '全部收起' : '全部展开' }}
         </ElButton>
         <ElButton size="small" @click="toggleSelectAll">
-          {{
-            selectAll
-              ? $t('roleUi.permissionDialog.deselectAll')
-              : $t('roleUi.permissionDialog.selectAll')
-          }}
+          {{ selectAll ? '取消全选' : '全部选择' }}
         </ElButton>
       </div>
     </div>
@@ -44,16 +34,13 @@
     </ElScrollbar>
 
     <template #footer>
-      <ElButton @click="dialogVisible = false">{{ $t('common.cancel') }}</ElButton>
-      <ElButton type="primary" :loading="saving" @click="handleSave">{{
-        $t('common.save')
-      }}</ElButton>
+      <ElButton @click="dialogVisible = false">取消</ElButton>
+      <ElButton type="primary" :loading="saving" @click="handleSave">保存</ElButton>
     </template>
   </ElDialog>
 </template>
 
 <script setup lang="ts">
-  import { useI18n } from 'vue-i18n'
   import { fetchGetMenuTree, fetchGetRoleMenus, fetchSetRoleMenus } from '@/api/system-manage'
 
   interface Props {
@@ -69,7 +56,6 @@
 
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
-  const { t } = useI18n()
 
   const dialogVisible = computed({
     get: () => props.visible,
@@ -103,7 +89,7 @@
       const leafKeys = getLeafKeys(tree, new Set(roleMenuIds))
       checkedKeys.value = leafKeys
     } catch (err) {
-      console.error(t('roleUi.permissionDialog.loadFailed'), err)
+      console.error('加载菜单树失败:', err)
     } finally {
       treeLoading.value = false
     }
@@ -165,11 +151,11 @@
       const allMenuIds = [...checked, ...halfChecked]
 
       await fetchSetRoleMenus(props.roleId, allMenuIds)
-      ElMessage.success(t('roleUi.permissionDialog.saveSuccess'))
+      ElMessage.success('权限保存成功')
       dialogVisible.value = false
       emit('saved')
     } catch (err) {
-      console.error(t('roleUi.permissionDialog.saveFailed'), err)
+      console.error('权限保存失败:', err)
     } finally {
       saving.value = false
     }

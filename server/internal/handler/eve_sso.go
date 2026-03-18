@@ -58,7 +58,8 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 	// 错误重定向辅助函数：带 error 参数跳回前端 callback 页面
 	redirectError := func(errMsg string) {
 		if frontendRedirect != "" {
-			c.Redirect(302, appendQuery(frontendRedirect, url.Values{"error": {errMsg}}))
+			target := frontendRedirect + "?error=" + url.QueryEscape(errMsg)
+			c.Redirect(302, target)
 			return
 		}
 		response.Fail(c, response.CodeBizError, errMsg)
@@ -77,29 +78,9 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 		return
 	}
 
-	// 角色转移冲突：重定向到前端确认页面
-	if result.Conflict {
-		if result.RedirectURL != "" {
-			params := url.Values{}
-			params.Set("conflict", "true")
-			params.Set("character_name", result.ConflictCharName)
-			params.Set("transfer_token", result.TransferToken)
-			target := result.RedirectURL + "?" + params.Encode()
-			c.Redirect(302, target)
-			return
-		}
-		response.OK(c, gin.H{
-			"conflict":        true,
-			"character_name":  result.ConflictCharName,
-			"transfer_token":  result.TransferToken,
-		})
-		return
-	}
-
 	// 如果有前端重定向地址，则带 token 跳转
 	if result.RedirectURL != "" {
-		target := result.RedirectURL + "?token=" + url.QueryEscape(result.Token)
-		c.Redirect(302, target)
+		c.Redirect(302, result.RedirectURL+"?token="+result.Token)
 		return
 	}
 
@@ -216,55 +197,6 @@ func (h *EveSSOHandler) Unbind(c *gin.Context) {
 	}
 
 	response.OK(c, nil)
-}
-
-// ConfirmTransfer 确认角色转移
-//
-// POST /api/v1/sso/eve/confirm-transfer { "transfer_token": "xxx" }
-func (h *EveSSOHandler) ConfirmTransfer(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-	if userID == 0 {
-		response.Fail(c, response.CodeUnauthorized, "未登录")
-		return
-	}
-
-	var req struct {
-		TransferToken string `json:"transfer_token" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "缺少 transfer_token")
-		return
-	}
-
-	result, err := h.svc.ConfirmTransfer(c.Request.Context(), userID, req.TransferToken)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-
-	response.OK(c, gin.H{
-		"token":     result.Token,
-		"user":      result.User,
-		"character": result.Character,
-	})
-}
-
-// appendQuery 安全地将额外的 query 参数追加到 URL 上，
-// 正确处理 URL 已有 query 参数的情况。
-func appendQuery(rawURL string, extra url.Values) string {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		// fallback：直接拼接
-		return rawURL + "?" + extra.Encode()
-	}
-	q := u.Query()
-	for k, vs := range extra {
-		for _, v := range vs {
-			q.Set(k, v)
-		}
-	}
-	u.RawQuery = q.Encode()
-	return u.String()
 }
 
 // splitCSV 按逗号或空格分割字符串
