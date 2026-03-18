@@ -177,26 +177,9 @@ func GetSystemMenuSeeds() []MenuSeed {
 }
 
 // DefaultRoleMenuMap 默认角色-菜单映射（角色Code -> 菜单Name列表）
-// super_admin 不在这里定义，代码中直接赋予所有权限
+// super_admin / admin 不在这里定义，代码中直接赋予所有权限
 func DefaultRoleMenuMap() map[string][]string {
 	return map[string][]string{
-		RoleAdmin: {
-			"Dashboard", "Console", "Characters",
-			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
-			"Operation", "Fleets", "FleetDetail", "MyPap", "Wallet", "JoinFleet",
-			"ShopRoot", "Shop", "ShopManage", "ShopProductAdd", "ShopProductEdit", "ShopProductDelete", "ShopOrderReview",
-			"SRP", "SrpApply", "SrpManage", "SrpManageReview", "SrpPrices", "SrpPriceAdd", "SrpPriceDelete",
-			"System", "User", "UserDelete", "UserSetRole",
-			"RoleManage", "RoleAdd", "RoleEdit", "RoleDelete", "RolePermission",
-			"Menus", "MenuAdd", "MenuEdit", "MenuDelete",
-			"ESIRefresh", "ESIRun",
-			"SystemWallet", "WalletAdjust", "WalletViewLog",
-			"AlliancePAP", "AlliancePAPFetch",
-			"CorpNpcKillReport",
-			"AutoRole",
-			"UserCenter",
-			"Result", "ResultSuccess", "ResultFail",
-		},
 		RoleFC: {
 			"Dashboard", "Console", "Characters",
 			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
