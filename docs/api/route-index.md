@@ -146,9 +146,11 @@ source_of_truth:
 | POST | `/srp/killmails/detail` | KM 详情 | Login |
 | POST | `/srp/open-info-window` | 打开游戏内信息窗口 | Login |
 | GET | `/srp/applications` | 审核列表 | `RequirePermission(srp:review)` |
+| GET | `/srp/applications/batch-payout-summary` | 批量发放汇总 | `RequirePermission(srp:review)` |
 | GET | `/srp/applications/:id` | 审核详情 | `RequirePermission(srp:review)` |
 | PUT | `/srp/applications/:id/review` | 审核申请 | `RequirePermission(srp:review)` |
 | PUT | `/srp/applications/:id/payout` | 发放补损 | `RequirePermission(srp:review)` |
+| PUT | `/srp/applications/users/:user_id/payout` | 按用户批量发放补损 | `RequirePermission(srp:review)` |
 
 ## ESI Refresh
 
