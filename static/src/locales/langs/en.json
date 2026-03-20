@@ -241,11 +241,6 @@
       "title": "Dashboard",
       "console": "Console"
     },
-    "result": {
-      "title": "Result Page",
-      "success": "Success",
-      "fail": "Fail"
-    },
     "exception": {
       "title": "Exception",
       "forbidden": "403",
@@ -1173,25 +1168,6 @@
       "resultUsers": "{count} users settled",
       "resultSkipped": "{count} users skipped",
       "resultWallet": "Total wallet issued: {amount}"
-    }
-  },
-  "resultPage": {
-    "success": {
-      "title": "Submitted Successfully",
-      "message": "The result page is used to present the outcome of a sequence of operations. For simple actions, a global message is usually enough. The gray area can show extra information.",
-      "content": "Your request has been submitted and is awaiting review.",
-      "back": "Back to Edit",
-      "view": "View",
-      "print": "Print"
-    },
-    "fail": {
-      "title": "Submission Failed",
-      "message": "Please review and correct the following items before submitting again.",
-      "content": "The following issues were found in your submission:",
-      "frozen": "Your account has been frozen",
-      "ineligible": "Your account is not eligible to apply yet",
-      "back": "Back to Edit",
-      "view": "View"
     }
   },
   "roleUi": {

@@ -3,7 +3,6 @@ import { dashboardRoutes } from './dashboard'
 import { systemRoutes } from './system'
 import { operationRoutes } from './operation'
 import { skillPlanningRoutes } from './skill-planning'
-import { resultRoutes } from './result'
 import { exceptionRoutes } from './exception'
 import { srpRoutes } from './srp'
 import { shopRoutes } from './shop'
@@ -19,7 +18,6 @@ export const routeModules: AppRouteRecord[] = [
   infoRoutes,
   shopRoutes,
   systemRoutes,
-  resultRoutes,
   exceptionRoutes,
   srpRoutes
 ]

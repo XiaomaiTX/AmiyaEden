@@ -176,10 +176,6 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "WebhookSettings", Path: "webhook", Component: "/system/webhook", Title: "menus.system.webhook", Sort: 59, KeepAlive: true, Status: 1}},
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "BasicConfig", Path: "basic-config", Component: "/system/basic-config", Title: "menus.system.basicConfig", Sort: 58, KeepAlive: true, Status: 1}},
 
-		// ── Result ──
-		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "Result", Path: "/result", Component: "/index/index", Title: "menus.result.title", Icon: "ri:checkbox-circle-line", Sort: 10, IsHide: true, Status: 1}},
-		{ParentName: "Result", Menu: Menu{Type: MenuTypeMenu, Name: "ResultSuccess", Path: "success", Component: "/result/success", Title: "menus.result.success", Sort: 100, IsHide: true, Status: 1}},
-		{ParentName: "Result", Menu: Menu{Type: MenuTypeMenu, Name: "ResultFail", Path: "fail", Component: "/result/fail", Title: "menus.result.fail", Sort: 90, IsHide: true, Status: 1}},
 	}
 }
 
@@ -194,7 +190,6 @@ func DefaultRoleMenuMap() map[string][]string {
 			"SkillPlanning", "SkillPlanCompletionCheck", "SkillPlans",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview",
-			"Result", "ResultSuccess", "ResultFail",
 		},
 		RoleSRP: {
 			"Dashboard", "Console", "Characters",
@@ -202,7 +197,6 @@ func DefaultRoleMenuMap() map[string][]string {
 			"Operation", "CorporationPap", "MyPap", "Wallet", "JoinFleet",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview", "SrpPrices", "SrpPriceAdd", "SrpPriceDelete",
-			"Result", "ResultSuccess", "ResultFail",
 		},
 		RoleUser: {
 			"Dashboard", "Console", "Characters",
@@ -211,13 +205,11 @@ func DefaultRoleMenuMap() map[string][]string {
 			"SkillPlanning", "SkillPlanCompletionCheck",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply",
-			"Result", "ResultSuccess", "ResultFail",
 			"UserCenter",
 		},
 		RoleGuest: {
 			"Dashboard", "Console", "Characters",
 			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
-			"Result", "ResultSuccess", "ResultFail",
 		},
 	}
 }

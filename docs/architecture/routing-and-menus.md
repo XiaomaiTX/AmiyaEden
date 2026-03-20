@@ -41,7 +41,6 @@ source_of_truth:
 - `static/src/router/modules/shop.ts`
 - `static/src/router/modules/srp.ts`
 - `static/src/router/modules/system.ts`
-- `static/src/router/modules/result.ts`
 
 基础静态路由位于：
 

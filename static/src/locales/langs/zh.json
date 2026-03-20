@@ -241,11 +241,6 @@
       "title": "仪表盘",
       "console": "工作台"
     },
-    "result": {
-      "title": "结果页面",
-      "success": "成功页",
-      "fail": "失败页"
-    },
     "exception": {
       "title": "异常页面",
       "forbidden": "403",
@@ -1174,25 +1169,6 @@
       "resultUsers": "实际展开结算 {count} 人",
       "resultSkipped": "跳过 {count} 人（无对应用户/已兑换）",
       "resultWallet": "共发放系统钱包 {amount}"
-    }
-  },
-  "resultPage": {
-    "success": {
-      "title": "提交成功",
-      "message": "提交结果页用于反馈一系列操作任务的处理结果，如果仅是简单操作，使用 Message 全局提示反馈即可。灰色区域可以显示一些补充的信息。",
-      "content": "已提交申请，等待部门审核。",
-      "back": "返回修改",
-      "view": "查看",
-      "print": "打印"
-    },
-    "fail": {
-      "title": "提交失败",
-      "message": "请核对并修改以下信息后，再重新提交。",
-      "content": "您提交的内容有如下错误：",
-      "frozen": "您的账户已被冻结",
-      "ineligible": "您的账户还不具备申请资格",
-      "back": "返回修改",
-      "view": "查看"
     }
   },
   "roleUi": {

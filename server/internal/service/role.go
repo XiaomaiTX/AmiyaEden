@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type RoleService struct {
@@ -301,6 +302,8 @@ func (s *RoleService) SeedSystemMenus() {
 	seeds := model.GetSystemMenuSeeds()
 	nameToID := make(map[string]uint)
 
+	s.removeObsoleteSystemMenus()
+
 	// 先处理根菜单，再处理子菜单
 	for pass := 0; pass < 5; pass++ {
 		for _, seed := range seeds {
@@ -340,6 +343,26 @@ func (s *RoleService) SeedSystemMenus() {
 
 	// 设置默认角色-菜单映射
 	s.seedDefaultRoleMenus(nameToID)
+}
+
+func (s *RoleService) removeObsoleteSystemMenus() {
+	obsoleteRootMenus := []string{"Result"}
+
+	for _, name := range obsoleteRootMenus {
+		menu, err := s.menuRepo.GetByName(name)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			continue
+		}
+		if err != nil {
+			global.Logger.Warn("查询旧菜单失败", zap.String("name", name), zap.Error(err))
+			continue
+		}
+		if err := s.menuRepo.Delete(menu.ID); err != nil {
+			global.Logger.Warn("删除旧菜单失败", zap.String("name", name), zap.Error(err))
+			continue
+		}
+		global.Logger.Info("已删除旧菜单", zap.String("name", name))
+	}
 }
 
 func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
