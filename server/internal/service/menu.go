@@ -3,12 +3,15 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"sync"
 )
 
 type MenuService struct {
 	repo     *repository.MenuRepository
 	roleRepo *repository.RoleRepository
 }
+
+var ensureSystemMenusOnce sync.Once
 
 func NewMenuService() *MenuService {
 	return &MenuService{
@@ -55,6 +58,8 @@ func (s *MenuService) DeleteMenu(id uint) error {
 
 // GetUserMenuTree 获取用户可访问的菜单树（前端路由格式）
 func (s *MenuService) GetUserMenuTree(userID uint, roleCodes []string) ([]*model.MenuItem, error) {
+	s.ensureSystemMenusSeeded()
+
 	// super_admin 返回全部菜单
 	if model.IsSuperAdmin(roleCodes) {
 		allMenus, err := s.repo.ListAll()
@@ -92,6 +97,12 @@ func (s *MenuService) GetUserMenuTree(userID uint, roleCodes []string) ([]*model
 	menus = s.ensureParentMenus(menus, menuIDs)
 
 	return repository.BuildMenuTree(menus), nil
+}
+
+func (s *MenuService) ensureSystemMenusSeeded() {
+	ensureSystemMenusOnce.Do(func() {
+		NewRoleService().SeedSystemMenus()
+	})
 }
 
 // ensureParentMenus 确保所有菜单的父目录菜单也被包含

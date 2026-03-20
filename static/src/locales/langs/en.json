@@ -282,6 +282,7 @@
       "fleetDetail": "Fleet Detail",
       "fleetConfigs": "Fleet Configs",
       "corporationPap": "Corporation PAP",
+      "skillPlans": "Corp Skill Plans",
       "pap": "My PAP",
       "join": "Join Fleet",
       "srpApply": "SRP Apply",
@@ -822,6 +823,50 @@
       "character": "Character",
       "fitting": "Fitting",
       "fittingPlaceholder": "Select a fitting"
+    }
+  },
+  "skillPlan": {
+    "title": "Corp Skill Plans",
+    "create": "Create Plan",
+    "edit": "Edit Plan",
+    "delete": "Delete Plan",
+    "createSuccess": "Skill plan created",
+    "updateSuccess": "Skill plan updated",
+    "deleteSuccess": "Skill plan deleted",
+    "deleteConfirm": "Are you sure you want to delete skill plan \"{title}\"? This cannot be undone.",
+    "searchPlaceholder": "Search skill plan title or description",
+    "listTitle": "Skill Plans",
+    "detailTitle": "Plan Details",
+    "emptyList": "No skill plans",
+    "emptyDetail": "Select a skill plan on the left to view details",
+    "descriptionEmpty": "No description",
+    "skillCount": "Skill Requirements",
+    "skillListTitle": "Required Skills",
+    "addSkill": "Add Skill Requirement",
+    "noSkills": "Please add at least one skill requirement",
+    "duplicateSkill": "Duplicate skills are not allowed in one plan",
+    "textInputActive": "Pasted skill text will be used as the source of truth on save; duplicate skills keep the highest level automatically.",
+    "manualInputHint": "Clear the pasted skill text above to switch back to manual skill selection.",
+    "level": "Level {level}",
+    "levelLabel": "Required Level",
+    "order": "Order",
+    "fields": {
+      "title": "Plan Title",
+      "titlePlaceholder": "Enter the skill plan title",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe what this skill plan is for",
+      "skillsText": "Skill Text",
+      "skillsTextPlaceholder": "One skill per line, for example:\nGraviton Physics 5\nDoomsday Rapid Firing 5\nCapital Shield Operation 4",
+      "skillsTextHint": "Supported format: skill name + space + level. Levels may use 1-5 or Roman numerals I-V. Duplicate skills automatically keep the highest level.",
+      "skill": "Skill",
+      "skillPlaceholder": "Search and select a skill",
+      "group": "Skill Group",
+      "requiredLevel": "Required Level"
+    },
+    "table": {
+      "skill": "Skill",
+      "group": "Group",
+      "requiredLevel": "Required Level"
     }
   },
   "characters": {

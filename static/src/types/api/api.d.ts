@@ -657,6 +657,75 @@ declare namespace Api {
     }
   }
 
+  /** 军团技能计划类型 */
+  namespace SkillPlan {
+    /** 技能计划列表项 */
+    interface SkillPlanListItem {
+      id: number
+      title: string
+      description: string
+      created_by: number
+      created_at: string
+      updated_at: string
+      skill_count: number
+    }
+
+    /** 技能要求详情 */
+    interface SkillRequirement {
+      id: number
+      skill_plan_id: number
+      skill_type_id: number
+      skill_name: string
+      group_name: string
+      required_level: number
+      sort: number
+    }
+
+    /** 技能计划详情 */
+    interface SkillPlanDetail {
+      id: number
+      title: string
+      description: string
+      created_by: number
+      created_at: string
+      updated_at: string
+      skill_count: number
+      skills: SkillRequirement[]
+    }
+
+    /** 技能计划分页列表 */
+    type SkillPlanList = Api.Common.PaginatedResponse<SkillPlanListItem>
+
+    /** 查询参数 */
+    type SkillPlanSearchParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    /** 单条技能要求请求 */
+    interface SkillRequirementParams {
+      skill_type_id: number
+      required_level: number
+    }
+
+    /** 创建技能计划请求 */
+    interface CreateSkillPlanParams {
+      title: string
+      description?: string
+      skills?: SkillRequirementParams[]
+      skills_text?: string
+    }
+
+    /** 更新技能计划请求 */
+    interface UpdateSkillPlanParams {
+      title: string
+      description?: string
+      skills?: SkillRequirementParams[]
+      skills_text?: string
+    }
+  }
+
   /** 系统钱包类型（独立于 EVE Wallet） */
   namespace SysWallet {
     /** 钱包信息 */

@@ -214,31 +214,98 @@ func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, langu
 // GetTypesByCategoryID 获取指定 categoryID 下所有已发布的物品（含翻译）
 // 主要用于技能模块获取 categoryID=16 的全量技能列表
 func (r *SdeRepository) GetTypesByCategoryID(categoryID int, languageID string) ([]TypeInfo, error) {
+	result, err := r.getTypesByCategoryIDWithLayout(categoryID, languageID, true)
+	if err == nil {
+		return result, nil
+	}
+
+	// Some SDE imports end up with unquoted lowercase PostgreSQL identifiers.
+	fallbackResult, fallbackErr := r.getTypesByCategoryIDWithLayout(categoryID, languageID, false)
+	if fallbackErr == nil {
+		return fallbackResult, nil
+	}
+
+	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+}
+
+func (r *SdeRepository) getTypesByCategoryIDWithLayout(categoryID int, languageID string, camelCase bool) ([]TypeInfo, error) {
 	var result []TypeInfo
 
-	query := global.DB.Table(`"invTypes" t`).
-		Select(`
-            t."typeID"        AS type_id,
-            t_name.text       AS type_name,
-            g."groupID"       AS group_id,
-            g_name.text       AS group_name,
-            t."marketGroupID" AS market_group_id,
-            mg_name.text      AS market_group_name,
-            c."categoryID"    AS category_id,
-            c_name.text       AS category_name
-        `).
-		Joins(`LEFT JOIN "invGroups" g ON g."groupID" = t."groupID"`).
-		Joins(`LEFT JOIN "invCategories" c ON c."categoryID" = g."categoryID"`).
-		Joins(`LEFT JOIN "invMarketGroups" mg ON mg."marketGroupID" = t."marketGroupID"`).
-		Joins(`LEFT JOIN "trnTranslations" t_name ON t_name."tcID" = ? AND t_name."keyID" = t."typeID" AND t_name."languageID" = ?`,
+	tableInvTypes := `"invTypes" t`
+	joinInvGroups := `"invGroups" g`
+	joinInvCategories := `"invCategories" c`
+	joinInvMarketGroups := `"invMarketGroups" mg`
+	joinTranslationsType := `"trnTranslations" t_name`
+	joinTranslationsGroup := `"trnTranslations" g_name`
+	joinTranslationsCategory := `"trnTranslations" c_name`
+	joinTranslationsMarket := `"trnTranslations" mg_name`
+
+	typeIDCol := `t."typeID"`
+	groupIDCol := `t."groupID"`
+	marketGroupIDCol := `t."marketGroupID"`
+	publishedCol := `t.published`
+	groupGroupIDCol := `g."groupID"`
+	groupCategoryIDCol := `g."categoryID"`
+	categoryIDCol := `c."categoryID"`
+	marketGroupJoinIDCol := `mg."marketGroupID"`
+	typeNameBaseCol := `t."typeName"`
+	groupNameBaseCol := `g."groupName"`
+	categoryNameBaseCol := `c."categoryName"`
+	marketGroupNameBaseCol := `mg."marketGroupName"`
+	trTcIDCol := `"tcID"`
+	trKeyIDCol := `"keyID"`
+	trLanguageIDCol := `"languageID"`
+
+	if !camelCase {
+		tableInvTypes = `invtypes t`
+		joinInvGroups = `invgroups g`
+		joinInvCategories = `invcategories c`
+		joinInvMarketGroups = `invmarketgroups mg`
+		joinTranslationsType = `trntranslations t_name`
+		joinTranslationsGroup = `trntranslations g_name`
+		joinTranslationsCategory = `trntranslations c_name`
+		joinTranslationsMarket = `trntranslations mg_name`
+
+		typeIDCol = `t.typeid`
+		groupIDCol = `t.groupid`
+		marketGroupIDCol = `t.marketgroupid`
+		publishedCol = `t.published`
+		groupGroupIDCol = `g.groupid`
+		groupCategoryIDCol = `g.categoryid`
+		categoryIDCol = `c.categoryid`
+		marketGroupJoinIDCol = `mg.marketgroupid`
+		typeNameBaseCol = `t.typename`
+		groupNameBaseCol = `g.groupname`
+		categoryNameBaseCol = `c.categoryname`
+		marketGroupNameBaseCol = `mg.marketgroupname`
+		trTcIDCol = `tcid`
+		trKeyIDCol = `keyid`
+		trLanguageIDCol = `languageid`
+	}
+
+	query := global.DB.Table(tableInvTypes).
+		Select(fmt.Sprintf(`
+            %s AS type_id,
+            COALESCE(NULLIF(t_name.text, ''), %s) AS type_name,
+            %s AS group_id,
+            COALESCE(NULLIF(g_name.text, ''), %s) AS group_name,
+            %s AS market_group_id,
+            COALESCE(NULLIF(mg_name.text, ''), %s) AS market_group_name,
+            %s AS category_id,
+            COALESCE(NULLIF(c_name.text, ''), %s) AS category_name
+        `, typeIDCol, typeNameBaseCol, groupGroupIDCol, groupNameBaseCol, marketGroupIDCol, marketGroupNameBaseCol, categoryIDCol, categoryNameBaseCol)).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = %s`, joinInvGroups, groupGroupIDCol, groupIDCol)).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = %s`, joinInvCategories, categoryIDCol, groupCategoryIDCol)).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = %s`, joinInvMarketGroups, marketGroupJoinIDCol, marketGroupIDCol)).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON t_name.%s = ? AND t_name.%s = %s AND t_name.%s = ?`, joinTranslationsType, trTcIDCol, trKeyIDCol, typeIDCol, trLanguageIDCol),
 			TC_ID["type"], languageID).
-		Joins(`LEFT JOIN "trnTranslations" g_name ON g_name."tcID" = ? AND g_name."keyID" = g."groupID" AND g_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON g_name.%s = ? AND g_name.%s = %s AND g_name.%s = ?`, joinTranslationsGroup, trTcIDCol, trKeyIDCol, groupGroupIDCol, trLanguageIDCol),
 			TC_ID["group"], languageID).
-		Joins(`LEFT JOIN "trnTranslations" c_name ON c_name."tcID" = ? AND c_name."keyID" = c."categoryID" AND c_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON c_name.%s = ? AND c_name.%s = %s AND c_name.%s = ?`, joinTranslationsCategory, trTcIDCol, trKeyIDCol, categoryIDCol, trLanguageIDCol),
 			TC_ID["category"], languageID).
-		Joins(`LEFT JOIN "trnTranslations" mg_name ON mg_name."tcID" = ? AND mg_name."keyID" = mg."marketGroupID" AND mg_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON mg_name.%s = ? AND mg_name.%s = %s AND mg_name.%s = ?`, joinTranslationsMarket, trTcIDCol, trKeyIDCol, marketGroupJoinIDCol, trLanguageIDCol),
 			TC_ID["market_group"], languageID).
-		Where(`c."categoryID" = ? AND t.published = 1`, categoryID)
+		Where(fmt.Sprintf(`%s = ? AND %s = 1`, categoryIDCol, publishedCol), categoryID)
 
 	if err := query.Scan(&result).Error; err != nil {
 		return nil, err
@@ -314,6 +381,21 @@ func (r *SdeRepository) getTypeIDsByNamesWithLayout(names []string, camelCase bo
 
 // FuzzySearch 模糊搜索 trnTranslations（物品名称）及成员名称
 func (r *SdeRepository) FuzzySearch(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool) ([]FuzzySearchItem, error) {
+	result, err := r.fuzzySearchWithLayout(keyword, languageID, categoryIDs, excludeCategoryIDs, limit, searchMember, true)
+	if err == nil {
+		return result, nil
+	}
+
+	// Some SDE imports end up with unquoted lowercase PostgreSQL identifiers.
+	fallbackResult, fallbackErr := r.fuzzySearchWithLayout(keyword, languageID, categoryIDs, excludeCategoryIDs, limit, searchMember, false)
+	if fallbackErr == nil {
+		return fallbackResult, nil
+	}
+
+	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+}
+
+func (r *SdeRepository) fuzzySearchWithLayout(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool, camelCase bool) ([]FuzzySearchItem, error) {
 	if keyword == "" {
 		return nil, nil
 	}
@@ -327,27 +409,67 @@ func (r *SdeRepository) FuzzySearch(keyword string, languageID string, categoryI
 	var result []FuzzySearchItem
 	pattern := "%" + keyword + "%"
 
-	// 1. 搜索 SDE 物品名称（通过 trnTranslations 的 type 翻译）
-	query := global.DB.Table(`"trnTranslations" tr`).
-		Select(`
-			t."typeID"   AS id,
-			tr.text      AS name,
-			g."groupID"  AS group_id,
-			g_name.text  AS group_name,
-			'type'       AS category
-		`).
-		Joins(`JOIN "invTypes" t ON t."typeID" = tr."keyID" AND t.published = 1`).
-		Joins(`JOIN "invGroups" g ON g."groupID" = t."groupID"`).
-		Joins(`JOIN "invCategories" c ON c."categoryID" = g."categoryID"`).
-		Joins(`LEFT JOIN "trnTranslations" g_name ON g_name."tcID" = ? AND g_name."keyID" = g."groupID" AND g_name."languageID" = ?`,
+	tableInvTypes := `"invTypes" t`
+	joinInvGroups := `"invGroups" g`
+	joinInvCategories := `"invCategories" c`
+	joinTypeTranslations := `"trnTranslations" tr`
+	joinGroupTranslations := `"trnTranslations" g_name`
+
+	typeIDCol := `t."typeID"`
+	groupIDCol := `t."groupID"`
+	publishedCol := `t.published`
+	groupGroupIDCol := `g."groupID"`
+	groupCategoryIDCol := `g."categoryID"`
+	categoryIDCol := `c."categoryID"`
+	typeNameBaseCol := `t."typeName"`
+	groupNameBaseCol := `g."groupName"`
+	trTcIDCol := `"tcID"`
+	trKeyIDCol := `"keyID"`
+	trLanguageIDCol := `"languageID"`
+
+	if !camelCase {
+		tableInvTypes = `invtypes t`
+		joinInvGroups = `invgroups g`
+		joinInvCategories = `invcategories c`
+		joinTypeTranslations = `trntranslations tr`
+		joinGroupTranslations = `trntranslations g_name`
+
+		typeIDCol = `t.typeid`
+		groupIDCol = `t.groupid`
+		publishedCol = `t.published`
+		groupGroupIDCol = `g.groupid`
+		groupCategoryIDCol = `g.categoryid`
+		categoryIDCol = `c.categoryid`
+		typeNameBaseCol = `t.typename`
+		groupNameBaseCol = `g.groupname`
+		trTcIDCol = `tcid`
+		trKeyIDCol = `keyid`
+		trLanguageIDCol = `languageid`
+	}
+
+	// 1. 搜索 SDE 物品名称。显示名称优先当前语言翻译，搜索关键字同时兼容当前语言翻译和英文基础名。
+	query := global.DB.Table(tableInvTypes).
+		Select(fmt.Sprintf(`
+			%s AS id,
+			COALESCE(NULLIF(tr.text, ''), %s) AS name,
+			%s AS group_id,
+			COALESCE(NULLIF(g_name.text, ''), %s) AS group_name,
+			'type' AS category
+		`, typeIDCol, typeNameBaseCol, groupGroupIDCol, groupNameBaseCol)).
+		Joins(fmt.Sprintf(`JOIN %s ON %s = %s`, joinInvGroups, groupGroupIDCol, groupIDCol)).
+		Joins(fmt.Sprintf(`JOIN %s ON %s = %s`, joinInvCategories, categoryIDCol, groupCategoryIDCol)).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON tr.%s = ? AND tr.%s = %s AND tr.%s = ?`, joinTypeTranslations, trTcIDCol, trKeyIDCol, typeIDCol, trLanguageIDCol),
+			TC_ID["type"], languageID).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON g_name.%s = ? AND g_name.%s = %s AND g_name.%s = ?`, joinGroupTranslations, trTcIDCol, trKeyIDCol, groupGroupIDCol, trLanguageIDCol),
 			TC_ID["group"], languageID).
-		Where(`tr."tcID" = ? AND tr."languageID" = ? AND tr.text ILIKE ?`, TC_ID["type"], languageID, pattern)
+		Where(fmt.Sprintf(`%s = 1`, publishedCol)).
+		Where(fmt.Sprintf(`(tr.text ILIKE ? OR %s ILIKE ?)`, typeNameBaseCol), pattern, pattern)
 
 	if len(categoryIDs) > 0 {
-		query = query.Where(`c."categoryID" IN ?`, categoryIDs)
+		query = query.Where(fmt.Sprintf(`%s IN ?`, categoryIDCol), categoryIDs)
 	}
 	if len(excludeCategoryIDs) > 0 {
-		query = query.Where(`c."categoryID" NOT IN ?`, excludeCategoryIDs)
+		query = query.Where(fmt.Sprintf(`%s NOT IN ?`, categoryIDCol), excludeCategoryIDs)
 	}
 
 	query = query.Limit(limit)

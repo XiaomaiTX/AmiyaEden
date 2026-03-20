@@ -267,6 +267,7 @@
       "fleetDetail": "舰队详情",
       "fleetConfigs": "舰队配置",
       "corporationPap": "军团PAP",
+      "skillPlans": "制定军团技能",
       "pap": "我的 PAP",
       "join": "加入舰队",
       "srpApply": "申请补损",
@@ -823,6 +824,50 @@
       "character": "角色",
       "fitting": "装配",
       "fittingPlaceholder": "选择一个装配"
+    }
+  },
+  "skillPlan": {
+    "title": "制定军团技能",
+    "create": "创建技能计划",
+    "edit": "编辑技能计划",
+    "delete": "删除技能计划",
+    "createSuccess": "技能计划创建成功",
+    "updateSuccess": "技能计划更新成功",
+    "deleteSuccess": "技能计划删除成功",
+    "deleteConfirm": "确定要删除技能计划「{title}」吗？此操作不可恢复。",
+    "searchPlaceholder": "搜索技能计划标题或描述",
+    "listTitle": "技能计划列表",
+    "detailTitle": "计划详情",
+    "emptyList": "暂无技能计划",
+    "emptyDetail": "请选择左侧技能计划查看详情",
+    "descriptionEmpty": "暂无描述",
+    "skillCount": "技能要求",
+    "skillListTitle": "技能要求明细",
+    "addSkill": "添加技能要求",
+    "noSkills": "请至少添加一个技能要求",
+    "duplicateSkill": "技能要求中不能包含重复技能",
+    "textInputActive": "当前将以粘贴的技能文本为准进行解析与保存；重复技能会自动保留最高等级。",
+    "manualInputHint": "清空上方粘贴文本后，可切换回手动逐条选择技能。",
+    "level": "等级 {level}",
+    "levelLabel": "要求等级",
+    "order": "排序",
+    "fields": {
+      "title": "计划标题",
+      "titlePlaceholder": "请输入技能计划标题",
+      "description": "计划说明",
+      "descriptionPlaceholder": "请输入此技能计划的适用说明",
+      "skillsText": "技能文本",
+      "skillsTextPlaceholder": "每行一个技能，格式示例：\nGraviton Physics 5\nDoomsday Rapid Firing 5\nCapital Shield Operation 4",
+      "skillsTextHint": "支持格式：技能名 + 空格 + 等级。等级可使用 1-5 或罗马数字 I-V；重复技能会自动保留最高等级。",
+      "skill": "技能",
+      "skillPlaceholder": "搜索并选择技能",
+      "group": "技能组",
+      "requiredLevel": "要求等级"
+    },
+    "table": {
+      "skill": "技能",
+      "group": "技能组",
+      "requiredLevel": "要求等级"
     }
   },
   "characters": {

@@ -30,6 +30,16 @@ export const operationRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'skill-plans',
+      name: 'SkillPlans',
+      component: '/operation/skill-plans',
+      meta: {
+        title: 'menus.operation.skillPlans',
+        keepAlive: true,
+        roles: ['super_admin', 'admin', 'fc']
+      }
+    },
+    {
       path: 'fleet-detail/:id',
       name: 'FleetDetail',
       component: '/operation/fleet-detail',

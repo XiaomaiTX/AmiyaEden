@@ -7,9 +7,11 @@ source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/fleet.go
   - server/internal/service/fleet_config.go
+  - server/internal/service/skill_plan.go
   - server/internal/service/auto_srp.go
   - static/src/api/fleet.ts
   - static/src/api/fleet-config.ts
+  - static/src/api/skill-plan.ts
   - static/src/views/operation
 ---
 
@@ -24,6 +26,7 @@ source_of_truth:
 - 查看军团 PAP 汇总
 - 查看我的联盟 PAP
 - 舰队配置管理、EFT 导出、从角色装配导入、导出到 ESI
+- 军团技能计划的列表、详情、创建、编辑、删除，以及粘贴技能文本解析
 - 用户侧系统钱包与流水
 - 舰队级自动 SRP 模式：`disabled` / `submit_only` / `auto_approve`
 
@@ -34,6 +37,7 @@ source_of_truth:
 - `static/src/views/operation/fleets`
 - `static/src/views/operation/fleet-detail`
 - `static/src/views/operation/fleet-configs`
+- `static/src/views/operation/skill-plans`
 - `static/src/views/operation/corporation-pap`
 - `static/src/views/operation/join`
 - `static/src/views/operation/pap`
@@ -42,6 +46,7 @@ source_of_truth:
 
 - `/api/v1/operation/fleets/*`
 - `/api/v1/operation/fleet-configs/*`
+- `/api/v1/operation/skill-plans/*`
 - `/api/v1/operation/wallet/*`
 
 ## 权限边界
@@ -50,6 +55,7 @@ source_of_truth:
 - `fleet-configs` 页面访问要求 `super_admin`、`admin`、`fc` 或 `user`
 - `fleet-configs` 的创建、修改、删除、导入装配和物品设置要求 `super_admin`、`admin` 或 `fc`
 - `fleet-configs` 的导出到 ESI 与只读查询要求 `super_admin`、`admin`、`fc` 或 `user`
+- `skill-plans` 的列表、详情、创建、修改、删除要求 `super_admin`、`admin` 或 `fc`
 - `corporation-pap` 在前端静态路由模式下允许 `super_admin`、`admin`、`fc`、`srp`、`user`
 - 舰队相关的细粒度拥有者 / FC / 管理员判断属于 service 层职责
 
@@ -65,8 +71,10 @@ source_of_truth:
 
 - `server/internal/service/fleet.go`
 - `server/internal/service/fleet_config.go`
+- `server/internal/service/skill_plan.go`
 - `server/internal/service/auto_srp.go`
 - `server/internal/router/router.go`
 - `static/src/api/fleet.ts`
 - `static/src/api/fleet-config.ts`
+- `static/src/api/skill-plan.ts`
 - `static/src/views/operation`

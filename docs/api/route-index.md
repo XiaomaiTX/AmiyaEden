@@ -91,6 +91,16 @@ source_of_truth:
 | GET | `/operation/fleet-configs/:id/fittings/:fitting_id/items` | 装配物品 | `RequireRole(admin, fc, user)` |
 | PUT | `/operation/fleet-configs/:id/fittings/:fitting_id/items/settings` | 更新物品设置 | `RequireRole(admin, fc)` |
 
+### Skill Plans
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/operation/skill-plans` | 技能计划列表 | `RequireRole(admin, fc)` |
+| GET | `/operation/skill-plans/:id` | 技能计划详情 | `RequireRole(admin, fc)` |
+| POST | `/operation/skill-plans` | 创建技能计划 | `RequireRole(admin, fc)` |
+| PUT | `/operation/skill-plans/:id` | 更新技能计划 | `RequireRole(admin, fc)` |
+| DELETE | `/operation/skill-plans/:id` | 删除技能计划 | `RequireRole(admin, fc)` |
+
 ### User Wallet
 
 | Method | Path | 说明 | 权限 |

@@ -112,6 +112,9 @@ func autoMigrate(db *gorm.DB) {
 		&model.FleetConfigFitting{},
 		&model.FleetConfigFittingItem{},
 		&model.FleetConfigFittingItemReplacement{},
+		// 军团技能计划相关表
+		&model.SkillPlan{},
+		&model.SkillPlanSkill{},
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},

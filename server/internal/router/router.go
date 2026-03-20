@@ -128,6 +128,19 @@ func RegisterRoutes(r *gin.Engine) {
 		fleetConfig.PUT("/:id/fittings/:fitting_id/items/settings", manageFleetConfigs, fleetConfigH.UpdateFittingItemsSettings)
 	}
 
+	// ─── 军团技能计划 ───
+	skillPlanH := handler.NewSkillPlanHandler()
+	skillPlan := operation.Group("/skill-plans")
+	{
+		manageSkillPlans := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
+
+		skillPlan.GET("", manageSkillPlans, skillPlanH.ListSkillPlans)
+		skillPlan.GET("/:id", manageSkillPlans, skillPlanH.GetSkillPlan)
+		skillPlan.POST("", manageSkillPlans, skillPlanH.CreateSkillPlan)
+		skillPlan.PUT("/:id", manageSkillPlans, skillPlanH.UpdateSkillPlan)
+		skillPlan.DELETE("/:id", manageSkillPlans, skillPlanH.DeleteSkillPlan)
+	}
+
 	// ─── EVE 角色信息 ───
 	infoH := handler.NewEveInfoHandler()
 	info := auth.Group("/info")
