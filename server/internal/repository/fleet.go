@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // FleetRepository 舰队数据访问层
@@ -224,6 +226,20 @@ type MonthlyPapStat struct {
 	TotalPap float64 `json:"total_pap"`
 }
 
+// FleetPapSummaryFilter PAP 汇总筛选条件
+type FleetPapSummaryFilter struct {
+	StartAt *time.Time
+	EndAt   *time.Time
+}
+
+// CorporationPapSummaryRow 军团 PAP 汇总行
+type CorporationPapSummaryRow struct {
+	UserID       uint    `json:"user_id"`
+	StratOpPaps  float64 `json:"strat_op_paps"`
+	SkirmishPaps float64 `json:"skirmish_paps"`
+	TotalPaps    float64 `json:"-"`
+}
+
 // SumPapByUserGroupedByMonth 按月汇总用户 PAP
 func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapStat, error) {
 	var stats []MonthlyPapStat
@@ -235,6 +251,41 @@ func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapS
 		Limit(12).
 		Scan(&stats).Error
 	return stats, err
+}
+
+// ListCorporationPapSummaryAll 查询全部军团 PAP 汇总结果
+func (r *FleetRepository) ListCorporationPapSummaryAll(filter FleetPapSummaryFilter) ([]CorporationPapSummaryRow, error) {
+	var rows []CorporationPapSummaryRow
+
+	err := r.applyPapLogDateFilter(
+		global.DB.Model(&model.FleetPapLog{}).
+			Joins("LEFT JOIN fleet ON fleet.id = fleet_pap_log.fleet_id"),
+		filter,
+	).
+		Select(`
+			fleet_pap_log.user_id,
+			COALESCE(SUM(CASE WHEN fleet.importance IN ('cta', 'strat_op') THEN fleet_pap_log.pap_count ELSE 0 END), 0) as strat_op_paps,
+			COALESCE(SUM(CASE WHEN fleet.importance = 'other' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
+			COALESCE(SUM(fleet_pap_log.pap_count), 0) as total_paps
+		`).
+		Group("fleet_pap_log.user_id").
+		Order("total_paps DESC, fleet_pap_log.user_id ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
+}
+
+func (r *FleetRepository) applyPapLogDateFilter(db *gorm.DB, filter FleetPapSummaryFilter) *gorm.DB {
+	if filter.StartAt != nil {
+		db = db.Where("fleet_pap_log.issued_at >= ?", *filter.StartAt)
+	}
+	if filter.EndAt != nil {
+		db = db.Where("fleet_pap_log.issued_at < ?", *filter.EndAt)
+	}
+	return db
 }
 
 // ─────────────────────────────────────────────

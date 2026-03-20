@@ -61,20 +61,11 @@
   "setting": {
     "menuType": {
       "title": "菜单布局",
-      "list": [
-        "垂直",
-        "水平",
-        "混合",
-        "双列"
-      ]
+      "list": ["垂直", "水平", "混合", "双列"]
     },
     "theme": {
       "title": "主题风格",
-      "list": [
-        "浅色",
-        "深色",
-        "系统"
-      ]
+      "list": ["浅色", "深色", "系统"]
     },
     "menu": {
       "title": "菜单风格"
@@ -84,17 +75,11 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": [
-        "边框",
-        "阴影"
-      ]
+      "list": ["边框", "阴影"]
     },
     "container": {
       "title": "容器宽度",
-      "list": [
-        "铺满",
-        "定宽"
-      ]
+      "list": ["铺满", "定宽"]
     },
     "basics": {
       "title": "基础配置",
@@ -140,14 +125,8 @@
   "notice": {
     "title": "通知",
     "btnRead": "标为已读",
-    "bar": [
-      "通知",
-      "消息",
-      "代办"
-    ],
-    "text": [
-      "暂无"
-    ],
+    "bar": ["通知", "消息", "代办"],
+    "text": ["暂无"],
     "viewAll": "查看全部"
   },
   "console": {
@@ -287,6 +266,7 @@
       "fleets": "舰队管理",
       "fleetDetail": "舰队详情",
       "fleetConfigs": "舰队配置",
+      "corporationPap": "军团PAP",
       "pap": "我的 PAP",
       "join": "加入舰队",
       "srpApply": "申请补损",
@@ -332,7 +312,7 @@
       "webhook": "Webhook 通知",
       "basicConfig": "基础配置"
     }
-    },
+  },
   "info": {
     "selectCharacter": "选择角色",
     "selectCharacterPlaceholder": "请选择一个角色",
@@ -817,6 +797,38 @@
       "allianceOperationName": "行动名称",
       "allianceStartTime": "开始时间",
       "allianceEndTime": "结束时间"
+    },
+    "corporationPap": {
+      "title": "军团PAP",
+      "summaryTitle": "军团 PAP 汇总",
+      "empty": "暂无军团 PAP 汇总记录",
+      "search": "查询",
+      "reset": "重置",
+      "filters": {
+        "period": "时间范围",
+        "year": "年份",
+        "corpTickers": "军团"
+      },
+      "periods": {
+        "currentMonth": "本月",
+        "lastMonth": "上月",
+        "atYear": "指定年份",
+        "all": "全部"
+      },
+      "stats": {
+        "filteredPap": "当前筛选 PAP",
+        "filteredStratOp": "战略 OP PAP",
+        "allPap": "全部 PAP",
+        "users": "用户数"
+      },
+      "columns": {
+        "corpTicker": "军团",
+        "mainCharacter": "主角色名",
+        "characterCount": "角色数量",
+        "stratOpPaps": "战略OP",
+        "skirmishPaps": "散打",
+        "allianceStratPaps": "联盟战略PAP"
+      }
     },
     "invite": {
       "title": "邀请链接",

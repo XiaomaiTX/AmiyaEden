@@ -61,20 +61,11 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": [
-        "Vertical",
-        "Horizontal",
-        "Mixed",
-        "Dual"
-      ]
+      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
     },
     "theme": {
       "title": "Theme Style",
-      "list": [
-        "Light",
-        "Dark",
-        "System"
-      ]
+      "list": ["Light", "Dark", "System"]
     },
     "menu": {
       "title": "Menu Style"
@@ -84,17 +75,11 @@
     },
     "box": {
       "title": "Box Style",
-      "list": [
-        "Border",
-        "Shadow"
-      ]
+      "list": ["Border", "Shadow"]
     },
     "container": {
       "title": "Container Width",
-      "list": [
-        "Full",
-        "Boxed"
-      ]
+      "list": ["Full", "Boxed"]
     },
     "basics": {
       "title": "Basic Config",
@@ -140,14 +125,8 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": [
-      "Notice",
-      "Message",
-      "Todo"
-    ],
-    "text": [
-      "No"
-    ],
+    "bar": ["Notice", "Message", "Todo"],
+    "text": ["No"],
     "viewAll": "View all"
   },
   "worktab": {
@@ -302,6 +281,7 @@
       "fleets": "Fleet Management",
       "fleetDetail": "Fleet Detail",
       "fleetConfigs": "Fleet Configs",
+      "corporationPap": "Corporation PAP",
       "pap": "My PAP",
       "join": "Join Fleet",
       "srpApply": "SRP Apply",
@@ -815,6 +795,38 @@
       "allianceOperationName": "Operation Name",
       "allianceStartTime": "Start Time",
       "allianceEndTime": "End Time"
+    },
+    "corporationPap": {
+      "title": "Corporation PAP",
+      "summaryTitle": "Corporation PAP Summary",
+      "empty": "No corporation PAP summary records",
+      "search": "Search",
+      "reset": "Reset",
+      "filters": {
+        "period": "Period",
+        "year": "Year",
+        "corpTickers": "Corporations"
+      },
+      "periods": {
+        "currentMonth": "Current Month",
+        "lastMonth": "Last Month",
+        "atYear": "At Year",
+        "all": "All"
+      },
+      "stats": {
+        "filteredPap": "Filtered PAP",
+        "filteredStratOp": "Strategic OP PAP",
+        "allPap": "All PAP",
+        "users": "Users"
+      },
+      "columns": {
+        "corpTicker": "Corporation",
+        "mainCharacter": "Main Character",
+        "characterCount": "Characters",
+        "stratOpPaps": "Strategic OP",
+        "skirmishPaps": "Skirmish",
+        "allianceStratPaps": "Alliance Strategic PAP"
+      }
     },
     "invite": {
       "title": "Invite Links",

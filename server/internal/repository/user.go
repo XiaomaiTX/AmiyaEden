@@ -36,6 +36,16 @@ func (r *UserRepository) ListAllIDs() ([]uint, error) {
 	return ids, err
 }
 
+// ListByIDs 根据 ID 列表查询用户
+func (r *UserRepository) ListByIDs(ids []uint) ([]model.User, error) {
+	var users []model.User
+	if len(ids) == 0 {
+		return users, nil
+	}
+	err := global.DB.Where("id IN ?", ids).Find(&users).Error
+	return users, err
+}
+
 // Delete 软删除用户
 func (r *UserRepository) Delete(id uint) error {
 	return global.DB.Delete(&model.User{}, id).Error
