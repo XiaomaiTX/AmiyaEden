@@ -1,30 +1,9 @@
-// 从 URL 和路径模块中导入必要的功能
-import fs from 'fs'
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
-
 // 从 ESLint 插件中导入推荐配置
 import pluginJs from '@eslint/js'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
-
-// 使用 import.meta.url 获取当前模块的路径
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-function loadAutoImportConfig() {
-  const autoImportPath = path.resolve(__dirname, '.auto-import.json')
-  if (!fs.existsSync(autoImportPath)) {
-    return { globals: {} }
-  }
-
-  return JSON.parse(fs.readFileSync(autoImportPath, 'utf-8'))
-}
-
-// .auto-import.json 是本地开发生成文件，CI 的干净检出未必存在。
-const autoImportConfig = loadAutoImportConfig()
 
 export default [
   // 指定文件匹配规则
@@ -51,8 +30,6 @@ export default [
 
     languageOptions: {
       globals: {
-        // 合并从 autoImportConfig 中读取的全局变量配置
-        ...autoImportConfig.globals,
         // TypeScript 全局命名空间
         Api: 'readonly'
       }
@@ -65,6 +42,13 @@ export default [
       'vue/multi-word-component-names': 'off', // 禁用对 Vue 组件名称的多词要求检查
       'no-multiple-empty-lines': ['warn', { max: 1 }], // 不允许多个空行
       'no-unexpected-multiline': 'error' // 禁止空余的多行
+    }
+  },
+  {
+    files: ['**/*.{ts,vue}'],
+    rules: {
+      // TypeScript 负责标识符解析，避免与自动导入声明重复报错。
+      'no-undef': 'off'
     }
   },
   // vue 规则
