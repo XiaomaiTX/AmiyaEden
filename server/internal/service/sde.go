@@ -724,8 +724,8 @@ func (s *SdeService) GetTypes(typeIDs []int, published *bool, languageID string)
 	return s.repo.GetTypes(typeIDs, published, languageID)
 }
 
-// GetNames 批量查询 id -> name 映射（仅查数据库翻译表）
-func (s *SdeService) GetNames(ids map[string][]int, languageID string) (map[int]string, error) {
+// GetNames 批量查询按 namespace 分组的 id -> name 映射（仅查数据库翻译表）
+func (s *SdeService) GetNames(ids map[string][]int, languageID string) (repository.SdeNameMap, error) {
 	return s.repo.GetNames(ids, languageID)
 }
 

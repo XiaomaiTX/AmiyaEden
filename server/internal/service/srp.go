@@ -790,9 +790,11 @@ func (s *SrpService) GetKillmailDetail(req *KillmailDetailRequest) (*KillmailDet
 	if err != nil {
 		return nil, err
 	}
+	typeNames := nameMap["type"]
 
 	// 5. 查星系名
 	sysNameMap, _ := s.sdeRepo.GetNames(map[string][]int{"solar_system": {int(km.SolarSystemID)}}, lang)
+	solarSystemNames := sysNameMap["solar_system"]
 
 	// 6. 查角色名
 	charName := ""
@@ -842,7 +844,7 @@ func (s *SrpService) GetKillmailDetail(req *KillmailDetailRequest) (*KillmailDet
 		if existing, ok := merged[key]; ok {
 			existing.Quantity += it.ItemNum
 		} else {
-			itemName := nameMap[it.ItemID]
+			itemName := typeNames[it.ItemID]
 			if itemName == "" {
 				itemName = "Unknown"
 			}
@@ -876,11 +878,11 @@ func (s *SrpService) GetKillmailDetail(req *KillmailDetailRequest) (*KillmailDet
 		}
 	}
 
-	shipName := nameMap[int(km.ShipTypeID)]
+	shipName := typeNames[int(km.ShipTypeID)]
 	if shipName == "" {
 		shipName = "Unknown"
 	}
-	sysName := sysNameMap[int(km.SolarSystemID)]
+	sysName := solarSystemNames[int(km.SolarSystemID)]
 
 	return &KillmailDetailResponse{
 		KillmailID:    km.KillmailID,

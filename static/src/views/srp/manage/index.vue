@@ -369,7 +369,7 @@
           width: 180,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
-            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`))
+            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
         },
         {
           prop: 'solar_system_id',
@@ -377,7 +377,7 @@
           width: 140,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
-            h('span', {}, getName(row.solar_system_id, String(row.solar_system_id)))
+            h('span', {}, getName(row.solar_system_id, String(row.solar_system_id), 'solar_system'))
         },
         {
           prop: 'killmail_id',
@@ -409,7 +409,11 @@
             h(
               'span',
               {},
-              getName(row.corporation_id, row.corporation_id ? `ID: ${row.corporation_id}` : '-')
+              getName(
+                row.corporation_id,
+                row.corporation_id ? `ID: ${row.corporation_id}` : '-',
+                'esi'
+              )
             )
         },
         {
@@ -421,7 +425,7 @@
             h(
               'span',
               {},
-              getName(row.alliance_id, row.alliance_id ? `ID: ${row.alliance_id}` : '-')
+              getName(row.alliance_id, row.alliance_id ? `ID: ${row.alliance_id}` : '-', 'esi')
             )
         },
         {
@@ -868,15 +872,16 @@
   const exportManageData = computed(() =>
     data.value.map((app) => ({
       character_name: app.character_name,
-      ship_name: getName(app.ship_type_id, `TypeID: ${app.ship_type_id}`),
-      solar_system: getName(app.solar_system_id, String(app.solar_system_id)),
+      ship_name: getName(app.ship_type_id, `TypeID: ${app.ship_type_id}`, 'type'),
+      solar_system: getName(app.solar_system_id, String(app.solar_system_id), 'solar_system'),
       killmail_id: app.killmail_id,
       killmail_time: formatTime(app.killmail_time),
       corporation: getName(
         app.corporation_id,
-        app.corporation_id ? `ID: ${app.corporation_id}` : '-'
+        app.corporation_id ? `ID: ${app.corporation_id}` : '-',
+        'esi'
       ),
-      alliance: getName(app.alliance_id, app.alliance_id ? `ID: ${app.alliance_id}` : '-'),
+      alliance: getName(app.alliance_id, app.alliance_id ? `ID: ${app.alliance_id}` : '-', 'esi'),
       fleet_title: app.fleet_title || '-',
       fleet_fc_name: app.fleet_fc_name || '-',
       note: app.note || '-',

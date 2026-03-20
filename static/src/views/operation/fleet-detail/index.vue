@@ -241,7 +241,8 @@
           label: t('fleet.members.shipType'),
           width: 160,
           showOverflowTooltip: true,
-          formatter: (row: Api.Fleet.MemberWithPap) => h('span', {}, getName(row.ship_type_id, '-'))
+          formatter: (row: Api.Fleet.MemberWithPap) =>
+            h('span', {}, getName(row.ship_type_id, '-', 'type'))
         },
         {
           prop: 'solar_system_id',
@@ -249,7 +250,7 @@
           width: 140,
           showOverflowTooltip: true,
           formatter: (row: Api.Fleet.MemberWithPap) =>
-            h('span', {}, getName(row.solar_system_id, '-'))
+            h('span', {}, getName(row.solar_system_id, '-', 'solar_system'))
         },
         {
           prop: 'joined_at',

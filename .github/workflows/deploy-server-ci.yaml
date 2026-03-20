@@ -36,6 +36,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+          cache: pnpm
+          cache-dependency-path: static/pnpm-lock.yaml
 
       - name: Setup pnpm
         if: needs.changes.outputs.frontend == 'true'
@@ -43,10 +45,36 @@ jobs:
         with:
           version: 9
 
+      - name: Setup Go
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
       - name: Install dependencies
         if: needs.changes.outputs.frontend == 'true'
         working-directory: static
         run: pnpm install --frozen-lockfile
+
+      - name: Verify backend
+        if: needs.changes.outputs.backend == 'true'
+        working-directory: server
+        run: |
+          go test ./...
+          go build ./...
+
+      - name: Verify frontend type safety
+        if: needs.changes.outputs.frontend == 'true'
+        working-directory: static
+        run: |
+          pnpm lint .
+          pnpm exec vue-tsc --noEmit
+
+      - name: Run frontend unit tests
+        if: needs.changes.outputs.frontend == 'true'
+        working-directory: static
+        run: pnpm test:unit
 
       - name: Build frontend
         if: needs.changes.outputs.frontend == 'true'

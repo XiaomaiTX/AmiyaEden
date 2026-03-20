@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-03-20
+last_reviewed: 2026-03-21
 source_of_truth:
   - AGENTS.md
 ---
@@ -61,6 +61,7 @@ source_of_truth:
 
 - 当前行为变化时，优先更新对应的 `docs/architecture`、`docs/api`、`docs/features/current`。
 - 新增工程约束时，更新 `AGENTS.md` 或 `docs/standards`，不要把规则写进 feature doc。
+- 测试与验证规则优先维护在 `AGENTS.md` 与 `docs/standards/testing-and-verification.md`。
 - 新增尚未落地的设计时，只放进 `docs/specs/draft`。
 - 不要在多个文件里重复维护同一份角色定义、路由表、权限矩阵。
 - 不要保留并行的“第二套文档入口”。
@@ -83,6 +84,7 @@ source_of_truth:
 2. `docs/ai/agent-onboarding.md`
 3. `docs/architecture/overview.md`
 4. 任务对应的标准文档
+   如果涉及测试、验证、回归保障，优先补读 `docs/standards/testing-and-verification.md`
 5. 任务对应的 feature / API 文档
 6. 只有在明确做规划工作时才读取 `docs/specs/draft/`
 7. 如任务已明确落在某个子目录，再补读该目录下的局部 `README.md`，但只把它当作实现注释而不是规范裁决来源

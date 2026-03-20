@@ -160,6 +160,38 @@ func TestParseSkillPlanLevelToken(t *testing.T) {
 	}
 }
 
+func TestNormalizeSkillPlanName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "lowercases and trims",
+			input: "  Logistics Cruisers  ",
+			want:  "logistics cruisers",
+		},
+		{
+			name:  "collapses internal whitespace",
+			input: "Capital   Shield\tOperation",
+			want:  "capital shield operation",
+		},
+		{
+			name:  "empty stays empty",
+			input: " \n\t ",
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeSkillPlanName(tt.input); got != tt.want {
+				t.Fatalf("normalizeSkillPlanName(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSkillPlanTextLinePattern(t *testing.T) {
 	lines := []string{
 		"Graviton Physics 5",

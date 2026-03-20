@@ -1479,6 +1479,17 @@ declare namespace Api {
 
   /** SDE 数据查询类型 */
   namespace Sde {
+    interface ResolveNamesRequest {
+      language?: string
+      ids?: Record<string, number[]>
+      esi?: number[]
+    }
+
+    interface ResolveNamesResponse {
+      flat: Record<number, string>
+      names: Record<string, Record<number, string>>
+    }
+
     /** 模糊搜索请求 */
     interface FuzzySearchRequest {
       keyword: string

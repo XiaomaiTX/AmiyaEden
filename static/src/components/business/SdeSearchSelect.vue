@@ -24,7 +24,10 @@
           class="sde-search-option__icon"
           loading="lazy"
         />
-        <el-icon v-else-if="item.category !== 'type'" class="sde-search-option__icon sde-search-option__icon--char">
+        <el-icon
+          v-else-if="item.category !== 'type'"
+          class="sde-search-option__icon sde-search-option__icon--char"
+        >
           <User />
         </el-icon>
         <span class="sde-search-option__name">{{ item.name }}</span>

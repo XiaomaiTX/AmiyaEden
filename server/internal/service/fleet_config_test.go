@@ -46,6 +46,58 @@ func TestResolveTypeIDFromName(t *testing.T) {
 	}
 }
 
+func TestParseEFTHeader(t *testing.T) {
+	tests := []struct {
+		name string
+		eft  string
+		want *eftHeader
+	}{
+		{
+			name: "valid header",
+			eft:  "[Ferox Navy Issue, Shield Doctrine]\nDamage Control II",
+			want: &eftHeader{
+				ShipType:    "Ferox Navy Issue",
+				FittingName: "Shield Doctrine",
+			},
+		},
+		{
+			name: "trims surrounding whitespace and preserves commas in fitting name",
+			eft:  "\n  [Scimitar, Logi, Cap Stable]  \n\nLarge Remote Shield Booster II",
+			want: &eftHeader{
+				ShipType:    "Scimitar",
+				FittingName: "Logi, Cap Stable",
+			},
+		},
+		{
+			name: "missing brackets",
+			eft:  "Ferox Navy Issue, Shield Doctrine",
+		},
+		{
+			name: "missing fitting name",
+			eft:  "[Ferox Navy Issue]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseEFTHeader(tt.eft)
+			if tt.want == nil {
+				if got != nil {
+					t.Fatalf("parseEFTHeader(%q) = %+v, want nil", tt.eft, got)
+				}
+				return
+			}
+
+			if got == nil {
+				t.Fatalf("parseEFTHeader(%q) = nil, want %+v", tt.eft, tt.want)
+			}
+			if *got != *tt.want {
+				t.Fatalf("parseEFTHeader(%q) = %+v, want %+v", tt.eft, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFleetConfigCanManage(t *testing.T) {
 	svc := &FleetConfigService{}
 	config := &model.FleetConfig{CreatedBy: 42}

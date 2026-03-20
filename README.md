@@ -148,12 +148,14 @@ cd server && go build ./...
 cd static && pnpm lint .
 cd static && pnpm build
 cd static && pnpm exec vue-tsc --noEmit
+cd static && pnpm test:unit
 ```
 
 ## 文档入口
 
 - 文档索引与信任顺序：[docs/README.md](docs/README.md)
 - 仓库工程规范：[AGENTS.md](AGENTS.md)
+- 测试与验证标准：[docs/standards/testing-and-verification.md](docs/standards/testing-and-verification.md)
 - 当前架构：[docs/architecture/overview.md](docs/architecture/overview.md)
 - API 路由索引：[docs/api/route-index.md](docs/api/route-index.md)
 - Feature 状态说明：[docs/features/README.md](docs/features/README.md)
