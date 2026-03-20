@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"fmt"
 )
 
 var TC_ID = map[string]int{
@@ -98,43 +99,110 @@ func (r *SdeRepository) GetNames(ids map[string][]int, languageID string) (map[i
 
 // GetTypes 查询物品(组)信息
 func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID string) ([]TypeInfo, error) {
+	result, err := r.getTypesWithLayout(typeIDs, published, languageID, true)
+	if err == nil {
+		return result, nil
+	}
+
+	// Some SDE imports end up with unquoted lowercase PostgreSQL identifiers.
+	fallbackResult, fallbackErr := r.getTypesWithLayout(typeIDs, published, languageID, false)
+	if fallbackErr == nil {
+		return fallbackResult, nil
+	}
+
+	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+}
+
+func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, languageID string, camelCase bool) ([]TypeInfo, error) {
 	var result []TypeInfo
 
-	query := global.DB.Table(`"invTypes" t`).
-		Select(`
-            t."typeID"        AS type_id,
-            t_name.text       AS type_name,
-            g."groupID"       AS group_id,
-            g_name.text       AS group_name,
-            t."marketGroupID" AS market_group_id,
-            mg_name.text      AS market_group_name,
-            c."categoryID"    AS category_id,
-            c_name.text       AS category_name
-        `).
+	tableInvTypes := `"invTypes" t`
+	joinInvGroups := `"invGroups" g`
+	joinInvCategories := `"invCategories" c`
+	joinInvMarketGroups := `"invMarketGroups" mg`
+	joinTranslationsType := `"trnTranslations" t_name`
+	joinTranslationsGroup := `"trnTranslations" g_name`
+	joinTranslationsCategory := `"trnTranslations" c_name`
+	joinTranslationsMarket := `"trnTranslations" mg_name`
+
+	typeIDCol := `t."typeID"`
+	groupIDCol := `t."groupID"`
+	marketGroupIDCol := `t."marketGroupID"`
+	publishedCol := `t.published`
+	groupGroupIDCol := `g."groupID"`
+	groupCategoryIDCol := `g."categoryID"`
+	categoryIDCol := `c."categoryID"`
+	marketGroupJoinIDCol := `mg."marketGroupID"`
+	typeNameBaseCol := `t."typeName"`
+	groupNameBaseCol := `g."groupName"`
+	categoryNameBaseCol := `c."categoryName"`
+	marketGroupNameBaseCol := `mg."marketGroupName"`
+	trTcIDCol := `"tcID"`
+	trKeyIDCol := `"keyID"`
+	trLanguageIDCol := `"languageID"`
+
+	if !camelCase {
+		tableInvTypes = `invtypes t`
+		joinInvGroups = `invgroups g`
+		joinInvCategories = `invcategories c`
+		joinInvMarketGroups = `invmarketgroups mg`
+		joinTranslationsType = `trntranslations t_name`
+		joinTranslationsGroup = `trntranslations g_name`
+		joinTranslationsCategory = `trntranslations c_name`
+		joinTranslationsMarket = `trntranslations mg_name`
+
+		typeIDCol = `t.typeid`
+		groupIDCol = `t.groupid`
+		marketGroupIDCol = `t.marketgroupid`
+		publishedCol = `t.published`
+		groupGroupIDCol = `g.groupid`
+		groupCategoryIDCol = `g.categoryid`
+		categoryIDCol = `c.categoryid`
+		marketGroupJoinIDCol = `mg.marketgroupid`
+		typeNameBaseCol = `t.typename`
+		groupNameBaseCol = `g.groupname`
+		categoryNameBaseCol = `c.categoryname`
+		marketGroupNameBaseCol = `mg.marketgroupname`
+		trTcIDCol = `tcid`
+		trKeyIDCol = `keyid`
+		trLanguageIDCol = `languageid`
+	}
+
+	query := global.DB.Table(tableInvTypes).
+		Select(fmt.Sprintf(`
+            %s AS type_id,
+            COALESCE(NULLIF(t_name.text, ''), %s) AS type_name,
+            %s AS group_id,
+            COALESCE(NULLIF(g_name.text, ''), %s) AS group_name,
+            %s AS market_group_id,
+            COALESCE(NULLIF(mg_name.text, ''), %s) AS market_group_name,
+            %s AS category_id,
+            COALESCE(NULLIF(c_name.text, ''), %s) AS category_name
+        `, typeIDCol, typeNameBaseCol, groupGroupIDCol, groupNameBaseCol, marketGroupIDCol, marketGroupNameBaseCol, categoryIDCol, categoryNameBaseCol)).
 		// invTypes -> invGroups
-		Joins(`LEFT JOIN "invGroups" g ON g."groupID" = t."groupID"`).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = %s`, joinInvGroups, groupGroupIDCol, groupIDCol)).
 		// invGroups -> invCategories
-		Joins(`LEFT JOIN "invCategories" c ON c."categoryID" = g."categoryID"`).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = %s`, joinInvCategories, categoryIDCol, groupCategoryIDCol)).
 		// invGroups -> invMarketGroups
-		Joins(`LEFT JOIN "invMarketGroups" mg ON mg."marketGroupID" = t."marketGroupID"`).
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = %s`, joinInvMarketGroups, marketGroupJoinIDCol, marketGroupIDCol)).
 		// 物品名翻译
-		Joins(`LEFT JOIN "trnTranslations" t_name ON t_name."tcID" = ? AND t_name."keyID" = t."typeID" AND t_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON t_name.%s = ? AND t_name.%s = %s AND t_name.%s = ?`, joinTranslationsType, trTcIDCol, trKeyIDCol, typeIDCol, trLanguageIDCol),
 			TC_ID["type"], languageID).
 		// 组名翻译
-		Joins(`LEFT JOIN "trnTranslations" g_name ON g_name."tcID" = ? AND g_name."keyID" = g."groupID" AND g_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON g_name.%s = ? AND g_name.%s = %s AND g_name.%s = ?`, joinTranslationsGroup, trTcIDCol, trKeyIDCol, groupGroupIDCol, trLanguageIDCol),
 			TC_ID["group"], languageID).
 		// 分类名翻译
-		Joins(`LEFT JOIN "trnTranslations" c_name ON c_name."tcID" = ? AND c_name."keyID" = c."categoryID" AND c_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON c_name.%s = ? AND c_name.%s = %s AND c_name.%s = ?`, joinTranslationsCategory, trTcIDCol, trKeyIDCol, categoryIDCol, trLanguageIDCol),
 			TC_ID["category"], languageID).
 		// 市场组名翻译
-		Joins(`LEFT JOIN "trnTranslations" mg_name ON mg_name."tcID" = ? AND mg_name."keyID" = mg."marketGroupID" AND mg_name."languageID" = ?`,
+		Joins(fmt.Sprintf(`LEFT JOIN %s ON mg_name.%s = ? AND mg_name.%s = %s AND mg_name.%s = ?`, joinTranslationsMarket, trTcIDCol, trKeyIDCol, marketGroupJoinIDCol, trLanguageIDCol),
 			TC_ID["market_group"], languageID)
 
 	if len(typeIDs) > 0 {
-		query = query.Where(`t."typeID" IN ?`, typeIDs)
+		query = query.Where(fmt.Sprintf(`%s IN ?`, typeIDCol), typeIDs)
 	}
 	if published != nil && *published {
-		query = query.Where(`t.published = ?`, 1)
+		query = query.Where(fmt.Sprintf(`%s = ?`, publishedCol), 1)
 	}
 
 	if err := query.Scan(&result).Error; err != nil {
@@ -200,14 +268,39 @@ func (r *SdeRepository) GetTypeIDsByNames(names []string) (map[string]int64, err
 	if len(names) == 0 {
 		return map[string]int64{}, nil
 	}
+	result, err := r.getTypeIDsByNamesWithLayout(names, true)
+	if err == nil {
+		return result, nil
+	}
+
+	// Fallback for lowercase PostgreSQL SDE imports.
+	fallbackResult, fallbackErr := r.getTypeIDsByNamesWithLayout(names, false)
+	if fallbackErr == nil {
+		return fallbackResult, nil
+	}
+
+	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+}
+
+func (r *SdeRepository) getTypeIDsByNamesWithLayout(names []string, camelCase bool) (map[string]int64, error) {
 	type row struct {
-		TypeID   int64  `gorm:"column:typeID"`
-		TypeName string `gorm:"column:typeName"`
+		TypeID   int64  `gorm:"column:type_id"`
+		TypeName string `gorm:"column:type_name"`
 	}
 	var rows []row
-	err := global.DB.Table(`"invTypes"`).
-		Select(`"typeID", "typeName"`).
-		Where(`"typeName" IN ?`, names).
+
+	tableName := `"invTypes"`
+	typeIDCol := `"typeID"`
+	typeNameCol := `"typeName"`
+	if !camelCase {
+		tableName = `invtypes`
+		typeIDCol = `typeid`
+		typeNameCol = `typename`
+	}
+
+	err := global.DB.Table(tableName).
+		Select(fmt.Sprintf(`%s AS type_id, %s AS type_name`, typeIDCol, typeNameCol)).
+		Where(fmt.Sprintf(`%s IN ?`, typeNameCol), names).
 		Scan(&rows).Error
 	if err != nil {
 		return nil, err

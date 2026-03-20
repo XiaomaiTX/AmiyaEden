@@ -104,10 +104,6 @@ func autoMigrate(db *gorm.DB) {
 		&model.ShopProduct{},
 		&model.ShopOrder{},
 		&model.ShopRedeemCode{},
-		// 抽奖相关表
-		&model.ShopLotteryActivity{},
-		&model.ShopLotteryPrize{},
-		&model.ShopLotteryRecord{},
 		// SRP 补损相关表
 		&model.SrpShipPrice{},
 		&model.SrpApplication{},
@@ -134,8 +130,8 @@ func autoMigrate(db *gorm.DB) {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
 
-	// 清理旧列（GORM AutoMigrate 不会自动删除列）
-	dropObsoleteColumns(db)
+	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
+	dropObsoleteSchema(db)
 
 	// 种子数据：系统角色 → 系统菜单 → 默认角色权限 → 迁移已有用户
 	roleSvc := service.NewRoleService()
@@ -144,8 +140,8 @@ func autoMigrate(db *gorm.DB) {
 	roleSvc.MigrateExistingUsers()
 }
 
-// dropObsoleteColumns 删除历史遗留的已被移除的列
-func dropObsoleteColumns(db *gorm.DB) {
+// dropObsoleteSchema 删除历史遗留的已被移除的列和表
+func dropObsoleteSchema(db *gorm.DB) {
 	migrator := db.Migrator()
 	type colDrop struct {
 		table string
@@ -161,6 +157,21 @@ func dropObsoleteColumns(db *gorm.DB) {
 				global.Logger.Warn("删除旧列失败", zap.String("table", d.table), zap.String("col", d.col), zap.Error(err))
 			} else {
 				global.Logger.Info("已删除旧列", zap.String("table", d.table), zap.String("col", d.col))
+			}
+		}
+	}
+
+	obsoleteTables := []string{
+		"shop_lottery_record",
+		"shop_lottery_prize",
+		"shop_lottery_activity",
+	}
+	for _, table := range obsoleteTables {
+		if migrator.HasTable(table) {
+			if err := migrator.DropTable(table); err != nil {
+				global.Logger.Warn("删除旧表失败", zap.String("table", table), zap.Error(err))
+			} else {
+				global.Logger.Info("已删除旧表", zap.String("table", table))
 			}
 		}
 	}

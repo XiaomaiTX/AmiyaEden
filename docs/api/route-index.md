@@ -67,6 +67,7 @@ source_of_truth:
 | POST | `/operation/fleets/:id/pap` | 发放 PAP | Login |
 | GET | `/operation/fleets/:id/pap` | PAP 日志 | Login |
 | GET | `/operation/fleets/pap/me` | 我的 PAP 日志 | Login |
+| GET | `/operation/fleets/pap/corporation` | 军团 PAP 汇总 | Login |
 | GET | `/operation/fleets/pap/alliance` | 我的联盟 PAP | Login |
 | POST | `/operation/fleets/:id/invites` | 创建邀请 | Login |
 | GET | `/operation/fleets/:id/invites` | 邀请列表 | Login |
@@ -79,16 +80,16 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/operation/fleet-configs` | 配置列表 | Login |
-| GET | `/operation/fleet-configs/:id` | 配置详情 | Login |
-| GET | `/operation/fleet-configs/:id/eft` | 获取 EFT 文本 | Login |
-| POST | `/operation/fleet-configs` | 创建配置 | `RequireRole(fc, srp)` |
-| PUT | `/operation/fleet-configs/:id` | 更新配置 | `RequireRole(fc, srp)` |
-| DELETE | `/operation/fleet-configs/:id` | 删除配置 | `RequireRole(fc, srp)` |
-| POST | `/operation/fleet-configs/import-fitting` | 从角色装配导入 | Login |
-| POST | `/operation/fleet-configs/export-esi` | 导出到 ESI | Login |
-| GET | `/operation/fleet-configs/:id/fittings/:fitting_id/items` | 装配物品 | Login |
-| PUT | `/operation/fleet-configs/:id/fittings/:fitting_id/items/settings` | 更新物品设置 | `RequireRole(fc, srp)` |
+| GET | `/operation/fleet-configs` | 配置列表 | `RequireRole(admin, fc, user)` |
+| GET | `/operation/fleet-configs/:id` | 配置详情 | `RequireRole(admin, fc, user)` |
+| GET | `/operation/fleet-configs/:id/eft` | 获取 EFT 文本 | `RequireRole(admin, fc, user)` |
+| POST | `/operation/fleet-configs` | 创建配置 | `RequireRole(admin, fc)` |
+| PUT | `/operation/fleet-configs/:id` | 更新配置 | `RequireRole(admin, fc)` |
+| DELETE | `/operation/fleet-configs/:id` | 删除配置 | `RequireRole(admin, fc)` |
+| POST | `/operation/fleet-configs/import-fitting` | 从角色装配导入 | `RequireRole(admin, fc)` |
+| POST | `/operation/fleet-configs/export-esi` | 导出到 ESI | `RequireRole(admin, fc, user)` |
+| GET | `/operation/fleet-configs/:id/fittings/:fitting_id/items` | 装配物品 | `RequireRole(admin, fc, user)` |
+| PUT | `/operation/fleet-configs/:id/fittings/:fitting_id/items/settings` | 更新物品设置 | `RequireRole(admin, fc)` |
 
 ### User Wallet
 
@@ -124,9 +125,6 @@ source_of_truth:
 | POST | `/shop/buy` | 购买商品 | Login |
 | POST | `/shop/orders` | 我的订单 | Login |
 | POST | `/shop/redeem/list` | 我的兑换码 | Login |
-| POST | `/shop/lottery/list` | 抽奖活动列表 | Login |
-| POST | `/shop/lottery/draw` | 抽奖 | Login |
-| POST | `/shop/lottery/records` | 我的抽奖记录 | Login |
 
 ## Upload
 
@@ -219,7 +217,7 @@ source_of_truth:
 | POST | `/system/wallet/transactions` | 钱包流水 | `RequireRole(admin)` |
 | POST | `/system/wallet/logs` | 调整日志 | `RequireRole(admin)` |
 
-### Shop / Lottery Admin
+### Shop Admin
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
@@ -231,15 +229,6 @@ source_of_truth:
 | POST | `/system/shop/order/approve` | 审批订单 | `RequireRole(admin)` |
 | POST | `/system/shop/order/reject` | 驳回订单 | `RequireRole(admin)` |
 | POST | `/system/shop/redeem/list` | 兑换码列表 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/list` | 活动列表 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/add` | 新增活动 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/edit` | 编辑活动 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/delete` | 删除活动 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/prize/add` | 新增奖品 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/prize/edit` | 编辑奖品 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/prize/delete` | 删除奖品 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/records` | 抽奖记录 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/records/deliver` | 更新奖品发放状态 | `RequireRole(admin)` |
 
 ### Auto Role / Webhook
 

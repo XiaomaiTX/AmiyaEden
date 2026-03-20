@@ -17,6 +17,7 @@ source_of_truth:
 - 批量查询 type 信息
 - 批量查询 ID 到名称映射
 - 模糊搜索物品 / 成员名称
+- 启动时和定时任务中检查最新 SDE 并导入 PostgreSQL
 - 为 EVE 信息、舰队配置、SRP、自动 SRP 等模块提供名称与静态数据支撑
 
 ## 入口
@@ -28,6 +29,15 @@ source_of_truth:
 
 前端封装位于 `static/src/api/sde.ts`。
 
+## 运行时行为
+
+- SDE 版本记录保存在 `sde_versions`
+- 启动时会异步执行一次检查更新，cron 也会周期性执行
+- 下载地址来自 `sde.download_url`
+- `sde.proxy` 是可选配置
+- 若配置了代理但代理不可达，下载器会自动回退为直连
+- 导入目标是当前业务 PostgreSQL，而不是独立的只读 SDE 库
+
 ## 权限边界
 
 - 当前这些路由在 router 中为 Public
@@ -38,11 +48,13 @@ source_of_truth:
 - 旧文档里“网页 API 需要 API Key 鉴权”的说法不再代表当前实现
 - SDE 是共享基础能力，修改返回结构时要检查多个业务模块
 - 版本检查与导入流程是运行时基础设施问题，不要只从某个页面角度描述
+- 英文名称缺失时，type/group/category/market group 查询会回退到 SDE 基础名称列
 - `docs/reference/sde-schema.sql` 仅是历史参考资产，不代表当前应用的实时 schema
 
 ## 主要代码文件
 
 - `server/internal/handler/sde.go`
 - `server/internal/service/sde.go`
+- `server/internal/repository/sde.go`
 - `server/internal/router/router.go`
 - `static/src/api/sde.ts`

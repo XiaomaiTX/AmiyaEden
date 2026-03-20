@@ -26,7 +26,7 @@ export const operationRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.operation.fleetConfigs',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'fc', 'srp', 'user']
+        roles: ['super_admin', 'admin', 'fc', 'user']
       }
     },
     {
@@ -45,7 +45,8 @@ export const operationRoutes: AppRouteRecord = {
       component: '/operation/corporation-pap',
       meta: {
         title: 'menus.operation.corporationPap',
-        keepAlive: true
+        keepAlive: true,
+        roles: ['super_admin', 'admin', 'fc', 'srp', 'user']
       }
     },
     {

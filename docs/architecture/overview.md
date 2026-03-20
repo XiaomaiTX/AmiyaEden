@@ -21,7 +21,7 @@ source_of_truth:
 - 舰队、PAP、舰队配置、自动 SRP 模式
 - EVE 角色信息查询与 NPC 刷怪报表
 - SRP 价格、申请、审核、发放
-- 系统钱包、商店、抽奖
+- 系统钱包、商店
 - 联盟 PAP、自动权限映射、Webhook、ESI 刷新队列
 - SDE 查询接口
 

@@ -345,40 +345,14 @@ func (s *RoleService) SeedSystemMenus() {
 func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
 	roleMenuMap := model.DefaultRoleMenuMap()
 
+	if err := s.seedAdminMenus(nameToID); err != nil {
+		global.Logger.Error("设置管理员全部菜单失败", zap.Error(err))
+	}
+
 	for roleCode, menuNames := range roleMenuMap {
 		role, err := s.repo.GetByCode(roleCode)
 		if err != nil {
 			global.Logger.Warn("默认角色未找到", zap.String("code", roleCode))
-			continue
-		}
-
-		// admin 角色自动获取所有菜单权限
-		if roleCode == model.RoleAdmin {
-			var allMenuIDs []uint
-			for _, id := range nameToID {
-				allMenuIDs = append(allMenuIDs, id)
-			}
-			if len(allMenuIDs) > 0 {
-				existing, _ := s.repo.GetRoleMenuIDs(role.ID)
-				existSet := make(map[uint]struct{}, len(existing))
-				for _, id := range existing {
-					existSet[id] = struct{}{}
-				}
-				var toAdd []uint
-				for _, id := range allMenuIDs {
-					if _, ok := existSet[id]; !ok {
-						toAdd = append(toAdd, id)
-					}
-				}
-				if len(toAdd) > 0 {
-					merged := append(existing, toAdd...)
-					if err := s.repo.SetRoleMenus(role.ID, merged); err != nil {
-						global.Logger.Error("设置管理员全部菜单失败", zap.String("role", roleCode), zap.Error(err))
-					} else {
-						global.Logger.Info("管理员菜单已增量更新", zap.String("role", roleCode), zap.Int("added", len(toAdd)))
-					}
-				}
-			}
 			continue
 		}
 
@@ -424,6 +398,46 @@ func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
 		}
 	}
 	global.Logger.Info("默认角色菜单映射完成")
+}
+
+func (s *RoleService) seedAdminMenus(nameToID map[string]uint) error {
+	role, err := s.repo.GetByCode(model.RoleAdmin)
+	if err != nil {
+		global.Logger.Warn("管理员角色未找到", zap.String("code", model.RoleAdmin))
+		return nil
+	}
+
+	var allMenuIDs []uint
+	for _, id := range nameToID {
+		allMenuIDs = append(allMenuIDs, id)
+	}
+	if len(allMenuIDs) == 0 {
+		return nil
+	}
+
+	existing, _ := s.repo.GetRoleMenuIDs(role.ID)
+	existSet := make(map[uint]struct{}, len(existing))
+	for _, id := range existing {
+		existSet[id] = struct{}{}
+	}
+
+	var toAdd []uint
+	for _, id := range allMenuIDs {
+		if _, ok := existSet[id]; !ok {
+			toAdd = append(toAdd, id)
+		}
+	}
+	if len(toAdd) == 0 {
+		return nil
+	}
+
+	merged := append(existing, toAdd...)
+	if err := s.repo.SetRoleMenus(role.ID, merged); err != nil {
+		return err
+	}
+
+	global.Logger.Info("管理员菜单已增量更新", zap.String("role", model.RoleAdmin), zap.Int("added", len(toAdd)))
+	return nil
 }
 
 // CheckCorpAccessAndAdjustRole 检查用户名下所有角色的军团归属是否在准入列表内
@@ -540,12 +554,12 @@ func (s *RoleService) MigrateExistingUsers() {
 	}
 	for _, u := range users {
 		existing, _ := s.repo.GetUserRoleCodes(u.ID)
-		if len(existing) > 0 {
-			continue
-		}
 		roleName := u.Role
 		if roleName == "" {
 			roleName = model.RoleGuest
+		}
+		if containsRoleCode(existing, roleName) {
+			continue
 		}
 		role, err := s.repo.GetByCode(roleName)
 		if err != nil {
@@ -557,4 +571,13 @@ func (s *RoleService) MigrateExistingUsers() {
 		}
 	}
 	global.Logger.Info("现有用户角色迁移完成")
+}
+
+func containsRoleCode(codes []string, target string) bool {
+	for _, code := range codes {
+		if code == target {
+			return true
+		}
+	}
+	return false
 }

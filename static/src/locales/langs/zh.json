@@ -564,115 +564,6 @@
       "validType": "请选择类型"
     }
   },
-  "lottery": {
-    "noActivities": "暂无进行中的抽奖活动",
-    "startDraw": "开始抽奖",
-    "points": "积分",
-    "perDraw": "次",
-    "free": "免费",
-    "more": "更多",
-    "myRecords": "我的抽奖记录",
-    "draw": "抽奖",
-    "costLabel": "每次费用：",
-    "balance": "余额",
-    "prizePool": "奖品池",
-    "drawing": "抽奖中...",
-    "close": "关闭",
-    "drawAgain": "再抽一次",
-    "loadFailed": "加载失败",
-    "drawFailed": "抽奖失败",
-    "tier": {
-      "normal": "普通",
-      "rare": "稀有",
-      "legendary": "传说"
-    },
-    "status": {
-      "active": "进行中",
-      "closed": "已关闭"
-    },
-    "manage": {
-      "activitiesTab": "抽奖活动",
-      "createActivity": "创建活动",
-      "editActivity": "编辑活动",
-      "noActivities": "暂无活动",
-      "costPerDraw": "每次费用",
-      "startAt": "开始时间",
-      "endAt": "结束时间",
-      "managePrizes": "管理奖品",
-      "prizeCount": "奖品数: {n}",
-      "noPrizes": "暂无奖品",
-      "recordsTab": "抽奖记录",
-      "filterActivity": "筛选活动",
-      "uploading": "上传中...",
-      "uploadCover": "上传封面",
-      "uploadImage": "上传图片",
-      "managePrizesTitle": "管理奖品 - {name}",
-      "addPrize": "添加奖品",
-      "editPrize": "编辑奖品",
-      "noPrizesHint": "暂无奖品，请点击上方按钮添加",
-      "weight": "权重",
-      "stock": "库存",
-      "sdeSearch": "搜索 EVE 物品",
-      "stockUnlimited": "不限量",
-      "totalWeight": "总权重",
-      "loadFailed": "加载失败",
-      "updateSuccess": "更新成功",
-      "createSuccess": "创建成功",
-      "addSuccess": "添加成功",
-      "operationFailed": "操作失败",
-      "deleteActivityConfirm": "确定要删除活动「{name}」吗？关联的奖品也会被删除。",
-      "deleteSuccess": "删除成功",
-      "deleteFailed": "删除失败",
-      "imageTooLarge": "图片大小不能超过 2MB",
-      "uploadSuccess": "上传成功",
-      "uploadFailed": "上传失败",
-      "validName": "请输入活动名称",
-      "validCost": "请设置每次费用",
-      "validPrizeName": "请输入奖品名称",
-      "validTier": "请选择稀有度",
-      "deletePrizeConfirm": "确定要删除奖品「{name}」吗？",
-      "fields": {
-        "name": "活动名称",
-        "namePlaceholder": "请输入活动名称",
-        "description": "描述",
-        "descriptionPlaceholder": "活动描述（可选）",
-        "coverImage": "封面图片",
-        "costPerDraw": "每次费用",
-        "costHint": "0 表示免费",
-        "status": "状态",
-        "startAt": "开始时间",
-        "endAt": "结束时间",
-        "noLimit": "不限",
-        "sortOrder": "排序",
-        "sortHint": "数字越大越靠前"
-      },
-      "prizeFields": {
-        "name": "奖品名称",
-        "namePlaceholder": "请输入奖品名称",
-        "image": "奖品图片",
-        "sdeSearchPlaceholder": "搜索 EVE 物品自动设置图片",
-        "tier": "稀有度",
-        "weight": "概率权重",
-        "weightHint": "权重越高概率越大",
-        "totalStock": "总库存",
-        "stockHint": "0 表示不限量"
-      },
-      "recordColumns": {
-        "userId": "用户 ID",
-        "activity": "活动",
-        "prize": "奖品",
-        "cost": "花费",
-        "time": "时间",
-        "deliveryStatus": "发放状态"
-      }
-    },
-    "delivery": {
-      "pending": "待发放",
-      "delivered": "已发放",
-      "markDelivered": "标记已发放",
-      "markSuccess": "已标记为已发放"
-    }
-  },
   "userAdmin": {
     "status": {
       "active": "正常",
@@ -827,7 +718,7 @@
         "characterCount": "角色数量",
         "stratOpPaps": "战略OP",
         "skirmishPaps": "散打",
-        "allianceStratPaps": "联盟战略PAP"
+        "allianceStratPaps": "联盟战略"
       }
     },
     "invite": {

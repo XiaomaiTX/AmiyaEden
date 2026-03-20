@@ -563,114 +563,6 @@
       "validType": "Please select a type"
     }
   },
-  "lottery": {
-    "noActivities": "No lottery activities available",
-    "startDraw": "Draw Now",
-    "points": "Points",
-    "perDraw": "draw",
-    "free": "Free",
-    "more": "more",
-    "myRecords": "My Lottery Records",
-    "draw": "Lottery",
-    "costLabel": "Cost per draw:",
-    "balance": "Balance",
-    "prizePool": "Prize Pool",
-    "drawing": "Drawing...",
-    "close": "Close",
-    "drawAgain": "Draw Again",
-    "loadFailed": "Failed to load",
-    "drawFailed": "Draw failed",
-    "tier": {
-      "normal": "Normal",
-      "rare": "Rare",
-      "legendary": "Legendary"
-    },
-    "status": {
-      "active": "Active",
-      "closed": "Closed"
-    },
-    "manage": {
-      "activitiesTab": "Activities",
-      "createActivity": "Create Activity",
-      "editActivity": "Edit Activity",
-      "noActivities": "No activities",
-      "costPerDraw": "Cost per draw",
-      "startAt": "Start time",
-      "endAt": "End time",
-      "managePrizes": "Manage Prizes",
-      "prizeCount": "Prizes: {n}",
-      "noPrizes": "No prizes",
-      "recordsTab": "Records",
-      "filterActivity": "Filter by activity",
-      "uploading": "Uploading...",
-      "uploadCover": "Upload Cover",
-      "uploadImage": "Upload Image",
-      "managePrizesTitle": "Manage Prizes - {name}",
-      "addPrize": "Add Prize",
-      "editPrize": "Edit Prize",
-      "noPrizesHint": "No prizes yet. Click the button above to add one.",
-      "weight": "Weight",
-      "stock": "Stock",
-      "stockUnlimited": "Unlimited",
-      "totalWeight": "Total weight",
-      "loadFailed": "Failed to load",
-      "updateSuccess": "Updated",
-      "createSuccess": "Created",
-      "addSuccess": "Added",
-      "operationFailed": "Operation failed",
-      "deleteActivityConfirm": "Delete activity \"{name}\"? All associated prizes will also be removed.",
-      "deleteSuccess": "Deleted",
-      "deleteFailed": "Delete failed",
-      "imageTooLarge": "Image must be under 2MB",
-      "uploadSuccess": "Uploaded",
-      "uploadFailed": "Upload failed",
-      "validName": "Activity name is required",
-      "validCost": "Cost per draw is required",
-      "validPrizeName": "Prize name is required",
-      "validTier": "Please select a tier",
-      "deletePrizeConfirm": "Delete prize \"{name}\"?",
-      "fields": {
-        "name": "Name",
-        "namePlaceholder": "Activity name",
-        "description": "Description",
-        "descriptionPlaceholder": "Description (optional)",
-        "coverImage": "Cover Image",
-        "costPerDraw": "Cost per draw",
-        "costHint": "0 means free",
-        "status": "Status",
-        "startAt": "Start time",
-        "endAt": "End time",
-        "noLimit": "No limit",
-        "sortOrder": "Sort order",
-        "sortHint": "Higher number = higher priority"
-      },
-      "prizeFields": {
-        "name": "Prize name",
-        "namePlaceholder": "Enter prize name",
-        "image": "Prize image",
-        "sdeSearchPlaceholder": "Search EVE items to auto-set image",
-        "tier": "Tier",
-        "weight": "Probability weight",
-        "weightHint": "Higher weight = higher chance",
-        "totalStock": "Total stock",
-        "stockHint": "0 means unlimited"
-      },
-      "recordColumns": {
-        "userId": "User ID",
-        "activity": "Activity",
-        "prize": "Prize",
-        "cost": "Cost",
-        "time": "Time",
-        "deliveryStatus": "Delivery"
-      }
-    },
-    "delivery": {
-      "pending": "Pending",
-      "delivered": "Delivered",
-      "markDelivered": "Mark Delivered",
-      "markSuccess": "Marked as delivered"
-    }
-  },
   "userAdmin": {
     "status": {
       "active": "Active",
@@ -825,7 +717,7 @@
         "characterCount": "Characters",
         "stratOpPaps": "Strategic OP",
         "skirmishPaps": "Skirmish",
-        "allianceStratPaps": "Alliance Strategic PAP"
+        "allianceStratPaps": "Alliance Strategic"
       }
     },
     "invite": {

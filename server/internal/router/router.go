@@ -113,16 +113,19 @@ func RegisterRoutes(r *gin.Engine) {
 	fleetConfigH := handler.NewFleetConfigHandler()
 	fleetConfig := operation.Group("/fleet-configs")
 	{
-		fleetConfig.GET("", fleetConfigH.ListFleetConfigs)
-		fleetConfig.GET("/:id", fleetConfigH.GetFleetConfig)
-		fleetConfig.GET("/:id/eft", fleetConfigH.GetFittingEFT)
-		fleetConfig.POST("", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.CreateFleetConfig)
-		fleetConfig.PUT("/:id", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.UpdateFleetConfig)
-		fleetConfig.DELETE("/:id", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.DeleteFleetConfig)
-		fleetConfig.POST("/import-fitting", fleetConfigH.ImportFromUserFitting)
-		fleetConfig.POST("/export-esi", fleetConfigH.ExportToESI)
-		fleetConfig.GET("/:id/fittings/:fitting_id/items", fleetConfigH.GetFittingItems)
-		fleetConfig.PUT("/:id/fittings/:fitting_id/items/settings", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.UpdateFittingItemsSettings)
+		viewFleetConfigs := middleware.RequireRole(model.RoleAdmin, model.RoleFC, model.RoleUser)
+		manageFleetConfigs := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
+
+		fleetConfig.GET("", viewFleetConfigs, fleetConfigH.ListFleetConfigs)
+		fleetConfig.GET("/:id", viewFleetConfigs, fleetConfigH.GetFleetConfig)
+		fleetConfig.GET("/:id/eft", viewFleetConfigs, fleetConfigH.GetFittingEFT)
+		fleetConfig.POST("", manageFleetConfigs, fleetConfigH.CreateFleetConfig)
+		fleetConfig.PUT("/:id", manageFleetConfigs, fleetConfigH.UpdateFleetConfig)
+		fleetConfig.DELETE("/:id", manageFleetConfigs, fleetConfigH.DeleteFleetConfig)
+		fleetConfig.POST("/import-fitting", manageFleetConfigs, fleetConfigH.ImportFromUserFitting)
+		fleetConfig.POST("/export-esi", viewFleetConfigs, fleetConfigH.ExportToESI)
+		fleetConfig.GET("/:id/fittings/:fitting_id/items", viewFleetConfigs, fleetConfigH.GetFittingItems)
+		fleetConfig.PUT("/:id/fittings/:fitting_id/items/settings", manageFleetConfigs, fleetConfigH.UpdateFittingItemsSettings)
 	}
 
 	// ─── EVE 角色信息 ───
@@ -165,11 +168,6 @@ func RegisterRoutes(r *gin.Engine) {
 		shop.POST("/buy", shopH.BuyProduct)
 		shop.POST("/orders", shopH.GetMyOrders)
 		shop.POST("/redeem/list", shopH.GetMyRedeemCodes)
-		// 抽奖
-		lotteryH := handler.NewLotteryHandler()
-		shop.POST("/lottery/list", lotteryH.ListActivities)
-		shop.POST("/lottery/draw", lotteryH.Draw)
-		shop.POST("/lottery/records", lotteryH.GetMyRecords)
 	}
 
 	// ─── 文件上传（需要登录）───
@@ -310,21 +308,6 @@ func RegisterRoutes(r *gin.Engine) {
 	adminShopRedeem := admin.Group("/shop/redeem")
 	{
 		adminShopRedeem.POST("/list", adminShopH.AdminListRedeemCodes)
-	}
-
-	// 抽奖管理（管理员）
-	adminLotteryH := handler.NewLotteryHandler()
-	adminLottery := admin.Group("/shop/lottery")
-	{
-		adminLottery.POST("/list", adminLotteryH.AdminListActivities)
-		adminLottery.POST("/add", adminLotteryH.AdminCreateActivity)
-		adminLottery.POST("/edit", adminLotteryH.AdminUpdateActivity)
-		adminLottery.POST("/delete", adminLotteryH.AdminDeleteActivity)
-		adminLottery.POST("/prize/add", adminLotteryH.AdminCreatePrize)
-		adminLottery.POST("/prize/edit", adminLotteryH.AdminUpdatePrize)
-		adminLottery.POST("/prize/delete", adminLotteryH.AdminDeletePrize)
-		adminLottery.POST("/records", adminLotteryH.AdminListRecords)
-		adminLottery.POST("/records/deliver", adminLotteryH.AdminUpdateRecordDelivery)
 	}
 
 	// 自动权限映射管理（管理员）

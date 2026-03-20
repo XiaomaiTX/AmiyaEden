@@ -21,6 +21,7 @@ source_of_truth:
 - 舰队成员同步、成员与 PAP 查询
 - 邀请链接创建 / 停用 / 加入舰队
 - 发放 PAP、查看 PAP 日志、查看我的 PAP
+- 查看军团 PAP 汇总
 - 查看我的联盟 PAP
 - 舰队配置管理、EFT 导出、从角色装配导入、导出到 ESI
 - 用户侧系统钱包与流水
@@ -33,6 +34,7 @@ source_of_truth:
 - `static/src/views/operation/fleets`
 - `static/src/views/operation/fleet-detail`
 - `static/src/views/operation/fleet-configs`
+- `static/src/views/operation/corporation-pap`
 - `static/src/views/operation/join`
 - `static/src/views/operation/pap`
 
@@ -45,7 +47,10 @@ source_of_truth:
 ## 权限边界
 
 - 路由级别默认要求登录
-- `fleet-configs` 的创建、修改、删除和物品设置要求 `fc` 或 `srp`
+- `fleet-configs` 页面访问要求 `super_admin`、`admin`、`fc` 或 `user`
+- `fleet-configs` 的创建、修改、删除、导入装配和物品设置要求 `super_admin`、`admin` 或 `fc`
+- `fleet-configs` 的导出到 ESI 与只读查询要求 `super_admin`、`admin`、`fc` 或 `user`
+- `corporation-pap` 在前端静态路由模式下允许 `super_admin`、`admin`、`fc`、`srp`、`user`
 - 舰队相关的细粒度拥有者 / FC / 管理员判断属于 service 层职责
 
 ## 关键不变量
@@ -54,6 +59,7 @@ source_of_truth:
 - 自动 SRP 不是纯草案，当前模型、页面和后台处理逻辑都已存在
 - 自动 SRP 的触发与舰队成员、KM 刷新、舰队配置装配有关，不能只改 UI 字段
 - 联盟 PAP 的用户侧展示在 Operation，管理员配置与导入在 System
+- 军团 PAP 页面属于多块统计 + 表格混排的分析页，当前明确允许不走 `useTable` / `ArtTable` 默认模板
 
 ## 主要代码文件
 

@@ -1,3 +1,4 @@
+<!-- 分析页例外：该页混排统计卡片、筛选器与只读表格，按 docs/standards/frontend-table-pages.md 允许直接使用 ElTable。 -->
 <template>
   <div class="corporation-pap-page art-full-height">
     <ElCard class="art-search-card" shadow="never">

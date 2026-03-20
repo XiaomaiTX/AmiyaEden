@@ -188,24 +188,57 @@ func (s *SdeService) doImport(release *githubRelease) error {
 
 // newHTTPClient 根据配置创建 http.Client，若设置了代理则使用代理
 func newHTTPClient(timeout time.Duration) *http.Client {
+	return newHTTPClientWithProxy(timeout, true)
+}
+
+func newHTTPClientWithProxy(timeout time.Duration, useProxy bool) *http.Client {
 	transport := &http.Transport{}
-	if proxyAddr := global.Config.SDE.Proxy; proxyAddr != "" {
-		if proxyURL, err := url.Parse(proxyAddr); err == nil {
-			transport.Proxy = http.ProxyURL(proxyURL)
-		} else {
-			global.Logger.Warn("[SDE] 代理地址解析失败，将不使用代理", zap.String("proxy", proxyAddr), zap.Error(err))
+	if useProxy {
+		if proxyAddr := global.Config.SDE.Proxy; proxyAddr != "" {
+			if proxyURL, err := url.Parse(proxyAddr); err == nil {
+				transport.Proxy = http.ProxyURL(proxyURL)
+			} else {
+				global.Logger.Warn("[SDE] 代理地址解析失败，将不使用代理", zap.String("proxy", proxyAddr), zap.Error(err))
+			}
 		}
 	}
 	return &http.Client{Timeout: timeout, Transport: transport}
 }
 
+func doRequestWithProxyFallback(timeout time.Duration, build func(*http.Client) (*http.Response, error)) (*http.Response, error) {
+	client := newHTTPClientWithProxy(timeout, true)
+	resp, err := build(client)
+	if err == nil {
+		return resp, nil
+	}
+
+	if !shouldRetryWithoutProxy(err) {
+		return nil, err
+	}
+
+	global.Logger.Warn("[SDE] 代理请求失败，回退为直连重试", zap.Error(err))
+	directClient := newHTTPClientWithProxy(timeout, false)
+	return build(directClient)
+}
+
+func shouldRetryWithoutProxy(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "proxyconnect") ||
+		strings.Contains(msg, "connect: connection refused") ||
+		strings.Contains(msg, "socks")
+}
+
 // fetchLatestRelease 获取 GitHub 最新 release 信息
 func fetchLatestRelease() (*githubRelease, error) {
 	url := global.Config.SDE.DownloadURL
-	client := newHTTPClient(30 * time.Second)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("Accept", "application/vnd.github+json")
-	resp, err := client.Do(req)
+	resp, err := doRequestWithProxyFallback(30*time.Second, func(client *http.Client) (*http.Response, error) {
+		return client.Do(req.Clone(context.Background()))
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -224,8 +257,9 @@ func fetchLatestRelease() (*githubRelease, error) {
 
 // downloadFile 下载文件到指定路径
 func downloadFile(url, destPath string) error {
-	client := newHTTPClient(10 * time.Minute)
-	resp, err := client.Get(url)
+	resp, err := doRequestWithProxyFallback(10*time.Minute, func(client *http.Client) (*http.Response, error) {
+		return client.Get(url)
+	})
 	if err != nil {
 		return err
 	}

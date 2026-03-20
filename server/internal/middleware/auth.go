@@ -64,6 +64,10 @@ func JWTAuth() gin.HandlerFunc {
 func RequireRole(codes ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roles := GetUserRoles(c)
+		if model.IsSuperAdmin(roles) {
+			c.Next()
+			return
+		}
 		for _, code := range codes {
 			if model.HasAnyRoleMatch(roles, code) {
 				c.Next()
