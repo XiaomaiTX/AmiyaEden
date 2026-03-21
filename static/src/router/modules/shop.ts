@@ -6,7 +6,8 @@ export const shopRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.shop.title',
-    icon: 'ri:shopping-bag-line'
+    icon: 'ri:shopping-bag-line',
+    login: true
   },
   children: [
     {

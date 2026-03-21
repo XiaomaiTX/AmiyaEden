@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-03-20
+last_reviewed: 2026-03-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -76,6 +76,12 @@ source_of_truth:
 - `super_admin` 自动通过
 - 当前不是数值等级继承模型
 
+### RequireLoginUser
+
+- 判断请求方是否至少拥有一个非 `guest` 角色
+- 用于实现 API 文档中的 `Login` 边界
+- 适合“任意产品用户可访问”的能力，不再用 `RequireRole(..., user)` 代替
+
 ### RequirePermission
 
 - 判断用户是否拥有指定权限之一
@@ -103,8 +109,14 @@ source_of_truth:
 
 前端通过 `VITE_ACCESS_MODE` 支持：
 
-- `frontend`: 静态路由 + `meta.roles`
+- `frontend`: 静态路由 + `meta.login` / `meta.roles`
 - `backend`: 后端菜单接口 `/api/v1/menu/list`
+
+静态路由模式下的约定：
+
+- `meta.login = true` 表示任意非 `guest` 已登录产品用户可访问
+- `meta.roles` 只用于真实的显式角色白名单
+- 不要用 `meta.roles: ['admin', 'fc', 'user']` 之类写法冒充 `Login`
 
 修改权限或菜单时，必须同时考虑：
 

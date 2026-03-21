@@ -36,9 +36,10 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 需要登录 ───
 	auth := api.Group("", middleware.JWTAuth())
+	login := auth.Group("", middleware.RequireLoginUser())
 
 	// SSO 角色管理（绑定/解绑/设主角色）
-	ssoAuth := auth.Group("/sso/eve")
+	ssoAuth := login.Group("/sso/eve")
 	{
 		// ssoAuth.GET("/scopes", ssoH.GetScopes)
 		ssoAuth.GET("/characters", ssoH.GetMyCharacters)
@@ -49,15 +50,15 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 当前用户 ───
 	meH := handler.NewMeHandler()
-	auth.GET("/me", meH.GetMe)
-	auth.PUT("/me", meH.UpdateMe)
+	login.GET("/me", meH.GetMe)
+	login.PUT("/me", meH.UpdateMe)
 
 	dashboardH := handler.NewDashboardHandler()
-	auth.POST("/dashboard", dashboardH.GetDashboard)
+	login.POST("/dashboard", dashboardH.GetDashboard)
 
 	// ─── 通知 ───
 	notifH := handler.NewNotificationHandler()
-	notification := auth.Group("/notification")
+	notification := login.Group("/notification")
 	{
 		notification.POST("/list", notifH.ListNotifications)
 		notification.POST("/unread-count", notifH.GetUnreadCount)
@@ -67,11 +68,11 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 菜单 ───
 	menuH := handler.NewMenuHandler()
-	auth.GET("/menu/list", menuH.GetMenuList) // 当前用户可用菜单
+	login.GET("/menu/list", menuH.GetMenuList) // 当前用户可用菜单
 
 	// ─── 舰队 ───
 	fleetH := handler.NewFleetHandler()
-	operation := auth.Group("/operation")
+	operation := login.Group("/operation")
 	fleet := operation.Group("/fleets")
 	{
 		manageFleets := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
@@ -135,7 +136,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 军团技能计划 ───
 	skillPlanH := handler.NewSkillPlanHandler()
-	skillPlanning := auth.Group("/skill-planning")
+	skillPlanning := login.Group("/skill-planning")
 	skillPlan := skillPlanning.Group("/skill-plans")
 	{
 		manageSkillPlans := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
@@ -153,7 +154,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── EVE 角色信息 ───
 	infoH := handler.NewEveInfoHandler()
-	info := auth.Group("/info")
+	info := login.Group("/info")
 	{
 		info.POST("/wallet", infoH.GetWalletJournal)
 		info.POST("/skills", infoH.GetCharacterSkills)
@@ -176,7 +177,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 商店（用户端）───
 	shopH := handler.NewShopHandler()
-	shop := auth.Group("/shop")
+	shop := login.Group("/shop")
 	walletH := handler.NewSysWalletHandler()
 	shopWallet := shop.Group("/wallet")
 	{
@@ -192,11 +193,11 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 文件上传（需要登录）───
 	uploadH := handler.NewUploadHandler()
-	auth.POST("/upload/image", uploadH.UploadImage)
+	login.POST("/upload/image", uploadH.UploadImage)
 
 	// ─── SRP 补损 ───
 	srpH := handler.NewSrpHandler()
-	srp := auth.Group("/srp")
+	srp := login.Group("/srp")
 	{
 		// 价格表（查看公开，修改需权限）
 		srp.GET("/prices", srpH.ListShipPrices)
@@ -225,7 +226,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── ESI 刷新队列 ───
 	esiH := handler.NewESIRefreshHandler()
-	esiRefresh := auth.Group("/esi/refresh", middleware.RequireRole(model.RoleAdmin))
+	esiRefresh := login.Group("/esi/refresh", middleware.RequireRole(model.RoleAdmin))
 	{
 		esiRefresh.GET("/tasks", esiH.GetTasks)
 		esiRefresh.GET("/statuses", esiH.GetStatuses)
@@ -235,7 +236,7 @@ func RegisterRoutes(r *gin.Engine) {
 	}
 
 	// ─── 系统管理（需要 admin 角色）───
-	admin := auth.Group("/system", middleware.RequireRole(model.RoleAdmin))
+	admin := login.Group("/system", middleware.RequireRole(model.RoleAdmin))
 
 	// 系统基础配置
 	sysConfigH := handler.NewSysConfigHandler()

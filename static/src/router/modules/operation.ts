@@ -6,7 +6,8 @@ export const operationRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.operation.title',
-    icon: 'ri:ship-line'
+    icon: 'ri:ship-line',
+    login: true
   },
   children: [
     {
@@ -26,7 +27,7 @@ export const operationRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.operation.fleetConfigs',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'fc', 'srp', 'user']
+        login: true
       }
     },
     {
@@ -46,7 +47,7 @@ export const operationRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.operation.corporationPap',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'fc', 'srp', 'user']
+        login: true
       }
     },
     {
@@ -55,7 +56,8 @@ export const operationRoutes: AppRouteRecord = {
       component: '/operation/pap',
       meta: {
         title: 'menus.operation.pap',
-        keepAlive: true
+        keepAlive: true,
+        login: true
       }
     },
     {
@@ -64,7 +66,8 @@ export const operationRoutes: AppRouteRecord = {
       component: '/operation/join',
       meta: {
         title: 'menus.operation.join',
-        isHide: true
+        isHide: true,
+        login: true
       }
     }
   ]

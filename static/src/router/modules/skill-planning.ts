@@ -6,7 +6,8 @@ export const skillPlanningRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.skillPlanning.title',
-    icon: 'ri:brain-line'
+    icon: 'ri:brain-line',
+    login: true
   },
   children: [
     {
@@ -16,7 +17,7 @@ export const skillPlanningRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.skillPlanning.completionCheck',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'fc', 'srp', 'user']
+        login: true
       }
     },
     {

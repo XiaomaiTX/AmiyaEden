@@ -278,7 +278,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 		// ── 登录流程：首次登录，创建新用户 + 新角色 ──
 		user := &model.User{
-			Nickname:           claims.Name,
+			Nickname:           "",
 			Avatar:             portraitURL,
 			Status:             1,
 			Role:               "user",
@@ -431,9 +431,8 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	if user.PrimaryCharacterID == 0 {
 		user.PrimaryCharacterID = characterID
 	}
-	// 同步头像和昵称为主角色
+	// 同步头像为当前登录角色，但保留用户自行填写的昵称
 	user.Avatar = portraitURL
-	user.Nickname = claims.Name
 	if err := s.userRepo.Update(user); err != nil {
 		return nil, err
 	}
@@ -521,7 +520,6 @@ func (s *EveSSOService) SetPrimaryCharacter(userID uint, characterID int64) erro
 
 	user.PrimaryCharacterID = characterID
 	user.Avatar = char.PortraitURL
-	user.Nickname = char.CharacterName
 	return s.userRepo.Update(user)
 }
 
@@ -554,7 +552,6 @@ func (s *EveSSOService) UnbindCharacter(userID uint, characterID int64) error {
 			if c.CharacterID != characterID {
 				user.PrimaryCharacterID = c.CharacterID
 				user.Avatar = c.PortraitURL
-				user.Nickname = c.CharacterName
 				break
 			}
 		}

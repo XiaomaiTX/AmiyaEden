@@ -7,7 +7,7 @@ export const dashboardRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.dashboard.title',
     icon: 'ri:pie-chart-line',
-    roles: ['super_admin', 'admin', 'srp', 'fc', 'user', 'guest']
+    login: true
   },
   children: [
     {

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-03-21
+last_reviewed: 2026-03-22
 source_of_truth:
   - server/internal/model/menu.go
   - static/src/router/core
@@ -45,6 +45,12 @@ source_of_truth:
 基础静态路由位于：
 
 - `static/src/router/routes/staticRoutes.ts`
+
+静态路由权限约定：
+
+- `meta.login = true` 对应 API / feature 文档中的 `Login`
+- `meta.roles` 只表示显式角色白名单
+- 同一路由不要再用 `meta.roles` 伪装“任意非 guest 登录用户”
 
 ## 动态路由核心
 

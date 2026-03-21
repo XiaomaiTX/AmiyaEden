@@ -259,6 +259,8 @@ async function handleDynamicRoutes(
   next: NavigationGuardNext,
   router: Router
 ): Promise<void> {
+  const userStore = useUserStore()
+
   // 标记初始化进行中
   routeInitInProgress = true
 
@@ -294,10 +296,9 @@ async function handleDynamicRoutes(
 
     // 8. 验证目标路径权限
     const { homePath } = useCommon()
-    const targetPath =
-      !isUserProfileComplete(useUserStore().getUserInfo) && to.path !== PROFILE_SETUP_PATH
-        ? PROFILE_SETUP_PATH
-        : to.path
+    const targetPath = shouldRedirectToProfileSetup(userStore, to.path)
+      ? PROFILE_SETUP_PATH
+      : to.path
     const { path: validatedPath, hasPermission } = RoutePermissionValidator.validatePath(
       targetPath,
       menuList,
@@ -373,16 +374,23 @@ function handleProfileSetupRedirect(
   userStore: ReturnType<typeof useUserStore>,
   next: NavigationGuardNext
 ): boolean {
-  if (to.path === PROFILE_SETUP_PATH) {
+  if (!shouldRedirectToProfileSetup(userStore, to.path)) {
     return false
   }
 
-  if (!isUserProfileComplete(userStore.getUserInfo)) {
-    next({ path: PROFILE_SETUP_PATH, replace: true })
-    return true
+  next({ path: PROFILE_SETUP_PATH, replace: true })
+  return true
+}
+
+function shouldRedirectToProfileSetup(
+  userStore: ReturnType<typeof useUserStore>,
+  path: string
+): boolean {
+  if (!userStore.isLogin || path === PROFILE_SETUP_PATH) {
+    return false
   }
 
-  return false
+  return !isUserProfileComplete(userStore.getUserInfo)
 }
 
 /**
