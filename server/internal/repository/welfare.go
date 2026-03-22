@@ -139,12 +139,92 @@ func (r *WelfareRepository) fillSkillPlanIDs(list []model.Welfare) error {
 }
 
 // ─────────────────────────────────────────────
-//  发放记录
+//  福利申请记录
 // ─────────────────────────────────────────────
 
-// CountDistributionsByWelfareID 统计福利的发放记录数
-func (r *WelfareRepository) CountDistributionsByWelfareID(welfareID uint) (int64, error) {
+// CountApplicationsByWelfareID 统计福利的申请记录数
+func (r *WelfareRepository) CountApplicationsByWelfareID(welfareID uint) (int64, error) {
 	var count int64
-	err := global.DB.Model(&model.WelfareDistribution{}).Where("welfare_id = ?", welfareID).Count(&count).Error
+	err := global.DB.Model(&model.WelfareApplication{}).Where("welfare_id = ?", welfareID).Count(&count).Error
 	return count, err
+}
+
+// CreateApplication 创建福利申请
+func (r *WelfareRepository) CreateApplication(app *model.WelfareApplication) error {
+	return global.DB.Create(app).Error
+}
+
+// ListApplicationsByUserID 查询用户的所有福利申请
+func (r *WelfareRepository) ListApplicationsByUserID(userID uint, status string) ([]model.WelfareApplication, error) {
+	var list []model.WelfareApplication
+	db := global.DB.Where("user_id = ?", userID)
+	if status != "" {
+		db = db.Where("status = ?", status)
+	}
+	err := db.Order("id DESC").Find(&list).Error
+	return list, err
+}
+
+// ListApplicationsByWelfareIDs 查询多个福利的所有申请记录（用于批量判断资格）
+func (r *WelfareRepository) ListApplicationsByWelfareIDs(welfareIDs []uint) ([]model.WelfareApplication, error) {
+	var list []model.WelfareApplication
+	if len(welfareIDs) == 0 {
+		return list, nil
+	}
+	err := global.DB.Where("welfare_id IN ?", welfareIDs).Find(&list).Error
+	return list, err
+}
+
+// WelfareApplicationFilter 福利申请查询筛选
+type WelfareApplicationFilter struct {
+	Status   string   // 单状态精确匹配
+	StatusIn []string // 多状态匹配
+}
+
+// ListApplicationsPaginated 分页查询所有福利申请（管理端）
+func (r *WelfareRepository) ListApplicationsPaginated(page, pageSize int, filter WelfareApplicationFilter) ([]model.WelfareApplication, int64, error) {
+	var list []model.WelfareApplication
+	var total int64
+	offset := (page - 1) * pageSize
+
+	db := global.DB.Model(&model.WelfareApplication{})
+	if filter.Status != "" {
+		db = db.Where("status = ?", filter.Status)
+	} else if len(filter.StatusIn) > 0 {
+		db = db.Where("status IN ?", filter.StatusIn)
+	}
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, total, nil
+}
+
+// GetApplicationByID 根据 ID 获取福利申请
+func (r *WelfareRepository) GetApplicationByID(id uint) (*model.WelfareApplication, error) {
+	var app model.WelfareApplication
+	if err := global.DB.First(&app, id).Error; err != nil {
+		return nil, err
+	}
+	return &app, nil
+}
+
+// UpdateApplication 更新福利申请
+func (r *WelfareRepository) UpdateApplication(app *model.WelfareApplication) error {
+	return global.DB.Save(app).Error
+}
+
+// ListActiveWelfares 查询所有启用的福利
+func (r *WelfareRepository) ListActiveWelfares() ([]model.Welfare, error) {
+	var list []model.Welfare
+	if err := global.DB.Where("status = ?", model.WelfareStatusActive).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	if err := r.fillSkillPlanIDs(list); err != nil {
+		return nil, err
+	}
+	return list, nil
 }

@@ -38,6 +38,9 @@ func RegisterRoutes(r *gin.Engine) {
 	auth := api.Group("", middleware.JWTAuth())
 	login := auth.Group("", middleware.RequireLoginUser())
 
+	// 福利（用户端 + 管理端共用 handler）
+	welfareH := handler.NewWelfareHandler()
+
 	// SSO 角色管理（绑定/解绑/设主角色）
 	// guest 也应可访问，用于完成初次登录后的角色管理与补充授权。
 	ssoAuth := auth.Group("/sso/eve")
@@ -345,13 +348,22 @@ func RegisterRoutes(r *gin.Engine) {
 	}
 
 	// 福利管理（管理员）
-	welfareH := handler.NewWelfareHandler()
 	adminWelfare := admin.Group("/welfare")
 	{
 		adminWelfare.POST("/list", welfareH.AdminListWelfares)
 		adminWelfare.POST("/add", welfareH.AdminCreateWelfare)
 		adminWelfare.POST("/edit", welfareH.AdminUpdateWelfare)
 		adminWelfare.POST("/delete", welfareH.AdminDeleteWelfare)
+		adminWelfare.POST("/applications", welfareH.AdminListApplications)
+		adminWelfare.POST("/review", welfareH.AdminReviewApplication)
+	}
+
+	// ─── 用户端福利 ───
+	welfareUser := login.Group("/welfare")
+	{
+		welfareUser.POST("/eligible", welfareH.GetEligibleWelfares)
+		welfareUser.POST("/apply", welfareH.ApplyForWelfare)
+		welfareUser.POST("/my-applications", welfareH.ListMyApplications)
 	}
 
 	// 自动权限映射管理（管理员）

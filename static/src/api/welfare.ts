@@ -33,3 +33,46 @@ export function adminDeleteWelfare(id: number) {
     data: { id }
   })
 }
+
+// ─── 管理端福利审批 ───
+
+/** 管理端查询福利申请列表 */
+export function adminListApplications(data?: Api.Welfare.AdminApplicationSearchParams) {
+  return request.post<Api.Common.PaginatedResponse<Api.Welfare.AdminApplication>>({
+    url: '/api/v1/system/welfare/applications',
+    data: data ?? { current: 1, size: 50 }
+  })
+}
+
+/** 管理端审批福利申请 */
+export function adminReviewApplication(data: Api.Welfare.ReviewParams) {
+  return request.post({
+    url: '/api/v1/system/welfare/review',
+    data
+  })
+}
+
+// ─── 用户端福利 ───
+
+/** 获取可申请的福利列表 */
+export function getEligibleWelfares() {
+  return request.post<Api.Welfare.EligibleWelfare[]>({
+    url: '/api/v1/welfare/eligible'
+  })
+}
+
+/** 申请福利 */
+export function applyForWelfare(data: Api.Welfare.ApplyParams) {
+  return request.post({
+    url: '/api/v1/welfare/apply',
+    data
+  })
+}
+
+/** 查询我的福利申请 */
+export function getMyApplications(data?: { status?: string }) {
+  return request.post<Api.Welfare.MyApplication[]>({
+    url: '/api/v1/welfare/my-applications',
+    data
+  })
+}

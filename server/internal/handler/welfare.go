@@ -6,6 +6,7 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,6 +31,7 @@ type adminWelfareCreateRequest struct {
 	DistMode         string `json:"dist_mode" binding:"required,oneof=per_user per_character"`
 	RequireSkillPlan bool   `json:"require_skill_plan"`
 	SkillPlanIDs     []uint `json:"skill_plan_ids"`
+	MaxCharAgeMonths *int   `json:"max_char_age_months"`
 	Status           int8   `json:"status"`
 }
 
@@ -47,6 +49,7 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 		DistMode:         req.DistMode,
 		RequireSkillPlan: req.RequireSkillPlan,
 		SkillPlanIDs:     req.SkillPlanIDs,
+		MaxCharAgeMonths: req.MaxCharAgeMonths,
 		Status:           req.Status,
 		CreatedBy:        middleware.GetUserID(c),
 	}
@@ -127,4 +130,123 @@ func (h *WelfareHandler) AdminListWelfares(c *gin.Context) {
 		return
 	}
 	response.OKWithPage(c, list, total, req.Current, req.Size)
+}
+
+// ─────────────────────────────────────────────
+//  管理端 - 福利审批
+// ─────────────────────────────────────────────
+
+// adminApplicationListRequest 福利申请列表请求
+type adminApplicationListRequest struct {
+	Current int    `json:"current"`
+	Size    int    `json:"size"`
+	Status  string `json:"status"`
+}
+
+// AdminListApplications POST /system/welfare/applications
+func (h *WelfareHandler) AdminListApplications(c *gin.Context) {
+	var req adminApplicationListRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req.Current = 1
+		req.Size = 50
+	}
+
+	var filter repository.WelfareApplicationFilter
+	if strings.Contains(req.Status, ",") {
+		filter.StatusIn = strings.Split(req.Status, ",")
+	} else {
+		filter.Status = req.Status
+	}
+
+	list, total, err := h.svc.AdminListApplications(req.Current, req.Size, filter)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OKWithPage(c, list, total, req.Current, req.Size)
+}
+
+// adminReviewApplicationRequest 审批请求
+type adminReviewApplicationRequest struct {
+	ID     uint   `json:"id" binding:"required"`
+	Action string `json:"action" binding:"required,oneof=deliver reject"`
+}
+
+// AdminReviewApplication POST /system/welfare/review
+func (h *WelfareHandler) AdminReviewApplication(c *gin.Context) {
+	var req adminReviewApplicationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+
+	reviewerID := middleware.GetUserID(c)
+	err := h.svc.AdminReviewApplication(req.ID, reviewerID, &service.AdminReviewApplicationRequest{
+		Action: req.Action,
+	})
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+// ─────────────────────────────────────────────
+//  用户端
+// ─────────────────────────────────────────────
+
+// GetEligibleWelfares POST /welfare/eligible
+func (h *WelfareHandler) GetEligibleWelfares(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	result, err := h.svc.GetEligibleWelfares(userID)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// applyForWelfareRequest 申请福利请求
+type applyForWelfareRequest struct {
+	WelfareID   uint  `json:"welfare_id" binding:"required"`
+	CharacterID int64 `json:"character_id"`
+}
+
+// ApplyForWelfare POST /welfare/apply
+func (h *WelfareHandler) ApplyForWelfare(c *gin.Context) {
+	var req applyForWelfareRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+
+	userID := middleware.GetUserID(c)
+	app, err := h.svc.ApplyForWelfare(userID, &service.ApplyForWelfareRequest{
+		WelfareID:   req.WelfareID,
+		CharacterID: req.CharacterID,
+	})
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, app)
+}
+
+// myApplicationsRequest 查询我的申请请求
+type myApplicationsRequest struct {
+	Status string `json:"status"`
+}
+
+// ListMyApplications POST /welfare/my-applications
+func (h *WelfareHandler) ListMyApplications(c *gin.Context) {
+	var req myApplicationsRequest
+	_ = c.ShouldBindJSON(&req) // status is optional
+
+	userID := middleware.GetUserID(c)
+	result, err := h.svc.ListMyApplications(userID, req.Status)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
 }
