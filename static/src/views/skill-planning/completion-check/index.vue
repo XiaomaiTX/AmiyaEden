@@ -8,6 +8,9 @@
         </div>
 
         <div class="toolbar__actions">
+          <ElButton @click="openPlanDialog">
+            {{ $t('skillPlanCheck.selectPlans') }}
+          </ElButton>
           <ElButton @click="openCharacterDialog">
             {{ $t('skillPlanCheck.selectCharacters') }}
           </ElButton>
@@ -41,6 +44,18 @@
         <span v-else class="selected-characters__empty">{{
           $t('skillPlanCheck.noCharactersSelected')
         }}</span>
+      </div>
+
+      <div class="selected-plans">
+        <span class="selected-plans__label">{{ $t('skillPlanCheck.selectedPlans') }}</span>
+        <template v-if="selectedPlanItems.length">
+          <div class="selected-plans__list">
+            <ElTag v-for="plan in selectedPlanItems" :key="plan.id" effect="light" round>
+              {{ plan.title }}
+            </ElTag>
+          </div>
+        </template>
+        <span v-else class="selected-plans__empty">{{ $t('skillPlanCheck.noPlansSelected') }}</span>
       </div>
     </ElCard>
 
@@ -254,6 +269,41 @@
         </ElButton>
       </template>
     </ElDialog>
+
+    <ElDialog
+      v-model="planDialogVisible"
+      :title="$t('skillPlanCheck.selectPlans')"
+      width="640px"
+      destroy-on-close
+    >
+      <div class="character-dialog">
+        <ElCheckboxGroup v-model="draftPlanIds" class="character-dialog__list">
+          <ElCheckbox
+            v-for="plan in allPlans"
+            :key="plan.id"
+            :label="plan.id"
+            class="character-option"
+          >
+            <div class="character-option__content">
+              <span>{{ plan.title }}</span>
+            </div>
+          </ElCheckbox>
+        </ElCheckboxGroup>
+
+        <ElEmpty
+          v-if="!allPlans.length"
+          :description="$t('skillPlanCheck.noAvailablePlans')"
+          :image-size="72"
+        />
+      </div>
+
+      <template #footer>
+        <ElButton @click="planDialogVisible = false">{{ $t('common.cancel') }}</ElButton>
+        <ElButton type="primary" :loading="savingPlanSelection" @click="savePlanSelection">
+          {{ $t('common.confirm') }}
+        </ElButton>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
@@ -263,8 +313,11 @@
   import { fetchMyCharacters } from '@/api/auth'
   import {
     fetchSkillPlanCheckSelection,
+    fetchSkillPlanCheckPlanSelection,
+    fetchSkillPlanList,
     runSkillPlanCompletionCheck,
-    saveSkillPlanCheckSelection
+    saveSkillPlanCheckSelection,
+    saveSkillPlanCheckPlanSelection
   } from '@/api/skill-plan'
   import { useUserStore } from '@/store/modules/user'
 
@@ -283,6 +336,13 @@
   const running = ref(false)
   const activeCharacterNames = ref<string[]>([])
   const activePlanNames = ref<Record<number, string[]>>({})
+
+  // Plan selection state
+  const allPlans = ref<Api.SkillPlan.SkillPlanListItem[]>([])
+  const selectedPlanIds = ref<number[]>([])
+  const draftPlanIds = ref<number[]>([])
+  const planDialogVisible = ref(false)
+  const savingPlanSelection = ref(false)
 
   function getShipImageUrl(shipTypeId: number, size = 64) {
     return `https://images.evetech.net/types/${shipTypeId}/render?size=${size}`
@@ -303,6 +363,11 @@
   const selectedCharacters = computed(() => {
     const selectedSet = new Set(selectedCharacterIds.value)
     return characters.value.filter((character) => selectedSet.has(character.character_id))
+  })
+
+  const selectedPlanItems = computed(() => {
+    const selectedSet = new Set(selectedPlanIds.value)
+    return allPlans.value.filter((plan) => selectedSet.has(plan.id))
   })
 
   function syncDraftSelection() {
@@ -343,6 +408,44 @@
     }
   }
 
+  async function loadAllPlans() {
+    try {
+      const res = await fetchSkillPlanList({ current: 1, size: 200 })
+      allPlans.value = res?.list ?? []
+    } catch {
+      allPlans.value = []
+    }
+  }
+
+  async function loadSavedPlanSelection() {
+    const saved = await fetchSkillPlanCheckPlanSelection()
+    const availableIDs = new Set(allPlans.value.map((plan) => plan.id))
+    selectedPlanIds.value = (saved.plan_ids ?? []).filter((id) => availableIDs.has(id))
+    draftPlanIds.value = [...selectedPlanIds.value]
+  }
+
+  function openPlanDialog() {
+    draftPlanIds.value = [...selectedPlanIds.value]
+    planDialogVisible.value = true
+  }
+
+  async function savePlanSelection() {
+    savingPlanSelection.value = true
+    try {
+      const saved = await saveSkillPlanCheckPlanSelection({
+        plan_ids: [...draftPlanIds.value]
+      })
+      selectedPlanIds.value = saved.plan_ids ?? []
+      draftPlanIds.value = [...selectedPlanIds.value]
+      planDialogVisible.value = false
+      ElMessage.success(t('skillPlanCheck.planSelectionSaved'))
+    } catch (error: any) {
+      ElMessage.error(error?.message ?? t('httpMsg.requestFailed'))
+    } finally {
+      savingPlanSelection.value = false
+    }
+  }
+
   function expandResults(data: Api.SkillPlan.CompletionCheckResult) {
     activeCharacterNames.value = data.characters.map((character) => String(character.character_id))
     activePlanNames.value = Object.fromEntries(
@@ -374,6 +477,8 @@
   onMounted(async () => {
     await loadCharacters()
     await loadSavedSelection()
+    await loadAllPlans()
+    await loadSavedPlanSelection()
   })
 </script>
 
@@ -418,7 +523,8 @@
     flex-wrap: wrap;
   }
 
-  .selected-characters {
+  .selected-characters,
+  .selected-plans {
     margin-top: 14px;
     display: flex;
     gap: 10px;
@@ -426,19 +532,22 @@
     flex-wrap: wrap;
   }
 
-  .selected-characters__label {
+  .selected-characters__label,
+  .selected-plans__label {
     color: var(--el-text-color-secondary);
     font-size: 13px;
     padding-top: 4px;
   }
 
-  .selected-characters__list {
+  .selected-characters__list,
+  .selected-plans__list {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
   }
 
-  .selected-characters__empty {
+  .selected-characters__empty,
+  .selected-plans__empty {
     color: var(--el-text-color-placeholder);
     font-size: 13px;
   }

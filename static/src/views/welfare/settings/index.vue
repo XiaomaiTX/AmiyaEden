@@ -72,13 +72,16 @@
         <ElFormItem
           v-if="formData.require_skill_plan"
           :label="t('welfareSettings.skillPlan')"
-          prop="skill_plan_id"
+          prop="skill_plan_ids"
         >
           <ElSelect
-            v-model="formData.skill_plan_id"
+            v-model="formData.skill_plan_ids"
             :placeholder="t('welfareSettings.skillPlanPlaceholder')"
             :loading="skillPlansLoading"
             filterable
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
             style="width: 100%"
           >
             <ElOption
@@ -217,8 +220,7 @@
                 size: 'small',
                 effect: 'plain'
               },
-              () =>
-                row.require_skill_plan ? t('welfareSettings.yes') : t('welfareSettings.no')
+              () => (row.require_skill_plan ? t('welfareSettings.yes') : t('welfareSettings.no'))
             )
         },
         {
@@ -276,12 +278,14 @@
   const skillPlans = ref<Api.SkillPlan.SkillPlanListItem[]>([])
   const skillPlansLoading = ref(false)
 
+  onMounted(() => loadSkillPlans())
+
   async function loadSkillPlans() {
     if (skillPlans.value.length > 0) return
     skillPlansLoading.value = true
     try {
       const res = await fetchSkillPlanList({ current: 1, size: 200 })
-      skillPlans.value = (res as any)?.list ?? (res as any) ?? []
+      skillPlans.value = res?.list ?? []
     } catch {
       skillPlans.value = []
     } finally {
@@ -300,17 +304,17 @@
     description: '',
     dist_mode: 'per_user' as 'per_user' | 'per_character',
     require_skill_plan: false,
-    skill_plan_id: null as number | null,
+    skill_plan_ids: [] as number[],
     status: 1 as number
   })
 
   const formRules = computed<FormRules>(() => ({
     name: [{ required: true, message: t('welfareSettings.validName'), trigger: 'blur' }],
     dist_mode: [{ required: true, message: t('welfareSettings.validDistMode'), trigger: 'change' }],
-    skill_plan_id: [
+    skill_plan_ids: [
       {
         validator: (_rule: any, value: any, callback: any) => {
-          if (formData.require_skill_plan && !value) {
+          if (formData.require_skill_plan && (!value || value.length === 0)) {
             callback(new Error(t('welfareSettings.validSkillPlan')))
           } else {
             callback()
@@ -327,7 +331,7 @@
       description: '',
       dist_mode: 'per_user',
       require_skill_plan: false,
-      skill_plan_id: null,
+      skill_plan_ids: [],
       status: 1
     })
     editingItem.value = null
@@ -346,7 +350,7 @@
       description: row.description,
       dist_mode: row.dist_mode,
       require_skill_plan: row.require_skill_plan,
-      skill_plan_id: row.skill_plan_id,
+      skill_plan_ids: row.skill_plan_ids ?? [],
       status: row.status
     })
     loadSkillPlans()
@@ -360,7 +364,7 @@
     try {
       const payload = {
         ...formData,
-        skill_plan_id: formData.require_skill_plan ? formData.skill_plan_id : null
+        skill_plan_ids: formData.require_skill_plan ? formData.skill_plan_ids : []
       }
       if (editingItem.value) {
         await adminUpdateWelfare({ id: editingItem.value.id, ...payload })

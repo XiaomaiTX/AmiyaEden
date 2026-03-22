@@ -146,6 +146,46 @@ func (r *SkillPlanRepository) ListCheckCharacterIDsByUserID(userID uint) ([]int6
 	return result, nil
 }
 
+// ListCheckPlanIDsByUserID 获取用户保存的技能检查计划
+func (r *SkillPlanRepository) ListCheckPlanIDsByUserID(userID uint) ([]uint, error) {
+	var rows []model.SkillPlanCheckPlan
+	if err := global.DB.Where("user_id = ?", userID).Order("id ASC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]uint, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, row.PlanID)
+	}
+	return result, nil
+}
+
+// ReplaceCheckPlans 替换用户保存的技能检查计划
+func (r *SkillPlanRepository) ReplaceCheckPlans(userID uint, planIDs []uint) error {
+	tx := global.DB.Begin()
+
+	if err := tx.Where("user_id = ?", userID).Delete(&model.SkillPlanCheckPlan{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if len(planIDs) > 0 {
+		rows := make([]model.SkillPlanCheckPlan, 0, len(planIDs))
+		for _, planID := range planIDs {
+			rows = append(rows, model.SkillPlanCheckPlan{
+				UserID: userID,
+				PlanID: planID,
+			})
+		}
+		if err := tx.Create(&rows).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit().Error
+}
+
 // ReplaceCheckCharacters 替换用户保存的技能检查角色
 func (r *SkillPlanRepository) ReplaceCheckCharacters(userID uint, characterIDs []int64) error {
 	tx := global.DB.Begin()

@@ -148,6 +148,8 @@ func RegisterRoutes(r *gin.Engine) {
 
 		skillPlan.GET("/check/selection", viewSkillPlanChecks, skillPlanH.GetCheckSelection)
 		skillPlan.PUT("/check/selection", viewSkillPlanChecks, skillPlanH.SaveCheckSelection)
+		skillPlan.GET("/check/plan-selection", viewSkillPlanChecks, skillPlanH.GetCheckPlanSelection)
+		skillPlan.PUT("/check/plan-selection", viewSkillPlanChecks, skillPlanH.SaveCheckPlanSelection)
 		skillPlan.POST("/check/run", viewSkillPlanChecks, skillPlanH.RunCompletionCheck)
 		skillPlan.GET("", manageSkillPlans, skillPlanH.ListSkillPlans)
 		skillPlan.GET("/:id", manageSkillPlans, skillPlanH.GetSkillPlan)

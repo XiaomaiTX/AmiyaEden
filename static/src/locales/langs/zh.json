@@ -51,7 +51,9 @@
     "millionIsk": "百万 ISK",
     "updatedAt": "更新时间",
     "createdAt": "创建时间",
-    "logOutTips": "您是否要退出登录?"
+    "logOutTips": "您是否要退出登录?",
+    "search": "查询",
+    "reset": "重置"
   },
   "search": {
     "placeholder": "搜索页面",
@@ -484,6 +486,7 @@
     "distModePerCharacter": "按人物",
     "requireSkillPlan": "需要技能检查",
     "skillPlan": "技能计划",
+    "skillRequirement": "技能要求",
     "skillPlanPlaceholder": "请选择技能计划",
     "status": "状态",
     "statusActive": "启用",
@@ -949,7 +952,12 @@
     "missingSkillsTitle": "缺失技能",
     "requiredVsCurrent": "需求 {required} 级，当前 {current} 级",
     "planCompleteSummary": "该角色已完整满足此技能规划。",
-    "planIncompleteSummary": "当前完成 {matched} / {total} 项技能要求。"
+    "planIncompleteSummary": "当前完成 {matched} / {total} 项技能要求。",
+    "selectPlans": "选择规划",
+    "selectedPlans": "已选择规划",
+    "noPlansSelected": "尚未选择规划",
+    "noAvailablePlans": "暂无可用规划",
+    "planSelectionSaved": "规划选择已保存"
   },
   "characters": {
     "title": "EVE 角色管理",

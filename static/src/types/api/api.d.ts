@@ -773,6 +773,10 @@ declare namespace Api {
       character_ids: number[]
     }
 
+    interface CheckPlanSelection {
+      plan_ids: number[]
+    }
+
     /** 技能完成度缺失技能 */
     interface CompletionMissingSkill {
       skill_type_id: number
@@ -1048,7 +1052,7 @@ declare namespace Api {
       description: string
       dist_mode: 'per_user' | 'per_character'
       require_skill_plan: boolean
-      skill_plan_id: number | null
+      skill_plan_ids: number[]
       status: number
       created_by: number
       created_at: string
@@ -1061,7 +1065,7 @@ declare namespace Api {
       description?: string
       dist_mode: 'per_user' | 'per_character'
       require_skill_plan?: boolean
-      skill_plan_id?: number | null
+      skill_plan_ids?: number[]
       status?: number
     }
 
@@ -1072,7 +1076,7 @@ declare namespace Api {
       description?: string
       dist_mode: 'per_user' | 'per_character'
       require_skill_plan?: boolean
-      skill_plan_id?: number | null
+      skill_plan_ids?: number[]
       status?: number
     }
 

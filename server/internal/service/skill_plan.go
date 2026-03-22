@@ -97,6 +97,14 @@ type SkillPlanCheckSelectionResp struct {
 	CharacterIDs []int64 `json:"character_ids"`
 }
 
+type SkillPlanCheckPlanSelectionRequest struct {
+	PlanIDs []uint `json:"plan_ids"`
+}
+
+type SkillPlanCheckPlanSelectionResp struct {
+	PlanIDs []uint `json:"plan_ids"`
+}
+
 type RunSkillPlanCheckRequest struct {
 	CharacterIDs []int64 `json:"character_ids"`
 	Language     string  `json:"language"`
@@ -326,6 +334,83 @@ func (s *SkillPlanService) SaveCheckSelection(userID uint, req *SkillPlanCheckSe
 	return &SkillPlanCheckSelectionResp{CharacterIDs: characterIDs}, nil
 }
 
+func (s *SkillPlanService) GetCheckPlanSelection(userID uint) (*SkillPlanCheckPlanSelectionResp, error) {
+	allPlans, err := s.repo.ListAll()
+	if err != nil {
+		return nil, errors.New("获取技能计划列表失败")
+	}
+
+	existingSet := make(map[uint]struct{}, len(allPlans))
+	for _, plan := range allPlans {
+		existingSet[plan.ID] = struct{}{}
+	}
+
+	savedIDs, err := s.repo.ListCheckPlanIDsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// If user has no saved selection, default to all plans
+	if len(savedIDs) == 0 {
+		allIDs := make([]uint, 0, len(allPlans))
+		for _, plan := range allPlans {
+			allIDs = append(allIDs, plan.ID)
+		}
+		return &SkillPlanCheckPlanSelectionResp{PlanIDs: allIDs}, nil
+	}
+
+	// Filter out deleted plans
+	filtered := make([]uint, 0, len(savedIDs))
+	changed := false
+	for _, planID := range savedIDs {
+		if _, ok := existingSet[planID]; !ok {
+			changed = true
+			continue
+		}
+		filtered = append(filtered, planID)
+	}
+
+	if changed {
+		if err := s.repo.ReplaceCheckPlans(userID, filtered); err != nil {
+			return nil, err
+		}
+	}
+
+	return &SkillPlanCheckPlanSelectionResp{PlanIDs: filtered}, nil
+}
+
+func (s *SkillPlanService) SaveCheckPlanSelection(userID uint, req *SkillPlanCheckPlanSelectionRequest) (*SkillPlanCheckPlanSelectionResp, error) {
+	allPlans, err := s.repo.ListAll()
+	if err != nil {
+		return nil, errors.New("获取技能计划列表失败")
+	}
+
+	existingSet := make(map[uint]struct{}, len(allPlans))
+	for _, plan := range allPlans {
+		existingSet[plan.ID] = struct{}{}
+	}
+
+	// Validate and deduplicate
+	seen := make(map[uint]struct{}, len(req.PlanIDs))
+	validated := make([]uint, 0, len(req.PlanIDs))
+	for _, planID := range req.PlanIDs {
+		if _, ok := existingSet[planID]; !ok {
+			continue
+		}
+		if _, dup := seen[planID]; dup {
+			continue
+		}
+		seen[planID] = struct{}{}
+		validated = append(validated, planID)
+	}
+
+	if err := s.repo.ReplaceCheckPlans(userID, validated); err != nil {
+		return nil, err
+	}
+
+	return &SkillPlanCheckPlanSelectionResp{PlanIDs: validated}, nil
+}
+
 func (s *SkillPlanService) RunCompletionCheck(userID uint, req *RunSkillPlanCheckRequest) (*SkillPlanCheckResultResp, error) {
 	lang := req.Language
 	if lang == "" {
@@ -361,9 +446,26 @@ func (s *SkillPlanService) RunCompletionCheck(userID uint, req *RunSkillPlanChec
 		characterMap[char.CharacterID] = char
 	}
 
-	plans, err := s.repo.ListAll()
+	allPlans, err := s.repo.ListAll()
 	if err != nil {
 		return nil, err
+	}
+
+	// Filter plans by user's saved plan selection
+	planSelection, _ := s.GetCheckPlanSelection(userID)
+	var plans []model.SkillPlan
+	if planSelection != nil && len(planSelection.PlanIDs) > 0 {
+		selectedSet := make(map[uint]struct{}, len(planSelection.PlanIDs))
+		for _, id := range planSelection.PlanIDs {
+			selectedSet[id] = struct{}{}
+		}
+		for _, plan := range allPlans {
+			if _, ok := selectedSet[plan.ID]; ok {
+				plans = append(plans, plan)
+			}
+		}
+	} else {
+		plans = allPlans
 	}
 
 	planIDs := make([]uint, 0, len(plans))

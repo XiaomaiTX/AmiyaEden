@@ -39,6 +39,7 @@ source_of_truth:
 - `static/src/router/modules/skill-planning.ts`
 - `static/src/router/modules/info.ts`
 - `static/src/router/modules/shop.ts`
+- `static/src/router/modules/welfare.ts`
 - `static/src/router/modules/srp.ts`
 - `static/src/router/modules/system.ts`
 

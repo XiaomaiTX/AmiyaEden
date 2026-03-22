@@ -51,7 +51,9 @@
     "millionIsk": "Million ISK",
     "updatedAt": "Updated At",
     "createdAt": "Created At",
-    "logOutTips": "Do you want to log out?"
+    "logOutTips": "Do you want to log out?",
+    "search": "Search",
+    "reset": "Reset"
   },
   "search": {
     "placeholder": "Search page",
@@ -483,6 +485,7 @@
     "distModePerCharacter": "Per Character",
     "requireSkillPlan": "Require Skill Check",
     "skillPlan": "Skill Plan",
+    "skillRequirement": "Skill Requirement",
     "skillPlanPlaceholder": "Select a skill plan",
     "status": "Status",
     "statusActive": "Active",
@@ -948,7 +951,12 @@
     "missingSkillsTitle": "Missing Skills",
     "requiredVsCurrent": "Required Lv.{required}, current Lv.{current}",
     "planCompleteSummary": "This character fully satisfies the selected skill plan.",
-    "planIncompleteSummary": "{matched} / {total} skill requirements are currently satisfied."
+    "planIncompleteSummary": "{matched} / {total} skill requirements are currently satisfied.",
+    "selectPlans": "Select Plans",
+    "selectedPlans": "Selected Plans",
+    "noPlansSelected": "No plans selected yet",
+    "noAvailablePlans": "No available plans",
+    "planSelectionSaved": "Plan selection saved"
   },
   "characters": {
     "title": "EVE Characters",

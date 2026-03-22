@@ -116,8 +116,10 @@ func autoMigrate(db *gorm.DB) {
 		&model.SkillPlan{},
 		&model.SkillPlanSkill{},
 		&model.SkillPlanCheckCharacter{},
+		&model.SkillPlanCheckPlan{},
 		// 军团福利相关表
 		&model.Welfare{},
+		&model.WelfareSkillPlan{},
 		&model.WelfareDistribution{},
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},

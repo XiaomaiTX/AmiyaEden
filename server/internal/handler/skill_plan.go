@@ -150,6 +150,34 @@ func (h *SkillPlanHandler) SaveCheckSelection(c *gin.Context) {
 	response.OK(c, result)
 }
 
+// GetCheckPlanSelection 获取当前用户保存的检查计划选择
+func (h *SkillPlanHandler) GetCheckPlanSelection(c *gin.Context) {
+	result, err := h.svc.GetCheckPlanSelection(middleware.GetUserID(c))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, result)
+}
+
+// SaveCheckPlanSelection 保存当前用户的检查计划选择
+func (h *SkillPlanHandler) SaveCheckPlanSelection(c *gin.Context) {
+	var req service.SkillPlanCheckPlanSelectionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.svc.SaveCheckPlanSelection(middleware.GetUserID(c), &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, result)
+}
+
 // RunCompletionCheck 执行技能计划完成度检查
 func (h *SkillPlanHandler) RunCompletionCheck(c *gin.Context) {
 	var req service.RunSkillPlanCheckRequest

@@ -34,3 +34,12 @@ type SkillPlanCheckCharacter struct {
 }
 
 func (SkillPlanCheckCharacter) TableName() string { return "skill_plan_check_character" }
+
+// SkillPlanCheckPlan 用户保存的技能完成度检查计划选择
+type SkillPlanCheckPlan struct {
+	ID     uint `gorm:"primarykey"                              json:"id"`
+	UserID uint `gorm:"not null;uniqueIndex:udx_spcp_user_plan" json:"user_id"`
+	PlanID uint `gorm:"not null;uniqueIndex:udx_spcp_user_plan" json:"plan_id"`
+}
+
+func (SkillPlanCheckPlan) TableName() string { return "skill_plan_check_plan" }
