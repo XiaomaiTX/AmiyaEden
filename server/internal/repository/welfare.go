@@ -66,7 +66,76 @@ func (r *WelfareRepository) ListWelfares(page, pageSize int, filter WelfareFilte
 	if err := db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
+
+	// 填充 SkillPlanIDs
+	if err := r.fillSkillPlanIDs(list); err != nil {
+		return nil, 0, err
+	}
 	return list, total, nil
+}
+
+// ─────────────────────────────────────────────
+//  福利-技能计划关联
+// ─────────────────────────────────────────────
+
+// ReplaceWelfareSkillPlans 替换福利的技能计划关联
+func (r *WelfareRepository) ReplaceWelfareSkillPlans(welfareID uint, skillPlanIDs []uint) error {
+	tx := global.DB.Begin()
+	if err := tx.Where("welfare_id = ?", welfareID).Delete(&model.WelfareSkillPlan{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if len(skillPlanIDs) > 0 {
+		rows := make([]model.WelfareSkillPlan, 0, len(skillPlanIDs))
+		for _, spID := range skillPlanIDs {
+			rows = append(rows, model.WelfareSkillPlan{WelfareID: welfareID, SkillPlanID: spID})
+		}
+		if err := tx.Create(&rows).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit().Error
+}
+
+// GetSkillPlanIDsByWelfareID 获取福利关联的技能计划 ID 列表
+func (r *WelfareRepository) GetSkillPlanIDsByWelfareID(welfareID uint) ([]uint, error) {
+	var rows []model.WelfareSkillPlan
+	if err := global.DB.Where("welfare_id = ?", welfareID).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	ids := make([]uint, len(rows))
+	for i, row := range rows {
+		ids[i] = row.SkillPlanID
+	}
+	return ids, nil
+}
+
+// fillSkillPlanIDs 批量填充 Welfare.SkillPlanIDs
+func (r *WelfareRepository) fillSkillPlanIDs(list []model.Welfare) error {
+	if len(list) == 0 {
+		return nil
+	}
+	welfareIDs := make([]uint, len(list))
+	for i, w := range list {
+		welfareIDs[i] = w.ID
+	}
+	var rows []model.WelfareSkillPlan
+	if err := global.DB.Where("welfare_id IN ?", welfareIDs).Find(&rows).Error; err != nil {
+		return err
+	}
+
+	m := make(map[uint][]uint)
+	for _, row := range rows {
+		m[row.WelfareID] = append(m[row.WelfareID], row.SkillPlanID)
+	}
+	for i := range list {
+		list[i].SkillPlanIDs = m[list[i].ID]
+		if list[i].SkillPlanIDs == nil {
+			list[i].SkillPlanIDs = []uint{}
+		}
+	}
+	return nil
 }
 
 // ─────────────────────────────────────────────

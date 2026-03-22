@@ -29,7 +29,7 @@ type adminWelfareCreateRequest struct {
 	Description      string `json:"description"`
 	DistMode         string `json:"dist_mode" binding:"required,oneof=per_user per_character"`
 	RequireSkillPlan bool   `json:"require_skill_plan"`
-	SkillPlanID      *uint  `json:"skill_plan_id"`
+	SkillPlanIDs     []uint `json:"skill_plan_ids"`
 	Status           int8   `json:"status"`
 }
 
@@ -46,7 +46,7 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 		Description:      req.Description,
 		DistMode:         req.DistMode,
 		RequireSkillPlan: req.RequireSkillPlan,
-		SkillPlanID:      req.SkillPlanID,
+		SkillPlanIDs:     req.SkillPlanIDs,
 		Status:           req.Status,
 		CreatedBy:        middleware.GetUserID(c),
 	}

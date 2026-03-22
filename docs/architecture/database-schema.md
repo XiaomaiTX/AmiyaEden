@@ -55,7 +55,7 @@ source_of_truth:
 - RBAC：`role`、`menu`、`role_menu`、`user_role`
 - 自动权限映射：`esi_role_mapping`、`esi_title_mapping`、`eve_character_corp_role`
 - ESI 快照：资产、通知、技能、合同、装配、结构、钱包等 `eve_*` / `esi_*` 相关表
-- 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`alliance_pap*`、`system_wallet*`
+- 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`welfare*`、`alliance_pap*`、`system_wallet*`、`wallet_log`、`wallet_transaction`
 - 基础设施：`operation_log`、`sde_versions`、`sys_config`
 
 ## 用户与认证
@@ -142,6 +142,7 @@ source_of_truth:
 - `admin`
 - `srp`
 - `fc`
+- `welfare`
 - `user`
 - `guest`
 

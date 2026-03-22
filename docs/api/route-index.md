@@ -106,6 +106,8 @@ source_of_truth:
 | GET | `/skill-planning/skill-plans/check/selection` | 获取当前用户保存的完成度检查角色选择 | Login |
 | PUT | `/skill-planning/skill-plans/check/selection` | 保存当前用户的完成度检查角色选择 | Login |
 | POST | `/skill-planning/skill-plans/check/run` | 执行技能规划完成度检查 | Login |
+| GET | `/skill-planning/skill-plans/check/plan-selection` | 获取当前用户保存的完成度检查规划选择 | Login |
+| PUT | `/skill-planning/skill-plans/check/plan-selection` | 保存当前用户的完成度检查规划选择 | Login |
 | GET | `/skill-planning/skill-plans` | 技能计划列表 | `RequireRole(admin, fc)` |
 | GET | `/skill-planning/skill-plans/:id` | 技能计划详情 | `RequireRole(admin, fc)` |
 | POST | `/skill-planning/skill-plans` | 创建技能计划 | `RequireRole(admin, fc)` |
@@ -242,6 +244,15 @@ source_of_truth:
 | POST | `/system/wallet/adjust` | 调整余额 | `RequireRole(admin)` |
 | POST | `/system/wallet/transactions` | 钱包流水 | `RequireRole(admin)` |
 | POST | `/system/wallet/logs` | 调整日志 | `RequireRole(admin)` |
+
+### Welfare Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/system/welfare/list` | 福利列表 | `RequireRole(admin)` |
+| POST | `/system/welfare/add` | 创建福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/edit` | 编辑福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/delete` | 删除福利 | `RequireRole(admin)` |
 
 ### Shop Admin
 
