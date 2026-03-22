@@ -25,6 +25,7 @@ source_of_truth:
 - 查看我的联盟 PAP
 - 舰队配置管理、EFT 导出、从角色装配导入、导出到 ESI
 - 舰队级自动 SRP 模式：`disabled` / `submit_only` / `auto_approve`
+- 创建舰队时，选择舰队配置会默认把自动 SRP 模式设为 `auto_approve`
 
 ## 入口
 

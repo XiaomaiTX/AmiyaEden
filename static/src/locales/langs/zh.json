@@ -48,6 +48,7 @@
     "quantity": "数量",
     "status": "状态",
     "save": "保存",
+    "millionIsk": "百万 ISK",
     "updatedAt": "更新时间",
     "createdAt": "创建时间",
     "logOutTips": "您是否要退出登录?"
@@ -247,6 +248,12 @@
       "forbidden": "403",
       "notFound": "404",
       "serverError": "500"
+    },
+    "welfare": {
+      "title": "军团福利",
+      "my": "我的福利",
+      "approval": "福利审批",
+      "settings": "福利设置"
     },
     "shop": {
       "title": "商店",
@@ -465,6 +472,39 @@
     "bountyPrizes": "赏金",
     "essTransfer": "ESS"
   },
+  "welfareSettings": {
+    "create": "新增福利",
+    "edit": "编辑福利",
+    "name": "福利名称",
+    "namePlaceholder": "请输入福利名称",
+    "description": "描述",
+    "descriptionPlaceholder": "请输入福利描述",
+    "distMode": "发放模式",
+    "distModePerUser": "按自然人",
+    "distModePerCharacter": "按人物",
+    "requireSkillPlan": "需要技能检查",
+    "skillPlan": "技能计划",
+    "skillPlanPlaceholder": "请选择技能计划",
+    "status": "状态",
+    "statusActive": "启用",
+    "statusDisabled": "停用",
+    "createdAt": "创建时间",
+    "filterName": "福利名称",
+    "filterStatus": "状态",
+    "yes": "是",
+    "no": "否",
+    "validName": "请输入福利名称",
+    "validDistMode": "请选择发放模式",
+    "validSkillPlan": "请选择技能计划",
+    "createSuccess": "福利创建成功",
+    "updateSuccess": "福利更新成功",
+    "operationFailed": "操作失败",
+    "deleteTitle": "删除确认",
+    "deleteConfirm": "确定要删除福利「{name}」吗？",
+    "deleteBtn": "删除",
+    "deleteSuccess": "福利删除成功",
+    "deleteFailed": "删除失败"
+  },
   "shop": {
     "products": "商品列表",
     "allTypes": "全部类型",
@@ -579,8 +619,9 @@
     "roles": {
       "super_admin": "超级管理员",
       "admin": "管理员",
-      "srp": "SRP管理员",
+      "srp": "补损官",
       "fc": "FC",
+      "welfare": "福利官",
       "user": "已认证用户",
       "guest": "访客"
     },
@@ -1023,6 +1064,7 @@
       "searchBtn": "查询",
       "resetBtn": "重置",
       "exportBtn": "导出当前数据",
+      "autoApproveBtn": "自动审批",
       "batchPayoutBtn": "批量发放",
       "approveBtn": "批准",
       "rejectBtn": "拒绝",
@@ -1042,6 +1084,7 @@
       "batchPayoutConfirmTitle": "批量发放",
       "batchPayoutConfirmText": "确认将 {name} 的所有已批准且未发放 SRP 申请标记为已发放吗？合计：{amount} ISK",
       "batchPayoutSuccess": "批量发放成功",
+      "autoApproveSuccess": "自动审批完成：批准 {approved} 条，跳过 {skipped} 条",
       "finalAmount": "最终金额",
       "finalAmountHint": "填 0 则保持原申请金额",
       "reviewNote": "审批备注",

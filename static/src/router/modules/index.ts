@@ -5,6 +5,7 @@ import { operationRoutes } from './operation'
 import { skillPlanningRoutes } from './skill-planning'
 import { exceptionRoutes } from './exception'
 import { srpRoutes } from './srp'
+import { welfareRoutes } from './welfare'
 import { shopRoutes } from './shop'
 import { infoRoutes } from './info'
 
@@ -16,6 +17,7 @@ export const routeModules: AppRouteRecord[] = [
   operationRoutes,
   skillPlanningRoutes,
   infoRoutes,
+  welfareRoutes,
   shopRoutes,
   systemRoutes,
   exceptionRoutes,

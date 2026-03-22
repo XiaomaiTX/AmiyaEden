@@ -220,6 +220,7 @@ func RegisterRoutes(r *gin.Engine) {
 		srpAdmin := srp.Group("", middleware.RequirePermission("srp:review"))
 		{
 			srpAdmin.GET("/applications", srpH.ListApplications)
+			srpAdmin.PUT("/applications/auto-approve", srpH.AutoApprovePendingApplications)
 			srpAdmin.GET("/applications/batch-payout-summary", srpH.ListBatchPayoutSummary)
 			srpAdmin.GET("/applications/:id", srpH.GetApplication)
 			srpAdmin.PUT("/applications/:id/review", srpH.ReviewApplication)
@@ -339,6 +340,16 @@ func RegisterRoutes(r *gin.Engine) {
 	adminShopRedeem := admin.Group("/shop/redeem")
 	{
 		adminShopRedeem.POST("/list", adminShopH.AdminListRedeemCodes)
+	}
+
+	// 福利管理（管理员）
+	welfareH := handler.NewWelfareHandler()
+	adminWelfare := admin.Group("/welfare")
+	{
+		adminWelfare.POST("/list", welfareH.AdminListWelfares)
+		adminWelfare.POST("/add", welfareH.AdminCreateWelfare)
+		adminWelfare.POST("/edit", welfareH.AdminUpdateWelfare)
+		adminWelfare.POST("/delete", welfareH.AdminDeleteWelfare)
 	}
 
 	// 自动权限映射管理（管理员）
