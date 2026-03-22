@@ -25,6 +25,19 @@ func hasAllowedPrimaryCharacter(primaryCharacterID int64, chars []model.EveChara
 	return false
 }
 
+func hasAnyAllowedCharacter(chars []model.EveCharacter, allowCorpSet map[int64]struct{}) bool {
+	for _, char := range chars {
+		if isAllowedCorporation(char.CorporationID, allowCorpSet) {
+			return true
+		}
+	}
+	return false
+}
+
+func shouldAutoPromoteGuestToUser(currentCodes []string, chars []model.EveCharacter, allowCorpSet map[int64]struct{}) bool {
+	return !model.HasNonGuestRole(currentCodes) && hasAnyAllowedCharacter(chars, allowCorpSet)
+}
+
 func isDirectorCorpRole(name string) bool {
 	return strings.EqualFold(strings.TrimSpace(name), "Director")
 }

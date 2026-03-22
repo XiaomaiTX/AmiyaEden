@@ -30,6 +30,9 @@ source_of_truth:
 
 `guest` 角色当前仍是已认证用户，但不是 `RequireLoginUser` 意义上的产品用户。
 因此需要把 guest onboarding / self-service 能力单独挂在仅需 `JWTAuth()` 的路由上，而不是 `RequireLoginUser()`。
+当用户已拥有任一非 `guest` 角色时，不应再同时保留 `guest`；`guest` 只作为无更高产品角色时的 fallback / onboarding 状态。
+首次 SSO 登录时，如果主角色所属军团命中 `allow_corporations`，系统应直接落为 `user`；未命中时才落为 `guest`。
+自动权限同步时，如果账号当前仍是纯 `guest`（或尚无有效角色）且任一绑定角色命中 `allow_corporations`，也应补为至少 `user`；已拥有 `admin`、`fc` 等非 `guest` 角色的账号不应因这条基线规则被改写。
 
 文档上应把这两类边界区分开：
 
@@ -105,13 +108,14 @@ source_of_truth:
 - `/api/v1/sso/eve/primary/:character_id`
 - `/api/v1/sso/eve/characters/:character_id`
 - `/api/v1/menu/list`
-- `/api/v1/info/*`
 
 这类接口主要用于：
 
 - 建立前端权限上下文
 - 完成角色绑定与主角色调整
 - 让 guest 在准入完成前仍能查看自己的基础信息或自助完成资料
+
+`/api/v1/info/*` 当前不再属于 JWT-only 自助能力，而是 `RequireLoginUser()` 边界。
 
 ### RequirePermission
 
@@ -160,7 +164,8 @@ source_of_truth:
 
 - 当前产品不是用户名 / 密码登录系统
 - 角色编码以代码常量为准，不以文档中文称呼为准
-- `allow_corporations` 的基线准入当前以主角色军团为准，不再按任意绑定角色放行
+- `allow_corporations` 的基线准入当前以主角色军团为准，不再按任意绑定角色放行；当列表为空时，当前默认回退到伏羲军团 Fuxi Legion（`98185110`）
+- 非 `allow_corporations` 军团角色的 ESI corporation role 信号当前应被整体忽略，不参与权限判断或衍生任务判定
 - 自动补 `admin` 的内置快捷规则当前仅接受允许军团中的 ESI corp role `Director`
 - corp title 只参与显式 title mapping，不会因为标题名为 `Director` 就自动抬升为 `admin`
 - 用户删除当前不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其删除 `super_admin` 或其他 `admin`
@@ -178,6 +183,7 @@ source_of_truth:
 因此：
 
 - 真实判断输入来自 `eve_character_corp_role`
+- 当 `allow_corporations` 已配置时，非允许军团角色不会保留 `eve_character_corp_role` 快照供后续判断
 - `Director` 只是 corp title 名称时，不应被当作管理员快捷信号
 - corp title 仍然可以通过 `esi_title_mapping` 参与显式映射，但那是配置行为，不是内置特判
 

@@ -20,6 +20,11 @@ type RoleService struct {
 	userRepo *repository.UserRepository
 }
 
+type requestedRoleAssignment struct {
+	id   uint
+	code string
+}
+
 func NewRoleService() *RoleService {
 	return &RoleService{
 		repo:     repository.NewRoleRepository(),
@@ -253,18 +258,19 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorRoles []string, 
 		return err
 	}
 
-	requestedCodes := make([]string, 0, len(roleIDs))
+	requestedRoles := make([]requestedRoleAssignment, 0, len(roleIDs))
 	// 检查是否包含 super_admin 角色
 	for _, rid := range roleIDs {
 		role, err := s.repo.GetByID(rid)
 		if err != nil {
 			return fmt.Errorf("角色ID %d 不存在", rid)
 		}
-		requestedCodes = append(requestedCodes, role.Code)
+		requestedRoles = append(requestedRoles, requestedRoleAssignment{id: rid, code: role.Code})
 		if role.Code == model.RoleSuperAdmin && !model.IsSuperAdmin(operatorRoles) {
 			return errors.New("只有超级管理员可以分配该角色")
 		}
 	}
+	roleIDs, requestedCodes := normalizeAssignedRoles(requestedRoles)
 	if err := validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes); err != nil {
 		return err
 	}
@@ -290,6 +296,32 @@ func validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes 
 		return errors.New("只有超级管理员可以分配管理员角色")
 	}
 	return nil
+}
+
+func normalizeAssignedRoles(requestedRoles []requestedRoleAssignment) ([]uint, []string) {
+	if len(requestedRoles) == 0 {
+		return nil, nil
+	}
+
+	hasNonGuestRole := false
+	for _, role := range requestedRoles {
+		if role.code != model.RoleGuest {
+			hasNonGuestRole = true
+			break
+		}
+	}
+
+	roleIDs := make([]uint, 0, len(requestedRoles))
+	roleCodes := make([]string, 0, len(requestedRoles))
+	for _, role := range requestedRoles {
+		if hasNonGuestRole && role.code == model.RoleGuest {
+			continue
+		}
+		roleIDs = append(roleIDs, role.id)
+		roleCodes = append(roleCodes, role.code)
+	}
+
+	return roleIDs, roleCodes
 }
 
 // ─── 内部辅助 ───
@@ -443,7 +475,69 @@ func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
 			}
 		}
 	}
+
+	if err := s.reconcileGuestMenuRestrictions(nameToID); err != nil {
+		global.Logger.Error("清理 guest 受限菜单失败", zap.Error(err))
+	}
 	global.Logger.Info("默认角色菜单映射完成")
+}
+
+func (s *RoleService) reconcileGuestMenuRestrictions(nameToID map[string]uint) error {
+	guestRole, err := s.repo.GetByCode(model.RoleGuest)
+	if err != nil {
+		return err
+	}
+
+	restrictedMenuNames := []string{
+		"EveInfo",
+		"EveInfoWallet",
+		"EveInfoSkill",
+		"NpcKillReport",
+		"EveInfoShips",
+		"EveInfoImplants",
+		"EveInfoFittings",
+		"EveInfoAssets",
+		"EveInfoContracts",
+	}
+
+	restrictedSet := make(map[uint]struct{}, len(restrictedMenuNames))
+	for _, name := range restrictedMenuNames {
+		if id, ok := nameToID[name]; ok {
+			restrictedSet[id] = struct{}{}
+		}
+	}
+	if len(restrictedSet) == 0 {
+		return nil
+	}
+
+	existing, err := s.repo.GetRoleMenuIDs(guestRole.ID)
+	if err != nil {
+		return err
+	}
+
+	filtered := make([]uint, 0, len(existing))
+	removed := 0
+	for _, id := range existing {
+		if _, blocked := restrictedSet[id]; blocked {
+			removed++
+			continue
+		}
+		filtered = append(filtered, id)
+	}
+
+	if removed == 0 {
+		return nil
+	}
+
+	if err := s.repo.SetRoleMenus(guestRole.ID, filtered); err != nil {
+		return err
+	}
+
+	global.Logger.Info("已清理 guest 受限菜单",
+		zap.Int("removed", removed),
+		zap.String("role", model.RoleGuest))
+
+	return nil
 }
 
 func (s *RoleService) seedAdminMenus(nameToID map[string]uint) error {
@@ -488,16 +582,12 @@ func (s *RoleService) seedAdminMenus(nameToID map[string]uint) error {
 
 // CheckCorpAccessAndAdjustRole 检查用户名下所有角色的军团归属是否在准入列表内
 // 规则：
-//   - AllowCorporations 为空 → 不限制，直接返回
-//   - admin / super_admin → 不受影响
+//   - AllowCorporations 为空 → 不信任任何军团，除 super_admin 外均视为无准入
+//   - super_admin → 不受影响
 //   - 主角色的 CorporationID 在允许列表内 → 确保拥有 user 角色（从 guest 升级）
 //   - 没有符合条件的角色 → 降级为 guest（清除所有非高级角色）
 func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID uint) error {
 	allowCorps := global.Config.App.AllowCorporations
-	if len(allowCorps) == 0 {
-		return nil
-	}
-
 	allowSet := make(map[int64]struct{}, len(allowCorps))
 	for _, id := range allowCorps {
 		allowSet[id] = struct{}{}
@@ -524,8 +614,8 @@ func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID u
 		return err
 	}
 
-	// admin / super_admin 不受军团限制影响
-	if model.ContainsAnyRole(rollCodes, model.RoleAdmin, model.RoleSuperAdmin) {
+	// super_admin 不受军团限制影响
+	if model.ContainsAnyRole(rollCodes, model.RoleSuperAdmin) {
 		return nil
 	}
 

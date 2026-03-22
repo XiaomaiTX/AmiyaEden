@@ -62,3 +62,33 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 		}
 	})
 }
+
+func TestNormalizeAssignedRoles(t *testing.T) {
+	t.Run("keeps guest when it is the only role", func(t *testing.T) {
+		roleIDs, roleCodes := normalizeAssignedRoles([]requestedRoleAssignment{
+			{id: 1, code: model.RoleGuest},
+		})
+
+		if len(roleIDs) != 1 || roleIDs[0] != 1 {
+			t.Fatalf("expected guest role id to remain, got %v", roleIDs)
+		}
+		if len(roleCodes) != 1 || roleCodes[0] != model.RoleGuest {
+			t.Fatalf("expected guest role code to remain, got %v", roleCodes)
+		}
+	})
+
+	t.Run("drops guest when a real role is present", func(t *testing.T) {
+		roleIDs, roleCodes := normalizeAssignedRoles([]requestedRoleAssignment{
+			{id: 1, code: model.RoleGuest},
+			{id: 2, code: model.RoleUser},
+			{id: 3, code: model.RoleFC},
+		})
+
+		if len(roleIDs) != 2 || roleIDs[0] != 2 || roleIDs[1] != 3 {
+			t.Fatalf("expected non-guest role ids only, got %v", roleIDs)
+		}
+		if len(roleCodes) != 2 || roleCodes[0] != model.RoleUser || roleCodes[1] != model.RoleFC {
+			t.Fatalf("expected non-guest role codes only, got %v", roleCodes)
+		}
+	})
+}
