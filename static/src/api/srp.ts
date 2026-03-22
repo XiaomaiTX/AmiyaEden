@@ -106,6 +106,14 @@ export function fetchBatchPayoutSummary() {
   })
 }
 
+/** 批量自动审批符合规则的待审批 SRP */
+export function autoApprovePendingApplications() {
+  return request.put<Api.Srp.AutoApproveSummary>({
+    url: '/api/v1/srp/applications/auto-approve',
+    data: {}
+  })
+}
+
 /** 按用户批量发放 SRP */
 export function batchPayoutByUser(userId: number) {
   return request.put<Api.Srp.BatchPayoutSummary>({

@@ -20,6 +20,13 @@ type AutoSrpService struct {
 	sdeRepo         *repository.SdeRepository
 }
 
+type autoSRPFleetContext struct {
+	fleet          *model.Fleet
+	fittingByShip  map[int64]*model.FleetConfigFitting
+	itemsByFitting map[uint][]model.FleetConfigFittingItem
+	repByItem      map[uint][]model.FleetConfigFittingItemReplacement
+}
+
 // NewAutoSrpService 创建自动 SRP 服务
 func NewAutoSrpService() *AutoSrpService {
 	return &AutoSrpService{
@@ -103,6 +110,84 @@ func (s *AutoSrpService) ProcessAutoSRP(fleetID string) {
 	)
 }
 
+func (s *AutoSrpService) buildFleetContext(fleetID string) (*autoSRPFleetContext, error) {
+	fleet, err := s.fleetRepo.GetByID(fleetID)
+	if err != nil {
+		return nil, err
+	}
+	if fleet.FleetConfigID == nil || *fleet.FleetConfigID == 0 {
+		return nil, fmt.Errorf("fleet %s has no fleet config", fleetID)
+	}
+
+	fittings, err := s.fleetConfigRepo.ListFittingsByConfigID(*fleet.FleetConfigID)
+	if err != nil {
+		return nil, err
+	}
+	if len(fittings) == 0 {
+		return nil, fmt.Errorf("fleet %s has no fleet config fittings", fleetID)
+	}
+
+	fittingByShip := make(map[int64]*model.FleetConfigFitting, len(fittings))
+	fittingIDs := make([]uint, len(fittings))
+	for i := range fittings {
+		fittingByShip[fittings[i].ShipTypeID] = &fittings[i]
+		fittingIDs[i] = fittings[i].ID
+	}
+
+	configItems, err := s.fleetConfigRepo.ListItemsByFittingIDs(fittingIDs)
+	if err != nil {
+		return nil, err
+	}
+	itemsByFitting := make(map[uint][]model.FleetConfigFittingItem)
+	allItemIDs := make([]uint, 0, len(configItems))
+	for _, item := range configItems {
+		itemsByFitting[item.FleetConfigFittingID] = append(itemsByFitting[item.FleetConfigFittingID], item)
+		allItemIDs = append(allItemIDs, item.ID)
+	}
+
+	allReplacements, err := s.fleetConfigRepo.ListReplacementsByItemIDs(allItemIDs)
+	if err != nil {
+		return nil, err
+	}
+	repByItem := make(map[uint][]model.FleetConfigFittingItemReplacement)
+	for _, replacement := range allReplacements {
+		repByItem[replacement.FleetConfigFittingItemID] = append(
+			repByItem[replacement.FleetConfigFittingItemID],
+			replacement,
+		)
+	}
+
+	return &autoSRPFleetContext{
+		fleet:          fleet,
+		fittingByShip:  fittingByShip,
+		itemsByFitting: itemsByFitting,
+		repByItem:      repByItem,
+	}, nil
+}
+
+func autoApproveReviewNote() string {
+	return "补损根据舰队的自动补损设置，已由系统自动批准。"
+}
+
+func (s *AutoSrpService) evaluateApplicationWithContext(
+	ctx *autoSRPFleetContext,
+	app *model.SrpApplication,
+) (float64, float64, string, bool) {
+	fitting, ok := ctx.fittingByShip[app.ShipTypeID]
+	if !ok {
+		return 0, 0, "", false
+	}
+
+	baseAmount := s.getBaseAmount(fitting, app.ShipTypeID)
+	finalAmount, validationNote := s.validateFitting(
+		app.KillmailID,
+		ctx.itemsByFitting[fitting.ID],
+		ctx.repByItem,
+		baseAmount,
+	)
+	return baseAmount, finalAmount, validationNote, true
+}
+
 // processOneMember 处理单个成员的自动 SRP
 func (s *AutoSrpService) processOneMember(
 	fleet *model.Fleet,
@@ -176,16 +261,12 @@ func (s *AutoSrpService) processOneMember(
 
 		if fleet.AutoSrpMode == model.FleetAutoSrpAutoApprove {
 			configItemsForFitting := itemsByFitting[fitting.ID]
-			finalAmount, note := s.validateFitting(km.KillmailID, configItemsForFitting, repByItem, baseAmount)
+			finalAmount, _ := s.validateFitting(km.KillmailID, configItemsForFitting, repByItem, baseAmount)
 			app.FinalAmount = finalAmount
 			app.ReviewStatus = model.SrpReviewApproved
 			now := time.Now()
 			app.ReviewedAt = &now
-			if note != "" {
-				app.ReviewNote = "[自动审批-不符] " + note
-			} else {
-				app.ReviewNote = "[自动审批-符合]"
-			}
+			app.ReviewNote = autoApproveReviewNote()
 		}
 
 		if err := s.srpRepo.CreateApplication(app); err != nil {

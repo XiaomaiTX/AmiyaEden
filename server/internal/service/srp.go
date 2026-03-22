@@ -418,6 +418,46 @@ type ReviewApplicationRequest struct {
 	FinalAmount float64 `json:"final_amount"`                                         // 批准时可以修改金额
 }
 
+type AutoApprovePendingApplicationsResponse struct {
+	CheckedCount  int `json:"checked_count"`
+	ApprovedCount int `json:"approved_count"`
+	SkippedCount  int `json:"skipped_count"`
+}
+
+func canManualAutoApproveApplication(app *model.SrpApplication, fleet *model.Fleet) bool {
+	if app == nil || fleet == nil {
+		return false
+	}
+	if app.ReviewStatus != model.SrpReviewPending {
+		return false
+	}
+	if app.FleetID == nil || *app.FleetID == "" {
+		return false
+	}
+	if fleet.ID != *app.FleetID {
+		return false
+	}
+	if fleet.AutoSrpMode != model.FleetAutoSrpAutoApprove {
+		return false
+	}
+	return fleet.FleetConfigID != nil && *fleet.FleetConfigID > 0
+}
+
+func applyAutoApprovalToApplication(
+	app *model.SrpApplication,
+	reviewerID uint,
+	recommendedAmount float64,
+	finalAmount float64,
+	reviewedAt time.Time,
+) {
+	app.RecommendedAmount = recommendedAmount
+	app.FinalAmount = finalAmount
+	app.ReviewStatus = model.SrpReviewApproved
+	app.ReviewNote = autoApproveReviewNote()
+	app.ReviewedBy = &reviewerID
+	app.ReviewedAt = &reviewedAt
+}
+
 // ReviewApplication 审批补损申请（srp/fc/admin 可操作）
 // 支持对已批准/已拒绝的申请重新审批（编辑/重新拒绝）
 func (s *SrpService) ReviewApplication(reviewerID uint, appID uint, req *ReviewApplicationRequest) (*model.SrpApplication, error) {
@@ -452,6 +492,71 @@ func (s *SrpService) ReviewApplication(reviewerID uint, appID uint, req *ReviewA
 		return nil, err
 	}
 	return app, nil
+}
+
+func (s *SrpService) AutoApprovePendingApplications(reviewerID uint) (*AutoApprovePendingApplicationsResponse, error) {
+	apps, err := s.repo.ListPendingLinkedApplications()
+	if err != nil {
+		return nil, err
+	}
+
+	result := &AutoApprovePendingApplicationsResponse{CheckedCount: len(apps)}
+	if len(apps) == 0 {
+		return result, nil
+	}
+
+	autoSrpSvc := NewAutoSrpService()
+	contextCache := make(map[string]*autoSRPFleetContext)
+	reviewedAt := time.Now()
+
+	for i := range apps {
+		app := &apps[i]
+		if app.FleetID == nil || *app.FleetID == "" {
+			result.SkippedCount++
+			continue
+		}
+
+		ctx, ok := contextCache[*app.FleetID]
+		if !ok {
+			builtCtx, ctxErr := autoSrpSvc.buildFleetContext(*app.FleetID)
+			if ctxErr != nil {
+				contextCache[*app.FleetID] = nil
+			} else {
+				contextCache[*app.FleetID] = builtCtx
+			}
+			ctx = contextCache[*app.FleetID]
+		}
+
+		var fleet *model.Fleet
+		if ctx != nil {
+			fleet = ctx.fleet
+		}
+		if !canManualAutoApproveApplication(app, fleet) {
+			result.SkippedCount++
+			continue
+		}
+
+		recommendedAmount, finalAmount, _, eligible := autoSrpSvc.evaluateApplicationWithContext(ctx, app)
+		if !eligible {
+			result.SkippedCount++
+			continue
+		}
+
+		applyAutoApprovalToApplication(
+			app,
+			reviewerID,
+			recommendedAmount,
+			finalAmount,
+			reviewedAt,
+		)
+		if err := s.repo.UpdateApplication(app); err != nil {
+			return nil, err
+		}
+		result.ApprovedCount++
+	}
+
+	result.SkippedCount = result.CheckedCount - result.ApprovedCount
+	return result, nil
 }
 
 // ─────────────────────────────────────────────

@@ -72,6 +72,7 @@
     admin: 90,
     srp: 80,
     fc: 70,
+    welfare: 50,
     user: 10,
     guest: 0
   }
@@ -85,6 +86,7 @@
     admin: { type: 'warning', text: t('userAdmin.roles.admin') },
     srp: { type: 'success', text: t('userAdmin.roles.srp') },
     fc: { type: 'warning', text: t('userAdmin.roles.fc') },
+    welfare: { type: 'primary', text: t('userAdmin.roles.welfare') },
     user: { type: 'success', text: t('userAdmin.roles.user') },
     guest: { type: 'info', text: t('userAdmin.roles.guest') }
   }

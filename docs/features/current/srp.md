@@ -18,6 +18,7 @@ source_of_truth:
 - 个人补损申请提交
 - 我的补损申请列表
 - 我的 KM、按舰队筛选 KM、KM 详情
+- 管理端手动自动审批符合规则的待审批申请
 - 审核列表、审核详情、审核通过 / 拒绝
 - 单条发放补损
 - 管理端批量发放补损汇总、按用户批量发放补损
@@ -39,6 +40,7 @@ source_of_truth:
 - `/api/v1/srp/killmails/fleet/:fleet_id`
 - `/api/v1/srp/killmails/detail`
 - `/api/v1/srp/open-info-window`
+- `/api/v1/srp/applications/auto-approve`
 - `/api/v1/srp/applications/batch-payout-summary`
 - `/api/v1/srp/applications/:id/review`
 - `/api/v1/srp/applications/:id/payout`

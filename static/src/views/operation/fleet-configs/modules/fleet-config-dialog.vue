@@ -69,14 +69,17 @@
           </ElFormItem>
 
           <ElFormItem :label="$t('fleetConfig.fields.srpAmount')">
-            <ElRow style="width: 100%">
+            <ElRow class="million-isk-input">
               <ElInputNumber
-                v-model="fit.srp_amount"
+                :model-value="toMillionISKInput(fit.srp_amount)"
                 :min="0"
-                :precision="0"
+                :precision="2"
+                :step="1"
                 :disabled="readonly"
-                style="width: 200px"
+                class="million-isk-input__control"
+                @update:model-value="updateFittingSrpAmount(fit, $event)"
               />
+              <span class="million-isk-input__suffix">{{ $t('common.millionIsk') }}</span>
             </ElRow>
           </ElFormItem>
 
@@ -333,6 +336,7 @@
   import { useClipboard } from '@vueuse/core'
   import { useUserStore } from '@/store/modules/user'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
+  import { fromMillionISKInput, toMillionISKInput } from '@/utils/iskUnits'
 
   const props = defineProps<{
     visible: boolean
@@ -449,6 +453,10 @@
 
   function removeFitting(idx: number) {
     formData.fittings.splice(idx, 1)
+  }
+
+  function updateFittingSrpAmount(fit: InternalFitting, value: number | null | undefined) {
+    fit.srp_amount = fromMillionISKInput(value)
   }
 
   /** EFT 头行自动填充装配 **/
@@ -777,5 +785,23 @@
 
   .replacement-tag {
     margin: 0;
+  }
+
+  .million-isk-input {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 200px) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .million-isk-input__control {
+    width: 100%;
+  }
+
+  .million-isk-input__suffix {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    white-space: nowrap;
   }
 </style>
