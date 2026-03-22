@@ -172,6 +172,17 @@ func (h *SrpHandler) ListBatchPayoutSummary(c *gin.Context) {
 	response.OK(c, list)
 }
 
+// AutoApprovePendingApplications PUT /srp/applications/auto-approve
+func (h *SrpHandler) AutoApprovePendingApplications(c *gin.Context) {
+	reviewerID := middleware.GetUserID(c)
+	result, err := h.svc.AutoApprovePendingApplications(reviewerID)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
 // GetApplication GET /srp/manage/applications/:id
 func (h *SrpHandler) GetApplication(c *gin.Context) {
 	idStr := c.Param("id")

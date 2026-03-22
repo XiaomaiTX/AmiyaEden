@@ -51,6 +51,9 @@
               :button-text="$t('srp.manage.exportBtn')"
               type="success"
             />
+            <ElButton type="primary" :loading="autoApproveLoading" @click="handleAutoApprove">
+              {{ $t('srp.manage.autoApproveBtn') }}
+            </ElButton>
             <ElButton type="warning" @click="openBatchPayoutDialog">
               {{ $t('srp.manage.batchPayoutBtn') }}
             </ElButton>
@@ -92,13 +95,17 @@
           </ElFormItem>
         </template>
         <ElFormItem :label="$t('srp.manage.finalAmount')" v-if="reviewAction === 'approve'">
-          <ElInputNumber
-            v-model="reviewForm.final_amount"
-            :min="0"
-            :precision="2"
-            :step="1000000"
-            style="width: 100%"
-          />
+          <div class="million-isk-input">
+            <ElInputNumber
+              :model-value="toMillionISKInput(reviewForm.final_amount)"
+              :min="0"
+              :precision="2"
+              :step="1"
+              class="million-isk-input__control"
+              @update:model-value="updateReviewFinalAmount"
+            />
+            <span class="million-isk-input__suffix">{{ $t('common.millionIsk') }}</span>
+          </div>
           <div class="text-xs text-gray-400 mt-1">{{ $t('srp.manage.finalAmountHint') }}</div>
         </ElFormItem>
         <ElFormItem :label="$t('srp.manage.reviewNote')" :required="reviewAction === 'reject'">
@@ -295,6 +302,7 @@
   import { fetchFleetList } from '@/api/fleet'
   import {
     fetchApplicationList,
+    autoApprovePendingApplications,
     fetchBatchPayoutSummary,
     reviewApplication,
     batchPayoutByUser,
@@ -304,6 +312,7 @@
   import { useNameResolver } from '@/hooks'
   import { useUserStore } from '@/store/modules/user'
   import { CopyDocument } from '@element-plus/icons-vue'
+  import { fromMillionISKInput, toMillionISKInput } from '@/utils/iskUnits'
 
   defineOptions({ name: 'SrpManage' })
 
@@ -356,11 +365,34 @@
       apiFn: fetchApplicationList,
       apiParams: { current: 1, size: 200, payout_status: 'pending' },
       columnsFactory: () => [
-        { type: 'index', width: 60, label: '#' },
+        { type: 'index', width: 40, label: '#' },
+        {
+          prop: 'review_status',
+          label: t('srp.manage.columns.review'),
+          width: 60,
+          formatter: (row: SrpApp) => {
+            const tag = h(ElTag, { type: reviewStatusType(row.review_status), size: 'small' }, () =>
+              reviewStatusLabel(row.review_status)
+            )
+            if (row.review_note) {
+              return h(ElTooltip, { content: row.review_note, placement: 'top' }, () => tag)
+            }
+            return tag
+          }
+        },
+        {
+          prop: 'payout_status',
+          label: t('srp.manage.columns.payout'),
+          width: 60,
+          formatter: (row: SrpApp) =>
+            h(ElTag, { type: payoutStatusType(row.payout_status), size: 'small' }, () =>
+              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
+            )
+        },
         {
           prop: 'nickname',
           label: t('srp.manage.columns.nickname'),
-          width: 160,
+          width: 120,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', { class: row.nickname ? '' : 'text-gray-400' }, row.nickname || '-')
@@ -368,21 +400,51 @@
         {
           prop: 'character_name',
           label: t('srp.manage.columns.character'),
-          width: 150,
+          width: 140,
           showOverflowTooltip: true
         },
         {
           prop: 'ship_type_id',
           label: t('srp.manage.columns.ship'),
-          width: 180,
+          width: 150,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
         },
         {
+          prop: 'recommended_amount',
+          label: t('srp.manage.columns.recommendedAmount'),
+          width: 90,
+          formatter: (row: SrpApp) => h('span', {}, formatISK(row.recommended_amount))
+        },
+        {
+          prop: 'final_amount',
+          label: t('srp.manage.columns.finalAmount'),
+          width: 90,
+          formatter: (row: SrpApp) =>
+            h('span', { class: 'font-semibold text-blue-600' }, formatISK(row.final_amount))
+        },
+        {
+          prop: 'fleet_title',
+          label: t('srp.manage.columns.fleet'),
+          width: 150,
+          formatter: (row: SrpApp) => {
+            if (!row.fleet_id) return h('span', { class: 'text-gray-400' }, '-')
+            const fleet = fleetMap.value.get(row.fleet_id)
+            const tooltipContent = fleet
+              ? formatFleetLabel(fleet)
+              : row.fleet_fc_name
+                ? `${row.fleet_fc_name}: ${row.fleet_title || row.fleet_id}`
+                : row.fleet_title || row.fleet_id
+            return h(ElTooltip, { content: tooltipContent, placement: 'top' }, () =>
+              h('span', { class: 'cursor-default' }, row.fleet_title || row.fleet_id || '')
+            )
+          }
+        },
+        {
           prop: 'solar_system_id',
           label: t('srp.manage.columns.system'),
-          width: 140,
+          width: 128,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', {}, getName(row.solar_system_id, String(row.solar_system_id), 'solar_system'))
@@ -390,7 +452,7 @@
         {
           prop: 'killmail_id',
           label: t('srp.manage.columns.killId'),
-          width: 110,
+          width: 96,
           formatter: (row: SrpApp) =>
             h(
               ElLink,
@@ -405,13 +467,13 @@
         {
           prop: 'killmail_time',
           label: t('srp.manage.columns.kmTime'),
-          width: 175,
+          width: 160,
           formatter: (row: SrpApp) => h('span', {}, formatTime(row.killmail_time))
         },
         {
           prop: 'corporation_id',
           label: t('srp.manage.columns.corporation'),
-          width: 180,
+          width: 150,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h(
@@ -427,7 +489,7 @@
         {
           prop: 'alliance_id',
           label: t('srp.manage.columns.alliance'),
-          width: 180,
+          width: 150,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h(
@@ -437,78 +499,25 @@
             )
         },
         {
-          prop: 'fleet_title',
-          label: t('srp.manage.columns.fleet'),
-          width: 180,
-          formatter: (row: SrpApp) => {
-            if (!row.fleet_id) return h('span', { class: 'text-gray-400' }, '-')
-            const fleet = fleetMap.value.get(row.fleet_id)
-            const tooltipContent = fleet
-              ? formatFleetLabel(fleet)
-              : row.fleet_fc_name
-                ? `${row.fleet_fc_name}: ${row.fleet_title || row.fleet_id}`
-                : row.fleet_title || row.fleet_id
-            return h(ElTooltip, { content: tooltipContent, placement: 'top' }, () =>
-              h('span', { class: 'cursor-default' }, row.fleet_title || row.fleet_id || '')
-            )
-          }
-        },
-        {
           prop: 'note',
           label: t('srp.manage.columns.note'),
-          width: 180,
+          minWidth: 150,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', { class: row.note ? '' : 'text-gray-400' }, row.note || '-')
         },
         {
-          prop: 'recommended_amount',
-          label: t('srp.manage.columns.recommendedAmount'),
-          width: 140,
-          formatter: (row: SrpApp) => h('span', {}, formatISK(row.recommended_amount))
-        },
-        {
-          prop: 'final_amount',
-          label: t('srp.manage.columns.finalAmount'),
-          width: 140,
-          formatter: (row: SrpApp) =>
-            h('span', { class: 'font-semibold text-blue-600' }, formatISK(row.final_amount))
-        },
-        {
-          prop: 'review_status',
-          label: t('srp.manage.columns.review'),
-          width: 100,
-          formatter: (row: SrpApp) => {
-            const tag = h(ElTag, { type: reviewStatusType(row.review_status), size: 'small' }, () =>
-              reviewStatusLabel(row.review_status)
-            )
-            if (row.review_note) {
-              return h(ElTooltip, { content: row.review_note, placement: 'top' }, () => tag)
-            }
-            return tag
-          }
-        },
-        {
           prop: 'review_note',
           label: t('srp.manage.columns.reviewNote'),
-          minWidth: 200,
+          minWidth: 170,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', { class: row.review_note ? '' : 'text-gray-400' }, row.review_note || '-')
         },
         {
-          prop: 'payout_status',
-          label: t('srp.manage.columns.payout'),
-          width: 100,
-          formatter: (row: SrpApp) =>
-            h(ElTag, { type: payoutStatusType(row.payout_status), size: 'small' }, () =>
-              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
-            )
-        },
-        {
           prop: 'actions',
           label: t('srp.manage.columns.action'),
-          width: 300,
+          width: 250,
           fixed: 'right',
           formatter: (row: SrpApp) => {
             const btns: ReturnType<typeof h>[] = [
@@ -522,6 +531,7 @@
                   {
                     size: 'small',
                     type: 'success',
+                    class: 'srp-manage-action-button !h-8 !px-3',
                     onClick: () => openReviewDialog(row, 'approve')
                   },
                   () => t('srp.manage.approveBtn')
@@ -531,6 +541,7 @@
                   {
                     size: 'small',
                     type: 'danger',
+                    class: 'srp-manage-action-button !h-8 !px-3',
                     onClick: () => openReviewDialog(row, 'reject')
                   },
                   () => t('srp.manage.rejectBtn')
@@ -541,7 +552,12 @@
               btns.push(
                 h(
                   ElButton,
-                  { size: 'small', type: 'primary', onClick: () => openPayoutDialog(row) },
+                  {
+                    size: 'small',
+                    type: 'primary',
+                    class: 'srp-manage-action-button !h-8 !px-3',
+                    onClick: () => openPayoutDialog(row)
+                  },
                   () => t('srp.manage.payoutBtn')
                 ),
                 h(
@@ -549,6 +565,7 @@
                   {
                     size: 'small',
                     type: 'warning',
+                    class: 'srp-manage-action-button !h-8 !px-3',
                     onClick: () => openReviewDialog(row, 'approve')
                   },
                   () => t('srp.manage.editBtn')
@@ -558,6 +575,7 @@
                   {
                     size: 'small',
                     type: 'danger',
+                    class: 'srp-manage-action-button !h-8 !px-3',
                     onClick: () => openReviewDialog(row, 'reject')
                   },
                   () => t('srp.manage.reRejectBtn')
@@ -571,13 +589,14 @@
                   {
                     size: 'small',
                     type: 'success',
+                    class: 'srp-manage-action-button !h-8 !px-3',
                     onClick: () => openReviewDialog(row, 'approve')
                   },
                   () => t('srp.manage.reApproveBtn')
                 )
               )
             }
-            return h('div', { class: 'flex gap-1' }, btns)
+            return h('div', { class: 'flex items-center gap-1' }, btns)
           }
         }
       ]
@@ -653,19 +672,26 @@
     )
   })
 
-  const DEFAULT_APPROVE_NOTE =
-    '将钱包筛选项改为军团账户支取，找到最近的交易记录；或打开合同，在"我的合同"中将拥有者改为自己，状态设为未决，点击显示合同。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
+  const DEFAULT_APPROVE_NOTE = '补损由补损官{{mainChracterName}}手动批准，如有问题请Q群联系'
   const DEFAULT_REJECT_NOTE =
     '不符合现有补损条例。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
 
   const fillTemplate = (tpl: string) =>
     tpl.replaceAll('{{mainChracterName}}', primaryCharName.value || t('srp.manage.unknownReviewer'))
 
+  const updateReviewFinalAmount = (value: number | null | undefined) => {
+    reviewForm.final_amount = fromMillionISKInput(value)
+  }
+
   const openReviewDialog = (row: Api.Srp.Application, action: 'approve' | 'reject') => {
     reviewTarget.value = row
     reviewAction.value = action
     reviewForm.review_note =
-      action === 'approve' ? fillTemplate(DEFAULT_APPROVE_NOTE) : fillTemplate(DEFAULT_REJECT_NOTE)
+      action === 'approve'
+        ? row.review_status === 'pending'
+          ? fillTemplate(DEFAULT_APPROVE_NOTE)
+          : row.review_note || ''
+        : fillTemplate(DEFAULT_REJECT_NOTE)
     reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
     reviewDialogVisible.value = true
   }
@@ -699,6 +725,7 @@
 
   const payoutDialogVisible = ref(false)
   const payoutTarget = ref<Api.Srp.Application | null>(null)
+  const autoApproveLoading = ref(false)
   const batchPayoutDialogVisible = ref(false)
   const batchPayoutList = ref<BatchPayoutSummary[]>([])
   const batchSummaryLoading = ref(false)
@@ -739,6 +766,24 @@
   const openBatchPayoutDialog = async () => {
     batchPayoutDialogVisible.value = true
     await loadBatchPayoutSummary()
+  }
+
+  const handleAutoApprove = async () => {
+    autoApproveLoading.value = true
+    try {
+      const result = await autoApprovePendingApplications()
+      ElMessage.success(
+        t('srp.manage.autoApproveSuccess', {
+          approved: result.approved_count,
+          skipped: result.skipped_count
+        })
+      )
+      refreshData()
+    } catch {
+      /* handled */
+    } finally {
+      autoApproveLoading.value = false
+    }
   }
 
   const handleBatchPayout = async (row: BatchPayoutSummary) => {
@@ -915,6 +960,29 @@
 </script>
 
 <style scoped>
+  .million-isk-input {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .million-isk-input__control {
+    width: 100%;
+  }
+
+  .million-isk-input__suffix {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    white-space: nowrap;
+  }
+
+  .srp-manage-action-button {
+    height: 32px;
+    padding-inline: 12px;
+  }
+
   .payout-info-list {
     display: flex;
     flex-direction: column;

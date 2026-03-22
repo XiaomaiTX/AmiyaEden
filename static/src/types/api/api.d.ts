@@ -984,6 +984,13 @@ declare namespace Api {
       application_count: number
     }
 
+    /** 批量自动审批结果 */
+    interface AutoApproveSummary {
+      checked_count: number
+      approved_count: number
+      skipped_count: number
+    }
+
     /** 快捷 KM 列表条目 */
     interface FleetKillmailItem {
       killmail_id: number
@@ -1030,6 +1037,52 @@ declare namespace Api {
       janice_amount: number | null
       slots: KillmailSlotGroup[]
     }
+  }
+
+  /** 军团福利系统类型 */
+  namespace Welfare {
+    /** 福利定义 */
+    interface WelfareItem {
+      id: number
+      name: string
+      description: string
+      dist_mode: 'per_user' | 'per_character'
+      require_skill_plan: boolean
+      skill_plan_id: number | null
+      status: number
+      created_by: number
+      created_at: string
+      updated_at: string
+    }
+
+    /** 创建福利请求 */
+    interface CreateParams {
+      name: string
+      description?: string
+      dist_mode: 'per_user' | 'per_character'
+      require_skill_plan?: boolean
+      skill_plan_id?: number | null
+      status?: number
+    }
+
+    /** 更新福利请求 */
+    interface UpdateParams {
+      id: number
+      name: string
+      description?: string
+      dist_mode: 'per_user' | 'per_character'
+      require_skill_plan?: boolean
+      skill_plan_id?: number | null
+      status?: number
+    }
+
+    /** 福利查询参数 */
+    type SearchParams = Partial<{
+      current: number
+      size: number
+      status: number
+      name: string
+    }>
   }
 
   /** 商店系统类型 */

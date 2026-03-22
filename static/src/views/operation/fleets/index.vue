@@ -64,12 +64,17 @@
             :placeholder="$t('fleet.fields.fleetConfigPlaceholder')"
             style="width: 100%"
             clearable
+            @change="handleFleetConfigChange"
           >
             <ElOption v-for="fc in fleetConfigs" :key="fc.id" :label="fc.name" :value="fc.id" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.autoSrpMode')">
-          <ElSelect v-model="formData.auto_srp_mode" style="width: 100%">
+          <ElSelect
+            v-model="formData.auto_srp_mode"
+            style="width: 100%"
+            @change="handleAutoSrpModeChange"
+          >
             <ElOption :label="$t('fleet.autoSrp.disabled')" value="disabled" />
             <ElOption :label="$t('fleet.autoSrp.submitOnly')" value="submit_only" />
             <ElOption :label="$t('fleet.autoSrp.autoApprove')" value="auto_approve" />
@@ -137,6 +142,7 @@
   import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
   import { useUserStore } from '@/store/modules/user'
+  import { resolveAutoSrpModeOnFleetConfigChange } from './autoSrpDefaults'
 
   defineOptions({ name: 'Fleets' })
 
@@ -322,6 +328,7 @@
   const submitLoading = ref(false)
   const formRef = ref<FormInstance>()
   const editingFleet = ref<FleetItem | null>(null)
+  const autoSrpModeTouched = ref(false)
 
   const formData = reactive({
     title: '',
@@ -354,6 +361,7 @@
     formData.fleet_config_id = undefined
     formData.auto_srp_mode = 'disabled'
     editingFleet.value = null
+    autoSrpModeTouched.value = false
   }
 
   function openCreateDialog() {
@@ -372,7 +380,21 @@
     formData.time_range = [row.start_at, row.end_at]
     formData.fleet_config_id = row.fleet_config_id ?? undefined
     formData.auto_srp_mode = row.auto_srp_mode ?? 'disabled'
+    autoSrpModeTouched.value = false
     dialogVisible.value = true
+  }
+
+  function handleFleetConfigChange(value?: number) {
+    formData.auto_srp_mode = resolveAutoSrpModeOnFleetConfigChange({
+      isEditing: !!editingFleet.value,
+      selectedFleetConfigId: value,
+      currentMode: formData.auto_srp_mode,
+      userTouchedMode: autoSrpModeTouched.value
+    })
+  }
+
+  function handleAutoSrpModeChange() {
+    autoSrpModeTouched.value = true
   }
 
   async function handleSubmit() {

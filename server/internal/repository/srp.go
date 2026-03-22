@@ -84,6 +84,17 @@ func (r *SrpRepository) UpdateApplication(app *model.SrpApplication) error {
 	return global.DB.Save(app).Error
 }
 
+// ListPendingLinkedApplications 查询所有待审批且已关联舰队的申请
+func (r *SrpRepository) ListPendingLinkedApplications() ([]model.SrpApplication, error) {
+	var list []model.SrpApplication
+	err := global.DB.Model(&model.SrpApplication{}).
+		Where("review_status = ?", model.SrpReviewPending).
+		Where("fleet_id IS NOT NULL AND fleet_id <> ''").
+		Order("id ASC").
+		Find(&list).Error
+	return list, err
+}
+
 // SrpApplicationFilter 申请列表筛选条件
 type SrpApplicationFilter struct {
 	UserID       *uint

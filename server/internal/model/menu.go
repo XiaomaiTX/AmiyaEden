@@ -119,6 +119,12 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "SkillPlanning", Menu: Menu{Type: MenuTypeMenu, Name: "SkillPlanCompletionCheck", Path: "completion-check", Component: "/skill-planning/completion-check", Title: "menus.skillPlanning.completionCheck", Sort: 100, KeepAlive: true, Status: 1}},
 		{ParentName: "SkillPlanning", Menu: Menu{Type: MenuTypeMenu, Name: "SkillPlans", Path: "skill-plans", Component: "/skill-planning/skill-plans", Title: "menus.skillPlanning.skillPlans", Sort: 90, KeepAlive: true, Status: 1}},
 
+		// ── Welfare (军团福利) ──
+		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "WelfareRoot", Path: "/welfare", Component: "/index/index", Title: "menus.welfare.title", Icon: "ri:gift-line", Sort: 86, Status: 1}},
+		{ParentName: "WelfareRoot", Menu: Menu{Type: MenuTypeMenu, Name: "WelfareMy", Path: "my", Component: "/welfare/my", Title: "menus.welfare.my", Sort: 100, KeepAlive: true, Status: 1}},
+		{ParentName: "WelfareRoot", Menu: Menu{Type: MenuTypeMenu, Name: "WelfareApproval", Path: "approval", Component: "/welfare/approval", Title: "menus.welfare.approval", Sort: 90, KeepAlive: true, Status: 1}},
+		{ParentName: "WelfareRoot", Menu: Menu{Type: MenuTypeMenu, Name: "WelfareSettings", Path: "settings", Component: "/welfare/settings", Title: "menus.welfare.settings", Sort: 80, KeepAlive: true, Status: 1}},
+
 		// ── Shop ──
 		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "ShopRoot", Path: "/shop", Component: "/index/index", Title: "menus.shop.title", Icon: "ri:shopping-bag-line", Sort: 85, Status: 1}},
 		{ParentName: "ShopRoot", Menu: Menu{Type: MenuTypeMenu, Name: "Shop", Path: "browse", Component: "/shop/browse", Title: "menus.shop.browse", Sort: 100, KeepAlive: true, Status: 1}},
@@ -187,6 +193,7 @@ func DefaultRoleMenuMap() map[string][]string {
 			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
 			"Operation", "Fleets", "FleetDetail", "FleetConfigs", "CorporationPap", "MyPap", "Wallet", "JoinFleet",
 			"SkillPlanning", "SkillPlanCompletionCheck", "SkillPlans",
+			"WelfareRoot", "WelfareMy",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview",
 		},
@@ -195,14 +202,26 @@ func DefaultRoleMenuMap() map[string][]string {
 			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
 			"Operation", "FleetConfigs", "CorporationPap", "MyPap", "Wallet", "JoinFleet",
 			"SkillPlanning", "SkillPlanCompletionCheck",
+			"WelfareRoot", "WelfareMy",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply", "SrpManage", "SrpManageReview", "SrpPrices", "SrpPriceAdd", "SrpPriceDelete",
+		},
+		RoleWelfare: {
+			"Dashboard", "Console", "Characters",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
+			"Operation", "CorporationPap", "MyPap", "Wallet", "JoinFleet", "FleetConfigs",
+			"SkillPlanning", "SkillPlanCompletionCheck",
+			"WelfareRoot", "WelfareMy", "WelfareApproval",
+			"ShopRoot", "Shop",
+			"SRP", "SrpApply",
+			"UserCenter",
 		},
 		RoleUser: {
 			"Dashboard", "Console", "Characters",
 			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
 			"Operation", "CorporationPap", "MyPap", "Wallet", "JoinFleet", "FleetConfigs",
 			"SkillPlanning", "SkillPlanCompletionCheck",
+			"WelfareRoot", "WelfareMy",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply",
 			"UserCenter",
