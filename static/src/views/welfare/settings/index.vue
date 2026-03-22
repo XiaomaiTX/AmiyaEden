@@ -178,7 +178,7 @@
 
   // ─── 搜索过滤状态 ───
   const nameFilter = ref('')
-  const statusFilter = ref<number | undefined>(undefined)
+  const statusFilter = ref<number | undefined>(1)
 
   const {
     columns,
@@ -195,7 +195,7 @@
   } = useTable({
     core: {
       apiFn: adminListWelfares,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 20, status: 1 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {

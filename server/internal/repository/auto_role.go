@@ -134,9 +134,10 @@ func (r *AutoRoleRepository) ListCharacterTitles(characterID int64) ([]model.Eve
 
 // CorpTitleInfo 军团头衔去重信息（用于前端下拉选择）
 type CorpTitleInfo struct {
-	CorporationID int64  `json:"corporation_id"`
-	TitleID       int    `json:"title_id"`
-	TitleName     string `json:"title_name"`
+	CorporationID   int64  `json:"corporation_id"`
+	CorporationName string `json:"corporation_name"`
+	TitleID         int    `json:"title_id"`
+	TitleName       string `json:"title_name"`
 }
 
 var eveTagRe = regexp.MustCompile(`<[^>]+>`)
@@ -146,6 +147,7 @@ func stripEveTags(s string) string {
 }
 
 // ListDistinctCorpTitles 获取所有去重的(军团+头衔)组合，来源于 ESI 头衔快照
+// 返回结果包含从 ESI 查询的军团名称
 func (r *AutoRoleRepository) ListDistinctCorpTitles() ([]CorpTitleInfo, error) {
 	var results []CorpTitleInfo
 	err := global.DB.
@@ -162,5 +164,6 @@ func (r *AutoRoleRepository) ListDistinctCorpTitles() ([]CorpTitleInfo, error) {
 	for i := range results {
 		results[i].TitleName = stripEveTags(results[i].TitleName)
 	}
+
 	return results, nil
 }

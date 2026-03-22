@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/pkg/eve"
+	"amiya-eden/pkg/eve/esi"
 	"context"
 	"io"
 	"net/http"
@@ -23,6 +24,7 @@ func newTestEveSSOService(client *http.Client) *EveSSOService {
 		eveClient: &eve.Client{
 			HTTPClient: client,
 		},
+		esiClient: esi.NewTestClient(client),
 	}
 }
 
@@ -169,7 +171,7 @@ func TestFetchCharacterAffiliationRejectsOversizedResponse(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected oversized affiliation response error")
 	}
-	if !strings.Contains(err.Error(), "affiliation response exceeds") {
+	if !strings.Contains(err.Error(), "ESI response exceeds") {
 		t.Fatalf("expected oversize error, got %v", err)
 	}
 }
