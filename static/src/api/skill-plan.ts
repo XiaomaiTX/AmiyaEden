@@ -60,6 +60,21 @@ export function saveSkillPlanCheckSelection(data: Api.SkillPlan.CheckSelection) 
   })
 }
 
+/** 获取技能完成度检查计划选择 */
+export function fetchSkillPlanCheckPlanSelection() {
+  return request.get<Api.SkillPlan.CheckPlanSelection>({
+    url: '/api/v1/skill-planning/skill-plans/check/plan-selection'
+  })
+}
+
+/** 保存技能完成度检查计划选择 */
+export function saveSkillPlanCheckPlanSelection(data: Api.SkillPlan.CheckPlanSelection) {
+  return request.put<Api.SkillPlan.CheckPlanSelection>({
+    url: '/api/v1/skill-planning/skill-plans/check/plan-selection',
+    data
+  })
+}
+
 /** 执行技能完成度检查 */
 export function runSkillPlanCompletionCheck(data?: Api.SkillPlan.CompletionCheckParams) {
   return request.post<Api.SkillPlan.CompletionCheckResult>({

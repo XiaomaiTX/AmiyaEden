@@ -16,7 +16,7 @@ source_of_truth:
 
 - 管理员福利定义 CRUD（创建、编辑、删除、列表）
 - 两种发放模式：按自然人（per_user）、按人物（per_character）
-- 可选技能计划检查：关联军团技能计划，技能合格才允许发放
+- 可选技能计划检查：可关联多个军团技能计划，技能合格才允许发放
 - 发放记录表（welfare_distribution）追踪 character_id、user_id、QQ、discord_id
 - 按自然人发放时按 user_id 去重，按人物发放时按 character_id 去重
 - 福利存在发放记录时禁止删除
@@ -48,7 +48,7 @@ source_of_truth:
 
 - 不论按自然人还是按人物发放，都不允许重复发放
 - 福利系统是纯记录型，实际发放在外部完成（游戏内合同等），系统只追踪分发
-- 技能计划检查复用 skill_plan 模块，福利定义通过 skill_plan_id 关联
+- 技能计划检查复用 skill_plan 模块，福利定义通过 welfare_skill_plans 关联表支持多技能计划
 - 我的福利、福利审批页面当前为占位，待后续实现
 
 ## 主要代码文件

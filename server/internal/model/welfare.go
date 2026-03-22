@@ -27,10 +27,20 @@ type Welfare struct {
 	Description      string `gorm:"type:text"                   json:"description"`
 	DistMode         string `gorm:"size:20;not null;default:'per_user'" json:"dist_mode"`
 	RequireSkillPlan bool   `gorm:"default:false"               json:"require_skill_plan"`
-	SkillPlanID      *uint  `gorm:"index"                       json:"skill_plan_id"`
 	Status           int8   `gorm:"default:1"                   json:"status"`
 	CreatedBy        uint   `gorm:"not null"                    json:"created_by"`
+
+	// 虚拟字段，不存库，由业务层填充
+	SkillPlanIDs []uint `gorm:"-" json:"skill_plan_ids"`
 }
+
+// WelfareSkillPlan 福利-技能计划关联表
+type WelfareSkillPlan struct {
+	WelfareID   uint `gorm:"primaryKey" json:"welfare_id"`
+	SkillPlanID uint `gorm:"primaryKey" json:"skill_plan_id"`
+}
+
+func (WelfareSkillPlan) TableName() string { return "welfare_skill_plans" }
 
 func (Welfare) TableName() string { return "welfare" }
 

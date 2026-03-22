@@ -58,6 +58,7 @@ source_of_truth:
 - `admin`
 - `srp`
 - `fc`
+- `welfare`
 - `user`
 - `guest`
 

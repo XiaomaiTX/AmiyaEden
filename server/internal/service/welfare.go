@@ -29,13 +29,25 @@ func (s *WelfareService) AdminCreateWelfare(w *model.Welfare) error {
 	if w.DistMode != model.WelfareDistModePerUser && w.DistMode != model.WelfareDistModePerCharacter {
 		return errors.New("无效的发放模式")
 	}
-	if w.RequireSkillPlan && (w.SkillPlanID == nil || *w.SkillPlanID == 0) {
-		return errors.New("需要技能计划时必须选择技能计划")
+	if w.RequireSkillPlan && len(w.SkillPlanIDs) == 0 {
+		return errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
-	if !w.RequireSkillPlan {
-		w.SkillPlanID = nil
+
+	skillPlanIDs := w.SkillPlanIDs
+	if err := s.repo.CreateWelfare(w); err != nil {
+		return err
 	}
-	return s.repo.CreateWelfare(w)
+
+	if w.RequireSkillPlan && len(skillPlanIDs) > 0 {
+		if err := s.repo.ReplaceWelfareSkillPlans(w.ID, skillPlanIDs); err != nil {
+			return err
+		}
+	}
+	w.SkillPlanIDs = skillPlanIDs
+	if w.SkillPlanIDs == nil {
+		w.SkillPlanIDs = []uint{}
+	}
+	return nil
 }
 
 // AdminUpdateWelfareRequest 更新福利请求
@@ -44,7 +56,7 @@ type AdminUpdateWelfareRequest struct {
 	Description      string `json:"description"`
 	DistMode         string `json:"dist_mode"`
 	RequireSkillPlan bool   `json:"require_skill_plan"`
-	SkillPlanID      *uint  `json:"skill_plan_id"`
+	SkillPlanIDs     []uint `json:"skill_plan_ids"`
 	Status           int8   `json:"status"`
 }
 
@@ -61,24 +73,33 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	if req.DistMode != model.WelfareDistModePerUser && req.DistMode != model.WelfareDistModePerCharacter {
 		return nil, errors.New("无效的发放模式")
 	}
-	if req.RequireSkillPlan && (req.SkillPlanID == nil || *req.SkillPlanID == 0) {
-		return nil, errors.New("需要技能计划时必须选择技能计划")
+	if req.RequireSkillPlan && len(req.SkillPlanIDs) == 0 {
+		return nil, errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
 
 	w.Name = req.Name
 	w.Description = req.Description
 	w.DistMode = req.DistMode
 	w.RequireSkillPlan = req.RequireSkillPlan
-	if req.RequireSkillPlan {
-		w.SkillPlanID = req.SkillPlanID
-	} else {
-		w.SkillPlanID = nil
-	}
 	w.Status = req.Status
 
 	if err := s.repo.UpdateWelfare(w); err != nil {
 		return nil, err
 	}
+
+	// 更新关联的技能计划
+	var planIDs []uint
+	if req.RequireSkillPlan {
+		planIDs = req.SkillPlanIDs
+	}
+	if err := s.repo.ReplaceWelfareSkillPlans(w.ID, planIDs); err != nil {
+		return nil, err
+	}
+	w.SkillPlanIDs = planIDs
+	if w.SkillPlanIDs == nil {
+		w.SkillPlanIDs = []uint{}
+	}
+
 	return w, nil
 }
 
