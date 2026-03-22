@@ -98,8 +98,9 @@ func buildLoginScopes(extraScopes []string) []string {
 // ─────────────────────────────────────────────
 
 const (
-	stateCachePrefix = "eve:sso:state:"
-	stateCacheTTL    = 10 * time.Minute
+	stateCachePrefix            = "eve:sso:state:"
+	stateCacheTTL               = 10 * time.Minute
+	affiliationResponseMaxBytes = 1 << 20
 )
 
 // OnNewCharacterFunc 新角色首次出现时触发的钩子（由 jobs 层注入以避免循环依赖）
@@ -206,9 +207,12 @@ func (s *EveSSOService) fetchCharacterAffiliation(ctx context.Context, character
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, affiliationResponseMaxBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("read affiliation response: %w", err)
+	}
+	if len(respBody) > affiliationResponseMaxBytes {
+		return nil, fmt.Errorf("affiliation response exceeds %d bytes", affiliationResponseMaxBytes)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("affiliation error %d: %s", resp.StatusCode, string(respBody))
