@@ -107,3 +107,9 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_HUB_REPO }}-frontend:preview
+
+      - name: Trigger Dokploy Auto-Deploy
+        run: |
+          curl -X GET "${{ secrets.DOKPLOY_PREVIEW_AUTO_DEPLOY_WEBHOOK_URL }}" \
+            -H "accept: application/json" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_TOKEN }}"
