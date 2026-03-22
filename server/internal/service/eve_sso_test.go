@@ -74,10 +74,10 @@ func TestGetRegisteredScopesReturnsCopy(t *testing.T) {
 
 func TestBuildDefaultSSOUser(t *testing.T) {
 	now := time.Date(2026, time.March, 22, 10, 11, 12, 0, time.UTC)
-	user := buildDefaultSSOUser("https://example.com/avatar.png", 90000001, "127.0.0.1", now)
+	user := buildDefaultSSOUser("https://example.com/avatar.png", 90000001, "127.0.0.1", now, model.RoleUser)
 
-	if user.Role != model.RoleGuest {
-		t.Fatalf("expected role %q, got %q", model.RoleGuest, user.Role)
+	if user.Role != model.RoleUser {
+		t.Fatalf("expected role %q, got %q", model.RoleUser, user.Role)
 	}
 	if user.PrimaryCharacterID != 90000001 {
 		t.Fatalf("expected primary character 90000001, got %d", user.PrimaryCharacterID)
@@ -94,4 +94,36 @@ func TestBuildDefaultSSOUser(t *testing.T) {
 	if user.Status != 1 {
 		t.Fatalf("expected status 1, got %d", user.Status)
 	}
+}
+
+func TestBuildDefaultSSOUserFallsBackToGuestRole(t *testing.T) {
+	now := time.Date(2026, time.March, 22, 10, 11, 12, 0, time.UTC)
+	user := buildDefaultSSOUser("https://example.com/avatar.png", 90000001, "127.0.0.1", now, "")
+
+	if user.Role != model.RoleGuest {
+		t.Fatalf("expected fallback role %q, got %q", model.RoleGuest, user.Role)
+	}
+}
+
+func TestResolveInitialSSORole(t *testing.T) {
+	t.Run("allowed corporation becomes user", func(t *testing.T) {
+		role := resolveInitialSSORole(98185110, []int64{98185110, 12345})
+		if role != model.RoleUser {
+			t.Fatalf("expected role %q, got %q", model.RoleUser, role)
+		}
+	})
+
+	t.Run("non allowed corporation stays guest", func(t *testing.T) {
+		role := resolveInitialSSORole(55555, []int64{98185110, 12345})
+		if role != model.RoleGuest {
+			t.Fatalf("expected role %q, got %q", model.RoleGuest, role)
+		}
+	})
+
+	t.Run("empty allow list stays guest", func(t *testing.T) {
+		role := resolveInitialSSORole(98185110, nil)
+		if role != model.RoleGuest {
+			t.Fatalf("expected role %q, got %q", model.RoleGuest, role)
+		}
+	})
 }

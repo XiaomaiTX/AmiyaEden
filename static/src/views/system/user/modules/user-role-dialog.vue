@@ -70,6 +70,15 @@
   const allRoles = ref<Api.SystemManage.RoleItem[]>([])
   const selectedRoleIds = ref<number[]>([])
   const submitting = ref(false)
+  const guestRoleId = computed(() => allRoles.value.find((role) => role.code === 'guest')?.id)
+
+  watch(selectedRoleIds, (roleIds) => {
+    const guestId = guestRoleId.value
+    if (!guestId || roleIds.length <= 1 || !roleIds.includes(guestId)) return
+
+    const nonGuestRoleIds = roleIds.filter((roleId) => roleId !== guestId)
+    selectedRoleIds.value = nonGuestRoleIds.length > 0 ? nonGuestRoleIds : [guestId]
+  })
 
   const onOpen = async () => {
     try {

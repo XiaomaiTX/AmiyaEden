@@ -15,7 +15,6 @@ type AutoRoleService struct {
 	autoRoleRepo *repository.AutoRoleRepository
 	roleRepo     *repository.RoleRepository
 	charRepo     *repository.EveCharacterRepository
-	userRepo     *repository.UserRepository
 	roleSvc      *RoleService
 }
 
@@ -24,7 +23,6 @@ func NewAutoRoleService() *AutoRoleService {
 		autoRoleRepo: repository.NewAutoRoleRepository(),
 		roleRepo:     repository.NewRoleRepository(),
 		charRepo:     repository.NewEveCharacterRepository(),
-		userRepo:     repository.NewUserRepository(),
 		roleSvc:      NewRoleService(),
 	}
 }
@@ -131,7 +129,7 @@ func (s *AutoRoleService) DeleteEsiTitleMapping(id uint) error {
 
 // SyncUserAutoRoles 根据 ESI 军团角色 + 头衔，自动同步用户的系统权限
 // 规则：
-//   - 主角色在 allow_corporations 内时自动补 user 角色
+//   - 当用户当前仅为 guest（或尚无有效角色）且任一绑定角色在 allow_corporations 内时，自动补 user 角色
 //   - 任一允许军团角色拥有 ESI corp role `Director` 时自动补 admin 角色
 //   - 根据 esi_role_mapping 表的配置，将 ESI 角色映射到系统角色
 //   - 根据 esi_title_mapping 表的配置，将 ESI 头衔映射到系统角色
@@ -145,11 +143,6 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 	}
 	if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
 		return nil
-	}
-
-	user, err := s.userRepo.GetByID(userID)
-	if err != nil {
-		return err
 	}
 
 	// 获取用户绑定的所有角色
@@ -169,7 +162,8 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 	}
 
 	autoRoleIDs := make(map[uint]struct{})
-	if hasAllowedPrimaryCharacter(user.PrimaryCharacterID, chars, allowCorpSet) {
+	shouldPromoteGuestToUser := shouldAutoPromoteGuestToUser(currentCodes, chars, allowCorpSet)
+	if shouldPromoteGuestToUser {
 		userRole, err := s.roleRepo.GetByCode(model.RoleUser)
 		if err != nil {
 			global.Logger.Warn("[AutoRole] 查询 user 角色失败", zap.Error(err))
@@ -281,6 +275,15 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 					zap.Uint("user_id", userID),
 					zap.Uint("role_id", rid),
 					zap.Error(err))
+			}
+		}
+		if shouldPromoteGuestToUser {
+			if guestRole, err := s.roleRepo.GetByCode(model.RoleGuest); err == nil {
+				if err := s.roleRepo.RemoveUserRole(userID, guestRole.ID); err != nil {
+					global.Logger.Warn("[AutoRole] 移除 guest 角色失败",
+						zap.Uint("user_id", userID),
+						zap.Error(err))
+				}
 			}
 		}
 		s.roleSvc.InvalidateUserCache(ctx, userID)

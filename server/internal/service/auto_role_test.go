@@ -34,6 +34,56 @@ func TestHasAllowedPrimaryCharacter(t *testing.T) {
 	})
 }
 
+func TestHasAnyAllowedCharacter(t *testing.T) {
+	t.Run("any allowed character promotes a guest-only account", func(t *testing.T) {
+		allowCorpSet := map[int64]struct{}{
+			98000001: {},
+		}
+		chars := []model.EveCharacter{
+			{CharacterID: 1001, CorporationID: 98000099},
+			{CharacterID: 1002, CorporationID: 98000001},
+		}
+		if !hasAnyAllowedCharacter(chars, allowCorpSet) {
+			t.Fatal("expected any allowed character to grant auto-role baseline access")
+		}
+	})
+
+	t.Run("all characters outside allow list keep guest baseline", func(t *testing.T) {
+		allowCorpSet := map[int64]struct{}{
+			98000001: {},
+		}
+		chars := []model.EveCharacter{
+			{CharacterID: 1001, CorporationID: 98000099},
+			{CharacterID: 1002, CorporationID: 98000098},
+		}
+		if hasAnyAllowedCharacter(chars, allowCorpSet) {
+			t.Fatal("expected no baseline access when every character is outside allow list")
+		}
+	})
+}
+
+func TestShouldAutoPromoteGuestToUser(t *testing.T) {
+	allowCorpSet := map[int64]struct{}{
+		98000001: {},
+	}
+	chars := []model.EveCharacter{
+		{CharacterID: 1001, CorporationID: 98000099},
+		{CharacterID: 1002, CorporationID: 98000001},
+	}
+
+	t.Run("guest-only account is promoted when any character is allowed", func(t *testing.T) {
+		if !shouldAutoPromoteGuestToUser([]string{model.RoleGuest}, chars, allowCorpSet) {
+			t.Fatal("expected guest-only account to be promoted to user")
+		}
+	})
+
+	t.Run("real-role account is left untouched", func(t *testing.T) {
+		if shouldAutoPromoteGuestToUser([]string{model.RoleFC}, chars, allowCorpSet) {
+			t.Fatal("expected non-guest account to keep its existing real role baseline")
+		}
+	})
+}
+
 func TestHasDirectorCorpRole(t *testing.T) {
 	tests := []struct {
 		name      string

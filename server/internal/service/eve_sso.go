@@ -7,10 +7,15 @@ import (
 	"amiya-eden/pkg/cache"
 	"amiya-eden/pkg/eve"
 	"amiya-eden/pkg/jwt"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -149,27 +154,102 @@ func (s *EveSSOService) loadUserAndGenerateToken(userID uint) (string, *model.Us
 	return token, user, nil
 }
 
-func buildDefaultSSOUser(portraitURL string, primaryCharacterID int64, clientIP string, now time.Time) *model.User {
+type characterAffiliationSnapshot struct {
+	AllianceID    *int64 `json:"alliance_id,omitempty"`
+	CorporationID int64  `json:"corporation_id"`
+	FactionID     *int64 `json:"faction_id,omitempty"`
+}
+
+func resolveInitialSSORole(corporationID int64, allowCorporations []int64) string {
+	for _, allowedID := range allowCorporations {
+		if allowedID == corporationID {
+			return model.RoleUser
+		}
+	}
+	return model.RoleGuest
+}
+
+func buildDefaultSSOUser(portraitURL string, primaryCharacterID int64, clientIP string, now time.Time, role string) *model.User {
+	if role == "" {
+		role = model.RoleGuest
+	}
+
 	return &model.User{
 		Nickname:           "",
 		Avatar:             portraitURL,
 		Status:             1,
-		Role:               model.RoleGuest,
+		Role:               role,
 		PrimaryCharacterID: primaryCharacterID,
 		LastLoginAt:        &now,
 		LastLoginIP:        clientIP,
 	}
 }
 
-func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, portraitURL string, primaryCharacterID int64, clientIP string, now time.Time) (*model.User, error) {
-	user := buildDefaultSSOUser(portraitURL, primaryCharacterID, clientIP, now)
+func (s *EveSSOService) fetchCharacterAffiliation(ctx context.Context, characterID int64) (*characterAffiliationSnapshot, error) {
+	var results []characterAffiliationSnapshot
+
+	bodyBytes, err := json.Marshal([]int64{characterID})
+	if err != nil {
+		return nil, fmt.Errorf("marshal affiliation request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://esi.evetech.net/characters/affiliation/", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("build affiliation request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := s.eveClient.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request affiliation: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read affiliation response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("affiliation error %d: %s", resp.StatusCode, string(respBody))
+	}
+	if err := json.Unmarshal(respBody, &results); err != nil {
+		return nil, fmt.Errorf("decode affiliation response: %w", err)
+	}
+	if len(results) == 0 {
+		return nil, errors.New("角色归属信息为空")
+	}
+	return &results[0], nil
+}
+
+func (s *EveSSOService) resolveInitialSSOState(ctx context.Context, characterID int64) (string, *characterAffiliationSnapshot) {
+	affiliation, err := s.fetchCharacterAffiliation(ctx, characterID)
+	if err != nil {
+		global.Logger.Warn("首次登录查询角色归属失败，回退为 guest",
+			zap.Int64("character_id", characterID),
+			zap.Error(err))
+		return model.RoleGuest, nil
+	}
+	return resolveInitialSSORole(affiliation.CorporationID, global.Config.App.AllowCorporations), affiliation
+}
+
+func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, portraitURL string, primaryCharacterID int64, clientIP string, now time.Time, initialRole string) (*model.User, error) {
+	user := buildDefaultSSOUser(portraitURL, primaryCharacterID, clientIP, now, initialRole)
 	if err := s.userRepo.Create(user); err != nil {
 		return nil, err
 	}
 
-	// SSO 首次登录默认落为 guest；后续再由准入/人工授权提升为 user 或更高角色。
-	s.roleSvc.EnsureUserHasDefaultRole(ctx, user.ID)
+	s.roleSvc.EnsureUserHasRole(ctx, user.ID, user.Role)
 	return user, nil
+}
+
+func applyAffiliationToCharacter(char *model.EveCharacter, affiliation *characterAffiliationSnapshot) {
+	if char == nil || affiliation == nil {
+		return
+	}
+	char.CorporationID = affiliation.CorporationID
+	char.AllianceID = affiliation.AllianceID
+	char.FactionID = affiliation.FactionID
 }
 
 // GetAuthURL 生成 EVE SSO 授权 URL，并将 state 存入 Redis
@@ -255,6 +335,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	tokenExpiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 	scopesStr := strings.Join(claims.GetScopes(), " ")
 	portraitURL := eve.PortraitURL(characterID)
+	initialRole, affiliation := s.resolveInitialSSOState(ctx, characterID)
 
 	// 3. 查找或创建 EveCharacter
 	char, err := s.charRepo.GetByCharacterID(characterID)
@@ -314,7 +395,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 		}
 
 		// ── 登录流程：首次登录，创建新用户 + 新角色 ──
-		user, err := s.createDefaultSSOUser(ctx, portraitURL, characterID, clientIP, now)
+		user, err := s.createDefaultSSOUser(ctx, portraitURL, characterID, clientIP, now, initialRole)
 		if err != nil {
 			return nil, err
 		}
@@ -329,6 +410,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 			TokenExpiry:   tokenExpiry,
 			Scopes:        scopesStr,
 		}
+		applyAffiliationToCharacter(char, affiliation)
 		if err := s.charRepo.Create(char); err != nil {
 			return nil, err
 		}
@@ -442,6 +524,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	char.CharacterName = claims.Name
 	char.PortraitURL = portraitURL
 	char.TokenInvalid = false
+	applyAffiliationToCharacter(char, affiliation)
 	if err := s.charRepo.Update(char); err != nil {
 		return nil, err
 	}
@@ -454,7 +537,11 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 		}
 
 		oldUserID := char.UserID
-		user, err = s.createDefaultSSOUser(ctx, portraitURL, characterID, clientIP, now)
+		orphanInitialRole := initialRole
+		if affiliation == nil {
+			orphanInitialRole = resolveInitialSSORole(char.CorporationID, global.Config.App.AllowCorporations)
+		}
+		user, err = s.createDefaultSSOUser(ctx, portraitURL, characterID, clientIP, now, orphanInitialRole)
 		if err != nil {
 			return nil, err
 		}

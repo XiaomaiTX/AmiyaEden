@@ -30,6 +30,9 @@ source_of_truth:
 
 `guest` 角色当前仍是已认证用户，但不是 `RequireLoginUser` 意义上的产品用户。
 因此需要把 guest onboarding / self-service 能力单独挂在仅需 `JWTAuth()` 的路由上，而不是 `RequireLoginUser()`。
+当用户已拥有任一非 `guest` 角色时，不应再同时保留 `guest`；`guest` 只作为无更高产品角色时的 fallback / onboarding 状态。
+首次 SSO 登录时，如果主角色所属军团命中 `allow_corporations`，系统应直接落为 `user`；未命中时才落为 `guest`。
+自动权限同步时，如果账号当前仍是纯 `guest`（或尚无有效角色）且任一绑定角色命中 `allow_corporations`，也应补为至少 `user`；已拥有 `admin`、`fc` 等非 `guest` 角色的账号不应因这条基线规则被改写。
 
 文档上应把这两类边界区分开：
 

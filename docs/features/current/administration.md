@@ -65,7 +65,7 @@ source_of_truth:
 - `/api/v1/system/user/:id` 更新与删除都受后端保护：`admin` 不可编辑或删除 `super_admin` 或其他 `admin`
 - `/api/v1/system/user/:id/roles` 仅 `super_admin` 可编辑管理员账号或分配 `admin/super_admin`
 - 自动权限映射已经是当前功能，不是纯想法
-- 主角色在 `allow_corporations` 中时会自动补 `user`
+- 当账号当前仅为 `guest`（或尚无有效角色）且任一绑定角色在 `allow_corporations` 中时，自动权限同步会补 `user`
 - 任一 `allow_corporations` 角色拥有 ESI corp role `Director` 时会自动补 `admin`
 - 非 `allow_corporations` 军团角色的 ESI corp role 信号不会参与权限判定或相关刷新任务
 - 当 `allow_corporations` 为空时，当前默认回退到伏羲军团 Fuxi Legion（`98185110`）
