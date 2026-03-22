@@ -1053,6 +1053,7 @@ declare namespace Api {
       dist_mode: 'per_user' | 'per_character'
       require_skill_plan: boolean
       skill_plan_ids: number[]
+      max_char_age_months: number | null
       status: number
       created_by: number
       created_at: string
@@ -1066,6 +1067,7 @@ declare namespace Api {
       dist_mode: 'per_user' | 'per_character'
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
+      max_char_age_months?: number | null
       status?: number
     }
 
@@ -1077,6 +1079,7 @@ declare namespace Api {
       dist_mode: 'per_user' | 'per_character'
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
+      max_char_age_months?: number | null
       status?: number
     }
 
@@ -1087,6 +1090,67 @@ declare namespace Api {
       status: number
       name: string
     }>
+
+    /** 可申请角色 */
+    interface EligibleCharacter {
+      character_id: number
+      character_name: string
+    }
+
+    /** 可申请福利 */
+    interface EligibleWelfare {
+      id: number
+      name: string
+      description: string
+      dist_mode: 'per_user' | 'per_character'
+      eligible_characters: EligibleCharacter[]
+    }
+
+    /** 我的申请记录 */
+    interface MyApplication {
+      id: number
+      welfare_id: number
+      welfare_name: string
+      character_name: string
+      status: 'pending_delivery' | 'delivered' | 'rejected'
+      created_at: string
+      reviewed_at: string | null
+    }
+
+    /** 申请福利参数 */
+    interface ApplyParams {
+      welfare_id: number
+      character_id?: number
+    }
+
+    /** 管理端福利申请记录 */
+    interface AdminApplication {
+      id: number
+      welfare_id: number
+      welfare_name: string
+      welfare_description: string
+      user_id: number
+      applicant_nickname: string
+      character_name: string
+      status: 'pending_delivery' | 'delivered' | 'rejected'
+      reviewed_by: number
+      reviewer_name: string
+      created_at: string
+      reviewed_at: string | null
+    }
+
+    /** 管理端申请列表查询参数 */
+    type AdminApplicationSearchParams = Partial<{
+      current: number
+      size: number
+      status: string
+    }>
+
+    /** 审批请求参数 */
+    interface ReviewParams {
+      id: number
+      action: 'deliver' | 'reject'
+    }
   }
 
   /** 商店系统类型 */

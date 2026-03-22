@@ -144,6 +144,16 @@ source_of_truth:
 | POST | `/shop/orders` | 我的订单 | Login |
 | POST | `/shop/redeem/list` | 我的兑换码 | Login |
 
+## Welfare
+
+### User Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/welfare/eligible` | 可申请福利列表 | Login |
+| POST | `/welfare/apply` | 申请福利 | Login |
+| POST | `/welfare/my-applications` | 我的福利申请 | Login |
+
 ## Upload
 
 | Method | Path | 说明 | 权限 |
@@ -253,6 +263,8 @@ source_of_truth:
 | POST | `/system/welfare/add` | 创建福利 | `RequireRole(admin)` |
 | POST | `/system/welfare/edit` | 编辑福利 | `RequireRole(admin)` |
 | POST | `/system/welfare/delete` | 删除福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/applications` | 福利申请列表（审批端） | `RequireRole(admin)` |
+| POST | `/system/welfare/review` | 审批福利申请（发放/拒绝） | `RequireRole(admin)` |
 
 ### Shop Admin
 

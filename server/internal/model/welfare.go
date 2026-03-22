@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 // ─────────────────────────────────────────────
 //  军团福利系统
 // ─────────────────────────────────────────────
@@ -27,6 +29,7 @@ type Welfare struct {
 	Description      string `gorm:"type:text"                   json:"description"`
 	DistMode         string `gorm:"size:20;not null;default:'per_user'" json:"dist_mode"`
 	RequireSkillPlan bool   `gorm:"default:false"               json:"require_skill_plan"`
+	MaxCharAgeMonths *int    `gorm:""                            json:"max_char_age_months"`
 	Status           int8   `gorm:"default:1"                   json:"status"`
 	CreatedBy        uint   `gorm:"not null"                    json:"created_by"`
 
@@ -44,16 +47,26 @@ func (WelfareSkillPlan) TableName() string { return "welfare_skill_plans" }
 
 func (Welfare) TableName() string { return "welfare" }
 
-// WelfareDistribution 福利发放记录
-type WelfareDistribution struct {
+// ─── 申请状态 ───
+
+const (
+	WelfareAppStatusPendingDelivery = "pending_delivery"
+	WelfareAppStatusDelivered       = "delivered"
+	WelfareAppStatusRejected        = "rejected"
+)
+
+// WelfareApplication 福利申请记录
+type WelfareApplication struct {
 	BaseModel
-	WelfareID     uint   `gorm:"not null;index"            json:"welfare_id"`
-	UserID        uint   `gorm:"not null;index"            json:"user_id"`
-	CharacterID   int64  `gorm:"not null"                  json:"character_id"`
-	CharacterName string `gorm:"size:128"                  json:"character_name"`
-	QQ            string `gorm:"size:20"                   json:"qq"`
-	DiscordID     string `gorm:"size:20"                   json:"discord_id"`
-	DistributedBy uint   `gorm:"not null"                  json:"distributed_by"`
+	WelfareID     uint       `gorm:"not null;index"            json:"welfare_id"`
+	UserID        uint       `gorm:"not null;index"            json:"user_id"`
+	CharacterID   int64      `gorm:"not null"                  json:"character_id"`
+	CharacterName string     `gorm:"size:128"                  json:"character_name"`
+	QQ            string     `gorm:"size:20"                   json:"qq"`
+	DiscordID     string     `gorm:"size:20"                   json:"discord_id"`
+	Status        string     `gorm:"size:20;default:'pending_delivery';index" json:"status"`
+	ReviewedBy    uint       `gorm:"default:0"                 json:"reviewed_by"`
+	ReviewedAt    *time.Time `gorm:""                          json:"reviewed_at"`
 }
 
-func (WelfareDistribution) TableName() string { return "welfare_distribution" }
+func (WelfareApplication) TableName() string { return "welfare_application" }

@@ -230,7 +230,7 @@ After editing:
 
 - validate the exact layer you changed
 - if you changed contracts, validate both backend and frontend
-- if you fixed a bug or changed risky logic, add or update regression tests when practical
+- if you added a feature, updated behavior, or changed risky logic, add or update regression tests when practical
 - update docs when current behavior or route surfaces changed
 
 ## 9. Testing and Verification
@@ -238,7 +238,7 @@ After editing:
 ### 9.1 Testing Expectations
 
 - build / lint / typecheck are necessary, but they do not replace regression tests for risky logic changes
-- bug fixes should add a regression test when the changed behavior can be tested reasonably
+- new features and feature updates should add a regression test when the changed behavior can be tested reasonably
 - backend pure logic should prefer Go unit tests alongside the changed package
 - repository query-shaping helpers and response merge logic should be covered by Go tests when changed
 - frontend pure helpers and hooks should prefer `static` unit tests via `pnpm test:unit`
@@ -273,7 +273,7 @@ Minimum expectation:
 - frontend changes: `pnpm lint .` and `vue-tsc --noEmit`
 - frontend pure helper / hook changes with unit coverage: `pnpm test:unit`
 - cross-contract changes: validate both
-- bug fixes and risky logic changes: add or update regression tests when practical, then run them
+- new features, feature updates, and risky logic changes: add or update regression tests when practical, then run them
 
 ## 10. Documentation Rules
 

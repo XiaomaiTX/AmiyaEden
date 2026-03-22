@@ -61,10 +61,28 @@
           />
         </ElFormItem>
         <ElFormItem :label="t('welfareSettings.distMode')" prop="dist_mode">
-          <ElRadioGroup v-model="formData.dist_mode">
+          <ElRadioGroup v-model="formData.dist_mode" :disabled="hasMaxCharAge">
             <ElRadio value="per_user">{{ t('welfareSettings.distModePerUser') }}</ElRadio>
             <ElRadio value="per_character">{{ t('welfareSettings.distModePerCharacter') }}</ElRadio>
           </ElRadioGroup>
+          <div v-if="hasMaxCharAge" class="text-xs text-gray-400 mt-1">
+            {{ t('welfareSettings.distModeLockedHint') }}
+          </div>
+        </ElFormItem>
+        <ElFormItem :label="t('welfareSettings.maxCharAgeMonths')">
+          <ElInputNumber
+            v-model="formData.max_char_age_months"
+            :min="0"
+            :step="1"
+            :precision="0"
+            :placeholder="t('welfareSettings.maxCharAgePlaceholder')"
+            controls-position="right"
+            style="width: 200px"
+            @change="handleMaxCharAgeChange"
+          />
+          <div class="text-xs text-gray-400 mt-1">
+            {{ t('welfareSettings.maxCharAgeHint') }}
+          </div>
         </ElFormItem>
         <ElFormItem :label="t('welfareSettings.requireSkillPlan')">
           <ElSwitch v-model="formData.require_skill_plan" />
@@ -114,6 +132,7 @@
     ElTag,
     ElButton,
     ElInput,
+    ElInputNumber,
     ElSelect,
     ElOption,
     ElSwitch,
@@ -305,8 +324,19 @@
     dist_mode: 'per_user' as 'per_user' | 'per_character',
     require_skill_plan: false,
     skill_plan_ids: [] as number[],
+    max_char_age_months: undefined as number | undefined,
     status: 1 as number
   })
+
+  const hasMaxCharAge = computed(
+    () => formData.max_char_age_months != null && formData.max_char_age_months > 0
+  )
+
+  function handleMaxCharAgeChange(val: number | undefined) {
+    if (val != null && val > 0) {
+      formData.dist_mode = 'per_user'
+    }
+  }
 
   const formRules = computed<FormRules>(() => ({
     name: [{ required: true, message: t('welfareSettings.validName'), trigger: 'blur' }],
@@ -332,6 +362,7 @@
       dist_mode: 'per_user',
       require_skill_plan: false,
       skill_plan_ids: [],
+      max_char_age_months: undefined,
       status: 1
     })
     editingItem.value = null
@@ -351,6 +382,7 @@
       dist_mode: row.dist_mode,
       require_skill_plan: row.require_skill_plan,
       skill_plan_ids: row.skill_plan_ids ?? [],
+      max_char_age_months: row.max_char_age_months ?? undefined,
       status: row.status
     })
     loadSkillPlans()
@@ -364,7 +396,8 @@
     try {
       const payload = {
         ...formData,
-        skill_plan_ids: formData.require_skill_plan ? formData.skill_plan_ids : []
+        skill_plan_ids: formData.require_skill_plan ? formData.skill_plan_ids : [],
+        max_char_age_months: formData.max_char_age_months || null
       }
       if (editingItem.value) {
         await adminUpdateWelfare({ id: editingItem.value.id, ...payload })
