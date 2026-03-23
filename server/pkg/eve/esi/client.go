@@ -280,7 +280,7 @@ func (c *Client) Delete(ctx context.Context, path string, accessToken string) er
 	if err != nil {
 		return fmt.Errorf("ESI DELETE %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

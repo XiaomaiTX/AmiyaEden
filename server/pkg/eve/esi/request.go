@@ -246,7 +246,7 @@ func (c *Client) doRequest(ctx context.Context, url string, accessToken string) 
 		}
 
 		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if readErr != nil {
 			return nil, nil, fmt.Errorf("read ESI response: %w", readErr)
 		}

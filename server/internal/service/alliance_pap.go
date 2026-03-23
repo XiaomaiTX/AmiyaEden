@@ -102,7 +102,7 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 	if err != nil {
 		return fmt.Errorf("请求联盟 PAP API 失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
