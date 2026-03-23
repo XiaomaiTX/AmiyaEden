@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-03-22
+last_reviewed: 2026-03-23
 source_of_truth:
   - AGENTS.md
 ---
@@ -35,8 +35,8 @@ source_of_truth:
 
 | 路径 | 类型 | 作用 |
 | --- | --- | --- |
-| `docs/ai/` | agent guide | 给 AI / 自动化代理的阅读顺序、冲突处理、更新要求 |
-| `docs/standards/` | standard | 约束性标准，描述“必须 / 不得 / 推荐” |
+| `docs/ai/` | agent guide | 给 AI / 自动化代理的阅读顺序、冲突处理、Harness 原则、更新要求 |
+| `docs/standards/` | standard | 约束性标准，描述”必须 / 不得 / 推荐”（含依赖分层、预完成检查清单） |
 | `docs/architecture/` | architecture | 只描述当前已经存在的系统结构与运行方式 |
 | `docs/api/` | api | 接口约定、响应格式、路由索引 |
 | `docs/features/current/` | feature | 当前已落地功能的模块级说明 |
@@ -110,9 +110,12 @@ source_of_truth:
 4. `docs/architecture/module-map.md`
 5. 任务对应的标准文档
    如果涉及测试、验证、回归保障，优先补读 `docs/standards/testing-and-verification.md`
+   如果涉及层级依赖或架构合规，优先补读 `docs/standards/dependency-layering.md`
+   完成任务前，参照 `docs/standards/pre-completion-checklist.md` 进行验证
 6. 任务对应的 feature / API 文档
 7. 只有在明确做规划工作时才读取 `docs/specs/draft/`
 8. 如任务已明确落在某个子目录，再补读该目录下的局部 `README.md`，但只把它当作实现注释而不是规范裁决来源
+9. 遇到问题时参照 `docs/guides/debugging-guide.md` 系统化排查
 
 ## 维护原则
 
