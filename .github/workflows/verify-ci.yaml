@@ -17,10 +17,10 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Filter paths
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -37,19 +37,32 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: server/go.mod
           cache-dependency-path: server/go.sum
 
-      - name: Go test
-        working-directory: server
-        run: go test ./...
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          working-directory: server
 
-      - name: Go build
+      - name: Test
+        working-directory: server
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: go-coverage
+          path: server/coverage.out
+
+      - name: Build
         working-directory: server
         run: go build ./...
 
@@ -61,15 +74,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: 9
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: pnpm
@@ -94,3 +107,25 @@ jobs:
       - name: Build frontend
         working-directory: static
         run: pnpm build
+
+  ci-passed:
+    name: CI Passed
+    if: always()
+    needs: [changes, backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.changes.result }}" == "failure" ]]; then
+            echo "::error::Change detection failed"
+            exit 1
+          fi
+          if [[ "${{ needs.backend.result }}" == "failure" ]]; then
+            echo "::error::Backend verification failed"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend.result }}" == "failure" ]]; then
+            echo "::error::Frontend verification failed"
+            exit 1
+          fi
+          echo "All required checks passed (or were skipped due to path filtering)"
