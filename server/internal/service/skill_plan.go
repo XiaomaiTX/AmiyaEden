@@ -649,7 +649,6 @@ func (s *SkillPlanService) validateAndNormalizeOwnedCharacterIDs(userID uint, ch
 func (s *SkillPlanService) parseSkillPlanText(skillsText string, lang string) ([]SkillPlanSkillReq, error) {
 	lines := strings.Split(skillsText, "\n")
 	entries := make([]parsedSkillPlanLine, 0, len(lines))
-	names := make([]string, 0, len(lines))
 
 	for idx, rawLine := range lines {
 		line := strings.TrimSpace(rawLine)
@@ -677,7 +676,6 @@ func (s *SkillPlanService) parseSkillPlanText(skillsText string, lang string) ([
 			Level: level,
 			Line:  idx + 1,
 		})
-		names = append(names, name)
 	}
 
 	if len(entries) == 0 {

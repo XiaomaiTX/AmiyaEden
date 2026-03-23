@@ -145,9 +145,6 @@ func (s *AssetService) GetUserAssets(userID uint, req *InfoAssetsRequest) (*Info
 	// 5. 建立位置分组
 	//    根物品: location_type == station / solar_system / other
 	//    子物品: location_type == item (location_id 是父物品的 item_id)
-	type locationKey struct {
-		LocationID int64
-	}
 
 	// 先找所有根位置 ID（非 item 类型的 location）
 	rootLocationIDs := make(map[int64]string)                // locationID -> locationType

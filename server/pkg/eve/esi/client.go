@@ -84,7 +84,7 @@ func (c *Client) Get(ctx context.Context, path string, accessToken string, dest 
 	if err != nil {
 		return fmt.Errorf("ESI request %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -123,7 +123,7 @@ func (c *Client) GetRaw(ctx context.Context, path string, accessToken string) ([
 	if err != nil {
 		return nil, 0, fmt.Errorf("ESI request %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

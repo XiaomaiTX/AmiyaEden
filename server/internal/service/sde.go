@@ -53,11 +53,6 @@ func NewSdeService() *SdeService {
 }
 
 // 获取配置的辅助方法
-func (s *SdeService) getAPIKey() string {
-	key, _ := s.sysConfig.Get(model.SysConfigSDEAPIKey, global.Config.SDE.APIKey)
-	return key
-}
-
 func (s *SdeService) getProxy() string {
 	proxy, _ := s.sysConfig.Get(model.SysConfigSDEProxy, global.Config.SDE.Proxy)
 	return proxy
@@ -244,11 +239,6 @@ func (s *SdeService) doImport(release *githubRelease) error {
 
 // ---- 工具函数 ----
 
-// newHTTPClient 根据配置创建 http.Client，若设置了代理则使用代理
-func (s *SdeService) newHTTPClient(timeout time.Duration) *http.Client {
-	return s.newHTTPClientWithProxy(timeout, true)
-}
-
 func (s *SdeService) newHTTPClientWithProxy(timeout time.Duration, useProxy bool) *http.Client {
 	transport := &http.Transport{}
 	if useProxy {
@@ -373,7 +363,7 @@ func readMagicBytes(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	buf := make([]byte, 4)
 	n, _ := f.Read(buf)
 	return buf[:n], nil
@@ -401,16 +391,16 @@ func extractGzip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	gr, err := gzip.NewReader(f)
 	if err != nil {
 		return "", err
 	}
-	defer gr.Close()
+	defer func() { _ = gr.Close() }()
 
 	// gzip 头中存有原始文件名
-	outName := gr.Header.Name
+	outName := gr.Name
 	if outName == "" {
 		outName = strings.TrimSuffix(filepath.Base(srcPath), ".gz")
 	}
@@ -419,7 +409,7 @@ func extractGzip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	if _, err = io.Copy(out, gr); err != nil {
 		return "", err
@@ -435,7 +425,7 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	br := bzip2.NewReader(f)
 
@@ -445,7 +435,7 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	if _, err = io.Copy(out, br); err != nil {
 		return "", err
@@ -461,7 +451,7 @@ func extractZip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 
 	for _, f := range r.File {
 		name := strings.ToLower(f.Name)
@@ -476,12 +466,12 @@ func extractZip(srcPath, destDir string) (string, error) {
 
 		out, err := os.Create(outPath)
 		if err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return "", err
 		}
 		_, copyErr := io.Copy(out, rc)
-		out.Close()
-		rc.Close()
+		_ = out.Close()
+		_ = rc.Close()
 		if copyErr != nil {
 			return "", copyErr
 		}
@@ -518,7 +508,7 @@ func importSQL(sqlPath string) error {
 	if err != nil {
 		return fmt.Errorf("获取专用连接失败: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// 禁用触发器/外键约束检查，关闭同步提交以提速
 	for _, pragma := range []string{

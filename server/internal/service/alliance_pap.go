@@ -238,7 +238,7 @@ func (s *AlliancePAPService) FetchAllUsers(year, month int) {
 // ─── 修改接口 ───
 type PAPImportInfo struct {
 	PrimaryCharacterName string  `json:"primary_character_name" binding:"required"`
-	MonthlyPAP           float64 `json:"monthly_pap,default=0" binding:"gte=0"`
+	MonthlyPAP           float64 `json:"monthly_pap" binding:"gte=0"`
 	CalculatedAt         string  `json:"calculated_at" binding:"required"`
 }
 
@@ -249,11 +249,11 @@ func (s *AlliancePAPService) ImportAlliancePAP(year, month int, data *PAPImportI
 		existingSummary = nil
 	}
 
-	var totalPap float64 = data.MonthlyPAP
-	var yearlyTotalPap float64 = data.MonthlyPAP
-	var monthlyRank int = 1
-	var yearlyRank int = 1
-	var globalMonthlyRank int = 1
+	totalPap := data.MonthlyPAP
+	yearlyTotalPap := data.MonthlyPAP
+	monthlyRank := 1
+	yearlyRank := 1
+	globalMonthlyRank := 1
 	var globalYearlyRank int = 1
 	var totalInCorp int = 0
 	var totalGlobal int = 0
