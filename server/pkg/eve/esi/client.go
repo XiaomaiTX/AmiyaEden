@@ -164,7 +164,7 @@ func (c *Client) postJSON(ctx context.Context, path string, accessToken string, 
 	if err != nil {
 		return fmt.Errorf("ESI POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	reader := io.Reader(resp.Body)
 	if maxBytes > 0 {
@@ -214,7 +214,7 @@ func (c *Client) PutJSON(ctx context.Context, path string, accessToken string, r
 	if err != nil {
 		return fmt.Errorf("ESI PUT %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -250,7 +250,7 @@ func (c *Client) PostNoContent(ctx context.Context, path string, accessToken str
 	if err != nil {
 		return fmt.Errorf("ESI POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

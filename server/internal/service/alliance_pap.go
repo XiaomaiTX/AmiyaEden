@@ -254,9 +254,9 @@ func (s *AlliancePAPService) ImportAlliancePAP(year, month int, data *PAPImportI
 	monthlyRank := 1
 	yearlyRank := 1
 	globalMonthlyRank := 1
-	var globalYearlyRank int = 1
-	var totalInCorp int = 0
-	var totalGlobal int = 0
+	globalYearlyRank := 1
+	totalInCorp := 0
+	totalGlobal := 0
 	calculatedAt, err := time.ParseInLocation(alliancePAPTimeLayout, data.CalculatedAt, time.UTC)
 
 	if err != nil {
