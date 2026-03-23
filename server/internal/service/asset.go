@@ -291,11 +291,13 @@ func (s *AssetService) resolveStationName(stationID int64) string {
 		Where(`"stationID" = ?`, stationID).
 		Scan(&name).Error; err == nil && name != "" {
 		// 缓存到 eve_stations 表
-		s.assetRepo.UpsertStation(&model.EveStation{
+		if err := s.assetRepo.UpsertStation(&model.EveStation{
 			StationID:   stationID,
 			StationName: name,
 			UpdateAt:    time.Now().Unix(),
-		})
+		}); err != nil {
+			global.Logger.Warn("[Asset] 缓存空间站失败", zap.Int64("station_id", stationID), zap.Error(err))
+		}
 		return name
 	}
 
@@ -350,7 +352,7 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 		return fmt.Sprintf("Station-%d", stationID)
 	}
 
-	s.assetRepo.UpsertStation(&model.EveStation{
+	if err := s.assetRepo.UpsertStation(&model.EveStation{
 		StationID:     stationID,
 		StationName:   detail.Name,
 		OwnerID:       detail.Owner,
@@ -360,7 +362,9 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 		Y:             detail.Position.Y,
 		Z:             detail.Position.Z,
 		UpdateAt:      time.Now().Unix(),
-	})
+	}); err != nil {
+		global.Logger.Warn("[Asset] 缓存空间站失败", zap.Int64("station_id", stationID), zap.Error(err))
+	}
 
 	return detail.Name
 }

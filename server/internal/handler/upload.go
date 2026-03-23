@@ -46,7 +46,7 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "获取文件失败: "+err.Error())
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if !allowedExts[ext] {

@@ -214,7 +214,11 @@ func (s *SdeService) doImport(release *githubRelease) error {
 	if err := s.downloadFile(asset.BrowserDownloadURL, dlPath); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
-	defer os.Remove(dlPath)
+	defer func() {
+		if err := os.Remove(dlPath); err != nil {
+			global.Logger.Warn("[SDE] 清理下载文件失败", zap.String("path", dlPath), zap.Error(err))
+		}
+	}()
 
 	// 解压得到 .sql 文件路径
 	sqlPath, err := extractSQL(dlPath, sdeDownloadDir)
@@ -222,7 +226,11 @@ func (s *SdeService) doImport(release *githubRelease) error {
 		return fmt.Errorf("解压失败: %w", err)
 	}
 	if sqlPath != dlPath {
-		defer os.Remove(sqlPath)
+		defer func() {
+			if err := os.Remove(sqlPath); err != nil {
+				global.Logger.Warn("[SDE] 清理 SQL 文件失败", zap.String("path", sqlPath), zap.Error(err))
+			}
+		}()
 	}
 
 	// 导入到 PostgreSQL
@@ -330,10 +338,12 @@ func (s *SdeService) downloadFile(url, destPath string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	_, err = io.Copy(f, resp.Body)
-	return err
+	if _, err = io.Copy(f, resp.Body); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // extractSQL 通过魔数检测文件类型并递归解压，最终返回 .sql 文件路径
