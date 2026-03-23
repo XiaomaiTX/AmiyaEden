@@ -131,15 +131,13 @@ export function useChart(options: UseChartOptions = {}) {
     }, RESIZE_DEBOUNCE_DELAY)
   }
 
-  // 多延迟resize处理 - 统一方法
+  // 延迟resize处理 - 立即响应一次，再在动画结束后最终调整
   const multiDelayResize = (delays: readonly number[]) => {
-    // 立即调用一次，快速响应
     nextTick(requestAnimationResize)
 
-    // 使用延迟时间，确保图表正确适应变化
-    delays.forEach((delay) => {
-      setTimeout(requestAnimationResize, delay)
-    })
+    // 只使用最长的延迟做一次最终调整，避免多次布局抖动
+    const maxDelay = delays[delays.length - 1]
+    setTimeout(requestAnimationResize, maxDelay)
   }
 
   // 收缩菜单时，重新计算图表大小（仅在图表存在时监听）

@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-  import * as XLSX from 'xlsx'
+  import ExcelJS from 'exceljs'
   import FileSaver from 'file-saver'
   import { ref, computed, nextTick } from 'vue'
   import { Loading } from '@element-plus/icons-vue'
@@ -209,31 +209,17 @@
     return processedData
   }
 
-  /** 计算列宽度 */
-  const calculateColumnWidths = (data: Record<string, string>[]): XLSX.ColInfo[] => {
-    if (data.length === 0) return []
+  /** 计算列宽度（字符数） */
+  const calculateColumnWidth = (header: string, data: Record<string, string>[]): number => {
+    const configWidth = Object.values(props.columns).find((col) => col.title === header)?.width
+    if (configWidth) return configWidth
 
-    const sampleSize = Math.min(data.length, 100) // 只取前100行计算列宽
-    const columns = Object.keys(data[0])
-
-    return columns.map((column) => {
-      // 使用配置的列宽度
-      const configWidth = Object.values(props.columns).find((col) => col.title === column)?.width
-
-      if (configWidth) {
-        return { wch: configWidth }
-      }
-
-      // 自动计算列宽度
-      const maxLength = Math.max(
-        column.length, // 标题长度
-        ...data.slice(0, sampleSize).map((row) => String(row[column] || '').length)
-      )
-
-      // 限制最小和最大宽度
-      const width = Math.min(Math.max(maxLength + 2, 8), 50)
-      return { wch: width }
-    })
+    const sampleSize = Math.min(data.length, 100)
+    const maxLength = Math.max(
+      header.length,
+      ...data.slice(0, sampleSize).map((row) => String(row[header] || '').length)
+    )
+    return Math.min(Math.max(maxLength + 2, 8), 50)
   }
 
   /** 导出到 Excel */
@@ -245,70 +231,48 @@
     try {
       emit('export-progress', 10)
 
-      // 处理数据
       const processedData = processData(data)
       emit('export-progress', 30)
 
-      // 创建工作簿
-      const workbook = XLSX.utils.book_new()
+      const workbook = new ExcelJS.Workbook()
 
-      // 设置工作簿属性
       if (props.workbookOptions) {
-        workbook.Props = {
-          Title: filename,
-          Subject: '数据导出',
-          Author: props.workbookOptions.creator || 'Art Design Pro',
-          Manager: props.workbookOptions.lastModifiedBy || '',
-          Company: '系统导出',
-          Category: '数据',
-          Keywords: 'excel,export,data',
-          Comments: '由系统自动生成',
-          CreatedDate: props.workbookOptions.created || new Date(),
-          ModifiedDate: props.workbookOptions.modified || new Date()
-        }
+        workbook.creator = props.workbookOptions.creator || 'Art Design Pro'
+        workbook.lastModifiedBy = props.workbookOptions.lastModifiedBy || ''
+        workbook.created = props.workbookOptions.created || new Date()
+        workbook.modified = props.workbookOptions.modified || new Date()
       }
 
       emit('export-progress', 50)
 
-      // 创建工作表
-      const worksheet = XLSX.utils.json_to_sheet(processedData)
+      const worksheet = workbook.addWorksheet(sheetName)
 
-      // 设置列宽度
-      worksheet['!cols'] = calculateColumnWidths(processedData)
-
-      emit('export-progress', 70)
-
-      // 添加工作表到工作簿
-      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
+      if (processedData.length > 0) {
+        const headers = Object.keys(processedData[0])
+        worksheet.columns = headers.map((header) => ({
+          header,
+          key: header,
+          width: calculateColumnWidth(header, processedData)
+        }))
+        worksheet.addRows(processedData)
+      }
 
       emit('export-progress', 85)
 
-      // 生成 Excel 文件
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: 'xlsx',
-        type: 'array',
-        compression: true
-      })
-
-      // 创建 Blob 并下载
+      const excelBuffer = await workbook.xlsx.writeBuffer()
       const blob = new Blob([excelBuffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       })
 
       emit('export-progress', 95)
 
-      // 使用时间戳确保文件名唯一
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const finalFilename = `${filename}_${timestamp}.xlsx`
 
       FileSaver.saveAs(blob, finalFilename)
 
       emit('export-progress', 100)
-
-      // 等待下载开始
       await nextTick()
-
-      return Promise.resolve()
     } catch (error) {
       throw new ExportError(`Excel 导出失败: ${(error as Error).message}`, 'EXPORT_FAILED', error)
     }
