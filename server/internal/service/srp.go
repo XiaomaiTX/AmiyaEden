@@ -508,15 +508,37 @@ func (s *SrpService) sendPayoutMailBatch(ctx context.Context, payerID uint, apps
 	}
 
 	grouped := make(map[int64][]*model.SrpApplication)
+
+	// 在批量路径中缓存每个用户的主角色，避免同一 user 多次查库
+	userPrimaryCharCache := make(map[uint]int64)
+	userPrimaryCharErr := make(map[uint]error)
+
 	for _, app := range apps {
 		if s.repo.HasPayoutMailSuccess(app.ID) {
 			continue
 		}
-		recipientCharacterID, err := s.resolveUserPrimaryCharacterID(app.UserID)
-		if err != nil {
-			s.logPayoutMailFailed(app.ID, senderCharacterID, 0, err)
-			failures[app.ID] = err.Error()
-			continue
+
+		// 先从缓存中查找该用户的主角色 ID
+		recipientCharacterID, ok := userPrimaryCharCache[app.UserID]
+		if !ok {
+			// 如果之前解析该用户时出过错，直接复用错误信息
+			if err, existed := userPrimaryCharErr[app.UserID]; existed {
+				s.logPayoutMailFailed(app.ID, senderCharacterID, 0, err)
+				failures[app.ID] = err.Error()
+				continue
+			}
+
+			resolvedID, err := s.resolveUserPrimaryCharacterID(app.UserID)
+			if err != nil {
+				// 记录该用户解析失败，后续同一用户的申请复用该错误
+				userPrimaryCharErr[app.UserID] = err
+				s.logPayoutMailFailed(app.ID, senderCharacterID, 0, err)
+				failures[app.ID] = err.Error()
+				continue
+			}
+
+			recipientCharacterID = resolvedID
+			userPrimaryCharCache[app.UserID] = resolvedID
 		}
 		grouped[recipientCharacterID] = append(grouped[recipientCharacterID], app)
 	}
