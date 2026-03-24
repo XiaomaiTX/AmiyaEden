@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -42,7 +43,7 @@ func (h *RoleHandler) ListAllRoles(c *gin.Context) {
 
 func (h *RoleHandler) GetRole(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的角色ID")
 		return
 	}
@@ -83,7 +84,7 @@ type updateRoleReq struct {
 
 func (h *RoleHandler) UpdateRole(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的角色ID")
 		return
 	}
@@ -103,7 +104,7 @@ func (h *RoleHandler) UpdateRole(c *gin.Context) {
 
 func (h *RoleHandler) DeleteRole(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的角色ID")
 		return
 	}
@@ -118,7 +119,7 @@ func (h *RoleHandler) DeleteRole(c *gin.Context) {
 
 func (h *RoleHandler) GetRoleMenus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的角色ID")
 		return
 	}
@@ -139,7 +140,7 @@ type setRoleMenusRequest struct {
 
 func (h *RoleHandler) SetRoleMenus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的角色ID")
 		return
 	}
@@ -159,7 +160,7 @@ func (h *RoleHandler) SetRoleMenus(c *gin.Context) {
 
 func (h *RoleHandler) GetUserRoles(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户ID")
 		return
 	}
@@ -180,7 +181,7 @@ type setUserRolesRequest struct {
 
 func (h *RoleHandler) SetUserRoles(c *gin.Context) {
 	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || userID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户ID")
 		return
 	}

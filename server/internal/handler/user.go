@@ -7,6 +7,7 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -48,7 +49,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 
 func (h *UserHandler) GetUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户ID")
 		return
 	}
@@ -69,7 +70,7 @@ type updateUserRequest struct {
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户ID")
 		return
 	}
@@ -93,7 +94,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户ID")
 		return
 	}
@@ -108,7 +109,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 // ImpersonateUser 以指定用户身份签发 JWT（仅超级管理员可用）
 func (h *UserHandler) ImpersonateUser(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户ID")
 		return
 	}

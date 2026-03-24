@@ -6,6 +6,7 @@ import (
 	"amiya-eden/pkg/response"
 	"errors"
 	"io"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -62,7 +63,7 @@ func (h *SkillPlanHandler) ListSkillPlans(c *gin.Context) {
 // GetSkillPlan 获取技能计划详情
 func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的技能计划 ID")
 		return
 	}
@@ -79,7 +80,7 @@ func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
 // UpdateSkillPlan 更新技能计划
 func (h *SkillPlanHandler) UpdateSkillPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的技能计划 ID")
 		return
 	}
@@ -108,7 +109,7 @@ func (h *SkillPlanHandler) UpdateSkillPlan(c *gin.Context) {
 // DeleteSkillPlan 删除技能计划
 func (h *SkillPlanHandler) DeleteSkillPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的技能计划 ID")
 		return
 	}

@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,7 @@ func (h *SrpHandler) UpsertShipPrice(c *gin.Context) {
 func (h *SrpHandler) DeleteShipPrice(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
+	if err != nil || id == 0 || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的 ID")
 		return
 	}
@@ -193,7 +194,7 @@ func (h *SrpHandler) RunFleetAutoApproval(c *gin.Context) {
 func (h *SrpHandler) GetApplication(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
+	if err != nil || id == 0 || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的 ID")
 		return
 	}
@@ -209,7 +210,7 @@ func (h *SrpHandler) GetApplication(c *gin.Context) {
 func (h *SrpHandler) ReviewApplication(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
+	if err != nil || id == 0 || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的 ID")
 		return
 	}
@@ -231,7 +232,7 @@ func (h *SrpHandler) ReviewApplication(c *gin.Context) {
 func (h *SrpHandler) Payout(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
+	if err != nil || id == 0 || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的 ID")
 		return
 	}
@@ -253,7 +254,7 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 func (h *SrpHandler) BatchPayoutByUser(c *gin.Context) {
 	userIDStr := c.Param("user_id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
-	if err != nil || userID == 0 {
+	if err != nil || userID == 0 || userID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的用户 ID")
 		return
 	}

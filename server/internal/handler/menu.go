@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -106,7 +107,7 @@ type updateMenuReq struct {
 
 func (h *MenuHandler) UpdateMenu(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的菜单ID")
 		return
 	}
@@ -154,7 +155,7 @@ func (h *MenuHandler) UpdateMenu(c *gin.Context) {
 
 func (h *MenuHandler) DeleteMenu(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的菜单ID")
 		return
 	}
