@@ -32,7 +32,7 @@ services:
     volumes:
       - ./.docker-data/redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "amiya_eden_dev", "ping"]
+      test: ["CMD", "redis-cli", "-a", "your_redis_password", "ping"]
       interval: 5s
       timeout: 5s
       retries: 20
