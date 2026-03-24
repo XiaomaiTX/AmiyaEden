@@ -682,12 +682,35 @@ func (s *SrpService) sendPayoutMail(ctx context.Context, payerID uint, app *mode
 		MailID:               &mailID,
 		Status:               model.SrpPayoutMailSuccess,
 	}
-	if err := s.repo.CreatePayoutMailLog(mailLog); err != nil {
-		global.Logger.Warn("记录 SRP 发放邮件成功日志失败",
+
+	const maxPayoutMailLogRetries = 3
+	var lastErr error
+	for attempt := 1; attempt <= maxPayoutMailLogRetries; attempt++ {
+		if err := s.repo.CreatePayoutMailLog(mailLog); err != nil {
+			lastErr = err
+			global.Logger.Warn("记录 SRP 发放邮件成功日志失败",
+				zap.Uint("application_id", app.ID),
+				zap.Int64("mail_id", mailID),
+				zap.Int("attempt", attempt),
+				zap.Error(err),
+			)
+			if attempt < maxPayoutMailLogRetries {
+				time.Sleep(100 * time.Millisecond)
+			}
+			continue
+		}
+		lastErr = nil
+		break
+	}
+
+	if lastErr != nil {
+		wrappedErr := fmt.Errorf("记录 SRP 发放邮件成功日志失败(重试 %d 次仍失败)", maxPayoutMailLogRetries)
+		global.Logger.Error("SRP 发放邮件成功但日志落库最终失败",
 			zap.Uint("application_id", app.ID),
 			zap.Int64("mail_id", mailID),
-			zap.Error(err),
+			zap.Error(lastErr),
 		)
+		return wrappedErr
 	}
 
 	return nil
