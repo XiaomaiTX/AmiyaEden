@@ -378,7 +378,10 @@ func (s *SrpService) Payout(payerID uint, appID uint, req *SrpPayoutRequest) (*m
 	}
 
 	// 发放成功后发送 EVE 邮件（失败不回滚发放）
-	if err := s.sendPayoutMail(context.Background(), payerID, app); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := s.sendPayoutMail(ctx, payerID, app); err != nil {
 		global.Logger.Warn("SRP 发放邮件发送失败",
 			zap.Uint("application_id", app.ID),
 			zap.Uint("payer_user_id", payerID),
