@@ -242,6 +242,12 @@ func (h *SrpHandler) PayoutBatch(c *gin.Context) {
 func (h *SrpHandler) ListPayoutMailLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 20
+	}
 
 	filter := repository.SrpPayoutMailLogFilter{Status: c.Query("status")}
 	if appIDStr := c.Query("application_id"); appIDStr != "" {
