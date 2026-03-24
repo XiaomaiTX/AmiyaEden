@@ -553,12 +553,13 @@ func (s *SrpService) sendPayoutMailBatch(ctx context.Context, payerID uint, apps
 				Status:               model.SrpPayoutMailSuccess,
 			}
 			if err := s.repo.CreatePayoutMailLog(mailLog); err != nil {
+				// 邮件已发送成功，但成功日志写入失败，这里仅记录告警，不将其视为可重试的邮件发送失败，
+				// 以避免后续重试时重复发送同一封邮件。
 				global.Logger.Warn("记录 SRP 发放邮件成功日志失败",
 					zap.Uint("application_id", app.ID),
 					zap.Int64("mail_id", mailID),
 					zap.Error(err),
 				)
-				failures[app.ID] = "邮件发送成功但日志写入失败"
 			}
 		}
 	}
