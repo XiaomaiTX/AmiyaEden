@@ -75,7 +75,7 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKER_HUB_USERNAME }}
+          username: ${{ vars.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -94,7 +94,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.DOCKER_HUB_REPO }}-backend:preview
+            ${{ vars.DOCKER_HUB_REPO }}-backend:preview
 
       - name: Build and push Frontend image
         if: needs.changes.outputs.frontend == 'true'
@@ -106,10 +106,10 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.DOCKER_HUB_REPO }}-frontend:preview
+            ${{ vars.DOCKER_HUB_REPO }}-frontend:preview
 
       - name: Trigger Self-hosted Auto-Deploy
         run: |
-          curl -X GET "${{ env.PREVIEW_DEPLOY_CI_WEBHOOK_URL }}" \
+          curl -X GET "${{ vars.PREVIEW_DEPLOY_CI_WEBHOOK_URL }}" \
             -H "accept: application/json" \
             -H "x-api-key: ${{ secrets.PREVIEW_DEPLOY_CI_API_TOKEN }}"
