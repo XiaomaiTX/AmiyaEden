@@ -75,7 +75,7 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Set up Docker Buildx
@@ -94,8 +94,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_REPO }}-backend:latest
-            ${{ secrets.DOCKER_HUB_REPO }}:${{ env.SHORT_SHA }}
+            ${{ env.DOCKER_HUB_REPO }}-backend:latest
+            ${{ env.DOCKER_HUB_REPO }}-backend:${{ env.SHORT_SHA }}
 
       - name: Build and push Frontend image
         if: needs.changes.outputs.frontend == 'true'
@@ -107,5 +107,5 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_REPO }}-frontend:latest
-            ${{ secrets.DOCKER_HUB_REPO }}-frontend:${{ env.SHORT_SHA }}
+            ${{ env.DOCKER_HUB_REPO }}-frontend:latest
+            ${{ env.DOCKER_HUB_REPO }}-frontend:${{ env.SHORT_SHA }}
