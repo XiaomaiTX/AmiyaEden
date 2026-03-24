@@ -4,13 +4,18 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // SrpService 补损业务逻辑层
@@ -18,6 +23,7 @@ type SrpService struct {
 	repo      *repository.SrpRepository
 	fleetRepo *repository.FleetRepository
 	charRepo  *repository.EveCharacterRepository
+	userRepo  *repository.UserRepository
 	sdeRepo   *repository.SdeRepository
 	ssoSvc    *EveSSOService
 }
@@ -27,10 +33,13 @@ func NewSrpService() *SrpService {
 		repo:      repository.NewSrpRepository(),
 		fleetRepo: repository.NewFleetRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
+		userRepo:  repository.NewUserRepository(),
 		sdeRepo:   repository.NewSdeRepository(),
 		ssoSvc:    NewEveSSOService(),
 	}
 }
+
+const esiMailSendScope = "esi-mail.send_mail.v1"
 
 // ─────────────────────────────────────────────
 //  KM 解析辅助
@@ -333,8 +342,54 @@ type SrpPayoutRequest struct {
 	FinalAmount float64 `json:"final_amount"` // 允许最终覆盖金额（0=保持原值）
 }
 
+// SrpPayoutBatchRequest 批量发放请求
+type SrpPayoutBatchRequest struct {
+	ApplicationIDs []uint             `json:"application_ids" binding:"required,min=1"`
+	FinalAmountMap map[string]float64 `json:"final_amount_map"`
+}
+
+// SrpPayoutBatchFailure 单条发放失败
+type SrpPayoutBatchFailure struct {
+	ApplicationID uint   `json:"application_id"`
+	Reason        string `json:"reason"`
+}
+
+// SrpPayoutMailFailure 单条邮件失败
+type SrpPayoutMailFailure struct {
+	ApplicationID uint   `json:"application_id"`
+	Reason        string `json:"reason"`
+}
+
+// SrpPayoutBatchResult 批量发放结果
+type SrpPayoutBatchResult struct {
+	PayoutSuccessCount int                     `json:"payout_success_count"`
+	PayoutFailedCount  int                     `json:"payout_failed_count"`
+	PayoutFailures     []SrpPayoutBatchFailure `json:"payout_failures"`
+	MailSuccessCount   int                     `json:"mail_success_count"`
+	MailFailedCount    int                     `json:"mail_failed_count"`
+	MailFailures       []SrpPayoutMailFailure  `json:"mail_failures"`
+}
+
 // Payout 发放补损（srp/admin 可操作）
 func (s *SrpService) Payout(payerID uint, appID uint, req *SrpPayoutRequest) (*model.SrpApplication, error) {
+	app, err := s.payoutCore(payerID, appID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// 发放成功后发送 EVE 邮件（失败不回滚发放）
+	if err := s.sendPayoutMail(context.Background(), payerID, app); err != nil {
+		global.Logger.Warn("SRP 发放邮件发送失败",
+			zap.Uint("application_id", app.ID),
+			zap.Uint("payer_user_id", payerID),
+			zap.Error(err),
+		)
+	}
+
+	return app, nil
+}
+
+func (s *SrpService) payoutCore(payerID uint, appID uint, req *SrpPayoutRequest) (*model.SrpApplication, error) {
 	app, err := s.repo.GetApplicationByID(appID)
 	if err != nil {
 		return nil, errors.New("申请不存在")
@@ -357,6 +412,456 @@ func (s *SrpService) Payout(payerID uint, appID uint, req *SrpPayoutRequest) (*m
 		return nil, err
 	}
 	return app, nil
+}
+
+// PayoutBatch 批量发放补损（srp/admin 可操作）
+func (s *SrpService) PayoutBatch(payerID uint, req *SrpPayoutBatchRequest) (*SrpPayoutBatchResult, error) {
+	result := &SrpPayoutBatchResult{
+		PayoutFailures: make([]SrpPayoutBatchFailure, 0),
+		MailFailures:   make([]SrpPayoutMailFailure, 0),
+	}
+
+	successApps := make([]*model.SrpApplication, 0)
+
+	for _, appID := range req.ApplicationIDs {
+		payoutReq := &SrpPayoutRequest{}
+		if override, ok := req.FinalAmountMap[fmt.Sprintf("%d", appID)]; ok {
+			payoutReq.FinalAmount = override
+		}
+
+		app, err := s.payoutCore(payerID, appID, payoutReq)
+		if err != nil {
+			result.PayoutFailedCount++
+			result.PayoutFailures = append(result.PayoutFailures, SrpPayoutBatchFailure{
+				ApplicationID: appID,
+				Reason:        err.Error(),
+			})
+			continue
+		}
+
+		result.PayoutSuccessCount++
+		successApps = append(successApps, app)
+	}
+
+	mailFailureMap := s.sendPayoutMailBatch(context.Background(), payerID, successApps)
+	for _, app := range successApps {
+		reason, failed := mailFailureMap[app.ID]
+		if !failed {
+			result.MailSuccessCount++
+			continue
+		}
+		result.MailFailedCount++
+		result.MailFailures = append(result.MailFailures, SrpPayoutMailFailure{
+			ApplicationID: app.ID,
+			Reason:        reason,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *SrpService) sendPayoutMailBatch(ctx context.Context, payerID uint, apps []*model.SrpApplication) map[uint]string {
+	failures := make(map[uint]string)
+	if len(apps) == 0 {
+		return failures
+	}
+
+	senderCharacterID, err := s.resolveUserPrimaryCharacterID(payerID)
+	if err != nil {
+		for _, app := range apps {
+			s.logPayoutMailFailed(app.ID, 0, 0, err)
+			failures[app.ID] = err.Error()
+		}
+		return failures
+	}
+
+	senderChar, err := s.charRepo.GetByCharacterID(senderCharacterID)
+	if err != nil {
+		reason := fmt.Sprintf("发信角色不存在: %v", err)
+		for _, app := range apps {
+			s.logPayoutMailFailed(app.ID, senderCharacterID, 0, errors.New(reason))
+			failures[app.ID] = reason
+		}
+		return failures
+	}
+
+	if !hasScope(senderChar.Scopes, esiMailSendScope) {
+		reason := fmt.Sprintf("发信角色未授权 scope: %s", esiMailSendScope)
+		for _, app := range apps {
+			s.logPayoutMailFailed(app.ID, senderCharacterID, 0, errors.New(reason))
+			failures[app.ID] = reason
+		}
+		return failures
+	}
+
+	token, err := s.ssoSvc.GetValidToken(ctx, senderCharacterID)
+	if err != nil {
+		reason := fmt.Sprintf("获取发信 token 失败: %v", err)
+		for _, app := range apps {
+			s.logPayoutMailFailed(app.ID, senderCharacterID, 0, errors.New(reason))
+			failures[app.ID] = reason
+		}
+		return failures
+	}
+
+	grouped := make(map[int64][]*model.SrpApplication)
+	for _, app := range apps {
+		if s.repo.HasPayoutMailSuccess(app.ID) {
+			continue
+		}
+		recipientCharacterID, err := s.resolveUserPrimaryCharacterID(app.UserID)
+		if err != nil {
+			s.logPayoutMailFailed(app.ID, senderCharacterID, 0, err)
+			failures[app.ID] = err.Error()
+			continue
+		}
+		grouped[recipientCharacterID] = append(grouped[recipientCharacterID], app)
+	}
+
+	for recipientCharacterID, groupApps := range grouped {
+		fleetTitles := make(map[uint]string, len(groupApps))
+		for _, app := range groupApps {
+			fleetTitles[app.ID] = s.resolveFleetTitle(app)
+		}
+
+		subject, body := buildBatchPayoutMailContent(groupApps, fleetTitles)
+		mailID, statusCode, err := sendEveMail(ctx, senderCharacterID, token, eveMailSendRequest{
+			Subject: subject,
+			Body:    body,
+			Recipients: []eveMailRecipient{
+				{RecipientID: recipientCharacterID, RecipientType: "character"},
+			},
+		})
+		if err != nil {
+			wrappedErr := fmt.Errorf("ESI 邮件发送失败(status=%d): %w", statusCode, err)
+			for _, app := range groupApps {
+				s.logPayoutMailFailed(app.ID, senderCharacterID, recipientCharacterID, wrappedErr)
+				failures[app.ID] = wrappedErr.Error()
+			}
+			continue
+		}
+
+		for _, app := range groupApps {
+			mailLog := &model.SrpPayoutMailLog{
+				ApplicationID:        app.ID,
+				RecipientCharacterID: recipientCharacterID,
+				SenderCharacterID:    senderCharacterID,
+				MailID:               &mailID,
+				Status:               model.SrpPayoutMailSuccess,
+			}
+			if err := s.repo.CreatePayoutMailLog(mailLog); err != nil {
+				global.Logger.Warn("记录 SRP 发放邮件成功日志失败",
+					zap.Uint("application_id", app.ID),
+					zap.Int64("mail_id", mailID),
+					zap.Error(err),
+				)
+				failures[app.ID] = "邮件发送成功但日志写入失败"
+			}
+		}
+	}
+
+	return failures
+}
+
+// ListPayoutMailLogs 查询发放邮件日志
+func (s *SrpService) ListPayoutMailLogs(page, pageSize int, filter repository.SrpPayoutMailLogFilter) ([]model.SrpPayoutMailLog, int64, error) {
+	return s.repo.ListPayoutMailLogs(page, pageSize, filter)
+}
+
+// RetryPayoutMail 重试发放邮件（仅失败记录）
+func (s *SrpService) RetryPayoutMail(appID uint) error {
+	app, err := s.repo.GetApplicationByID(appID)
+	if err != nil {
+		return errors.New("申请不存在")
+	}
+	if app.PayoutStatus != model.SrpPayoutPaid {
+		return errors.New("申请未发放，无法重试邮件")
+	}
+	if app.PaidBy == nil || *app.PaidBy == 0 {
+		return errors.New("申请缺少原发放人信息，无法重试邮件")
+	}
+	if s.repo.HasPayoutMailSuccess(appID) {
+		return errors.New("该申请已存在成功邮件记录，无需重试")
+	}
+
+	return s.sendPayoutMail(context.Background(), *app.PaidBy, app)
+}
+
+type eveMailRecipient struct {
+	RecipientID   int64  `json:"recipient_id"`
+	RecipientType string `json:"recipient_type"`
+}
+
+type eveMailSendRequest struct {
+	Subject    string             `json:"subject"`
+	Body       string             `json:"body"`
+	Recipients []eveMailRecipient `json:"recipients"`
+}
+
+func (s *SrpService) sendPayoutMail(ctx context.Context, payerID uint, app *model.SrpApplication) error {
+	if s.repo.HasPayoutMailSuccess(app.ID) {
+		return nil
+	}
+
+	senderCharacterID, err := s.resolveUserPrimaryCharacterID(payerID)
+	if err != nil {
+		s.logPayoutMailFailed(app.ID, 0, 0, err)
+		return err
+	}
+
+	recipientCharacterID, err := s.resolveUserPrimaryCharacterID(app.UserID)
+	if err != nil {
+		s.logPayoutMailFailed(app.ID, senderCharacterID, 0, err)
+		return err
+	}
+
+	senderChar, err := s.charRepo.GetByCharacterID(senderCharacterID)
+	if err != nil {
+		s.logPayoutMailFailed(app.ID, senderCharacterID, recipientCharacterID, fmt.Errorf("发信角色不存在: %w", err))
+		return err
+	}
+
+	if !hasScope(senderChar.Scopes, esiMailSendScope) {
+		err = fmt.Errorf("发信角色未授权 scope: %s", esiMailSendScope)
+		s.logPayoutMailFailed(app.ID, senderCharacterID, recipientCharacterID, err)
+		return err
+	}
+
+	token, err := s.ssoSvc.GetValidToken(ctx, senderCharacterID)
+	if err != nil {
+		s.logPayoutMailFailed(app.ID, senderCharacterID, recipientCharacterID, fmt.Errorf("获取发信 token 失败: %w", err))
+		return err
+	}
+
+	subject := fmt.Sprintf("[SRP 发放通知 / SRP Payout Notice] %s - %s", app.CharacterName, formatISKCompact(app.FinalAmount))
+	body := buildSinglePayoutMailBody(app, s.resolveFleetTitle(app))
+
+	mailID, statusCode, err := sendEveMail(ctx, senderCharacterID, token, eveMailSendRequest{
+		Subject: subject,
+		Body:    body,
+		Recipients: []eveMailRecipient{
+			{RecipientID: recipientCharacterID, RecipientType: "character"},
+		},
+	})
+	if err != nil {
+		wrappedErr := fmt.Errorf("ESI 邮件发送失败(status=%d): %w", statusCode, err)
+		s.logPayoutMailFailed(app.ID, senderCharacterID, recipientCharacterID, wrappedErr)
+		return wrappedErr
+	}
+
+	mailLog := &model.SrpPayoutMailLog{
+		ApplicationID:        app.ID,
+		RecipientCharacterID: recipientCharacterID,
+		SenderCharacterID:    senderCharacterID,
+		MailID:               &mailID,
+		Status:               model.SrpPayoutMailSuccess,
+	}
+	if err := s.repo.CreatePayoutMailLog(mailLog); err != nil {
+		global.Logger.Warn("记录 SRP 发放邮件成功日志失败",
+			zap.Uint("application_id", app.ID),
+			zap.Int64("mail_id", mailID),
+			zap.Error(err),
+		)
+	}
+
+	return nil
+}
+
+func (s *SrpService) resolveUserPrimaryCharacterID(userID uint) (int64, error) {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return 0, fmt.Errorf("用户不存在(user_id=%d): %w", userID, err)
+	}
+	if user.PrimaryCharacterID == 0 {
+		return 0, fmt.Errorf("用户主角色未设置(user_id=%d)", userID)
+	}
+	return user.PrimaryCharacterID, nil
+}
+
+func (s *SrpService) resolveFleetTitle(app *model.SrpApplication) string {
+	if app == nil || app.FleetID == nil || *app.FleetID == "" {
+		return ""
+	}
+	fleet, err := s.fleetRepo.GetByID(*app.FleetID)
+	if err != nil || fleet == nil {
+		return ""
+	}
+	return fleet.Title
+}
+
+func (s *SrpService) logPayoutMailFailed(applicationID uint, senderCharacterID, recipientCharacterID int64, err error) {
+	mailLog := &model.SrpPayoutMailLog{
+		ApplicationID:        applicationID,
+		RecipientCharacterID: recipientCharacterID,
+		SenderCharacterID:    senderCharacterID,
+		Status:               model.SrpPayoutMailFailed,
+		ErrorMessage:         err.Error(),
+	}
+	if createErr := s.repo.CreatePayoutMailLog(mailLog); createErr != nil {
+		global.Logger.Warn("记录 SRP 发放邮件失败日志失败",
+			zap.Uint("application_id", applicationID),
+			zap.Error(createErr),
+		)
+	}
+}
+
+func formatISKCompact(amount float64) string {
+	abs := math.Abs(amount)
+	sign := ""
+	if amount < 0 {
+		sign = "-"
+	}
+
+	switch {
+	case abs >= 1_000_000_000:
+		return fmt.Sprintf("%s%.2fB ISK", sign, abs/1_000_000_000)
+	case abs >= 1_000_000:
+		return fmt.Sprintf("%s%.2fM ISK", sign, abs/1_000_000)
+	case abs >= 1_000:
+		return fmt.Sprintf("%s%.2fK ISK", sign, abs/1_000)
+	default:
+		return fmt.Sprintf("%s%.2f ISK", sign, abs)
+	}
+}
+
+func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string) string {
+	shipDisplay := app.ShipName
+	if shipDisplay == "" {
+		shipDisplay = fmt.Sprintf("Type %d", app.ShipTypeID)
+	}
+	amountDisplay := formatISKCompact(app.FinalAmount)
+	zkillURL := fmt.Sprintf("https://zkillboard.com/kill/%d/", app.KillmailID)
+
+	var bodyBuilder strings.Builder
+	bodyBuilder.WriteString(fmt.Sprintf("%s 你好，\n\n", app.CharacterName))
+	bodyBuilder.WriteString("你的 SRP 补损已发放完成，详情如下：\n")
+	if fleetTitle != "" {
+		bodyBuilder.WriteString(fmt.Sprintf("关联舰队：%s\n", fleetTitle))
+	}
+	bodyBuilder.WriteString(fmt.Sprintf("损失时间：%s\n", app.KillmailTime.Format("2006-01-02 15:04:05")))
+	bodyBuilder.WriteString(fmt.Sprintf("损失舰船：%s\n", shipDisplay))
+	bodyBuilder.WriteString(fmt.Sprintf("发放金额：%s\n", amountDisplay))
+	bodyBuilder.WriteString(fmt.Sprintf("zKillboard：<url=%s>查看击毁报告</url>\n\n", zkillURL))
+
+	bodyBuilder.WriteString("Hello ")
+	bodyBuilder.WriteString(app.CharacterName)
+	bodyBuilder.WriteString(",\n\n")
+	bodyBuilder.WriteString("Your SRP payout has been completed. Details are as follows:\n")
+	if fleetTitle != "" {
+		bodyBuilder.WriteString(fmt.Sprintf("Linked Fleet: %s\n", fleetTitle))
+	}
+	bodyBuilder.WriteString(fmt.Sprintf("Loss Time: %s\n", app.KillmailTime.Format("2006-01-02 15:04:05")))
+	bodyBuilder.WriteString(fmt.Sprintf("Ship Lost: %s\n", shipDisplay))
+	bodyBuilder.WriteString(fmt.Sprintf("Payout Amount: %s\n", amountDisplay))
+	bodyBuilder.WriteString(fmt.Sprintf("zKillboard: <url=%s>View Killmail</url>\n\n", zkillURL))
+
+	bodyBuilder.WriteString("────────────────────────\n")
+	bodyBuilder.WriteString("该打的仗一场不少，该补的损一分不差。\n")
+	bodyBuilder.WriteString("No battle is missed, no reimbursement is short.\n\n")
+	bodyBuilder.WriteString("此邮件由 FUXI 后勤署（军团管理系统）自动发放，请勿回复。\n")
+	bodyBuilder.WriteString("This mail is automatically issued by FUXI Logistics Office (Corporation Management System). Please do not reply.")
+
+	return bodyBuilder.String()
+}
+
+// buildBatchPayoutMailContent 为批量发放生成聚合邮件主题和内容
+// apps: 同一个收件人（recipient_character_id）的所有申请
+func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[uint]string) (string, string) {
+	if len(apps) == 0 {
+		return "", ""
+	}
+
+	totalISK := 0.0
+	for _, app := range apps {
+		totalISK += app.FinalAmount
+	}
+
+	recipientName := apps[0].CharacterName
+	subject := fmt.Sprintf("[SRP 发放通知 / SRP Payout Notice] %s - %s", recipientName, formatISKCompact(totalISK))
+
+	var bodyBuilder strings.Builder
+	bodyBuilder.WriteString(fmt.Sprintf("%s 你好，\n\n以下 %d 条 SRP 补损申请已完成批量发放，合计 %s，详情如下：\n\n", recipientName, len(apps), formatISKCompact(totalISK)))
+	bodyBuilder.WriteString(fmt.Sprintf("Hello %s,\n\n", recipientName))
+	bodyBuilder.WriteString(fmt.Sprintf("Your %d SRP payouts have been completed. Total: %s. Details are as follows:\n\n", len(apps), formatISKCompact(totalISK)))
+
+	for i, app := range apps {
+		shipDisplay := app.ShipName
+		if shipDisplay == "" {
+			shipDisplay = fmt.Sprintf("Type %d", app.ShipTypeID)
+		}
+		zkillURL := fmt.Sprintf("https://zkillboard.com/kill/%d/", app.KillmailID)
+		fleetTitle := ""
+		if fleetTitles != nil {
+			fleetTitle = fleetTitles[app.ID]
+		}
+		bodyBuilder.WriteString(fmt.Sprintf("────────────────────────\n"))
+		bodyBuilder.WriteString(fmt.Sprintf("第 %d 条\n", i+1))
+		if fleetTitle != "" {
+			bodyBuilder.WriteString(fmt.Sprintf("  关联舰队：%s\n", fleetTitle))
+		}
+		bodyBuilder.WriteString(fmt.Sprintf("  zKillboard：<url=%s>查看击毁报告</url>\n", zkillURL))
+		bodyBuilder.WriteString(fmt.Sprintf("  损失时间：%s\n", app.KillmailTime.Format("2006-01-02 15:04:05")))
+		bodyBuilder.WriteString(fmt.Sprintf("  损失舰船：%s\n", shipDisplay))
+		bodyBuilder.WriteString(fmt.Sprintf("  发放金额：%s\n", formatISKCompact(app.FinalAmount)))
+
+		bodyBuilder.WriteString(fmt.Sprintf("  Item %d\n", i+1))
+		if fleetTitle != "" {
+			bodyBuilder.WriteString(fmt.Sprintf("  Linked Fleet: %s\n", fleetTitle))
+		}
+		bodyBuilder.WriteString(fmt.Sprintf("  zKillboard: <url=%s>View Killmail</url>\n", zkillURL))
+		bodyBuilder.WriteString(fmt.Sprintf("  Loss Time: %s\n", app.KillmailTime.Format("2006-01-02 15:04:05")))
+		bodyBuilder.WriteString(fmt.Sprintf("  Ship Lost: %s\n", shipDisplay))
+		bodyBuilder.WriteString(fmt.Sprintf("  Payout Amount: %s\n", formatISKCompact(app.FinalAmount)))
+	}
+
+	bodyBuilder.WriteString("────────────────────────\n\n")
+	bodyBuilder.WriteString("该打的仗一场不少，该补的损一分不差。\n")
+	bodyBuilder.WriteString("No battle is missed, no reimbursement is short.\n\n")
+	bodyBuilder.WriteString("此邮件由 FUXI 后勤署（军团管理系统）自动发放，请勿回复。\n")
+	bodyBuilder.WriteString("This mail is automatically issued by FUXI Logistics Office (Corporation Management System). Please do not reply.")
+	return subject, bodyBuilder.String()
+}
+
+func hasScope(scopes, target string) bool {
+	for _, s := range strings.Fields(scopes) {
+		if s == target {
+			return true
+		}
+	}
+	return false
+}
+
+func sendEveMail(ctx context.Context, senderCharacterID int64, accessToken string, req eveMailSendRequest) (int64, int, error) {
+	bodyBytes, err := json.Marshal(req)
+	if err != nil {
+		return 0, 0, fmt.Errorf("序列化邮件请求失败: %w", err)
+	}
+
+	url := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/mail/", senderCharacterID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return 0, 0, fmt.Errorf("构建请求失败: %w", err)
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+accessToken)
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return 0, resp.StatusCode, fmt.Errorf("%s", strings.TrimSpace(string(respBody)))
+	}
+
+	var mailID int64
+	if err := json.NewDecoder(resp.Body).Decode(&mailID); err != nil {
+		return 0, resp.StatusCode, fmt.Errorf("解析 ESI 响应失败: %w", err)
+	}
+
+	return mailID, resp.StatusCode, nil
 }
 
 // ─────────────────────────────────────────────

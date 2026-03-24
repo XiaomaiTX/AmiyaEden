@@ -33,4 +33,5 @@ func InitScopes() {
 
 	// ── SRP 补损模块额外 scope ──
 	service.RegisterScope("srp", "esi-ui.open_window.v1", "打开游戏内信息窗口（角色/军团/联盟）", true)
+	service.RegisterScope("srp", "esi-mail.send_mail.v1", "发送游戏内邮件", true)
 }

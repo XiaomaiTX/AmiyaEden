@@ -151,6 +151,9 @@ source_of_truth:
 | GET | `/srp/applications/:id` | 审核详情 | `RequirePermission(srp:review)` |
 | PUT | `/srp/applications/:id/review` | 审核申请 | `RequirePermission(srp:review)` |
 | PUT | `/srp/applications/:id/payout` | 发放补损 | `RequirePermission(srp:review)` |
+| PUT | `/srp/applications/payout-batch` | 批量发放补损 | `RequirePermission(srp:review)` |
+| GET | `/srp/payout-mail-logs` | 发放邮件日志列表 | `RequirePermission(srp:review)` |
+| POST | `/srp/applications/:id/payout-mail/retry` | 重试发放邮件 | `RequirePermission(srp:review)` |
 
 ## ESI Refresh
 

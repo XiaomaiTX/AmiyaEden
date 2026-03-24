@@ -111,6 +111,7 @@ func autoMigrate(db *gorm.DB) {
 		// SRP 补损相关表
 		&model.SrpShipPrice{},
 		&model.SrpApplication{},
+		&model.SrpPayoutMailLog{},
 		// 舰队配置相关表
 		&model.FleetConfig{},
 		&model.FleetConfigFitting{},

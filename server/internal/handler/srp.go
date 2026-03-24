@@ -222,6 +222,58 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 	response.OK(c, app)
 }
 
+// PayoutBatch PUT /srp/applications/payout-batch
+func (h *SrpHandler) PayoutBatch(c *gin.Context) {
+	var req service.SrpPayoutBatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	payerID := middleware.GetUserID(c)
+	result, err := h.svc.PayoutBatch(payerID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// ListPayoutMailLogs GET /srp/payout-mail-logs
+func (h *SrpHandler) ListPayoutMailLogs(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+
+	filter := repository.SrpPayoutMailLogFilter{Status: c.Query("status")}
+	if appIDStr := c.Query("application_id"); appIDStr != "" {
+		if appID, err := strconv.ParseUint(appIDStr, 10, 64); err == nil && appID > 0 {
+			id := uint(appID)
+			filter.ApplicationID = &id
+		}
+	}
+
+	list, total, err := h.svc.ListPayoutMailLogs(page, size, filter)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OKWithPage(c, list, total, page, size)
+}
+
+// RetryPayoutMail POST /srp/applications/:id/payout-mail/retry
+func (h *SrpHandler) RetryPayoutMail(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil || id == 0 {
+		response.Fail(c, response.CodeParamError, "无效的 ID")
+		return
+	}
+	if err := h.svc.RetryPayoutMail(uint(id)); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
 // OpenInfoWindow POST /srp/open-info-window
 // 通过 ESI 在客户端打开角色信息窗口
 func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
