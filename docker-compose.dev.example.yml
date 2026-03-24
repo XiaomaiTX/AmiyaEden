@@ -55,7 +55,7 @@ services:
     ports:
       - "65433:65432"
     volumes:
-      - ./server/config/config.docker-dev.yaml  # copy from config.docker-dev.example.yaml:/app/config/config.yaml:ro
+      - ./server/config/config.docker-dev.yaml:/app/config/config.yaml:ro  # copy from config.docker-dev.example.yaml
       - ./server/logs:/app/logs
       - ./server/uploads:/app/uploads
     networks:
