@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 	"strings"
 
@@ -51,7 +52,7 @@ func (h *FleetHandler) ListFleets(c *gin.Context) {
 		Importance: c.Query("importance"),
 	}
 	if fcStr := c.Query("fc_user_id"); fcStr != "" {
-		if id, err := strconv.ParseUint(fcStr, 10, 64); err == nil {
+		if id, err := strconv.ParseUint(fcStr, 10, 64); err == nil && id <= math.MaxUint32 {
 			fcID := uint(id)
 			filter.FCUserID = &fcID
 		}
@@ -347,7 +348,7 @@ func (h *FleetHandler) GetInvites(c *gin.Context) {
 // DeactivateInvite 禁用邀请链接
 func (h *FleetHandler) DeactivateInvite(c *gin.Context) {
 	inviteID, err := strconv.ParseUint(c.Param("invite_id"), 10, 64)
-	if err != nil {
+	if err != nil || inviteID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的邀请ID")
 		return
 	}

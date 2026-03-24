@@ -3,6 +3,7 @@ package handler
 import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -57,7 +58,7 @@ func (h *AutoRoleHandler) CreateEsiRoleMapping(c *gin.Context) {
 // DeleteEsiRoleMapping 删除 ESI 角色映射
 func (h *AutoRoleHandler) DeleteEsiRoleMapping(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的映射ID")
 		return
 	}
@@ -115,7 +116,7 @@ func (h *AutoRoleHandler) CreateEsiTitleMapping(c *gin.Context) {
 // DeleteEsiTitleMapping 删除 ESI 头衔映射
 func (h *AutoRoleHandler) DeleteEsiTitleMapping(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的映射ID")
 		return
 	}
