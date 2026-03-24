@@ -83,6 +83,12 @@ type SrpApplicationFilter struct {
 	PayoutStatus string
 }
 
+// SrpPayoutMailLogFilter 发放邮件日志筛选条件
+type SrpPayoutMailLogFilter struct {
+	ApplicationID *uint
+	Status        string
+}
+
 // ListApplications 分页查询申请列表
 func (r *SrpRepository) ListApplications(page, pageSize int, filter SrpApplicationFilter) ([]model.SrpApplication, int64, error) {
 	var list []model.SrpApplication
@@ -117,4 +123,50 @@ func (r *SrpRepository) ListApplications(page, pageSize int, filter SrpApplicati
 func (r *SrpRepository) ListMyApplications(userID uint, page, pageSize int) ([]model.SrpApplication, int64, error) {
 	uid := &userID
 	return r.ListApplications(page, pageSize, SrpApplicationFilter{UserID: uid})
+}
+
+// HasPayoutMailSuccess 检查该申请是否已有成功邮件记录（幂等）
+func (r *SrpRepository) HasPayoutMailSuccess(applicationID uint) bool {
+	var count int64
+	err := global.DB.Model(&model.SrpPayoutMailLog{}).
+		Where("application_id = ? AND status = ?", applicationID, model.SrpPayoutMailSuccess).
+		Count(&count).Error
+	if err != nil {
+		// 保守处理：查询出错时认为已存在成功记录，避免重复发送邮件
+		return true
+	}
+	return count > 0
+}
+
+// CreatePayoutMailLog 创建发放邮件发送日志
+func (r *SrpRepository) CreatePayoutMailLog(log *model.SrpPayoutMailLog) error {
+	return global.DB.Create(log).Error
+}
+
+// ListPayoutMailLogs 分页查询发放邮件日志
+func (r *SrpRepository) ListPayoutMailLogs(page, pageSize int, filter SrpPayoutMailLogFilter) ([]model.SrpPayoutMailLog, int64, error) {
+	var list []model.SrpPayoutMailLog
+	var total int64
+
+	db := global.DB.Model(&model.SrpPayoutMailLog{})
+	if filter.ApplicationID != nil {
+		db = db.Where("application_id = ?", *filter.ApplicationID)
+	}
+	if filter.Status != "" {
+		db = db.Where("status = ?", filter.Status)
+	}
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * pageSize
+	err := db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&list).Error
+	return list, total, err
+}
+
+// GetLatestPayoutMailLogByApplicationID 查询申请最新一条发放邮件日志
+func (r *SrpRepository) GetLatestPayoutMailLogByApplicationID(applicationID uint) (*model.SrpPayoutMailLog, error) {
+	var log model.SrpPayoutMailLog
+	err := global.DB.Where("application_id = ?", applicationID).Order("id DESC").First(&log).Error
+	return &log, err
 }

@@ -66,3 +66,23 @@ type SrpApplication struct {
 }
 
 func (SrpApplication) TableName() string { return "srp_application" }
+
+// SRP 发放邮件发送状态
+const (
+	SrpPayoutMailSuccess = "success"
+	SrpPayoutMailFailed  = "failed"
+)
+
+// SrpPayoutMailLog SRP 发放后的 EVE 邮件发送日志
+type SrpPayoutMailLog struct {
+	ID                   uint      `gorm:"primarykey"                           json:"id"`
+	ApplicationID        uint      `gorm:"not null;index"                       json:"application_id"`
+	RecipientCharacterID int64     `gorm:"not null;index"                       json:"recipient_character_id"`
+	SenderCharacterID    int64     `gorm:"not null;index"                       json:"sender_character_id"`
+	MailID               *int64    `gorm:""                                     json:"mail_id,omitempty"`
+	Status               string    `gorm:"size:32;not null;index"               json:"status"`
+	ErrorMessage         string    `gorm:"size:1024"                            json:"error_message,omitempty"`
+	CreatedAt            time.Time `gorm:"autoCreateTime"                       json:"created_at"`
+}
+
+func (SrpPayoutMailLog) TableName() string { return "srp_payout_mail_log" }

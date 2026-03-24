@@ -199,6 +199,9 @@ func RegisterRoutes(r *gin.Engine) {
 			srpAdmin.GET("/applications/:id", srpH.GetApplication)
 			srpAdmin.PUT("/applications/:id/review", srpH.ReviewApplication)
 			srpAdmin.PUT("/applications/:id/payout", srpH.Payout)
+			srpAdmin.PUT("/applications/payout-batch", srpH.PayoutBatch)
+			srpAdmin.GET("/payout-mail-logs", srpH.ListPayoutMailLogs)
+			srpAdmin.POST("/applications/:id/payout-mail/retry", srpH.RetryPayoutMail)
 		}
 	}
 
