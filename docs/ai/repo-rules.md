@@ -193,7 +193,7 @@ Use:
 
 Minimum expectations:
 
-- backend changes -> `cd server && go test ./...` and `go build ./...`
+- Backend changes must pass: `cd server && go build ./... && go test ./... && golangci-lint run --path-mode=abs`
 - frontend changes -> `cd static && pnpm lint .` and `pnpm exec vue-tsc --noEmit`
 - contract changes -> validate both backend and frontend
 - bug fixes -> add a regression test or state why not
