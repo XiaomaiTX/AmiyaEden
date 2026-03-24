@@ -199,7 +199,7 @@ func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("webhook 返回错误状态码: %d", resp.StatusCode)
 	}

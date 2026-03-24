@@ -410,7 +410,7 @@ func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) e
 	if err != nil {
 		return fmt.Errorf("ESI 请求失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(resp.Body)

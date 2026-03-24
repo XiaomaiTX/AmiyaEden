@@ -291,7 +291,7 @@ func (s *SdeService) fetchLatestRelease() (*githubRelease, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GitHub API 返回非 200: %d", resp.StatusCode)
@@ -318,7 +318,7 @@ func (s *SdeService) downloadFile(url, destPath string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("下载返回非 200: %d", resp.StatusCode)

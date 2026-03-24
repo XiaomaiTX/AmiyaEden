@@ -318,7 +318,7 @@ func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*Fi
 		delReq.Header.Set("Authorization", "Bearer "+char.AccessToken)
 		resp, err := httpClient.Do(delReq)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 
 		// 删除数据库中的旧记录
@@ -360,7 +360,7 @@ func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*Fi
 	if err != nil {
 		return nil, fmt.Errorf("ESI 创建装配失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
