@@ -694,12 +694,27 @@ func (s *SrpService) resolveFleetTitle(app *model.SrpApplication) string {
 }
 
 func (s *SrpService) logPayoutMailFailed(applicationID uint, senderCharacterID, recipientCharacterID int64, err error) {
+	// 记录完整错误到结构化日志，便于排查
+	global.Logger.Error("SRP 发放邮件失败",
+		zap.Uint("application_id", applicationID),
+		zap.Int64("sender_character_id", senderCharacterID),
+		zap.Int64("recipient_character_id", recipientCharacterID),
+		zap.Error(err),
+	)
+
+	// ErrorMessage 字段限制为 1024 字符，这里对 err.Error() 做长度截断，避免插入失败
+	const maxErrorMessageLen = 1024
+	errMsg := err.Error()
+	if len(errMsg) > maxErrorMessageLen {
+		errMsg = errMsg[:maxErrorMessageLen]
+	}
+
 	mailLog := &model.SrpPayoutMailLog{
 		ApplicationID:        applicationID,
 		RecipientCharacterID: recipientCharacterID,
 		SenderCharacterID:    senderCharacterID,
 		Status:               model.SrpPayoutMailFailed,
-		ErrorMessage:         err.Error(),
+		ErrorMessage:         errMsg,
 	}
 	if createErr := s.repo.CreatePayoutMailLog(mailLog); createErr != nil {
 		global.Logger.Warn("记录 SRP 发放邮件失败日志失败",
