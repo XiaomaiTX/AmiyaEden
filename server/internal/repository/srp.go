@@ -128,9 +128,13 @@ func (r *SrpRepository) ListMyApplications(userID uint, page, pageSize int) ([]m
 // HasPayoutMailSuccess 检查该申请是否已有成功邮件记录（幂等）
 func (r *SrpRepository) HasPayoutMailSuccess(applicationID uint) bool {
 	var count int64
-	global.DB.Model(&model.SrpPayoutMailLog{}).
+	err := global.DB.Model(&model.SrpPayoutMailLog{}).
 		Where("application_id = ? AND status = ?", applicationID, model.SrpPayoutMailSuccess).
-		Count(&count)
+		Count(&count).Error
+	if err != nil {
+		// 保守处理：查询出错时认为已存在成功记录，避免重复发送邮件
+		return true
+	}
 	return count > 0
 }
 
