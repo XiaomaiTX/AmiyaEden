@@ -95,7 +95,7 @@ jobs:
           push: true
           tags: |
             ${{ vars.DOCKER_HUB_REPO }}-backend:latest
-            ${{ vars.DOCKER_HUB_REPO }}-backend:${{ vars.SHORT_SHA }}
+            ${{ vars.DOCKER_HUB_REPO }}-backend:${{ env.SHORT_SHA }}
 
       - name: Build and push Frontend image
         if: needs.changes.outputs.frontend == 'true'
@@ -108,4 +108,4 @@ jobs:
           push: true
           tags: |
             ${{ vars.DOCKER_HUB_REPO }}-frontend:latest
-            ${{ vars.DOCKER_HUB_REPO }}-frontend:${{ vars.SHORT_SHA }}
+            ${{ vars.DOCKER_HUB_REPO }}-frontend:${{ env.SHORT_SHA }}
