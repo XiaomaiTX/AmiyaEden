@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/pkg/response"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const (
@@ -46,7 +48,11 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "获取文件失败: "+err.Error())
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			global.Logger.Error("关闭文件失败", zap.Error(err))
+		}
+	}()
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if !allowedExts[ext] {
@@ -72,7 +78,11 @@ func saveFile(src multipart.File, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			global.Logger.Error("关闭文件失败", zap.Error(err))
+		}
+	}()
 	_, err = io.Copy(f, src)
 	return err
 }

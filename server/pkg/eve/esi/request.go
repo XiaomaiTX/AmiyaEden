@@ -246,9 +246,12 @@ func (c *Client) doRequest(ctx context.Context, url string, accessToken string) 
 		}
 
 		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		closeErr := resp.Body.Close()
 		if readErr != nil {
 			return nil, nil, fmt.Errorf("read ESI response: %w", readErr)
+		}
+		if closeErr != nil {
+			return nil, nil, fmt.Errorf("close ESI response: %w", closeErr)
 		}
 
 		meta := parseResponseMeta(resp)

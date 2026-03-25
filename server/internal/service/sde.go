@@ -53,11 +53,6 @@ func NewSdeService() *SdeService {
 }
 
 // 获取配置的辅助方法
-func (s *SdeService) getAPIKey() string {
-	key, _ := s.sysConfig.Get(model.SysConfigSDEAPIKey, global.Config.SDE.APIKey)
-	return key
-}
-
 func (s *SdeService) getProxy() string {
 	proxy, _ := s.sysConfig.Get(model.SysConfigSDEProxy, global.Config.SDE.Proxy)
 	return proxy
@@ -214,7 +209,11 @@ func (s *SdeService) doImport(release *githubRelease) error {
 	if err := s.downloadFile(asset.BrowserDownloadURL, dlPath); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
 	}
-	defer os.Remove(dlPath)
+	defer func() {
+		if err := os.Remove(dlPath); err != nil {
+			global.Logger.Warn("[SDE] 删除临时文件失败", zap.String("file", dlPath), zap.Error(err))
+		}
+	}()
 
 	// 解压得到 .sql 文件路径
 	sqlPath, err := extractSQL(dlPath, sdeDownloadDir)
@@ -222,7 +221,11 @@ func (s *SdeService) doImport(release *githubRelease) error {
 		return fmt.Errorf("解压失败: %w", err)
 	}
 	if sqlPath != dlPath {
-		defer os.Remove(sqlPath)
+		defer func() {
+			if err := os.Remove(sqlPath); err != nil {
+				global.Logger.Warn("[SDE] 删除临时文件失败", zap.String("file", sqlPath), zap.Error(err))
+			}
+		}()
 	}
 
 	// 导入到 PostgreSQL
@@ -235,11 +238,6 @@ func (s *SdeService) doImport(release *githubRelease) error {
 }
 
 // ---- 工具函数 ----
-
-// newHTTPClient 根据配置创建 http.Client，若设置了代理则使用代理
-func (s *SdeService) newHTTPClient(timeout time.Duration) *http.Client {
-	return s.newHTTPClientWithProxy(timeout, true)
-}
 
 func (s *SdeService) newHTTPClientWithProxy(timeout time.Duration, useProxy bool) *http.Client {
 	transport := &http.Transport{}
@@ -293,7 +291,9 @@ func (s *SdeService) fetchLatestRelease() (*githubRelease, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GitHub API 返回非 200: %d", resp.StatusCode)
@@ -320,7 +320,11 @@ func (s *SdeService) downloadFile(url, destPath string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭响应体失败", zap.Error(err))
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("下载返回非 200: %d", resp.StatusCode)
@@ -330,7 +334,11 @@ func (s *SdeService) downloadFile(url, destPath string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.String("file", destPath), zap.Error(err))
+		}
+	}()
 
 	_, err = io.Copy(f, resp.Body)
 	return err
@@ -363,7 +371,11 @@ func readMagicBytes(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.String("file", path), zap.Error(err))
+		}
+	}()
 	buf := make([]byte, 4)
 	n, _ := f.Read(buf)
 	return buf[:n], nil
@@ -391,16 +403,24 @@ func extractGzip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.String("file", srcPath), zap.Error(err))
+		}
+	}()
 
 	gr, err := gzip.NewReader(f)
 	if err != nil {
 		return "", err
 	}
-	defer gr.Close()
+	defer func() {
+		if err := gr.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭 gzip reader 失败", zap.Error(err))
+		}
+	}()
 
 	// gzip 头中存有原始文件名
-	outName := gr.Header.Name
+	outName := gr.Name
 	if outName == "" {
 		outName = strings.TrimSuffix(filepath.Base(srcPath), ".gz")
 	}
@@ -409,7 +429,11 @@ func extractGzip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.String("file", outPath), zap.Error(err))
+		}
+	}()
 
 	if _, err = io.Copy(out, gr); err != nil {
 		return "", err
@@ -425,7 +449,11 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.String("file", srcPath), zap.Error(err))
+		}
+	}()
 
 	br := bzip2.NewReader(f)
 
@@ -435,7 +463,11 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.String("file", outPath), zap.Error(err))
+		}
+	}()
 
 	if _, err = io.Copy(out, br); err != nil {
 		return "", err
@@ -451,7 +483,11 @@ func extractZip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer r.Close()
+	defer func() {
+		if err := r.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭 zip reader 失败", zap.Error(err))
+		}
+	}()
 
 	for _, f := range r.File {
 		name := strings.ToLower(f.Name)
@@ -466,12 +502,12 @@ func extractZip(srcPath, destDir string) (string, error) {
 
 		out, err := os.Create(outPath)
 		if err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return "", err
 		}
 		_, copyErr := io.Copy(out, rc)
-		out.Close()
-		rc.Close()
+		_ = out.Close()
+		_ = rc.Close()
 		if copyErr != nil {
 			return "", copyErr
 		}
@@ -508,7 +544,11 @@ func importSQL(sqlPath string) error {
 	if err != nil {
 		return fmt.Errorf("获取专用连接失败: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭数据库连接失败", zap.Error(err))
+		}
+	}()
 
 	// 禁用触发器/外键约束检查，关闭同步提交以提速
 	for _, pragma := range []string{
@@ -528,7 +568,11 @@ func importSQL(sqlPath string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			global.Logger.Warn("[SDE] 关闭文件失败", zap.Error(err))
+		}
+	}()
 
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 1024*1024), 64*1024*1024)
