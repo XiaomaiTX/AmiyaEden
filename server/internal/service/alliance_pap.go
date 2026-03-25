@@ -102,7 +102,9 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 	if err != nil {
 		return fmt.Errorf("请求联盟 PAP API 失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -236,9 +238,10 @@ func (s *AlliancePAPService) FetchAllUsers(year, month int) {
 }
 
 // ─── 修改接口 ───
+// PAPImportInfo 导入 PAP 信息
 type PAPImportInfo struct {
 	PrimaryCharacterName string  `json:"primary_character_name" binding:"required"`
-	MonthlyPAP           float64 `json:"monthly_pap,default=0" binding:"gte=0"`
+	MonthlyPAP           float64 `json:"monthly_pap" binding:"gte=0"`
 	CalculatedAt         string  `json:"calculated_at" binding:"required"`
 }
 
@@ -249,14 +252,14 @@ func (s *AlliancePAPService) ImportAlliancePAP(year, month int, data *PAPImportI
 		existingSummary = nil
 	}
 
-	var totalPap float64 = data.MonthlyPAP
-	var yearlyTotalPap float64 = data.MonthlyPAP
-	var monthlyRank int = 1
-	var yearlyRank int = 1
-	var globalMonthlyRank int = 1
-	var globalYearlyRank int = 1
-	var totalInCorp int = 0
-	var totalGlobal int = 0
+	totalPap := data.MonthlyPAP
+	yearlyTotalPap := data.MonthlyPAP
+	monthlyRank := 1
+	yearlyRank := 1
+	globalMonthlyRank := 1
+	globalYearlyRank := 1
+	totalInCorp := 0
+	totalGlobal := 0
 	calculatedAt, err := time.ParseInLocation(alliancePAPTimeLayout, data.CalculatedAt, time.UTC)
 
 	if err != nil {

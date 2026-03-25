@@ -639,7 +639,9 @@ func (s *SrpService) OpenInfoWindow(userID uint, req *OpenInfoWindowRequest) err
 	if err != nil {
 		return fmt.Errorf("调用 ESI Open Window 失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

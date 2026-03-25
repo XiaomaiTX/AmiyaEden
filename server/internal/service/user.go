@@ -183,7 +183,7 @@ func buildUserPatchUpdates(current *model.User, patch UserPatch, requireComplete
 	if patch.DiscordID != nil {
 		discordID := strings.TrimSpace(*patch.DiscordID)
 		if utf8.RuneCountInString(discordID) > maxUserContactLength {
-			return nil, nil, errors.New("Discord ID 最多 20 个字符")
+			return nil, nil, errors.New("discord ID 最多 20 个字符")
 		}
 		next.DiscordID = discordID
 		updates["discord_id"] = discordID

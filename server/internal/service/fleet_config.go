@@ -410,7 +410,9 @@ func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) e
 	if err != nil {
 		return fmt.Errorf("ESI 请求失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -757,7 +759,7 @@ func (s *FleetConfigService) GetFittingEFT(configID uint, lang string) (*FleetCo
 // buildEFT 构建 EFT 格式文本
 func buildEFT(shipName, fittingName string, items []model.EveCharacterFittingItem, typeNames map[int]string) string {
 	var buf strings.Builder
-	buf.WriteString(fmt.Sprintf("[%s, %s]\n", shipName, fittingName))
+	fmt.Fprintf(&buf, "[%s, %s]\n", shipName, fittingName)
 
 	// 按 flag 分组
 	type slotItem struct {
@@ -799,11 +801,11 @@ func buildEFT(shipName, fittingName string, items []model.EveCharacterFittingIte
 
 		for _, item := range items {
 			if isDroneOrCargo && item.quantity > 1 {
-				buf.WriteString(fmt.Sprintf("%s x%d\n", item.name, item.quantity))
+				fmt.Fprintf(&buf, "%s x%d\n", item.name, item.quantity)
 			} else if isDroneOrCargo {
-				buf.WriteString(fmt.Sprintf("%s x%d\n", item.name, item.quantity))
+				fmt.Fprintf(&buf, "%s\n", item.name)
 			} else {
-				buf.WriteString(fmt.Sprintf("%s\n", item.name))
+				fmt.Fprintf(&buf, "%s\n", item.name)
 			}
 		}
 	}

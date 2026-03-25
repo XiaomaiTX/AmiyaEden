@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	BaseURL = config.DefaultESIBaseURL
+	BaseURL   = config.DefaultESIBaseURL
 	APIPrefix = config.DefaultESIAPIPrefix
 	// DefaultTimeout HTTP 默认超时
 	DefaultTimeout = 30 * time.Second
@@ -35,7 +35,7 @@ func NewClient() *Client {
 
 func NewClientWithConfig(baseURL, apiPrefix string) *Client {
 	return &Client{
-		baseURL: strings.TrimRight(baseURL, "/"),
+		baseURL:   strings.TrimRight(baseURL, "/"),
 		apiPrefix: normalizePrefix(apiPrefix),
 		httpClient: &http.Client{
 			Timeout: DefaultTimeout,
@@ -84,7 +84,9 @@ func (c *Client) Get(ctx context.Context, path string, accessToken string, dest 
 	if err != nil {
 		return fmt.Errorf("ESI request %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -123,7 +125,9 @@ func (c *Client) GetRaw(ctx context.Context, path string, accessToken string) ([
 	if err != nil {
 		return nil, 0, fmt.Errorf("ESI request %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -164,7 +168,9 @@ func (c *Client) postJSON(ctx context.Context, path string, accessToken string, 
 	if err != nil {
 		return fmt.Errorf("ESI POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	reader := io.Reader(resp.Body)
 	if maxBytes > 0 {
@@ -214,7 +220,9 @@ func (c *Client) PutJSON(ctx context.Context, path string, accessToken string, r
 	if err != nil {
 		return fmt.Errorf("ESI PUT %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -250,7 +258,9 @@ func (c *Client) PostNoContent(ctx context.Context, path string, accessToken str
 	if err != nil {
 		return fmt.Errorf("ESI POST %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -280,7 +290,9 @@ func (c *Client) Delete(ctx context.Context, path string, accessToken string) er
 	if err != nil {
 		return fmt.Errorf("ESI DELETE %s: %w", path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
