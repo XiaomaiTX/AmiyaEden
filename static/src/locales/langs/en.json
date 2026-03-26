@@ -65,20 +65,11 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": [
-        "Vertical",
-        "Horizontal",
-        "Mixed",
-        "Dual"
-      ]
+      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
     },
     "theme": {
       "title": "Theme Style",
-      "list": [
-        "Light",
-        "Dark",
-        "System"
-      ]
+      "list": ["Light", "Dark", "System"]
     },
     "menu": {
       "title": "Menu Style"
@@ -88,17 +79,11 @@
     },
     "box": {
       "title": "Box Style",
-      "list": [
-        "Border",
-        "Shadow"
-      ]
+      "list": ["Border", "Shadow"]
     },
     "container": {
       "title": "Container Width",
-      "list": [
-        "Full",
-        "Boxed"
-      ]
+      "list": ["Full", "Boxed"]
     },
     "basics": {
       "title": "Basic Config",
@@ -144,14 +129,8 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": [
-      "Notice",
-      "Message",
-      "Todo"
-    ],
-    "text": [
-      "No"
-    ],
+    "bar": ["Notice", "Message", "Todo"],
+    "text": ["No"],
     "viewAll": "View all"
   },
   "worktab": {
@@ -176,7 +155,7 @@
   },
   "login": {
     "leftView": {
-      "title": "AmiyaEden — EVE Online Tools & Community",
+      "title": "AmiyaEden \u2014 EVE Online Tools & Community",
       "subTitle": "Sign in with your EVE Online character, secure and simple"
     },
     "title": "Welcome",
@@ -282,7 +261,6 @@
       "esiRefresh": "Scheduled Tasks",
       "wallet": "Wallet Management",
       "alliancePap": "Alliance PAP",
-      "papExchange": "PAP Exchange",
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
       "webhook": "Webhook Notifications",
@@ -536,11 +514,7 @@
     "importTitle": "Import History Records",
     "importHint": "Paste CSV with character name and QQ number per line (comma or tab separated)",
     "importPlaceholder": "CharacterName, QQNumber\nCharacterName2, QQNumber2",
-    "importSuccess": "Successfully imported {count} records",
-    "requireEvidence": "Require Evidence",
-    "exampleEvidence": "Example Evidence",
-    "uploadExampleEvidence": "Upload Example Image",
-    "uploadFailed": "Upload failed"
+    "importSuccess": "Successfully imported {count} records"
   },
   "welfareMy": {
     "applyTab": "Apply for Welfare",
@@ -561,11 +535,7 @@
     "noEligibleWelfares": "No eligible welfare available",
     "noApplications": "No applications yet",
     "distModePerUser": "Per User",
-    "distModePerCharacter": "Per Character",
-    "evidenceDialogTitle": "Upload Evidence",
-    "evidenceDialogHint": "This welfare requires you to upload an image as evidence before applying.",
-    "exampleEvidenceLabel": "Example (provided by admin):",
-    "uploadEvidenceBtn": "Choose Image"
+    "distModePerCharacter": "Per Character"
   },
   "welfareApproval": {
     "pendingTab": "Pending Delivery",
@@ -593,8 +563,7 @@
     "noPending": "No requested applications",
     "noHistory": "No processed records yet",
     "searchBtn": "Search",
-    "resetBtn": "Reset",
-    "evidenceImage": "Evidence"
+    "resetBtn": "Reset"
   },
   "shop": {
     "products": "Products",
@@ -650,7 +619,7 @@
       "productImage": "Product Image",
       "uploading": "Uploading...",
       "uploadImage": "Click to upload",
-      "uploadHint": "JPG/PNG/WebP, max 2MB",
+      "uploadHint": "JPG/PNG/GIF/WebP, max 5MB",
       "price": "Price",
       "type": "Type",
       "typeNormal": "Normal",
@@ -688,7 +657,7 @@
       "deleteBtn": "Delete",
       "deleteSuccess": "Deleted",
       "deleteFailed": "Delete failed",
-      "imageTooLarge": "Image must be under 2MB",
+      "imageTooLarge": "Image must be under 5MB",
       "uploadSuccess": "Uploaded",
       "uploadFailed": "Upload failed",
       "validName": "Product name is required",
@@ -1331,26 +1300,26 @@
     "calculatedAtLabel": "Calculated At",
     "noRecords": "No alliance PAP records",
     "settle": {
-      "openBtn": "Monthly Archive",
-      "title": "Monthly Archive",
-      "settleMonth": "Archive Month",
+      "openBtn": "PAP Exchange Config",
+      "title": "PAP Exchange Config & Monthly Settle",
+      "enabled": "Enable Exchange",
+      "walletPerPap": "Exchange Rate",
+      "walletPerPapUnit": "wallet / 1 PAP",
+      "walletPerPapRequired": "Rate must be greater than 0",
+      "settleMonth": "Settle Month",
       "settleMonthRequired": "Please select a month",
-      "doSettle": "Archive",
-      "settleSuccess": "Archive complete",
-      "settleFailed": "Archive failed"
-    }
-  },
-  "papExchange": {
-    "title": "PAP Exchange Rate Config",
-    "tip": "Configure the wallet conversion rate for each fleet PAP type. When an FC issues PAPs, members automatically receive system wallet based on this rate.",
-    "loadFailed": "Failed to load exchange rate config",
-    "saveSuccess": "Exchange rate config saved",
-    "saveFailed": "Failed to save exchange rate config",
-    "columns": {
-      "type": "PAP Type",
-      "rate": "Exchange Rate",
-      "rateUnit": "wallet / 1 PAP",
-      "updatedAt": "Updated At"
+      "walletConvert": "Also Convert Wallet",
+      "walletConvertTip": "Automatically issue wallet balance by rate",
+      "saveConfig": "Save Config",
+      "doSettle": "Archive & Settle",
+      "configSaved": "Config saved",
+      "configFailed": "Failed to save config",
+      "settleSuccess": "Settlement complete",
+      "settleFailed": "Settlement failed",
+      "resultTitle": "Settlement Result",
+      "resultUsers": "{count} users settled",
+      "resultSkipped": "{count} users skipped",
+      "resultWallet": "Total wallet issued: {amount}"
     }
   },
   "roleUi": {
@@ -1428,7 +1397,6 @@
     "tabs": {
       "products": "Product Management",
       "orders": "Order Management",
-      "orderHistory": "Order History",
       "redeem": "Redeem Code Management"
     },
     "products": {
@@ -1490,38 +1458,42 @@
       }
     },
     "orders": {
-      "keywordPlaceholder": "Product / Main char / Nickname",
-      "dialogDeliver": "Deliver Order",
+      "userIdPlaceholder": "User ID",
+      "statusPlaceholder": "Order status",
+      "dialogApprove": "Approve Order",
       "dialogReject": "Reject Order",
-      "deliverButton": "Deliver",
+      "approveButton": "Approve",
       "rejectButton": "Reject",
-      "deliverConfirm": "Confirm Delivery",
+      "approveConfirm": "Confirm Approval",
       "rejectConfirm": "Confirm Rejection",
       "fields": {
         "orderNo": "Order No.",
-        "deliverRemark": "Delivery Remark"
+        "reviewRemark": "Review Remark"
       },
       "placeholders": {
-        "deliverRemark": "Delivery remark (optional)"
+        "reviewRemark": "Review remark (optional)"
       },
       "status": {
-        "requested": "Requested",
-        "delivered": "Delivered",
-        "rejected": "Rejected"
+        "submitted": "Submitted",
+        "paid": "Paid",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "insufficient_funds": "Insufficient Funds"
       },
       "table": {
         "orderNo": "Order No.",
-        "mainCharacter": "Main Character",
-        "nickname": "Nickname",
-        "contact": "Contact",
+        "userId": "User ID",
         "product": "Product",
         "quantity": "Qty",
         "totalPrice": "Total",
         "userRemark": "User Remark",
+        "reviewRemark": "Review Remark",
         "createdAt": "Order Time"
       },
       "messages": {
-        "deliverSuccess": "Delivered",
+        "approveSuccess": "Approved",
         "rejectSuccess": "Rejected",
         "actionFailed": "Operation failed"
       }
