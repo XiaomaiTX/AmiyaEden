@@ -57,11 +57,10 @@ AmiyaEden/
 
 ## 运行依赖
 
-- Go `>= 1.24.5`
+- Go `>= 1.24`
 - Air（Go 热重载工具）
-- golangci-lint `v2.11.4`（与 CI 保持一致）
-- Node.js `24`（与 CI 保持一致，见 `.nvmrc`）
-- pnpm `10.32.1`（与 CI 保持一致）
+- Node.js `>= 20.19.0`
+- pnpm `>= 8.8.0`
 - PostgreSQL
 - Redis
 
@@ -71,13 +70,6 @@ AmiyaEden/
 go install github.com/air-verse/air@latest
 export PATH="$PATH:$(go env GOPATH)/bin"
 air -v
-```
-
-如果本机还没有 `golangci-lint`，可以直接使用 Go 安装：
-
-```bash
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.11.4
-golangci-lint --version
 ```
 
 ## 本地启动
@@ -178,7 +170,6 @@ pnpm dev
 ## 常用校验命令
 
 ```bash
-cd server && golangci-lint run ./...
 cd server && go test ./...
 cd server && go build ./...
 cd static && pnpm lint .

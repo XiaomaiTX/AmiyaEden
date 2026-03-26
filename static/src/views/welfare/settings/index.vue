@@ -109,28 +109,6 @@
         <ElFormItem :label="t('welfareSettings.requireSkillPlan')">
           <ElSwitch v-model="formData.require_skill_plan" />
         </ElFormItem>
-        <ElFormItem :label="t('welfareSettings.requireEvidence')">
-          <ElSwitch v-model="formData.require_evidence" />
-        </ElFormItem>
-        <ElFormItem v-if="formData.require_evidence" :label="t('welfareSettings.exampleEvidence')">
-          <div class="flex flex-col gap-2" style="width: 100%">
-            <ElUpload
-              :show-file-list="false"
-              accept="image/*"
-              :before-upload="handleExampleEvidenceUpload"
-            >
-              <ElButton size="small" :loading="exampleEvidenceUploading">
-                {{ t('welfareSettings.uploadExampleEvidence') }}
-              </ElButton>
-            </ElUpload>
-            <img
-              v-if="formData.example_evidence"
-              :src="formData.example_evidence"
-              class="mt-1 rounded border"
-              style="max-height: 120px; max-width: 100%; object-fit: contain"
-            />
-          </div>
-        </ElFormItem>
         <ElFormItem
           v-if="formData.require_skill_plan"
           :label="t('welfareSettings.skillPlan')"
@@ -182,11 +160,10 @@
     ElSwitch,
     ElRadioGroup,
     ElRadio,
-    ElUpload,
     ElMessage,
     ElMessageBox
   } from 'element-plus'
-  import type { FormInstance, FormRules, UploadRawFile } from 'element-plus'
+  import type { FormInstance, FormRules } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import {
@@ -194,8 +171,7 @@
     adminCreateWelfare,
     adminUpdateWelfare,
     adminDeleteWelfare,
-    adminImportWelfareRecords,
-    uploadWelfareEvidence
+    adminImportWelfareRecords
   } from '@/api/welfare'
   import { fetchSkillPlanList } from '@/api/skill-plan'
   import { useTable } from '@/hooks/core/useTable'
@@ -378,25 +354,8 @@
     require_skill_plan: false,
     skill_plan_ids: [] as number[],
     max_char_age_months: undefined as number | undefined,
-    require_evidence: false,
-    example_evidence: '',
     status: 1 as number
   })
-
-  const exampleEvidenceUploading = ref(false)
-
-  async function handleExampleEvidenceUpload(file: UploadRawFile) {
-    exampleEvidenceUploading.value = true
-    try {
-      const res = await uploadWelfareEvidence(file)
-      formData.example_evidence = res.url
-    } catch (e: any) {
-      ElMessage.error(e?.message ?? t('welfareSettings.uploadFailed'))
-    } finally {
-      exampleEvidenceUploading.value = false
-    }
-    return false // prevent default upload behavior
-  }
 
   const hasMaxCharAge = computed(
     () => formData.max_char_age_months != null && formData.max_char_age_months > 0
@@ -433,8 +392,6 @@
       require_skill_plan: false,
       skill_plan_ids: [],
       max_char_age_months: undefined,
-      require_evidence: false,
-      example_evidence: '',
       status: 1
     })
     editingItem.value = null
@@ -455,8 +412,6 @@
       require_skill_plan: row.require_skill_plan,
       skill_plan_ids: row.skill_plan_ids ?? [],
       max_char_age_months: row.max_char_age_months ?? undefined,
-      require_evidence: row.require_evidence ?? false,
-      example_evidence: row.example_evidence ?? '',
       status: row.status
     })
     loadSkillPlans()
@@ -471,8 +426,7 @@
       const payload = {
         ...formData,
         skill_plan_ids: formData.require_skill_plan ? formData.skill_plan_ids : [],
-        max_char_age_months: formData.max_char_age_months || null,
-        example_evidence: formData.require_evidence ? formData.example_evidence : ''
+        max_char_age_months: formData.max_char_age_months || null
       }
       if (editingItem.value) {
         await adminUpdateWelfare({ id: editingItem.value.id, ...payload })

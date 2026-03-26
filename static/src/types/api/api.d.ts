@@ -1060,8 +1060,6 @@ declare namespace Api {
       require_skill_plan: boolean
       skill_plan_ids: number[]
       max_char_age_months: number | null
-      require_evidence: boolean
-      example_evidence: string
       status: number
       created_by: number
       created_at: string
@@ -1076,8 +1074,6 @@ declare namespace Api {
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
-      require_evidence?: boolean
-      example_evidence?: string
       status?: number
     }
 
@@ -1090,8 +1086,6 @@ declare namespace Api {
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
-      require_evidence?: boolean
-      example_evidence?: string
       status?: number
     }
 
@@ -1115,8 +1109,6 @@ declare namespace Api {
       name: string
       description: string
       dist_mode: 'per_user' | 'per_character'
-      require_evidence: boolean
-      example_evidence: string
       eligible_characters: EligibleCharacter[]
     }
 
@@ -1135,7 +1127,6 @@ declare namespace Api {
     interface ApplyParams {
       welfare_id: number
       character_id?: number
-      evidence_image?: string
     }
 
     /** 导入历史记录参数 */
@@ -1160,7 +1151,6 @@ declare namespace Api {
       character_name: string
       qq: string
       discord_id: string
-      evidence_image: string
       status: 'requested' | 'delivered' | 'rejected'
       reviewed_by: number
       reviewer_name: string
@@ -1195,6 +1185,7 @@ declare namespace Api {
       max_per_user: number
       limit_period: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
+      need_approval: boolean
       status: number
       sort_order: number
       created_at: string
@@ -1206,10 +1197,6 @@ declare namespace Api {
       id: number
       order_no: string
       user_id: number
-      main_character_name: string
-      nickname: string
-      qq: string
-      discord_id: string
       product_id: number
       product_name: string
       product_type: string
@@ -1257,6 +1244,7 @@ declare namespace Api {
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
+      need_approval?: boolean
       status?: number
       sort_order?: number
     }
@@ -1272,6 +1260,7 @@ declare namespace Api {
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type?: string
+      need_approval?: boolean
       status?: number
       sort_order?: number
     }
@@ -1289,12 +1278,12 @@ declare namespace Api {
     type OrderSearchParams = Partial<{
       current: number
       size: number
-      keyword: string
-      statuses: string[]
+      user_id: number
+      product_id: number
       status: string
     }>
 
-    /** 订单操作请求 */
+    /** 订单审批请求 */
     interface OrderReviewParams {
       order_id: number
       remark?: string

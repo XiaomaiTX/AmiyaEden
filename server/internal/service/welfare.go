@@ -76,8 +76,6 @@ type AdminUpdateWelfareRequest struct {
 	RequireSkillPlan bool   `json:"require_skill_plan"`
 	SkillPlanIDs     []uint `json:"skill_plan_ids"`
 	MaxCharAgeMonths *int   `json:"max_char_age_months"`
-	RequireEvidence  bool   `json:"require_evidence"`
-	ExampleEvidence  string `json:"example_evidence"`
 	Status           int8   `json:"status"`
 }
 
@@ -103,8 +101,6 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	w.DistMode = req.DistMode
 	w.RequireSkillPlan = req.RequireSkillPlan
 	w.MaxCharAgeMonths = req.MaxCharAgeMonths
-	w.RequireEvidence = req.RequireEvidence
-	w.ExampleEvidence = req.ExampleEvidence
 	w.Status = req.Status
 	// 角色年龄限制锁定 per_user
 	if w.MaxCharAgeMonths != nil && *w.MaxCharAgeMonths > 0 {
@@ -175,8 +171,6 @@ type EligibleWelfareResp struct {
 	Name               string                  `json:"name"`
 	Description        string                  `json:"description"`
 	DistMode           string                  `json:"dist_mode"`
-	RequireEvidence    bool                    `json:"require_evidence"`
-	ExampleEvidence    string                  `json:"example_evidence"`
 	EligibleCharacters []EligibleCharacterResp `json:"eligible_characters"`
 }
 
@@ -272,8 +266,6 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 				Name:               w.Name,
 				Description:        w.Description,
 				DistMode:           w.DistMode,
-				RequireEvidence:    w.RequireEvidence,
-				ExampleEvidence:    w.ExampleEvidence,
 				EligibleCharacters: []EligibleCharacterResp{},
 			})
 		} else {
@@ -287,8 +279,6 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 				Name:               w.Name,
 				Description:        w.Description,
 				DistMode:           w.DistMode,
-				RequireEvidence:    w.RequireEvidence,
-				ExampleEvidence:    w.ExampleEvidence,
 				EligibleCharacters: eligible,
 			})
 		}
@@ -438,9 +428,8 @@ func (s *WelfareService) characterSatisfiesAnySkillPlan(
 
 // ApplyForWelfareRequest 申请福利请求
 type ApplyForWelfareRequest struct {
-	WelfareID     uint   `json:"welfare_id"`
-	CharacterID   int64  `json:"character_id"`
-	EvidenceImage string `json:"evidence_image"`
+	WelfareID   uint  `json:"welfare_id"`
+	CharacterID int64 `json:"character_id"`
 }
 
 func initialWelfareApplicationRequestedStatus() string {
@@ -533,11 +522,6 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		}
 	}
 
-	// 证明图片检查
-	if welfare.RequireEvidence && strings.TrimSpace(req.EvidenceImage) == "" {
-		return nil, errors.New("该福利需要上传证明图片")
-	}
-
 	// 技能计划检查
 	if welfare.RequireSkillPlan {
 		// 填充 SkillPlanIDs (GetWelfareByID 不会自动填充)
@@ -571,7 +555,6 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		CharacterName: selectedChar.CharacterName,
 		QQ:            user.QQ,
 		DiscordID:     user.DiscordID,
-		EvidenceImage: req.EvidenceImage,
 		Status:        initialWelfareApplicationRequestedStatus(),
 	}
 
@@ -596,7 +579,6 @@ type AdminApplicationResp struct {
 	CharacterName     string     `json:"character_name"`
 	QQ                string     `json:"qq"`
 	DiscordID         string     `json:"discord_id"`
-	EvidenceImage     string     `json:"evidence_image"`
 	Status            string     `json:"status"`
 	ReviewedBy        uint       `json:"reviewed_by"`
 	ReviewerName      string     `json:"reviewer_name"`
@@ -661,7 +643,6 @@ func (s *WelfareService) AdminListApplications(page, pageSize int, filter reposi
 			CharacterName: app.CharacterName,
 			QQ:            app.QQ,
 			DiscordID:     app.DiscordID,
-			EvidenceImage: app.EvidenceImage,
 			Status:        app.Status,
 			ReviewedBy:    app.ReviewedBy,
 			CreatedAt:     app.CreatedAt,

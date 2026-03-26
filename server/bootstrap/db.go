@@ -124,7 +124,6 @@ func autoMigrate(db *gorm.DB) {
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},
-		&model.PAPTypeRate{},
 		// 系统配置表
 		&model.SystemConfig{},
 		// RBAC 权限相关表
