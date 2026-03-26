@@ -274,12 +274,14 @@ func RegisterRoutes(r *gin.Engine) {
 		alliancePAPAdmin.GET("", alliancePAPAdminH.GetAllAlliancePAP)
 		alliancePAPAdmin.POST("/fetch", alliancePAPAdminH.TriggerFetch)
 		alliancePAPAdmin.POST("/import", alliancePAPAdminH.ImportAlliancePAP)
-		// PAP 兑换配置
-		alliancePAPAdmin.GET("/config", alliancePAPAdminH.GetExchangeConfig)
-		alliancePAPAdmin.PUT("/config", alliancePAPAdminH.SetExchangeConfig)
-		// 月度归档 + 兑换系统钱包
+		// 月度归档
 		alliancePAPAdmin.POST("/settle", alliancePAPAdminH.SettleMonth)
 	}
+
+	// PAP 兑换汇率管理（管理员）
+	papExchangeH := handler.NewPAPExchangeHandler()
+	admin.GET("/pap-exchange/rates", papExchangeH.GetRates)
+	admin.PUT("/pap-exchange/rates", papExchangeH.SetRates)
 
 	// 菜单管理
 	adminMenu := admin.Group("/menu")
@@ -346,7 +348,7 @@ func RegisterRoutes(r *gin.Engine) {
 	adminShopOrder := admin.Group("/shop/order")
 	{
 		adminShopOrder.POST("/list", adminShopH.AdminListOrders)
-		adminShopOrder.POST("/approve", adminShopH.AdminApproveOrder)
+		adminShopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
 		adminShopOrder.POST("/reject", adminShopH.AdminRejectOrder)
 	}
 	adminShopRedeem := admin.Group("/shop/redeem")

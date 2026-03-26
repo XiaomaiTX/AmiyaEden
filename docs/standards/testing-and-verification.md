@@ -23,6 +23,20 @@ Applies to all backend, frontend, contract, repository, hook, handler, and servi
 - Any change that fixes a bug, changes a contract, or modifies non-trivial logic must be evaluated for regression coverage.
 - Tests must exercise the real logic that changed. Do not duplicate a second implementation inside the test.
 
+## Required Tool Versions
+
+To keep local and CI lint results consistent, use these exact versions:
+
+| Tool | Version | How to install |
+|------|---------|----------------|
+| golangci-lint | v2.11.4 | `go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.11.4` |
+| pnpm | 10.32.1 | `npm install -g pnpm@10.32.1` |
+| Node.js | 24 | see `.nvmrc` at repo root |
+
+CI pins golangci-lint at v2.11.4 via `.github/workflows/verify-ci.yaml`. When upgrading the linter locally, update that file and `server/.golangci.yml` in the same change.
+
+Frontend package versions are locked by `static/pnpm-lock.yaml`. Always run `pnpm install --frozen-lockfile` locally to match CI exactly.
+
 ## Default Commands
 
 **This section is the single canonical source for verification commands. All other documents must reference this section rather than redefine commands.**

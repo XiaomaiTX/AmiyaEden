@@ -1,20 +1,14 @@
 package handler
 
 import (
-	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"encoding/base64"
-	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 const (
@@ -30,36 +24,7 @@ var evidenceAllowedMIME = map[string]bool{
 // UploadEvidence POST /welfare/upload-evidence
 // 接收图片文件，验证大小和类型，返回 base64 data URL（不写入文件系统）
 func (h *WelfareHandler) UploadEvidence(c *gin.Context) {
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, evidenceMaxBytes+1024)
-
-	file, _, err := c.Request.FormFile("file")
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "获取文件失败: "+err.Error())
-		return
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			global.Logger.Error("关闭文件失败", zap.Error(err))
-		}
-	}()
-	data, err := io.ReadAll(io.LimitReader(file, evidenceMaxBytes+1))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "读取文件失败")
-		return
-	}
-	if len(data) > evidenceMaxBytes {
-		response.Fail(c, response.CodeParamError, fmt.Sprintf("图片大小不能超过 %d KB", evidenceMaxBytes>>10))
-		return
-	}
-
-	mime := http.DetectContentType(data)
-	if !evidenceAllowedMIME[mime] {
-		response.Fail(c, response.CodeParamError, "仅支持 jpeg/png/webp 格式")
-		return
-	}
-
-	dataURL := fmt.Sprintf("data:%s;base64,%s", mime, base64.StdEncoding.EncodeToString(data))
-	response.OK(c, gin.H{"url": dataURL})
+	uploadImageAsDataURL(c, evidenceMaxBytes, evidenceAllowedMIME)
 }
 
 // WelfareHandler 福利 HTTP 处理器

@@ -1195,7 +1195,6 @@ declare namespace Api {
       max_per_user: number
       limit_period: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
-      need_approval: boolean
       status: number
       sort_order: number
       created_at: string
@@ -1207,6 +1206,10 @@ declare namespace Api {
       id: number
       order_no: string
       user_id: number
+      main_character_name: string
+      nickname: string
+      qq: string
+      discord_id: string
       product_id: number
       product_name: string
       product_type: string
@@ -1254,7 +1257,6 @@ declare namespace Api {
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
-      need_approval?: boolean
       status?: number
       sort_order?: number
     }
@@ -1270,7 +1272,6 @@ declare namespace Api {
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type?: string
-      need_approval?: boolean
       status?: number
       sort_order?: number
     }
@@ -1288,12 +1289,12 @@ declare namespace Api {
     type OrderSearchParams = Partial<{
       current: number
       size: number
-      user_id: number
-      product_id: number
+      keyword: string
+      statuses: string[]
       status: string
     }>
 
-    /** 订单审批请求 */
+    /** 订单操作请求 */
     interface OrderReviewParams {
       order_id: number
       remark?: string
