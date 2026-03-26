@@ -372,6 +372,7 @@ func RegisterRoutes(r *gin.Engine) {
 		welfareUser.POST("/eligible", welfareH.GetEligibleWelfares)
 		welfareUser.POST("/apply", welfareH.ApplyForWelfare)
 		welfareUser.POST("/my-applications", welfareH.ListMyApplications)
+		welfareUser.POST("/upload-evidence", welfareH.UploadEvidence)
 	}
 
 	// 自动权限映射管理（管理员）

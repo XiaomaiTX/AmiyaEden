@@ -65,11 +65,20 @@
   "setting": {
     "menuType": {
       "title": "菜单布局",
-      "list": ["垂直", "水平", "混合", "双列"]
+      "list": [
+        "垂直",
+        "水平",
+        "混合",
+        "双列"
+      ]
     },
     "theme": {
       "title": "主题风格",
-      "list": ["浅色", "深色", "系统"]
+      "list": [
+        "浅色",
+        "深色",
+        "系统"
+      ]
     },
     "menu": {
       "title": "菜单风格"
@@ -79,11 +88,17 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": ["边框", "阴影"]
+      "list": [
+        "边框",
+        "阴影"
+      ]
     },
     "container": {
       "title": "容器宽度",
-      "list": ["铺满", "定宽"]
+      "list": [
+        "铺满",
+        "定宽"
+      ]
     },
     "basics": {
       "title": "基础配置",
@@ -129,8 +144,14 @@
   "notice": {
     "title": "通知",
     "btnRead": "标为已读",
-    "bar": ["通知", "消息", "代办"],
-    "text": ["暂无"],
+    "bar": [
+      "通知",
+      "消息",
+      "代办"
+    ],
+    "text": [
+      "暂无"
+    ],
     "viewAll": "查看全部"
   },
   "console": {
@@ -515,7 +536,11 @@
     "importTitle": "导入历史记录",
     "importHint": "请粘贴 CSV 内容，每行一条记录，格式为角色名和QQ号（逗号或制表符分隔）",
     "importPlaceholder": "角色名, QQ号\n角色名2, QQ号2",
-    "importSuccess": "成功导入 {count} 条记录"
+    "importSuccess": "成功导入 {count} 条记录",
+    "requireEvidence": "需要证明图片",
+    "exampleEvidence": "示例证明图片",
+    "uploadExampleEvidence": "上传示例图片",
+    "uploadFailed": "上传失败"
   },
   "welfareMy": {
     "applyTab": "申请福利",
@@ -536,7 +561,11 @@
     "noEligibleWelfares": "暂无可申请的福利",
     "noApplications": "暂无申请记录",
     "distModePerUser": "按自然人",
-    "distModePerCharacter": "按人物"
+    "distModePerCharacter": "按人物",
+    "evidenceDialogTitle": "上传证明图片",
+    "evidenceDialogHint": "该福利需要您上传一张证明图片才能申请。",
+    "exampleEvidenceLabel": "示例图片（管理员提供）：",
+    "uploadEvidenceBtn": "选择图片"
   },
   "welfareApproval": {
     "pendingTab": "待发放",
@@ -564,7 +593,8 @@
     "noPending": "暂无待发放请求",
     "noHistory": "暂无处理记录",
     "searchBtn": "搜索",
-    "resetBtn": "重置"
+    "resetBtn": "重置",
+    "evidenceImage": "证明图片"
   },
   "shop": {
     "products": "商品列表",
@@ -1040,11 +1070,11 @@
       "completed": "已完成",
       "incomplete": "未完成",
       "completedHint": "个人资料已完成，可以正常访问其他页面。",
-      "requiredHint": "需要填写昵称，并至少填写 QQ 号码或 Discord ID 后才能继续使用系统。",
+      "requiredHint": "需要填写昵称，并至少填写 QQ 或 Discord ID 后才能继续使用系统。",
       "nickname": "昵称",
       "nicknamePlaceholder": "请输入昵称",
-      "qq": "QQ 号码",
-      "qqPlaceholder": "请输入 QQ 号码",
+      "qq": "QQ",
+      "qqPlaceholder": "请输入 QQ",
       "discordId": "Discord ID",
       "discordPlaceholder": "请输入 Discord ID",
       "save": "保存资料",
@@ -1052,9 +1082,9 @@
       "validation": {
         "nicknameRequired": "请输入昵称",
         "nicknameLength": "昵称最多 20 个字符",
-        "contactRequired": "请至少填写 QQ 号码或 Discord ID",
-        "qqLength": "QQ 号码最多 20 个字符",
-        "qqDigits": "QQ 号码只能包含数字",
+        "contactRequired": "请至少填写 QQ 或 Discord ID",
+        "qqLength": "QQ 最多 20 个字符",
+        "qqDigits": "QQ 只能包含数字",
         "discordLength": "Discord ID 最多 20 个字符"
       }
     }

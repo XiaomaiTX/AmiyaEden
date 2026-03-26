@@ -6,10 +6,56 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"encoding/base64"
+	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
+
+const (
+	evidenceMaxBytes = 2048 << 10 // 2MB
+)
+
+var evidenceAllowedMIME = map[string]bool{
+	"image/jpeg": true,
+	"image/png":  true,
+	"image/webp": true,
+}
+
+// UploadEvidence POST /welfare/upload-evidence
+// 接收图片文件，验证大小和类型，返回 base64 data URL（不写入文件系统）
+func (h *WelfareHandler) UploadEvidence(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, evidenceMaxBytes+1024)
+
+	file, _, err := c.Request.FormFile("file")
+	if err != nil {
+		response.Fail(c, response.CodeParamError, "获取文件失败: "+err.Error())
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, evidenceMaxBytes+1))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "读取文件失败")
+		return
+	}
+	if len(data) > evidenceMaxBytes {
+		response.Fail(c, response.CodeParamError, fmt.Sprintf("图片大小不能超过 %d KB", evidenceMaxBytes>>10))
+		return
+	}
+
+	mime := http.DetectContentType(data)
+	if !evidenceAllowedMIME[mime] {
+		response.Fail(c, response.CodeParamError, "仅支持 jpeg/png/webp 格式")
+		return
+	}
+
+	dataURL := fmt.Sprintf("data:%s;base64,%s", mime, base64.StdEncoding.EncodeToString(data))
+	response.OK(c, gin.H{"url": dataURL})
+}
 
 // WelfareHandler 福利 HTTP 处理器
 type WelfareHandler struct {
@@ -32,6 +78,8 @@ type adminWelfareCreateRequest struct {
 	RequireSkillPlan bool   `json:"require_skill_plan"`
 	SkillPlanIDs     []uint `json:"skill_plan_ids"`
 	MaxCharAgeMonths *int   `json:"max_char_age_months"`
+	RequireEvidence  bool   `json:"require_evidence"`
+	ExampleEvidence  string `json:"example_evidence"`
 	Status           int8   `json:"status"`
 }
 
@@ -50,6 +98,8 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 		RequireSkillPlan: req.RequireSkillPlan,
 		SkillPlanIDs:     req.SkillPlanIDs,
 		MaxCharAgeMonths: req.MaxCharAgeMonths,
+		RequireEvidence:  req.RequireEvidence,
+		ExampleEvidence:  req.ExampleEvidence,
 		Status:           req.Status,
 		CreatedBy:        middleware.GetUserID(c),
 	}
@@ -237,8 +287,9 @@ func (h *WelfareHandler) GetEligibleWelfares(c *gin.Context) {
 
 // applyForWelfareRequest 申请福利请求
 type applyForWelfareRequest struct {
-	WelfareID   uint  `json:"welfare_id" binding:"required"`
-	CharacterID int64 `json:"character_id"`
+	WelfareID     uint   `json:"welfare_id" binding:"required"`
+	CharacterID   int64  `json:"character_id"`
+	EvidenceImage string `json:"evidence_image"`
 }
 
 // ApplyForWelfare POST /welfare/apply
@@ -251,8 +302,9 @@ func (h *WelfareHandler) ApplyForWelfare(c *gin.Context) {
 
 	userID := middleware.GetUserID(c)
 	app, err := h.svc.ApplyForWelfare(userID, &service.ApplyForWelfareRequest{
-		WelfareID:   req.WelfareID,
-		CharacterID: req.CharacterID,
+		WelfareID:     req.WelfareID,
+		CharacterID:   req.CharacterID,
+		EvidenceImage: req.EvidenceImage,
 	})
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())

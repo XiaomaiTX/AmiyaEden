@@ -1,5 +1,16 @@
 import request from '@/utils/http'
 
+/** 上传福利证明图片（含示例），返回 base64 data URL（不写入文件系统，最大 200 KB） */
+export function uploadWelfareEvidence(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<{ url: string }>({
+    url: '/api/v1/welfare/upload-evidence',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
 // ─── 管理员福利设置 ───
 
 /** 管理员查询福利列表 */

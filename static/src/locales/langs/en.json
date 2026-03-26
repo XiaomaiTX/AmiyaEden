@@ -65,11 +65,20 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
+      "list": [
+        "Vertical",
+        "Horizontal",
+        "Mixed",
+        "Dual"
+      ]
     },
     "theme": {
       "title": "Theme Style",
-      "list": ["Light", "Dark", "System"]
+      "list": [
+        "Light",
+        "Dark",
+        "System"
+      ]
     },
     "menu": {
       "title": "Menu Style"
@@ -79,11 +88,17 @@
     },
     "box": {
       "title": "Box Style",
-      "list": ["Border", "Shadow"]
+      "list": [
+        "Border",
+        "Shadow"
+      ]
     },
     "container": {
       "title": "Container Width",
-      "list": ["Full", "Boxed"]
+      "list": [
+        "Full",
+        "Boxed"
+      ]
     },
     "basics": {
       "title": "Basic Config",
@@ -129,8 +144,14 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": ["Notice", "Message", "Todo"],
-    "text": ["No"],
+    "bar": [
+      "Notice",
+      "Message",
+      "Todo"
+    ],
+    "text": [
+      "No"
+    ],
     "viewAll": "View all"
   },
   "worktab": {
@@ -155,7 +176,7 @@
   },
   "login": {
     "leftView": {
-      "title": "AmiyaEden \u2014 EVE Online Tools & Community",
+      "title": "AmiyaEden — EVE Online Tools & Community",
       "subTitle": "Sign in with your EVE Online character, secure and simple"
     },
     "title": "Welcome",
@@ -514,7 +535,11 @@
     "importTitle": "Import History Records",
     "importHint": "Paste CSV with character name and QQ number per line (comma or tab separated)",
     "importPlaceholder": "CharacterName, QQNumber\nCharacterName2, QQNumber2",
-    "importSuccess": "Successfully imported {count} records"
+    "importSuccess": "Successfully imported {count} records",
+    "requireEvidence": "Require Evidence",
+    "exampleEvidence": "Example Evidence",
+    "uploadExampleEvidence": "Upload Example Image",
+    "uploadFailed": "Upload failed"
   },
   "welfareMy": {
     "applyTab": "Apply for Welfare",
@@ -535,7 +560,11 @@
     "noEligibleWelfares": "No eligible welfare available",
     "noApplications": "No applications yet",
     "distModePerUser": "Per User",
-    "distModePerCharacter": "Per Character"
+    "distModePerCharacter": "Per Character",
+    "evidenceDialogTitle": "Upload Evidence",
+    "evidenceDialogHint": "This welfare requires you to upload an image as evidence before applying.",
+    "exampleEvidenceLabel": "Example (provided by admin):",
+    "uploadEvidenceBtn": "Choose Image"
   },
   "welfareApproval": {
     "pendingTab": "Pending Delivery",
@@ -563,7 +592,8 @@
     "noPending": "No requested applications",
     "noHistory": "No processed records yet",
     "searchBtn": "Search",
-    "resetBtn": "Reset"
+    "resetBtn": "Reset",
+    "evidenceImage": "Evidence"
   },
   "shop": {
     "products": "Products",

@@ -508,8 +508,8 @@ declare namespace Api {
     }
 
     /** 军团 PAP 汇总分页响应 */
-    interface CorporationPapSummaryList
-      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
+    interface CorporationPapSummaryList extends Api.Common
+      .PaginatedResponse<CorporationPapSummaryItem> {
       overview: CorporationPapOverview
     }
 
@@ -1060,6 +1060,8 @@ declare namespace Api {
       require_skill_plan: boolean
       skill_plan_ids: number[]
       max_char_age_months: number | null
+      require_evidence: boolean
+      example_evidence: string
       status: number
       created_by: number
       created_at: string
@@ -1074,6 +1076,8 @@ declare namespace Api {
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
+      require_evidence?: boolean
+      example_evidence?: string
       status?: number
     }
 
@@ -1086,6 +1090,8 @@ declare namespace Api {
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
+      require_evidence?: boolean
+      example_evidence?: string
       status?: number
     }
 
@@ -1109,6 +1115,8 @@ declare namespace Api {
       name: string
       description: string
       dist_mode: 'per_user' | 'per_character'
+      require_evidence: boolean
+      example_evidence: string
       eligible_characters: EligibleCharacter[]
     }
 
@@ -1127,6 +1135,7 @@ declare namespace Api {
     interface ApplyParams {
       welfare_id: number
       character_id?: number
+      evidence_image?: string
     }
 
     /** 导入历史记录参数 */
@@ -1151,6 +1160,7 @@ declare namespace Api {
       character_name: string
       qq: string
       discord_id: string
+      evidence_image: string
       status: 'requested' | 'delivered' | 'rejected'
       reviewed_by: number
       reviewer_name: string
