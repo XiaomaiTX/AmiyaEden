@@ -4,29 +4,92 @@ on:
   push:
     branches: [ preview ]
 
+permissions:
+  contents: read
+  
 jobs:
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+            frontend:
+              - 'static/**'
 
   build:
-
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        if: needs.changes.outputs.backend == 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Setup pnpm
+        if: needs.changes.outputs.frontend == 'true'
+        uses: pnpm/action-setup@v5
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        if: needs.changes.outputs.frontend == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: static/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        if: needs.changes.outputs.frontend == 'true'
+        working-directory: static
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify backend
+        if: needs.changes.outputs.backend == 'true'
+        working-directory: server
+        run: |
+          go test ./...
+          go build ./...
+
+      - name: Verify frontend
+        if: needs.changes.outputs.frontend == 'true'
+        working-directory: static
+        run: |
+          pnpm lint .
+          pnpm exec vue-tsc --noEmit
+          pnpm test:unit
+          pnpm build
 
       - name: Login to DockerHub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: ${{ vars.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
 
       - name: Get short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Build and push Backend image
-        uses: docker/build-push-action@v2
+        if: needs.changes.outputs.backend == 'true'
+        uses: docker/build-push-action@v6
         with:
           context: ./server
           file: ./server/Dockerfile
@@ -34,10 +97,11 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_REPO }}-backend:preview
+            ${{ vars.DOCKER_HUB_REPO }}-backend:preview
 
       - name: Build and push Frontend image
-        uses: docker/build-push-action@v2
+        if: needs.changes.outputs.frontend == 'true'
+        uses: docker/build-push-action@v6
         with:
           context: ./static
           file: ./static/Dockerfile
@@ -45,4 +109,10 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ secrets.DOCKER_HUB_REPO }}-frontend:preview
+            ${{ vars.DOCKER_HUB_REPO }}-frontend:preview
+
+      - name: Trigger Self-hosted Auto-Deploy
+        run: |
+          curl -X GET "${{ vars.PREVIEW_DEPLOY_CI_WEBHOOK_URL }}" \
+            -H "accept: application/json" \
+            -H "x-api-key: ${{ secrets.PREVIEW_DEPLOY_CI_API_TOKEN }}"

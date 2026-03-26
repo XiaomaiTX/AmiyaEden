@@ -58,7 +58,7 @@ source_of_truth:
 
 这些文件只用于离线查阅，不是当前运行时行为的权威来源。
 
-如果你已经确认改动会落在 `server/pkg/eve/esi/` 内部实现细节，再补读该目录下的 `README.md`。但它只用于解释本地机制，不能覆盖 `AGENTS.md` 与 `docs/` 中的 canonical 规则。
+如果你已经确认改动会落在 `server/pkg/eve/esi/` 内部实现细节，再补读该目录下的 `README.md`。但它只用于解释本地机制，不能覆盖 `docs/ai/repo-rules.md` 与 `docs/` 中的 canonical 规则。
 
 ## 任务系统要求
 
@@ -68,6 +68,8 @@ source_of_truth:
 - 明确任务名、scope、刷新频率
 - 考虑新角色首次全量刷新与后台周期调度
 - 不要在 handler 里直接调用 CCP API
+- **所有 ESI API 端点必须使用 `global.Config.EveSSO.ESIBaseURL` 和 `ESIAPIPrefix` 构建，禁止硬编码 EVE 官方 URL**
+- 如果需要直接在 service 层调用 ESI，必须使用 `global.Config.EveSSO.ESIBaseURL` 或通过 `pkg/eve/esi/client.go` 的配置化客户端
 
 ## 前端要求
 
@@ -81,4 +83,4 @@ source_of_truth:
 
 - `docs/api/route-index.md`
 - 对应 `docs/features/current/*.md`
-- 若引入新的约束，再更新 `AGENTS.md` 或 `docs/standards`
+- 若引入新的约束，再更新 `docs/ai/repo-rules.md` 或 `docs/standards`

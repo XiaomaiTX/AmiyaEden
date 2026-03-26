@@ -99,6 +99,29 @@ export function payoutApplication(id: number, data?: Api.Srp.PayoutParams) {
   })
 }
 
+/** 获取批量发放汇总 */
+export function fetchBatchPayoutSummary() {
+  return request.get<Api.Srp.BatchPayoutSummary[]>({
+    url: '/api/v1/srp/applications/batch-payout-summary'
+  })
+}
+
+/** 批量自动审批符合规则的待审批 SRP */
+export function runFleetAutoApproval(data: Api.Srp.AutoApproveParams) {
+  return request.put<Api.Srp.AutoApproveSummary>({
+    url: '/api/v1/srp/applications/auto-approve',
+    data
+  })
+}
+
+/** 按用户批量发放 SRP */
+export function batchPayoutByUser(userId: number) {
+  return request.put<Api.Srp.BatchPayoutSummary>({
+    url: `/api/v1/srp/applications/users/${userId}/payout`,
+    data: {}
+  })
+}
+
 /** 通过 ESI 在客户端打开角色信息窗口 */
 export function openInfoWindow(data: { character_id: number; target_id: number }) {
   return request.post({

@@ -260,8 +260,10 @@ func (s *CloneService) resolveLocationName(characterID, locationID int64, locati
 			"solar_system": {int(locationID)},
 		}, "zh")
 		if err == nil {
-			if name, ok := names[int(locationID)]; ok {
-				return name
+			if solarNames, ok := names["solar_system"]; ok {
+				if name, ok := solarNames[int(locationID)]; ok {
+					return name
+				}
 			}
 		}
 		// station ID 通常在 60000000–61000000 范围，尝试通过 staStations 表
@@ -346,7 +348,7 @@ func (s *CloneService) fetchAndCacheStructure(characterID, structureID int64) st
 // ─────────────────────────────────────────────
 
 func (s *CloneService) esiGet(ctx context.Context, path, accessToken string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, esiBaseURL+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -357,7 +359,9 @@ func (s *CloneService) esiGet(ctx context.Context, path, accessToken string, out
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

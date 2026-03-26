@@ -220,14 +220,14 @@
           minWidth: 140,
           showOverflowTooltip: true,
           formatter: (row: Api.Srp.Application) =>
-            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`))
+            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
         },
         {
           prop: 'recommended_amount',
           label: t('srp.apply.columns.estimatedValue'),
           width: 140,
           formatter: (row: Api.Srp.Application) =>
-            h('span', {}, `${formatISK(row.recommended_amount)} ISK`)
+            h('span', {}, `${formatISK(row.recommended_amount)} M ISK`)
         },
         {
           prop: 'review_status',
@@ -249,7 +249,7 @@
           width: 130,
           formatter: (row: Api.Srp.Application) =>
             row.final_amount > 0
-              ? h('span', {}, `${formatISK(row.final_amount)} ISK`)
+              ? h('span', {}, `${formatISK(row.final_amount)} M ISK`)
               : h('span', {}, '-')
         },
         {
@@ -260,7 +260,7 @@
             h(
               'span',
               {},
-              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
+              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')
             )
         },
         {
@@ -319,7 +319,6 @@
     fleet_id: '',
     killmail_id: 0,
     note: '',
-    final_amount: 0,
     recommended_amount: 0
   })
 
@@ -357,9 +356,9 @@
   }
 
   const formatKmLabel = (km: Api.Srp.FleetKillmailItem) =>
-    `${km.killmail_id}: ${getName(km.ship_type_id, `TypeID: ${km.ship_type_id}`)}` +
+    `${km.killmail_id}: ${getName(km.ship_type_id, `TypeID: ${km.ship_type_id}`, 'type')}` +
     `(${km.victim_name}) - ${formatTime(km.killmail_time)}` +
-    ` @${getName(km.solar_system_id, String(km.solar_system_id))}`
+    ` @${getName(km.solar_system_id, String(km.solar_system_id), 'solar_system')}`
 
   const loadKillmails = async () => {
     kmLoading.value = true
@@ -425,8 +424,7 @@
         character_id: form.character_id,
         killmail_id: form.killmail_id,
         fleet_id: fleetId,
-        note: form.note,
-        final_amount: form.final_amount
+        note: form.note
       })
       ElMessage.success(t('srp.apply.submitSuccess'))
       formRef.value?.resetFields()
@@ -470,7 +468,7 @@
     new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(v ?? 0)
+    }).format((v ?? 0) / 1_000_000)
 
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
   const reviewStatusType = (s: string): TagType =>
@@ -479,10 +477,10 @@
     ] ?? 'info'
   const reviewStatusLabel = (s: string) =>
     ({
-      pending: t('srp.status.pending'),
+      submitted: t('srp.status.submitted'),
       approved: t('srp.status.approved'),
       rejected: t('srp.status.rejected')
-    })[s as 'pending' | 'approved' | 'rejected'] ?? s
+    })[s as 'submitted' | 'approved' | 'rejected'] ?? s
 
   /* ── 初始化 ── */
   onMounted(async () => {

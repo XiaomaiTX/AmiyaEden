@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -57,7 +58,7 @@ func (h *FleetConfigHandler) ListFleetConfigs(c *gin.Context) {
 // GetFleetConfig 获取舰队配置详情
 func (h *FleetConfigHandler) GetFleetConfig(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的配置ID")
 		return
 	}
@@ -72,7 +73,7 @@ func (h *FleetConfigHandler) GetFleetConfig(c *gin.Context) {
 // UpdateFleetConfig 更新舰队配置
 func (h *FleetConfigHandler) UpdateFleetConfig(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的配置ID")
 		return
 	}
@@ -82,8 +83,8 @@ func (h *FleetConfigHandler) UpdateFleetConfig(c *gin.Context) {
 		return
 	}
 	userID := middleware.GetUserID(c)
-	userRole := middleware.GetUserRole(c)
-	result, err := h.svc.UpdateFleetConfig(uint(id), userID, userRole, &req)
+	userRoles := middleware.GetUserRoles(c)
+	result, err := h.svc.UpdateFleetConfig(uint(id), userID, userRoles, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -94,13 +95,13 @@ func (h *FleetConfigHandler) UpdateFleetConfig(c *gin.Context) {
 // DeleteFleetConfig 删除舰队配置
 func (h *FleetConfigHandler) DeleteFleetConfig(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的配置ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
-	userRole := middleware.GetUserRole(c)
-	if err := h.svc.DeleteFleetConfig(uint(id), userID, userRole); err != nil {
+	userRoles := middleware.GetUserRoles(c)
+	if err := h.svc.DeleteFleetConfig(uint(id), userID, userRoles); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -141,7 +142,7 @@ func (h *FleetConfigHandler) ExportToESI(c *gin.Context) {
 // GetFittingEFT 获取舰队配置中所有装配的本地化 EFT 文本
 func (h *FleetConfigHandler) GetFittingEFT(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || id > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的配置ID")
 		return
 	}
@@ -157,12 +158,12 @@ func (h *FleetConfigHandler) GetFittingEFT(c *gin.Context) {
 // GetFittingItems 获取装配物品详情（含重要性、惩罚、替代品）
 func (h *FleetConfigHandler) GetFittingItems(c *gin.Context) {
 	configID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || configID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的配置ID")
 		return
 	}
 	fittingID, err := strconv.ParseUint(c.Param("fitting_id"), 10, 64)
-	if err != nil {
+	if err != nil || fittingID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的装配ID")
 		return
 	}
@@ -178,12 +179,12 @@ func (h *FleetConfigHandler) GetFittingItems(c *gin.Context) {
 // UpdateFittingItemsSettings 批量更新装配物品设置（重要性、惩罚、替代品）
 func (h *FleetConfigHandler) UpdateFittingItemsSettings(c *gin.Context) {
 	configID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
+	if err != nil || configID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的配置ID")
 		return
 	}
 	fittingID, err := strconv.ParseUint(c.Param("fitting_id"), 10, 64)
-	if err != nil {
+	if err != nil || fittingID > math.MaxUint32 {
 		response.Fail(c, response.CodeParamError, "无效的装配ID")
 		return
 	}
@@ -193,8 +194,8 @@ func (h *FleetConfigHandler) UpdateFittingItemsSettings(c *gin.Context) {
 		return
 	}
 	userID := middleware.GetUserID(c)
-	userRole := middleware.GetUserRole(c)
-	if err := h.svc.UpdateFittingItemsSettings(uint(configID), uint(fittingID), userID, userRole, &req); err != nil {
+	userRoles := middleware.GetUserRoles(c)
+	if err := h.svc.UpdateFittingItemsSettings(uint(configID), uint(fittingID), userID, userRoles, &req); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

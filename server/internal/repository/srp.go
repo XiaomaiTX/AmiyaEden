@@ -3,6 +3,16 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"errors"
+	"time"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+var (
+	ErrNoApprovedUnpaidBatchPayoutApplications = errors.New("no approved unpaid batch payout applications")
+	ErrBatchPayoutSelectionChanged             = errors.New("batch payout selection changed")
 )
 
 // SrpRepository SRP 数据访问层
@@ -74,8 +84,42 @@ func (r *SrpRepository) UpdateApplication(app *model.SrpApplication) error {
 	return global.DB.Save(app).Error
 }
 
+func buildSubmittedLinkedApplicationsQuery(db *gorm.DB) *gorm.DB {
+	return db.Model(&model.SrpApplication{}).
+		Where("review_status = ?", model.SrpReviewSubmitted).
+		Where("fleet_id IS NOT NULL AND fleet_id <> ''")
+}
+
+// ListSubmittedLinkedApplications 查询所有 submitted 且已关联舰队的申请
+func (r *SrpRepository) ListSubmittedLinkedApplications() ([]model.SrpApplication, error) {
+	var list []model.SrpApplication
+	err := buildSubmittedLinkedApplicationsQuery(global.DB).
+		Order("id ASC").
+		Find(&list).Error
+	return list, err
+}
+
+// ListSubmittedLinkedApplicationsByFleet 查询指定舰队下 submitted 且已关联舰队的申请
+func (r *SrpRepository) ListSubmittedLinkedApplicationsByFleet(fleetID string) ([]model.SrpApplication, error) {
+	var list []model.SrpApplication
+	err := buildSubmittedLinkedApplicationsQuery(global.DB).
+		Where("fleet_id = ?", fleetID).
+		Order("id ASC").
+		Find(&list).Error
+	return list, err
+}
+
+// SrpTabType 申请列表 Tab 分类
+type SrpTabType string
+
+const (
+	SrpTabPending SrpTabType = "pending" // 待处理：pending/approved + unpaid
+	SrpTabHistory SrpTabType = "history" // 发放记录：paid OR rejected
+)
+
 // SrpApplicationFilter 申请列表筛选条件
 type SrpApplicationFilter struct {
+	Tab          SrpTabType
 	UserID       *uint
 	CharacterID  *int64
 	FleetID      *string
@@ -83,27 +127,49 @@ type SrpApplicationFilter struct {
 	PayoutStatus string
 }
 
+// SrpBatchPayoutSummaryRow 按用户聚合的待批量发放汇总
+type SrpBatchPayoutSummaryRow struct {
+	UserID           uint    `json:"user_id"`
+	TotalAmount      float64 `json:"total_amount"`
+	ApplicationCount int64   `json:"application_count"`
+}
+
+func buildSrpApplicationListQuery(db *gorm.DB, filter SrpApplicationFilter) *gorm.DB {
+	query := db.Model(&model.SrpApplication{})
+
+	switch filter.Tab {
+	case SrpTabPending:
+		query = query.Where("review_status IN (?, ?) AND payout_status = ?",
+			model.SrpReviewSubmitted, model.SrpReviewApproved, model.SrpPayoutNotPaid)
+	case SrpTabHistory:
+		query = query.Where("payout_status = ? OR review_status = ?",
+			model.SrpPayoutPaid, model.SrpReviewRejected)
+	}
+	if filter.UserID != nil {
+		query = query.Where("user_id = ?", *filter.UserID)
+	}
+	if filter.CharacterID != nil {
+		query = query.Where("character_id = ?", *filter.CharacterID)
+	}
+	if filter.FleetID != nil {
+		query = query.Where("fleet_id = ?", *filter.FleetID)
+	}
+	if filter.ReviewStatus != "" {
+		query = query.Where("review_status = ?", filter.ReviewStatus)
+	}
+	if filter.PayoutStatus != "" {
+		query = query.Where("payout_status = ?", filter.PayoutStatus)
+	}
+
+	return query
+}
+
 // ListApplications 分页查询申请列表
 func (r *SrpRepository) ListApplications(page, pageSize int, filter SrpApplicationFilter) ([]model.SrpApplication, int64, error) {
 	var list []model.SrpApplication
 	var total int64
 
-	db := global.DB.Model(&model.SrpApplication{})
-	if filter.UserID != nil {
-		db = db.Where("user_id = ?", *filter.UserID)
-	}
-	if filter.CharacterID != nil {
-		db = db.Where("character_id = ?", *filter.CharacterID)
-	}
-	if filter.FleetID != nil {
-		db = db.Where("fleet_id = ?", *filter.FleetID)
-	}
-	if filter.ReviewStatus != "" {
-		db = db.Where("review_status = ?", filter.ReviewStatus)
-	}
-	if filter.PayoutStatus != "" {
-		db = db.Where("payout_status = ?", filter.PayoutStatus)
-	}
+	db := buildSrpApplicationListQuery(global.DB, filter)
 
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -117,4 +183,82 @@ func (r *SrpRepository) ListApplications(page, pageSize int, filter SrpApplicati
 func (r *SrpRepository) ListMyApplications(userID uint, page, pageSize int) ([]model.SrpApplication, int64, error) {
 	uid := &userID
 	return r.ListApplications(page, pageSize, SrpApplicationFilter{UserID: uid})
+}
+
+// ListBatchPayoutSummary 查询所有可批量发放的按用户汇总数据
+func (r *SrpRepository) ListBatchPayoutSummary() ([]SrpBatchPayoutSummaryRow, error) {
+	var list []SrpBatchPayoutSummaryRow
+	err := global.DB.Model(&model.SrpApplication{}).
+		Select(`
+			user_id,
+			SUM(final_amount) AS total_amount,
+			COUNT(id) AS application_count
+		`).
+		Where("payout_status = ? AND review_status = ?", model.SrpPayoutNotPaid, model.SrpReviewApproved).
+		Group("user_id").
+		Order("total_amount DESC, user_id ASC").
+		Scan(&list).Error
+	return list, err
+}
+
+func buildApprovedUnpaidBatchPayoutApplicationsQuery(db *gorm.DB, userID uint) *gorm.DB {
+	return db.Model(&model.SrpApplication{}).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Select("id", "user_id", "final_amount").
+		Where("user_id = ? AND payout_status = ? AND review_status = ?", userID, model.SrpPayoutNotPaid, model.SrpReviewApproved).
+		Order("id ASC")
+}
+
+func summarizeBatchPayoutApplications(userID uint, apps []model.SrpApplication) (SrpBatchPayoutSummaryRow, []uint) {
+	summary := SrpBatchPayoutSummaryRow{UserID: userID}
+	ids := make([]uint, 0, len(apps))
+	for _, app := range apps {
+		summary.TotalAmount += app.FinalAmount
+		summary.ApplicationCount++
+		ids = append(ids, app.ID)
+	}
+	return summary, ids
+}
+
+func buildBatchPayoutApplicationsUpdateQuery(db *gorm.DB, applicationIDs []uint, payerID uint, paidAt time.Time) *gorm.DB {
+	return db.Model(&model.SrpApplication{}).
+		Where("id IN ?", applicationIDs).
+		Where("payout_status = ? AND review_status = ?", model.SrpPayoutNotPaid, model.SrpReviewApproved).
+		Updates(map[string]interface{}{
+			"payout_status": model.SrpPayoutPaid,
+			"paid_by":       payerID,
+			"paid_at":       paidAt,
+		})
+}
+
+// BatchPayoutApplicationsByUser 将某用户所有已批准且待发放的申请标记为已发放
+func (r *SrpRepository) BatchPayoutApplicationsByUser(userID uint, payerID uint, paidAt time.Time) (*SrpBatchPayoutSummaryRow, error) {
+	var summary *SrpBatchPayoutSummaryRow
+
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		var apps []model.SrpApplication
+		if err := buildApprovedUnpaidBatchPayoutApplicationsQuery(tx, userID).Find(&apps).Error; err != nil {
+			return err
+		}
+		if len(apps) == 0 {
+			return ErrNoApprovedUnpaidBatchPayoutApplications
+		}
+
+		selectedSummary, applicationIDs := summarizeBatchPayoutApplications(userID, apps)
+		updateTx := buildBatchPayoutApplicationsUpdateQuery(tx, applicationIDs, payerID, paidAt)
+		if updateTx.Error != nil {
+			return updateTx.Error
+		}
+		if updateTx.RowsAffected != int64(len(applicationIDs)) {
+			return ErrBatchPayoutSelectionChanged
+		}
+
+		summary = &selectedSummary
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return summary, nil
 }

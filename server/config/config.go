@@ -1,5 +1,15 @@
 package config
 
+import "strings"
+
+const (
+	DefaultESIBaseURL       = "https://esi.evetech.net"
+	DefaultESIAPIPrefix     = "/latest"
+	DefaultSSOAuthorizeURL  = "https://login.eveonline.com/v2/oauth/authorize"
+	DefaultSSOTokenURL      = "https://login.eveonline.com/v2/oauth/token"
+	DefaultEVEImagesBaseURL = "https://images.evetech.net"
+)
+
 // Config 全局配置根结构
 type Config struct {
 	Server      ServerConfig      `mapstructure:"server"`
@@ -57,9 +67,14 @@ type RedisConfig struct {
 
 // EveSSOConfig EVE Online SSO 配置
 type EveSSOConfig struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-	CallbackURL  string `mapstructure:"callback_url"`
+	ClientID         string `mapstructure:"client_id"`
+	ClientSecret     string `mapstructure:"client_secret"`
+	CallbackURL      string `mapstructure:"callback_url"`
+	ESIBaseURL       string `mapstructure:"esi_base_url"`
+	ESIAPIPrefix     string `mapstructure:"esi_api_prefix"`
+	SSOAuthorizeURL  string `mapstructure:"sso_authorize_url"`
+	SSOTokenURL      string `mapstructure:"sso_token_url"`
+	EVEImagesBaseURL string `mapstructure:"eve_images_base_url"`
 }
 
 // SDEConfig SDE 模块配置
@@ -71,7 +86,40 @@ type SDEConfig struct {
 
 // AppConfig 全局应用配置实例
 type AppConfig struct {
-	AllowCorporations []int64 `mapstructure:"allow_corporations"` // 允许访问的公司 ID 列表，空表示不限制
+}
+
+func ApplyDefaults(cfg *Config) {
+	if cfg == nil {
+		return
+	}
+	cfg.EveSSO.ESIBaseURL = normalizeBaseURL(cfg.EveSSO.ESIBaseURL, DefaultESIBaseURL)
+	cfg.EveSSO.ESIAPIPrefix = normalizePrefix(cfg.EveSSO.ESIAPIPrefix, DefaultESIAPIPrefix)
+	cfg.EveSSO.SSOAuthorizeURL = normalizeBaseURL(cfg.EveSSO.SSOAuthorizeURL, DefaultSSOAuthorizeURL)
+	cfg.EveSSO.SSOTokenURL = normalizeBaseURL(cfg.EveSSO.SSOTokenURL, DefaultSSOTokenURL)
+	cfg.EveSSO.EVEImagesBaseURL = normalizeBaseURL(cfg.EveSSO.EVEImagesBaseURL, DefaultEVEImagesBaseURL)
+}
+
+func normalizeBaseURL(raw, fallback string) string {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		v = fallback
+	}
+	return strings.TrimRight(v, "/")
+}
+
+func normalizePrefix(raw, fallback string) string {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		v = fallback
+	}
+	v = strings.TrimRight(v, "/")
+	if v == "" {
+		return ""
+	}
+	if !strings.HasPrefix(v, "/") {
+		v = "/" + v
+	}
+	return v
 }
 
 // AlliancePAPConfig 联盟 PAP 外部 API 配置

@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/internal/utils"
+	"amiya-eden/pkg/eve/esi"
 	"context"
 	"errors"
 
@@ -90,8 +92,76 @@ func (s *AutoRoleService) ListEsiTitleMappings() ([]model.EsiTitleMapping, error
 }
 
 // ListCorpTitles 获取数据库中所有去重的军团头衔（用于前端下拉选择）
+// 返回结果包含从 ESI 查询的军团名称
 func (s *AutoRoleService) ListCorpTitles() ([]repository.CorpTitleInfo, error) {
-	return s.autoRoleRepo.ListDistinctCorpTitles()
+	titles, err := s.autoRoleRepo.ListDistinctCorpTitles()
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch corporation names from ESI
+	corpNames, err := s.fetchCorporationNames(titles)
+	if err != nil {
+		// Log error but don't fail - names will be empty and frontend will fall back to ID
+		global.Logger.Warn("[AutoRole] Failed to fetch corporation names from ESI",
+			zap.Error(err),
+		)
+	} else {
+		// Populate corporation names
+		for i := range titles {
+			if name, ok := corpNames[titles[i].CorporationID]; ok {
+				titles[i].CorporationName = name
+			}
+		}
+	}
+
+	return titles, nil
+}
+
+// fetchCorporationNames 批量查询军团名称，通过 ESI /universe/names 端点
+type esiNameEntry struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func (s *AutoRoleService) fetchCorporationNames(titles []repository.CorpTitleInfo) (map[int64]string, error) {
+	// Collect unique corporation IDs
+	corpIDSet := make(map[int64]struct{})
+	for _, t := range titles {
+		if t.CorporationID > 0 {
+			corpIDSet[t.CorporationID] = struct{}{}
+		}
+	}
+	if len(corpIDSet) == 0 {
+		return nil, nil
+	}
+
+	// Convert to slice for ESI request
+	corpIDs := make([]int64, 0, len(corpIDSet))
+	for id := range corpIDSet {
+		corpIDs = append(corpIDs, id)
+	}
+
+	// Call ESI /universe/names
+	client := esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
+	var esiResults []esiNameEntry
+	if err := client.PostJSON(
+		context.Background(),
+		"/universe/names?datasource=tranquility",
+		"",
+		corpIDs,
+		&esiResults,
+	); err != nil {
+		return nil, err
+	}
+
+	// Build map of corporation_id -> corporation_name
+	nameMap := make(map[int64]string, len(esiResults))
+	for _, entry := range esiResults {
+		nameMap[int64(entry.ID)] = entry.Name
+	}
+
+	return nameMap, nil
 }
 
 // CreateEsiTitleMapping 创建 ESI 头衔映射
@@ -129,7 +199,8 @@ func (s *AutoRoleService) DeleteEsiTitleMapping(id uint) error {
 
 // SyncUserAutoRoles 根据 ESI 军团角色 + 头衔，自动同步用户的系统权限
 // 规则：
-//   - Director 始终对应 admin 角色
+//   - 当用户当前仅为 guest（或尚无有效角色）且任一绑定角色在 allow_corporations 内时，自动补 user 角色
+//   - 任一允许军团角色拥有 ESI corp role `Director` 时自动补 admin 角色
 //   - 根据 esi_role_mapping 表的配置，将 ESI 角色映射到系统角色
 //   - 根据 esi_title_mapping 表的配置，将 ESI 头衔映射到系统角色
 //   - super_admin 不受影响
@@ -153,23 +224,32 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 		return nil
 	}
 
-	// 构建允许军团白名单（为空表示不限制）
-	allowCorps := global.Config.App.AllowCorporations
+	// 构建允许军团白名单（为空表示不信任任何军团信号）
+	allowCorps := utils.GetAllowCorporations()
 	allowCorpSet := make(map[int64]struct{}, len(allowCorps))
 	for _, id := range allowCorps {
 		allowCorpSet[id] = struct{}{}
 	}
 
-	// 收集所有角色的 ESI 军团角色（仅限允许军团）
+	autoRoleIDs := make(map[uint]struct{})
+	shouldPromoteGuestToUser := shouldAutoPromoteGuestToUser(currentCodes, chars, allowCorpSet)
+	if shouldPromoteGuestToUser {
+		userRole, err := s.roleRepo.GetByCode(model.RoleUser)
+		if err != nil {
+			global.Logger.Warn("[AutoRole] 查询 user 角色失败", zap.Error(err))
+		} else {
+			autoRoleIDs[userRole.ID] = struct{}{}
+		}
+	}
+
+	// 收集所有角色的 ESI 军团角色。
+	// 仅允许 allow_corporations 名单内军团参与自动映射。
+	// 当名单为空时，不信任任何 ESI 军团角色信号。
 	allEsiRoles := make(map[string]struct{})
-	hasDirector := false
 
 	for _, char := range chars {
-		// 跳过不在允许军团中的角色
-		if len(allowCorpSet) > 0 {
-			if _, ok := allowCorpSet[char.CorporationID]; !ok {
-				continue
-			}
+		if !isAllowedCorporation(char.CorporationID, allowCorpSet) {
+			continue
 		}
 
 		corpRoles, err := s.autoRoleRepo.ListCharacterCorpRoles(char.CharacterID)
@@ -181,23 +261,10 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 		}
 		for _, r := range corpRoles {
 			allEsiRoles[r] = struct{}{}
-			if r == "Director" {
-				hasDirector = true
-			}
 		}
 	}
 
 	// 根据所有 ESI 角色查找映射
-	autoRoleIDs := make(map[uint]struct{})
-
-	// Director → admin
-	if hasDirector {
-		adminRole, err := s.roleRepo.GetByCode(model.RoleAdmin)
-		if err == nil {
-			autoRoleIDs[adminRole.ID] = struct{}{}
-		}
-	}
-
 	// 查找 ESI 角色映射
 	if len(allEsiRoles) > 0 {
 		esiRoleNames := make([]string, 0, len(allEsiRoles))
@@ -216,18 +283,15 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 
 	// 查找 ESI 头衔映射（仅限允许军团）
 	for _, char := range chars {
-		if char.CorporationID == 0 {
+		if !isAllowedCorporation(char.CorporationID, allowCorpSet) {
 			continue
 		}
-		// 跳过不在允许军团中的角色
-		if len(allowCorpSet) > 0 {
-			if _, ok := allowCorpSet[char.CorporationID]; !ok {
-				continue
-			}
-		}
 		// 查询角色头衔
-		var titles []model.EveCharacterTitle
-		if err := global.DB.Where("character_id = ?", char.CharacterID).Find(&titles).Error; err != nil {
+		titles, err := s.autoRoleRepo.ListCharacterTitles(char.CharacterID)
+		if err != nil {
+			global.Logger.Warn("[AutoRole] 查询角色头衔失败",
+				zap.Int64("character_id", char.CharacterID),
+				zap.Error(err))
 			continue
 		}
 		if len(titles) == 0 {
@@ -243,6 +307,15 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 		}
 		for _, m := range titleMappings {
 			autoRoleIDs[m.RoleID] = struct{}{}
+		}
+	}
+
+	if hasDirectorCorpRole(allEsiRoles) {
+		adminRole, err := s.roleRepo.GetByCode(model.RoleAdmin)
+		if err != nil {
+			global.Logger.Warn("[AutoRole] 查询 admin 角色失败", zap.Error(err))
+		} else {
+			autoRoleIDs[adminRole.ID] = struct{}{}
 		}
 	}
 
@@ -272,6 +345,15 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 					zap.Uint("user_id", userID),
 					zap.Uint("role_id", rid),
 					zap.Error(err))
+			}
+		}
+		if shouldPromoteGuestToUser {
+			if guestRole, err := s.roleRepo.GetByCode(model.RoleGuest); err == nil {
+				if err := s.roleRepo.RemoveUserRole(userID, guestRole.ID); err != nil {
+					global.Logger.Warn("[AutoRole] 移除 guest 角色失败",
+						zap.Uint("user_id", userID),
+						zap.Error(err))
+				}
 			}
 		}
 		s.roleSvc.InvalidateUserCache(ctx, userID)

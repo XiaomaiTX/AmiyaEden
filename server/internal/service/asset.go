@@ -145,9 +145,6 @@ func (s *AssetService) GetUserAssets(userID uint, req *InfoAssetsRequest) (*Info
 	// 5. 建立位置分组
 	//    根物品: location_type == station / solar_system / other
 	//    子物品: location_type == item (location_id 是父物品的 item_id)
-	type locationKey struct {
-		LocationID int64
-	}
 
 	// 先找所有根位置 ID（非 item 类型的 location）
 	rootLocationIDs := make(map[int64]string)                // locationID -> locationType
@@ -260,8 +257,10 @@ func (s *AssetService) resolveLocationName(chars []model.EveCharacter, locationI
 			"solar_system": {int(locationID)},
 		}, "zh")
 		if err == nil {
-			if name, ok := names[int(locationID)]; ok {
-				return name
+			if solarNames, ok := names["solar_system"]; ok {
+				if name, ok := solarNames[int(locationID)]; ok {
+					return name
+				}
 			}
 		}
 		return fmt.Sprintf("System-%d", locationID)
@@ -289,11 +288,13 @@ func (s *AssetService) resolveStationName(stationID int64) string {
 		Where(`"stationID" = ?`, stationID).
 		Scan(&name).Error; err == nil && name != "" {
 		// 缓存到 eve_stations 表
-		s.assetRepo.UpsertStation(&model.EveStation{
+		if err := s.assetRepo.UpsertStation(&model.EveStation{
 			StationID:   stationID,
 			StationName: name,
 			UpdateAt:    time.Now().Unix(),
-		})
+		}); err != nil {
+			global.Logger.Warn("[Asset] 缓存空间站信息失败", zap.Int64("station_id", stationID), zap.Error(err))
+		}
 		return name
 	}
 
@@ -348,7 +349,7 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 		return fmt.Sprintf("Station-%d", stationID)
 	}
 
-	s.assetRepo.UpsertStation(&model.EveStation{
+	if err := s.assetRepo.UpsertStation(&model.EveStation{
 		StationID:     stationID,
 		StationName:   detail.Name,
 		OwnerID:       detail.Owner,
@@ -358,7 +359,9 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 		Y:             detail.Position.Y,
 		Z:             detail.Position.Z,
 		UpdateAt:      time.Now().Unix(),
-	})
+	}); err != nil {
+		global.Logger.Warn("[Asset] 缓存空间站信息失败", zap.Int64("station_id", stationID), zap.Error(err))
+	}
 
 	return detail.Name
 }
@@ -413,7 +416,7 @@ func (s *AssetService) fetchAndCacheStructure(characterID, structureID int64, ac
 // ─────────────────────────────────────────────
 
 func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, esiBaseURL+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -424,7 +427,11 @@ func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			global.Logger.Warn("[Asset] 关闭响应体失败", zap.Error(err))
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
@@ -435,7 +442,7 @@ func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out
 }
 
 func (s *AssetService) esiGetPublic(ctx context.Context, path string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, esiBaseURL+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -445,7 +452,11 @@ func (s *AssetService) esiGetPublic(ctx context.Context, path string, out interf
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			global.Logger.Warn("[Asset] 关闭响应体失败", zap.Error(err))
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"bytes"
@@ -312,12 +313,12 @@ func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*Fi
 
 	// 如果有 fittingID，先删除 ESI 上的旧装配
 	if req.FittingID != nil && *req.FittingID > 0 {
-		deleteURL := fmt.Sprintf("https://esi.evetech.net/characters/%d/fittings/%d/", req.CharacterID, *req.FittingID)
+		deleteURL := fmt.Sprintf("%s/characters/%d/fittings/%d/", global.Config.EveSSO.ESIBaseURL, req.CharacterID, *req.FittingID)
 		delReq, _ := http.NewRequestWithContext(bgCtx, http.MethodDelete, deleteURL, nil)
 		delReq.Header.Set("Authorization", "Bearer "+char.AccessToken)
 		resp, err := httpClient.Do(delReq)
 		if err == nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 
 		// 删除数据库中的旧记录
@@ -346,7 +347,7 @@ func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*Fi
 		return nil, fmt.Errorf("序列化请求体失败: %w", err)
 	}
 
-	postURL := fmt.Sprintf("https://esi.evetech.net/characters/%d/fittings/", req.CharacterID)
+	postURL := fmt.Sprintf("%s/characters/%d/fittings/", global.Config.EveSSO.ESIBaseURL, req.CharacterID)
 	postReq, err := http.NewRequestWithContext(bgCtx, http.MethodPost, postURL, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("构建 ESI 请求失败: %w", err)
@@ -359,7 +360,9 @@ func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*Fi
 	if err != nil {
 		return nil, fmt.Errorf("ESI 创建装配失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

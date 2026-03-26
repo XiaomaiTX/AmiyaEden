@@ -7,6 +7,7 @@ const (
 	RoleAdmin      = "admin"
 	RoleSRP        = "srp"
 	RoleFC         = "fc"
+	RoleWelfare    = "welfare"
 	RoleUser       = "user"
 	RoleGuest      = "guest"
 )
@@ -79,6 +80,28 @@ func ContainsAnyRole(roleCodes []string, targets ...string) bool {
 	return false
 }
 
+// HasNonGuestRole 检查角色列表中是否存在任一非 guest 角色
+func HasNonGuestRole(roleCodes []string) bool {
+	for _, code := range roleCodes {
+		if code != RoleGuest {
+			return true
+		}
+	}
+	return false
+}
+
+// NormalizeRoleCodes returns active role codes ordered by priority, falling back
+// to the legacy single-role field when the association table is empty.
+func NormalizeRoleCodes(roleCodes []string, fallback string) []string {
+	if len(roleCodes) > 0 {
+		return roleCodes
+	}
+	if fallback != "" {
+		return []string{fallback}
+	}
+	return []string{RoleGuest}
+}
+
 // HasAnyRoleMatch 检查用户角色列表中是否有满足 requiredRole 的角色
 // 超级管理员拥有所有权限
 func HasAnyRoleMatch(userRoles []string, requiredRole string) bool {
@@ -101,8 +124,9 @@ func HasRole(userRole, requiredRole string) bool {
 var SystemRoleSeeds = []Role{
 	{Code: RoleSuperAdmin, Name: "超级管理员", Description: "拥有系统全部权限", IsSystem: true, Sort: 100, Status: 1},
 	{Code: RoleAdmin, Name: "管理员", Description: "系统管理权限", IsSystem: true, Sort: 90, Status: 1},
-	{Code: RoleSRP, Name: "SRP管理员", Description: "补损审批与舰船价格管理", IsSystem: true, Sort: 80, Status: 1},
+	{Code: RoleSRP, Name: "补损官", Description: "补损审批与舰船价格管理", IsSystem: true, Sort: 80, Status: 1},
 	{Code: RoleFC, Name: "FC", Description: "舰队指挥，管理舰队与活动", IsSystem: true, Sort: 70, Status: 1},
+	{Code: RoleWelfare, Name: "福利官", Description: "军团福利审批与管理", IsSystem: true, Sort: 50, Status: 1},
 	{Code: RoleUser, Name: "用户", Description: "已认证用户，基本访问权限", IsSystem: true, Sort: 10, Status: 1},
 	{Code: RoleGuest, Name: "访客", Description: "访客，只读公开信息", IsSystem: true, Sort: 0, Status: 1},
 }

@@ -7,11 +7,6 @@
         <ShopProducts ref="productsRef" :balance="walletBalance" @buy="openBuyDialog" />
       </ElTabPane>
 
-      <!-- 抽奖 -->
-      <ElTabPane label="抽奖" name="lottery">
-        <ShopLottery ref="lotteryRef" />
-      </ElTabPane>
-
       <!-- 我的订单 -->
       <ElTabPane :label="$t('shop.myOrders')" name="orders">
         <ShopOrders ref="ordersRef" />
@@ -48,9 +43,6 @@
             :placeholder="$t('shop.remarkPlaceholder')"
           />
         </ElFormItem>
-        <div v-if="buyProduct.need_approval" class="text-xs text-orange-500 mb-2">
-          <el-icon><Warning /></el-icon> {{ $t('shop.approvalNotice') }}
-        </div>
       </ElForm>
       <template #footer>
         <ElButton @click="buyDialogVisible = false">{{ $t('common.cancel') }}</ElButton>
@@ -63,7 +55,6 @@
 </template>
 
 <script setup lang="ts">
-  import { Warning } from '@element-plus/icons-vue'
   import {
     ElTabs,
     ElTabPane,
@@ -79,7 +70,6 @@
   import { buyProduct as apiBuyProduct } from '@/api/shop'
   import { fetchMyWallet } from '@/api/sys-wallet'
   import ShopProducts from './modules/shop-products.vue'
-  import ShopLottery from './modules/shop-lottery.vue'
   import ShopOrders from './modules/shop-orders.vue'
 
   defineOptions({ name: 'Shop' })
@@ -90,7 +80,6 @@
 
   // ─── 子面板 refs ───
   const productsRef = ref<InstanceType<typeof ShopProducts>>()
-  const lotteryRef = ref<InstanceType<typeof ShopLottery>>()
   const ordersRef = ref<InstanceType<typeof ShopOrders>>()
 
   // ─── 钱包余额 ───
@@ -155,7 +144,6 @@
 
   // ─── Tab 切换懒加载 ───
   watch(activeTab, (tab) => {
-    if (tab === 'lottery') lotteryRef.value?.load()
     if (tab === 'orders') ordersRef.value?.load()
   })
 

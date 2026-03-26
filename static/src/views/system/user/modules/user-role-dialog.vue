@@ -19,7 +19,7 @@
             v-for="role in allRoles"
             :key="role.id"
             :label="role.id"
-            :disabled="role.code === 'super_admin' && !isSuperAdmin"
+            :disabled="['super_admin', 'admin'].includes(role.code) && !isSuperAdmin"
           >
             {{ role.name }}
             <span v-if="role.is_system" class="text-xs text-gray-400 ml-1">
@@ -70,6 +70,15 @@
   const allRoles = ref<Api.SystemManage.RoleItem[]>([])
   const selectedRoleIds = ref<number[]>([])
   const submitting = ref(false)
+  const guestRoleId = computed(() => allRoles.value.find((role) => role.code === 'guest')?.id)
+
+  watch(selectedRoleIds, (roleIds) => {
+    const guestId = guestRoleId.value
+    if (!guestId || roleIds.length <= 1 || !roleIds.includes(guestId)) return
+
+    const nonGuestRoleIds = roleIds.filter((roleId) => roleId !== guestId)
+    selectedRoleIds.value = nonGuestRoleIds.length > 0 ? nonGuestRoleIds : [guestId]
+  })
 
   const onOpen = async () => {
     try {

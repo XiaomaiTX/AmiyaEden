@@ -257,11 +257,6 @@ func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*N
 
 // GetCorpNpcKills 获取公司所有成员的刷怪报表（管理员）
 func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpResponse, error) {
-	lang := req.Language
-	if lang == "" {
-		lang = "zh"
-	}
-
 	startDate, endDate := parseDateRange(req.StartDate, req.EndDate)
 
 	// 获取所有已绑定的角色

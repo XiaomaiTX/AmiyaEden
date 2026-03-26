@@ -2,15 +2,18 @@
 
 面向 EVE Online 联盟 / 军团的一体化运营平台。
 
+本文件是仓库的 onboarding / product-facing 入口。若与工程规则、当前架构边界或接口裁决相关的说明发生冲突，以 [AGENTS.md](AGENTS.md) 与 [docs/](docs/README.md) 为准。
+
 当前仓库的活跃实现包含：
 
 - EVE SSO 登录与多角色绑定
 - RBAC 角色 / 菜单 / 按钮权限
 - 动态菜单与动态路由
 - 舰队行动、PAP、舰队配置
+- 技能规划、军团技能计划与完成度检查
 - ESI 角色信息查询（钱包、技能、舰船、植入体、资产、合同、装配）
 - SRP 补损申请、审核、价格表
-- 系统钱包、商店、抽奖
+- 系统钱包、商店
 - 联盟 PAP、自动权限映射、Webhook 配置
 - ESI 刷新队列与 SDE 查询接口
 
@@ -54,11 +57,28 @@ AmiyaEden/
 
 ## 运行依赖
 
-- Go `>= 1.24`
-- Node.js `>= 20.19.0`
-- pnpm `>= 8.8.0`
+- Go `>= 1.24.5`
+- Air（Go 热重载工具）
+- golangci-lint `v2.11.4`（与 CI 保持一致）
+- Node.js `24`（与 CI 保持一致，见 `.nvmrc`）
+- pnpm `10.32.1`（与 CI 保持一致）
 - PostgreSQL
 - Redis
+
+如果本机还没有 `air`，可以直接使用 Go 安装：
+
+```bash
+go install github.com/air-verse/air@latest
+export PATH="$PATH:$(go env GOPATH)/bin"
+air -v
+```
+
+如果本机还没有 `golangci-lint`，可以直接使用 Go 安装：
+
+```bash
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.11.4
+golangci-lint --version
+```
 
 ## 本地启动
 
@@ -94,10 +114,14 @@ docker compose -f docker-compose.example.yml up -d postgres redis
 ### 3. 启动后端
 
 ```bash
-cd server
-go mod download
-go run main.go
+make dev
 ```
+
+`make dev` 会同时启动前端和后端。
+
+后端通过 Air 热重载工具运行，源码变更后会自动重新编译并启动服务；前端会在 `static/` 下运行 `pnpm dev`。
+
+按 `Ctrl-C` 会同时停止前端和后端。
 
 启动时会执行：
 
@@ -111,7 +135,13 @@ go run main.go
 
 ### 4. 启动前端
 
-当前仓库没有提交前端 `.env.example`，本地开发通常至少需要提供以下 Vite 变量：
+当前仓库没有提交前端 `.env.example`，但已经提交了可直接作为起点的默认环境文件：
+
+- `static/.env.development`
+- `static/.env.development.local`
+- `static/.env.production`
+
+本地开发通常不需要从空白开始创建全部 Vite 变量；大多数情况下只需确认或覆盖以下常用项：
 
 ```bash
 VITE_VERSION=dev
@@ -124,6 +154,11 @@ VITE_WITH_CREDENTIALS=false
 VITE_LOCK_ENCRYPT_KEY=change_me
 VITE_OPEN_ROUTE_INFO=false
 ```
+
+默认本地联调场景下：
+
+- `VITE_API_PROXY_URL` 已指向 `http://localhost:8080`
+- `VITE_API_URL` 在开发环境下可保持为 `/`
 
 然后启动前端：
 
@@ -143,17 +178,20 @@ pnpm dev
 ## 常用校验命令
 
 ```bash
+cd server && golangci-lint run ./...
 cd server && go test ./...
 cd server && go build ./...
 cd static && pnpm lint .
 cd static && pnpm build
 cd static && pnpm exec vue-tsc --noEmit
+cd static && pnpm test:unit
 ```
 
 ## 文档入口
 
 - 文档索引与信任顺序：[docs/README.md](docs/README.md)
 - 仓库工程规范：[AGENTS.md](AGENTS.md)
+- 测试与验证标准：[docs/standards/testing-and-verification.md](docs/standards/testing-and-verification.md)
 - 当前架构：[docs/architecture/overview.md](docs/architecture/overview.md)
 - API 路由索引：[docs/api/route-index.md](docs/api/route-index.md)
 - Feature 状态说明：[docs/features/README.md](docs/features/README.md)

@@ -7,14 +7,14 @@
         <ManageProducts ref="productsRef" />
       </ElTabPane>
 
-      <!-- 抽奖管理 -->
-      <ElTabPane label="抽奖管理" name="lottery">
-        <ManageLottery ref="lotteryRef" />
-      </ElTabPane>
-
-      <!-- 订单管理 -->
+      <!-- 订单管理（待发放） -->
       <ElTabPane :label="$t('shopAdmin.tabs.orders')" name="orders">
         <ManageOrders ref="ordersRef" />
+      </ElTabPane>
+
+      <!-- 订单历史（已发放 / 已拒绝） -->
+      <ElTabPane :label="$t('shopAdmin.tabs.orderHistory')" name="orderHistory">
+        <ManageOrderHistory ref="orderHistoryRef" />
       </ElTabPane>
     </ElTabs>
   </div>
@@ -22,21 +22,21 @@
 
 <script setup lang="ts">
   import ManageProducts from './modules/manage-products.vue'
-  import ManageLottery from './modules/manage-lottery.vue'
   import ManageOrders from './modules/manage-orders.vue'
+  import ManageOrderHistory from './modules/manage-order-history.vue'
 
   defineOptions({ name: 'SystemShop' })
 
   const activeTab = ref('products')
 
   const productsRef = ref<InstanceType<typeof ManageProducts>>()
-  const lotteryRef = ref<InstanceType<typeof ManageLottery>>()
   const ordersRef = ref<InstanceType<typeof ManageOrders>>()
+  const orderHistoryRef = ref<InstanceType<typeof ManageOrderHistory>>()
 
   // Tab 切换懒加载
   watch(activeTab, (tab) => {
-    if (tab === 'lottery') lotteryRef.value?.load()
     if (tab === 'orders') ordersRef.value?.load()
+    if (tab === 'orderHistory') orderHistoryRef.value?.load()
   })
 
   // 初始化加载商品列表

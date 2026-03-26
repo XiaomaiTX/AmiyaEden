@@ -1,8 +1,13 @@
 <!-- SRP 补损审批管理页面 -->
 <template>
   <div class="srp-manage-page art-full-height">
-    <ElCard class="art-search-card" shadow="never">
-      <div class="flex items-center gap-3 flex-wrap">
+    <ElCard class="art-table-card" shadow="never">
+      <ElTabs v-model="activeTab" @tab-change="handleTabChange">
+        <ElTabPane :label="$t('srp.manage.pendingTab')" name="pending" />
+        <ElTabPane :label="$t('srp.manage.historyTab')" name="history" />
+      </ElTabs>
+
+      <div class="flex items-center gap-3 flex-wrap mb-3">
         <ElSelect
           v-model="filter.review_status"
           :placeholder="$t('srp.apply.columns.reviewStatus')"
@@ -10,19 +15,14 @@
           style="width: 130px"
           @change="handleSearch"
         >
-          <ElOption :label="$t('srp.status.pending')" value="pending" />
-          <ElOption :label="$t('srp.status.approved')" value="approved" />
-          <ElOption :label="$t('srp.status.rejected')" value="rejected" />
-        </ElSelect>
-        <ElSelect
-          v-model="filter.payout_status"
-          :placeholder="$t('srp.apply.columns.payoutStatus')"
-          clearable
-          style="width: 130px"
-          @change="handleSearch"
-        >
-          <ElOption :label="$t('srp.status.unpaid')" value="pending" />
-          <ElOption :label="$t('srp.status.paid')" value="paid" />
+          <template v-if="activeTab === 'pending'">
+            <ElOption :label="$t('srp.status.submitted')" value="submitted" />
+            <ElOption :label="$t('srp.status.approved')" value="approved" />
+          </template>
+          <template v-else>
+            <ElOption :label="$t('srp.status.approved')" value="approved" />
+            <ElOption :label="$t('srp.status.rejected')" value="rejected" />
+          </template>
         </ElSelect>
         <ElSelect
           v-model="filter.fleet_id"
@@ -37,19 +37,28 @@
         <ElButton type="primary" @click="handleSearch">{{ $t('srp.manage.searchBtn') }}</ElButton>
         <ElButton @click="resetFilter">{{ $t('srp.manage.resetBtn') }}</ElButton>
       </div>
-    </ElCard>
 
-    <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
         <template #left>
-          <ArtExcelExport
-            :data="exportManageData"
-            :headers="manageExportHeaders"
-            :filename="`srp-manage_${new Date().toLocaleDateString()}`"
-            sheet-name="补损申请"
-            :button-text="$t('srp.manage.exportBtn')"
-            type="success"
-          />
+          <div class="flex items-center gap-2">
+            <template v-if="activeTab === 'pending'">
+              <ElButton type="primary" @click="handleAutoApprove">
+                {{ $t('srp.manage.autoApproveBtn') }}
+              </ElButton>
+              <ElButton type="warning" @click="openBatchPayoutDialog">
+                {{ $t('srp.manage.batchPayoutBtn') }}
+              </ElButton>
+            </template>
+            <ArtExcelExport
+              v-if="activeTab === 'history'"
+              :data="exportManageData"
+              :headers="manageExportHeaders"
+              :filename="`srp-manage_${new Date().toLocaleDateString()}`"
+              sheet-name="补损申请"
+              :button-text="$t('srp.manage.exportBtn')"
+              type="success"
+            />
+          </div>
         </template>
       </ArtTableHeader>
 
@@ -58,6 +67,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [200, 500, 1000] }"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -86,13 +96,17 @@
           </ElFormItem>
         </template>
         <ElFormItem :label="$t('srp.manage.finalAmount')" v-if="reviewAction === 'approve'">
-          <ElInputNumber
-            v-model="reviewForm.final_amount"
-            :min="0"
-            :precision="2"
-            :step="1000000"
-            style="width: 100%"
-          />
+          <div class="million-isk-input">
+            <ElInputNumber
+              :model-value="toMillionISKInput(reviewForm.final_amount)"
+              :min="0"
+              :precision="2"
+              :step="1"
+              class="million-isk-input__control"
+              @update:model-value="updateReviewFinalAmount"
+            />
+            <span class="million-isk-input__suffix">{{ $t('common.millionIsk') }}</span>
+          </div>
           <div class="text-xs text-gray-400 mt-1">{{ $t('srp.manage.finalAmountHint') }}</div>
         </ElFormItem>
         <ElFormItem :label="$t('srp.manage.reviewNote')" :required="reviewAction === 'reject'">
@@ -193,6 +207,70 @@
       </template>
     </ElDialog>
 
+    <ElDialog
+      v-model="batchPayoutDialogVisible"
+      :title="$t('srp.manage.batchPayoutDialog')"
+      width="760px"
+    >
+      <div class="mb-3 flex items-center gap-2 text-sm text-gray-500">
+        <span>{{ $t('srp.manage.batchPayoutHint') }}</span>
+        <ElButton
+          size="small"
+          :icon="CopyDocument"
+          :disabled="!batchPayoutList.length"
+          @click="copyBatchPayoutListText"
+        />
+      </div>
+      <ElTable
+        v-loading="batchSummaryLoading"
+        :data="batchPayoutList"
+        :empty-text="$t('srp.manage.batchPayoutEmpty')"
+        size="small"
+      >
+        <ElTableColumn
+          prop="main_character_name"
+          :label="$t('srp.manage.batchPayoutMainCharacter')"
+          min-width="170"
+        >
+          <template #default="{ row }">
+            {{ row.main_character_name || $t('srp.manage.unknownMainCharacter') }}
+          </template>
+        </ElTableColumn>
+        <ElTableColumn
+          prop="total_amount"
+          :label="$t('srp.manage.batchPayoutAmount')"
+          min-width="140"
+        >
+          <template #default="{ row }">
+            <span class="font-semibold text-blue-600">{{ formatISK(row.total_amount) }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn
+          prop="application_count"
+          :label="$t('srp.manage.batchPayoutCount')"
+          width="110"
+          align="center"
+        />
+        <ElTableColumn :label="$t('srp.manage.columns.action')" width="150" fixed="right">
+          <template #default="{ row }">
+            <ElButton
+              type="primary"
+              size="small"
+              :loading="batchPayoutLoadingUserId === row.user_id"
+              @click="handleBatchPayout(row)"
+            >
+              {{ $t('srp.manage.confirmPayout') }}
+            </ElButton>
+          </template>
+        </ElTableColumn>
+      </ElTable>
+      <template #footer>
+        <ElButton @click="batchPayoutDialogVisible = false">{{
+          $t('srp.apply.cancelBtn')
+        }}</ElButton>
+      </template>
+    </ElDialog>
+
     <!-- KM 预览弹窗 -->
     <KmPreviewDialog v-model="kmPreviewVisible" :killmail-id="previewKillmailId" />
   </div>
@@ -212,7 +290,12 @@
     ElInputNumber,
     ElInput,
     ElLink,
+    ElMessageBox,
     ElMessage,
+    ElTable,
+    ElTableColumn,
+    ElTabs,
+    ElTabPane,
     ElTooltip
   } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
@@ -222,13 +305,17 @@
   import { fetchFleetList } from '@/api/fleet'
   import {
     fetchApplicationList,
+    runFleetAutoApproval,
+    fetchBatchPayoutSummary,
     reviewApplication,
+    batchPayoutByUser,
     payoutApplication,
     openInfoWindow
   } from '@/api/srp'
   import { useNameResolver } from '@/hooks'
   import { useUserStore } from '@/store/modules/user'
   import { CopyDocument } from '@element-plus/icons-vue'
+  import { fromMillionISKInput, toMillionISKInput } from '@/utils/iskUnits'
 
   defineOptions({ name: 'SrpManage' })
 
@@ -247,9 +334,11 @@
     }
   }
 
-  const filter = reactive({ review_status: 'pending', payout_status: '', fleet_id: '' })
+  const activeTab = ref('pending')
+  const filter = reactive({ review_status: '', fleet_id: '' })
 
   type SrpApp = Api.Srp.Application
+  type BatchPayoutSummary = Api.Srp.BatchPayoutSummary
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
   const reviewStatusType = (s: string): TagType =>
@@ -258,10 +347,10 @@
     ] ?? 'info'
   const reviewStatusLabel = (s: string) =>
     ({
-      pending: t('srp.status.pending'),
+      submitted: t('srp.status.submitted'),
       approved: t('srp.status.approved'),
       rejected: t('srp.status.rejected')
-    })[s as 'pending' | 'approved' | 'rejected'] ?? s
+    })[s as 'submitted' | 'approved' | 'rejected'] ?? s
   const payoutStatusType = (s: string): TagType => (s === 'paid' ? 'success' : 'warning')
 
   const {
@@ -278,80 +367,71 @@
   } = useTable({
     core: {
       apiFn: fetchApplicationList,
-      apiParams: { current: 1, size: 20, review_status: 'pending' },
+      apiParams: { current: 1, size: 200, tab: 'pending' },
       columnsFactory: () => [
-        { type: 'index', width: 60, label: '#' },
+        { type: 'index', width: 40, label: '#' },
+        {
+          prop: 'review_status',
+          label: t('srp.manage.columns.review'),
+          width: 60,
+          formatter: (row: SrpApp) => {
+            const tag = h(ElTag, { type: reviewStatusType(row.review_status), size: 'small' }, () =>
+              reviewStatusLabel(row.review_status)
+            )
+            if (row.review_note) {
+              return h(ElTooltip, { content: row.review_note, placement: 'top' }, () => tag)
+            }
+            return tag
+          }
+        },
+        {
+          prop: 'payout_status',
+          label: t('srp.manage.columns.payout'),
+          width: 60,
+          formatter: (row: SrpApp) =>
+            h(ElTag, { type: payoutStatusType(row.payout_status), size: 'small' }, () =>
+              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')
+            )
+        },
+        {
+          prop: 'nickname',
+          label: t('srp.manage.columns.nickname'),
+          width: 120,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) =>
+            h('span', { class: row.nickname ? '' : 'text-gray-400' }, row.nickname || '-')
+        },
         {
           prop: 'character_name',
           label: t('srp.manage.columns.character'),
-          width: 150,
+          width: 140,
           showOverflowTooltip: true
         },
         {
           prop: 'ship_type_id',
           label: t('srp.manage.columns.ship'),
-          width: 180,
+          width: 150,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
-            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`))
+            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
         },
         {
-          prop: 'solar_system_id',
-          label: t('srp.manage.columns.system'),
-          width: 140,
-          showOverflowTooltip: true,
+          prop: 'recommended_amount',
+          label: t('srp.manage.columns.recommendedAmount'),
+          width: 90,
+          formatter: (row: SrpApp) => h('span', {}, formatISK(row.recommended_amount))
+        },
+        {
+          prop: 'final_amount',
+          label: t('srp.manage.columns.finalAmount'),
+          width: 90,
           formatter: (row: SrpApp) =>
-            h('span', {}, getName(row.solar_system_id, String(row.solar_system_id)))
-        },
-        {
-          prop: 'killmail_id',
-          label: t('srp.manage.columns.killId'),
-          width: 110,
-          formatter: (row: SrpApp) =>
-            h(
-              ElLink,
-              {
-                href: `https://zkillboard.com/kill/${row.killmail_id}/`,
-                target: '_blank',
-                type: 'primary'
-              },
-              () => String(row.killmail_id)
-            )
-        },
-        {
-          prop: 'killmail_time',
-          label: t('srp.manage.columns.kmTime'),
-          width: 175,
-          formatter: (row: SrpApp) => h('span', {}, formatTime(row.killmail_time))
-        },
-        {
-          prop: 'corporation_id',
-          label: t('srp.manage.columns.corporation'),
-          width: 180,
-          showOverflowTooltip: true,
-          formatter: (row: SrpApp) =>
-            h(
-              'span',
-              {},
-              getName(row.corporation_id, row.corporation_id ? `ID: ${row.corporation_id}` : '-')
-            )
-        },
-        {
-          prop: 'alliance_id',
-          label: t('srp.manage.columns.alliance'),
-          width: 180,
-          showOverflowTooltip: true,
-          formatter: (row: SrpApp) =>
-            h(
-              'span',
-              {},
-              getName(row.alliance_id, row.alliance_id ? `ID: ${row.alliance_id}` : '-')
-            )
+            h('span', { class: 'font-semibold text-blue-600' }, formatISK(row.final_amount))
         },
         {
           prop: 'fleet_title',
           label: t('srp.manage.columns.fleet'),
-          width: 180,
+          width: 150,
           formatter: (row: SrpApp) => {
             if (!row.fleet_id) return h('span', { class: 'text-gray-400' }, '-')
             const fleet = fleetMap.value.get(row.fleet_id)
@@ -366,130 +446,131 @@
           }
         },
         {
+          prop: 'solar_system_id',
+          label: t('srp.manage.columns.system'),
+          width: 128,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) =>
+            h('span', {}, getName(row.solar_system_id, String(row.solar_system_id), 'solar_system'))
+        },
+        {
+          prop: 'killmail_id',
+          label: t('srp.manage.columns.killId'),
+          width: 96,
+          formatter: (row: SrpApp) =>
+            h(
+              ElLink,
+              {
+                href: `https://zkillboard.com/kill/${row.killmail_id}/`,
+                target: '_blank',
+                type: 'primary'
+              },
+              () => String(row.killmail_id)
+            )
+        },
+        {
+          prop: 'killmail_time',
+          label: t('srp.manage.columns.kmTime'),
+          width: 160,
+          formatter: (row: SrpApp) => h('span', {}, formatTime(row.killmail_time))
+        },
+        {
+          prop: 'corporation_id',
+          label: t('srp.manage.columns.corporation'),
+          width: 150,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) =>
+            h(
+              'span',
+              {},
+              getName(
+                row.corporation_id,
+                row.corporation_id ? `ID: ${row.corporation_id}` : '-',
+                'esi'
+              )
+            )
+        },
+        {
+          prop: 'alliance_id',
+          label: t('srp.manage.columns.alliance'),
+          width: 150,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) =>
+            h(
+              'span',
+              {},
+              getName(row.alliance_id, row.alliance_id ? `ID: ${row.alliance_id}` : '-', 'esi')
+            )
+        },
+        {
           prop: 'note',
           label: t('srp.manage.columns.note'),
-          width: 180,
+          minWidth: 150,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', { class: row.note ? '' : 'text-gray-400' }, row.note || '-')
         },
         {
-          prop: 'recommended_amount',
-          label: t('srp.manage.columns.recommendedAmount'),
-          width: 140,
-          formatter: (row: SrpApp) => h('span', {}, formatISK(row.recommended_amount))
-        },
-        {
-          prop: 'final_amount',
-          label: t('srp.manage.columns.finalAmount'),
-          width: 140,
-          formatter: (row: SrpApp) =>
-            h('span', { class: 'font-semibold text-blue-600' }, formatISK(row.final_amount))
-        },
-        {
-          prop: 'review_status',
-          label: t('srp.manage.columns.review'),
-          width: 100,
-          formatter: (row: SrpApp) => {
-            const tag = h(ElTag, { type: reviewStatusType(row.review_status), size: 'small' }, () =>
-              reviewStatusLabel(row.review_status)
-            )
-            if (row.review_note) {
-              return h(ElTooltip, { content: row.review_note, placement: 'top' }, () => tag)
-            }
-            return tag
-          }
-        },
-        {
           prop: 'review_note',
           label: t('srp.manage.columns.reviewNote'),
-          minWidth: 200,
+          minWidth: 170,
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', { class: row.review_note ? '' : 'text-gray-400' }, row.review_note || '-')
         },
         {
-          prop: 'payout_status',
-          label: t('srp.manage.columns.payout'),
-          width: 100,
-          formatter: (row: SrpApp) =>
-            h(ElTag, { type: payoutStatusType(row.payout_status), size: 'small' }, () =>
-              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
-            )
-        },
-        {
           prop: 'actions',
           label: t('srp.manage.columns.action'),
-          width: 300,
+          width: 220,
           fixed: 'right',
           formatter: (row: SrpApp) => {
             const btns: ReturnType<typeof h>[] = [
               h(ArtButtonTable, { type: 'view', onClick: () => openKmPreview(row) })
             ]
-            if (row.review_status === 'pending') {
+            if (row.review_status === 'submitted') {
               // 待审批：批准 + 拒绝
               btns.push(
-                h(
-                  ElButton,
-                  {
-                    size: 'small',
-                    type: 'success',
-                    onClick: () => openReviewDialog(row, 'approve')
-                  },
-                  () => t('srp.manage.approveBtn')
-                ),
-                h(
-                  ElButton,
-                  {
-                    size: 'small',
-                    type: 'danger',
-                    onClick: () => openReviewDialog(row, 'reject')
-                  },
-                  () => t('srp.manage.rejectBtn')
-                )
+                h(ArtButtonTable, {
+                  label: t('srp.manage.approveBtn'),
+                  elType: 'success',
+                  onClick: () => openReviewDialog(row, 'approve')
+                }),
+                h(ArtButtonTable, {
+                  label: t('srp.manage.rejectBtn'),
+                  elType: 'danger',
+                  onClick: () => openReviewDialog(row, 'reject')
+                })
               )
-            } else if (row.review_status === 'approved' && row.payout_status === 'pending') {
+            } else if (row.review_status === 'approved' && row.payout_status === 'notpaid') {
               // 已批准 + 未发放：发放 + 编辑 + 重新拒绝
               btns.push(
-                h(
-                  ElButton,
-                  { size: 'small', type: 'primary', onClick: () => openPayoutDialog(row) },
-                  () => t('srp.manage.payoutBtn')
-                ),
-                h(
-                  ElButton,
-                  {
-                    size: 'small',
-                    type: 'warning',
-                    onClick: () => openReviewDialog(row, 'approve')
-                  },
-                  () => t('srp.manage.editBtn')
-                ),
-                h(
-                  ElButton,
-                  {
-                    size: 'small',
-                    type: 'danger',
-                    onClick: () => openReviewDialog(row, 'reject')
-                  },
-                  () => t('srp.manage.reRejectBtn')
-                )
+                h(ArtButtonTable, {
+                  label: t('srp.manage.payoutBtn'),
+                  elType: 'primary',
+                  onClick: () => openPayoutDialog(row)
+                }),
+                h(ArtButtonTable, {
+                  label: t('srp.manage.editBtn'),
+                  elType: 'warning',
+                  onClick: () => openReviewDialog(row, 'approve')
+                }),
+                h(ArtButtonTable, {
+                  label: t('srp.manage.reRejectBtn'),
+                  elType: 'danger',
+                  onClick: () => openReviewDialog(row, 'reject')
+                })
               )
             } else if (row.review_status === 'rejected') {
               // 已拒绝：可重新批准
               btns.push(
-                h(
-                  ElButton,
-                  {
-                    size: 'small',
-                    type: 'success',
-                    onClick: () => openReviewDialog(row, 'approve')
-                  },
-                  () => t('srp.manage.reApproveBtn')
-                )
+                h(ArtButtonTable, {
+                  label: t('srp.manage.reApproveBtn'),
+                  elType: 'success',
+                  onClick: () => openReviewDialog(row, 'approve')
+                })
               )
             }
-            return h('div', { class: 'flex gap-1' }, btns)
+            return h('div', { class: 'flex items-center gap-1' }, btns)
           }
         }
       ]
@@ -522,19 +603,28 @@
 
   const handleSearch = () => {
     Object.assign(searchParams, {
+      tab: activeTab.value,
       review_status: filter.review_status || undefined,
-      payout_status: filter.payout_status || undefined,
       fleet_id: filter.fleet_id || undefined
     })
     getData()
   }
   const resetFilter = () => {
     filter.review_status = ''
-    filter.payout_status = ''
     filter.fleet_id = ''
     Object.assign(searchParams, {
+      tab: activeTab.value,
       review_status: undefined,
-      payout_status: undefined,
+      fleet_id: undefined
+    })
+    getData()
+  }
+  const handleTabChange = () => {
+    filter.review_status = ''
+    filter.fleet_id = ''
+    Object.assign(searchParams, {
+      tab: activeTab.value,
+      review_status: undefined,
       fleet_id: undefined
     })
     getData()
@@ -565,19 +655,26 @@
     )
   })
 
-  const DEFAULT_APPROVE_NOTE =
-    '将钱包筛选项改为军团账户支取，找到最近的交易记录；或打开合同，在"我的合同"中将拥有者改为自己，状态设为未决，点击显示合同。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
+  const DEFAULT_APPROVE_NOTE = '补损由补损官{{mainChracterName}}手动批准，如有问题请Q群联系'
   const DEFAULT_REJECT_NOTE =
     '不符合现有补损条例。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
 
   const fillTemplate = (tpl: string) =>
     tpl.replaceAll('{{mainChracterName}}', primaryCharName.value || t('srp.manage.unknownReviewer'))
 
+  const updateReviewFinalAmount = (value: number | null | undefined) => {
+    reviewForm.final_amount = fromMillionISKInput(value)
+  }
+
   const openReviewDialog = (row: Api.Srp.Application, action: 'approve' | 'reject') => {
     reviewTarget.value = row
     reviewAction.value = action
     reviewForm.review_note =
-      action === 'approve' ? fillTemplate(DEFAULT_APPROVE_NOTE) : fillTemplate(DEFAULT_REJECT_NOTE)
+      action === 'approve'
+        ? row.review_status === 'submitted'
+          ? fillTemplate(DEFAULT_APPROVE_NOTE)
+          : row.review_note || ''
+        : fillTemplate(DEFAULT_REJECT_NOTE)
     reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
     reviewDialogVisible.value = true
   }
@@ -611,6 +708,11 @@
 
   const payoutDialogVisible = ref(false)
   const payoutTarget = ref<Api.Srp.Application | null>(null)
+  const autoApproveLoading = ref(false)
+  const batchPayoutDialogVisible = ref(false)
+  const batchPayoutList = ref<BatchPayoutSummary[]>([])
+  const batchSummaryLoading = ref(false)
+  const batchPayoutLoadingUserId = ref<number | null>(null)
 
   const openPayoutDialog = (row: Api.Srp.Application) => {
     payoutTarget.value = row
@@ -633,6 +735,75 @@
     }
   }
 
+  const loadBatchPayoutSummary = async () => {
+    batchSummaryLoading.value = true
+    try {
+      batchPayoutList.value = await fetchBatchPayoutSummary()
+    } catch {
+      batchPayoutList.value = []
+    } finally {
+      batchSummaryLoading.value = false
+    }
+  }
+
+  const openBatchPayoutDialog = async () => {
+    batchPayoutDialogVisible.value = true
+    await loadBatchPayoutSummary()
+  }
+
+  const handleAutoApprove = async () => {
+    if (!filter.fleet_id) {
+      ElMessage.warning(t('srp.manage.autoApproveFleetRequired'))
+      return
+    }
+
+    autoApproveLoading.value = true
+    try {
+      const result = await runFleetAutoApproval({ fleet_id: filter.fleet_id })
+      ElMessage.success(
+        t('srp.manage.autoApproveSuccess', {
+          approved: result.approved_count,
+          skipped: result.skipped_count
+        })
+      )
+      refreshData()
+    } catch {
+      /* handled */
+    } finally {
+      autoApproveLoading.value = false
+    }
+  }
+
+  const handleBatchPayout = async (row: BatchPayoutSummary) => {
+    try {
+      await ElMessageBox.confirm(
+        t('srp.manage.batchPayoutConfirmText', {
+          name: row.main_character_name || t('srp.manage.unknownMainCharacter'),
+          amount: formatISK(row.total_amount)
+        }),
+        t('srp.manage.batchPayoutConfirmTitle'),
+        {
+          type: 'warning',
+          confirmButtonText: t('srp.manage.confirmPayout'),
+          cancelButtonText: t('srp.apply.cancelBtn')
+        }
+      )
+    } catch {
+      return
+    }
+
+    batchPayoutLoadingUserId.value = row.user_id
+    try {
+      await batchPayoutByUser(row.user_id)
+      ElMessage.success(t('srp.manage.batchPayoutSuccess'))
+      await Promise.all([loadBatchPayoutSummary(), refreshData()])
+    } catch {
+      /* handled */
+    } finally {
+      batchPayoutLoadingUserId.value = null
+    }
+  }
+
   /* ── 复制到剪贴板 ── */
   const copyText = async (text: string) => {
     try {
@@ -641,6 +812,33 @@
     } catch {
       ElMessage.warning(t('srp.manage.copyFailed'))
     }
+  }
+
+  const formatBatchPayoutLine = (
+    characterId: number,
+    characterName: string,
+    totalAmount: number
+  ) => {
+    const fullAmount = new Intl.NumberFormat('en-US', {
+      maximumFractionDigits: 0,
+      useGrouping: false
+    }).format(totalAmount ?? 0)
+    return `<a href="showinfo:1376//${characterId}">${characterName}</a>  ${fullAmount}`
+  }
+
+  const copyBatchPayoutListText = async () => {
+    const lines = batchPayoutList.value
+      .filter((row) => row.main_character_id && row.main_character_name)
+      .map((row) =>
+        formatBatchPayoutLine(row.main_character_id, row.main_character_name, row.total_amount)
+      )
+
+    if (!lines.length) {
+      ElMessage.warning(t('srp.manage.batchPayoutEmpty'))
+      return
+    }
+
+    await copyText(lines.join('\r\n'))
   }
 
   /* ── Open Info Window (ESI) ── */
@@ -675,10 +873,24 @@
   }
   const formatFleetLabel = (f: Api.Fleet.FleetItem) =>
     `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatShortTime(f.start_at)}~${formatShortTime(f.end_at)}`
-  const formatISK = (v: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-      v ?? 0
-    )
+  const formatISK = (v: number) => {
+    const value = Number(v ?? 0)
+    const abs = Math.abs(value)
+    const units = [
+      { threshold: 1_000_000_000_000, suffix: 'T' },
+      { threshold: 1_000_000_000, suffix: 'B' },
+      { threshold: 1_000_000, suffix: 'M' },
+      { threshold: 1_000, suffix: 'K' }
+    ]
+
+    for (const unit of units) {
+      if (abs >= unit.threshold) {
+        return `${(value / unit.threshold).toFixed(1)}${unit.suffix}`
+      }
+    }
+
+    return value.toFixed(1)
+  }
 
   // ─── 导出 ───
   const manageExportHeaders = {
@@ -701,15 +913,16 @@
   const exportManageData = computed(() =>
     data.value.map((app) => ({
       character_name: app.character_name,
-      ship_name: getName(app.ship_type_id, `TypeID: ${app.ship_type_id}`),
-      solar_system: getName(app.solar_system_id, String(app.solar_system_id)),
+      ship_name: getName(app.ship_type_id, `TypeID: ${app.ship_type_id}`, 'type'),
+      solar_system: getName(app.solar_system_id, String(app.solar_system_id), 'solar_system'),
       killmail_id: app.killmail_id,
       killmail_time: formatTime(app.killmail_time),
       corporation: getName(
         app.corporation_id,
-        app.corporation_id ? `ID: ${app.corporation_id}` : '-'
+        app.corporation_id ? `ID: ${app.corporation_id}` : '-',
+        'esi'
       ),
-      alliance: getName(app.alliance_id, app.alliance_id ? `ID: ${app.alliance_id}` : '-'),
+      alliance: getName(app.alliance_id, app.alliance_id ? `ID: ${app.alliance_id}` : '-', 'esi'),
       fleet_title: app.fleet_title || '-',
       fleet_fc_name: app.fleet_fc_name || '-',
       note: app.note || '-',
@@ -717,7 +930,7 @@
       final_amount: app.final_amount,
       review_status: reviewStatusLabel(app.review_status),
       review_note: app.review_note || '-',
-      payout_status: app.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
+      payout_status: app.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')
     }))
   )
 
@@ -735,6 +948,24 @@
 </script>
 
 <style scoped>
+  .million-isk-input {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .million-isk-input__control {
+    width: 100%;
+  }
+
+  .million-isk-input__suffix {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    white-space: nowrap;
+  }
+
   .payout-info-list {
     display: flex;
     flex-direction: column;

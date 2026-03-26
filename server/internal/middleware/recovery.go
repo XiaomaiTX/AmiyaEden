@@ -35,7 +35,7 @@ func ZapRecovery() gin.HandlerFunc {
 						zap.Any("error", err),
 						zap.ByteString("request", httpRequest),
 					)
-					c.Error(err.(error))
+					_ = c.Error(err.(error))
 					c.Abort()
 					return
 				}

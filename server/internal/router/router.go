@@ -24,7 +24,7 @@ func RegisterRoutes(r *gin.Engine) {
 		sso.GET("/scopes", ssoH.GetScopes)
 	}
 
-	// ─── SDE 公开查询（API Key 鉴权）───
+	// ─── SDE 公开查询 ──
 	sdeH := handler.NewSdeHandler()
 	sde := api.Group("/sde")
 	{
@@ -36,8 +36,13 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 需要登录 ───
 	auth := api.Group("", middleware.JWTAuth())
+	login := auth.Group("", middleware.RequireLoginUser())
+
+	// 福利（用户端 + 管理端共用 handler）
+	welfareH := handler.NewWelfareHandler()
 
 	// SSO 角色管理（绑定/解绑/设主角色）
+	// guest 也应可访问，用于完成初次登录后的角色管理与补充授权。
 	ssoAuth := auth.Group("/sso/eve")
 	{
 		// ssoAuth.GET("/scopes", ssoH.GetScopes)
@@ -50,6 +55,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// ─── 当前用户 ───
 	meH := handler.NewMeHandler()
 	auth.GET("/me", meH.GetMe)
+	auth.PUT("/me", meH.UpdateMe)
 
 	dashboardH := handler.NewDashboardHandler()
 	auth.POST("/dashboard", dashboardH.GetDashboard)
@@ -60,8 +66,11 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		notification.POST("/list", notifH.ListNotifications)
 		notification.POST("/unread-count", notifH.GetUnreadCount)
-		notification.POST("/read", notifH.MarkAsRead)
-		notification.POST("/read-all", notifH.MarkAllAsRead)
+	}
+	notificationWrite := login.Group("/notification")
+	{
+		notificationWrite.POST("/read", notifH.MarkAsRead)
+		notificationWrite.POST("/read-all", notifH.MarkAllAsRead)
 	}
 
 	// ─── 菜单 ───
@@ -70,63 +79,91 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── 舰队 ───
 	fleetH := handler.NewFleetHandler()
-	operation := auth.Group("/operation")
+	operation := login.Group("/operation")
 	fleet := operation.Group("/fleets")
 	{
-		fleet.POST("", fleetH.CreateFleet)
-		fleet.GET("", fleetH.ListFleets)
+		manageFleets := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
+		deleteFleets := middleware.RequireRole(model.RoleAdmin)
+
+		fleet.POST("", manageFleets, fleetH.CreateFleet)
+		fleet.GET("", manageFleets, fleetH.ListFleets)
 		fleet.GET("/me", fleetH.GetMyFleets)
-		fleet.GET("/:id", fleetH.GetFleet)
-		fleet.PUT("/:id", fleetH.UpdateFleet)
-		fleet.DELETE("/:id", fleetH.DeleteFleet)
-		fleet.POST("/:id/refresh-esi", fleetH.RefreshFleetESI)
+		fleet.GET("/:id", manageFleets, fleetH.GetFleet)
+		fleet.PUT("/:id", manageFleets, fleetH.UpdateFleet)
+		fleet.DELETE("/:id", deleteFleets, fleetH.DeleteFleet)
+		fleet.POST("/:id/refresh-esi", manageFleets, fleetH.RefreshFleetESI)
 
 		// 成员
-		fleet.GET("/:id/members", fleetH.GetMembers)
-		fleet.GET("/:id/members-pap", fleetH.GetMembersWithPap)
-		fleet.POST("/:id/members/sync", fleetH.SyncESIMembers)
+		fleet.GET("/:id/members", manageFleets, fleetH.GetMembers)
+		fleet.GET("/:id/members-pap", manageFleets, fleetH.GetMembersWithPap)
+		fleet.POST("/:id/members/manual", manageFleets, fleetH.ManualAddMembers)
+		fleet.POST("/:id/members/sync", manageFleets, fleetH.SyncESIMembers)
 
 		// ――― PAP
-		fleet.POST("/:id/pap", fleetH.IssuePap)
-		fleet.GET("/:id/pap", fleetH.GetPapLogs)
+		fleet.POST("/:id/pap", manageFleets, fleetH.IssuePap)
+		fleet.GET("/:id/pap", manageFleets, fleetH.GetPapLogs)
 		fleet.GET("/pap/me", fleetH.GetMyPapLogs)
+		fleet.GET("/pap/corporation", fleetH.GetCorporationPapSummary)
 
 		// ――― 联盟 PAP
 		alliancePAPH := handler.NewAlliancePAPHandler()
 		fleet.GET("/pap/alliance", alliancePAPH.GetMyAlliancePAP)
 
 		// 邀请
-		fleet.POST("/:id/invites", fleetH.CreateInvite)
-		fleet.GET("/:id/invites", fleetH.GetInvites)
-		fleet.DELETE("/invites/:invite_id", fleetH.DeactivateInvite)
+		fleet.POST("/:id/invites", manageFleets, fleetH.CreateInvite)
+		fleet.GET("/:id/invites", manageFleets, fleetH.GetInvites)
+		fleet.DELETE("/invites/:invite_id", manageFleets, fleetH.DeactivateInvite)
 		fleet.POST("/join", fleetH.JoinFleet)
 
 		// 查角色所在舰队
 		fleet.GET("/esi/:character_id", fleetH.GetCharacterFleetInfo)
 
 		// Webhook Ping（FC 或管理员手动触发）
-		fleet.POST("/:id/ping", fleetH.PingFleet)
+		fleet.POST("/:id/ping", manageFleets, fleetH.PingFleet)
 	}
 
 	// ─── 舰队配置 ───
 	fleetConfigH := handler.NewFleetConfigHandler()
 	fleetConfig := operation.Group("/fleet-configs")
 	{
-		fleetConfig.GET("", fleetConfigH.ListFleetConfigs)
-		fleetConfig.GET("/:id", fleetConfigH.GetFleetConfig)
-		fleetConfig.GET("/:id/eft", fleetConfigH.GetFittingEFT)
-		fleetConfig.POST("", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.CreateFleetConfig)
-		fleetConfig.PUT("/:id", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.UpdateFleetConfig)
-		fleetConfig.DELETE("/:id", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.DeleteFleetConfig)
-		fleetConfig.POST("/import-fitting", fleetConfigH.ImportFromUserFitting)
-		fleetConfig.POST("/export-esi", fleetConfigH.ExportToESI)
-		fleetConfig.GET("/:id/fittings/:fitting_id/items", fleetConfigH.GetFittingItems)
-		fleetConfig.PUT("/:id/fittings/:fitting_id/items/settings", middleware.RequireRole(model.RoleFC, model.RoleSRP), fleetConfigH.UpdateFittingItemsSettings)
+		viewFleetConfigs := middleware.RequireLoginUser()
+		manageFleetConfigs := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
+
+		fleetConfig.GET("", viewFleetConfigs, fleetConfigH.ListFleetConfigs)
+		fleetConfig.GET("/:id", viewFleetConfigs, fleetConfigH.GetFleetConfig)
+		fleetConfig.GET("/:id/eft", viewFleetConfigs, fleetConfigH.GetFittingEFT)
+		fleetConfig.POST("", manageFleetConfigs, fleetConfigH.CreateFleetConfig)
+		fleetConfig.PUT("/:id", manageFleetConfigs, fleetConfigH.UpdateFleetConfig)
+		fleetConfig.DELETE("/:id", manageFleetConfigs, fleetConfigH.DeleteFleetConfig)
+		fleetConfig.POST("/import-fitting", manageFleetConfigs, fleetConfigH.ImportFromUserFitting)
+		fleetConfig.POST("/export-esi", viewFleetConfigs, fleetConfigH.ExportToESI)
+		fleetConfig.GET("/:id/fittings/:fitting_id/items", viewFleetConfigs, fleetConfigH.GetFittingItems)
+		fleetConfig.PUT("/:id/fittings/:fitting_id/items/settings", manageFleetConfigs, fleetConfigH.UpdateFittingItemsSettings)
+	}
+
+	// ─── 军团技能计划 ───
+	skillPlanH := handler.NewSkillPlanHandler()
+	skillPlanning := login.Group("/skill-planning")
+	skillPlan := skillPlanning.Group("/skill-plans")
+	{
+		manageSkillPlans := middleware.RequireRole(model.RoleAdmin, model.RoleFC)
+		viewSkillPlanChecks := middleware.RequireLoginUser()
+
+		skillPlan.GET("/check/selection", viewSkillPlanChecks, skillPlanH.GetCheckSelection)
+		skillPlan.PUT("/check/selection", viewSkillPlanChecks, skillPlanH.SaveCheckSelection)
+		skillPlan.GET("/check/plan-selection", viewSkillPlanChecks, skillPlanH.GetCheckPlanSelection)
+		skillPlan.PUT("/check/plan-selection", viewSkillPlanChecks, skillPlanH.SaveCheckPlanSelection)
+		skillPlan.POST("/check/run", viewSkillPlanChecks, skillPlanH.RunCompletionCheck)
+		skillPlan.GET("", manageSkillPlans, skillPlanH.ListSkillPlans)
+		skillPlan.GET("/:id", manageSkillPlans, skillPlanH.GetSkillPlan)
+		skillPlan.POST("", manageSkillPlans, skillPlanH.CreateSkillPlan)
+		skillPlan.PUT("/:id", manageSkillPlans, skillPlanH.UpdateSkillPlan)
+		skillPlan.DELETE("/:id", manageSkillPlans, skillPlanH.DeleteSkillPlan)
 	}
 
 	// ─── EVE 角色信息 ───
 	infoH := handler.NewEveInfoHandler()
-	info := auth.Group("/info")
+	info := login.Group("/info")
 	{
 		info.POST("/wallet", infoH.GetWalletJournal)
 		info.POST("/skills", infoH.GetCharacterSkills)
@@ -147,37 +184,29 @@ func RegisterRoutes(r *gin.Engine) {
 	info.POST("/npc-kills", npcKillH.GetNpcKills)
 	info.POST("/npc-kills/all", npcKillH.GetAllNpcKills)
 
-	// ─── 系统钱包（用户端）───
-	walletH := handler.NewSysWalletHandler()
-	wallet := operation.Group("/wallet")
-	{
-		wallet.POST("/my", walletH.GetMyWallet)
-		wallet.POST("/my/transactions", walletH.GetMyTransactions)
-	}
-
 	// ─── 商店（用户端）───
 	shopH := handler.NewShopHandler()
-	shop := auth.Group("/shop")
+	shop := login.Group("/shop")
+	walletH := handler.NewSysWalletHandler()
+	shopWallet := shop.Group("/wallet")
 	{
 		shop.POST("/products", shopH.ListProducts)
 		shop.POST("/product/detail", shopH.GetProductDetail)
 		shop.POST("/buy", shopH.BuyProduct)
 		shop.POST("/orders", shopH.GetMyOrders)
 		shop.POST("/redeem/list", shopH.GetMyRedeemCodes)
-		// 抽奖
-		lotteryH := handler.NewLotteryHandler()
-		shop.POST("/lottery/list", lotteryH.ListActivities)
-		shop.POST("/lottery/draw", lotteryH.Draw)
-		shop.POST("/lottery/records", lotteryH.GetMyRecords)
+
+		shopWallet.POST("/my", walletH.GetMyWallet)
+		shopWallet.POST("/my/transactions", walletH.GetMyTransactions)
 	}
 
 	// ─── 文件上传（需要登录）───
 	uploadH := handler.NewUploadHandler()
-	auth.POST("/upload/image", uploadH.UploadImage)
+	login.POST("/upload/image", uploadH.UploadImage)
 
 	// ─── SRP 补损 ───
 	srpH := handler.NewSrpHandler()
-	srp := auth.Group("/srp")
+	srp := login.Group("/srp")
 	{
 		// 价格表（查看公开，修改需权限）
 		srp.GET("/prices", srpH.ListShipPrices)
@@ -196,15 +225,18 @@ func RegisterRoutes(r *gin.Engine) {
 		srpAdmin := srp.Group("", middleware.RequirePermission("srp:review"))
 		{
 			srpAdmin.GET("/applications", srpH.ListApplications)
+			srpAdmin.PUT("/applications/auto-approve", srpH.RunFleetAutoApproval)
+			srpAdmin.GET("/applications/batch-payout-summary", srpH.ListBatchPayoutSummary)
 			srpAdmin.GET("/applications/:id", srpH.GetApplication)
 			srpAdmin.PUT("/applications/:id/review", srpH.ReviewApplication)
 			srpAdmin.PUT("/applications/:id/payout", srpH.Payout)
+			srpAdmin.PUT("/applications/users/:user_id/payout", srpH.BatchPayoutByUser)
 		}
 	}
 
 	// ─── ESI 刷新队列 ───
 	esiH := handler.NewESIRefreshHandler()
-	esiRefresh := auth.Group("/esi/refresh", middleware.RequireRole(model.RoleAdmin))
+	esiRefresh := login.Group("/esi/refresh", middleware.RequireRole(model.RoleAdmin))
 	{
 		esiRefresh.GET("/tasks", esiH.GetTasks)
 		esiRefresh.GET("/statuses", esiH.GetStatuses)
@@ -214,12 +246,20 @@ func RegisterRoutes(r *gin.Engine) {
 	}
 
 	// ─── 系统管理（需要 admin 角色）───
-	admin := auth.Group("/system", middleware.RequireRole(model.RoleAdmin))
+	admin := login.Group("/system", middleware.RequireRole(model.RoleAdmin))
 
 	// 系统基础配置
 	sysConfigH := handler.NewSysConfigHandler()
 	admin.GET("/basic-config", sysConfigH.GetBasicConfig)
 	admin.PUT("/basic-config", sysConfigH.UpdateBasicConfig)
+
+	// SDE 配置管理
+	admin.GET("/sde-config", sysConfigH.GetSDEConfig)
+	admin.PUT("/sde-config", sysConfigH.UpdateSDEConfig)
+
+	// 允许访问的军团列表
+	admin.GET("/basic-config/allow-corporations", sysConfigH.GetAllowCorporations)
+	admin.PUT("/basic-config/allow-corporations", sysConfigH.UpdateAllowCorporations)
 
 	// NPC 刷怪报表（管理员 — 公司级）
 	admin.POST("/npc-kills", npcKillH.GetCorpNpcKills)
@@ -231,12 +271,14 @@ func RegisterRoutes(r *gin.Engine) {
 		alliancePAPAdmin.GET("", alliancePAPAdminH.GetAllAlliancePAP)
 		alliancePAPAdmin.POST("/fetch", alliancePAPAdminH.TriggerFetch)
 		alliancePAPAdmin.POST("/import", alliancePAPAdminH.ImportAlliancePAP)
-		// PAP 兑换配置
-		alliancePAPAdmin.GET("/config", alliancePAPAdminH.GetExchangeConfig)
-		alliancePAPAdmin.PUT("/config", alliancePAPAdminH.SetExchangeConfig)
-		// 月度归档 + 兑换系统钱包
+		// 月度归档
 		alliancePAPAdmin.POST("/settle", alliancePAPAdminH.SettleMonth)
 	}
+
+	// PAP 兑换汇率管理（管理员）
+	papExchangeH := handler.NewPAPExchangeHandler()
+	admin.GET("/pap-exchange/rates", papExchangeH.GetRates)
+	admin.PUT("/pap-exchange/rates", papExchangeH.SetRates)
 
 	// 菜单管理
 	adminMenu := admin.Group("/menu")
@@ -303,7 +345,7 @@ func RegisterRoutes(r *gin.Engine) {
 	adminShopOrder := admin.Group("/shop/order")
 	{
 		adminShopOrder.POST("/list", adminShopH.AdminListOrders)
-		adminShopOrder.POST("/approve", adminShopH.AdminApproveOrder)
+		adminShopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
 		adminShopOrder.POST("/reject", adminShopH.AdminRejectOrder)
 	}
 	adminShopRedeem := admin.Group("/shop/redeem")
@@ -311,19 +353,25 @@ func RegisterRoutes(r *gin.Engine) {
 		adminShopRedeem.POST("/list", adminShopH.AdminListRedeemCodes)
 	}
 
-	// 抽奖管理（管理员）
-	adminLotteryH := handler.NewLotteryHandler()
-	adminLottery := admin.Group("/shop/lottery")
+	// 福利管理（管理员）
+	adminWelfare := admin.Group("/welfare")
 	{
-		adminLottery.POST("/list", adminLotteryH.AdminListActivities)
-		adminLottery.POST("/add", adminLotteryH.AdminCreateActivity)
-		adminLottery.POST("/edit", adminLotteryH.AdminUpdateActivity)
-		adminLottery.POST("/delete", adminLotteryH.AdminDeleteActivity)
-		adminLottery.POST("/prize/add", adminLotteryH.AdminCreatePrize)
-		adminLottery.POST("/prize/edit", adminLotteryH.AdminUpdatePrize)
-		adminLottery.POST("/prize/delete", adminLotteryH.AdminDeletePrize)
-		adminLottery.POST("/records", adminLotteryH.AdminListRecords)
-		adminLottery.POST("/records/deliver", adminLotteryH.AdminUpdateRecordDelivery)
+		adminWelfare.POST("/list", welfareH.AdminListWelfares)
+		adminWelfare.POST("/add", welfareH.AdminCreateWelfare)
+		adminWelfare.POST("/edit", welfareH.AdminUpdateWelfare)
+		adminWelfare.POST("/delete", welfareH.AdminDeleteWelfare)
+		adminWelfare.POST("/applications", welfareH.AdminListApplications)
+		adminWelfare.POST("/review", welfareH.AdminReviewApplication)
+		adminWelfare.POST("/import", welfareH.AdminImportRecords)
+	}
+
+	// ─── 用户端福利 ───
+	welfareUser := login.Group("/welfare")
+	{
+		welfareUser.POST("/eligible", welfareH.GetEligibleWelfares)
+		welfareUser.POST("/apply", welfareH.ApplyForWelfare)
+		welfareUser.POST("/my-applications", welfareH.ListMyApplications)
+		welfareUser.POST("/upload-evidence", welfareH.UploadEvidence)
 	}
 
 	// 自动权限映射管理（管理员）
