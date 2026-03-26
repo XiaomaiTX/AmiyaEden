@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 const (
@@ -35,8 +37,11 @@ func (h *WelfareHandler) UploadEvidence(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "获取文件失败: "+err.Error())
 		return
 	}
-	defer file.Close()
-
+	defer func() {
+		if err := file.Close(); err != nil {
+			global.Logger.Error("关闭文件失败", zap.Error(err))
+		}
+	}()
 	data, err := io.ReadAll(io.LimitReader(file, evidenceMaxBytes+1))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, "读取文件失败")
