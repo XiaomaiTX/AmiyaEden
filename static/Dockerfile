@@ -17,7 +17,7 @@ COPY . .
 # 可通过 build-arg 覆盖：docker build --build-arg VITE_API_URL=https://your-domain.com
 ARG VITE_API_URL=/
 ARG VITE_BASE_URL=/
-ARG VITE_ACCESS_MODE=backend
+ARG VITE_ACCESS_MODE=frontend
 ARG VITE_DROP_CONSOLE=true
 
 ENV VITE_API_URL=$VITE_API_URL \
