@@ -191,10 +191,10 @@ Use:
 - `docs/standards/testing-and-verification.md`
 - `docs/standards/pre-completion-checklist.md`
 
-Minimum expectations:
+Minimum expectations (commands are defined in `docs/standards/testing-and-verification.md § Default Commands`):
 
-- backend changes -> `cd server && go test ./...` and `go build ./...`
-- frontend changes -> `cd static && pnpm lint .` and `pnpm exec vue-tsc --noEmit`
+- backend changes -> lint, test, and build
+- frontend changes -> lint and typecheck
 - contract changes -> validate both backend and frontend
 - bug fixes -> add a regression test or state why not
 - behavior changes -> update relevant docs

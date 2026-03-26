@@ -145,21 +145,8 @@ VITE_OPEN_ROUTE_INFO=false
 
 ## 常用校验命令
 
-后端：
+参见 `docs/standards/testing-and-verification.md`（`Default Commands` 节）。
 
-```bash
-cd server && go test ./...
-cd server && go build ./...
-```
-
-前端：
-
-```bash
-cd static && pnpm lint .
-cd static && pnpm exec vue-tsc --noEmit
-cd static && pnpm test:unit
-cd static && pnpm build
-```
 
 ## 常见问题
 

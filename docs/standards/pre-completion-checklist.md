@@ -25,8 +25,11 @@ Skip only items that do not apply to the change. Do not skip items for convenien
 
 ## Checklist by Change Type
 
+Commands in this section come from `docs/standards/testing-and-verification.md § Default Commands`, which is the single canonical source. Do not redefine or duplicate commands elsewhere; update that section if commands change.
+
 ### Backend-Only Change
 
+- [ ] `cd server && golangci-lint run ./...`
 - [ ] `cd server && go build ./...`
 - [ ] `cd server && go test ./...`
 - [ ] No layer violations were introduced
@@ -46,6 +49,7 @@ Skip only items that do not apply to the change. Do not skip items for convenien
 
 ### Cross-Contract Change
 
+- [ ] `cd server && golangci-lint run ./...`
 - [ ] `cd server && go build ./...`
 - [ ] `cd server && go test ./...`
 - [ ] `cd static && pnpm lint .`
@@ -107,19 +111,6 @@ When a normally expected test is skipped:
 
 Never skip a normally expected test without documenting the reason.
 
-## Quick Commands
+## Verification Commands
 
-Backend:
-
-- `cd server && go build ./...`
-- `cd server && go test ./...`
-
-Frontend:
-
-- `cd static && pnpm lint .`
-- `cd static && pnpm exec vue-tsc --noEmit`
-- `cd static && pnpm test:unit`
-
-Full stack:
-
-- `cd server && go build ./... && go test ./... && cd ../static && pnpm lint . && pnpm exec vue-tsc --noEmit && pnpm test:unit`
+See `docs/standards/testing-and-verification.md § Default Commands` for the authoritative backend and frontend verification commands.

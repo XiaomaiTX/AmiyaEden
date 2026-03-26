@@ -106,20 +106,7 @@ Examples:
 
 ## Common Commands
 
-### Backend
-
-```bash
-cd server && go test ./...
-cd server && go build ./...
-```
-
-### Frontend
-
-```bash
-cd static && pnpm lint .
-cd static && pnpm exec vue-tsc --noEmit
-cd static && pnpm test:unit
-```
+See `docs/standards/testing-and-verification.md § Default Commands` for the authoritative list of backend and frontend verification commands.
 
 ## When Verification without new tests is acceptable only when justified
 

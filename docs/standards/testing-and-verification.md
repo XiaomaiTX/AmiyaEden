@@ -25,8 +25,11 @@ Applies to all backend, frontend, contract, repository, hook, handler, and servi
 
 ## Default Commands
 
+**This section is the single canonical source for verification commands. All other documents must reference this section rather than redefine commands.**
+
 ### Backend
 
+- `cd server && golangci-lint run ./...`
 - `cd server && go test ./...`
 - `cd server && go build ./...`
 
@@ -35,6 +38,7 @@ Applies to all backend, frontend, contract, repository, hook, handler, and servi
 - `cd static && pnpm lint .`
 - `cd static && pnpm exec vue-tsc --noEmit`
 - `cd static && pnpm test:unit`
+- `cd static && pnpm build`
 
 ## Required Rules
 
