@@ -2,10 +2,9 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-03-24
+last_reviewed: 2026-03-26
 source_of_truth:
   - docs/ai/repo-rules.md
-  - docs/standards/testing-and-verification.md
   - docs/standards/dependency-layering.md
 ---
 
@@ -13,25 +12,22 @@ source_of_truth:
 
 ## Scope
 
-Use this checklist before marking any task complete.
-
-Skip only items that do not apply to the change. Do not skip items for convenience.
+Use this checklist before marking work complete. Skip only items that do not apply.
 
 ## Core Rules
 
-- Completion requires both correct implementation and appropriate verification.
-- `build`, `lint`, and `typecheck` do not replace regression testing where regression coverage is required.
-- If a required check or test is skipped, the omission must be stated explicitly.
+- This file is the completion gate.
+- `docs/standards/testing-and-verification.md` is the canonical source for commands, coverage rules, and allowed exceptions.
+- If a required check or test is skipped, state the reason explicitly.
 
 ## Checklist by Change Type
-
-Commands in this section come from `docs/standards/testing-and-verification.md ยง Default Commands`, which is the single canonical source. Do not redefine or duplicate commands elsewhere; update that section if commands change.
 
 ### Backend-Only Change
 
 - [ ] `cd server && golangci-lint run ./...`
 - [ ] `cd server && go build ./...`
 - [ ] `cd server && go test ./...`
+- [ ] Scope stayed focused; no unrelated refactor was introduced
 - [ ] No layer violations were introduced
 - [ ] If this is a bug fix, a regression test was added or updated
 - [ ] If an API contract changed, frontend API wrappers and types were updated
@@ -43,6 +39,7 @@ Commands in this section come from `docs/standards/testing-and-verification.md ย
 - [ ] `cd static && pnpm lint .`
 - [ ] `cd static && pnpm exec vue-tsc --noEmit`
 - [ ] If a pure helper or hook changed, `cd static && pnpm test:unit`
+- [ ] Scope stayed focused; no unrelated refactor was introduced
 - [ ] No direct HTTP calls were added to views
 - [ ] All new user-facing strings were added to both `zh.json` and `en.json`
 - [ ] If behavior changed, the relevant feature doc was updated
@@ -55,6 +52,7 @@ Commands in this section come from `docs/standards/testing-and-verification.md ย
 - [ ] `cd static && pnpm lint .`
 - [ ] `cd static && pnpm exec vue-tsc --noEmit`
 - [ ] If relevant, `cd static && pnpm test:unit`
+- [ ] Scope stayed focused; no unrelated refactor was introduced
 - [ ] Frontend API wrapper was updated
 - [ ] Shared TypeScript types were updated
 - [ ] Backend response fields and frontend type fields match
@@ -73,6 +71,7 @@ Commands in this section come from `docs/standards/testing-and-verification.md ย
 
 ### Documentation-Only Change
 
+- [ ] Scope stayed focused; no unrelated refactor was introduced
 - [ ] Front matter was updated where required
 - [ ] No stale references or broken cross-links were introduced
 - [ ] Index documents were updated if required
@@ -89,17 +88,9 @@ Commands in this section come from `docs/standards/testing-and-verification.md ย
 - [ ] The change follows the existing module structure pattern
 - [ ] At least one regression test covers key behavior, unless explicitly justified otherwise
 
-## Test Decision Matrix
+## Test Selection Reference
 
-| change | minimum test expectation |
-| --- | --- |
-| service business logic | Go test in the same package |
-| repository query, join, filter, or fallback logic | Go behavior or branch test |
-| handler response shape or contract logic | Go handler-boundary or contract test |
-| frontend pure helper or pure hook | `cd static && pnpm test:unit` |
-| bug fix in any layer | regression test at the root-cause layer when practical |
-| localization-only change | build-level verification only |
-| documentation-only change | no code-level test required |
+See `docs/guides/testing-guide.md` for practical placement and selection guidance.
 
 ## If a Test Is Skipped
 
@@ -110,7 +101,3 @@ When a normally expected test is skipped:
 3. state where the test should be added later, if applicable
 
 Never skip a normally expected test without documenting the reason.
-
-## Verification Commands
-
-See `docs/standards/testing-and-verification.md ยง Default Commands` for the authoritative backend and frontend verification commands.
