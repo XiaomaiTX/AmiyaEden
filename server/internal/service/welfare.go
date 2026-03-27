@@ -738,14 +738,21 @@ type MyApplicationResp struct {
 }
 
 // ListMyApplications 查询用户的福利申请列表
-func (s *WelfareService) ListMyApplications(userID uint, status string) ([]MyApplicationResp, error) {
-	apps, err := s.repo.ListApplicationsByUserID(userID, status)
+func (s *WelfareService) ListMyApplications(userID uint, page, pageSize int, status string) ([]MyApplicationResp, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	apps, total, err := s.repo.ListApplicationsByUserIDPaginated(userID, page, pageSize, status)
 	if err != nil {
-		return nil, errors.New("获取申请记录失败")
+		return nil, 0, errors.New("获取申请记录失败")
 	}
 
 	if len(apps) == 0 {
-		return []MyApplicationResp{}, nil
+		return []MyApplicationResp{}, total, nil
 	}
 
 	// 批量获取福利名称
@@ -779,7 +786,7 @@ func (s *WelfareService) ListMyApplications(userID uint, status string) ([]MyApp
 		})
 	}
 
-	return result, nil
+	return result, total, nil
 }
 
 // ─────────────────────────────────────────────

@@ -49,7 +49,7 @@ source_of_truth:
 
 - `static/src/views/welfare/my` — 我的福利（所有已登录用户）
   - 申请福利 tab：显示可申请的福利，per_character 每个角色独立一行
-  - 已领取福利 tab：显示所有申请记录及状态
+  - 已领取福利 tab：分页显示申请记录及状态
 - `static/src/views/welfare/approval` — 福利审批（福利官、管理员）
   - 待发放 tab：显示 requested 申请，支持发放/拒绝操作
   - 历史记录 tab：显示已发放/已拒绝的申请记录
