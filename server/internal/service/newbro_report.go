@@ -88,7 +88,8 @@ func (s *NewbroReportService) GetCaptainOverview(captainUserID uint) (*CaptainOv
 	if err != nil {
 		return nil, err
 	}
-	bountyTotal, recordCount, err := s.attrRepo.SumByCaptainUserID(captainUserID)
+	refTypes := supportedPlayerAttributionRefTypeList()
+	bountyTotal, recordCount, err := s.attrRepo.SumByCaptainUserID(captainUserID, refTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,10 @@ func (s *NewbroReportService) ListCaptainPlayers(captainUserID uint, status stri
 	for _, char := range chars {
 		charByID[char.CharacterID] = char
 	}
-	items, err := buildCaptainPlayerListItems(rows, userByID, charByID, captainUserID, s.attrRepo.SumByCaptainAndPlayerUserID)
+	refTypes := supportedPlayerAttributionRefTypeList()
+	items, err := buildCaptainPlayerListItems(rows, userByID, charByID, captainUserID, func(captainUserID, playerUserID uint) (float64, error) {
+		return s.attrRepo.SumByCaptainAndPlayerUserID(captainUserID, playerUserID, refTypes)
+	})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -155,6 +159,7 @@ func (s *NewbroReportService) ListCaptainAttributions(captainUserID uint, req Ca
 		req.RefType,
 		req.StartDate,
 		req.EndDate,
+		supportedPlayerAttributionRefTypeList(),
 	)
 	if err != nil {
 		return CaptainAttributionSummary{}, nil, 0, err

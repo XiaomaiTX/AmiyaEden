@@ -449,7 +449,6 @@
     "reset": "Reset",
     "summary": "Summary",
     "totalBounty": "Total Bounty",
-    "totalESS": "Total ESS",
     "totalTax": "Total Tax",
     "actualIncome": "Actual Income",
     "totalRecords": "Total Records",
@@ -477,7 +476,11 @@
     "noData": "No NPC kill data",
     "members": "Member Stats",
     "recordCount": "Records",
-    "bountyPrizes": "Bounty"
+    "bountyPrizes": "Bounty",
+    "refTypes": {
+      "bounty_prizes": "Bounty",
+      "ess_escrow_transfer": "ESS Escrow"
+    }
   },
   "welfareSettings": {
     "create": "Create Welfare",
@@ -728,6 +731,9 @@
       "title": "Choose a Captain",
       "subtitle": "Eligible newbros can choose or switch their current captain here.",
       "currentlyIneligible": "Currently ineligible",
+      "currentlyIneligibleWithReason": "Currently ineligible: {reason}. Last evaluated at {evaluatedAt}.",
+      "ineligibleBecauseSkillThreshold": "a character has reached the single-character SP limit",
+      "ineligibleBecauseMultiCharacterThreshold": "too many characters have reached the multi-character SP threshold",
       "overviewTab": "Choose Captain",
       "historyTab": "History",
       "currentCaptain": "Current Captain",
@@ -799,7 +805,6 @@
       "captainNicknameColumn": "Captain Nickname",
       "newbroColumn": "Newbro",
       "newbroNicknameColumn": "Newbro Nickname",
-      "historyCreatorColumn": "Created By",
       "changedByCharacterColumn": "Changed By",
       "historyPlayerCharacterId": "Newbro Character ID",
       "nicknameLabel": "Nickname",
@@ -1843,7 +1848,11 @@
       "rewardHint": "Reward processing sums unprocessed attributed bounty and converts it into wallet credits using this percentage.",
       "bonusRate": "Bonus Rate",
       "bonusRatePlaceholder": "Enter the reward percentage",
-      "save": "Save Settings"
+      "save": "Save Settings",
+      "validation": {
+        "mustBeGreaterThanZero": "Must be greater than 0",
+        "mustBeZeroOrGreater": "Must be 0 or greater"
+      }
     }
   }
 }

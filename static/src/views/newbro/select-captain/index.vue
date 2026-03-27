@@ -24,7 +24,8 @@
               <ElEmpty
                 v-if="!state?.current_affiliation"
                 :description="t('newbro.select.noCurrentCaptain')"
-                :image-size="72"
+                :image-size="48"
+                class="compact-empty"
               />
 
               <div v-else class="flex items-center justify-between gap-4 flex-wrap">
@@ -139,21 +140,21 @@
 </template>
 
 <script setup lang="ts">
-  import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
-  import { useMenuStore } from '@/store/modules/menu'
   import {
     fetchMyNewbroAffiliation,
     fetchNewbroCaptains,
     fetchSelectCaptain,
     fetchEndAffiliation
   } from '@/api/newbro'
+  import { useNewbroEligibility } from '@/hooks/newbro/useNewbroEligibility'
+  import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
 
   defineOptions({ name: 'NewbroSelectCaptain' })
 
   const { t } = useI18n()
-  const router = useRouter()
-  const menuStore = useMenuStore()
+  const { redirectIfIneligible } = useNewbroEligibility()
+  const { formatDateTime } = useNewbroFormatters()
 
   const loading = ref(false)
   const submittingCaptainId = ref<number | null>(null)
@@ -162,25 +163,20 @@
   const captains = ref<Api.Newbro.CaptainCandidate[]>([])
   const state = ref<Api.Newbro.MyAffiliationResponse | null>(null)
 
-  const formatDateTime = (value?: string | null) => {
-    if (!value) return '-'
-    return new Date(value).toLocaleString()
-  }
-
   const loadData = async () => {
     loading.value = true
     try {
       state.value = await fetchMyNewbroAffiliation()
-      if (!state.value.is_currently_newbro) {
+      if (await redirectIfIneligible(state.value)) {
         captains.value = []
-        ElMessage.warning(t('newbro.select.currentlyIneligible'))
-        await router.replace(menuStore.getHomePath() || '/')
         return
       }
       captains.value = await fetchNewbroCaptains()
     } catch (error) {
       console.error('Failed to load newbro selection data', error)
+      state.value = null
       captains.value = []
+      ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
     } finally {
       loading.value = false
     }
@@ -221,3 +217,9 @@
     loadData()
   })
 </script>
+
+<style scoped>
+  :deep(.compact-empty.el-empty) {
+    padding: 8px 0;
+  }
+</style>

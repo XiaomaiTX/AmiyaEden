@@ -6,7 +6,7 @@
           <div class="text-lg font-semibold">{{ t('newbro.captain.title') }}</div>
           <div class="text-sm text-gray-500 mt-1">{{ t('newbro.captain.subtitle') }}</div>
         </div>
-        <ElButton class="min-w-[120px]" :disabled="loadingOverview" @click="reloadAll">{{
+        <ElButton class="min-w-[120px]" :disabled="isRefreshing" @click="reloadActiveTab">{{
           $t('common.refresh')
         }}</ElButton>
       </div>
@@ -374,16 +374,23 @@
     fetchCaptainPlayers,
     fetchCaptainRewardSettlements
   } from '@/api/newbro'
+  import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
 
   defineOptions({ name: 'NewbroCaptainDashboard' })
 
   const { t } = useI18n()
+  const { formatDateTime, formatIsk, formatCredit, formatPercentage } = useNewbroFormatters()
 
   const loadingOverview = ref(false)
   const loadingPlayers = ref(false)
   const loadingEligiblePlayers = ref(false)
   const loadingAttributions = ref(false)
   const loadingRewards = ref(false)
+  const overviewLoaded = ref(false)
+  const playersLoaded = ref(false)
+  const eligiblePlayersLoaded = ref(false)
+  const attributionsLoaded = ref(false)
+  const rewardsLoaded = ref(false)
   const activeTab = ref('players')
   const overview = ref<Api.Newbro.CaptainOverview | null>(null)
   const players = ref<Api.Newbro.CaptainPlayerListItem[]>([])
@@ -407,28 +414,20 @@
   const eligiblePage = reactive({ current: 1, size: 10, total: 0 })
   const attributionPage = reactive({ current: 1, size: 20, total: 0 })
   const rewardPage = reactive({ current: 1, size: 20, total: 0 })
-  const formatDateTime = (value?: string | null) => {
-    if (!value) return '-'
-    return new Date(value).toLocaleString()
-  }
-  const formatIsk = (value: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-      value
-    )
-  const formatCredit = (value: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-      value
-    )
-  const formatPercentage = (value: number) =>
-    `${new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(value)}%`
+  const isRefreshing = computed(
+    () =>
+      loadingOverview.value ||
+      loadingPlayers.value ||
+      loadingEligiblePlayers.value ||
+      loadingAttributions.value ||
+      loadingRewards.value
+  )
 
   const loadOverview = async () => {
     loadingOverview.value = true
     try {
       overview.value = await fetchCaptainOverview()
+      overviewLoaded.value = true
     } finally {
       loadingOverview.value = false
     }
@@ -444,6 +443,7 @@
       })
       players.value = data.list
       playerPage.total = data.total
+      playersLoaded.value = true
     } finally {
       loadingPlayers.value = false
     }
@@ -459,6 +459,7 @@
       attributions.value = data.list
       attributionSummary.value = data.summary
       attributionPage.total = data.total
+      attributionsLoaded.value = true
     } finally {
       loadingAttributions.value = false
     }
@@ -474,6 +475,7 @@
       rewardSettlements.value = data.list
       rewardSummary.value = data.summary
       rewardPage.total = data.total
+      rewardsLoaded.value = true
     } finally {
       loadingRewards.value = false
     }
@@ -489,8 +491,31 @@
       })
       eligiblePlayers.value = data.list
       eligiblePage.total = data.total
+      eligiblePlayersLoaded.value = true
     } finally {
       loadingEligiblePlayers.value = false
+    }
+  }
+
+  const loadAttributionTabData = async () => {
+    await Promise.all([loadOverview(), loadAttributions(), loadRewards()])
+  }
+
+  const ensurePlayersLoaded = async () => {
+    if (!playersLoaded.value) {
+      await loadPlayers()
+    }
+  }
+
+  const ensureEligiblePlayersLoaded = async () => {
+    if (!eligiblePlayersLoaded.value) {
+      await loadEligiblePlayers()
+    }
+  }
+
+  const ensureAttributionTabLoaded = async () => {
+    if (!overviewLoaded.value || !attributionsLoaded.value || !rewardsLoaded.value) {
+      await loadAttributionTabData()
     }
   }
 
@@ -527,17 +552,35 @@
     }
   }
 
-  const reloadAll = async () => {
-    await Promise.all([
-      loadOverview(),
-      loadPlayers(),
-      loadEligiblePlayers(),
-      loadAttributions(),
-      loadRewards()
-    ])
+  const reloadActiveTab = async () => {
+    if (activeTab.value === 'players') {
+      await loadPlayers()
+      return
+    }
+
+    if (activeTab.value === 'enroll') {
+      await loadEligiblePlayers()
+      return
+    }
+
+    await loadAttributionTabData()
   }
 
+  watch(activeTab, (value) => {
+    if (value === 'players') {
+      void ensurePlayersLoaded()
+    }
+
+    if (value === 'enroll') {
+      void ensureEligiblePlayersLoaded()
+    }
+
+    if (value === 'attributions') {
+      void ensureAttributionTabLoaded()
+    }
+  })
+
   onMounted(() => {
-    reloadAll()
+    void ensurePlayersLoaded()
   })
 </script>

@@ -70,3 +70,28 @@ func TestBuildCaptainCandidateJournalQueryUsesExplicitWindowAndRefTypes(t *testi
 		t.Fatalf("did not expect repository to hardcode bounty_prizes, got SQL: %s", sql)
 	}
 }
+
+func TestBuildCaptainAttributionAggregateQueryUsesCallerSuppliedSupportedRefTypes(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildCaptainAttributionAggregateQuery(
+			tx.Model(&model.CaptainBountyAttribution{}),
+			[]string{"ess_escrow_transfer"},
+			true,
+		).Where("captain_user_id = ?", 42).Scan(&struct{}{})
+	})
+
+	if !strings.Contains(sql, `ref_type IN (`) {
+		t.Fatalf("expected aggregate query to filter by caller-supplied ref types, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `'ess_escrow_transfer'`) {
+		t.Fatalf("expected aggregate query to include caller-supplied ref type, got SQL: %s", sql)
+	}
+	if strings.Contains(sql, `'bounty_prizes'`) {
+		t.Fatalf("did not expect aggregate query to hardcode bounty_prizes, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `COUNT(*) AS record_count`) {
+		t.Fatalf("expected aggregate query to project record_count when requested, got SQL: %s", sql)
+	}
+}

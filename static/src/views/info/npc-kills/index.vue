@@ -208,7 +208,8 @@
 
   // ─── REF_TYPE 配置 ───
   const REF_TYPE_CONFIG: Record<string, { type: string; text: string }> = {
-    bounty_prizes: { type: 'success', text: '' }
+    bounty_prizes: { type: 'success', text: t('npcKill.refTypes.bounty_prizes') },
+    ess_escrow_transfer: { type: 'warning', text: t('npcKill.refTypes.ess_escrow_transfer') }
   }
 
   // ─── API 适配器 ───

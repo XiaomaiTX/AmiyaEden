@@ -2,6 +2,7 @@ package service
 
 import (
 	"amiya-eden/internal/model"
+	"errors"
 	"testing"
 	"time"
 )
@@ -97,5 +98,49 @@ func TestFilterCaptainCandidateUsersExcludesCurrentUser(t *testing.T) {
 	}
 	if filtered[1].ID != 84 {
 		t.Fatalf("expected second retained user to be 84, got %d", filtered[1].ID)
+	}
+}
+
+func TestResolveCaptainAffiliationCreateErrorReusesCurrentAffiliationOnUniqueConflict(t *testing.T) {
+	now := time.Date(2026, 3, 27, 17, 0, 0, 0, time.UTC)
+	current := &model.NewbroCaptainAffiliation{
+		BaseModel:     model.BaseModel{ID: 55},
+		CaptainUserID: 42,
+		StartedAt:     now,
+	}
+
+	resp, err := resolveCaptainAffiliationCreateError(
+		errors.New(`duplicate key value violates unique constraint "idx_newbro_captain_affiliation_active_player_user_id"`),
+		current,
+		42,
+	)
+	if err != nil {
+		t.Fatalf("expected unique conflict to be converted into a successful reuse response, got %v", err)
+	}
+	if resp == nil {
+		t.Fatal("expected response for matching active affiliation")
+	}
+	if resp.AffiliationID != 55 || resp.CaptainUserID != 42 || !resp.StartedAt.Equal(now) {
+		t.Fatalf("unexpected reuse response: %+v", resp)
+	}
+}
+
+func TestResolveCaptainAffiliationCreateErrorRejectsMismatchedConcurrentCaptain(t *testing.T) {
+	current := &model.NewbroCaptainAffiliation{
+		BaseModel:     model.BaseModel{ID: 55},
+		CaptainUserID: 84,
+		StartedAt:     time.Date(2026, 3, 27, 17, 0, 0, 0, time.UTC),
+	}
+
+	resp, err := resolveCaptainAffiliationCreateError(
+		errors.New(`duplicate key value violates unique constraint "idx_newbro_captain_affiliation_active_player_user_id"`),
+		current,
+		42,
+	)
+	if err == nil {
+		t.Fatal("expected mismatched concurrent captain to return a retryable error")
+	}
+	if resp != nil {
+		t.Fatalf("expected no response for mismatched concurrent captain, got %+v", resp)
 	}
 }

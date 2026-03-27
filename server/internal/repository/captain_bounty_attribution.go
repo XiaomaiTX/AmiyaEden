@@ -27,31 +27,56 @@ func (r *CaptainBountyAttributionRepository) ExistsByWalletJournalID(walletJourn
 	return count > 0, err
 }
 
-func (r *CaptainBountyAttributionRepository) SumByCaptainUserID(captainUserID uint) (bountyTotal float64, recordCount int64, err error) {
+func buildCaptainAttributionAggregateQuery(
+	db *gorm.DB,
+	supportedRefTypes []string,
+	includeRecordCount bool,
+) *gorm.DB {
+	selectExpr := "0 AS bounty_total"
+	selectArgs := make([]any, 0, 1)
+	if len(supportedRefTypes) > 0 {
+		selectExpr = "COALESCE(SUM(CASE WHEN ref_type IN ? THEN amount ELSE 0 END), 0) AS bounty_total"
+		selectArgs = append(selectArgs, supportedRefTypes)
+	}
+	if includeRecordCount {
+		selectExpr += ", COUNT(*) AS record_count"
+	}
+	return db.Select(selectExpr, selectArgs...)
+}
+
+func (r *CaptainBountyAttributionRepository) SumByCaptainUserID(
+	captainUserID uint,
+	supportedRefTypes []string,
+) (bountyTotal float64, recordCount int64, err error) {
 	type row struct {
 		BountyTotal float64
 		RecordCount int64
 	}
 	var result row
-	err = global.DB.Model(&model.CaptainBountyAttribution{}).
-		Select(`
-			COALESCE(SUM(CASE WHEN ref_type = 'bounty_prizes' THEN amount ELSE 0 END), 0) AS bounty_total,
-			COUNT(*) AS record_count
-		`).
+	err = buildCaptainAttributionAggregateQuery(
+		global.DB.Model(&model.CaptainBountyAttribution{}),
+		supportedRefTypes,
+		true,
+	).
 		Where("captain_user_id = ?", captainUserID).
 		Scan(&result).Error
 	return result.BountyTotal, result.RecordCount, err
 }
 
-func (r *CaptainBountyAttributionRepository) SumByCaptainAndPlayerUserID(captainUserID, playerUserID uint) (bountyTotal float64, err error) {
+func (r *CaptainBountyAttributionRepository) SumByCaptainAndPlayerUserID(
+	captainUserID,
+	playerUserID uint,
+	supportedRefTypes []string,
+) (bountyTotal float64, err error) {
 	type row struct {
 		BountyTotal float64
 	}
 	var result row
-	err = global.DB.Model(&model.CaptainBountyAttribution{}).
-		Select(`
-			COALESCE(SUM(CASE WHEN ref_type = 'bounty_prizes' THEN amount ELSE 0 END), 0) AS bounty_total
-		`).
+	err = buildCaptainAttributionAggregateQuery(
+		global.DB.Model(&model.CaptainBountyAttribution{}),
+		supportedRefTypes,
+		false,
+	).
 		Where("captain_user_id = ? AND player_user_id = ?", captainUserID, playerUserID).
 		Scan(&result).Error
 	return result.BountyTotal, err
@@ -98,18 +123,18 @@ func (r *CaptainBountyAttributionRepository) SummarizeByCaptainUserIDFiltered(
 	refType string,
 	startDate,
 	endDate *time.Time,
+	supportedRefTypes []string,
 ) (bountyTotal float64, recordCount int64, err error) {
 	type row struct {
 		BountyTotal float64
 		RecordCount int64
 	}
 	var result row
-	db := global.DB.Model(&model.CaptainBountyAttribution{}).
-		Select(`
-			COALESCE(SUM(CASE WHEN ref_type = 'bounty_prizes' THEN amount ELSE 0 END), 0) AS bounty_total,
-			COUNT(*) AS record_count
-		`).
-		Where("captain_user_id = ?", captainUserID)
+	db := buildCaptainAttributionAggregateQuery(
+		global.DB.Model(&model.CaptainBountyAttribution{}),
+		supportedRefTypes,
+		true,
+	).Where("captain_user_id = ?", captainUserID)
 	if playerUserID != nil && *playerUserID > 0 {
 		db = db.Where("player_user_id = ?", *playerUserID)
 	}
@@ -148,7 +173,7 @@ func buildUnattributedPlayerJournalQuery(
 	return query
 }
 
-func (r *CaptainBountyAttributionRepository) ListUsersCurrentNewbroUnattributedJournals(
+func (r *CaptainBountyAttributionRepository) ListUnattributedPlayerJournalsFromLookback(
 	lastWalletJournalID int64,
 	lookbackStart time.Time,
 	refTypes []string,

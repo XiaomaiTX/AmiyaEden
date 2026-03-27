@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -22,11 +23,33 @@ const (
 // SysConfigRepository 系统配置（key/value）数据访问层，带 Redis 缓存
 type SysConfigRepository struct{}
 
+type SysConfigUpsertItem struct {
+	Key   string
+	Value string
+	Desc  string
+}
+
 func NewSysConfigRepository() *SysConfigRepository {
 	return &SysConfigRepository{}
 }
 
 func cacheKey(key string) string { return sysConfigCachePrefix + key }
+
+func buildSysConfigBatchUpsertQuery(db *gorm.DB, items []SysConfigUpsertItem) *gorm.DB {
+	rows := make([]model.SystemConfig, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, model.SystemConfig{
+			Key:   item.Key,
+			Value: item.Value,
+			Desc:  item.Desc,
+		})
+	}
+
+	return db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value", "desc", "updated_at"}),
+	}).Create(&rows)
+}
 
 // Get 获取配置值字符串；若不存在返回 defaultVal
 func (r *SysConfigRepository) Get(key, defaultVal string) (string, error) {
@@ -58,29 +81,28 @@ func (r *SysConfigRepository) Get(key, defaultVal string) (string, error) {
 
 // Set 设置配置值并使缓存失效
 func (r *SysConfigRepository) Set(key, value, desc string) error {
-	var cfg model.SystemConfig
-	err := global.DB.Where("key = ?", key).First(&cfg).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			cfg = model.SystemConfig{Key: key, Value: value, Desc: desc}
-			if err2 := global.DB.Create(&cfg).Error; err2 != nil {
-				return err2
-			}
-		} else {
-			return err
-		}
-	} else {
-		updates := map[string]interface{}{"value": value}
-		if desc != "" {
-			updates["desc"] = desc
-		}
-		if err2 := global.DB.Model(&cfg).Where("key = ?", key).Updates(updates).Error; err2 != nil {
-			return err2
-		}
+	return r.SetMany([]SysConfigUpsertItem{{
+		Key:   key,
+		Value: value,
+		Desc:  desc,
+	}})
+}
+
+func (r *SysConfigRepository) SetMany(items []SysConfigUpsertItem) error {
+	if len(items) == 0 {
+		return nil
 	}
 
-	// 刷新缓存
-	_ = cache.SetString(context.Background(), cacheKey(key), value, sysConfigCacheTTL)
+	if err := global.DB.Transaction(func(tx *gorm.DB) error {
+		return buildSysConfigBatchUpsertQuery(tx, items).Error
+	}); err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	for _, item := range items {
+		_ = cache.SetString(ctx, cacheKey(item.Key), item.Value, sysConfigCacheTTL)
+	}
 	return nil
 }
 

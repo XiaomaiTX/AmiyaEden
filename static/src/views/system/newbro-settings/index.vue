@@ -142,7 +142,7 @@
         required: true,
         type: 'number',
         min: 1,
-        message: t('system.newbroSettings.maxCharacterSPPlaceholder'),
+        message: t('system.newbroSettings.validation.mustBeGreaterThanZero'),
         trigger: 'blur'
       }
     ],
@@ -151,7 +151,7 @@
         required: true,
         type: 'number',
         min: 1,
-        message: t('system.newbroSettings.multiCharacterSPPlaceholder'),
+        message: t('system.newbroSettings.validation.mustBeGreaterThanZero'),
         trigger: 'blur'
       }
     ],
@@ -160,7 +160,7 @@
         required: true,
         type: 'number',
         min: 1,
-        message: t('system.newbroSettings.multiCharacterThresholdPlaceholder'),
+        message: t('system.newbroSettings.validation.mustBeGreaterThanZero'),
         trigger: 'blur'
       }
     ],
@@ -169,7 +169,7 @@
         required: true,
         type: 'number',
         min: 1,
-        message: t('system.newbroSettings.refreshIntervalDaysPlaceholder'),
+        message: t('system.newbroSettings.validation.mustBeGreaterThanZero'),
         trigger: 'blur'
       }
     ],
@@ -178,7 +178,7 @@
         required: true,
         type: 'number',
         min: 0,
-        message: t('system.newbroSettings.bonusRatePlaceholder'),
+        message: t('system.newbroSettings.validation.mustBeZeroOrGreater'),
         trigger: 'blur'
       }
     ]

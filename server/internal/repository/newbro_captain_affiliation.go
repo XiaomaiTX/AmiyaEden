@@ -24,11 +24,21 @@ func NewNewbroCaptainAffiliationRepository() *NewbroCaptainAffiliationRepository
 	return &NewbroCaptainAffiliationRepository{}
 }
 
+func buildActiveByPlayerUserIDQuery(db *gorm.DB, userID uint) *gorm.DB {
+	return db.Where("player_user_id = ? AND ended_at IS NULL", userID).
+		Order("started_at DESC, id DESC")
+}
+
 func (r *NewbroCaptainAffiliationRepository) GetActiveByPlayerUserID(userID uint) (*model.NewbroCaptainAffiliation, error) {
+	return r.GetActiveByPlayerUserIDTx(global.DB, userID)
+}
+
+func (r *NewbroCaptainAffiliationRepository) GetActiveByPlayerUserIDTx(
+	tx *gorm.DB,
+	userID uint,
+) (*model.NewbroCaptainAffiliation, error) {
 	var row model.NewbroCaptainAffiliation
-	err := global.DB.Where("player_user_id = ? AND ended_at IS NULL", userID).
-		Order("started_at DESC, id DESC").
-		First(&row).Error
+	err := buildActiveByPlayerUserIDQuery(tx, userID).First(&row).Error
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +58,23 @@ func (r *NewbroCaptainAffiliationRepository) ListRecentByPlayerUserID(userID uin
 }
 
 func (r *NewbroCaptainAffiliationRepository) Create(row *model.NewbroCaptainAffiliation) error {
-	return global.DB.Create(row).Error
+	return r.CreateTx(global.DB, row)
+}
+
+func (r *NewbroCaptainAffiliationRepository) CreateTx(tx *gorm.DB, row *model.NewbroCaptainAffiliation) error {
+	return tx.Create(row).Error
 }
 
 func (r *NewbroCaptainAffiliationRepository) EndActiveByPlayerUserID(userID uint, endedAt time.Time) error {
-	return global.DB.Model(&model.NewbroCaptainAffiliation{}).
+	return r.EndActiveByPlayerUserIDTx(global.DB, userID, endedAt)
+}
+
+func (r *NewbroCaptainAffiliationRepository) EndActiveByPlayerUserIDTx(
+	tx *gorm.DB,
+	userID uint,
+	endedAt time.Time,
+) error {
+	return tx.Model(&model.NewbroCaptainAffiliation{}).
 		Where("player_user_id = ? AND ended_at IS NULL", userID).
 		Update("ended_at", endedAt).Error
 }

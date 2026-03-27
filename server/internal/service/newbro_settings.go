@@ -57,7 +57,14 @@ func (s NewbroSettings) RefreshInterval() time.Duration {
 }
 
 type NewbroSettingsService struct {
-	cfgRepo *repository.SysConfigRepository
+	cfgRepo newbroSettingsConfigStore
+}
+
+type newbroSettingsConfigStore interface {
+	GetInt64(key string, defaultVal int64) int64
+	GetInt(key string, defaultVal int) int
+	GetFloat(key string, defaultVal float64) float64
+	SetMany(items []repository.SysConfigUpsertItem) error
 }
 
 func NewNewbroSettingsService() *NewbroSettingsService {
@@ -82,42 +89,36 @@ func (s *NewbroSettingsService) UpdateSettings(cfg NewbroSettings) (NewbroSettin
 		return NewbroSettings{}, err
 	}
 
-	items := []struct {
-		key   string
-		value string
-		desc  string
-	}{
+	items := []repository.SysConfigUpsertItem{
 		{
-			key:   model.SysConfigNewbroMaxCharacterSP,
-			value: fmt.Sprintf("%d", cfg.MaxCharacterSP),
-			desc:  "新人资格：单角色技能点阈值",
+			Key:   model.SysConfigNewbroMaxCharacterSP,
+			Value: fmt.Sprintf("%d", cfg.MaxCharacterSP),
+			Desc:  "新人资格：单角色技能点阈值",
 		},
 		{
-			key:   model.SysConfigNewbroMultiCharacterSP,
-			value: fmt.Sprintf("%d", cfg.MultiCharacterSP),
-			desc:  "新人资格：多角色技能点阈值",
+			Key:   model.SysConfigNewbroMultiCharacterSP,
+			Value: fmt.Sprintf("%d", cfg.MultiCharacterSP),
+			Desc:  "新人资格：多角色技能点阈值",
 		},
 		{
-			key:   model.SysConfigNewbroMultiCharacterThreshold,
-			value: fmt.Sprintf("%d", cfg.MultiCharacterThreshold),
-			desc:  "新人资格：达到多角色阈值的角色数量",
+			Key:   model.SysConfigNewbroMultiCharacterThreshold,
+			Value: fmt.Sprintf("%d", cfg.MultiCharacterThreshold),
+			Desc:  "新人资格：达到多角色阈值的角色数量",
 		},
 		{
-			key:   model.SysConfigNewbroRefreshIntervalDays,
-			value: fmt.Sprintf("%d", cfg.RefreshIntervalDays),
-			desc:  "新人资格快照刷新间隔（天）",
+			Key:   model.SysConfigNewbroRefreshIntervalDays,
+			Value: fmt.Sprintf("%d", cfg.RefreshIntervalDays),
+			Desc:  "新人资格快照刷新间隔（天）",
 		},
 		{
-			key:   model.SysConfigNewbroBonusRate,
-			value: fmt.Sprintf("%g", cfg.BonusRate),
-			desc:  "队长奖励比例（百分比）",
+			Key:   model.SysConfigNewbroBonusRate,
+			Value: fmt.Sprintf("%g", cfg.BonusRate),
+			Desc:  "队长奖励比例（百分比）",
 		},
 	}
 
-	for _, item := range items {
-		if err := s.cfgRepo.Set(item.key, item.value, item.desc); err != nil {
-			return NewbroSettings{}, err
-		}
+	if err := s.cfgRepo.SetMany(items); err != nil {
+		return NewbroSettings{}, err
 	}
 
 	return cfg, nil

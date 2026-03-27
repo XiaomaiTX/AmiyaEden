@@ -187,11 +187,7 @@
         </ElCard>
       </ElTabPane>
 
-      <ElTabPane
-        :label="t('newbro.manage.rewardHistoryTab')"
-        name="rewards"
-        @click="ensureRewardsLoaded"
-      >
+      <ElTabPane :label="t('newbro.manage.rewardHistoryTab')" name="rewards">
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
           <ElCard shadow="never">
             <div class="text-sm text-gray-500">{{ t('newbro.manage.rewardSettlementCount') }}</div>
@@ -278,11 +274,7 @@
         </ElCard>
       </ElTabPane>
 
-      <ElTabPane
-        :label="t('newbro.manage.affiliationHistoryTab')"
-        name="history"
-        @click="ensureHistoryLoaded"
-      >
+      <ElTabPane :label="t('newbro.manage.affiliationHistoryTab')" name="history">
         <ElCard shadow="never" class="mb-4">
           <template #header>
             <span>{{ t('newbro.manage.affiliationHistoryTitle') }}</span>
@@ -350,6 +342,11 @@
               min-width="180"
             />
             <ElTableColumn
+              prop="player_character_id"
+              :label="t('newbro.manage.historyPlayerCharacterId')"
+              width="150"
+            />
+            <ElTableColumn
               prop="player_nickname"
               :label="t('newbro.manage.newbroNicknameColumn')"
               min-width="140"
@@ -362,7 +359,7 @@
             </ElTableColumn>
             <ElTableColumn
               prop="changed_by_character_name"
-              :label="t('newbro.manage.historyCreatorColumn')"
+              :label="t('newbro.manage.changedByCharacterColumn')"
               min-width="180"
             >
               <template #default="{ row }">
@@ -412,10 +409,12 @@
     fetchRunCaptainAttributionSync,
     fetchRunCaptainRewardProcessing
   } from '@/api/newbro'
+  import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
 
   defineOptions({ name: 'NewbroManage' })
 
   const { t } = useI18n()
+  const { formatDateTime, formatIsk, formatCredit, formatPercentage } = useNewbroFormatters()
 
   const activeTab = ref('performance')
   const loadingCaptains = ref(false)
@@ -431,7 +430,7 @@
   const historyLoaded = ref(false)
   const rewardLoaded = ref(false)
   const page = reactive({ current: 1, size: 20, total: 0 })
-  const rewardPage = reactive({ current: 1, size: 200, total: 0 })
+  const rewardPage = reactive({ current: 1, size: 20, total: 0 })
   const historyPage = reactive({ current: 1, size: 20, total: 0 })
   const rewardSummary = ref<Api.Newbro.CaptainRewardSummary>({
     settlement_count: 0,
@@ -443,25 +442,6 @@
     playerCharacterIds: '',
     dateRange: [] as string[]
   })
-
-  const formatDateTime = (value?: string | null) => {
-    if (!value) return '-'
-    return new Date(value).toLocaleString()
-  }
-
-  const formatIsk = (value: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-      value
-    )
-  const formatCredit = (value: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-      value
-    )
-  const formatPercentage = (value: number) =>
-    `${new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(value)}%`
 
   const loadCaptains = async () => {
     loadingCaptains.value = true

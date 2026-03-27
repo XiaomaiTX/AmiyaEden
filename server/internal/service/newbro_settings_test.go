@@ -1,9 +1,36 @@
 package service
 
 import (
+	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
+	"errors"
 	"testing"
 	"time"
 )
+
+type fakeNewbroSettingsConfigStore struct {
+	setManyCalls int
+	setManyItems []repository.SysConfigUpsertItem
+	setManyErr   error
+}
+
+func (f *fakeNewbroSettingsConfigStore) GetInt64(_ string, defaultVal int64) int64 {
+	return defaultVal
+}
+
+func (f *fakeNewbroSettingsConfigStore) GetInt(_ string, defaultVal int) int {
+	return defaultVal
+}
+
+func (f *fakeNewbroSettingsConfigStore) GetFloat(_ string, defaultVal float64) float64 {
+	return defaultVal
+}
+
+func (f *fakeNewbroSettingsConfigStore) SetMany(items []repository.SysConfigUpsertItem) error {
+	f.setManyCalls++
+	f.setManyItems = append([]repository.SysConfigUpsertItem(nil), items...)
+	return f.setManyErr
+}
 
 func TestDefaultNewbroSettings(t *testing.T) {
 	cfg := DefaultNewbroSettings()
@@ -131,5 +158,64 @@ func TestValidateNewbroSettings(t *testing.T) {
 				t.Fatal("expected validation error")
 			}
 		})
+	}
+}
+
+func TestUpdateNewbroSettingsPersistsAllKeysInSingleBatch(t *testing.T) {
+	store := &fakeNewbroSettingsConfigStore{}
+	svc := &NewbroSettingsService{cfgRepo: store}
+	cfg := NewbroSettings{
+		MaxCharacterSP:          21_000_000,
+		MultiCharacterSP:        11_000_000,
+		MultiCharacterThreshold: 4,
+		RefreshIntervalDays:     9,
+		BonusRate:               35,
+	}
+
+	updated, err := svc.UpdateSettings(cfg)
+	if err != nil {
+		t.Fatalf("expected update to succeed, got %v", err)
+	}
+	if updated != cfg {
+		t.Fatalf("expected updated settings %v, got %v", cfg, updated)
+	}
+	if store.setManyCalls != 1 {
+		t.Fatalf("expected exactly one batch write, got %d", store.setManyCalls)
+	}
+	if len(store.setManyItems) != 5 {
+		t.Fatalf("expected 5 settings entries, got %d", len(store.setManyItems))
+	}
+
+	gotKeys := []string{
+		store.setManyItems[0].Key,
+		store.setManyItems[1].Key,
+		store.setManyItems[2].Key,
+		store.setManyItems[3].Key,
+		store.setManyItems[4].Key,
+	}
+	wantKeys := []string{
+		model.SysConfigNewbroMaxCharacterSP,
+		model.SysConfigNewbroMultiCharacterSP,
+		model.SysConfigNewbroMultiCharacterThreshold,
+		model.SysConfigNewbroRefreshIntervalDays,
+		model.SysConfigNewbroBonusRate,
+	}
+	for i := range wantKeys {
+		if gotKeys[i] != wantKeys[i] {
+			t.Fatalf("unexpected key at index %d: got %q want %q", i, gotKeys[i], wantKeys[i])
+		}
+	}
+}
+
+func TestUpdateNewbroSettingsReturnsBatchWriteError(t *testing.T) {
+	store := &fakeNewbroSettingsConfigStore{setManyErr: errors.New("write failed")}
+	svc := &NewbroSettingsService{cfgRepo: store}
+
+	_, err := svc.UpdateSettings(DefaultNewbroSettings())
+	if err == nil {
+		t.Fatal("expected batch write error")
+	}
+	if store.setManyCalls != 1 {
+		t.Fatalf("expected one batch write attempt, got %d", store.setManyCalls)
 	}
 }

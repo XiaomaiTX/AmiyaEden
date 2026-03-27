@@ -450,7 +450,6 @@
     "reset": "重置",
     "summary": "总览",
     "totalBounty": "刷怪赏金",
-    "totalESS": "ESS 入账",
     "totalTax": "交税金额",
     "actualIncome": "实际收入",
     "totalRecords": "总记录数",
@@ -478,7 +477,11 @@
     "noData": "暂无刷怪数据",
     "members": "成员统计",
     "recordCount": "记录数",
-    "bountyPrizes": "赏金"
+    "bountyPrizes": "赏金",
+    "refTypes": {
+      "bounty_prizes": "赏金",
+      "ess_escrow_transfer": "ESS 托管"
+    }
   },
   "welfareSettings": {
     "create": "新增福利",
@@ -729,6 +732,9 @@
       "title": "新人选队长",
       "subtitle": "符合新人资格的玩家可以在这里选择或切换自己的队长。",
       "currentlyIneligible": "当前不符合新人资格",
+      "currentlyIneligibleWithReason": "当前不符合新人资格：{reason}。最近评估时间：{evaluatedAt}。",
+      "ineligibleBecauseSkillThreshold": "已有角色达到单角色技能点上限",
+      "ineligibleBecauseMultiCharacterThreshold": "达到多角色技能点阈值的角色数量过多",
       "overviewTab": "选择队长",
       "historyTab": "关系历史",
       "currentCaptain": "当前队长",
@@ -800,7 +806,6 @@
       "captainNicknameColumn": "队长昵称",
       "newbroColumn": "新人",
       "newbroNicknameColumn": "新人昵称",
-      "historyCreatorColumn": "创建方",
       "changedByCharacterColumn": "变更操作角色",
       "historyPlayerCharacterId": "新人角色 ID",
       "nicknameLabel": "昵称",
@@ -1844,7 +1849,11 @@
       "rewardHint": "奖励处理会按未处理归因赏金汇总后，使用这里的百分比换算系统积分。这个奖励应该根据ESS抽成(40%)适当上调，因为我们后台记录不另外计算ESS分成奖励。",
       "bonusRate": "奖励比例",
       "bonusRatePlaceholder": "请输入奖励比例，按百分比填写",
-      "save": "保存设置"
+      "save": "保存设置",
+      "validation": {
+        "mustBeGreaterThanZero": "必须大于 0",
+        "mustBeZeroOrGreater": "必须大于或等于 0"
+      }
     }
   }
 }

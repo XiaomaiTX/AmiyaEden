@@ -44,7 +44,7 @@ func (h *NewbroUserHandler) SelectCaptain(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	var req selectCaptainRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
+		response.Fail(c, response.CodeParamError, "invalid request")
 		return
 	}
 	result, err := h.affSvc.SelectCaptain(userID, req.CaptainUserID)

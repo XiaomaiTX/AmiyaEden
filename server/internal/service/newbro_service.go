@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"errors"
@@ -172,6 +173,17 @@ func (s *NewbroEligibilityService) CurrentSettings() NewbroSettings {
 
 func (s *NewbroEligibilityService) CurrentRules() NewbroEligibilityRules {
 	return s.CurrentSettings().ToEligibilityRules()
+}
+
+// GetCachedState returns the stored eligibility state without triggering a refresh.
+// Use this on hot paths (e.g. GetMe, GetUserMenuTree) where blocking on a recalculation
+// is unacceptable. Returns nil if no state has been computed yet.
+func (s *NewbroEligibilityService) GetCachedState(userID uint) *model.NewbroPlayerState {
+	state, err := s.stateRepo.GetByUserID(userID)
+	if err != nil {
+		return nil
+	}
+	return state
 }
 
 func (s *NewbroEligibilityService) EnsureCurrentState(userID uint) (*model.NewbroPlayerState, error) {
@@ -418,38 +430,62 @@ func (s *NewbroAffiliationService) changeCaptainAffiliation(actorUserID, playerU
 		return nil, errors.New("目标用户不是队长")
 	}
 
-	current, err := s.affRepo.GetActiveByPlayerUserID(playerUserID)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
-	if shouldReuseCurrentAffiliation(current, captainUserID) {
-		return &SelectCaptainResponse{
-			AffiliationID: current.ID,
-			CaptainUserID: current.CaptainUserID,
-			StartedAt:     current.StartedAt,
-		}, nil
-	}
+	var result *SelectCaptainResponse
+	err = global.DB.Transaction(func(tx *gorm.DB) error {
+		player, err := s.userRepo.GetByIDForUpdateTx(tx, playerUserID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("用户不存在")
+			}
+			return err
+		}
 
-	player, err := s.userRepo.GetByID(playerUserID)
+		current, err := s.affRepo.GetActiveByPlayerUserIDTx(tx, playerUserID)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if shouldReuseCurrentAffiliation(current, captainUserID) {
+			result = &SelectCaptainResponse{
+				AffiliationID: current.ID,
+				CaptainUserID: current.CaptainUserID,
+				StartedAt:     current.StartedAt,
+			}
+			return nil
+		}
+
+		now := time.Now()
+		if current != nil && current.EndedAt == nil {
+			if err := s.affRepo.EndActiveByPlayerUserIDTx(tx, playerUserID, now); err != nil {
+				return err
+			}
+		}
+
+		row := buildNewbroCaptainAffiliation(playerUserID, player.PrimaryCharacterID, captainUserID, actorUserID, now)
+		if err := s.affRepo.CreateTx(tx, &row); err != nil {
+			return err
+		}
+
+		result = &SelectCaptainResponse{
+			AffiliationID: row.ID,
+			CaptainUserID: row.CaptainUserID,
+			StartedAt:     row.StartedAt,
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, errors.New("用户不存在")
-	}
-	now := time.Now()
-	if current != nil && current.EndedAt == nil {
-		if err := s.affRepo.EndActiveByPlayerUserID(playerUserID, now); err != nil {
+		if !isActiveAffiliationConflictError(err) {
 			return nil, err
 		}
+		// The transaction rolled back due to a concurrent cross-process request
+		// inserting an active affiliation for the same player. Read the current
+		// state with a fresh connection (tx is no longer usable) and resolve.
+		latestCurrent, getErr := s.affRepo.GetActiveByPlayerUserID(playerUserID)
+		if getErr != nil && !errors.Is(getErr, gorm.ErrRecordNotFound) {
+			return nil, getErr
+		}
+		return resolveCaptainAffiliationCreateError(err, latestCurrent, captainUserID)
 	}
-
-	row := buildNewbroCaptainAffiliation(playerUserID, player.PrimaryCharacterID, captainUserID, actorUserID, now)
-	if err := s.affRepo.Create(&row); err != nil {
-		return nil, err
-	}
-	return &SelectCaptainResponse{
-		AffiliationID: row.ID,
-		CaptainUserID: row.CaptainUserID,
-		StartedAt:     row.StartedAt,
-	}, nil
+	return result, nil
 }
 
 func (s *NewbroAffiliationService) EndAffiliation(actorUserID, playerUserID uint) error {
@@ -660,7 +696,7 @@ func (s *CaptainBountySyncService) RunSync(now time.Time) (*CaptainAttributionSy
 	captainPrimaryCache := make(map[uint]int64)
 
 	for {
-		journals, err := s.attrRepo.ListUsersCurrentNewbroUnattributedJournals(
+		journals, err := s.attrRepo.ListUnattributedPlayerJournalsFromLookback(
 			state.LastWalletJournalID,
 			lookbackStart,
 			refTypes,

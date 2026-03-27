@@ -55,8 +55,16 @@ func (h *NewbroCaptainHandler) GetAttributions(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, err.Error())
 		return
 	}
-	startDate := parseOptionalNewbroDate(c.Query("start_date"), false)
-	endDate := parseOptionalNewbroDate(c.Query("end_date"), true)
+	startDate, err := parseOptionalNewbroDate(c.Query("start_date"), false)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
+	endDate, err := parseOptionalNewbroDate(c.Query("end_date"), true)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 	summary, result, total, err := h.reportSvc.ListCaptainAttributions(userID, service.CaptainAttributionListRequest{
 		Page:         page,
 		PageSize:     size,
@@ -84,7 +92,7 @@ func parseOptionalUintQueryParam(field, raw string) (*uint, error) {
 	}
 	parsed, err := strconv.ParseUint(raw, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("无效的参数 %s", field)
+		return nil, fmt.Errorf("invalid parameter %s", field)
 	}
 	value := uint(parsed)
 	return &value, nil
@@ -129,7 +137,7 @@ func (h *NewbroCaptainHandler) EnrollPlayer(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	var req captainEnrollPlayerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
+		response.Fail(c, response.CodeParamError, "invalid request")
 		return
 	}
 
@@ -149,7 +157,7 @@ func (h *NewbroCaptainHandler) EndAffiliation(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	var req captainEndAffiliationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
+		response.Fail(c, response.CodeParamError, "invalid request")
 		return
 	}
 	if err := h.affSvc.EndAffiliation(userID, req.PlayerUserID); err != nil {
@@ -159,17 +167,17 @@ func (h *NewbroCaptainHandler) EndAffiliation(c *gin.Context) {
 	response.OK(c, gin.H{})
 }
 
-func parseOptionalNewbroDate(raw string, endOfDay bool) *time.Time {
+func parseOptionalNewbroDate(raw string, endOfDay bool) (*time.Time, error) {
 	if raw == "" {
-		return nil
+		return nil, nil
 	}
 	value, err := time.Parse("2006-01-02", raw)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("invalid date: expected YYYY-MM-DD")
 	}
 	if endOfDay {
 		v := value.Add(24*time.Hour - time.Nanosecond)
-		return &v
+		return &v, nil
 	}
-	return &value
+	return &value, nil
 }

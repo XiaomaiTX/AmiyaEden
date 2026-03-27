@@ -41,7 +41,7 @@ func (h *NewbroAdminHandler) ListCaptains(c *gin.Context) {
 func (h *NewbroAdminHandler) GetCaptainDetail(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
 	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+		response.Fail(c, response.CodeParamError, "invalid user_id")
 		return
 	}
 	result, err := h.reportSvc.GetAdminCaptainDetail(uint(id))
@@ -85,7 +85,7 @@ func (h *NewbroAdminHandler) GetSettings(c *gin.Context) {
 func (h *NewbroAdminHandler) UpdateSettings(c *gin.Context) {
 	var req UpdateNewbroSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		response.Fail(c, response.CodeParamError, "invalid request: "+err.Error())
 		return
 	}
 
@@ -117,14 +117,24 @@ func (h *NewbroAdminHandler) ListAffiliationHistory(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, err.Error())
 		return
 	}
+	changeStartDate, err := parseOptionalNewbroDate(c.Query("change_start_date"), false)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
+	changeEndDate, err := parseOptionalNewbroDate(c.Query("change_end_date"), true)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 
 	result, total, err := h.reportSvc.ListAdminAffiliationHistory(service.AdminAffiliationHistoryListRequest{
 		Page:               page,
 		PageSize:           size,
 		CaptainUserIDs:     captainUserIDs,
 		PlayerCharacterIDs: playerCharacterIDs,
-		ChangeStartDate:    parseOptionalNewbroDate(c.Query("change_start_date"), false),
-		ChangeEndDate:      parseOptionalNewbroDate(c.Query("change_end_date"), true),
+		ChangeStartDate:    changeStartDate,
+		ChangeEndDate:      changeEndDate,
 	})
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
@@ -163,7 +173,7 @@ func parseUintCSV(raw string) ([]uint, error) {
 		}
 		value, err := strconv.ParseUint(trimmed, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("无效的队长用户ID: %s", trimmed)
+			return nil, fmt.Errorf("invalid captain_user_id: %s", trimmed)
 		}
 		result = append(result, uint(value))
 	}
@@ -183,7 +193,7 @@ func parseInt64CSV(raw string) ([]int64, error) {
 		}
 		value, err := strconv.ParseInt(trimmed, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("无效的新人角色ID: %s", trimmed)
+			return nil, fmt.Errorf("invalid player_character_id: %s", trimmed)
 		}
 		result = append(result, value)
 	}

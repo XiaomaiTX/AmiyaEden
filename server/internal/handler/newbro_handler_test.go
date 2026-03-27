@@ -11,7 +11,10 @@ import (
 )
 
 func TestParseOptionalNewbroDateEndOfDayCoversFullLastSecond(t *testing.T) {
-	got := parseOptionalNewbroDate("2026-03-27", true)
+	got, err := parseOptionalNewbroDate("2026-03-27", true)
+	if err != nil {
+		t.Fatalf("expected valid date, got error %v", err)
+	}
 	if got == nil {
 		t.Fatal("expected parsed date")
 	}
@@ -19,6 +22,16 @@ func TestParseOptionalNewbroDateEndOfDayCoversFullLastSecond(t *testing.T) {
 	want := time.Date(2026, 3, 27, 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
 	if !got.Equal(want) {
 		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
+func TestParseOptionalNewbroDateRejectsInvalidDate(t *testing.T) {
+	got, err := parseOptionalNewbroDate("2026-13-27", false)
+	if err == nil {
+		t.Fatal("expected invalid date to return an error")
+	}
+	if got != nil {
+		t.Fatalf("expected invalid date to return nil time, got %v", got)
 	}
 }
 

@@ -21,8 +21,7 @@ export function fetchSelectCaptain(data: Api.Newbro.SelectCaptainParams) {
 
 export function fetchEndAffiliation() {
   return request.post<Api.Newbro.EndAffiliationResponse>({
-    url: '/api/v1/newbro/affiliation/end',
-    data: {}
+    url: '/api/v1/newbro/affiliation/end'
   })
 }
 

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
@@ -9,7 +8,6 @@ import (
 	"amiya-eden/pkg/response"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type MeHandler struct {
@@ -53,9 +51,7 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	}
 
 	var isCurrentlyNewbro *bool
-	if state, err := h.eligibilitySvc.EnsureCurrentState(userID); err != nil {
-		global.Logger.Warn("刷新新人资格快照失败", zap.Uint("user_id", userID), zap.Error(err))
-	} else {
+	if state := h.eligibilitySvc.GetCachedState(userID); state != nil {
 		value := state.IsCurrentlyNewbro
 		isCurrentlyNewbro = &value
 	}

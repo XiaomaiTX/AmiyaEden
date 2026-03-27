@@ -12,8 +12,8 @@ import { useUserStore } from '@/store/modules/user'
 import { useAppMode } from '@/hooks/core/useAppMode'
 import { fetchGetMenuList } from '@/api/system-manage'
 import { asyncRoutes } from '../routes/asyncRoutes'
-import { RoutesAlias } from '../routesAlias'
 import { formatMenuTitle } from '@/utils'
+import { applyMenuAccessFilter, pruneEmptyMenus } from './menuAccess'
 
 export class MenuProcessor {
   /**
@@ -66,66 +66,14 @@ export class MenuProcessor {
     const userStore = useUserStore()
     const isCurrentlyNewbro = userStore.info?.isCurrentlyNewbro
 
-    return menu.reduce((acc: AppRouteRecord[], item) => {
-      const itemRoles = item.meta?.roles
-      const requiresLogin = item.meta?.login === true
-      const requiresNewbro = item.meta?.requiresNewbro === true
-      const hasRolePermission = !itemRoles || itemRoles.some((role) => roles.includes(role))
-      const hasLoginPermission = !requiresLogin || this.hasNonGuestRole(roles)
-      const hasNewbroPermission = !requiresNewbro || isCurrentlyNewbro !== false
-      const hasPermission = hasRolePermission && hasLoginPermission && hasNewbroPermission
-
-      if (hasPermission) {
-        const filteredItem = { ...item }
-        if (filteredItem.children?.length) {
-          filteredItem.children = this.filterMenuByAccess(filteredItem.children, roles)
-        }
-        acc.push(filteredItem)
-      }
-
-      return acc
-    }, [])
-  }
-
-  private hasNonGuestRole(roles: string[]): boolean {
-    return roles.some((role) => role !== 'guest')
+    return applyMenuAccessFilter(menu, roles, isCurrentlyNewbro)
   }
 
   /**
    * 递归过滤空菜单项
    */
   private filterEmptyMenus(menuList: AppRouteRecord[]): AppRouteRecord[] {
-    return menuList
-      .map((item) => {
-        // 如果有子菜单，先递归过滤子菜单
-        if (item.children && item.children.length > 0) {
-          const filteredChildren = this.filterEmptyMenus(item.children)
-          return {
-            ...item,
-            children: filteredChildren
-          }
-        }
-        return item
-      })
-      .filter((item) => {
-        // 如果定义了 children 属性（即使是空数组），说明这是一个目录菜单，应该保留
-        if ('children' in item) {
-          return true
-        }
-
-        // 如果有外链或 iframe，保留
-        if (item.meta?.isIframe === true || item.meta?.link) {
-          return true
-        }
-
-        // 如果有有效的 component，保留
-        if (item.component && item.component !== '' && item.component !== RoutesAlias.Layout) {
-          return true
-        }
-
-        // 其他情况过滤掉
-        return false
-      })
+    return pruneEmptyMenus(menuList)
   }
 
   /**

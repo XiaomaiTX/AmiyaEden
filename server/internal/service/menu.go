@@ -63,7 +63,7 @@ func (s *MenuService) GetUserMenuTree(userID uint, roleCodes []string) ([]*model
 	s.ensureSystemMenusSeeded()
 
 	var isCurrentlyNewbro *bool
-	if state, err := s.eligibilitySvc.EnsureCurrentState(userID); err == nil {
+	if state := s.eligibilitySvc.GetCachedState(userID); state != nil {
 		isCurrentlyNewbro = &state.IsCurrentlyNewbro
 	}
 
