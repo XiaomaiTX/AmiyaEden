@@ -17,7 +17,27 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.user',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin'],
+        authList: [
+          { title: '删除用户', authMark: 'delete_user' },
+          { title: '分配角色', authMark: 'assign_role' }
+        ]
+      }
+    },
+    {
+      path: 'role',
+      name: 'RoleManage',
+      component: '/system/role',
+      meta: {
+        title: 'menus.system.role',
+        keepAlive: true,
+        roles: ['super_admin'],
+        authList: [
+          { title: '新增角色', authMark: 'add_role' },
+          { title: '编辑角色', authMark: 'edit_role' },
+          { title: '删除角色', authMark: 'delete_role' },
+          { title: '权限设置', authMark: 'set_permission' }
+        ]
       }
     },
     {
@@ -27,33 +47,8 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.esiRefresh',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
-      }
-    },
-    {
-      path: 'user-center',
-      name: 'UserCenter',
-      component: '/system/user-center',
-      meta: {
-        title: 'menus.system.userCenter',
-        isHide: true,
-        keepAlive: true,
-        isHideTab: true
-      }
-    },
-    {
-      path: 'menu',
-      name: 'Menus',
-      component: '/system/menu',
-      meta: {
-        title: 'menus.system.menu',
-        keepAlive: true,
-        roles: ['super_admin'],
-        authList: [
-          { title: '新增', authMark: 'add' },
-          { title: '编辑', authMark: 'edit' },
-          { title: '删除', authMark: 'delete' }
-        ]
+        roles: ['super_admin', 'admin'],
+        authList: [{ title: '执行任务', authMark: 'execute_task' }]
       }
     },
     {
@@ -63,7 +58,22 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.wallet',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin'],
+        authList: [
+          { title: '调整余额', authMark: 'adjust_balance' },
+          { title: '查看日志', authMark: 'view_log' }
+        ]
+      }
+    },
+    {
+      path: 'pap-exchange',
+      name: 'PAPExchange',
+      component: '/system/pap-exchange',
+      meta: {
+        title: 'menus.system.papExchange',
+        keepAlive: true,
+        roles: ['super_admin', 'admin'],
+        authList: [{ title: '编辑兑换率', authMark: 'edit_exchange_rate' }]
       }
     },
     {
@@ -73,7 +83,8 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.alliancePap',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin'],
+        authList: [{ title: '手动拉取', authMark: 'manual_fetch' }]
       }
     },
     {
@@ -94,6 +105,17 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.autoRole',
         keepAlive: true,
         roles: ['super_admin', 'admin']
+      }
+    },
+    {
+      path: 'user-center',
+      name: 'UserCenter',
+      component: '/system/user-center',
+      meta: {
+        title: 'menus.system.userCenter',
+        isHide: true,
+        keepAlive: true,
+        isHideTab: true
       }
     },
     {
