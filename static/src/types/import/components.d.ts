@@ -77,8 +77,6 @@ declare module 'vue' {
     ElCheckboxGroup: typeof import('element-plus/es')['ElCheckboxGroup']
     ElCol: typeof import('element-plus/es')['ElCol']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
-    ElDialog: typeof import('element-plus/es')['ElDialog']
-    ElDrawer: typeof import('element-plus/es')['ElDrawer']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
     ElDropdownItem: typeof import('element-plus/es')['ElDropdownItem']
     ElDropdownMenu: typeof import('element-plus/es')['ElDropdownMenu']
@@ -121,8 +119,5 @@ declare module 'vue' {
     SidebarSubmenu: typeof import('./../../components/core/layouts/art-menus/art-sidebar-menu/widget/SidebarSubmenu.vue')['default']
     ThemeSettings: typeof import('./../../components/core/layouts/art-settings-panel/widget/ThemeSettings.vue')['default']
     ThemeSvg: typeof import('./../../components/core/theme/theme-svg/index.vue')['default']
-  }
-  export interface GlobalDirectives {
-    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

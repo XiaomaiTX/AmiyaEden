@@ -106,7 +106,7 @@ export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
     url: '/api/v1/me'
   })
 
-  const { user, characters, roles: backendRoles, permissions } = data
+  const { user, characters, roles: backendRoles } = data
 
   // 主角色：根据 primary_character_id 查找，找不到则用第一个，再 fallback 到用户信息
   const primaryChar =
@@ -132,7 +132,6 @@ export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
     isCurrentlyNewbro:
       typeof data.is_currently_newbro === 'boolean' ? data.is_currently_newbro : undefined,
     roles,
-    buttons: permissions ?? [],
     characters: characters ?? [],
     primaryCharacterId: user.primary_character_id ?? 0
   }

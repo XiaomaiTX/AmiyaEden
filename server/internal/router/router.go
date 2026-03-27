@@ -73,10 +73,6 @@ func RegisterRoutes(r *gin.Engine) {
 		notificationWrite.POST("/read-all", notifH.MarkAllAsRead)
 	}
 
-	// ─── 菜单 ───
-	menuH := handler.NewMenuHandler()
-	auth.GET("/menu/list", menuH.GetMenuList) // 当前用户可用菜单
-
 	// ─── 舰队 ───
 	fleetH := handler.NewFleetHandler()
 	operation := login.Group("/operation")
@@ -293,21 +289,14 @@ func RegisterRoutes(r *gin.Engine) {
 		alliancePAPAdmin.GET("", alliancePAPAdminH.GetAllAlliancePAP)
 		alliancePAPAdmin.POST("/fetch", alliancePAPAdminH.TriggerFetch)
 		alliancePAPAdmin.POST("/import", alliancePAPAdminH.ImportAlliancePAP)
-		// PAP 兑换配置
-		alliancePAPAdmin.GET("/config", alliancePAPAdminH.GetExchangeConfig)
-		alliancePAPAdmin.PUT("/config", alliancePAPAdminH.SetExchangeConfig)
-		// 月度归档 + 兑换系统钱包
+		// 月度归档
 		alliancePAPAdmin.POST("/settle", alliancePAPAdminH.SettleMonth)
 	}
 
-	// 菜单管理
-	adminMenu := admin.Group("/menu")
-	{
-		adminMenu.GET("/tree", menuH.GetMenuTree)
-		adminMenu.POST("", menuH.CreateMenu)
-		adminMenu.PUT("/:id", menuH.UpdateMenu)
-		adminMenu.DELETE("/:id", menuH.DeleteMenu)
-	}
+	// PAP 兑换汇率管理（管理员）
+	papExchangeH := handler.NewPAPExchangeHandler()
+	admin.GET("/pap-exchange/rates", papExchangeH.GetRates)
+	admin.PUT("/pap-exchange/rates", papExchangeH.SetRates)
 
 	// 角色管理
 	roleH := handler.NewRoleHandler()
@@ -319,10 +308,6 @@ func RegisterRoutes(r *gin.Engine) {
 		adminRole.POST("", roleH.CreateRole)
 		adminRole.PUT("/:id", roleH.UpdateRole)
 		adminRole.DELETE("/:id", roleH.DeleteRole)
-
-		// 角色权限
-		adminRole.GET("/:id/menus", roleH.GetRoleMenus)
-		adminRole.PUT("/:id/menus", roleH.SetRoleMenus)
 	}
 
 	// 用户管理
@@ -378,7 +363,7 @@ func RegisterRoutes(r *gin.Engine) {
 	adminShopOrder := admin.Group("/shop/order")
 	{
 		adminShopOrder.POST("/list", adminShopH.AdminListOrders)
-		adminShopOrder.POST("/approve", adminShopH.AdminApproveOrder)
+		adminShopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
 		adminShopOrder.POST("/reject", adminShopH.AdminRejectOrder)
 	}
 	adminShopRedeem := admin.Group("/shop/redeem")
@@ -404,6 +389,7 @@ func RegisterRoutes(r *gin.Engine) {
 		welfareUser.POST("/eligible", welfareH.GetEligibleWelfares)
 		welfareUser.POST("/apply", welfareH.ApplyForWelfare)
 		welfareUser.POST("/my-applications", welfareH.ListMyApplications)
+		welfareUser.POST("/upload-evidence", welfareH.UploadEvidence)
 	}
 
 	// 自动权限映射管理（管理员）

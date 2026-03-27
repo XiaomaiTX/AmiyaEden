@@ -130,12 +130,11 @@ func autoMigrate(db *gorm.DB) {
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},
+		&model.PAPTypeRate{},
 		// 系统配置表
 		&model.SystemConfig{},
 		// RBAC 权限相关表
 		&model.Role{},
-		&model.Menu{},
-		&model.RoleMenu{},
 		&model.UserRole{},
 		// ESI 自动权限映射表
 		&model.EsiRoleMapping{},
@@ -149,10 +148,9 @@ func autoMigrate(db *gorm.DB) {
 	dropObsoleteSchema(db)
 	ensureCustomIndexes(db)
 
-	// 种子数据：系统角色 → 系统菜单 → 默认角色权限 → 迁移已有用户
+	// 种子数据：系统角色 → 默认角色权限 → 迁移已有用户
 	roleSvc := service.NewRoleService()
 	roleSvc.SeedSystemRoles()
-	roleSvc.SeedSystemMenus()
 	roleSvc.MigrateExistingUsers()
 }
 
