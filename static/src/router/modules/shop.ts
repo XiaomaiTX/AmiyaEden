@@ -26,7 +26,13 @@ export const shopRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.shop.manage',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin'],
+        authList: [
+          { title: '新增商品', authMark: 'add_product' },
+          { title: '编辑商品', authMark: 'edit_product' },
+          { title: '删除商品', authMark: 'delete_product' },
+          { title: '审批订单', authMark: 'approve_order' }
+        ]
       }
     },
     {

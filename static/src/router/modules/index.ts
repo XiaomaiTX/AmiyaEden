@@ -21,7 +21,7 @@ export const routeModules: AppRouteRecord[] = [
   welfareRoutes,
   newbroRoutes,
   shopRoutes,
+  srpRoutes,
   systemRoutes,
-  exceptionRoutes,
-  srpRoutes
+  exceptionRoutes
 ]
