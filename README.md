@@ -143,50 +143,16 @@ VITE_API_URL=http://localhost:8080
 VITE_API_PROXY_URL=http://localhost:8080
 VITE_ACCESS_MODE=backend
 VITE_WITH_CREDENTIALS=false
-VITE_LOCK_ENCRYPT_KEY=change_me
-VITE_OPEN_ROUTE_INFO=false
+VITE_LOCK_ENCRYP
 ```
 
-默认本地联调场景下：
+## 开发贡献
 
-- `VITE_API_PROXY_URL` 已指向 `http://localhost:8080`
-- `VITE_API_URL` 在开发环境下可保持为 `/`
+欢迎提交 PR 或 Issue。在开始贡献前，请务必阅读：
+1. [AGENTS.md](AGENTS.md)：包含仓库最高优先级的工程约束与架构原则。
+2. [docs/](docs/README.md)：详细的功能设计文档与 API 说明。
+3. 提交 PR 时请确保代码符合项目 lint 规则并包含必要的注释。
 
-然后启动前端：
+## 开源协议
 
-```bash
-cd static
-pnpm install
-pnpm dev
-```
-
-## 认证说明
-
-- 后端 SSO 回调默认路径：`/api/v1/sso/eve/callback`
-- 前端登录页当前使用 `/auth/login`
-- 前端回调页当前使用 `/auth/callback`
-- 活跃登录方式是 EVE SSO；不要把未接入的用户名 / 密码模板页当作当前产品能力
-
-## 常用校验命令
-
-```bash
-cd server && go test ./...
-cd server && go build ./...
-cd static && pnpm lint .
-cd static && pnpm build
-cd static && pnpm exec vue-tsc --noEmit
-cd static && pnpm test:unit
-```
-
-## 文档入口
-
-- 文档索引与信任顺序：[docs/README.md](docs/README.md)
-- 仓库工程规范：[AGENTS.md](AGENTS.md)
-- 测试与验证标准：[docs/standards/testing-and-verification.md](docs/standards/testing-and-verification.md)
-- 当前架构：[docs/architecture/overview.md](docs/architecture/overview.md)
-- API 路由索引：[docs/api/route-index.md](docs/api/route-index.md)
-- Feature 状态说明：[docs/features/README.md](docs/features/README.md)
-
-## 许可证
-
-[LICENSE](LICENSE)
+本项目采用 MIT 协议开源。详情请参阅 [LICENSE](LICENSE) 文件。
