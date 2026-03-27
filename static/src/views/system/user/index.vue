@@ -39,7 +39,7 @@
     fetchGetUserList,
     fetchDeleteUser,
     fetchImpersonateUser,
-    fetchGetAllRoles,
+    fetchGetRoleDefinitions,
     fetchGetUserRoles
   } from '@/api/system-manage'
   import { fetchGetUserInfo } from '@/api/auth'
@@ -142,8 +142,8 @@
   const ensureRolePriorityMap = async () => {
     if (rolePriorityLoaded.value) return
     try {
-      const allRoles = await fetchGetAllRoles()
-      rolePriorityMap.value = allRoles.reduce<Record<string, number>>(
+      const defs = await fetchGetRoleDefinitions()
+      rolePriorityMap.value = defs.reduce<Record<string, number>>(
         (acc, role) => {
           acc[role.code] = role.sort
           return acc
