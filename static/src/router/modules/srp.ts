@@ -27,7 +27,8 @@ export const srpRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.srp.srpManage',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'srp', 'fc']
+        roles: ['super_admin', 'admin', 'srp', 'fc'],
+        authList: [{ title: '审批', authMark: 'approve' }]
       }
     },
     {
@@ -37,7 +38,11 @@ export const srpRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.srp.srpPrices',
         keepAlive: true,
-        login: true
+        roles: ['super_admin', 'admin'],
+        authList: [
+          { title: '新增价格', authMark: 'add_price' },
+          { title: '删除价格', authMark: 'delete_price' }
+        ]
       }
     }
   ]
