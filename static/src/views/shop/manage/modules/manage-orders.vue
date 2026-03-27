@@ -155,7 +155,11 @@
           label: t('shopAdmin.orders.table.totalPrice'),
           width: 120,
           formatter: (row: Order) =>
-            h('span', { class: 'font-medium text-orange-600' }, formatISK(row.total_price))
+            h(
+              'span',
+              { class: 'font-medium text-orange-600' },
+              `${formatISK(row.total_price)} ${t('shop.currency')}`
+            )
         },
         {
           prop: 'remark',
