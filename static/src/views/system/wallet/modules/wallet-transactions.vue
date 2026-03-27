@@ -37,6 +37,7 @@
     :data="data"
     :columns="columns"
     :pagination="pagination"
+    :pagination-options="{ pageSizes: [200, 500, 1000] }"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -45,6 +46,7 @@
 <script setup lang="ts">
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListTransactions } from '@/api/sys-wallet'
 
@@ -71,8 +73,6 @@
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
 
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
-
   const filterForm = reactive({ user_id: '', ref_type: '' })
 
   const {
@@ -89,7 +89,7 @@
   } = useTable({
     core: {
       apiFn: adminListTransactions,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         { prop: 'user_id', label: '用户 ID', width: 90 },

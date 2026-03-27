@@ -20,6 +20,7 @@
   import { fetchMyRedeemCodes } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
 
   defineOptions({ name: 'ShopRedeem' })
 
@@ -33,8 +34,6 @@
     used: { label: t('shopAdmin.redeem.status.used'), type: 'info' },
     expired: { label: t('shopAdmin.redeem.status.expired'), type: 'danger' }
   }
-
-  const formatTime = (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
 
   const {
     columns,

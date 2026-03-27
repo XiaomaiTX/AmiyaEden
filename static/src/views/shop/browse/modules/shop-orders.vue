@@ -34,6 +34,7 @@
   import { fetchMyOrders } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
 
   defineOptions({ name: 'ShopOrders' })
 
@@ -49,8 +50,6 @@
   }
 
   const formatISK = (v: number) => Math.round(v).toLocaleString('en-US')
-
-  const formatTime = (t: string) => new Date(t).toLocaleString()
 
   const statusFilter = ref<string | undefined>(undefined)
 

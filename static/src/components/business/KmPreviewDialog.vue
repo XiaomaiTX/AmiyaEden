@@ -70,6 +70,7 @@
   import { useI18n } from 'vue-i18n'
   import { ElDialog, ElButton, ElEmpty } from 'element-plus'
   import { fetchKillmailDetail } from '@/api/srp'
+  import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'KmPreviewDialog' })
@@ -106,7 +107,6 @@
     window.open(`https://zkillboard.com/kill/${props.killmailId}/`, '_blank')
   }
 
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,

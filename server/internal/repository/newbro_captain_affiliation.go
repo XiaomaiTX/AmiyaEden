@@ -57,6 +57,20 @@ func (r *NewbroCaptainAffiliationRepository) ListRecentByPlayerUserID(userID uin
 	return rows, err
 }
 
+func (r *NewbroCaptainAffiliationRepository) ListByPlayerUserIDPaged(userID uint, page, pageSize int) ([]model.NewbroCaptainAffiliation, int64, error) {
+	var rows []model.NewbroCaptainAffiliation
+	var total int64
+	db := global.DB.Where("player_user_id = ?", userID)
+	if err := db.Model(&model.NewbroCaptainAffiliation{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := db.Order("started_at DESC, id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&rows).Error
+	return rows, total, err
+}
+
 func (r *NewbroCaptainAffiliationRepository) Create(row *model.NewbroCaptainAffiliation) error {
 	return r.CreateTx(global.DB, row)
 }

@@ -159,6 +159,7 @@
   import { useI18n } from 'vue-i18n'
   import { Plus } from '@element-plus/icons-vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
+  import { formatTime } from '@utils/common'
   import { deleteSkillPlan, fetchSkillPlanDetail, fetchSkillPlanList } from '@/api/skill-plan'
   import SkillPlanDialog from './modules/skill-plan-dialog.vue'
   import { useUserStore } from '@/store/modules/user'
@@ -198,7 +199,6 @@
     total: 0
   })
 
-  const formatTime = (value: string) => (value ? new Date(value).toLocaleString() : '-')
   const getShipIconUrl = (shipTypeId: number, size = 64) =>
     `https://images.evetech.net/types/${shipTypeId}/icon?size=${size}`
 

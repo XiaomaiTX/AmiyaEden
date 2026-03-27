@@ -88,6 +88,7 @@
 <script setup lang="ts">
   import { ref, watch, onMounted } from 'vue'
   import { fetchNotifications, markAsRead, markAllAsRead } from '@/api/notification'
+  import { formatTime } from '@utils/common'
 
   defineOptions({ name: 'ArtNotification' })
 
@@ -146,23 +147,6 @@
       return { icon: 'ri:money-dollar-circle-line', iconClass: 'bg-warning/12 text-warning' }
     }
     return { icon: 'ri:notification-3-line', iconClass: 'bg-theme/12 text-theme' }
-  }
-
-  // ─── 时间格式化 ───
-
-  const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-
-    if (minutes < 1) return '刚刚'
-    if (minutes < 60) return `${minutes} 分钟前`
-    if (hours < 24) return `${hours} 小时前`
-    if (days < 7) return `${days} 天前`
-    return date.toLocaleString()
   }
 
   // ─── 数据加载 ───

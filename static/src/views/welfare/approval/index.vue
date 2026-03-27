@@ -45,7 +45,7 @@
             :data="historyData"
             :columns="historyColumns"
             :pagination="historyPagination"
-            :pagination-options="{ pageSizes: [50, 100, 200] }"
+            :pagination-options="{ pageSizes: [200, 500, 1000] }"
             @pagination:size-change="historyHandleSizeChange"
             @pagination:current-change="historyHandleCurrentChange"
           />
@@ -63,6 +63,7 @@
   import { ElTag, ElButton, ElMessage, ElMessageBox, ElEmpty } from 'element-plus'
   import { CopyDocument } from '@element-plus/icons-vue'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListApplications, adminReviewApplication } from '@/api/welfare'
@@ -143,13 +144,6 @@
       label: t('welfareApproval.welfareName'),
       width: 160,
       showOverflowTooltip: true
-    },
-    {
-      prop: 'welfare_description',
-      label: t('welfareApproval.welfareDescription'),
-      minWidth: 180,
-      showOverflowTooltip: true,
-      formatter: (row: AppRow) => row.welfare_description || '-'
     },
     {
       prop: 'reviewer_name',
@@ -241,7 +235,7 @@
   } = useTable({
     core: {
       apiFn: adminListApplications,
-      apiParams: { current: 1, size: 50, status: 'delivered,rejected' },
+      apiParams: { current: 1, size: 200, status: 'delivered,rejected' },
       immediate: false,
       columnsFactory: () => [
         ...buildBaseColumns(),
@@ -317,5 +311,4 @@
   }
 
   // ─── Helpers ───
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
 </script>

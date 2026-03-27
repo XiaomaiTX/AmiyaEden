@@ -23,6 +23,7 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListWallets } from '@/api/sys-wallet'
+  import { formatTime } from '@utils/common'
 
   defineOptions({ name: 'WalletList' })
   const { t } = useI18n()
@@ -36,8 +37,6 @@
 
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
-
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
 
   const {
     columns,
