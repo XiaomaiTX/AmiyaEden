@@ -304,6 +304,12 @@
       "skillPlans": "管理军团规划",
       "completionCheck": "检查完成度"
     },
+    "newbro": {
+      "title": "新人帮扶",
+      "selectCaptain": "新人选队长",
+      "captain": "我是队长",
+      "manage": "帮扶管理"
+    },
     "role": {
       "title": "权限组",
       "explore": "角色广场",
@@ -342,7 +348,8 @@
       "npcKills": "刷怪报表",
       "autoRole": "自动权限",
       "webhook": "Webhook 通知",
-      "basicConfig": "基础配置"
+      "basicConfig": "基础配置",
+      "newbroSettings": "帮扶设置"
     }
   },
   "info": {
@@ -465,7 +472,8 @@
     "reset": "重置",
     "summary": "总览",
     "totalBounty": "刷怪赏金",
-    "totalESS": "ESS 收入",
+    "totalIncursion": "入侵收入",
+    "totalMission": "任务奖励",
     "totalTax": "交税金额",
     "actualIncome": "实际收入",
     "totalRecords": "总记录数",
@@ -494,7 +502,12 @@
     "members": "成员统计",
     "recordCount": "记录数",
     "bountyPrizes": "赏金",
-    "essTransfer": "ESS"
+    "refTypes": {
+      "bounty_prizes": "赏金",
+      "ess_escrow_transfer": "ESS 托管",
+      "incursion_payout": "入侵奖励",
+      "agent_mission_reward": "任务奖励"
+    }
   },
   "welfareSettings": {
     "create": "新增福利",
@@ -713,6 +726,7 @@
       "admin": "管理员",
       "srp": "补损官",
       "fc": "FC",
+      "captain": "队长",
       "welfare": "福利官",
       "user": "已认证用户",
       "guest": "访客"
@@ -734,6 +748,119 @@
     "impersonateConfirm": "确定要以「{name}」的身份登录吗？当前管理员会话将被替换，请提前记录当前 Token 或在新标签页中操作。",
     "impersonateSuccess": "已切换至用户「{name}」",
     "impersonateFailed": "模拟登录失败"
+  },
+  "newbro": {
+    "common": {
+      "player": "玩家",
+      "mainCharacter": "当前主角色",
+      "nickname": "昵称",
+      "captain": "队长",
+      "startedAt": "开始时间",
+      "endedAt": "结束时间",
+      "refType": "流水类型",
+      "systemId": "星系 ID",
+      "amount": "金额",
+      "journalAt": "流水时间",
+      "processedAt": "处理时间"
+    },
+    "select": {
+      "title": "新人选队长",
+      "subtitle": "符合新人资格的玩家可以在这里选择或切换自己的队长。",
+      "currentlyIneligible": "当前不符合新人资格",
+      "currentlyIneligibleWithReason": "当前不符合新人资格：{reason}。最近评估时间：{evaluatedAt}。",
+      "ineligibleBecauseSkillThreshold": "已有角色达到单角色技能点上限",
+      "ineligibleBecauseMultiCharacterThreshold": "达到多角色技能点阈值的角色数量过多",
+      "overviewTab": "选择队长",
+      "historyTab": "关系历史",
+      "currentCaptain": "当前队长",
+      "noCurrentCaptain": "当前还没有选择队长",
+      "affiliationStarted": "开始时间",
+      "captainList": "可选队长",
+      "nicknameLabel": "昵称",
+      "activeNewbros": "当前带新人数量",
+      "lastOnline": "最近在线",
+      "currentSelection": "当前选择",
+      "chooseCaptain": "选择队长",
+      "chooseSuccess": "队长选择已更新",
+      "noCaptains": "当前没有可选队长",
+      "recentHistory": "最近关系历史",
+      "endAffiliationButton": "解除关联",
+      "endAffiliationSuccess": "已结束当前帮扶关系"
+    },
+    "captain": {
+      "title": "我是队长",
+      "subtitle": "查看当前与历史帮扶玩家，以及由你带来的收益归因台账。",
+      "activePlayers": "当前玩家数",
+      "historicalPlayers": "历史玩家数",
+      "totalBounty": "归因赏金",
+      "recordCount": "归因记录数",
+      "playersTitle": "新人列表",
+      "playersAll": "全部",
+      "playersActive": "当前",
+      "playersHistorical": "历史",
+      "endAffiliationButton": "解除关系",
+      "endAffiliationSuccess": "已结束该玩家的帮扶关系",
+      "enrollTitle": "招募新人",
+      "enrollSubtitle": "按昵称或当前主角色名搜索符合资格的新人，并将其挂到你的帮扶关系下。",
+      "enrollSearchPlaceholder": "搜索昵称或角色名",
+      "enrollSearchHint": "结果只包含当前仍符合新人资格且尚未挂在你名下的用户。",
+      "enrollCurrentCaptain": "当前队长",
+      "enrollNoCaptain": "未挂队长",
+      "enrollButton": "招募",
+      "enrollSuccess": "新人帮扶关系已更新",
+      "enrollEmpty": "没有找到符合条件的新人",
+      "enrollSwitchingFrom": "当前挂靠",
+      "attributionsTitle": "收益归因明细",
+      "refTypeBounty": "赏金",
+      "totalRewardedValue": "已发放积分",
+      "rewardSettlementCount": "奖励批次数",
+      "lastRewardProcessedAt": "最近奖励时间",
+      "rewardHistoryTitle": "奖励发放历史",
+      "rewardAttributionCount": "归因记录数",
+      "rewardAttributedTotal": "归因赏金总额",
+      "rewardBonusRate": "奖励比例",
+      "rewardCreditedValue": "发放积分"
+    },
+    "manage": {
+      "title": "帮扶管理",
+      "subtitle": "管理员可以查看全部队长绩效并手动执行收益归因同步。",
+      "performanceTab": "队长绩效",
+      "rewardHistoryTab": "奖励发放历史",
+      "affiliationHistoryTab": "关系变更历史",
+      "keyword": "搜索队长名称",
+      "runSync": "执行归因同步",
+      "runRewardProcessing": "执行奖励处理",
+      "captainPerformance": "队长绩效",
+      "affiliationHistoryTitle": "关系变更历史",
+      "historyStartDate": "变更开始日期",
+      "historyEndDate": "变更结束日期",
+      "historyCaptainFilter": "队长用户 ID，多个用逗号分隔",
+      "historyPlayerFilter": "新人角色 ID，多个用逗号分隔",
+      "historyFilterHint": "时间筛选会匹配所选范围内开始或结束的帮扶关系。",
+      "historyCaptainUserId": "队长用户 ID",
+      "captainNicknameColumn": "队长昵称",
+      "newbroColumn": "新人",
+      "newbroNicknameColumn": "新人昵称",
+      "changedByCharacterColumn": "变更操作角色",
+      "historyPlayerCharacterId": "新人角色 ID",
+      "nicknameLabel": "昵称",
+      "nicknameColumn": "昵称",
+      "activeNewbroCount": "当前新人数",
+      "historicalNewbroCount": "历史新人数",
+      "viewDetail": "查看详情",
+      "detailTitle": "队长详情 - {name}",
+      "detailPlayers": "玩家列表",
+      "detailAttributions": "归因明细",
+      "syncSuccess": "归因同步完成，新增 {inserted} 条，处理 {processed} 条记录",
+      "rewardSettlementCount": "奖励批次数",
+      "rewardTotalCredited": "累计发放积分",
+      "rewardLastProcessedAt": "最近奖励时间",
+      "rewardAttributionCount": "归因记录数",
+      "rewardAttributedTotal": "归因赏金总额",
+      "rewardBonusRate": "奖励比例",
+      "rewardCreditedValue": "发放积分",
+      "rewardProcessSuccess": "奖励处理完成，覆盖 {captains} 名队长、{attributions} 条归因记录，共发放 {credited} 积分"
+    }
   },
   "fleet": {
     "title": "舰队管理",
@@ -1580,7 +1707,8 @@
       "manual": "手动操作",
       "redeem": "兑换消费",
       "srp_payout": "SRP 补损",
-      "shop_purchase": "商城购买"
+      "shop_purchase": "商城购买",
+      "newbro_captain_reward": "队长帮扶奖励"
     },
     "validation": {
       "targetUserId": "请输入目标用户 ID",
@@ -1732,6 +1860,32 @@
       "sdeProxyPlaceholder": "留空不使用代理，如 http://127.0.0.1:7890",
       "sdeDownloadUrl": "下载地址",
       "sdeDownloadUrlPlaceholder": "SDE 数据下载 API 地址"
+    },
+    "newbroSettings": {
+      "title": "帮扶设置",
+      "subtitle": "统一管理新人资格判定规则、资格快照刷新周期与队长奖励比例。",
+      "saveSuccess": "帮扶设置已保存",
+      "eligibilityTitle": "新人资格判定",
+      "eligibilityHint": "当前规则会基于用户全部绑定角色的技能点快照进行判定。",
+      "maxCharacterSP": "单角色技能点上限",
+      "maxCharacterSPPlaceholder": "达到该技能点即不再属于新人",
+      "multiCharacterSP": "多角色技能点阈值",
+      "multiCharacterSPPlaceholder": "用于统计达到阈值的角色数量",
+      "multiCharacterThreshold": "达到阈值的角色数量",
+      "multiCharacterThresholdPlaceholder": "达到该数量后不再属于新人",
+      "refreshTitle": "资格快照刷新",
+      "refreshHint": "已判定为非新人的用户只会在规则变更后重新计算；当前仍是新人的用户会按下面的天数定期重算。",
+      "refreshIntervalDays": "新人快照刷新间隔（天）",
+      "refreshIntervalDaysPlaceholder": "当前仍是新人的用户超过该天数后会重算",
+      "rewardTitle": "队长奖励",
+      "rewardHint": "奖励处理会按未处理归因赏金汇总后，使用这里的百分比换算系统积分。这个奖励应该根据ESS抽成(40%)适当上调，因为我们后台记录不另外计算ESS分成奖励。",
+      "bonusRate": "奖励比例",
+      "bonusRatePlaceholder": "请输入奖励比例，按百分比填写",
+      "save": "保存设置",
+      "validation": {
+        "mustBeGreaterThanZero": "必须大于 0",
+        "mustBeZeroOrGreater": "必须大于或等于 0"
+      }
     }
   }
 }

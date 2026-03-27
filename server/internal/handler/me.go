@@ -11,16 +11,18 @@ import (
 )
 
 type MeHandler struct {
-	userSvc  *service.UserService
-	roleSvc  *service.RoleService
-	charRepo *repository.EveCharacterRepository
+	userSvc        *service.UserService
+	roleSvc        *service.RoleService
+	charRepo       *repository.EveCharacterRepository
+	eligibilitySvc *service.NewbroEligibilityService
 }
 
 func NewMeHandler() *MeHandler {
 	return &MeHandler{
-		userSvc:  service.NewUserService(),
-		roleSvc:  service.NewRoleService(),
-		charRepo: repository.NewEveCharacterRepository(),
+		userSvc:        service.NewUserService(),
+		roleSvc:        service.NewRoleService(),
+		charRepo:       repository.NewEveCharacterRepository(),
+		eligibilitySvc: service.NewNewbroEligibilityService(),
 	}
 }
 
@@ -43,17 +45,18 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	if roles == nil {
 		roles = []string{}
 	}
-	permissions := middleware.GetUserPermissions(c)
-	if permissions == nil {
-		permissions = []string{}
+	var isCurrentlyNewbro *bool
+	if state := h.eligibilitySvc.GetCachedState(userID); state != nil {
+		value := state.IsCurrentlyNewbro
+		isCurrentlyNewbro = &value
 	}
 
 	response.OK(c, gin.H{
-		"user":             user,
-		"characters":       characters,
-		"roles":            roles,
-		"permissions":      permissions,
-		"profile_complete": user.ProfileComplete(),
+		"user":                user,
+		"characters":          characters,
+		"roles":               roles,
+		"profile_complete":    user.ProfileComplete(),
+		"is_currently_newbro": isCurrentlyNewbro,
 	})
 }
 

@@ -3,6 +3,9 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // UserRepository 用户数据访问层
@@ -21,6 +24,16 @@ func (r *UserRepository) Create(user *model.User) error {
 func (r *UserRepository) GetByID(id uint) (*model.User, error) {
 	var user model.User
 	err := global.DB.First(&user, id).Error
+	return &user, err
+}
+
+func buildGetByIDForUpdateQuery(db *gorm.DB, id uint) *gorm.DB {
+	return db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&model.User{}, id)
+}
+
+func (r *UserRepository) GetByIDForUpdateTx(tx *gorm.DB, id uint) (*model.User, error) {
+	var user model.User
+	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, id).Error
 	return &user, err
 }
 

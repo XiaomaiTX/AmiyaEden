@@ -143,6 +143,27 @@ source_of_truth:
 | POST | `/shop/orders` | 我的订单 | Login |
 | POST | `/shop/redeem/list` | 我的兑换码 | Login |
 
+## Newbro Support
+
+### User Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/newbro/captains` | 当前新人可选择的队长列表 | `Login` + 当前新人资格 |
+| GET | `/newbro/affiliation/me` | 当前用户的新人资格快照与队长关联历史 | Login |
+| POST | `/newbro/affiliation/select` | 选择或切换队长 | `Login` + 当前新人资格 |
+| POST | `/newbro/affiliation/end` | 结束当前与队长的帮扶关系 | `Login` + 当前新人资格 |
+
+### Captain Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/newbro/captain/overview` | 当前队长概览 | `RequireRole(captain)` |
+| GET | `/newbro/captain/players` | 当前队长名下新人列表 | `RequireRole(captain)` |
+| GET | `/newbro/captain/attributions` | 当前队长赏金归因明细 | `RequireRole(captain)` |
+| GET | `/newbro/captain/rewards` | 当前队长奖励发放历史 | `RequireRole(captain)` |
+| POST | `/newbro/captain/affiliation/end` | 解除指定新人与当前队长的关系 | `RequireRole(captain)` |
+
 ## Welfare
 
 ### User Side
@@ -266,6 +287,19 @@ source_of_truth:
 | POST | `/system/welfare/import` | 导入历史福利记录 | `RequireRole(admin)` |
 | POST | `/system/welfare/applications` | 福利申请列表（审批端） | `RequireRole(admin)` |
 | POST | `/system/welfare/review` | 审批福利申请（发放/拒绝） | `RequireRole(admin)` |
+
+### Newbro Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/newbro/settings` | 获取帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
+| PUT | `/system/newbro/settings` | 更新帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
+| GET | `/system/newbro/captains` | 队长绩效列表 | `RequireRole(admin)` |
+| GET | `/system/newbro/captains/:user_id` | 队长详情（概览、关联玩家、归因明细） | `RequireRole(admin)` |
+| GET | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史 | `RequireRole(admin)` |
+| GET | `/system/newbro/rewards` | 队长奖励发放历史 | `RequireRole(admin)` |
+| POST | `/system/newbro/attribution/sync` | 手动执行队长赏金归因同步 | `RequireRole(admin)` |
+| POST | `/system/newbro/reward/process` | 手动执行队长奖励处理 | `RequireRole(admin)` |
 
 ### Shop Admin
 
