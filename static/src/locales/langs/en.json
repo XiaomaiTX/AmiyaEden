@@ -449,6 +449,8 @@
     "reset": "Reset",
     "summary": "Summary",
     "totalBounty": "Total Bounty",
+    "totalIncursion": "Incursion",
+    "totalMission": "Mission Reward",
     "totalTax": "Total Tax",
     "actualIncome": "Actual Income",
     "totalRecords": "Total Records",
@@ -479,7 +481,9 @@
     "bountyPrizes": "Bounty",
     "refTypes": {
       "bounty_prizes": "Bounty",
-      "ess_escrow_transfer": "ESS Escrow"
+      "ess_escrow_transfer": "ESS Escrow",
+      "incursion_payout": "Incursion Payout",
+      "agent_mission_reward": "Mission Reward"
     }
   },
   "welfareSettings": {

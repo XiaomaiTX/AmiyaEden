@@ -450,6 +450,8 @@
     "reset": "重置",
     "summary": "总览",
     "totalBounty": "刷怪赏金",
+    "totalIncursion": "入侵收入",
+    "totalMission": "任务奖励",
     "totalTax": "交税金额",
     "actualIncome": "实际收入",
     "totalRecords": "总记录数",
@@ -480,7 +482,9 @@
     "bountyPrizes": "赏金",
     "refTypes": {
       "bounty_prizes": "赏金",
-      "ess_escrow_transfer": "ESS 托管"
+      "ess_escrow_transfer": "ESS 托管",
+      "incursion_payout": "入侵奖励",
+      "agent_mission_reward": "任务奖励"
     }
   },
   "welfareSettings": {

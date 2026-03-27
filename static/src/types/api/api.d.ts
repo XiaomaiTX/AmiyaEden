@@ -1779,6 +1779,8 @@ declare namespace Api {
     interface Summary {
       total_bounty: number
       total_ess: number
+      total_incursion: number
+      total_mission: number
       total_tax: number
       actual_income: number
       total_records: number
@@ -1839,6 +1841,9 @@ declare namespace Api {
       character_id: number
       character_name: string
       total_bounty: number
+      total_ess: number
+      total_incursion: number
+      total_mission: number
       total_tax: number
       actual_income: number
       record_count: number
