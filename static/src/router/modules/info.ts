@@ -19,6 +19,12 @@ export const infoRoutes: AppRouteRecord = {
       meta: { title: 'menus.info.skill', keepAlive: true, login: true }
     },
     {
+      path: 'npc-kills',
+      name: 'NpcKillReport',
+      component: '/info/npc-kills',
+      meta: { title: 'menus.info.npcKills', keepAlive: true, login: true }
+    },
+    {
       path: 'ships',
       name: 'EveInfoShips',
       component: '/info/ships',
@@ -37,10 +43,16 @@ export const infoRoutes: AppRouteRecord = {
       meta: { title: 'menus.info.fittings', keepAlive: true, login: true }
     },
     {
-      path: 'npc-kills',
-      name: 'NpcKillReport',
-      component: '/info/npc-kills',
-      meta: { title: 'menus.info.npcKills', keepAlive: true, login: true }
+      path: 'assets',
+      name: 'EveInfoAssets',
+      component: '/info/assets',
+      meta: { title: 'menus.info.assets', keepAlive: true, login: true }
+    },
+    {
+      path: 'contracts',
+      name: 'EveInfoContracts',
+      component: '/info/contracts',
+      meta: { title: 'menus.info.contracts', keepAlive: true, login: true }
     }
   ]
 }
