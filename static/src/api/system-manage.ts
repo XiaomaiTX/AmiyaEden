@@ -1,5 +1,4 @@
 import request from '@/utils/http'
-import { AppRouteRecord } from '@/types/router'
 
 // ─── 用户管理 ───
 
