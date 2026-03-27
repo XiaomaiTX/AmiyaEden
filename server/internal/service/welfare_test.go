@@ -201,6 +201,56 @@ func TestAnyCharacterTooOld(t *testing.T) {
 	}
 }
 
+func TestWelfareAgeRestrictionFailed(t *testing.T) {
+	now := time.Date(2026, 3, 23, 0, 0, 0, 0, time.UTC)
+
+	bday := func(y, m, d int) *time.Time {
+		t := time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)
+		return &t
+	}
+
+	tests := []struct {
+		name       string
+		characters []model.EveCharacter
+		maxMonths  *int
+		want       bool
+	}{
+		{
+			name:       "nil limit never blocks",
+			characters: []model.EveCharacter{{Birthday: bday(2024, 1, 1)}},
+			maxMonths:  nil,
+			want:       false,
+		},
+		{
+			name:       "zero limit never blocks",
+			characters: []model.EveCharacter{{Birthday: bday(2024, 1, 1)}},
+			maxMonths:  func() *int { v := 0; return &v }(),
+			want:       false,
+		},
+		{
+			name:       "old character blocks the welfare",
+			characters: []model.EveCharacter{{Birthday: bday(2024, 1, 1)}},
+			maxMonths:  func() *int { v := 12; return &v }(),
+			want:       true,
+		},
+		{
+			name:       "young characters pass the welfare",
+			characters: []model.EveCharacter{{Birthday: bday(2026, 1, 1)}},
+			maxMonths:  func() *int { v := 12; return &v }(),
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := welfareAgeRestrictionFailed(tt.characters, tt.maxMonths, now)
+			if got != tt.want {
+				t.Fatalf("welfareAgeRestrictionFailed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestParseImportedWelfareApplicationsSupportsCommaAndTabSeparatedRows(t *testing.T) {
 	apps, err := parseImportedWelfareApplications(7, "Alice, 12345\n\nBob\t67890\nCharlie")
 	if err != nil {
