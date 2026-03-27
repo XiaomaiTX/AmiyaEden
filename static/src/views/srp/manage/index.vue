@@ -42,7 +42,7 @@
         <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
           <template #left>
             <div class="flex items-center gap-2">
-              <template v-if="activeTab === 'pending'">
+              <template v-if="activeTab === 'pending' && canPayout">
                 <ElButton type="primary" @click="handleAutoApprove">
                   {{ $t('srp.manage.autoApproveBtn') }}
                 </ElButton>
@@ -328,6 +328,12 @@
   const { getName, resolve: resolveNames } = useNameResolver()
   const userStore = useUserStore()
 
+  // fc can review but cannot payout or trigger auto-approve
+  const canPayout = computed(() => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    return roles.some((r) => ['super_admin', 'admin', 'srp'].includes(r))
+  })
+
   const fleets = ref<Api.Fleet.FleetItem[]>([])
   const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.id, f])))
   const loadFleets = async () => {
@@ -547,13 +553,17 @@
                 })
               )
             } else if (row.review_status === 'approved' && row.payout_status === 'notpaid') {
-              // 已批准 + 未发放：发放 + 编辑 + 重新拒绝
+              // 已批准 + 未发放：发放（仅 srp/admin）+ 编辑 + 重新拒绝
+              if (canPayout.value) {
+                btns.push(
+                  h(ArtButtonTable, {
+                    label: t('srp.manage.payoutBtn'),
+                    elType: 'primary',
+                    onClick: () => openPayoutDialog(row)
+                  })
+                )
+              }
               btns.push(
-                h(ArtButtonTable, {
-                  label: t('srp.manage.payoutBtn'),
-                  elType: 'primary',
-                  onClick: () => openPayoutDialog(row)
-                }),
                 h(ArtButtonTable, {
                   label: t('srp.manage.editBtn'),
                   elType: 'warning',
