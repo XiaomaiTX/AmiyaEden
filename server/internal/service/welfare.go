@@ -46,10 +46,6 @@ func (s *WelfareService) AdminCreateWelfare(w *model.Welfare) error {
 	if w.RequireSkillPlan && len(w.SkillPlanIDs) == 0 {
 		return errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
-	// 角色年龄限制锁定 per_user
-	if w.MaxCharAgeMonths != nil && *w.MaxCharAgeMonths > 0 {
-		w.DistMode = model.WelfareDistModePerUser
-	}
 
 	skillPlanIDs := w.SkillPlanIDs
 	if err := s.repo.CreateWelfare(w); err != nil {
@@ -106,10 +102,6 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	w.RequireEvidence = req.RequireEvidence
 	w.ExampleEvidence = req.ExampleEvidence
 	w.Status = req.Status
-	// 角色年龄限制锁定 per_user
-	if w.MaxCharAgeMonths != nil && *w.MaxCharAgeMonths > 0 {
-		w.DistMode = model.WelfareDistModePerUser
-	}
 
 	if err := s.repo.UpdateWelfare(w); err != nil {
 		return nil, err
@@ -250,16 +242,13 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 	result := make([]EligibleWelfareResp, 0)
 	for _, w := range welfares {
 		apps := appsByWelfare[w.ID]
+		if welfareAgeRestrictionFailed(characters, w.MaxCharAgeMonths, now) {
+			continue
+		}
 
 		if w.DistMode == model.WelfareDistModePerUser {
 			if s.isUserIneligible(user, apps) {
 				continue
-			}
-			// 角色年龄检查：任一角色超龄则不可申请
-			if w.MaxCharAgeMonths != nil && *w.MaxCharAgeMonths > 0 {
-				if anyCharacterTooOld(characters, *w.MaxCharAgeMonths, now) {
-					continue
-				}
 			}
 			// 技能计划检查：至少一个角色满足
 			if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 {
@@ -295,6 +284,14 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 	}
 
 	return result, nil
+}
+
+// welfareAgeRestrictionFailed 检查福利的年龄限制是否阻止该用户申请
+func welfareAgeRestrictionFailed(characters []model.EveCharacter, maxMonths *int, now time.Time) bool {
+	if maxMonths == nil || *maxMonths <= 0 {
+		return false
+	}
+	return anyCharacterTooOld(characters, *maxMonths, now)
 }
 
 // isUserIneligible 检查 per_user 福利中用户是否已申请过（通过 QQ 或 DiscordID 匹配）
@@ -483,6 +480,10 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		return nil, errors.New("获取申请记录失败")
 	}
 
+	if welfare.MaxCharAgeMonths != nil && *welfare.MaxCharAgeMonths > 0 {
+		s.ensureBirthdays(characters)
+	}
+
 	var selectedChar model.EveCharacter
 
 	if welfare.DistMode == model.WelfareDistModePerUser {
@@ -525,12 +526,9 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		}
 	}
 
-	// 角色年龄检查（仅 per_user，MaxCharAgeMonths 锁定 per_user）
-	if welfare.MaxCharAgeMonths != nil && *welfare.MaxCharAgeMonths > 0 {
-		s.ensureBirthdays(characters)
-		if anyCharacterTooOld(characters, *welfare.MaxCharAgeMonths, time.Now()) {
-			return nil, errors.New("您的角色年龄超过该福利限制")
-		}
+	// 角色年龄检查：任一角色超龄则该福利不可申请
+	if welfareAgeRestrictionFailed(characters, welfare.MaxCharAgeMonths, time.Now()) {
+		return nil, errors.New("您的角色年龄超过该福利限制")
 	}
 
 	// 证明图片检查
