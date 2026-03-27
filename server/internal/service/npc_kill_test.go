@@ -1,6 +1,10 @@
 package service
 
-import "testing"
+import (
+	"amiya-eden/internal/model"
+	"testing"
+	"time"
+)
 
 func TestParseReason(t *testing.T) {
 	result := parseReason("123: 2, 456:3, 123:4, invalid, 789: x, :1")
@@ -34,5 +38,32 @@ func TestParseDateRange(t *testing.T) {
 	}
 	if end != nil {
 		t.Fatalf("expected nil end for empty input, got %v", end)
+	}
+}
+
+func TestCalcSummaryIncludesEssTransfers(t *testing.T) {
+	svc := NewNpcKillService()
+	base := time.Date(2026, 3, 27, 12, 0, 0, 0, time.UTC)
+
+	summary := svc.calcSummary([]model.EVECharacterWalletJournal{
+		{ID: 1, RefType: "bounty_prizes", Amount: 100, Tax: -10, Date: base},
+		{ID: 2, RefType: "ess_escrow_transfer", Amount: 50, Tax: 0, Date: base.Add(time.Minute)},
+		{ID: 3, RefType: "bounty_prizes", Amount: 80, Tax: -8, Date: base.Add(2 * time.Minute)},
+	})
+
+	if summary.TotalBounty != 180 {
+		t.Fatalf("expected bounty total 180, got %v", summary.TotalBounty)
+	}
+	if summary.TotalESS != 50 {
+		t.Fatalf("expected ESS total 50, got %v", summary.TotalESS)
+	}
+	if summary.TotalTax != -18 {
+		t.Fatalf("expected tax total -18, got %v", summary.TotalTax)
+	}
+	if summary.ActualIncome != 212 {
+		t.Fatalf("expected actual income 212 with ESS contribution, got %v", summary.ActualIncome)
+	}
+	if summary.TotalRecords != 2 {
+		t.Fatalf("expected 2 bounty records, got %d", summary.TotalRecords)
 	}
 }

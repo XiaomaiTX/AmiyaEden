@@ -184,6 +184,28 @@ func RegisterRoutes(r *gin.Engine) {
 	info.POST("/npc-kills", npcKillH.GetNpcKills)
 	info.POST("/npc-kills/all", npcKillH.GetAllNpcKills)
 
+	// ─── 新人帮扶（用户/队长） ───
+	newbroUserH := handler.NewNewbroUserHandler()
+	newbro := login.Group("/newbro")
+	{
+		newbro.GET("/captains", newbroUserH.ListCaptains)
+		newbro.GET("/affiliation/me", newbroUserH.GetMyAffiliation)
+		newbro.POST("/affiliation/select", newbroUserH.SelectCaptain)
+		newbro.POST("/affiliation/end", newbroUserH.EndAffiliation)
+	}
+
+	newbroCaptainH := handler.NewNewbroCaptainHandler()
+	newbroCaptain := login.Group("/newbro/captain", middleware.RequireRole(model.RoleCaptain))
+	{
+		newbroCaptain.GET("/overview", newbroCaptainH.GetOverview)
+		newbroCaptain.GET("/players", newbroCaptainH.GetPlayers)
+		newbroCaptain.GET("/attributions", newbroCaptainH.GetAttributions)
+		newbroCaptain.GET("/rewards", newbroCaptainH.GetRewardSettlements)
+		newbroCaptain.GET("/eligible-players", newbroCaptainH.ListEligiblePlayers)
+		newbroCaptain.POST("/enroll", newbroCaptainH.EnrollPlayer)
+		newbroCaptain.POST("/affiliation/end", newbroCaptainH.EndAffiliation)
+	}
+
 	// ─── 商店（用户端）───
 	shopH := handler.NewShopHandler()
 	shop := login.Group("/shop")
@@ -318,6 +340,19 @@ func RegisterRoutes(r *gin.Engine) {
 
 		// 模拟登录（仅超级管理员）
 		adminUser.POST("/:id/impersonate", middleware.RequireRole(model.RoleSuperAdmin), userH.ImpersonateUser)
+	}
+
+	newbroAdminH := handler.NewNewbroAdminHandler()
+	adminNewbro := admin.Group("/newbro")
+	{
+		adminNewbro.GET("/settings", newbroAdminH.GetSettings)
+		adminNewbro.PUT("/settings", newbroAdminH.UpdateSettings)
+		adminNewbro.GET("/captains", newbroAdminH.ListCaptains)
+		adminNewbro.GET("/captains/:user_id", newbroAdminH.GetCaptainDetail)
+		adminNewbro.GET("/affiliations/history", newbroAdminH.ListAffiliationHistory)
+		adminNewbro.GET("/rewards", newbroAdminH.ListRewardSettlements)
+		adminNewbro.POST("/attribution/sync", newbroAdminH.RunAttributionSync)
+		adminNewbro.POST("/reward/process", newbroAdminH.RunRewardProcessing)
 	}
 
 	// 系统钱包管理（管理员）

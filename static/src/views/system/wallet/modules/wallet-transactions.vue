@@ -23,6 +23,10 @@
         <ElOption :label="$t('walletAdmin.refTypes.redeem')" value="redeem" />
         <ElOption :label="$t('walletAdmin.refTypes.srp_payout')" value="srp_payout" />
         <ElOption :label="$t('walletAdmin.refTypes.shop_purchase')" value="shop_purchase" />
+        <ElOption
+          :label="$t('walletAdmin.refTypes.newbro_captain_reward')"
+          value="newbro_captain_reward"
+        />
       </ElSelect>
       <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
     </template>
@@ -55,7 +59,11 @@
     manual: { label: t('walletAdmin.refTypes.manual'), tag: '' },
     redeem: { label: t('walletAdmin.refTypes.redeem'), tag: 'danger' },
     srp_payout: { label: t('walletAdmin.refTypes.srp_payout'), tag: 'primary' },
-    shop_purchase: { label: t('walletAdmin.refTypes.shop_purchase'), tag: 'info' }
+    shop_purchase: { label: t('walletAdmin.refTypes.shop_purchase'), tag: 'info' },
+    newbro_captain_reward: {
+      label: t('walletAdmin.refTypes.newbro_captain_reward'),
+      tag: 'success'
+    }
   }
   const getRefTypeLabel = (t: string) => REF_TYPE_MAP[t]?.label ?? t
   const getRefTypeTag = (t: string): any => REF_TYPE_MAP[t]?.tag ?? 'info'

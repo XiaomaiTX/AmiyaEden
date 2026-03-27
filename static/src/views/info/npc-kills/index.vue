@@ -45,17 +45,11 @@
     </ElCard>
 
     <!-- 总览卡片 -->
-    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 my-4">
+    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 my-4">
       <ElCard shadow="never" class="text-center">
         <p class="text-sm text-gray-500">{{ $t('npcKill.totalBounty') }}</p>
         <p class="text-xl font-bold text-green-600 mt-1">{{
           formatISK(reportData.summary.total_bounty)
-        }}</p>
-      </ElCard>
-      <ElCard shadow="never" class="text-center">
-        <p class="text-sm text-gray-500">{{ $t('npcKill.totalESS') }}</p>
-        <p class="text-xl font-bold text-blue-600 mt-1">{{
-          formatISK(reportData.summary.total_ess)
         }}</p>
       </ElCard>
       <ElCard shadow="never" class="text-center">
@@ -214,8 +208,7 @@
 
   // ─── REF_TYPE 配置 ───
   const REF_TYPE_CONFIG: Record<string, { type: string; text: string }> = {
-    bounty_prizes: { type: 'success', text: '' },
-    ess_escrow_transfer: { type: 'warning', text: 'ESS' }
+    bounty_prizes: { type: 'success', text: '' }
   }
 
   // ─── API 适配器 ───

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-03-22
+last_reviewed: 2026-03-27
 source_of_truth:
   - server/internal/model/menu.go
   - static/src/router/core
@@ -40,6 +40,7 @@ source_of_truth:
 - `static/src/router/modules/info.ts`
 - `static/src/router/modules/shop.ts`
 - `static/src/router/modules/welfare.ts`
+- `static/src/router/modules/newbro.ts`
 - `static/src/router/modules/srp.ts`
 - `static/src/router/modules/system.ts`
 
@@ -51,6 +52,7 @@ source_of_truth:
 
 - `meta.login = true` 对应 API / feature 文档中的 `Login`
 - `meta.roles` 只表示显式角色白名单
+- `meta.requiresNewbro = true` 表示还要通过当前用户的新人大类资格快照检查
 - 同一路由不要再用 `meta.roles` 伪装“任意非 guest 登录用户”
 - guest 可访问的 onboarding / self-service 页面不要错误标成 `meta.login = true`，因为这会把它们提升为“非 guest 才可访问”
 
@@ -85,5 +87,6 @@ source_of_truth:
 - 菜单名称、路径、组件路径应在前后端保持一致
 - 菜单可见性不应硬编码在页面内部
 - `/api/v1/menu/list` 本身是 `JWT` 边界；guest 允许拿到其可见的有限菜单树
+- `新人选队长` 当前同时受前端静态路由过滤和后端菜单过滤影响，不是单纯的角色菜单
 - 路由改动若涉及权限边界，必须同步更新 API / feature 文档
 - 路由架构说明只维护在 `docs/` 中

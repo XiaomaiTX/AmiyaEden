@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
@@ -8,19 +9,22 @@ import (
 	"amiya-eden/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type MeHandler struct {
-	userSvc  *service.UserService
-	roleSvc  *service.RoleService
-	charRepo *repository.EveCharacterRepository
+	userSvc        *service.UserService
+	roleSvc        *service.RoleService
+	charRepo       *repository.EveCharacterRepository
+	eligibilitySvc *service.NewbroEligibilityService
 }
 
 func NewMeHandler() *MeHandler {
 	return &MeHandler{
-		userSvc:  service.NewUserService(),
-		roleSvc:  service.NewRoleService(),
-		charRepo: repository.NewEveCharacterRepository(),
+		userSvc:        service.NewUserService(),
+		roleSvc:        service.NewRoleService(),
+		charRepo:       repository.NewEveCharacterRepository(),
+		eligibilitySvc: service.NewNewbroEligibilityService(),
 	}
 }
 
@@ -48,12 +52,21 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 		permissions = []string{}
 	}
 
+	var isCurrentlyNewbro *bool
+	if state, err := h.eligibilitySvc.EnsureCurrentState(userID); err != nil {
+		global.Logger.Warn("刷新新人资格快照失败", zap.Uint("user_id", userID), zap.Error(err))
+	} else {
+		value := state.IsCurrentlyNewbro
+		isCurrentlyNewbro = &value
+	}
+
 	response.OK(c, gin.H{
-		"user":             user,
-		"characters":       characters,
-		"roles":            roles,
-		"permissions":      permissions,
-		"profile_complete": user.ProfileComplete(),
+		"user":                user,
+		"characters":          characters,
+		"roles":               roles,
+		"permissions":         permissions,
+		"profile_complete":    user.ProfileComplete(),
+		"is_currently_newbro": isCurrentlyNewbro,
 	})
 }
 

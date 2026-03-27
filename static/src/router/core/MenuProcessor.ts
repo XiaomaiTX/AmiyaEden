@@ -63,12 +63,17 @@ export class MenuProcessor {
    * 根据静态路由访问边界过滤菜单
    */
   private filterMenuByAccess(menu: AppRouteRecord[], roles: string[]): AppRouteRecord[] {
+    const userStore = useUserStore()
+    const isCurrentlyNewbro = userStore.info?.isCurrentlyNewbro
+
     return menu.reduce((acc: AppRouteRecord[], item) => {
       const itemRoles = item.meta?.roles
       const requiresLogin = item.meta?.login === true
+      const requiresNewbro = item.meta?.requiresNewbro === true
       const hasRolePermission = !itemRoles || itemRoles.some((role) => roles.includes(role))
       const hasLoginPermission = !requiresLogin || this.hasNonGuestRole(roles)
-      const hasPermission = hasRolePermission && hasLoginPermission
+      const hasNewbroPermission = !requiresNewbro || isCurrentlyNewbro !== false
+      const hasPermission = hasRolePermission && hasLoginPermission && hasNewbroPermission
 
       if (hasPermission) {
         const filteredItem = { ...item }

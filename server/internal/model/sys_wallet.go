@@ -67,13 +67,14 @@ func (WalletLog) TableName() string { return "wallet_log" }
 
 // 钱包流水类型常量
 const (
-	WalletRefPapReward   = "pap_reward"    // PAP 奖励
-	WalletRefPapConvert  = "pap_convert"   // 联盟 PAP 月度兑换
-	WalletRefManual      = "manual"        // 手动操作
-	WalletRefRedeem      = "redeem"        // 兑换消费
-	WalletRefAdminAdjust = "admin_adjust"  // 管理员调整
-	WalletRefSrpPayout   = "srp_payout"    // SRP 补损发放
-	WalletRefShopBuy     = "shop_purchase" // 商城购买
+	WalletRefPapReward           = "pap_reward"            // PAP 奖励
+	WalletRefPapConvert          = "pap_convert"           // 联盟 PAP 月度兑换
+	WalletRefManual              = "manual"                // 手动操作
+	WalletRefRedeem              = "redeem"                // 兑换消费
+	WalletRefAdminAdjust         = "admin_adjust"          // 管理员调整
+	WalletRefSrpPayout           = "srp_payout"            // SRP 补损发放
+	WalletRefShopBuy             = "shop_purchase"         // 商城购买
+	WalletRefNewbroCaptainReward = "newbro_captain_reward" // 队长帮扶奖励
 )
 
 // 钱包操作日志动作

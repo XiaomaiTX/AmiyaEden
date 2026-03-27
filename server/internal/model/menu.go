@@ -125,6 +125,12 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "WelfareRoot", Menu: Menu{Type: MenuTypeMenu, Name: "WelfareApproval", Path: "approval", Component: "/welfare/approval", Title: "menus.welfare.approval", Sort: 90, KeepAlive: true, Status: 1}},
 		{ParentName: "WelfareRoot", Menu: Menu{Type: MenuTypeMenu, Name: "WelfareSettings", Path: "settings", Component: "/welfare/settings", Title: "menus.welfare.settings", Sort: 80, KeepAlive: true, Status: 1}},
 
+		// ── Newbro Support ──
+		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "NewbroRoot", Path: "/newbro", Component: "/index/index", Title: "menus.newbro.title", Icon: "ri:user-heart-line", Sort: 84, Status: 1}},
+		{ParentName: "NewbroRoot", Menu: Menu{Type: MenuTypeMenu, Name: "NewbroSelectCaptain", Path: "select-captain", Component: "/newbro/select-captain", Title: "menus.newbro.selectCaptain", Sort: 100, KeepAlive: true, Status: 1}},
+		{ParentName: "NewbroRoot", Menu: Menu{Type: MenuTypeMenu, Name: "NewbroCaptainDashboard", Path: "captain", Component: "/newbro/captain", Title: "menus.newbro.captain", Sort: 90, KeepAlive: true, Status: 1}},
+		{ParentName: "NewbroRoot", Menu: Menu{Type: MenuTypeMenu, Name: "NewbroManage", Path: "manage", Component: "/newbro/manage", Title: "menus.newbro.manage", Sort: 80, KeepAlive: true, Status: 1}},
+
 		// ── Shop ──
 		{ParentName: "", Menu: Menu{Type: MenuTypeDir, Name: "ShopRoot", Path: "/shop", Component: "/index/index", Title: "menus.shop.title", Icon: "ri:shopping-bag-line", Sort: 85, Status: 1}},
 		{ParentName: "ShopRoot", Menu: Menu{Type: MenuTypeMenu, Name: "Shop", Path: "browse", Component: "/shop/browse", Title: "menus.shop.browse", Sort: 100, KeepAlive: true, Status: 1}},
@@ -181,6 +187,7 @@ func GetSystemMenuSeeds() []MenuSeed {
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "UserCenter", Path: "user-center", Component: "/system/user-center", Title: "menus.system.userCenter", Sort: 60, IsHide: true, KeepAlive: true, IsHideTab: true, Status: 1}},
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "WebhookSettings", Path: "webhook", Component: "/system/webhook", Title: "menus.system.webhook", Sort: 59, KeepAlive: true, Status: 1}},
 		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "BasicConfig", Path: "basic-config", Component: "/system/basic-config", Title: "menus.system.basicConfig", Sort: 58, KeepAlive: true, Status: 1}},
+		{ParentName: "System", Menu: Menu{Type: MenuTypeMenu, Name: "NewbroSettings", Path: "newbro-settings", Component: "/system/newbro-settings", Title: "menus.system.newbroSettings", Sort: 57, KeepAlive: true, Status: 1}},
 	}
 }
 
@@ -212,6 +219,18 @@ func DefaultRoleMenuMap() map[string][]string {
 			"Operation", "CorporationPap", "MyPap", "Wallet", "JoinFleet", "FleetConfigs",
 			"SkillPlanning", "SkillPlanCompletionCheck",
 			"WelfareRoot", "WelfareMy", "WelfareApproval",
+			"NewbroRoot", "NewbroSelectCaptain",
+			"ShopRoot", "Shop",
+			"SRP", "SrpApply",
+			"UserCenter",
+		},
+		RoleCaptain: {
+			"Dashboard", "Console", "Characters",
+			"EveInfo", "EveInfoWallet", "EveInfoSkill", "NpcKillReport", "EveInfoShips", "EveInfoImplants", "EveInfoFittings", "EveInfoAssets", "EveInfoContracts",
+			"Operation", "CorporationPap", "MyPap", "Wallet", "JoinFleet", "FleetConfigs",
+			"SkillPlanning", "SkillPlanCompletionCheck",
+			"WelfareRoot", "WelfareMy",
+			"NewbroRoot", "NewbroSelectCaptain", "NewbroCaptainDashboard",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply",
 			"UserCenter",
@@ -222,6 +241,7 @@ func DefaultRoleMenuMap() map[string][]string {
 			"Operation", "CorporationPap", "MyPap", "Wallet", "JoinFleet", "FleetConfigs",
 			"SkillPlanning", "SkillPlanCompletionCheck",
 			"WelfareRoot", "WelfareMy",
+			"NewbroRoot", "NewbroSelectCaptain",
 			"ShopRoot", "Shop",
 			"SRP", "SrpApply",
 			"UserCenter",

@@ -7,16 +7,18 @@ import (
 )
 
 type MenuService struct {
-	repo     *repository.MenuRepository
-	roleRepo *repository.RoleRepository
+	repo           *repository.MenuRepository
+	roleRepo       *repository.RoleRepository
+	eligibilitySvc *NewbroEligibilityService
 }
 
 var ensureSystemMenusOnce sync.Once
 
 func NewMenuService() *MenuService {
 	return &MenuService{
-		repo:     repository.NewMenuRepository(),
-		roleRepo: repository.NewRoleRepository(),
+		repo:           repository.NewMenuRepository(),
+		roleRepo:       repository.NewRoleRepository(),
+		eligibilitySvc: NewNewbroEligibilityService(),
 	}
 }
 
@@ -60,12 +62,18 @@ func (s *MenuService) DeleteMenu(id uint) error {
 func (s *MenuService) GetUserMenuTree(userID uint, roleCodes []string) ([]*model.MenuItem, error) {
 	s.ensureSystemMenusSeeded()
 
+	var isCurrentlyNewbro *bool
+	if state, err := s.eligibilitySvc.EnsureCurrentState(userID); err == nil {
+		isCurrentlyNewbro = &state.IsCurrentlyNewbro
+	}
+
 	// super_admin 返回全部菜单
 	if model.IsSuperAdmin(roleCodes) {
 		allMenus, err := s.repo.ListAll()
 		if err != nil {
 			return nil, err
 		}
+		allMenus = filterMenusBySystemRoleRestrictions(allMenus, roleCodes, isCurrentlyNewbro)
 		return repository.BuildMenuTree(allMenus), nil
 	}
 
@@ -92,7 +100,7 @@ func (s *MenuService) GetUserMenuTree(userID uint, roleCodes []string) ([]*model
 	if err != nil {
 		return nil, err
 	}
-	menus = filterMenusBySystemRoleRestrictions(menus, roleCodes)
+	menus = filterMenusBySystemRoleRestrictions(menus, roleCodes, isCurrentlyNewbro)
 
 	// 补全父菜单（确保目录菜单被包含）
 	menus = s.ensureParentMenus(menus, menuIDs)
@@ -149,21 +157,41 @@ func extractIDs(menus []model.Menu) []uint {
 	return ids
 }
 
-func filterMenusBySystemRoleRestrictions(menus []model.Menu, roleCodes []string) []model.Menu {
+func filterMenusBySystemRoleRestrictions(menus []model.Menu, roleCodes []string, isCurrentlyNewbro *bool) []model.Menu {
 	restrictedMenus := map[string][]string{
-		"Fleets":      {model.RoleSuperAdmin, model.RoleAdmin, model.RoleFC},
-		"FleetDetail": {model.RoleSuperAdmin, model.RoleAdmin, model.RoleFC},
+		"Fleets":                 {model.RoleSuperAdmin, model.RoleAdmin, model.RoleFC},
+		"FleetDetail":            {model.RoleSuperAdmin, model.RoleAdmin, model.RoleFC},
+		"NewbroCaptainDashboard": {model.RoleSuperAdmin, model.RoleCaptain},
 	}
 
 	filtered := make([]model.Menu, 0, len(menus))
+	hasNewbroChild := false
 	for _, menu := range menus {
 		allowedRoles, restricted := restrictedMenus[menu.Name]
 		if restricted && !model.ContainsAnyRole(roleCodes, allowedRoles...) {
 			continue
 		}
+		if menu.Name == "NewbroSelectCaptain" && isCurrentlyNewbro != nil && !*isCurrentlyNewbro {
+			continue
+		}
+		if menu.Name == "NewbroSelectCaptain" || menu.Name == "NewbroCaptainDashboard" || menu.Name == "NewbroManage" {
+			hasNewbroChild = true
+		}
 		filtered = append(filtered, menu)
 	}
-	return filtered
+
+	if hasNewbroChild {
+		return filtered
+	}
+
+	result := make([]model.Menu, 0, len(filtered))
+	for _, menu := range filtered {
+		if menu.Name == "NewbroRoot" {
+			continue
+		}
+		result = append(result, menu)
+	}
+	return result
 }
 
 // ─── 错误定义 ───

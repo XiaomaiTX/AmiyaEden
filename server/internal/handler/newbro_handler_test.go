@@ -1,0 +1,52 @@
+package handler
+
+import (
+	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+func TestParseOptionalNewbroDateEndOfDayCoversFullLastSecond(t *testing.T) {
+	got := parseOptionalNewbroDate("2026-03-27", true)
+	if got == nil {
+		t.Fatal("expected parsed date")
+	}
+
+	want := time.Date(2026, 3, 27, 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC)
+	if !got.Equal(want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+}
+
+func TestParseOptionalUintQueryParamRejectsInvalidInput(t *testing.T) {
+	if _, err := parseOptionalUintQueryParam("player_user_id", "not-a-number"); err == nil {
+		t.Fatal("expected invalid player_user_id to return an error")
+	}
+}
+
+func TestUpdateNewbroSettingsRequestAllowsZeroBonusRate(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/newbro/settings", bytes.NewBufferString(`{
+		"max_character_sp": 20000000,
+		"multi_character_sp": 10000000,
+		"multi_character_threshold": 3,
+		"refresh_interval_days": 7,
+		"bonus_rate": 0
+	}`))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	var req UpdateNewbroSettingsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		t.Fatalf("expected zero bonus_rate to bind successfully, got %v", err)
+	}
+	if req.BonusRate == nil || *req.BonusRate != 0 {
+		t.Fatalf("expected bonus_rate pointer to preserve explicit zero, got %#v", req.BonusRate)
+	}
+}

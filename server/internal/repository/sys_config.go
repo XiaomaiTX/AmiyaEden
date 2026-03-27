@@ -97,6 +97,32 @@ func (r *SysConfigRepository) GetFloat(key string, defaultVal float64) float64 {
 	return v
 }
 
+// GetInt64 获取 int64 配置；解析失败或不存在时返回 defaultVal
+func (r *SysConfigRepository) GetInt64(key string, defaultVal int64) int64 {
+	raw, err := r.Get(key, strconv.FormatInt(defaultVal, 10))
+	if err != nil {
+		return defaultVal
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return v
+}
+
+// GetInt 获取 int 配置；解析失败或不存在时返回 defaultVal
+func (r *SysConfigRepository) GetInt(key string, defaultVal int) int {
+	raw, err := r.Get(key, strconv.Itoa(defaultVal))
+	if err != nil {
+		return defaultVal
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return defaultVal
+	}
+	return v
+}
+
 // GetBool 获取 bool 配置；解析失败或不存在时返回 defaultVal
 func (r *SysConfigRepository) GetBool(key string, defaultVal bool) bool {
 	def := "false"

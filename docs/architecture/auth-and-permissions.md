@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-03-22
+last_reviewed: 2026-03-27
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -27,6 +27,7 @@ source_of_truth:
 - 绑定角色
 - 角色列表
 - 按钮权限列表
+- 当前新人资格快照 `is_currently_newbro`
 
 `guest` 角色当前仍是已认证用户，但不是 `RequireLoginUser` 意义上的产品用户。
 因此需要把 guest onboarding / self-service 能力单独挂在仅需 `JWTAuth()` 的路由上，而不是 `RequireLoginUser()`。
@@ -58,6 +59,7 @@ source_of_truth:
 - `admin`
 - `srp`
 - `fc`
+- `captain`
 - `welfare`
 - `user`
 - `guest`
@@ -152,6 +154,7 @@ source_of_truth:
 
 - `meta.login = true` 表示任意非 `guest` 已登录产品用户可访问
 - `meta.roles` 只用于真实的显式角色白名单
+- `meta.requiresNewbro = true` 表示该页面还要求当前用户的新人资格快照为 true
 - 不要用 `meta.roles: ['admin', 'fc', 'user']` 之类写法冒充 `Login`
 
 修改权限或菜单时，必须同时考虑：
@@ -160,6 +163,11 @@ source_of_truth:
 - 角色 / 菜单种子
 - 前端路由元数据
 - 按钮权限使用点
+
+`新人帮扶` 模块还有两条额外边界：
+
+- `新人选队长` 不是纯角色权限，而是 `Login + 当前新人资格`
+- `队长帮扶` 需要真实系统角色 `captain`；普通 `admin` 应使用 `帮扶管理` 页面，而不是把 `admin` 当作 captain 的别名
 
 ## 当前不变量
 

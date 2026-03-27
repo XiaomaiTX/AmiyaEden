@@ -57,6 +57,11 @@
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(v)
+  const getRefTypeLabel = (value: string) => {
+    const key = `walletAdmin.refTypes.${value}`
+    const translated = t(key)
+    return translated === key ? value : translated
+  }
 
   // ─── 钱包余额 ───
   const wallet = ref<Api.SysWallet.Wallet | null>(null)
@@ -123,7 +128,7 @@
           minWidth: 120,
           maxWidth: 200,
           formatter: (row: WalletTransaction) =>
-            h(ElTag, { size: 'small', effect: 'plain' }, () => row.ref_type)
+            h(ElTag, { size: 'small', effect: 'plain' }, () => getRefTypeLabel(row.ref_type))
         },
         {
           prop: 'created_at',
