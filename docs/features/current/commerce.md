@@ -19,7 +19,7 @@ source_of_truth:
 
 - 用户侧系统钱包与流水
 - 商品浏览、购买、订单、兑换码
-- 管理员商品管理、订单发放/拒绝、订单历史、兑换码列表
+- 管理员商品管理、订单发放/拒绝、订单历史、兑换码列表；福利官可访问订单发放/拒绝与订单历史
 - 管理员系统钱包调整、流水、日志
 
 ## 入口
@@ -28,6 +28,7 @@ source_of_truth:
 
 - `static/src/views/shop/browse`
 - `static/src/views/shop/manage`
+- `static/src/views/shop/order-manage`
 - `static/src/views/shop/wallet`
 - `static/src/views/system/wallet`
 
@@ -40,7 +41,9 @@ source_of_truth:
 ## 权限边界
 
 - 用户侧能力要求 `Login`
-- `/system/wallet/*`、`/system/shop/*` 默认要求 `admin`
+- `/system/wallet/*` 默认要求 `admin`
+- `/system/shop/product/*` 与 `/system/shop/redeem/*` 默认要求 `admin`
+- `/system/shop/order/*` 允许 `admin` 与 `welfare`
 
 ## 订单状态
 
@@ -91,8 +94,10 @@ source_of_truth:
 
 ## 管理后台订单视图
 
-- **订单管理**（`shop/manage` → 订单管理 Tab）：仅展示 `requested` 状态订单，支持按商品名/主角色名/昵称关键字搜索，可执行发放或拒绝操作。
-- **订单历史**（`shop/manage` → 订单历史 Tab）：展示 `delivered` + `rejected` 订单，支持相同关键字搜索，只读。
+- **订单管理**（`shop/order-manage` → 订单管理 Tab）：仅展示 `requested` 状态订单，支持按商品名/主角色名/昵称关键字搜索，可执行发放或拒绝操作。
+- **订单历史**（`shop/order-manage` → 订单历史 Tab）：展示 `delivered` + `rejected` 订单，支持相同关键字搜索，只读。
+
+`/shop/manage` 仍保留为管理员专用的商品管理入口。
 
 两个视图的表格列：订单号、主角色、昵称、联系方式（QQ/Discord）、商品、数量、总价。
 

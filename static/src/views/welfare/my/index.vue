@@ -18,6 +18,9 @@
             :loading="applicationsLoading"
             :data="applications"
             :columns="applicationColumns"
+            :pagination="applicationPagination"
+            @pagination:size-change="handleApplicationSizeChange"
+            @pagination:current-change="handleApplicationCurrentChange"
           />
           <ElEmpty
             v-if="!applicationsLoading && applications.length === 0"
@@ -77,6 +80,7 @@
 
 <script setup lang="ts">
   import { ElTag, ElButton, ElUpload, ElMessage, ElEmpty } from 'element-plus'
+  import { useTable } from '@/hooks/core/useTable'
   import {
     getEligibleWelfares,
     applyForWelfare,
@@ -261,8 +265,20 @@
   }
 
   // ─── 已领取福利 Tab ───
-  const applicationsLoading = ref(false)
-  const applications = ref<Api.Welfare.MyApplication[]>([])
+  const {
+    data: applications,
+    loading: applicationsLoading,
+    pagination: applicationPagination,
+    handleSizeChange: handleApplicationSizeChange,
+    handleCurrentChange: handleApplicationCurrentChange,
+    getData: loadApplications
+  } = useTable({
+    core: {
+      apiFn: getMyApplications,
+      apiParams: { current: 1, size: 10 },
+      immediate: false
+    }
+  })
 
   const STATUS_CONFIG = computed(
     () =>
@@ -309,18 +325,6 @@
       formatter: (row: Api.Welfare.MyApplication) => row.reviewed_at || '-'
     }
   ])
-
-  async function loadApplications() {
-    applicationsLoading.value = true
-    try {
-      const res = await getMyApplications()
-      applications.value = res ?? []
-    } catch {
-      applications.value = []
-    } finally {
-      applicationsLoading.value = false
-    }
-  }
 
   // ─── Tab switch & init ───
   function handleTabChange(tab: string | number) {

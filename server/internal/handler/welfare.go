@@ -285,19 +285,27 @@ func (h *WelfareHandler) ApplyForWelfare(c *gin.Context) {
 
 // myApplicationsRequest 查询我的申请请求
 type myApplicationsRequest struct {
-	Status string `json:"status"`
+	Current int    `json:"current"`
+	Size    int    `json:"size"`
+	Status  string `json:"status"`
 }
 
 // ListMyApplications POST /welfare/my-applications
 func (h *WelfareHandler) ListMyApplications(c *gin.Context) {
 	var req myApplicationsRequest
-	_ = c.ShouldBindJSON(&req) // status is optional
+	_ = c.ShouldBindJSON(&req) // current/size/status are optional
+	if req.Current < 1 {
+		req.Current = 1
+	}
+	if req.Size < 1 || req.Size > 100 {
+		req.Size = 10
+	}
 
 	userID := middleware.GetUserID(c)
-	result, err := h.svc.ListMyApplications(userID, req.Status)
+	result, total, err := h.svc.ListMyApplications(userID, req.Current, req.Size, req.Status)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, result)
+	response.OKWithPage(c, result, total, req.Current, req.Size)
 }
