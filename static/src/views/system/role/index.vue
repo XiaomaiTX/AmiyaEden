@@ -74,6 +74,7 @@
     admin: 'warning',
     srp: '',
     fc: '',
+    captain: 'primary',
     user: 'success',
     guest: 'info'
   }

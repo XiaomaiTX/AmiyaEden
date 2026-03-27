@@ -25,6 +25,7 @@ source_of_truth:
 - `static/src/router/modules/info.ts`
 - `static/src/router/modules/shop.ts`
 - `static/src/router/modules/welfare.ts`
+- `static/src/router/modules/newbro.ts`
 - `static/src/router/modules/srp.ts`
 - `static/src/router/modules/system.ts`
 
@@ -36,8 +37,9 @@ source_of_truth:
 
 - `meta.login = true` 对应 API / feature 文档中的 `Login`
 - `meta.roles` 只表示显式角色白名单
-- 同一路由不要再用 `meta.roles` 伪装"任意非 guest 登录用户"
-- guest 可访问的 onboarding / self-service 页面不要错误标成 `meta.login = true`，因为这会把它们提升为"非 guest 才可访问"
+- `meta.requiresNewbro = true` 表示还要通过当前用户的新人大类资格快照检查
+- 同一路由不要再用 `meta.roles` 伪装“任意非 guest 登录用户”
+- guest 可访问的 onboarding / self-service 页面不要错误标成 `meta.login = true`，因为这会把它们提升为“非 guest 才可访问”
 
 ## 按钮权限
 
@@ -45,5 +47,6 @@ source_of_truth:
 
 ## 当前不变量
 
+- `新人选队长` 当前同时受前端静态路由过滤和后端菜单过滤影响，不是单纯的角色菜单
 - 路由改动若涉及权限边界，必须同步更新 API / feature 文档
 - 路由架构说明只维护在 `docs/` 中

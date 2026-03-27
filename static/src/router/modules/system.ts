@@ -137,6 +137,16 @@ export const systemRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin']
       }
+    },
+    {
+      path: 'newbro-settings',
+      name: 'NewbroSettings',
+      component: '/system/newbro-settings',
+      meta: {
+        title: 'menus.system.newbroSettings',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
     }
   ]
 }
