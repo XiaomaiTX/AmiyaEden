@@ -24,8 +24,8 @@ source_of_truth:
 - 资产
 - 合同列表与详情
 - 装配列表与保存
-- 个人 NPC 刷怪报表
-- 全量 NPC 刷怪报表
+- 个人 NPC 刷怪报表（详见 [npc-kills.md](npc-kills.md)）
+- 全量 NPC 刷怪报表（详见 [npc-kills.md](npc-kills.md)）
 
 ## 入口
 

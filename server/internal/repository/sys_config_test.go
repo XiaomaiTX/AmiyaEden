@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"strings"
 	"testing"
 
 	"amiya-eden/internal/model"
+	"gorm.io/gorm"
 )
 
 func TestCacheKey(t *testing.T) {
@@ -55,5 +57,29 @@ func TestSysConfigRepository_New(t *testing.T) {
 
 	if repo == nil {
 		t.Fatal("expected non-nil repository")
+	}
+}
+
+func TestBuildSysConfigBatchUpsertQueryUsesSingleUpsertStatement(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildSysConfigBatchUpsertQuery(tx, []SysConfigUpsertItem{
+			{Key: model.SysConfigNewbroMaxCharacterSP, Value: "20000000", Desc: "max"},
+			{Key: model.SysConfigNewbroBonusRate, Value: "20", Desc: "bonus"},
+		})
+	})
+
+	if !strings.Contains(sql, `INSERT INTO "system_config"`) {
+		t.Fatalf("expected system_config insert, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `VALUES (`) {
+		t.Fatalf("expected batched values clause, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `ON CONFLICT ("key") DO UPDATE SET`) {
+		t.Fatalf("expected upsert on key conflict, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `"value"="excluded"."value"`) {
+		t.Fatalf("expected value column to be updated from excluded row, got SQL: %s", sql)
 	}
 }

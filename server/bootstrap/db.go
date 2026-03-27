@@ -121,6 +121,12 @@ func autoMigrate(db *gorm.DB) {
 		&model.Welfare{},
 		&model.WelfareSkillPlan{},
 		&model.WelfareApplication{},
+		// 新人帮扶相关表
+		&model.NewbroPlayerState{},
+		&model.NewbroCaptainAffiliation{},
+		&model.CaptainBountyAttribution{},
+		&model.CaptainBountySyncState{},
+		&model.CaptainRewardSettlement{},
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},
@@ -140,6 +146,7 @@ func autoMigrate(db *gorm.DB) {
 
 	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
 	dropObsoleteSchema(db)
+	ensureCustomIndexes(db)
 
 	// 种子数据：系统角色 → 默认角色权限 → 迁移已有用户
 	roleSvc := service.NewRoleService()
@@ -180,6 +187,20 @@ func dropObsoleteSchema(db *gorm.DB) {
 			} else {
 				global.Logger.Info("已删除旧表", zap.String("table", table))
 			}
+		}
+	}
+}
+
+func newbroCustomIndexStatements() []string {
+	return []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_newbro_captain_affiliation_active_player_user_id ON newbro_captain_affiliation (player_user_id) WHERE ended_at IS NULL AND deleted_at IS NULL`,
+	}
+}
+
+func ensureCustomIndexes(db *gorm.DB) {
+	for _, stmt := range newbroCustomIndexStatements() {
+		if err := db.Exec(stmt).Error; err != nil {
+			global.Logger.Fatal("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
 	}
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"time"
 )
 
 // EveCharacterRepository EVE 角色数据访问层
@@ -78,4 +79,16 @@ func (r *EveCharacterRepository) GetByCharacterName(name string) (*model.EveChar
 	var char model.EveCharacter
 	err := global.DB.Where("character_name = ?", name).First(&char).Error
 	return &char, err
+}
+
+func (r *EveCharacterRepository) GetLatestUpdatedAtByUserID(userID uint) (*time.Time, error) {
+	var value *time.Time
+	err := global.DB.Model(&model.EveCharacter{}).
+		Where("user_id = ?", userID).
+		Select("MAX(updated_at)").
+		Scan(&value).Error
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
 }

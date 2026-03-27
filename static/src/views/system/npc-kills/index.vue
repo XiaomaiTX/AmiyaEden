@@ -21,17 +21,11 @@
     </ElCard>
 
     <!-- 总览卡片 -->
-    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 my-4">
+    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 my-4">
       <ElCard shadow="never" class="text-center">
         <p class="text-sm text-gray-500">{{ $t('npcKill.totalBounty') }}</p>
         <p class="text-xl font-bold text-green-600 mt-1">{{
           formatISK(reportData.summary.total_bounty)
-        }}</p>
-      </ElCard>
-      <ElCard shadow="never" class="text-center">
-        <p class="text-sm text-gray-500">{{ $t('npcKill.totalESS') }}</p>
-        <p class="text-xl font-bold text-blue-600 mt-1">{{
-          formatISK(reportData.summary.total_ess)
         }}</p>
       </ElCard>
       <ElCard shadow="never" class="text-center">
@@ -84,17 +78,6 @@
         >
           <template #default="{ row }">
             <span class="text-green-600 font-medium">{{ formatISK(row.total_bounty) }}</span>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn
-          prop="total_ess"
-          :label="$t('npcKill.totalESS')"
-          width="160"
-          align="right"
-          sortable
-        >
-          <template #default="{ row }">
-            <span class="text-blue-600 font-medium">{{ formatISK(row.total_ess) }}</span>
           </template>
         </ElTableColumn>
         <ElTableColumn

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-03-22
+last_reviewed: 2026-03-27
 source_of_truth:
   - server/bootstrap/db.go
   - server/internal/model
@@ -55,7 +55,7 @@ source_of_truth:
 - RBAC：`role`、`menu`、`role_menu`、`user_role`
 - 自动权限映射：`esi_role_mapping`、`esi_title_mapping`、`eve_character_corp_role`
 - ESI 快照：资产、通知、技能、合同、装配、结构、钱包等 `eve_*` / `esi_*` 相关表
-- 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`welfare*`、`alliance_pap*`、`system_wallet*`、`wallet_log`、`wallet_transaction`
+- 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`welfare*`、`newbro_player_state`、`newbro_captain_affiliation`、`captain_bounty_attribution`、`captain_bounty_sync_state`、`alliance_pap*`、`system_wallet*`、`wallet_log`、`wallet_transaction`
 - 基础设施：`operation_log`、`sde_versions`、`sys_config`
 
 ## 用户与认证
@@ -142,6 +142,7 @@ source_of_truth:
 - `admin`
 - `srp`
 - `fc`
+- `captain`
 - `welfare`
 - `user`
 - `guest`
@@ -258,6 +259,103 @@ ESI 头衔到系统角色的映射表。
 - 这是自动权限同步的输入快照之一
 - 当前 `admin` 的内置快捷规则会读取允许军团中的 corp role `Director`
 - `eve_character_title` 只用于显式 title mapping，不负责 `Director` 的内置快捷抬升
+
+## 新人帮扶相关表
+
+### `newbro_player_state`
+
+缓存用户当前新人资格快照。
+
+关键列包括：
+
+- `user_id`
+- `is_currently_newbro`
+- `evaluated_at`
+- `rule_version`
+- `disqualified_reason`
+
+说明：
+
+- 这是快照，不是永久毕业标记
+- 当角色资料、技能快照或规则版本变化时，服务层会重新计算
+
+### `newbro_captain_affiliation`
+
+记录新人用户与队长用户之间的关联历史。
+
+关键列包括：
+
+- `player_user_id`
+- `player_primary_character_id_at_start`
+- `captain_user_id`
+- `started_at`
+- `ended_at`
+
+说明：
+
+- 同一时间一个新人只能有一条 active 关联
+- 更换队长时旧记录写入 `ended_at`，新关系另起一行
+
+### `captain_bounty_attribution`
+
+记录已持久化的队长赏金归因台账。
+
+关键列包括：
+
+- `affiliation_id`
+- `player_user_id`
+- `player_character_id`
+- `captain_user_id`
+- `captain_character_id`
+- `captain_wallet_journal_id`
+- `wallet_journal_id`
+- `ref_type`
+- `system_id`
+- `journal_at`
+- `amount`
+- `processed_at`
+
+说明：
+
+- `wallet_journal_id` 当前唯一，避免同一条新人赏金被重复归因
+- `captain_character_id` 在写入时冻结保存，后续队长主角色变化不会回改旧账
+- 当前只直接扫描并写入玩家侧 `bounty_prizes`
+- `processed_at IS NULL` 表示该条归因尚未参与队长奖励处理
+
+### `captain_reward_settlement`
+
+记录队长奖励处理历史；每次处理、每名队长写入一行。
+
+关键列包括：
+
+- `captain_user_id`
+- `attribution_count`
+- `attributed_isk_total`
+- `bonus_rate`
+- `credited_value`
+- `processed_at`
+- `wallet_ref_id`
+
+说明：
+
+- `bonus_rate` 按百分比保存，便于历史回溯时准确重建当次计算口径
+- `credited_value` 是最终发放到系统钱包的积分，保留两位小数
+- `wallet_ref_id` 对应系统钱包流水引用，当前使用 `newbro_captain_reward` 类型
+
+### `captain_bounty_sync_state`
+
+记录队长赏金归因增量同步进度。
+
+关键列包括：
+
+- `sync_key`
+- `last_wallet_journal_id`
+- `last_journal_at`
+
+说明：
+
+- 当前默认维护 `default` 同步游标
+- 当前归因回填窗口限制在最近 `30` 天
 
 ### Director 快捷规则的输入边界
 
