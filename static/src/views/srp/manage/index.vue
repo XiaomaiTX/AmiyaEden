@@ -1,76 +1,80 @@
 <!-- SRP 补损审批管理页面 -->
 <template>
   <div class="srp-manage-page art-full-height">
-    <ElCard class="art-table-card" shadow="never">
-      <ElTabs v-model="activeTab" @tab-change="handleTabChange">
-        <ElTabPane :label="$t('srp.manage.pendingTab')" name="pending" />
-        <ElTabPane :label="$t('srp.manage.historyTab')" name="history" />
-      </ElTabs>
+    <ElCard class="art-table-card srp-manage-card" shadow="never">
+      <div class="srp-manage-content">
+        <ElTabs v-model="activeTab" @tab-change="handleTabChange">
+          <ElTabPane :label="$t('srp.manage.pendingTab')" name="pending" />
+          <ElTabPane :label="$t('srp.manage.historyTab')" name="history" />
+        </ElTabs>
 
-      <div class="flex items-center gap-3 flex-wrap mb-3">
-        <ElSelect
-          v-model="filter.review_status"
-          :placeholder="$t('srp.apply.columns.reviewStatus')"
-          clearable
-          style="width: 130px"
-          @change="handleSearch"
-        >
-          <template v-if="activeTab === 'pending'">
-            <ElOption :label="$t('srp.status.submitted')" value="submitted" />
-            <ElOption :label="$t('srp.status.approved')" value="approved" />
-          </template>
-          <template v-else>
-            <ElOption :label="$t('srp.status.approved')" value="approved" />
-            <ElOption :label="$t('srp.status.rejected')" value="rejected" />
-          </template>
-        </ElSelect>
-        <ElSelect
-          v-model="filter.fleet_id"
-          :placeholder="$t('srp.manage.selectFleet')"
-          clearable
-          filterable
-          style="width: 220px"
-          @change="handleSearch"
-        >
-          <ElOption v-for="f in fleets" :key="f.id" :label="formatFleetLabel(f)" :value="f.id" />
-        </ElSelect>
-        <ElButton type="primary" @click="handleSearch">{{ $t('srp.manage.searchBtn') }}</ElButton>
-        <ElButton @click="resetFilter">{{ $t('srp.manage.resetBtn') }}</ElButton>
-      </div>
-
-      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
-        <template #left>
-          <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3 flex-wrap mb-3">
+          <ElSelect
+            v-model="filter.review_status"
+            :placeholder="$t('srp.apply.columns.reviewStatus')"
+            clearable
+            style="width: 130px"
+            @change="handleSearch"
+          >
             <template v-if="activeTab === 'pending'">
-              <ElButton type="primary" @click="handleAutoApprove">
-                {{ $t('srp.manage.autoApproveBtn') }}
-              </ElButton>
-              <ElButton type="warning" @click="openBatchPayoutDialog">
-                {{ $t('srp.manage.batchPayoutBtn') }}
-              </ElButton>
+              <ElOption :label="$t('srp.status.submitted')" value="submitted" />
+              <ElOption :label="$t('srp.status.approved')" value="approved" />
             </template>
-            <ArtExcelExport
-              v-if="activeTab === 'history'"
-              :data="exportManageData"
-              :headers="manageExportHeaders"
-              :filename="`srp-manage_${new Date().toLocaleDateString()}`"
-              sheet-name="补损申请"
-              :button-text="$t('srp.manage.exportBtn')"
-              type="success"
-            />
-          </div>
-        </template>
-      </ArtTableHeader>
+            <template v-else>
+              <ElOption :label="$t('srp.status.approved')" value="approved" />
+              <ElOption :label="$t('srp.status.rejected')" value="rejected" />
+            </template>
+          </ElSelect>
+          <ElSelect
+            v-model="filter.fleet_id"
+            :placeholder="$t('srp.manage.selectFleet')"
+            clearable
+            filterable
+            style="width: 220px"
+            @change="handleSearch"
+          >
+            <ElOption v-for="f in fleets" :key="f.id" :label="formatFleetLabel(f)" :value="f.id" />
+          </ElSelect>
+          <ElButton type="primary" @click="handleSearch">{{ $t('srp.manage.searchBtn') }}</ElButton>
+          <ElButton @click="resetFilter">{{ $t('srp.manage.resetBtn') }}</ElButton>
+        </div>
 
-      <ArtTable
-        :loading="loading"
-        :data="data"
-        :columns="columns"
-        :pagination="pagination"
-        :pagination-options="{ pageSizes: [200, 500, 1000] }"
-        @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
-      />
+        <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
+          <template #left>
+            <div class="flex items-center gap-2">
+              <template v-if="activeTab === 'pending'">
+                <ElButton type="primary" @click="handleAutoApprove">
+                  {{ $t('srp.manage.autoApproveBtn') }}
+                </ElButton>
+                <ElButton type="warning" @click="openBatchPayoutDialog">
+                  {{ $t('srp.manage.batchPayoutBtn') }}
+                </ElButton>
+              </template>
+              <ArtExcelExport
+                v-if="activeTab === 'history'"
+                :data="exportManageData"
+                :headers="manageExportHeaders"
+                :filename="`srp-manage_${new Date().toLocaleDateString()}`"
+                sheet-name="补损申请"
+                :button-text="$t('srp.manage.exportBtn')"
+                type="success"
+              />
+            </div>
+          </template>
+        </ArtTableHeader>
+
+        <div class="srp-manage-table-shell">
+          <ArtTable
+            :loading="loading"
+            :data="data"
+            :columns="columns"
+            :pagination="pagination"
+            :pagination-options="{ pageSizes: [200, 500, 1000] }"
+            @pagination:size-change="handleSizeChange"
+            @pagination:current-change="handleCurrentChange"
+          />
+        </div>
+      </div>
     </ElCard>
 
     <!-- 审批弹窗 -->
@@ -948,6 +952,37 @@
 </script>
 
 <style scoped>
+  .srp-manage-page {
+    gap: 12px;
+  }
+
+  .srp-manage-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .srp-manage-card :deep(.el-card__body) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .srp-manage-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .srp-manage-table-shell {
+    flex: 1;
+    min-height: 0;
+  }
+
   .million-isk-input {
     width: 100%;
     display: grid;

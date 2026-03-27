@@ -69,10 +69,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ElButton, ElInput, ElMessage } from 'element-plus'
+  import { ElInput, ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtCopyCell from '@/components/core/tables/art-copy-cell/index.vue'
   import { adminListOrders, adminDeliverOrder, adminRejectOrder } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
 
@@ -82,6 +83,7 @@
   type Order = Api.Shop.Order
 
   const formatISK = (v: number) => Math.round(v).toLocaleString('en-US')
+
   const formatContact = (row: Order) => {
     if (row.qq) return `QQ: ${row.qq}`
     if (row.discord_id) return `Discord: ${row.discord_id}`
@@ -112,14 +114,16 @@
         {
           prop: 'order_no',
           label: t('shopAdmin.orders.table.orderNo'),
-          width: 120,
-          showOverflowTooltip: true
+          width: 150,
+          showOverflowTooltip: true,
+          formatter: (row: Order) => h(ArtCopyCell, { text: row.order_no })
         },
         {
           prop: 'main_character_name',
           label: t('shopAdmin.orders.table.mainCharacter'),
-          width: 140,
-          showOverflowTooltip: true
+          width: 180,
+          showOverflowTooltip: true,
+          formatter: (row: Order) => h(ArtCopyCell, { text: row.main_character_name })
         },
         {
           prop: 'nickname',
