@@ -7,14 +7,13 @@
         :placeholder="$t('fleet.fields.importance')"
         clearable
         style="width: 140px"
-        @update:model-value="(v) => emit('update:modelValue', { ...modelValue, importance: v })"
-        @change="emit('search', { ...modelValue })"
+        @update:model-value="handleImportanceChange"
       >
         <ElOption label="Strat Op" value="strat_op" />
         <ElOption label="CTA" value="cta" />
         <ElOption label="Other" value="other" />
       </ElSelect>
-      <ElButton @click="emit('reset')">
+      <ElButton @click="handleReset">
         {{ $t('table.searchBar.reset') }}
       </ElButton>
     </div>
@@ -22,26 +21,36 @@
 </template>
 
 <script setup lang="ts">
+  import { buildFleetSearchForm, type FleetSearchForm } from './fleet-search-form'
+
   defineOptions({ name: 'FleetSearch' })
 
-  interface FleetSearchForm {
-    importance: string | undefined
+  interface Props {
+    modelValue: FleetSearchForm
   }
 
-  withDefaults(
-    defineProps<{
-      modelValue: FleetSearchForm
-    }>(),
-    {
-      modelValue: () => ({ importance: undefined })
-    }
-  )
-
-  const emit = defineEmits<{
+  interface Emits {
     (e: 'update:modelValue', v: FleetSearchForm): void
     (e: 'search', params: FleetSearchForm): void
     (e: 'reset'): void
-  }>()
+  }
+
+  const props = withDefaults(defineProps<Props>(), {
+    modelValue: () => ({ importance: undefined })
+  })
+  const emit = defineEmits<Emits>()
+
+  function handleImportanceChange(importance: FleetSearchForm['importance']) {
+    const next = buildFleetSearchForm(props.modelValue, importance)
+    emit('update:modelValue', next)
+    emit('search', next)
+  }
+
+  function handleReset() {
+    const next: FleetSearchForm = { importance: undefined }
+    emit('update:modelValue', next)
+    emit('reset')
+  }
 </script>
 
 <style scoped>
