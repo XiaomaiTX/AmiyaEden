@@ -228,6 +228,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { Refresh } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import {
     ElCard,
     ElTable,
@@ -343,8 +344,6 @@
     if (imp === 'other') return t('fleet.pap.importance.other')
     return imp || '-'
   }
-
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
 
   onMounted(() => {
     loadPapLogs()

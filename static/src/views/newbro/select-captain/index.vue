@@ -117,21 +117,15 @@
               <span>{{ t('newbro.select.recentHistory') }}</span>
             </template>
 
-            <ElTable :data="state?.recent_affiliations ?? []" stripe border>
-              <ElTableColumn
-                prop="captain_character_name"
-                :label="t('newbro.common.captain')"
-                min-width="180"
-              />
-              <ElTableColumn prop="started_at" :label="t('newbro.common.startedAt')" width="180">
-                <template #default="{ row }">{{ formatDateTime(row.started_at) }}</template>
-              </ElTableColumn>
-              <ElTableColumn prop="ended_at" :label="t('newbro.common.endedAt')" width="180">
-                <template #default="{ row }">{{
-                  row.ended_at ? formatDateTime(row.ended_at) : '-'
-                }}</template>
-              </ElTableColumn>
-            </ElTable>
+            <ArtTable
+              :loading="historyLoading"
+              :data="historyData"
+              :columns="historyColumns"
+              :pagination="historyPagination"
+              :pagination-options="{ pageSizes: [200, 500, 1000] }"
+              @pagination:size-change="historyHandleSizeChange"
+              @pagination:current-change="historyHandleCurrentChange"
+            />
           </ElCard>
         </ElTabPane>
       </ElTabs>
@@ -143,10 +137,12 @@
   import { useI18n } from 'vue-i18n'
   import {
     fetchMyNewbroAffiliation,
+    fetchMyAffiliationHistory,
     fetchNewbroCaptains,
     fetchSelectCaptain,
     fetchEndAffiliation
   } from '@/api/newbro'
+  import { useTable } from '@/hooks/core/useTable'
   import { useNewbroEligibility } from '@/hooks/newbro/useNewbroEligibility'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
 
@@ -155,6 +151,45 @@
   const { t } = useI18n()
   const { redirectIfIneligible } = useNewbroEligibility()
   const { formatDateTime } = useNewbroFormatters()
+
+  // ─── History tab ───
+  const {
+    columns: historyColumns,
+    data: historyData,
+    loading: historyLoading,
+    pagination: historyPagination,
+    handleSizeChange: historyHandleSizeChange,
+    handleCurrentChange: historyHandleCurrentChange,
+    getData: loadHistoryData
+  } = useTable({
+    core: {
+      apiFn: fetchMyAffiliationHistory,
+      apiParams: { current: 1, size: 200 },
+      immediate: false,
+      columnsFactory: () => [
+        {
+          prop: 'captain_character_name',
+          label: t('newbro.common.captain'),
+          minWidth: 180
+        },
+        {
+          prop: 'started_at',
+          label: t('newbro.common.startedAt'),
+          width: 180,
+          formatter: (row: Api.Newbro.AffiliationSummary) => formatDateTime(row.started_at)
+        },
+        {
+          prop: 'ended_at',
+          label: t('newbro.common.endedAt'),
+          width: 180,
+          formatter: (row: Api.Newbro.AffiliationSummary) =>
+            row.ended_at ? formatDateTime(row.ended_at) : '-'
+        }
+      ]
+    }
+  })
+
+  const historyLoaded = ref(false)
 
   const loading = ref(false)
   const submittingCaptainId = ref<number | null>(null)
@@ -212,6 +247,13 @@
       endingAffiliation.value = false
     }
   }
+
+  watch(activeTab, (tab) => {
+    if (tab === 'history' && !historyLoaded.value) {
+      historyLoaded.value = true
+      loadHistoryData()
+    }
+  })
 
   onMounted(() => {
     loadData()

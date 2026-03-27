@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-03-24
+last_reviewed: 2026-03-28
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
@@ -21,6 +21,25 @@ Applies to admin pages, paginated list pages, and standard CRUD table pages in t
 - Localize all user-visible text, including column titles, buttons, empty states, and validation messages.
 - Handle permissions through routes, `v-auth`, and shared store or hook patterns. Do not hardcode permission logic locally in the page when an existing repository pattern applies.
 - Extract reusable or page-sized search areas, edit dialogs, and column definitions into `modules/`.
+
+## Pagination Sizing
+
+Choose page sizes based on the nature of the data:
+
+**Ledger / high-volume views** — transaction logs, event histories, operation records, approval
+histories, or any view whose row count grows unboundedly over time:
+
+- `pageSizes`: `[200, 500, 1000]`
+- default `size`: `200`
+- Pass `:pagination-options="{ pageSizes: [200, 500, 1000] }"` to `ArtTable` and set `size: 200` in `apiParams`.
+
+**Management / config views** — users, roles, products, settings, or any view with a bounded
+dataset that admins manage rather than browse:
+
+- Use the framework default page sizes.
+- A lower default size (10–50) is appropriate.
+
+When in doubt, ask: does this table accumulate records indefinitely? If yes, use ledger sizing.
 
 ## Default Page Pattern
 

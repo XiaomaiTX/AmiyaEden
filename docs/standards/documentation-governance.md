@@ -157,6 +157,7 @@ Certain facts have a designated single source. Do not redefine or duplicate thes
 | fact | canonical source |
 | --- | --- |
 | verification commands (lint, test, build) | `docs/standards/testing-and-verification.md § Default Commands` |
+| timestamp / datetime display format | `docs/standards/timestamp-formatting.md` |
 
 When adding a new category of facts that appears in multiple documents, designate one canonical source here and convert all other occurrences to references.
 

@@ -200,6 +200,7 @@
   import { fetchSkillPlanList } from '@/api/skill-plan'
   import { useTable } from '@/hooks/core/useTable'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
 
   defineOptions({ name: 'WelfareSettings' })
   const { t } = useI18n()
@@ -308,7 +309,8 @@
         {
           prop: 'created_at',
           label: t('welfareSettings.createdAt'),
-          width: 170
+          width: 180,
+          formatter: (row: WelfareItem) => formatTime(row.created_at)
         },
         {
           prop: 'actions',
@@ -537,4 +539,6 @@
       ElMessage.error(e?.message ?? t('welfareSettings.deleteFailed'))
     }
   }
+
+  // ─── Helpers ───
 </script>

@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,18 @@ func (h *NewbroUserHandler) GetMyAffiliation(c *gin.Context) {
 		return
 	}
 	response.OK(c, result)
+}
+
+func (h *NewbroUserHandler) ListMyAffiliationHistory(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
+	size, _ := strconv.Atoi(c.DefaultQuery("size", "200"))
+	result, total, err := h.affSvc.ListMyAffiliationHistory(userID, page, size)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OKWithPage(c, result, total, page, size)
 }
 
 type selectCaptainRequest struct {

@@ -401,6 +401,26 @@ func (s *NewbroAffiliationService) GetMyAffiliation(userID uint) (*NewbroMyAffil
 	return resp, nil
 }
 
+func (s *NewbroAffiliationService) ListMyAffiliationHistory(userID uint, page, pageSize int) ([]NewbroAffiliationSummary, int64, error) {
+	rows, total, err := s.affRepo.ListByPlayerUserIDPaged(userID, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	captainUserIDs := make([]uint, 0, len(rows))
+	for _, r := range rows {
+		captainUserIDs = append(captainUserIDs, r.CaptainUserID)
+	}
+	enrichment, err := s.loadCaptainPrimaryData(captainUserIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+	result := make([]NewbroAffiliationSummary, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, buildNewbroAffiliationSummary(r, enrichment))
+	}
+	return result, total, nil
+}
+
 func (s *NewbroAffiliationService) SelectCaptain(userID, captainUserID uint) (*SelectCaptainResponse, error) {
 	return s.changeCaptainAffiliation(userID, userID, captainUserID)
 }
