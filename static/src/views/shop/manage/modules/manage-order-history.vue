@@ -22,6 +22,7 @@
       :data="data"
       :columns="columns"
       :pagination="pagination"
+      :pagination-options="{ pageSizes: [200, 500, 1000] }"
       @pagination:size-change="handleSizeChange"
       @pagination:current-change="handleCurrentChange"
     />
@@ -31,6 +32,7 @@
 <script setup lang="ts">
   import { ElTag, ElButton, ElInput } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { adminListOrderHistory } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
 
@@ -45,8 +47,6 @@
   }
 
   const formatISK = (v: number) => Math.round(v).toLocaleString('en-US')
-  const formatTime = (s: string) => new Date(s).toLocaleString()
-
   const formatContact = (row: Order) => {
     if (row.qq) return `QQ: ${row.qq}`
     if (row.discord_id) return `Discord: ${row.discord_id}`
@@ -70,7 +70,7 @@
   } = useTable({
     core: {
       apiFn: adminListOrderHistory,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       immediate: false,
       columnsFactory: () => [
         {

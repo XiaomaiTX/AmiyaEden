@@ -27,6 +27,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [200, 500, 1000] }"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -41,6 +42,7 @@
   import { useTable } from '@/hooks/core/useTable'
   import { ElTag, ElMessage, ElButton } from 'element-plus'
   import { Setting } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import { useI18n } from 'vue-i18n'
   import {
     fetchAllAlliancePAP,
@@ -83,7 +85,7 @@
   } = useTable({
     core: {
       apiFn: fetchAllAlliancePAP,
-      apiParams: { current: 1, size: 20, ...parseMonth() },
+      apiParams: { current: 1, size: 200, ...parseMonth() },
       columnsFactory: () => [
         { type: 'index', width: 60, label: t('alliancePap.columns.rank') },
         {
@@ -149,8 +151,7 @@
           prop: 'calculated_at',
           label: t('alliancePap.columns.calculatedAt'),
           width: 170,
-          formatter: (row: AlliancePAPSummary) =>
-            row.calculated_at ? new Date(row.calculated_at).toLocaleString() : '-'
+          formatter: (row: AlliancePAPSummary) => formatTime(row.calculated_at)
         },
         {
           prop: 'is_archived',

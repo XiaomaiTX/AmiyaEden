@@ -40,6 +40,7 @@
   import { useI18n } from 'vue-i18n'
   import { Refresh } from '@element-plus/icons-vue'
   import { ElCard, ElButton, ElTag } from 'element-plus'
+  import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import { fetchMyWallet, fetchMyWalletTransactions } from '@/api/sys-wallet'
 
@@ -50,8 +51,6 @@
   type WalletTransaction = Api.SysWallet.WalletTransaction
 
   // ─── 格式化工具 ───
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
-
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,

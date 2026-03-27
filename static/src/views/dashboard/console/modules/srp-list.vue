@@ -73,17 +73,12 @@
 
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
 
   const { t } = useI18n()
   defineProps<{
     list: Api.Dashboard.SrpItem[]
   }>()
-
-  const formatTime = (time: string): string => {
-    if (!time) return ''
-    const d = new Date(time)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
 
   const formatISK = (amount: number): string => {
     if (!amount) return '0'

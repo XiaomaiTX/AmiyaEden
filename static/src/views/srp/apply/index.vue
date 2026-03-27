@@ -127,6 +127,7 @@
   import { useRoute } from 'vue-router'
   import { useI18n } from 'vue-i18n'
   import { View } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import {
     ElCard,
     ElTag,
@@ -456,7 +457,6 @@
   }
 
   /* ── 工具函数 ── */
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
   const formatShortTime = (v: string) => {
     if (!v) return '-'
     const d = new Date(v)

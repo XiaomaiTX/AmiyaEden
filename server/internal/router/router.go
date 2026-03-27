@@ -186,6 +186,7 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		newbro.GET("/captains", newbroUserH.ListCaptains)
 		newbro.GET("/affiliation/me", newbroUserH.GetMyAffiliation)
+		newbro.GET("/affiliations/history", newbroUserH.ListMyAffiliationHistory)
 		newbro.POST("/affiliation/select", newbroUserH.SelectCaptain)
 		newbro.POST("/affiliation/end", newbroUserH.EndAffiliation)
 	}

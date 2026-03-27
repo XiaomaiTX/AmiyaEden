@@ -1,3 +1,5 @@
+import { formatTime } from '@utils/common'
+
 const decimalFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
@@ -9,8 +11,7 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
 })
 
 export function formatNewbroDateTime(value?: string | null): string {
-  if (!value) return '-'
-  return new Date(value).toLocaleString()
+  return formatTime(value)
 }
 
 export function formatNewbroIsk(value: number): string {
