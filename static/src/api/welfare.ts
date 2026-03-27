@@ -84,8 +84,8 @@ export function applyForWelfare(data: Api.Welfare.ApplyParams) {
 }
 
 /** 查询我的福利申请 */
-export function getMyApplications(data?: { status?: string }) {
-  return request.post<Api.Welfare.MyApplication[]>({
+export function getMyApplications(data?: Api.Welfare.MyApplicationSearchParams) {
+  return request.post<Api.Common.PaginatedResponse<Api.Welfare.MyApplication>>({
     url: '/api/v1/welfare/my-applications',
     data
   })

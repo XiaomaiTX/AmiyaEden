@@ -361,15 +361,17 @@ func RegisterRoutes(r *gin.Engine) {
 		adminShopProduct.POST("/edit", adminShopH.AdminUpdateProduct)
 		adminShopProduct.POST("/delete", adminShopH.AdminDeleteProduct)
 	}
-	adminShopOrder := admin.Group("/shop/order")
-	{
-		adminShopOrder.POST("/list", adminShopH.AdminListOrders)
-		adminShopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
-		adminShopOrder.POST("/reject", adminShopH.AdminRejectOrder)
-	}
 	adminShopRedeem := admin.Group("/shop/redeem")
 	{
 		adminShopRedeem.POST("/list", adminShopH.AdminListRedeemCodes)
+	}
+
+	// 商店订单（管理员 / 福利官）
+	shopOrder := login.Group("/system/shop/order", middleware.RequireRole(model.RoleAdmin, model.RoleWelfare))
+	{
+		shopOrder.POST("/list", adminShopH.AdminListOrders)
+		shopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
+		shopOrder.POST("/reject", adminShopH.AdminRejectOrder)
 	}
 
 	// 福利管理（管理员）
