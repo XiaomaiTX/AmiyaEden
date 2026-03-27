@@ -30,11 +30,17 @@ const (
 	SysConfigCorpID    = "corp.id"    // 军团ID (int64) - 用于获取Logo
 	SysConfigSiteTitle = "site.title" // 网站标题 (string)
 
-	SysConfigSDEAPIKey      = "sde.api_key"       // SDE 查询 API Key
-	SysConfigSDEProxy       = "sde.proxy"         // SDE 下载代理
-	SysConfigSDEDownloadURL = "sde.download_url"  // SDE 下载地址
+	SysConfigSDEAPIKey      = "sde.api_key"      // SDE 查询 API Key
+	SysConfigSDEProxy       = "sde.proxy"        // SDE 下载代理
+	SysConfigSDEDownloadURL = "sde.download_url" // SDE 下载地址
 
 	SysConfigAllowCorporations = "app.allow_corporations" // 允许访问的公司 ID 列表 (JSON 数组)
+
+	SysConfigNewbroMaxCharacterSP          = "newbro.max_character_sp"
+	SysConfigNewbroMultiCharacterSP        = "newbro.multi_character_sp"
+	SysConfigNewbroMultiCharacterThreshold = "newbro.multi_character_threshold"
+	SysConfigNewbroRefreshIntervalDays     = "newbro.refresh_interval_days"
+	SysConfigNewbroBonusRate               = "newbro.bonus_rate"
 
 	SysConfigDefaultCorpID    int64  = 1
 	SysConfigDefaultSiteTitle string = "Amiya eden"
@@ -42,4 +48,10 @@ const (
 	SysConfigDefaultSDEAPIKey      = "modify_your_api_key"
 	SysConfigDefaultSDEProxy       = ""
 	SysConfigDefaultSDEDownloadURL = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
+
+	SysConfigDefaultNewbroMaxCharacterSP          int64   = 20_000_000
+	SysConfigDefaultNewbroMultiCharacterSP        int64   = 10_000_000
+	SysConfigDefaultNewbroMultiCharacterThreshold         = 3
+	SysConfigDefaultNewbroRefreshIntervalDays             = 7
+	SysConfigDefaultNewbroBonusRate               float64 = 20
 )

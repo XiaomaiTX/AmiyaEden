@@ -13,9 +13,7 @@ import (
 const (
 	ctxKeyUserID      = "userID"
 	ctxKeyCharacterID = "characterID"
-	ctxKeyUserRole    = "userRole" // JWT 中的单角色字段（向后兼容）
 	ctxKeyRoles       = "roles"
-	ctxKeyPermissions = "permissions"
 )
 
 // JWTAuth JWT 认证中间件
@@ -40,7 +38,6 @@ func JWTAuth() gin.HandlerFunc {
 
 		c.Set(ctxKeyUserID, claims.UserID)
 		c.Set(ctxKeyCharacterID, claims.CharacterID)
-		c.Set(ctxKeyUserRole, claims.Role) // JWT 单角色（向后兼容）
 
 		// 加载用户角色（带 Redis 缓存）
 		roles, err := roleSvc.GetUserRoleNames(c.Request.Context(), claims.UserID)
@@ -48,13 +45,6 @@ func JWTAuth() gin.HandlerFunc {
 			roles = []string{model.RoleGuest}
 		}
 		c.Set(ctxKeyRoles, roles)
-
-		// 加载用户权限（带 Redis 缓存）
-		perms, err := roleSvc.GetUserPermissions(c.Request.Context(), claims.UserID)
-		if err != nil {
-			perms = []string{}
-		}
-		c.Set(ctxKeyPermissions, perms)
 
 		c.Next()
 	}
@@ -91,30 +81,6 @@ func RequireLoginUser() gin.HandlerFunc {
 	}
 }
 
-// RequirePermission 要求用户拥有指定权限标识之一（super_admin 自动通过）
-// 支持前缀继承：用户拥有 "srp" 时，自动满足 "srp:review"、"srp:price:edit" 等子权限
-func RequirePermission(perms ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		roles := GetUserRoles(c)
-		if model.IsSuperAdmin(roles) {
-			c.Next()
-			return
-		}
-		userPerms := GetUserPermissions(c)
-		for _, required := range perms {
-			for _, have := range userPerms {
-				// 精确匹配，或拥有父级权限（前缀 + ":" 匹配）
-				if have == required || strings.HasPrefix(required, have+":") {
-					c.Next()
-					return
-				}
-			}
-		}
-		response.Fail(c, response.CodeForbidden, "权限不足，需要权限: "+strings.Join(perms, "/"))
-		c.Abort()
-	}
-}
-
 // ─── Context 辅助函数 ───
 
 func GetUserID(c *gin.Context) uint {
@@ -129,11 +95,6 @@ func GetCharacterID(c *gin.Context) int64 {
 	return 0
 }
 
-// GetUserRole 获取 JWT 中的单角色字段（向后兼容 fleet 等模块）
-func GetUserRole(c *gin.Context) string {
-	return c.GetString(ctxKeyUserRole)
-}
-
 func GetUserRoles(c *gin.Context) []string {
 	v, exists := c.Get(ctxKeyRoles)
 	if !exists {
@@ -141,15 +102,6 @@ func GetUserRoles(c *gin.Context) []string {
 	}
 	roles, _ := v.([]string)
 	return roles
-}
-
-func GetUserPermissions(c *gin.Context) []string {
-	v, exists := c.Get(ctxKeyPermissions)
-	if !exists {
-		return nil
-	}
-	perms, _ := v.([]string)
-	return perms
 }
 
 func extractToken(c *gin.Context) string {

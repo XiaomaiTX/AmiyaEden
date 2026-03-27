@@ -129,6 +129,8 @@ export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
         qq: user.qq ?? '',
         discordId: user.discord_id ?? ''
       }),
+    isCurrentlyNewbro:
+      typeof data.is_currently_newbro === 'boolean' ? data.is_currently_newbro : undefined,
     roles,
     characters: characters ?? [],
     primaryCharacterId: user.primary_character_id ?? 0

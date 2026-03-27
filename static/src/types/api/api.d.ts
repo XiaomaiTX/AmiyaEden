@@ -116,6 +116,7 @@ declare namespace Api {
       /** 用户所有权限标识列表 */
       permissions: string[]
       profile_complete: boolean
+      is_currently_newbro?: boolean | null
     }
 
     /** 用户信息（路由守卫和权限指令使用） */
@@ -128,6 +129,7 @@ declare namespace Api {
       qq: string
       discordId: string
       profileComplete: boolean
+      isCurrentlyNewbro?: boolean
       characters?: EveCharacter[]
       primaryCharacterId?: number
     }
@@ -1730,6 +1732,8 @@ declare namespace Api {
     interface Summary {
       total_bounty: number
       total_ess: number
+      total_incursion: number
+      total_mission: number
       total_tax: number
       actual_income: number
       total_records: number
@@ -1791,6 +1795,8 @@ declare namespace Api {
       character_name: string
       total_bounty: number
       total_ess: number
+      total_incursion: number
+      total_mission: number
       total_tax: number
       actual_income: number
       record_count: number
@@ -1802,6 +1808,269 @@ declare namespace Api {
       members: CorpMemberSummary[]
       by_system: BySystem[]
       trend: Trend[]
+    }
+  }
+
+  /** 新人帮扶 */
+  namespace Newbro {
+    interface CaptainCandidate {
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      captain_portrait_url: string
+      active_newbro_count: number
+      last_online_at: string | null
+    }
+
+    interface AffiliationSummary {
+      affiliation_id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_portrait_url: string
+      started_at: string
+      ended_at: string | null
+    }
+
+    interface MyAffiliationResponse {
+      is_currently_newbro: boolean
+      evaluated_at: string
+      rule_version: string
+      disqualified_reason: string
+      current_affiliation: AffiliationSummary | null
+      recent_affiliations: AffiliationSummary[]
+    }
+
+    interface SelectCaptainParams {
+      captain_user_id: number
+    }
+
+    interface SelectCaptainResponse {
+      affiliation_id: number
+      captain_user_id: number
+      started_at: string
+    }
+
+    type EndAffiliationResponse = Record<string, never>
+
+    interface CaptainEndAffiliationParams {
+      player_user_id: number
+    }
+
+    interface CaptainOverview {
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      active_player_count: number
+      historical_player_count: number
+      attributed_bounty_total: number
+      attribution_record_count: number
+    }
+
+    interface CaptainPlayerListItem {
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      player_nickname: string
+      player_portrait_url: string
+      started_at: string
+      ended_at: string | null
+      attributed_bounty_total: number
+    }
+
+    type CaptainPlayersResponse = Api.Common.PaginatedResponse<CaptainPlayerListItem>
+
+    interface CaptainEligiblePlayerCurrentAffiliation {
+      affiliation_id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      started_at: string
+    }
+
+    interface CaptainEligiblePlayerListItem {
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      player_nickname: string
+      player_portrait_url: string
+      current_affiliation: CaptainEligiblePlayerCurrentAffiliation | null
+    }
+
+    type CaptainEligiblePlayersResponse =
+      Api.Common.PaginatedResponse<CaptainEligiblePlayerListItem>
+
+    interface CaptainAttributionItem {
+      id: number
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      captain_character_id: number
+      captain_character_name: string
+      captain_wallet_journal_id: number
+      wallet_journal_id: number
+      ref_type: string
+      system_id: number
+      journal_at: string
+      amount: number
+      processed_at: string | null
+    }
+
+    interface CaptainAttributionSummary {
+      attributed_bounty_total: number
+      record_count: number
+    }
+
+    interface CaptainAttributionsResponse {
+      summary: CaptainAttributionSummary
+      list: CaptainAttributionItem[]
+      total: number
+      page: number
+      page_size: number
+    }
+
+    interface CaptainRewardSettlementItem {
+      id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      attribution_count: number
+      attributed_isk_total: number
+      bonus_rate: number
+      credited_value: number
+      processed_at: string
+    }
+
+    interface CaptainRewardSummary {
+      settlement_count: number
+      total_credited_value: number
+      last_processed_at: string | null
+    }
+
+    interface CaptainRewardSettlementsResponse {
+      summary: CaptainRewardSummary
+      list: CaptainRewardSettlementItem[]
+      total: number
+      page: number
+      page_size: number
+    }
+
+    type CaptainPlayerStatus = 'active' | 'historical' | 'all'
+
+    type CaptainPlayersParams = Partial<{
+      current: number
+      size: number
+      status: CaptainPlayerStatus
+    }>
+
+    type CaptainEligiblePlayersParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    interface CaptainEnrollPlayerParams {
+      player_user_id: number
+    }
+
+    type CaptainAttributionsParams = Partial<{
+      current: number
+      size: number
+      player_user_id: number
+      ref_type: string
+      start_date: string
+      end_date: string
+    }>
+
+    type CaptainRewardSettlementsParams = Partial<{
+      current: number
+      size: number
+    }>
+
+    type AdminCaptainsParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    type AdminCaptainsResponse = Api.Common.PaginatedResponse<CaptainOverview>
+
+    interface AdminCaptainDetail {
+      overview: CaptainOverview
+      players: CaptainPlayerListItem[]
+      players_total: number
+      attributions: CaptainAttributionItem[]
+      attributions_total: number
+      attribution_summary: CaptainAttributionSummary
+    }
+
+    type AdminAffiliationHistoryParams = Partial<{
+      current: number
+      size: number
+      captain_user_ids: string
+      player_character_ids: string
+      change_start_date: string
+      change_end_date: string
+    }>
+
+    interface AdminAffiliationHistoryItem {
+      affiliation_id: number
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      player_nickname: string
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      changed_by_character_name: string
+      started_at: string
+      ended_at: string | null
+      created_at: string
+    }
+
+    type AdminAffiliationHistoryResponse = Api.Common.PaginatedResponse<AdminAffiliationHistoryItem>
+
+    type AdminRewardSettlementsParams = Partial<{
+      current: number
+      size: number
+    }>
+
+    type AdminRewardSettlementsResponse = CaptainRewardSettlementsResponse
+
+    interface AttributionSyncResult {
+      processed_count: number
+      inserted_count: number
+      skipped_count: number
+      last_wallet_journal_id: number
+    }
+
+    interface RewardProcessResult {
+      processed_at: string
+      processed_captain_count: number
+      processed_attribution_count: number
+      settlement_count: number
+      total_credited_value: number
+    }
+
+    interface Settings {
+      max_character_sp: number
+      multi_character_sp: number
+      multi_character_threshold: number
+      refresh_interval_days: number
+      bonus_rate: number
+    }
+
+    interface UpdateSettingsParams {
+      max_character_sp: number
+      multi_character_sp: number
+      multi_character_threshold: number
+      refresh_interval_days: number
+      bonus_rate: number
     }
   }
 

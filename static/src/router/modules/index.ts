@@ -8,6 +8,7 @@ import { srpRoutes } from './srp'
 import { welfareRoutes } from './welfare'
 import { shopRoutes } from './shop'
 import { infoRoutes } from './info'
+import { newbroRoutes } from './newbro'
 
 /**
  * 导出所有模块化路由
@@ -18,6 +19,7 @@ export const routeModules: AppRouteRecord[] = [
   skillPlanningRoutes,
   infoRoutes,
   welfareRoutes,
+  newbroRoutes,
   shopRoutes,
   srpRoutes,
   systemRoutes,
