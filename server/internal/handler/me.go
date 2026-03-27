@@ -45,11 +45,6 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	if roles == nil {
 		roles = []string{}
 	}
-	permissions := middleware.GetUserPermissions(c)
-	if permissions == nil {
-		permissions = []string{}
-	}
-
 	var isCurrentlyNewbro *bool
 	if state := h.eligibilitySvc.GetCachedState(userID); state != nil {
 		value := state.IsCurrentlyNewbro
@@ -60,7 +55,6 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 		"user":                user,
 		"characters":          characters,
 		"roles":               roles,
-		"permissions":         permissions,
 		"profile_complete":    user.ProfileComplete(),
 		"is_currently_newbro": isCurrentlyNewbro,
 	})

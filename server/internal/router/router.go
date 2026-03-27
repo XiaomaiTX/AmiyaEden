@@ -228,8 +228,8 @@ func RegisterRoutes(r *gin.Engine) {
 	{
 		// 价格表（查看公开，修改需权限）
 		srp.GET("/prices", srpH.ListShipPrices)
-		srp.POST("/prices", middleware.RequirePermission("srp:price:add"), srpH.UpsertShipPrice)
-		srp.DELETE("/prices/:id", middleware.RequirePermission("srp:price:delete"), srpH.DeleteShipPrice)
+		srp.POST("/prices", middleware.RequireRole(model.RoleSRP), srpH.UpsertShipPrice)
+		srp.DELETE("/prices/:id", middleware.RequireRole(model.RoleSRP), srpH.DeleteShipPrice)
 
 		// 个人申请
 		srp.POST("/applications", srpH.SubmitApplication)
@@ -240,7 +240,7 @@ func RegisterRoutes(r *gin.Engine) {
 		srp.POST("/open-info-window", srpH.OpenInfoWindow)
 
 		// 审核（需权限）
-		srpAdmin := srp.Group("", middleware.RequirePermission("srp:review"))
+		srpAdmin := srp.Group("", middleware.RequireRole(model.RoleSRP))
 		{
 			srpAdmin.GET("/applications", srpH.ListApplications)
 			srpAdmin.PUT("/applications/auto-approve", srpH.RunFleetAutoApproval)

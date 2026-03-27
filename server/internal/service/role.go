@@ -35,7 +35,6 @@ func NewRoleService() *RoleService {
 
 const (
 	userRolesCachePrefix = "user_roles:"
-	userPermsCachePrefix = "user_perms:"
 	cacheTTL             = 30 * time.Minute
 )
 
@@ -64,32 +63,9 @@ func (s *RoleService) GetUserRoleNames(ctx context.Context, userID uint) ([]stri
 	return roles, nil
 }
 
-// GetUserPermissions 获取用户所有权限标识列表（带缓存）
-func (s *RoleService) GetUserPermissions(ctx context.Context, userID uint) ([]string, error) {
-	cacheKey := fmt.Sprintf("%s%d", userPermsCachePrefix, userID)
-	val, err := global.Redis.Get(ctx, cacheKey).Result()
-	if err == nil && val != "" {
-		var perms []string
-		if json.Unmarshal([]byte(val), &perms) == nil {
-			return perms, nil
-		}
-	}
-
-	roleCodes, err := s.repo.GetUserRoleCodes(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if data, err := json.Marshal(roleCodes); err == nil {
-		global.Redis.Set(ctx, cacheKey, string(data), cacheTTL)
-	}
-	return roleCodes, nil
-}
-
-// InvalidateUserCache 清除用户角色和权限缓存
+// InvalidateUserCache 清除用户角色缓存
 func (s *RoleService) InvalidateUserCache(ctx context.Context, userID uint) {
 	global.Redis.Del(ctx, fmt.Sprintf("%s%d", userRolesCachePrefix, userID))
-	global.Redis.Del(ctx, fmt.Sprintf("%s%d", userPermsCachePrefix, userID))
 }
 
 // InvalidateUserRolesCache 兼容旧接口
