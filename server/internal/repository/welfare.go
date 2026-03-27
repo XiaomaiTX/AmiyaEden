@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"gorm.io/gorm"
 )
 
 // WelfareRepository 福利数据访问层
@@ -171,6 +172,35 @@ func (r *WelfareRepository) ListApplicationsByUserID(userID uint, status string)
 	}
 	err := db.Order("id DESC").Find(&list).Error
 	return list, err
+}
+
+// buildApplicationsByUserIDQuery 构建用户福利申请查询条件
+func buildApplicationsByUserIDQuery(db *gorm.DB, userID uint, status string) *gorm.DB {
+	query := db.Where("user_id = ?", userID)
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	return query
+}
+
+// ListApplicationsByUserIDPaginated 分页查询用户的福利申请
+func (r *WelfareRepository) ListApplicationsByUserIDPaginated(
+	userID uint,
+	page, pageSize int,
+	status string,
+) ([]model.WelfareApplication, int64, error) {
+	var list []model.WelfareApplication
+	var total int64
+	offset := (page - 1) * pageSize
+
+	db := buildApplicationsByUserIDQuery(global.DB.Model(&model.WelfareApplication{}), userID, status)
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, total, nil
 }
 
 // ListApplicationsByWelfareIDs 查询多个福利的所有申请记录（用于批量判断资格）

@@ -1075,6 +1075,13 @@ declare namespace Api {
       reviewed_at: string | null
     }
 
+    /** 我的申请记录查询参数 */
+    type MyApplicationSearchParams = Partial<{
+      current: number
+      size: number
+      status: string
+    }>
+
     /** 申请福利参数 */
     interface ApplyParams {
       welfare_id: number

@@ -1,68 +1,18 @@
 <!-- 商店管理页面（管理员） -->
 <template>
   <div class="shop-admin-page art-full-height">
-    <ElTabs v-model="activeTab" class="art-table-card p-4">
-      <!-- 商品管理 -->
-      <ElTabPane :label="$t('shopAdmin.tabs.products')" name="products">
-        <ManageProducts ref="productsRef" />
-      </ElTabPane>
-
-      <!-- 订单管理（待发放） -->
-      <ElTabPane :label="$t('shopAdmin.tabs.orders')" name="orders">
-        <ManageOrders ref="ordersRef" />
-      </ElTabPane>
-
-      <!-- 订单历史（已发放 / 已拒绝） -->
-      <ElTabPane :label="$t('shopAdmin.tabs.orderHistory')" name="orderHistory">
-        <ManageOrderHistory ref="orderHistoryRef" />
-      </ElTabPane>
-    </ElTabs>
+    <ManageProducts ref="productsRef" />
   </div>
 </template>
 
 <script setup lang="ts">
   import ManageProducts from './modules/manage-products.vue'
-  import ManageOrders from './modules/manage-orders.vue'
-  import ManageOrderHistory from './modules/manage-order-history.vue'
 
   defineOptions({ name: 'SystemShop' })
 
-  const activeTab = ref('products')
-
   const productsRef = ref<InstanceType<typeof ManageProducts>>()
-  const ordersRef = ref<InstanceType<typeof ManageOrders>>()
-  const orderHistoryRef = ref<InstanceType<typeof ManageOrderHistory>>()
 
-  // Tab 切换懒加载
-  watch(activeTab, (tab) => {
-    if (tab === 'orders') ordersRef.value?.load()
-    if (tab === 'orderHistory') orderHistoryRef.value?.load()
-  })
-
-  // 初始化加载商品列表
   onMounted(() => {
     productsRef.value?.load()
   })
 </script>
-
-<style scoped lang="scss">
-  .shop-admin-page {
-    // 让 ElTabs 的内容区填满剩余高度，使子面板能继承高度
-    :deep(.el-tabs__content) {
-      flex: 1;
-      overflow: hidden;
-    }
-
-    // tab-pane 撑满内容区，成为 flex 列容器
-    :deep(.el-tab-pane) {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-
-      // tab pane 内的卡片无需全局 margin-top
-      .art-table-card {
-        margin-top: 0;
-      }
-    }
-  }
-</style>
