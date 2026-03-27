@@ -39,6 +39,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [200, 500, 1000] }"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -57,6 +58,7 @@
 <script setup lang="ts">
   import { ElTag, ElSelect, ElOption } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
+  import { formatTime } from '@utils/common'
   import { useI18n } from 'vue-i18n'
   import { useUserStore } from '@/store/modules/user'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
@@ -157,7 +159,7 @@
   } = useTable({
     core: {
       apiFn: fetchContractsList,
-      apiParams: { current: 1, size: 20, type: '', status: '' } as Api.EveInfo.ContractsRequest,
+      apiParams: { current: 1, size: 200, type: '', status: '' } as Api.EveInfo.ContractsRequest,
       columnsFactory: () => [
         { type: 'globalIndex', width: 60, label: '#', fixed: 'left' },
         {
@@ -209,8 +211,7 @@
           prop: 'date_expired',
           label: t('info.contractExpiry'),
           width: 180,
-          formatter: (row: ContractItem) =>
-            h('span', {}, row.date_expired ? new Date(row.date_expired).toLocaleString() : '-')
+          formatter: (row: ContractItem) => h('span', {}, formatTime(row.date_expired))
         },
         {
           prop: 'actions',

@@ -45,6 +45,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [200, 500, 1000] }"
         :empty-text="$t('info.noJournalData')"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
@@ -111,7 +112,7 @@
   } = useTable({
     core: {
       apiFn: fetchWalletJournalList,
-      apiParams: { character_id: undefined as number | undefined, current: 1, size: 20 },
+      apiParams: { character_id: undefined as number | undefined, current: 1, size: 200 },
       immediate: false,
       columnsFactory: () => [
         {

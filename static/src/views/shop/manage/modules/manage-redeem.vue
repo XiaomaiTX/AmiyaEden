@@ -42,6 +42,7 @@
 <script setup lang="ts">
   import { ElTag, ElInput, ElSelect, ElOption, ElButton } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { adminListRedeemCodes } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
 
@@ -56,8 +57,6 @@
     used: { label: t('shopAdmin.redeem.status.used'), type: 'info' },
     expired: { label: t('shopAdmin.redeem.status.expired'), type: 'danger' }
   }
-
-  const formatTime = (v: string | null) => (v ? new Date(v).toLocaleString() : '-')
 
   // ─── 搜索过滤状态 ───
   const productIdFilter = ref('')

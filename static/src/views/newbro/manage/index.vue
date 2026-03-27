@@ -84,10 +84,18 @@
           <div class="flex justify-end mt-4">
             <ElPagination
               background
-              layout="prev, pager, next"
+              layout="sizes, prev, pager, next"
+              :page-sizes="[200, 500, 1000]"
               :current-page="page.current"
               :page-size="page.size"
               :total="page.total"
+              @size-change="
+                (value: number) => {
+                  page.size = value
+                  page.current = 1
+                  loadCaptains()
+                }
+              "
               @current-change="
                 (value: number) => {
                   page.current = value
@@ -259,10 +267,18 @@
           <div class="flex justify-end mt-4">
             <ElPagination
               background
-              layout="prev, pager, next"
+              layout="sizes, prev, pager, next"
+              :page-sizes="[200, 500, 1000]"
               :current-page="rewardPage.current"
               :page-size="rewardPage.size"
               :total="rewardPage.total"
+              @size-change="
+                (value: number) => {
+                  rewardPage.size = value
+                  rewardPage.current = 1
+                  loadRewards()
+                }
+              "
               @current-change="
                 (value: number) => {
                   rewardPage.current = value
@@ -381,10 +397,18 @@
           <div class="flex justify-end mt-4">
             <ElPagination
               background
-              layout="prev, pager, next"
+              layout="sizes, prev, pager, next"
+              :page-sizes="[200, 500, 1000]"
               :current-page="historyPage.current"
               :page-size="historyPage.size"
               :total="historyPage.total"
+              @size-change="
+                (value: number) => {
+                  historyPage.size = value
+                  historyPage.current = 1
+                  loadHistory()
+                }
+              "
               @current-change="
                 (value: number) => {
                   historyPage.current = value
@@ -429,9 +453,9 @@
   const rewardRows = ref<Api.Newbro.CaptainRewardSettlementItem[]>([])
   const historyLoaded = ref(false)
   const rewardLoaded = ref(false)
-  const page = reactive({ current: 1, size: 20, total: 0 })
-  const rewardPage = reactive({ current: 1, size: 20, total: 0 })
-  const historyPage = reactive({ current: 1, size: 20, total: 0 })
+  const page = reactive({ current: 1, size: 200, total: 0 })
+  const rewardPage = reactive({ current: 1, size: 200, total: 0 })
+  const historyPage = reactive({ current: 1, size: 200, total: 0 })
   const rewardSummary = ref<Api.Newbro.CaptainRewardSummary>({
     settlement_count: 0,
     total_credited_value: 0,

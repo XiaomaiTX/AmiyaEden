@@ -76,6 +76,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { Plus } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import {
     ElCard,
     ElButton,
@@ -104,7 +105,6 @@
   type ShipPrice = Api.Srp.ShipPrice
 
   // ─── 格式化 ───
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
       (v ?? 0) / 1_000_000
@@ -162,7 +162,7 @@
       ship_type_id: p.ship_type_id,
       ship_name: p.ship_name,
       amount: p.amount,
-      updated_at: p.updated_at ? new Date(p.updated_at).toLocaleString() : '-'
+      updated_at: formatTime(p.updated_at)
     }))
   )
 

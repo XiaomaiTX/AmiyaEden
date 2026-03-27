@@ -192,6 +192,7 @@
 
 <script setup lang="ts">
   import { ArrowLeft, Refresh, Plus } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import {
     ElCard,
     ElDialog,
@@ -247,7 +248,6 @@
     other: 'info'
   }
   const importanceType = (v: string) => (IMPORTANCE_MAP[v] || 'info') as any
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
   const goBack = () => router.push({ name: 'Fleets' })
 
   const loadFleet = async () => {
