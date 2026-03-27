@@ -35,7 +35,7 @@
         </ElTableColumn>
         <ElTableColumn prop="updated_at" :label="t('papExchange.columns.updatedAt')" width="180">
           <template #default="{ row }">
-            {{ row.updated_at ? new Date(row.updated_at).toLocaleString() : '-' }}
+            {{ formatTime(row.updated_at) }}
           </template>
         </ElTableColumn>
       </ElTable>
@@ -54,6 +54,7 @@
     ElMessage
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { fetchPAPTypeRates, updatePAPTypeRates, type PAPTypeRate } from '@/api/pap-exchange'
 
   defineOptions({ name: 'PAPExchange' })

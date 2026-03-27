@@ -494,6 +494,22 @@
     border-radius: 16px;
   }
 
+  .result-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    :deep(.el-card__body) {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+  }
+
   .toolbar {
     display: flex;
     align-items: flex-start;
@@ -550,6 +566,12 @@
   .selected-plans__empty {
     color: var(--el-text-color-placeholder);
     font-size: 13px;
+  }
+
+  .result-panel {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .result-card__header {

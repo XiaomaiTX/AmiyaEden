@@ -71,6 +71,7 @@
 <script setup lang="ts">
   import { ElButton, ElInput, ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { adminListOrders, adminDeliverOrder, adminRejectOrder } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
@@ -81,8 +82,6 @@
   type Order = Api.Shop.Order
 
   const formatISK = (v: number) => Math.round(v).toLocaleString('en-US')
-  const formatTime = (s: string) => new Date(s).toLocaleString()
-
   const formatContact = (row: Order) => {
     if (row.qq) return `QQ: ${row.qq}`
     if (row.discord_id) return `Discord: ${row.discord_id}`

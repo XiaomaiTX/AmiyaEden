@@ -141,6 +141,7 @@
   import { Plus } from '@element-plus/icons-vue'
   import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
   import { resolveAutoSrpModeOnFleetConfigChange } from './autoSrpDefaults'
 
@@ -166,12 +167,6 @@
     strat_op: 'danger',
     cta: 'warning',
     other: 'info'
-  }
-
-  // ─── 时间格式化 ───
-  const formatTime = (v: string) => {
-    if (!v) return '-'
-    return new Date(v).toLocaleString()
   }
 
   // 生成 YYYY-MM-DDTHH:mm:ssZ 格式的本地时间字符串（DatePicker value-format）

@@ -31,7 +31,7 @@ func NewEveInfoService() *EveInfoService {
 type InfoWalletRequest struct {
 	CharacterID int64 `json:"character_id" binding:"required"`
 	Page        int   `json:"page" binding:"required,min=1"`
-	PageSize    int   `json:"page_size" binding:"required,min=1,max=100"`
+	PageSize    int   `json:"page_size" binding:"required,min=1,max=1000"`
 }
 
 // InfoWalletResponse 钱包流水响应

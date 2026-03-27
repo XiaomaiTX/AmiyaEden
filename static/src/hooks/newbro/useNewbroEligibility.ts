@@ -1,9 +1,9 @@
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { formatTime } from '@utils/common'
 import { useMenuStore } from '../../store/modules/menu'
 import { getNewbroIneligibilityReasonKey } from './newbroEligibility'
-import { formatNewbroDateTime } from './useNewbroFormatters'
 
 export function useNewbroEligibility() {
   const { t } = useI18n()
@@ -18,7 +18,7 @@ export function useNewbroEligibility() {
     ElMessage.warning(
       t('newbro.select.currentlyIneligibleWithReason', {
         reason: t(getNewbroIneligibilityReasonKey(state.disqualified_reason)),
-        evaluatedAt: formatNewbroDateTime(state.evaluated_at)
+        evaluatedAt: formatTime(state.evaluated_at)
       })
     )
     await router.replace(menuStore.getHomePath() || '/')

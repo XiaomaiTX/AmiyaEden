@@ -12,6 +12,13 @@ export function fetchMyNewbroAffiliation() {
   })
 }
 
+export function fetchMyAffiliationHistory(params: Api.Common.PaginationParams) {
+  return request.get<Api.Common.PaginatedResponse<Api.Newbro.AffiliationSummary>>({
+    url: '/api/v1/newbro/affiliations/history',
+    params
+  })
+}
+
 export function fetchSelectCaptain(data: Api.Newbro.SelectCaptainParams) {
   return request.post<Api.Newbro.SelectCaptainResponse>({
     url: '/api/v1/newbro/affiliation/select',

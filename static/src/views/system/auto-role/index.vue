@@ -46,7 +46,7 @@
           </ElTableColumn>
           <ElTableColumn :label="t('common.createdAt')" prop="created_at" width="180">
             <template #default="{ row }">
-              {{ formatDate(row.created_at) }}
+              {{ formatTime(row.created_at) }}
             </template>
           </ElTableColumn>
           <ElTableColumn :label="t('common.operation')" width="100" fixed="right">
@@ -110,7 +110,7 @@
           </ElTableColumn>
           <ElTableColumn :label="t('common.createdAt')" prop="created_at" width="180">
             <template #default="{ row }">
-              {{ formatDate(row.created_at) }}
+              {{ formatTime(row.created_at) }}
             </template>
           </ElTableColumn>
           <ElTableColumn :label="t('common.operation')" width="100" fixed="right">
@@ -250,6 +250,7 @@
   import { Plus } from '@element-plus/icons-vue'
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import {
     fetchGetEsiRoleMappings,
     fetchCreateEsiRoleMapping,
@@ -286,18 +287,6 @@
   }
   function getRoleTagType(code: string) {
     return (CODE_TYPE[code] ?? '') as any
-  }
-
-  // ─── 日期格式化 ───
-  function formatDate(dateStr: string) {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleString(undefined, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
 
   // ─── 基础数据 ───

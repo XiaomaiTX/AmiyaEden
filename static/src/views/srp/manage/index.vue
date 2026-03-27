@@ -278,6 +278,7 @@
 
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import {
     ElCard,
     ElTag,
@@ -865,7 +866,6 @@
     }
   }
 
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
   const formatShortTime = (v: string) => {
     if (!v) return '-'
     const d = new Date(v)
