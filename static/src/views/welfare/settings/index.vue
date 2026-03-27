@@ -83,7 +83,7 @@
           />
         </ElFormItem>
         <ElFormItem :label="t('welfareSettings.distMode')" prop="dist_mode">
-          <ElRadioGroup v-model="formData.dist_mode" :disabled="hasMaxCharAge">
+          <ElRadioGroup v-model="formData.dist_mode">
             <ElRadio value="per_user">{{ t('welfareSettings.distModePerUser') }}</ElRadio>
             <ElRadio value="per_character">{{ t('welfareSettings.distModePerCharacter') }}</ElRadio>
           </ElRadioGroup>
@@ -100,7 +100,6 @@
             :placeholder="t('welfareSettings.maxCharAgePlaceholder')"
             controls-position="right"
             style="width: 200px"
-            @change="handleMaxCharAgeChange"
           />
           <div class="text-xs text-gray-400 mt-1">
             {{ t('welfareSettings.maxCharAgeHint') }}
@@ -403,12 +402,6 @@
   const hasMaxCharAge = computed(
     () => formData.max_char_age_months != null && formData.max_char_age_months > 0
   )
-
-  function handleMaxCharAgeChange(val: number | undefined) {
-    if (val != null && val > 0) {
-      formData.dist_mode = 'per_user'
-    }
-  }
 
   const formRules = computed<FormRules>(() => ({
     name: [{ required: true, message: t('welfareSettings.validName'), trigger: 'blur' }],
