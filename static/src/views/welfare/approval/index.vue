@@ -60,11 +60,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTag, ElButton, ElMessage, ElMessageBox, ElEmpty } from 'element-plus'
-  import { CopyDocument } from '@element-plus/icons-vue'
+  import { ElTag, ElMessage, ElMessageBox, ElEmpty } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtCopyCell from '@/components/core/tables/art-copy-cell/index.vue'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListApplications, adminReviewApplication } from '@/api/welfare'
 
@@ -85,16 +85,6 @@
       }) as Record<string, { label: string; type: string }>
   )
 
-  // ─── Copy helper ───
-  const copyText = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      ElMessage.success(t('welfareApproval.copied'))
-    } catch {
-      ElMessage.warning(t('welfareApproval.copyFailed'))
-    }
-  }
-
   // ─── Shared column builders ───
   const buildBaseColumns = () => [
     {
@@ -113,20 +103,7 @@
       prop: 'character_name',
       label: t('welfareApproval.characterName'),
       minWidth: 160,
-      formatter: (row: AppRow) =>
-        h('div', { class: 'flex items-center gap-1' }, [
-          h('span', {}, row.character_name),
-          h(
-            ElButton,
-            {
-              size: 'small',
-              icon: CopyDocument,
-              type: '' as const,
-              onClick: () => copyText(row.character_name)
-            },
-            () => ''
-          )
-        ])
+      formatter: (row: AppRow) => h(ArtCopyCell, { text: row.character_name })
     },
     {
       prop: 'contact',

@@ -30,9 +30,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTag, ElButton, ElInput } from 'element-plus'
+  import { ElTag, ElInput } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
+  import ArtCopyCell from '@/components/core/tables/art-copy-cell/index.vue'
   import { adminListOrderHistory } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
 
@@ -47,6 +48,7 @@
   }
 
   const formatISK = (v: number) => Math.round(v).toLocaleString('en-US')
+
   const formatContact = (row: Order) => {
     if (row.qq) return `QQ: ${row.qq}`
     if (row.discord_id) return `Discord: ${row.discord_id}`
@@ -76,14 +78,16 @@
         {
           prop: 'order_no',
           label: t('shopAdmin.orders.table.orderNo'),
-          width: 120,
-          showOverflowTooltip: true
+          width: 150,
+          showOverflowTooltip: true,
+          formatter: (row: Order) => h(ArtCopyCell, { text: row.order_no })
         },
         {
           prop: 'main_character_name',
           label: t('shopAdmin.orders.table.mainCharacter'),
-          width: 140,
-          showOverflowTooltip: true
+          width: 180,
+          showOverflowTooltip: true,
+          formatter: (row: Order) => h(ArtCopyCell, { text: row.main_character_name })
         },
         {
           prop: 'nickname',

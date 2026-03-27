@@ -33,6 +33,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import {
     fetchGetUserList,
@@ -274,7 +275,7 @@
           label: t('userAdmin.table.lastLogin'),
           width: 180,
           sortable: true,
-          formatter: (row) => row.last_login_at || '-'
+          formatter: (row) => formatTime(row.last_login_at)
         },
         {
           prop: 'last_login_ip',
@@ -286,7 +287,8 @@
           prop: 'created_at',
           label: t('userAdmin.table.registeredAt'),
           width: 180,
-          sortable: true
+          sortable: true,
+          formatter: (row) => formatTime(row.created_at)
         },
         {
           prop: 'operation',
