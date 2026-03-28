@@ -131,6 +131,6 @@ export const systemRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin']
       }
-    },
+    }
   ]
 }
