@@ -80,7 +80,7 @@
             :data="data"
             :columns="columns"
             :pagination="pagination"
-            :pagination-options="{ pageSizes: [200, 500, 1000] }"
+            visual-variant="ledger"
             @pagination:size-change="handleSizeChange"
             @pagination:current-change="handleCurrentChange"
           />
@@ -399,7 +399,7 @@
         {
           prop: 'review_status',
           label: t('srp.manage.columns.review'),
-          width: 60,
+          width: 70,
           formatter: (row: SrpApp) => {
             const tag = h(ElTag, { type: reviewStatusType(row.review_status), size: 'small' }, () =>
               reviewStatusLabel(row.review_status)
@@ -413,7 +413,7 @@
         {
           prop: 'payout_status',
           label: t('srp.manage.columns.payout'),
-          width: 60,
+          width: 70,
           formatter: (row: SrpApp) =>
             h(ElTag, { type: payoutStatusType(row.payout_status), size: 'small' }, () =>
               row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')

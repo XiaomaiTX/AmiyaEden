@@ -64,7 +64,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
-        :pagination-options="{ pageSizes: [200, 500, 1000] }"
+        visual-variant="ledger"
         :empty-text="$t('info.noJournalData')"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"

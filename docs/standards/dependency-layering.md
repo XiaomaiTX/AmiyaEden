@@ -25,15 +25,27 @@ model → repository → service → handler → router/middleware
 
 ### Backend Rules
 
-| Layer | May Import | Must Not Import |
-| --- | --- | --- |
-| `model` | standard library, GORM tags | `repository`, `service`, `handler`, `router`, `middleware` |
-| `repository` | `model`, standard library, GORM, `pkg/*` | `service`, `handler`, `router`, `middleware` |
-| `service` | `model`, `repository`, `pkg/*`, other services | `handler`, `router`, `middleware` |
-| `handler` | `service`, `model` (for request/response types), `pkg/response` | `repository` directly |
-| `router` | `handler`, `middleware`, `service` (for DI) | `repository` directly |
-| `middleware` | `model` (for role constants), `pkg/*`, `service` (for auth) | `handler`, `repository` directly |
-| `pkg/*` | standard library, external packages | `internal/*` |
+- `model`
+  may import: standard library, GORM tags
+  must not import: `repository`, `service`, `handler`, `router`, `middleware`
+- `repository`
+  may import: `model`, standard library, GORM, `pkg/*`
+  must not import: `service`, `handler`, `router`, `middleware`
+- `service`
+  may import: `model`, `repository`, `pkg/*`, other services
+  must not import: `handler`, `router`, `middleware`
+- `handler`
+  may import: `service`, `model` for request or response types, `pkg/response`
+  must not import: `repository` directly
+- `router`
+  may import: `handler`, `middleware`, `service` for DI
+  must not import: `repository` directly
+- `middleware`
+  may import: `model` for role constants, `pkg/*`, `service` for auth
+  must not import: `handler`, `repository` directly
+- `pkg/*`
+  may import: standard library, external packages
+  must not import: `internal/*`
 
 ### Handler Input Parsing
 
@@ -54,46 +66,11 @@ if err != nil || id > math.MaxUint32 {
 typedID := uint(id)
 ```
 
-### Backend Common Violations
+### Backend Fast Rules
 
-**Handler importing repository:**
-
-```go
-// WRONG — handler reaching past service into repository
-func (h *FleetHandler) List(c *gin.Context) {
-    fleets, err := h.repo.ListFleets(params)  // violation
-}
-
-// CORRECT — handler calls service
-func (h *FleetHandler) List(c *gin.Context) {
-    fleets, err := h.service.ListFleets(params)
-}
-```
-
-**Repository containing business logic:**
-
-```go
-// WRONG — authorization decision in repository
-func (r *UserRepo) GetUser(id uint, requesterRole string) (*model.User, error) {
-    if requesterRole != "admin" {  // violation: business logic
-        return nil, errors.New("forbidden")
-    }
-}
-
-// CORRECT — repository does data access, service does authorization
-func (r *UserRepo) GetUser(id uint) (*model.User, error) {
-    // pure data access
-}
-```
-
-**Model importing service:**
-
-```go
-// WRONG — model depending on service layer
-import "amiya-eden/internal/service"
-
-// CORRECT — model has zero internal dependencies
-```
+- `handler` must call `service`, not `repository`
+- `repository` must stay data-access only; authorization and orchestration belong in `service`
+- `model` must not depend on higher internal layers
 
 ## Frontend Dependency Direction
 
@@ -103,79 +80,63 @@ types → api → hooks/store → components → views
 
 ### Frontend Rules
 
-| Layer | May Import | Must Not Import |
-| --- | --- | --- |
-| `types/` | nothing (pure type definitions) | `api/`, `hooks/`, `store/`, `components/`, `views/` |
-| `api/` | `types/`, HTTP client utilities | `hooks/`, `store/`, `components/`, `views/` |
-| `hooks/` | `types/`, `api/`, `store/`, other hooks | `views/`, `components/` (specific ones) |
-| `store/` | `types/`, `api/`, `hooks/` | `views/`, `components/` |
-| `components/` | `types/`, `hooks/`, `store/`, other components | `views/`, `api/` directly (should go through hooks) |
-| `views/` | all layers above | should not be imported by others |
+- `types/`
+  may import: nothing; pure type definitions only
+  must not import: `api/`, `hooks/`, `store/`, `components/`, `views/`
+- `api/`
+  may import: `types/`, HTTP client utilities
+  must not import: `hooks/`, `store/`, `components/`, `views/`
+- `hooks/`
+  may import: `types/`, `api/`, `store/`, other hooks
+  must not import: `views/`, feature-specific `components/`
+- `store/`
+  may import: `types/`, `api/`, `hooks/`
+  must not import: `views/`, `components/`
+- `components/`
+  may import: `types/`, `hooks/`, `store/`, other components
+  must not import: `views/`, `api/` directly
+- `views/`
+  may import: all layers above
+  must not be imported by other application layers
 
-### Frontend Common Violations
+### Frontend Fast Rules
 
-**View calling fetch directly:**
-
-```typescript
-// WRONG — view making HTTP calls
-const response = await axios.get('/api/v1/fleets')
-
-// CORRECT — view calls API wrapper
-import { getFleets } from '@/api/fleet'
-const response = await getFleets(params)
-```
-
-**API layer importing from views:**
-
-```typescript
-// WRONG — circular dependency
-import { FleetFormData } from '@/views/operation/fleets/types'
-
-// CORRECT — shared types live in types/
-import type { Api } from '@/types/api/api'
-```
+- `views` must not make direct HTTP calls; use `api/`
+- shared contracts must live in `types/`, not under `views/`
+- `components` should reach backend data through hooks or store, not direct `api/` imports
 
 ## Cross-Boundary Rules
 
 ### Backend ↔ Frontend Contract
 
-When a backend response shape changes:
-
-1. Backend: update handler response / request shape
-2. Backend: update service if needed
-3. Frontend: update `static/src/api/*.ts`
-4. Frontend: update `static/src/types/api/api.d.ts`
-5. Frontend: update consuming views/components
-
-Field names in backend JSON tags must match frontend type definitions exactly. Do not silently rename across the boundary.
+- change order:
+  1. backend request or response shape
+  2. backend service logic if needed
+  3. frontend `static/src/api/*.ts`
+  4. frontend `static/src/types/api/api.d.ts`
+  5. consuming views or components
+- backend JSON field names must match frontend type definitions exactly
+- do not silently rename fields across the boundary
 
 ### Infrastructure Layer (`pkg/*`)
 
-`pkg/*` provides shared utilities (JWT, ESI client, response helpers) to `internal/*`. It must never import from `internal/*`. If `pkg` code needs internal types, either:
+`pkg/*` is shared infrastructure for `internal/*`.
 
-- Define the types in `pkg` and have `internal` use them
-- Use interfaces for dependency injection (as done with ESI queue)
+- `pkg/*` must never import from `internal/*`
+- if shared code needs types used by `internal/*`, move the types into `pkg/*` or use interfaces for DI
 
 ## Enforcement
 
-### Current Mechanism
+- enforce through code review, agent verification, and `docs/standards/pre-completion-checklist.md`
+- if a violation is in code you are already touching, fix it in the same change
+- if a violation is unrelated, note it but do not broaden scope
+- never introduce a new layering violation
 
-Enforcement is through code review, agent verification, and the pre-completion protocol (see "Verification and Completion" in `docs/ai/repo-rules.md` and `docs/standards/pre-completion-checklist.md`).
+## Submission Check
 
-### What To Do When You Find a Violation
-
-1. Flag the violation in your change summary
-2. If the violation is in code you're modifying, fix it as part of your change
-3. If the violation is in unrelated code, note it but do not fix it (scoped changes rule)
-4. Do not introduce new violations under any circumstances
-
-## Pre-Submission Check
-
-Before submitting a change:
-
-- [ ] No new imports from a lower layer to a higher layer
-- [ ] `handler` does not import `repository`
-- [ ] `repository` does not contain business logic
-- [ ] `views` do not call HTTP directly
-- [ ] `types/` has no imports from other application layers
-- [ ] `pkg/*` does not import `internal/*`
+- no new imports from a lower layer to a higher layer
+- `handler` does not import `repository`
+- `repository` does not contain business logic
+- `views` do not call HTTP directly
+- `types/` has no imports from application layers
+- `pkg/*` does not import `internal/*`

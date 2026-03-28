@@ -35,75 +35,16 @@
             </div>
           </template>
 
-          <ElTable :data="captains" v-loading="loadingCaptains" stripe border>
-            <ElTableColumn
-              prop="captain_character_name"
-              :label="t('newbro.common.captain')"
-              min-width="240"
-            >
-              <template #default="{ row }">
-                <span class="font-medium">{{ row.captain_character_name }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="captain_nickname"
-              :label="t('newbro.manage.nicknameColumn')"
-              min-width="140"
-            />
-            <ElTableColumn
-              prop="active_player_count"
-              :label="t('newbro.manage.activeNewbroCount')"
-              width="140"
-            />
-            <ElTableColumn
-              prop="historical_player_count"
-              :label="t('newbro.manage.historicalNewbroCount')"
-              width="140"
-            />
-            <ElTableColumn
-              prop="attributed_bounty_total"
-              :label="t('newbro.captain.totalBounty')"
-              width="160"
-            >
-              <template #default="{ row }">{{ formatIsk(row.attributed_bounty_total) }}</template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="attribution_record_count"
-              :label="t('newbro.captain.recordCount')"
-              width="120"
-            />
-            <ElTableColumn :label="$t('common.operation')" width="120" fixed="right">
-              <template #default="{ row }">
-                <ElButton link type="primary" @click="showDetail(row.captain_user_id)">
-                  {{ t('newbro.manage.viewDetail') }}
-                </ElButton>
-              </template>
-            </ElTableColumn>
-          </ElTable>
-
-          <div class="flex justify-end mt-4">
-            <ElPagination
-              background
-              layout="sizes, prev, pager, next"
-              :page-sizes="[200, 500, 1000]"
-              :current-page="page.current"
-              :page-size="page.size"
-              :total="page.total"
-              @size-change="
-                (value: number) => {
-                  page.size = value
-                  page.current = 1
-                  loadCaptains()
-                }
-              "
-              @current-change="
-                (value: number) => {
-                  page.current = value
-                  loadCaptains()
-                }
-              "
-            />
-          </div>
+          <ArtTable
+            :loading="loadingCaptains"
+            :data="captains"
+            :columns="captainColumns"
+            :pagination="page"
+            visual-variant="ledger"
+            :show-table-header="false"
+            @pagination:size-change="handleCaptainSizeChange"
+            @pagination:current-change="handleCaptainCurrentChange"
+          />
         </ElCard>
 
         <ElCard v-if="detail" shadow="never">
@@ -216,77 +157,16 @@
         </div>
 
         <ElCard shadow="never">
-          <ElTable :data="rewardRows" v-loading="loadingRewards" stripe border>
-            <ElTableColumn
-              prop="captain_character_name"
-              :label="t('newbro.common.captain')"
-              min-width="180"
-            />
-            <ElTableColumn
-              prop="captain_nickname"
-              :label="t('newbro.manage.captainNicknameColumn')"
-              min-width="140"
-            >
-              <template #default="{ row }">
-                <span :class="row.captain_nickname ? '' : 'text-gray-400'">
-                  {{ row.captain_nickname || '-' }}
-                </span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="processed_at" :label="t('newbro.common.processedAt')" width="180">
-              <template #default="{ row }">{{ formatDateTime(row.processed_at) }}</template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="attribution_count"
-              :label="t('newbro.manage.rewardAttributionCount')"
-              width="160"
-            />
-            <ElTableColumn
-              prop="attributed_isk_total"
-              :label="t('newbro.manage.rewardAttributedTotal')"
-              width="180"
-            >
-              <template #default="{ row }">{{ formatIsk(row.attributed_isk_total) }}</template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="bonus_rate"
-              :label="t('newbro.manage.rewardBonusRate')"
-              width="140"
-            >
-              <template #default="{ row }">{{ formatPercentage(row.bonus_rate) }}</template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="credited_value"
-              :label="t('newbro.manage.rewardCreditedValue')"
-              width="160"
-            >
-              <template #default="{ row }">{{ formatCredit(row.credited_value) }}</template>
-            </ElTableColumn>
-          </ElTable>
-
-          <div class="flex justify-end mt-4">
-            <ElPagination
-              background
-              layout="sizes, prev, pager, next"
-              :page-sizes="[200, 500, 1000]"
-              :current-page="rewardPage.current"
-              :page-size="rewardPage.size"
-              :total="rewardPage.total"
-              @size-change="
-                (value: number) => {
-                  rewardPage.size = value
-                  rewardPage.current = 1
-                  loadRewards()
-                }
-              "
-              @current-change="
-                (value: number) => {
-                  rewardPage.current = value
-                  loadRewards()
-                }
-              "
-            />
-          </div>
+          <ArtTable
+            :loading="loadingRewards"
+            :data="rewardRows"
+            :columns="rewardColumns"
+            :pagination="rewardPage"
+            visual-variant="ledger"
+            :show-table-header="false"
+            @pagination:size-change="handleRewardSizeChange"
+            @pagination:current-change="handleRewardCurrentChange"
+          />
         </ElCard>
       </ElTabPane>
 
@@ -330,93 +210,16 @@
         </ElCard>
 
         <ElCard shadow="never">
-          <ElTable :data="historyRows" v-loading="loadingHistory" stripe border>
-            <ElTableColumn
-              prop="captain_character_name"
-              :label="t('newbro.common.captain')"
-              min-width="180"
-            />
-            <ElTableColumn
-              prop="captain_user_id"
-              :label="t('newbro.manage.historyCaptainUserId')"
-              width="140"
-            />
-            <ElTableColumn
-              prop="captain_nickname"
-              :label="t('newbro.manage.captainNicknameColumn')"
-              min-width="140"
-            >
-              <template #default="{ row }">
-                <span :class="row.captain_nickname ? '' : 'text-gray-400'">
-                  {{ row.captain_nickname || '-' }}
-                </span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="player_character_name"
-              :label="t('newbro.manage.newbroColumn')"
-              min-width="180"
-            />
-            <ElTableColumn
-              prop="player_character_id"
-              :label="t('newbro.manage.historyPlayerCharacterId')"
-              width="150"
-            />
-            <ElTableColumn
-              prop="player_nickname"
-              :label="t('newbro.manage.newbroNicknameColumn')"
-              min-width="140"
-            >
-              <template #default="{ row }">
-                <span :class="row.player_nickname ? '' : 'text-gray-400'">
-                  {{ row.player_nickname || '-' }}
-                </span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn
-              prop="changed_by_character_name"
-              :label="t('newbro.manage.changedByCharacterColumn')"
-              min-width="180"
-            >
-              <template #default="{ row }">
-                <span :class="row.changed_by_character_name ? '' : 'text-gray-400'">
-                  {{ row.changed_by_character_name || '-' }}
-                </span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="started_at" :label="t('newbro.common.startedAt')" width="180">
-              <template #default="{ row }">{{ formatDateTime(row.started_at) }}</template>
-            </ElTableColumn>
-            <ElTableColumn prop="ended_at" :label="t('newbro.common.endedAt')" width="180">
-              <template #default="{ row }">{{
-                row.ended_at ? formatDateTime(row.ended_at) : '-'
-              }}</template>
-            </ElTableColumn>
-          </ElTable>
-
-          <div class="flex justify-end mt-4">
-            <ElPagination
-              background
-              layout="sizes, prev, pager, next"
-              :page-sizes="[200, 500, 1000]"
-              :current-page="historyPage.current"
-              :page-size="historyPage.size"
-              :total="historyPage.total"
-              @size-change="
-                (value: number) => {
-                  historyPage.size = value
-                  historyPage.current = 1
-                  loadHistory()
-                }
-              "
-              @current-change="
-                (value: number) => {
-                  historyPage.current = value
-                  loadHistory()
-                }
-              "
-            />
-          </div>
+          <ArtTable
+            :loading="loadingHistory"
+            :data="historyRows"
+            :columns="historyColumns"
+            :pagination="historyPage"
+            visual-variant="ledger"
+            :show-table-header="false"
+            @pagination:size-change="handleHistorySizeChange"
+            @pagination:current-change="handleHistoryCurrentChange"
+          />
         </ElCard>
       </ElTabPane>
     </ElTabs>
@@ -424,6 +227,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { ColumnOption } from '@/types/component'
   import { useI18n } from 'vue-i18n'
   import {
     fetchAdminAffiliationHistory,
@@ -466,6 +270,156 @@
     playerSearch: '',
     dateRange: [] as string[]
   })
+
+  const captainColumns = computed<ColumnOption<Api.Newbro.CaptainOverview>[]>(() => [
+    {
+      prop: 'captain_character_name',
+      label: t('newbro.common.captain'),
+      minWidth: 240,
+      formatter: (row) => h('span', { class: 'font-medium' }, row.captain_character_name)
+    },
+    {
+      prop: 'captain_nickname',
+      label: t('newbro.manage.nicknameColumn'),
+      minWidth: 140
+    },
+    {
+      prop: 'active_player_count',
+      label: t('newbro.manage.activeNewbroCount'),
+      width: 140
+    },
+    {
+      prop: 'historical_player_count',
+      label: t('newbro.manage.historicalNewbroCount'),
+      width: 140
+    },
+    {
+      prop: 'attributed_bounty_total',
+      label: t('newbro.captain.totalBounty'),
+      width: 160,
+      formatter: (row) => formatIsk(row.attributed_bounty_total)
+    },
+    {
+      prop: 'attribution_record_count',
+      label: t('newbro.captain.recordCount'),
+      width: 120
+    },
+    {
+      label: t('common.operation'),
+      width: 120,
+      fixed: 'right',
+      formatter: (row) =>
+        h(
+          ElButton,
+          {
+            link: true,
+            type: 'primary',
+            onClick: () => showDetail(row.captain_user_id)
+          },
+          () => t('newbro.manage.viewDetail')
+        )
+    }
+  ])
+
+  const rewardColumns = computed<ColumnOption<Api.Newbro.CaptainRewardSettlementItem>[]>(() => [
+    { prop: 'captain_character_name', label: t('newbro.common.captain'), minWidth: 180 },
+    {
+      prop: 'captain_nickname',
+      label: t('newbro.manage.captainNicknameColumn'),
+      minWidth: 140,
+      formatter: (row) =>
+        h(
+          'span',
+          { class: row.captain_nickname ? '' : 'text-gray-400' },
+          row.captain_nickname || '-'
+        )
+    },
+    {
+      prop: 'processed_at',
+      label: t('newbro.common.processedAt'),
+      width: 180,
+      formatter: (row) => formatDateTime(row.processed_at)
+    },
+    {
+      prop: 'attribution_count',
+      label: t('newbro.manage.rewardAttributionCount'),
+      width: 160
+    },
+    {
+      prop: 'attributed_isk_total',
+      label: t('newbro.manage.rewardAttributedTotal'),
+      width: 180,
+      formatter: (row) => formatIsk(row.attributed_isk_total)
+    },
+    {
+      prop: 'bonus_rate',
+      label: t('newbro.manage.rewardBonusRate'),
+      width: 140,
+      formatter: (row) => formatPercentage(row.bonus_rate)
+    },
+    {
+      prop: 'credited_value',
+      label: t('newbro.manage.rewardCreditedValue'),
+      width: 160,
+      formatter: (row) => formatCredit(row.credited_value)
+    }
+  ])
+
+  const historyColumns = computed<ColumnOption<Api.Newbro.AdminAffiliationHistoryItem>[]>(() => [
+    { prop: 'captain_character_name', label: t('newbro.common.captain'), minWidth: 180 },
+    {
+      prop: 'captain_user_id',
+      label: t('newbro.manage.historyCaptainUserId'),
+      width: 140
+    },
+    {
+      prop: 'captain_nickname',
+      label: t('newbro.manage.captainNicknameColumn'),
+      minWidth: 140,
+      formatter: (row) =>
+        h(
+          'span',
+          { class: row.captain_nickname ? '' : 'text-gray-400' },
+          row.captain_nickname || '-'
+        )
+    },
+    { prop: 'player_character_name', label: t('newbro.manage.newbroColumn'), minWidth: 180 },
+    {
+      prop: 'player_character_id',
+      label: t('newbro.manage.historyPlayerCharacterId'),
+      width: 150
+    },
+    {
+      prop: 'player_nickname',
+      label: t('newbro.manage.newbroNicknameColumn'),
+      minWidth: 140,
+      formatter: (row) =>
+        h('span', { class: row.player_nickname ? '' : 'text-gray-400' }, row.player_nickname || '-')
+    },
+    {
+      prop: 'changed_by_character_name',
+      label: t('newbro.manage.changedByCharacterColumn'),
+      minWidth: 180,
+      formatter: (row) =>
+        h(
+          'span',
+          { class: row.changed_by_character_name ? '' : 'text-gray-400' },
+          row.changed_by_character_name || '-'
+        )
+    },
+    {
+      prop: 'started_at',
+      label: t('newbro.common.startedAt'),
+      width: 180,
+      formatter: (row) => formatDateTime(row.started_at)
+    },
+    {
+      prop: 'ended_at',
+      label: t('newbro.common.endedAt'),
+      width: 180,
+      formatter: (row) => (row.ended_at ? formatDateTime(row.ended_at) : '-')
+    }
+  ])
 
   const loadCaptains = async () => {
     loadingCaptains.value = true
@@ -535,15 +489,48 @@
     await loadCaptains()
   }
 
+  const handleCaptainCurrentChange = async (value: number) => {
+    page.current = value
+    await loadCaptains()
+  }
+
+  const handleCaptainSizeChange = async (value: number) => {
+    page.size = value
+    page.current = 1
+    await loadCaptains()
+  }
+
   const handleHistorySearch = async () => {
     historyPage.current = 1
     await loadHistory()
+  }
+
+  const handleRewardCurrentChange = async (value: number) => {
+    rewardPage.current = value
+    await loadRewards()
+  }
+
+  const handleRewardSizeChange = async (value: number) => {
+    rewardPage.size = value
+    rewardPage.current = 1
+    await loadRewards()
   }
 
   const handleHistoryReset = async () => {
     historyFilters.captainSearch = ''
     historyFilters.playerSearch = ''
     historyFilters.dateRange = []
+    historyPage.current = 1
+    await loadHistory()
+  }
+
+  const handleHistoryCurrentChange = async (value: number) => {
+    historyPage.current = value
+    await loadHistory()
+  }
+
+  const handleHistorySizeChange = async (value: number) => {
+    historyPage.size = value
     historyPage.current = 1
     await loadHistory()
   }
