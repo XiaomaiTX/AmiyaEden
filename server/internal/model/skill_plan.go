@@ -8,6 +8,7 @@ type SkillPlan struct {
 	Title       string    `gorm:"size:256;not null"  json:"title"`
 	Description string    `gorm:"type:text"          json:"description"`
 	ShipTypeID  *int      `gorm:"index"              json:"ship_type_id"`
+	SortOrder   int       `gorm:"default:0"          json:"sort_order"`
 	CreatedBy   uint      `gorm:"not null;index"     json:"created_by"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"     json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"     json:"updated_at"`

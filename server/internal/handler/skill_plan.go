@@ -123,6 +123,22 @@ func (h *SkillPlanHandler) DeleteSkillPlan(c *gin.Context) {
 	response.OK(c, nil)
 }
 
+// ReorderSkillPlans PUT /skill-planning/skill-plans/reorder
+func (h *SkillPlanHandler) ReorderSkillPlans(c *gin.Context) {
+	var req struct {
+		IDs []uint `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	if err := h.svc.ReorderSkillPlans(req.IDs, middleware.GetUserRoles(c)); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
 // GetCheckSelection 获取当前用户保存的检查角色选择
 func (h *SkillPlanHandler) GetCheckSelection(c *gin.Context) {
 	result, err := h.svc.GetCheckSelection(middleware.GetUserID(c))

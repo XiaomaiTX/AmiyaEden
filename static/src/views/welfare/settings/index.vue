@@ -8,6 +8,9 @@
             <ElButton type="success" :icon="Plus" @click="openCreateDialog">{{
               t('welfareSettings.create')
             }}</ElButton>
+            <ElTag v-if="reorderSaving" type="info" size="small">{{
+              t('welfareSettings.reorderSaving')
+            }}</ElTag>
             <ElInput
               v-model="nameFilter"
               :placeholder="t('welfareSettings.filterName')"
@@ -32,10 +35,12 @@
       </ArtTableHeader>
 
       <ArtTable
+        ref="tableRef"
         :loading="loading"
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        row-key="id"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -173,6 +178,17 @@
             <ElOption :label="t('welfareSettings.statusDisabled')" :value="0" />
           </ElSelect>
         </ElFormItem>
+        <ElFormItem :label="t('welfareSettings.sortOrder')">
+          <ElInputNumber
+            v-model="formData.sort_order"
+            :min="0"
+            :step="1"
+            :precision="0"
+            controls-position="right"
+            style="width: 200px"
+          />
+          <div class="text-xs text-gray-400 mt-1">{{ t('welfareSettings.sortOrderHint') }}</div>
+        </ElFormItem>
       </ElForm>
       <template #footer>
         <ElButton @click="dialogVisible = false">{{ t('common.cancel') }}</ElButton>
@@ -201,6 +217,7 @@
   } from 'element-plus'
   import type { FormInstance, FormRules, UploadRawFile } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
+  import { useDraggable } from 'vue-draggable-plus'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import {
     adminListWelfares,
@@ -208,6 +225,7 @@
     adminUpdateWelfare,
     adminDeleteWelfare,
     adminImportWelfareRecords,
+    adminReorderWelfares,
     uploadWelfareEvidence
   } from '@/api/welfare'
   import { fetchSkillPlanList } from '@/api/skill-plan'
@@ -256,8 +274,22 @@
   } = useTable({
     core: {
       apiFn: adminListWelfares,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 50 },
       columnsFactory: () => [
+        {
+          prop: 'drag',
+          label: '',
+          width: 40,
+          formatter: () =>
+            h(
+              'span',
+              {
+                class: 'drag-handle cursor-grab text-gray-400 hover:text-gray-600 select-none',
+                title: t('welfareSettings.dragHint')
+              },
+              '⠿'
+            )
+        },
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'name',
@@ -396,7 +428,8 @@
     minimum_pap: undefined as number | undefined,
     require_evidence: false,
     example_evidence: '',
-    status: 1 as number
+    status: 1 as number,
+    sort_order: 0
   })
 
   const exampleEvidenceUploading = ref(false)
@@ -446,7 +479,8 @@
       minimum_pap: undefined,
       require_evidence: false,
       example_evidence: '',
-      status: 1
+      status: 1,
+      sort_order: 0
     })
     editingItem.value = null
   }
@@ -469,7 +503,8 @@
       minimum_pap: row.minimum_pap ?? undefined,
       require_evidence: row.require_evidence ?? false,
       example_evidence: row.example_evidence ?? '',
-      status: row.status
+      status: row.status,
+      sort_order: row.sort_order ?? 0
     })
     loadSkillPlans()
     dialogVisible.value = true
@@ -551,5 +586,31 @@
     }
   }
 
-  // ─── Helpers ───
+  // ─── Drag-and-drop reordering ───
+  const tableRef = ref<any>()
+  const reorderSaving = ref(false)
+
+  const { start: startDraggable } = useDraggable<WelfareItem>(null, data, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: async () => {
+      reorderSaving.value = true
+      try {
+        await adminReorderWelfares(data.value.map((row) => row.id))
+      } catch (e: any) {
+        ElMessage.error(e?.message ?? t('welfareSettings.reorderFailed'))
+      } finally {
+        reorderSaving.value = false
+      }
+    }
+  })
+
+  onMounted(() => {
+    nextTick(() => {
+      const tbody = tableRef.value?.$el?.querySelector(
+        '.el-table__body tbody'
+      ) as HTMLElement | null
+      if (tbody) startDraggable(tbody)
+    })
+  })
 </script>

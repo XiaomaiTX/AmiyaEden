@@ -173,7 +173,7 @@ declare namespace Api {
 
     /** 用户搜索参数 */
     type UserSearchParams = Partial<{
-      nickname: string
+      keyword: string
       status: number
     }> &
       Partial<Api.Common.CommonSearchParams>
@@ -628,6 +628,7 @@ declare namespace Api {
       title: string
       description: string
       ship_type_id: number | null
+      sort_order: number
       created_by: number
       created_at: string
       updated_at: string
@@ -652,6 +653,7 @@ declare namespace Api {
       description: string
       ship_type_id: number | null
       ship_name: string
+      sort_order: number
       created_by: number
       created_at: string
       updated_at: string
@@ -680,6 +682,7 @@ declare namespace Api {
       title: string
       description?: string
       ship_type_id?: number
+      sort_order?: number
       skills?: SkillRequirementParams[]
       skills_text?: string
     }
@@ -689,6 +692,7 @@ declare namespace Api {
       title: string
       description?: string
       ship_type_id?: number
+      sort_order?: number
       skills?: SkillRequirementParams[]
       skills_text?: string
     }
@@ -988,6 +992,7 @@ declare namespace Api {
       require_evidence: boolean
       example_evidence: string
       status: number
+      sort_order: number
       created_by: number
       created_at: string
       updated_at: string
@@ -1005,6 +1010,7 @@ declare namespace Api {
       require_evidence?: boolean
       example_evidence?: string
       status?: number
+      sort_order?: number
     }
 
     /** 更新福利请求 */
@@ -1020,6 +1026,7 @@ declare namespace Api {
       require_evidence?: boolean
       example_evidence?: string
       status?: number
+      sort_order?: number
     }
 
     /** 福利查询参数 */
