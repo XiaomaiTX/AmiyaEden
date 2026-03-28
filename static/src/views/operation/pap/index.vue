@@ -97,7 +97,7 @@
               v-model:page-size="papPageSize"
               :page-sizes="[50, 100, 200]"
               :total="papLogs.length"
-              layout="total, sizes, prev, pager, next"
+              layout="total, sizes, prev, pager, next, jumper"
               background
               small
             />
@@ -238,7 +238,7 @@
               v-model:page-size="alliancePageSize"
               :page-sizes="[50, 100, 200]"
               :total="allianceFleets.length"
-              layout="total, sizes, prev, pager, next"
+              layout="total, sizes, prev, pager, next, jumper"
               background
               small
             />

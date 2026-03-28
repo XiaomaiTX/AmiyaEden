@@ -13,7 +13,7 @@ export function fetchMyWallet() {
 export function fetchMyWalletTransactions(data?: Partial<Api.Common.CommonSearchParams>) {
   return request.post<Api.Common.PaginatedResponse<Api.SysWallet.WalletTransaction>>({
     url: '/api/v1/shop/wallet/my/transactions',
-    data: data ?? { current: 1, size: 20 }
+    data: data ?? { current: 1, size: 200 }
   })
 }
 
@@ -23,7 +23,7 @@ export function fetchMyWalletTransactions(data?: Partial<Api.Common.CommonSearch
 export function adminListWallets(data?: Partial<Api.Common.CommonSearchParams>) {
   return request.post<Api.Common.PaginatedResponse<Api.SysWallet.Wallet>>({
     url: '/api/v1/system/wallet/list',
-    data: data ?? { current: 1, size: 20 }
+    data: data ?? { current: 1, size: 200 }
   })
 }
 
@@ -55,6 +55,6 @@ export function adminListTransactions(data?: Api.SysWallet.TransactionSearchPara
 export function adminListWalletLogs(data?: Api.SysWallet.LogSearchParams) {
   return request.post<Api.Common.PaginatedResponse<Api.SysWallet.WalletLog>>({
     url: '/api/v1/system/wallet/logs',
-    data: data ?? { current: 1, size: 20 }
+    data: data ?? { current: 1, size: 200 }
   })
 }

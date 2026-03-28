@@ -27,7 +27,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
-        :pagination-options="{ pageSizes: [200, 500, 1000] }"
+        visual-variant="ledger"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
