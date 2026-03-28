@@ -90,11 +90,10 @@ func parseOptionalUintQueryParam(field, raw string) (*uint, error) {
 	if raw == "" {
 		return nil, nil
 	}
-	parsed, err := strconv.ParseUint(raw, 10, 64)
+	value, err := parseUintValue(raw, field)
 	if err != nil {
 		return nil, fmt.Errorf("invalid parameter %s", field)
 	}
-	value := uint(parsed)
 	return &value, nil
 }
 
