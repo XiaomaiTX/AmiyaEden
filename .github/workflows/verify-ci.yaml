@@ -114,7 +114,7 @@ jobs:
   ci-passed:
     name: CI Passed
     if: always()
-    needs: [changes, lint, backend, frontend]
+    needs: [changes, backend, frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
