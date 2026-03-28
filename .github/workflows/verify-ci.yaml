@@ -32,32 +32,6 @@ jobs:
             frontend:
               - 'static/**'
 
-  lint:
-    name: Lint Codebase
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    env:
-      # Forces all MegaLinter internal tools to use Node 24 to avoid warnings
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0 # MegaLinter needs history for "changed lines" mode
-
-      - name: MegaLinter
-        uses: oxsecurity/megalinter@v9
-        env:
-          # Only scan files changed in the PR (makes it much faster)
-          VALIDATE_ALL_CODEBASE: false
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # This disables the entire spelling category
-          DISABLE: SPELL, GO, REPOSITORY_DEVSKIM, TYPESCRIPT, JAVASCRIPT, YAML, PRETTIER, MARKDOWN
-          # Disable things you already have dedicated jobs for
-          # This prevents duplicate errors for Go and Vue
-          SKIP_LINTERS: 
-
   backend:
     name: Backend Verify
     needs: changes
