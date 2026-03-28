@@ -44,11 +44,16 @@
   // 表单配置
   const formItems = computed(() => [
     {
-      label: t('userAdmin.search.nickname'),
-      key: 'nickname',
+      label: t('userAdmin.search.keyword'),
+      key: 'keyword',
       type: 'input',
-      placeholder: t('userAdmin.search.nicknamePlaceholder'),
-      clearable: true
+      props: {
+        placeholder: t('userAdmin.search.keywordPlaceholder'),
+        clearable: true,
+        onKeyup: (e: KeyboardEvent) => {
+          if (e.key === 'Enter') handleSearch()
+        }
+      }
     },
     {
       label: t('common.status'),

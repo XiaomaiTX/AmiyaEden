@@ -15,6 +15,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        :pagination-options="{ pageSizes: [200, 500, 1000] }"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       >
@@ -64,7 +65,7 @@
 
   // 搜索表单
   const searchForm = ref({
-    nickname: undefined,
+    keyword: undefined,
     status: undefined
   })
 
@@ -205,8 +206,9 @@
       apiFn: fetchGetUserList,
       apiParams: {
         current: 1,
-        size: 20,
-        ...searchForm.value
+        size: 200,
+        keyword: searchForm.value.keyword,
+        status: searchForm.value.status
       },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },

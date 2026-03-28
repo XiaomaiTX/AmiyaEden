@@ -53,6 +53,18 @@
         </div>
       </ElFormItem>
 
+      <ElFormItem v-if="editing" :label="$t('skillPlan.sortOrder')">
+        <ElInputNumber
+          v-model="formData.sortOrder"
+          :min="0"
+          :step="1"
+          :precision="0"
+          controls-position="right"
+          style="width: 160px"
+        />
+        <div class="skills-text-hint">{{ $t('skillPlan.sortOrderHint') }}</div>
+      </ElFormItem>
+
       <ElFormItem :label="$t('skillPlan.fields.skillsText')">
         <ElInput
           v-model="formData.skillsText"
@@ -133,7 +145,7 @@
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
   import { useUserStore } from '@/store/modules/user'
   import { Delete, Plus } from '@element-plus/icons-vue'
-  import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+  import { ElInputNumber, ElMessage, type FormInstance, type FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   interface SkillFormItem {
@@ -173,7 +185,8 @@
     shipGroupName: '',
     shipInitialOption: null as Api.Sde.FuzzySearchItem | null,
     skillsText: '',
-    skills: [] as SkillFormItem[]
+    skills: [] as SkillFormItem[],
+    sortOrder: 0
   })
 
   const formRules: FormRules = {
@@ -217,6 +230,7 @@
     formData.shipTypeId = props.editing?.ship_type_id ?? null
     formData.shipName = props.editing?.ship_name ?? ''
     formData.shipGroupName = ''
+    formData.sortOrder = props.editing?.sort_order ?? 0
     formData.shipInitialOption = props.editing?.ship_type_id
       ? {
           id: props.editing.ship_type_id,
@@ -274,6 +288,7 @@
       title: formData.title.trim(),
       description: formData.description.trim(),
       ship_type_id: formData.shipTypeId ?? undefined,
+      sort_order: formData.sortOrder,
       skills_text: formData.skillsText.trim() || undefined,
       skills: usesTextInput.value
         ? undefined

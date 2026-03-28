@@ -78,6 +78,7 @@ type AdminUpdateWelfareRequest struct {
 	RequireEvidence  bool   `json:"require_evidence"`
 	ExampleEvidence  string `json:"example_evidence"`
 	Status           int8   `json:"status"`
+	SortOrder        *int   `json:"sort_order"`
 }
 
 // AdminUpdateWelfare 更新福利
@@ -106,6 +107,9 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	w.RequireEvidence = req.RequireEvidence
 	w.ExampleEvidence = req.ExampleEvidence
 	w.Status = req.Status
+	if req.SortOrder != nil {
+		w.SortOrder = *req.SortOrder
+	}
 
 	if err := s.repo.UpdateWelfare(w); err != nil {
 		return nil, err
@@ -153,6 +157,18 @@ func (s *WelfareService) AdminListWelfares(page, pageSize int, filter repository
 		pageSize = 20
 	}
 	return s.repo.ListWelfares(page, pageSize, filter)
+}
+
+// AdminReorderWelfares 按给定 ID 顺序更新 sort_order
+func (s *WelfareService) AdminReorderWelfares(ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	updates := make([]repository.WelfareSortUpdate, len(ids))
+	for i, id := range ids {
+		updates[i] = repository.WelfareSortUpdate{ID: id, SortOrder: i}
+	}
+	return s.repo.UpdateWelfareSortOrders(updates)
 }
 
 // ─────────────────────────────────────────────

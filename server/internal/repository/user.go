@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -79,7 +80,7 @@ func (r *UserRepository) UpdateRole(id uint, role string) error {
 
 // UserFilter 用户列表筛选条件
 type UserFilter struct {
-	Nickname          string
+	Keyword           string // 匹配昵称或任意角色名（不区分大小写）
 	Status            *int
 	Role              string
 	AllowCorporations []int64 // 非空时只返回拥有这些军团角色的用户
@@ -123,8 +124,12 @@ func (r *UserRepository) List(page, pageSize int, filter UserFilter) ([]model.Us
 	offset := (page - 1) * pageSize
 	db := global.DB.Model(&model.User{})
 
-	if filter.Nickname != "" {
-		db = db.Where("nickname LIKE ?", "%"+filter.Nickname+"%")
+	if filter.Keyword != "" {
+		pattern := "%" + strings.ToLower(filter.Keyword) + "%"
+		db = db.Where(
+			"LOWER(nickname) LIKE ? OR id IN (SELECT DISTINCT user_id FROM eve_character WHERE LOWER(character_name) LIKE ?)",
+			pattern, pattern,
+		)
 	}
 	if filter.Status != nil {
 		db = db.Where("status = ?", *filter.Status)
