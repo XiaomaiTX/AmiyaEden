@@ -57,7 +57,7 @@ func (r *SkillPlanRepository) List(page, pageSize int, keyword string) ([]model.
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Order("updated_at DESC, id DESC").Offset(offset).Limit(pageSize).Find(&plans).Error; err != nil {
+	if err := db.Order("sort_order ASC, id DESC").Offset(offset).Limit(pageSize).Find(&plans).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -67,8 +67,29 @@ func (r *SkillPlanRepository) List(page, pageSize int, keyword string) ([]model.
 // ListAll 获取全部技能计划
 func (r *SkillPlanRepository) ListAll() ([]model.SkillPlan, error) {
 	var plans []model.SkillPlan
-	err := global.DB.Order("updated_at DESC, id DESC").Find(&plans).Error
+	err := global.DB.Order("sort_order ASC, id DESC").Find(&plans).Error
 	return plans, err
+}
+
+// SkillPlanSortUpdate 用于批量更新排序字段
+type SkillPlanSortUpdate struct {
+	ID        uint
+	SortOrder int
+}
+
+// UpdateSortOrders 批量更新技能计划的排序
+func (r *SkillPlanRepository) UpdateSortOrders(updates []SkillPlanSortUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	tx := global.DB.Begin()
+	for _, u := range updates {
+		if err := tx.Model(&model.SkillPlan{}).Where("id = ?", u.ID).Update("sort_order", u.SortOrder).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit().Error
 }
 
 // Update 更新技能计划及技能要求

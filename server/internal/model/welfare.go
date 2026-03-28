@@ -34,6 +34,7 @@ type Welfare struct {
 	RequireEvidence  bool   `gorm:"default:false"               json:"require_evidence"`
 	ExampleEvidence  string `gorm:"type:text"                   json:"example_evidence"`
 	Status           int8   `gorm:"default:1"                   json:"status"`
+	SortOrder        int    `gorm:"default:0"                   json:"sort_order"`
 	CreatedBy        uint   `gorm:"not null"                    json:"created_by"`
 
 	// 虚拟字段，不存库，由业务层填充

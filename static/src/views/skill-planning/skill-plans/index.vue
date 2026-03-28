@@ -22,25 +22,40 @@
 
         <div v-loading="listLoading" class="skill-plan-list">
           <template v-if="plans.length">
-            <button
-              v-for="plan in plans"
-              :key="plan.id"
-              type="button"
-              class="skill-plan-item"
-              :class="{ active: plan.id === selectedPlanId }"
-              @click="selectPlan(plan.id)"
+            <VueDraggable
+              v-model="plans"
+              :disabled="!canManage || reorderSaving"
+              :animation="150"
+              handle=".skill-plan-drag-handle"
+              tag="div"
+              class="skill-plan-draggable"
+              @end="handleReorderEnd"
             >
-              <div class="skill-plan-item__heading">
-                <img
-                  v-if="plan.ship_type_id"
-                  :src="getShipIconUrl(plan.ship_type_id, 64)"
-                  class="skill-plan-item__icon"
-                  alt=""
-                  loading="lazy"
-                />
-                <span class="skill-plan-item__title">{{ plan.title }}</span>
-              </div>
-            </button>
+              <button
+                v-for="plan in plans"
+                :key="plan.id"
+                type="button"
+                class="skill-plan-item"
+                :class="{ active: plan.id === selectedPlanId }"
+                @click="selectPlan(plan.id)"
+              >
+                <div class="skill-plan-item__heading">
+                  <span
+                    v-if="canManage"
+                    class="skill-plan-drag-handle"
+                    :title="$t('skillPlan.dragHint')"
+                  >⠿</span>
+                  <img
+                    v-if="plan.ship_type_id"
+                    :src="getShipIconUrl(plan.ship_type_id, 64)"
+                    class="skill-plan-item__icon"
+                    alt=""
+                    loading="lazy"
+                  />
+                  <span class="skill-plan-item__title">{{ plan.title }}</span>
+                </div>
+              </button>
+            </VueDraggable>
           </template>
 
           <ElEmpty v-else :description="$t('skillPlan.emptyList')" :image-size="72" />
@@ -152,8 +167,14 @@
   import { useI18n } from 'vue-i18n'
   import { Plus } from '@element-plus/icons-vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
+  import { VueDraggable } from 'vue-draggable-plus'
   import { formatTime } from '@utils/common'
-  import { deleteSkillPlan, fetchSkillPlanDetail, fetchSkillPlanList } from '@/api/skill-plan'
+  import {
+    deleteSkillPlan,
+    fetchSkillPlanDetail,
+    fetchSkillPlanList,
+    reorderSkillPlans
+  } from '@/api/skill-plan'
   import SkillPlanDialog from './modules/skill-plan-dialog.vue'
   import { useUserStore } from '@/store/modules/user'
 
@@ -331,6 +352,19 @@
     }
   }
 
+  const reorderSaving = ref(false)
+
+  async function handleReorderEnd() {
+    reorderSaving.value = true
+    try {
+      await reorderSkillPlans(plans.value.map((p) => p.id))
+    } catch (e: any) {
+      ElMessage.error(e?.message ?? t('skillPlan.reorderFailed'))
+    } finally {
+      reorderSaving.value = false
+    }
+  }
+
   async function handleDialogSuccess(plan: SkillPlanDetail) {
     dialogVisible.value = false
     editingPlan.value = null
@@ -439,6 +473,25 @@
       border-color 0.2s ease,
       box-shadow 0.2s ease,
       transform 0.2s ease;
+  }
+
+  .skill-plan-draggable {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .skill-plan-drag-handle {
+    cursor: grab;
+    color: var(--el-text-color-placeholder);
+    font-size: 16px;
+    flex-shrink: 0;
+    user-select: none;
+    line-height: 1;
+
+    &:hover {
+      color: var(--el-text-color-secondary);
+    }
   }
 
   .skill-plan-item:hover {
