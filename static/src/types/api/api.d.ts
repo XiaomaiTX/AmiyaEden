@@ -1042,6 +1042,7 @@ declare namespace Api {
       character_id: number
       character_name: string
       can_apply_now: boolean
+      ineligible_reason?: 'pap' | 'skill' | 'pap_skill'
     }
 
     /** 可申请福利 */
@@ -1053,6 +1054,7 @@ declare namespace Api {
       require_evidence: boolean
       example_evidence: string
       can_apply_now: boolean
+      ineligible_reason?: 'pap' | 'skill' | 'pap_skill'
       eligible_characters: EligibleCharacter[]
     }
 

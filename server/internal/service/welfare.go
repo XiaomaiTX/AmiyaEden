@@ -177,9 +177,10 @@ func (s *WelfareService) AdminReorderWelfares(ids []uint) error {
 
 // EligibleCharacterResp 可申请角色
 type EligibleCharacterResp struct {
-	CharacterID   int64  `json:"character_id"`
-	CharacterName string `json:"character_name"`
-	CanApplyNow   bool   `json:"can_apply_now"`
+	CharacterID      int64  `json:"character_id"`
+	CharacterName    string `json:"character_name"`
+	CanApplyNow      bool   `json:"can_apply_now"`
+	IneligibleReason string `json:"ineligible_reason,omitempty"`
 }
 
 // EligibleWelfareResp 可申请福利
@@ -191,7 +192,23 @@ type EligibleWelfareResp struct {
 	RequireEvidence    bool                    `json:"require_evidence"`
 	ExampleEvidence    string                  `json:"example_evidence"`
 	CanApplyNow        bool                    `json:"can_apply_now"`
+	IneligibleReason   string                  `json:"ineligible_reason,omitempty"`
 	EligibleCharacters []EligibleCharacterResp `json:"eligible_characters"`
+}
+
+// buildIneligibleReason 根据不满足的条件构建原因字符串
+// 可能的值："pap"、"skill"、"pap_skill"
+func buildIneligibleReason(papBlocked bool, skillBlocked bool) string {
+	if papBlocked && skillBlocked {
+		return "pap_skill"
+	}
+	if papBlocked {
+		return "pap"
+	}
+	if skillBlocked {
+		return "skill"
+	}
+	return ""
 }
 
 // GetEligibleWelfares 获取用户可申请的福利列表
@@ -356,9 +373,13 @@ func (s *WelfareService) buildEligibleWelfareResp(
 		if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 && len(characters) == 0 {
 			return EligibleWelfareResp{}, false
 		}
-		resp.CanApplyNow = !minimumPapBlocked
+		skillBlocked := false
 		if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 {
-			resp.CanApplyNow = !minimumPapBlocked && s.anyCharacterSatisfiesSkillPlan(characters, w.SkillPlanIDs, skillCheckCache)
+			skillBlocked = !s.anyCharacterSatisfiesSkillPlan(characters, w.SkillPlanIDs, skillCheckCache)
+		}
+		resp.CanApplyNow = !minimumPapBlocked && !skillBlocked
+		if !resp.CanApplyNow {
+			resp.IneligibleReason = buildIneligibleReason(minimumPapBlocked, skillBlocked)
 		}
 		return resp, true
 	}
@@ -395,18 +416,20 @@ func (s *WelfareService) filterEligibleCharacters(
 		if appliedCharIDs[char.CharacterID] || appliedCharNames[strings.TrimSpace(char.CharacterName)] {
 			continue
 		}
-		canApplyNow := true
-		if minimumPapBlocked {
-			canApplyNow = false
-		}
+		skillBlocked := false
 		if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 {
-			canApplyNow = canApplyNow && s.characterSatisfiesAnySkillPlan(char.CharacterID, w.SkillPlanIDs, skillCheckCache)
+			skillBlocked = !s.characterSatisfiesAnySkillPlan(char.CharacterID, w.SkillPlanIDs, skillCheckCache)
 		}
-		eligible = append(eligible, EligibleCharacterResp{
+		canApplyNow := !minimumPapBlocked && !skillBlocked
+		charResp := EligibleCharacterResp{
 			CharacterID:   char.CharacterID,
 			CharacterName: char.CharacterName,
 			CanApplyNow:   canApplyNow,
-		})
+		}
+		if !canApplyNow {
+			charResp.IneligibleReason = buildIneligibleReason(minimumPapBlocked, skillBlocked)
+		}
+		eligible = append(eligible, charResp)
 	}
 	return eligible
 }
