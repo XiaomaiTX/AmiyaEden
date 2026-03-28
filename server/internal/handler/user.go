@@ -26,7 +26,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 
 	filter := repository.UserFilter{
-		Nickname: c.Query("nickname"),
+		Keyword: c.Query("keyword"),
 	}
 	if s := c.Query("status"); s != "" {
 		v, _ := strconv.Atoi(s)

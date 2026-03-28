@@ -159,6 +159,7 @@ func RegisterRoutes(r *gin.Engine) {
 		skillPlan.GET("", viewSkillPlans, skillPlanH.ListSkillPlans)
 		skillPlan.GET("/:id", viewSkillPlans, skillPlanH.GetSkillPlan)
 		skillPlan.POST("", manageSkillPlans, skillPlanH.CreateSkillPlan)
+		skillPlan.PUT("/reorder", manageSkillPlans, skillPlanH.ReorderSkillPlans)
 		skillPlan.PUT("/:id", manageSkillPlans, skillPlanH.UpdateSkillPlan)
 		skillPlan.DELETE("/:id", manageSkillPlans, skillPlanH.DeleteSkillPlan)
 	}
@@ -381,6 +382,7 @@ func RegisterRoutes(r *gin.Engine) {
 		adminWelfare.POST("/applications", welfareH.AdminListApplications)
 		adminWelfare.POST("/review", welfareH.AdminReviewApplication)
 		adminWelfare.POST("/import", welfareH.AdminImportRecords)
+		adminWelfare.POST("/reorder", welfareH.AdminReorderWelfares)
 	}
 
 	// ─── 用户端福利 ───

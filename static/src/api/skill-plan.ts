@@ -38,6 +38,14 @@ export function updateSkillPlan(
   })
 }
 
+/** 批量更新技能计划排序 */
+export function reorderSkillPlans(ids: number[]) {
+  return request.put({
+    url: '/api/v1/skill-planning/skill-plans/reorder',
+    data: { ids }
+  })
+}
+
 /** 删除军团技能计划 */
 export function deleteSkillPlan(id: number) {
   return request.del({

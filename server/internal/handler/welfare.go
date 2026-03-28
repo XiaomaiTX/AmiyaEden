@@ -52,6 +52,7 @@ type adminWelfareCreateRequest struct {
 	RequireEvidence  bool   `json:"require_evidence"`
 	ExampleEvidence  string `json:"example_evidence"`
 	Status           int8   `json:"status"`
+	SortOrder        int    `json:"sort_order"`
 }
 
 // AdminCreateWelfare POST /system/welfare/add
@@ -73,6 +74,7 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 		RequireEvidence:  req.RequireEvidence,
 		ExampleEvidence:  req.ExampleEvidence,
 		Status:           req.Status,
+		SortOrder:        req.SortOrder,
 		CreatedBy:        middleware.GetUserID(c),
 	}
 
@@ -152,6 +154,25 @@ func (h *WelfareHandler) AdminListWelfares(c *gin.Context) {
 		return
 	}
 	response.OKWithPage(c, list, total, req.Current, req.Size)
+}
+
+// adminWelfareReorderRequest 福利排序请求
+type adminWelfareReorderRequest struct {
+	IDs []uint `json:"ids" binding:"required"`
+}
+
+// AdminReorderWelfares POST /system/welfare/reorder
+func (h *WelfareHandler) AdminReorderWelfares(c *gin.Context) {
+	var req adminWelfareReorderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	if err := h.svc.AdminReorderWelfares(req.IDs); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
 }
 
 // ─────────────────────────────────────────────

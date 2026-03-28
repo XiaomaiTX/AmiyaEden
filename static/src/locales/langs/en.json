@@ -558,7 +558,12 @@
     "requireEvidence": "Require Evidence",
     "exampleEvidence": "Example Evidence",
     "uploadExampleEvidence": "Upload Example Image",
-    "uploadFailed": "Upload failed"
+    "uploadFailed": "Upload failed",
+    "dragHint": "Drag to reorder",
+    "reorderSaving": "Saving order…",
+    "reorderFailed": "Failed to save order",
+    "sortOrder": "Sort Order",
+    "sortOrderHint": "Lower number = higher position. Use a number to reorder across pages."
   },
   "welfareMy": {
     "applyTab": "Apply for Welfare",
@@ -726,8 +731,8 @@
       "unknown": "Unknown"
     },
     "search": {
-      "nickname": "Nickname",
-      "nicknamePlaceholder": "Enter nickname",
+      "keyword": "Search",
+      "keywordPlaceholder": "Nickname or character name",
       "statusPlaceholder": "Select status"
     },
     "roles": {
@@ -1119,6 +1124,10 @@
     "deleteSuccess": "Skill plan deleted",
     "deleteConfirm": "Are you sure you want to delete skill plan \"{title}\"? This cannot be undone.",
     "searchPlaceholder": "Search skill plan title or description",
+    "dragHint": "Drag to reorder",
+    "reorderFailed": "Failed to save order",
+    "sortOrder": "Sort Order",
+    "sortOrderHint": "Lower number = higher position. Use a number to reorder across pages.",
     "listTitle": "Skill Plans",
     "detailTitle": "Plan Details",
     "emptyList": "No skill plans",

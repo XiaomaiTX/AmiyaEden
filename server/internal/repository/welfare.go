@@ -64,7 +64,7 @@ func (r *WelfareRepository) ListWelfares(page, pageSize int, filter WelfareFilte
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
+	if err := db.Order("sort_order ASC, id DESC").Offset(offset).Limit(pageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -73,6 +73,27 @@ func (r *WelfareRepository) ListWelfares(page, pageSize int, filter WelfareFilte
 		return nil, 0, err
 	}
 	return list, total, nil
+}
+
+// WelfareSortUpdate 用于批量更新排序字段
+type WelfareSortUpdate struct {
+	ID        uint
+	SortOrder int
+}
+
+// UpdateWelfareSortOrders 批量更新福利的排序
+func (r *WelfareRepository) UpdateWelfareSortOrders(updates []WelfareSortUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	tx := global.DB.Begin()
+	for _, u := range updates {
+		if err := tx.Model(&model.Welfare{}).Where("id = ?", u.ID).Update("sort_order", u.SortOrder).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit().Error
 }
 
 // ─────────────────────────────────────────────
@@ -258,7 +279,7 @@ func (r *WelfareRepository) UpdateApplication(app *model.WelfareApplication) err
 // ListActiveWelfares 查询所有启用的福利
 func (r *WelfareRepository) ListActiveWelfares() ([]model.Welfare, error) {
 	var list []model.Welfare
-	if err := global.DB.Where("status = ?", model.WelfareStatusActive).Find(&list).Error; err != nil {
+	if err := global.DB.Where("status = ?", model.WelfareStatusActive).Order("sort_order ASC, id DESC").Find(&list).Error; err != nil {
 		return nil, err
 	}
 	if err := r.fillSkillPlanIDs(list); err != nil {
