@@ -39,12 +39,12 @@ func (h *NewbroAdminHandler) ListCaptains(c *gin.Context) {
 }
 
 func (h *NewbroAdminHandler) GetCaptainDetail(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
+	id, err := parseUintValue(c.Param("user_id"), "user_id")
 	if err != nil {
 		response.Fail(c, response.CodeParamError, "invalid user_id")
 		return
 	}
-	result, err := h.reportSvc.GetAdminCaptainDetail(uint(id))
+	result, err := h.reportSvc.GetAdminCaptainDetail(id)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -171,11 +171,11 @@ func parseUintCSV(raw string) ([]uint, error) {
 		if trimmed == "" {
 			continue
 		}
-		value, err := strconv.ParseUint(trimmed, 10, 64)
+		value, err := parseUintValue(trimmed, "captain_user_id")
 		if err != nil {
 			return nil, fmt.Errorf("invalid captain_user_id: %s", trimmed)
 		}
-		result = append(result, uint(value))
+		result = append(result, value)
 	}
 	return result, nil
 }
@@ -198,4 +198,15 @@ func parseInt64CSV(raw string) ([]int64, error) {
 		result = append(result, value)
 	}
 	return result, nil
+}
+
+func parseUintValue(raw, field string) (uint, error) {
+	parsed, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s", field)
+	}
+	if parsed > uint64(^uint(0)) {
+		return 0, fmt.Errorf("invalid %s", field)
+	}
+	return uint(parsed), nil
 }
