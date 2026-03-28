@@ -52,6 +52,8 @@ jobs:
           # Only scan files changed in the PR (makes it much faster)
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This disables the entire spelling category
+          DISABLE: SPELL
           # Disable things you already have dedicated jobs for
           # This prevents duplicate errors for Go and Vue
           SKIP_LINTERS: GO_GOLANGCI_LINT, JAVASCRIPT_ESLINT, TYPESCRIPT_ESLINT
