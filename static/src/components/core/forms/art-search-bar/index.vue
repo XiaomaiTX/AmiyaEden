@@ -106,48 +106,17 @@
   import { useWindowSize } from '@vueuse/core'
   import { useI18n } from 'vue-i18n'
   import type { Component } from 'vue'
-  import {
-    ElCascader,
-    ElCheckbox,
-    ElCheckboxGroup,
-    ElDatePicker,
-    ElInput,
-    ElInputTag,
-    ElInputNumber,
-    ElRadioGroup,
-    ElRate,
-    ElSelect,
-    ElSlider,
-    ElSwitch,
-    ElTimePicker,
-    ElTimeSelect,
-    ElTreeSelect,
-    type FormInstance
-  } from 'element-plus'
+  import { type FormInstance } from 'element-plus'
   import { calculateResponsiveSpan, type ResponsiveBreakpoint } from '@/utils/form/responsive'
+  import {
+    formComponentMap,
+    getFormItemProps,
+    getFormItemSlots,
+    resolveFormItemComponent,
+    type SharedFormItem
+  } from '../shared'
 
   defineOptions({ name: 'ArtSearchBar' })
-
-  const componentMap = {
-    input: ElInput, // 输入框
-    inputTag: ElInputTag, // 标签输入框
-    number: ElInputNumber, // 数字输入框
-    select: ElSelect, // 选择器
-    switch: ElSwitch, // 开关
-    checkbox: ElCheckbox, // 复选框
-    checkboxgroup: ElCheckboxGroup, // 复选框组
-    radiogroup: ElRadioGroup, // 单选框组
-    date: ElDatePicker, // 日期选择器
-    daterange: ElDatePicker, // 日期范围选择器
-    datetime: ElDatePicker, // 日期时间选择器
-    datetimerange: ElDatePicker, // 日期时间范围选择器
-    rate: ElRate, // 评分
-    slider: ElSlider, // 滑块
-    cascader: ElCascader, // 级联选择器
-    timepicker: ElTimePicker, // 时间选择器
-    timeselect: ElTimeSelect, // 时间选择
-    treeselect: ElTreeSelect // 树选择器
-  }
 
   const { width } = useWindowSize()
   const { t } = useI18n()
@@ -156,7 +125,7 @@
   const formInstance = useTemplateRef<FormInstance>('formRef')
 
   // 表单项配置
-  export interface SearchFormItem {
+  export interface SearchFormItem extends SharedFormItem {
     /** 表单项的唯一标识 */
     key: string
     /** 表单项的标签文本或自定义渲染函数 */
@@ -164,7 +133,7 @@
     /** 表单项标签的宽度，会覆盖 Form 的 labelWidth */
     labelWidth?: string | number
     /** 表单项类型，支持预定义的组件类型 */
-    type?: keyof typeof componentMap | string
+    type?: keyof typeof formComponentMap | string
     /** 自定义渲染函数或组件，用于渲染自定义组件（优先级高于 type） */
     render?: (() => VNode) | Component
     /** 是否隐藏该表单项 */
@@ -239,26 +208,10 @@
    */
   const isExpanded = ref(props.defaultExpanded)
 
-  const rootProps = ['label', 'labelWidth', 'key', 'type', 'hidden', 'span', 'slots']
-
-  const getProps = (item: SearchFormItem) => {
-    if (item.props) return item.props
-    const props = { ...item }
-    rootProps.forEach((key) => delete (props as Record<string, any>)[key])
-    return props
-  }
+  const getProps = (item: SearchFormItem) => getFormItemProps(item)
 
   // 获取插槽
-  const getSlots = (item: SearchFormItem) => {
-    if (!item.slots) return {}
-    const validSlots: Record<string, () => any> = {}
-    Object.entries(item.slots).forEach(([key, slotFn]) => {
-      if (slotFn) {
-        validSlots[key] = slotFn
-      }
-    })
-    return validSlots
-  }
+  const getSlots = (item: SearchFormItem) => getFormItemSlots(item)
 
   /**
    * 获取列宽 span 值
@@ -270,13 +223,7 @@
 
   // 组件
   const getComponent = (item: SearchFormItem) => {
-    // 优先使用 render 函数或组件渲染自定义组件
-    if (item.render) {
-      return item.render
-    }
-    // 使用 type 获取预定义组件
-    const { type } = item
-    return componentMap[type as keyof typeof componentMap] || componentMap['input']
+    return resolveFormItemComponent(item)
   }
 
   /**
