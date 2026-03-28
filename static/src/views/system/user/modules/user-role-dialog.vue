@@ -39,7 +39,11 @@
 
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
-  import { fetchGetRoleDefinitions, fetchGetUserRoles, fetchSetUserRoles } from '@/api/system-manage'
+  import {
+    fetchGetRoleDefinitions,
+    fetchGetUserRoles,
+    fetchSetUserRoles
+  } from '@/api/system-manage'
   import { useUserStore } from '@/store/modules/user'
 
   interface Props {
