@@ -48,6 +48,7 @@ type UpdateSkillPlanRequest struct {
 	Title       string              `json:"title" binding:"required"`
 	Description string              `json:"description"`
 	ShipTypeID  *int                `json:"ship_type_id"`
+	SortOrder   *int                `json:"sort_order"`
 	Skills      []SkillPlanSkillReq `json:"skills"`
 	SkillsText  string              `json:"skills_text"`
 }
@@ -58,6 +59,7 @@ type SkillPlanListItemResp struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	ShipTypeID  *int   `json:"ship_type_id"`
+	SortOrder   int    `json:"sort_order"`
 	CreatedBy   uint   `json:"created_by"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
@@ -212,6 +214,7 @@ func (s *SkillPlanService) ListSkillPlans(page, pageSize int, keyword string) ([
 			Title:       plan.Title,
 			Description: plan.Description,
 			ShipTypeID:  plan.ShipTypeID,
+			SortOrder:   plan.SortOrder,
 			CreatedBy:   plan.CreatedBy,
 			CreatedAt:   plan.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:   plan.UpdatedAt.Format(time.RFC3339),
@@ -260,6 +263,9 @@ func (s *SkillPlanService) UpdateSkillPlan(id uint, userID uint, userRoles []str
 	plan.Title = title
 	plan.Description = description
 	plan.ShipTypeID = normalizeOptionalSkillPlanShipTypeID(req.ShipTypeID)
+	if req.SortOrder != nil {
+		plan.SortOrder = *req.SortOrder
+	}
 
 	skills := buildSkillPlanModels(normalizedSkills)
 	if err := s.repo.Update(plan, skills); err != nil {
@@ -284,6 +290,21 @@ func (s *SkillPlanService) DeleteSkillPlan(id uint, userID uint, userRoles []str
 		return errors.New("权限不足")
 	}
 	return s.repo.Delete(id)
+}
+
+// ReorderSkillPlans 按给定 ID 顺序更新 sort_order（需要管理权限）
+func (s *SkillPlanService) ReorderSkillPlans(ids []uint, userRoles []string) error {
+	if !model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin, model.RoleSeniorFC) {
+		return errors.New("权限不足")
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	updates := make([]repository.SkillPlanSortUpdate, len(ids))
+	for i, id := range ids {
+		updates[i] = repository.SkillPlanSortUpdate{ID: id, SortOrder: i}
+	}
+	return s.repo.UpdateSortOrders(updates)
 }
 
 func (s *SkillPlanService) GetCheckSelection(userID uint) (*SkillPlanCheckSelectionResp, error) {

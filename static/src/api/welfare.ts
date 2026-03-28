@@ -32,6 +32,14 @@ export function adminUpdateWelfare(data: Api.Welfare.UpdateParams) {
   })
 }
 
+/** 管理员批量更新福利排序 */
+export function adminReorderWelfares(ids: number[]) {
+  return request.post({
+    url: '/api/v1/system/welfare/reorder',
+    data: { ids }
+  })
+}
+
 /** 管理员删除福利 */
 export function adminDeleteWelfare(id: number) {
   return request.post({
