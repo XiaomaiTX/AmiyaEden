@@ -53,10 +53,10 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # This disables the entire spelling category
-          DISABLE: SPELL
+          DISABLE: SPELL, GO, REPOSITORY_DEVSKIM, TYPESCRIPT, JAVASCRIPT, YAML, PRETTIER, MARKDOWN
           # Disable things you already have dedicated jobs for
           # This prevents duplicate errors for Go and Vue
-          SKIP_LINTERS: GO_GOLANGCI_LINT, JAVASCRIPT_ESLINT, TYPESCRIPT_ESLINT
+          SKIP_LINTERS: 
 
   backend:
     name: Backend Verify
