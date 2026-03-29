@@ -5,6 +5,15 @@
   .el-table {
     height: 100%;
     margin-top: 10px;
+
+    &.art-table--ledger {
+      margin-top: 0;
+
+      :deep(.el-table__header th.el-table__cell),
+      :deep(.el-table__body td.el-table__cell) {
+        border-right: none;
+      }
+    }
   }
 
   :deep(.el-loading-mask) {
@@ -50,7 +59,7 @@
     }
 
     // 自定义分页组件样式
-    &.custom-pagination {
+    &.custom-pagination:not(.pagination--ledger) {
       :deep(.el-pagination) {
         .btn-prev,
         .btn-next {

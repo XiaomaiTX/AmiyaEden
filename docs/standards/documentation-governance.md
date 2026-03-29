@@ -26,17 +26,26 @@ This standard governs canonical repository documentation under the repository ro
 
 ## Document Types
 
-| doc_type | directory | purpose |
-| --- | --- | --- |
-| `agent-rules` | `docs/ai/` | shared agent rule source included by `AGENTS.md` and `CLAUDE.md` |
-| `standard` | `docs/standards/` | required rules, prohibitions, and recommended practices |
-| `architecture` | `docs/architecture/` | how the current system works |
-| `api` | `docs/api/` | routes, authentication, and response conventions |
-| `feature` | `docs/features/current/` | current module behavior, entry points, permissions, and invariants |
-| `guide` | `docs/guides/` | step-by-step operating instructions |
-| `reference` | `docs/reference/` | offline reference assets; not authoritative for current implementation |
-| `draft` | `docs/specs/draft/` | proposals, enhancements, and unimplemented designs |
-| `template` | `docs/templates/` | templates for creating new documents |
+Use this mapping:
+
+- `agent-rules` -> `docs/ai/`
+  Shared agent rule source used by `AGENTS.md` and `CLAUDE.md`.
+- `standard` -> `docs/standards/`
+  Required rules, prohibitions, and recommended practices.
+- `architecture` -> `docs/architecture/`
+  How the current system works.
+- `api` -> `docs/api/`
+  Routes, authentication, and response conventions.
+- `feature` -> `docs/features/current/`
+  Current module behavior, entry points, permissions, and invariants.
+- `guide` -> `docs/guides/`
+  Step-by-step operating instructions.
+- `reference` -> `docs/reference/`
+  Offline reference assets; not authoritative for current implementation.
+- `draft` -> `docs/specs/draft/`
+  Proposals, enhancements, and unimplemented designs.
+- `template` -> `docs/templates/`
+  Templates for creating new documents.
 
 ## Front Matter Requirements
 
@@ -154,10 +163,10 @@ Do not create a new document when:
 
 Certain facts have a designated single source. Do not redefine or duplicate these in other documents; reference them instead.
 
-| fact | canonical source |
-| --- | --- |
-| verification commands (lint, test, build) | `docs/standards/testing-and-verification.md § Default Commands` |
-| timestamp / datetime display format | `docs/standards/timestamp-formatting.md` |
+Canonical fact map:
+
+- verification commands (`lint`, `test`, `build`) -> `docs/standards/testing-and-verification.md § Default Commands`
+- timestamp / datetime display format -> `docs/standards/timestamp-formatting.md`
 
 When adding a new category of facts that appears in multiple documents, designate one canonical source here and convert all other occurrences to references.
 
