@@ -260,10 +260,18 @@ func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpAppli
 		}
 	}
 	// 批量查询舰队信息
+	fleetIDs := make([]string, 0, len(fleetIDSet))
+	for fleetID := range fleetIDSet {
+		fleetIDs = append(fleetIDs, fleetID)
+	}
 	fleetMap := make(map[string]*model.Fleet)
-	for fid := range fleetIDSet {
-		if fleet, err := s.fleetRepo.GetByID(fid); err == nil {
-			fleetMap[fid] = fleet
+	if len(fleetIDs) > 0 {
+		fleets, err := s.fleetRepo.ListByIDs(fleetIDs)
+		if err == nil {
+			for index := range fleets {
+				fleet := fleets[index]
+				fleetMap[fleet.ID] = &fleet
+			}
 		}
 	}
 	// 组装响应
@@ -285,6 +293,11 @@ func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpAppli
 
 // ListApplications 管理员端分页查询申请列表
 func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpApplicationFilter) ([]SrpApplicationResponse, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	pageSize = normalizeLedgerPageSize(pageSize)
+
 	apps, total, err := s.repo.ListApplications(page, pageSize, filter)
 	if err != nil {
 		return nil, 0, err

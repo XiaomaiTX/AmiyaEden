@@ -104,10 +104,7 @@ func (s *ContractService) GetUserContracts(userID uint, req *InfoContractsReques
 	if page <= 0 {
 		page = 1
 	}
-	pageSize := req.Size
-	if pageSize <= 0 || pageSize > 100 {
-		pageSize = 20
-	}
+	pageSize := normalizeLedgerPageSize(req.Size)
 
 	// 1. 获取角色列表
 	chars, err := s.charRepo.ListByUserID(userID)

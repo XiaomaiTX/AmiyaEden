@@ -155,6 +155,19 @@
     }
   }
 
+  const syncDisplayRoles = async (rows: UserListItem[]) => {
+    if (rows.length === 0) return
+
+    const hydrationVersion = ++roleHydrationVersion
+    await ensureRolePriorityMap()
+
+    if (hydrationVersion !== roleHydrationVersion) return
+    data.value = rows.map((row) => ({
+      ...row,
+      roles: getDisplayRoles(row)
+    }))
+  }
+
   const {
     columns,
     columnChecks,
@@ -298,8 +311,8 @@
         })
     },
     hooks: {
-      onSuccess: () => {
-        void ensureRolePriorityMap()
+      onSuccess: (rows) => {
+        void syncDisplayRoles(rows as UserListItem[])
       }
     }
   })

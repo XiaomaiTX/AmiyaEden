@@ -22,13 +22,14 @@ func TestBuildSystemWalletTransactionUsesDeltaAndSystemOperator(t *testing.T) {
 	}
 }
 
-func TestNormalizeWalletLedgerPageSizeUsesLedgerStandardBounds(t *testing.T) {
+func TestNormalizeLedgerPageSizeUsesLedgerStandardBounds(t *testing.T) {
 	tests := []struct {
 		name string
 		size int
 		want int
 	}{
 		{name: "defaults when zero", size: 0, want: 200},
+		{name: "preserves smaller valid page", size: 20, want: 20},
 		{name: "keeps ledger default", size: 200, want: 200},
 		{name: "allows larger ledger page", size: 500, want: 500},
 		{name: "caps at thousand", size: 5000, want: 1000},
@@ -36,8 +37,8 @@ func TestNormalizeWalletLedgerPageSizeUsesLedgerStandardBounds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := normalizeWalletLedgerPageSize(tt.size); got != tt.want {
-				t.Fatalf("normalizeWalletLedgerPageSize(%d) = %d, want %d", tt.size, got, tt.want)
+			if got := normalizeLedgerPageSize(tt.size); got != tt.want {
+				t.Fatalf("normalizeLedgerPageSize(%d) = %d, want %d", tt.size, got, tt.want)
 			}
 		})
 	}
