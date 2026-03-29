@@ -23,6 +23,16 @@ func NewFleetHandler() *FleetHandler {
 	}
 }
 
+// requireFleetID extracts and validates the fleet :id path param.
+// Returns the fleet ID or writes an error response and returns "".
+func requireFleetID(c *gin.Context) string {
+	id := c.Param("id")
+	if id == "" {
+		response.Fail(c, response.CodeParamError, "缺少舰队ID")
+	}
+	return id
+}
+
 // ─────────────────────────────────────────────
 //  舰队 CRUD
 // ─────────────────────────────────────────────
@@ -82,9 +92,8 @@ func (h *FleetHandler) GetMyFleets(c *gin.Context) {
 
 // GetFleet 获取舰队详情
 func (h *FleetHandler) GetFleet(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	fleet, err := h.svc.GetFleet(fleetID)
@@ -97,9 +106,8 @@ func (h *FleetHandler) GetFleet(c *gin.Context) {
 
 // RefreshFleetESI 从 ESI 刷新舰队的 esi_fleet_id
 func (h *FleetHandler) RefreshFleetESI(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -114,9 +122,8 @@ func (h *FleetHandler) RefreshFleetESI(c *gin.Context) {
 
 // UpdateFleet 更新舰队信息
 func (h *FleetHandler) UpdateFleet(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	var req service.UpdateFleetRequest
@@ -136,9 +143,8 @@ func (h *FleetHandler) UpdateFleet(c *gin.Context) {
 
 // DeleteFleet 删除舰队（软删除）
 func (h *FleetHandler) DeleteFleet(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -156,9 +162,8 @@ func (h *FleetHandler) DeleteFleet(c *gin.Context) {
 
 // GetMembers 获取舰队成员列表
 func (h *FleetHandler) GetMembers(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	members, err := h.svc.GetMembers(fleetID)
@@ -175,9 +180,8 @@ type manualAddFleetMembersRequest struct {
 
 // GetMembersWithPap 分页查询舰队成员（含 PAP 信息）
 func (h *FleetHandler) GetMembersWithPap(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	page, pageSize, err := parsePaginationQuery(c, 260, 260)
@@ -196,9 +200,8 @@ func (h *FleetHandler) GetMembersWithPap(c *gin.Context) {
 
 // ManualAddMembers 手动添加舰队成员
 func (h *FleetHandler) ManualAddMembers(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 
@@ -222,9 +225,8 @@ func (h *FleetHandler) ManualAddMembers(c *gin.Context) {
 
 // SyncESIMembers 从 ESI 拉取当前舰队成员并同步到数据库
 func (h *FleetHandler) SyncESIMembers(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -243,9 +245,8 @@ func (h *FleetHandler) SyncESIMembers(c *gin.Context) {
 
 // IssuePap 发放 PAP
 func (h *FleetHandler) IssuePap(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -259,9 +260,8 @@ func (h *FleetHandler) IssuePap(c *gin.Context) {
 
 // GetPapLogs 获取舰队 PAP 发放记录
 func (h *FleetHandler) GetPapLogs(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	logs, err := h.svc.GetPapLogs(fleetID)
@@ -314,9 +314,8 @@ func (h *FleetHandler) GetCorporationPapSummary(c *gin.Context) {
 
 // CreateInvite 创建邀请链接
 func (h *FleetHandler) CreateInvite(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -331,9 +330,8 @@ func (h *FleetHandler) CreateInvite(c *gin.Context) {
 
 // GetInvites 获取舰队邀请链接列表
 func (h *FleetHandler) GetInvites(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	invites, err := h.svc.GetInvites(fleetID)
@@ -410,9 +408,8 @@ func (h *FleetHandler) GetCharacterFleetInfo(c *gin.Context) {
 
 // PingFleet 手动触发舰队 Webhook Ping
 func (h *FleetHandler) PingFleet(c *gin.Context) {
-	fleetID := c.Param("id")
+	fleetID := requireFleetID(c)
 	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少舰队ID")
 		return
 	}
 	userID := middleware.GetUserID(c)

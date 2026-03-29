@@ -200,26 +200,14 @@ func (s *SysWalletService) CreditUser(userID uint, amount float64, reason, refTy
 		return errors.New("金额必须大于 0")
 	}
 
-	wallet, err := s.repo.GetOrCreateWallet(userID)
-	if err != nil {
-		return fmt.Errorf("获取用户钱包失败: %w", err)
-	}
-
-	newBalance := wallet.Balance + amount
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
+		if err != nil {
+			return fmt.Errorf("获取用户钱包失败: %w", err)
 		}
-	}()
-
-	if err := s.applyWalletDeltaTx(tx, userID, 0, amount, newBalance, reason, refType, refID); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+		newBalance := wallet.Balance + amount
+		return s.applyWalletDeltaTx(tx, userID, 0, amount, newBalance, reason, refType, refID)
+	})
 }
 
 // DebitUser 扣减用户余额（内部调用，如商城购买）
@@ -228,30 +216,17 @@ func (s *SysWalletService) DebitUser(userID uint, amount float64, reason, refTyp
 		return errors.New("金额必须大于 0")
 	}
 
-	wallet, err := s.repo.GetOrCreateWallet(userID)
-	if err != nil {
-		return fmt.Errorf("获取用户钱包失败: %w", err)
-	}
-
-	if wallet.Balance < amount {
-		return errors.New("余额不足")
-	}
-
-	newBalance := wallet.Balance - amount
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
+		if err != nil {
+			return fmt.Errorf("获取用户钱包失败: %w", err)
 		}
-	}()
-
-	if err := s.applyWalletDeltaTx(tx, userID, 0, -amount, newBalance, reason, refType, refID); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+		if wallet.Balance < amount {
+			return errors.New("余额不足")
+		}
+		newBalance := wallet.Balance - amount
+		return s.applyWalletDeltaTx(tx, userID, 0, -amount, newBalance, reason, refType, refID)
+	})
 }
 
 // ApplyWalletDeltaTx 在已有事务中对用户钱包应用差量（正=充值，负=扣减），用于 PAP 重复发放去重
