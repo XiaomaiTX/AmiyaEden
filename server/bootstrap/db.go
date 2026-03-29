@@ -211,7 +211,7 @@ func newbroCustomIndexStatements() []string {
 func ensureCustomIndexes(db *gorm.DB) {
 	for _, stmt := range newbroCustomIndexStatements() {
 		if err := db.Exec(stmt).Error; err != nil {
-			global.Logger.Fatal("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
+			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
 	}
 }
