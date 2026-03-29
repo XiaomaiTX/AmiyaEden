@@ -25,8 +25,9 @@ type Config struct {
 
 // ServerConfig HTTP 服务配置
 type ServerConfig struct {
-	Port string `mapstructure:"port"`
-	Mode string `mapstructure:"mode"` // debug | release | test
+	Port        string   `mapstructure:"port"`
+	Mode        string   `mapstructure:"mode"`         // debug | release | test
+	CORSOrigins []string `mapstructure:"cors_origins"` // 允许的 CORS 源，空=仅 debug 模式允许 *
 }
 
 // DatabaseConfig 数据库配置
