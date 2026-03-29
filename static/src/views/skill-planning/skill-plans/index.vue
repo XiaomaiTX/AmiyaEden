@@ -44,7 +44,8 @@
                     v-if="canManage"
                     class="skill-plan-drag-handle"
                     :title="$t('skillPlan.dragHint')"
-                  >⠿</span>
+                    >⠿</span
+                  >
                   <img
                     v-if="plan.ship_type_id"
                     :src="getShipIconUrl(plan.ship_type_id, 64)"

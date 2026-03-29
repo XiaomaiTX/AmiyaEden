@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTag, ElButton, ElUpload, ElMessage, ElEmpty } from 'element-plus'
+  import { ElTag, ElButton, ElUpload, ElMessage, ElEmpty, ElTooltip } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
   import {
     getEligibleWelfares,
@@ -114,6 +114,7 @@
     description: string
     distMode: string
     canApplyNow: boolean
+    ineligibleReason?: 'pap' | 'skill' | 'pap_skill'
     characterId?: number
     characterName?: string
   }
@@ -127,7 +128,8 @@
           welfareName: w.name,
           description: w.description,
           distMode: w.dist_mode,
-          canApplyNow: w.can_apply_now
+          canApplyNow: w.can_apply_now,
+          ineligibleReason: w.ineligible_reason
         })
       } else {
         for (const char of w.eligible_characters) {
@@ -137,6 +139,7 @@
             description: w.description,
             distMode: w.dist_mode,
             canApplyNow: char.can_apply_now,
+            ineligibleReason: char.ineligible_reason,
             characterId: char.character_id,
             characterName: char.character_name
           })
@@ -184,8 +187,8 @@
       prop: 'eligibility',
       label: t('welfareMy.eligibility'),
       width: 140,
-      formatter: (row: EligibleRow) =>
-        h(
+      formatter: (row: EligibleRow) => {
+        const tag = h(
           ElTag,
           {
             type: row.canApplyNow ? 'success' : 'info',
@@ -194,6 +197,15 @@
           },
           () => (row.canApplyNow ? t('welfareMy.eligibilityNow') : t('welfareMy.eligibilityFuture'))
         )
+        if (row.canApplyNow || !row.ineligibleReason) return tag
+        const reasonKey =
+          row.ineligibleReason === 'pap_skill'
+            ? 'welfareMy.ineligibleReasonPapSkill'
+            : row.ineligibleReason === 'pap'
+              ? 'welfareMy.ineligibleReasonPap'
+              : 'welfareMy.ineligibleReasonSkill'
+        return h(ElTooltip, { content: t(reasonKey), placement: 'top' }, () => tag)
+      }
     },
     {
       prop: 'characterName',
