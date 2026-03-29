@@ -77,8 +77,8 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin, model.RoleSuperAdmin},
 		)
-		if err == nil {
-			t.Fatal("expected self super admin assignment to be blocked")
+		if err != nil {
+			t.Fatalf("validateSetUserRolesPermission should not check super_admin (handled by SetUserRoles entry), got %v", err)
 		}
 	})
 }

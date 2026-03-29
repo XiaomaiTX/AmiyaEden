@@ -105,6 +105,9 @@ func (s *UserService) DeleteUser(id uint, operatorRoles []string) error {
 	if err != nil {
 		return err
 	}
+	if model.ContainsAnyRole(targetRoles, model.RoleSuperAdmin) {
+		return errors.New("超级管理员仅通过配置文件管理，不可删除")
+	}
 	if err := validateManageUserPermission(operatorRoles, targetRoles); err != nil {
 		return err
 	}

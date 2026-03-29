@@ -98,17 +98,21 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 		return err
 	}
 
-	// Validate all requested role codes
 	for _, code := range roleCodes {
 		if !model.IsValidRoleCode(code) {
 			return fmt.Errorf("未知的角色编码: %s", code)
 		}
-		if code == model.RoleSuperAdmin && !model.IsSuperAdmin(operatorRoles) {
-			return errors.New("只有超级管理员可以分配该角色")
-		}
 	}
 
 	requestedCodes := normalizeAssignedRoleCodes(roleCodes)
+
+	if model.ContainsAnyRole(requestedCodes, model.RoleSuperAdmin) {
+		return errors.New("超级管理员角色仅通过配置文件管理，不可手动分配")
+	}
+	if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
+		return errors.New("超级管理员角色仅通过配置文件管理，不可手动修改")
+	}
+
 	if err := validateSetUserRolesPermission(operatorID, userID, operatorRoles, currentCodes, requestedCodes); err != nil {
 		return err
 	}
@@ -132,13 +136,6 @@ func validateSetUserRolesPermission(operatorID, targetUserID uint, operatorRoles
 		}
 	}
 
-	if model.IsSuperAdmin(operatorRoles) {
-		return nil
-	}
-
-	if model.ContainsAnyRole(requestedCodes, model.RoleSuperAdmin) {
-		return errors.New("只有超级管理员可以分配该角色")
-	}
 	if model.ContainsAnyRole(requestedCodes, model.RoleAdmin) && !isSelfAdminEdit {
 		return errors.New("只有超级管理员可以分配管理员角色")
 	}

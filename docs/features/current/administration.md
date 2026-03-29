@@ -65,8 +65,10 @@ source_of_truth:
 - 角色定义的 canonical 源在代码常量，不在旧文档
 - 管理员侧用户资料维护走 `/api/v1/system/user/:id`，当前支持昵称、QQ、Discord ID、状态
 - 管理员侧用户列表 `/api/v1/system/user` 的角色列只以有序 `roles[]` 为准，不再暴露历史单值 `role`
-- `/api/v1/system/user/:id` 更新与删除都受后端保护：`admin` 不可编辑或删除 `super_admin` 或其他 `admin`
-- `/api/v1/system/user/:id/roles` 仅 `super_admin` 可编辑管理员账号或分配 `admin/super_admin`
+- `/api/v1/system/user/:id` 更新与删除都受后端保护：`admin` 不可编辑或删除其他 `admin`
+- `/api/v1/system/user/:id/roles` 仅 `super_admin` 可分配 `admin`；`super_admin` 角色不可通过 API 分配或修改，仅通过配置文件管理
+- `super_admin` 角色由 `config.yaml` 的 `app.super_admins` 配置驱动，每次 SSO 登录时自动同步，不可通过任何 API 或 UI 授予、修改或撤销
+- `super_admin` 用户不可通过 API 删除
 - 自动权限映射已经是当前功能，不是纯想法
 - 当账号当前仅为 `guest`（或尚无有效角色）且任一绑定角色在 `allow_corporations` 中时，自动权限同步会补 `user`
 - 任一 `allow_corporations` 角色拥有 ESI corp role `Director` 时会自动补 `admin`
