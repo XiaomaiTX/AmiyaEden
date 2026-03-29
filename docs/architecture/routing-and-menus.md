@@ -47,6 +47,6 @@ source_of_truth:
 
 ## 当前不变量
 
-- `新人选队长` 当前同时受前端静态路由过滤和后端菜单过滤影响，不是单纯的角色菜单
+- `新人选队长` 仅受前端静态路由过滤影响，通过 `meta.requiresNewbro = true` 和后端返回的 `is_currently_newbro` 状态控制访问权限
 - 路由改动若涉及权限边界，必须同步更新 API / feature 文档
 - 路由架构说明只维护在 `docs/` 中
