@@ -27,10 +27,6 @@ func buildWalletTransaction(userID uint, operatorID uint, delta float64, newBala
 	}
 }
 
-func buildSystemWalletTransaction(userID uint, delta float64, newBalance float64, reason, refType, refID string) *model.WalletTransaction {
-	return buildWalletTransaction(userID, 0, delta, newBalance, reason, refType, refID)
-}
-
 func (s *SysWalletService) applyWalletDeltaTx(tx *gorm.DB, userID uint, operatorID uint, delta float64, newBalance float64, reason, refType, refID string) error {
 	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
 		return err

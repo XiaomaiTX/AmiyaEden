@@ -556,21 +556,9 @@ const fastEnterConfig: FastEnterConfig = {
       routeName: 'Login'
     },
     {
-      name: '注册',
-      enabled: true,
-      order: 2,
-      routeName: 'Register'
-    },
-    {
-      name: '忘记密码',
-      enabled: true,
-      order: 3,
-      routeName: 'ForgetPassword'
-    },
-    {
       name: '个人中心',
       enabled: true,
-      order: 4,
+      order: 2,
       routeName: 'UserCenter'
     }
   ]

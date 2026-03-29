@@ -100,26 +100,24 @@ func TestParseEFTHeader(t *testing.T) {
 
 func TestFleetConfigCanManage(t *testing.T) {
 	svc := &FleetConfigService{}
-	config := &model.FleetConfig{CreatedBy: 42}
 
 	tests := []struct {
-		name   string
-		userID uint
-		roles  []string
-		want   bool
+		name  string
+		roles []string
+		want  bool
 	}{
-		{name: "super admin", userID: 7, roles: []string{model.RoleSuperAdmin}, want: true},
-		{name: "admin", userID: 7, roles: []string{model.RoleAdmin}, want: true},
-		{name: "senior fc", userID: 7, roles: []string{model.RoleSeniorFC}, want: true},
-		{name: "fc cannot manage", userID: 7, roles: []string{model.RoleFC}, want: false},
-		{name: "owner user no longer manages", userID: 42, roles: []string{model.RoleUser}, want: false},
-		{name: "srp non owner", userID: 7, roles: []string{model.RoleSRP}, want: false},
-		{name: "user non owner", userID: 7, roles: []string{model.RoleUser}, want: false},
+		{name: "super admin", roles: []string{model.RoleSuperAdmin}, want: true},
+		{name: "admin", roles: []string{model.RoleAdmin}, want: true},
+		{name: "senior fc", roles: []string{model.RoleSeniorFC}, want: true},
+		{name: "fc cannot manage", roles: []string{model.RoleFC}, want: false},
+		{name: "owner user no longer manages", roles: []string{model.RoleUser}, want: false},
+		{name: "srp non owner", roles: []string{model.RoleSRP}, want: false},
+		{name: "user non owner", roles: []string{model.RoleUser}, want: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := svc.canManage(config, tt.userID, tt.roles); got != tt.want {
+			if got := svc.canManage(tt.roles); got != tt.want {
 				t.Fatalf("canManage() = %v, want %v", got, tt.want)
 			}
 		})

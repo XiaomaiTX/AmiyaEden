@@ -92,7 +92,7 @@ func (s *RoleService) GetUserRoles(userID uint) ([]model.RoleDefinition, error) 
 	return defs, nil
 }
 
-func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operatorRoles []string, userID uint, roleCodes []string) error {
+func (s *RoleService) SetUserRoles(ctx context.Context, _ uint, operatorRoles []string, userID uint, roleCodes []string) error {
 	currentCodes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 		}
 	}
 
-	if err := validateSetUserRolesPermission(operatorID, userID, operatorRoles, currentCodes, requestedCodes); err != nil {
+	if err := validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes); err != nil {
 		return err
 	}
 
@@ -134,7 +134,7 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 	return nil
 }
 
-func validateSetUserRolesPermission(operatorID, targetUserID uint, operatorRoles, currentCodes, requestedCodes []string) error {
+func validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes []string) error {
 	isSuperAdmin := model.IsSuperAdmin(operatorRoles)
 	isAdmin := model.ContainsRole(operatorRoles, model.RoleAdmin)
 

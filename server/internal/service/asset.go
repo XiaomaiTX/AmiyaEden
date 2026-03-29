@@ -316,7 +316,7 @@ func (s *AssetService) resolveStructureName(chars []model.EveCharacter, structur
 		if err != nil {
 			continue
 		}
-		name := s.fetchAndCacheStructure(c.CharacterID, structureID, accessToken)
+		name := s.fetchAndCacheStructure(structureID, accessToken)
 		if name != "" && name != fmt.Sprintf("Structure-%d", structureID) {
 			return name
 		}
@@ -367,7 +367,7 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 }
 
 // fetchAndCacheStructure 从 ESI 获取建筑详情并入库
-func (s *AssetService) fetchAndCacheStructure(characterID, structureID int64, accessToken string) string {
+func (s *AssetService) fetchAndCacheStructure(structureID int64, accessToken string) string {
 	type structureDetail struct {
 		Name     string `json:"name"`
 		OwnerID  int64  `json:"owner_id"`
