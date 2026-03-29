@@ -9,11 +9,8 @@
             :loading="eligibleLoading"
             :data="eligibleRows"
             :columns="eligibleColumns"
+            :empty-text="t('welfareMy.noEligibleWelfares')"
             :row-class-name="eligibleRowClassName"
-          />
-          <ElEmpty
-            v-if="!eligibleLoading && eligibleRows.length === 0"
-            :description="t('welfareMy.noEligibleWelfares')"
           />
         </ElTabPane>
 
@@ -23,13 +20,10 @@
             :loading="applicationsLoading"
             :data="applications"
             :columns="applicationColumns"
+            :empty-text="t('welfareMy.noApplications')"
             :pagination="applicationPagination"
             @pagination:size-change="handleApplicationSizeChange"
             @pagination:current-change="handleApplicationCurrentChange"
-          />
-          <ElEmpty
-            v-if="!applicationsLoading && applications.length === 0"
-            :description="t('welfareMy.noApplications')"
           />
         </ElTabPane>
       </ElTabs>
@@ -84,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTag, ElButton, ElUpload, ElMessage, ElEmpty, ElTooltip } from 'element-plus'
+  import { ElTag, ElButton, ElUpload, ElMessage, ElTooltip } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
   import {
     getEligibleWelfares,
