@@ -193,12 +193,12 @@ func (s *FleetConfigService) ListFleetConfigs(page, pageSize int) ([]FleetConfig
 }
 
 // UpdateFleetConfig 更新舰队配置
-func (s *FleetConfigService) UpdateFleetConfig(id uint, userID uint, userRoles []string, req *UpdateFleetConfigRequest) (*FleetConfigResp, error) {
+func (s *FleetConfigService) UpdateFleetConfig(id uint, _ uint, userRoles []string, req *UpdateFleetConfigRequest) (*FleetConfigResp, error) {
 	config, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, errors.New("舰队配置不存在")
 	}
-	if !s.canManage(config, userID, userRoles) {
+	if !s.canManage(userRoles) {
 		return nil, errors.New("权限不足")
 	}
 
@@ -256,12 +256,13 @@ func (s *FleetConfigService) UpdateFleetConfig(id uint, userID uint, userRoles [
 }
 
 // DeleteFleetConfig 删除舰队配置
-func (s *FleetConfigService) DeleteFleetConfig(id uint, userID uint, userRoles []string) error {
-	config, err := s.repo.GetByID(id)
+
+func (s *FleetConfigService) DeleteFleetConfig(id uint, _ uint, userRoles []string) error {
+	_, err := s.repo.GetByID(id)
 	if err != nil {
 		return errors.New("舰队配置不存在")
 	}
-	if !s.canManage(config, userID, userRoles) {
+	if !s.canManage(userRoles) {
 		return errors.New("权限不足")
 	}
 	return s.repo.Delete(id)
@@ -422,7 +423,7 @@ func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) e
 //  辅助方法
 // ─────────────────────────────────────────────
 
-func (s *FleetConfigService) canManage(config *model.FleetConfig, userID uint, userRoles []string) bool {
+func (s *FleetConfigService) canManage(userRoles []string) bool {
 	return model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin, model.RoleSeniorFC)
 }
 
@@ -963,12 +964,12 @@ type UpdateFittingItemsSettingsRequest struct {
 }
 
 // UpdateFittingItemsSettings 批量更新装配物品的重要性、惩罚和替代品
-func (s *FleetConfigService) UpdateFittingItemsSettings(configID, fittingID, userID uint, userRoles []string, req *UpdateFittingItemsSettingsRequest) error {
-	config, err := s.repo.GetByID(configID)
+func (s *FleetConfigService) UpdateFittingItemsSettings(configID, fittingID, _ uint, userRoles []string, req *UpdateFittingItemsSettingsRequest) error {
+	_, err := s.repo.GetByID(configID)
 	if err != nil {
 		return errors.New("配置不存在")
 	}
-	if !s.canManage(config, userID, userRoles) {
+	if !s.canManage(userRoles) {
 		return errors.New("权限不足")
 	}
 

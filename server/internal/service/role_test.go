@@ -19,8 +19,6 @@ func TestEnsureUserHasDefaultRoleUsesGuest(t *testing.T) {
 func TestValidateSetUserRolesPermission(t *testing.T) {
 	t.Run("super admin can assign any role to others", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			1,
-			2,
 			[]string{model.RoleSuperAdmin},
 			[]string{model.RoleUser},
 			[]string{model.RoleAdmin, model.RoleFC},
@@ -32,8 +30,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("super admin can edit own roles", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			1,
-			1,
 			[]string{model.RoleSuperAdmin},
 			[]string{model.RoleSuperAdmin},
 			[]string{model.RoleSuperAdmin, model.RoleCaptain},
@@ -45,8 +41,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin cannot assign admin role to others", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			1,
-			2,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleUser},
 			[]string{model.RoleAdmin},
@@ -58,8 +52,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin can assign normal roles to normal user", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			1,
-			2,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleUser},
 			[]string{model.RoleUser, model.RoleFC},
@@ -71,8 +63,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin can edit own roles adding non-admin", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			7,
-			7,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin, model.RoleFC},
@@ -84,8 +74,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin can remove own admin role", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			7,
-			7,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin},
 			[]string{model.RoleUser, model.RoleFC},
@@ -97,8 +85,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin self-edit blocked if currentCodes inconsistent and requesting admin", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			7,
-			7,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleUser},
 			[]string{model.RoleAdmin},
@@ -110,8 +96,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin can manage other admin non-admin roles", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			1,
-			2,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin, model.RoleFC},
@@ -123,8 +107,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("admin cannot add super admin to self", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			7,
-			7,
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin},
 			[]string{model.RoleAdmin, model.RoleSuperAdmin},
@@ -136,8 +118,6 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 
 	t.Run("non-admin non-super user cannot manage roles", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
-			1,
-			2,
 			[]string{model.RoleUser},
 			[]string{model.RoleUser},
 			[]string{model.RoleFC},

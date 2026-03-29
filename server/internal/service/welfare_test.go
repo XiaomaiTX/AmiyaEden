@@ -374,8 +374,8 @@ func TestBuildEligibleWelfareRespIncludesFutureSkillOptions(t *testing.T) {
 			SkillPlanIDs:     []uint{7},
 		}
 		skillCache := map[int64]map[uint]bool{
-			1001: map[uint]bool{7: false},
-			1002: map[uint]bool{7: false},
+			1001: {7: false},
+			1002: {7: false},
 		}
 
 		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, skillCache, false)
@@ -399,8 +399,8 @@ func TestBuildEligibleWelfareRespIncludesFutureSkillOptions(t *testing.T) {
 			SkillPlanIDs:     []uint{7},
 		}
 		skillCache := map[int64]map[uint]bool{
-			1001: map[uint]bool{7: true},
-			1002: map[uint]bool{7: false},
+			1001: {7: true},
+			1002: {7: false},
 		}
 
 		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, skillCache, false)

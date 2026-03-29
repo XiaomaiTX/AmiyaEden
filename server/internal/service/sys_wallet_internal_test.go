@@ -1,21 +1,47 @@
 package service
 
-import "testing"
+import (
+	"amiya-eden/global"
+	"amiya-eden/internal/model"
+	"fmt"
+	"testing"
+	"time"
 
-func TestBuildSystemWalletTransactionUsesDeltaAndSystemOperator(t *testing.T) {
-	tx := buildSystemWalletTransaction(42, -15.5, 84.5, "shop order", "shop", "order:1")
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
 
+func TestCreditUserStoresSystemOperatorOnWalletTransaction(t *testing.T) {
+	db := newSysWalletServiceTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	svc := NewSysWalletService()
+	if err := svc.CreditUser(42, 15.5, "shop order", "shop", "order:1"); err != nil {
+		t.Fatalf("CreditUser() error = %v", err)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
+	if len(txs) != 1 {
+		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	}
+
+	tx := txs[0]
 	if tx.UserID != 42 {
-		t.Fatalf("expected user id 42, got %d", tx.UserID)
+		t.Fatalf("wallet transaction user_id = %d, want 42", tx.UserID)
 	}
-	if tx.Amount != -15.5 {
-		t.Fatalf("expected delta amount to be preserved, got %f", tx.Amount)
+	if tx.Amount != 15.5 {
+		t.Fatalf("wallet transaction amount = %f, want 15.5", tx.Amount)
 	}
-	if tx.BalanceAfter != 84.5 {
-		t.Fatalf("expected balance after 84.5, got %f", tx.BalanceAfter)
+	if tx.BalanceAfter != 15.5 {
+		t.Fatalf("wallet transaction balance_after = %f, want 15.5", tx.BalanceAfter)
 	}
 	if tx.OperatorID != 0 {
-		t.Fatalf("expected system operator id 0, got %d", tx.OperatorID)
+		t.Fatalf("wallet transaction operator_id = %d, want 0", tx.OperatorID)
 	}
 	if tx.RefType != "shop" || tx.RefID != "order:1" || tx.Reason != "shop order" {
 		t.Fatalf("unexpected transaction metadata: %+v", tx)
@@ -42,4 +68,18 @@ func TestNormalizeLedgerPageSizeUsesLedgerStandardBounds(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newSysWalletServiceTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	dsn := fmt.Sprintf("file:sys_wallet_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&model.SystemWallet{}, &model.WalletTransaction{}); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	return db
 }
