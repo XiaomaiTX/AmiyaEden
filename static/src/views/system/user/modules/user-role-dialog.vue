@@ -19,7 +19,9 @@
             v-for="role in allRoles"
             :key="role.code"
             :label="role.code"
-            :disabled="['super_admin', 'admin'].includes(role.code) && !isSuperAdmin"
+            :disabled="
+              role.code === 'super_admin' || (['admin'].includes(role.code) && !isSuperAdmin)
+            "
           >
             {{ role.name }}
           </ElCheckbox>

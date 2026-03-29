@@ -114,7 +114,7 @@ source_of_truth:
 - 舰队列表 FC 昵称 fallback
 - join 后的 `deleted_at`、`status`、`id` 等歧义列问题
 - 用户列表角色 fallback 与排序
-- admin / super_admin 保护逻辑
+- admin / super_admin 保护逻辑（super_admin 仅通过配置文件管理，API 不可分配 / 修改 / 删除）
 - `/api/v1/me` 资料补全与联系方式唯一性
 
 ### Phase 2: 补模块级高频回归点
@@ -140,6 +140,9 @@ source_of_truth:
 
 - 用户资料更新校验与唯一性
 - 保护管理员账号不能被普通 admin 修改 / 删除
+- super_admin 角色不可通过 API 授予、修改或删除
+- super_admin 用户不可通过 API 删除
+- 登录时 super_admin 角色根据配置文件自动同步
 - 角色列表 `roles[]` 与 legacy `role` fallback
 - auto-role 的 `Director -> admin` 规则
 

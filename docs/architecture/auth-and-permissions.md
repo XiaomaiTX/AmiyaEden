@@ -145,6 +145,18 @@ source_of_truth:
 - `新人选队长` 不是纯角色权限，而是 `Login + 当前新人资格`
 - `队长帮扶` 需要真实系统角色 `captain`；普通 `admin` 应使用 `帮扶管理` 页面，而不是把 `admin` 当作 captain 的别名
 
+## Super Admin 配置驱动机制
+
+`super_admin` 角色完全由配置文件驱动，不通过任何 API 或 UI 管理：
+
+- 配置位置：`config.yaml` 的 `app.super_admins`，值为 EVE character ID 列表
+- 授予时机：首次 SSO 登录创建用户时，若主角色 ID 在配置列表中则直接授予
+- 同步时机：每次 SSO 登录时，`SyncConfigSuperAdmins` 检查用户所有绑定角色 ID，任一命中配置则授予，全部未命中则移除
+- API 拦截：`SetUserRoles` 完全拒绝包含 `super_admin` 的授予或修改请求
+- 删除保护：`DeleteUser` 拒绝删除拥有 `super_admin` 角色的用户
+- 前端禁用：角色分配对话框中 `super_admin` 复选框始终 disabled
+- ESI 自动映射：自动权限映射逻辑已排除 `super_admin`，不会被 ESI corp role / title 触发
+
 ## 当前不变量
 
 - 当前产品不是用户名 / 密码登录系统
@@ -153,8 +165,11 @@ source_of_truth:
 - 非 `allow_corporations` 军团角色的 ESI corporation role 信号当前应被整体忽略，不参与权限判断或衍生任务判定
 - 自动补 `admin` 的内置快捷规则当前仅接受允许军团中的 ESI corp role `Director`
 - corp title 只参与显式 title mapping，不会因为标题名为 `Director` 就自动抬升为 `admin`
-- 用户删除当前不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其删除 `super_admin` 或其他 `admin`
-- 用户编辑当前也不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其编辑 `super_admin` 或其他 `admin`，且仅 `super_admin` 可分配 `admin/super_admin`
+- `super_admin` 仅通过配置文件（`config.yaml` 的 `app.super_admins`）管理，不可通过任何 API 或 UI 授予、修改或撤销
+- `super_admin` 用户不可通过 API 删除
+- `super_admin` 角色在每次 SSO 登录时根据配置文件自动同步：用户任一绑定角色 ID 在配置列表中则授予，否则移除
+- 用户删除当前不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其删除其他 `admin`
+- 用户编辑当前也不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其编辑其他 `admin`；仅 `super_admin` 可分配 `admin`
 - 管理员用户列表 `/api/v1/system/user` 的角色展示与接口契约当前只认 `roles[]`，不应再依赖历史单值 `role`
 - 细粒度权限不能只靠前端控制
 - 旧兼容文档不能重新定义角色体系

@@ -217,13 +217,71 @@ func (s *EveSSOService) resolveInitialSSOState(ctx context.Context, characterID 
 }
 
 func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, portraitURL string, primaryCharacterID int64, clientIP string, now time.Time, initialRole string) (*model.User, error) {
-	user := buildDefaultSSOUser(portraitURL, primaryCharacterID, clientIP, now, initialRole)
+	finalRole := initialRole
+	for _, adminCharID := range global.Config.App.SuperAdmins {
+		if adminCharID == primaryCharacterID {
+			finalRole = model.RoleSuperAdmin
+			global.Logger.Info("从配置文件授予超级管理员角色",
+				zap.Int64("character_id", primaryCharacterID))
+			break
+		}
+	}
+
+	user := buildDefaultSSOUser(portraitURL, primaryCharacterID, clientIP, now, finalRole)
 	if err := s.userRepo.Create(user); err != nil {
 		return nil, err
 	}
 
 	s.roleSvc.EnsureUserHasRole(ctx, user.ID, user.Role)
 	return user, nil
+}
+
+// SyncConfigSuperAdmins 根据配置文件同步用户的 super_admin 角色
+// 如果用户的任意角色 ID 在配置列表中则授予，否则移除
+func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
+	charRepo := repository.NewEveCharacterRepository()
+	roleRepo := repository.NewRoleRepository()
+
+	chars, err := charRepo.ListByUserID(userID)
+	if err != nil {
+		global.Logger.Error("SyncConfigSuperAdmins 查询角色失败", zap.Uint("userID", userID), zap.Error(err))
+		return
+	}
+
+	userCharIDs := make(map[int64]struct{}, len(chars))
+	for _, c := range chars {
+		userCharIDs[c.CharacterID] = struct{}{}
+	}
+
+	shouldSuperAdmin := false
+	for _, adminCharID := range global.Config.App.SuperAdmins {
+		if _, ok := userCharIDs[adminCharID]; ok {
+			shouldSuperAdmin = true
+			break
+		}
+	}
+
+	currentCodes, err := roleRepo.GetUserRoleCodes(userID)
+	if err != nil {
+		global.Logger.Error("SyncConfigSuperAdmins 查询角色失败", zap.Uint("userID", userID), zap.Error(err))
+		return
+	}
+
+	hasSuperAdmin := model.ContainsRole(currentCodes, model.RoleSuperAdmin)
+
+	if shouldSuperAdmin && !hasSuperAdmin {
+		if err := roleRepo.AddUserRole(userID, model.RoleSuperAdmin); err != nil {
+			global.Logger.Error("SyncConfigSuperAdmins 授予 super_admin 失败", zap.Uint("userID", userID), zap.Error(err))
+			return
+		}
+		global.Logger.Info("SyncConfigSuperAdmins 授予超级管理员", zap.Uint("userID", userID))
+	} else if !shouldSuperAdmin && hasSuperAdmin {
+		if err := roleRepo.RemoveUserRole(userID, model.RoleSuperAdmin); err != nil {
+			global.Logger.Error("SyncConfigSuperAdmins 移除 super_admin 失败", zap.Uint("userID", userID), zap.Error(err))
+			return
+		}
+		global.Logger.Info("SyncConfigSuperAdmins 移除超级管理员", zap.Uint("userID", userID))
+	}
 }
 
 func applyAffiliationToCharacter(char *model.EveCharacter, affiliation *characterAffiliationSnapshot) {
@@ -555,6 +613,9 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	if OnExistingCharacterSyncFunc != nil {
 		OnExistingCharacterSyncFunc(characterID, user.ID)
 	}
+
+	// 根据配置文件同步 super_admin 角色
+	SyncConfigSuperAdmins(context.Background(), user.ID)
 
 	jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
 	if err != nil {
