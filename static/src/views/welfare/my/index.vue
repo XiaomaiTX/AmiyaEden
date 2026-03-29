@@ -9,10 +9,7 @@
             :loading="eligibleLoading"
             :data="eligibleRows"
             :columns="eligibleColumns"
-            :row-class-name="
-              ({ row }: { row: Record<string, any>; rowIndex: number }) =>
-                getEligibleRowClassName({ row: row as EligibleRow })
-            "
+            :row-class-name="eligibleRowClassName"
           />
         </ElTabPane>
 
@@ -234,6 +231,10 @@
 
   function getEligibleRowClassName({ row }: { row: EligibleRow }) {
     return row.canApplyNow ? '' : 'welfare-future-row'
+  }
+
+  function eligibleRowClassName({ row }: { row: Record<string, any>; rowIndex: number }) {
+    return getEligibleRowClassName({ row: row as EligibleRow })
   }
 
   async function loadEligibleWelfares() {
