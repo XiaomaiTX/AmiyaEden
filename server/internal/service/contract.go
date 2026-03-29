@@ -100,14 +100,8 @@ func NewContractService() *ContractService {
 
 // GetUserContracts 分页获取用户名下所有角色的合同
 func (s *ContractService) GetUserContracts(userID uint, req *InfoContractsRequest) ([]ContractResponse, int64, error) {
-	page := req.Current
-	if page <= 0 {
-		page = 1
-	}
-	pageSize := req.Size
-	if pageSize <= 0 || pageSize > 100 {
-		pageSize = 20
-	}
+	page := normalizePage(req.Current)
+	pageSize := normalizeLedgerPageSize(req.Size)
 
 	// 1. 获取角色列表
 	chars, err := s.charRepo.ListByUserID(userID)

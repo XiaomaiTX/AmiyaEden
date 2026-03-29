@@ -80,7 +80,7 @@ func (r *UserRepository) UpdateRole(id uint, role string) error {
 
 // UserFilter 用户列表筛选条件
 type UserFilter struct {
-	Keyword           string // 匹配昵称、QQ 或任意角色名（不区分大小写）
+	Keyword           string // 匹配昵称、QQ 或已绑定角色名（不区分大小写）
 	Status            *int
 	Role              string
 	AllowCorporations []int64 // 非空时只返回拥有这些军团角色的用户

@@ -17,20 +17,33 @@ func TestEnsureUserHasDefaultRoleUsesGuest(t *testing.T) {
 }
 
 func TestValidateSetUserRolesPermission(t *testing.T) {
-	t.Run("admin cannot edit admin target", func(t *testing.T) {
+	t.Run("super admin can assign any role to others", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
 			1,
 			2,
-			[]string{model.RoleAdmin},
-			[]string{model.RoleAdmin},
+			[]string{model.RoleSuperAdmin},
 			[]string{model.RoleUser},
+			[]string{model.RoleAdmin, model.RoleFC},
 		)
-		if err == nil {
-			t.Fatal("expected protected target edit to be blocked")
+		if err != nil {
+			t.Fatalf("expected super admin to assign any role, got %v", err)
 		}
 	})
 
-	t.Run("admin cannot assign admin role", func(t *testing.T) {
+	t.Run("super admin can edit own roles", func(t *testing.T) {
+		err := validateSetUserRolesPermission(
+			1,
+			1,
+			[]string{model.RoleSuperAdmin},
+			[]string{model.RoleSuperAdmin},
+			[]string{model.RoleSuperAdmin, model.RoleCaptain},
+		)
+		if err != nil {
+			t.Fatalf("expected super admin self edit to pass, got %v", err)
+		}
+	})
+
+	t.Run("admin cannot assign admin role to others", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
 			1,
 			2,
@@ -56,7 +69,20 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 		}
 	})
 
-	t.Run("admin can edit own roles", func(t *testing.T) {
+	t.Run("admin can edit own roles adding non-admin", func(t *testing.T) {
+		err := validateSetUserRolesPermission(
+			7,
+			7,
+			[]string{model.RoleAdmin},
+			[]string{model.RoleAdmin},
+			[]string{model.RoleAdmin, model.RoleFC},
+		)
+		if err != nil {
+			t.Fatalf("expected self role edit to pass, got %v", err)
+		}
+	})
+
+	t.Run("admin can remove own admin role", func(t *testing.T) {
 		err := validateSetUserRolesPermission(
 			7,
 			7,
@@ -65,7 +91,33 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 			[]string{model.RoleUser, model.RoleFC},
 		)
 		if err != nil {
-			t.Fatalf("expected self role edit to pass, got %v", err)
+			t.Fatalf("expected self admin removal to pass, got %v", err)
+		}
+	})
+
+	t.Run("admin self-edit blocked if currentCodes inconsistent and requesting admin", func(t *testing.T) {
+		err := validateSetUserRolesPermission(
+			7,
+			7,
+			[]string{model.RoleAdmin},
+			[]string{model.RoleUser},
+			[]string{model.RoleAdmin},
+		)
+		if err == nil {
+			t.Fatal("expected self admin promotion to be blocked when currentCodes lacks admin")
+		}
+	})
+
+	t.Run("admin can manage other admin non-admin roles", func(t *testing.T) {
+		err := validateSetUserRolesPermission(
+			1,
+			2,
+			[]string{model.RoleAdmin},
+			[]string{model.RoleAdmin},
+			[]string{model.RoleAdmin, model.RoleFC},
+		)
+		if err != nil {
+			t.Fatalf("expected admin to manage peer admin non-admin roles, got %v", err)
 		}
 	})
 
@@ -79,6 +131,49 @@ func TestValidateSetUserRolesPermission(t *testing.T) {
 		)
 		if err != nil {
 			t.Fatalf("validateSetUserRolesPermission should not check super_admin (handled by SetUserRoles entry), got %v", err)
+		}
+	})
+
+	t.Run("non-admin non-super user cannot manage roles", func(t *testing.T) {
+		err := validateSetUserRolesPermission(
+			1,
+			2,
+			[]string{model.RoleUser},
+			[]string{model.RoleUser},
+			[]string{model.RoleFC},
+		)
+		if err == nil {
+			t.Fatal("expected non-admin to be blocked")
+		}
+	})
+}
+
+func TestFilterOutRole(t *testing.T) {
+	t.Run("removes target role", func(t *testing.T) {
+		result := filterOutRole([]string{"super_admin", "admin", "fc"}, model.RoleSuperAdmin)
+		if len(result) != 2 || result[0] != "admin" || result[1] != "fc" {
+			t.Fatalf("expected [admin fc], got %v", result)
+		}
+	})
+
+	t.Run("no target present returns same elements", func(t *testing.T) {
+		result := filterOutRole([]string{"admin", "fc"}, model.RoleSuperAdmin)
+		if len(result) != 2 {
+			t.Fatalf("expected 2 elements, got %v", result)
+		}
+	})
+
+	t.Run("empty input returns empty", func(t *testing.T) {
+		result := filterOutRole([]string{}, model.RoleSuperAdmin)
+		if len(result) != 0 {
+			t.Fatalf("expected empty, got %v", result)
+		}
+	})
+
+	t.Run("all elements are target returns empty", func(t *testing.T) {
+		result := filterOutRole([]string{"super_admin", "super_admin"}, model.RoleSuperAdmin)
+		if len(result) != 0 {
+			t.Fatalf("expected empty, got %v", result)
 		}
 	})
 }

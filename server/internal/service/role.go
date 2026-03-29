@@ -106,11 +106,18 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 
 	requestedCodes := normalizeAssignedRoleCodes(roleCodes)
 
-	if model.ContainsAnyRole(requestedCodes, model.RoleSuperAdmin) {
-		return errors.New("超级管理员角色仅通过配置文件管理，不可手动分配")
-	}
-	if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
-		return errors.New("超级管理员角色仅通过配置文件管理，不可手动修改")
+	if model.IsSuperAdmin(operatorRoles) {
+		requestedCodes = filterOutRole(requestedCodes, model.RoleSuperAdmin)
+		if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
+			requestedCodes = append([]string{model.RoleSuperAdmin}, requestedCodes...)
+		}
+	} else {
+		if model.ContainsAnyRole(requestedCodes, model.RoleSuperAdmin) {
+			return errors.New("超级管理员角色仅通过配置文件管理，不可手动分配")
+		}
+		if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
+			return errors.New("超级管理员角色仅通过配置文件管理，不可手动修改")
+		}
 	}
 
 	if err := validateSetUserRolesPermission(operatorID, userID, operatorRoles, currentCodes, requestedCodes); err != nil {
@@ -128,18 +135,21 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 }
 
 func validateSetUserRolesPermission(operatorID, targetUserID uint, operatorRoles, currentCodes, requestedCodes []string) error {
-	isSelfAdminEdit := operatorID == targetUserID && model.ContainsRole(operatorRoles, model.RoleAdmin)
+	isSuperAdmin := model.IsSuperAdmin(operatorRoles)
+	isAdmin := model.ContainsRole(operatorRoles, model.RoleAdmin)
 
-	if !isSelfAdminEdit {
-		if err := validateManageUserPermission(operatorRoles, currentCodes); err != nil {
-			return err
+	if isSuperAdmin {
+		return nil
+	}
+
+	if isAdmin {
+		if model.ContainsAnyRole(requestedCodes, model.RoleAdmin) && !model.ContainsRole(currentCodes, model.RoleAdmin) {
+			return errors.New("只有超级管理员可以分配管理员角色")
 		}
+		return nil
 	}
 
-	if model.ContainsAnyRole(requestedCodes, model.RoleAdmin) && !isSelfAdminEdit {
-		return errors.New("只有超级管理员可以分配管理员角色")
-	}
-	return nil
+	return errors.New("权限不足")
 }
 
 func normalizeAssignedRoleCodes(codes []string) []string {
@@ -167,6 +177,16 @@ func normalizeAssignedRoleCodes(codes []string) []string {
 			continue
 		}
 		result = append(result, code)
+	}
+	return result
+}
+
+func filterOutRole(codes []string, target string) []string {
+	result := make([]string, 0, len(codes))
+	for _, code := range codes {
+		if code != target {
+			result = append(result, code)
+		}
 	}
 	return result
 }

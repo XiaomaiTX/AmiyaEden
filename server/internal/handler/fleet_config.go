@@ -39,20 +39,18 @@ func (h *FleetConfigHandler) CreateFleetConfig(c *gin.Context) {
 
 // ListFleetConfigs 分页查询舰队配置列表
 func (h *FleetConfigHandler) ListFleetConfigs(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	page, pageSize, err := parsePaginationQuery(c, 20, 100)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 
-	records, total, err := h.svc.ListFleetConfigs(page, size)
+	records, total, err := h.svc.ListFleetConfigs(page, pageSize)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{
-		"list":     records,
-		"page":     page,
-		"pageSize": size,
-		"total":    total,
-	})
+	response.OKWithPage(c, records, total, page, pageSize)
 }
 
 // GetFleetConfig 获取舰队配置详情

@@ -150,11 +150,7 @@
           { class: 'user-characters-panel__header-cell' },
           t('userAdmin.characters.characterIdLabel')
         ),
-        h(
-          'div',
-          { class: 'user-characters-panel__header-cell' },
-          t("SeAT")
-        ),
+        h('div', { class: 'user-characters-panel__header-cell' }, t('SeAT')),
         h(
           'div',
           { class: 'user-characters-panel__header-cell' },

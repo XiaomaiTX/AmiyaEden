@@ -47,12 +47,8 @@ func (s *UserService) GetUserByID(id uint) (*model.User, error) {
 }
 
 func (s *UserService) ListUsers(page, pageSize int, filter repository.UserFilter) ([]model.UserListItem, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 10
-	}
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
 	users, total, err := s.repo.List(page, pageSize, filter)
 	if err != nil {
 		return nil, 0, err

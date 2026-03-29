@@ -31,6 +31,17 @@ func (r *FleetRepository) GetByID(id string) (*model.Fleet, error) {
 	return &fleet, err
 }
 
+func (r *FleetRepository) ListByIDs(ids []string) ([]model.Fleet, error) {
+	var fleets []model.Fleet
+	if len(ids) == 0 {
+		return fleets, nil
+	}
+	err := global.DB.
+		Where("id IN ? AND deleted_at IS NULL", ids).
+		Find(&fleets).Error
+	return fleets, err
+}
+
 // Update 更新舰队信息
 func (r *FleetRepository) Update(fleet *model.Fleet) error {
 	return global.DB.Save(fleet).Error

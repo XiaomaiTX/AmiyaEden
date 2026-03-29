@@ -224,8 +224,7 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/basic-config` | 获取基础配置 | `RequireRole(admin)` |
-| PUT | `/system/basic-config` | 更新基础配置 | `RequireRole(admin)` |
+| GET | `/system/basic-config` | 获取固定系统标识（军团 ID / 网站标题） | `RequireRole(admin)` |
 | GET | `/system/basic-config/allow-corporations` | 获取允许军团列表 | `RequireRole(admin)` |
 | PUT | `/system/basic-config/allow-corporations` | 更新允许军团列表 | `RequireRole(admin)` |
 
@@ -258,7 +257,7 @@ source_of_truth:
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
 | GET | `/system/role/definitions` | 系统角色定义列表（只读） | `RequireRole(admin)` |
-| GET | `/system/user` | 用户列表；默认按 `last_login_at` 倒序，关键字支持昵称 / QQ / 已绑定角色名；角色字段仅返回有序 `roles[]`，并附带已绑定角色与每个角色的 `total_sp` 快照 | `RequireRole(admin)` |
+| GET | `/system/user` | 用户列表；默认按 `last_login_at` 倒序，关键字支持昵称 / QQ / 已绑定角色名；角色字段仅返回有序 `roles[]`，不再返回历史单值 `role`，并附带已绑定角色与每个角色的 `total_sp` 快照 | `RequireRole(admin)` |
 | GET | `/system/user/:id` | 用户详情 | `RequireRole(admin)` |
 | PUT | `/system/user/:id` | 更新用户昵称 / QQ / Discord ID / 状态；`admin` 不可编辑其他 `admin` | `RequireRole(admin)` |
 | DELETE | `/system/user/:id` | 删除用户；`super_admin` 用户不可删除；`admin` 不可删除其他 `admin` | `RequireRole(admin)` |

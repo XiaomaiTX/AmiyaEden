@@ -260,10 +260,18 @@ func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpAppli
 		}
 	}
 	// 批量查询舰队信息
-	fleetMap := make(map[string]*model.Fleet)
-	for fid := range fleetIDSet {
-		if fleet, err := s.fleetRepo.GetByID(fid); err == nil {
-			fleetMap[fid] = fleet
+	fleetIDs := make([]string, 0, len(fleetIDSet))
+	for fleetID := range fleetIDSet {
+		fleetIDs = append(fleetIDs, fleetID)
+	}
+	fleetMap := make(map[string]model.Fleet)
+	if len(fleetIDs) > 0 {
+		fleets, err := s.fleetRepo.ListByIDs(fleetIDs)
+		if err == nil {
+			for index := range fleets {
+				fleet := fleets[index]
+				fleetMap[fleet.ID] = fleet
+			}
 		}
 	}
 	// 组装响应
@@ -285,6 +293,9 @@ func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpAppli
 
 // ListApplications 管理员端分页查询申请列表
 func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpApplicationFilter) ([]SrpApplicationResponse, int64, error) {
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
+
 	apps, total, err := s.repo.ListApplications(page, pageSize, filter)
 	if err != nil {
 		return nil, 0, err
@@ -294,6 +305,9 @@ func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpA
 
 // ListMyApplications 当前用户申请列表
 func (s *SrpService) ListMyApplications(userID uint, page, pageSize int) ([]SrpApplicationResponse, int64, error) {
+	page = normalizePage(page)
+	pageSize = normalizePageSize(pageSize, 20, 100)
+
 	apps, total, err := s.repo.ListMyApplications(userID, page, pageSize)
 	if err != nil {
 		return nil, 0, err
