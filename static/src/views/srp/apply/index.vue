@@ -297,7 +297,7 @@
     if (list.length) await resolveApplicationNames(list)
   })
 
-  /* ── 角色 & 舰队 ── */
+  /* ── 人物 & 舰队 ── */
   const fleets = ref<Api.Fleet.FleetItem[]>([])
   const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.id, f])))
   const loadFleets = async () => {

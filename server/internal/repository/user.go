@@ -72,20 +72,20 @@ func (r *UserRepository) Delete(id uint) error {
 	return global.DB.Delete(&model.User{}, id).Error
 }
 
-// UpdateRole 修改用户角色
+// UpdateRole 修改用户职权（兼容字段）
 func (r *UserRepository) UpdateRole(id uint, role string) error {
 	return global.DB.Model(&model.User{}).Where("id = ?", id).Update("role", role).Error
 }
 
 // UserFilter 用户列表筛选条件
 type UserFilter struct {
-	Keyword           string // 匹配昵称、QQ 或已绑定角色名（不区分大小写）
+	Keyword           string // 匹配昵称、QQ 或已绑定人物名（不区分大小写）
 	Status            *int
-	Role              string  // 单角色筛选，仅匹配当前 user_role 关联
-	AllowCorporations []int64 // 非空时只返回拥有这些军团角色的用户
+	Role              string  // 单职权筛选，仅匹配当前 user_role 关联
+	AllowCorporations []int64 // 非空时只返回属于这些军团的用户
 }
 
-// GetByPrimaryCharacterID 根据主角色 ID 查询用户
+// GetByPrimaryCharacterID 根据主人物 ID 查询用户
 func (r *UserRepository) GetByPrimaryCharacterID(characterID int64) (*model.User, error) {
 	var user model.User
 	err := global.DB.Where("primary_character_id = ?", characterID).First(&user).Error

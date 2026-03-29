@@ -107,7 +107,7 @@
 
   // 将 eligible welfares 展平为表格行
   // per_user: 一条福利一行
-  // per_character: 每个可申请角色一行
+  // per_character: 每个可申请人物一行
   interface EligibleRow {
     welfareId: number
     welfareName: string

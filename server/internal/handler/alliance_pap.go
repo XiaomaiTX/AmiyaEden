@@ -29,7 +29,7 @@ func NewAlliancePAPHandler() *AlliancePAPHandler {
 	}
 }
 
-// getAllowCorpFilter 根据调用者角色返回军团过滤列表
+// getAllowCorpFilter 根据调用者职权返回军团过滤列表
 // super_admin 返回 nil（不过滤），admin 返回配置的 allow_corporations
 func getAllowCorpFilter(c *gin.Context) []int64 {
 	roles := middleware.GetUserRoles(c)

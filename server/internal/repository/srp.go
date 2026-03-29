@@ -77,7 +77,7 @@ func (r *SrpRepository) GetApplicationByIDForUpdate(tx *gorm.DB, id uint) (*mode
 	return &app, err
 }
 
-// ExistsApplicationByKillmail 检查该 killmail 是否已被该角色提交过申请
+// ExistsApplicationByKillmail 检查该 killmail 是否已被该人物提交过申请
 func (r *SrpRepository) ExistsApplicationByKillmail(killmailID int64, characterID int64) bool {
 	var count int64
 	global.DB.Model(&model.SrpApplication{}).

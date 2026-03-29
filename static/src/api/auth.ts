@@ -112,7 +112,7 @@ export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
   const primaryChar =
     characters?.find((c) => c.character_id === user.primary_character_id) ?? characters?.[0]
 
-  // 直接使用后端角色编码，回退到 user.role
+  // 直接使用后端职权编码，回退到 user.role
   const roles = backendRoles && backendRoles.length > 0 ? backendRoles : [user.role ?? 'user']
 
   return {

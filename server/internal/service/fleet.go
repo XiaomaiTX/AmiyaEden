@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// FleetKMRefreshFunc 触发单个角色 KM 刷新的钩子，由 jobs 层注入以避免循环依赖
+// FleetKMRefreshFunc 触发单个人物 KM 刷新的钩子，由 jobs 层注入以避免循环依赖
 var FleetKMRefreshFunc func(characterID int64)
 
 // FleetAutoSRPFunc 自动 SRP 处理钩子，由 jobs 层注入
@@ -258,10 +258,10 @@ func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRoles []stri
 	if req.CharacterID != nil {
 		char, err := s.charRepo.GetByCharacterID(*req.CharacterID)
 		if err != nil {
-			return nil, errors.New("角色不存在")
+			return nil, errors.New("人物不存在")
 		}
 		if char.UserID != userID && !model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
-			return nil, errors.New("该角色不属于当前用户")
+			return nil, errors.New("该人物不属于当前用户")
 		}
 		fleet.FCCharacterID = *req.CharacterID
 		fleet.FCCharacterName = char.CharacterName
@@ -827,7 +827,7 @@ func (s *FleetService) GetPapLogs(fleetID string) ([]model.FleetPapLog, error) {
 	return s.repo.ListPapLogsByFleet(fleetID)
 }
 
-// GetUserPapLogs 获取用户的 PAP 记录（含角色名、FC 名称、舰队信息）
+// GetUserPapLogs 获取用户的 PAP 记录（含人物名、FC 名称、舰队信息）
 func (s *FleetService) GetUserPapLogs(userID uint) ([]repository.PapLogDetail, error) {
 	return s.repo.ListPapLogsDetailByUser(userID)
 }
@@ -1011,7 +1011,7 @@ func (s *FleetService) SyncESIMembers(fleetID string, userID uint, userRoles []s
 	for _, em := range esiMembers {
 		char, err := s.charRepo.GetByCharacterID(em.CharacterID)
 		if err != nil {
-			// 角色不在系统中，跳过
+			// 人物不在系统中，跳过
 			continue
 		}
 		shipTypeID := em.ShipTypeID

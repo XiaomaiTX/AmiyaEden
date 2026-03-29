@@ -58,7 +58,7 @@ source_of_truth:
 ## 权限边界
 
 - **SDE 查询接口**：公开访问，无需鉴权
-- **SDE 配置管理**：需要 `admin` 角色（`middleware.RequireRole(model.RoleAdmin)`）
+- **SDE 配置管理**：需要 `admin` 职权（`middleware.RequireRole(model.RoleAdmin)`）
 - 语言优先级由 body / header / cookie 决定，最终默认 `en`
 
 ## 验证

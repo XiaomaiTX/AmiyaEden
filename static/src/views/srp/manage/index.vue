@@ -165,7 +165,7 @@
     <!-- 发放弹窗 -->
     <ElDialog v-model="payoutDialogVisible" :title="$t('srp.manage.payoutDialog')" width="480px">
       <div class="payout-info-list" v-if="payoutTarget">
-        <!-- 角色（可复制） -->
+        <!-- 人物（可复制） -->
         <div class="payout-info-row">
           <span class="payout-label">{{ $t('srp.manage.payoutCharacter') }}</span>
           <span class="payout-value">

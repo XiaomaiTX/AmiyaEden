@@ -286,7 +286,7 @@ func (h *SrpHandler) BatchPayoutAsFuxiCoin(c *gin.Context) {
 }
 
 // OpenInfoWindow POST /srp/open-info-window
-// 通过 ESI 在客户端打开角色信息窗口
+// 通过 ESI 在客户端打开人物信息窗口
 func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
 	var req service.OpenInfoWindowRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

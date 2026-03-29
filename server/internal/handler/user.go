@@ -37,7 +37,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		filter.Status = &v
 	}
 
-	// admin 只能看到 allow_corporations 下有角色的用户，super_admin 看全部
+	// admin 只能看到 allow_corporations 下有人物的用户，super_admin 看全部
 	roles := middleware.GetUserRoles(c)
 	if !model.IsSuperAdmin(roles) {
 		filter.AllowCorporations = utils.GetAllowCorporations()
