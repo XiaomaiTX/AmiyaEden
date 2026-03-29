@@ -845,9 +845,7 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 1000 {
-		pageSize = 200
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 
 	now := time.Now()
 	filter, normalizedPeriod, normalizedYear, err := s.buildCorporationPapFilter(period, year, now)

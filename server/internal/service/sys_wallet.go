@@ -62,9 +62,7 @@ func (s *SysWalletService) GetMyTransactions(userID uint, page, pageSize int) ([
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 	filter := repository.WalletTransactionFilter{UserID: &userID}
 	return s.repo.ListTransactions(page, pageSize, filter)
 }
@@ -173,9 +171,7 @@ func (s *SysWalletService) AdminListWallets(page, pageSize int) ([]model.WalletW
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListWalletsWithCharacter(page, pageSize)
 }
 
@@ -189,7 +185,7 @@ func (s *SysWalletService) AdminListTransactions(page, pageSize int, filter repo
 	if page < 1 {
 		page = 1
 	}
-	pageSize = normalizeWalletLedgerPageSize(pageSize)
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListTransactionsWithCharacter(page, pageSize, filter)
 }
 
@@ -198,9 +194,7 @@ func (s *SysWalletService) AdminListLogs(page, pageSize int, filter repository.W
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListLogsWithCharacter(page, pageSize, filter)
 }
 
@@ -286,14 +280,4 @@ func (s *SysWalletService) ApplyWalletDeltaByOperatorTx(tx *gorm.DB, userID uint
 		newBalance = 0
 	}
 	return s.applyWalletDeltaTx(tx, userID, operatorID, delta, newBalance, reason, refType, refID)
-}
-
-func normalizeWalletLedgerPageSize(pageSize int) int {
-	if pageSize < 1 {
-		return 200
-	}
-	if pageSize > 1000 {
-		return 1000
-	}
-	return pageSize
 }

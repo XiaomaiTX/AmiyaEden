@@ -39,8 +39,7 @@
     fetchGetUserList,
     fetchDeleteUser,
     fetchImpersonateUser,
-    fetchGetRoleDefinitions,
-    fetchGetUserRoles
+    fetchGetRoleDefinitions
   } from '@/api/system-manage'
   import { fetchGetUserInfo } from '@/api/auth'
   import { useUserStore } from '@/store/modules/user'
@@ -158,34 +157,17 @@
     }
   }
 
-  const hydrateUserRoles = async (rows: UserListItem[]) => {
+  const syncDisplayRoles = async (rows: UserListItem[]) => {
     if (rows.length === 0) return
 
     const hydrationVersion = ++roleHydrationVersion
     await ensureRolePriorityMap()
 
-    const hydratedRows = await Promise.all(
-      rows.map(async (row) => {
-        try {
-          const userRoles = await fetchGetUserRoles(row.id)
-          const roles = sortRoles(userRoles.map((role) => role.code))
-          return {
-            ...row,
-            roles: roles.length > 0 ? roles : ['guest']
-          }
-        } catch (error) {
-          const roles = getDisplayRoles(row)
-          console.error(`Failed to load roles for user ${row.id}`, error)
-          return {
-            ...row,
-            roles
-          }
-        }
-      })
-    )
-
     if (hydrationVersion !== roleHydrationVersion) return
-    data.value = hydratedRows
+    data.value = rows.map((row) => ({
+      ...row,
+      roles: getDisplayRoles(row)
+    }))
   }
 
   const {
@@ -332,7 +314,7 @@
     },
     hooks: {
       onSuccess: (rows) => {
-        void hydrateUserRoles(rows as UserListItem[])
+        void syncDisplayRoles(rows as UserListItem[])
       }
     }
   })

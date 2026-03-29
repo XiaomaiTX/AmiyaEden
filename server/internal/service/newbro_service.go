@@ -398,6 +398,11 @@ func (s *NewbroAffiliationService) GetMyAffiliation(userID uint) (*NewbroMyAffil
 }
 
 func (s *NewbroAffiliationService) ListMyAffiliationHistory(userID uint, page, pageSize int) ([]NewbroAffiliationSummary, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	pageSize = normalizeLedgerPageSize(pageSize)
+
 	rows, total, err := s.affRepo.ListByPlayerUserIDPaged(userID, page, pageSize)
 	if err != nil {
 		return nil, 0, err
