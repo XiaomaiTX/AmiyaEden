@@ -80,8 +80,6 @@
   }
   const rolePriorityMap = ref<Record<string, number>>({ ...DEFAULT_ROLE_PRIORITY })
   const rolePriorityLoaded = ref(false)
-  let roleHydrationVersion = 0
-
   // 角色显示配置
   const ROLE_CONFIG: Record<string, { type: string; text: string }> = {
     super_admin: { type: 'danger', text: t('userAdmin.roles.super_admin') },
@@ -155,19 +153,6 @@
     } finally {
       rolePriorityLoaded.value = true
     }
-  }
-
-  const syncDisplayRoles = async (rows: UserListItem[]) => {
-    if (rows.length === 0) return
-
-    const hydrationVersion = ++roleHydrationVersion
-    await ensureRolePriorityMap()
-
-    if (hydrationVersion !== roleHydrationVersion) return
-    data.value = rows.map((row) => ({
-      ...row,
-      roles: getDisplayRoles(row)
-    }))
   }
 
   const {
@@ -313,8 +298,8 @@
         })
     },
     hooks: {
-      onSuccess: (rows) => {
-        void syncDisplayRoles(rows as UserListItem[])
+      onSuccess: () => {
+        void ensureRolePriorityMap()
       }
     }
   })
