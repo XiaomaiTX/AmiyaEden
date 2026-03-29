@@ -10,7 +10,6 @@ import (
 )
 
 const newbroRecentAffiliationLimit = 10
-const newbroActiveAffiliationUniqueIndex = "idx_newbro_captain_affiliation_active_player_user_id"
 
 func normalizeRecentAffiliations(rows []model.NewbroCaptainAffiliation) []model.NewbroCaptainAffiliation {
 	if len(rows) <= newbroRecentAffiliationLimit {
