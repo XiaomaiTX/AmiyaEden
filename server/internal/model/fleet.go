@@ -21,11 +21,11 @@ type Fleet struct {
 	ID              string     `gorm:"primaryKey;size:36"         json:"id"`
 	Title           string     `gorm:"size:256;not null"          json:"title"`
 	Description     string     `gorm:"type:text"                  json:"description"`
-	StartAt         time.Time  `gorm:"not null"                   json:"start_at"`
+	StartAt         time.Time  `gorm:"not null;index:idx_fleet_fc_start,priority:2,sort:desc" json:"start_at"`
 	EndAt           time.Time  `gorm:"not null"                   json:"end_at"`
 	Importance      string     `gorm:"size:32;not null"           json:"importance"` // strat_op / cta / other
 	PapCount        float64    `gorm:"default:0"                  json:"pap_count"`
-	FCUserID        uint       `gorm:"not null;index"             json:"fc_user_id"`
+	FCUserID        uint       `gorm:"not null;index;index:idx_fleet_fc_start,priority:1" json:"fc_user_id"`
 	FCCharacterID   int64      `gorm:"not null"                   json:"fc_character_id"`
 	FCCharacterName string     `gorm:"size:128"                   json:"fc_character_name"`
 	ESIFleetID      *int64     `gorm:""                           json:"esi_fleet_id,omitempty"`
@@ -58,10 +58,10 @@ type FleetPapLog struct {
 	ID          uint      `gorm:"primarykey"                                       json:"id"`
 	FleetID     string    `gorm:"size:36;not null;index"                           json:"fleet_id"`
 	CharacterID int64     `gorm:"not null;index"                                   json:"character_id"`
-	UserID      uint      `gorm:"not null;index"                                   json:"user_id"`
+	UserID      uint      `gorm:"not null;index;index:idx_fpl_user_issued,priority:1" json:"user_id"`
 	PapCount    float64   `gorm:"not null"                                         json:"pap_count"`
 	IssuedBy    uint      `gorm:"not null"                                         json:"issued_by"` // 发放者 user_id
-	IssuedAt    time.Time `gorm:"autoCreateTime"                                   json:"issued_at"`
+	IssuedAt    time.Time `gorm:"autoCreateTime;index:idx_fpl_user_issued,priority:2,sort:desc" json:"issued_at"`
 }
 
 func (FleetPapLog) TableName() string { return "fleet_pap_log" }

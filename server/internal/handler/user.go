@@ -7,7 +7,6 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
-	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -52,12 +51,11 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 }
 
 func (h *UserHandler) GetUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+	id := requireUintID(c, "id", "用户ID")
+	if id == 0 {
 		return
 	}
-	user, err := h.svc.GetUserByID(uint(id))
+	user, err := h.svc.GetUserByID(id)
 	if err != nil {
 		response.Fail(c, response.CodeNotFound, "用户不存在")
 		return
@@ -73,9 +71,8 @@ type updateUserRequest struct {
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+	id := requireUintID(c, "id", "用户ID")
+	if id == 0 {
 		return
 	}
 	var req updateUserRequest
@@ -84,7 +81,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.UpdateUserByAdmin(uint(id), operatorRoles, service.UserPatch{
+	if err := h.svc.UpdateUserByAdmin(id, operatorRoles, service.UserPatch{
 		Nickname:  req.Nickname,
 		QQ:        req.QQ,
 		DiscordID: req.DiscordID,
@@ -97,13 +94,12 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+	id := requireUintID(c, "id", "用户ID")
+	if id == 0 {
 		return
 	}
 	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.DeleteUser(uint(id), operatorRoles); err != nil {
+	if err := h.svc.DeleteUser(id, operatorRoles); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -112,12 +108,11 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 
 // ImpersonateUser 以指定用户身份签发 JWT（仅超级管理员可用）
 func (h *UserHandler) ImpersonateUser(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+	id := requireUintID(c, "id", "用户ID")
+	if id == 0 {
 		return
 	}
-	token, user, err := h.svc.ImpersonateUser(uint(id))
+	token, user, err := h.svc.ImpersonateUser(id)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
