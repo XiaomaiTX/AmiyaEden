@@ -86,6 +86,7 @@ type SDEConfig struct {
 
 // AppConfig 全局应用配置实例
 type AppConfig struct {
+	SuperAdmins []int64 `mapstructure:"super_admins"`
 }
 
 func ApplyDefaults(cfg *Config) {

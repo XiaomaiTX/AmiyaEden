@@ -260,10 +260,10 @@ source_of_truth:
 | GET | `/system/role/definitions` | 系统角色定义列表（只读） | `RequireRole(admin)` |
 | GET | `/system/user` | 用户列表；角色字段仅返回有序 `roles[]`，不再返回历史单值 `role` | `RequireRole(admin)` |
 | GET | `/system/user/:id` | 用户详情 | `RequireRole(admin)` |
-| PUT | `/system/user/:id` | 更新用户昵称 / QQ / Discord ID / 状态；`admin` 不可编辑 `super_admin` 或其他 `admin` | `RequireRole(admin)` |
-| DELETE | `/system/user/:id` | 删除用户；`admin` 不可删除 `super_admin` 或其他 `admin` | `RequireRole(admin)` |
+| PUT | `/system/user/:id` | 更新用户昵称 / QQ / Discord ID / 状态；`admin` 不可编辑其他 `admin` | `RequireRole(admin)` |
+| DELETE | `/system/user/:id` | 删除用户；`super_admin` 用户不可删除；`admin` 不可删除其他 `admin` | `RequireRole(admin)` |
 | GET | `/system/user/:id/roles` | 获取用户角色 | `RequireRole(admin)` |
-| PUT | `/system/user/:id/roles` | 设置用户角色；仅 `super_admin` 可编辑管理员账号或分配 `admin/super_admin` | `RequireRole(admin)` |
+| PUT | `/system/user/:id/roles` | 设置用户角色；`super_admin` 角色不可通过 API 分配或修改（仅通过配置文件管理）；仅 `super_admin` 可分配 `admin` | `RequireRole(admin)` |
 | POST | `/system/user/:id/impersonate` | 模拟登录，需 `super_admin` | `RequireRole(admin)` + `super_admin` |
 
 ### System Wallet
