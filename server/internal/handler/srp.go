@@ -152,6 +152,7 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 		Tab:          repository.SrpTabType(c.Query("tab")),
 		ReviewStatus: c.Query("review_status"),
 		PayoutStatus: c.Query("payout_status"),
+		Keyword:      c.Query("keyword"),
 	}
 	if fleetID := c.Query("fleet_id"); fleetID != "" {
 		filter.FleetID = &fleetID

@@ -30,6 +30,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 
 	filter := repository.UserFilter{
 		Keyword: c.Query("keyword"),
+		Role:    c.Query("role"),
 	}
 	if s := c.Query("status"); s != "" {
 		v, _ := strconv.Atoi(s)

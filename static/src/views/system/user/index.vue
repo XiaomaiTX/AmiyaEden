@@ -27,7 +27,7 @@
       >
       </ArtTable>
 
-      <!-- 角色分配弹窗 -->
+      <!-- 职权分配弹窗 -->
       <UserRoleDialog
         v-model:visible="dialogVisible"
         :user-data="currentUserData"
@@ -67,12 +67,13 @@
   // 搜索表单
   const searchForm = ref({
     keyword: undefined,
-    status: undefined
+    status: undefined,
+    role: undefined
   })
   const expandedUserIds = ref<string[]>([])
   const skillPointFormatter = new Intl.NumberFormat('en-US')
 
-  // 角色显示配置
+  // 职权显示配置
   const ROLE_CONFIG: Record<string, { type: string; text: string }> = {
     super_admin: { type: 'danger', text: t('userAdmin.roles.super_admin') },
     admin: { type: 'warning', text: t('userAdmin.roles.admin') },
@@ -212,7 +213,8 @@
         current: 1,
         size: 200,
         keyword: searchForm.value.keyword,
-        status: searchForm.value.status
+        status: searchForm.value.status,
+        role: searchForm.value.role
       },
       columnsFactory: () => [
         {
@@ -372,11 +374,11 @@
 
   /** 搜索 */
   const handleSearch = (params: Record<string, any>) => {
-    Object.assign(searchParams, params)
+    Object.assign(searchParams, { current: 1 }, params)
     getData()
   }
 
-  /** 打开角色编辑弹窗 */
+  /** 打开职权编辑弹窗 */
   const showRoleDialog = (row: UserListItem): void => {
     if (!canEditUser(row)) {
       ElMessage.error(t('userAdmin.editProtectedDenied'))

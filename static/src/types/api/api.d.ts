@@ -183,6 +183,7 @@ declare namespace Api {
     type UserSearchParams = Partial<{
       keyword: string
       status: number
+      role: string
     }> &
       Partial<Api.Common.CommonSearchParams>
 
@@ -905,6 +906,7 @@ declare namespace Api {
       review_status: string
       payout_status: string
       tab: string
+      keyword: string
     }> &
       Partial<Api.Common.CommonSearchParams>
 
@@ -1140,6 +1142,7 @@ declare namespace Api {
       current: number
       size: number
       status: string
+      keyword: string
     }>
 
     /** 审批请求参数 */
@@ -2014,6 +2017,7 @@ declare namespace Api {
     type CaptainRewardSettlementsParams = Partial<{
       current: number
       size: number
+      keyword: string
     }>
 
     type AdminCaptainsParams = Partial<{
@@ -2063,6 +2067,7 @@ declare namespace Api {
     type AdminRewardSettlementsParams = Partial<{
       current: number
       size: number
+      keyword: string
     }>
 
     type AdminRewardSettlementsResponse = CaptainRewardSettlementsResponse

@@ -627,6 +627,7 @@
     "noHistory": "No processed records yet",
     "searchBtn": "Search",
     "resetBtn": "Reset",
+    "historyKeywordPlaceholder": "Character, nickname, or QQ",
     "evidenceImage": "Evidence"
   },
   "shop": {
@@ -739,7 +740,8 @@
     "search": {
       "keyword": "Search",
       "keywordPlaceholder": "Nickname, QQ, or character name",
-      "statusPlaceholder": "Select status"
+      "statusPlaceholder": "Select status",
+      "rolePlaceholder": "Select role"
     },
     "roles": {
       "super_admin": "Super Admin",
@@ -856,7 +858,7 @@
       "performanceTab": "Captain Performance",
       "rewardHistoryTab": "Reward History",
       "affiliationHistoryTab": "Affiliation History",
-      "keyword": "Search captain name",
+      "keyword": "Search captain character or nickname",
       "runSync": "Run Attribution Sync",
       "runRewardProcessing": "Run Reward Processing",
       "captainPerformance": "Captain Performance",
@@ -1320,6 +1322,7 @@
       "historyTab": "Delivery Records",
       "refresh": "Refresh",
       "selectFleet": "Filter by fleet",
+      "userKeywordFilter": "Search by character or nickname",
       "searchBtn": "Search",
       "resetBtn": "Reset",
       "payoutModeLabel": "Payout Mode",

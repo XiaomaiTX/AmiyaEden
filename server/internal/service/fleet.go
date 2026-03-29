@@ -105,7 +105,7 @@ type CreateFleetRequest struct {
 	EndAt         string  `json:"end_at" binding:"required"`   // RFC3339
 	Importance    string  `json:"importance" binding:"required,oneof=strat_op cta other"`
 	PapCount      float64 `json:"pap_count"`
-	CharacterID   int64   `json:"character_id" binding:"required"` // FC 角色 ID
+	CharacterID   int64   `json:"character_id" binding:"required"` // FC 人物 ID
 	SendPing      bool    `json:"send_ping"`                       // 是否发送 Ping 通知
 	FleetConfigID *uint   `json:"fleet_config_id"`                 // 舰队配置 ID
 	AutoSrpMode   string  `json:"auto_srp_mode"`                   // disabled/submit_only/auto_approve
@@ -113,13 +113,13 @@ type CreateFleetRequest struct {
 
 // CreateFleet 创建舰队
 func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model.Fleet, error) {
-	// 验证角色属于当前用户
+	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil {
-		return nil, errors.New("角色不存在")
+		return nil, errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return nil, errors.New("该角色不属于当前用户")
+		return nil, errors.New("该人物不属于当前用户")
 	}
 
 	startAt, err := time.Parse(time.RFC3339, req.StartAt)
@@ -352,7 +352,7 @@ func (s *FleetService) GetMembers(fleetID string) ([]model.FleetMember, error) {
 	return s.repo.ListMembers(fleetID)
 }
 
-// ManualAddMembers 手动按角色名添加成员到舰队
+// ManualAddMembers 手动按人物名添加成员到舰队
 func (s *FleetService) ManualAddMembers(fleetID string, userID uint, userRoles []string, req *ManualAddFleetMembersRequest) (*ManualAddFleetMembersResult, error) {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
@@ -364,7 +364,7 @@ func (s *FleetService) ManualAddMembers(fleetID string, userID uint, userRoles [
 
 	characterNames := normalizeCharacterNames(req.CharacterNames)
 	if len(characterNames) == 0 {
-		return nil, errors.New("请至少填写一个角色名")
+		return nil, errors.New("请至少填写一个人物名")
 	}
 
 	result := &ManualAddFleetMembersResult{
@@ -412,13 +412,13 @@ func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) er
 		return errors.New("邀请链接已过期")
 	}
 
-	// 验证角色属于当前用户
+	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		return errors.New("角色不存在")
+		return errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return errors.New("该角色不属于当前用户")
+		return errors.New("该人物不属于当前用户")
 	}
 
 	fleet, err := s.repo.GetByID(invite.FleetID)
@@ -437,7 +437,7 @@ func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) er
 		return err
 	}
 
-	// 尝试通过 ESI 邀请角色加入游戏内舰队
+	// 尝试通过 ESI 邀请人物加入游戏内舰队
 	if fleet.ESIFleetID != nil {
 		go s.esiInviteMember(fleet, char)
 	}
@@ -445,7 +445,7 @@ func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) er
 	return nil
 }
 
-// esiInviteMember 通过 ESI 邀请角色加入游戏内舰队
+// esiInviteMember 通过 ESI 邀请人物加入游戏内舰队
 func (s *FleetService) esiInviteMember(fleet *model.Fleet, char *model.EveCharacter) {
 	ctx := context.Background()
 
@@ -1088,8 +1088,8 @@ func (s *FleetService) DeactivateInvite(inviteID uint, userID uint, userRoles []
 
 // canManageFleet 判断用户是否有权管理舰队相关功能。
 // super_admin、admin、senior_fc 可管理任何舰队；
-// fc 角色仅能管理自己创建的舰队（fleet.FCUserID == userID）。
-// fleet 为 nil 时退化为纯角色判断（用于不依赖具体舰队的操作）。
+// fc 职权仅能管理自己创建的舰队（fleet.FCUserID == userID）。
+// fleet 为 nil 时退化为纯职权判断（用于不依赖具体舰队的操作）。
 func (s *FleetService) canManageFleet(fleet *model.Fleet, userID uint, userRoles []string) bool {
 	if model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin, model.RoleSeniorFC) {
 		return true
@@ -1285,10 +1285,10 @@ func (s *FleetService) resolveCorporationTickers(corporationIDs []int64) (map[in
 }
 
 // ─────────────────────────────────────────────
-//  ESI: 获取角色当前舰队信息
+//  ESI: 获取人物当前舰队信息
 // ─────────────────────────────────────────────
 
-// CharacterFleetInfo 角色当前舰队信息
+// CharacterFleetInfo 人物当前舰队信息
 type CharacterFleetInfo struct {
 	FleetID     int64  `json:"fleet_id"`
 	FleetBossID int64  `json:"fleet_boss_id"`
@@ -1307,14 +1307,14 @@ func normalizeAutoSrpMode(mode string) string {
 	}
 }
 
-// GetCharacterFleetInfo 获取角色当前所在的 ESI 舰队信息
+// GetCharacterFleetInfo 获取人物当前所在的 ESI 舰队信息
 func (s *FleetService) GetCharacterFleetInfo(userID uint, characterID int64) (*CharacterFleetInfo, error) {
 	char, err := s.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		return nil, errors.New("角色不存在")
+		return nil, errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return nil, errors.New("该角色不属于当前用户")
+		return nil, errors.New("该人物不属于当前用户")
 	}
 
 	ctx := context.Background()

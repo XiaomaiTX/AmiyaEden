@@ -3,7 +3,6 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -82,7 +81,7 @@ func (r *UserRepository) UpdateRole(id uint, role string) error {
 type UserFilter struct {
 	Keyword           string // 匹配昵称、QQ 或已绑定角色名（不区分大小写）
 	Status            *int
-	Role              string
+	Role              string  // 单角色筛选，仅匹配当前 user_role 关联
 	AllowCorporations []int64 // 非空时只返回拥有这些军团角色的用户
 }
 
@@ -119,18 +118,20 @@ func (r *UserRepository) GetByDiscordID(discordID string) (*model.User, error) {
 func buildUserListQuery(db *gorm.DB, filter UserFilter) *gorm.DB {
 	query := db.Model(&model.User{})
 
-	if filter.Keyword != "" {
-		pattern := "%" + strings.ToLower(filter.Keyword) + "%"
-		query = query.Where(
-			"LOWER(nickname) LIKE ? OR LOWER(qq) LIKE ? OR id IN (SELECT DISTINCT user_id FROM eve_character WHERE LOWER(character_name) LIKE ?)",
-			pattern, pattern, pattern,
-		)
-	}
+	query = applyKeywordLikeFilter(
+		query,
+		filter.Keyword,
+		"LOWER(nickname) LIKE ?",
+		"LOWER(qq) LIKE ?",
+		`id IN (SELECT DISTINCT user_id FROM eve_character WHERE LOWER(character_name) LIKE ?)`)
 	if filter.Status != nil {
 		query = query.Where("status = ?", *filter.Status)
 	}
 	if filter.Role != "" {
-		query = query.Where("role = ?", filter.Role)
+		query = query.Where(
+			`EXISTS (SELECT 1 FROM user_role WHERE user_role.user_id = "user".id AND user_role.role_code = ?)`,
+			filter.Role,
+		)
 	}
 	if len(filter.AllowCorporations) > 0 {
 		query = query.Where("id IN (SELECT DISTINCT user_id FROM eve_character WHERE corporation_id IN ?)", filter.AllowCorporations)

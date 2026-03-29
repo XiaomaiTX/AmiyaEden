@@ -72,6 +72,7 @@ source_of_truth:
 - 管理员侧用户资料维护走 `/api/v1/system/user/:id`，当前支持昵称、QQ、Discord ID、状态
 - 管理员侧用户列表 `/api/v1/system/user` 的角色列只以有序 `roles[]` 为准，不再暴露历史单值 `role`
 - 管理员侧用户列表 `/api/v1/system/user` 同时返回该用户全部已绑定角色及每个角色的 `total_sp` 快照，供前端展开行展示
+- 管理员侧用户列表 `/api/v1/system/user` 支持单角色筛选；角色匹配只以当前 `user_role` 关联为准，不读取历史单值 `role`
 - `/api/v1/system/user/:id` 更新与删除都受后端保护：`admin` 不可编辑或删除其他 `admin`
 - `/api/v1/system/user/:id/roles` 角色分配规则：`super_admin` 可为任何用户（包括自己）分配除 `super_admin` 以外的任意角色，请求中包含的 `super_admin` 被静默剥离，目标用户已有的 `super_admin` 角色自动保留；`admin` 可管理自己的角色（包括移除自身 admin 角色），可为其他用户分配除 `admin` 以外的任意角色，但不可为非 admin 用户新增 `admin` 角色；非 admin 用户无权分配任何角色
 - `super_admin` 角色不可通过 API 分配或撤销，仅通过配置文件管理；`super_admin` 操作者提交的角色列表中的 `super_admin` 会被静默剥离而非报错；非 `super_admin` 不可修改已有 `super_admin` 用户的任何角色

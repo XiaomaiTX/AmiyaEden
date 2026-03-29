@@ -101,16 +101,16 @@ const (
 	affiliationResponseMaxBytes = 1 << 20
 )
 
-// OnNewCharacterFunc 新角色首次出现时触发的钩子（由 jobs 层注入以避免循环依赖）
+// OnNewCharacterFunc 新人物首次出现时触发的钩子（由 jobs 层注入以避免循环依赖）
 // 在后台 goroutine 中运行，用于全量 ESI 刷新。全量刷新完成后应执行一次权限检查。
 var OnNewCharacterFunc func(characterID int64, userID uint)
 
-// OnNewCharacterSyncFunc 新角色同步钩子：在返回 JWT 之前调用。
+// OnNewCharacterSyncFunc 新人物同步钩子：在返回 JWT 之前调用。
 // 负责刷新最小安全相关数据（如 affiliation / corp roles）并完成权限重算。
 // 必须快速返回（< 1s），调用方不会使用 goroutine。
 var OnNewCharacterSyncFunc func(characterID int64, userID uint)
 
-// OnExistingCharacterSyncFunc 已有角色完成绑定/重新登录时触发的同步钩子。
+// OnExistingCharacterSyncFunc 已有人物完成绑定/重新登录时触发的同步钩子。
 // 必须在签发 JWT 前完成，用于刷新 affiliation / corp roles 并重算权限。
 var OnExistingCharacterSyncFunc func(characterID int64, userID uint)
 
@@ -118,7 +118,7 @@ var OnExistingCharacterSyncFunc func(characterID int64, userID uint)
 type stateData struct {
 	ExtraScopes  []string `json:"extra_scopes,omitempty"`
 	RedirectURL  string   `json:"redirect_url,omitempty"`
-	BindToUserID uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定角色」流程，而非登录
+	BindToUserID uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定人物」流程，而非登录
 }
 
 // EveSSOService EVE SSO 业务逻辑层
@@ -200,7 +200,7 @@ func (s *EveSSOService) fetchCharacterAffiliation(ctx context.Context, character
 		return nil, fmt.Errorf("fetch affiliation: %w", err)
 	}
 	if len(results) == 0 {
-		return nil, errors.New("角色归属信息为空")
+		return nil, errors.New("人物归属信息为空")
 	}
 	return &results[0], nil
 }
@@ -208,7 +208,7 @@ func (s *EveSSOService) fetchCharacterAffiliation(ctx context.Context, character
 func (s *EveSSOService) resolveInitialSSOState(ctx context.Context, characterID int64) (string, *characterAffiliationSnapshot) {
 	affiliation, err := s.fetchCharacterAffiliation(ctx, characterID)
 	if err != nil {
-		global.Logger.Warn("首次登录查询角色归属失败，回退为 guest",
+		global.Logger.Warn("首次登录查询人物归属失败，回退为 guest",
 			zap.Int64("character_id", characterID),
 			zap.Error(err))
 		return model.RoleGuest, nil
@@ -221,7 +221,7 @@ func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, portraitURL st
 	for _, adminCharID := range global.Config.App.SuperAdmins {
 		if adminCharID == primaryCharacterID {
 			finalRole = model.RoleSuperAdmin
-			global.Logger.Info("从配置文件授予超级管理员角色",
+			global.Logger.Info("从配置文件授予超级管理员职权",
 				zap.Int64("character_id", primaryCharacterID))
 			break
 		}
@@ -236,15 +236,15 @@ func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, portraitURL st
 	return user, nil
 }
 
-// SyncConfigSuperAdmins 根据配置文件同步用户的 super_admin 角色
-// 如果用户的任意角色 ID 在配置列表中则授予，否则移除
+// SyncConfigSuperAdmins 根据配置文件同步用户的 super_admin 职权
+// 如果用户的任意人物 ID 在配置列表中则授予，否则移除
 func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
 	charRepo := repository.NewEveCharacterRepository()
 	roleRepo := repository.NewRoleRepository()
 
 	chars, err := charRepo.ListByUserID(userID)
 	if err != nil {
-		global.Logger.Error("SyncConfigSuperAdmins 查询角色失败", zap.Uint("userID", userID), zap.Error(err))
+		global.Logger.Error("SyncConfigSuperAdmins 查询人物失败", zap.Uint("userID", userID), zap.Error(err))
 		return
 	}
 
@@ -263,7 +263,7 @@ func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
 
 	currentCodes, err := roleRepo.GetUserRoleCodes(userID)
 	if err != nil {
-		global.Logger.Error("SyncConfigSuperAdmins 查询角色失败", zap.Uint("userID", userID), zap.Error(err))
+		global.Logger.Error("SyncConfigSuperAdmins 查询人物失败", zap.Uint("userID", userID), zap.Error(err))
 		return
 	}
 
@@ -316,8 +316,8 @@ func (s *EveSSOService) GetAuthURL(ctx context.Context, extraScopes []string, re
 	return s.eveClient.BuildAuthURL(state, scopes), nil
 }
 
-// GetBindAuthURL 生成「绑定新角色」的 EVE SSO 授权 URL
-// 与 GetAuthURL 不同的是，state 中会记录当前登录用户 ID，回调时将角色绑到该用户下
+// GetBindAuthURL 生成「绑定新人物」的 EVE SSO 授权 URL
+// 与 GetAuthURL 不同的是，state 中会记录当前登录用户 ID，回调时将人物绑到该用户下
 func (s *EveSSOService) GetBindAuthURL(ctx context.Context, userID uint, extraScopes []string, redirectURL string) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {

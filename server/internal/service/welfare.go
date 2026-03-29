@@ -551,10 +551,10 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		}
 	}
 
-	// 获取用户角色
+	// 获取用户人物
 	characters, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return nil, errors.New("获取角色列表失败")
+		return nil, errors.New("获取人物列表失败")
 	}
 
 	// 获取该福利的所有申请记录
@@ -574,7 +574,7 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		if s.isUserIneligible(user, apps) {
 			return nil, errors.New("您已申请过该福利")
 		}
-		// 找主角色或第一个角色
+		// 找主人物或第一个人物
 		for _, c := range characters {
 			if c.CharacterID == user.PrimaryCharacterID {
 				selectedChar = c
@@ -585,11 +585,11 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 			selectedChar = characters[0]
 		}
 	} else {
-		// per_character: 必须指定角色
+		// per_character: 必须指定人物
 		if req.CharacterID == 0 {
-			return nil, errors.New("按人物模式必须指定角色")
+			return nil, errors.New("按人物模式必须指定人物")
 		}
-		// 验证角色属于用户
+		// 验证人物属于用户
 		found := false
 		for _, c := range characters {
 			if c.CharacterID == req.CharacterID {
@@ -599,19 +599,19 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 			}
 		}
 		if !found {
-			return nil, errors.New("该角色不属于您")
+			return nil, errors.New("该人物不属于您")
 		}
-		// 检查角色是否已申请
+		// 检查人物是否已申请
 		for _, app := range apps {
 			if app.CharacterID == req.CharacterID || strings.TrimSpace(app.CharacterName) == strings.TrimSpace(selectedChar.CharacterName) {
-				return nil, errors.New("该角色已申请过该福利")
+				return nil, errors.New("该人物已申请过该福利")
 			}
 		}
 	}
 
-	// 角色年龄检查：任一角色超龄则该福利不可申请
+	// 人物年龄检查：任一人物超龄则该福利不可申请
 	if welfareAgeRestrictionFailed(characters, welfare.MaxCharAgeMonths, time.Now()) {
-		return nil, errors.New("您的角色年龄超过该福利限制")
+		return nil, errors.New("您的人物年龄超过该福利限制")
 	}
 
 	// PAP 检查：军团 PAP 总数必须严格大于最低要求

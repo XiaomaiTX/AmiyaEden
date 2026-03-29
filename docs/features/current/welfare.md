@@ -58,7 +58,7 @@ source_of_truth:
   - 已领取福利 tab：分页显示申请记录及状态
 - `static/src/views/welfare/approval` — 福利审批（福利官、管理员）
   - 待发放 tab：显示 requested 申请，支持发放/拒绝操作
-  - 历史记录 tab：显示已发放/已拒绝的申请记录
+  - 历史记录 tab：显示已发放/已拒绝的申请记录，并支持按角色名、昵称或 QQ 搜索
 - `static/src/views/welfare/settings` — 福利设置（管理员）
 
 ### 后端路由
@@ -70,7 +70,7 @@ source_of_truth:
 - `POST /api/v1/system/welfare/edit`
 - `POST /api/v1/system/welfare/delete`
 - `POST /api/v1/system/welfare/import` — 导入历史福利记录
-- `POST /api/v1/system/welfare/applications` — 福利申请列表（审批端，支持按状态筛选）
+- `POST /api/v1/system/welfare/applications` — 福利申请列表（审批端，支持按状态与角色名/昵称/QQ 关键词筛选）
 - `POST /api/v1/system/welfare/review` — 审批福利申请（发放/拒绝）
 
 用户端：

@@ -44,6 +44,27 @@ func TestBuildUserListQueryAppliesNicknameQQAndCharacterKeywordFilter(t *testing
 	}
 }
 
+func TestBuildUserListQueryAppliesActiveRoleFilterWithoutLegacyFallback(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildUserListQuery(tx, UserFilter{Role: model.RoleCaptain}).Find(&[]model.User{})
+	})
+
+	if !strings.Contains(sql, `FROM user_role`) {
+		t.Fatalf("expected role filter to query user_role association, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `user_role.role_code =`) {
+		t.Fatalf("expected role filter to match role code in user_role, got SQL: %s", sql)
+	}
+	if strings.Contains(sql, `NOT EXISTS (SELECT 1 FROM user_role`) {
+		t.Fatalf("expected role filter to avoid any legacy role fallback, got SQL: %s", sql)
+	}
+	if strings.Contains(sql, `AND role =`) || strings.Contains(sql, ` role = `) {
+		t.Fatalf("expected role filter to avoid legacy user.role predicate, got SQL: %s", sql)
+	}
+}
+
 func TestBuildUserListSelectQueryOrdersByRecentLoginDescending(t *testing.T) {
 	db := newDryRunPostgresDB(t)
 
