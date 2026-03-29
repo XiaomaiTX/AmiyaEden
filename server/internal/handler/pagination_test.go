@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"amiya-eden/pkg/response"
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 
@@ -163,6 +165,26 @@ func TestRequireUintID(t *testing.T) {
 			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
 		}
 	})
+
+	t.Run("uses custom display name in error response", func(t *testing.T) {
+		ctx, recorder := newPaginationQueryTestContextWithRecorder("")
+		ctx.Params = gin.Params{{Key: "id", Value: "abc"}}
+		id := requireUintID(ctx, "id", "用户ID")
+		if id != 0 {
+			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
+		}
+
+		var resp response.Response
+		if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("unmarshal response: %v", err)
+		}
+		if resp.Code != response.CodeParamError {
+			t.Fatalf("response code = %d, want %d", resp.Code, response.CodeParamError)
+		}
+		if resp.Msg != "无效的用户ID" {
+			t.Fatalf("response msg = %q, want %q", resp.Msg, "无效的用户ID")
+		}
+	})
 }
 
 func TestParseLedgerPaginationQueryUsesDefaultAndClampsOversizedValues(t *testing.T) {
@@ -191,9 +213,14 @@ func TestParseLedgerPaginationQueryUsesDefaultAndClampsOversizedValues(t *testin
 }
 
 func newPaginationQueryTestContext(rawQuery string) *gin.Context {
+	ctx, _ := newPaginationQueryTestContextWithRecorder(rawQuery)
+	return ctx
+}
+
+func newPaginationQueryTestContextWithRecorder(rawQuery string) (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest("GET", "/test"+rawQuery, nil)
-	return ctx
+	return ctx, recorder
 }

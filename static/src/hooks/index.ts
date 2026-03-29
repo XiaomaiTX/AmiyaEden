@@ -28,5 +28,9 @@ export { useChart, useChartComponent, useChartOps } from './core/useChart'
 // ID → 名称批量解析
 export { useNameResolver } from './core/useNameResolver'
 
+// SRP 审批管理
+export { useSrpManage } from './srp/useSrpManage'
+export { useSrpWorkflow } from './srp/useSrpWorkflow'
+
 // 布局高度
 export { useLayoutHeight, useAutoLayoutHeight } from './core/useLayoutHeight'

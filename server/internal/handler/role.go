@@ -4,8 +4,6 @@ import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"math"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,12 +24,11 @@ func (h *RoleHandler) ListRoleDefinitions(c *gin.Context) {
 // ─── 用户职权管理 ───
 
 func (h *RoleHandler) GetUserRoles(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+	id := requireUintID(c, "id", "用户ID")
+	if id == 0 {
 		return
 	}
-	roles, err := h.svc.GetUserRoles(uint(id))
+	roles, err := h.svc.GetUserRoles(id)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -44,9 +41,8 @@ type setUserRolesRequest struct {
 }
 
 func (h *RoleHandler) SetUserRoles(c *gin.Context) {
-	userID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || userID > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的用户ID")
+	userID := requireUintID(c, "id", "用户ID")
+	if userID == 0 {
 		return
 	}
 	var req setUserRolesRequest
@@ -56,7 +52,7 @@ func (h *RoleHandler) SetUserRoles(c *gin.Context) {
 	}
 	operatorID := middleware.GetUserID(c)
 	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.SetUserRoles(c.Request.Context(), operatorID, operatorRoles, uint(userID), req.RoleCodes); err != nil {
+	if err := h.svc.SetUserRoles(c.Request.Context(), operatorID, operatorRoles, userID, req.RoleCodes); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
