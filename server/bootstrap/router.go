@@ -15,10 +15,11 @@ func InitRouter() *gin.Engine {
 	r := gin.New()
 
 	// 全局中间件（注册顺序即执行顺序，defer 逆序执行）
-	// 执行顺序(before): RequestID → OperationLog → ResponseWrapper → ZapLogger → ZapRecovery → Cors → handler
-	// 执行顺序(after) : Cors → ZapRecovery → ZapLogger → ResponseWrapper(写biz_code) → OperationLog(读biz_code存DB)
+	// 执行顺序(before): RequestID → SecureHeaders → OperationLog → ResponseWrapper → ZapLogger → ZapRecovery → Cors → handler
+	// 执行顺序(after) : Cors → ZapRecovery → ZapLogger → ResponseWrapper(写biz_code) → OperationLog(读biz_code存DB) → SecureHeaders
 	r.Use(
 		middleware.RequestID(),
+		middleware.SecureHeaders(),
 		middleware.OperationLog(),
 		middleware.ResponseWrapper(),
 		middleware.ZapLogger(),

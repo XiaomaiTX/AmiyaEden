@@ -1,6 +1,7 @@
 server:
   port: "8080"
   mode: "debug" # debug | release | test
+  cors_origins: [] # 允许的 CORS 源。空=仅 debug 模式允许 *。生产环境应填写前端域名，如 ["https://eden.example.com"]
 
 database:
   host: "amiya-eden-postgres"

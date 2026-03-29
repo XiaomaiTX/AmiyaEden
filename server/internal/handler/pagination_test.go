@@ -103,6 +103,68 @@ func TestParsePaginationQuerySupportsUnboundedSize(t *testing.T) {
 	}
 }
 
+func TestParseUnboundedPaginationQueryCapsOversizedPageSize(t *testing.T) {
+	ctx := newPaginationQueryTestContext("?current=1&size=5000")
+	page, pageSize, err := parseUnboundedPaginationQuery(ctx, 20)
+	if err != nil {
+		t.Fatalf("parseUnboundedPaginationQuery() error = %v, want nil", err)
+	}
+	if page != 1 {
+		t.Fatalf("page = %d, want 1", page)
+	}
+	if pageSize != 1000 {
+		t.Fatalf("pageSize = %d, want 1000 (capped)", pageSize)
+	}
+}
+
+func TestRequireFleetID(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		ctx := newPaginationQueryTestContext("")
+		ctx.Params = gin.Params{{Key: "id", Value: "abc-123"}}
+		id := requireFleetID(ctx)
+		if id != "abc-123" {
+			t.Fatalf("requireFleetID() = %q, want %q", id, "abc-123")
+		}
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		ctx := newPaginationQueryTestContext("")
+		id := requireFleetID(ctx)
+		if id != "" {
+			t.Fatalf("requireFleetID() = %q, want empty", id)
+		}
+	})
+}
+
+func TestRequireUintID(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		ctx := newPaginationQueryTestContext("")
+		ctx.Params = gin.Params{{Key: "id", Value: "42"}}
+		id := requireUintID(ctx, "id")
+		if id != 42 {
+			t.Fatalf("requireUintID() = %d, want 42", id)
+		}
+	})
+
+	t.Run("zero", func(t *testing.T) {
+		ctx := newPaginationQueryTestContext("")
+		ctx.Params = gin.Params{{Key: "id", Value: "0"}}
+		id := requireUintID(ctx, "id")
+		if id != 0 {
+			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
+		}
+	})
+
+	t.Run("non-numeric", func(t *testing.T) {
+		ctx := newPaginationQueryTestContext("")
+		ctx.Params = gin.Params{{Key: "id", Value: "abc"}}
+		id := requireUintID(ctx, "id")
+		if id != 0 {
+			t.Fatalf("requireUintID() = %d, want 0 (invalid)", id)
+		}
+	})
+}
+
 func TestParseLedgerPaginationQueryUsesDefaultAndClampsOversizedValues(t *testing.T) {
 	t.Run("invalid size returns error", func(t *testing.T) {
 		ctx := newPaginationQueryTestContext("?size=oops")
