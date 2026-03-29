@@ -708,9 +708,7 @@ func (s *WelfareService) AdminListApplications(page, pageSize int, filter reposi
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 200 {
-		pageSize = 50
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 
 	apps, total, err := s.repo.ListApplicationsPaginated(page, pageSize, filter)
 	if err != nil {
@@ -734,20 +732,33 @@ func (s *WelfareService) AdminListApplications(page, pageSize int, filter reposi
 	}
 
 	// 批量获取 welfare 信息
-	welfareMap := make(map[uint]*model.Welfare)
+	welfareIDs := make([]uint, 0, len(welfareIDSet))
 	for wid := range welfareIDSet {
-		w, err := s.repo.GetWelfareByID(wid)
+		welfareIDs = append(welfareIDs, wid)
+	}
+	welfareMap := make(map[uint]*model.Welfare)
+	if len(welfareIDs) > 0 {
+		welfares, err := s.repo.ListWelfaresByIDs(welfareIDs)
 		if err == nil {
-			welfareMap[wid] = w
+			for index := range welfares {
+				welfare := welfares[index]
+				welfareMap[welfare.ID] = &welfare
+			}
 		}
 	}
 
 	// 批量获取 user 昵称
-	nicknameMap := make(map[uint]string)
+	userIDs := make([]uint, 0, len(userIDSet))
 	for uid := range userIDSet {
-		u, err := s.userRepo.GetByID(uid)
+		userIDs = append(userIDs, uid)
+	}
+	nicknameMap := make(map[uint]string)
+	if len(userIDs) > 0 {
+		users, err := s.userRepo.ListByIDs(userIDs)
 		if err == nil {
-			nicknameMap[uid] = u.Nickname
+			for _, user := range users {
+				nicknameMap[user.ID] = user.Nickname
+			}
 		}
 	}
 

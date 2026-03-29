@@ -13,10 +13,10 @@ import (
 
 // ShopService 商店业务逻辑层
 type ShopService struct {
-	repo        *repository.ShopRepository
-	walletSvc   *SysWalletService
-	userRepo    *repository.UserRepository
-	charRepo    *repository.EveCharacterRepository
+	repo      *repository.ShopRepository
+	walletSvc *SysWalletService
+	userRepo  *repository.UserRepository
+	charRepo  *repository.EveCharacterRepository
 }
 
 func NewShopService() *ShopService {
@@ -310,9 +310,7 @@ func (s *ShopService) AdminListOrders(page, pageSize int, filter repository.Orde
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListOrders(page, pageSize, filter)
 }
 

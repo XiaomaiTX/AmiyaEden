@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+
 	"gorm.io/gorm"
 )
 
@@ -39,6 +40,15 @@ func (r *WelfareRepository) GetWelfareByID(id uint) (*model.Welfare, error) {
 		return nil, err
 	}
 	return &w, nil
+}
+
+func (r *WelfareRepository) ListWelfaresByIDs(ids []uint) ([]model.Welfare, error) {
+	var list []model.Welfare
+	if len(ids) == 0 {
+		return list, nil
+	}
+	err := global.DB.Where("id IN ?", ids).Find(&list).Error
+	return list, err
 }
 
 // WelfareFilter 福利查询筛选

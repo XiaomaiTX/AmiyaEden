@@ -235,9 +235,7 @@ func (s *NewbroReportService) listRewardSettlements(
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 500 {
-		pageSize = 20
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 
 	settlementCount, totalCreditedValue, lastProcessedAt, err := s.settlementRepo.Summarize(captainUserID)
 	if err != nil {
@@ -268,9 +266,7 @@ func (s *NewbroReportService) ListAllCaptainOverviews(page, pageSize int, keywor
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pageSize = normalizeLedgerPageSize(pageSize)
 
 	userIDs, err := s.roleRepo.GetRoleUserIDs(model.RoleCaptain)
 	if err != nil {
@@ -332,9 +328,7 @@ func (s *NewbroReportService) ListAdminAffiliationHistory(req AdminAffiliationHi
 	if req.Page < 1 {
 		req.Page = 1
 	}
-	if req.PageSize < 1 || req.PageSize > 100 {
-		req.PageSize = 20
-	}
+	req.PageSize = normalizeLedgerPageSize(req.PageSize)
 
 	rows, total, err := s.affRepo.ListAdminAffiliationHistory(repository.AdminAffiliationHistoryFilter{
 		CaptainSearch:       req.CaptainSearch,
