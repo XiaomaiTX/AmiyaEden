@@ -52,12 +52,12 @@ type SrpApplication struct {
 	RecommendedAmount float64 `gorm:"not null;default:0"                     json:"recommended_amount"`
 	FinalAmount       float64 `gorm:"not null;default:0"                     json:"final_amount"`
 	// 审批
-	ReviewStatus string     `gorm:"size:32;not null;default:'submitted';index" json:"review_status"`
+	ReviewStatus string     `gorm:"size:32;not null;default:'submitted';index;index:idx_srp_status,priority:1" json:"review_status"`
 	ReviewedBy   *uint      `gorm:""                                         json:"reviewed_by,omitempty"`
 	ReviewedAt   *time.Time `gorm:""                                         json:"reviewed_at,omitempty"`
 	ReviewNote   string     `gorm:"size:512"                                 json:"review_note"`
 	// 发放
-	PayoutStatus string     `gorm:"size:32;not null;default:'notpaid';index" json:"payout_status"`
+	PayoutStatus string     `gorm:"size:32;not null;default:'notpaid';index;index:idx_srp_status,priority:2" json:"payout_status"`
 	PaidBy       *uint      `gorm:""                                         json:"paid_by,omitempty"`
 	PaidAt       *time.Time `gorm:""                                         json:"paid_at,omitempty"`
 

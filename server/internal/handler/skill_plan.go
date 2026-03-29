@@ -6,8 +6,6 @@ import (
 	"amiya-eden/pkg/response"
 	"errors"
 	"io"
-	"math"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -60,13 +58,12 @@ func (h *SkillPlanHandler) ListSkillPlans(c *gin.Context) {
 
 // GetSkillPlan 获取技能计划详情
 func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的技能计划 ID")
+	id := requireUintID(c, "id", "技能计划 ID")
+	if id == 0 {
 		return
 	}
 
-	result, err := h.svc.GetSkillPlan(uint(id), resolveRequestLang(c))
+	result, err := h.svc.GetSkillPlan(id, resolveRequestLang(c))
 	if err != nil {
 		response.Fail(c, response.CodeNotFound, err.Error())
 		return
@@ -77,9 +74,8 @@ func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
 
 // UpdateSkillPlan 更新技能计划
 func (h *SkillPlanHandler) UpdateSkillPlan(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的技能计划 ID")
+	id := requireUintID(c, "id", "技能计划 ID")
+	if id == 0 {
 		return
 	}
 
@@ -90,7 +86,7 @@ func (h *SkillPlanHandler) UpdateSkillPlan(c *gin.Context) {
 	}
 
 	result, err := h.svc.UpdateSkillPlan(
-		uint(id),
+		id,
 		middleware.GetUserID(c),
 		middleware.GetUserRoles(c),
 		&req,
@@ -106,13 +102,12 @@ func (h *SkillPlanHandler) UpdateSkillPlan(c *gin.Context) {
 
 // DeleteSkillPlan 删除技能计划
 func (h *SkillPlanHandler) DeleteSkillPlan(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的技能计划 ID")
+	id := requireUintID(c, "id", "技能计划 ID")
+	if id == 0 {
 		return
 	}
 
-	err = h.svc.DeleteSkillPlan(uint(id), middleware.GetUserID(c), middleware.GetUserRoles(c))
+	err := h.svc.DeleteSkillPlan(id, middleware.GetUserID(c), middleware.GetUserRoles(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

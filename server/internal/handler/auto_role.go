@@ -3,8 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"math"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -57,12 +55,11 @@ func (h *AutoRoleHandler) CreateEsiRoleMapping(c *gin.Context) {
 
 // DeleteEsiRoleMapping 删除 ESI 职权映射
 func (h *AutoRoleHandler) DeleteEsiRoleMapping(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的映射ID")
+	id := requireUintID(c, "id", "映射ID")
+	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteEsiRoleMapping(uint(id)); err != nil {
+	if err := h.svc.DeleteEsiRoleMapping(id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -115,12 +112,11 @@ func (h *AutoRoleHandler) CreateEsiTitleMapping(c *gin.Context) {
 
 // DeleteEsiTitleMapping 删除 ESI 头衔映射
 func (h *AutoRoleHandler) DeleteEsiTitleMapping(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, "无效的映射ID")
+	id := requireUintID(c, "id", "映射ID")
+	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteEsiTitleMapping(uint(id)); err != nil {
+	if err := h.svc.DeleteEsiTitleMapping(id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
