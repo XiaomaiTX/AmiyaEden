@@ -9,6 +9,7 @@
 
       <ElAlert type="success" :closable="false" class="mb-4" show-icon>
         <p>{{ $t('srp.apply.infoText') }}</p>
+        <ElLink type="primary" class="mt-1" href="https://seat.winterco.org/srp" target="_blank">{{ $t('srp.apply.seatLink') }}</ElLink>
       </ElAlert>
 
       <ElForm ref="formRef" :model="form" :rules="rules" label-position="top">

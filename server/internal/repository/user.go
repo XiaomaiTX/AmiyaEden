@@ -80,7 +80,7 @@ func (r *UserRepository) UpdateRole(id uint, role string) error {
 
 // UserFilter 用户列表筛选条件
 type UserFilter struct {
-	Keyword           string // 匹配昵称或任意角色名（不区分大小写）
+	Keyword           string // 匹配昵称、QQ 或任意角色名（不区分大小写）
 	Status            *int
 	Role              string
 	AllowCorporations []int64 // 非空时只返回拥有这些军团角色的用户
@@ -116,35 +116,48 @@ func (r *UserRepository) GetByDiscordID(discordID string) (*model.User, error) {
 	return &user, nil
 }
 
+func buildUserListQuery(db *gorm.DB, filter UserFilter) *gorm.DB {
+	query := db.Model(&model.User{})
+
+	if filter.Keyword != "" {
+		pattern := "%" + strings.ToLower(filter.Keyword) + "%"
+		query = query.Where(
+			"LOWER(nickname) LIKE ? OR LOWER(qq) LIKE ? OR id IN (SELECT DISTINCT user_id FROM eve_character WHERE LOWER(character_name) LIKE ?)",
+			pattern, pattern, pattern,
+		)
+	}
+	if filter.Status != nil {
+		query = query.Where("status = ?", *filter.Status)
+	}
+	if filter.Role != "" {
+		query = query.Where("role = ?", filter.Role)
+	}
+	if len(filter.AllowCorporations) > 0 {
+		query = query.Where("id IN (SELECT DISTINCT user_id FROM eve_character WHERE corporation_id IN ?)", filter.AllowCorporations)
+	}
+
+	return query
+}
+
+func buildUserListSelectQuery(db *gorm.DB, filter UserFilter, page, pageSize int) *gorm.DB {
+	offset := (page - 1) * pageSize
+
+	return buildUserListQuery(db, filter).
+		Order("last_login_at DESC NULLS LAST").
+		Order("id DESC").
+		Offset(offset).
+		Limit(pageSize)
+}
+
 // List 分页查询用户列表（支持筛选）
 func (r *UserRepository) List(page, pageSize int, filter UserFilter) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
 
-	offset := (page - 1) * pageSize
-	db := global.DB.Model(&model.User{})
-
-	if filter.Keyword != "" {
-		pattern := "%" + strings.ToLower(filter.Keyword) + "%"
-		db = db.Where(
-			"LOWER(nickname) LIKE ? OR id IN (SELECT DISTINCT user_id FROM eve_character WHERE LOWER(character_name) LIKE ?)",
-			pattern, pattern,
-		)
-	}
-	if filter.Status != nil {
-		db = db.Where("status = ?", *filter.Status)
-	}
-	if filter.Role != "" {
-		db = db.Where("role = ?", filter.Role)
-	}
-	if len(filter.AllowCorporations) > 0 {
-		db = db.Where("id IN (SELECT DISTINCT user_id FROM eve_character WHERE corporation_id IN ?)", filter.AllowCorporations)
-	}
-
-	if err := db.Count(&total).Error; err != nil {
+	if err := buildUserListQuery(global.DB, filter).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Order("id DESC").Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
+	if err := buildUserListSelectQuery(global.DB, filter, page, pageSize).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	return users, total, nil

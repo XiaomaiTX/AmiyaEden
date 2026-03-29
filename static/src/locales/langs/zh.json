@@ -739,7 +739,7 @@
     },
     "search": {
       "keyword": "搜索",
-      "keywordPlaceholder": "昵称或角色名",
+      "keywordPlaceholder": "昵称、QQ 或角色名",
       "statusPlaceholder": "请选择状态"
     },
     "roles": {
@@ -759,6 +759,14 @@
       "lastLogin": "最后登录",
       "loginIp": "登录IP",
       "registeredAt": "注册时间"
+    },
+    "characters": {
+      "empty": "暂无绑定角色",
+      "character": "角色",
+      "characterIdLabel": "角色 ID",
+      "characterId": "角色 ID：{id}",
+      "totalSkillPoints": "总技能点：{points}",
+      "totalSkillPointsLabel": "总技能点"
     },
     "unnamed": "未命名",
     "impersonate": "模拟登录",
@@ -1248,6 +1256,7 @@
       "title": "我的补损申请",
       "formTitle": "申请补损",
       "infoText": "在下框中选择欲提交的击杀报告和舰队行动。如果在列表中找不到击杀报告，请确认您对应的帐号已正确完成绑定后等待最多1小时刷新。如果找不到对应的舰队，请联系 FC 修改行动信息或发 PAP。",
+      "seatLink": "请注意，伏羲系统不会发放联盟舰队的补损，申请联盟补损请点此链接。",
       "dialogTitle": "提交补损申请",
       "submitBtn": "提交补损申请",
       "submitBtnText": "提交",

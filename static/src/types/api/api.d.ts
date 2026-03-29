@@ -140,6 +140,13 @@ declare namespace Api {
     /** 用户列表 */
     type UserList = Api.Common.PaginatedResponse<UserListItem>
 
+    interface UserListCharacter {
+      character_id: number
+      character_name: string
+      portrait_url: string
+      total_sp: number
+    }
+
     /** 用户列表项（匹配后端 model.UserListItem） */
     interface UserListItem {
       id: number
@@ -149,6 +156,7 @@ declare namespace Api {
       avatar: string
       status: number // 1:正常 0:禁用
       roles: string[]
+      characters: UserListCharacter[]
       last_login_at: string | null
       last_login_ip: string
       created_at: string

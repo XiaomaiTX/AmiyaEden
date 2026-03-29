@@ -26,6 +26,8 @@ source_of_truth:
 - 系统角色定义只读查询
 - 用户管理、用户角色分配
 - 管理员可维护用户昵称、QQ、Discord ID 与状态
+- 用户管理列表默认按最后登录时间倒序，并支持按昵称、QQ、任意已绑定角色名搜索
+- 用户管理列表可展开每个用户行，查看该用户全部已绑定角色的头像、角色 ID、角色名与角色总技能点
 - 超级管理员模拟登录
 - 自动权限映射（ESI corp roles / corp titles -> system roles）
 - 联盟 PAP 列表、抓取、导入、月度归档（钱包兑换暂不启用）
@@ -65,6 +67,7 @@ source_of_truth:
 - 角色定义的 canonical 源在代码常量，不在旧文档
 - 管理员侧用户资料维护走 `/api/v1/system/user/:id`，当前支持昵称、QQ、Discord ID、状态
 - 管理员侧用户列表 `/api/v1/system/user` 的角色列只以有序 `roles[]` 为准，不再暴露历史单值 `role`
+- 管理员侧用户列表 `/api/v1/system/user` 同时返回该用户全部已绑定角色及每个角色的 `total_sp` 快照，供前端展开行展示
 - `/api/v1/system/user/:id` 更新与删除都受后端保护：`admin` 不可编辑或删除其他 `admin`
 - `/api/v1/system/user/:id/roles` 仅 `super_admin` 可分配 `admin`；`super_admin` 角色不可通过 API 分配或修改，仅通过配置文件管理
 - `super_admin` 角色由 `config.yaml` 的 `app.super_admins` 配置驱动，每次 SSO 登录时自动同步，不可通过任何 API 或 UI 授予、修改或撤销
