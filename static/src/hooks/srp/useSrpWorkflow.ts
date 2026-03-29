@@ -325,7 +325,6 @@ export function useSrpWorkflow(deps: {
   }
 
   // ─── Open Info Window (ESI) ───
-  const openWindowLoading = ref(false)
   const handleOpenInfoWindow = async () => {
     if (!payoutTarget.value) return
     const userInfo = userStore.getUserInfo
@@ -334,7 +333,6 @@ export function useSrpWorkflow(deps: {
       ElMessage.warning(t('srp.manage.noPrimaryCharacter'))
       return
     }
-    openWindowLoading.value = true
     try {
       await openInfoWindow({
         character_id: primaryCharacterId,
@@ -343,8 +341,6 @@ export function useSrpWorkflow(deps: {
       ElMessage.success(t('srp.manage.openInfoWindowSuccess'))
     } catch {
       /* handled */
-    } finally {
-      openWindowLoading.value = false
     }
   }
 
@@ -362,7 +358,6 @@ export function useSrpWorkflow(deps: {
     // payout
     payoutDialogVisible,
     payoutTarget,
-    openPayoutDialog,
     handlePayoutAction,
     handlePayout,
     // batch payout
@@ -377,8 +372,6 @@ export function useSrpWorkflow(deps: {
     // clipboard
     copyText,
     copyBatchPayoutListText,
-    // info window
-    openWindowLoading,
     // formatters
     formatFuxiCoin
   }

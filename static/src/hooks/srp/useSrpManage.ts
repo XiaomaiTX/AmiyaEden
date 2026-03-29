@@ -9,7 +9,6 @@ import { fetchApplicationList } from '@/api/srp'
 import { formatTime } from '@utils/common'
 import { ElTag, ElTooltip, ElLink } from 'element-plus'
 import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
-import { toMillionISKInput } from '@/utils/iskUnits'
 
 type SrpApp = Api.Srp.Application
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
@@ -460,7 +459,6 @@ export function useSrpManage(callbacks: {
     refreshData,
     // formatters
     formatISK,
-    toMillionISKInput,
     // export
     manageExportHeaders,
     exportManageData,
