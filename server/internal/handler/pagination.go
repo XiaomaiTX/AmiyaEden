@@ -12,11 +12,15 @@ import (
 
 // requireUintID extracts, validates, and returns a uint path param.
 // Returns 0 and writes an error response if the param is missing or invalid.
-func requireUintID(c *gin.Context, param string) uint {
+func requireUintID(c *gin.Context, param string, displayNames ...string) uint {
 	raw := c.Param(param)
 	id, err := strconv.ParseUint(raw, 10, 64)
 	if err != nil || id == 0 || id > math.MaxUint32 {
-		response.Fail(c, response.CodeParamError, fmt.Sprintf("无效的 %s", param))
+		displayName := param
+		if len(displayNames) > 0 && displayNames[0] != "" {
+			displayName = displayNames[0]
+		}
+		response.Fail(c, response.CodeParamError, fmt.Sprintf("无效的%s", displayName))
 		return 0
 	}
 	return uint(id)

@@ -40,14 +40,14 @@ type LogWithCharacter struct {
 // WalletTransaction 钱包流水
 type WalletTransaction struct {
 	ID           uint      `gorm:"primarykey"                 json:"id"`
-	UserID       uint      `gorm:"not null;index"             json:"user_id"`
+	UserID       uint      `gorm:"not null;index;index:idx_wt_user_created,priority:1" json:"user_id"`
 	Amount       float64   `gorm:"not null"                   json:"amount"` // 正数=收入 负数=支出
 	Reason       string    `gorm:"size:256"                   json:"reason"`
 	RefType      string    `gorm:"size:64;index"              json:"ref_type"` // pap_reward / pap_fc_salary / manual / redeem / admin_adjust
 	RefID        string    `gorm:"size:64"                    json:"ref_id"`   // 关联 ID（如 fleet_id）
 	BalanceAfter float64   `gorm:"not null"                   json:"balance_after"`
 	OperatorID   uint      `gorm:"default:0;index"            json:"operator_id"` // 操作人 user_id（系统操作为 0）
-	CreatedAt    time.Time `gorm:"autoCreateTime;index"       json:"created_at"`
+	CreatedAt    time.Time `gorm:"autoCreateTime;index;index:idx_wt_user_created,priority:2,sort:desc" json:"created_at"`
 }
 
 func (WalletTransaction) TableName() string { return "wallet_transaction" }
