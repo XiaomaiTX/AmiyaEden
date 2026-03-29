@@ -13,6 +13,7 @@
     :data="data"
     :columns="columns"
     :pagination="pagination"
+    visual-variant="ledger"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -50,7 +51,7 @@
   } = useTable({
     core: {
       apiFn: adminListWallets,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         { prop: 'user_id', label: '用户 ID', width: 100 },

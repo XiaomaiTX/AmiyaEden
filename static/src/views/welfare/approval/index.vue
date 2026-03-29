@@ -45,7 +45,7 @@
             :data="historyData"
             :columns="historyColumns"
             :pagination="historyPagination"
-            :pagination-options="{ pageSizes: [200, 500, 1000] }"
+            visual-variant="ledger"
             @pagination:size-change="historyHandleSizeChange"
             @pagination:current-change="historyHandleCurrentChange"
           />

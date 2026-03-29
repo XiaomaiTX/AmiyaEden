@@ -1,50 +1,48 @@
 <!-- 钱包流水查询子模块 -->
 <template>
-  <div class="wallet-transactions-panel">
-    <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
-      <template #left>
-        <ElInput
-          v-model="filterForm.user_keyword"
-          :placeholder="$t('walletAdmin.placeholders.userKeywordFilter')"
-          clearable
-          style="width: 240px"
-          @clear="handleSearch"
-          @keyup.enter="handleSearch"
+  <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
+    <template #left>
+      <ElInput
+        v-model="filterForm.user_keyword"
+        :placeholder="$t('walletAdmin.placeholders.userKeywordFilter')"
+        clearable
+        style="width: 240px"
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      />
+      <ElSelect
+        v-model="filterForm.ref_type"
+        :placeholder="$t('walletAdmin.placeholders.refType')"
+        clearable
+        style="width: 160px"
+        @change="handleSearch"
+      >
+        <ElOption :label="$t('walletAdmin.refTypes.pap_reward')" value="pap_reward" />
+        <ElOption :label="$t('walletAdmin.refTypes.pap_fc_salary')" value="pap_fc_salary" />
+        <ElOption :label="$t('walletAdmin.refTypes.admin_adjust')" value="admin_adjust" />
+        <ElOption :label="$t('walletAdmin.refTypes.manual')" value="manual" />
+        <ElOption :label="$t('walletAdmin.refTypes.redeem')" value="redeem" />
+        <ElOption :label="$t('walletAdmin.refTypes.srp_payout')" value="srp_payout" />
+        <ElOption :label="$t('walletAdmin.refTypes.shop_purchase')" value="shop_purchase" />
+        <ElOption :label="$t('walletAdmin.refTypes.shop_refund')" value="shop_refund" />
+        <ElOption
+          :label="$t('walletAdmin.refTypes.newbro_captain_reward')"
+          value="newbro_captain_reward"
         />
-        <ElSelect
-          v-model="filterForm.ref_type"
-          :placeholder="$t('walletAdmin.placeholders.refType')"
-          clearable
-          style="width: 160px"
-          @change="handleSearch"
-        >
-          <ElOption :label="$t('walletAdmin.refTypes.pap_reward')" value="pap_reward" />
-          <ElOption :label="$t('walletAdmin.refTypes.pap_fc_salary')" value="pap_fc_salary" />
-          <ElOption :label="$t('walletAdmin.refTypes.admin_adjust')" value="admin_adjust" />
-          <ElOption :label="$t('walletAdmin.refTypes.manual')" value="manual" />
-          <ElOption :label="$t('walletAdmin.refTypes.redeem')" value="redeem" />
-          <ElOption :label="$t('walletAdmin.refTypes.srp_payout')" value="srp_payout" />
-          <ElOption :label="$t('walletAdmin.refTypes.shop_purchase')" value="shop_purchase" />
-          <ElOption :label="$t('walletAdmin.refTypes.shop_refund')" value="shop_refund" />
-          <ElOption
-            :label="$t('walletAdmin.refTypes.newbro_captain_reward')"
-            value="newbro_captain_reward"
-          />
-        </ElSelect>
-        <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
-      </template>
-    </ArtTableHeader>
+      </ElSelect>
+      <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
+    </template>
+  </ArtTableHeader>
 
-    <ArtTable
-      :loading="loading"
-      :data="data"
-      :columns="columns"
-      :pagination="pagination"
-      :pagination-options="{ pageSizes: [200, 500, 1000] }"
-      @pagination:size-change="handleSizeChange"
-      @pagination:current-change="handleCurrentChange"
-    />
-  </div>
+  <ArtTable
+    :loading="loading"
+    :data="data"
+    :columns="columns"
+    :pagination="pagination"
+    visual-variant="ledger"
+    @pagination:size-change="handleSizeChange"
+    @pagination:current-change="handleCurrentChange"
+  />
 </template>
 
 <script setup lang="ts">
@@ -182,17 +180,3 @@
 
   defineExpose({ filterByUser })
 </script>
-
-<style scoped lang="scss">
-  .wallet-transactions-panel {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-
-    :deep(.art-table) {
-      flex: 1;
-      min-height: 0;
-    }
-  }
-</style>
