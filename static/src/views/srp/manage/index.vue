@@ -375,7 +375,6 @@
     payoutTarget,
     handlePayoutAction,
     handlePayout,
-    autoApproveLoading,
     batchPayoutDialogVisible,
     batchPayoutList,
     batchSummaryLoading,
@@ -384,8 +383,7 @@
     handleAutoApprove,
     handleBatchPayout,
     copyText,
-    copyBatchPayoutListText,
-    formatFuxiCoin
+    copyBatchPayoutListText
   } = useSrpWorkflow({
     fleetMap,
     formatFleetLabel,
