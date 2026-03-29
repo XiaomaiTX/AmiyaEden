@@ -9,11 +9,10 @@
             :loading="eligibleLoading"
             :data="eligibleRows"
             :columns="eligibleColumns"
-            :row-class-name="getEligibleRowClassName"
-          />
-          <ElEmpty
-            v-if="!eligibleLoading && eligibleRows.length === 0"
-            :description="t('welfareMy.noEligibleWelfares')"
+            :row-class-name="
+              ({ row }: { row: Record<string, any>; rowIndex: number }) =>
+                getEligibleRowClassName({ row: row as EligibleRow })
+            "
           />
         </ElTabPane>
 
