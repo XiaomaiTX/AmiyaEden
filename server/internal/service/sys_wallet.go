@@ -15,6 +15,29 @@ type SysWalletService struct {
 	repo *repository.SysWalletRepository
 }
 
+func buildSystemWalletTransaction(userID uint, delta float64, newBalance float64, reason, refType, refID string) *model.WalletTransaction {
+	return &model.WalletTransaction{
+		UserID:       userID,
+		Amount:       delta,
+		Reason:       reason,
+		RefType:      refType,
+		RefID:        refID,
+		BalanceAfter: newBalance,
+		OperatorID:   0, // 系统操作
+	}
+}
+
+func (s *SysWalletService) applyWalletDeltaTx(tx *gorm.DB, userID uint, delta float64, newBalance float64, reason, refType, refID string) error {
+	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
+		return err
+	}
+
+	return s.repo.CreateTransactionTx(
+		tx,
+		buildSystemWalletTransaction(userID, delta, newBalance, reason, refType, refID),
+	)
+}
+
 func NewSysWalletService() *SysWalletService {
 	return &SysWalletService{
 		repo: repository.NewSysWalletRepository(),
@@ -203,21 +226,7 @@ func (s *SysWalletService) CreditUser(userID uint, amount float64, reason, refTy
 		}
 	}()
 
-	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	walletTx := &model.WalletTransaction{
-		UserID:       userID,
-		Amount:       amount,
-		Reason:       reason,
-		RefType:      refType,
-		RefID:        refID,
-		BalanceAfter: newBalance,
-		OperatorID:   0, // 系统操作
-	}
-	if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
+	if err := s.applyWalletDeltaTx(tx, userID, amount, newBalance, reason, refType, refID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -249,21 +258,7 @@ func (s *SysWalletService) DebitUser(userID uint, amount float64, reason, refTyp
 		}
 	}()
 
-	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	walletTx := &model.WalletTransaction{
-		UserID:       userID,
-		Amount:       -amount,
-		Reason:       reason,
-		RefType:      refType,
-		RefID:        refID,
-		BalanceAfter: newBalance,
-		OperatorID:   0, // 系统操作
-	}
-	if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
+	if err := s.applyWalletDeltaTx(tx, userID, -amount, newBalance, reason, refType, refID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -284,17 +279,5 @@ func (s *SysWalletService) ApplyWalletDeltaTx(tx *gorm.DB, userID uint, delta fl
 	if newBalance < 0 {
 		newBalance = 0
 	}
-	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
-		return err
-	}
-	walletTx := &model.WalletTransaction{
-		UserID:       userID,
-		Amount:       delta,
-		Reason:       reason,
-		RefType:      refType,
-		RefID:        refID,
-		BalanceAfter: newBalance,
-		OperatorID:   0,
-	}
-	return s.repo.CreateTransactionTx(tx, walletTx)
+	return s.applyWalletDeltaTx(tx, userID, delta, newBalance, reason, refType, refID)
 }
