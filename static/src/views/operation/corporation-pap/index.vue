@@ -1,4 +1,4 @@
-<!-- 分析页例外：该页混排统计卡片、筛选器与只读表格，按 docs/standards/frontend-table-pages.md 允许直接使用 ElTable。 -->
+<!-- 分析页例外：该页仍是统计卡片 + 自定义筛选混排，但表格本身复用共享 ArtTable ledger 呈现。 -->
 <template>
   <div class="corporation-pap-page art-full-height">
     <ElCard class="art-search-card" shadow="never">
@@ -72,85 +72,16 @@
       </template>
 
       <div class="table-wrap">
-        <ElTable v-loading="loading" :data="records" stripe border style="width: 100%">
-          <ElTableColumn type="index" width="60" label="#" :index="tableIndex" />
-          <ElTableColumn
-            prop="corp_ticker"
-            :label="t('fleet.corporationPap.columns.corpTicker')"
-            min-width="140"
-            align="center"
-          />
-          <ElTableColumn
-            prop="nickname"
-            :label="t('fleet.corporationPap.columns.nickname')"
-            min-width="180"
-            show-overflow-tooltip
-          >
-            <template #default="{ row }">
-              <span :class="row.nickname ? '' : 'text-gray-400'">{{ row.nickname || '-' }}</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="main_character_name"
-            :label="t('fleet.corporationPap.columns.mainCharacter')"
-            min-width="220"
-            show-overflow-tooltip
-          />
-          <ElTableColumn
-            prop="character_count"
-            :label="t('fleet.corporationPap.columns.characterCount')"
-            min-width="140"
-            align="center"
-          />
-          <ElTableColumn
-            prop="strat_op_paps"
-            :label="t('fleet.corporationPap.columns.stratOpPaps')"
-            min-width="160"
-            align="center"
-          >
-            <template #default="{ row }">
-              <ElTag type="warning" size="small">{{ formatPap(row.strat_op_paps) }}</ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="skirmish_paps"
-            :label="t('fleet.corporationPap.columns.skirmishPaps')"
-            min-width="160"
-            align="center"
-          >
-            <template #default="{ row }">
-              <ElTag type="success" size="small">{{ formatPap(row.skirmish_paps) }}</ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn
-            prop="alliance_strat_paps"
-            :label="t('fleet.corporationPap.columns.allianceStratPaps')"
-            min-width="180"
-            align="center"
-          >
-            <template #default="{ row }">
-              <ElTag type="info" size="small">{{ formatPap(row.alliance_strat_paps) }}</ElTag>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
-
-      <ElEmpty
-        v-if="!loading && records.length === 0"
-        :description="t('fleet.corporationPap.empty')"
-        class="my-4"
-      />
-
-      <div v-if="pagination.total > 0" class="flex justify-end mt-4">
-        <ElPagination
-          v-model:current-page="pagination.current"
-          v-model:page-size="pagination.size"
-          :page-sizes="[200, 500, 1000]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next"
-          background
-          @current-change="loadData"
-          @size-change="handleSizeChange"
+        <ArtTable
+          :loading="loading"
+          :data="records"
+          :columns="columns"
+          :pagination="pagination"
+          visual-variant="ledger"
+          :show-table-header="false"
+          :empty-text="t('fleet.corporationPap.empty')"
+          @pagination:current-change="handleCurrentChange"
+          @pagination:size-change="handleSizeChange"
         />
       </div>
     </ElCard>
@@ -159,20 +90,10 @@
 
 <script setup lang="ts">
   import { Refresh } from '@element-plus/icons-vue'
-  import {
-    ElButton,
-    ElCard,
-    ElEmpty,
-    ElInputNumber,
-    ElOption,
-    ElPagination,
-    ElSelect,
-    ElTable,
-    ElTableColumn,
-    ElTag
-  } from 'element-plus'
+  import { ElButton, ElCard, ElInputNumber, ElOption, ElSelect, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { fetchCorporationPapSummary } from '@/api/fleet'
+  import type { ColumnOption } from '@/types/component'
 
   defineOptions({ name: 'CorporationPap' })
 
@@ -246,7 +167,59 @@
       maximumFractionDigits: 1
     }).format(value ?? 0)
 
-  const tableIndex = (index: number) => (pagination.current - 1) * pagination.size + index + 1
+  const columns = computed<ColumnOption<Api.Fleet.CorporationPapSummaryItem>[]>(() => [
+    { type: 'globalIndex', width: 60, label: '#' },
+    {
+      prop: 'corp_ticker',
+      label: t('fleet.corporationPap.columns.corpTicker'),
+      minWidth: 140,
+      align: 'center'
+    },
+    {
+      prop: 'nickname',
+      label: t('fleet.corporationPap.columns.nickname'),
+      minWidth: 180,
+      showOverflowTooltip: true,
+      formatter: (row) =>
+        h('span', { class: row.nickname ? '' : 'text-gray-400' }, row.nickname || '-')
+    },
+    {
+      prop: 'main_character_name',
+      label: t('fleet.corporationPap.columns.mainCharacter'),
+      minWidth: 220,
+      showOverflowTooltip: true
+    },
+    {
+      prop: 'character_count',
+      label: t('fleet.corporationPap.columns.characterCount'),
+      minWidth: 140,
+      align: 'center'
+    },
+    {
+      prop: 'strat_op_paps',
+      label: t('fleet.corporationPap.columns.stratOpPaps'),
+      minWidth: 160,
+      align: 'center',
+      formatter: (row) =>
+        h(ElTag, { type: 'warning', size: 'small' }, () => formatPap(row.strat_op_paps))
+    },
+    {
+      prop: 'skirmish_paps',
+      label: t('fleet.corporationPap.columns.skirmishPaps'),
+      minWidth: 160,
+      align: 'center',
+      formatter: (row) =>
+        h(ElTag, { type: 'success', size: 'small' }, () => formatPap(row.skirmish_paps))
+    },
+    {
+      prop: 'alliance_strat_paps',
+      label: t('fleet.corporationPap.columns.allianceStratPaps'),
+      minWidth: 180,
+      align: 'center',
+      formatter: (row) =>
+        h(ElTag, { type: 'info', size: 'small' }, () => formatPap(row.alliance_strat_paps))
+    }
+  ])
 
   const emptyOverview = (): Api.Fleet.CorporationPapOverview => ({
     filtered_pap_total: 0,
@@ -302,8 +275,14 @@
     loadData()
   }
 
-  function handleSizeChange() {
+  function handleCurrentChange(current: number) {
+    pagination.current = current
+    loadData()
+  }
+
+  function handleSizeChange(size: number) {
     pagination.current = 1
+    pagination.size = size
     loadData()
   }
 

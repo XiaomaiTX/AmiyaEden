@@ -29,6 +29,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        visual-variant="ledger"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -95,7 +96,7 @@
   } = useTable({
     core: {
       apiFn: fetchMyWalletTransactions,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {

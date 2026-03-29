@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-03-28
+last_reviewed: 2026-03-29
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
@@ -10,80 +10,58 @@ source_of_truth:
 
 # Frontend Table Page Standard
 
-## Scope
+## Use This By Default
 
-Applies to admin pages, paginated list pages, and standard CRUD table pages in the frontend.
+- Use `useTable` for paginated page-level tables.
+- Use `ArtTable` for the table block.
+- Keep API calls in `static/src/api`.
+- Localize all user-visible text.
+- Keep page components thin; extract page-sized search areas, dialogs, or repeated column setup into `modules/` when helpful.
 
-## Core Rules
+## Ledger Rule
 
-- For standard paginated management pages, use `useTable` by default.
-- Do not make direct `axios` or `fetch` calls in view components.
-- Localize all user-visible text, including column titles, buttons, empty states, and validation messages.
-- Handle permissions through routes, `v-auth`, and shared store or hook patterns. Do not hardcode permission logic locally in the page when an existing repository pattern applies.
-- Extract reusable or page-sized search areas, edit dialogs, and column definitions into `modules/`.
+Treat a table as ledger-style when rows grow unbounded over time: logs, histories, transactions, records, approvals.
 
-## Pagination Sizing
+For ledger tables:
 
-Choose page sizes based on the nature of the data:
+- set default request size to `200`
+- use `ArtTable` with `visual-variant="ledger"`
+- do not repeat ledger page sizes or pager layout locally unless intentionally overriding the shared preset
 
-**Ledger / high-volume views** — transaction logs, event histories, operation records, approval
-histories, or any view whose row count grows unboundedly over time:
+For bounded management/config tables:
 
-- `pageSizes`: `[200, 500, 1000]`
-- default `size`: `200`
-- Pass `:pagination-options="{ pageSizes: [200, 500, 1000] }"` to `ArtTable` and set `size: 200` in `apiParams`.
+- use normal `ArtTable` defaults
+- smaller page sizes are fine
 
-**Management / config views** — users, roles, products, settings, or any view with a bounded
-dataset that admins manage rather than browse:
+## Layout Pattern
 
-- Use the framework default page sizes.
-- A lower default size (10–50) is appropriate.
+Preferred page structure:
 
-When in doubt, ask: does this table accumulate records indefinitely? If yes, use ledger sizing.
+- search area outside the table card
+- `ElCard.art-table-card` as the table container
+- `ArtTableHeader` above `ArtTable`
+- dialogs as siblings outside the card
 
-## Default Page Pattern
+If the page is mixed layout or analytics-like, you may still use this pattern for the table section itself.
 
-When creating a standard table page, use this structure unless the page has a justified exception:
+## Exceptions
 
-- place the search area outside the card
-- use `ElCard.art-table-card` as the table container
-- use `ArtTableHeader` for refresh, column settings, and primary actions
-- use `ArtTable` for table rendering and pagination
-- use `useTable` to manage `loading`, `data`, `pagination`, and `searchParams`
-- place dialogs outside `ElCard` as sibling nodes
+Use native `ElTable` only when the table itself does not fit `ArtTable`, for example:
 
-## Recommended Structure
+- detail-page subtables
+- tree tables
+- highly customized expandable rows
+- temporary import/preview tables
+- Element Plus interactions that `ArtTable` does not expose cleanly
 
-```text
-views/<module>/<page>/
-├── index.vue
-└── modules/
-    ├── <page>-search.vue
-    ├── <page>-dialog.vue
-    └── columns.ts
-```
+Using native `ElTable` does not relax the other rules in this document.
 
-## Allowed Exceptions
+## AI Checklist
 
-You may use native ElTable instead of ArtTable only when the page does not fit the standard management-page pattern, such as:
+Before finishing:
 
-- a read-only subtable inside a detail page
-- an analytics page or dashboard with mixed data blocks
-- a tree table or highly customized expandable row that ArtTable does not express well
-- a third-party import page or temporary preview page
-
-When using native ElTable, the following rules still apply:
-
-- keep API calls in static/src/api
-- localize all user-visible text
-- do not hardcode permission logic inside the page
-
-## Pre-Completion Checklist
-
-Before considering the page complete, verify:
-
-- Does the page actually require pagination?
-- If it is a standard paginated management page, does it use useTable?
-- Were the search area and dialog extracted when they are reusable or page-sized?
-- Are all user-visible strings localized?
-- Does the page avoid direct HTTP client creation or direct HTTP calls?
+- Is this paginated table using `useTable` unless there is a real exception?
+- If it is ledger-style, is it using `visual-variant="ledger"`?
+- Are API calls outside the view?
+- Are visible strings localized?
+- Is the implementation following existing page patterns instead of inventing a one-off abstraction?
