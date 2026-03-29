@@ -98,7 +98,7 @@ type createEsiTitleMappingRequest struct {
 	RoleCode      string `json:"role_code"      binding:"required"`
 }
 
-// CreateEsiTitleMapping 创建 ESI 头衔映���
+// CreateEsiTitleMapping 创建 ESI 头衔映射
 func (h *AutoRoleHandler) CreateEsiTitleMapping(c *gin.Context) {
 	var req createEsiTitleMappingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
