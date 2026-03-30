@@ -15,7 +15,13 @@ type SysWalletService struct {
 	repo *repository.SysWalletRepository
 }
 
+const walletTransactionReasonMaxLength = 256
+
 func buildWalletTransaction(userID uint, operatorID uint, delta float64, newBalance float64, reason, refType, refID string) *model.WalletTransaction {
+	if reasonRunes := []rune(reason); len(reasonRunes) > walletTransactionReasonMaxLength {
+		reason = string(reasonRunes[:walletTransactionReasonMaxLength])
+	}
+
 	return &model.WalletTransaction{
 		UserID:       userID,
 		Amount:       delta,

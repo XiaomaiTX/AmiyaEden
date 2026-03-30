@@ -108,9 +108,10 @@ source_of_truth:
 | POST | `/skill-planning/skill-plans/check/run` | 执行技能规划完成度检查 | Login |
 | GET | `/skill-planning/skill-plans/check/plan-selection` | 获取当前用户保存的完成度检查规划选择 | Login |
 | PUT | `/skill-planning/skill-plans/check/plan-selection` | 保存当前用户的完成度检查规划选择 | Login |
-| GET | `/skill-planning/skill-plans` | 技能计划列表 | `RequireRole(admin, senior_fc, fc)` |
-| GET | `/skill-planning/skill-plans/:id` | 技能计划详情 | `RequireRole(admin, senior_fc, fc)` |
+| GET | `/skill-planning/skill-plans` | 技能计划列表 | Login |
+| GET | `/skill-planning/skill-plans/:id` | 技能计划详情 | Login |
 | POST | `/skill-planning/skill-plans` | 创建技能计划 | `RequireRole(admin, senior_fc)` |
+| PUT | `/skill-planning/skill-plans/reorder` | 调整技能计划排序 | `RequireRole(admin, senior_fc)` |
 | PUT | `/skill-planning/skill-plans/:id` | 更新技能计划 | `RequireRole(admin, senior_fc)` |
 | DELETE | `/skill-planning/skill-plans/:id` | 删除技能计划 | `RequireRole(admin, senior_fc)` |
 
@@ -280,13 +281,15 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/system/welfare/list` | 福利列表 | `RequireRole(admin)` |
+| POST | `/system/welfare/list` | 福利列表 | `RequireRole(admin, welfare)` |
 | POST | `/system/welfare/add` | 创建福利 | `RequireRole(admin)` |
 | POST | `/system/welfare/edit` | 编辑福利 | `RequireRole(admin)` |
 | POST | `/system/welfare/delete` | 删除福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/reorder` | 调整福利排序 | `RequireRole(admin)` |
 | POST | `/system/welfare/import` | 导入历史福利记录 | `RequireRole(admin)` |
 | POST | `/system/welfare/applications` | 福利申请列表（审批端） | `RequireRole(admin)` |
-| POST | `/system/welfare/review` | 审批福利申请（发放/拒绝） | `RequireRole(admin)` |
+| POST | `/system/welfare/applications/delete` | 删除单条福利申请记录 | `RequireRole(admin)` |
+| POST | `/system/welfare/review` | 审批福利申请（发放/拒绝；若当前福利配置 `pay_by_fuxi_coin > 0`，同步写入 `welfare_payout` 钱包流水） | `RequireRole(admin)` |
 
 ### Newbro Admin
 
