@@ -11,6 +11,7 @@ import (
 var (
 	srpManageRoles = []string{model.RoleSRP, model.RoleFC, model.RoleAdmin}
 	srpPayoutRoles = []string{model.RoleSRP, model.RoleAdmin}
+	skillPlanManageRoles = []string{model.RoleAdmin, model.RoleSeniorFC}
 )
 
 // RegisterRoutes 注册所有业务路由
@@ -147,8 +148,8 @@ func RegisterRoutes(r *gin.Engine) {
 	skillPlanning := login.Group("/skill-planning")
 	skillPlan := skillPlanning.Group("/skill-plans")
 	{
-		viewSkillPlans := middleware.RequireRole(model.RoleAdmin, model.RoleSeniorFC, model.RoleFC)
-		manageSkillPlans := middleware.RequireRole(model.RoleAdmin, model.RoleSeniorFC)
+		viewSkillPlans := middleware.RequireLoginUser()
+		manageSkillPlans := middleware.RequireRole(skillPlanManageRoles...)
 		viewSkillPlanChecks := middleware.RequireLoginUser()
 
 		skillPlan.GET("/check/selection", viewSkillPlanChecks, skillPlanH.GetCheckSelection)

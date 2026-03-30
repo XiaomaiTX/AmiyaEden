@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // WelfareRepository 福利数据访问层
@@ -37,6 +38,15 @@ func (r *WelfareRepository) DeleteWelfare(id uint) error {
 func (r *WelfareRepository) GetWelfareByID(id uint) (*model.Welfare, error) {
 	var w model.Welfare
 	if err := global.DB.First(&w, id).Error; err != nil {
+		return nil, err
+	}
+	return &w, nil
+}
+
+// GetWelfareByIDTx 根据 ID 在指定事务中获取福利
+func (r *WelfareRepository) GetWelfareByIDTx(tx *gorm.DB, id uint) (*model.Welfare, error) {
+	var w model.Welfare
+	if err := tx.First(&w, id).Error; err != nil {
 		return nil, err
 	}
 	return &w, nil
@@ -291,9 +301,29 @@ func (r *WelfareRepository) GetApplicationByID(id uint) (*model.WelfareApplicati
 	return &app, nil
 }
 
+func buildGetApplicationByIDForUpdateQuery(db *gorm.DB, id uint) *gorm.DB {
+	return db.Model(&model.WelfareApplication{}).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("welfare_application.id = ?", id)
+}
+
+// GetApplicationByIDForUpdateTx 根据 ID 在事务中获取福利申请并加行锁
+func (r *WelfareRepository) GetApplicationByIDForUpdateTx(tx *gorm.DB, id uint) (*model.WelfareApplication, error) {
+	var app model.WelfareApplication
+	if err := buildGetApplicationByIDForUpdateQuery(tx, id).First(&app).Error; err != nil {
+		return nil, err
+	}
+	return &app, nil
+}
+
 // UpdateApplication 更新福利申请
 func (r *WelfareRepository) UpdateApplication(app *model.WelfareApplication) error {
 	return global.DB.Save(app).Error
+}
+
+// UpdateApplicationTx 在事务中更新福利申请
+func (r *WelfareRepository) UpdateApplicationTx(tx *gorm.DB, app *model.WelfareApplication) error {
+	return tx.Save(app).Error
 }
 
 // DeleteApplication 删除福利申请记录

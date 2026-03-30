@@ -2,10 +2,11 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-03-28
+last_reviewed: 2026-03-31
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go
+  - server/internal/service/sys_wallet.go
   - static/src/api/welfare.ts
   - static/src/views/welfare
 ---
@@ -15,6 +16,7 @@ source_of_truth:
 ## 当前能力
 
 - 管理员福利定义 CRUD（创建、编辑、删除、列表）
+- 福利定义支持可选整数配置 `pay_by_fuxi_coin`，用于审批发放时按当前配置发放伏羲币
 - 两种发放模式：按自然人（per_user）、按人物（per_character）
 - 可选技能计划检查：可关联多个军团技能计划，技能合格才允许申请
 - 可选人物最大年龄限制（max_char_age_months）：可与 per_user / per_character 一起使用。系统会先按用户检查任一人物年龄，若任一人物超龄则该福利对该用户不可申请；若通过，再继续按发放模式筛选人物
@@ -26,6 +28,7 @@ source_of_truth:
 - 若福利因技能规划未满足而暂不可申请，前端提示会列出对应的技能规划名称
 - 我的福利页面顶部提供前往技能规划完成度检查页的提醒链接
 - 申请状态流转：requested → delivered / rejected
+- 当福利当前配置 `pay_by_fuxi_coin > 0` 时，审批端执行 delivered 会同步给申请人钱包入账，流水 `ref_type = welfare_payout`
 - 我的福利页面"已领取福利" tab 展示审批福利官昵称
 - 福利审批页面：福利官/管理员浏览待发放申请，执行发放或拒绝操作；审批列表展示申请人上传的证明图片缩略图，并支持原页预览，行悬停时展示福利描述
 - 管理员可导入历史已发放记录，按行粘贴人物名和 QQ 号生成 delivered 记录
@@ -72,6 +75,7 @@ source_of_truth:
 - `POST /api/v1/system/welfare/add`
 - `POST /api/v1/system/welfare/edit`
 - `POST /api/v1/system/welfare/delete`
+- `POST /api/v1/system/welfare/reorder`
 - `POST /api/v1/system/welfare/import` — 导入历史福利记录
 - `POST /api/v1/system/welfare/applications` — 福利申请列表（审批端，支持按状态与人物名/昵称/QQ 关键词筛选）
 - `POST /api/v1/system/welfare/applications/delete` — 删除单条申请记录（仅 admin）
@@ -99,7 +103,9 @@ source_of_truth:
 - per_user 去重基于 QQ / DiscordID 匹配（非 user_id），要求用户至少设置一个联系方式
 - per_character 去重基于 character_id 和 character_name
 - 申请时服务端二次校验资格，防止并发竞态
-- 福利系统是纯记录型，实际发放在外部完成（游戏内合同等），系统只追踪申请和审批
+- `pay_by_fuxi_coin` 使用审批当下的福利配置，不在申请记录里冻结快照
+- 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，`requested -> delivered` 会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
+- 导入历史福利记录只写福利申请历史，不补写 `welfare_payout` 钱包流水
 - 技能计划检查复用 skill_plan 模块，福利定义通过 welfare_skill_plans 关联表支持多技能计划
 
 ## 主要代码文件

@@ -1009,6 +1009,7 @@ declare namespace Api {
       name: string
       description: string
       dist_mode: 'per_user' | 'per_character'
+      pay_by_fuxi_coin: number | null
       require_skill_plan: boolean
       skill_plan_ids: number[]
       max_char_age_months: number | null
@@ -1027,6 +1028,7 @@ declare namespace Api {
       name: string
       description?: string
       dist_mode: 'per_user' | 'per_character'
+      pay_by_fuxi_coin?: number | null
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
@@ -1043,6 +1045,7 @@ declare namespace Api {
       name: string
       description?: string
       dist_mode: 'per_user' | 'per_character'
+      pay_by_fuxi_coin?: number | null
       require_skill_plan?: boolean
       skill_plan_ids?: number[]
       max_char_age_months?: number | null

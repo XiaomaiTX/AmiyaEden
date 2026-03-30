@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-03-29
+last_reviewed: 2026-03-31
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -130,6 +130,7 @@ source_of_truth:
 - 判断请求方是否至少拥有一个非 `guest` 职权
 - 用于实现 API 文档中的 `Login` 边界
 - 适合"任意产品用户可访问"的能力，不再用 `RequireRole(..., user)` 代替
+- 当前 `skill-planning` 模块的列表 / 详情与完成度检查接口都属于这条边界
 - 不适用于 SSO 首次登录后的 guest onboarding 页面，例如 `/me`、`/sso/eve/characters` 以及 guest 可访问的自助信息页
 
 ### JWT-only 自助能力
@@ -167,6 +168,7 @@ source_of_truth:
 - `meta.roles` 只用于真实的显式职权白名单
 - `meta.requiresNewbro = true` 表示该页面还要求当前用户的新人资格快照为 true
 - 不要用 `meta.roles: ['admin', 'fc', 'user']` 之类写法冒充 `Login`
+- `skill-planning/skill-plans` 当前使用 `meta.login = true` 提供只读访问，创建 / 编辑 / 删除 / 排序仍依赖页面内 `canManage` 与后端 `RequireRole(admin, senior_fc)` 双层限制
 
 修改权限时，必须同时考虑：
 
