@@ -28,6 +28,7 @@ type Welfare struct {
 	Name             string `gorm:"size:256;not null"           json:"name"`
 	Description      string `gorm:"type:text"                   json:"description"`
 	DistMode         string `gorm:"size:20;not null;default:'per_user'" json:"dist_mode"`
+	PayByFuxiCoin    *int   `gorm:""                            json:"pay_by_fuxi_coin"`
 	RequireSkillPlan bool   `gorm:"default:false"               json:"require_skill_plan"`
 	MaxCharAgeMonths *int   `gorm:""                            json:"max_char_age_months"`
 	MinimumPap       *int   `gorm:""                            json:"minimum_pap"`

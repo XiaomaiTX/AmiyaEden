@@ -511,6 +511,9 @@
     "minimumPap": "最低 PAP",
     "minimumPapPlaceholder": "数量（0 = 不限制）",
     "minimumPapHint": "设置后会检查军团舰队 PAP，总数需大于该值才可申请",
+    "payByFuxiCoin": "按伏羲币发放",
+    "payByFuxiCoinPlaceholder": "数量（0 = 不发放）",
+    "payByFuxiCoinHint": "若大于 0，则审批发放时会自动向申请人钱包发放对应数量的伏羲币",
     "distModeLockedHint": "设置人物年龄限制后仍可选择按自然人或按人物",
     "importBtn": "导入",
     "importTitle": "导入历史记录",
@@ -1725,6 +1728,7 @@
       "manual": "手动操作",
       "redeem": "兑换消费",
       "srp_payout": "SRP 补损",
+      "welfare_payout": "福利发放",
       "shop_purchase": "商城购买",
       "shop_refund": "商城退款",
       "newbro_captain_reward": "队长帮扶奖励"

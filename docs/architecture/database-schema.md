@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-03-27
+last_reviewed: 2026-03-31
 source_of_truth:
   - server/bootstrap/db.go
   - server/internal/model
@@ -366,6 +366,59 @@ ESI 头衔到系统职权的映射表。
 - `esi_title_mapping` 使用的 title 数据是另一条显式配置链路，不能和 corp role 混为一谈
 
 因此，“title 名称叫 Director” 与 “ESI corp role 是 Director” 在当前系统里不是同一件事。
+
+## 福利与伏羲币关联表
+
+### `welfare`
+
+关键列包括：
+
+- `id`
+- `dist_mode`
+- `pay_by_fuxi_coin`
+- `require_skill_plan`
+- `max_char_age_months`
+- `minimum_pap`
+- `require_evidence`
+- `example_evidence`
+- `status`
+- `sort_order`
+- `created_by`
+
+说明：
+
+- `pay_by_fuxi_coin` 是福利定义上的可选整数配置，不会在申请时冻结到 `welfare_application`
+- 审批发放时，服务层会重新读取当前 `welfare` 行来决定是否发放伏羲币
+- 技能计划关联当前通过 `welfare_skill_plans` 关系表维护，不直接内嵌在 `welfare` 表列里
+
+### `welfare_application`
+
+关键列包括：
+
+- `welfare_id`
+- `user_id`
+- `character_id`
+- `character_name`
+- `qq`
+- `discord_id`
+- `evidence_image`
+- `status`
+- `reviewed_by`
+- `reviewed_at`
+
+说明：
+
+- 正常审批路径会在事务内重新读取并锁定申请行，再执行 `requested -> delivered / rejected`
+- 历史导入允许 `user_id` 为空并直接写入 `delivered` 记录
+
+### `wallet_transaction`
+
+与福利模块相关的当前约定：
+
+- 当 `welfare.pay_by_fuxi_coin > 0` 且福利申请从 `requested` 发放为 `delivered` 时，系统会写入一条钱包流水
+- 该流水使用 `ref_type = welfare_payout`
+- `ref_id` 当前按 `welfare_application:<application_id>` 生成，用于追踪该次福利发放
+- 导入历史福利记录不会补写 `welfare_payout` 钱包流水
 
 ## 当前未采用的 schema 设计
 

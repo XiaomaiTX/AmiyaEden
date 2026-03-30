@@ -76,6 +76,7 @@ const (
 	WalletRefRedeem              = "redeem"                // 兑换消费
 	WalletRefAdminAdjust         = "admin_adjust"          // 管理员调整
 	WalletRefSrpPayout           = "srp_payout"            // SRP 补损发放
+	WalletRefWelfarePayout       = "welfare_payout"        // 福利审批发放
 	WalletRefShopBuy             = "shop_purchase"         // 商城购买
 	WalletRefShopRefund          = "shop_refund"           // 商城退款（拒绝订单）
 	WalletRefNewbroCaptainReward = "newbro_captain_reward" // 队长帮扶奖励

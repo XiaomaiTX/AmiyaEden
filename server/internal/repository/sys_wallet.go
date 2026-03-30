@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"errors"
 	"strings"
 	"time"
 
@@ -31,12 +32,24 @@ func buildGetOrCreateWalletForUpdateQuery(db *gorm.DB, userID uint) *gorm.DB {
 func (r *SysWalletRepository) GetOrCreateWalletTx(tx *gorm.DB, userID uint) (*model.SystemWallet, error) {
 	var wallet model.SystemWallet
 	err := buildGetOrCreateWalletForUpdateQuery(tx, userID).First(&wallet).Error
-	if err != nil {
-		wallet = model.SystemWallet{UserID: userID, Balance: 0}
-		if err := tx.Create(&wallet).Error; err != nil {
-			return nil, err
-		}
+	if err == nil {
+		return &wallet, nil
 	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	if err := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoNothing: true,
+	}).Create(&model.SystemWallet{UserID: userID, Balance: 0}).Error; err != nil {
+		return nil, err
+	}
+
+	if err := buildGetOrCreateWalletForUpdateQuery(tx, userID).First(&wallet).Error; err != nil {
+		return nil, err
+	}
+
 	return &wallet, nil
 }
 
@@ -44,12 +57,24 @@ func (r *SysWalletRepository) GetOrCreateWalletTx(tx *gorm.DB, userID uint) (*mo
 func (r *SysWalletRepository) GetOrCreateWallet(userID uint) (*model.SystemWallet, error) {
 	var wallet model.SystemWallet
 	err := global.DB.Where("user_id = ?", userID).First(&wallet).Error
-	if err != nil {
-		wallet = model.SystemWallet{UserID: userID, Balance: 0}
-		if err := global.DB.Create(&wallet).Error; err != nil {
-			return nil, err
-		}
+	if err == nil {
+		return &wallet, nil
 	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	if err := global.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoNothing: true,
+	}).Create(&model.SystemWallet{UserID: userID, Balance: 0}).Error; err != nil {
+		return nil, err
+	}
+
+	if err := global.DB.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		return nil, err
+	}
+
 	return &wallet, nil
 }
 

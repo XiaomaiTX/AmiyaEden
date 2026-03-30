@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { AppRouteRecord } from '../../types/router'
+import { skillPlanningRoutes } from '../modules/skill-planning'
 import { applyMenuAccessFilter, pruneEmptyMenus } from './menuAccess'
 
 const newbroRoutes: AppRouteRecord[] = [
@@ -49,4 +50,11 @@ test('pruneEmptyMenus removes directories whose children were fully filtered out
   const pruned = pruneEmptyMenus(filtered)
 
   assert.deepEqual(pruned, [])
+})
+
+test('applyMenuAccessFilter keeps SkillPlans for logged-in ordinary users', () => {
+  const filtered = applyMenuAccessFilter([skillPlanningRoutes], ['user'], undefined)
+  const skillPlanning = filtered[0]
+
+  assert.equal(skillPlanning.children?.some((route) => route.name === 'SkillPlans'), true)
 })
