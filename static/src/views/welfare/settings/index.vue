@@ -124,6 +124,20 @@
             {{ t('welfareSettings.minimumPapHint') }}
           </div>
         </ElFormItem>
+        <ElFormItem :label="t('welfareSettings.payByFuxiCoin')">
+          <ElInputNumber
+            v-model="formData.pay_by_fuxi_coin"
+            :min="0"
+            :step="1"
+            :precision="0"
+            :placeholder="t('welfareSettings.payByFuxiCoinPlaceholder')"
+            controls-position="right"
+            style="width: 200px"
+          />
+          <div class="text-xs text-gray-400 mt-1">
+            {{ t('welfareSettings.payByFuxiCoinHint') }}
+          </div>
+        </ElFormItem>
         <ElFormItem :label="t('welfareSettings.requireSkillPlan')">
           <ElSwitch v-model="formData.require_skill_plan" />
         </ElFormItem>
@@ -348,6 +362,12 @@
             )
         },
         {
+          prop: 'pay_by_fuxi_coin',
+          label: t('welfareSettings.payByFuxiCoin'),
+          width: 140,
+          formatter: (row: WelfareItem) => row.pay_by_fuxi_coin ?? '-'
+        },
+        {
           prop: 'status',
           label: t('common.status'),
           width: 90,
@@ -438,6 +458,7 @@
     name: '',
     description: '',
     dist_mode: 'per_user' as 'per_user' | 'per_character',
+    pay_by_fuxi_coin: undefined as number | undefined,
     require_skill_plan: false,
     skill_plan_ids: [] as number[],
     max_char_age_months: undefined as number | undefined,
@@ -489,6 +510,7 @@
       name: '',
       description: '',
       dist_mode: 'per_user',
+      pay_by_fuxi_coin: undefined,
       require_skill_plan: false,
       skill_plan_ids: [],
       max_char_age_months: undefined,
@@ -513,6 +535,7 @@
       name: row.name,
       description: row.description,
       dist_mode: row.dist_mode,
+      pay_by_fuxi_coin: row.pay_by_fuxi_coin ?? undefined,
       require_skill_plan: row.require_skill_plan,
       skill_plan_ids: row.skill_plan_ids ?? [],
       max_char_age_months: row.max_char_age_months ?? undefined,
@@ -534,6 +557,7 @@
       const payload = {
         ...formData,
         skill_plan_ids: formData.require_skill_plan ? formData.skill_plan_ids : [],
+        pay_by_fuxi_coin: formData.pay_by_fuxi_coin ?? null,
         max_char_age_months: formData.max_char_age_months || null,
         minimum_pap: formData.minimum_pap || null,
         example_evidence: formData.require_evidence ? formData.example_evidence : ''

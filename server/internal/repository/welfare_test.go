@@ -6,7 +6,38 @@ import (
 	"testing"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+func TestBuildGetApplicationByIDForUpdateQueryUsesRowLock(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	query := buildGetApplicationByIDForUpdateQuery(db, 42).
+		Session(&gorm.Session{DryRun: true}).
+		First(&model.WelfareApplication{})
+	sql := query.Statement.SQL.String()
+
+	if !strings.Contains(sql, `FROM "welfare_application"`) {
+		t.Fatalf("expected welfare_application select, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `WHERE welfare_application.id =`) && !strings.Contains(sql, `WHERE "welfare_application"."id" =`) && !strings.Contains(sql, `WHERE id =`) {
+		t.Fatalf("expected application id filter, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `FOR UPDATE`) {
+		t.Fatalf("expected row lock query to use FOR UPDATE, got SQL: %s", sql)
+	}
+	lockingClause, ok := query.Statement.Clauses["FOR"]
+	if !ok {
+		t.Fatalf("expected FOR locking clause to be present, got clauses: %#v", query.Statement.Clauses)
+	}
+	lockingExpr, ok := lockingClause.Expression.(clause.Locking)
+	if !ok {
+		t.Fatalf("expected FOR clause to use clause.Locking, got %T", lockingClause.Expression)
+	}
+	if lockingExpr.Strength != "UPDATE" {
+		t.Fatalf("expected UPDATE row lock strength, got %q", lockingExpr.Strength)
+	}
+}
 
 func TestBuildApplicationsByUserIDQueryAppliesUserStatusAndPagination(t *testing.T) {
 	db := newDryRunPostgresDB(t)

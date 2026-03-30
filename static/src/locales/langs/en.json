@@ -510,6 +510,9 @@
     "minimumPap": "Minimum PAP",
     "minimumPapPlaceholder": "Count (0 = no limit)",
     "minimumPapHint": "If set, the user's corporation fleet PAP total must be greater than this value",
+    "payByFuxiCoin": "Pay By Fuxi Coin",
+    "payByFuxiCoinPlaceholder": "Amount (0 = disabled)",
+    "payByFuxiCoinHint": "If greater than 0, delivering this welfare credits the applicant wallet automatically.",
     "distModeLockedHint": "Character age limits can be used with either distribution mode",
     "importBtn": "Import",
     "importTitle": "Import History Records",
@@ -1725,6 +1728,7 @@
       "manual": "Manual",
       "redeem": "Redeem Spend",
       "srp_payout": "SRP Payout",
+      "welfare_payout": "Welfare Payout",
       "shop_purchase": "Shop Purchase",
       "shop_refund": "Shop Refund",
       "newbro_captain_reward": "Captain Support Reward"

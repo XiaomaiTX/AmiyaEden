@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,6 +46,27 @@ func TestCreditUserStoresSystemOperatorOnWalletTransaction(t *testing.T) {
 	}
 	if tx.RefType != "shop" || tx.RefID != "order:1" || tx.Reason != "shop order" {
 		t.Fatalf("unexpected transaction metadata: %+v", tx)
+	}
+}
+
+func TestCreditUserTruncatesOverlongWalletReason(t *testing.T) {
+	db := newSysWalletServiceTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	overlongReason := strings.Repeat("伏", walletTransactionReasonMaxLength+16)
+	svc := NewSysWalletService()
+	if err := svc.CreditUser(42, 10, overlongReason, "shop", "order:2"); err != nil {
+		t.Fatalf("CreditUser() error = %v", err)
+	}
+
+	var tx model.WalletTransaction
+	if err := db.First(&tx).Error; err != nil {
+		t.Fatalf("load wallet transaction: %v", err)
+	}
+	if got := len([]rune(tx.Reason)); got != walletTransactionReasonMaxLength {
+		t.Fatalf("wallet transaction reason length = %d, want %d", got, walletTransactionReasonMaxLength)
 	}
 }
 
