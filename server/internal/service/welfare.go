@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"encoding/json"
@@ -10,6 +11,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // WelfareService 福利业务逻辑层
@@ -45,6 +48,9 @@ func (s *WelfareService) AdminCreateWelfare(w *model.Welfare) error {
 	if w.DistMode != model.WelfareDistModePerUser && w.DistMode != model.WelfareDistModePerCharacter {
 		return errors.New("无效的发放模式")
 	}
+	if w.PayByFuxiCoin != nil && *w.PayByFuxiCoin < 0 {
+		return errors.New("伏羲币发放数量不能小于 0")
+	}
 	if w.RequireSkillPlan && len(w.SkillPlanIDs) == 0 {
 		return errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
@@ -71,6 +77,7 @@ type AdminUpdateWelfareRequest struct {
 	Name             string `json:"name"`
 	Description      string `json:"description"`
 	DistMode         string `json:"dist_mode"`
+	PayByFuxiCoin    *int   `json:"pay_by_fuxi_coin"`
 	RequireSkillPlan bool   `json:"require_skill_plan"`
 	SkillPlanIDs     []uint `json:"skill_plan_ids"`
 	MaxCharAgeMonths *int   `json:"max_char_age_months"`
@@ -94,6 +101,9 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	if req.DistMode != model.WelfareDistModePerUser && req.DistMode != model.WelfareDistModePerCharacter {
 		return nil, errors.New("无效的发放模式")
 	}
+	if req.PayByFuxiCoin != nil && *req.PayByFuxiCoin < 0 {
+		return nil, errors.New("伏羲币发放数量不能小于 0")
+	}
 	if req.RequireSkillPlan && len(req.SkillPlanIDs) == 0 {
 		return nil, errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
@@ -101,6 +111,7 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	w.Name = req.Name
 	w.Description = req.Description
 	w.DistMode = req.DistMode
+	w.PayByFuxiCoin = req.PayByFuxiCoin
 	w.RequireSkillPlan = req.RequireSkillPlan
 	w.MaxCharAgeMonths = req.MaxCharAgeMonths
 	w.MinimumPap = req.MinimumPap
@@ -885,22 +896,49 @@ func (s *WelfareService) AdminDeleteApplication(id uint) error {
 }
 
 func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, req *AdminReviewApplicationRequest) error {
-	app, err := s.repo.GetApplicationByID(appID)
-	if err != nil {
-		return errors.New("申请记录不存在")
-	}
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		app, err := s.repo.GetApplicationByIDForUpdateTx(tx, appID)
+		if err != nil {
+			return errors.New("申请记录不存在")
+		}
 
-	newStatus, err := validateReviewTransition(app.Status, strings.TrimSpace(req.Action))
-	if err != nil {
-		return err
-	}
-	app.Status = newStatus
+		newStatus, err := validateReviewTransition(app.Status, strings.TrimSpace(req.Action))
+		if err != nil {
+			return err
+		}
+		app.Status = newStatus
 
-	now := time.Now()
-	app.ReviewedBy = reviewerID
-	app.ReviewedAt = &now
+		now := time.Now()
+		app.ReviewedBy = reviewerID
+		app.ReviewedAt = &now
 
-	return s.repo.UpdateApplication(app)
+		if newStatus == model.WelfareAppStatusDelivered {
+			welfare, err := s.repo.GetWelfareByIDTx(tx, app.WelfareID)
+			if err != nil {
+				return errors.New("福利不存在")
+			}
+			if welfare.PayByFuxiCoin != nil && *welfare.PayByFuxiCoin > 0 {
+				if app.UserID == nil || *app.UserID == 0 {
+					return errors.New("该福利配置了伏羲币发放，但申请记录缺少用户信息")
+				}
+				reason := fmt.Sprintf("Welfare#%d Application#%d %s", welfare.ID, app.ID, welfare.Name)
+				refID := fmt.Sprintf("welfare_application:%d", app.ID)
+				if err := NewSysWalletService().ApplyWalletDeltaByOperatorTx(
+					tx,
+					*app.UserID,
+					reviewerID,
+					float64(*welfare.PayByFuxiCoin),
+					reason,
+					model.WalletRefWelfarePayout,
+					refID,
+				); err != nil {
+					return err
+				}
+			}
+		}
+
+		return s.repo.UpdateApplicationTx(tx, app)
+	})
 }
 
 // MyApplicationResp 用户申请记录响应

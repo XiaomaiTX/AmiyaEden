@@ -45,6 +45,7 @@ type adminWelfareCreateRequest struct {
 	Name             string `json:"name" binding:"required"`
 	Description      string `json:"description"`
 	DistMode         string `json:"dist_mode" binding:"required,oneof=per_user per_character"`
+	PayByFuxiCoin    *int   `json:"pay_by_fuxi_coin"`
 	RequireSkillPlan bool   `json:"require_skill_plan"`
 	SkillPlanIDs     []uint `json:"skill_plan_ids"`
 	MaxCharAgeMonths *int   `json:"max_char_age_months"`
@@ -67,6 +68,7 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 		Name:             req.Name,
 		Description:      req.Description,
 		DistMode:         req.DistMode,
+		PayByFuxiCoin:    req.PayByFuxiCoin,
 		RequireSkillPlan: req.RequireSkillPlan,
 		SkillPlanIDs:     req.SkillPlanIDs,
 		MaxCharAgeMonths: req.MaxCharAgeMonths,
