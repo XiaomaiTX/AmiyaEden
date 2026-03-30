@@ -1,12 +1,51 @@
 package repository
 
 import (
+	"amiya-eden/internal/model"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+func TestBuildGetOrCreateWalletForUpdateQueryUsesRowLock(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	query := buildGetOrCreateWalletForUpdateQuery(db, 42).
+		Session(&gorm.Session{DryRun: true}).
+		First(&model.SystemWallet{})
+	sql := query.Statement.SQL.String()
+
+	if !strings.Contains(sql, `FROM "system_wallet"`) {
+		t.Fatalf("expected system_wallet select, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `WHERE user_id =`) && !strings.Contains(sql, `WHERE "user_id" =`) {
+		t.Fatalf("expected user-scoped filter, got SQL: %s", sql)
+	}
+	if len(query.Statement.Vars) == 0 || fmt.Sprint(query.Statement.Vars[0]) != "42" {
+		t.Fatalf("expected first bound variable to be user ID 42, got vars: %#v", query.Statement.Vars)
+	}
+	if !strings.Contains(sql, `FOR UPDATE`) {
+		t.Fatalf("expected row lock query to use FOR UPDATE, got SQL: %s", sql)
+	}
+	lockingClause, ok := query.Statement.Clauses["FOR"]
+	if !ok {
+		t.Fatalf("expected FOR locking clause to be present, got clauses: %#v", query.Statement.Clauses)
+	}
+	lockingExpr, ok := lockingClause.Expression.(clause.Locking)
+	if !ok {
+		t.Fatalf("expected FOR clause to use clause.Locking, got %T", lockingClause.Expression)
+	}
+	if lockingExpr.Strength != "UPDATE" {
+		t.Fatalf("expected UPDATE row lock strength, got %q", lockingExpr.Strength)
+	}
+	if !strings.Contains(sql, `ORDER BY`) {
+		t.Fatalf("expected first query ordering, got SQL: %s", sql)
+	}
+}
 
 func TestSysWalletCountTransactionsByUserRefTypeInRangeUsesTimeBounds(t *testing.T) {
 	db := newDryRunPostgresDB(t)
@@ -38,7 +77,7 @@ func TestSysWalletTransactionLookupByUserRefTypeRefIDUsesAllFilters(t *testing.T
 			"user_id = ? AND ref_type = ? AND ref_id = ? AND created_at >= ? AND created_at < ?",
 			42, "pap_fc_salary", "fleet-1", startAt, endAt,
 		).
-			First(&struct{}{})
+			First(&model.WalletTransaction{})
 	})
 
 	if !strings.Contains(sql, `ref_type = 'pap_fc_salary'`) {
