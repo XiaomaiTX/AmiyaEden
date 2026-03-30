@@ -61,7 +61,7 @@
                 <ElButton type="primary" @click="handleHistorySearch">
                   {{ t('welfareApproval.searchBtn') }}
                 </ElButton>
-                <ElButton @click="handleHistoryReset">{{ t('welfareApproval.resetBtn') }}</ElButton>
+                <ElButton @click="handleHistoryReset">{{ t('common.reset') }}</ElButton>
               </div>
             </template>
           </ArtTableHeader>
@@ -94,7 +94,11 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { useEnterSearch } from '@/hooks/core/useEnterSearch'
   import { useTable } from '@/hooks/core/useTable'
-  import { adminListApplications, adminReviewApplication, adminDeleteApplication } from '@/api/welfare'
+  import {
+    adminListApplications,
+    adminReviewApplication,
+    adminDeleteApplication
+  } from '@/api/welfare'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'WelfareApproval' })
@@ -308,7 +312,7 @@
         ...buildBaseColumns(),
         {
           prop: 'status',
-          label: t('welfareApproval.status'),
+          label: t('common.status'),
           width: 110,
           formatter: (row: AppRow) => {
             const cfg = STATUS_CONFIG.value[row.status] ?? { label: row.status, type: 'info' }

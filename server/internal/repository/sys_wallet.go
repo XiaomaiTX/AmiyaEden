@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // SysWalletRepository 系统钱包数据访问层
@@ -20,11 +21,16 @@ func NewSysWalletRepository() *SysWalletRepository {
 //  钱包 CRUD
 // ─────────────────────────────────────────────
 
+func buildGetOrCreateWalletForUpdateQuery(db *gorm.DB, userID uint) *gorm.DB {
+	return db.
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ?", userID)
+}
+
 // GetOrCreateWalletTx 在事务内获取或创建用户钱包（使用 FOR UPDATE 行锁防止并发竞态）
 func (r *SysWalletRepository) GetOrCreateWalletTx(tx *gorm.DB, userID uint) (*model.SystemWallet, error) {
 	var wallet model.SystemWallet
-	err := tx.Set("gorm:query_option", "FOR UPDATE").
-		Where("user_id = ?", userID).First(&wallet).Error
+	err := buildGetOrCreateWalletForUpdateQuery(tx, userID).First(&wallet).Error
 	if err != nil {
 		wallet = model.SystemWallet{UserID: userID, Balance: 0}
 		if err := tx.Create(&wallet).Error; err != nil {

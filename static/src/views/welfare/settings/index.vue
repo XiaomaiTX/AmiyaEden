@@ -172,7 +172,7 @@
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('welfareSettings.status')">
+        <ElFormItem :label="t('common.status')">
           <ElSelect v-model="formData.status" style="width: 200px">
             <ElOption :label="t('welfareSettings.statusActive')" :value="1" />
             <ElOption :label="t('welfareSettings.statusDisabled')" :value="0" />
@@ -293,7 +293,8 @@
                   h(
                     'span',
                     {
-                      class: 'drag-handle cursor-grab text-gray-400 hover:text-gray-600 select-none',
+                      class:
+                        'drag-handle cursor-grab text-gray-400 hover:text-gray-600 select-none',
                       title: t('welfareSettings.dragHint')
                     },
                     '⠿'
@@ -348,7 +349,7 @@
         },
         {
           prop: 'status',
-          label: t('welfareSettings.status'),
+          label: t('common.status'),
           width: 90,
           formatter: (row: WelfareItem) => {
             const cfg = STATUS_CONFIG.value[row.status] ?? {
@@ -364,7 +365,7 @@
         },
         {
           prop: 'created_at',
-          label: t('welfareSettings.createdAt'),
+          label: t('common.createdAt'),
           width: 180,
           formatter: (row: WelfareItem) => formatTime(row.created_at)
         },
@@ -374,7 +375,7 @@
                 prop: 'actions',
                 label: t('common.operation'),
                 width: 180,
-                fixed: 'right',
+                fixed: 'right' as const,
                 formatter: (row: WelfareItem) =>
                   h('div', { class: 'flex gap-1' }, [
                     h(ArtButtonTable, { type: 'edit', onClick: () => openEditDialog(row) }),
@@ -587,7 +588,7 @@
       t('welfareSettings.deleteConfirm', { name: row.name }),
       t('welfareSettings.deleteTitle'),
       {
-        confirmButtonText: t('welfareSettings.deleteBtn'),
+        confirmButtonText: t('common.delete'),
         cancelButtonText: t('common.cancel'),
         type: 'warning'
       }
