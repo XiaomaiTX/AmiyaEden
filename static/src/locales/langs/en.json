@@ -15,21 +15,9 @@
     "requestConfigError": "Request configuration error"
   },
   "topBar": {
-    "search": {
-      "title": "Search"
-    },
     "user": {
       "userCenter": "User center",
-      "docs": "Document",
-      "github": "Github",
-      "lockScreen": "Lock screen",
       "logout": "Log out"
-    },
-    "guide": {
-      "title": "Click here to view",
-      "theme": "Theme style",
-      "menu": "Open top menu",
-      "description": "More configurations"
     }
   },
   "common": {
@@ -39,7 +27,6 @@
     "close": "Close",
     "refresh": "Refresh",
     "operation": "Operation",
-    "detail": "Detail",
     "edit": "Edit",
     "delete": "Delete",
     "reason": "Reason",
@@ -148,9 +135,7 @@
     "title": "Notice",
     "btnRead": "Mark as read",
     "bar": [
-      "Notice",
-      "Message",
-      "Todo"
+      "Notice"
     ],
     "text": [
       "No"
@@ -194,10 +179,6 @@
       "successSub": "Welcome back, {name}! Redirecting...",
       "error": "Login failed",
       "retry": "Try again"
-    },
-    "success": {
-      "title": "Login successful",
-      "message": "Welcome back"
     }
   },
   "register": {
@@ -233,12 +214,6 @@
       "backBtnText": "Back to login"
     }
   },
-  "greeting": {
-    "dawn": "Good morning!",
-    "morning": "Good morning!",
-    "afternoon": "Good afternoon!",
-    "evening": "Good evening!"
-  },
   "exceptionPage": {
     "403": "Sorry, you do not have permission to access this page",
     "404": "Sorry, the page you are trying to access does not exist",
@@ -248,9 +223,6 @@
   "menus": {
     "login": {
       "title": "Login"
-    },
-    "register": {
-      "title": "Register"
     },
     "outside": {
       "title": "Outside"
@@ -515,12 +487,9 @@
     "distModePerCharacter": "Per Character",
     "requireSkillPlan": "Require Skill Check",
     "skillPlan": "Skill Plan",
-    "skillRequirement": "Skill Requirement",
     "skillPlanPlaceholder": "Select a skill plan",
-    "status": "Status",
     "statusActive": "Active",
     "statusDisabled": "Disabled",
-    "createdAt": "Created At",
     "filterName": "Name",
     "filterStatus": "Status",
     "yes": "Yes",
@@ -533,7 +502,6 @@
     "operationFailed": "Operation failed",
     "deleteTitle": "Confirm Delete",
     "deleteConfirm": "Are you sure you want to delete welfare \"{name}\"?",
-    "deleteBtn": "Delete",
     "deleteSuccess": "Welfare deleted successfully",
     "deleteFailed": "Delete failed",
     "maxCharAgeMonths": "Max Character Age",
@@ -564,7 +532,6 @@
     "welfareName": "Welfare Name",
     "characterName": "Character Name",
     "description": "Description",
-    "status": "Status",
     "deliveryMode": "Delivery Mode",
     "eligibility": "Eligibility",
     "appliedAt": "Applied At",
@@ -602,9 +569,7 @@
     "characterName": "Character Name",
     "contact": "Contact",
     "welfareName": "Welfare Name",
-    "welfareDescription": "Description",
     "reviewerName": "Welfare Manager",
-    "status": "Status",
     "requestedAt": "Requested At",
     "processedAt": "Processed At",
     "statusRequested": "Requested",
@@ -621,13 +586,10 @@
     "noPending": "No requested applications",
     "noHistory": "No processed records yet",
     "searchBtn": "Search",
-    "resetBtn": "Reset",
     "historyKeywordPlaceholder": "Character, nickname, or QQ",
     "evidenceImage": "Evidence",
-    "deleteHistoryBtn": "Delete",
     "deleteHistoryConfirm": "Delete the application record for {name}? This cannot be undone.",
-    "deleteHistorySuccess": "Application record deleted",
-    "deleteHistoryFailed": "Delete failed"
+    "deleteHistorySuccess": "Application record deleted"
   },
   "shop": {
     "currency": "Fuxi Coin",
@@ -1781,6 +1743,9 @@
       "balance": "Balance"
     },
     "transactions": {
+      "userId": "User ID",
+      "characterName": "Main Character",
+      "amount": "Amount",
       "balanceAfter": "Balance",
       "operator": "Operator"
     },
