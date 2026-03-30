@@ -46,6 +46,15 @@ func TestCors_ExplicitOriginAllowlist_AllowsListedOrigin(t *testing.T) {
 	}
 }
 
+func TestCors_ExplicitOriginAllowlist_AddsVaryOrigin(t *testing.T) {
+	global.Config.Server.Mode = "release"
+	global.Config.Server.CORSOrigins = []string{"https://eden.example.com"}
+	w, _ := serveCORSRequest("https://eden.example.com")
+	if got := w.Header().Get("Vary"); got != "Origin" {
+		t.Fatalf("Vary = %q, want Origin", got)
+	}
+}
+
 func TestCors_ExplicitOriginAllowlist_DeniesUnlistedOrigin(t *testing.T) {
 	global.Config.Server.Mode = "release"
 	global.Config.Server.CORSOrigins = []string{"https://eden.example.com"}

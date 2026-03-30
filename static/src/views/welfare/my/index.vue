@@ -25,7 +25,6 @@
             @pagination:current-change="handleEligibleCurrentChange"
           />
         </ElTabPane>
-
         <!-- 已领取福利 -->
         <ElTabPane :label="t('welfareMy.applicationsTab')" name="applications">
           <ArtTable
@@ -141,7 +140,11 @@
         exampleEvidence: w.example_evidence
       }
       if (w.dist_mode === 'per_user') {
-        rows.push({ ...shared, canApplyNow: w.can_apply_now, ineligibleReason: w.ineligible_reason })
+        rows.push({
+          ...shared,
+          canApplyNow: w.can_apply_now,
+          ineligibleReason: w.ineligible_reason
+        })
       } else {
         for (const char of w.eligible_characters) {
           rows.push({
@@ -163,7 +166,12 @@
     const welfares = await getEligibleWelfares()
     const rows = flattenEligibleWelfares(welfares ?? [])
     const { current, size } = params
-    return { list: rows.slice((current - 1) * size, current * size), total: rows.length, page: current, pageSize: size }
+    return {
+      list: rows.slice((current - 1) * size, current * size),
+      total: rows.length,
+      page: current,
+      pageSize: size
+    }
   }
 
   const {
@@ -193,7 +201,7 @@
     pap: t('welfareMy.ineligibleReasonPap'),
     skill: t('welfareMy.ineligibleReasonSkill'),
     papSkill: t('welfareMy.ineligibleReasonPapSkill'),
-    skillPlan: (plans: string) => t('welfareMy.ineligibleReasonSkillPlan', { plans } ),
+    skillPlan: (plans: string) => t('welfareMy.ineligibleReasonSkillPlan', { plans }),
     papSkillPlan: (plans: string) => t('welfareMy.ineligibleReasonPapSkillPlan', { plans }),
     planSeparator: t('welfareMy.skillPlanJoiner')
   }))
@@ -379,7 +387,7 @@
     },
     {
       prop: 'status',
-      label: t('welfareMy.status'),
+      label: t('common.status'),
       width: 100,
       formatter: (row: Api.Welfare.MyApplication) => {
         const cfg = STATUS_CONFIG.value[row.status] ?? {
