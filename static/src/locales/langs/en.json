@@ -200,13 +200,6 @@
       "message": "Welcome back"
     }
   },
-  "forgetPassword": {
-    "title": "Forgot password?",
-    "subTitle": "Enter your email to reset your password",
-    "placeholder": "Please enter your email",
-    "submitBtnText": "Submit",
-    "backBtnText": "Back"
-  },
   "register": {
     "title": "Create account",
     "subTitle": "Welcome to join us, please fill in the following information to complete the registration",
@@ -258,9 +251,6 @@
     },
     "register": {
       "title": "Register"
-    },
-    "forgetPassword": {
-      "title": "Forget Password"
     },
     "outside": {
       "title": "Outside"
