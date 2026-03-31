@@ -56,5 +56,8 @@ test('applyMenuAccessFilter keeps SkillPlans for logged-in ordinary users', () =
   const filtered = applyMenuAccessFilter([skillPlanningRoutes], ['user'], undefined)
   const skillPlanning = filtered[0]
 
-  assert.equal(skillPlanning.children?.some((route) => route.name === 'SkillPlans'), true)
+  assert.equal(
+    skillPlanning.children?.some((route) => route.name === 'SkillPlans'),
+    true
+  )
 })
