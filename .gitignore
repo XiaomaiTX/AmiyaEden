@@ -44,3 +44,6 @@ static/dist/
 # Temp Logs
 server/tmp/
 server/logs/
+
+# VSCode Personcal Workspace
+AmiyaEden.code-workspace
