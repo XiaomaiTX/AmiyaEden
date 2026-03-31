@@ -23,7 +23,7 @@
 - 前端：Vue 3 + TypeScript + Vite + Pinia + Vue Router
 - 认证：EVE SSO + JWT
 - 菜单模式：支持前端静态模式与后端菜单模式，当前仓库完整实现两种路径
-- 登录流程：当前产品登录流以 EVE SSO 为主；仓库中仍有模板化的 `register` / `forget-password` 页面源码，但它们不是当前路由中的受支持流程
+- 登录流程：当前产品登录流以 EVE SSO 为主；仓库中仍有模板化的 `register` 页面源码，但它不属于当前路由中的受支持流程，`forget-password` 页面已移除
 
 ## 仓库结构
 
