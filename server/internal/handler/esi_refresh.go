@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/repository"
 	"amiya-eden/jobs"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
@@ -173,6 +175,57 @@ func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
 
 	go queue.Run() // 异步执行，避免超时
 	response.OK(c, gin.H{"message": "全量刷新已触发"})
+}
+
+// RefreshSkillDataRequest 刷新技能数据请求
+type RefreshSkillDataRequest struct {
+	CharacterID int64 `json:"character_id" binding:"required"`
+}
+
+// RefreshSkillData 手动触发指定人物的技能数据刷新
+//
+// POST /api/v1/esi/refresh/skills
+func (h *ESIRefreshHandler) RefreshSkillData(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req RefreshSkillDataRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	// 校验人物归属
+	charRepo := repository.NewEveCharacterRepository()
+	chars, err := charRepo.ListByUserID(userID)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "获取人物列表失败")
+		return
+	}
+
+	found := false
+	for _, ch := range chars {
+		if ch.CharacterID == req.CharacterID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		response.Fail(c, response.CodeBizError, "该人物不属于当前用户")
+		return
+	}
+
+	queue := jobs.GetESIQueue()
+	if queue == nil {
+		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
+		return
+	}
+
+	// 异步执行刷新
+	go func() {
+		_ = queue.RunTask("character_skill", req.CharacterID)
+	}()
+
+	response.OK(c, gin.H{"message": "技能数据刷新已触发"})
 }
 
 // formatDuration 格式化 time.Duration 为可读字符串

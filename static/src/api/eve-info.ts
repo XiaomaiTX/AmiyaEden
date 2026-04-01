@@ -50,3 +50,8 @@ export function fetchInfoContractDetail(data: Api.EveInfo.ContractDetailRequest)
     data
   })
 }
+
+/** 手动刷新技能数据 */
+export function refreshSkillData(data: { character_id: number }) {
+  return request.post({ url: '/api/v1/esi/refresh/skills', data })
+}

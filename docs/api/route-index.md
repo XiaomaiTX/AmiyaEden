@@ -237,6 +237,7 @@ source_of_truth:
 | POST | `/esi/refresh/run` | 执行队列调度 | `RequireRole(admin)` |
 | POST | `/esi/refresh/run-task` | 按名称执行任务 | `RequireRole(admin)` |
 | POST | `/esi/refresh/run-all` | 对人物执行全部任务 | `RequireRole(admin)` |
+| POST | `/esi/refresh/skills` | 手动刷新指定人物的技能数据 | Login |
 
 ## System
 

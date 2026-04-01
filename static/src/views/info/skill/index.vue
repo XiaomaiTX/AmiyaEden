@@ -27,6 +27,10 @@
             <el-icon class="mr-1"><Refresh /></el-icon>
             {{ $t('common.refresh') }}
           </ElButton>
+          <ElButton :loading="refreshESILoading" size="small" type="warning" @click="refreshESISkills">
+            <el-icon class="mr-1"><RefreshRight /></el-icon>
+            {{ $t('info.refreshESIData') }}
+          </ElButton>
         </div>
       </div>
     </ElCard>
@@ -208,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Refresh, Search } from '@element-plus/icons-vue'
+  import { Refresh, Search, RefreshRight } from '@element-plus/icons-vue'
   import {
     ElCard,
     ElSelect,
@@ -217,10 +221,11 @@
     ElButton,
     ElEmpty,
     ElProgress,
-    ElInput
+    ElInput,
+    ElMessage
   } from 'element-plus'
   import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoSkills } from '@/api/eve-info'
+  import { fetchInfoSkills, refreshSkillData } from '@/api/eve-info'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'EveInfoSkill' })
@@ -232,6 +237,7 @@
   const selectedCharacterId = ref<number>()
   const skillData = ref<Api.EveInfo.SkillResponse | null>(null)
   const loading = ref(false)
+  const refreshESILoading = ref(false)
   const searchKeyword = ref('')
   const selectedGroup = ref('')
 
@@ -404,6 +410,23 @@
       skillData.value = null
     } finally {
       loading.value = false
+    }
+  }
+
+  const refreshESISkills = async () => {
+    if (!selectedCharacterId.value) return
+    refreshESILoading.value = true
+    try {
+      await refreshSkillData({ character_id: selectedCharacterId.value })
+      ElMessage.success($t('info.refreshESIDataSuccess'))
+      // 延迟 2 秒后重新加载数据，让 ESI 任务有时间完成
+      setTimeout(() => {
+        loadData()
+      }, 2000)
+    } catch (err: any) {
+      ElMessage.error(err?.message || $t('info.refreshESIDataFailed'))
+    } finally {
+      refreshESILoading.value = false
     }
   }
 

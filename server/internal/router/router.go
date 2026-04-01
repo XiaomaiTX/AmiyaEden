@@ -292,6 +292,9 @@ func RegisterRoutes(r *gin.Engine) {
 		esiRefresh.POST("/run-all", esiH.RunAll)
 	}
 
+	// 用户端 ESI 刷新（技能数据）
+	login.POST("/esi/refresh/skills", esiH.RefreshSkillData)
+
 	// ─── 系统管理（需要 admin 职权）───
 	admin := login.Group("/system", middleware.RequireRole(model.RoleAdmin))
 
