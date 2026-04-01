@@ -472,8 +472,7 @@
       overflow: hidden;
       border: 1px solid var(--el-border-color-lighter);
       border-radius: 14px;
-      background: linear-gradient(180deg, var(--el-fill-color-extra-light), #fff);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      background: var(--el-bg-color-overlay);
     }
 
     .user-characters-panel--empty {

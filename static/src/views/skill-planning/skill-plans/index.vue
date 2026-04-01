@@ -503,7 +503,7 @@
   .skill-plan-item.active {
     border-color: var(--el-color-primary);
     box-shadow: 0 10px 24px rgb(64 158 255 / 12%);
-    background: linear-gradient(180deg, rgb(236 245 255 / 100%) 0%, var(--el-bg-color) 100%);
+    background: var(--el-bg-color-overlay);
   }
 
   .skill-plan-item__title {

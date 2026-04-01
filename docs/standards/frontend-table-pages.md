@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-03-29
+last_reviewed: 2026-04-01
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
@@ -43,6 +43,13 @@ Preferred page structure:
 - dialogs as siblings outside the card
 
 If the page is mixed layout or analytics-like, you may still use this pattern for the table section itself.
+
+## Theme-Safe Styles
+
+- Do not hardcode light backgrounds or gradients (`#fff`, very bright RGB values) for table rows, expandable panels, or selection states; they will appear as glaring white bands in dark mode.
+- Prefer Element Plus theme tokens (`var(--el-bg-color)`, `var(--el-bg-color-overlay)`, `var(--el-fill-color)`, `var(--el-border-color-*)`) for backgrounds and borders so both light and dark themes stay consistent.
+- For “selected” or “expanded” cards/rows, keep the background at most one brightness step lighter than the surrounding surface; use border and shadow emphasis instead of large areas of pure white.
+- When adding custom table or list visuals, manually verify the page in both light and dark modes and adjust colors using theme tokens rather than fixed hex values.
 
 ## Exceptions
 
