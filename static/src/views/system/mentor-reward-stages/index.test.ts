@@ -5,8 +5,14 @@ import { readFileSync } from 'node:fs'
 const viewSource = readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
 const apiSource = readFileSync(new URL('../../../api/mentor.ts', import.meta.url), 'utf8')
 const typeSource = readFileSync(new URL('../../../types/api/api.d.ts', import.meta.url), 'utf8')
-const zhLocaleSource = readFileSync(new URL('../../../locales/langs/zh.json', import.meta.url), 'utf8')
-const enLocaleSource = readFileSync(new URL('../../../locales/langs/en.json', import.meta.url), 'utf8')
+const zhLocaleSource = readFileSync(
+  new URL('../../../locales/langs/zh.json', import.meta.url),
+  'utf8'
+)
+const enLocaleSource = readFileSync(
+  new URL('../../../locales/langs/en.json', import.meta.url),
+  'utf8'
+)
 
 test('mentor reward stages page wires mentor eligibility settings separately', () => {
   assert.match(apiSource, /export function fetchMentorSettings\(/)

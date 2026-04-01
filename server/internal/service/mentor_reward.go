@@ -265,12 +265,6 @@ func (s *MentorRewardService) getMenteeMetrics(userID uint) (*mentorMetrics, err
 	}, nil
 }
 
-func (s *MentorRewardService) distributeStageReward(rel model.MentorMenteeRelationship, stage model.MentorRewardStage, now time.Time) error {
-	return global.DB.Transaction(func(tx *gorm.DB) error {
-		return s.distributeStageRewardTx(tx, rel, stage, now)
-	})
-}
-
 func (s *MentorRewardService) distributeStageRewardTx(tx *gorm.DB, rel model.MentorMenteeRelationship, stage model.MentorRewardStage, now time.Time) error {
 	walletRefID := fmt.Sprintf("mentor_reward:%d:%d:%d", rel.ID, stage.StageOrder, now.Unix())
 	reason := fmt.Sprintf("导师奖励 关系#%d 阶段#%d %s 学员#%d", rel.ID, stage.StageOrder, stage.Name, rel.MenteeUserID)
