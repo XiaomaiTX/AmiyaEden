@@ -8,7 +8,6 @@
       :content="hoveredDescription"
       placement="top"
       effect="dark"
-      :show-after="0"
       :teleported="true"
     />
     <ElCard class="art-table-card" shadow="never">
@@ -140,6 +139,7 @@
   const tooltipVisible = ref(false)
   const hoveredRowEl = shallowRef<HTMLElement | null>(null)
   const hoveredDescription = ref('')
+  const ROW_DESCRIPTION_TOOLTIP_HIDE_DELAY_MS = 800
   let leaveTimer: ReturnType<typeof setTimeout> | null = null
 
   function handleCellMouseEnter(row: AppRow, _col: unknown, cell: HTMLElement) {
@@ -161,7 +161,7 @@
     leaveTimer = setTimeout(() => {
       tooltipVisible.value = false
       leaveTimer = null
-    }, 80)
+    }, ROW_DESCRIPTION_TOOLTIP_HIDE_DELAY_MS)
   }
 
   // ─── Shared column builders ───
@@ -439,22 +439,22 @@
     }
 
     :deep(.el-tabs) {
-      flex: 1;
       display: flex;
+      flex: 1;
       flex-direction: column;
       min-height: 0;
     }
 
     :deep(.el-tabs__content) {
       flex: 1;
-      overflow: hidden;
       min-height: 0;
+      overflow: hidden;
     }
 
     :deep(.el-tab-pane) {
-      height: 100%;
       display: flex;
       flex-direction: column;
+      height: 100%;
       min-height: 0;
     }
   }
