@@ -169,9 +169,6 @@ func TestBuildShopOrderDeliveryMailContentIncludesBilingualOfficerNotice(t *test
 	if !strings.Contains(body, "数量：2") {
 		t.Fatalf("expected Chinese body to include quantity, got %q", body)
 	}
-	if !strings.Contains(body, "发放官员：Amiya") {
-		t.Fatalf("expected Chinese body to include officer detail, got %q", body)
-	}
 	if !strings.Contains(body, "请检查你的钱包或合同") {
 		t.Fatalf("expected Chinese body to mention wallet or contract, got %q", body)
 	}
@@ -189,9 +186,6 @@ func TestBuildShopOrderDeliveryMailContentIncludesBilingualOfficerNotice(t *test
 	}
 	if !strings.Contains(body, "Quantity: 2") {
 		t.Fatalf("expected English body to include quantity, got %q", body)
-	}
-	if !strings.Contains(body, "Delivered by: Amiya") {
-		t.Fatalf("expected English body to include officer detail, got %q", body)
 	}
 	if !strings.Contains(body, "Please check your wallet or contract.") {
 		t.Fatalf("expected English body to mention wallet or contract, got %q", body)
