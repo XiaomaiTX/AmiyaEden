@@ -2,7 +2,7 @@
 status: active
 doc_type: guide
 owner: engineering
-last_reviewed: 2026-03-26
+last_reviewed: 2026-04-02
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/README.md
@@ -275,4 +275,4 @@ When changing repository-wide agent rules:
 - `docs/standards/pre-completion-checklist.md`
 - `docs/standards/documentation-governance.md`
 - `docs/guides/testing-guide.md`
-- `docs/guides/regression-test-plan.md`
+- `docs/standards/regression-test-plan.md`
