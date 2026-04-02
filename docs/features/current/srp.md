@@ -17,7 +17,7 @@ source_of_truth:
 
 ## 当前能力
 
-- 舰船价格表查询、维护、删除
+- 舰船价格表查询；`admin` 与 `senior_fc` 可维护、删除，`srp` 可只读查看
 - 个人补损申请提交
 - 我的补损申请列表
 - 我的 KM、按舰队筛选 KM、KM 详情
@@ -56,7 +56,8 @@ source_of_truth:
 
 ## 权限边界
 
-- 价格新增 / 更新 / 删除要求 `srp`
+- 价格表查看要求 `Login`
+- 价格新增 / 更新 / 删除要求 `admin` 或 `senior_fc`
 - 审核列表、详情、审批（approve/reject）要求 `srp`、`fc` 或 `admin`
 - 发放、批量发放、自动审批要求 `srp` 或 `admin`
 - 其余个人能力默认要求 `Login`

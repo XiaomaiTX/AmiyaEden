@@ -211,8 +211,8 @@ source_of_truth:
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
 | GET | `/srp/prices` | 价格表 | Login |
-| POST | `/srp/prices` | 新增或更新价格 | `RequireRole(srp)` |
-| DELETE | `/srp/prices/:id` | 删除价格 | `RequireRole(srp)` |
+| POST | `/srp/prices` | 新增或更新价格 | `RequireRole(admin, senior_fc)` |
+| DELETE | `/srp/prices/:id` | 删除价格 | `RequireRole(admin, senior_fc)` |
 | POST | `/srp/applications` | 提交补损申请 | Login |
 | GET | `/srp/applications/me` | 我的补损申请 | Login |
 | GET | `/srp/killmails/me` | 我的 KM | Login |

@@ -4,14 +4,11 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
-	"bytes"
+	"amiya-eden/pkg/eve/esi"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
-	"net/http"
 	"strings"
 	"time"
 
@@ -36,6 +33,7 @@ type SrpService struct {
 	kmRepo    *repository.KillmailRepository
 	ssoSvc    *EveSSOService
 	walletSvc *SysWalletService
+	esiClient *esi.Client
 
 	payoutMailSender srpPayoutMailSender
 }
@@ -50,6 +48,7 @@ func NewSrpService() *SrpService {
 		kmRepo:    repository.NewKillmailRepository(),
 		ssoSvc:    NewEveSSOService(),
 		walletSvc: NewSysWalletService(),
+		esiClient: esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix),
 	}
 	svc.payoutMailSender = svc.sendPayoutMails
 	return svc
@@ -861,15 +860,14 @@ func (s *SrpService) sendPayoutMails(ctx context.Context, payerID uint, apps []*
 
 	for recipientCharacterID, recipientApps := range grouped {
 		subject, body := s.buildPayoutMailContent(recipientApps)
-		_, statusCode, err := sendEveMail(ctx, senderCharacterID, token, eveMailSendRequest{
+		if err := s.sendEveMail(ctx, senderCharacterID, token, eveMailSendRequest{
 			Subject: subject,
 			Body:    body,
 			Recipients: []eveMailRecipient{
 				{RecipientID: recipientCharacterID, RecipientType: "character"},
 			},
-		})
-		if err != nil {
-			errs = append(errs, fmt.Errorf("recipient_character_id=%d status=%d: %w", recipientCharacterID, statusCode, err))
+		}); err != nil {
+			errs = append(errs, fmt.Errorf("recipient_character_id=%d: %w", recipientCharacterID, err))
 		}
 	}
 
@@ -998,8 +996,6 @@ func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string) str
 	bodyBuilder.WriteString("────────────────────────\n")
 	bodyBuilder.WriteString("该打的仗一场不少，该补的损一分不差。\n")
 	bodyBuilder.WriteString("No battle is missed, no reimbursement is short.\n\n")
-	bodyBuilder.WriteString("此邮件由 FUXI 后勤署（军团管理系统）自动发放，请勿回复。\n")
-	bodyBuilder.WriteString("This mail is automatically issued by FUXI Logistics Office (Corporation Management System). Please do not reply.")
 
 	return bodyBuilder.String()
 }
@@ -1069,37 +1065,9 @@ func hasScope(scopes, target string) bool {
 	return false
 }
 
-func sendEveMail(ctx context.Context, senderCharacterID int64, accessToken string, req eveMailSendRequest) (int64, int, error) {
-	bodyBytes, err := json.Marshal(req)
-	if err != nil {
-		return 0, 0, fmt.Errorf("序列化邮件请求失败: %w", err)
-	}
-
-	url := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/mail/", senderCharacterID)
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return 0, 0, fmt.Errorf("构建请求失败: %w", err)
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+accessToken)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return 0, 0, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		respBody, _ := io.ReadAll(resp.Body)
-		return 0, resp.StatusCode, fmt.Errorf("%s", strings.TrimSpace(string(respBody)))
-	}
-
-	var mailID int64
-	if err := json.NewDecoder(resp.Body).Decode(&mailID); err != nil {
-		return 0, resp.StatusCode, fmt.Errorf("解析 ESI 响应失败: %w", err)
-	}
-
-	return mailID, resp.StatusCode, nil
+func (s *SrpService) sendEveMail(ctx context.Context, senderCharacterID int64, accessToken string, req eveMailSendRequest) error {
+	path := fmt.Sprintf("/characters/%d/mail/", senderCharacterID)
+	return s.esiClient.PostNoContent(ctx, path, accessToken, req)
 }
 
 // ─────────────────────────────────────────────
@@ -1116,42 +1084,19 @@ type OpenInfoWindowRequest struct {
 // POST /ui/openwindow/information?target_id=xxx
 // 需要 scope: esi-ui.open_window.v1
 func (s *SrpService) OpenInfoWindow(userID uint, req *OpenInfoWindowRequest) error {
-	// 1. 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil || char.UserID != userID {
 		return errors.New("人物不属于当前用户或不存在")
 	}
 
-	// 2. 获取有效 token
 	ctx := context.Background()
 	token, err := s.ssoSvc.GetValidToken(ctx, req.CharacterID)
 	if err != nil {
 		return fmt.Errorf("获取 token 失败: %w", err)
 	}
 
-	// 3. 调用 ESI Open Information Window
-	url := fmt.Sprintf("%s/ui/openwindow/information/?target_id=%d", global.Config.EveSSO.ESIBaseURL, req.TargetID)
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
-	if err != nil {
-		return fmt.Errorf("构建请求失败: %w", err)
-	}
-	httpReq.Header.Set("Authorization", "Bearer "+token)
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return fmt.Errorf("调用 ESI Open Window 失败: %w", err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("ESI error %d: %s", resp.StatusCode, string(body))
-	}
-
-	return nil
+	path := fmt.Sprintf("/ui/openwindow/information/?target_id=%d", req.TargetID)
+	return s.esiClient.PostNoContent(ctx, path, token, nil)
 }
 
 // ─────────────────────────────────────────────
