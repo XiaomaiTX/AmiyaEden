@@ -324,7 +324,7 @@ source_of_truth:
 | POST | `/system/welfare/import` | 导入历史福利记录 | `RequireRole(admin)` |
 | POST | `/system/welfare/applications` | 福利申请列表（审批端） | `RequireRole(admin)` |
 | POST | `/system/welfare/applications/delete` | 删除单条福利申请记录 | `RequireRole(admin)` |
-| POST | `/system/welfare/review` | 审批福利申请（发放/拒绝；若当前福利配置 `pay_by_fuxi_coin > 0`，同步写入 `welfare_payout` 钱包流水） | `RequireRole(admin)` |
+| POST | `/system/welfare/review` | 审批福利申请（发放/拒绝；若当前福利配置 `pay_by_fuxi_coin > 0`，同步写入 `welfare_payout` 钱包流水；发放成功后尽力发送一封以发放福利官主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin)` |
 
 ### Newbro Admin
 
@@ -348,7 +348,7 @@ source_of_truth:
 | POST | `/system/shop/product/edit` | 编辑商品 | `RequireRole(admin)` |
 | POST | `/system/shop/product/delete` | 删除商品 | `RequireRole(admin)` |
 | POST | `/system/shop/order/list` | 订单列表 | `RequireRole(admin, welfare)` |
-| POST | `/system/shop/order/deliver` | 发放订单 | `RequireRole(admin, welfare)` |
+| POST | `/system/shop/order/deliver` | 发放订单（成功后尽力发送一封以执行发放官员主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin, welfare)` |
 | POST | `/system/shop/order/reject` | 驳回订单 | `RequireRole(admin, welfare)` |
 | POST | `/system/shop/redeem/list` | 兑换码列表 | `RequireRole(admin)` |
 

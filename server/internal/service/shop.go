@@ -4,28 +4,43 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/pkg/eve/esi"
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // ShopService 商店业务逻辑层
+type shopOrderDeliveryMailSender func(ctx context.Context, operatorID uint, deliveredOrder *model.ShopOrder) error
+
 type ShopService struct {
 	repo      *repository.ShopRepository
 	walletSvc *SysWalletService
 	userRepo  *repository.UserRepository
 	charRepo  *repository.EveCharacterRepository
+	ssoSvc    *EveSSOService
+	esiClient *esi.Client
+
+	orderDeliveryMailSender shopOrderDeliveryMailSender
 }
 
 func NewShopService() *ShopService {
-	return &ShopService{
+	svc := &ShopService{
 		repo:      repository.NewShopRepository(),
 		walletSvc: NewSysWalletService(),
 		userRepo:  repository.NewUserRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
+		ssoSvc:    newConfiguredEveSSOService(),
+		esiClient: newConfiguredESIClient(),
 	}
+	svc.orderDeliveryMailSender = svc.sendOrderDeliveryMail
+	return svc
 }
 
 // ─────────────────────────────────────────────
@@ -333,7 +348,95 @@ func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, remark st
 		return nil, fmt.Errorf("更新订单失败: %w", err)
 	}
 
+	s.attemptOrderDeliveryMail(operatorID, order)
 	return order, nil
+}
+
+func (s *ShopService) attemptOrderDeliveryMail(operatorID uint, deliveredOrder *model.ShopOrder) {
+	if deliveredOrder == nil || s.orderDeliveryMailSender == nil {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := s.orderDeliveryMailSender(ctx, operatorID, deliveredOrder); err != nil && global.Logger != nil {
+		global.Logger.Warn("商店订单发放后邮件尝试失败",
+			zap.Uint("operator_user_id", operatorID),
+			zap.Uint("order_id", deliveredOrder.ID),
+			zap.String("order_no", deliveredOrder.OrderNo),
+			zap.Error(err),
+		)
+	}
+}
+
+func (s *ShopService) sendOrderDeliveryMail(ctx context.Context, operatorID uint, deliveredOrder *model.ShopOrder) error {
+	if deliveredOrder == nil {
+		return nil
+	}
+
+	mailSupport := newInGameMailSupport(s.userRepo, s.charRepo, s.ssoSvc, s.esiClient)
+	senderCharacterID, token, officerDisplayName, err := mailSupport.resolveSender(ctx, operatorID)
+	if err != nil {
+		return err
+	}
+
+	recipientCharacterID, err := mailSupport.resolveUserPrimaryCharacterID(deliveredOrder.UserID)
+	if err != nil {
+		return err
+	}
+
+	subject, body := buildShopOrderDeliveryMailContent(
+		deliveredOrder.OrderNo,
+		deliveredOrder.ProductName,
+		deliveredOrder.Quantity,
+		officerDisplayName,
+	)
+	return mailSupport.send(ctx, senderCharacterID, token, recipientCharacterID, subject, body)
+}
+
+func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, officerDisplayName string) (string, string) {
+	orderNo = strings.TrimSpace(orderNo)
+	if orderNo == "" {
+		orderNo = "N/A"
+	}
+	orderItem = strings.TrimSpace(orderItem)
+	if orderItem == "" {
+		orderItem = "订单"
+	}
+	if quantity <= 0 {
+		quantity = 1
+	}
+	officerDisplayName = strings.TrimSpace(officerDisplayName)
+	if officerDisplayName == "" {
+		officerDisplayName = "Officer"
+	}
+
+	subject := fmt.Sprintf("[订单发放通知 / Order Delivery Notice] %s", orderItem)
+	var bodyBuilder strings.Builder
+	bodyBuilder.WriteString("你好，\n\n")
+	bodyBuilder.WriteString(fmt.Sprintf("你的订单已由 %s 发放。\n", officerDisplayName))
+	bodyBuilder.WriteString("订单详情：\n")
+	bodyBuilder.WriteString(fmt.Sprintf("订单编号：%s\n", orderNo))
+	bodyBuilder.WriteString(fmt.Sprintf("订单内容：%s\n", orderItem))
+	bodyBuilder.WriteString(fmt.Sprintf("数量：%d\n", quantity))
+	bodyBuilder.WriteString(fmt.Sprintf("发放官员：%s\n", officerDisplayName))
+	bodyBuilder.WriteString("请检查你的钱包或合同。\n")
+	bodyBuilder.WriteString("如有疑问，请联系处理此订单的官员。\n")
+	bodyBuilder.WriteString("感谢你的耐心等待。\n")
+
+	bodyBuilder.WriteString("Hello,\n\n")
+	bodyBuilder.WriteString(fmt.Sprintf("Your shop order has been delivered by %s.\n", officerDisplayName))
+	bodyBuilder.WriteString("Order details:\n")
+	bodyBuilder.WriteString(fmt.Sprintf("Order No: %s\n", orderNo))
+	bodyBuilder.WriteString(fmt.Sprintf("Item: %s\n", orderItem))
+	bodyBuilder.WriteString(fmt.Sprintf("Quantity: %d\n", quantity))
+	bodyBuilder.WriteString(fmt.Sprintf("Delivered by: %s\n", officerDisplayName))
+	bodyBuilder.WriteString("Please check your wallet or contract.\n")
+	bodyBuilder.WriteString("If anything looks incorrect, please contact the officer who handled this order.\n")
+	bodyBuilder.WriteString("Thank you for your patience.\n")
+
+	return subject, bodyBuilder.String()
 }
 
 // AdminRejectOrder 拒绝订单（退款）

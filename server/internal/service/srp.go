@@ -54,7 +54,6 @@ func NewSrpService() *SrpService {
 	return svc
 }
 
-const esiMailSendScope = "esi-mail.send_mail.v1"
 const (
 	SrpPayoutModeManualTransfer = "manual_transfer"
 	SrpPayoutModeFuxiCoin       = "fuxi_coin"
@@ -727,17 +726,6 @@ func (s *SrpService) Payout(payerID uint, appID uint, req *SrpPayoutRequest) (*m
 	return app, nil
 }
 
-type eveMailRecipient struct {
-	RecipientID   int64  `json:"recipient_id"`
-	RecipientType string `json:"recipient_type"`
-}
-
-type eveMailSendRequest struct {
-	Subject    string             `json:"subject"`
-	Body       string             `json:"body"`
-	Recipients []eveMailRecipient `json:"recipients"`
-}
-
 // BatchPayoutByUser 批量发放某用户所有已批准且未发放的 SRP
 func (s *SrpService) BatchPayoutByUser(payerID uint, userID uint) (*SrpBatchPayoutSummaryResponse, error) {
 	now := time.Now()
@@ -838,7 +826,8 @@ func (s *SrpService) sendPayoutMails(ctx context.Context, payerID uint, apps []*
 		return nil
 	}
 
-	senderCharacterID, token, err := s.resolvePayoutMailSender(ctx, payerID)
+	mailSupport := newInGameMailSupport(s.userRepo, s.charRepo, s.ssoSvc, s.esiClient)
+	senderCharacterID, token, _, err := mailSupport.resolveSender(ctx, payerID)
 	if err != nil {
 		return err
 	}
@@ -850,7 +839,7 @@ func (s *SrpService) sendPayoutMails(ctx context.Context, payerID uint, apps []*
 		if app == nil {
 			continue
 		}
-		recipientCharacterID, err := s.resolveUserPrimaryCharacterID(app.UserID)
+		recipientCharacterID, err := mailSupport.resolveUserPrimaryCharacterID(app.UserID)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("application_id=%d: %w", app.ID, err))
 			continue
@@ -860,44 +849,12 @@ func (s *SrpService) sendPayoutMails(ctx context.Context, payerID uint, apps []*
 
 	for recipientCharacterID, recipientApps := range grouped {
 		subject, body := s.buildPayoutMailContent(recipientApps)
-		if err := s.sendEveMail(ctx, senderCharacterID, token, eveMailSendRequest{
-			Subject: subject,
-			Body:    body,
-			Recipients: []eveMailRecipient{
-				{RecipientID: recipientCharacterID, RecipientType: "character"},
-			},
-		}); err != nil {
+		if err := mailSupport.send(ctx, senderCharacterID, token, recipientCharacterID, subject, body); err != nil {
 			errs = append(errs, fmt.Errorf("recipient_character_id=%d: %w", recipientCharacterID, err))
 		}
 	}
 
 	return errors.Join(errs...)
-}
-
-func (s *SrpService) resolvePayoutMailSender(ctx context.Context, payerID uint) (int64, string, error) {
-	if s.charRepo == nil || s.ssoSvc == nil {
-		return 0, "", errors.New("SRP payout mail dependencies unavailable")
-	}
-
-	senderCharacterID, err := s.resolveUserPrimaryCharacterID(payerID)
-	if err != nil {
-		return 0, "", err
-	}
-
-	senderChar, err := s.charRepo.GetByCharacterID(senderCharacterID)
-	if err != nil {
-		return 0, "", fmt.Errorf("发信角色不存在: %w", err)
-	}
-	if !hasScope(senderChar.Scopes, esiMailSendScope) {
-		return 0, "", fmt.Errorf("发信角色未授权 scope: %s", esiMailSendScope)
-	}
-
-	token, err := s.ssoSvc.GetValidToken(ctx, senderCharacterID)
-	if err != nil {
-		return 0, "", fmt.Errorf("获取发信 token 失败: %w", err)
-	}
-
-	return senderCharacterID, token, nil
 }
 
 func (s *SrpService) buildPayoutMailContent(apps []*model.SrpApplication) (string, string) {
@@ -915,21 +872,6 @@ func (s *SrpService) buildPayoutMailContent(apps []*model.SrpApplication) (strin
 		fleetTitles[app.ID] = s.resolveFleetTitle(app)
 	}
 	return buildBatchPayoutMailContent(apps, fleetTitles)
-}
-
-func (s *SrpService) resolveUserPrimaryCharacterID(userID uint) (int64, error) {
-	if s.userRepo == nil {
-		return 0, errors.New("SRP payout mail user repository unavailable")
-	}
-
-	user, err := s.userRepo.GetByID(userID)
-	if err != nil {
-		return 0, fmt.Errorf("用户不存在(user_id=%d): %w", userID, err)
-	}
-	if user.PrimaryCharacterID == 0 {
-		return 0, fmt.Errorf("用户主角色未设置(user_id=%d)", userID)
-	}
-	return user.PrimaryCharacterID, nil
 }
 
 func (s *SrpService) resolveFleetTitle(app *model.SrpApplication) string {
@@ -1054,20 +996,6 @@ func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[u
 	bodyBuilder.WriteString("该打的仗一场不少，该补的损一分不差。\n")
 	bodyBuilder.WriteString("No battle is missed, no reimbursement is short.\n\n")
 	return subject, bodyBuilder.String()
-}
-
-func hasScope(scopes, target string) bool {
-	for _, s := range strings.Fields(scopes) {
-		if s == target {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *SrpService) sendEveMail(ctx context.Context, senderCharacterID int64, accessToken string, req eveMailSendRequest) error {
-	path := fmt.Sprintf("/characters/%d/mail/", senderCharacterID)
-	return s.esiClient.PostNoContent(ctx, path, accessToken, req)
 }
 
 // ─────────────────────────────────────────────
