@@ -120,6 +120,14 @@
           }
         },
         {
+          prop: 'reviewer_name',
+          label: t('shop.reviewerName'),
+          width: 140,
+          showOverflowTooltip: true,
+          formatter: (row: Order) =>
+            h('span', { class: row.reviewer_name ? '' : 'text-gray-400' }, row.reviewer_name || '-')
+        },
+        {
           prop: 'created_at',
           label: t('shop.orderTime'),
           width: 180,

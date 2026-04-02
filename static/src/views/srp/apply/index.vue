@@ -247,17 +247,8 @@
           }
         },
         {
-          prop: 'final_amount',
-          label: t('srp.apply.columns.actualAmount'),
-          width: 130,
-          formatter: (row: Api.Srp.Application) =>
-            row.final_amount > 0
-              ? h('span', {}, `${formatISK(row.final_amount)} M ISK`)
-              : h('span', {}, '-')
-        },
-        {
           prop: 'payout_status',
-          label: t('srp.apply.columns.paid'),
+          label: t('srp.apply.columns.payoutStatus'),
           width: 100,
           formatter: (row: Api.Srp.Application) =>
             h(
@@ -265,6 +256,27 @@
               {},
               row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')
             )
+        },
+        {
+          prop: 'last_actor_nickname',
+          label: t('srp.apply.columns.lastActor'),
+          width: 130,
+          showOverflowTooltip: true,
+          formatter: (row: Api.Srp.Application) =>
+            h(
+              'span',
+              { class: row.last_actor_nickname ? '' : 'text-gray-400' },
+              row.last_actor_nickname || '-'
+            )
+        },
+        {
+          prop: 'final_amount',
+          label: t('srp.apply.columns.actualAmount'),
+          width: 130,
+          formatter: (row: Api.Srp.Application) =>
+            row.final_amount > 0
+              ? h('span', {}, `${formatISK(row.final_amount)} M ISK`)
+              : h('span', {}, '-')
         },
         {
           prop: 'fleet_id',

@@ -196,11 +196,63 @@ func (s *ShopService) getUserSnapshot(userID uint) (mainCharName, nickname, qq, 
 }
 
 // GetMyOrders 获取我的订单
-func (s *ShopService) GetMyOrders(userID uint, page, pageSize int, status string) ([]model.ShopOrder, int64, error) {
+type ShopOrderResponse struct {
+	model.ShopOrder
+	ReviewerName string `json:"reviewer_name,omitempty"`
+}
+
+func buildShopOrderResponses(orders []model.ShopOrder, reviewerNames map[uint]string) []ShopOrderResponse {
+	responses := make([]ShopOrderResponse, len(orders))
+	for index, order := range orders {
+		resp := ShopOrderResponse{ShopOrder: order}
+		if order.ReviewedBy != nil {
+			resp.ReviewerName = reviewerNames[*order.ReviewedBy]
+		}
+		responses[index] = resp
+	}
+	return responses
+}
+
+func (s *ShopService) enrichShopOrders(orders []model.ShopOrder) ([]ShopOrderResponse, error) {
+	reviewerIDSet := make(map[uint]struct{})
+	for _, order := range orders {
+		if order.ReviewedBy != nil {
+			reviewerIDSet[*order.ReviewedBy] = struct{}{}
+		}
+	}
+
+	reviewerIDs := make([]uint, 0, len(reviewerIDSet))
+	for reviewerID := range reviewerIDSet {
+		reviewerIDs = append(reviewerIDs, reviewerID)
+	}
+
+	reviewerNames := make(map[uint]string, len(reviewerIDs))
+	if len(reviewerIDs) > 0 {
+		users, err := s.userRepo.ListByIDs(reviewerIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, user := range users {
+			reviewerNames[user.ID] = user.Nickname
+		}
+	}
+
+	return buildShopOrderResponses(orders, reviewerNames), nil
+}
+
+func (s *ShopService) GetMyOrders(userID uint, page, pageSize int, status string) ([]ShopOrderResponse, int64, error) {
 	page = normalizePage(page)
 	pageSize = normalizePageSize(pageSize, 20, 100)
 	filter := repository.OrderFilter{UserID: &userID, Status: status}
-	return s.repo.ListOrders(page, pageSize, filter)
+	orders, total, err := s.repo.ListOrders(page, pageSize, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	responses, err := s.enrichShopOrders(orders)
+	if err != nil {
+		return nil, 0, err
+	}
+	return responses, total, nil
 }
 
 // GetMyRedeemCodes 获取我的兑换码
@@ -290,10 +342,18 @@ func (s *ShopService) AdminListProducts(page, pageSize int, filter repository.Pr
 }
 
 // AdminListOrders 管理员查询订单
-func (s *ShopService) AdminListOrders(page, pageSize int, filter repository.OrderFilter) ([]model.ShopOrder, int64, error) {
+func (s *ShopService) AdminListOrders(page, pageSize int, filter repository.OrderFilter) ([]ShopOrderResponse, int64, error) {
 	page = normalizePage(page)
 	pageSize = normalizeLedgerPageSize(pageSize)
-	return s.repo.ListOrders(page, pageSize, filter)
+	orders, total, err := s.repo.ListOrders(page, pageSize, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	responses, err := s.enrichShopOrders(orders)
+	if err != nil {
+		return nil, 0, err
+	}
+	return responses, total, nil
 }
 
 // AdminDeliverOrder 发放订单
