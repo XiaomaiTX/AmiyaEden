@@ -90,7 +90,7 @@ source_of_truth:
 | GET | `/operation/fleet-configs/:id` | 配置详情 | Login |
 | GET | `/operation/fleet-configs/:id/eft` | 获取 EFT 文本 | Login |
 | POST | `/operation/fleet-configs` | 创建配置 | `RequireRole(admin, senior_fc)` |
-| PUT | `/operation/fleet-configs/:id` | 更新配置 | `RequireRole(admin, senior_fc)` |
+| PUT | `/operation/fleet-configs/:id` | 更新配置；同一装配内按 `flag + type_id + quantity` 组合匹配物品，匹配项保留原有设置，其他项重置 | `RequireRole(admin, senior_fc)` |
 | DELETE | `/operation/fleet-configs/:id` | 删除配置 | `RequireRole(admin, senior_fc)` |
 | POST | `/operation/fleet-configs/import-fitting` | 从人物装配导入 | `RequireRole(admin, senior_fc)` |
 | POST | `/operation/fleet-configs/export-esi` | 导出到 ESI | Login |
