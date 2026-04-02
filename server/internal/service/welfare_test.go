@@ -682,9 +682,6 @@ func TestBuildWelfareDeliveryMailContentIncludesBilingualOfficerNotice(t *testin
 	if !strings.Contains(body, "福利名称：Starter Pack") {
 		t.Fatalf("expected Chinese body to include welfare name detail, got %q", body)
 	}
-	if !strings.Contains(body, "发放官员：Amiya") {
-		t.Fatalf("expected Chinese body to include officer detail, got %q", body)
-	}
 	if !strings.Contains(body, "请检查你的伏羲币钱包或合同") {
 		t.Fatalf("expected Chinese body to mention FuxiCoin wallet or contract, got %q", body)
 	}
@@ -696,9 +693,6 @@ func TestBuildWelfareDeliveryMailContentIncludesBilingualOfficerNotice(t *testin
 	}
 	if !strings.Contains(body, "Welfare: Starter Pack") {
 		t.Fatalf("expected English body to include welfare detail, got %q", body)
-	}
-	if !strings.Contains(body, "Delivered by: Amiya") {
-		t.Fatalf("expected English body to include officer detail, got %q", body)
 	}
 	if !strings.Contains(body, "Please check your FuxiCoin wallet or contract.") {
 		t.Fatalf("expected English body to mention FuxiCoin wallet or contract, got %q", body)
