@@ -132,6 +132,19 @@
             h(ElTag, { size: 'small', effect: 'plain' }, () => getRefTypeLabel(row.ref_type))
         },
         {
+          prop: 'operator_id',
+          label: t('walletAdmin.transactions.operator'),
+          minWidth: 120,
+          formatter: (row: WalletTransaction) =>
+            h(
+              'span',
+              {},
+              row.operator_id === 0
+                ? t('walletAdmin.actions.system')
+                : row.operator_name || `#${row.operator_id}`
+            )
+        },
+        {
           prop: 'created_at',
           label: t('fleet.wallet.time'),
           width: 200,

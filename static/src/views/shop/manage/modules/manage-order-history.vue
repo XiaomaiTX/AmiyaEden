@@ -144,6 +144,14 @@
           }
         },
         {
+          prop: 'reviewer_name',
+          label: t('shopAdmin.orders.table.reviewerName'),
+          width: 140,
+          showOverflowTooltip: true,
+          formatter: (row: Order) =>
+            h('span', { class: row.reviewer_name ? '' : 'text-gray-400' }, row.reviewer_name || '-')
+        },
+        {
           prop: 'review_remark',
           label: t('shopAdmin.orders.fields.deliverRemark'),
           width: 140,

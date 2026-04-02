@@ -123,6 +123,18 @@ export function useSrpManage(callbacks: {
             )
         },
         {
+          prop: 'last_actor_nickname',
+          label: t('srp.manage.columns.lastActor'),
+          width: 130,
+          showOverflowTooltip: true,
+          formatter: (row: SrpApp) =>
+            h(
+              'span',
+              { class: row.last_actor_nickname ? '' : 'text-gray-400' },
+              row.last_actor_nickname || '-'
+            )
+        },
+        {
           prop: 'nickname',
           label: t('srp.manage.columns.nickname'),
           width: 120,
@@ -393,7 +405,8 @@ export function useSrpManage(callbacks: {
     final_amount: '最终金额',
     review_status: '审批状态',
     review_note: '审批备注',
-    payout_status: '发放状态'
+    payout_status: '发放状态',
+    last_actor_nickname: '最后处理人'
   }
 
   const exportManageData = computed(() =>
@@ -416,7 +429,8 @@ export function useSrpManage(callbacks: {
       final_amount: app.final_amount,
       review_status: reviewStatusLabel(app.review_status),
       review_note: app.review_note || '-',
-      payout_status: app.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')
+      payout_status: app.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid'),
+      last_actor_nickname: app.last_actor_nickname || '-'
     }))
   )
 

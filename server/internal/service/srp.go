@@ -224,9 +224,10 @@ func (s *SrpService) SubmitApplication(userID uint, req *SubmitApplicationReques
 // SrpApplicationResponse 补损申请响应（含舰队信息）
 type SrpApplicationResponse struct {
 	model.SrpApplication
-	FleetTitle  string `json:"fleet_title,omitempty"`
-	FleetFCName string `json:"fleet_fc_name,omitempty"`
-	Nickname    string `json:"nickname,omitempty"`
+	FleetTitle        string `json:"fleet_title,omitempty"`
+	FleetFCName       string `json:"fleet_fc_name,omitempty"`
+	Nickname          string `json:"nickname,omitempty"`
+	LastActorNickname string `json:"last_actor_nickname,omitempty"`
 }
 
 // SrpBatchPayoutSummaryResponse 按用户聚合的批量发放摘要
@@ -239,13 +240,51 @@ type SrpBatchPayoutSummaryResponse struct {
 	ApplicationCount  int64   `json:"application_count"`
 }
 
+func resolveSrpLastActorNickname(app model.SrpApplication, userMap map[uint]model.User) string {
+	if app.PaidBy != nil {
+		if user, ok := userMap[*app.PaidBy]; ok {
+			return user.Nickname
+		}
+	}
+	if app.ReviewedBy != nil {
+		if user, ok := userMap[*app.ReviewedBy]; ok {
+			return user.Nickname
+		}
+	}
+	return ""
+}
+
+func buildSrpApplicationResponses(apps []model.SrpApplication, userMap map[uint]model.User, fleetMap map[string]model.Fleet) []SrpApplicationResponse {
+	result := make([]SrpApplicationResponse, len(apps))
+	for i, app := range apps {
+		resp := SrpApplicationResponse{SrpApplication: app}
+		if user, ok := userMap[app.UserID]; ok {
+			resp.Nickname = user.Nickname
+		}
+		resp.LastActorNickname = resolveSrpLastActorNickname(app, userMap)
+		if app.FleetID != nil && *app.FleetID != "" {
+			if fleet, ok := fleetMap[*app.FleetID]; ok {
+				resp.FleetTitle = fleet.Title
+				resp.FleetFCName = fleet.FCCharacterName
+			}
+		}
+		result[i] = resp
+	}
+	return result
+}
+
 // enrichWithFleetInfo 为申请列表填充舰队信息
 func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpApplicationResponse {
-	result := make([]SrpApplicationResponse, len(apps))
 	userIDSet := make(map[uint]bool)
 	fleetIDSet := make(map[string]bool)
 	for _, app := range apps {
 		userIDSet[app.UserID] = true
+		if app.ReviewedBy != nil {
+			userIDSet[*app.ReviewedBy] = true
+		}
+		if app.PaidBy != nil {
+			userIDSet[*app.PaidBy] = true
+		}
 		if app.FleetID != nil && *app.FleetID != "" {
 			fleetIDSet[*app.FleetID] = true
 		}
@@ -278,20 +317,7 @@ func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpAppli
 			}
 		}
 	}
-	for i, app := range apps {
-		resp := SrpApplicationResponse{SrpApplication: app}
-		if user, ok := userMap[app.UserID]; ok {
-			resp.Nickname = user.Nickname
-		}
-		if app.FleetID != nil && *app.FleetID != "" {
-			if fleet, ok := fleetMap[*app.FleetID]; ok {
-				resp.FleetTitle = fleet.Title
-				resp.FleetFCName = fleet.FCCharacterName
-			}
-		}
-		result[i] = resp
-	}
-	return result
+	return buildSrpApplicationResponses(apps, userMap, fleetMap)
 }
 
 // ListApplications 管理员端分页查询申请列表
@@ -327,6 +353,26 @@ func (s *SrpService) GetApplication(id uint) (*SrpApplicationResponse, error) {
 	resp := &SrpApplicationResponse{SrpApplication: *app}
 	if user, uerr := s.userRepo.GetByID(app.UserID); uerr == nil {
 		resp.Nickname = user.Nickname
+	}
+	actorIDSet := make(map[uint]struct{})
+	if app.ReviewedBy != nil {
+		actorIDSet[*app.ReviewedBy] = struct{}{}
+	}
+	if app.PaidBy != nil {
+		actorIDSet[*app.PaidBy] = struct{}{}
+	}
+	if len(actorIDSet) > 0 {
+		actorIDs := make([]uint, 0, len(actorIDSet))
+		for actorID := range actorIDSet {
+			actorIDs = append(actorIDs, actorID)
+		}
+		if users, uerr := s.userRepo.ListByIDs(actorIDs); uerr == nil {
+			actorMap := make(map[uint]model.User, len(users))
+			for _, user := range users {
+				actorMap[user.ID] = user
+			}
+			resp.LastActorNickname = resolveSrpLastActorNickname(*app, actorMap)
+		}
 	}
 	if app.FleetID != nil && *app.FleetID != "" {
 		if fleet, ferr := s.fleetRepo.GetByID(*app.FleetID); ferr == nil {

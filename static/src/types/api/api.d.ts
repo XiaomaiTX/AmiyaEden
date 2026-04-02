@@ -873,6 +873,7 @@ declare namespace Api {
       id: number
       user_id: number
       nickname?: string
+      last_actor_nickname?: string
       character_id: number
       character_name: string
       killmail_id: number
@@ -1212,6 +1213,7 @@ declare namespace Api {
       remark: string
       reviewed_by: number | null
       reviewed_at: string | null
+      reviewer_name?: string
       review_remark: string
       created_at: string
       updated_at: string
