@@ -30,6 +30,12 @@ source_of_truth:
 - 管理端待处理 tab 支持切换「伏羲币补损 / 手动打钱」两种发放模式，默认使用伏羲币补损
 - SRP 发放成功后会以 best-effort 方式尝试发送 EVE 游戏内邮件通知
 
+## 前端金额展示
+
+- SRP 页面中的 ISK 展示统一使用 smart abbreviation style。
+- SRP 价格维护、舰队配置等“以百万为输入单位”的编辑器，统一复用共享的 `iskToMillionInput` 与 `millionInputToIsk`，不再各自维护换算逻辑。
+- 伏羲币发放金额不属于 ISK 展示标准范围，继续沿用各自的钱包 / 商店文档约束。
+
 ## 入口
 
 ### 前端页面

@@ -71,7 +71,7 @@
           <ElFormItem :label="$t('fleetConfig.fields.srpAmount')">
             <ElRow class="million-isk-input">
               <ElInputNumber
-                :model-value="toMillionISKInput(fit.srp_amount)"
+                :model-value="iskToMillionInput(fit.srp_amount)"
                 :min="0"
                 :precision="2"
                 :step="1"
@@ -336,7 +336,7 @@
   import { useClipboard } from '@vueuse/core'
   import { useUserStore } from '@/store/modules/user'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
-  import { fromMillionISKInput, toMillionISKInput } from '@/utils/iskUnits'
+  import { iskToMillionInput, millionInputToIsk } from '@/utils/common'
 
   const props = defineProps<{
     visible: boolean
@@ -456,7 +456,7 @@
   }
 
   function updateFittingSrpAmount(fit: InternalFitting, value: number | null | undefined) {
-    fit.srp_amount = fromMillionISKInput(value)
+    fit.srp_amount = millionInputToIsk(value)
   }
 
   /** EFT 头行自动填充装配 **/
