@@ -173,7 +173,7 @@
       <ElForm label-width="80px">
         <ElFormItem :label="$t('fleetConfig.fields.fitting')">
           <ElSelect
-            v-model="importForm.fitting_id"
+            v-model="importForm.selection"
             :placeholder="$t('fleetConfig.fields.fittingPlaceholder')"
             style="width: 100%"
             filterable
@@ -182,7 +182,7 @@
               v-for="f in userFittings"
               :key="`${f.character_id}_${f.fitting_id}`"
               :label="`${f.ship_name} - ${f.name}`"
-              :value="f.fitting_id"
+              :value="buildImportSelectionKey(f.character_id, f.fitting_id)"
             />
           </ElSelect>
         </ElFormItem>
@@ -524,9 +524,13 @@
   const showImportDialog = ref(false)
   const importLoading = ref(false)
   const importForm = reactive({
-    fitting_id: undefined as number | undefined
+    selection: undefined as string | undefined
   })
   const userFittings = ref<Api.EveInfo.FittingResponse[]>([])
+
+  function buildImportSelectionKey(characterID: number, fittingID: number) {
+    return `${characterID}:${fittingID}`
+  }
 
   function openImportDialog() {
     showImportDialog.value = true
@@ -543,11 +547,13 @@
   }
 
   async function handleImport() {
-    if (!importForm.fitting_id) {
+    if (!importForm.selection) {
       ElMessage.warning(t('fleetConfig.importSelectRequired'))
       return
     }
-    const selected = userFittings.value.find((f) => f.fitting_id === importForm.fitting_id)
+    const selected = userFittings.value.find(
+      (f) => buildImportSelectionKey(f.character_id, f.fitting_id) === importForm.selection
+    )
     if (!selected) {
       ElMessage.warning(t('fleetConfig.importSelectRequired'))
       return
@@ -556,7 +562,7 @@
     try {
       const result = await importFittingFromUser({
         character_id: selected.character_id,
-        fitting_id: importForm.fitting_id
+        fitting_id: selected.fitting_id
       })
       if (result) {
         formData.fittings.push({
@@ -566,7 +572,7 @@
         })
       }
       showImportDialog.value = false
-      importForm.fitting_id = undefined
+      importForm.selection = undefined
       ElMessage.success(t('fleetConfig.importSuccess'))
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('common.error'))

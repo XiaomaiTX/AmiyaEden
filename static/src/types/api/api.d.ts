@@ -551,6 +551,7 @@ declare namespace Api {
 
     /** 创建/更新装配条目请求（输入英文 EFT，后端解析） */
     interface FittingReq {
+      id?: number
       fitting_name: string
       eft: string
       srp_amount: number
