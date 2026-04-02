@@ -99,7 +99,10 @@ const NON_SRP_ROOTS = [
   'hooks/newbro/useNewbroFormatters.ts'
 ] as const
 
+const FUXI_ROOTS = ['views/shop', 'views/system/wallet'] as const
+
 const NON_SRP_TRACKED_FILES = [...new Set(NON_SRP_ROOTS.flatMap(collectTrackedFiles))]
+const FUXI_TRACKED_FILES = [...new Set(FUXI_ROOTS.flatMap(collectTrackedFiles))]
 
 const NON_SRP_EXPECTATIONS = [
   ['views/info/wallet/index.vue', 'formatIskPlain'],
@@ -118,6 +121,14 @@ for (const relativePath of NON_SRP_TRACKED_FILES) {
     assert.doesNotMatch(source, /function\s+formatISK\s*\(/)
     assert.doesNotMatch(source, /@\/utils\/iskUnits/)
     assert.doesNotMatch(source, /\.toFixed\([^)]*\)\s*\+\s*['"`][^'"`]*[KMBTkmbt][^'"`]*['"`]/)
+  })
+}
+
+for (const relativePath of FUXI_TRACKED_FILES) {
+  test(`${relativePath} does not use misleading local ISK formatter names for Fuxi Coin`, () => {
+    const source = readSource(relativePath)
+    assert.doesNotMatch(source, /const\s+formatISK\s*=/)
+    assert.doesNotMatch(source, /function\s+formatISK\s*\(/)
   })
 }
 

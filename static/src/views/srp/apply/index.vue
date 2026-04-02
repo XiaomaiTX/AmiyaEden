@@ -275,7 +275,7 @@
           width: 130,
           formatter: (row: Api.Srp.Application) =>
             row.final_amount > 0
-              ? h('span', {}, `${formatISK(row.final_amount)} M ISK`)
+              ? h('span', {}, `${formatIskSmart(row.final_amount)} ISK`)
               : h('span', {}, '-')
         },
         {
