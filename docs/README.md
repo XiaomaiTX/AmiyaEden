@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-03-23
+last_reviewed: 2026-04-02
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
@@ -33,19 +33,49 @@ source_of_truth:
 
 - 第 7 层只表示”计划 / 草案 / 未完成设计”，不能覆盖当前实现。
 
+## 受众分类
+
+文档按主要受众分为两类：
+
+### AI Agent 中心（agent-centric）
+
+以下目录的文档主要服务于 AI 代理和自动化工具。人类工程师可能偶尔阅读（特别是 `docs/architecture/`），但内容以 agent 消费为主：
+
+- `docs/ai/` — 代理规则、onboarding、Harness 原则
+- `docs/standards/` — 约束性标准与回归测试策略
+- `docs/architecture/` — 系统结构（人类也会少量阅读）
+- `docs/api/` — 接口约定与路由索引
+- `docs/features/current/` — 功能行为规格
+
+### 人类工程师中心（human-centric）
+
+以下目录的文档主要服务于人类开发者，提供日常开发所需的操作指南：
+
+- `docs/guides/` — 本地开发、调试流程、测试编写、ESI 模块添加
+
+### 通用（utility）
+
+以下目录同时服务两类受众：
+
+- `docs/reference/` — 离线参考资产
+- `docs/specs/draft/` — 提案与未完成设计
+- `docs/templates/` — 文档模板
+
+放置新文档时，根据主要受众选择目录。如果某文档主要由 agent 消费，不应放在 `docs/guides/`；如果某文档主要面向人类操作流程，不应放在 `docs/standards/` 或 `docs/ai/`。
+
 ## 目录结构
 
-| 路径 | 类型 | 作用 |
-| --- | --- | --- |
-| `docs/ai/` | agent guide | 给 AI / 自动化代理的阅读顺序、冲突处理、Harness 原则、更新要求 |
-| `docs/standards/` | standard | 约束性标准，描述”必须 / 不得 / 推荐”（含依赖分层、预完成检查清单） |
-| `docs/architecture/` | architecture | 只描述当前已经存在的系统结构与运行方式 |
-| `docs/api/` | api | 接口约定、响应格式、路由索引 |
-| `docs/features/current/` | feature | 当前已落地功能的模块级说明 |
-| `docs/guides/` | guide | 过程型指南，例如新增一个 ESI 模块 |
-| `docs/reference/` | reference | 离线参考资产，不作为当前实现的 source of truth |
-| `docs/specs/draft/` | draft | 提案、未来增强、未完成设计 |
-| `docs/templates/` | template | 新建文档时复用的模板 |
+| 路径 | 类型 | 受众 | 作用 |
+| --- | --- | --- | --- |
+| `docs/ai/` | agent guide | agent | 给 AI / 自动化代理的规则、onboarding、Harness 原则 |
+| `docs/standards/` | standard | agent | 约束性标准，描述”必须 / 不得 / 推荐”（含依赖分层、回归测试策略、预完成检查清单） |
+| `docs/architecture/` | architecture | agent（人类少量阅读） | 只描述当前已经存在的系统结构与运行方式 |
+| `docs/api/` | api | agent | 接口约定、响应格式、路由索引 |
+| `docs/features/current/` | feature | agent | 当前已落地功能的模块级说明 |
+| `docs/guides/` | guide | human | 面向人类工程师的过程型指南（本地开发、调试、测试、ESI 模块添加） |
+| `docs/reference/` | reference | both | 离线参考资产，不作为当前实现的 source of truth |
+| `docs/specs/draft/` | draft | both | 提案、未来增强、未完成设计 |
+| `docs/templates/` | template | both | 新建文档时复用的模板 |
 
 ## 状态字段
 

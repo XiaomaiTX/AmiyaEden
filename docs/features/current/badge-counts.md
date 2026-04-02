@@ -29,17 +29,6 @@ source_of_truth:
 - `GET /api/v1/badge-counts`
 - 权限：`Login`
 
-响应示例：
-
-```json
-{
-  "welfare_eligible": 2,
-  "srp_pending": 5,
-  "welfare_pending": 3,
-  "order_pending": 1
-}
-```
-
 ## 字段定义
 
 | 字段 | 可见范围 | 含义 |

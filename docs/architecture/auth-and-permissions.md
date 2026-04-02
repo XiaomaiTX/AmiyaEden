@@ -202,33 +202,18 @@ source_of_truth:
 
 ## 当前不变量
 
-- 当前产品不是用户名 / 密码登录系统
-- 职权编码以代码常量为准，不以文档中文称呼为准
-- `allow_corporations` 的基线准入当前以主人物军团为准，不再按任意绑定人物放行；运行时列表总会强制包含代码常量中的伏羲军团 Fuxi Legion（`98185110`）
-- 非 `allow_corporations` 军团人物的 ESI corporation role 信号当前应被整体忽略，不参与权限判断或衍生任务判定
-- 自动补 `admin` 的内置快捷规则当前仅接受伏羲军团 Fuxi Legion（`98185110`）中的 ESI corp role `Director`
-- corp title 只参与显式 title mapping，不会因为标题名为 `Director` 就自动抬升为 `admin`
-- `super_admin` 仅通过配置文件（`config.yaml` 的 `app.super_admins`）管理，不可通过任何 API 或 UI 授予、修改或撤销
-- `super_admin` 用户不可通过 API 删除
-- `super_admin` 职权在每次 SSO 登录时根据配置文件自动同步：用户任一绑定人物 ID 在配置列表中则授予，否则移除
-- 用户删除当前不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其删除其他 `admin`
-- 用户编辑当前也不是纯路由级能力：即使请求方拥有 `admin`，后端仍会阻止其编辑其他 `admin`；仅 `super_admin` 可分配 `admin`
+The following are not restated from the body above — they are additional constraints or easily missed boundaries:
+
 - 管理员用户列表 `/api/v1/system/user` 的职权展示与接口契约当前只认 `roles[]`，不应再依赖历史单值 `role`
 - 细粒度权限不能只靠前端控制
-- 旧兼容文档不能重新定义职权体系
+- 职权编码以代码常量为准，不以文档中文称呼为准
 
-## 重要 Caveat
+For super_admin rules, see "Super Admin 配置驱动机制" above. For role assignment rules, see "职权分配权限矩阵" above. For Director auto-role rules, see below.
 
-### Auto-role Director Signal
+## 重要 Caveat: Auto-role Director Signal
 
-自动权限映射里的 `Director -> admin` 内置快捷规则，使用的是 ESI corporation role 信号，不是 title 文本匹配。
+`Director -> admin` 内置快捷规则使用 ESI corporation role 信号（`eve_character_corp_role`），不是 title 文本匹配。
 
-因此：
-
-- 真实判断输入来自 `eve_character_corp_role`
-- 当人物不在 `allow_corporations` 中时，不会保留 `eve_character_corp_role` 快照供后续判断
-- 即使某个军团被加入 `allow_corporations`，也只有伏羲军团 Fuxi Legion（`98185110`）的 `Director` 能触发内置 `admin` 快捷规则
-- `Director` 只是 corp title 名称时，不应被当作管理员快捷信号
-- corp title 仍然可以通过 `esi_title_mapping` 参与显式映射，但那是配置行为，不是内置特判
-
-这个区别是权限边界的一部分，文档和实现都必须保持一致。
+- 当人物不在 `allow_corporations` 中时，`eve_character_corp_role` 快照不保留
+- 只有伏羲军团 Fuxi Legion（`98185110`）的 `Director` corp role 触发此规则
+- corp title 名称为 `Director` 不触发；title 映射通过 `esi_title_mapping` 显式配置

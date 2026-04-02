@@ -5,7 +5,7 @@ owner: engineering
 last_reviewed: 2026-03-24
 source_of_truth:
   - docs/ai/repo-rules.md
-  - docs/guides/regression-test-plan.md
+  - docs/standards/regression-test-plan.md
   - server/go.mod
   - static/package.json
 ---
@@ -88,7 +88,7 @@ Tests may be omitted only if the reason is stated explicitly and one of these ap
 - `static/src/types/import/auto-imports.d.ts` and `static/src/types/import/components.d.ts` are retained so clean checkouts pass lint and typecheck.
 - `static/.auto-import.json` must not be required for CI linting.
 - See `docs/guides/testing-guide.md` for placement and implementation guidance.
-- See `docs/guides/regression-test-plan.md` for incremental regression planning.
+- See `docs/standards/regression-test-plan.md` for incremental regression planning.
 
 ## Completion Check
 
