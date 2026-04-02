@@ -625,7 +625,7 @@ func TestAdminReviewApplicationDeliverAttemptsInGameMailButIgnoresMailErrors(t *
 
 	svc := NewWelfareService()
 	mailAttempted := false
-	svc.deliveryMailSender = func(ctx context.Context, reviewerID uint, deliveredWelfare *model.Welfare, deliveredApp *model.WelfareApplication) error {
+	svc.deliveryMailSender = func(ctx context.Context, reviewerID uint, deliveredWelfare *model.Welfare, deliveredApp *model.WelfareApplication) (MailAttemptSummary, error) {
 		mailAttempted = true
 		if reviewerID != 77 {
 			t.Fatalf("reviewerID = %d, want 77", reviewerID)
@@ -636,18 +636,26 @@ func TestAdminReviewApplicationDeliverAttemptsInGameMailButIgnoresMailErrors(t *
 		if deliveredApp.ID != app.ID {
 			t.Fatalf("application id = %d, want %d", deliveredApp.ID, app.ID)
 		}
-		return errors.New("mail failed")
+		return MailAttemptSummary{
+			MailSenderCharacterID:      90000077,
+			MailSenderCharacterName:    "Officer Main",
+			MailRecipientCharacterID:   90000042,
+			MailRecipientCharacterName: "Pilot Main",
+		}, errors.New("mail failed")
 	}
 
-	mailWarning, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"})
+	mailSummary, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"})
 	if err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
 	if !mailAttempted {
 		t.Fatal("expected deliver to attempt in-game mail after successful delivery")
 	}
-	if !strings.Contains(mailWarning, "mail failed") {
-		t.Fatalf("mailWarning = %q, want to contain %q", mailWarning, "mail failed")
+	if !strings.Contains(mailSummary.MailError, "mail failed") {
+		t.Fatalf("mailError = %q, want to contain %q", mailSummary.MailError, "mail failed")
+	}
+	if mailSummary.MailSenderCharacterID != 90000077 || mailSummary.MailRecipientCharacterID != 90000042 {
+		t.Fatalf("unexpected mail summary: %#v", mailSummary)
 	}
 
 	var updated model.WelfareApplication
