@@ -231,78 +231,144 @@
     <ElDialog
       v-model="itemSettingsVisible"
       :title="$t('fleetConfig.itemSettingsTitle')"
-      width="780px"
+      width="min(980px, calc(100vw - 32px))"
       append-to-body
       destroy-on-close
     >
-      <div v-loading="itemSettingsLoading">
-        <template v-for="(items, group) in groupedItems" :key="group">
-          <ElDivider content-position="left">{{
-            $t(`fleetConfig.slotGroup.${group}`, group)
-          }}</ElDivider>
-          <div v-for="item in items" :key="item.id" class="item-setting-row">
-            <div class="item-setting-info">
-              <img
-                :src="`https://images.evetech.net/types/${item.type_id}/icon?size=32`"
-                class="item-setting-icon"
-                loading="lazy"
-              />
-              <span class="item-setting-name">{{ item.type_name }} ×{{ item.quantity }}</span>
+      <div v-loading="itemSettingsLoading" class="item-settings-dialog">
+        <ElTabs
+          v-if="groupedItemEntries.length"
+          v-model="itemSettingsActiveGroup"
+          class="item-settings-tabs"
+        >
+          <ElTabPane
+            v-for="entry in groupedItemEntries"
+            :key="entry.group"
+            :label="formatGroupTabLabel(entry.group, entry.items.length)"
+            :name="entry.group"
+          >
+            <div class="item-settings-list">
+              <div v-for="item in entry.items" :key="item.id" class="item-setting-row">
+                <div class="item-setting-main">
+                  <img
+                    :src="`https://images.evetech.net/types/${item.type_id}/icon?size=32`"
+                    class="item-setting-icon"
+                    loading="lazy"
+                  />
+                  <div class="item-setting-body">
+                    <span class="item-setting-name">{{ item.type_name }}</span>
+                    <span class="item-setting-meta"
+                      >{{ item.flag }} · {{ $t('common.quantity') }} ×{{ item.quantity }}</span
+                    >
+                  </div>
+                </div>
+
+                <div class="item-setting-controls">
+                  <div class="item-setting-field">
+                    <span class="item-setting-field__label">{{
+                      $t('fleetConfig.itemColumns.importance')
+                    }}</span>
+                    <template v-if="canManage">
+                      <ElSelect
+                        v-model="itemEdits[item.id].importance"
+                        size="small"
+                        class="item-settings-inline-select"
+                        @change="onImportanceChange(item.id)"
+                      >
+                        <ElOption value="required" :label="$t('fleetConfig.importance.required')" />
+                        <ElOption value="optional" :label="$t('fleetConfig.importance.optional')" />
+                        <ElOption
+                          value="replaceable"
+                          :label="$t('fleetConfig.importance.replaceable')"
+                        />
+                      </ElSelect>
+                    </template>
+                    <ElTag v-else size="small" effect="plain">
+                      {{ importanceLabel(itemEdits[item.id].importance) }}
+                    </ElTag>
+                  </div>
+
+                  <div class="item-setting-field">
+                    <span class="item-setting-field__label">{{
+                      $t('fleetConfig.itemColumns.penalty')
+                    }}</span>
+                    <template v-if="canManage">
+                      <ElSelect
+                        v-model="itemEdits[item.id].penalty"
+                        size="small"
+                        class="item-settings-inline-select"
+                      >
+                        <ElOption value="half" :label="$t('fleetConfig.penalty.half')" />
+                        <ElOption value="none" :label="$t('fleetConfig.penalty.none')" />
+                      </ElSelect>
+                    </template>
+                    <ElTag v-else size="small" effect="plain">
+                      {{ penaltyLabel(itemEdits[item.id].penalty) }}
+                    </ElTag>
+                  </div>
+
+                  <div class="item-setting-field">
+                    <span class="item-setting-field__label">{{
+                      $t('fleetConfig.itemColumns.replacementPenalty')
+                    }}</span>
+                    <template v-if="itemEdits[item.id].importance === 'replaceable'">
+                      <template v-if="canManage">
+                        <ElSelect
+                          v-model="itemEdits[item.id].replacement_penalty"
+                          size="small"
+                          class="item-settings-inline-select"
+                        >
+                          <ElOption
+                            value="half"
+                            :label="$t('fleetConfig.replacementPenalty.half')"
+                          />
+                          <ElOption
+                            value="none"
+                            :label="$t('fleetConfig.replacementPenalty.none')"
+                          />
+                        </ElSelect>
+                      </template>
+                      <ElTag v-else size="small" effect="plain">
+                        {{ replacementPenaltyLabel(itemEdits[item.id].replacement_penalty) }}
+                      </ElTag>
+                    </template>
+                    <span v-else class="item-settings-empty">-</span>
+                  </div>
+
+                  <div class="item-setting-field item-setting-field--wide">
+                    <span class="item-setting-field__label">{{
+                      $t('fleetConfig.itemColumns.replacements')
+                    }}</span>
+                    <template v-if="itemEdits[item.id].importance === 'replaceable'">
+                      <div class="item-setting-replacements">
+                        <span
+                          class="item-setting-replacements__summary"
+                          :title="getReplacementTooltip(item.id)"
+                        >
+                          {{ getReplacementSummary(item.id) }}
+                        </span>
+                        <ElButton
+                          size="small"
+                          link
+                          type="primary"
+                          @click="openReplacementEditor(item.id)"
+                        >
+                          {{
+                            canManage
+                              ? $t('fleetConfig.manageReplacements')
+                              : $t('fleetConfig.viewReplacements')
+                          }}
+                        </ElButton>
+                      </div>
+                    </template>
+                    <span v-else class="item-settings-empty">-</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="item-setting-controls">
-              <ElSelect
-                v-model="itemEdits[item.id].importance"
-                size="small"
-                style="width: 100px"
-                :disabled="!canManage"
-                @change="onImportanceChange(item.id)"
-              >
-                <ElOption value="required" :label="$t('fleetConfig.importance.required')" />
-                <ElOption value="optional" :label="$t('fleetConfig.importance.optional')" />
-                <ElOption value="replaceable" :label="$t('fleetConfig.importance.replaceable')" />
-              </ElSelect>
-              <ElSelect
-                v-model="itemEdits[item.id].penalty"
-                size="small"
-                style="width: 100px"
-                :disabled="!canManage"
-              >
-                <ElOption value="half" :label="$t('fleetConfig.penalty.half')" />
-                <ElOption value="none" :label="$t('fleetConfig.penalty.none')" />
-              </ElSelect>
-              <ElSelect
-                v-if="itemEdits[item.id].importance === 'replaceable'"
-                v-model="itemEdits[item.id].replacement_penalty"
-                size="small"
-                style="width: 120px"
-                :disabled="!canManage"
-              >
-                <ElOption value="half" :label="$t('fleetConfig.replacementPenalty.half')" />
-                <ElOption value="none" :label="$t('fleetConfig.replacementPenalty.none')" />
-              </ElSelect>
-            </div>
-            <!-- 替代品列表 -->
-            <div v-if="itemEdits[item.id].importance === 'replaceable'" class="item-replacements">
-              <ElTag
-                v-for="repId in itemEdits[item.id].replacements"
-                :key="repId"
-                :closable="canManage"
-                size="small"
-                class="replacement-tag"
-                @close="removeReplacement(item.id, repId)"
-              >
-                {{ replacementNameCache[repId] ?? '' }} #{{ repId }}
-              </ElTag>
-              <SdeSearchSelect
-                v-if="canManage"
-                v-model="replacementSearchId"
-                :placeholder="$t('fleetConfig.replacementSearch')"
-                style="width: 200px"
-                @select="onReplacementSelect(item.id, $event)"
-              />
-            </div>
-          </div>
-        </template>
+          </ElTabPane>
+        </ElTabs>
+        <div v-else class="item-settings-empty-state">{{ $t('fleetConfig.noItems') }}</div>
       </div>
       <template #footer>
         <ElButton @click="itemSettingsVisible = false">{{ $t('common.close') }}</ElButton>
@@ -314,6 +380,61 @@
         >
           {{ $t('common.confirm') }}
         </ElButton>
+      </template>
+    </ElDialog>
+
+    <ElDialog
+      v-model="replacementEditorVisible"
+      :title="replacementEditorTitle"
+      width="min(560px, calc(100vw - 32px))"
+      append-to-body
+      destroy-on-close
+      @closed="closeReplacementEditor"
+    >
+      <template v-if="replacementEditorItem && replacementEditorEdit">
+        <div class="replacement-editor-item">
+          <img
+            :src="`https://images.evetech.net/types/${replacementEditorItem.type_id}/icon?size=32`"
+            class="item-setting-icon"
+            loading="lazy"
+          />
+          <div class="replacement-editor-item__body">
+            <span class="replacement-editor-item__name">{{ replacementEditorItem.type_name }}</span>
+            <span class="replacement-editor-item__meta"
+              >{{ replacementEditorItem.flag }} · {{ $t('common.quantity') }} ×{{
+                replacementEditorItem.quantity
+              }}</span
+            >
+          </div>
+        </div>
+
+        <div class="replacement-editor-tags">
+          <ElTag
+            v-for="repId in replacementEditorEdit.replacements"
+            :key="repId"
+            :closable="canManage"
+            size="small"
+            class="replacement-tag"
+            @close="removeReplacement(replacementEditorItem.id, repId)"
+          >
+            {{ replacementNameCache[repId] ?? '' }} #{{ repId }}
+          </ElTag>
+          <span v-if="!replacementEditorEdit.replacements?.length" class="item-settings-empty">
+            {{ $t('fleetConfig.noReplacements') }}
+          </span>
+        </div>
+
+        <SdeSearchSelect
+          v-if="canManage"
+          v-model="replacementSearchId"
+          :placeholder="$t('fleetConfig.replacementSearch')"
+          class="replacement-editor-search"
+          @select="onReplacementSelect(replacementEditorItem.id, $event)"
+        />
+      </template>
+
+      <template #footer>
+        <ElButton @click="closeReplacementEditor">{{ $t('common.close') }}</ElButton>
       </template>
     </ElDialog>
   </ElDialog>
@@ -588,16 +709,34 @@
   const itemSettingsFittingId = ref(0)
   const itemSettingsData = ref<Api.FleetConfig.FittingItemsResponse | null>(null)
   const itemEdits = ref<Record<number, Api.FleetConfig.ItemSettingUpdate>>({})
+  const itemSettingsActiveGroup = ref('')
   const replacementSearchId = ref<number | null>(null)
+  const replacementEditorVisible = ref(false)
+  const replacementEditorItemId = ref<number | null>(null)
   /** 本地缓存新增替代品的名称 type_id -> type_name */
   const replacementNameCache = ref<Record<number, string>>({})
+
+  const itemSettingsItems = computed(() => itemSettingsData.value?.items ?? [])
+  const replacementEditorItem = computed(
+    () => itemSettingsItems.value.find((item) => item.id === replacementEditorItemId.value) ?? null
+  )
+  const replacementEditorEdit = computed(() => {
+    if (!replacementEditorItemId.value) return null
+    return itemEdits.value[replacementEditorItemId.value] ?? null
+  })
+  const replacementEditorTitle = computed(() =>
+    t('fleetConfig.replacementEditorTitle', { name: replacementEditorItem.value?.type_name ?? '' })
+  )
 
   async function openItemSettings(fittingId: number) {
     if (!props.editing) return
     itemSettingsFittingId.value = fittingId
     itemSettingsLoading.value = true
     itemSettingsVisible.value = true
+    itemSettingsData.value = null
+    itemEdits.value = {}
     replacementNameCache.value = {}
+    closeReplacementEditor()
     try {
       const res = await fetchFittingItems(props.editing.id, fittingId, locale.value)
       itemSettingsData.value = res
@@ -617,6 +756,7 @@
         }
       }
       itemEdits.value = edits
+      itemSettingsActiveGroup.value = res?.items?.length ? res.items[0].flag_group || 'Other' : ''
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('common.error'))
       itemSettingsVisible.value = false
@@ -630,7 +770,55 @@
     if (!edit) return
     if (edit.importance !== 'replaceable') {
       edit.replacements = []
+      if (replacementEditorItemId.value === itemId) {
+        closeReplacementEditor()
+      }
     }
+  }
+
+  function importanceLabel(value: Api.FleetConfig.ItemSettingUpdate['importance']) {
+    return t(`fleetConfig.importance.${value}`)
+  }
+
+  function penaltyLabel(value: Api.FleetConfig.ItemSettingUpdate['penalty']) {
+    return t(`fleetConfig.penalty.${value}`)
+  }
+
+  function replacementPenaltyLabel(
+    value: Api.FleetConfig.ItemSettingUpdate['replacement_penalty']
+  ) {
+    return t(`fleetConfig.replacementPenalty.${value}`)
+  }
+
+  function getReplacementLabels(itemId: number) {
+    return (itemEdits.value[itemId]?.replacements ?? []).map((id) => {
+      const name = replacementNameCache.value[id]
+      return name ? `${name} #${id}` : `#${id}`
+    })
+  }
+
+  function getReplacementSummary(itemId: number) {
+    const labels = getReplacementLabels(itemId)
+    if (!labels.length) return t('fleetConfig.noReplacements')
+    const preview = labels.slice(0, 2).join(' / ')
+    return labels.length > 2 ? `${preview} +${labels.length - 2}` : preview
+  }
+
+  function getReplacementTooltip(itemId: number) {
+    const labels = getReplacementLabels(itemId)
+    return labels.length ? labels.join(', ') : undefined
+  }
+
+  function openReplacementEditor(itemId: number) {
+    replacementEditorItemId.value = itemId
+    replacementSearchId.value = null
+    replacementEditorVisible.value = true
+  }
+
+  function closeReplacementEditor() {
+    replacementEditorVisible.value = false
+    replacementEditorItemId.value = null
+    replacementSearchId.value = null
   }
 
   function removeReplacement(itemId: number, typeId: number) {
@@ -653,7 +841,7 @@
 
   /** 按 flag_group 分组 */
   const groupedItems = computed(() => {
-    const items = itemSettingsData.value?.items ?? []
+    const items = itemSettingsItems.value
     const groups: Record<string, Api.FleetConfig.FittingItemDetail[]> = {}
     for (const item of items) {
       const g = item.flag_group || 'Other'
@@ -662,6 +850,14 @@
     }
     return groups
   })
+
+  const groupedItemEntries = computed(() =>
+    Object.entries(groupedItems.value).map(([group, items]) => ({ group, items }))
+  )
+
+  function formatGroupTabLabel(group: string, count: number) {
+    return `${t(`fleetConfig.slotGroup.${group}`, group)} (${count})`
+  }
 
   async function handleSaveItemSettings() {
     if (!props.editing) return
@@ -679,6 +875,23 @@
       itemSettingsSaving.value = false
     }
   }
+
+  watch(itemSettingsVisible, (visible) => {
+    if (!visible) {
+      closeReplacementEditor()
+    }
+  })
+
+  watch(groupedItemEntries, (entries) => {
+    if (!entries.length) {
+      itemSettingsActiveGroup.value = ''
+      return
+    }
+
+    if (!entries.some((entry) => entry.group === itemSettingsActiveGroup.value)) {
+      itemSettingsActiveGroup.value = entries[0].group
+    }
+  })
 
   // ─── 保存到游戏───
   const saveToGameVisible = ref(false)
@@ -753,40 +966,158 @@
     font-size: 12px;
   }
 
-  .item-setting-row {
-    padding: 8px 0;
-    border-bottom: 1px solid var(--el-border-color-extra-light);
-  }
-
-  .item-setting-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
   .item-setting-icon {
     width: 32px;
     height: 32px;
     border-radius: 4px;
   }
 
-  .item-setting-name {
+  .item-settings-dialog {
+    min-height: 360px;
+  }
+
+  .item-settings-tabs :deep(.el-tabs__header) {
+    margin-bottom: 10px;
+  }
+
+  .item-settings-tabs :deep(.el-tabs__content) {
+    padding-top: 2px;
+  }
+
+  .item-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: min(64vh, 640px);
+    overflow: auto;
+    padding-right: 4px;
+  }
+
+  .item-setting-row {
+    display: grid;
+    grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+    background: var(--el-bg-color);
+  }
+
+  .item-setting-main,
+  .replacement-editor-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .item-setting-body,
+  .replacement-editor-item__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .item-setting-name,
+  .replacement-editor-item__name {
     font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-setting-meta,
+  .replacement-editor-item__meta {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
   }
 
   .item-setting-controls {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 6px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    align-items: start;
   }
 
-  .item-replacements {
+  .item-setting-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .item-setting-field--wide {
+    grid-column: 1 / -1;
+  }
+
+  .item-setting-field__label {
+    font-size: 11px;
+    line-height: 1;
+    color: var(--el-text-color-secondary);
+  }
+
+  .item-settings-inline-select {
+    width: 100%;
+  }
+
+  .item-setting-replacements {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px dashed var(--el-border-color);
+    border-radius: 8px;
+    background: var(--el-fill-color-lighter);
+  }
+
+  .item-setting-replacements__summary {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-settings-empty {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px dashed var(--el-border-color);
+    border-radius: 8px;
+    color: var(--el-text-color-placeholder);
+    font-size: 12px;
+  }
+
+  .item-settings-empty-state {
+    padding: 16px 4px;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+  }
+
+  .replacement-editor-item {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--el-border-color-extra-light);
+  }
+
+  .replacement-editor-tags {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    padding-left: 40px;
+    min-height: 32px;
+  }
+
+  .replacement-editor-search {
+    width: 100%;
+    margin-top: 12px;
   }
 
   .replacement-tag {
@@ -809,5 +1140,15 @@
     font-size: 13px;
     color: var(--el-text-color-secondary);
     white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    .item-setting-row {
+      grid-template-columns: 1fr;
+    }
+
+    .item-setting-controls {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

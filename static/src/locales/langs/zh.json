@@ -1163,6 +1163,18 @@
     "itemSettingsTitle": "装备重要性与惩罚设置",
     "itemSettingsSaved": "装备设置已保存",
     "replacementSearch": "搜索替代装备",
+    "manageReplacements": "管理替代品",
+    "viewReplacements": "查看替代品",
+    "noReplacements": "暂无替代品",
+    "noItems": "当前装配没有可配置的装备项",
+    "replacementEditorTitle": "{name} 的替代品",
+    "itemColumns": {
+      "item": "装备",
+      "importance": "重要性",
+      "penalty": "惩罚",
+      "replacementPenalty": "替代惩罚",
+      "replacements": "替代品"
+    },
     "importance": {
       "required": "必需",
       "optional": "可选",
