@@ -1,6 +1,6 @@
 <template>
   <div class="info-implants-page art-full-height">
-    <!-- 顶部：角色选择器 -->
+    <!-- 顶部：人物选择器 -->
     <ElCard shadow="never" class="mb-2">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center gap-4">
@@ -55,11 +55,11 @@
             </div>
             <div class="fatigue-item" v-if="implantsData.last_jump_date">
               <span class="fatigue-label">{{ $t('info.lastJumpDate') }}:</span>
-              <span class="fatigue-value">{{ formatDate(implantsData.last_jump_date) }}</span>
+              <span class="fatigue-value">{{ formatTime(implantsData.last_jump_date) }}</span>
             </div>
             <div class="fatigue-item" v-if="implantsData.last_clone_jump_date">
               <span class="fatigue-label">{{ $t('info.lastCloneJump') }}:</span>
-              <span class="fatigue-value">{{ formatDate(implantsData.last_clone_jump_date) }}</span>
+              <span class="fatigue-value">{{ formatTime(implantsData.last_clone_jump_date) }}</span>
             </div>
           </div>
 
@@ -163,6 +163,7 @@
   import { ElCard, ElSelect, ElOption, ElAvatar, ElButton, ElEmpty, ElTag } from 'element-plus'
   import { fetchMyCharacters } from '@/api/auth'
   import { fetchInfoImplants } from '@/api/eve-info'
+  import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
 
   // Cpu icon (Element Plus doesn't have Cpu, use Monitor as substitute)
@@ -213,13 +214,6 @@
   })
 
   // ---- 工具方法 ----
-  function formatDate(dateStr: string | null): string {
-    if (!dateStr) return '-'
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return dateStr
-    return d.toLocaleString()
-  }
-
   // ---- 交互 ----
   const loadCharacters = async () => {
     try {

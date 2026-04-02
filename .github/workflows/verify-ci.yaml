@@ -1,0 +1,134 @@
+name: Verify
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect Changed Paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Filter paths
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+            frontend:
+              - 'static/**'
+
+  backend:
+    name: Backend Verify
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.11.4
+          working-directory: server
+
+      - name: Test
+        working-directory: server
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: go-coverage
+          path: server/coverage.out
+
+      - name: Build
+        working-directory: server
+        run: go build ./...
+
+  frontend:
+    name: Frontend Verify
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10.32.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: static/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: static
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontend
+        working-directory: static
+        run: pnpm lint .
+
+      - name: Type check
+        working-directory: static
+        run: pnpm exec vue-tsc --noEmit
+
+      - name: Unit tests
+        working-directory: static
+        run: pnpm test:unit
+
+      - name: Build frontend
+        working-directory: static
+        run: pnpm build
+
+  ci-passed:
+    name: CI Passed
+    if: always()
+    needs: [changes, backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.changes.result }}" == "failure" ]]; then
+            echo "::error::Change detection failed"
+            exit 1
+          fi
+          if [[ "${{ needs.backend.result }}" == "failure" ]]; then
+            echo "::error::Backend verification failed"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend.result }}" == "failure" ]]; then
+            echo "::error::Frontend verification failed"
+            exit 1
+          fi
+          echo "All required checks passed (or were skipped due to path filtering)"

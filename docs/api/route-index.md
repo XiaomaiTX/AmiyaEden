@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-03-20
+last_reviewed: 2026-04-02
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -12,6 +12,10 @@ source_of_truth:
 ## 说明
 
 本文件只记录当前 `server/internal/router/router.go` 已注册的路由分组、路径与主要权限边界。
+权限列说明：
+
+- `JWT`：任意持有有效 JWT 的已认证用户可访问，包含 `guest`
+- `Login`：任意已认证且非 `guest` 的产品用户可访问
 
 ## Public
 
@@ -36,17 +40,18 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/sso/eve/characters` | 当前用户绑定角色 | Login |
-| GET | `/sso/eve/bind` | 获取绑定新角色的 SSO 地址 | Login |
-| PUT | `/sso/eve/primary/:character_id` | 设为主角色 | Login |
-| DELETE | `/sso/eve/characters/:character_id` | 解绑角色 | Login |
-| GET | `/me` | 当前用户、角色、权限、绑定角色 | Login |
-| POST | `/dashboard` | Dashboard 聚合数据 | Login |
-| POST | `/notification/list` | 通知列表 | Login |
-| POST | `/notification/unread-count` | 未读数 | Login |
+| GET | `/sso/eve/characters` | 当前用户绑定人物 | JWT |
+| GET | `/sso/eve/bind` | 获取绑定新人物的 SSO 地址 | JWT |
+| PUT | `/sso/eve/primary/:character_id` | 设为主人物 | JWT |
+| DELETE | `/sso/eve/characters/:character_id` | 解绑人物 | JWT |
+| GET | `/me` | 当前用户、人物、权限、绑定人物，并返回 `enforce_character_esi_restriction`；若主人物 ESI 已失效则返回未授权以阻止继续启动登录上下文 | JWT |
+| PUT | `/me` | 更新当前用户昵称 / QQ / Discord ID | JWT |
+| POST | `/dashboard` | Dashboard 聚合数据 | JWT |
+| GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段 | Login |
+| POST | `/notification/list` | 通知列表 | JWT |
+| POST | `/notification/unread-count` | 未读数 | JWT |
 | POST | `/notification/read` | 标记已读 | Login |
 | POST | `/notification/read-all` | 全部已读 | Login |
-| GET | `/menu/list` | 当前用户菜单树 | Login |
 
 ## Operation
 
@@ -54,26 +59,28 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/operation/fleets` | 创建舰队 | Login |
-| GET | `/operation/fleets` | 舰队列表 | Login |
+| POST | `/operation/fleets` | 创建舰队 | `RequireRole(admin, fc, senior_fc)` |
+| GET | `/operation/fleets` | 舰队列表 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/me` | 我的舰队 | Login |
-| GET | `/operation/fleets/:id` | 舰队详情 | Login |
-| PUT | `/operation/fleets/:id` | 更新舰队 | Login |
-| DELETE | `/operation/fleets/:id` | 删除舰队 | Login |
-| POST | `/operation/fleets/:id/refresh-esi` | 刷新舰队 ESI 数据 | Login |
-| GET | `/operation/fleets/:id/members` | 舰队成员 | Login |
-| GET | `/operation/fleets/:id/members-pap` | 舰队成员与 PAP | Login |
-| POST | `/operation/fleets/:id/members/sync` | 同步 ESI 成员 | Login |
-| POST | `/operation/fleets/:id/pap` | 发放 PAP | Login |
-| GET | `/operation/fleets/:id/pap` | PAP 日志 | Login |
+| GET | `/operation/fleets/:id` | 舰队详情 | `RequireRole(admin, fc, senior_fc)` |
+| PUT | `/operation/fleets/:id` | 更新舰队 | `RequireRole(admin, fc, senior_fc)` |
+| DELETE | `/operation/fleets/:id` | 删除舰队 | `RequireRole(admin)` |
+| POST | `/operation/fleets/:id/refresh-esi` | 刷新舰队 ESI 数据 | `RequireRole(admin, fc, senior_fc)` |
+| GET | `/operation/fleets/:id/members` | 舰队成员 | `RequireRole(admin, fc, senior_fc)` |
+| GET | `/operation/fleets/:id/members-pap` | 舰队成员与 PAP | `RequireRole(admin, fc, senior_fc)` |
+| POST | `/operation/fleets/:id/members/manual` | 手动添加成员 | `RequireRole(admin, fc, senior_fc)` |
+| POST | `/operation/fleets/:id/members/sync` | 同步 ESI 成员 | `RequireRole(admin, fc, senior_fc)` |
+| POST | `/operation/fleets/:id/pap` | 发放 PAP | `RequireRole(admin, fc, senior_fc)` |
+| GET | `/operation/fleets/:id/pap` | PAP 日志 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/pap/me` | 我的 PAP 日志 | Login |
+| GET | `/operation/fleets/pap/corporation` | 军团 PAP 汇总 | Login |
 | GET | `/operation/fleets/pap/alliance` | 我的联盟 PAP | Login |
-| POST | `/operation/fleets/:id/invites` | 创建邀请 | Login |
-| GET | `/operation/fleets/:id/invites` | 邀请列表 | Login |
-| DELETE | `/operation/fleets/invites/:invite_id` | 停用邀请 | Login |
+| POST | `/operation/fleets/:id/invites` | 创建邀请 | `RequireRole(admin, fc, senior_fc)` |
+| GET | `/operation/fleets/:id/invites` | 邀请列表 | `RequireRole(admin, fc, senior_fc)` |
+| DELETE | `/operation/fleets/invites/:invite_id` | 停用邀请 | `RequireRole(admin, fc, senior_fc)` |
 | POST | `/operation/fleets/join` | 加入舰队 | Login |
-| GET | `/operation/fleets/esi/:character_id` | 查询角色当前舰队 | Login |
-| POST | `/operation/fleets/:id/ping` | 发送 Webhook Ping | Login |
+| GET | `/operation/fleets/esi/:character_id` | 查询人物当前舰队 | Login |
+| POST | `/operation/fleets/:id/ping` | 发送 Webhook Ping | `RequireRole(admin, fc, senior_fc)` |
 
 ### Fleet Configs
 
@@ -82,20 +89,31 @@ source_of_truth:
 | GET | `/operation/fleet-configs` | 配置列表 | Login |
 | GET | `/operation/fleet-configs/:id` | 配置详情 | Login |
 | GET | `/operation/fleet-configs/:id/eft` | 获取 EFT 文本 | Login |
-| POST | `/operation/fleet-configs` | 创建配置 | `RequireRole(fc, srp)` |
-| PUT | `/operation/fleet-configs/:id` | 更新配置 | `RequireRole(fc, srp)` |
-| DELETE | `/operation/fleet-configs/:id` | 删除配置 | `RequireRole(fc, srp)` |
-| POST | `/operation/fleet-configs/import-fitting` | 从角色装配导入 | Login |
+| POST | `/operation/fleet-configs` | 创建配置 | `RequireRole(admin, senior_fc)` |
+| PUT | `/operation/fleet-configs/:id` | 更新配置 | `RequireRole(admin, senior_fc)` |
+| DELETE | `/operation/fleet-configs/:id` | 删除配置 | `RequireRole(admin, senior_fc)` |
+| POST | `/operation/fleet-configs/import-fitting` | 从人物装配导入 | `RequireRole(admin, senior_fc)` |
 | POST | `/operation/fleet-configs/export-esi` | 导出到 ESI | Login |
 | GET | `/operation/fleet-configs/:id/fittings/:fitting_id/items` | 装配物品 | Login |
-| PUT | `/operation/fleet-configs/:id/fittings/:fitting_id/items/settings` | 更新物品设置 | `RequireRole(fc, srp)` |
+| PUT | `/operation/fleet-configs/:id/fittings/:fitting_id/items/settings` | 更新物品设置 | `RequireRole(admin, senior_fc)` |
 
-### User Wallet
+## Skill Planning
+
+### Skill Plans
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/operation/wallet/my` | 我的钱包 | Login |
-| POST | `/operation/wallet/my/transactions` | 我的钱包流水 | Login |
+| GET | `/skill-planning/skill-plans/check/selection` | 获取当前用户保存的完成度检查人物选择 | Login |
+| PUT | `/skill-planning/skill-plans/check/selection` | 保存当前用户的完成度检查人物选择 | Login |
+| POST | `/skill-planning/skill-plans/check/run` | 执行技能规划完成度检查 | Login |
+| GET | `/skill-planning/skill-plans/check/plan-selection` | 获取当前用户保存的完成度检查规划选择 | Login |
+| PUT | `/skill-planning/skill-plans/check/plan-selection` | 保存当前用户的完成度检查规划选择 | Login |
+| GET | `/skill-planning/skill-plans` | 技能计划列表 | Login |
+| GET | `/skill-planning/skill-plans/:id` | 技能计划详情 | Login |
+| POST | `/skill-planning/skill-plans` | 创建技能计划 | `RequireRole(admin, senior_fc)` |
+| PUT | `/skill-planning/skill-plans/reorder` | 调整技能计划排序 | `RequireRole(admin, senior_fc)` |
+| PUT | `/skill-planning/skill-plans/:id` | 更新技能计划 | `RequireRole(admin, senior_fc)` |
+| DELETE | `/skill-planning/skill-plans/:id` | 删除技能计划 | `RequireRole(admin, senior_fc)` |
 
 ## Info
 
@@ -115,45 +133,100 @@ source_of_truth:
 
 ## Shop
 
-### User Side
+### Common User Side
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
+| POST | `/shop/wallet/my` | 我的钱包 | Login |
+| POST | `/shop/wallet/my/transactions` | 我的钱包流水 | Login |
 | POST | `/shop/products` | 商品列表 | Login |
 | POST | `/shop/product/detail` | 商品详情 | Login |
 | POST | `/shop/buy` | 购买商品 | Login |
 | POST | `/shop/orders` | 我的订单 | Login |
 | POST | `/shop/redeem/list` | 我的兑换码 | Login |
-| POST | `/shop/lottery/list` | 抽奖活动列表 | Login |
-| POST | `/shop/lottery/draw` | 抽奖 | Login |
-| POST | `/shop/lottery/records` | 我的抽奖记录 | Login |
+
+## Newbro Support
+
+### Newbro User Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/newbro/captains` | 当前新人可选择的队长列表 | `Login` + 当前新人资格 |
+| GET | `/newbro/affiliation/me` | 当前用户的新人资格快照与队长关联历史 | Login |
+| GET | `/newbro/affiliations/history` | 当前用户的帮扶关系变更历史 | Login |
+| POST | `/newbro/affiliation/select` | 选择或切换队长 | `Login` + 当前新人资格 |
+| POST | `/newbro/affiliation/end` | 结束当前与队长的帮扶关系 | `Login` + 当前新人资格 |
+
+### Captain Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/newbro/captain/overview` | 当前队长概览 | `RequireRole(captain)` |
+| GET | `/newbro/captain/players` | 当前队长名下新人列表 | `RequireRole(captain)` |
+| GET | `/newbro/captain/attributions` | 当前队长赏金归因明细 | `RequireRole(captain)` |
+| GET | `/newbro/captain/rewards` | 当前队长奖励发放历史 | `RequireRole(captain)` |
+| GET | `/newbro/captain/eligible-players` | 可加入帮扶的新人列表 | `RequireRole(captain)` |
+| POST | `/newbro/captain/enroll` | 手动加入新人到帮扶 | `RequireRole(captain)` |
+| POST | `/newbro/captain/affiliation/end` | 解除指定新人与当前队长的关系 | `RequireRole(captain)` |
+
+## Mentor System
+
+### Mentee Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/mentor/mentors` | 当前符合资格学员可申请的导师列表 | `Login` + 当前学员资格（服务层） |
+| GET | `/mentor/me` | 当前用户的学员资格与导师关系快照 | Login |
+| POST | `/mentor/apply` | 向指定导师提交申请 | `Login` + 当前学员资格（服务层） |
+
+### Mentor Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/mentor/dashboard/applications` | 当前导师待处理申请列表 | `RequireRole(mentor)` |
+| GET | `/mentor/dashboard/mentees` | 当前导师的学员列表 | `RequireRole(mentor)` |
+| GET | `/mentor/dashboard/reward-stages` | 当前导师可见的只读奖励阶段配置 | `RequireRole(mentor)` |
+| POST | `/mentor/dashboard/accept` | 接受学员申请 | `RequireRole(mentor)` |
+| POST | `/mentor/dashboard/reject` | 拒绝学员申请 | `RequireRole(mentor)` |
+
+## Welfare
+
+### Welfare User Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/welfare/eligible` | 可申请福利列表 | Login |
+| POST | `/welfare/apply` | 申请福利 | Login |
+| POST | `/welfare/my-applications` | 我的福利申请 | Login |
+| POST | `/welfare/upload-evidence` | 上传福利申请凭证 | Login |
 
 ## Upload
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/upload/image` | 上传图片 | Login |
+| POST | `/upload/image` | 上传图片，返回 base64 data URL（不落盘，最大 2MB，仅支持 jpeg/png/webp） | Login |
 
 ## SRP
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
 | GET | `/srp/prices` | 价格表 | Login |
-| POST | `/srp/prices` | 新增或更新价格 | `RequirePermission(srp:price:add)` |
-| DELETE | `/srp/prices/:id` | 删除价格 | `RequirePermission(srp:price:delete)` |
+| POST | `/srp/prices` | 新增或更新价格 | `RequireRole(srp)` |
+| DELETE | `/srp/prices/:id` | 删除价格 | `RequireRole(srp)` |
 | POST | `/srp/applications` | 提交补损申请 | Login |
 | GET | `/srp/applications/me` | 我的补损申请 | Login |
 | GET | `/srp/killmails/me` | 我的 KM | Login |
 | GET | `/srp/killmails/fleet/:fleet_id` | 指定舰队 KM | Login |
 | POST | `/srp/killmails/detail` | KM 详情 | Login |
 | POST | `/srp/open-info-window` | 打开游戏内信息窗口 | Login |
-| GET | `/srp/applications` | 审核列表 | `RequirePermission(srp:review)` |
-| GET | `/srp/applications/:id` | 审核详情 | `RequirePermission(srp:review)` |
-| PUT | `/srp/applications/:id/review` | 审核申请 | `RequirePermission(srp:review)` |
-| PUT | `/srp/applications/:id/payout` | 发放补损 | `RequirePermission(srp:review)` |
-| PUT | `/srp/applications/payout-batch` | 批量发放补损 | `RequirePermission(srp:review)` |
-| GET | `/srp/payout-mail-logs` | 发放邮件日志列表 | `RequirePermission(srp:review)` |
-| POST | `/srp/applications/:id/payout-mail/retry` | 重试发放邮件 | `RequirePermission(srp:review)` |
+| GET | `/srp/applications` | 审核列表 | `RequireRole(srp, fc, admin)` |
+| GET | `/srp/applications/:id` | 审核详情 | `RequireRole(srp, fc, admin)` |
+| PUT | `/srp/applications/:id/review` | 审核申请 | `RequireRole(srp, fc, admin)` |
+| PUT | `/srp/applications/auto-approve` | 对指定 `fleet_id` 自动审批符合规则的待审批申请 | `RequireRole(srp, admin)` |
+| GET | `/srp/applications/batch-payout-summary` | 批量发放汇总 | `RequireRole(srp, admin)` |
+| PUT | `/srp/applications/fuxi-payout` | 将全部已批准未发放的申请按 1,000,000 ISK : 1 伏羲币批量发放并结案 | `RequireRole(srp, admin)` |
+| PUT | `/srp/applications/:id/payout` | 发放补损 | `RequireRole(srp, admin)` |
+| PUT | `/srp/applications/users/:user_id/payout` | 按用户批量发放补损 | `RequireRole(srp, admin)` |
 
 ## ESI Refresh
 
@@ -163,7 +236,7 @@ source_of_truth:
 | GET | `/esi/refresh/statuses` | 状态汇总 | `RequireRole(admin)` |
 | POST | `/esi/refresh/run` | 执行队列调度 | `RequireRole(admin)` |
 | POST | `/esi/refresh/run-task` | 按名称执行任务 | `RequireRole(admin)` |
-| POST | `/esi/refresh/run-all` | 对角色执行全部任务 | `RequireRole(admin)` |
+| POST | `/esi/refresh/run-all` | 对人物执行全部任务 | `RequireRole(admin)` |
 
 ## System
 
@@ -173,8 +246,18 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/basic-config` | 获取基础配置 | `RequireRole(admin)` |
-| PUT | `/system/basic-config` | 更新基础配置 | `RequireRole(admin)` |
+| GET | `/system/basic-config` | 获取固定系统标识（军团 ID / 网站标题） | `RequireRole(super_admin)` |
+| GET | `/system/basic-config/allow-corporations` | 获取允许军团列表 | `RequireRole(super_admin)` |
+| PUT | `/system/basic-config/allow-corporations` | 更新允许军团列表 | `RequireRole(super_admin)` |
+| GET | `/system/basic-config/character-esi-restriction` | 获取任一绑定人物 ESI 失效时是否强制停留人物页的配置 | `RequireRole(super_admin)` |
+| PUT | `/system/basic-config/character-esi-restriction` | 更新任一绑定人物 ESI 失效时是否强制停留人物页的配置 | `RequireRole(super_admin)` |
+
+### SDE Config
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/sde-config` | 获取 SDE 配置 | `RequireRole(super_admin)` |
+| PUT | `/system/sde-config` | 更新 SDE 配置 | `RequireRole(super_admin)` |
 
 ### NPC Kills / Alliance PAP
 
@@ -184,35 +267,42 @@ source_of_truth:
 | GET | `/system/pap` | 联盟 PAP 列表 | `RequireRole(admin)` |
 | POST | `/system/pap/fetch` | 手动抓取联盟 PAP | `RequireRole(admin)` |
 | POST | `/system/pap/import` | 导入联盟 PAP | `RequireRole(admin)` |
-| GET | `/system/pap/config` | 获取兑换配置 | `RequireRole(admin)` |
-| PUT | `/system/pap/config` | 设置兑换配置 | `RequireRole(admin)` |
-| POST | `/system/pap/settle` | 月度结算 | `RequireRole(admin)` |
+| POST | `/system/pap/settle` | 月度归档 | `RequireRole(admin)` |
 
-### Menu / Role / User
+### PAP 兑换汇率
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/menu/tree` | 菜单树 | `RequireRole(admin)` |
-| POST | `/system/menu` | 创建菜单 | `RequireRole(admin)` |
-| PUT | `/system/menu/:id` | 更新菜单 | `RequireRole(admin)` |
-| DELETE | `/system/menu/:id` | 删除菜单 | `RequireRole(admin)` |
-| GET | `/system/role` | 角色列表 | `RequireRole(admin)` |
-| GET | `/system/role/all` | 全量角色列表 | `RequireRole(admin)` |
-| GET | `/system/role/:id` | 角色详情 | `RequireRole(admin)` |
-| POST | `/system/role` | 创建角色 | `RequireRole(admin)` |
-| PUT | `/system/role/:id` | 更新角色 | `RequireRole(admin)` |
-| DELETE | `/system/role/:id` | 删除角色 | `RequireRole(admin)` |
-| GET | `/system/role/:id/menus` | 获取角色菜单 | `RequireRole(admin)` |
-| PUT | `/system/role/:id/menus` | 设置角色菜单 | `RequireRole(admin)` |
-| GET | `/system/user` | 用户列表 | `RequireRole(admin)` |
-| GET | `/system/user/:id` | 用户详情 | `RequireRole(admin)` |
-| PUT | `/system/user/:id` | 更新用户 | `RequireRole(admin)` |
-| DELETE | `/system/user/:id` | 删除用户 | `RequireRole(admin)` |
-| GET | `/system/user/:id/roles` | 获取用户角色 | `RequireRole(admin)` |
-| PUT | `/system/user/:id/roles` | 设置用户角色 | `RequireRole(admin)` |
-| POST | `/system/user/:id/impersonate` | 模拟登录，需 `super_admin` | `RequireRole(admin)` + `super_admin` |
+| GET | `/system/pap-exchange/rates` | 获取 PAP 类型兑换汇率列表 | `RequireRole(admin)` |
+| PUT | `/system/pap-exchange/rates` | 更新 PAP 类型兑换汇率 | `RequireRole(admin)` |
 
-### System Wallet
+### Mentor Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/mentor/relationships` | 全量导师关系列表 | `RequireRole(admin)` |
+| GET | `/system/mentor/reward-distributions` | 导师奖励发放记录分页列表；关键字支持导师人物名 / 昵称 | `RequireRole(admin)` |
+| POST | `/system/mentor/revoke` | 撤销指定导师关系 | `RequireRole(admin)` |
+| GET | `/system/mentor/settings` | 导师学员资格阈值配置 | `RequireRole(admin)` |
+| PUT | `/system/mentor/settings` | 更新导师学员资格阈值配置 | `RequireRole(admin)` |
+| GET | `/system/mentor/reward-stages` | 导师奖励阶段配置 | `RequireRole(admin)` |
+| PUT | `/system/mentor/reward-stages` | 更新导师奖励阶段配置 | `RequireRole(admin)` |
+| POST | `/system/mentor/reward/process` | 手动执行导师奖励处理 | `RequireRole(admin)` |
+
+### Role / User
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/role/definitions` | 系统职权定义列表（只读） | `RequireRole(admin)` |
+| GET | `/system/user` | 用户列表；默认按 `last_login_at` 倒序，关键字支持昵称 / QQ / 已绑定人物名；职权字段仅返回有序 `roles[]`，不再返回历史单值 `role`，并附带已绑定人物与每个人物的 `total_sp`、`token_invalid` 快照 | `RequireRole(admin)` |
+| GET | `/system/user/:id` | 用户详情 | `RequireRole(admin)` |
+| PUT | `/system/user/:id` | 更新用户昵称 / 状态；不允许通过该接口修改 QQ / Discord ID，`admin` 也不可编辑其他 `admin` | `RequireRole(admin)` |
+| DELETE | `/system/user/:id` | 删除用户；`super_admin` 用户不可删除；`admin` 不可删除其他 `admin`，且已登记 QQ / Discord ID 的用户仅 `super_admin` 可删除 | `RequireRole(admin)` |
+| GET | `/system/user/:id/roles` | 获取用户职权 | `RequireRole(admin)` |
+| PUT | `/system/user/:id/roles` | 设置用户职权；`super_admin` 职权不可通过 API 分配或修改（仅通过配置文件管理）；仅 `super_admin` 可分配 `admin` | `RequireRole(admin)` |
+| POST | `/system/user/:id/impersonate` | 模拟登录，需 `super_admin`；若目标用户主人物 ESI 已失效则拒绝签发 token | `RequireRole(admin)` + `super_admin` |
+
+### Fuxi Coin
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
@@ -222,7 +312,34 @@ source_of_truth:
 | POST | `/system/wallet/transactions` | 钱包流水 | `RequireRole(admin)` |
 | POST | `/system/wallet/logs` | 调整日志 | `RequireRole(admin)` |
 
-### Shop / Lottery Admin
+### Welfare Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/system/welfare/list` | 福利列表 | `RequireRole(admin, welfare)` |
+| POST | `/system/welfare/add` | 创建福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/edit` | 编辑福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/delete` | 删除福利 | `RequireRole(admin)` |
+| POST | `/system/welfare/reorder` | 调整福利排序 | `RequireRole(admin)` |
+| POST | `/system/welfare/import` | 导入历史福利记录 | `RequireRole(admin)` |
+| POST | `/system/welfare/applications` | 福利申请列表（审批端） | `RequireRole(admin)` |
+| POST | `/system/welfare/applications/delete` | 删除单条福利申请记录 | `RequireRole(admin)` |
+| POST | `/system/welfare/review` | 审批福利申请（发放/拒绝；若当前福利配置 `pay_by_fuxi_coin > 0`，同步写入 `welfare_payout` 钱包流水） | `RequireRole(admin)` |
+
+### Newbro Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/newbro/settings` | 获取帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
+| PUT | `/system/newbro/settings` | 更新帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
+| GET | `/system/newbro/captains` | 队长绩效列表 | `RequireRole(admin)` |
+| GET | `/system/newbro/captains/:user_id` | 队长详情（概览、关联玩家、归因明细） | `RequireRole(admin)` |
+| GET | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史 | `RequireRole(admin)` |
+| GET | `/system/newbro/rewards` | 队长奖励发放历史 | `RequireRole(admin)` |
+| POST | `/system/newbro/attribution/sync` | 手动执行队长赏金归因同步 | `RequireRole(admin)` |
+| POST | `/system/newbro/reward/process` | 手动执行队长奖励处理 | `RequireRole(admin)` |
+
+### Shop Admin
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
@@ -230,33 +347,24 @@ source_of_truth:
 | POST | `/system/shop/product/add` | 新增商品 | `RequireRole(admin)` |
 | POST | `/system/shop/product/edit` | 编辑商品 | `RequireRole(admin)` |
 | POST | `/system/shop/product/delete` | 删除商品 | `RequireRole(admin)` |
-| POST | `/system/shop/order/list` | 订单列表 | `RequireRole(admin)` |
-| POST | `/system/shop/order/approve` | 审批订单 | `RequireRole(admin)` |
-| POST | `/system/shop/order/reject` | 驳回订单 | `RequireRole(admin)` |
+| POST | `/system/shop/order/list` | 订单列表 | `RequireRole(admin, welfare)` |
+| POST | `/system/shop/order/deliver` | 发放订单 | `RequireRole(admin, welfare)` |
+| POST | `/system/shop/order/reject` | 驳回订单 | `RequireRole(admin, welfare)` |
 | POST | `/system/shop/redeem/list` | 兑换码列表 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/list` | 活动列表 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/add` | 新增活动 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/edit` | 编辑活动 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/delete` | 删除活动 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/prize/add` | 新增奖品 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/prize/edit` | 编辑奖品 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/prize/delete` | 删除奖品 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/records` | 抽奖记录 | `RequireRole(admin)` |
-| POST | `/system/shop/lottery/records/deliver` | 更新奖品发放状态 | `RequireRole(admin)` |
 
 ### Auto Role / Webhook
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/auto-role/esi-roles` | ESI corp roles 列表 | `RequireRole(admin)` |
-| GET | `/system/auto-role/esi-role-mappings` | ESI role 映射列表 | `RequireRole(admin)` |
-| POST | `/system/auto-role/esi-role-mappings` | 新增 ESI role 映射 | `RequireRole(admin)` |
-| DELETE | `/system/auto-role/esi-role-mappings/:id` | 删除 ESI role 映射 | `RequireRole(admin)` |
-| GET | `/system/auto-role/corp-titles` | Corp titles 列表 | `RequireRole(admin)` |
-| GET | `/system/auto-role/esi-title-mappings` | Title 映射列表 | `RequireRole(admin)` |
-| POST | `/system/auto-role/esi-title-mappings` | 新增 title 映射 | `RequireRole(admin)` |
-| DELETE | `/system/auto-role/esi-title-mappings/:id` | 删除 title 映射 | `RequireRole(admin)` |
-| POST | `/system/auto-role/sync` | 手动触发同步 | `RequireRole(admin)` |
-| GET | `/system/webhook/config` | 获取 Webhook 配置 | `RequireRole(admin)` |
-| PUT | `/system/webhook/config` | 保存 Webhook 配置 | `RequireRole(admin)` |
-| POST | `/system/webhook/test` | 测试 Webhook | `RequireRole(admin)` |
+| GET | `/system/auto-role/esi-roles` | ESI corp roles 列表 | `RequireRole(super_admin)` |
+| GET | `/system/auto-role/esi-role-mappings` | ESI role 映射列表 | `RequireRole(super_admin)` |
+| POST | `/system/auto-role/esi-role-mappings` | 新增 ESI role 映射 | `RequireRole(super_admin)` |
+| DELETE | `/system/auto-role/esi-role-mappings/:id` | 删除 ESI role 映射 | `RequireRole(super_admin)` |
+| GET | `/system/auto-role/corp-titles` | Corp titles 列表（含军团名称） | `RequireRole(super_admin)` |
+| GET | `/system/auto-role/esi-title-mappings` | Title 映射列表 | `RequireRole(super_admin)` |
+| POST | `/system/auto-role/esi-title-mappings` | 新增 title 映射 | `RequireRole(super_admin)` |
+| DELETE | `/system/auto-role/esi-title-mappings/:id` | 删除 title 映射 | `RequireRole(super_admin)` |
+| POST | `/system/auto-role/sync` | 手动触发同步 | `RequireRole(super_admin)` |
+| GET | `/system/webhook/config` | 获取 Webhook 配置 | `RequireRole(super_admin)` |
+| PUT | `/system/webhook/config` | 保存 Webhook 配置 | `RequireRole(super_admin)` |
+| POST | `/system/webhook/test` | 测试 Webhook | `RequireRole(super_admin)` |

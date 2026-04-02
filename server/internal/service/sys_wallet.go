@@ -10,9 +10,38 @@ import (
 	"gorm.io/gorm"
 )
 
-// SysWalletService 系统钱包业务逻辑层
+// SysWalletService 伏羲币业务逻辑层
 type SysWalletService struct {
 	repo *repository.SysWalletRepository
+}
+
+const walletTransactionReasonMaxLength = 256
+
+func buildWalletTransaction(userID uint, operatorID uint, delta float64, newBalance float64, reason, refType, refID string) *model.WalletTransaction {
+	if reasonRunes := []rune(reason); len(reasonRunes) > walletTransactionReasonMaxLength {
+		reason = string(reasonRunes[:walletTransactionReasonMaxLength])
+	}
+
+	return &model.WalletTransaction{
+		UserID:       userID,
+		Amount:       delta,
+		Reason:       reason,
+		RefType:      refType,
+		RefID:        refID,
+		BalanceAfter: newBalance,
+		OperatorID:   operatorID,
+	}
+}
+
+func (s *SysWalletService) applyWalletDeltaTx(tx *gorm.DB, userID uint, operatorID uint, delta float64, newBalance float64, reason, refType, refID string) error {
+	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
+		return err
+	}
+
+	return s.repo.CreateTransactionTx(
+		tx,
+		buildWalletTransaction(userID, operatorID, delta, newBalance, reason, refType, refID),
+	)
 }
 
 func NewSysWalletService() *SysWalletService {
@@ -32,12 +61,8 @@ func (s *SysWalletService) GetMyWallet(userID uint) (*model.SystemWallet, error)
 
 // GetMyTransactions 获取当前用户流水
 func (s *SysWalletService) GetMyTransactions(userID uint, page, pageSize int) ([]model.WalletTransaction, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
 	filter := repository.WalletTransactionFilter{UserID: &userID}
 	return s.repo.ListTransactions(page, pageSize, filter)
 }
@@ -141,14 +166,10 @@ func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest)
 	return wallet, nil
 }
 
-// AdminListWallets 管理员查询所有钱包（附带主角色名）
+// AdminListWallets 管理员查询所有钱包（附带主人物名）
 func (s *SysWalletService) AdminListWallets(page, pageSize int) ([]model.WalletWithCharacter, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListWalletsWithCharacter(page, pageSize)
 }
 
@@ -157,25 +178,17 @@ func (s *SysWalletService) AdminGetWallet(userID uint) (*model.SystemWallet, err
 	return s.repo.GetOrCreateWallet(userID)
 }
 
-// AdminListTransactions 管理员查询流水（可按用户/类型筛选，附带角色名）
+// AdminListTransactions 管理员查询流水（可按用户/类型筛选，附带人物名）
 func (s *SysWalletService) AdminListTransactions(page, pageSize int, filter repository.WalletTransactionFilter) ([]model.TransactionWithCharacter, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListTransactionsWithCharacter(page, pageSize, filter)
 }
 
-// AdminListLogs 管理员查询操作日志（附带角色名）
+// AdminListLogs 管理员查询操作日志（附带人物名）
 func (s *SysWalletService) AdminListLogs(page, pageSize int, filter repository.WalletLogFilter) ([]model.LogWithCharacter, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
 	return s.repo.ListLogsWithCharacter(page, pageSize, filter)
 }
 
@@ -189,40 +202,14 @@ func (s *SysWalletService) CreditUser(userID uint, amount float64, reason, refTy
 		return errors.New("金额必须大于 0")
 	}
 
-	wallet, err := s.repo.GetOrCreateWallet(userID)
-	if err != nil {
-		return fmt.Errorf("获取用户钱包失败: %w", err)
-	}
-
-	newBalance := wallet.Balance + amount
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
+		if err != nil {
+			return fmt.Errorf("获取用户钱包失败: %w", err)
 		}
-	}()
-
-	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	walletTx := &model.WalletTransaction{
-		UserID:       userID,
-		Amount:       amount,
-		Reason:       reason,
-		RefType:      refType,
-		RefID:        refID,
-		BalanceAfter: newBalance,
-		OperatorID:   0, // 系统操作
-	}
-	if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+		newBalance := wallet.Balance + amount
+		return s.applyWalletDeltaTx(tx, userID, 0, amount, newBalance, reason, refType, refID)
+	})
 }
 
 // DebitUser 扣减用户余额（内部调用，如商城购买）
@@ -231,48 +218,25 @@ func (s *SysWalletService) DebitUser(userID uint, amount float64, reason, refTyp
 		return errors.New("金额必须大于 0")
 	}
 
-	wallet, err := s.repo.GetOrCreateWallet(userID)
-	if err != nil {
-		return fmt.Errorf("获取用户钱包失败: %w", err)
-	}
-
-	if wallet.Balance < amount {
-		return errors.New("余额不足")
-	}
-
-	newBalance := wallet.Balance - amount
-
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
+		if err != nil {
+			return fmt.Errorf("获取用户钱包失败: %w", err)
 		}
-	}()
-
-	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	walletTx := &model.WalletTransaction{
-		UserID:       userID,
-		Amount:       -amount,
-		Reason:       reason,
-		RefType:      refType,
-		RefID:        refID,
-		BalanceAfter: newBalance,
-		OperatorID:   0, // 系统操作
-	}
-	if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+		if wallet.Balance < amount {
+			return errors.New("余额不足")
+		}
+		newBalance := wallet.Balance - amount
+		return s.applyWalletDeltaTx(tx, userID, 0, -amount, newBalance, reason, refType, refID)
+	})
 }
 
 // ApplyWalletDeltaTx 在已有事务中对用户钱包应用差量（正=充值，负=扣减），用于 PAP 重复发放去重
 func (s *SysWalletService) ApplyWalletDeltaTx(tx *gorm.DB, userID uint, delta float64, reason, refType, refID string) error {
+	return s.ApplyWalletDeltaByOperatorTx(tx, userID, 0, delta, reason, refType, refID)
+}
+
+func (s *SysWalletService) ApplyWalletDeltaByOperatorTx(tx *gorm.DB, userID uint, operatorID uint, delta float64, reason, refType, refID string) error {
 	if delta == 0 {
 		return nil
 	}
@@ -284,17 +248,5 @@ func (s *SysWalletService) ApplyWalletDeltaTx(tx *gorm.DB, userID uint, delta fl
 	if newBalance < 0 {
 		newBalance = 0
 	}
-	if err := s.repo.UpdateBalanceTx(tx, userID, newBalance); err != nil {
-		return err
-	}
-	walletTx := &model.WalletTransaction{
-		UserID:       userID,
-		Amount:       delta,
-		Reason:       reason,
-		RefType:      refType,
-		RefID:        refID,
-		BalanceAfter: newBalance,
-		OperatorID:   0,
-	}
-	return s.repo.CreateTransactionTx(tx, walletTx)
+	return s.applyWalletDeltaTx(tx, userID, operatorID, delta, newBalance, reason, refType, refID)
 }

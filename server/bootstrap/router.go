@@ -14,11 +14,16 @@ func InitRouter() *gin.Engine {
 
 	r := gin.New()
 
-	// 全局中间件（注册顺序即执行顺序，defer 逆序执行）
-	// 执行顺序(before): RequestID → OperationLog → ResponseWrapper → ZapLogger → ZapRecovery → Cors → handler
-	// 执行顺序(after) : Cors → ZapRecovery → ZapLogger → ResponseWrapper(写biz_code) → OperationLog(读biz_code存DB)
+	// 全局中间件。
+	// 进入 handler 前: RequestID(注入请求 ID) → SecureHeaders(预写安全头) → OperationLog(开始计时) →
+	// ResponseWrapper(接管响应) → ZapLogger(开始计时) → ZapRecovery(注册 panic 恢复) →
+	// Cors(写 CORS 头，OPTIONS 可在此提前返回) → handler
+	// c.Next() 返回后: ZapRecovery(仅 panic 时处理) → ZapLogger(记录日志) →
+	// ResponseWrapper(统一响应并写 biz_code) → OperationLog(读取 biz_code 入库)
+	// RequestID / SecureHeaders / Cors 没有额外的 after 阶段逻辑。
 	r.Use(
 		middleware.RequestID(),
+		middleware.SecureHeaders(),
 		middleware.OperationLog(),
 		middleware.ResponseWrapper(),
 		middleware.ZapLogger(),

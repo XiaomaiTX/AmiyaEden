@@ -4,7 +4,6 @@ import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,30 +37,27 @@ func (h *FleetConfigHandler) CreateFleetConfig(c *gin.Context) {
 
 // ListFleetConfigs 分页查询舰队配置列表
 func (h *FleetConfigHandler) ListFleetConfigs(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	page, pageSize, err := parsePaginationQuery(c, 20, 100)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 
-	records, total, err := h.svc.ListFleetConfigs(page, size)
+	records, total, err := h.svc.ListFleetConfigs(page, pageSize)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{
-		"list":     records,
-		"page":     page,
-		"pageSize": size,
-		"total":    total,
-	})
+	response.OKWithPage(c, records, total, page, pageSize)
 }
 
 // GetFleetConfig 获取舰队配置详情
 func (h *FleetConfigHandler) GetFleetConfig(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的配置ID")
+	id := requireUintID(c, "id", "配置ID")
+	if id == 0 {
 		return
 	}
-	result, err := h.svc.GetFleetConfig(uint(id))
+	result, err := h.svc.GetFleetConfig(id)
 	if err != nil {
 		response.Fail(c, response.CodeNotFound, err.Error())
 		return
@@ -71,9 +67,8 @@ func (h *FleetConfigHandler) GetFleetConfig(c *gin.Context) {
 
 // UpdateFleetConfig 更新舰队配置
 func (h *FleetConfigHandler) UpdateFleetConfig(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的配置ID")
+	id := requireUintID(c, "id", "配置ID")
+	if id == 0 {
 		return
 	}
 	var req service.UpdateFleetConfigRequest
@@ -82,8 +77,8 @@ func (h *FleetConfigHandler) UpdateFleetConfig(c *gin.Context) {
 		return
 	}
 	userID := middleware.GetUserID(c)
-	userRole := middleware.GetUserRole(c)
-	result, err := h.svc.UpdateFleetConfig(uint(id), userID, userRole, &req)
+	userRoles := middleware.GetUserRoles(c)
+	result, err := h.svc.UpdateFleetConfig(id, userID, userRoles, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -93,14 +88,13 @@ func (h *FleetConfigHandler) UpdateFleetConfig(c *gin.Context) {
 
 // DeleteFleetConfig 删除舰队配置
 func (h *FleetConfigHandler) DeleteFleetConfig(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的配置ID")
+	id := requireUintID(c, "id", "配置ID")
+	if id == 0 {
 		return
 	}
 	userID := middleware.GetUserID(c)
-	userRole := middleware.GetUserRole(c)
-	if err := h.svc.DeleteFleetConfig(uint(id), userID, userRole); err != nil {
+	userRoles := middleware.GetUserRoles(c)
+	if err := h.svc.DeleteFleetConfig(id, userID, userRoles); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -140,13 +134,12 @@ func (h *FleetConfigHandler) ExportToESI(c *gin.Context) {
 
 // GetFittingEFT 获取舰队配置中所有装配的本地化 EFT 文本
 func (h *FleetConfigHandler) GetFittingEFT(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的配置ID")
+	id := requireUintID(c, "id", "配置ID")
+	if id == 0 {
 		return
 	}
 	lang := c.DefaultQuery("lang", "zh")
-	result, err := h.svc.GetFittingEFT(uint(id), lang)
+	result, err := h.svc.GetFittingEFT(id, lang)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -156,18 +149,16 @@ func (h *FleetConfigHandler) GetFittingEFT(c *gin.Context) {
 
 // GetFittingItems 获取装配物品详情（含重要性、惩罚、替代品）
 func (h *FleetConfigHandler) GetFittingItems(c *gin.Context) {
-	configID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的配置ID")
+	configID := requireUintID(c, "id", "配置ID")
+	if configID == 0 {
 		return
 	}
-	fittingID, err := strconv.ParseUint(c.Param("fitting_id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的装配ID")
+	fittingID := requireUintID(c, "fitting_id", "装配ID")
+	if fittingID == 0 {
 		return
 	}
 	lang := c.DefaultQuery("lang", "zh")
-	result, err := h.svc.GetFittingItems(uint(configID), uint(fittingID), lang)
+	result, err := h.svc.GetFittingItems(configID, fittingID, lang)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -177,14 +168,12 @@ func (h *FleetConfigHandler) GetFittingItems(c *gin.Context) {
 
 // UpdateFittingItemsSettings 批量更新装配物品设置（重要性、惩罚、替代品）
 func (h *FleetConfigHandler) UpdateFittingItemsSettings(c *gin.Context) {
-	configID, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的配置ID")
+	configID := requireUintID(c, "id", "配置ID")
+	if configID == 0 {
 		return
 	}
-	fittingID, err := strconv.ParseUint(c.Param("fitting_id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的装配ID")
+	fittingID := requireUintID(c, "fitting_id", "装配ID")
+	if fittingID == 0 {
 		return
 	}
 	var req service.UpdateFittingItemsSettingsRequest
@@ -193,8 +182,8 @@ func (h *FleetConfigHandler) UpdateFittingItemsSettings(c *gin.Context) {
 		return
 	}
 	userID := middleware.GetUserID(c)
-	userRole := middleware.GetUserRole(c)
-	if err := h.svc.UpdateFittingItemsSettings(uint(configID), uint(fittingID), userID, userRole, &req); err != nil {
+	userRoles := middleware.GetUserRoles(c)
+	if err := h.svc.UpdateFittingItemsSettings(configID, fittingID, userID, userRoles, &req); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

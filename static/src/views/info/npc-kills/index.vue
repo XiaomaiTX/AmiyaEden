@@ -1,6 +1,6 @@
 <template>
   <div class="npc-kills-page">
-    <!-- 角色切换 + 日期范围 -->
+    <!-- 人物切换 + 日期范围 -->
     <ElCard class="art-card" shadow="never">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center gap-4 flex-wrap">
@@ -11,7 +11,7 @@
             style="width: 240px"
             @change="onCharacterChange"
           >
-            <!-- 全部角色 -->
+            <!-- 全部人物 -->
             <ElOption :value="0" :label="$t('npcKill.allCharacters')">
               <span>{{ $t('npcKill.allCharacters') }}</span>
             </ElOption>
@@ -45,17 +45,11 @@
     </ElCard>
 
     <!-- 总览卡片 -->
-    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 my-4">
+    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 my-4">
       <ElCard shadow="never" class="text-center">
         <p class="text-sm text-gray-500">{{ $t('npcKill.totalBounty') }}</p>
         <p class="text-xl font-bold text-green-600 mt-1">{{
           formatISK(reportData.summary.total_bounty)
-        }}</p>
-      </ElCard>
-      <ElCard shadow="never" class="text-center">
-        <p class="text-sm text-gray-500">{{ $t('npcKill.totalESS') }}</p>
-        <p class="text-xl font-bold text-blue-600 mt-1">{{
-          formatISK(reportData.summary.total_ess)
         }}</p>
       </ElCard>
       <ElCard shadow="never" class="text-center">
@@ -204,7 +198,7 @@
 
   // ─── 状态 ───
   const characters = ref<Api.Auth.EveCharacter[]>([])
-  const selectedCharacterId = ref<number>(0) // 0 表示全部角色
+  const selectedCharacterId = ref<number>(0) // 0 表示全部人物
   const dateRange = ref<[string, string] | null>(null)
   const reportData = ref<Api.NpcKill.NpcKillResponse | null>(null)
 
@@ -214,8 +208,8 @@
 
   // ─── REF_TYPE 配置 ───
   const REF_TYPE_CONFIG: Record<string, { type: string; text: string }> = {
-    bounty_prizes: { type: 'success', text: '' },
-    ess_escrow_transfer: { type: 'warning', text: 'ESS' }
+    bounty_prizes: { type: 'success', text: t('npcKill.refTypes.bounty_prizes') },
+    ess_escrow_transfer: { type: 'warning', text: t('npcKill.refTypes.ess_escrow_transfer') }
   }
 
   // ─── API 适配器 ───
@@ -229,7 +223,7 @@
     const charId = params.character_id ?? 0
     let res: Api.NpcKill.NpcKillResponse | undefined
     if (charId === 0) {
-      // 全部角色汇总
+      // 全部人物汇总
       res = await fetchNpcKillsAll({
         start_date: params.start_date,
         end_date: params.end_date,
@@ -369,7 +363,7 @@
   const loadCharacters = async () => {
     try {
       characters.value = (await fetchMyCharacters()) ?? []
-      // 不自动选中第一个角色，保持默认"全部角色"模式
+      // 不自动选中第一个人物，保持默认"全部人物"模式
     } catch {
       characters.value = []
     }

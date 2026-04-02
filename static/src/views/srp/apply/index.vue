@@ -9,7 +9,9 @@
 
       <ElAlert type="success" :closable="false" class="mb-4" show-icon>
         <p>{{ $t('srp.apply.infoText') }}</p>
-        <ElLink type="primary" class="mt-1">{{ $t('srp.apply.faqLink') }}</ElLink>
+        <ElLink type="primary" class="mt-1" href="https://seat.winterco.org/srp" target="_blank">{{
+          $t('srp.apply.seatLink')
+        }}</ElLink>
       </ElAlert>
 
       <ElForm ref="formRef" :model="form" :rules="rules" label-position="top">
@@ -127,6 +129,7 @@
   import { useRoute } from 'vue-router'
   import { useI18n } from 'vue-i18n'
   import { View } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import {
     ElCard,
     ElTag,
@@ -220,14 +223,14 @@
           minWidth: 140,
           showOverflowTooltip: true,
           formatter: (row: Api.Srp.Application) =>
-            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`))
+            h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
         },
         {
           prop: 'recommended_amount',
           label: t('srp.apply.columns.estimatedValue'),
           width: 140,
           formatter: (row: Api.Srp.Application) =>
-            h('span', {}, `${formatISK(row.recommended_amount)} ISK`)
+            h('span', {}, `${formatISK(row.recommended_amount)} M ISK`)
         },
         {
           prop: 'review_status',
@@ -249,7 +252,7 @@
           width: 130,
           formatter: (row: Api.Srp.Application) =>
             row.final_amount > 0
-              ? h('span', {}, `${formatISK(row.final_amount)} ISK`)
+              ? h('span', {}, `${formatISK(row.final_amount)} M ISK`)
               : h('span', {}, '-')
         },
         {
@@ -260,7 +263,7 @@
             h(
               'span',
               {},
-              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.unpaid')
+              row.payout_status === 'paid' ? t('srp.status.paid') : t('srp.status.notpaid')
             )
         },
         {
@@ -296,7 +299,7 @@
     if (list.length) await resolveApplicationNames(list)
   })
 
-  /* ── 角色 & 舰队 ── */
+  /* ── 人物 & 舰队 ── */
   const fleets = ref<Api.Fleet.FleetItem[]>([])
   const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.id, f])))
   const loadFleets = async () => {
@@ -319,7 +322,6 @@
     fleet_id: '',
     killmail_id: 0,
     note: '',
-    final_amount: 0,
     recommended_amount: 0
   })
 
@@ -357,9 +359,9 @@
   }
 
   const formatKmLabel = (km: Api.Srp.FleetKillmailItem) =>
-    `${km.killmail_id}: ${getName(km.ship_type_id, `TypeID: ${km.ship_type_id}`)}` +
+    `${km.killmail_id}: ${getName(km.ship_type_id, `TypeID: ${km.ship_type_id}`, 'type')}` +
     `(${km.victim_name}) - ${formatTime(km.killmail_time)}` +
-    ` @${getName(km.solar_system_id, String(km.solar_system_id))}`
+    ` @${getName(km.solar_system_id, String(km.solar_system_id), 'solar_system')}`
 
   const loadKillmails = async () => {
     kmLoading.value = true
@@ -425,8 +427,7 @@
         character_id: form.character_id,
         killmail_id: form.killmail_id,
         fleet_id: fleetId,
-        note: form.note,
-        final_amount: form.final_amount
+        note: form.note
       })
       ElMessage.success(t('srp.apply.submitSuccess'))
       formRef.value?.resetFields()
@@ -458,19 +459,13 @@
   }
 
   /* ── 工具函数 ── */
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
-  const formatShortTime = (v: string) => {
-    if (!v) return '-'
-    const d = new Date(v)
-    return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
   const formatFleetLabel = (f: Api.Fleet.FleetItem) =>
-    `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatShortTime(f.start_at)}~${formatShortTime(f.end_at)}`
+    `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatTime(f.start_at)} ~ ${formatTime(f.end_at)}`
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(v ?? 0)
+    }).format((v ?? 0) / 1_000_000)
 
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
   const reviewStatusType = (s: string): TagType =>
@@ -479,10 +474,10 @@
     ] ?? 'info'
   const reviewStatusLabel = (s: string) =>
     ({
-      pending: t('srp.status.pending'),
+      submitted: t('srp.status.submitted'),
       approved: t('srp.status.approved'),
       rejected: t('srp.status.rejected')
-    })[s as 'pending' | 'approved' | 'rejected'] ?? s
+    })[s as 'submitted' | 'approved' | 'rejected'] ?? s
 
   /* ── 初始化 ── */
   onMounted(async () => {

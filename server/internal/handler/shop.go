@@ -39,6 +39,7 @@ func (h *ShopHandler) ListProducts(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
 	list, total, err := h.svc.ListOnSaleProducts(req.Current, req.Size, req.Type)
 	if err != nil {
@@ -96,6 +97,7 @@ func (h *ShopHandler) GetMyOrders(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
 	userID := middleware.GetUserID(c)
 	list, total, err := h.svc.GetMyOrders(userID, req.Current, req.Size, req.Status)
@@ -114,6 +116,7 @@ func (h *ShopHandler) GetMyRedeemCodes(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
 	userID := middleware.GetUserID(c)
 	list, total, err := h.svc.GetMyRedeemCodes(userID, req.Current, req.Size)
@@ -130,17 +133,16 @@ func (h *ShopHandler) GetMyRedeemCodes(c *gin.Context) {
 
 // adminProductCreateRequest 创建商品请求
 type adminProductCreateRequest struct {
-	Name         string  `json:"name" binding:"required"`
-	Description  string  `json:"description"`
-	Image        string  `json:"image"`
-	Price        float64 `json:"price" binding:"required,gt=0"`
-	Stock        int     `json:"stock"`        // -1=无限，>=0 有限
-	MaxPerUser   int     `json:"max_per_user"` // 0=不限购
-	LimitPeriod  string  `json:"limit_period"` // forever / daily / weekly / monthly
-	Type         string  `json:"type" binding:"required,oneof=normal redeem"`
-	NeedApproval bool    `json:"need_approval"`
-	Status       int8    `json:"status"`
-	SortOrder    int     `json:"sort_order"`
+	Name        string  `json:"name" binding:"required"`
+	Description string  `json:"description"`
+	Image       string  `json:"image"`
+	Price       float64 `json:"price" binding:"required,gt=0"`
+	Stock       int     `json:"stock"`        // -1=无限，>=0 有限
+	MaxPerUser  int     `json:"max_per_user"` // 0=不限购
+	LimitPeriod string  `json:"limit_period"` // forever / daily / weekly / monthly
+	Type        string  `json:"type" binding:"required,oneof=normal redeem"`
+	Status      int8    `json:"status"`
+	SortOrder   int     `json:"sort_order"`
 }
 
 // AdminCreateProduct POST /system/shop/product/add
@@ -153,17 +155,16 @@ func (h *ShopHandler) AdminCreateProduct(c *gin.Context) {
 	}
 
 	product := &model.ShopProduct{
-		Name:         req.Name,
-		Description:  req.Description,
-		Image:        req.Image,
-		Price:        req.Price,
-		Stock:        req.Stock,
-		MaxPerUser:   req.MaxPerUser,
-		LimitPeriod:  req.LimitPeriod,
-		Type:         req.Type,
-		NeedApproval: req.NeedApproval,
-		Status:       req.Status,
-		SortOrder:    req.SortOrder,
+		Name:        req.Name,
+		Description: req.Description,
+		Image:       req.Image,
+		Price:       req.Price,
+		Stock:       req.Stock,
+		MaxPerUser:  req.MaxPerUser,
+		LimitPeriod: req.LimitPeriod,
+		Type:        req.Type,
+		Status:      req.Status,
+		SortOrder:   req.SortOrder,
 	}
 
 	if err := h.svc.AdminCreateProduct(product); err != nil {
@@ -234,6 +235,7 @@ func (h *ShopHandler) AdminListProducts(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
 	filter := repository.ProductFilter{
 		Status: req.Status,
@@ -251,11 +253,11 @@ func (h *ShopHandler) AdminListProducts(c *gin.Context) {
 
 // adminOrderListRequest 管理员订单列表请求
 type adminOrderListRequest struct {
-	Current   int    `json:"current"`
-	Size      int    `json:"size"`
-	UserID    *uint  `json:"user_id"`
-	ProductID *uint  `json:"product_id"`
-	Status    string `json:"status"`
+	Current  int      `json:"current"`
+	Size     int      `json:"size"`
+	Keyword  string   `json:"keyword"`  // 商品名、主人物名或昵称
+	Statuses []string `json:"statuses"` // 多状态筛选（为空则用 status）
+	Status   string   `json:"status"`
 }
 
 // AdminListOrders POST /system/shop/order/list
@@ -266,11 +268,12 @@ func (h *ShopHandler) AdminListOrders(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
 	filter := repository.OrderFilter{
-		UserID:    req.UserID,
-		ProductID: req.ProductID,
-		Status:    req.Status,
+		Keyword:  req.Keyword,
+		Statuses: req.Statuses,
+		Status:   req.Status,
 	}
 
 	list, total, err := h.svc.AdminListOrders(req.Current, req.Size, filter)
@@ -281,15 +284,15 @@ func (h *ShopHandler) AdminListOrders(c *gin.Context) {
 	response.OKWithPage(c, list, total, req.Current, req.Size)
 }
 
-// adminOrderReviewRequest 审批/拒绝订单请求
+// adminOrderReviewRequest 发放/拒绝订单请求
 type adminOrderReviewRequest struct {
 	OrderID uint   `json:"order_id" binding:"required"`
 	Remark  string `json:"remark"`
 }
 
-// AdminApproveOrder POST /system/shop/order/approve
-// 管理员审批通过订单
-func (h *ShopHandler) AdminApproveOrder(c *gin.Context) {
+// AdminDeliverOrder POST /system/shop/order/deliver
+// 管理员发放订单
+func (h *ShopHandler) AdminDeliverOrder(c *gin.Context) {
 	var req adminOrderReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
@@ -297,7 +300,7 @@ func (h *ShopHandler) AdminApproveOrder(c *gin.Context) {
 	}
 
 	operatorID := middleware.GetUserID(c)
-	order, err := h.svc.AdminApproveOrder(req.OrderID, operatorID, req.Remark)
+	order, err := h.svc.AdminDeliverOrder(req.OrderID, operatorID, req.Remark)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -306,7 +309,7 @@ func (h *ShopHandler) AdminApproveOrder(c *gin.Context) {
 }
 
 // AdminRejectOrder POST /system/shop/order/reject
-// 管理员拒绝订单
+// 管理员拒绝订单（退款）
 func (h *ShopHandler) AdminRejectOrder(c *gin.Context) {
 	var req adminOrderReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -339,6 +342,7 @@ func (h *ShopHandler) AdminListRedeemCodes(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
 	list, total, err := h.svc.AdminListRedeemCodes(req.Current, req.Size, req.ProductID, req.Status)
 	if err != nil {

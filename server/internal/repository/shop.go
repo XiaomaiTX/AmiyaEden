@@ -15,6 +15,17 @@ func NewShopRepository() *ShopRepository {
 	return &ShopRepository{}
 }
 
+func buildPendingBadgeShopOrderCountQuery(db *gorm.DB) *gorm.DB {
+	return db.Model(&model.ShopOrder{}).
+		Where("status = ?", model.OrderStatusRequested)
+}
+
+func (r *ShopRepository) CountPendingOrders() (int64, error) {
+	var count int64
+	err := buildPendingBadgeShopOrderCountQuery(global.DB).Count(&count).Error
+	return count, err
+}
+
 // ─────────────────────────────────────────────
 //  商品
 // ─────────────────────────────────────────────
@@ -136,7 +147,9 @@ func (r *ShopRepository) GetOrderByOrderNo(orderNo string) (*model.ShopOrder, er
 type OrderFilter struct {
 	UserID    *uint
 	ProductID *uint
-	Status    string
+	Status    string   // 单状态精确匹配
+	Statuses  []string // 多状态 IN 查询（优先于 Status）
+	Keyword   string   // 商品名、主人物名或昵称模糊搜索
 }
 
 // ListOrders 分页查询订单
@@ -152,8 +165,17 @@ func (r *ShopRepository) ListOrders(page, pageSize int, filter OrderFilter) ([]m
 	if filter.ProductID != nil {
 		db = db.Where("product_id = ?", *filter.ProductID)
 	}
-	if filter.Status != "" {
+	if len(filter.Statuses) > 0 {
+		db = db.Where("status IN ?", filter.Statuses)
+	} else if filter.Status != "" {
 		db = db.Where("status = ?", filter.Status)
+	}
+	if filter.Keyword != "" {
+		kw := "%" + filter.Keyword + "%"
+		db = db.Where(
+			"product_name ILIKE ? OR main_character_name ILIKE ? OR nickname ILIKE ?",
+			kw, kw, kw,
+		)
 	}
 
 	if err := db.Count(&total).Error; err != nil {
@@ -165,13 +187,13 @@ func (r *ShopRepository) ListOrders(page, pageSize int, filter OrderFilter) ([]m
 	return list, total, nil
 }
 
-// CountUserProductPurchased 统计用户对某商品的已购数量（pending + paid + approved + completed）
+// CountUserProductPurchased 统计用户对某商品的有效购买数量（requested + delivered）
 // limitPeriod 控制统计时间范围：forever=全部, daily=当天, weekly=本周, monthly=本月
 func (r *ShopRepository) CountUserProductPurchased(userID, productID uint, limitPeriod string) (int64, error) {
 	var total int64
 	db := global.DB.Model(&model.ShopOrder{}).
 		Where("user_id = ? AND product_id = ? AND status IN ?", userID, productID,
-			[]string{model.OrderStatusPending, model.OrderStatusPaid, model.OrderStatusApproved, model.OrderStatusCompleted})
+			[]string{model.OrderStatusRequested, model.OrderStatusDelivered})
 
 	now := time.Now()
 	switch limitPeriod {

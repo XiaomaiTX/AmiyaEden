@@ -40,6 +40,7 @@ import { nextTick } from 'vue'
 import NProgress from 'nprogress'
 import { useSettingStore } from '@/store/modules/setting'
 import { useUserStore } from '@/store/modules/user'
+import { useBadgeStore } from '@/store/modules/badge'
 import { useMenuStore } from '@/store/modules/menu'
 import { setWorktab } from '@/utils/navigation'
 import { setPageTitle } from '@/utils/router'
@@ -52,6 +53,12 @@ import { fetchGetUserInfo } from '@/api/auth'
 import { ApiStatus } from '@/utils/http/status'
 import { isHttpError } from '@/utils/http/error'
 import { RouteRegistry, MenuProcessor, IframeRouteManager, RoutePermissionValidator } from '../core'
+import { loadBadgeCounts } from './badge'
+import {
+  PROFILE_SETUP_PATH,
+  refreshCharactersGateState,
+  shouldRedirectToCharactersPage
+} from './charactersGate'
 
 // 路由注册器实例
 let routeRegistry: RouteRegistry | null = null
@@ -114,6 +121,11 @@ export function setupBeforeEachGuard(router: Router): void {
       try {
         await handleRouteGuard(to, from, next, router)
       } catch (error) {
+        if (isUnauthorizedError(error)) {
+          closeLoading()
+          next(false)
+          return
+        }
         console.error('[RouteGuard] 路由守卫处理失败:', error)
         closeLoading()
         next({ name: 'Exception500' })
@@ -180,12 +192,17 @@ async function handleRouteGuard(
     return
   }
 
-  // 4. 处理根路径重定向
+  // 4. 强制完成资料设置
+  if (await handleProfileSetupRedirect(to, userStore, next)) {
+    return
+  }
+
+  // 5. 处理根路径重定向
   if (handleRootPathRedirect(to, next)) {
     return
   }
 
-  // 5. 处理已匹配的路由
+  // 6. 处理已匹配的路由
   if (to.matched.length > 0) {
     setWorktab(to)
     setPageTitle(to)
@@ -193,7 +210,7 @@ async function handleRouteGuard(
     return
   }
 
-  // 6. 未匹配到路由，跳转到 404
+  // 7. 未匹配到路由，跳转到 404
   next({ name: 'Exception404' })
 }
 
@@ -252,6 +269,8 @@ async function handleDynamicRoutes(
   next: NavigationGuardNext,
   router: Router
 ): Promise<void> {
+  const userStore = useUserStore()
+
   // 标记初始化进行中
   routeInitInProgress = true
 
@@ -279,6 +298,9 @@ async function handleDynamicRoutes(
     menuStore.setMenuList(menuList)
     menuStore.addRemoveRouteFns(routeRegistry?.getRemoveRouteFns() || [])
 
+    const badgeStore = useBadgeStore()
+    await loadBadgeCounts(badgeStore)
+
     // 6. 保存 iframe 路由
     IframeRouteManager.getInstance().save()
 
@@ -287,8 +309,14 @@ async function handleDynamicRoutes(
 
     // 8. 验证目标路径权限
     const { homePath } = useCommon()
+    const targetPath = shouldRedirectToCharactersPage(
+      { isLogin: userStore.isLogin, path: to.path },
+      userStore.getUserInfo
+    )
+      ? PROFILE_SETUP_PATH
+      : to.path
     const { path: validatedPath, hasPermission } = RoutePermissionValidator.validatePath(
-      to.path,
+      targetPath,
       menuList,
       homePath.value || '/'
     )
@@ -312,9 +340,9 @@ async function handleDynamicRoutes(
     } else {
       // 有权限，正常导航
       next({
-        path: to.path,
-        query: to.query,
-        hash: to.hash,
+        path: validatedPath,
+        query: validatedPath === to.path ? to.query : undefined,
+        hash: validatedPath === to.path ? to.hash : undefined,
         replace: true
       })
     }
@@ -357,6 +385,38 @@ async function fetchUserInfo(): Promise<void> {
   userStore.checkAndClearWorktabs()
 }
 
+async function handleProfileSetupRedirect(
+  to: RouteLocationNormalized,
+  userStore: ReturnType<typeof useUserStore>,
+  next: NavigationGuardNext
+): Promise<boolean> {
+  if (!userStore.isLogin) {
+    return false
+  }
+
+  const userInfo = await getCharactersGateUserInfo(to.path, userStore)
+
+  if (!shouldRedirectToCharactersPage({ isLogin: userStore.isLogin, path: to.path }, userInfo)) {
+    return false
+  }
+
+  next({ path: PROFILE_SETUP_PATH, replace: true })
+  return true
+}
+
+async function getCharactersGateUserInfo(
+  path: string,
+  userStore: ReturnType<typeof useUserStore>
+): Promise<Api.Auth.UserInfo> {
+  if (path === PROFILE_SETUP_PATH) {
+    return userStore.getUserInfo as Api.Auth.UserInfo
+  }
+
+  return refreshCharactersGateState(fetchGetUserInfo, (userInfo) => {
+    userStore.setUserInfo(userInfo)
+  })
+}
+
 /**
  * 重置路由相关状态
  */
@@ -368,6 +428,9 @@ export function resetRouterState(delay: number): void {
     const menuStore = useMenuStore()
     menuStore.removeAllDynamicRoutes()
     menuStore.setMenuList([])
+
+    const badgeStore = useBadgeStore()
+    badgeStore.clearBadgeCounts()
 
     // 重置路由初始化状态，允许重新登录后再次初始化
     resetRouteInitState()

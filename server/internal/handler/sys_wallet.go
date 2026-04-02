@@ -5,12 +5,11 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// SysWalletHandler 系统钱包 HTTP 处理器
+// SysWalletHandler 伏羲币 HTTP 处理器
 type SysWalletHandler struct {
 	svc *service.SysWalletService
 }
@@ -23,7 +22,7 @@ func NewSysWalletHandler() *SysWalletHandler {
 //  用户端（POST 接口）
 // ─────────────────────────────────────────────
 
-// GetMyWallet POST /wallet/my
+// GetMyWallet POST /shop/wallet/my
 // 获取当前用户钱包信息
 func (h *SysWalletHandler) GetMyWallet(c *gin.Context) {
 	userID := middleware.GetUserID(c)
@@ -41,7 +40,7 @@ type walletListRequest struct {
 	Size    int `json:"size"`
 }
 
-// GetMyTransactions POST /wallet/my/transactions
+// GetMyTransactions POST /shop/wallet/my/transactions
 // 获取当前用户钱包流水
 func (h *SysWalletHandler) GetMyTransactions(c *gin.Context) {
 	var req walletListRequest
@@ -49,6 +48,7 @@ func (h *SysWalletHandler) GetMyTransactions(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 	userID := middleware.GetUserID(c)
 
 	records, total, err := h.svc.GetMyTransactions(userID, req.Current, req.Size)
@@ -71,6 +71,7 @@ func (h *SysWalletHandler) AdminListWallets(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
 	wallets, total, err := h.svc.AdminListWallets(req.Current, req.Size)
 	if err != nil {
@@ -122,10 +123,11 @@ func (h *SysWalletHandler) AdminAdjust(c *gin.Context) {
 
 // adminTransactionListRequest 管理员查询流水请求
 type adminTransactionListRequest struct {
-	Current int    `json:"current"`
-	Size    int    `json:"size"`
-	UserID  *uint  `json:"user_id"`
-	RefType string `json:"ref_type"`
+	Current     int    `json:"current"`
+	Size        int    `json:"size"`
+	UserID      *uint  `json:"user_id"`
+	UserKeyword string `json:"user_keyword"`
+	RefType     string `json:"ref_type"`
 }
 
 // AdminListTransactions POST /system/wallet/transactions
@@ -136,10 +138,12 @@ func (h *SysWalletHandler) AdminListTransactions(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
 	filter := repository.WalletTransactionFilter{
-		UserID:  req.UserID,
-		RefType: req.RefType,
+		UserID:      req.UserID,
+		UserKeyword: req.UserKeyword,
+		RefType:     req.RefType,
 	}
 
 	records, total, err := h.svc.AdminListTransactions(req.Current, req.Size, filter)
@@ -167,6 +171,7 @@ func (h *SysWalletHandler) AdminListLogs(c *gin.Context) {
 		req.Current = 1
 		req.Size = 20
 	}
+	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
 	filter := repository.WalletLogFilter{
 		OperatorID: req.OperatorID,
@@ -200,13 +205,16 @@ func (h *SysWalletHandler) GetWallet(c *gin.Context) {
 // GetWalletTransactions 兼容旧的 GET /operation/wallet/transactions
 func (h *SysWalletHandler) GetWalletTransactions(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	page, pageSize, err := parseLedgerPaginationQuery(c, 20)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 
-	records, total, err := h.svc.GetMyTransactions(userID, page, size)
+	records, total, err := h.svc.GetMyTransactions(userID, page, pageSize)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OKWithPage(c, records, total, page, size)
+	response.OKWithPage(c, records, total, page, pageSize)
 }

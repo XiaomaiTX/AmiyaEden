@@ -23,7 +23,7 @@
           class="font-bold text-lg"
           :class="balance !== null && balance > 0 ? 'text-green-600' : 'text-red-500'"
         >
-          {{ balance !== null ? formatISK(balance) : '-' }}
+          {{ balance !== null ? `${formatISK(balance)} ${$t('shop.currency')}` : '-' }}
         </span>
       </div>
     </div>
@@ -41,7 +41,7 @@
           <h3 class="product-name">{{ item.name }}</h3>
           <p v-if="item.description" class="product-desc">{{ item.description }}</p>
           <div class="product-meta">
-            <div class="price">{{ formatISK(item.price) }}</div>
+            <div class="price">{{ formatISK(item.price) }} {{ $t('shop.currency') }}</div>
             <div class="stock text-xs text-gray-400">
               <template v-if="item.stock < 0">{{ $t('shop.unlimitedStock') }}</template>
               <template v-else>{{ $t('shop.stockRemaining', { n: item.stock }) }}</template>
@@ -56,9 +56,6 @@
           <div class="product-tags mt-2">
             <ElTag v-if="item.type === 'redeem'" size="small" type="warning" effect="plain">
               {{ $t('shop.typeRedeem') }}
-            </ElTag>
-            <ElTag v-if="item.need_approval" size="small" type="info" effect="plain">
-              {{ $t('shop.needApproval') }}
             </ElTag>
           </div>
           <ElButton

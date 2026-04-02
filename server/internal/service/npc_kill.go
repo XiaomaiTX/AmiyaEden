@@ -31,7 +31,7 @@ func NewNpcKillService() *NpcKillService {
 //  请求 & 响应结构
 // ─────────────────────────────────────────────
 
-// NpcKillRequest 刷怪报表请求（个人 - 单角色）
+// NpcKillRequest 刷怪报表请求（个人 - 单人物）
 type NpcKillRequest struct {
 	CharacterID int64  `json:"character_id" binding:"required"`
 	StartDate   string `json:"start_date"`           // 格式: 2006-01-02
@@ -41,7 +41,7 @@ type NpcKillRequest struct {
 	PageSize    int    `json:"page_size" binding:"min=0"`
 }
 
-// NpcKillAllRequest 刷怪报表请求（个人 - 名下所有角色汇总）
+// NpcKillAllRequest 刷怪报表请求（个人 - 名下所有人物汇总）
 type NpcKillAllRequest struct {
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
@@ -61,10 +61,12 @@ type NpcKillCorpRequest struct {
 
 // NpcKillSummary 总览数据
 type NpcKillSummary struct {
-	TotalBounty    float64 `json:"total_bounty"`    // 总刷怪金额（bounty_prizes amount 合计）
+	TotalBounty    float64 `json:"total_bounty"`    // 总刷怪赏金（bounty_prizes amount 合计）
 	TotalESS       float64 `json:"total_ess"`       // 总 ESS 金额（ess_escrow_transfer amount 合计）
+	TotalIncursion float64 `json:"total_incursion"` // 总入侵收入（incursion_payout amount 合计）
+	TotalMission   float64 `json:"total_mission"`   // 总任务奖励（agent_mission_reward amount 合计）
 	TotalTax       float64 `json:"total_tax"`       // 总交税金额
-	ActualIncome   float64 `json:"actual_income"`   // 实际获得 = bounty + ess + tax（tax 为负数）
+	ActualIncome   float64 `json:"actual_income"`   // 实际获得 = bounty + ess + incursion + mission + tax
 	TotalRecords   int     `json:"total_records"`   // 总记录数（bounty_prizes 条数）
 	EstimatedHours float64 `json:"estimated_hours"` // 大致时长（有效记录 * 20min / 60）
 }
@@ -120,13 +122,15 @@ type NpcKillResponse struct {
 
 // NpcKillCorpMemberSummary 公司成员刷怪统计
 type NpcKillCorpMemberSummary struct {
-	CharacterID   int64   `json:"character_id"`
-	CharacterName string  `json:"character_name"`
-	TotalBounty   float64 `json:"total_bounty"`
-	TotalESS      float64 `json:"total_ess"`
-	TotalTax      float64 `json:"total_tax"`
-	ActualIncome  float64 `json:"actual_income"`
-	RecordCount   int     `json:"record_count"`
+	CharacterID    int64   `json:"character_id"`
+	CharacterName  string  `json:"character_name"`
+	TotalBounty    float64 `json:"total_bounty"`
+	TotalESS       float64 `json:"total_ess"`
+	TotalIncursion float64 `json:"total_incursion"`
+	TotalMission   float64 `json:"total_mission"`
+	TotalTax       float64 `json:"total_tax"`
+	ActualIncome   float64 `json:"actual_income"`
+	RecordCount    int     `json:"record_count"`
 }
 
 // NpcKillCorpResponse 公司刷怪报表响应（管理员）
@@ -143,7 +147,7 @@ type NpcKillCorpResponse struct {
 
 // GetNpcKills 获取个人刷怪报表
 func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKillResponse, error) {
-	// 校验角色归属
+	// 校验人物归属
 	if err := s.validateCharacterOwnership(userID, req.CharacterID); err != nil {
 		return nil, err
 	}
@@ -199,7 +203,7 @@ func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKill
 	return resp, nil
 }
 
-// GetAllNpcKills 获取当前用户名下所有角色的汇总刷怪报表
+// GetAllNpcKills 获取当前用户名下所有人物的汇总刷怪报表
 func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*NpcKillResponse, error) {
 	lang := req.Language
 	if lang == "" {
@@ -208,10 +212,10 @@ func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*N
 
 	startDate, endDate := parseDateRange(req.StartDate, req.EndDate)
 
-	// 获取该用户名下的所有角色
+	// 获取该用户名下的所有人物
 	chars, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return nil, fmt.Errorf("获取角色列表失败: %w", err)
+		return nil, fmt.Errorf("获取人物列表失败: %w", err)
 	}
 
 	charIDs := make([]int64, 0, len(chars))
@@ -257,17 +261,12 @@ func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*N
 
 // GetCorpNpcKills 获取公司所有成员的刷怪报表（管理员）
 func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpResponse, error) {
-	lang := req.Language
-	if lang == "" {
-		lang = "zh"
-	}
-
 	startDate, endDate := parseDateRange(req.StartDate, req.EndDate)
 
-	// 获取所有已绑定的角色
+	// 获取所有已绑定的人物
 	allChars, err := s.charRepo.ListAllWithToken()
 	if err != nil {
-		return nil, fmt.Errorf("获取角色列表失败: %w", err)
+		return nil, fmt.Errorf("获取人物列表失败: %w", err)
 	}
 
 	charIDs := make([]int64, 0, len(allChars))
@@ -305,12 +304,16 @@ func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpR
 			m.RecordCount++
 		case "ess_escrow_transfer":
 			m.TotalESS += j.Amount
+		case "incursion_payout":
+			m.TotalIncursion += j.Amount
+		case "agent_mission_reward":
+			m.TotalMission += j.Amount
 		}
 		m.TotalTax += j.Tax
 	}
 	members := make([]NpcKillCorpMemberSummary, 0, len(memberMap))
 	for _, m := range memberMap {
-		m.ActualIncome = m.TotalBounty + m.TotalESS + m.TotalTax
+		m.ActualIncome = m.TotalBounty + m.TotalESS + m.TotalIncursion + m.TotalMission + m.TotalTax
 		members = append(members, *m)
 	}
 	// 按实际收入排序（降序）
@@ -335,14 +338,14 @@ func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpR
 func (s *NpcKillService) validateCharacterOwnership(userID uint, characterID int64) error {
 	chars, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return fmt.Errorf("获取角色列表失败")
+		return fmt.Errorf("获取人物列表失败")
 	}
 	for _, c := range chars {
 		if c.CharacterID == characterID {
 			return nil
 		}
 	}
-	return fmt.Errorf("该角色不属于当前用户")
+	return fmt.Errorf("该人物不属于当前用户")
 }
 
 // calcSummary 计算总览统计
@@ -360,11 +363,15 @@ func (s *NpcKillService) calcSummary(journals []model.EVECharacterWalletJournal)
 			bountyAmounts = append(bountyAmounts, j.Amount)
 		case "ess_escrow_transfer":
 			summary.TotalESS += j.Amount
+		case "incursion_payout":
+			summary.TotalIncursion += j.Amount
+		case "agent_mission_reward":
+			summary.TotalMission += j.Amount
 		}
 		summary.TotalTax += j.Tax
 	}
 
-	summary.ActualIncome = summary.TotalBounty + summary.TotalESS + summary.TotalTax
+	summary.ActualIncome = summary.TotalBounty + summary.TotalESS + summary.TotalIncursion + summary.TotalMission + summary.TotalTax
 
 	// 计算大致时长：每条 bounty_prizes 记录 ≈ 20min，但明显低于平均金额的不算
 	if len(bountyAmounts) > 0 {
@@ -489,7 +496,10 @@ func (s *NpcKillService) calcTrend(journals []model.EVECharacterWalletJournal) [
 	dayMap := make(map[string]*NpcKillTrend)
 
 	for _, j := range journals {
-		if j.RefType != "bounty_prizes" {
+		switch j.RefType {
+		case "bounty_prizes", "incursion_payout", "agent_mission_reward":
+			// 这些类型计入趋势；ess_escrow_transfer 不含时间颗粒度的星系上下文，不单独趋势
+		default:
 			continue
 		}
 		day := j.Date.Format("2006-01-02")

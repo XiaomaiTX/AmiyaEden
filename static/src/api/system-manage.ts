@@ -1,5 +1,4 @@
 import request from '@/utils/http'
-import { AppRouteRecord } from '@/types/router'
 
 // ─── 用户管理 ───
 
@@ -11,7 +10,7 @@ export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
 }
 
 export function fetchGetUser(id: number) {
-  return request.get<Api.SystemManage.UserListItem>({
+  return request.get<Api.SystemManage.UserDetail>({
     url: `/api/v1/system/user/${id}`
   })
 }
@@ -30,143 +29,59 @@ export function fetchDeleteUser(id: number) {
 }
 
 export function fetchImpersonateUser(id: number) {
-  return request.post<{ token: string; user: Api.SystemManage.UserListItem }>({
+  return request.post<{ token: string; user: Api.SystemManage.UserDetail }>({
     url: `/api/v1/system/user/${id}/impersonate`
   })
 }
 
-// ─── 用户角色分配 ───
+// ─── 用户职权分配 ───
 
 export function fetchGetUserRoles(userId: number) {
-  return request.get<Api.SystemManage.RoleItem[]>({
+  return request.get<Api.SystemManage.RoleDefinition[]>({
     url: `/api/v1/system/user/${userId}/roles`
   })
 }
 
-export function fetchSetUserRoles(userId: number, roleIds: number[]) {
+export function fetchSetUserRoles(userId: number, roleCodes: string[]) {
   return request.put({
     url: `/api/v1/system/user/${userId}/roles`,
-    data: { role_ids: roleIds }
+    data: { role_codes: roleCodes }
   })
 }
 
-// ─── 角色管理 ───
+// ─── 职权定义 ───
 
-export function fetchGetRoleList(params?: Api.SystemManage.RoleSearchParams) {
-  return request.get<Api.SystemManage.RoleList>({
-    url: '/api/v1/system/role',
-    params
-  })
-}
-
-export function fetchGetAllRoles() {
-  return request.get<Api.SystemManage.RoleItem[]>({
-    url: '/api/v1/system/role/all'
-  })
-}
-
-export function fetchGetRole(id: number) {
-  return request.get<Api.SystemManage.RoleItem>({
-    url: `/api/v1/system/role/${id}`
-  })
-}
-
-export function fetchCreateRole(data: Api.SystemManage.CreateRoleParams) {
-  return request.post<Api.SystemManage.RoleItem>({
-    url: '/api/v1/system/role',
-    data
-  })
-}
-
-export function fetchUpdateRole(id: number, data: Api.SystemManage.UpdateRoleParams) {
-  return request.put({
-    url: `/api/v1/system/role/${id}`,
-    data
-  })
-}
-
-export function fetchDeleteRole(id: number) {
-  return request.del({
-    url: `/api/v1/system/role/${id}`
-  })
-}
-
-// ─── 角色权限（菜单）管理 ───
-
-export function fetchGetRoleMenus(roleId: number) {
-  return request.get<number[]>({
-    url: `/api/v1/system/role/${roleId}/menus`
-  })
-}
-
-export function fetchSetRoleMenus(roleId: number, menuIds: number[]) {
-  return request.put({
-    url: `/api/v1/system/role/${roleId}/menus`,
-    data: { menu_ids: menuIds }
-  })
-}
-
-// ─── 菜单管理 ───
-
-export function fetchGetMenuTree() {
-  return request.get<Api.SystemManage.MenuItem[]>({
-    url: '/api/v1/system/menu/tree'
-  })
-}
-
-export function fetchCreateMenu(data: Api.SystemManage.CreateMenuParams) {
-  return request.post<Api.SystemManage.MenuItem>({
-    url: '/api/v1/system/menu',
-    data
-  })
-}
-
-export function fetchUpdateMenu(id: number, data: Api.SystemManage.UpdateMenuParams) {
-  return request.put({
-    url: `/api/v1/system/menu/${id}`,
-    data
-  })
-}
-
-export function fetchDeleteMenu(id: number) {
-  return request.del({
-    url: `/api/v1/system/menu/${id}`
-  })
-}
-
-// ─── 用户菜单（前端路由） ───
-
-export function fetchGetMenuList() {
-  return request.get<AppRouteRecord[]>({
-    url: '/api/v1/menu/list'
+export function fetchGetRoleDefinitions() {
+  return request.get<Api.SystemManage.RoleDefinition[]>({
+    url: '/api/v1/system/role/definitions'
   })
 }
 
 // ─── 自动权限映射 ───
 
-/** 获取所有 ESI 军团角色名列表 */
+/** 获取所有 ESI 军团职权名列表 */
 export function fetchGetAllEsiRoles() {
   return request.get<string[]>({
     url: '/api/v1/system/auto-role/esi-roles'
   })
 }
 
-/** 获取所有 ESI 军团角色映射 */
+/** 获取所有 ESI 军团职权映射 */
 export function fetchGetEsiRoleMappings() {
   return request.get<Api.SystemManage.EsiRoleMapping[]>({
     url: '/api/v1/system/auto-role/esi-role-mappings'
   })
 }
 
-/** 创建 ESI 军团角色映射 */
-export function fetchCreateEsiRoleMapping(data: Api.SystemManage.CreateEsiRoleMappingParams) {
+/** 创建 ESI 军团职权映射 */
+export function fetchCreateEsiRoleMapping(data: { esi_role: string; role_code: string }) {
   return request.post<Api.SystemManage.EsiRoleMapping>({
     url: '/api/v1/system/auto-role/esi-role-mappings',
     data
   })
 }
 
-/** 删除 ESI 军团角色映射 */
+/** 删除 ESI 军团职权映射 */
 export function fetchDeleteEsiRoleMapping(id: number) {
   return request.del({
     url: `/api/v1/system/auto-role/esi-role-mappings/${id}`
@@ -181,7 +96,12 @@ export function fetchGetEsiTitleMappings() {
 }
 
 /** 创建 ESI 头衔映射 */
-export function fetchCreateEsiTitleMapping(data: Api.SystemManage.CreateEsiTitleMappingParams) {
+export function fetchCreateEsiTitleMapping(data: {
+  corporation_id: number
+  title_id: number
+  title_name?: string
+  role_code: string
+}) {
   return request.post<Api.SystemManage.EsiTitleMapping>({
     url: '/api/v1/system/auto-role/esi-title-mappings',
     data

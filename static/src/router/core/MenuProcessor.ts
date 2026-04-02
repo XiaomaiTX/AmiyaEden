@@ -9,25 +9,16 @@
 
 import type { AppRouteRecord } from '@/types/router'
 import { useUserStore } from '@/store/modules/user'
-import { useAppMode } from '@/hooks/core/useAppMode'
-import { fetchGetMenuList } from '@/api/system-manage'
 import { asyncRoutes } from '../routes/asyncRoutes'
-import { RoutesAlias } from '../routesAlias'
 import { formatMenuTitle } from '@/utils'
+import { applyMenuAccessFilter, pruneEmptyMenus } from './menuAccess'
 
 export class MenuProcessor {
   /**
    * 获取菜单数据
    */
   async getMenuList(): Promise<AppRouteRecord[]> {
-    const { isFrontendMode } = useAppMode()
-
-    let menuList: AppRouteRecord[]
-    if (isFrontendMode.value) {
-      menuList = await this.processFrontendMenu()
-    } else {
-      menuList = await this.processBackendMenu()
-    }
+    const menuList = await this.processFrontendMenu()
 
     // 在规范化路径之前，验证原始路径配置
     this.validateMenuPaths(menuList)
@@ -41,81 +32,32 @@ export class MenuProcessor {
    */
   private async processFrontendMenu(): Promise<AppRouteRecord[]> {
     const userStore = useUserStore()
-    const roles = userStore.info?.roles
+    const roles = userStore.info?.roles ?? []
 
     let menuList = [...asyncRoutes]
 
-    // 根据角色过滤菜单
-    if (roles && roles.length > 0) {
-      menuList = this.filterMenuByRoles(menuList, roles)
-    }
+    // 根据静态路由访问边界过滤菜单
+    menuList = this.filterMenuByAccess(menuList, roles)
 
     return this.filterEmptyMenus(menuList)
   }
 
   /**
-   * 处理后端控制模式的菜单
+   * 根据静态路由访问边界过滤菜单
    */
-  private async processBackendMenu(): Promise<AppRouteRecord[]> {
-    const list = await fetchGetMenuList()
-    return this.filterEmptyMenus(list)
-  }
+  private filterMenuByAccess(menu: AppRouteRecord[], roles: string[]): AppRouteRecord[] {
+    const userStore = useUserStore()
+    const isCurrentlyNewbro = userStore.info?.isCurrentlyNewbro
+    const isMentorMenteeEligible = userStore.info?.isMentorMenteeEligible
 
-  /**
-   * 根据角色过滤菜单
-   */
-  private filterMenuByRoles(menu: AppRouteRecord[], roles: string[]): AppRouteRecord[] {
-    return menu.reduce((acc: AppRouteRecord[], item) => {
-      const itemRoles = item.meta?.roles
-      const hasPermission = !itemRoles || itemRoles.some((role) => roles?.includes(role))
-
-      if (hasPermission) {
-        const filteredItem = { ...item }
-        if (filteredItem.children?.length) {
-          filteredItem.children = this.filterMenuByRoles(filteredItem.children, roles)
-        }
-        acc.push(filteredItem)
-      }
-
-      return acc
-    }, [])
+    return applyMenuAccessFilter(menu, roles, isCurrentlyNewbro, isMentorMenteeEligible)
   }
 
   /**
    * 递归过滤空菜单项
    */
   private filterEmptyMenus(menuList: AppRouteRecord[]): AppRouteRecord[] {
-    return menuList
-      .map((item) => {
-        // 如果有子菜单，先递归过滤子菜单
-        if (item.children && item.children.length > 0) {
-          const filteredChildren = this.filterEmptyMenus(item.children)
-          return {
-            ...item,
-            children: filteredChildren
-          }
-        }
-        return item
-      })
-      .filter((item) => {
-        // 如果定义了 children 属性（即使是空数组），说明这是一个目录菜单，应该保留
-        if ('children' in item) {
-          return true
-        }
-
-        // 如果有外链或 iframe，保留
-        if (item.meta?.isIframe === true || item.meta?.link) {
-          return true
-        }
-
-        // 如果有有效的 component，保留
-        if (item.component && item.component !== '' && item.component !== RoutesAlias.Layout) {
-          return true
-        }
-
-        // 其他情况过滤掉
-        return false
-      })
+    return pruneEmptyMenus(menuList)
   }
 
   /**

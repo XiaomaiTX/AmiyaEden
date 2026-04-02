@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // FleetRepository 舰队数据访问层
@@ -29,6 +31,17 @@ func (r *FleetRepository) GetByID(id string) (*model.Fleet, error) {
 	return &fleet, err
 }
 
+func (r *FleetRepository) ListByIDs(ids []string) ([]model.Fleet, error) {
+	var fleets []model.Fleet
+	if len(ids) == 0 {
+		return fleets, nil
+	}
+	err := global.DB.
+		Where("id IN ? AND deleted_at IS NULL", ids).
+		Find(&fleets).Error
+	return fleets, err
+}
+
 // Update 更新舰队信息
 func (r *FleetRepository) Update(fleet *model.Fleet) error {
 	return global.DB.Save(fleet).Error
@@ -46,25 +59,39 @@ type FleetFilter struct {
 	FCUserID   *uint
 }
 
+func buildFleetListBaseQuery(db *gorm.DB, filter FleetFilter) *gorm.DB {
+	query := db.Model(&model.Fleet{}).Where("fleet.deleted_at IS NULL")
+
+	if filter.Importance != "" {
+		query = query.Where("importance = ?", filter.Importance)
+	}
+	if filter.FCUserID != nil {
+		query = query.Where("fc_user_id = ?", *filter.FCUserID)
+	}
+
+	return query
+}
+
+func buildFleetListSelectQuery(db *gorm.DB) *gorm.DB {
+	return db.
+		Select(`fleet.*,
+			COALESCE(NULLIF("user".nickname, ''), fleet.fc_character_name) AS fc_display_name`).
+		Joins(`LEFT JOIN "user" ON "user".id = fleet.fc_user_id`)
+}
+
 // List 分页查询舰队列表
-func (r *FleetRepository) List(page, pageSize int, filter FleetFilter) ([]model.Fleet, int64, error) {
-	var fleets []model.Fleet
+func (r *FleetRepository) List(page, pageSize int, filter FleetFilter) ([]model.FleetListItem, int64, error) {
+	var fleets []model.FleetListItem
 	var total int64
 
 	offset := (page - 1) * pageSize
-	db := global.DB.Model(&model.Fleet{}).Where("deleted_at IS NULL")
-
-	if filter.Importance != "" {
-		db = db.Where("importance = ?", filter.Importance)
-	}
-	if filter.FCUserID != nil {
-		db = db.Where("fc_user_id = ?", *filter.FCUserID)
-	}
+	db := buildFleetListBaseQuery(global.DB, filter)
 
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Order("start_at DESC").Offset(offset).Limit(pageSize).Find(&fleets).Error; err != nil {
+	queryDB := buildFleetListSelectQuery(db)
+	if err := queryDB.Order("fleet.start_at DESC").Offset(offset).Limit(pageSize).Find(&fleets).Error; err != nil {
 		return nil, 0, err
 	}
 	return fleets, total, nil
@@ -177,7 +204,43 @@ func (r *FleetRepository) ListPapLogsByUser(userID uint) ([]model.FleetPapLog, e
 	return logs, err
 }
 
-// PapLogDetail PAP 记录（含角色名、FC 名称、舰队信息）
+// SumPapByUserTotal 汇总用户的军团 PAP 总数
+func (r *FleetRepository) SumPapByUserTotal(userID uint) (float64, error) {
+	var total float64
+	err := global.DB.Model(&model.FleetPapLog{}).
+		Select("COALESCE(SUM(pap_count), 0)").
+		Where("user_id = ?", userID).
+		Scan(&total).Error
+	return total, err
+}
+
+func (r *FleetRepository) SumPapTotalsByUserIDs(userIDs []uint) (map[uint]float64, error) {
+	result := make(map[uint]float64, len(userIDs))
+	if len(userIDs) == 0 {
+		return result, nil
+	}
+
+	type row struct {
+		UserID uint
+		Total  float64
+	}
+
+	var rows []row
+	err := global.DB.Model(&model.FleetPapLog{}).
+		Select("user_id, COALESCE(SUM(pap_count), 0) AS total").
+		Where("user_id IN ?", userIDs).
+		Group("user_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		result[row.UserID] = row.Total
+	}
+	return result, nil
+}
+
+// PapLogDetail PAP 记录（含人物名、FC 名称、舰队信息）
 type PapLogDetail struct {
 	model.FleetPapLog
 	CharacterName   string `json:"character_name"`
@@ -188,7 +251,7 @@ type PapLogDetail struct {
 	ShipTypeID      *int64 `json:"ship_type_id"`
 }
 
-// ListPapLogsDetailByUser 查询某用户的 PAP 记录（JOIN 舰队、角色信息）
+// ListPapLogsDetailByUser 查询某用户的 PAP 记录（JOIN 舰队、人物信息）
 func (r *FleetRepository) ListPapLogsDetailByUser(userID uint) ([]PapLogDetail, error) {
 	var results []PapLogDetail
 	err := global.DB.Table("fleet_pap_log p").
@@ -224,6 +287,20 @@ type MonthlyPapStat struct {
 	TotalPap float64 `json:"total_pap"`
 }
 
+// FleetPapSummaryFilter PAP 汇总筛选条件
+type FleetPapSummaryFilter struct {
+	StartAt *time.Time
+	EndAt   *time.Time
+}
+
+// CorporationPapSummaryRow 军团 PAP 汇总行
+type CorporationPapSummaryRow struct {
+	UserID       uint    `json:"user_id"`
+	StratOpPaps  float64 `json:"strat_op_paps"`
+	SkirmishPaps float64 `json:"skirmish_paps"`
+	TotalPaps    float64 `json:"-"`
+}
+
 // SumPapByUserGroupedByMonth 按月汇总用户 PAP
 func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapStat, error) {
 	var stats []MonthlyPapStat
@@ -235,6 +312,41 @@ func (r *FleetRepository) SumPapByUserGroupedByMonth(userID uint) ([]MonthlyPapS
 		Limit(12).
 		Scan(&stats).Error
 	return stats, err
+}
+
+// ListCorporationPapSummaryAll 查询全部军团 PAP 汇总结果
+func (r *FleetRepository) ListCorporationPapSummaryAll(filter FleetPapSummaryFilter) ([]CorporationPapSummaryRow, error) {
+	var rows []CorporationPapSummaryRow
+
+	err := r.applyPapLogDateFilter(
+		global.DB.Model(&model.FleetPapLog{}).
+			Joins("LEFT JOIN fleet ON fleet.id = fleet_pap_log.fleet_id"),
+		filter,
+	).
+		Select(`
+			fleet_pap_log.user_id,
+			COALESCE(SUM(CASE WHEN fleet.importance IN ('cta', 'strat_op') THEN fleet_pap_log.pap_count ELSE 0 END), 0) as strat_op_paps,
+			COALESCE(SUM(CASE WHEN fleet.importance = 'other' THEN fleet_pap_log.pap_count ELSE 0 END), 0) as skirmish_paps,
+			COALESCE(SUM(fleet_pap_log.pap_count), 0) as total_paps
+		`).
+		Group("fleet_pap_log.user_id").
+		Order("total_paps DESC, fleet_pap_log.user_id ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
+}
+
+func (r *FleetRepository) applyPapLogDateFilter(db *gorm.DB, filter FleetPapSummaryFilter) *gorm.DB {
+	if filter.StartAt != nil {
+		db = db.Where("fleet_pap_log.issued_at >= ?", *filter.StartAt)
+	}
+	if filter.EndAt != nil {
+		db = db.Where("fleet_pap_log.issued_at < ?", *filter.EndAt)
+	}
+	return db
 }
 
 // ─────────────────────────────────────────────

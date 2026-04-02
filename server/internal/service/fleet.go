@@ -4,24 +4,21 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
-	"bytes"
+	"amiya-eden/pkg/eve/esi"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-const esiBaseURL = "https://esi.evetech.net/latest"
-
-// FleetKMRefreshFunc 触发单个角色 KM 刷新的钩子，由 jobs 层注入以避免循环依赖
+// FleetKMRefreshFunc 触发单个人物 KM 刷新的钩子，由 jobs 层注入以避免循环依赖
 var FleetKMRefreshFunc func(characterID int64)
 
 // FleetAutoSRPFunc 自动 SRP 处理钩子，由 jobs 层注入
@@ -30,22 +27,70 @@ var FleetAutoSRPFunc func(fleetID string)
 // FleetService 舰队业务逻辑层
 type FleetService struct {
 	repo       *repository.FleetRepository
+	papRepo    *repository.AlliancePAPRepository
+	userRepo   *repository.UserRepository
 	charRepo   *repository.EveCharacterRepository
+	configRepo *repository.SysConfigRepository
+	walletRepo *repository.SysWalletRepository
 	ssoSvc     *EveSSOService
 	walletSvc  *SysWalletService
 	webhookSvc *WebhookService
-	http       *http.Client
+	rateRepo   *repository.PAPTypeRateRepository
+	esiClient  *esi.Client
 }
 
 func NewFleetService() *FleetService {
 	return &FleetService{
 		repo:       repository.NewFleetRepository(),
+		papRepo:    repository.NewAlliancePAPRepository(),
+		userRepo:   repository.NewUserRepository(),
 		charRepo:   repository.NewEveCharacterRepository(),
+		configRepo: repository.NewSysConfigRepository(),
+		walletRepo: repository.NewSysWalletRepository(),
 		ssoSvc:     NewEveSSOService(),
 		walletSvc:  NewSysWalletService(),
 		webhookSvc: NewWebhookService(),
-		http:       &http.Client{Timeout: 30 * time.Second},
+		rateRepo:   repository.NewPAPTypeRateRepository(),
+		esiClient:  esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix),
 	}
+}
+
+const (
+	CorporationPapPeriodCurrentMonth = "current_month"
+	CorporationPapPeriodLastMonth    = "last_month"
+	CorporationPapPeriodAtYear       = "at_year"
+	CorporationPapPeriodAll          = "all"
+)
+
+// CorporationPapSummaryItem 军团 PAP 汇总项
+type CorporationPapSummaryItem struct {
+	UserID            uint    `json:"user_id"`
+	Nickname          string  `json:"nickname"`
+	CorpTicker        string  `json:"corp_ticker"`
+	MainCharacterName string  `json:"main_character_name"`
+	CharacterCount    int     `json:"character_count"`
+	StratOpPaps       float64 `json:"strat_op_paps"`
+	SkirmishPaps      float64 `json:"skirmish_paps"`
+	AllianceStratPaps float64 `json:"alliance_strat_paps"`
+}
+
+// CorporationPapOverview 军团 PAP 页面顶部概览
+type CorporationPapOverview struct {
+	FilteredPapTotal     float64 `json:"filtered_pap_total"`
+	FilteredStratOpTotal float64 `json:"filtered_strat_op_total"`
+	AllPapTotal          float64 `json:"all_pap_total"`
+	FilteredUserCount    int64   `json:"filtered_user_count"`
+	Period               string  `json:"period"`
+	Year                 *int    `json:"year,omitempty"`
+}
+
+// CorporationPapSummaryResponse 军团 PAP 汇总响应
+type CorporationPapSummaryResponse struct {
+	List     []CorporationPapSummaryItem `json:"list"`
+	Total    int64                       `json:"total"`
+	Page     int                         `json:"page"`
+	PageSize int                         `json:"pageSize"`
+	Overview CorporationPapOverview      `json:"overview"`
 }
 
 // ─────────────────────────────────────────────
@@ -60,7 +105,7 @@ type CreateFleetRequest struct {
 	EndAt         string  `json:"end_at" binding:"required"`   // RFC3339
 	Importance    string  `json:"importance" binding:"required,oneof=strat_op cta other"`
 	PapCount      float64 `json:"pap_count"`
-	CharacterID   int64   `json:"character_id" binding:"required"` // FC 角色 ID
+	CharacterID   int64   `json:"character_id" binding:"required"` // FC 人物 ID
 	SendPing      bool    `json:"send_ping"`                       // 是否发送 Ping 通知
 	FleetConfigID *uint   `json:"fleet_config_id"`                 // 舰队配置 ID
 	AutoSrpMode   string  `json:"auto_srp_mode"`                   // disabled/submit_only/auto_approve
@@ -68,13 +113,13 @@ type CreateFleetRequest struct {
 
 // CreateFleet 创建舰队
 func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model.Fleet, error) {
-	// 验证角色属于当前用户
+	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil {
-		return nil, errors.New("角色不存在")
+		return nil, errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return nil, errors.New("该角色不属于当前用户")
+		return nil, errors.New("该人物不属于当前用户")
 	}
 
 	startAt, err := time.Parse(time.RFC3339, req.StartAt)
@@ -139,12 +184,12 @@ func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model
 }
 
 // PingFleet 手动触发舰队 Ping（仅 FC 或管理员）
-func (s *FleetService) PingFleet(fleetID string, userID uint, userRole string) error {
+func (s *FleetService) PingFleet(fleetID string, userID uint, userRoles []string) error {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
 		return errors.New("舰队不存在")
 	}
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canManageFleet(fleet, userID, userRoles) {
 		return errors.New("权限不足")
 	}
 	return s.webhookSvc.SendFleetPing(fleet)
@@ -164,14 +209,23 @@ type UpdateFleetRequest struct {
 	AutoSrpMode   *string  `json:"auto_srp_mode"`
 }
 
+type ManualAddFleetMembersRequest struct {
+	CharacterNames []string `json:"character_names"`
+}
+
+type ManualAddFleetMembersResult struct {
+	AddedCharacterNames   []string `json:"added_character_names"`
+	MissingCharacterNames []string `json:"missing_character_names"`
+}
+
 // UpdateFleet 更新舰队信息
-func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRole string, req *UpdateFleetRequest) (*model.Fleet, error) {
+func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRoles []string, req *UpdateFleetRequest) (*model.Fleet, error) {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
 		return nil, errors.New("舰队不存在")
 	}
 
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canManageFleet(fleet, userID, userRoles) {
 		return nil, errors.New("权限不足")
 	}
 
@@ -204,10 +258,10 @@ func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRole string,
 	if req.CharacterID != nil {
 		char, err := s.charRepo.GetByCharacterID(*req.CharacterID)
 		if err != nil {
-			return nil, errors.New("角色不存在")
+			return nil, errors.New("人物不存在")
 		}
-		if char.UserID != userID && !model.HasRole(userRole, model.RoleAdmin) {
-			return nil, errors.New("该角色不属于当前用户")
+		if char.UserID != userID && !model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
+			return nil, errors.New("该人物不属于当前用户")
 		}
 		fleet.FCCharacterID = *req.CharacterID
 		fleet.FCCharacterName = char.CharacterName
@@ -233,12 +287,11 @@ func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRole string,
 }
 
 // DeleteFleet 删除舰队
-func (s *FleetService) DeleteFleet(fleetID string, userID uint, userRole string) error {
-	fleet, err := s.repo.GetByID(fleetID)
-	if err != nil {
+func (s *FleetService) DeleteFleet(fleetID string, userID uint, userRoles []string) error {
+	if _, err := s.repo.GetByID(fleetID); err != nil {
 		return errors.New("舰队不存在")
 	}
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canDeleteFleet(userRoles) {
 		return errors.New("权限不足")
 	}
 	return s.repo.SoftDelete(fleetID)
@@ -250,12 +303,12 @@ func (s *FleetService) GetFleet(fleetID string) (*model.Fleet, error) {
 }
 
 // RefreshESIFleetID 从 ESI 刷新舰队的 esi_fleet_id 并持久化
-func (s *FleetService) RefreshESIFleetID(fleetID string, userID uint, userRole string) (*model.Fleet, error) {
+func (s *FleetService) RefreshESIFleetID(fleetID string, userID uint, userRoles []string) (*model.Fleet, error) {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
 		return nil, errors.New("舰队不存在")
 	}
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canManageFleet(fleet, userID, userRoles) {
 		return nil, errors.New("权限不足")
 	}
 
@@ -279,13 +332,9 @@ func (s *FleetService) RefreshESIFleetID(fleetID string, userID uint, userRole s
 }
 
 // ListFleets 分页查询舰队列表
-func (s *FleetService) ListFleets(page, pageSize int, filter repository.FleetFilter) ([]model.Fleet, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 10
-	}
+func (s *FleetService) ListFleets(page, pageSize int, filter repository.FleetFilter) ([]model.FleetListItem, int64, error) {
+	page = normalizePage(page)
+	pageSize = normalizePageSize(pageSize, 10, 100)
 	return s.repo.List(page, pageSize, filter)
 }
 
@@ -303,6 +352,53 @@ func (s *FleetService) GetMembers(fleetID string) ([]model.FleetMember, error) {
 	return s.repo.ListMembers(fleetID)
 }
 
+// ManualAddMembers 手动按人物名添加成员到舰队
+func (s *FleetService) ManualAddMembers(fleetID string, userID uint, userRoles []string, req *ManualAddFleetMembersRequest) (*ManualAddFleetMembersResult, error) {
+	fleet, err := s.repo.GetByID(fleetID)
+	if err != nil {
+		return nil, errors.New("舰队不存在")
+	}
+	if !s.canManageFleet(fleet, userID, userRoles) {
+		return nil, errors.New("权限不足")
+	}
+
+	characterNames := normalizeCharacterNames(req.CharacterNames)
+	if len(characterNames) == 0 {
+		return nil, errors.New("请至少填写一个人物名")
+	}
+
+	result := &ManualAddFleetMembersResult{
+		AddedCharacterNames:   make([]string, 0, len(characterNames)),
+		MissingCharacterNames: make([]string, 0),
+	}
+
+	for _, name := range characterNames {
+		char, err := s.charRepo.GetByCharacterName(name)
+		if err != nil {
+			result.MissingCharacterNames = append(result.MissingCharacterNames, name)
+			continue
+		}
+
+		member := &model.FleetMember{
+			FleetID:       fleet.ID,
+			CharacterID:   char.CharacterID,
+			CharacterName: char.CharacterName,
+			UserID:        char.UserID,
+		}
+		if err := s.repo.AddMember(member); err != nil {
+			return nil, err
+		}
+
+		result.AddedCharacterNames = append(result.AddedCharacterNames, char.CharacterName)
+
+		if fleet.ESIFleetID != nil {
+			go s.esiInviteMember(fleet, char)
+		}
+	}
+
+	return result, nil
+}
+
 // JoinFleet 通过邀请码加入舰队
 func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) error {
 	invite, err := s.repo.GetInviteByCode(code)
@@ -316,13 +412,13 @@ func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) er
 		return errors.New("邀请链接已过期")
 	}
 
-	// 验证角色属于当前用户
+	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		return errors.New("角色不存在")
+		return errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return errors.New("该角色不属于当前用户")
+		return errors.New("该人物不属于当前用户")
 	}
 
 	fleet, err := s.repo.GetByID(invite.FleetID)
@@ -341,7 +437,7 @@ func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) er
 		return err
 	}
 
-	// 尝试通过 ESI 邀请角色加入游戏内舰队
+	// 尝试通过 ESI 邀请人物加入游戏内舰队
 	if fleet.ESIFleetID != nil {
 		go s.esiInviteMember(fleet, char)
 	}
@@ -349,7 +445,7 @@ func (s *FleetService) JoinFleet(code string, userID uint, characterID int64) er
 	return nil
 }
 
-// esiInviteMember 通过 ESI 邀请角色加入游戏内舰队
+// esiInviteMember 通过 ESI 邀请人物加入游戏内舰队
 func (s *FleetService) esiInviteMember(fleet *model.Fleet, char *model.EveCharacter) {
 	ctx := context.Background()
 
@@ -382,12 +478,12 @@ func (s *FleetService) esiInviteMember(fleet *model.Fleet, char *model.EveCharac
 // ─────────────────────────────────────────────
 
 // IssuePap 发放 PAP 到舰队所有成员
-func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) error {
+func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string) error {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
 		return errors.New("舰队不存在")
 	}
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canManageFleet(fleet, userID, userRoles) {
 		return errors.New("权限不足")
 	}
 	if fleet.PapCount <= 0 {
@@ -396,7 +492,7 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) er
 
 	// 1. 先尝试 ESI 同步成员（失败不阻断发放）
 	if fleet.ESIFleetID != nil {
-		if _, syncErr := s.SyncESIMembers(fleetID, userID, userRole); syncErr != nil {
+		if _, syncErr := s.SyncESIMembers(fleetID, userID, userRoles); syncErr != nil {
 			global.Logger.Warn("[Fleet] IssuePap ESI 同步失败，继续发放",
 				zap.String("fleet_id", fleetID),
 				zap.Error(syncErr),
@@ -418,14 +514,43 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) er
 	if err != nil {
 		return err
 	}
-	oldPapPerUser := make(map[uint]float64, len(oldLogs))
-	for _, ol := range oldLogs {
-		oldPapPerUser[ol.UserID] = ol.PapCount
+	rateMap := s.rateRepo.GetRateMap()
+	walletRate := papImportanceToWalletRate(fleet.Importance, rateMap)
+	fcSalary := s.getPAPFCSalary()
+	fcSalaryMonthlyLimit := s.getPAPFCSalaryMonthlyLimit()
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	nextMonthStart := monthStart.AddDate(0, 1, 0)
+
+	fcInMembers := false
+	for _, m := range members {
+		if m.UserID == fleet.FCUserID {
+			fcInMembers = true
+			break
+		}
+	}
+
+	oldWalletPerUser := buildPapWalletByUser(toPapWalletEntriesFromLogs(oldLogs), walletRate)
+	oldFCSalaryAmount := 0.0
+	if tx, lookupErr := s.walletRepo.GetTransactionByUserRefTypeRefIDInRange(
+		fleet.FCUserID,
+		model.WalletRefPapFCSalary,
+		fleetID,
+		monthStart,
+		nextMonthStart,
+	); lookupErr == nil {
+		oldFCSalaryAmount = tx.Amount
+	} else if !errors.Is(lookupErr, gorm.ErrRecordNotFound) {
+		global.Logger.Warn("[Fleet] 查询 FC 工资历史流水失败",
+			zap.String("fleet_id", fleetID),
+			zap.Uint("user_id", fleet.FCUserID),
+			zap.Error(lookupErr),
+		)
 	}
 
 	// 4. 构建新 PAP 记录
 	newLogs := make([]model.FleetPapLog, 0, len(members))
-	newPapPerUser := make(map[uint]float64, len(members))
+	newEntries := make([]papWalletEntry, 0, len(members))
 	for _, m := range members {
 		newLogs = append(newLogs, model.FleetPapLog{
 			FleetID:     fleetID,
@@ -434,7 +559,10 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) er
 			PapCount:    fleet.PapCount,
 			IssuedBy:    userID,
 		})
-		newPapPerUser[m.UserID] += fleet.PapCount
+		newEntries = append(newEntries, papWalletEntry{
+			UserID:   m.UserID,
+			PapCount: fleet.PapCount,
+		})
 	}
 
 	// 5. 事务：更新 PAP 记录 + 钱包差量
@@ -456,15 +584,42 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) er
 
 	// 合并涉及的所有 user_id，计算并应用差量
 	allUsers := make(map[uint]struct{})
-	for uid := range oldPapPerUser {
+	for uid := range oldWalletPerUser {
 		allUsers[uid] = struct{}{}
 	}
-	for uid := range newPapPerUser {
+	newWalletPerUser := buildPapWalletByUser(newEntries, walletRate)
+	newFCSalaryAmount := 0.0
+	if fcInMembers || oldFCSalaryAmount > 0 {
+		// monthlyCount is only needed when this is a new entry (no prior salary for this fleet).
+		// When oldFCSalaryAmount > 0, calculateFCSalaryAmount ignores monthlyCount entirely,
+		// so skip the DB query in that case.
+		var monthlyCount int64
+		if fcInMembers && oldFCSalaryAmount == 0 {
+			var countErr error
+			monthlyCount, countErr = s.walletRepo.CountTransactionsByUserRefTypeInRange(
+				fleet.FCUserID,
+				model.WalletRefPapFCSalary,
+				monthStart,
+				nextMonthStart,
+			)
+			if countErr != nil {
+				global.Logger.Warn("[Fleet] 统计 FC 工资次数失败",
+					zap.String("fleet_id", fleetID),
+					zap.Uint("user_id", fleet.FCUserID),
+					zap.Error(countErr),
+				)
+				monthlyCount = int64(fcSalaryMonthlyLimit)
+			}
+		}
+		newFCSalaryAmount = calculateFCSalaryAmount(fcInMembers, oldFCSalaryAmount, monthlyCount, fcSalaryMonthlyLimit, fcSalary)
+	}
+	for uid := range newWalletPerUser {
 		allUsers[uid] = struct{}{}
 	}
+
 	reason := fmt.Sprintf("舰队 PAP 奖励: %s", fleetID)
 	for uid := range allUsers {
-		delta := newPapPerUser[uid] - oldPapPerUser[uid]
+		delta := newWalletPerUser[uid] - oldWalletPerUser[uid]
 		if delta == 0 {
 			continue
 		}
@@ -475,6 +630,18 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) er
 				zap.Error(err),
 			)
 			// 钱包失败不阻断整个操作，继续
+		}
+	}
+
+	fcSalaryDelta := newFCSalaryAmount - oldFCSalaryAmount
+	if fcSalaryDelta != 0 {
+		if err := s.walletSvc.ApplyWalletDeltaTx(tx, fleet.FCUserID, fcSalaryDelta, fmt.Sprintf("舰队 FC 工资: %s", fleetID), model.WalletRefPapFCSalary, fleetID); err != nil {
+			global.Logger.Warn("[Fleet] FC 工资差量更新失败",
+				zap.String("fleet_id", fleetID),
+				zap.Uint("user_id", fleet.FCUserID),
+				zap.Float64("delta", fcSalaryDelta),
+				zap.Error(err),
+			)
 		}
 	}
 
@@ -491,6 +658,74 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRole string) er
 	go s.triggerNewMembersKMRefresh(fleetID)
 
 	return nil
+}
+
+type papWalletEntry struct {
+	UserID   uint
+	PapCount float64
+}
+
+func toPapWalletEntriesFromLogs(logs []model.FleetPapLog) []papWalletEntry {
+	entries := make([]papWalletEntry, 0, len(logs))
+	for _, log := range logs {
+		entries = append(entries, papWalletEntry{
+			UserID:   log.UserID,
+			PapCount: log.PapCount,
+		})
+	}
+	return entries
+}
+
+func buildPapWalletByUser(entries []papWalletEntry, walletRate float64) map[uint]float64 {
+	result := make(map[uint]float64, len(entries))
+	for _, entry := range entries {
+		result[entry.UserID] += entry.PapCount * walletRate
+	}
+	return result
+}
+
+// calculateFCSalaryAmount returns the target FC salary amount for a fleet issuance.
+// If the FC is not in the member list, returns 0 (revoke any prior salary for this fleet).
+// If a salary was already issued for this fleet (existingSalaryAmount > 0), the monthly limit
+// is intentionally bypassed — this is a re-issue that updates the amount to the current rate,
+// not a new charge against the cap.
+// monthlyCount is only consulted for genuinely new entries (existingSalaryAmount == 0).
+func calculateFCSalaryAmount(fcInMembers bool, existingSalaryAmount float64, monthlyCount int64, monthlyLimit int, currentSalary float64) float64 {
+	if !fcInMembers {
+		return 0
+	}
+	if existingSalaryAmount > 0 {
+		return currentSalary
+	}
+	if monthlyLimit <= 0 || monthlyCount >= int64(monthlyLimit) {
+		return 0
+	}
+	return currentSalary
+}
+
+// papImportanceToWalletRate 将舰队重要性映射到对应的 PAP 兑换汇率（伏羲币 / 1 PAP）
+func papImportanceToWalletRate(importance string, rateMap map[string]float64) float64 {
+	var papType string
+	switch importance {
+	case model.FleetImportanceCTA:
+		papType = model.PAPTypeCTA
+	case model.FleetImportanceStratOp:
+		papType = model.PAPTypeStratOp
+	default:
+		papType = model.PAPTypeSkirmish
+	}
+	if rate, ok := rateMap[papType]; ok {
+		return rate
+	}
+	return 1
+}
+
+func (s *FleetService) getPAPFCSalary() float64 {
+	return s.configRepo.GetFloat(model.SysConfigPAPFCSalary, model.SysConfigDefaultPAPFCSalary)
+}
+
+func (s *FleetService) getPAPFCSalaryMonthlyLimit() int {
+	return s.configRepo.GetInt(model.SysConfigPAPFCSalaryLimit, model.SysConfigDefaultPAPFCSalaryLimit)
 }
 
 // triggerNewMembersKMRefresh 对本舰队中需要 KM 刷新的成员执行触发：
@@ -541,12 +776,8 @@ func (s *FleetService) triggerNewMembersKMRefresh(fleetID string) {
 
 // ListMembersWithPap 分页查询舰队成员（含 PAP 信息）
 func (s *FleetService) ListMembersWithPap(fleetID string, page, pageSize int) ([]repository.MemberWithPap, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page = normalizePage(page)
+	pageSize = normalizePageSize(pageSize, 260, 260)
 	return s.repo.ListMembersWithPap(fleetID, page, pageSize)
 }
 
@@ -596,9 +827,143 @@ func (s *FleetService) GetPapLogs(fleetID string) ([]model.FleetPapLog, error) {
 	return s.repo.ListPapLogsByFleet(fleetID)
 }
 
-// GetUserPapLogs 获取用户的 PAP 记录（含角色名、FC 名称、舰队信息）
+// GetUserPapLogs 获取用户的 PAP 记录（含人物名、FC 名称、舰队信息）
 func (s *FleetService) GetUserPapLogs(userID uint) ([]repository.PapLogDetail, error) {
 	return s.repo.ListPapLogsDetailByUser(userID)
+}
+
+// GetCorporationPapSummary 获取军团维度 PAP 汇总
+func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period string, year int, corpTickers []string) (*CorporationPapSummaryResponse, error) {
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
+
+	now := time.Now()
+	filter, normalizedPeriod, normalizedYear, err := s.buildCorporationPapFilter(period, year, now)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := s.repo.ListCorporationPapSummaryAll(filter)
+	if err != nil {
+		return nil, err
+	}
+	allRows, err := s.repo.ListCorporationPapSummaryAll(repository.FleetPapSummaryFilter{})
+	if err != nil {
+		return nil, err
+	}
+
+	userIDs := make([]uint, 0, len(rows)+len(allRows))
+	seenUsers := make(map[uint]struct{}, len(rows)+len(allRows))
+	for _, row := range rows {
+		if _, ok := seenUsers[row.UserID]; ok {
+			continue
+		}
+		seenUsers[row.UserID] = struct{}{}
+		userIDs = append(userIDs, row.UserID)
+	}
+	for _, row := range allRows {
+		if _, ok := seenUsers[row.UserID]; ok {
+			continue
+		}
+		seenUsers[row.UserID] = struct{}{}
+		userIDs = append(userIDs, row.UserID)
+	}
+
+	profileByUserID, err := s.resolveCorporationPapProfiles(userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	allowedTickerSet := make(map[string]struct{})
+	for _, ticker := range corpTickers {
+		normalized := strings.ToUpper(strings.TrimSpace(ticker))
+		if normalized != "" {
+			allowedTickerSet[normalized] = struct{}{}
+		}
+	}
+
+	matchesCorpFilter := func(userID uint) bool {
+		if len(allowedTickerSet) == 0 {
+			return true
+		}
+		profile := profileByUserID[userID]
+		_, ok := allowedTickerSet[strings.ToUpper(profile.CorpTicker)]
+		return ok
+	}
+
+	items := make([]CorporationPapSummaryItem, 0, len(rows))
+	var filteredPapTotal float64
+	var filteredStratOpTotal float64
+	for _, row := range rows {
+		if !matchesCorpFilter(row.UserID) {
+			continue
+		}
+		profile := profileByUserID[row.UserID]
+		items = append(items, CorporationPapSummaryItem{
+			UserID:            row.UserID,
+			Nickname:          profile.Nickname,
+			CorpTicker:        profile.CorpTicker,
+			MainCharacterName: profile.MainCharacterName,
+			CharacterCount:    profile.CharacterCount,
+			StratOpPaps:       row.StratOpPaps,
+			SkirmishPaps:      row.SkirmishPaps,
+		})
+		filteredPapTotal += row.StratOpPaps + row.SkirmishPaps
+		filteredStratOpTotal += row.StratOpPaps
+	}
+
+	var allPapTotal float64
+	for _, row := range allRows {
+		if !matchesCorpFilter(row.UserID) {
+			continue
+		}
+		allPapTotal += row.StratOpPaps + row.SkirmishPaps
+	}
+
+	total := int64(len(items))
+	start := (page - 1) * pageSize
+	if start > len(items) {
+		start = len(items)
+	}
+	end := start + pageSize
+	if end > len(items) {
+		end = len(items)
+	}
+	pagedItems := items[start:end]
+
+	mainChars := make([]string, 0, len(pagedItems))
+	for _, item := range pagedItems {
+		if item.MainCharacterName != "" {
+			mainChars = append(mainChars, item.MainCharacterName)
+		}
+	}
+
+	allianceStratPapByMainChar, err := s.papRepo.SumStrategicPapByMainCharacters(mainChars, filter.StartAt, filter.EndAt)
+	if err != nil {
+		return nil, err
+	}
+	for i := range pagedItems {
+		pagedItems[i].AllianceStratPaps = allianceStratPapByMainChar[pagedItems[i].MainCharacterName]
+	}
+
+	overview := CorporationPapOverview{
+		FilteredPapTotal:     filteredPapTotal,
+		FilteredStratOpTotal: filteredStratOpTotal,
+		AllPapTotal:          allPapTotal,
+		FilteredUserCount:    total,
+		Period:               normalizedPeriod,
+	}
+	if normalizedYear != nil {
+		overview.Year = normalizedYear
+	}
+
+	return &CorporationPapSummaryResponse{
+		List:     pagedItems,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+		Overview: overview,
+	}, nil
 }
 
 // ─────────────────────────────────────────────
@@ -618,12 +983,12 @@ type ESIFleetMember struct {
 }
 
 // SyncESIMembers 从 ESI 获取当前舰队成员并记录到数据库
-func (s *FleetService) SyncESIMembers(fleetID string, userID uint, userRole string) ([]ESIFleetMember, error) {
+func (s *FleetService) SyncESIMembers(fleetID string, userID uint, userRoles []string) ([]ESIFleetMember, error) {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
 		return nil, errors.New("舰队不存在")
 	}
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canManageFleet(fleet, userID, userRoles) {
 		return nil, errors.New("权限不足")
 	}
 	if fleet.ESIFleetID == nil {
@@ -646,7 +1011,7 @@ func (s *FleetService) SyncESIMembers(fleetID string, userID uint, userRole stri
 	for _, em := range esiMembers {
 		char, err := s.charRepo.GetByCharacterID(em.CharacterID)
 		if err != nil {
-			// 角色不在系统中，跳过
+			// 人物不在系统中，跳过
 			continue
 		}
 		shipTypeID := em.ShipTypeID
@@ -670,12 +1035,12 @@ func (s *FleetService) SyncESIMembers(fleetID string, userID uint, userRole stri
 // ─────────────────────────────────────────────
 
 // CreateInvite 创建舰队邀请链接
-func (s *FleetService) CreateInvite(fleetID string, userID uint, userRole string) (*model.FleetInvite, error) {
+func (s *FleetService) CreateInvite(fleetID string, userID uint, userRoles []string) (*model.FleetInvite, error) {
 	fleet, err := s.repo.GetByID(fleetID)
 	if err != nil {
 		return nil, errors.New("舰队不存在")
 	}
-	if !s.canManageFleet(fleet, userID, userRole) {
+	if !s.canManageFleet(fleet, userID, userRoles) {
 		return nil, errors.New("权限不足")
 	}
 
@@ -710,9 +1075,8 @@ func (s *FleetService) GetInvites(fleetID string) ([]model.FleetInvite, error) {
 }
 
 // DeactivateInvite 禁用邀请链接
-func (s *FleetService) DeactivateInvite(inviteID uint, userID uint, userRole string) error {
-	// 简单处理：admin 和 fc 都可以禁用
-	if !model.HasRole(userRole, model.RoleFC) {
+func (s *FleetService) DeactivateInvite(inviteID uint, userID uint, userRoles []string) error {
+	if !s.canManageFleet(nil, userID, userRoles) {
 		return errors.New("权限不足")
 	}
 	return s.repo.DeactivateInvite(inviteID)
@@ -722,19 +1086,209 @@ func (s *FleetService) DeactivateInvite(inviteID uint, userID uint, userRole str
 //  权限判断
 // ─────────────────────────────────────────────
 
-// canManageFleet 判断用户是否有权管理该舰队（admin 或创建者）
-func (s *FleetService) canManageFleet(fleet *model.Fleet, userID uint, userRole string) bool {
-	if model.HasRole(userRole, model.RoleAdmin) {
+// canManageFleet 判断用户是否有权管理舰队相关功能。
+// super_admin、admin、senior_fc 可管理任何舰队；
+// fc 职权仅能管理自己创建的舰队（fleet.FCUserID == userID）。
+// fleet 为 nil 时退化为纯职权判断（用于不依赖具体舰队的操作）。
+func (s *FleetService) canManageFleet(fleet *model.Fleet, userID uint, userRoles []string) bool {
+	if model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin, model.RoleSeniorFC) {
 		return true
 	}
-	return fleet.FCUserID == userID
+	if model.ContainsAnyRole(userRoles, model.RoleFC) {
+		if fleet == nil {
+			return true
+		}
+		return fleet.FCUserID == userID
+	}
+	return false
+}
+
+func (s *FleetService) canDeleteFleet(userRoles []string) bool {
+	return model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin)
+}
+
+func normalizeCharacterNames(names []string) []string {
+	result := make([]string, 0, len(names))
+	seen := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+	return result
+}
+
+func (s *FleetService) buildCorporationPapFilter(period string, year int, now time.Time) (repository.FleetPapSummaryFilter, string, *int, error) {
+	location := now.Location()
+
+	switch period {
+	case CorporationPapPeriodCurrentMonth:
+		startAt := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, location)
+		return repository.FleetPapSummaryFilter{StartAt: &startAt}, CorporationPapPeriodCurrentMonth, nil, nil
+	case "", CorporationPapPeriodLastMonth:
+		startAt := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, location)
+		endAt := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, location)
+		return repository.FleetPapSummaryFilter{StartAt: &startAt, EndAt: &endAt}, CorporationPapPeriodLastMonth, nil, nil
+	case CorporationPapPeriodAtYear, "last_year":
+		if period == "last_year" {
+			year = now.Year() - 1
+		}
+		if year <= 0 {
+			year = now.Year()
+		}
+		startAt := time.Date(year, time.January, 1, 0, 0, 0, 0, location)
+		endAt := time.Date(year+1, time.January, 1, 0, 0, 0, 0, location)
+		return repository.FleetPapSummaryFilter{StartAt: &startAt, EndAt: &endAt}, CorporationPapPeriodAtYear, &year, nil
+	case CorporationPapPeriodAll:
+		return repository.FleetPapSummaryFilter{}, CorporationPapPeriodAll, nil, nil
+	default:
+		return repository.FleetPapSummaryFilter{}, "", nil, errors.New("无效的 PAP 时间筛选条件")
+	}
+}
+
+type corporationPapProfile struct {
+	Nickname          string
+	MainCharacterName string
+	CharacterCount    int
+	MainCharacterID   int64
+	CorporationID     int64
+	CorpTicker        string
+}
+
+func (s *FleetService) resolveCorporationPapProfiles(userIDs []uint) (map[uint]corporationPapProfile, error) {
+	profileByUserID := make(map[uint]corporationPapProfile, len(userIDs))
+	if len(userIDs) == 0 {
+		return profileByUserID, nil
+	}
+
+	users, err := s.userRepo.ListByIDs(userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	primaryCharacterIDs := make([]int64, 0, len(users))
+	for _, user := range users {
+		if user.PrimaryCharacterID > 0 {
+			primaryCharacterIDs = append(primaryCharacterIDs, user.PrimaryCharacterID)
+		}
+	}
+
+	primaryChars, err := s.charRepo.ListByCharacterIDs(primaryCharacterIDs)
+	if err != nil {
+		return nil, err
+	}
+	primaryNameByCharacterID := make(map[int64]string, len(primaryChars))
+	primaryCharByCharacterID := make(map[int64]model.EveCharacter, len(primaryChars))
+	for _, char := range primaryChars {
+		primaryNameByCharacterID[char.CharacterID] = char.CharacterName
+		primaryCharByCharacterID[char.CharacterID] = char
+	}
+
+	fallbackChars, err := s.charRepo.ListByUserIDs(userIDs)
+	if err != nil {
+		return nil, err
+	}
+	fallbackNameByUserID := make(map[uint]string, len(fallbackChars))
+	characterCountByUserID := make(map[uint]int, len(fallbackChars))
+	fallbackCorpIDByUserID := make(map[uint]int64, len(fallbackChars))
+	for _, char := range fallbackChars {
+		characterCountByUserID[char.UserID]++
+		if fallbackNameByUserID[char.UserID] == "" {
+			fallbackNameByUserID[char.UserID] = char.CharacterName
+		}
+		if fallbackCorpIDByUserID[char.UserID] == 0 {
+			fallbackCorpIDByUserID[char.UserID] = char.CorporationID
+		}
+	}
+
+	primaryCorpIDs := make([]int64, 0, len(users))
+	for _, user := range users {
+		profile := corporationPapProfile{
+			Nickname:        user.Nickname,
+			CharacterCount:  characterCountByUserID[user.ID],
+			MainCharacterID: user.PrimaryCharacterID,
+		}
+		if primaryChar, ok := primaryCharByCharacterID[user.PrimaryCharacterID]; ok {
+			profile.CorporationID = primaryChar.CorporationID
+			if primaryChar.CorporationID > 0 {
+				primaryCorpIDs = append(primaryCorpIDs, primaryChar.CorporationID)
+			}
+		} else if fallbackCorpIDByUserID[user.ID] > 0 {
+			profile.CorporationID = fallbackCorpIDByUserID[user.ID]
+			primaryCorpIDs = append(primaryCorpIDs, fallbackCorpIDByUserID[user.ID])
+		}
+
+		if name := primaryNameByCharacterID[user.PrimaryCharacterID]; name != "" {
+			profile.MainCharacterName = name
+		} else if name := fallbackNameByUserID[user.ID]; name != "" {
+			profile.MainCharacterName = name
+		} else if user.Nickname != "" {
+			profile.MainCharacterName = user.Nickname
+		} else {
+			profile.MainCharacterName = fmt.Sprintf("User#%d", user.ID)
+		}
+		profileByUserID[user.ID] = profile
+	}
+
+	tickerByCorpID, err := s.resolveCorporationTickers(primaryCorpIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, userID := range userIDs {
+		if _, ok := profileByUserID[userID]; !ok {
+			profileByUserID[userID] = corporationPapProfile{
+				MainCharacterName: fmt.Sprintf("User#%d", userID),
+				CharacterCount:    characterCountByUserID[userID],
+			}
+		}
+		profile := profileByUserID[userID]
+		if profile.CorporationID > 0 {
+			profile.CorpTicker = tickerByCorpID[profile.CorporationID]
+		}
+		profileByUserID[userID] = profile
+	}
+
+	return profileByUserID, nil
+}
+
+func (s *FleetService) resolveCorporationTickers(corporationIDs []int64) (map[int64]string, error) {
+	tickerByCorpID := make(map[int64]string)
+	seen := make(map[int64]struct{})
+
+	for _, corpID := range corporationIDs {
+		if corpID <= 0 {
+			continue
+		}
+		if _, ok := seen[corpID]; ok {
+			continue
+		}
+		seen[corpID] = struct{}{}
+
+		var corpInfo struct {
+			Ticker string `json:"ticker"`
+		}
+		if err := s.esiGetPublic(context.Background(), fmt.Sprintf("/corporations/%d/", corpID), &corpInfo); err != nil {
+			global.Logger.Warn("解析军团 ticker 失败", zap.Int64("corporation_id", corpID), zap.Error(err))
+			continue
+		}
+		tickerByCorpID[corpID] = corpInfo.Ticker
+	}
+
+	return tickerByCorpID, nil
 }
 
 // ─────────────────────────────────────────────
-//  ESI: 获取角色当前舰队信息
+//  ESI: 获取人物当前舰队信息
 // ─────────────────────────────────────────────
 
-// CharacterFleetInfo 角色当前舰队信息
+// CharacterFleetInfo 人物当前舰队信息
 type CharacterFleetInfo struct {
 	FleetID     int64  `json:"fleet_id"`
 	FleetBossID int64  `json:"fleet_boss_id"`
@@ -753,14 +1307,14 @@ func normalizeAutoSrpMode(mode string) string {
 	}
 }
 
-// GetCharacterFleetInfo 获取角色当前所在的 ESI 舰队信息
+// GetCharacterFleetInfo 获取人物当前所在的 ESI 舰队信息
 func (s *FleetService) GetCharacterFleetInfo(userID uint, characterID int64) (*CharacterFleetInfo, error) {
 	char, err := s.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		return nil, errors.New("角色不存在")
+		return nil, errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return nil, errors.New("该角色不属于当前用户")
+		return nil, errors.New("该人物不属于当前用户")
 	}
 
 	ctx := context.Background()
@@ -784,75 +1338,20 @@ func (s *FleetService) GetCharacterFleetInfo(userID uint, characterID int64) (*C
 
 // esiGet GET 请求并解析 JSON 响应
 func (s *FleetService) esiGet(ctx context.Context, path, accessToken string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, esiBaseURL+path, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := s.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("ESI GET %s 返回 %d: %s", path, resp.StatusCode, string(body))
-	}
-
-	return json.NewDecoder(resp.Body).Decode(out)
+	return s.esiClient.Get(ctx, path, accessToken, out)
 }
 
 // esiPost POST 请求（不期望响应体）
 func (s *FleetService) esiPost(ctx context.Context, path, accessToken string, body interface{}) error {
-	data, err := json.Marshal(body)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, esiBaseURL+path, bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := s.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("ESI POST %s 返回 %d: %s", path, resp.StatusCode, string(respBody))
-	}
-	return nil
+	return s.esiClient.PostNoContent(ctx, path, accessToken, body)
 }
 
 // esiPut PUT 请求（不期望响应体）
 func (s *FleetService) esiPut(ctx context.Context, path, accessToken string, body interface{}) error {
-	data, err := json.Marshal(body)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, esiBaseURL+path, bytes.NewReader(data))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Content-Type", "application/json")
+	return s.esiClient.PutJSON(ctx, path, accessToken, body)
+}
 
-	resp, err := s.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("ESI PUT %s 返回 %d: %s", path, resp.StatusCode, string(respBody))
-	}
-	return nil
+// esiGetPublic GET 公共 ESI 接口并解析 JSON 响应
+func (s *FleetService) esiGetPublic(ctx context.Context, path string, out interface{}) error {
+	return s.esiClient.Get(ctx, path, "", out)
 }

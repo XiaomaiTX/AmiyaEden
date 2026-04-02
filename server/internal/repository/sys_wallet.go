@@ -3,11 +3,15 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"errors"
+	"strings"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-// SysWalletRepository 系统钱包数据访问层
+// SysWalletRepository 伏羲币数据访问层
 type SysWalletRepository struct{}
 
 func NewSysWalletRepository() *SysWalletRepository {
@@ -18,16 +22,34 @@ func NewSysWalletRepository() *SysWalletRepository {
 //  钱包 CRUD
 // ─────────────────────────────────────────────
 
-// GetOrCreateWalletTx 在事务内获取或创建用户钱包
+func buildGetOrCreateWalletForUpdateQuery(db *gorm.DB, userID uint) *gorm.DB {
+	return db.
+		Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("user_id = ?", userID)
+}
+
+// GetOrCreateWalletTx 在事务内获取或创建用户钱包（使用 FOR UPDATE 行锁防止并发竞态）
 func (r *SysWalletRepository) GetOrCreateWalletTx(tx *gorm.DB, userID uint) (*model.SystemWallet, error) {
 	var wallet model.SystemWallet
-	err := tx.Where("user_id = ?", userID).First(&wallet).Error
-	if err != nil {
-		wallet = model.SystemWallet{UserID: userID, Balance: 0}
-		if err := tx.Create(&wallet).Error; err != nil {
-			return nil, err
-		}
+	err := buildGetOrCreateWalletForUpdateQuery(tx, userID).First(&wallet).Error
+	if err == nil {
+		return &wallet, nil
 	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	if err := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoNothing: true,
+	}).Create(&model.SystemWallet{UserID: userID, Balance: 0}).Error; err != nil {
+		return nil, err
+	}
+
+	if err := buildGetOrCreateWalletForUpdateQuery(tx, userID).First(&wallet).Error; err != nil {
+		return nil, err
+	}
+
 	return &wallet, nil
 }
 
@@ -35,12 +57,24 @@ func (r *SysWalletRepository) GetOrCreateWalletTx(tx *gorm.DB, userID uint) (*mo
 func (r *SysWalletRepository) GetOrCreateWallet(userID uint) (*model.SystemWallet, error) {
 	var wallet model.SystemWallet
 	err := global.DB.Where("user_id = ?", userID).First(&wallet).Error
-	if err != nil {
-		wallet = model.SystemWallet{UserID: userID, Balance: 0}
-		if err := global.DB.Create(&wallet).Error; err != nil {
-			return nil, err
-		}
+	if err == nil {
+		return &wallet, nil
 	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	if err := global.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoNothing: true,
+	}).Create(&model.SystemWallet{UserID: userID, Balance: 0}).Error; err != nil {
+		return nil, err
+	}
+
+	if err := global.DB.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+		return nil, err
+	}
+
 	return &wallet, nil
 }
 
@@ -87,10 +121,55 @@ func (r *SysWalletRepository) ExistsTransactionByRefID(refID string) (bool, erro
 	return count > 0, err
 }
 
+// GetTransactionByUserRefTypeRefIDInRange 根据用户、流水类型、关联 ID 和时间范围获取单条钱包流水
+func (r *SysWalletRepository) GetTransactionByUserRefTypeRefIDInRange(userID uint, refType, refID string, startAt, endAt time.Time) (*model.WalletTransaction, error) {
+	var tx model.WalletTransaction
+	err := global.DB.Where(
+		"user_id = ? AND ref_type = ? AND ref_id = ? AND created_at >= ? AND created_at < ?",
+		userID, refType, refID, startAt, endAt,
+	).First(&tx).Error
+	if err != nil {
+		return nil, err
+	}
+	return &tx, nil
+}
+
+// CountTransactionsByUserRefTypeInRange 统计某用户在指定时间范围内的指定流水类型数量
+func (r *SysWalletRepository) CountTransactionsByUserRefTypeInRange(userID uint, refType string, startAt, endAt time.Time) (int64, error) {
+	var count int64
+	err := global.DB.Model(&model.WalletTransaction{}).
+		Where("user_id = ? AND ref_type = ? AND created_at >= ? AND created_at < ?", userID, refType, startAt, endAt).
+		Count(&count).Error
+	return count, err
+}
+
 // WalletTransactionFilter 流水查询筛选条件
 type WalletTransactionFilter struct {
-	UserID  *uint
-	RefType string
+	UserID      *uint
+	UserKeyword string
+	RefType     string
+}
+
+func applyWalletTransactionUserFilter(db *gorm.DB, userIDColumn string, refTypeColumn string, filter WalletTransactionFilter) *gorm.DB {
+	if filter.UserID != nil {
+		db = db.Where(userIDColumn+" = ?", *filter.UserID)
+	}
+	if strings.TrimSpace(filter.UserKeyword) != "" {
+		pattern := "%" + strings.ToLower(strings.TrimSpace(filter.UserKeyword)) + "%"
+		db = db.Where(
+			userIDColumn+` IN (
+				SELECT DISTINCT u.id
+				FROM "user" u
+				LEFT JOIN eve_character ec ON ec.user_id = u.id
+				WHERE LOWER(u.nickname) LIKE ? OR LOWER(ec.character_name) LIKE ?
+			)`,
+			pattern, pattern,
+		)
+	}
+	if filter.RefType != "" {
+		db = db.Where(refTypeColumn+" = ?", filter.RefType)
+	}
+	return db
 }
 
 // ListTransactions 分页查询钱包流水
@@ -99,13 +178,7 @@ func (r *SysWalletRepository) ListTransactions(page, pageSize int, filter Wallet
 	var total int64
 	offset := (page - 1) * pageSize
 
-	db := global.DB.Model(&model.WalletTransaction{})
-	if filter.UserID != nil {
-		db = db.Where("user_id = ?", *filter.UserID)
-	}
-	if filter.RefType != "" {
-		db = db.Where("ref_type = ?", filter.RefType)
-	}
+	db := applyWalletTransactionUserFilter(global.DB.Model(&model.WalletTransaction{}), "user_id", "ref_type", filter)
 
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -116,33 +189,30 @@ func (r *SysWalletRepository) ListTransactions(page, pageSize int, filter Wallet
 	return txs, total, nil
 }
 
-// ListTransactionsWithCharacter 分页查询钱包流水（附带用户主角色名）
+// ListTransactionsWithCharacter 分页查询钱包流水（附带用户主人物名）
 func (r *SysWalletRepository) ListTransactionsWithCharacter(page, pageSize int, filter WalletTransactionFilter) ([]model.TransactionWithCharacter, int64, error) {
 	var results []model.TransactionWithCharacter
 	var total int64
 	offset := (page - 1) * pageSize
 
-	countDB := global.DB.Model(&model.WalletTransaction{})
-	if filter.UserID != nil {
-		countDB = countDB.Where("user_id = ?", *filter.UserID)
-	}
-	if filter.RefType != "" {
-		countDB = countDB.Where("ref_type = ?", filter.RefType)
-	}
+	countDB := applyWalletTransactionUserFilter(global.DB.Model(&model.WalletTransaction{}), "user_id", "ref_type", filter)
 	if err := countDB.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	queryDB := global.DB.Table("wallet_transaction wt").
-		Select("wt.*, COALESCE(ec.character_name, '') AS character_name").
+		Select(`wt.*,
+			COALESCE(ec.character_name, '') AS character_name,
+			COALESCE(NULLIF(u.nickname, ''), ec.character_name, '') AS nickname,
+			CASE
+				WHEN wt.operator_id = 0 THEN ''
+				ELSE COALESCE(NULLIF(operator_u.nickname, ''), operator_ec.character_name, '')
+			END AS operator_name`).
 		Joins(`LEFT JOIN "user" u ON wt.user_id = u.id`).
-		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id")
-	if filter.UserID != nil {
-		queryDB = queryDB.Where("wt.user_id = ?", *filter.UserID)
-	}
-	if filter.RefType != "" {
-		queryDB = queryDB.Where("wt.ref_type = ?", filter.RefType)
-	}
+		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id").
+		Joins(`LEFT JOIN "user" operator_u ON wt.operator_id = operator_u.id`).
+		Joins("LEFT JOIN eve_character operator_ec ON operator_u.primary_character_id = operator_ec.character_id")
+	queryDB = applyWalletTransactionUserFilter(queryDB, "wt.user_id", "wt.ref_type", filter)
 	if err := queryDB.Order("wt.created_at DESC").Offset(offset).Limit(pageSize).Scan(&results).Error; err != nil {
 		return nil, 0, err
 	}
@@ -196,7 +266,7 @@ func (r *SysWalletRepository) ListLogs(page, pageSize int, filter WalletLogFilte
 	return logs, total, nil
 }
 
-// ListLogsWithCharacter 分页查询操作日志（附带操作人和目标用户主角色名）
+// ListLogsWithCharacter 分页查询操作日志（附带操作人和目标用户主人物名）
 func (r *SysWalletRepository) ListLogsWithCharacter(page, pageSize int, filter WalletLogFilter) ([]model.LogWithCharacter, int64, error) {
 	var results []model.LogWithCharacter
 	var total int64
@@ -259,7 +329,7 @@ func (r *SysWalletRepository) ListWallets(page, pageSize int) ([]model.SystemWal
 	return wallets, total, nil
 }
 
-// ListWalletsWithCharacter 分页查询所有用户钱包（附带主角色名）
+// ListWalletsWithCharacter 分页查询所有用户钱包（附带主人物名）
 func (r *SysWalletRepository) ListWalletsWithCharacter(page, pageSize int) ([]model.WalletWithCharacter, int64, error) {
 	var results []model.WalletWithCharacter
 	var total int64

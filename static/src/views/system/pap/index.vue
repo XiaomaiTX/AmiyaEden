@@ -27,6 +27,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        visual-variant="ledger"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -41,13 +42,13 @@
   import { useTable } from '@/hooks/core/useTable'
   import { ElTag, ElMessage, ElButton } from 'element-plus'
   import { Setting } from '@element-plus/icons-vue'
+  import { formatTime } from '@utils/common'
   import { useI18n } from 'vue-i18n'
   import {
     fetchAllAlliancePAP,
     triggerAlliancePAPFetch,
     importAlliancePAP,
-    type AlliancePAPSummary,
-    type PAPImportInfo
+    type AlliancePAPSummary
   } from '@/api/alliance-pap'
   import PapSearch from './modules/pap-search.vue'
   import PapSettle from './modules/pap-settle.vue'
@@ -84,7 +85,7 @@
   } = useTable({
     core: {
       apiFn: fetchAllAlliancePAP,
-      apiParams: { current: 1, size: 20, ...parseMonth() },
+      apiParams: { current: 1, size: 200, ...parseMonth() },
       columnsFactory: () => [
         { type: 'index', width: 60, label: t('alliancePap.columns.rank') },
         {
@@ -150,8 +151,7 @@
           prop: 'calculated_at',
           label: t('alliancePap.columns.calculatedAt'),
           width: 170,
-          formatter: (row: AlliancePAPSummary) =>
-            row.calculated_at ? new Date(row.calculated_at).toLocaleString() : '-'
+          formatter: (row: AlliancePAPSummary) => formatTime(row.calculated_at)
         },
         {
           prop: 'is_archived',
@@ -194,7 +194,9 @@
     const { year, month } = parseMonth()
     const items = rows
       .map((row) => ({
-        primary_character_name: String(row['主角色'] ?? row['primary_character_name'] ?? ''),
+        primary_character_name: String(
+          row['主人物'] ?? row['主角色'] ?? row['primary_character_name'] ?? ''
+        ),
         monthly_pap: Number(row['月 PAP'] ?? row['monthly_pap'] ?? 0),
         calculated_at: String(row['数据时间'] ?? row['calculated_at'] ?? 0)
       }))
@@ -209,9 +211,18 @@
       for (const item of items) {
         const { primary_character_name, monthly_pap, calculated_at } = item
         try {
-          await importAlliancePAP({ year, month, data: { primary_character_name, monthly_pap, calculated_at } })
+          await importAlliancePAP({
+            year,
+            month,
+            data: { primary_character_name, monthly_pap, calculated_at }
+          })
         } catch (err: any) {
-          if (err.message == '主角色不存在' || err.message == '未设置主角色') {
+          if (
+            err.message == '主人物不存在' ||
+            err.message == '未设置主人物' ||
+            err.message == '主角色不存在' ||
+            err.message == '未设置主角色'
+          ) {
             continue
           }
           throw err

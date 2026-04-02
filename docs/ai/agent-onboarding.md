@@ -1,84 +1,97 @@
 ---
 status: active
-doc_type: guide
+doc_type: agent-guide
 owner: engineering
-last_reviewed: 2026-03-20
+last_reviewed: 2026-04-02
 source_of_truth:
-  - AGENTS.md
+  - docs/ai/repo-rules.md
   - docs/README.md
 ---
 
 # AI Agent Onboarding
 
-## 目标
+## Purpose
 
-本文件帮助未来的 AI agent 在最短路径内读到正确文档，并在代码与文档不一致时做出保守、可维护的判断。
+Fast routing for agents. Repository rules live in `docs/ai/repo-rules.md`.
 
-## 最小阅读顺序
+## Startup
 
-### 处理后端 / API 变更
+1. Read your agent entry point (`AGENTS.md` or `CLAUDE.md`).
+2. Read `docs/README.md`.
+3. Identify the change type.
+4. Read only the docs needed for that change before editing code.
 
-1. `AGENTS.md`
-2. `docs/README.md`
-3. `docs/architecture/overview.md`
-4. `docs/architecture/auth-and-permissions.md`
-5. `docs/api/conventions.md`
-6. `docs/api/route-index.md`
-7. 对应 feature doc
+## Change Routing
 
-### 处理前端页面 / 路由 / 权限
+### Backend or API
 
-1. `AGENTS.md`
-2. `docs/README.md`
-3. `docs/architecture/routing-and-menus.md`
-4. `docs/standards/frontend-table-pages.md`
-5. 对应 feature doc
+Read:
 
-### 处理 ESI / SSO / CCP 数据同步
+1. `docs/architecture/overview.md`
+2. `docs/architecture/module-map.md`
+3. `docs/architecture/auth-and-permissions.md`
+4. `docs/api/conventions.md`
+5. `docs/api/route-index.md`
+6. the relevant feature doc
 
-1. `AGENTS.md`
-2. `docs/README.md`
-3. `docs/architecture/overview.md`
-4. `docs/architecture/runtime-and-startup.md`
-5. `docs/features/current/auth-and-characters.md`
-6. `docs/features/current/esi-refresh.md`
-7. `docs/guides/adding-esi-feature.md`
-8. 只有在任务已经确定落在 `server/pkg/eve/esi/` 时，再读该目录下的局部 `README.md`
+### Frontend Page, Route, or Permission
 
-## 冲突处理规则
+Read:
 
-当文档之间互相冲突时：
+1. `docs/architecture/module-map.md`
+2. `docs/architecture/routing-and-menus.md`
+3. `docs/standards/frontend-table-pages.md` when relevant
+4. `docs/standards/frontend-record-card-pages.md` when relevant
+5. the relevant feature doc
 
-1. 先信 `AGENTS.md`
-2. 再信 `docs/` 中更高层级的 active 文档
-3. `docs/templates/` 与局部目录 `README.md` 不作为规范裁决依据
-4. 旧兼容文件不作为裁决依据
+### ESI, SSO, or CCP Sync
 
-当代码与文档冲突时：
+Read:
 
-1. 把代码视为当前实现
-2. 评估这是“代码漂移”还是“文档过时”
-3. 如果任务允许，优先把 canonical 文档修正到当前实现
-4. 不要为了迎合旧文档去回滚用户已有实现
+1. `docs/architecture/overview.md`
+2. `docs/architecture/module-map.md`
+3. `docs/architecture/runtime-and-startup.md`
+4. `docs/features/current/auth-and-characters.md`
+5. `docs/features/current/esi-refresh.md`
+6. `docs/guides/adding-esi-feature.md`
 
-## 修改前检查
+Read local `README.md` files under `server/pkg/eve/esi/` only when the task is clearly in that area.
 
-- 阅读目标模块周边代码，而不是只看一个文件
-- 找到对应 feature doc 与 API / architecture 文档
-- 明确这次改动属于：标准、现状、接口、功能、提案中的哪一种
-- 如果只是未来想法，不要改写 current-state 文档
+## Agent Rules
 
-## 修改后最少更新
+Do:
 
-- 行为变化：更新对应 feature doc
-- 路由或权限边界变化：更新 `docs/api/route-index.md`
-- 运行 / 启动方式变化：更新 `docs/architecture/runtime-and-startup.md`
-- 规范变化：更新 `AGENTS.md` 或 `docs/standards`
+- treat `docs/ai/repo-rules.md` as the primary authority
+- reason from committed repository artifacts and user-provided session context
+- read surrounding module code, not only the file being edited
+- update relevant docs when behavior, routes, runtime behavior, or standards change
+- stop and reassess when blocked or looping
 
-## 不该做的事
+Do not:
 
-- 重新建立第二套影子文档树
-- 把“计划中的行为”写进 architecture / feature current
-- 在多个文档里维护同一份角色、权限、路由清单
-- 看到旧标题就假设旧内容仍然正确
-- 把模板文件或模块局部 `README.md` 当成 repo-level source of truth
+- treat `docs/templates/` or local directory `README.md` files as repository-wide authority
+- write future or planned behavior into current-state docs
+- revert working behavior only to satisfy stale docs
+- create a shadow documentation tree
+- keep editing without progress
+
+## Conflict Resolution
+
+Use the authority order and code-vs-docs rule in `docs/ai/repo-rules.md`. If code and docs disagree, determine whether code drifted or docs became stale before changing either.
+
+## Documentation Updates
+
+Update the following when applicable:
+
+- behavior changed -> update the relevant feature document
+- route surface or permission boundary changed -> update `docs/api/route-index.md`
+- runtime or startup behavior changed -> update `docs/architecture/runtime-and-startup.md`
+- repository-wide rule or engineering standard changed -> update `docs/ai/repo-rules.md` or the relevant file under `docs/standards/`
+
+## Debugging
+
+Use `docs/guides/debugging-guide.md` for systematic debugging workflows.
+
+## Verification
+
+Use `docs/standards/pre-completion-checklist.md` as the completion gate and `docs/standards/testing-and-verification.md` for commands.

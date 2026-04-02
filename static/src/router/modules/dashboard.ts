@@ -6,8 +6,7 @@ export const dashboardRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.dashboard.title',
-    icon: 'ri:pie-chart-line',
-    roles: ['super_admin', 'admin', 'srp', 'fc', 'user', 'guest']
+    icon: 'ri:pie-chart-line'
   },
   children: [
     {
@@ -27,6 +26,16 @@ export const dashboardRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.characters.title',
         keepAlive: true
+      }
+    },
+    {
+      path: 'npc-kills',
+      name: 'CorpNpcKillReport',
+      component: '/dashboard/npc-kills',
+      meta: {
+        title: 'menus.dashboard.npcKills',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
       }
     }
   ]

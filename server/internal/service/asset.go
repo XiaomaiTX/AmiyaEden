@@ -79,17 +79,17 @@ func NewAssetService() *AssetService {
 	}
 }
 
-// GetUserAssets 获取用户名下所有角色的资产汇总
+// GetUserAssets 获取用户名下所有人物的资产汇总
 func (s *AssetService) GetUserAssets(userID uint, req *InfoAssetsRequest) (*InfoAssetsResponse, error) {
 	lang := req.Language
 	if lang == "" {
 		lang = "zh"
 	}
 
-	// 1. 获取用户的所有角色
+	// 1. 获取用户的所有人物
 	chars, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return nil, errors.New("获取角色列表失败")
+		return nil, errors.New("获取人物列表失败")
 	}
 	if len(chars) == 0 {
 		return &InfoAssetsResponse{Locations: []AssetLocationNode{}}, nil
@@ -102,7 +102,7 @@ func (s *AssetService) GetUserAssets(userID uint, req *InfoAssetsRequest) (*Info
 		charNameMap[c.CharacterID] = c.CharacterName
 	}
 
-	// 2. 获取所有角色的资产
+	// 2. 获取所有人物的资产
 	allAssets, err := s.assetRepo.GetAssetsByCharacterIDs(charIDs)
 	if err != nil {
 		return nil, errors.New("获取资产数据失败")
@@ -145,9 +145,6 @@ func (s *AssetService) GetUserAssets(userID uint, req *InfoAssetsRequest) (*Info
 	// 5. 建立位置分组
 	//    根物品: location_type == station / solar_system / other
 	//    子物品: location_type == item (location_id 是父物品的 item_id)
-	type locationKey struct {
-		LocationID int64
-	}
 
 	// 先找所有根位置 ID（非 item 类型的 location）
 	rootLocationIDs := make(map[int64]string)                // locationID -> locationType
@@ -260,8 +257,10 @@ func (s *AssetService) resolveLocationName(chars []model.EveCharacter, locationI
 			"solar_system": {int(locationID)},
 		}, "zh")
 		if err == nil {
-			if name, ok := names[int(locationID)]; ok {
-				return name
+			if solarNames, ok := names["solar_system"]; ok {
+				if name, ok := solarNames[int(locationID)]; ok {
+					return name
+				}
 			}
 		}
 		return fmt.Sprintf("System-%d", locationID)
@@ -289,11 +288,13 @@ func (s *AssetService) resolveStationName(stationID int64) string {
 		Where(`"stationID" = ?`, stationID).
 		Scan(&name).Error; err == nil && name != "" {
 		// 缓存到 eve_stations 表
-		s.assetRepo.UpsertStation(&model.EveStation{
+		if err := s.assetRepo.UpsertStation(&model.EveStation{
 			StationID:   stationID,
 			StationName: name,
 			UpdateAt:    time.Now().Unix(),
-		})
+		}); err != nil {
+			global.Logger.Warn("[Asset] 缓存空间站信息失败", zap.Int64("station_id", stationID), zap.Error(err))
+		}
 		return name
 	}
 
@@ -309,13 +310,13 @@ func (s *AssetService) resolveStructureName(chars []model.EveCharacter, structur
 		return structure.StructureName
 	}
 
-	// 尝试用任一角色的 token 从 ESI 获取
+	// 尝试用任一人物的 token 从 ESI 获取
 	for _, c := range chars {
 		accessToken, err := s.ssoSvc.GetValidToken(context.Background(), c.CharacterID)
 		if err != nil {
 			continue
 		}
-		name := s.fetchAndCacheStructure(c.CharacterID, structureID, accessToken)
+		name := s.fetchAndCacheStructure(structureID, accessToken)
 		if name != "" && name != fmt.Sprintf("Structure-%d", structureID) {
 			return name
 		}
@@ -348,7 +349,7 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 		return fmt.Sprintf("Station-%d", stationID)
 	}
 
-	s.assetRepo.UpsertStation(&model.EveStation{
+	if err := s.assetRepo.UpsertStation(&model.EveStation{
 		StationID:     stationID,
 		StationName:   detail.Name,
 		OwnerID:       detail.Owner,
@@ -358,13 +359,15 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 		Y:             detail.Position.Y,
 		Z:             detail.Position.Z,
 		UpdateAt:      time.Now().Unix(),
-	})
+	}); err != nil {
+		global.Logger.Warn("[Asset] 缓存空间站信息失败", zap.Int64("station_id", stationID), zap.Error(err))
+	}
 
 	return detail.Name
 }
 
 // fetchAndCacheStructure 从 ESI 获取建筑详情并入库
-func (s *AssetService) fetchAndCacheStructure(characterID, structureID int64, accessToken string) string {
+func (s *AssetService) fetchAndCacheStructure(structureID int64, accessToken string) string {
 	type structureDetail struct {
 		Name     string `json:"name"`
 		OwnerID  int64  `json:"owner_id"`
@@ -413,7 +416,7 @@ func (s *AssetService) fetchAndCacheStructure(characterID, structureID int64, ac
 // ─────────────────────────────────────────────
 
 func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, esiBaseURL+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -424,7 +427,11 @@ func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			global.Logger.Warn("[Asset] 关闭响应体失败", zap.Error(err))
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
@@ -435,7 +442,7 @@ func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out
 }
 
 func (s *AssetService) esiGetPublic(ctx context.Context, path string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, esiBaseURL+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
 	if err != nil {
 		return err
 	}
@@ -445,7 +452,11 @@ func (s *AssetService) esiGetPublic(ctx context.Context, path string, out interf
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			global.Logger.Warn("[Asset] 关闭响应体失败", zap.Error(err))
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

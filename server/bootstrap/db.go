@@ -104,28 +104,39 @@ func autoMigrate(db *gorm.DB) {
 		&model.ShopProduct{},
 		&model.ShopOrder{},
 		&model.ShopRedeemCode{},
-		// 抽奖相关表
-		&model.ShopLotteryActivity{},
-		&model.ShopLotteryPrize{},
-		&model.ShopLotteryRecord{},
 		// SRP 补损相关表
 		&model.SrpShipPrice{},
 		&model.SrpApplication{},
-		&model.SrpPayoutMailLog{},
 		// 舰队配置相关表
 		&model.FleetConfig{},
 		&model.FleetConfigFitting{},
 		&model.FleetConfigFittingItem{},
 		&model.FleetConfigFittingItemReplacement{},
+		// 军团技能计划相关表
+		&model.SkillPlan{},
+		&model.SkillPlanSkill{},
+		&model.SkillPlanCheckCharacter{},
+		&model.SkillPlanCheckPlan{},
+		// 军团福利相关表
+		&model.Welfare{},
+		&model.WelfareSkillPlan{},
+		&model.WelfareApplication{},
+		// 新人帮扶相关表
+		&model.NewbroPlayerState{},
+		&model.NewbroCaptainAffiliation{},
+		&model.CaptainBountyAttribution{},
+		&model.CaptainBountySyncState{},
+		&model.CaptainRewardSettlement{},
+		&model.MentorMenteeRelationship{},
+		&model.MentorRewardStage{},
+		&model.MentorRewardDistribution{},
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},
+		&model.PAPTypeRate{},
 		// 系统配置表
 		&model.SystemConfig{},
 		// RBAC 权限相关表
-		&model.Role{},
-		&model.Menu{},
-		&model.RoleMenu{},
 		&model.UserRole{},
 		// ESI 自动权限映射表
 		&model.EsiRoleMapping{},
@@ -135,18 +146,30 @@ func autoMigrate(db *gorm.DB) {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
 
-	// 清理旧列（GORM AutoMigrate 不会自动删除列）
-	dropObsoleteColumns(db)
+	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
+	dropObsoleteSchema(db)
+	ensureCustomIndexes(db)
 
-	// 种子数据：系统角色 → 系统菜单 → 默认角色权限 → 迁移已有用户
+	// 数据迁移：user_role / esi 映射表从 role_id 迁移到 role_code，然后删除 role 表
 	roleSvc := service.NewRoleService()
-	roleSvc.SeedSystemRoles()
-	roleSvc.SeedSystemMenus()
+	roleSvc.MigrateUserRoleTableToCode()
+	roleSvc.MigrateEsiMappingsToCode()
+
+	// 删除旧的 role 表（迁移完成后不再需要）
+	if db.Migrator().HasTable("role") {
+		if err := db.Migrator().DropTable("role"); err != nil {
+			global.Logger.Warn("删除旧 role 表失败", zap.Error(err))
+		} else {
+			global.Logger.Info("已删除旧 role 表")
+		}
+	}
+
+	// 迁移旧 User.Role 字段到 user_role 表
 	roleSvc.MigrateExistingUsers()
 }
 
-// dropObsoleteColumns 删除历史遗留的已被移除的列
-func dropObsoleteColumns(db *gorm.DB) {
+// dropObsoleteSchema 删除历史遗留的已被移除的列和表
+func dropObsoleteSchema(db *gorm.DB) {
 	migrator := db.Migrator()
 	type colDrop struct {
 		table string
@@ -163,6 +186,37 @@ func dropObsoleteColumns(db *gorm.DB) {
 			} else {
 				global.Logger.Info("已删除旧列", zap.String("table", d.table), zap.String("col", d.col))
 			}
+		}
+	}
+
+	obsoleteTables := []string{
+		"shop_lottery_record",
+		"shop_lottery_prize",
+		"shop_lottery_activity",
+		"srp_payout_mail_log",
+	}
+	for _, table := range obsoleteTables {
+		if migrator.HasTable(table) {
+			if err := migrator.DropTable(table); err != nil {
+				global.Logger.Warn("删除旧表失败", zap.String("table", table), zap.Error(err))
+			} else {
+				global.Logger.Info("已删除旧表", zap.String("table", table))
+			}
+		}
+	}
+}
+
+func newbroCustomIndexStatements() []string {
+	return []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_newbro_captain_affiliation_active_player_user_id ON newbro_captain_affiliation (player_user_id) WHERE ended_at IS NULL AND deleted_at IS NULL`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_mentor_rel_active_mentee ON mentor_mentee_relationship (mentee_user_id) WHERE status IN ('pending', 'active') AND deleted_at IS NULL`,
+	}
+}
+
+func ensureCustomIndexes(db *gorm.DB) {
+	for _, stmt := range newbroCustomIndexStatements() {
+		if err := db.Exec(stmt).Error; err != nil {
+			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
 	}
 }

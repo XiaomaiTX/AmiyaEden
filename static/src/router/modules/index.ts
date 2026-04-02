@@ -2,22 +2,26 @@ import { AppRouteRecord } from '@/types/router'
 import { dashboardRoutes } from './dashboard'
 import { systemRoutes } from './system'
 import { operationRoutes } from './operation'
-import { resultRoutes } from './result'
+import { skillPlanningRoutes } from './skill-planning'
 import { exceptionRoutes } from './exception'
 import { srpRoutes } from './srp'
+import { welfareRoutes } from './welfare'
 import { shopRoutes } from './shop'
 import { infoRoutes } from './info'
+import { newbroRoutes } from './newbro'
 
 /**
  * 导出所有模块化路由
  */
 export const routeModules: AppRouteRecord[] = [
   dashboardRoutes,
-  infoRoutes,
   operationRoutes,
+  skillPlanningRoutes,
+  infoRoutes,
+  welfareRoutes,
+  newbroRoutes,
   shopRoutes,
+  srpRoutes,
   systemRoutes,
-  resultRoutes,
-  exceptionRoutes,
-  srpRoutes
+  exceptionRoutes
 ]

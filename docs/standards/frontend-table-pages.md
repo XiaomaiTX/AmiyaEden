@@ -2,67 +2,81 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-03-20
+last_reviewed: 2026-04-03
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
 ---
 
-# 前端表格页面标准
+# Frontend Table Page Standard
 
-## 适用范围
+## Use This By Default
 
-适用于后台管理类、带分页的列表类、标准 CRUD 表格页面。
+- Use `useTable` for paginated page-level tables.
+- Use `ArtTable` for the table block.
+- Keep API calls in `static/src/api`.
+- Localize all user-visible text.
+- Keep page components thin; extract page-sized search areas, dialogs, or repeated column setup into `modules/` when helpful.
 
-## 默认模式
+## Ledger Rule
 
-新增标准表格页时，优先遵循：
+Treat a table as ledger-style when rows grow unbounded over time: logs, histories, transactions, records, approvals.
 
-- 搜索区在卡片外
-- `ElCard.art-table-card` 承载表格
-- `ArtTableHeader` 承载刷新、列设置、主操作按钮
-- `ArtTable` 承载列表与分页
-- `useTable` 管理 `loading / data / pagination / searchParams`
-- 对话框放在 `ElCard` 外，作为同级节点
+For ledger tables:
 
-## 必须遵守
+- set default request size to `200`
+- use `ArtTable` with `visual-variant="ledger"`
+- do not repeat ledger page sizes or pager layout locally unless intentionally overriding the shared preset
 
-- 需要分页的标准管理页，默认使用 `useTable`
-- 视图层不要直接 `axios` / `fetch`
-- 列标题、按钮、空态、校验提示必须走 i18n
-- 权限控制优先通过路由、`v-auth`、store / hooks 处理
-- 重复搜索区、编辑弹窗、列定义应抽到 `modules/`
+For bounded management/config tables:
 
-## 推荐结构
+- use normal `ArtTable` defaults
+- smaller page sizes are fine
 
-```text
-views/<module>/<page>/
-├── index.vue
-└── modules/
-    ├── <page>-search.vue
-    ├── <page>-dialog.vue
-    └── columns.ts
-```
+## Layout Pattern
 
-## 允许例外
+Preferred page structure:
 
-以下场景可以直接使用原生 `ElTable`，但应在页面注释或文档中说明原因：
+- search area outside the table card
+- `ElCard.art-table-card` as the table container
+- `ArtTableHeader` above `ArtTable`
+- dialogs as siblings outside the card
 
-- 详情页内的只读子表格
-- 多块数据混排的分析页或 dashboard
-- `ArtTable` 难以表达的树表 / 高度定制展开行
-- 第三方数据导入页、临时预览页
+If the page is mixed layout or analytics-like, you may still use this pattern for the table section itself.
 
-即使使用 `ElTable`，也仍需遵守：
+## Theme-Safe Styles
 
-- API 调用放在 `static/src/api`
-- 用户可见文本本地化
-- 权限不写成页面局部硬编码
+- Do not hardcode light backgrounds or gradients (`#fff`, very bright RGB values) for table rows, expandable panels, or selection states; they will appear as glaring white bands in dark mode.
+- Prefer Element Plus theme tokens (`var(--el-bg-color)`, `var(--el-bg-color-overlay)`, `var(--el-fill-color)`, `var(--el-border-color-*)`) for backgrounds and borders so both light and dark themes stay consistent.
+- For “selected” or “expanded” cards/rows, keep the background at most one brightness step lighter than the surrounding surface; use border and shadow emphasis instead of large areas of pure white.
+- When adding custom table or list visuals, manually verify the page in both light and dark modes and adjust colors using theme tokens rather than fixed hex values.
 
-## 提交前检查
+## Inline Copy Rule
 
-- 是否真的需要分页
-- 是否复用了 `useTable`
-- 是否把对话框与搜索区拆出
-- 是否所有用户可见字符串都已本地化
-- 是否没有在页面里直接创建 HTTP client
+- For compact inline copy actions attached to a text value inside a table cell, list row, or expanded record row, reuse the shared `ArtCopyButton`.
+- Do not introduce page-local copy icon buttons, duplicate clipboard success/failure toast handling, or ad hoc inline copy markup for the same interaction shape.
+- If the requirement is not a compact inline button beside a single displayed value, reuse the shared clipboard hook instead of forcing the button component into a mismatched flow.
+- Feature docs may describe where copy is available, but the reuse rule itself is defined here and applies repository-wide.
+
+## Exceptions
+
+Use native `ElTable` only when the table itself does not fit `ArtTable`, for example:
+
+- detail-page subtables
+- tree tables
+- highly customized expandable rows
+- temporary import/preview tables
+- Element Plus interactions that `ArtTable` does not expose cleanly
+
+Using native `ElTable` does not relax the other rules in this document.
+
+## AI Checklist
+
+Before finishing:
+
+- Is this paginated table using `useTable` unless there is a real exception?
+- If it is ledger-style, is it using `visual-variant="ledger"`?
+- If it adds a compact inline copy action, is it reusing `ArtCopyButton`?
+- Are API calls outside the view?
+- Are visible strings localized?
+- Is the implementation following existing page patterns instead of inventing a one-off abstraction?

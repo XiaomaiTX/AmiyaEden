@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/internal/utils"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,14 +16,12 @@ import (
 
 type RoleService struct {
 	repo     *repository.RoleRepository
-	menuRepo *repository.MenuRepository
 	userRepo *repository.UserRepository
 }
 
 func NewRoleService() *RoleService {
 	return &RoleService{
 		repo:     repository.NewRoleRepository(),
-		menuRepo: repository.NewMenuRepository(),
 		userRepo: repository.NewUserRepository(),
 	}
 }
@@ -31,11 +30,10 @@ func NewRoleService() *RoleService {
 
 const (
 	userRolesCachePrefix = "user_roles:"
-	userPermsCachePrefix = "user_perms:"
 	cacheTTL             = 30 * time.Minute
 )
 
-// GetUserRoleNames 获取用户角色编码列表（带缓存）
+// GetUserRoleNames 获取用户职权编码列表（带缓存）
 func (s *RoleService) GetUserRoleNames(ctx context.Context, userID uint) ([]string, error) {
 	cacheKey := fmt.Sprintf("%s%d", userRolesCachePrefix, userID)
 	val, err := global.Redis.Get(ctx, cacheKey).Result()
@@ -60,82 +58,9 @@ func (s *RoleService) GetUserRoleNames(ctx context.Context, userID uint) ([]stri
 	return roles, nil
 }
 
-// GetUserPermissions 获取用户所有权限标识列表（带缓存）
-func (s *RoleService) GetUserPermissions(ctx context.Context, userID uint) ([]string, error) {
-	cacheKey := fmt.Sprintf("%s%d", userPermsCachePrefix, userID)
-	val, err := global.Redis.Get(ctx, cacheKey).Result()
-	if err == nil && val != "" {
-		var perms []string
-		if json.Unmarshal([]byte(val), &perms) == nil {
-			return perms, nil
-		}
-	}
-
-	// 获取用户角色
-	roleCodes, err := s.repo.GetUserRoleCodes(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// super_admin 拥有所有权限
-	if model.IsSuperAdmin(roleCodes) {
-		allMenus, err := s.menuRepo.ListAll()
-		if err != nil {
-			return nil, err
-		}
-		perms := make([]string, 0)
-		for _, m := range allMenus {
-			if m.Type == model.MenuTypeButton && m.Permission != "" {
-				perms = append(perms, m.Permission)
-			}
-		}
-		if data, err := json.Marshal(perms); err == nil {
-			global.Redis.Set(ctx, cacheKey, string(data), cacheTTL)
-		}
-		return perms, nil
-	}
-
-	// 获取角色ID
-	roleIDs, err := s.repo.GetUserRoleIDs(userID)
-	if err != nil {
-		return nil, err
-	}
-	if len(roleIDs) == 0 {
-		return []string{}, nil
-	}
-
-	// 获取角色所有菜单ID
-	menuIDs, err := s.repo.GetMenuIDsByRoles(roleIDs)
-	if err != nil {
-		return nil, err
-	}
-	if len(menuIDs) == 0 {
-		return []string{}, nil
-	}
-
-	// 获取菜单，过滤出按钮权限
-	menus, err := s.menuRepo.ListByIDs(menuIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	perms := make([]string, 0)
-	for _, m := range menus {
-		if m.Type == model.MenuTypeButton && m.Permission != "" {
-			perms = append(perms, m.Permission)
-		}
-	}
-
-	if data, err := json.Marshal(perms); err == nil {
-		global.Redis.Set(ctx, cacheKey, string(data), cacheTTL)
-	}
-	return perms, nil
-}
-
-// InvalidateUserCache 清除用户角色和权限缓存
+// InvalidateUserCache 清除用户职权缓存
 func (s *RoleService) InvalidateUserCache(ctx context.Context, userID uint) {
 	global.Redis.Del(ctx, fmt.Sprintf("%s%d", userRolesCachePrefix, userID))
-	global.Redis.Del(ctx, fmt.Sprintf("%s%d", userPermsCachePrefix, userID))
 }
 
 // InvalidateUserRolesCache 兼容旧接口
@@ -143,129 +68,127 @@ func (s *RoleService) InvalidateUserRolesCache(ctx context.Context, userID uint)
 	s.InvalidateUserCache(ctx, userID)
 }
 
-// ─── 角色 CRUD ───
+// ─── 职权定义查询 ───
 
-func (s *RoleService) ListRoles(page, pageSize int) ([]model.Role, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-	return s.repo.List(page, pageSize)
+// ListRoleDefinitions 返回系统职权定义列表
+func (s *RoleService) ListRoleDefinitions() []model.RoleDefinition {
+	return model.SystemRoleDefinitions
 }
 
-func (s *RoleService) ListAllRoles() ([]model.Role, error) {
-	return s.repo.ListAll()
-}
+// ─── 用户职权管理 ───
 
-func (s *RoleService) GetRole(id uint) (*model.Role, error) {
-	role, err := s.repo.GetByID(id)
+// GetUserRoles 获取用户的职权定义列表
+func (s *RoleService) GetUserRoles(userID uint) ([]model.RoleDefinition, error) {
+	codes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
 		return nil, err
 	}
-	menuIDs, _ := s.repo.GetRoleMenuIDs(id)
-	role.MenuIDs = menuIDs
-	return role, nil
-}
-
-func (s *RoleService) CreateRole(role *model.Role) error {
-	if role.Code == "" {
-		return errors.New("角色编码不能为空")
-	}
-	if role.Name == "" {
-		return errors.New("角色名称不能为空")
-	}
-	role.Status = 1
-	return s.repo.Create(role)
-}
-
-func (s *RoleService) UpdateRole(role *model.Role) error {
-	existing, err := s.repo.GetByID(role.ID)
-	if err != nil {
-		return errors.New("角色不存在")
-	}
-	if existing.IsSystem {
-		// 系统角色只允许修改名称和描述
-		existing.Name = role.Name
-		existing.Description = role.Description
-		return s.repo.Update(existing)
-	}
-	role.IsSystem = false
-	return s.repo.Update(role)
-}
-
-func (s *RoleService) DeleteRole(id uint) error {
-	role, err := s.repo.GetByID(id)
-	if err != nil {
-		return errors.New("角色不存在")
-	}
-	if role.IsSystem {
-		return errors.New("系统内置角色不可删除")
-	}
-	return s.repo.Delete(id)
-}
-
-// ─── 角色权限（菜单）管理 ───
-
-func (s *RoleService) GetRoleMenuIDs(roleID uint) ([]uint, error) {
-	return s.repo.GetRoleMenuIDs(roleID)
-}
-
-func (s *RoleService) SetRoleMenus(ctx context.Context, roleID uint, menuIDs []uint) error {
-	_, err := s.repo.GetByID(roleID)
-	if err != nil {
-		return errors.New("角色不存在")
-	}
-	if err := s.repo.SetRoleMenus(roleID, menuIDs); err != nil {
-		return err
-	}
-	// 清除该角色所有用户的缓存
-	userIDs, _ := s.repo.GetRoleUserIDs(roleID)
-	for _, uid := range userIDs {
-		s.InvalidateUserCache(ctx, uid)
-	}
-	return nil
-}
-
-// ─── 用户角色管理 ───
-
-func (s *RoleService) GetUserRoles(userID uint) ([]model.Role, error) {
-	roleIDs, err := s.repo.GetUserRoleIDs(userID)
-	if err != nil {
-		return nil, err
-	}
-	if len(roleIDs) == 0 {
-		return []model.Role{}, nil
-	}
-	var roles []model.Role
-	err = global.DB.Where("id IN ?", roleIDs).Order("sort DESC, id ASC").Find(&roles).Error
-	if roles == nil {
-		roles = []model.Role{}
-	}
-	return roles, err
-}
-
-func (s *RoleService) SetUserRoles(ctx context.Context, operatorRoles []string, userID uint, roleIDs []uint) error {
-	// 检查是否包含 super_admin 角色
-	for _, rid := range roleIDs {
-		role, err := s.repo.GetByID(rid)
-		if err != nil {
-			return fmt.Errorf("角色ID %d 不存在", rid)
-		}
-		if role.Code == model.RoleSuperAdmin && !model.IsSuperAdmin(operatorRoles) {
-			return errors.New("只有超级管理员可以分配该角色")
+	defs := make([]model.RoleDefinition, 0, len(codes))
+	for _, code := range codes {
+		if def, ok := model.GetRoleDefinition(code); ok {
+			defs = append(defs, def)
 		}
 	}
+	return defs, nil
+}
 
-	if err := s.repo.SetUserRoles(userID, roleIDs); err != nil {
+func (s *RoleService) SetUserRoles(ctx context.Context, _ uint, operatorRoles []string, userID uint, roleCodes []string) error {
+	currentCodes, err := s.repo.GetUserRoleCodes(userID)
+	if err != nil {
 		return err
 	}
 
-	// 同步 User.Role 字段（取最高优先级角色）
+	for _, code := range roleCodes {
+		if !model.IsValidRoleCode(code) {
+			return fmt.Errorf("未知的职权编码: %s", code)
+		}
+	}
+
+	requestedCodes := normalizeAssignedRoleCodes(roleCodes)
+
+	if model.IsSuperAdmin(operatorRoles) {
+		requestedCodes = filterOutRole(requestedCodes, model.RoleSuperAdmin)
+		if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
+			requestedCodes = append([]string{model.RoleSuperAdmin}, requestedCodes...)
+		}
+	} else {
+		if model.ContainsAnyRole(requestedCodes, model.RoleSuperAdmin) {
+			return errors.New("超级管理员职权仅通过配置文件管理，不可手动分配")
+		}
+		if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
+			return errors.New("超级管理员职权仅通过配置文件管理，不可手动修改")
+		}
+	}
+
+	if err := validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes); err != nil {
+		return err
+	}
+
+	if err := s.repo.SetUserRoles(userID, requestedCodes); err != nil {
+		return err
+	}
+
+	// 同步 User.Role 字段（取最高优先级职权）
 	s.SyncUserPrimaryRole(userID)
 	s.InvalidateUserCache(ctx, userID)
 	return nil
+}
+
+func validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes []string) error {
+	isSuperAdmin := model.IsSuperAdmin(operatorRoles)
+	isAdmin := model.ContainsRole(operatorRoles, model.RoleAdmin)
+
+	if isSuperAdmin {
+		return nil
+	}
+
+	if isAdmin {
+		if model.ContainsAnyRole(requestedCodes, model.RoleAdmin) && !model.ContainsRole(currentCodes, model.RoleAdmin) {
+			return errors.New("只有超级管理员可以分配管理员职权")
+		}
+		return nil
+	}
+
+	return errors.New("权限不足")
+}
+
+func normalizeAssignedRoleCodes(codes []string) []string {
+	if len(codes) == 0 {
+		return nil
+	}
+
+	hasNonGuestRole := false
+	for _, code := range codes {
+		if code != model.RoleGuest {
+			hasNonGuestRole = true
+			break
+		}
+	}
+
+	// Deduplicate and filter
+	seen := make(map[string]struct{}, len(codes))
+	result := make([]string, 0, len(codes))
+	for _, code := range codes {
+		if _, dup := seen[code]; dup {
+			continue
+		}
+		seen[code] = struct{}{}
+		if hasNonGuestRole && code == model.RoleGuest {
+			continue
+		}
+		result = append(result, code)
+	}
+	return result
+}
+
+func filterOutRole(codes []string, target string) []string {
+	result := make([]string, 0, len(codes))
+	for _, code := range codes {
+		if code != target {
+			result = append(result, code)
+		}
+	}
+	return result
 }
 
 // ─── 内部辅助 ───
@@ -273,261 +196,203 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorRoles []string, 
 func (s *RoleService) SyncUserPrimaryRole(userID uint) {
 	codes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil || len(codes) == 0 {
-		_ = s.userRepo.UpdateRole(userID, model.RoleUser)
+		_ = s.userRepo.UpdateRole(userID, model.RoleGuest)
 		return
 	}
 	// 取第一个（已按 sort 排序）
 	_ = s.userRepo.UpdateRole(userID, codes[0])
 }
 
-// SeedSystemRoles 初始化系统角色种子数据
-func (s *RoleService) SeedSystemRoles() {
-	// 清理旧版 code 为空的脏数据
-	if err := global.DB.Where("code = '' OR code IS NULL").Delete(&model.Role{}).Error; err != nil {
-		global.Logger.Warn("清理旧角色数据失败", zap.Error(err))
-	}
-
-	for _, seed := range model.SystemRoleSeeds {
-		role := seed
-		if err := s.repo.UpsertSystemRole(&role); err != nil {
-			global.Logger.Error("种子角色同步失败", zap.String("role", seed.Code), zap.Error(err))
-		}
-	}
-	global.Logger.Info("系统角色种子同步完成")
-}
-
-// SeedSystemMenus 初始化系统菜单种子数据
-func (s *RoleService) SeedSystemMenus() {
-	seeds := model.GetSystemMenuSeeds()
-	nameToID := make(map[string]uint)
-
-	// 先处理根菜单，再处理子菜单
-	for pass := 0; pass < 5; pass++ {
-		for _, seed := range seeds {
-			// 确定父ID
-			parentID := uint(0)
-			if seed.ParentName != "" {
-				pid, ok := nameToID[seed.ParentName]
-				if !ok {
-					continue // 父菜单未创建，等下一轮
-				}
-				parentID = pid
-			}
-
-			// 已处理过的跳过
-			if _, exists := nameToID[seed.Menu.Name]; exists {
-				continue
-			}
-
-			menu := seed.Menu
-			menu.ParentID = parentID
-			if err := s.menuRepo.UpsertByName(&menu); err != nil {
-				global.Logger.Error("种子菜单同步失败", zap.String("name", seed.Menu.Name), zap.Error(err))
-				continue
-			}
-
-			// 获取真实ID
-			created, err := s.menuRepo.GetByName(seed.Menu.Name)
-			if err != nil {
-				global.Logger.Error("查询种子菜单失败", zap.String("name", seed.Menu.Name), zap.Error(err))
-				continue
-			}
-			nameToID[seed.Menu.Name] = created.ID
-		}
-	}
-
-	global.Logger.Info("系统菜单种子同步完成", zap.Int("count", len(nameToID)))
-
-	// 设置默认角色-菜单映射
-	s.seedDefaultRoleMenus(nameToID)
-}
-
-func (s *RoleService) seedDefaultRoleMenus(nameToID map[string]uint) {
-	roleMenuMap := model.DefaultRoleMenuMap()
-
-	for roleCode, menuNames := range roleMenuMap {
-		role, err := s.repo.GetByCode(roleCode)
-		if err != nil {
-			global.Logger.Warn("默认角色未找到", zap.String("code", roleCode))
-			continue
-		}
-
-		// admin 角色自动获取所有菜单权限
-		if roleCode == model.RoleAdmin {
-			var allMenuIDs []uint
-			for _, id := range nameToID {
-				allMenuIDs = append(allMenuIDs, id)
-			}
-			if len(allMenuIDs) > 0 {
-				existing, _ := s.repo.GetRoleMenuIDs(role.ID)
-				existSet := make(map[uint]struct{}, len(existing))
-				for _, id := range existing {
-					existSet[id] = struct{}{}
-				}
-				var toAdd []uint
-				for _, id := range allMenuIDs {
-					if _, ok := existSet[id]; !ok {
-						toAdd = append(toAdd, id)
-					}
-				}
-				if len(toAdd) > 0 {
-					merged := append(existing, toAdd...)
-					if err := s.repo.SetRoleMenus(role.ID, merged); err != nil {
-						global.Logger.Error("设置管理员全部菜单失败", zap.String("role", roleCode), zap.Error(err))
-					} else {
-						global.Logger.Info("管理员菜单已增量更新", zap.String("role", roleCode), zap.Int("added", len(toAdd)))
-					}
-				}
-			}
-			continue
-		}
-
-		// 计算 seed 中该角色应有的菜单 ID 集合
-		var seedMenuIDs []uint
-		for _, name := range menuNames {
-			if id, ok := nameToID[name]; ok {
-				seedMenuIDs = append(seedMenuIDs, id)
-			}
-		}
-		if len(seedMenuIDs) == 0 {
-			continue
-		}
-
-		existing, _ := s.repo.GetRoleMenuIDs(role.ID)
-
-		if len(existing) == 0 {
-			// 角色尚无菜单，直接写入
-			if err := s.repo.SetRoleMenus(role.ID, seedMenuIDs); err != nil {
-				global.Logger.Error("设置默认角色菜单失败", zap.String("role", roleCode), zap.Error(err))
-			}
-			continue
-		}
-
-		// 角色已有菜单配置：增量补入 seed 中新增但尚未分配的菜单
-		existSet := make(map[uint]struct{}, len(existing))
-		for _, id := range existing {
-			existSet[id] = struct{}{}
-		}
-		var toAdd []uint
-		for _, id := range seedMenuIDs {
-			if _, ok := existSet[id]; !ok {
-				toAdd = append(toAdd, id)
-			}
-		}
-		if len(toAdd) > 0 {
-			merged := append(existing, toAdd...)
-			if err := s.repo.SetRoleMenus(role.ID, merged); err != nil {
-				global.Logger.Error("增量更新角色菜单失败", zap.String("role", roleCode), zap.Error(err))
-			} else {
-				global.Logger.Info("角色菜单已增量更新", zap.String("role", roleCode), zap.Int("added", len(toAdd)))
-			}
-		}
-	}
-	global.Logger.Info("默认角色菜单映射完成")
-}
-
-// CheckCorpAccessAndAdjustRole 检查用户名下所有角色的军团归属是否在准入列表内
-// 规则：
-//   - AllowCorporations 为空 → 不限制，直接返回
-//   - admin / super_admin → 不受影响
-//   - 至少有一个角色的 CorporationID 在允许列表内 → 确保拥有 user 角色（从 guest 升级）
-//   - 没有符合条件的角色 → 降级为 guest（清除所有非高级角色）
+// CheckCorpAccessAndAdjustRole 检查用户名下所有人物的军团归属是否在准入列表内
 func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID uint) error {
-	allowCorps := global.Config.App.AllowCorporations
-	if len(allowCorps) == 0 {
-		return nil
-	}
-
+	allowCorps := utils.GetAllowCorporations()
 	allowSet := make(map[int64]struct{}, len(allowCorps))
 	for _, id := range allowCorps {
 		allowSet[id] = struct{}{}
 	}
 
-	// 查询该用户绑定的所有 EVE 角色
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+
 	charRepo := repository.NewEveCharacterRepository()
 	chars, err := charRepo.ListByUserID(userID)
 	if err != nil {
 		return err
 	}
 
-	// 检查是否有角色属于允许军团
-	hasAccess := false
-	for _, c := range chars {
-		if c.CorporationID != 0 {
-			if _, ok := allowSet[c.CorporationID]; ok {
-				hasAccess = true
-				break
-			}
-		}
-	}
+	hasAccess := hasAllowedPrimaryCharacter(user.PrimaryCharacterID, chars, allowSet)
 
-	// 获取用户当前拥有的角色
 	rollCodes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
 		return err
 	}
 
-	// admin / super_admin 不受军团限制影响
-	if model.ContainsAnyRole(rollCodes, model.RoleAdmin, model.RoleSuperAdmin) {
+	if model.ContainsAnyRole(rollCodes, model.RoleSuperAdmin) {
 		return nil
 	}
 
 	if hasAccess {
-		// 已有 user 或更高普通权限则无需变更
 		if model.ContainsRole(rollCodes, model.RoleUser) {
 			return nil
 		}
-		// 从 guest 升级为 user：先移除 guest，再添加 user
-		userRole, err := s.repo.GetByCode(model.RoleUser)
-		if err != nil {
-			return err
-		}
-		if guestRole, err := s.repo.GetByCode(model.RoleGuest); err == nil {
-			_ = s.repo.RemoveUserRole(userID, guestRole.ID)
-		}
-		if err := s.repo.AddUserRole(userID, userRole.ID); err != nil {
+		_ = s.repo.RemoveUserRole(userID, model.RoleGuest)
+		if err := s.repo.AddUserRole(userID, model.RoleUser); err != nil {
 			return err
 		}
 		s.InvalidateUserCache(ctx, userID)
+		s.SyncUserPrimaryRole(userID)
 		global.Logger.Info("[CorpCheck] 用户升级为 user",
 			zap.Uint("user_id", userID))
 	} else {
-		// 已经是纯 guest 则无需变更
 		if len(rollCodes) == 1 && rollCodes[0] == model.RoleGuest {
 			return nil
 		}
-		// 清除所有角色，降级为 guest
-		guestRole, err := s.repo.GetByCode(model.RoleGuest)
-		if err != nil {
-			return err
-		}
-		roleIDs, _ := s.repo.GetUserRoleIDs(userID)
-		for _, rid := range roleIDs {
-			_ = s.repo.RemoveUserRole(userID, rid)
-		}
-		if err := s.repo.AddUserRole(userID, guestRole.ID); err != nil {
+		// 清除所有职权，降级为 guest
+		if err := s.repo.SetUserRoles(userID, []string{model.RoleGuest}); err != nil {
 			return err
 		}
 		s.InvalidateUserCache(ctx, userID)
+		s.SyncUserPrimaryRole(userID)
 		global.Logger.Info("[CorpCheck] 用户降级为 guest",
 			zap.Uint("user_id", userID))
 	}
 	return nil
 }
 
-// EnsureUserHasDefaultRole 确保用户拥有默认角色
-func (s *RoleService) EnsureUserHasDefaultRole(ctx context.Context, userID uint) {
+// EnsureUserHasRole 确保用户至少拥有指定职权（当用户还没有任何 user_role 记录时）
+func (s *RoleService) EnsureUserHasRole(ctx context.Context, userID uint, roleCode string) {
 	codes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil || len(codes) == 0 {
-		role, err := s.repo.GetByCode(model.RoleGuest)
-		if err != nil {
-			global.Logger.Error("查找默认角色失败", zap.Error(err))
-			return
-		}
-		if err := s.repo.AddUserRole(userID, role.ID); err != nil {
-			global.Logger.Error("分配默认角色失败", zap.Uint("userID", userID), zap.Error(err))
+		if err := s.repo.AddUserRole(userID, roleCode); err != nil {
+			global.Logger.Error("分配职权失败", zap.Uint("userID", userID), zap.String("role", roleCode), zap.Error(err))
 		}
 		s.InvalidateUserCache(ctx, userID)
+	}
+}
+
+// EnsureUserHasDefaultRole 兼容旧接口，默认补 guest
+func (s *RoleService) EnsureUserHasDefaultRole(ctx context.Context, userID uint) {
+	s.EnsureUserHasRole(ctx, userID, model.RoleGuest)
+}
+
+// MigrateUserRoleTableToCode 将旧的 user_role(user_id, role_id) 迁移为 (user_id, role_code)
+// 在 bootstrap 阶段调用一次
+func (s *RoleService) MigrateUserRoleTableToCode() {
+	migrator := global.DB.Migrator()
+
+	// If old role_id column still exists, perform migration
+	if !migrator.HasColumn("user_role", "role_id") {
+		return
+	}
+
+	global.Logger.Info("[Migration] 开始迁移 user_role 表: role_id → role_code")
+
+	// Check if role_code column already exists (partial migration)
+	hasRoleCode := migrator.HasColumn("user_role", "role_code")
+
+	if !hasRoleCode {
+		// Add role_code column
+		if err := global.DB.Exec(`ALTER TABLE user_role ADD COLUMN role_code VARCHAR(50)`).Error; err != nil {
+			global.Logger.Error("[Migration] 添加 role_code 列失败", zap.Error(err))
+			return
+		}
+	}
+
+	// Populate role_code from role table (if role table still exists)
+	if migrator.HasTable("role") {
+		if err := global.DB.Exec(`
+			UPDATE user_role
+			SET role_code = (SELECT code FROM role WHERE role.id = user_role.role_id)
+			WHERE role_code IS NULL OR role_code = ''
+		`).Error; err != nil {
+			global.Logger.Error("[Migration] 填充 role_code 失败", zap.Error(err))
+			return
+		}
+	}
+
+	// Delete rows where role_code is still empty (orphaned references)
+	global.DB.Exec(`DELETE FROM user_role WHERE role_code IS NULL OR role_code = ''`)
+
+	// Drop old primary key and role_id column, set new primary key
+	// Use raw SQL for atomic DDL
+	ddlStatements := []string{
+		`ALTER TABLE user_role DROP CONSTRAINT IF EXISTS user_role_pkey`,
+		`ALTER TABLE user_role DROP COLUMN IF EXISTS role_id`,
+		`ALTER TABLE user_role ALTER COLUMN role_code SET NOT NULL`,
+		`ALTER TABLE user_role ADD PRIMARY KEY (user_id, role_code)`,
+	}
+	for _, stmt := range ddlStatements {
+		if err := global.DB.Exec(stmt).Error; err != nil {
+			global.Logger.Error("[Migration] DDL 执行失败", zap.String("sql", stmt), zap.Error(err))
+			return
+		}
+	}
+
+	global.Logger.Info("[Migration] user_role 表迁移完成")
+}
+
+// MigrateEsiMappingsToCode 将 esi_role_mapping / esi_title_mapping 的 role_id 迁移为 role_code
+func (s *RoleService) MigrateEsiMappingsToCode() {
+	migrator := global.DB.Migrator()
+
+	for _, table := range []string{"esi_role_mapping", "esi_title_mapping"} {
+		if !migrator.HasColumn(table, "role_id") {
+			continue
+		}
+
+		global.Logger.Info("[Migration] 迁移 ESI 映射表", zap.String("table", table))
+
+		hasRoleCode := migrator.HasColumn(table, "role_code")
+		if !hasRoleCode {
+			if err := global.DB.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN role_code VARCHAR(50)`, table)).Error; err != nil {
+				global.Logger.Error("[Migration] 添加 role_code 列失败", zap.String("table", table), zap.Error(err))
+				continue
+			}
+		}
+
+		// Populate from role table
+		if migrator.HasTable("role") {
+			if err := global.DB.Exec(fmt.Sprintf(`
+				UPDATE %s
+				SET role_code = (SELECT code FROM role WHERE role.id = %s.role_id)
+				WHERE role_code IS NULL OR role_code = ''
+			`, table, table)).Error; err != nil {
+				global.Logger.Error("[Migration] 填充 role_code 失败", zap.String("table", table), zap.Error(err))
+				continue
+			}
+		}
+
+		// Delete orphaned rows
+		global.DB.Exec(fmt.Sprintf(`DELETE FROM %s WHERE role_code IS NULL OR role_code = ''`, table))
+
+		// Drop role_id column and update constraints
+		ddl := []string{
+			fmt.Sprintf(`ALTER TABLE %s DROP COLUMN IF EXISTS role_id`, table),
+			fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN role_code SET NOT NULL`, table),
+		}
+
+		// Recreate unique indexes without role_id
+		if table == "esi_role_mapping" {
+			ddl = append(ddl,
+				`DROP INDEX IF EXISTS idx_esi_role_mapping`,
+				`CREATE UNIQUE INDEX idx_esi_role_mapping ON esi_role_mapping (esi_role, role_code)`,
+			)
+		} else {
+			ddl = append(ddl,
+				`DROP INDEX IF EXISTS idx_esi_title_mapping`,
+				`CREATE UNIQUE INDEX idx_esi_title_mapping ON esi_title_mapping (corporation_id, title_id, role_code)`,
+			)
+		}
+
+		for _, stmt := range ddl {
+			if err := global.DB.Exec(stmt).Error; err != nil {
+				global.Logger.Error("[Migration] DDL 执行失败", zap.String("table", table), zap.String("sql", stmt), zap.Error(err))
+			}
+		}
+
+		global.Logger.Info("[Migration] ESI 映射表迁移完成", zap.String("table", table))
 	}
 }
 
@@ -535,26 +400,25 @@ func (s *RoleService) EnsureUserHasDefaultRole(ctx context.Context, userID uint)
 func (s *RoleService) MigrateExistingUsers() {
 	var users []model.User
 	if err := global.DB.Find(&users).Error; err != nil {
-		global.Logger.Error("迁移用户角色失败：查询用户", zap.Error(err))
+		global.Logger.Error("迁移用户职权失败：查询用户", zap.Error(err))
 		return
 	}
 	for _, u := range users {
 		existing, _ := s.repo.GetUserRoleCodes(u.ID)
-		if len(existing) > 0 {
-			continue
-		}
 		roleName := u.Role
 		if roleName == "" {
 			roleName = model.RoleGuest
 		}
-		role, err := s.repo.GetByCode(roleName)
-		if err != nil {
-			global.Logger.Warn("迁移角色未找到", zap.String("role", roleName), zap.Uint("userID", u.ID))
+		if model.ContainsRole(existing, roleName) {
 			continue
 		}
-		if err := s.repo.AddUserRole(u.ID, role.ID); err != nil {
-			global.Logger.Error("迁移用户角色失败", zap.Uint("userID", u.ID), zap.Error(err))
+		if !model.IsValidRoleCode(roleName) {
+			global.Logger.Warn("迁移职权未找到", zap.String("role", roleName), zap.Uint("userID", u.ID))
+			continue
+		}
+		if err := s.repo.AddUserRole(u.ID, roleName); err != nil {
+			global.Logger.Error("迁移用户职权失败", zap.Uint("userID", u.ID), zap.Error(err))
 		}
 	}
-	global.Logger.Info("现有用户角色迁移完成")
+	global.Logger.Info("现有用户职权迁移完成")
 }

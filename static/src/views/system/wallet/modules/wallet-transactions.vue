@@ -3,10 +3,10 @@
   <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
     <template #left>
       <ElInput
-        v-model="filterForm.user_id"
-        :placeholder="$t('walletAdmin.placeholders.userIdFilter')"
+        v-model="filterForm.user_keyword"
+        :placeholder="$t('walletAdmin.placeholders.userKeywordFilter')"
         clearable
-        style="width: 160px"
+        style="width: 240px"
         @clear="handleSearch"
         @keyup.enter="handleSearch"
       />
@@ -18,11 +18,19 @@
         @change="handleSearch"
       >
         <ElOption :label="$t('walletAdmin.refTypes.pap_reward')" value="pap_reward" />
+        <ElOption :label="$t('walletAdmin.refTypes.pap_fc_salary')" value="pap_fc_salary" />
         <ElOption :label="$t('walletAdmin.refTypes.admin_adjust')" value="admin_adjust" />
         <ElOption :label="$t('walletAdmin.refTypes.manual')" value="manual" />
         <ElOption :label="$t('walletAdmin.refTypes.redeem')" value="redeem" />
         <ElOption :label="$t('walletAdmin.refTypes.srp_payout')" value="srp_payout" />
+        <ElOption :label="$t('walletAdmin.refTypes.welfare_payout')" value="welfare_payout" />
         <ElOption :label="$t('walletAdmin.refTypes.shop_purchase')" value="shop_purchase" />
+        <ElOption :label="$t('walletAdmin.refTypes.shop_refund')" value="shop_refund" />
+        <ElOption
+          :label="$t('walletAdmin.refTypes.newbro_captain_reward')"
+          value="newbro_captain_reward"
+        />
+        <ElOption :label="$t('walletAdmin.refTypes.mentor_reward')" value="mentor_reward" />
       </ElSelect>
       <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
     </template>
@@ -33,6 +41,7 @@
     :data="data"
     :columns="columns"
     :pagination="pagination"
+    visual-variant="ledger"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -41,6 +50,7 @@
 <script setup lang="ts">
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListTransactions } from '@/api/sys-wallet'
 
@@ -51,11 +61,22 @@
 
   const REF_TYPE_MAP: Record<string, { label: string; tag: string }> = {
     pap_reward: { label: t('walletAdmin.refTypes.pap_reward'), tag: 'success' },
+    pap_fc_salary: { label: t('walletAdmin.refTypes.pap_fc_salary'), tag: 'success' },
     admin_adjust: { label: t('walletAdmin.refTypes.admin_adjust'), tag: 'warning' },
     manual: { label: t('walletAdmin.refTypes.manual'), tag: '' },
     redeem: { label: t('walletAdmin.refTypes.redeem'), tag: 'danger' },
     srp_payout: { label: t('walletAdmin.refTypes.srp_payout'), tag: 'primary' },
-    shop_purchase: { label: t('walletAdmin.refTypes.shop_purchase'), tag: 'info' }
+    welfare_payout: { label: t('walletAdmin.refTypes.welfare_payout'), tag: 'success' },
+    shop_purchase: { label: t('walletAdmin.refTypes.shop_purchase'), tag: 'info' },
+    shop_refund: { label: t('walletAdmin.refTypes.shop_refund'), tag: 'warning' },
+    newbro_captain_reward: {
+      label: t('walletAdmin.refTypes.newbro_captain_reward'),
+      tag: 'success'
+    },
+    mentor_reward: {
+      label: t('walletAdmin.refTypes.mentor_reward'),
+      tag: 'success'
+    }
   }
   const getRefTypeLabel = (t: string) => REF_TYPE_MAP[t]?.label ?? t
   const getRefTypeTag = (t: string): any => REF_TYPE_MAP[t]?.tag ?? 'info'
@@ -63,9 +84,11 @@
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
 
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
-
-  const filterForm = reactive({ user_id: '', ref_type: '' })
+  const filterForm = reactive({
+    user_id: undefined as number | undefined,
+    user_keyword: '',
+    ref_type: ''
+  })
 
   const {
     columns,
@@ -81,18 +104,18 @@
   } = useTable({
     core: {
       apiFn: adminListTransactions,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
-        { prop: 'user_id', label: '用户 ID', width: 90 },
+        { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 90 },
         {
           prop: 'character_name',
-          label: '主角色',
+          label: t('walletAdmin.transactions.characterName'),
           minWidth: 140,
           formatter: (row: WalletTransaction) => h('span', {}, row.character_name || '-')
         },
         {
-          label: '金额',
+          label: t('walletAdmin.transactions.amount'),
           width: 140,
           formatter: (row: WalletTransaction) =>
             h(
@@ -127,12 +150,14 @@
         {
           prop: 'operator_id',
           label: t('walletAdmin.transactions.operator'),
-          width: 100,
+          minWidth: 120,
           formatter: (row: WalletTransaction) =>
             h(
               'span',
               {},
-              row.operator_id === 0 ? t('walletAdmin.actions.system') : `#${row.operator_id}`
+              row.operator_id === 0
+                ? t('walletAdmin.actions.system')
+                : row.operator_name || `#${row.operator_id}`
             )
         },
         {
@@ -147,14 +172,16 @@
 
   const handleSearch = () => {
     Object.assign(searchParams, {
-      user_id: filterForm.user_id ? Number(filterForm.user_id) : undefined,
+      user_id: filterForm.user_id,
+      user_keyword: filterForm.user_keyword || undefined,
       ref_type: filterForm.ref_type || undefined
     })
     getData()
   }
 
   const filterByUser = (userId: number) => {
-    filterForm.user_id = String(userId)
+    filterForm.user_id = userId
+    filterForm.user_keyword = ''
     handleSearch()
   }
 

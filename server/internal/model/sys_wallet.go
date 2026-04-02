@@ -3,10 +3,10 @@ package model
 import "time"
 
 // ─────────────────────────────────────────────
-//  系统钱包（与 EVE Wallet 无关，独立系统）
+//  伏羲币（与 EVE Wallet 无关，独立系统）
 // ─────────────────────────────────────────────
 
-// SystemWallet 用户系统钱包（用于发放/兑换奖励）
+// SystemWallet 用户伏羲币（用于发放/兑换奖励）
 type SystemWallet struct {
 	ID        uint      `gorm:"primarykey"                 json:"id"`
 	UserID    uint      `gorm:"uniqueIndex;not null"       json:"user_id"`
@@ -16,19 +16,21 @@ type SystemWallet struct {
 
 func (SystemWallet) TableName() string { return "system_wallet" }
 
-// WalletWithCharacter 钱包信息 + 用户主角色名（用于管理列表展示）
+// WalletWithCharacter 钱包信息 + 用户主人物名（用于管理列表展示）
 type WalletWithCharacter struct {
 	SystemWallet
 	CharacterName string `json:"character_name"`
 }
 
-// TransactionWithCharacter 钱包流水 + 用户主角色名
+// TransactionWithCharacter 钱包流水 + 用户主人物名
 type TransactionWithCharacter struct {
 	WalletTransaction
 	CharacterName string `json:"character_name"`
+	Nickname      string `json:"nickname"`
+	OperatorName  string `json:"operator_name"`
 }
 
-// LogWithCharacter 钱包操作日志 + 操作人/目标用户角色名
+// LogWithCharacter 钱包操作日志 + 操作人/目标用户人物名
 type LogWithCharacter struct {
 	WalletLog
 	TargetCharacterName   string `json:"target_character_name"`
@@ -38,14 +40,14 @@ type LogWithCharacter struct {
 // WalletTransaction 钱包流水
 type WalletTransaction struct {
 	ID           uint      `gorm:"primarykey"                 json:"id"`
-	UserID       uint      `gorm:"not null;index"             json:"user_id"`
+	UserID       uint      `gorm:"not null;index;index:idx_wt_user_created,priority:1" json:"user_id"`
 	Amount       float64   `gorm:"not null"                   json:"amount"` // 正数=收入 负数=支出
 	Reason       string    `gorm:"size:256"                   json:"reason"`
-	RefType      string    `gorm:"size:64;index"              json:"ref_type"` // pap_reward / manual / redeem / admin_adjust
+	RefType      string    `gorm:"size:64;index"              json:"ref_type"` // pap_reward / pap_fc_salary / manual / redeem / admin_adjust
 	RefID        string    `gorm:"size:64"                    json:"ref_id"`   // 关联 ID（如 fleet_id）
 	BalanceAfter float64   `gorm:"not null"                   json:"balance_after"`
 	OperatorID   uint      `gorm:"default:0;index"            json:"operator_id"` // 操作人 user_id（系统操作为 0）
-	CreatedAt    time.Time `gorm:"autoCreateTime;index"       json:"created_at"`
+	CreatedAt    time.Time `gorm:"autoCreateTime;index;index:idx_wt_user_created,priority:2,sort:desc" json:"created_at"`
 }
 
 func (WalletTransaction) TableName() string { return "wallet_transaction" }
@@ -67,14 +69,18 @@ func (WalletLog) TableName() string { return "wallet_log" }
 
 // 钱包流水类型常量
 const (
-	WalletRefPapReward   = "pap_reward"    // PAP 奖励
-	WalletRefPapConvert  = "pap_convert"   // 联盟 PAP 月度兑换
-	WalletRefManual      = "manual"        // 手动操作
-	WalletRefRedeem      = "redeem"        // 兑换消费
-	WalletRefAdminAdjust = "admin_adjust"  // 管理员调整
-	WalletRefSrpPayout   = "srp_payout"    // SRP 补损发放
-	WalletRefShopBuy     = "shop_purchase" // 商城购买
-	WalletRefLotteryDraw = "lottery_draw"  // 抽奖消费
+	WalletRefPapReward           = "pap_reward"            // PAP 奖励
+	WalletRefPapFCSalary         = "pap_fc_salary"         // FC 工资
+	WalletRefPapConvert          = "pap_convert"           // 联盟 PAP 月度兑换
+	WalletRefManual              = "manual"                // 手动操作
+	WalletRefRedeem              = "redeem"                // 兑换消费
+	WalletRefAdminAdjust         = "admin_adjust"          // 管理员调整
+	WalletRefSrpPayout           = "srp_payout"            // SRP 补损发放
+	WalletRefWelfarePayout       = "welfare_payout"        // 福利审批发放
+	WalletRefShopBuy             = "shop_purchase"         // 商城购买
+	WalletRefShopRefund          = "shop_refund"           // 商城退款（拒绝订单）
+	WalletRefNewbroCaptainReward = "newbro_captain_reward" // 队长帮扶奖励
+	WalletRefMentorReward        = "mentor_reward"         // 导师帮扶奖励
 )
 
 // 钱包操作日志动作

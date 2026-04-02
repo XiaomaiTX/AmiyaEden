@@ -4,14 +4,14 @@ import "time"
 
 // SRP 申请审批状态
 const (
-	SrpReviewPending  = "pending"  // 待审批
-	SrpReviewApproved = "approved" // 已批准
-	SrpReviewRejected = "rejected" // 已拒绝
+	SrpReviewSubmitted = "submitted" // 已提交（待审批）
+	SrpReviewApproved  = "approved"  // 已批准
+	SrpReviewRejected  = "rejected"  // 已拒绝
 )
 
 // SRP 发放状态
 const (
-	SrpPayoutPending = "pending" // 待发放
+	SrpPayoutNotPaid = "notpaid" // 未发放
 	SrpPayoutPaid    = "paid"    // 已发放
 )
 
@@ -52,12 +52,12 @@ type SrpApplication struct {
 	RecommendedAmount float64 `gorm:"not null;default:0"                     json:"recommended_amount"`
 	FinalAmount       float64 `gorm:"not null;default:0"                     json:"final_amount"`
 	// 审批
-	ReviewStatus string     `gorm:"size:32;not null;default:'pending';index" json:"review_status"`
+	ReviewStatus string     `gorm:"size:32;not null;default:'submitted';index;index:idx_srp_status,priority:1" json:"review_status"`
 	ReviewedBy   *uint      `gorm:""                                         json:"reviewed_by,omitempty"`
 	ReviewedAt   *time.Time `gorm:""                                         json:"reviewed_at,omitempty"`
 	ReviewNote   string     `gorm:"size:512"                                 json:"review_note"`
 	// 发放
-	PayoutStatus string     `gorm:"size:32;not null;default:'pending';index" json:"payout_status"`
+	PayoutStatus string     `gorm:"size:32;not null;default:'notpaid';index;index:idx_srp_status,priority:2" json:"payout_status"`
 	PaidBy       *uint      `gorm:""                                         json:"paid_by,omitempty"`
 	PaidAt       *time.Time `gorm:""                                         json:"paid_at,omitempty"`
 
@@ -66,23 +66,3 @@ type SrpApplication struct {
 }
 
 func (SrpApplication) TableName() string { return "srp_application" }
-
-// SRP 发放邮件发送状态
-const (
-	SrpPayoutMailSuccess = "success"
-	SrpPayoutMailFailed  = "failed"
-)
-
-// SrpPayoutMailLog SRP 发放后的 EVE 邮件发送日志
-type SrpPayoutMailLog struct {
-	ID                   uint      `gorm:"primarykey"                           json:"id"`
-	ApplicationID        uint      `gorm:"not null;index"                       json:"application_id"`
-	RecipientCharacterID int64     `gorm:"not null;index"                       json:"recipient_character_id"`
-	SenderCharacterID    int64     `gorm:"not null;index"                       json:"sender_character_id"`
-	MailID               *int64    `gorm:""                                     json:"mail_id,omitempty"`
-	Status               string    `gorm:"size:32;not null;index"               json:"status"`
-	ErrorMessage         string    `gorm:"size:1024"                            json:"error_message,omitempty"`
-	CreatedAt            time.Time `gorm:"autoCreateTime"                       json:"created_at"`
-}
-
-func (SrpPayoutMailLog) TableName() string { return "srp_payout_mail_log" }

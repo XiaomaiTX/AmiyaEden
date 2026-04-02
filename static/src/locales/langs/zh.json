@@ -1,4 +1,4 @@
-﻿{
+{
   "httpMsg": {
     "unauthorized": "未授权访问，请重新登录",
     "forbidden": "禁止访问该资源",
@@ -15,21 +15,9 @@
     "requestConfigError": "请求配置错误"
   },
   "topBar": {
-    "search": {
-      "title": "搜索"
-    },
     "user": {
       "userCenter": "个人中心",
-      "docs": "使用文档",
-      "github": "Github",
-      "lockScreen": "锁定屏幕",
       "logout": "退出登录"
-    },
-    "guide": {
-      "title": "点击这里查看",
-      "theme": "主题风格",
-      "menu": "开启顶栏菜单",
-      "description": "等更多配置"
     }
   },
   "common": {
@@ -39,17 +27,26 @@
     "close": "关闭",
     "refresh": "刷新",
     "operation": "操作",
-    "detail": "详情",
     "edit": "编辑",
     "delete": "删除",
+    "reason": "说明",
+    "type": "类型",
+    "time": "时间",
     "user": "用户",
-    "role": "角色",
+    "role": "职权",
     "name": "名称",
+    "quantity": "数量",
     "status": "状态",
     "save": "保存",
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制失败",
+    "millionIsk": "百万 ISK",
     "updatedAt": "更新时间",
     "createdAt": "创建时间",
-    "logOutTips": "您是否要退出登录?"
+    "logOutTips": "您是否要退出登录?",
+    "search": "查询",
+    "reset": "重置"
   },
   "search": {
     "placeholder": "搜索页面",
@@ -61,20 +58,11 @@
   "setting": {
     "menuType": {
       "title": "菜单布局",
-      "list": [
-        "垂直",
-        "水平",
-        "混合",
-        "双列"
-      ]
+      "list": ["垂直", "水平", "混合", "双列"]
     },
     "theme": {
       "title": "主题风格",
-      "list": [
-        "浅色",
-        "深色",
-        "系统"
-      ]
+      "list": ["浅色", "深色", "系统"]
     },
     "menu": {
       "title": "菜单风格"
@@ -84,17 +72,11 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": [
-        "边框",
-        "阴影"
-      ]
+      "list": ["边框", "阴影"]
     },
     "container": {
       "title": "容器宽度",
-      "list": [
-        "铺满",
-        "定宽"
-      ]
+      "list": ["铺满", "定宽"]
     },
     "basics": {
       "title": "基础配置",
@@ -140,14 +122,8 @@
   "notice": {
     "title": "通知",
     "btnRead": "标为已读",
-    "bar": [
-      "通知",
-      "消息",
-      "代办"
-    ],
-    "text": [
-      "暂无"
-    ],
+    "bar": ["通知"],
+    "text": ["暂无"],
     "viewAll": "查看全部"
   },
   "console": {
@@ -173,7 +149,7 @@
   "login": {
     "leftView": {
       "title": "AmiyaEden - EVE Online 工具与社区平台",
-      "subTitle": "使用您的 EVE Online 角色登录，安全且便捷"
+      "subTitle": "使用您的 EVE Online 人物登录，安全且便捷"
     },
     "title": "欢迎登录",
     "subTitle": "使用您的 EVE Online 身份进行登录",
@@ -187,18 +163,7 @@
       "successSub": "欢迎回来，{name}！正在跳转...",
       "error": "登录失败",
       "retry": "重新登录"
-    },
-    "success": {
-      "title": "登录成功",
-      "message": "欢迎回来"
     }
-  },
-  "forgetPassword": {
-    "title": "忘记密码？",
-    "subTitle": "输入您的电子邮件来重置您的密码",
-    "placeholder": "请输入您的电子邮件",
-    "submitBtnText": "提交",
-    "backBtnText": "返回"
   },
   "register": {
     "title": "创建账号",
@@ -233,12 +198,6 @@
       "backBtnText": "返回登录"
     }
   },
-  "greeting": {
-    "dawn": "凌晨了！",
-    "morning": "上午好！",
-    "afternoon": "下午好！",
-    "evening": "晚上好！"
-  },
   "exceptionPage": {
     "403": "抱歉，您无权访问该页面",
     "404": "抱歉，您访问的页面不存在",
@@ -249,23 +208,13 @@
     "login": {
       "title": "登录"
     },
-    "register": {
-      "title": "注册"
-    },
-    "forgetPassword": {
-      "title": "忘记密码"
-    },
     "outside": {
       "title": "内嵌页面"
     },
     "dashboard": {
       "title": "仪表盘",
-      "console": "工作台"
-    },
-    "result": {
-      "title": "结果页面",
-      "success": "成功页",
-      "fail": "失败页"
+      "console": "工作台",
+      "npcKills": "刷怪报表"
     },
     "exception": {
       "title": "异常页面",
@@ -273,32 +222,54 @@
       "notFound": "404",
       "serverError": "500"
     },
+    "welfare": {
+      "title": "军团福利",
+      "my": "我的福利",
+      "approval": "福利审批",
+      "settings": "福利设置"
+    },
     "shop": {
       "title": "商店",
       "browse": "浏览商品",
       "manage": "商店管理",
+      "orderManage": "订单管理",
       "wallet": "我的钱包"
     },
     "characters": {
-      "title": "EVE 角色管理"
+      "title": "EVE 人物管理"
     },
     "operation": {
       "title": "舰队行动",
       "fleets": "舰队管理",
       "fleetDetail": "舰队详情",
       "fleetConfigs": "舰队配置",
-      "pap": "我的 PAP",
+      "corporationPap": "军团PAP",
+      "pap": "我的PAP",
       "join": "加入舰队",
       "srpApply": "申请补损",
       "srpManage": "补损审批",
       "srpPrices": "补损价格表"
     },
+    "skillPlanning": {
+      "title": "技能规划",
+      "skillPlans": "管理军团规划",
+      "completionCheck": "检查完成度"
+    },
+    "newbro": {
+      "title": "新人帮扶",
+      "selectCaptain": "新人选队长",
+      "selectMentor": "新人选导师",
+      "captain": "我是队长",
+      "mentor": "我是导师",
+      "manage": "帮扶管理",
+      "mentorManage": "导师管理"
+    },
     "role": {
       "title": "权限组",
-      "explore": "角色广场",
-      "myRoles": "我的角色",
+      "explore": "职权广场",
+      "myRoles": "我的职权",
       "applications": "我的申请",
-      "manage": "角色管理"
+      "manage": "职权管理"
     },
     "srp": {
       "title": "补损 SRP",
@@ -307,35 +278,39 @@
       "srpPrices": "补损价格表"
     },
     "info": {
-      "title": "EVE 角色信息",
+      "title": "EVE 人物信息",
       "wallet": "钱包流水",
       "skill": "技能列表",
       "ships": "可用舰船",
       "implants": "植入体/克隆",
       "npcKills": "刷怪报表",
       "fittings": "我的装配",
-      "assets": "角色资产",
-      "contracts": "角色合同"
+      "assets": "人物资产",
+      "contracts": "人物合同"
     },
     "system": {
       "title": "系统管理",
       "user": "用户管理",
-      "role": "角色管理",
-      "characters": "EVE 角色管理",
+      "characters": "EVE 人物管理",
       "userCenter": "个人中心",
       "menu": "菜单管理",
       "esiRefresh": "定时任务",
       "wallet": "钱包管理",
       "alliancePap": "联盟 PAP",
+      "papExchange": "PAP兑换",
       "npcKills": "刷怪报表",
       "autoRole": "自动权限",
       "webhook": "Webhook 通知",
-      "basicConfig": "基础配置"
+      "basicConfig": "基础配置",
+      "newbroSettings": "帮扶设置",
+      "mentorRewardStages": "导师奖励阶段"
     }
-    },
+  },
   "info": {
-    "selectCharacter": "选择角色",
-    "selectCharacterPlaceholder": "请选择一个角色",
+    "selectCharacter": "选择人物",
+    "selectCharacterPlaceholder": "请选择一个人物",
+    "journalTypeFilter": "流水类型",
+    "journalTypeFilterPlaceholder": "请选择一个或多个类型",
     "walletBalance": "钱包余额",
     "walletJournal": "钱包流水",
     "journalDate": "时间",
@@ -393,7 +368,7 @@
     "noFittingData": "暂无装配数据，请等待数据刷新",
     "fittingDetail": "装配详情",
     "fittingCount": "装配数量",
-    "assetsTitle": "角色资产",
+    "assetsTitle": "人物资产",
     "searchAsset": "搜索物品名 / 资产名称",
     "noAssetData": "暂无资产数据，请等待数据刷新",
     "assetCount": "资产总数",
@@ -401,8 +376,8 @@
     "assetName": "资产名称",
     "typeName": "物品名称",
     "quantity": "数量",
-    "owner": "所属角色",
-    "contractsTitle": "角色合同",
+    "owner": "所属人物",
+    "contractsTitle": "人物合同",
     "searchContract": "搜索合同标题 / 物品名",
     "noContractData": "暂无合同数据，请等待数据刷新",
     "contractCount": "合同总数",
@@ -445,15 +420,16 @@
   "npcKill": {
     "title": "刷怪报表",
     "corpTitle": "公司刷怪报表",
-    "selectCharacter": "选择角色",
-    "selectCharacterPlaceholder": "请选择一个角色",
+    "selectCharacter": "选择人物",
+    "selectCharacterPlaceholder": "请选择一个人物",
     "startDate": "开始日期",
     "endDate": "结束日期",
     "search": "查询",
     "reset": "重置",
     "summary": "总览",
     "totalBounty": "刷怪赏金",
-    "totalESS": "ESS 收入",
+    "totalIncursion": "入侵收入",
+    "totalMission": "任务奖励",
     "totalTax": "交税金额",
     "actualIncome": "实际收入",
     "totalRecords": "总记录数",
@@ -476,15 +452,140 @@
     "journalRefType": "类型",
     "journalSystem": "星系",
     "journalReason": "备注",
-    "characterName": "角色名称",
-    "allCharacters": "全部角色",
+    "characterName": "人物名称",
+    "allCharacters": "全部人物",
     "noData": "暂无刷怪数据",
     "members": "成员统计",
     "recordCount": "记录数",
     "bountyPrizes": "赏金",
-    "essTransfer": "ESS"
+    "refTypes": {
+      "bounty_prizes": "赏金",
+      "ess_escrow_transfer": "ESS 托管",
+      "incursion_payout": "入侵奖励",
+      "agent_mission_reward": "任务奖励"
+    }
+  },
+  "welfareSettings": {
+    "create": "新增福利",
+    "edit": "编辑福利",
+    "name": "福利名称",
+    "namePlaceholder": "请输入福利名称",
+    "description": "描述",
+    "descriptionPlaceholder": "请输入福利描述",
+    "distMode": "发放模式",
+    "distModePerUser": "按自然人",
+    "distModePerCharacter": "按人物",
+    "requireSkillPlan": "需要技能检查",
+    "skillPlan": "技能计划",
+    "skillPlanPlaceholder": "请选择技能计划",
+    "statusActive": "启用",
+    "statusDisabled": "停用",
+    "filterName": "福利名称",
+    "filterStatus": "状态",
+    "yes": "是",
+    "no": "否",
+    "validName": "请输入福利名称",
+    "validDistMode": "请选择发放模式",
+    "validSkillPlan": "请选择技能计划",
+    "createSuccess": "福利创建成功",
+    "updateSuccess": "福利更新成功",
+    "operationFailed": "操作失败",
+    "deleteTitle": "删除确认",
+    "deleteConfirm": "确定要删除福利「{name}」吗？",
+    "deleteSuccess": "福利删除成功",
+    "deleteFailed": "删除失败",
+    "maxCharAgeMonths": "人物最大年龄",
+    "maxCharAgePlaceholder": "月数（0 = 不限制）",
+    "maxCharAgeHint": "设置后会先按用户检查任一人物年龄，超龄则该福利对该用户不可申请",
+    "minimumPap": "最低 PAP",
+    "minimumPapPlaceholder": "数量（0 = 不限制）",
+    "minimumPapHint": "设置后会检查军团舰队 PAP，总数需大于该值才可申请",
+    "payByFuxiCoin": "按伏羲币发放",
+    "payByFuxiCoinPlaceholder": "数量（0 = 不发放）",
+    "payByFuxiCoinHint": "若大于 0，则审批发放时会自动向申请人钱包发放对应数量的伏羲币",
+    "distModeLockedHint": "设置人物年龄限制后仍可选择按自然人或按人物",
+    "importBtn": "导入",
+    "importTitle": "导入历史记录",
+    "importHint": "请粘贴 CSV 内容，每行一条记录，格式为人物名和QQ号（逗号或制表符分隔）",
+    "importPlaceholder": "人物名, QQ号\n人物名2, QQ号2",
+    "importSuccess": "成功导入 {count} 条记录",
+    "requireEvidence": "需要证明图片",
+    "exampleEvidence": "示例证明图片",
+    "uploadExampleEvidence": "上传示例图片",
+    "uploadFailed": "上传失败",
+    "dragHint": "拖拽调整显示顺序",
+    "reorderSaving": "保存排序中…",
+    "reorderFailed": "排序保存失败",
+    "sortOrder": "排序值",
+    "sortOrderHint": "数值越小越靠前，跨分页排序请直接填写数字"
+  },
+  "welfareMy": {
+    "applyTab": "申请福利",
+    "applicationsTab": "已领取福利",
+    "welfareName": "福利名称",
+    "characterName": "人物名称",
+    "description": "描述",
+    "deliveryMode": "发放模式",
+    "eligibility": "可申请状态",
+    "appliedAt": "申请时间",
+    "reviewedAt": "审批时间",
+    "reviewerName": "福利官",
+    "statusRequested": "待发放",
+    "statusDelivered": "已发放",
+    "statusRejected": "已拒绝",
+    "applyBtn": "申请",
+    "futureApplyBtn": "未达到条件",
+    "applySuccess": "申请成功",
+    "applyFailed": "申请失败",
+    "noEligibleWelfares": "暂无可申请的福利",
+    "noApplications": "暂无申请记录",
+    "distModePerUser": "按自然人",
+    "distModePerCharacter": "按人物",
+    "eligibilityNow": "当前可申请",
+    "eligibilityFuture": "未达到条件",
+    "skillPlanJoiner": "或",
+    "ineligibleReasonPap": "军团PAP数不足",
+    "ineligibleReasonSkill": "技能未达标",
+    "ineligibleReasonPapSkill": "技能未达标，军团PAP数不足",
+    "ineligibleReasonSkillPlan": "技能规划{plans}未达成",
+    "ineligibleReasonPapSkillPlan": "技能规划{plans}未达成，军团PAP数不足",
+    "evidenceDialogTitle": "上传证明图片",
+    "evidenceDialogHint": "该福利需要您上传一张证明图片才能申请。",
+    "exampleEvidenceLabel": "示例图片（管理员提供）：",
+    "uploadEvidenceBtn": "选择图片",
+    "skillPlanningAlertPrefix": "如有技能不达标，可前往"
+  },
+  "welfareApproval": {
+    "pendingTab": "待发放",
+    "historyTab": "历史记录",
+    "applicantNickname": "申请人",
+    "characterName": "人物名称",
+    "contact": "联系方式",
+    "welfareName": "福利名称",
+    "reviewerName": "福利官",
+    "requestedAt": "申请时间",
+    "processedAt": "处理时间",
+    "statusRequested": "待发放",
+    "statusDelivered": "已发放",
+    "statusRejected": "已拒绝",
+    "deliverBtn": "发放",
+    "rejectBtn": "拒绝",
+    "deliverConfirm": "确定向 {name} 发放福利？",
+    "rejectConfirm": "确定拒绝 {name} 的福利申请？",
+    "deliverSuccess": "福利已发放",
+    "rejectSuccess": "福利申请已拒绝",
+    "copied": "已复制",
+    "copyFailed": "复制失败",
+    "noPending": "暂无待发放请求",
+    "noHistory": "暂无处理记录",
+    "searchBtn": "搜索",
+    "historyKeywordPlaceholder": "人物名、昵称或 QQ",
+    "evidenceImage": "证明图片",
+    "deleteHistoryConfirm": "确定删除 {name} 的申请记录？此操作不可撤销。",
+    "deleteHistorySuccess": "申请记录已删除"
   },
   "shop": {
+    "currency": "伏羲币",
     "products": "商品列表",
     "allTypes": "全部类型",
     "typeNormal": "普通商品",
@@ -507,8 +608,8 @@
     "orderNo": "订单号",
     "productName": "商品名称",
     "quantity": "数量",
-    "unitPrice": "单价",
-    "totalPrice": "总价",
+    "unitPrice": "单价（伏羲币）",
+    "totalPrice": "总价（伏羲币）",
     "status": "状态",
     "orderTime": "下单时间",
     "noOrders": "暂无订单",
@@ -538,7 +639,7 @@
       "productImage": "商品图片",
       "uploading": "上传中...",
       "uploadImage": "点击上传图片",
-      "uploadHint": "JPG/PNG/GIF/WebP，最大 5MB",
+      "uploadHint": "JPG/PNG/WebP，最大 2MB",
       "price": "价格",
       "type": "类型",
       "typeNormal": "普通商品",
@@ -576,121 +677,12 @@
       "deleteBtn": "删除",
       "deleteSuccess": "删除成功",
       "deleteFailed": "删除失败",
-      "imageTooLarge": "图片大小不能超过 5MB",
+      "imageTooLarge": "图片大小不能超过 2MB",
       "uploadSuccess": "上传成功",
       "uploadFailed": "上传失败",
       "validName": "请输入商品名称",
       "validPrice": "请输入价格",
       "validType": "请选择类型"
-    }
-  },
-  "lottery": {
-    "noActivities": "暂无进行中的抽奖活动",
-    "startDraw": "开始抽奖",
-    "points": "积分",
-    "perDraw": "次",
-    "free": "免费",
-    "more": "更多",
-    "myRecords": "我的抽奖记录",
-    "draw": "抽奖",
-    "costLabel": "每次费用：",
-    "balance": "余额",
-    "prizePool": "奖品池",
-    "drawing": "抽奖中...",
-    "close": "关闭",
-    "drawAgain": "再抽一次",
-    "loadFailed": "加载失败",
-    "drawFailed": "抽奖失败",
-    "tier": {
-      "normal": "普通",
-      "rare": "稀有",
-      "legendary": "传说"
-    },
-    "status": {
-      "active": "进行中",
-      "closed": "已关闭"
-    },
-    "manage": {
-      "activitiesTab": "抽奖活动",
-      "createActivity": "创建活动",
-      "editActivity": "编辑活动",
-      "noActivities": "暂无活动",
-      "costPerDraw": "每次费用",
-      "startAt": "开始时间",
-      "endAt": "结束时间",
-      "managePrizes": "管理奖品",
-      "prizeCount": "奖品数: {n}",
-      "noPrizes": "暂无奖品",
-      "recordsTab": "抽奖记录",
-      "filterActivity": "筛选活动",
-      "uploading": "上传中...",
-      "uploadCover": "上传封面",
-      "uploadImage": "上传图片",
-      "managePrizesTitle": "管理奖品 - {name}",
-      "addPrize": "添加奖品",
-      "editPrize": "编辑奖品",
-      "noPrizesHint": "暂无奖品，请点击上方按钮添加",
-      "weight": "权重",
-      "stock": "库存",
-      "sdeSearch": "搜索 EVE 物品",
-      "stockUnlimited": "不限量",
-      "totalWeight": "总权重",
-      "loadFailed": "加载失败",
-      "updateSuccess": "更新成功",
-      "createSuccess": "创建成功",
-      "addSuccess": "添加成功",
-      "operationFailed": "操作失败",
-      "deleteActivityConfirm": "确定要删除活动「{name}」吗？关联的奖品也会被删除。",
-      "deleteSuccess": "删除成功",
-      "deleteFailed": "删除失败",
-      "imageTooLarge": "图片大小不能超过 2MB",
-      "uploadSuccess": "上传成功",
-      "uploadFailed": "上传失败",
-      "validName": "请输入活动名称",
-      "validCost": "请设置每次费用",
-      "validPrizeName": "请输入奖品名称",
-      "validTier": "请选择稀有度",
-      "deletePrizeConfirm": "确定要删除奖品「{name}」吗？",
-      "fields": {
-        "name": "活动名称",
-        "namePlaceholder": "请输入活动名称",
-        "description": "描述",
-        "descriptionPlaceholder": "活动描述（可选）",
-        "coverImage": "封面图片",
-        "costPerDraw": "每次费用",
-        "costHint": "0 表示免费",
-        "status": "状态",
-        "startAt": "开始时间",
-        "endAt": "结束时间",
-        "noLimit": "不限",
-        "sortOrder": "排序",
-        "sortHint": "数字越大越靠前"
-      },
-      "prizeFields": {
-        "name": "奖品名称",
-        "namePlaceholder": "请输入奖品名称",
-        "image": "奖品图片",
-        "sdeSearchPlaceholder": "搜索 EVE 物品自动设置图片",
-        "tier": "稀有度",
-        "weight": "概率权重",
-        "weightHint": "权重越高概率越大",
-        "totalStock": "总库存",
-        "stockHint": "0 表示不限量"
-      },
-      "recordColumns": {
-        "userId": "用户 ID",
-        "activity": "活动",
-        "prize": "奖品",
-        "cost": "花费",
-        "time": "时间",
-        "deliveryStatus": "发放状态"
-      }
-    },
-    "delivery": {
-      "pending": "待发放",
-      "delivered": "已发放",
-      "markDelivered": "标记已发放",
-      "markSuccess": "已标记为已发放"
     }
   },
   "userAdmin": {
@@ -700,32 +692,277 @@
       "unknown": "未知"
     },
     "search": {
-      "nickname": "昵称",
-      "nicknamePlaceholder": "请输入昵称",
-      "statusPlaceholder": "请选择状态"
+      "keyword": "搜索",
+      "keywordPlaceholder": "昵称、QQ 或人物名",
+      "statusPlaceholder": "请选择状态",
+      "rolePlaceholder": "请选择职权"
     },
     "roles": {
       "super_admin": "超级管理员",
       "admin": "管理员",
-      "srp": "SRP管理员",
+      "srp": "补损官",
       "fc": "FC",
+      "senior_fc": "资深FC",
+      "captain": "队长",
+      "mentor": "导师",
+      "welfare": "福利官",
       "user": "已认证用户",
       "guest": "访客"
     },
     "table": {
       "userInfo": "用户信息",
+      "contact": "联系方式",
       "lastLogin": "最后登录",
       "loginIp": "登录IP",
       "registeredAt": "注册时间"
     },
+    "characters": {
+      "empty": "暂无绑定人物",
+      "character": "人物",
+      "characterIdLabel": "人物 ID",
+      "tokenHealth": "ESI 状态",
+      "tokenValid": "有效",
+      "tokenExpired": "已过期",
+      "characterId": "人物 ID：{id}",
+      "totalSkillPoints": "总技能点：{points}",
+      "totalSkillPointsLabel": "总技能点"
+    },
+    "characterEsiRestriction": {
+      "title": "已失效人物 ESI 限制",
+      "description": "开启后，只要用户仍绑定任一 ESI 已过期的人物，就会被强制停留在人物管理页面，直到重新授权或解绑这些人物。",
+      "switchLabel": "启用限制",
+      "enabled": "已启用",
+      "disabled": "已关闭",
+      "loadFailed": "加载人物 ESI 限制配置失败",
+      "saveSuccess": "人物 ESI 限制配置已更新",
+      "saveFailed": "更新人物 ESI 限制配置失败"
+    },
     "unnamed": "未命名",
     "impersonate": "模拟登录",
+    "editProtectedDenied": "管理员不能编辑超级管理员或其他管理员。",
     "deleteConfirm": "确定要删除用户「{name}」吗？此操作不可恢复。",
+    "deleteProtectedDenied": "管理员不能删除超级管理员或其他管理员。",
     "deleteSuccess": "删除成功",
     "deleteFailed": "删除失败",
     "impersonateConfirm": "确定要以「{name}」的身份登录吗？当前管理员会话将被替换，请提前记录当前 Token 或在新标签页中操作。",
     "impersonateSuccess": "已切换至用户「{name}」",
     "impersonateFailed": "模拟登录失败"
+  },
+  "newbro": {
+    "common": {
+      "player": "玩家",
+      "mentor": "导师",
+      "mentee": "学员",
+      "mainCharacter": "当前主人物",
+      "nickname": "昵称",
+      "captain": "队长",
+      "startedAt": "开始时间",
+      "endedAt": "结束时间",
+      "refType": "流水类型",
+      "systemId": "星系 ID",
+      "amount": "金额",
+      "journalAt": "流水时间",
+      "processedAt": "处理时间"
+    },
+    "mentorStatus": {
+      "pending": "待确认",
+      "active": "进行中",
+      "rejected": "已拒绝",
+      "revoked": "已撤销",
+      "graduated": "已毕业"
+    },
+    "mentorConditionTypes": {
+      "skill_points": "总技能点",
+      "pap_count": "军团 PAP 总数",
+      "days_active": "活跃天数"
+    },
+    "select": {
+      "title": "新人选队长",
+      "subtitle": "符合新人资格的玩家可以在这里选择或切换自己的队长。",
+      "currentlyIneligible": "当前不符合新人资格",
+      "currentlyIneligibleWithReason": "当前不符合新人资格：{reason}。最近评估时间：{evaluatedAt}。",
+      "ineligibleBecauseSkillThreshold": "已有人物达到单人物技能点上限",
+      "ineligibleBecauseMultiCharacterThreshold": "达到多人物技能点阈值的人物数量过多",
+      "overviewTab": "选择队长",
+      "historyTab": "关系历史",
+      "currentCaptain": "当前队长",
+      "noCurrentCaptain": "当前还没有选择队长",
+      "affiliationStarted": "开始时间",
+      "captainList": "可选队长",
+      "nicknameLabel": "昵称",
+      "activeNewbros": "当前带新人数量",
+      "lastOnline": "最近在线",
+      "currentSelection": "当前选择",
+      "chooseCaptain": "选择队长",
+      "chooseSuccess": "队长选择已更新",
+      "noCaptains": "当前没有可选队长",
+      "recentHistory": "最近关系历史",
+      "endAffiliationButton": "解除关联",
+      "endAffiliationSuccess": "已结束当前帮扶关系"
+    },
+    "selectMentor": {
+      "title": "新人选导师",
+      "subtitle": "符合资格的学员可以在这里查看导师名单并提交申请。",
+      "statusTitle": "我的学员状态",
+      "eligible": "当前符合学员资格",
+      "ineligible": "当前不符合学员资格",
+      "disqualifiedReason": "当前不符合学员资格：{reason}",
+      "currentRelationship": "当前导师关系",
+      "noCurrentRelationship": "当前没有待处理或生效中的导师关系",
+      "mentorList": "可选导师",
+      "noMentors": "当前没有可申请的导师",
+      "nicknameLabel": "昵称",
+      "activeMentees": "当前学员数",
+      "lastOnline": "最近在线",
+      "apply": "申请导师",
+      "applied": "已申请",
+      "activeRelationship": "关系进行中",
+      "applySuccess": "导师申请已提交",
+      "ineligibleBecauseAccountTooOld": "账号注册时间超过学员资格窗口",
+      "ineligibleBecauseSkillPointsTooHigh": "总技能点已超过学员资格上限",
+      "ineligibleBecauseNoCharacters": "当前没有可评估的人物"
+    },
+    "captain": {
+      "title": "我是队长",
+      "subtitle": "查看当前与历史帮扶玩家，以及由你带来的收益归因台账。",
+      "activePlayers": "当前玩家数",
+      "historicalPlayers": "历史玩家数",
+      "totalBounty": "归因赏金",
+      "recordCount": "归因记录数",
+      "playersTitle": "新人列表",
+      "playersAll": "全部",
+      "playersActive": "当前",
+      "playersHistorical": "历史",
+      "endAffiliationButton": "解除关系",
+      "endAffiliationSuccess": "已结束该玩家的帮扶关系",
+      "enrollTitle": "招募新人",
+      "enrollSubtitle": "按昵称或当前主人物名搜索符合资格的新人，并将其挂到你的帮扶关系下。",
+      "enrollSearchPlaceholder": "搜索昵称或人物名",
+      "enrollSearchHint": "结果只包含当前仍符合新人资格且尚未挂在你名下的用户。",
+      "enrollCurrentCaptain": "当前队长",
+      "enrollNoCaptain": "未挂队长",
+      "enrollButton": "招募",
+      "enrollSuccess": "新人帮扶关系已更新",
+      "enrollEmpty": "没有找到符合条件的新人",
+      "enrollSwitchingFrom": "当前挂靠",
+      "attributionsTitle": "收益归因明细",
+      "refTypeBounty": "赏金",
+      "totalRewardedValue": "已发放积分",
+      "rewardSettlementCount": "奖励批次数",
+      "lastRewardProcessedAt": "最近奖励时间",
+      "rewardHistoryTitle": "奖励发放历史",
+      "rewardAttributionCount": "归因记录数",
+      "rewardAttributedTotal": "归因赏金总额",
+      "rewardBonusRate": "奖励比例",
+      "rewardCreditedValue": "发放积分"
+    },
+    "mentor": {
+      "title": "我是导师",
+      "subtitle": "查看待处理申请和当前学员进度，并处理导师申请。",
+      "applicationsTab": "待处理申请",
+      "menteesTab": "学员列表",
+      "rewardStagesTab": "奖励阶段配置",
+      "applicationsTitle": "待处理申请",
+      "menteesTitle": "学员列表",
+      "rewardStagesTitle": "当前奖励阶段配置",
+      "rewardStagesDescription": "仅供查看，实际配置与奖励执行仍由管理员在导师奖励阶段页面维护。",
+      "rewardStagesEmpty": "当前未配置奖励阶段",
+      "responsibilitiesTitle": "导师职责",
+      "responsibilitiesDescription": "以下职责说明会同时展示给学员和导师，用于明确导师帮扶的范围。",
+      "responsibilityItems": {
+        "registration": "导师引导学生注册军团和联盟 IT 系统，如何添加新人物，加 Mumble 和集结群。",
+        "basics": "导师回答学生的游戏内基本操作问题，如总览，联盟规则，充值，炸鱼，装配。",
+        "pvp": "导师引导学生参加舰队 pvp 活动，挂正确的技能，领取军团奖励。",
+        "scope": "导师的主要职责为口头或书面教导，并不需要负责带学生刷怪。带新人刷怪为队长的职责。"
+      },
+      "statusFilter": "状态筛选",
+      "allStatuses": "全部",
+      "pendingApplicationsEmpty": "当前没有待处理申请",
+      "menteesEmpty": "当前没有学员记录",
+      "appliedAt": "申请时间",
+      "respondedAt": "处理时间",
+      "graduatedAt": "毕业时间",
+      "qq": "QQ",
+      "discordId": "Discord",
+      "totalSP": "总技能点",
+      "totalPap": "军团 PAP",
+      "daysActive": "活跃天数",
+      "distributedStages": "已发奖励阶段",
+      "distributedRewardAmount": "累计已发伏羲币",
+      "noDistributedStages": "暂无",
+      "accept": "接受",
+      "reject": "拒绝",
+      "acceptSuccess": "申请已接受",
+      "rejectSuccess": "申请已拒绝"
+    },
+    "manage": {
+      "title": "帮扶管理",
+      "subtitle": "管理员可以查看全部队长绩效并手动执行收益归因同步。",
+      "performanceTab": "队长绩效",
+      "rewardHistoryTab": "奖励发放历史",
+      "affiliationHistoryTab": "关系变更历史",
+      "keyword": "搜索队长人物名或昵称",
+      "runSync": "执行归因同步",
+      "runRewardProcessing": "执行奖励处理",
+      "captainPerformance": "队长绩效",
+      "affiliationHistoryTitle": "关系变更历史",
+      "historyStartDate": "变更开始日期",
+      "historyEndDate": "变更结束日期",
+      "historyCaptainFilter": "队长人物名或昵称",
+      "historyPlayerFilter": "新人人物名或昵称",
+      "historyFilterHint": "名称筛选不区分大小写。时间筛选会匹配所选范围内开始或结束的帮扶关系。",
+      "historyCaptainUserId": "队长用户 ID",
+      "captainNicknameColumn": "队长昵称",
+      "newbroColumn": "新人",
+      "newbroNicknameColumn": "新人昵称",
+      "changedByCharacterColumn": "变更操作人物",
+      "historyPlayerCharacterId": "新人人物 ID",
+      "nicknameLabel": "昵称",
+      "nicknameColumn": "昵称",
+      "activeNewbroCount": "当前新人数",
+      "historicalNewbroCount": "历史新人数",
+      "viewDetail": "查看详情",
+      "detailTitle": "队长详情 - {name}",
+      "detailPlayers": "玩家列表",
+      "detailAttributions": "归因明细",
+      "syncSuccess": "归因同步完成，新增 {inserted} 条，处理 {processed} 条记录",
+      "rewardSettlementCount": "奖励批次数",
+      "rewardTotalCredited": "累计发放积分",
+      "rewardLastProcessedAt": "最近奖励时间",
+      "rewardAttributionCount": "归因记录数",
+      "rewardAttributedTotal": "归因赏金总额",
+      "rewardBonusRate": "奖励比例",
+      "rewardCreditedValue": "发放积分",
+      "rewardProcessSuccess": "奖励处理完成，覆盖 {captains} 名队长、{attributions} 条归因记录，共发放 {credited} 积分"
+    },
+    "mentorManage": {
+      "title": "导师管理",
+      "subtitle": "管理员可以查看全部导师关系，以及导师奖励发放记录。",
+      "relationshipsTab": "导师关系",
+      "rewardRecordsTab": "奖励发放记录",
+      "keyword": "搜索导师或学员人物名 / 昵称",
+      "rewardKeyword": "搜索导师人物名或昵称",
+      "status": "关系状态",
+      "allStatuses": "全部",
+      "relationshipList": "导师关系列表",
+      "rewardRecordsList": "导师奖励发放记录",
+      "mentorColumn": "导师",
+      "menteeColumn": "学员",
+      "mentorNickname": "导师昵称",
+      "menteeNickname": "学员昵称",
+      "appliedAt": "申请时间",
+      "respondedAt": "处理时间",
+      "revokedAt": "撤销时间",
+      "graduatedAt": "毕业时间",
+      "stageOrder": "奖励阶段",
+      "rewardAmount": "发放伏羲币",
+      "distributedAt": "发放时间",
+      "noRewardRecords": "暂无奖励发放记录",
+      "cancelPending": "取消申请",
+      "cancelPendingSuccess": "待处理导师申请已取消",
+      "revoke": "撤销关系",
+      "revokeSuccess": "导师关系已撤销"
+    }
   },
   "fleet": {
     "title": "舰队管理",
@@ -747,7 +984,7 @@
       "endAt": "结束时间",
       "createdAt": "创建时间",
       "fc": "舰队指挥",
-      "fcPlaceholder": "选择一个角色作为舰队指挥",
+      "fcPlaceholder": "选择一个人物作为舰队指挥",
       "description": "详细信息",
       "descriptionPlaceholder": "关于此行动的额外信息",
       "esiFleetId": "ESI 舰队 ID",
@@ -772,30 +1009,39 @@
       "empty": "暂无成员",
       "syncESI": "从 ESI 同步",
       "syncSuccess": "成员同步成功",
-      "characterName": "角色名",
-      "characterId": "角色 ID",
+      "manualAdd": "手动添加成员",
+      "manualAddInputLabel": "人物名列表",
+      "manualAddPlaceholder": "PlayerOne\nPlayerTwo\nPlayerThree",
+      "manualAddHint": "每行填写一个人物名，保存后会将已录入系统的人物加入舰队。",
+      "manualAddEmpty": "请至少输入一个人物名",
+      "manualAddSuccess": "已添加 {count} 名成员",
+      "manualAddMissing": "以下人物未找到：{names}",
+      "characterName": "人物名",
+      "characterId": "人物 ID",
       "shipType": "舰船",
       "joinedAt": "加入时间",
       "solarSystem": "星系"
     },
     "pap": {
       "title": "PAP 发放",
-      "issue": "发放 PAP",
+      "issue": "发放PAP",
       "issueConfirm": "确定要向所有成员发放 PAP 吗？",
       "issueSuccess": "PAP 已发放",
-      "myTitle": "军团 PAP",
+      "issueWithSyncConfirm": "确定要先从 ESI 同步“{name}”的成员，再发放 PAP 吗？",
+      "issueWithSyncSuccess": "成员同步并发放 PAP 成功",
+      "myTitle": "军团PAP",
       "totalPap": "总 PAP",
       "participationCount": "参与次数",
       "fleetId": "舰队 ID",
       "fleetName": "舰队名",
-      "characterId": "角色 ID",
-      "characterName": "角色名",
+      "characterId": "人物 ID",
+      "characterName": "人物名",
       "count": "PAP 数量",
       "issuedBy": "发放人",
       "issuedAt": "发放时间",
       "empty": "暂无 PAP 记录",
       "operation": "舰队行动",
-      "character": "参与角色",
+      "character": "参与人物",
       "ship": "舰船",
       "fc": "发放 FC",
       "level": "等级",
@@ -807,7 +1053,6 @@
       },
       "allianceCard": "联盟 PAP",
       "allianceEmpty": "暂无联盟 PAP 记录",
-      "allianceMonthly": "月 PAP",
       "allianceYearly": "年度 PAP",
       "allianceCorpMonthRank": "军团月排名",
       "allianceGlobalMonthRank": "联盟月排名",
@@ -817,6 +1062,39 @@
       "allianceOperationName": "行动名称",
       "allianceStartTime": "开始时间",
       "allianceEndTime": "结束时间"
+    },
+    "corporationPap": {
+      "title": "军团PAP",
+      "summaryTitle": "军团 PAP 汇总",
+      "empty": "暂无军团 PAP 汇总记录",
+      "search": "查询",
+      "reset": "重置",
+      "filters": {
+        "period": "时间范围",
+        "year": "年份",
+        "corpTickers": "军团"
+      },
+      "periods": {
+        "currentMonth": "本月",
+        "lastMonth": "上月",
+        "atYear": "指定年份",
+        "all": "全部"
+      },
+      "stats": {
+        "filteredPap": "当前筛选 PAP",
+        "filteredStratOp": "战略 OP PAP",
+        "allPap": "全部 PAP",
+        "users": "用户数"
+      },
+      "columns": {
+        "corpTicker": "军团",
+        "nickname": "昵称",
+        "mainCharacter": "主人物名",
+        "characterCount": "人物数量",
+        "stratOpPaps": "战略OP",
+        "skirmishPaps": "散打",
+        "allianceStratPaps": "联盟战略"
+      }
     },
     "invite": {
       "title": "邀请链接",
@@ -834,8 +1112,8 @@
     },
     "join": {
       "title": "加入舰队",
-      "selectCharacter": "选择角色",
-      "selectCharacterPlaceholder": "选择一个角色加入舰队",
+      "selectCharacter": "选择人物",
+      "selectCharacterPlaceholder": "选择一个人物加入舰队",
       "joinSuccess": "已成功加入舰队",
       "invalidCode": "无效的邀请码",
       "missingCode": "无效的邀请链接，缺少邀请码"
@@ -872,14 +1150,14 @@
     "addFitting": "添加装配",
     "importFromFitting": "从我的装配导入",
     "importSuccess": "装配导入成功",
-    "importSelectRequired": "请选择角色和装配",
+    "importSelectRequired": "请选择人物和装配",
     "copyEFT": "复制 EFT",
     "eftCopied": "EFT 已复制到剪贴板",
     "noFittings": "请至少添加一个装配",
     "saveToGame": "保存到游戏",
     "saveToGameTitle": "保存装配到游戏",
     "saveToGameSuccess": "装配已成功保存到游戏",
-    "saveToGameCharacterRequired": "请选择角色",
+    "saveToGameCharacterRequired": "请选择人物",
     "itemSettings": "装备设置",
     "itemSettingsTitle": "装备重要性与惩罚设置",
     "itemSettingsSaved": "装备设置已保存",
@@ -917,39 +1195,147 @@
       "srpAmount": "补损额度",
       "eft": "EFT 格式",
       "eftPlaceholder": "粘贴 EFT 格式装配文本",
-      "character": "角色",
+      "character": "人物",
       "fitting": "装配",
       "fittingPlaceholder": "选择一个装配"
     }
   },
+  "skillPlan": {
+    "title": "制定军团技能",
+    "create": "创建技能计划",
+    "edit": "编辑技能计划",
+    "delete": "删除技能计划",
+    "createSuccess": "技能计划创建成功",
+    "updateSuccess": "技能计划更新成功",
+    "deleteSuccess": "技能计划删除成功",
+    "deleteConfirm": "确定要删除技能计划「{title}」吗？此操作不可恢复。",
+    "searchPlaceholder": "搜索技能计划标题或描述",
+    "dragHint": "拖拽调整显示顺序",
+    "reorderFailed": "排序保存失败",
+    "sortOrder": "排序值",
+    "sortOrderHint": "数值越小越靠前，跨分页排序请直接填写数字",
+    "listTitle": "技能计划列表",
+    "detailTitle": "计划详情",
+    "emptyList": "暂无技能计划",
+    "emptyDetail": "请选择左侧技能计划查看详情",
+    "descriptionEmpty": "暂无描述",
+    "skillCount": "技能要求",
+    "skillListTitle": "技能要求明细",
+    "addSkill": "添加技能要求",
+    "noSkills": "请至少添加一个技能要求",
+    "duplicateSkill": "技能要求中不能包含重复技能",
+    "textInputActive": "当前将以粘贴的技能文本为准进行解析与保存；重复技能会自动保留最高等级。",
+    "manualInputHint": "清空上方粘贴文本后，可切换回手动逐条选择技能。",
+    "level": "等级 {level}",
+    "levelLabel": "要求等级",
+    "order": "排序",
+    "fields": {
+      "title": "计划标题",
+      "titlePlaceholder": "请输入技能计划标题",
+      "description": "计划说明",
+      "descriptionPlaceholder": "请输入此技能计划的适用说明",
+      "ship": "计划舰船图标",
+      "shipPlaceholder": "搜索并选择舰船",
+      "shipHint": "可选。选中的舰船图标会显示在技能计划列表中。",
+      "skillsText": "技能文本",
+      "skillsTextPlaceholder": "每行一个技能，格式示例：\nGraviton Physics 5\nDoomsday Rapid Firing 5\nCapital Shield Operation 4",
+      "skillsTextGuide": "打开游戏内技能规划，查看详情。右上角按钮选择复制所有技能到粘贴板，然后复制进入上方。",
+      "skillsTextHint": "支持格式：技能名 + 空格 + 等级。等级可使用 1-5 或罗马数字 I-V；重复技能会自动保留最高等级。",
+      "skill": "技能",
+      "skillPlaceholder": "搜索并选择技能",
+      "group": "技能组",
+      "requiredLevel": "要求等级"
+    },
+    "table": {
+      "skill": "技能",
+      "group": "技能组",
+      "requiredLevel": "要求等级"
+    }
+  },
+  "skillPlanCheck": {
+    "title": "检查完成度",
+    "subtitle": "将已选择人物的技能与军团规划进行逐项比对，快速查看完成情况。",
+    "selectCharacters": "选择人物",
+    "selectedCharacters": "已选择人物",
+    "noCharactersSelected": "尚未选择人物",
+    "noAvailableCharacters": "当前用户没有可用人物",
+    "selectionSaved": "人物选择已保存",
+    "selectCharactersFirst": "请先选择至少一个人物",
+    "startCheck": "开始检查",
+    "resultTitle": "检查结果",
+    "resultSubtitle": "按人物展开，再按技能规划展开查看完成情况。",
+    "planCount": "规划数 {count}",
+    "emptyResult": "选择人物后点击开始检查以查看完成度结果",
+    "characterSummary": "已完成 {completed} / {total} 个规划",
+    "planCompleted": "已满足",
+    "planIncomplete": "未满足",
+    "missingCount": "缺失 {count} 项",
+    "missingSkillsTitle": "缺失技能",
+    "requiredVsCurrent": "需求 {required} 级，当前 {current} 级",
+    "planCompleteSummary": "该人物已完整满足此技能规划。",
+    "planIncompleteSummary": "当前完成 {matched} / {total} 项技能要求。",
+    "selectPlans": "选择规划",
+    "selectedPlans": "已选择规划",
+    "noPlansSelected": "尚未选择规划",
+    "noAvailablePlans": "暂无可用规划",
+    "planSelectionSaved": "规划选择已保存"
+  },
   "characters": {
-    "title": "EVE 角色管理",
-    "subTitle": "管理账号下绑定的 EVE Online 角色，可绑定多个角色并切换主角色",
-    "bind": "绑定新角色",
-    "primary": "主角色",
-    "setPrimary": "设为主角色",
+    "title": "EVE 人物管理",
+    "subTitle": "管理账号下绑定的 EVE Online 人物，可绑定多个人物并切换主人物",
+    "bind": "绑定新人物",
+    "primary": "主人物",
+    "setPrimary": "设为主人物",
     "unbind": "解绑",
-    "empty": "暂无绑定角色",
+    "empty": "暂无绑定人物",
     "noScopes": "无额外权限",
     "scopeCount": "项权限",
     "tokenInvalid": "(已失效)",
+    "tokenHealth": {
+      "title": "只要存在任一已过期的 ESI 授权人物，就无法继续访问其他页面",
+      "requiredHint": "请重新授权所有已过期人物的 ESI，或解绑这些已过期人物，然后再离开本页面。"
+    },
     "bindFailed": "获取绑定链接失败",
-    "setPrimarySuccess": "已将 {name} 设为主角色",
-    "setPrimaryFailed": "设置主角色失败",
-    "unbindConfirm": "确定要解绑角色 {name} 吗？解绑后该角色的授权数据将被清除。",
+    "setPrimarySuccess": "已将 {name} 设为主人物",
+    "setPrimaryFailed": "设置主人物失败",
+    "unbindConfirm": "确定要解绑人物 {name} 吗？解绑后该人物的授权数据将被清除。",
     "unbindSuccess": "已成功解绑 {name}",
-    "unbindFailed": "解绑失败"
+    "unbindFailed": "解绑失败",
+    "profile": {
+      "title": "联系方式与昵称",
+      "subTitle": "请填写昵称，并至少填写一个联系方式。未完成前将始终停留在本页面。",
+      "completed": "已完成",
+      "incomplete": "未完成",
+      "completedHint": "个人资料已完成，可以正常访问其他页面。",
+      "requiredHint": "需要填写昵称，并至少填写 QQ 或 Discord ID 后才能继续使用系统。",
+      "nickname": "昵称",
+      "nicknamePlaceholder": "请输入昵称",
+      "qq": "QQ",
+      "qqPlaceholder": "请输入 QQ",
+      "discordId": "Discord ID",
+      "discordPlaceholder": "请输入 Discord ID",
+      "save": "保存资料",
+      "saveSuccess": "个人资料已更新",
+      "validation": {
+        "nicknameRequired": "请输入昵称",
+        "nicknameLength": "昵称最多 20 个字符",
+        "contactRequired": "请至少填写 QQ 或 Discord ID",
+        "qqLength": "QQ 最多 20 个字符",
+        "qqDigits": "QQ 只能包含数字",
+        "discordLength": "Discord ID 最多 20 个字符"
+      }
+    }
   },
   "srp": {
     "apply": {
       "title": "我的补损申请",
       "formTitle": "申请补损",
       "infoText": "在下框中选择欲提交的击杀报告和舰队行动。如果在列表中找不到击杀报告，请确认您对应的帐号已正确完成绑定后等待最多1小时刷新。如果找不到对应的舰队，请联系 FC 修改行动信息或发 PAP。",
-      "faqLink": "关于如何申请补损与其他常见问题的说明",
+      "seatLink": "请注意，伏羲系统不会发放联盟舰队的补损，申请联盟补损请点此链接。",
       "dialogTitle": "提交补损申请",
       "submitBtn": "提交补损申请",
       "submitBtnText": "提交",
-      "selectCharacter": "选择受损角色",
+      "selectCharacter": "选择受损人物",
       "associatedFleet": "关联舰队",
       "selectFleet": "可选：关联舰队",
       "fleetInfo": "集结信息",
@@ -979,7 +1365,7 @@
       "noKmFound": "未找到符合条件的 KM",
       "columns": {
         "id": "ID",
-        "character": "角色",
+        "character": "人物",
         "ship": "舰船",
         "system": "星系",
         "killId": "KillID",
@@ -1006,17 +1392,44 @@
     },
     "manage": {
       "title": "补损申请列表",
+      "pendingTab": "待处理",
+      "historyTab": "发放记录",
       "refresh": "刷新",
       "selectFleet": "按舰队筛选",
+      "userKeywordFilter": "按人物名或昵称搜索",
       "searchBtn": "查询",
       "resetBtn": "重置",
+      "payoutModeLabel": "发放方式",
+      "payoutModes": {
+        "fuxiCoin": "伏羲币补损",
+        "manualTransfer": "手动打钱"
+      },
       "exportBtn": "导出当前数据",
+      "autoApproveBtn": "自动审批",
+      "batchPayoutBtn": "批量发放",
       "approveBtn": "批准",
       "rejectBtn": "拒绝",
       "payoutBtn": "发放",
       "approveDialog": "批准申请",
       "rejectDialog": "拒绝申请",
       "payoutDialog": "确认发放补损",
+      "batchPayoutDialog": "批量发放",
+      "batchPayoutHint": "点击右侧复制按钮，将内容粘贴至游戏内记事本",
+      "batchPayoutMainCharacter": "主人物",
+      "batchPayoutAmount": "金额",
+      "batchPayoutApprovedAmount": "已批准金额",
+      "batchPayoutPendingAmount": "待审批金额",
+      "batchPayoutTotalAmount": "合计金额",
+      "batchPayoutCount": "申请数",
+      "batchPayoutEmpty": "暂无可批量发放的 SRP 申请",
+      "batchPayoutConfirmTitle": "批量发放",
+      "batchPayoutConfirmText": "确认将 {name} 的所有已批准且未发放 SRP 申请标记为已发放吗？合计：{amount} ISK",
+      "batchPayoutSuccess": "批量发放成功",
+      "fuxiBatchPayoutConfirmTitle": "伏羲币批量补损",
+      "fuxiBatchPayoutConfirmText": "确认立即为全部已批准且未发放的 SRP 申请发放伏羲币并结案吗？",
+      "fuxiBatchPayoutSuccess": "伏羲币补损发放完成：{users} 名用户，{applications} 条申请，共 {amount} 伏羲币",
+      "autoApproveFleetRequired": "请先选择要执行自动审批的舰队",
+      "autoApproveSuccess": "自动审批完成：批准 {approved} 条，跳过 {skipped} 条",
       "finalAmount": "最终金额",
       "finalAmountHint": "填 0 则保持原申请金额",
       "reviewNote": "审批备注",
@@ -1024,7 +1437,7 @@
       "optionalPlaceholder": "可选",
       "overrideAmount": "覆盖金额",
       "overrideAmountHint": "填 0 则使用现有最终金额",
-      "payoutCharacter": "角色：",
+      "payoutCharacter": "人物：",
       "payoutAmount": "最终金额：",
       "confirmApprove": "确认批准",
       "confirmReject": "确认拒绝",
@@ -1032,20 +1445,25 @@
       "approveSuccess": "已批准",
       "rejectSuccess": "已拒绝",
       "payoutSuccess": "发放成功",
+      "fuxiPayoutConfirmTitle": "伏羲币补损",
+      "fuxiPayoutConfirmText": "确认向 {name} 发放 {amount} 伏羲币用于 {ship} 补损并结案吗？",
+      "fuxiPayoutSuccess": "伏羲币补损发放成功，已发放 {amount} 伏羲币",
       "rejectRequired": "拒绝时必须填写审批备注",
       "unknownReviewer": "审批人",
       "payoutKillId": "KillID",
-      "openInfoWindow": "打开角色信息",
+      "openInfoWindow": "打开人物信息",
       "editBtn": "编辑",
       "reRejectBtn": "拒绝",
       "reApproveBtn": "批准",
       "copied": "已复制",
       "copyFailed": "复制失败",
-      "noPrimaryCharacter": "请先设置主角色",
+      "noPrimaryCharacter": "请先设置主人物",
       "openInfoWindowSuccess": "已发送打开信息窗口请求",
+      "unknownMainCharacter": "未知人物",
       "columns": {
         "id": "#",
-        "character": "角色",
+        "nickname": "昵称",
+        "character": "人物",
         "ship": "舰船",
         "system": "星系",
         "killId": "KillID",
@@ -1101,11 +1519,11 @@
       }
     },
     "status": {
-      "pending": "待审批",
+      "submitted": "待审批",
       "approved": "已批准",
       "rejected": "已拒绝",
       "paid": "已发放",
-      "unpaid": "待发放"
+      "notpaid": "待发放"
     }
   },
   "alliancePap": {
@@ -1129,14 +1547,14 @@
       "fetchPapError": "从 SEAT 获取数据失败，状态码：{status}"
     },
     "importBtnXLS": "从表格导入",
-    "importNoData": "未找到有效数据，请检查列名（主角色 / 月 PAP / 数据时间）",
+    "importNoData": "未找到有效数据，请检查列名（主人物 / 月 PAP / 数据时间）",
     "importFailed": "导入失败",
     "importSuccess": "导入完成，成功 {count} 条",
     "columns": {
       "rank": "排名",
-      "mainCharacter": "主角色",
+      "mainCharacter": "主人物",
       "operationTitle": "行动名称",
-      "character": "角色",
+      "character": "人物",
       "level": "等级",
       "ship": "舰船",
       "startTime": "开始时间",
@@ -1162,59 +1580,47 @@
     "calculatedAtLabel": "最后计算",
     "noRecords": "暂无联盟 PAP 记录",
     "settle": {
-      "openBtn": "PAP 兑换设置",
-      "title": "PAP 兑换配置 & 月度结算",
-      "enabled": "开启兑换",
-      "walletPerPap": "兑换比例",
-      "walletPerPapUnit": "系统钱包 / 1 PAP",
-      "walletPerPapRequired": "兑换比例必须大于 0",
-      "settleMonth": "结算月份",
-      "settleMonthRequired": "请选择结算月份",
-      "walletConvert": "同时兑换钱包",
-      "walletConvertTip": "开启后将按比例自动向所有用户发放系统钱包",
-      "saveConfig": "保存配置",
-      "doSettle": "执行归档结算",
-      "configSaved": "配置已保存",
-      "configFailed": "保存配置失败",
-      "settleSuccess": "结算完成",
-      "settleFailed": "结算失败",
-      "resultTitle": "结算结果",
-      "resultUsers": "实际展开结算 {count} 人",
-      "resultSkipped": "跳过 {count} 人（无对应用户/已兑换）",
-      "resultWallet": "共发放系统钱包 {amount}"
+      "openBtn": "月度归档",
+      "title": "月度归档",
+      "settleMonth": "归档月份",
+      "settleMonthRequired": "请选择归档月份",
+      "doSettle": "执行归档",
+      "settleSuccess": "归档完成",
+      "settleFailed": "归档失败"
     }
   },
-  "resultPage": {
-    "success": {
-      "title": "提交成功",
-      "message": "提交结果页用于反馈一系列操作任务的处理结果，如果仅是简单操作，使用 Message 全局提示反馈即可。灰色区域可以显示一些补充的信息。",
-      "content": "已提交申请，等待部门审核。",
-      "back": "返回修改",
-      "view": "查看",
-      "print": "打印"
-    },
-    "fail": {
-      "title": "提交失败",
-      "message": "请核对并修改以下信息后，再重新提交。",
-      "content": "您提交的内容有如下错误：",
-      "frozen": "您的账户已被冻结",
-      "ineligible": "您的账户还不具备申请资格",
-      "back": "返回修改",
-      "view": "查看"
+  "papExchange": {
+    "title": "军团 PAP 兑换汇率配置",
+    "fcSection": "FC 工资设置",
+    "ratesSection": "PAP 兑换比率",
+    "tip": "配置各类型军团舰队行动 PAP 兑换伏羲币的比率，以及 FC 发放 PAP 时的固定工资和每月工资上限。",
+    "loadFailed": "加载汇率配置失败",
+    "saveSuccess": "汇率配置已保存",
+    "saveFailed": "保存汇率配置失败",
+    "fcSalary": "FC工资",
+    "fcSalaryHint": "FC 在发放 PAP 时将固定获得此金额，默认 400。",
+    "fcSalaryUnit": "伏羲币",
+    "fcSalaryMonthlyLimit": "FC工资上限次数",
+    "fcSalaryMonthlyLimitHint": "同一名 FC 每月最多可领取的工资次数，默认 5 次。",
+    "fcSalaryMonthlyLimitUnit": "次 / 月",
+    "columns": {
+      "type": "PAP 类型",
+      "rate": "兑换比率",
+      "rateUnit": "伏羲币 / 1 PAP",
+      "updatedAt": "更新时间"
     }
   },
   "roleUi": {
     "userRoleDialog": {
-      "title": "分配角色",
+      "title": "分配职权",
       "unnamed": "未命名",
-      "systemTag": "(系统)",
-      "loadFailed": "加载角色数据失败",
-      "saveSuccess": "角色分配成功",
-      "saveFailed": "角色分配失败"
+      "loadFailed": "加载职权数据失败",
+      "saveSuccess": "职权分配成功",
+      "saveFailed": "职权分配失败"
     },
     "permissionDialog": {
       "title": "分配菜单权限",
-      "roleLabel": "角色：{name}",
+      "roleLabel": "职权：{name}",
       "expandAll": "全部展开",
       "collapseAll": "全部收起",
       "selectAll": "全部选择",
@@ -1226,8 +1632,8 @@
   },
   "autoRolePage": {
     "title": "ESI 自动权限",
-    "description": "根据角色的 EVE 军团职位和头衔，自动分配系统权限。",
-    "directorHint": "Director 始终自动映射为 admin 角色。",
+    "description": "根据人物的 EVE 军团职位和头衔，自动分配系统权限。",
+    "directorHint": "只有 {corporationName}（{corporationId}）中具备 ESI corporation role `Director` 的人物才会自动映射为 admin 职权。",
     "triggerSync": "手动触发同步",
     "syncTriggered": "同步任务已触发，将在后台执行",
     "syncFailed": "触发失败",
@@ -1242,7 +1648,7 @@
     "columns": {
       "index": "序号",
       "esiRole": "EVE 军团职位",
-      "mappedRole": "映射系统角色",
+      "mappedRole": "映射系统职权",
       "corporationId": "军团 ID",
       "titleId": "头衔 ID",
       "titleName": "头衔名称"
@@ -1253,21 +1659,22 @@
     "createTitleTitle": "新增军团头衔映射",
     "fields": {
       "esiRole": "EVE 职位",
-      "systemRole": "系统角色",
+      "systemRole": "系统职权",
       "title": "选择头衔"
     },
     "placeholders": {
       "esiRole": "选择军团职位",
-      "systemRole": "选择系统角色",
+      "systemRole": "选择系统职权",
       "title": "选择军团头衔"
     },
     "rules": {
       "esiRole": "请选择 EVE 军团职位",
-      "systemRole": "请选择系统角色",
+      "systemRole": "请选择系统职权",
       "title": "请选择头衔"
     },
     "titleFallback": "头衔 {id}",
     "corpPrefix": "Corp {id}",
+    "corpFallback": "军团 {id}",
     "mappingCreated": "映射创建成功",
     "createFailed": "创建失败",
     "deleteSuccess": "删除成功",
@@ -1277,6 +1684,8 @@
     "tabs": {
       "products": "商品管理",
       "orders": "订单管理",
+      "ordersSubtitle": "发放订单时，请复制粘贴订单号至合同描述或转账理由。",
+      "orderHistory": "订单历史",
       "redeem": "兑换码管理"
     },
     "products": {
@@ -1295,7 +1704,7 @@
         "name": "商品名称",
         "description": "描述",
         "image": "图片 URL",
-        "price": "价格",
+        "price": "价格（伏羲币）",
         "type": "类型",
         "stock": "库存",
         "maxPerUser": "限购/人",
@@ -1315,7 +1724,7 @@
       },
       "table": {
         "name": "商品名称",
-        "price": "价格",
+        "price": "价格（伏羲币）",
         "stock": "库存",
         "maxPerUser": "限购",
         "needApproval": "需审批"
@@ -1338,42 +1747,38 @@
       }
     },
     "orders": {
-      "userIdPlaceholder": "用户 ID",
-      "statusPlaceholder": "订单状态",
-      "dialogApprove": "审批通过",
+      "keywordPlaceholder": "商品名 / 主人物 / 昵称",
+      "dialogDeliver": "发放订单",
       "dialogReject": "拒绝订单",
-      "approveButton": "通过",
+      "deliverButton": "发放",
       "rejectButton": "拒绝",
-      "approveConfirm": "确认通过",
+      "deliverConfirm": "确认发放",
       "rejectConfirm": "确认拒绝",
       "fields": {
         "orderNo": "订单号",
-        "reviewRemark": "审批备注"
+        "deliverRemark": "发放备注"
       },
       "placeholders": {
-        "reviewRemark": "审批备注（可选）"
+        "deliverRemark": "发放备注（可选）"
       },
       "status": {
-        "pending": "待审批",
-        "paid": "已付款",
-        "approved": "已审批",
-        "rejected": "已拒绝",
-        "completed": "已完成",
-        "cancelled": "已取消",
-        "insufficient_funds": "余额不足"
+        "requested": "待发放",
+        "delivered": "已发放",
+        "rejected": "已拒绝"
       },
       "table": {
         "orderNo": "订单号",
-        "userId": "用户ID",
+        "mainCharacter": "主人物",
+        "nickname": "昵称",
+        "contact": "联系方式",
         "product": "商品",
         "quantity": "数量",
         "totalPrice": "总价",
         "userRemark": "用户备注",
-        "reviewRemark": "审批备注",
         "createdAt": "下单时间"
       },
       "messages": {
-        "approveSuccess": "审批通过",
+        "deliverSuccess": "已发放",
         "rejectSuccess": "已拒绝",
         "actionFailed": "操作失败"
       }
@@ -1413,6 +1818,7 @@
     "placeholders": {
       "reason": "请说明操作原因（必填）",
       "userIdFilter": "按用户 ID 筛选",
+      "userKeywordFilter": "按人物名或昵称搜索",
       "refType": "流水类型",
       "targetUserId": "目标用户 ID",
       "operatorId": "操作人 ID",
@@ -1427,11 +1833,16 @@
     },
     "refTypes": {
       "pap_reward": "PAP 奖励",
+      "pap_fc_salary": "FC 工资",
       "admin_adjust": "管理员调整",
       "manual": "手动操作",
       "redeem": "兑换消费",
       "srp_payout": "SRP 补损",
-      "shop_purchase": "商城购买"
+      "welfare_payout": "福利发放",
+      "shop_purchase": "商城购买",
+      "shop_refund": "商城退款",
+      "newbro_captain_reward": "队长帮扶奖励",
+      "mentor_reward": "导师帮扶奖励"
     },
     "validation": {
       "targetUserId": "请输入目标用户 ID",
@@ -1447,6 +1858,9 @@
       "balance": "余额"
     },
     "transactions": {
+      "userId": "用户 ID",
+      "characterName": "主人物",
+      "amount": "金额",
       "balanceAfter": "余额",
       "operator": "操作人"
     },
@@ -1463,7 +1877,7 @@
     "cards": {
       "eveWalletBalance": "EVE 钱包余额",
       "eveSkillPoints": "EVE 技能点",
-      "systemWallet": "系统钱包",
+      "systemWallet": "伏羲币",
       "currentAlliancePap": "当月联盟 PAP"
     },
     "papChart": {
@@ -1565,12 +1979,79 @@
   "system": {
     "basicConfig": {
       "title": "基础配置",
-      "corpId": "军团ID",
-      "siteTitle": "网站标题",
       "save": "保存",
-      "corpIdPlaceholder": "请输入军团ID",
-      "siteTitlePlaceholder": "请输入网站标题",
-      "saveSuccess": "配置已保存"
+      "saveSuccess": "配置已保存",
+      "allowCorporations": "允许军团列表",
+      "allowCorporationsLabel": "军团 ID 列表",
+      "allowCorporationsPlaceholder": "每行输入一个军团 ID",
+      "allowCorporationsHint": "军团 {corporationId}（{corporationName}）会被强制保留在此列表中，无法移除。其他军团权限信号是否生效由此配置决定。",
+      "invalidCorpId": "军团 ID 必须为正整数",
+      "sdeConfig": "SDE 配置",
+      "sdeApiKey": "API Key",
+      "sdeApiKeyPlaceholder": "用于保护 SDE 数据查询接口的密钥",
+      "sdeProxy": "代理地址",
+      "sdeProxyPlaceholder": "留空不使用代理，如 http://127.0.0.1:7890",
+      "sdeDownloadUrl": "下载地址",
+      "sdeDownloadUrlPlaceholder": "SDE 数据下载 API 地址"
+    },
+    "newbroSettings": {
+      "title": "帮扶设置",
+      "subtitle": "统一管理新人资格判定规则、资格快照刷新周期与队长奖励比例。",
+      "saveSuccess": "帮扶设置已保存",
+      "eligibilityTitle": "新人资格判定",
+      "eligibilityHint": "当前规则会基于用户全部绑定人物的技能点快照进行判定。",
+      "maxCharacterSP": "单人物技能点上限",
+      "maxCharacterSPPlaceholder": "达到该技能点即不再属于新人",
+      "multiCharacterSP": "多人物技能点阈值",
+      "multiCharacterSPPlaceholder": "用于统计达到阈值的人物数量",
+      "multiCharacterThreshold": "达到阈值的人物数量",
+      "multiCharacterThresholdPlaceholder": "达到该数量后不再属于新人",
+      "refreshTitle": "资格快照刷新",
+      "refreshHint": "已判定为非新人的用户只会在规则变更后重新计算；当前仍是新人的用户会按下面的天数定期重算。",
+      "refreshIntervalDays": "新人快照刷新间隔（天）",
+      "refreshIntervalDaysPlaceholder": "当前仍是新人的用户超过该天数后会重算",
+      "rewardTitle": "队长奖励",
+      "rewardHint": "奖励处理会按未处理归因赏金汇总后，使用这里的百分比换算系统积分。这个奖励应该根据ESS抽成(40%)适当上调，因为我们后台记录不另外计算ESS分成奖励。",
+      "bonusRate": "奖励比例",
+      "bonusRatePlaceholder": "请输入奖励比例，按百分比填写",
+      "save": "保存设置",
+      "validation": {
+        "mustBeGreaterThanZero": "必须大于 0",
+        "mustBeZeroOrGreater": "必须大于或等于 0"
+      }
+    },
+    "mentorRewardStages": {
+      "title": "导师奖励阶段",
+      "subtitle": "配置导师奖励里程碑，并可手动执行一次奖励处理。",
+      "description": "系统会按阶段顺序检查学员是否满足条件；每日定时任务也会自动处理。",
+      "eligibilityTitle": "学员资格",
+      "eligibilityDescription": "这两个阈值决定哪些用户可以在导师系统中申请成为学员。",
+      "maxCharacterSP": "人物技能点上限",
+      "maxAccountAgeDays": "账号注册天数上限",
+      "addStage": "新增阶段",
+      "save": "保存配置",
+      "saveSuccess": "导师奖励阶段已保存",
+      "saveEligibility": "保存学员资格设置",
+      "saveEligibilitySuccess": "导师学员资格设置已保存",
+      "runProcess": "执行奖励处理",
+      "runProcessSuccess": "奖励处理完成：覆盖 {relationships} 条关系，发放 {rewards} 笔奖励，共计 {total} 伏羲币，毕业 {graduated} 人",
+      "stageOrder": "阶段序号",
+      "stageName": "阶段名称",
+      "conditionType": "条件类型",
+      "threshold": "阈值",
+      "rewardAmount": "奖励数量",
+      "operation": "操作",
+      "remove": "删除",
+      "empty": "暂无奖励阶段，请新增至少一个阶段",
+      "validation": {
+        "maxCharacterSP": "请输入大于 0 的整数技能点上限",
+        "maxAccountAgeDays": "请输入大于 0 的整数账号注册天数上限",
+        "stageOrder": "请输入大于 0 的整数阶段序号",
+        "name": "请输入阶段名称",
+        "conditionType": "请选择条件类型",
+        "threshold": "请输入大于 0 的整数阈值",
+        "rewardAmount": "请输入大于 0 的整数奖励数量"
+      }
     }
   }
 }

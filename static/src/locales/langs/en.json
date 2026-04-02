@@ -15,21 +15,9 @@
     "requestConfigError": "Request configuration error"
   },
   "topBar": {
-    "search": {
-      "title": "Search"
-    },
     "user": {
       "userCenter": "User center",
-      "docs": "Document",
-      "github": "Github",
-      "lockScreen": "Lock screen",
       "logout": "Log out"
-    },
-    "guide": {
-      "title": "Click here to view",
-      "theme": "Theme style",
-      "menu": "Open top menu",
-      "description": "More configurations"
     }
   },
   "common": {
@@ -39,17 +27,26 @@
     "close": "Close",
     "refresh": "Refresh",
     "operation": "Operation",
-    "detail": "Detail",
     "edit": "Edit",
     "delete": "Delete",
+    "reason": "Reason",
+    "type": "Type",
+    "time": "Time",
     "user": "User",
     "role": "Role",
     "name": "Name",
+    "quantity": "Quantity",
     "status": "Status",
     "save": "Save",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "millionIsk": "Million ISK",
     "updatedAt": "Updated At",
     "createdAt": "Created At",
-    "logOutTips": "Do you want to log out?"
+    "logOutTips": "Do you want to log out?",
+    "search": "Search",
+    "reset": "Reset"
   },
   "search": {
     "placeholder": "Search page",
@@ -61,20 +58,11 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": [
-        "Vertical",
-        "Horizontal",
-        "Mixed",
-        "Dual"
-      ]
+      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
     },
     "theme": {
       "title": "Theme Style",
-      "list": [
-        "Light",
-        "Dark",
-        "System"
-      ]
+      "list": ["Light", "Dark", "System"]
     },
     "menu": {
       "title": "Menu Style"
@@ -84,17 +72,11 @@
     },
     "box": {
       "title": "Box Style",
-      "list": [
-        "Border",
-        "Shadow"
-      ]
+      "list": ["Border", "Shadow"]
     },
     "container": {
       "title": "Container Width",
-      "list": [
-        "Full",
-        "Boxed"
-      ]
+      "list": ["Full", "Boxed"]
     },
     "basics": {
       "title": "Basic Config",
@@ -140,14 +122,8 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": [
-      "Notice",
-      "Message",
-      "Todo"
-    ],
-    "text": [
-      "No"
-    ],
+    "bar": ["Notice"],
+    "text": ["No"],
     "viewAll": "View all"
   },
   "worktab": {
@@ -172,7 +148,7 @@
   },
   "login": {
     "leftView": {
-      "title": "AmiyaEden \u2014 EVE Online Tools & Community",
+      "title": "AmiyaEden — EVE Online Tools & Community",
       "subTitle": "Sign in with your EVE Online character, secure and simple"
     },
     "title": "Welcome",
@@ -187,18 +163,7 @@
       "successSub": "Welcome back, {name}! Redirecting...",
       "error": "Login failed",
       "retry": "Try again"
-    },
-    "success": {
-      "title": "Login successful",
-      "message": "Welcome back"
     }
-  },
-  "forgetPassword": {
-    "title": "Forgot password?",
-    "subTitle": "Enter your email to reset your password",
-    "placeholder": "Please enter your email",
-    "submitBtnText": "Submit",
-    "backBtnText": "Back"
   },
   "register": {
     "title": "Create account",
@@ -233,12 +198,6 @@
       "backBtnText": "Back to login"
     }
   },
-  "greeting": {
-    "dawn": "Good morning!",
-    "morning": "Good morning!",
-    "afternoon": "Good afternoon!",
-    "evening": "Good evening!"
-  },
   "exceptionPage": {
     "403": "Sorry, you do not have permission to access this page",
     "404": "Sorry, the page you are trying to access does not exist",
@@ -249,23 +208,13 @@
     "login": {
       "title": "Login"
     },
-    "register": {
-      "title": "Register"
-    },
-    "forgetPassword": {
-      "title": "Forget Password"
-    },
     "outside": {
       "title": "Outside"
     },
     "dashboard": {
       "title": "Dashboard",
-      "console": "Console"
-    },
-    "result": {
-      "title": "Result Page",
-      "success": "Success",
-      "fail": "Fail"
+      "console": "Console",
+      "npcKills": "NPC Kill Report"
     },
     "exception": {
       "title": "Exception",
@@ -276,22 +225,31 @@
     "system": {
       "title": "System Settings",
       "user": "User Manage",
-      "role": "Role Manage",
       "characters": "Characters",
       "userCenter": "User Center",
       "menu": "Menu Manage",
       "esiRefresh": "Scheduled Tasks",
       "wallet": "Wallet Management",
       "alliancePap": "Alliance PAP",
+      "papExchange": "PAP Exchange",
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
       "webhook": "Webhook Notifications",
-      "basicConfig": "Basic Config"
+      "basicConfig": "Basic Config",
+      "newbroSettings": "Newbro Settings",
+      "mentorRewardStages": "Mentor Reward Stages"
+    },
+    "welfare": {
+      "title": "Corp Welfare",
+      "my": "My Welfare",
+      "approval": "Welfare Approval",
+      "settings": "Welfare Settings"
     },
     "shop": {
       "title": "Shop",
       "browse": "Browse Products",
       "manage": "Shop Management",
+      "orderManage": "Order Management",
       "wallet": "My Wallet"
     },
     "characters": {
@@ -302,11 +260,26 @@
       "fleets": "Fleet Management",
       "fleetDetail": "Fleet Detail",
       "fleetConfigs": "Fleet Configs",
+      "corporationPap": "Corporation PAP",
       "pap": "My PAP",
       "join": "Join Fleet",
       "srpApply": "SRP Apply",
       "srpManage": "SRP Review",
       "srpPrices": "SRP Price List"
+    },
+    "skillPlanning": {
+      "title": "Skill Planning",
+      "skillPlans": "Manage Corp Plans",
+      "completionCheck": "Check Completion"
+    },
+    "newbro": {
+      "title": "Newbro Support",
+      "selectCaptain": "Choose Captain",
+      "selectMentor": "Choose Mentor",
+      "captain": "I Am Captain",
+      "mentor": "I Am Mentor",
+      "manage": "Support Manage",
+      "mentorManage": "Mentor Manage"
     },
     "role": {
       "title": "Roles",
@@ -336,6 +309,8 @@
   "info": {
     "selectCharacter": "Select Character",
     "selectCharacterPlaceholder": "Choose a character",
+    "journalTypeFilter": "Journal Type",
+    "journalTypeFilterPlaceholder": "Select one or more types",
     "walletBalance": "Wallet Balance",
     "walletJournal": "Wallet Journal",
     "journalDate": "Date",
@@ -452,7 +427,8 @@
     "reset": "Reset",
     "summary": "Summary",
     "totalBounty": "Total Bounty",
-    "totalESS": "ESS Income",
+    "totalIncursion": "Incursion",
+    "totalMission": "Mission Reward",
     "totalTax": "Total Tax",
     "actualIncome": "Actual Income",
     "totalRecords": "Total Records",
@@ -481,9 +457,134 @@
     "members": "Member Stats",
     "recordCount": "Records",
     "bountyPrizes": "Bounty",
-    "essTransfer": "ESS"
+    "refTypes": {
+      "bounty_prizes": "Bounty",
+      "ess_escrow_transfer": "ESS Escrow",
+      "incursion_payout": "Incursion Payout",
+      "agent_mission_reward": "Mission Reward"
+    }
+  },
+  "welfareSettings": {
+    "create": "Create Welfare",
+    "edit": "Edit Welfare",
+    "name": "Name",
+    "namePlaceholder": "Enter welfare name",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter welfare description",
+    "distMode": "Distribution Mode",
+    "distModePerUser": "Per User",
+    "distModePerCharacter": "Per Character",
+    "requireSkillPlan": "Require Skill Check",
+    "skillPlan": "Skill Plan",
+    "skillPlanPlaceholder": "Select a skill plan",
+    "statusActive": "Active",
+    "statusDisabled": "Disabled",
+    "filterName": "Name",
+    "filterStatus": "Status",
+    "yes": "Yes",
+    "no": "No",
+    "validName": "Please enter a name",
+    "validDistMode": "Please select a distribution mode",
+    "validSkillPlan": "Please select a skill plan",
+    "createSuccess": "Welfare created successfully",
+    "updateSuccess": "Welfare updated successfully",
+    "operationFailed": "Operation failed",
+    "deleteTitle": "Confirm Delete",
+    "deleteConfirm": "Are you sure you want to delete welfare \"{name}\"?",
+    "deleteSuccess": "Welfare deleted successfully",
+    "deleteFailed": "Delete failed",
+    "maxCharAgeMonths": "Max Character Age",
+    "maxCharAgePlaceholder": "Months (0 = no limit)",
+    "maxCharAgeHint": "If set, the user's characters are checked first; if any are older than this limit, the welfare is unavailable to that user",
+    "minimumPap": "Minimum PAP",
+    "minimumPapPlaceholder": "Count (0 = no limit)",
+    "minimumPapHint": "If set, the user's corporation fleet PAP total must be greater than this value",
+    "payByFuxiCoin": "Pay By Fuxi Coin",
+    "payByFuxiCoinPlaceholder": "Amount (0 = disabled)",
+    "payByFuxiCoinHint": "If greater than 0, delivering this welfare credits the applicant wallet automatically.",
+    "distModeLockedHint": "Character age limits can be used with either distribution mode",
+    "importBtn": "Import",
+    "importTitle": "Import History Records",
+    "importHint": "Paste CSV with character name and QQ number per line (comma or tab separated)",
+    "importPlaceholder": "CharacterName, QQNumber\nCharacterName2, QQNumber2",
+    "importSuccess": "Successfully imported {count} records",
+    "requireEvidence": "Require Evidence",
+    "exampleEvidence": "Example Evidence",
+    "uploadExampleEvidence": "Upload Example Image",
+    "uploadFailed": "Upload failed",
+    "dragHint": "Drag to reorder",
+    "reorderSaving": "Saving order…",
+    "reorderFailed": "Failed to save order",
+    "sortOrder": "Sort Order",
+    "sortOrderHint": "Lower number = higher position. Use a number to reorder across pages."
+  },
+  "welfareMy": {
+    "applyTab": "Apply for Welfare",
+    "applicationsTab": "My Applications",
+    "welfareName": "Welfare Name",
+    "characterName": "Character Name",
+    "description": "Description",
+    "deliveryMode": "Delivery Mode",
+    "eligibility": "Eligibility",
+    "appliedAt": "Applied At",
+    "reviewedAt": "Reviewed At",
+    "reviewerName": "Welfare Officer",
+    "statusRequested": "Requested",
+    "statusDelivered": "Delivered",
+    "statusRejected": "Rejected",
+    "applyBtn": "Apply",
+    "futureApplyBtn": "Future Option",
+    "applySuccess": "Application submitted successfully",
+    "applyFailed": "Application failed",
+    "noEligibleWelfares": "No eligible welfare available",
+    "noApplications": "No applications yet",
+    "distModePerUser": "Per User",
+    "distModePerCharacter": "Per Character",
+    "eligibilityNow": "Available Now",
+    "eligibilityFuture": "Future Option",
+    "skillPlanJoiner": " or ",
+    "ineligibleReasonPap": "Alliance PAP insufficient",
+    "ineligibleReasonSkill": "Skill requirements not met",
+    "ineligibleReasonPapSkill": "Skill requirements not met, Alliance PAP insufficient",
+    "ineligibleReasonSkillPlan": "Skill plan {plans} not completed",
+    "ineligibleReasonPapSkillPlan": "Skill plan {plans} not completed, Alliance PAP insufficient",
+    "evidenceDialogTitle": "Upload Evidence",
+    "evidenceDialogHint": "This welfare requires you to upload an image as evidence before applying.",
+    "exampleEvidenceLabel": "Example (provided by admin):",
+    "uploadEvidenceBtn": "Choose Image",
+    "skillPlanningAlertPrefix": "Go to "
+  },
+  "welfareApproval": {
+    "pendingTab": "Pending Delivery",
+    "historyTab": "History",
+    "applicantNickname": "Applicant",
+    "characterName": "Character Name",
+    "contact": "Contact",
+    "welfareName": "Welfare Name",
+    "reviewerName": "Welfare Manager",
+    "requestedAt": "Requested At",
+    "processedAt": "Processed At",
+    "statusRequested": "Requested",
+    "statusDelivered": "Delivered",
+    "statusRejected": "Rejected",
+    "deliverBtn": "Deliver",
+    "rejectBtn": "Reject",
+    "deliverConfirm": "Confirm delivering welfare to {name}?",
+    "rejectConfirm": "Confirm rejecting welfare application from {name}?",
+    "deliverSuccess": "Welfare delivered successfully",
+    "rejectSuccess": "Welfare application rejected",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "noPending": "No requested applications",
+    "noHistory": "No processed records yet",
+    "searchBtn": "Search",
+    "historyKeywordPlaceholder": "Character, nickname, or QQ",
+    "evidenceImage": "Evidence",
+    "deleteHistoryConfirm": "Delete the application record for {name}? This cannot be undone.",
+    "deleteHistorySuccess": "Application record deleted"
   },
   "shop": {
+    "currency": "Fuxi Coin",
     "products": "Products",
     "allTypes": "All Types",
     "typeNormal": "Normal",
@@ -537,7 +638,7 @@
       "productImage": "Product Image",
       "uploading": "Uploading...",
       "uploadImage": "Click to upload",
-      "uploadHint": "JPG/PNG/GIF/WebP, max 5MB",
+      "uploadHint": "JPG/PNG/WebP, max 2MB",
       "price": "Price",
       "type": "Type",
       "typeNormal": "Normal",
@@ -575,120 +676,12 @@
       "deleteBtn": "Delete",
       "deleteSuccess": "Deleted",
       "deleteFailed": "Delete failed",
-      "imageTooLarge": "Image must be under 5MB",
+      "imageTooLarge": "Image must be under 2MB",
       "uploadSuccess": "Uploaded",
       "uploadFailed": "Upload failed",
       "validName": "Product name is required",
       "validPrice": "Price is required",
       "validType": "Please select a type"
-    }
-  },
-  "lottery": {
-    "noActivities": "No lottery activities available",
-    "startDraw": "Draw Now",
-    "points": "Points",
-    "perDraw": "draw",
-    "free": "Free",
-    "more": "more",
-    "myRecords": "My Lottery Records",
-    "draw": "Lottery",
-    "costLabel": "Cost per draw:",
-    "balance": "Balance",
-    "prizePool": "Prize Pool",
-    "drawing": "Drawing...",
-    "close": "Close",
-    "drawAgain": "Draw Again",
-    "loadFailed": "Failed to load",
-    "drawFailed": "Draw failed",
-    "tier": {
-      "normal": "Normal",
-      "rare": "Rare",
-      "legendary": "Legendary"
-    },
-    "status": {
-      "active": "Active",
-      "closed": "Closed"
-    },
-    "manage": {
-      "activitiesTab": "Activities",
-      "createActivity": "Create Activity",
-      "editActivity": "Edit Activity",
-      "noActivities": "No activities",
-      "costPerDraw": "Cost per draw",
-      "startAt": "Start time",
-      "endAt": "End time",
-      "managePrizes": "Manage Prizes",
-      "prizeCount": "Prizes: {n}",
-      "noPrizes": "No prizes",
-      "recordsTab": "Records",
-      "filterActivity": "Filter by activity",
-      "uploading": "Uploading...",
-      "uploadCover": "Upload Cover",
-      "uploadImage": "Upload Image",
-      "managePrizesTitle": "Manage Prizes - {name}",
-      "addPrize": "Add Prize",
-      "editPrize": "Edit Prize",
-      "noPrizesHint": "No prizes yet. Click the button above to add one.",
-      "weight": "Weight",
-      "stock": "Stock",
-      "stockUnlimited": "Unlimited",
-      "totalWeight": "Total weight",
-      "loadFailed": "Failed to load",
-      "updateSuccess": "Updated",
-      "createSuccess": "Created",
-      "addSuccess": "Added",
-      "operationFailed": "Operation failed",
-      "deleteActivityConfirm": "Delete activity \"{name}\"? All associated prizes will also be removed.",
-      "deleteSuccess": "Deleted",
-      "deleteFailed": "Delete failed",
-      "imageTooLarge": "Image must be under 2MB",
-      "uploadSuccess": "Uploaded",
-      "uploadFailed": "Upload failed",
-      "validName": "Activity name is required",
-      "validCost": "Cost per draw is required",
-      "validPrizeName": "Prize name is required",
-      "validTier": "Please select a tier",
-      "deletePrizeConfirm": "Delete prize \"{name}\"?",
-      "fields": {
-        "name": "Name",
-        "namePlaceholder": "Activity name",
-        "description": "Description",
-        "descriptionPlaceholder": "Description (optional)",
-        "coverImage": "Cover Image",
-        "costPerDraw": "Cost per draw",
-        "costHint": "0 means free",
-        "status": "Status",
-        "startAt": "Start time",
-        "endAt": "End time",
-        "noLimit": "No limit",
-        "sortOrder": "Sort order",
-        "sortHint": "Higher number = higher priority"
-      },
-      "prizeFields": {
-        "name": "Prize name",
-        "namePlaceholder": "Enter prize name",
-        "image": "Prize image",
-        "sdeSearchPlaceholder": "Search EVE items to auto-set image",
-        "tier": "Tier",
-        "weight": "Probability weight",
-        "weightHint": "Higher weight = higher chance",
-        "totalStock": "Total stock",
-        "stockHint": "0 means unlimited"
-      },
-      "recordColumns": {
-        "userId": "User ID",
-        "activity": "Activity",
-        "prize": "Prize",
-        "cost": "Cost",
-        "time": "Time",
-        "deliveryStatus": "Delivery"
-      }
-    },
-    "delivery": {
-      "pending": "Pending",
-      "delivered": "Delivered",
-      "markDelivered": "Mark Delivered",
-      "markSuccess": "Marked as delivered"
     }
   },
   "userAdmin": {
@@ -698,32 +691,277 @@
       "unknown": "Unknown"
     },
     "search": {
-      "nickname": "Nickname",
-      "nicknamePlaceholder": "Enter nickname",
-      "statusPlaceholder": "Select status"
+      "keyword": "Search",
+      "keywordPlaceholder": "Nickname, QQ, or character name",
+      "statusPlaceholder": "Select status",
+      "rolePlaceholder": "Select role"
     },
     "roles": {
       "super_admin": "Super Admin",
       "admin": "Admin",
       "srp": "SRP Admin",
       "fc": "FC",
+      "senior_fc": "Senior FC",
+      "captain": "Captain",
+      "mentor": "Mentor",
+      "welfare": "Welfare Officer",
       "user": "Verified User",
       "guest": "Guest"
     },
     "table": {
       "userInfo": "User Info",
+      "contact": "Contact",
       "lastLogin": "Last Login",
       "loginIp": "Login IP",
       "registeredAt": "Registered At"
     },
+    "characters": {
+      "empty": "No characters bound",
+      "character": "Character",
+      "characterIdLabel": "Character ID",
+      "tokenHealth": "ESI Health",
+      "tokenValid": "Valid",
+      "tokenExpired": "Expired",
+      "characterId": "Character ID: {id}",
+      "totalSkillPoints": "Total Skill Points: {points}",
+      "totalSkillPointsLabel": "Total SP"
+    },
+    "characterEsiRestriction": {
+      "title": "Expired Character ESI Restriction",
+      "description": "When enabled, users who still have any bound character with expired ESI authorization are forced to stay on the characters page until they refresh or remove those characters.",
+      "switchLabel": "Enforce restriction",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "loadFailed": "Failed to load the character ESI restriction setting",
+      "saveSuccess": "Character ESI restriction updated",
+      "saveFailed": "Failed to update the character ESI restriction"
+    },
     "unnamed": "Unnamed",
     "impersonate": "Impersonate",
+    "editProtectedDenied": "Admins cannot edit super admins or other admins.",
     "deleteConfirm": "Are you sure you want to delete user \"{name}\"? This cannot be undone.",
+    "deleteProtectedDenied": "Admins cannot delete super admins or other admins.",
     "deleteSuccess": "Deleted",
     "deleteFailed": "Failed to delete",
     "impersonateConfirm": "Are you sure you want to sign in as \"{name}\"? Your current admin session will be replaced. Save your current token first or use a new tab.",
     "impersonateSuccess": "Switched to user \"{name}\"",
     "impersonateFailed": "Failed to impersonate user"
+  },
+  "newbro": {
+    "common": {
+      "player": "Player",
+      "mentor": "Mentor",
+      "mentee": "Mentee",
+      "mainCharacter": "Current Main Character",
+      "nickname": "Nickname",
+      "captain": "Captain",
+      "startedAt": "Started At",
+      "endedAt": "Ended At",
+      "refType": "Ref Type",
+      "systemId": "System ID",
+      "amount": "Amount",
+      "journalAt": "Journal Time",
+      "processedAt": "Processed At"
+    },
+    "mentorStatus": {
+      "pending": "Pending",
+      "active": "Active",
+      "rejected": "Rejected",
+      "revoked": "Revoked",
+      "graduated": "Graduated"
+    },
+    "mentorConditionTypes": {
+      "skill_points": "Total Skill Points",
+      "pap_count": "Corporation PAP Total",
+      "days_active": "Active Days"
+    },
+    "select": {
+      "title": "Choose a Captain",
+      "subtitle": "Eligible newbros can choose or switch their current captain here.",
+      "currentlyIneligible": "Currently ineligible",
+      "currentlyIneligibleWithReason": "Currently ineligible: {reason}. Last evaluated at {evaluatedAt}.",
+      "ineligibleBecauseSkillThreshold": "a character has reached the single-character SP limit",
+      "ineligibleBecauseMultiCharacterThreshold": "too many characters have reached the multi-character SP threshold",
+      "overviewTab": "Choose Captain",
+      "historyTab": "History",
+      "currentCaptain": "Current Captain",
+      "noCurrentCaptain": "No captain selected yet",
+      "affiliationStarted": "Started At",
+      "captainList": "Available Captains",
+      "nicknameLabel": "Nickname",
+      "activeNewbros": "Active newbros",
+      "lastOnline": "Last Online",
+      "currentSelection": "Current Selection",
+      "chooseCaptain": "Choose Captain",
+      "chooseSuccess": "Captain selection updated",
+      "noCaptains": "No captains available right now",
+      "recentHistory": "Recent Affiliation History",
+      "endAffiliationButton": "End Affiliation",
+      "endAffiliationSuccess": "Affiliation ended"
+    },
+    "selectMentor": {
+      "title": "Choose a Mentor",
+      "subtitle": "Eligible mentees can review available mentors and submit an application here.",
+      "statusTitle": "My Mentee Status",
+      "eligible": "You are currently eligible as a mentee",
+      "ineligible": "You are currently not eligible as a mentee",
+      "disqualifiedReason": "You are currently not eligible: {reason}",
+      "currentRelationship": "Current Mentor Relationship",
+      "noCurrentRelationship": "No pending or active mentor relationship right now",
+      "mentorList": "Available Mentors",
+      "noMentors": "No mentors available right now",
+      "nicknameLabel": "Nickname",
+      "activeMentees": "Active Mentees",
+      "lastOnline": "Last Online",
+      "apply": "Apply",
+      "applied": "Applied",
+      "activeRelationship": "Relationship Active",
+      "applySuccess": "Mentor application submitted",
+      "ineligibleBecauseAccountTooOld": "account age exceeds the mentee eligibility window",
+      "ineligibleBecauseSkillPointsTooHigh": "total skill points exceed the mentee threshold",
+      "ineligibleBecauseNoCharacters": "no characters are available for eligibility evaluation"
+    },
+    "captain": {
+      "title": "I Am Captain",
+      "subtitle": "Review your active and historical newbros plus the bounty attribution ledger tied to them.",
+      "activePlayers": "Active Players",
+      "historicalPlayers": "Historical Players",
+      "totalBounty": "Attributed Bounty",
+      "recordCount": "Attribution Records",
+      "playersTitle": "Newbro List",
+      "playersAll": "All",
+      "playersActive": "Active",
+      "playersHistorical": "Historical",
+      "endAffiliationButton": "End Affiliation",
+      "endAffiliationSuccess": "Player affiliation removed",
+      "enrollTitle": "Enroll Newbros",
+      "enrollSubtitle": "Search eligible newbros by nickname or current character name, then enroll them under your affiliation.",
+      "enrollSearchPlaceholder": "Search nickname or character name",
+      "enrollSearchHint": "Results only include currently eligible newbros who are not already affiliated with you.",
+      "enrollCurrentCaptain": "Current Captain",
+      "enrollNoCaptain": "Unassigned",
+      "enrollButton": "Enroll",
+      "enrollSuccess": "Newbro affiliation updated",
+      "enrollEmpty": "No eligible newbros found",
+      "enrollSwitchingFrom": "Currently with",
+      "attributionsTitle": "Attribution Ledger",
+      "refTypeBounty": "Bounty",
+      "totalRewardedValue": "Rewarded Credits",
+      "rewardSettlementCount": "Reward Batches",
+      "lastRewardProcessedAt": "Last Reward Time",
+      "rewardHistoryTitle": "Reward History",
+      "rewardAttributionCount": "Attributed Records",
+      "rewardAttributedTotal": "Attributed Bounty Total",
+      "rewardBonusRate": "Bonus Rate",
+      "rewardCreditedValue": "Credited Value"
+    },
+    "mentor": {
+      "title": "I Am Mentor",
+      "subtitle": "Review pending applications and current mentee progress, then process mentor applications.",
+      "applicationsTab": "Pending Applications",
+      "menteesTab": "Mentees",
+      "rewardStagesTab": "Reward Stages",
+      "applicationsTitle": "Pending Applications",
+      "menteesTitle": "Mentee List",
+      "rewardStagesTitle": "Current Reward Stage Config",
+      "rewardStagesDescription": "Read-only view. Admins still manage stage rules and manual processing from the Mentor Reward Stages page.",
+      "rewardStagesEmpty": "No reward stages configured yet",
+      "responsibilitiesTitle": "Mentor Responsibilities",
+      "responsibilitiesDescription": "This guidance is shown to both mentees and mentors so the mentor scope stays explicit.",
+      "responsibilityItems": {
+        "registration": "Mentors guide mentees through registering in the corporation and alliance IT systems, adding new characters, and joining Mumble plus the rally group chat.",
+        "basics": "Mentors answer basic in-game questions such as overview setup, alliance rules, top-ups, ratting, and fittings.",
+        "pvp": "Mentors guide mentees into fleet PvP activity, help them queue the correct skills, and claim corporation rewards.",
+        "scope": "A mentor's main duty is verbal or written guidance. Running PvE with a newbro is not required; that responsibility belongs to captains."
+      },
+      "statusFilter": "Status",
+      "allStatuses": "All",
+      "pendingApplicationsEmpty": "No pending applications right now",
+      "menteesEmpty": "No mentee records yet",
+      "appliedAt": "Applied At",
+      "respondedAt": "Responded At",
+      "graduatedAt": "Graduated At",
+      "qq": "QQ",
+      "discordId": "Discord",
+      "totalSP": "Total SP",
+      "totalPap": "Corporation PAP",
+      "daysActive": "Active Days",
+      "distributedStages": "Rewarded Stages",
+      "distributedRewardAmount": "Distributed Fuxi Coin",
+      "noDistributedStages": "None",
+      "accept": "Accept",
+      "reject": "Reject",
+      "acceptSuccess": "Application accepted",
+      "rejectSuccess": "Application rejected"
+    },
+    "manage": {
+      "title": "Support Management",
+      "subtitle": "Admins can review all captain performance and run attribution sync manually.",
+      "performanceTab": "Captain Performance",
+      "rewardHistoryTab": "Reward History",
+      "affiliationHistoryTab": "Affiliation History",
+      "keyword": "Search captain character or nickname",
+      "runSync": "Run Attribution Sync",
+      "runRewardProcessing": "Run Reward Processing",
+      "captainPerformance": "Captain Performance",
+      "affiliationHistoryTitle": "Affiliation Change History",
+      "historyStartDate": "Change Start Date",
+      "historyEndDate": "Change End Date",
+      "historyCaptainFilter": "Captain character name or nickname",
+      "historyPlayerFilter": "Newbro character name or nickname",
+      "historyFilterHint": "Name filters are case-insensitive. Time filter matches affiliation starts or ends within the selected range.",
+      "historyCaptainUserId": "Captain User ID",
+      "captainNicknameColumn": "Captain Nickname",
+      "newbroColumn": "Newbro",
+      "newbroNicknameColumn": "Newbro Nickname",
+      "changedByCharacterColumn": "Changed By",
+      "historyPlayerCharacterId": "Newbro Character ID",
+      "nicknameLabel": "Nickname",
+      "nicknameColumn": "Nickname",
+      "activeNewbroCount": "Current Newbros",
+      "historicalNewbroCount": "Historical Newbros",
+      "viewDetail": "View Detail",
+      "detailTitle": "Captain Detail - {name}",
+      "detailPlayers": "Players",
+      "detailAttributions": "Attributions",
+      "syncSuccess": "Attribution sync completed. Inserted {inserted} records after processing {processed}.",
+      "rewardSettlementCount": "Reward Batches",
+      "rewardTotalCredited": "Total Credited Value",
+      "rewardLastProcessedAt": "Last Reward Time",
+      "rewardAttributionCount": "Attributed Records",
+      "rewardAttributedTotal": "Attributed Bounty Total",
+      "rewardBonusRate": "Bonus Rate",
+      "rewardCreditedValue": "Credited Value",
+      "rewardProcessSuccess": "Reward processing completed for {captains} captains and {attributions} attribution records, crediting {credited} in total."
+    },
+    "mentorManage": {
+      "title": "Mentor Management",
+      "subtitle": "Admins can review every mentor relationship and the mentor reward distribution ledger.",
+      "relationshipsTab": "Relationships",
+      "rewardRecordsTab": "Reward Records",
+      "keyword": "Search mentor or mentee by character name / nickname",
+      "rewardKeyword": "Search mentor by character name or nickname",
+      "status": "Relationship Status",
+      "allStatuses": "All",
+      "relationshipList": "Mentor Relationships",
+      "rewardRecordsList": "Mentor Reward Distribution Records",
+      "mentorColumn": "Mentor",
+      "menteeColumn": "Mentee",
+      "mentorNickname": "Mentor Nickname",
+      "menteeNickname": "Mentee Nickname",
+      "appliedAt": "Applied At",
+      "respondedAt": "Responded At",
+      "revokedAt": "Revoked At",
+      "graduatedAt": "Graduated At",
+      "stageOrder": "Reward Stage",
+      "rewardAmount": "Reward Amount",
+      "distributedAt": "Distributed At",
+      "noRewardRecords": "No reward records",
+      "cancelPending": "Cancel Application",
+      "cancelPendingSuccess": "Pending mentor application cancelled",
+      "revoke": "Revoke",
+      "revokeSuccess": "Mentor relationship revoked"
+    }
   },
   "fleet": {
     "title": "Fleet Management",
@@ -770,6 +1008,13 @@
       "empty": "No members yet",
       "syncESI": "Sync from ESI",
       "syncSuccess": "Members synced",
+      "manualAdd": "Add Members",
+      "manualAddInputLabel": "Character name list",
+      "manualAddPlaceholder": "PlayerOne\nPlayerTwo\nPlayerThree",
+      "manualAddHint": "Enter one character name per line. Saved names that already exist in the system will be added to the fleet.",
+      "manualAddEmpty": "Enter at least one character name",
+      "manualAddSuccess": "{count} members added",
+      "manualAddMissing": "Characters not found: {names}",
       "characterName": "Character",
       "characterId": "Character ID",
       "shipType": "Ship",
@@ -781,7 +1026,9 @@
       "issue": "Issue PAP",
       "issueConfirm": "Issue PAP to all members?",
       "issueSuccess": "PAP issued",
-      "myTitle": "My PAP Records",
+      "issueWithSyncConfirm": "Sync members from ESI for \"{name}\" and then issue PAP?",
+      "issueWithSyncSuccess": "Members synced and PAP issued",
+      "myTitle": "Corporation PAP",
       "totalPap": "Total PAP",
       "participationCount": "Participations",
       "fleetId": "Fleet ID",
@@ -815,6 +1062,39 @@
       "allianceOperationName": "Operation Name",
       "allianceStartTime": "Start Time",
       "allianceEndTime": "End Time"
+    },
+    "corporationPap": {
+      "title": "Corporation PAP",
+      "summaryTitle": "Corporation PAP Summary",
+      "empty": "No corporation PAP summary records",
+      "search": "Search",
+      "reset": "Reset",
+      "filters": {
+        "period": "Period",
+        "year": "Year",
+        "corpTickers": "Corporations"
+      },
+      "periods": {
+        "currentMonth": "Current Month",
+        "lastMonth": "Last Month",
+        "atYear": "At Year",
+        "all": "All"
+      },
+      "stats": {
+        "filteredPap": "Filtered PAP",
+        "filteredStratOp": "Strategic OP PAP",
+        "allPap": "All PAP",
+        "users": "Users"
+      },
+      "columns": {
+        "corpTicker": "Corporation",
+        "nickname": "Nickname",
+        "mainCharacter": "Main Character",
+        "characterCount": "Characters",
+        "stratOpPaps": "Strategic OP",
+        "skirmishPaps": "Skirmish",
+        "allianceStratPaps": "Alliance Strategic"
+      }
     },
     "invite": {
       "title": "Invite Links",
@@ -920,6 +1200,86 @@
       "fittingPlaceholder": "Select a fitting"
     }
   },
+  "skillPlan": {
+    "title": "Corp Skill Plans",
+    "create": "Create Plan",
+    "edit": "Edit Plan",
+    "delete": "Delete Plan",
+    "createSuccess": "Skill plan created",
+    "updateSuccess": "Skill plan updated",
+    "deleteSuccess": "Skill plan deleted",
+    "deleteConfirm": "Are you sure you want to delete skill plan \"{title}\"? This cannot be undone.",
+    "searchPlaceholder": "Search skill plan title or description",
+    "dragHint": "Drag to reorder",
+    "reorderFailed": "Failed to save order",
+    "sortOrder": "Sort Order",
+    "sortOrderHint": "Lower number = higher position. Use a number to reorder across pages.",
+    "listTitle": "Skill Plans",
+    "detailTitle": "Plan Details",
+    "emptyList": "No skill plans",
+    "emptyDetail": "Select a skill plan on the left to view details",
+    "descriptionEmpty": "No description",
+    "skillCount": "Skill Requirements",
+    "skillListTitle": "Required Skills",
+    "addSkill": "Add Skill Requirement",
+    "noSkills": "Please add at least one skill requirement",
+    "duplicateSkill": "Duplicate skills are not allowed in one plan",
+    "textInputActive": "Pasted skill text will be used as the source of truth on save; duplicate skills keep the highest level automatically.",
+    "manualInputHint": "Clear the pasted skill text above to switch back to manual skill selection.",
+    "level": "Level {level}",
+    "levelLabel": "Required Level",
+    "order": "Order",
+    "fields": {
+      "title": "Plan Title",
+      "titlePlaceholder": "Enter the skill plan title",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe what this skill plan is for",
+      "ship": "Plan Ship Icon",
+      "shipPlaceholder": "Search and select a ship",
+      "shipHint": "Optional. The selected ship icon will be shown in the plan list.",
+      "skillsText": "Skill Text",
+      "skillsTextPlaceholder": "One skill per line, for example:\nGraviton Physics 5\nDoomsday Rapid Firing 5\nCapital Shield Operation 4",
+      "skillsTextGuide": "Open the in-game skill planner to view the details. Use the top-right button to copy all skills to the clipboard, then paste them into the field above.",
+      "skillsTextHint": "Supported format: skill name + space + level. Levels may use 1-5 or Roman numerals I-V. Duplicate skills automatically keep the highest level.",
+      "skill": "Skill",
+      "skillPlaceholder": "Search and select a skill",
+      "group": "Skill Group",
+      "requiredLevel": "Required Level"
+    },
+    "table": {
+      "skill": "Skill",
+      "group": "Group",
+      "requiredLevel": "Required Level"
+    }
+  },
+  "skillPlanCheck": {
+    "title": "Check Completion",
+    "subtitle": "Compare the selected characters' skills against the saved corp plans and review completion at a glance.",
+    "selectCharacters": "Select Characters",
+    "selectedCharacters": "Selected Characters",
+    "noCharactersSelected": "No characters selected yet",
+    "noAvailableCharacters": "No available characters for this user",
+    "selectionSaved": "Character selection saved",
+    "selectCharactersFirst": "Please select at least one character first",
+    "startCheck": "Start Check",
+    "resultTitle": "Check Results",
+    "resultSubtitle": "Expand by character, then by skill plan, to inspect completion details.",
+    "planCount": "{count} plans",
+    "emptyResult": "Select characters and start the check to view completion results",
+    "characterSummary": "{completed} / {total} plans completed",
+    "planCompleted": "Completed",
+    "planIncomplete": "Incomplete",
+    "missingCount": "{count} missing",
+    "missingSkillsTitle": "Missing Skills",
+    "requiredVsCurrent": "Required Lv.{required}, current Lv.{current}",
+    "planCompleteSummary": "This character fully satisfies the selected skill plan.",
+    "planIncompleteSummary": "{matched} / {total} skill requirements are currently satisfied.",
+    "selectPlans": "Select Plans",
+    "selectedPlans": "Selected Plans",
+    "noPlansSelected": "No plans selected yet",
+    "noAvailablePlans": "No available plans",
+    "planSelectionSaved": "Plan selection saved"
+  },
   "characters": {
     "title": "EVE Characters",
     "subTitle": "Manage EVE Online characters linked to your account. You can bind multiple characters and switch the primary one.",
@@ -931,19 +1291,47 @@
     "noScopes": "No extra scopes",
     "scopeCount": "scopes",
     "tokenInvalid": "(Expired)",
+    "tokenHealth": {
+      "title": "You cannot continue while any bound character has expired ESI access",
+      "requiredHint": "Refresh ESI for every expired character or unbind the expired characters before leaving this page."
+    },
     "bindFailed": "Failed to get bind URL",
     "setPrimarySuccess": "{name} is now the primary character",
     "setPrimaryFailed": "Failed to set primary character",
     "unbindConfirm": "Are you sure you want to unbind {name}? The authorization data will be removed.",
     "unbindSuccess": "Successfully unbound {name}",
-    "unbindFailed": "Failed to unbind character"
+    "unbindFailed": "Failed to unbind character",
+    "profile": {
+      "title": "Contact Details and Nickname",
+      "subTitle": "Set a nickname and at least one contact method. You will stay on this page until it is complete.",
+      "completed": "Complete",
+      "incomplete": "Incomplete",
+      "completedHint": "Your profile setup is complete. You can access the rest of the app normally.",
+      "requiredHint": "You must set a nickname and at least one of QQ number or Discord ID before continuing.",
+      "nickname": "Nickname",
+      "nicknamePlaceholder": "Enter nickname",
+      "qq": "QQ Number",
+      "qqPlaceholder": "Enter QQ number",
+      "discordId": "Discord ID",
+      "discordPlaceholder": "Enter Discord ID",
+      "save": "Save Profile",
+      "saveSuccess": "Profile updated",
+      "validation": {
+        "nicknameRequired": "Nickname is required",
+        "nicknameLength": "Nickname must be 20 characters or fewer",
+        "contactRequired": "Enter either a QQ number or a Discord ID",
+        "qqLength": "QQ number must be 20 characters or fewer",
+        "qqDigits": "QQ number must contain digits only",
+        "discordLength": "Discord ID must be 20 characters or fewer"
+      }
+    }
   },
   "srp": {
     "apply": {
       "title": "My SRP Applications",
       "formTitle": "Apply for SRP",
       "infoText": "Select the killmail and fleet operation you wish to submit. If you can't find the killmail, verify your account is properly linked and wait up to 1 hour for refresh. If you can't find the fleet, contact the FC to update the operation info or issue PAP.",
-      "faqLink": "About how to apply for SRP and other FAQs",
+      "seatLink": "Please note that the Fuxi System does not issue reimbursements for Alliance fleets; please click this link to apply for Alliance reimbursement.",
       "dialogTitle": "Submit SRP Application",
       "submitBtn": "Submit SRP Application",
       "submitBtnText": "Submit",
@@ -1004,17 +1392,44 @@
     },
     "manage": {
       "title": "SRP Applications",
+      "pendingTab": "Pending",
+      "historyTab": "Delivery Records",
       "refresh": "Refresh",
       "selectFleet": "Filter by fleet",
+      "userKeywordFilter": "Search by character or nickname",
       "searchBtn": "Search",
       "resetBtn": "Reset",
+      "payoutModeLabel": "Payout Mode",
+      "payoutModes": {
+        "fuxiCoin": "Fuxi Coin",
+        "manualTransfer": "Manual Transfer"
+      },
       "exportBtn": "Export Data",
+      "autoApproveBtn": "Auto Approve",
+      "batchPayoutBtn": "Batch Payout",
       "approveBtn": "Approve",
       "rejectBtn": "Reject",
       "payoutBtn": "Payout",
       "approveDialog": "Approve Application",
       "rejectDialog": "Reject Application",
       "payoutDialog": "Confirm Payout",
+      "batchPayoutDialog": "Batch Payout",
+      "batchPayoutHint": "Click the copy button on the right, then paste the content into an in-game note.",
+      "batchPayoutMainCharacter": "Main Character",
+      "batchPayoutAmount": "Amount",
+      "batchPayoutApprovedAmount": "Approved Amount",
+      "batchPayoutPendingAmount": "Pending Amount",
+      "batchPayoutTotalAmount": "Total Amount",
+      "batchPayoutCount": "Requests",
+      "batchPayoutEmpty": "No eligible SRP requests to batch payout",
+      "batchPayoutConfirmTitle": "Batch Payout",
+      "batchPayoutConfirmText": "Mark all approved unpaid SRP requests for {name} as paid? Total: {amount} ISK",
+      "batchPayoutSuccess": "Batch payout successful",
+      "fuxiBatchPayoutConfirmTitle": "Batch Fuxi Coin SRP",
+      "fuxiBatchPayoutConfirmText": "Issue Fuxi Coin for all approved unpaid SRP requests now and conclude them?",
+      "fuxiBatchPayoutSuccess": "Fuxi Coin SRP complete: {users} users, {applications} requests, {amount} coins",
+      "autoApproveFleetRequired": "Select the fleet to run auto-approve against first",
+      "autoApproveSuccess": "Auto-approve complete: approved {approved}, skipped {skipped}",
       "finalAmount": "Final Amount",
       "finalAmountHint": "Enter 0 to keep the current amount",
       "reviewNote": "Review Note",
@@ -1030,6 +1445,9 @@
       "approveSuccess": "Approved",
       "rejectSuccess": "Rejected",
       "payoutSuccess": "Payout successful",
+      "fuxiPayoutConfirmTitle": "Fuxi Coin SRP",
+      "fuxiPayoutConfirmText": "Issue {amount} Fuxi Coin to {name} for {ship} and conclude this SRP request?",
+      "fuxiPayoutSuccess": "Fuxi Coin SRP issued: {amount} coins",
       "rejectRequired": "A note is required when rejecting",
       "unknownReviewer": "Reviewer",
       "payoutKillId": "KillID",
@@ -1041,8 +1459,10 @@
       "copyFailed": "Copy failed",
       "noPrimaryCharacter": "Please set a primary character first",
       "openInfoWindowSuccess": "Open window request sent",
+      "unknownMainCharacter": "Unknown",
       "columns": {
         "id": "#",
+        "nickname": "Nickname",
         "character": "Character",
         "ship": "Ship",
         "system": "System",
@@ -1099,11 +1519,11 @@
       }
     },
     "status": {
-      "pending": "Pending",
+      "submitted": "Submitted",
       "approved": "Approved",
       "rejected": "Rejected",
       "paid": "Paid",
-      "unpaid": "Pending Payout"
+      "notpaid": "Pending Payout"
     }
   },
   "alliancePap": {
@@ -1160,52 +1580,40 @@
     "calculatedAtLabel": "Calculated At",
     "noRecords": "No alliance PAP records",
     "settle": {
-      "openBtn": "PAP Exchange Config",
-      "title": "PAP Exchange Config & Monthly Settle",
-      "enabled": "Enable Exchange",
-      "walletPerPap": "Exchange Rate",
-      "walletPerPapUnit": "wallet / 1 PAP",
-      "walletPerPapRequired": "Rate must be greater than 0",
-      "settleMonth": "Settle Month",
+      "openBtn": "Monthly Archive",
+      "title": "Monthly Archive",
+      "settleMonth": "Archive Month",
       "settleMonthRequired": "Please select a month",
-      "walletConvert": "Also Convert Wallet",
-      "walletConvertTip": "Automatically issue wallet balance by rate",
-      "saveConfig": "Save Config",
-      "doSettle": "Archive & Settle",
-      "configSaved": "Config saved",
-      "configFailed": "Failed to save config",
-      "settleSuccess": "Settlement complete",
-      "settleFailed": "Settlement failed",
-      "resultTitle": "Settlement Result",
-      "resultUsers": "{count} users settled",
-      "resultSkipped": "{count} users skipped",
-      "resultWallet": "Total wallet issued: {amount}"
+      "doSettle": "Archive",
+      "settleSuccess": "Archive complete",
+      "settleFailed": "Archive failed"
     }
   },
-  "resultPage": {
-    "success": {
-      "title": "Submitted Successfully",
-      "message": "The result page is used to present the outcome of a sequence of operations. For simple actions, a global message is usually enough. The gray area can show extra information.",
-      "content": "Your request has been submitted and is awaiting review.",
-      "back": "Back to Edit",
-      "view": "View",
-      "print": "Print"
-    },
-    "fail": {
-      "title": "Submission Failed",
-      "message": "Please review and correct the following items before submitting again.",
-      "content": "The following issues were found in your submission:",
-      "frozen": "Your account has been frozen",
-      "ineligible": "Your account is not eligible to apply yet",
-      "back": "Back to Edit",
-      "view": "View"
+  "papExchange": {
+    "title": "PAP Exchange Rate Config",
+    "fcSection": "FC Salary Settings",
+    "ratesSection": "PAP Exchange Rates",
+    "tip": "Configure the Fuxi Coin conversion rate for each fleet PAP type, plus the FC fixed salary and monthly wage cap.",
+    "loadFailed": "Failed to load exchange rate config",
+    "saveSuccess": "Exchange rate config saved",
+    "saveFailed": "Failed to save exchange rate config",
+    "fcSalary": "FC Salary",
+    "fcSalaryHint": "The FC receives this fixed amount when PAP is issued. Default: 400.",
+    "fcSalaryUnit": "Fuxi Coin",
+    "fcSalaryMonthlyLimit": "FC Salary Monthly Cap",
+    "fcSalaryMonthlyLimitHint": "The maximum number of salary payouts a single FC can receive each month. Default: 5.",
+    "fcSalaryMonthlyLimitUnit": "times / month",
+    "columns": {
+      "type": "PAP Type",
+      "rate": "Exchange Rate",
+      "rateUnit": "Fuxi Coin / 1 PAP",
+      "updatedAt": "Updated At"
     }
   },
   "roleUi": {
     "userRoleDialog": {
       "title": "Assign Roles",
       "unnamed": "Unnamed",
-      "systemTag": "(System)",
       "loadFailed": "Failed to load roles",
       "saveSuccess": "Roles assigned",
       "saveFailed": "Failed to assign roles"
@@ -1225,7 +1633,7 @@
   "autoRolePage": {
     "title": "ESI Auto Roles",
     "description": "Automatically assign system roles based on a character's EVE corporation roles and titles.",
-    "directorHint": "Director is always mapped to the admin role automatically.",
+    "directorHint": "Only characters with the ESI corporation role `Director` in {corporationName} ({corporationId}) are auto-mapped to admin.",
     "triggerSync": "Trigger Sync",
     "syncTriggered": "Sync task triggered and will run in the background",
     "syncFailed": "Failed to trigger sync",
@@ -1266,6 +1674,7 @@
     },
     "titleFallback": "Title {id}",
     "corpPrefix": "Corp {id}",
+    "corpFallback": "Corp {id}",
     "mappingCreated": "Mapping created",
     "createFailed": "Failed to create mapping",
     "deleteSuccess": "Deleted",
@@ -1275,6 +1684,8 @@
     "tabs": {
       "products": "Product Management",
       "orders": "Order Management",
+      "ordersSubtitle": "When delivering an order, copy and paste the order number into the contract description or transfer note.",
+      "orderHistory": "Order History",
       "redeem": "Redeem Code Management"
     },
     "products": {
@@ -1336,42 +1747,38 @@
       }
     },
     "orders": {
-      "userIdPlaceholder": "User ID",
-      "statusPlaceholder": "Order status",
-      "dialogApprove": "Approve Order",
+      "keywordPlaceholder": "Product / Main char / Nickname",
+      "dialogDeliver": "Deliver Order",
       "dialogReject": "Reject Order",
-      "approveButton": "Approve",
+      "deliverButton": "Deliver",
       "rejectButton": "Reject",
-      "approveConfirm": "Confirm Approval",
+      "deliverConfirm": "Confirm Delivery",
       "rejectConfirm": "Confirm Rejection",
       "fields": {
         "orderNo": "Order No.",
-        "reviewRemark": "Review Remark"
+        "deliverRemark": "Delivery Remark"
       },
       "placeholders": {
-        "reviewRemark": "Review remark (optional)"
+        "deliverRemark": "Delivery remark (optional)"
       },
       "status": {
-        "pending": "Pending",
-        "paid": "Paid",
-        "approved": "Approved",
-        "rejected": "Rejected",
-        "completed": "Completed",
-        "cancelled": "Cancelled",
-        "insufficient_funds": "Insufficient Funds"
+        "requested": "Requested",
+        "delivered": "Delivered",
+        "rejected": "Rejected"
       },
       "table": {
         "orderNo": "Order No.",
-        "userId": "User ID",
+        "mainCharacter": "Main Character",
+        "nickname": "Nickname",
+        "contact": "Contact",
         "product": "Product",
         "quantity": "Qty",
         "totalPrice": "Total",
         "userRemark": "User Remark",
-        "reviewRemark": "Review Remark",
         "createdAt": "Order Time"
       },
       "messages": {
-        "approveSuccess": "Approved",
+        "deliverSuccess": "Delivered",
         "rejectSuccess": "Rejected",
         "actionFailed": "Operation failed"
       }
@@ -1411,6 +1818,7 @@
     "placeholders": {
       "reason": "Explain the reason for this adjustment (required)",
       "userIdFilter": "Filter by user ID",
+      "userKeywordFilter": "Search by character or nickname",
       "refType": "Transaction type",
       "targetUserId": "Target user ID",
       "operatorId": "Operator ID",
@@ -1425,11 +1833,16 @@
     },
     "refTypes": {
       "pap_reward": "PAP Reward",
+      "pap_fc_salary": "FC Salary",
       "admin_adjust": "Admin Adjustment",
       "manual": "Manual",
       "redeem": "Redeem Spend",
       "srp_payout": "SRP Payout",
-      "shop_purchase": "Shop Purchase"
+      "welfare_payout": "Welfare Payout",
+      "shop_purchase": "Shop Purchase",
+      "shop_refund": "Shop Refund",
+      "newbro_captain_reward": "Captain Support Reward",
+      "mentor_reward": "Mentor Support Reward"
     },
     "validation": {
       "targetUserId": "Please enter a target user ID",
@@ -1445,6 +1858,9 @@
       "balance": "Balance"
     },
     "transactions": {
+      "userId": "User ID",
+      "characterName": "Main Character",
+      "amount": "Amount",
       "balanceAfter": "Balance",
       "operator": "Operator"
     },
@@ -1461,7 +1877,7 @@
     "cards": {
       "eveWalletBalance": "EVE Wallet Balance",
       "eveSkillPoints": "EVE Skill Points",
-      "systemWallet": "System Wallet",
+      "systemWallet": "Fuxi Coin",
       "currentAlliancePap": "Current Alliance PAP"
     },
     "papChart": {
@@ -1563,12 +1979,79 @@
   "system": {
     "basicConfig": {
       "title": "Basic Config",
-      "corpId": "Corporation ID",
-      "siteTitle": "Site Title",
       "save": "Save",
-      "corpIdPlaceholder": "Please enter corporation ID",
-      "siteTitlePlaceholder": "Please enter site title",
-      "saveSuccess": "Configuration saved"
+      "saveSuccess": "Configuration saved",
+      "allowCorporations": "Allowed Corporations",
+      "allowCorporationsLabel": "Corporation ID List",
+      "allowCorporationsPlaceholder": "Enter one corporation ID per line",
+      "allowCorporationsHint": "Corporation {corporationId} ({corporationName}) is always enforced in this list and cannot be removed. Other corporation permission signals are controlled by this configuration.",
+      "invalidCorpId": "Corporation ID must be a positive integer",
+      "sdeConfig": "SDE Configuration",
+      "sdeApiKey": "API Key",
+      "sdeApiKeyPlaceholder": "API key for protecting SDE data query endpoints",
+      "sdeProxy": "Proxy Address",
+      "sdeProxyPlaceholder": "Leave empty to disable proxy, e.g. http://127.0.0.1:7890",
+      "sdeDownloadUrl": "Download URL",
+      "sdeDownloadUrlPlaceholder": "SDE data download API URL"
+    },
+    "newbroSettings": {
+      "title": "Newbro Settings",
+      "subtitle": "Manage newbro eligibility rules, eligibility refresh cadence, and captain reward percentages.",
+      "saveSuccess": "Newbro settings saved",
+      "eligibilityTitle": "Eligibility Rules",
+      "eligibilityHint": "Eligibility is evaluated against skill point snapshots across all characters bound to the user.",
+      "maxCharacterSP": "Single Character SP Limit",
+      "maxCharacterSPPlaceholder": "A user stops being a newbro once any character reaches this SP",
+      "multiCharacterSP": "Multi-character SP Threshold",
+      "multiCharacterSPPlaceholder": "Count characters that reach at least this SP",
+      "multiCharacterThreshold": "Qualified Character Count",
+      "multiCharacterThresholdPlaceholder": "A user stops being a newbro once this many characters meet the threshold",
+      "refreshTitle": "Snapshot Refresh",
+      "refreshHint": "Users already classified as non-newbro are only recalculated after rule changes. Users still classified as newbro are recalculated on the cadence below.",
+      "refreshIntervalDays": "Newbro Snapshot Refresh Interval (Days)",
+      "refreshIntervalDaysPlaceholder": "Current newbros are recalculated after this many days",
+      "rewardTitle": "Captain Rewards",
+      "rewardHint": "Reward processing sums unprocessed attributed bounty and converts it into wallet credits using this percentage.",
+      "bonusRate": "Bonus Rate",
+      "bonusRatePlaceholder": "Enter the reward percentage",
+      "save": "Save Settings",
+      "validation": {
+        "mustBeGreaterThanZero": "Must be greater than 0",
+        "mustBeZeroOrGreater": "Must be 0 or greater"
+      }
+    },
+    "mentorRewardStages": {
+      "title": "Mentor Reward Stages",
+      "subtitle": "Configure mentor milestone rewards and run reward processing manually when needed.",
+      "description": "Stages are checked in order. The daily cron job will also process mentor rewards automatically.",
+      "eligibilityTitle": "Mentee Eligibility",
+      "eligibilityDescription": "These thresholds control who can apply as a mentee in the mentor system.",
+      "maxCharacterSP": "Maximum Character SP",
+      "maxAccountAgeDays": "Maximum Account Age (Days)",
+      "addStage": "Add Stage",
+      "save": "Save Configuration",
+      "saveSuccess": "Mentor reward stages saved",
+      "saveEligibility": "Save Eligibility Settings",
+      "saveEligibilitySuccess": "Mentor eligibility settings saved",
+      "runProcess": "Run Reward Processing",
+      "runProcessSuccess": "Reward processing completed: {relationships} relationships checked, {rewards} rewards distributed, {total} Fuxi Coin awarded, {graduated} mentees graduated.",
+      "stageOrder": "Stage Order",
+      "stageName": "Stage Name",
+      "conditionType": "Condition Type",
+      "threshold": "Threshold",
+      "rewardAmount": "Reward Amount",
+      "operation": "Operation",
+      "remove": "Remove",
+      "empty": "No reward stages configured yet. Add at least one stage.",
+      "validation": {
+        "maxCharacterSP": "Enter an integer skill point limit greater than 0",
+        "maxAccountAgeDays": "Enter an integer account age limit greater than 0",
+        "stageOrder": "Enter an integer stage order greater than 0",
+        "name": "Enter a stage name",
+        "conditionType": "Select a condition type",
+        "threshold": "Enter an integer threshold greater than 0",
+        "rewardAmount": "Enter an integer reward amount greater than 0"
+      }
     }
   }
 }

@@ -52,13 +52,11 @@ func (h *SrpHandler) UpsertShipPrice(c *gin.Context) {
 
 // DeleteShipPrice DELETE /srp/prices/:id
 func (h *SrpHandler) DeleteShipPrice(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
-		response.Fail(c, response.CodeParamError, "无效的 ID")
+	id := requireUintID(c, "id", " ID")
+	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteShipPrice(uint(id)); err != nil {
+	if err := h.svc.DeleteShipPrice(id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -87,16 +85,19 @@ func (h *SrpHandler) SubmitApplication(c *gin.Context) {
 
 // ListMyApplications GET /srp/applications/my
 func (h *SrpHandler) ListMyApplications(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	page, pageSize, err := parsePaginationQuery(c, 20, 100)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 	userID := middleware.GetUserID(c)
 
-	list, total, err := h.svc.ListMyApplications(userID, page, size)
+	list, total, err := h.svc.ListMyApplications(userID, page, pageSize)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OKWithPage(c, list, total, page, size)
+	response.OKWithPage(c, list, total, page, pageSize)
 }
 
 // GetMyKillmails GET /srp/my-killmails?character_id=xxx
@@ -138,12 +139,17 @@ func (h *SrpHandler) GetFleetKillmails(c *gin.Context) {
 
 // ListApplications GET /srp/manage/applications
 func (h *SrpHandler) ListApplications(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	page, pageSize, err := parseLedgerPaginationQuery(c, 20)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 
 	filter := repository.SrpApplicationFilter{
+		Tab:          repository.SrpTabType(c.Query("tab")),
 		ReviewStatus: c.Query("review_status"),
 		PayoutStatus: c.Query("payout_status"),
+		Keyword:      c.Query("keyword"),
 	}
 	if fleetID := c.Query("fleet_id"); fleetID != "" {
 		filter.FleetID = &fleetID
@@ -154,23 +160,47 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 		}
 	}
 
-	list, total, err := h.svc.ListApplications(page, size, filter)
+	list, total, err := h.svc.ListApplications(page, pageSize, filter)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OKWithPage(c, list, total, page, size)
+	response.OKWithPage(c, list, total, page, pageSize)
+}
+
+// ListBatchPayoutSummary GET /srp/applications/batch-payout-summary
+func (h *SrpHandler) ListBatchPayoutSummary(c *gin.Context) {
+	list, err := h.svc.ListBatchPayoutSummary()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, list)
+}
+
+// RunFleetAutoApproval PUT /srp/applications/auto-approve
+func (h *SrpHandler) RunFleetAutoApproval(c *gin.Context) {
+	var req service.RunFleetAutoApprovalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	reviewerID := middleware.GetUserID(c)
+	result, err := h.svc.RunFleetAutoApproval(reviewerID, req.FleetID)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
 }
 
 // GetApplication GET /srp/manage/applications/:id
 func (h *SrpHandler) GetApplication(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
-		response.Fail(c, response.CodeParamError, "无效的 ID")
+	id := requireUintID(c, "id", " ID")
+	if id == 0 {
 		return
 	}
-	app, err := h.svc.GetApplication(uint(id))
+	app, err := h.svc.GetApplication(id)
 	if err != nil {
 		response.Fail(c, response.CodeNotFound, "申请不存在")
 		return
@@ -180,10 +210,8 @@ func (h *SrpHandler) GetApplication(c *gin.Context) {
 
 // ReviewApplication PATCH /srp/manage/applications/:id/review
 func (h *SrpHandler) ReviewApplication(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
-		response.Fail(c, response.CodeParamError, "无效的 ID")
+	id := requireUintID(c, "id", " ID")
+	if id == 0 {
 		return
 	}
 	var req service.ReviewApplicationRequest
@@ -192,7 +220,7 @@ func (h *SrpHandler) ReviewApplication(c *gin.Context) {
 		return
 	}
 	reviewerID := middleware.GetUserID(c)
-	app, err := h.svc.ReviewApplication(reviewerID, uint(id), &req)
+	app, err := h.svc.ReviewApplication(reviewerID, id, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -202,10 +230,8 @@ func (h *SrpHandler) ReviewApplication(c *gin.Context) {
 
 // Payout PATCH /srp/manage/applications/:id/payout
 func (h *SrpHandler) Payout(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
-		response.Fail(c, response.CodeParamError, "无效的 ID")
+	id := requireUintID(c, "id", " ID")
+	if id == 0 {
 		return
 	}
 	var req service.SrpPayoutRequest
@@ -214,7 +240,7 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 		return
 	}
 	payerID := middleware.GetUserID(c)
-	app, err := h.svc.Payout(payerID, uint(id), &req)
+	app, err := h.svc.Payout(payerID, id, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -222,15 +248,14 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 	response.OK(c, app)
 }
 
-// PayoutBatch PUT /srp/applications/payout-batch
-func (h *SrpHandler) PayoutBatch(c *gin.Context) {
-	var req service.SrpPayoutBatchRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+// BatchPayoutByUser PUT /srp/applications/users/:user_id/payout
+func (h *SrpHandler) BatchPayoutByUser(c *gin.Context) {
+	userID := requireUintID(c, "user_id", "用户 ID")
+	if userID == 0 {
 		return
 	}
 	payerID := middleware.GetUserID(c)
-	result, err := h.svc.PayoutBatch(payerID, &req)
+	result, err := h.svc.BatchPayoutByUser(payerID, userID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -238,50 +263,19 @@ func (h *SrpHandler) PayoutBatch(c *gin.Context) {
 	response.OK(c, result)
 }
 
-// ListPayoutMailLogs GET /srp/payout-mail-logs
-func (h *SrpHandler) ListPayoutMailLogs(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if size < 1 {
-		size = 20
-	}
-
-	filter := repository.SrpPayoutMailLogFilter{Status: c.Query("status")}
-	if appIDStr := c.Query("application_id"); appIDStr != "" {
-		if appID, err := strconv.ParseUint(appIDStr, 10, 64); err == nil && appID > 0 {
-			id := uint(appID)
-			filter.ApplicationID = &id
-		}
-	}
-
-	list, total, err := h.svc.ListPayoutMailLogs(page, size, filter)
+// BatchPayoutAsFuxiCoin PUT /srp/applications/fuxi-payout
+func (h *SrpHandler) BatchPayoutAsFuxiCoin(c *gin.Context) {
+	payerID := middleware.GetUserID(c)
+	result, err := h.svc.BatchPayoutAsFuxiCoin(payerID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OKWithPage(c, list, total, page, size)
-}
-
-// RetryPayoutMail POST /srp/applications/:id/payout-mail/retry
-func (h *SrpHandler) RetryPayoutMail(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil || id == 0 {
-		response.Fail(c, response.CodeParamError, "无效的 ID")
-		return
-	}
-	if err := h.svc.RetryPayoutMail(uint(id)); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
+	response.OK(c, result)
 }
 
 // OpenInfoWindow POST /srp/open-info-window
-// 通过 ESI 在客户端打开角色信息窗口
+// 通过 ESI 在客户端打开人物信息窗口
 func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
 	var req service.OpenInfoWindowRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

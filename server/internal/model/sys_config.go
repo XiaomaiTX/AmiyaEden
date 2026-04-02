@@ -15,8 +15,10 @@ func (SystemConfig) TableName() string { return "system_config" }
 // ─── 已知配置 Key ───
 
 const (
-	SysConfigPAPWalletPerPAP    = "pap.wallet_per_pap"   // 每 1 PAP 兑换多少系统钱包（float）
+	SysConfigPAPWalletPerPAP    = "pap.wallet_per_pap"   // 每 1 PAP 兑换多少伏羲币（float）
 	SysConfigPAPExchangeEnabled = "pap.exchange_enabled" // PAP 兑换是否开启（bool）
+	SysConfigPAPFCSalary        = "pap.fc_salary"        // FC 工资（float）
+	SysConfigPAPFCSalaryLimit   = "pap.fc_salary_limit"  // FC 工资每月上限次数（int）
 
 	SysConfigWebhookURL           = "webhook.url"            // Webhook URL
 	SysConfigWebhookEnabled       = "webhook.enabled"        // 是否启用（bool）
@@ -27,9 +29,34 @@ const (
 	SysConfigWebhookOBTargetID   = "webhook.ob_target_id"   // 目标群号或用户 QQ
 	SysConfigWebhookOBToken      = "webhook.ob_token"       // access token（可空）
 
-	SysConfigCorpID    = "corp.id"    // 军团ID (int64) - 用于获取Logo
-	SysConfigSiteTitle = "site.title" // 网站标题 (string)
+	SysConfigSDEAPIKey      = "sde.api_key"      // SDE 查询 API Key
+	SysConfigSDEProxy       = "sde.proxy"        // SDE 下载代理
+	SysConfigSDEDownloadURL = "sde.download_url" // SDE 下载地址
 
-	SysConfigDefaultCorpID    int64  = 1
-	SysConfigDefaultSiteTitle string = "Amiya eden"
+	SysConfigAllowCorporations              = "app.allow_corporations"                 // 允许访问的公司 ID 列表 (JSON 数组)
+	SysConfigEnforceCharacterESIRestriction = "auth.enforce_character_esi_restriction" // 是否强制限制失效人物 ESI 停留在人物页面
+
+	SysConfigNewbroMaxCharacterSP          = "newbro.max_character_sp"
+	SysConfigNewbroMultiCharacterSP        = "newbro.multi_character_sp"
+	SysConfigNewbroMultiCharacterThreshold = "newbro.multi_character_threshold"
+	SysConfigNewbroRefreshIntervalDays     = "newbro.refresh_interval_days"
+	SysConfigNewbroBonusRate               = "newbro.bonus_rate"
+
+	SysConfigMenteeMaxCharacterSP    = "mentor.mentee_max_character_sp"
+	SysConfigMenteeMaxAccountAgeDays = "mentor.mentee_max_account_age_days"
+
+	SysConfigDefaultSDEAPIKey      = "modify_your_api_key"
+	SysConfigDefaultSDEProxy       = ""
+	SysConfigDefaultSDEDownloadURL = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
+
+	SysConfigDefaultNewbroMaxCharacterSP           int64   = 20_000_000
+	SysConfigDefaultNewbroMultiCharacterSP         int64   = 10_000_000
+	SysConfigDefaultNewbroMultiCharacterThreshold          = 3
+	SysConfigDefaultNewbroRefreshIntervalDays              = 7
+	SysConfigDefaultNewbroBonusRate                float64 = 20
+	SysConfigDefaultMenteeMaxCharacterSP           int64   = 4_000_000
+	SysConfigDefaultMenteeMaxAccountAgeDays                = 7
+	SysConfigDefaultPAPFCSalary                    float64 = 400
+	SysConfigDefaultPAPFCSalaryLimit               int     = 5
+	SysConfigDefaultEnforceCharacterESIRestriction         = true
 )

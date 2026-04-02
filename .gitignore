@@ -46,15 +46,5 @@ static/dist/
 server/tmp/
 server/logs/
 
-# Local Docker dev environment (use docker-compose.dev.example.yml as template)
-.docker-data/
-docker-compose.dev.yml
-docker-nginx.dev.conf
-
-# Local test scripts and test data (not for production)
-generate_token.py
-test_*.py
-test-*.sql
-tmp_*.sql
-TEST_REPORT*.md
-
+# VSCode Personcal Workspace
+AmiyaEden.code-workspace

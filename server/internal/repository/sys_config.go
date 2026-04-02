@@ -5,12 +5,14 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/pkg/cache"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -21,11 +23,33 @@ const (
 // SysConfigRepository 系统配置（key/value）数据访问层，带 Redis 缓存
 type SysConfigRepository struct{}
 
+type SysConfigUpsertItem struct {
+	Key   string
+	Value string
+	Desc  string
+}
+
 func NewSysConfigRepository() *SysConfigRepository {
 	return &SysConfigRepository{}
 }
 
 func cacheKey(key string) string { return sysConfigCachePrefix + key }
+
+func buildSysConfigBatchUpsertQuery(db *gorm.DB, items []SysConfigUpsertItem) *gorm.DB {
+	rows := make([]model.SystemConfig, 0, len(items))
+	for _, item := range items {
+		rows = append(rows, model.SystemConfig{
+			Key:   item.Key,
+			Value: item.Value,
+			Desc:  item.Desc,
+		})
+	}
+
+	return db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value", "desc", "updated_at"}),
+	}).Create(&rows)
+}
 
 // Get 获取配置值字符串；若不存在返回 defaultVal
 func (r *SysConfigRepository) Get(key, defaultVal string) (string, error) {
@@ -57,29 +81,28 @@ func (r *SysConfigRepository) Get(key, defaultVal string) (string, error) {
 
 // Set 设置配置值并使缓存失效
 func (r *SysConfigRepository) Set(key, value, desc string) error {
-	var cfg model.SystemConfig
-	err := global.DB.Where("key = ?", key).First(&cfg).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			cfg = model.SystemConfig{Key: key, Value: value, Desc: desc}
-			if err2 := global.DB.Create(&cfg).Error; err2 != nil {
-				return err2
-			}
-		} else {
-			return err
-		}
-	} else {
-		updates := map[string]interface{}{"value": value}
-		if desc != "" {
-			updates["desc"] = desc
-		}
-		if err2 := global.DB.Model(&cfg).Where("key = ?", key).Updates(updates).Error; err2 != nil {
-			return err2
-		}
+	return r.SetMany([]SysConfigUpsertItem{{
+		Key:   key,
+		Value: value,
+		Desc:  desc,
+	}})
+}
+
+func (r *SysConfigRepository) SetMany(items []SysConfigUpsertItem) error {
+	if len(items) == 0 {
+		return nil
 	}
 
-	// 刷新缓存
-	_ = cache.SetString(context.Background(), cacheKey(key), value, sysConfigCacheTTL)
+	if err := global.DB.Transaction(func(tx *gorm.DB) error {
+		return buildSysConfigBatchUpsertQuery(tx, items).Error
+	}); err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	for _, item := range items {
+		_ = cache.SetString(ctx, cacheKey(item.Key), item.Value, sysConfigCacheTTL)
+	}
 	return nil
 }
 
@@ -90,6 +113,32 @@ func (r *SysConfigRepository) GetFloat(key string, defaultVal float64) float64 {
 		return defaultVal
 	}
 	v, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return v
+}
+
+// GetInt64 获取 int64 配置；解析失败或不存在时返回 defaultVal
+func (r *SysConfigRepository) GetInt64(key string, defaultVal int64) int64 {
+	raw, err := r.Get(key, strconv.FormatInt(defaultVal, 10))
+	if err != nil {
+		return defaultVal
+	}
+	v, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return defaultVal
+	}
+	return v
+}
+
+// GetInt 获取 int 配置；解析失败或不存在时返回 defaultVal
+func (r *SysConfigRepository) GetInt(key string, defaultVal int) int {
+	raw, err := r.Get(key, strconv.Itoa(defaultVal))
+	if err != nil {
+		return defaultVal
+	}
+	v, err := strconv.Atoi(raw)
 	if err != nil {
 		return defaultVal
 	}
@@ -120,4 +169,30 @@ func (r *SysConfigRepository) Invalidate(keys ...string) {
 		cacheKeys[i] = cacheKey(k)
 	}
 	_ = cache.Del(context.Background(), cacheKeys...)
+}
+
+// GetInt64Slice 获取 int64 数组配置；解析失败或不存在时返回 defaultVal
+func (r *SysConfigRepository) GetInt64Slice(key string, defaultVal []int64) ([]int64, error) {
+	raw, err := r.Get(key, "")
+	if err != nil {
+		return defaultVal, nil
+	}
+	if raw == "" {
+		return defaultVal, nil
+	}
+
+	var result []int64
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		return defaultVal, nil
+	}
+	return result, nil
+}
+
+// SetInt64Slice 设置 int64 数组配置并使缓存失效
+func (r *SysConfigRepository) SetInt64Slice(key string, value []int64, desc string) error {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return r.Set(key, string(data), desc)
 }

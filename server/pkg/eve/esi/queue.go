@@ -3,8 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
-	"amiya-eden/internal/service"
 	"context"
 	"fmt"
 	"sort"
@@ -19,11 +17,19 @@ import (
 //  队列引擎
 // ─────────────────────────────────────────────
 
-// Queue ESI 数据刷新队列
+type TokenService interface {
+	GetValidToken(ctx context.Context, characterID int64) (string, error)
+}
+
+type CharacterRepository interface {
+	ListAllWithToken() ([]model.EveCharacter, error)
+	GetByCharacterID(characterID int64) (*model.EveCharacter, error)
+}
+
 type Queue struct {
 	client   *Client
-	ssoSvc   *service.EveSSOService
-	charRepo *repository.EveCharacterRepository
+	ssoSvc   TokenService
+	charRepo CharacterRepository
 
 	mu       sync.RWMutex
 	statuses map[string]*TaskStatus // key: "taskName:characterID"
@@ -32,14 +38,13 @@ type Queue struct {
 	concurrency int
 }
 
-// NewQueue 创建刷新队列
-func NewQueue() *Queue {
+func NewQueue(ssoSvc TokenService, charRepo CharacterRepository) *Queue {
 	return &Queue{
 		client:      NewClient(),
-		ssoSvc:      service.NewEveSSOService(),
-		charRepo:    repository.NewEveCharacterRepository(),
+		ssoSvc:      ssoSvc,
+		charRepo:    charRepo,
 		statuses:    make(map[string]*TaskStatus),
-		concurrency: 5, // 默认 5 并发
+		concurrency: 5,
 	}
 }
 
@@ -61,19 +66,19 @@ func (q *Queue) Run() {
 	ctx := context.Background()
 	global.Logger.Info("[ESI Queue] 开始刷新调度")
 
-	// 1. 获取所有有 refresh_token 的角色
+	// 1. 获取所有有 refresh_token 的人物
 	characters, err := q.charRepo.ListAllWithToken()
 	if err != nil {
-		global.Logger.Error("[ESI Queue] 获取角色列表失败", zap.Error(err))
+		global.Logger.Error("[ESI Queue] 获取人物列表失败", zap.Error(err))
 		return
 	}
 
 	if len(characters) == 0 {
-		global.Logger.Info("[ESI Queue] 没有需要刷新的角色")
+		global.Logger.Info("[ESI Queue] 没有需要刷新的人物")
 		return
 	}
 
-	// 2. 检测角色活跃度
+	// 2. 检测人物活跃度
 	activityMap := q.checkActivity(ctx, characters)
 
 	// 3. 获取所有任务并按优先级排序
@@ -93,7 +98,7 @@ func (q *Queue) Run() {
 			char := characters[i]
 			isActive := activityMap[char.CharacterID]
 
-			// 检查角色是否有该任务所需的 scope
+			// 检查人物是否有该任务所需的 scope
 			if !q.hasRequiredScopes(char, task) {
 				continue
 			}
@@ -160,11 +165,11 @@ func (q *Queue) RunTask(taskName string, characterID int64) error {
 	return nil
 }
 
-// RunAllForCharacter 对指定角色执行全部任务，忽略刷新间隔（用于新角色首次登录时的全量初始化）
+// RunAllForCharacter 对指定人物执行全部任务，忽略刷新间隔（用于新人物首次登录时的全量初始化）
 func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
 	char, err := q.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		global.Logger.Error("[ESI Queue] RunAllForCharacter: 角色不存在",
+		global.Logger.Error("[ESI Queue] RunAllForCharacter: 人物不存在",
 			zap.Int64("character_id", characterID),
 			zap.Error(err),
 		)
@@ -192,10 +197,10 @@ func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
 	}
 
 	wg.Wait()
-	global.Logger.Info("[ESI Queue] 新角色全量刷新完成", zap.Int64("character_id", characterID))
+	global.Logger.Info("[ESI Queue] 新人物全量刷新完成", zap.Int64("character_id", characterID))
 }
 
-// RunTaskByName 对所有拥有所需 scope 的角色执行指定任务
+// RunTaskByName 对所有拥有所需 scope 的人物执行指定任务
 func (q *Queue) RunTaskByName(taskName string) error {
 	task, ok := GetTask(taskName)
 	if !ok {
@@ -338,7 +343,7 @@ func (q *Queue) needsRefresh(task RefreshTask, characterID int64, isActive bool)
 	return time.Since(lastRun) >= dur
 }
 
-// hasRequiredScopes 检查角色是否拥有任务所需的 scope
+// hasRequiredScopes 检查人物是否拥有任务所需的 scope
 func (q *Queue) hasRequiredScopes(char model.EveCharacter, task RefreshTask) bool {
 	charScopes := strings.Fields(char.Scopes)
 	scopeSet := make(map[string]struct{}, len(charScopes))
@@ -406,7 +411,7 @@ func (q *Queue) GetAllStatuses() []*TaskStatus {
 	return result
 }
 
-// GetTaskStatuses 获取指定任务的所有角色状态
+// GetTaskStatuses 获取指定任务的所有人物状态
 func (q *Queue) GetTaskStatuses(taskName string) []*TaskStatus {
 	q.mu.RLock()
 	defer q.mu.RUnlock()

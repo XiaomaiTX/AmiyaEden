@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +18,7 @@ func NewAutoRoleHandler() *AutoRoleHandler {
 
 // ─── ESI Role Mapping ───
 
-// ListEsiRoleMappings 获取所有 ESI 角色映射
+// ListEsiRoleMappings 获取所有 ESI 职权映射
 func (h *AutoRoleHandler) ListEsiRoleMappings(c *gin.Context) {
 	mappings, err := h.svc.ListEsiRoleMappings()
 	if err != nil {
@@ -29,24 +28,24 @@ func (h *AutoRoleHandler) ListEsiRoleMappings(c *gin.Context) {
 	response.OK(c, mappings)
 }
 
-// GetAllEsiRoles 获取所有可用的 ESI 军团角色名列表
+// GetAllEsiRoles 获取所有可用的 ESI 军团职权名列表
 func (h *AutoRoleHandler) GetAllEsiRoles(c *gin.Context) {
 	response.OK(c, h.svc.GetAllEsiRoles())
 }
 
 type createEsiRoleMappingRequest struct {
-	EsiRole string `json:"esi_role" binding:"required"`
-	RoleID  uint   `json:"role_id"  binding:"required"`
+	EsiRole  string `json:"esi_role"   binding:"required"`
+	RoleCode string `json:"role_code"  binding:"required"`
 }
 
-// CreateEsiRoleMapping 创建 ESI 角色映射
+// CreateEsiRoleMapping 创建 ESI 职权映射
 func (h *AutoRoleHandler) CreateEsiRoleMapping(c *gin.Context) {
 	var req createEsiRoleMappingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	mapping, err := h.svc.CreateEsiRoleMapping(req.EsiRole, req.RoleID)
+	mapping, err := h.svc.CreateEsiRoleMapping(req.EsiRole, req.RoleCode)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -54,14 +53,13 @@ func (h *AutoRoleHandler) CreateEsiRoleMapping(c *gin.Context) {
 	response.OK(c, mapping)
 }
 
-// DeleteEsiRoleMapping 删除 ESI 角色映射
+// DeleteEsiRoleMapping 删除 ESI 职权映射
 func (h *AutoRoleHandler) DeleteEsiRoleMapping(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的映射ID")
+	id := requireUintID(c, "id", "映射ID")
+	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteEsiRoleMapping(uint(id)); err != nil {
+	if err := h.svc.DeleteEsiRoleMapping(id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -94,7 +92,7 @@ type createEsiTitleMappingRequest struct {
 	CorporationID int64  `json:"corporation_id" binding:"required"`
 	TitleID       int    `json:"title_id"       binding:"required"`
 	TitleName     string `json:"title_name"`
-	RoleID        uint   `json:"role_id"        binding:"required"`
+	RoleCode      string `json:"role_code"      binding:"required"`
 }
 
 // CreateEsiTitleMapping 创建 ESI 头衔映射
@@ -104,7 +102,7 @@ func (h *AutoRoleHandler) CreateEsiTitleMapping(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	mapping, err := h.svc.CreateEsiTitleMapping(req.CorporationID, req.TitleID, req.TitleName, req.RoleID)
+	mapping, err := h.svc.CreateEsiTitleMapping(req.CorporationID, req.TitleID, req.TitleName, req.RoleCode)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -114,12 +112,11 @@ func (h *AutoRoleHandler) CreateEsiTitleMapping(c *gin.Context) {
 
 // DeleteEsiTitleMapping 删除 ESI 头衔映射
 func (h *AutoRoleHandler) DeleteEsiTitleMapping(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的映射ID")
+	id := requireUintID(c, "id", "映射ID")
+	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteEsiTitleMapping(uint(id)); err != nil {
+	if err := h.svc.DeleteEsiTitleMapping(id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

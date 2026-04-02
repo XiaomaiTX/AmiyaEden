@@ -38,6 +38,7 @@
     :data="data"
     :columns="columns"
     :pagination="pagination"
+    visual-variant="ledger"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -46,6 +47,7 @@
 <script setup lang="ts">
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import { adminListWalletLogs } from '@/api/sys-wallet'
 
@@ -65,8 +67,6 @@
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)
 
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
-
   const filterForm = reactive({ target_uid: '', operator_id: '', action: '' })
 
   const {
@@ -83,7 +83,7 @@
   } = useTable({
     core: {
       apiFn: adminListWalletLogs,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {

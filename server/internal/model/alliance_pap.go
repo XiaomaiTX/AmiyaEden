@@ -27,7 +27,7 @@ type AlliancePAPRecord struct {
 
 func (AlliancePAPRecord) TableName() string { return "alliance_pap_record" }
 
-// AlliancePAPSummary 联盟 PAP 月度汇总（主角色 + 年 + 月 唯一）
+// AlliancePAPSummary 联盟 PAP 月度汇总（主人物 + 年 + 月 唯一）
 type AlliancePAPSummary struct {
 	ID                uint      `gorm:"primarykey"                                                   json:"id"`
 	MainCharacter     string    `gorm:"size:128;not null;uniqueIndex:idx_aps_main_ym"              json:"main_character"`
@@ -44,8 +44,8 @@ type AlliancePAPSummary struct {
 	TotalGlobal       int       `gorm:"default:0"                                                   json:"total_global"`
 	CalculatedAt      time.Time `gorm:""                                                             json:"calculated_at"`
 	IsArchived        bool      `gorm:"not null;default:false"                                       json:"is_archived"`
-	IsRedeemed        bool      `gorm:"not null;default:false"                                       json:"is_redeemed"`   // 是否已兑换为系统钱包
-	WalletIssued      float64   `gorm:"type:decimal(10,2);not null;default:0"                        json:"wallet_issued"` // 已发放系统钱包数量
+	IsRedeemed        bool      `gorm:"not null;default:false"                                       json:"is_redeemed"`   // 是否已兑换为伏羲币
+	WalletIssued      float64   `gorm:"type:decimal(10,2);not null;default:0"                        json:"wallet_issued"` // 已发放伏羲币数量
 	CreatedAt         time.Time `gorm:"autoCreateTime"                                               json:"created_at"`
 	UpdatedAt         time.Time `gorm:"autoUpdateTime"                                               json:"updated_at"`
 }

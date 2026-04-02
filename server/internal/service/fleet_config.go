@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"bytes"
@@ -162,12 +163,8 @@ func (s *FleetConfigService) GetFleetConfig(id uint) (*FleetConfigResp, error) {
 
 // ListFleetConfigs 分页查询舰队配置列表
 func (s *FleetConfigService) ListFleetConfigs(page, pageSize int) ([]FleetConfigResp, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	page = normalizePage(page)
+	pageSize = normalizePageSize(pageSize, 20, 100)
 
 	configs, total, err := s.repo.List(page, pageSize)
 	if err != nil {
@@ -196,12 +193,12 @@ func (s *FleetConfigService) ListFleetConfigs(page, pageSize int) ([]FleetConfig
 }
 
 // UpdateFleetConfig 更新舰队配置
-func (s *FleetConfigService) UpdateFleetConfig(id uint, userID uint, userRole string, req *UpdateFleetConfigRequest) (*FleetConfigResp, error) {
+func (s *FleetConfigService) UpdateFleetConfig(id uint, _ uint, userRoles []string, req *UpdateFleetConfigRequest) (*FleetConfigResp, error) {
 	config, err := s.repo.GetByID(id)
 	if err != nil {
 		return nil, errors.New("舰队配置不存在")
 	}
-	if !s.canManage(config, userID, userRole) {
+	if !s.canManage(userRoles) {
 		return nil, errors.New("权限不足")
 	}
 
@@ -259,12 +256,13 @@ func (s *FleetConfigService) UpdateFleetConfig(id uint, userID uint, userRole st
 }
 
 // DeleteFleetConfig 删除舰队配置
-func (s *FleetConfigService) DeleteFleetConfig(id uint, userID uint, userRole string) error {
-	config, err := s.repo.GetByID(id)
+
+func (s *FleetConfigService) DeleteFleetConfig(id uint, _ uint, userRoles []string) error {
+	_, err := s.repo.GetByID(id)
 	if err != nil {
 		return errors.New("舰队配置不存在")
 	}
-	if !s.canManage(config, userID, userRole) {
+	if !s.canManage(userRoles) {
 		return errors.New("权限不足")
 	}
 	return s.repo.Delete(id)
@@ -276,13 +274,13 @@ func (s *FleetConfigService) DeleteFleetConfig(id uint, userID uint, userRole st
 
 // ImportFromUserFitting 从用户的 ESI 装配导入为英文 EFT（供编辑表单预填充）
 func (s *FleetConfigService) ImportFromUserFitting(userID uint, req *ImportFittingRequest) (*ImportFittingResponse, error) {
-	// 验证角色属于当前用户
+	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil {
-		return nil, errors.New("角色不存在")
+		return nil, errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return nil, errors.New("该角色不属于当前用户")
+		return nil, errors.New("该人物不属于当前用户")
 	}
 
 	fittingRepo := repository.NewFittingsRepository()
@@ -342,16 +340,16 @@ func (s *FleetConfigService) ImportFromUserFitting(userID uint, req *ImportFitti
 
 // ExportToESI 将配置中的某个装配导出到 ESI（使用存储的 items，无需 EFT 解析）
 func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) error {
-	// 验证角色属于当前用户
+	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil {
-		return errors.New("角色不存在")
+		return errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return errors.New("该角色不属于当前用户")
+		return errors.New("该人物不属于当前用户")
 	}
 	if char.AccessToken == "" || char.TokenInvalid {
-		return errors.New("角色 Token 不可用，请重新绑定")
+		return errors.New("人物 Token 不可用，请重新绑定")
 	}
 
 	// 获取目标装配
@@ -396,7 +394,7 @@ func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) e
 		return fmt.Errorf("获取 Token 失败: %w", err)
 	}
 
-	postURL := fmt.Sprintf("https://esi.evetech.net/latest/characters/%d/fittings/", req.CharacterID)
+	postURL := fmt.Sprintf("%s/latest/characters/%d/fittings/", global.Config.EveSSO.ESIBaseURL, req.CharacterID)
 	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, postURL, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return fmt.Errorf("构建请求失败: %w", err)
@@ -409,7 +407,9 @@ func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) e
 	if err != nil {
 		return fmt.Errorf("ESI 请求失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(resp.Body)
@@ -423,17 +423,8 @@ func (s *FleetConfigService) ExportToESI(userID uint, req *ExportToESIRequest) e
 //  辅助方法
 // ─────────────────────────────────────────────
 
-func (s *FleetConfigService) canManage(config *model.FleetConfig, userID uint, userRole string) bool {
-	if model.HasRole(userRole, model.RoleAdmin) {
-		return true
-	}
-	if model.HasRole(userRole, model.RoleFC) {
-		return true
-	}
-	if model.HasRole(userRole, model.RoleSRP) {
-		return true
-	}
-	return config.CreatedBy == userID
+func (s *FleetConfigService) canManage(userRoles []string) bool {
+	return model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin, model.RoleSeniorFC)
 }
 
 func (s *FleetConfigService) buildResp(config *model.FleetConfig, fittings []model.FleetConfigFitting) *FleetConfigResp {
@@ -489,6 +480,7 @@ func parseEFTHeader(eft string) *eftHeader {
 }
 
 var countRegex = regexp.MustCompile(`^(.+?)\s+x(\d+)\s*$`)
+var typeIDNameRegex = regexp.MustCompile(`^TypeID:(\d+)$`)
 
 // parseEFTToESIItems 已废弃 - 由 parseEFTToFitting 替代
 
@@ -562,7 +554,7 @@ func (s *FleetConfigService) parseEFTToFitting(eft string) (int64, []model.Fleet
 		return 0, nil, fmt.Errorf("SDE 查询失败: %w", err)
 	}
 
-	shipTypeID, ok := nameToTypeID[header.ShipType]
+	shipTypeID, ok := resolveTypeIDFromName(header.ShipType, nameToTypeID)
 	if !ok {
 		return 0, nil, fmt.Errorf("未找到舰船类型「%s」，请确认 EFT 使用英文名称", header.ShipType)
 	}
@@ -607,7 +599,7 @@ func (s *FleetConfigService) parseEFTToFitting(eft string) (int64, []model.Fleet
 				}
 				name := strings.TrimSpace(m[1])
 				qty, _ := strconv.Atoi(m[2])
-				typeID, exists := nameToTypeID[name]
+				typeID, exists := resolveTypeIDFromName(name, nameToTypeID)
 				if !exists {
 					continue
 				}
@@ -642,7 +634,7 @@ func (s *FleetConfigService) parseEFTToFitting(eft string) (int64, []model.Fleet
 						chargeName = strings.TrimSpace(parts[1])
 					}
 
-					moduleTypeID, exists := nameToTypeID[moduleName]
+					moduleTypeID, exists := resolveTypeIDFromName(moduleName, nameToTypeID)
 					if exists {
 						items = append(items, model.FleetConfigFittingItem{
 							TypeID:   moduleTypeID,
@@ -653,7 +645,7 @@ func (s *FleetConfigService) parseEFTToFitting(eft string) (int64, []model.Fleet
 					slotCounter++
 
 					if chargeName != "" {
-						chargeTypeID, exists := nameToTypeID[chargeName]
+						chargeTypeID, exists := resolveTypeIDFromName(chargeName, nameToTypeID)
 						if exists {
 							items = append(items, model.FleetConfigFittingItem{
 								TypeID:   chargeTypeID,
@@ -669,6 +661,21 @@ func (s *FleetConfigService) parseEFTToFitting(eft string) (int64, []model.Fleet
 	}
 
 	return shipTypeID, items, nil
+}
+
+func resolveTypeIDFromName(name string, nameToTypeID map[string]int64) (int64, bool) {
+	if typeID, ok := nameToTypeID[name]; ok {
+		return typeID, true
+	}
+	match := typeIDNameRegex.FindStringSubmatch(strings.TrimSpace(name))
+	if len(match) != 2 {
+		return 0, false
+	}
+	typeID, err := strconv.ParseInt(match[1], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return typeID, true
 }
 
 // GetFittingEFT 返回舰队配置中所有装配的本地化 EFT 文本
@@ -749,7 +756,7 @@ func (s *FleetConfigService) GetFittingEFT(configID uint, lang string) (*FleetCo
 // buildEFT 构建 EFT 格式文本
 func buildEFT(shipName, fittingName string, items []model.EveCharacterFittingItem, typeNames map[int]string) string {
 	var buf strings.Builder
-	buf.WriteString(fmt.Sprintf("[%s, %s]\n", shipName, fittingName))
+	fmt.Fprintf(&buf, "[%s, %s]\n", shipName, fittingName)
 
 	// 按 flag 分组
 	type slotItem struct {
@@ -791,11 +798,11 @@ func buildEFT(shipName, fittingName string, items []model.EveCharacterFittingIte
 
 		for _, item := range items {
 			if isDroneOrCargo && item.quantity > 1 {
-				buf.WriteString(fmt.Sprintf("%s x%d\n", item.name, item.quantity))
+				fmt.Fprintf(&buf, "%s x%d\n", item.name, item.quantity)
 			} else if isDroneOrCargo {
-				buf.WriteString(fmt.Sprintf("%s x%d\n", item.name, item.quantity))
+				fmt.Fprintf(&buf, "%s\n", item.name)
 			} else {
-				buf.WriteString(fmt.Sprintf("%s\n", item.name))
+				fmt.Fprintf(&buf, "%s\n", item.name)
 			}
 		}
 	}
@@ -957,12 +964,12 @@ type UpdateFittingItemsSettingsRequest struct {
 }
 
 // UpdateFittingItemsSettings 批量更新装配物品的重要性、惩罚和替代品
-func (s *FleetConfigService) UpdateFittingItemsSettings(configID, fittingID, userID uint, userRole string, req *UpdateFittingItemsSettingsRequest) error {
-	config, err := s.repo.GetByID(configID)
+func (s *FleetConfigService) UpdateFittingItemsSettings(configID, fittingID, _ uint, userRoles []string, req *UpdateFittingItemsSettingsRequest) error {
+	_, err := s.repo.GetByID(configID)
 	if err != nil {
 		return errors.New("配置不存在")
 	}
-	if !s.canManage(config, userID, userRole) {
+	if !s.canManage(userRoles) {
 		return errors.New("权限不足")
 	}
 

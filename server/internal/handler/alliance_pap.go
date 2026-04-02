@@ -6,6 +6,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
+	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
 	"strconv"
 	"time"
@@ -28,18 +29,18 @@ func NewAlliancePAPHandler() *AlliancePAPHandler {
 	}
 }
 
-// getAllowCorpFilter 根据调用者角色返回军团过滤列表
+// getAllowCorpFilter 根据调用者职权返回军团过滤列表
 // super_admin 返回 nil（不过滤），admin 返回配置的 allow_corporations
 func getAllowCorpFilter(c *gin.Context) []int64 {
 	roles := middleware.GetUserRoles(c)
 	if model.IsSuperAdmin(roles) {
 		return nil
 	}
-	return global.Config.App.AllowCorporations
+	return utils.GetAllowCorporations()
 }
 
 // GetMyAlliancePAP  GET /operation/pap/alliance
-// 查询当前登录用户主角色的联盟 PAP 数据（默认当月）
+// 查询当前登录用户主人物的联盟 PAP 数据（默认当月）
 func (h *AlliancePAPHandler) GetMyAlliancePAP(c *gin.Context) {
 	now := time.Now()
 	year := now.Year()
@@ -59,13 +60,13 @@ func (h *AlliancePAPHandler) GetMyAlliancePAP(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	user, err := h.userRepo.GetByID(userID)
 	if err != nil || user.PrimaryCharacterID == 0 {
-		response.Fail(c, response.CodeBizError, "未设置主角色")
+		response.Fail(c, response.CodeBizError, "未设置主人物")
 		return
 	}
 
 	char, err := h.charRepo.GetByCharacterID(user.PrimaryCharacterID)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "主角色不存在")
+		response.Fail(c, response.CodeBizError, "主人物不存在")
 		return
 	}
 
@@ -83,8 +84,11 @@ func (h *AlliancePAPHandler) GetAllAlliancePAP(c *gin.Context) {
 	now := time.Now()
 	year := now.Year()
 	month := int(now.Month())
-	page, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
+	page, pageSize, err := parseLedgerPaginationQuery(c, 20)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 
 	if y := c.Query("year"); y != "" {
 		if v, err := strconv.Atoi(y); err == nil {
@@ -97,19 +101,19 @@ func (h *AlliancePAPHandler) GetAllAlliancePAP(c *gin.Context) {
 		}
 	}
 
-	list, total, err := h.svc.GetAllPAPPaged(year, month, page, size, getAllowCorpFilter(c))
+	list, total, err := h.svc.GetAllPAPPaged(year, month, page, pageSize, getAllowCorpFilter(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OKWithPage(c, list, total, page, size)
+	response.OKWithPage(c, list, total, page, pageSize)
 }
 
 // TriggerFetch  POST /system/pap/fetch
 // 手动触发拉取（管理员，可指定 year/month）
 type triggerFetchRequest struct {
-	Year          int  `json:"year"  binding:"required"`
-	Month         int  `json:"month" binding:"required,min=1,max=12"`
+	Year  int `json:"year"  binding:"required"`
+	Month int `json:"month" binding:"required,min=1,max=12"`
 }
 
 func (h *AlliancePAPHandler) TriggerFetch(c *gin.Context) {
@@ -134,8 +138,8 @@ func (h *AlliancePAPHandler) TriggerFetch(c *gin.Context) {
 // ImportAlliancePAP  POST /system/pap/import
 // 导入联盟 PAP 数据（管理员，可指定 year/month）
 type importAlliancePAPRequest struct {
-	Year          int  `json:"year"  binding:"required"`
-	Month         int  `json:"month" binding:"required,min=1,max=12"`
+	Year          int                   `json:"year"  binding:"required"`
+	Month         int                   `json:"month" binding:"required,min=1,max=12"`
 	PAPImportInfo service.PAPImportInfo `json:"data" binding:"required"`
 }
 
@@ -143,7 +147,7 @@ func (h *AlliancePAPHandler) ImportAlliancePAP(c *gin.Context) {
 	var req importAlliancePAPRequest
 	if err := c.ShouldBindJSON(&req); err != nil || req.PAPImportInfo.CalculatedAt == "" {
 		if err != nil {
-			response.Fail(c, response.CodeParamError, "请求参数错误: " + err.Error())
+			response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 			return
 		}
 		response.Fail(c, response.CodeParamError, "请求参数错误: 缺少数据时间")
@@ -152,13 +156,13 @@ func (h *AlliancePAPHandler) ImportAlliancePAP(c *gin.Context) {
 
 	char, err := h.charRepo.GetByCharacterName(req.PAPImportInfo.PrimaryCharacterName)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, "主角色不存在")
+		response.Fail(c, response.CodeBizError, "主人物不存在")
 		return
 	}
 
 	user, err := h.userRepo.GetByPrimaryCharacterID(char.CharacterID)
 	if err != nil || user.PrimaryCharacterID == 0 {
-		response.Fail(c, response.CodeBizError, "未设置主角色")
+		response.Fail(c, response.CodeBizError, "未设置主人物")
 		return
 	}
 
@@ -170,50 +174,21 @@ func (h *AlliancePAPHandler) ImportAlliancePAP(c *gin.Context) {
 	response.OK(c, gin.H{"message": "导入成功"})
 }
 
-// GetExchangeConfig  GET /system/pap/config
-// 查询 PAP 兑换系统钱包配置
-func (h *AlliancePAPHandler) GetExchangeConfig(c *gin.Context) {
-	cfg, err := h.svc.GetExchangeConfig()
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, cfg)
-}
-
-// SetExchangeConfig  PUT /system/pap/config
-// 更新 PAP 兑换配置
-func (h *AlliancePAPHandler) SetExchangeConfig(c *gin.Context) {
-	var req service.SetExchangeConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-	cfg, err := h.svc.SetExchangeConfig(&req)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, cfg)
-}
-
 // settleMonthRequest 月度结算请求
 type settleMonthRequest struct {
-	Year          int  `json:"year"  binding:"required"`
-	Month         int  `json:"month" binding:"required,min=1,max=12"`
-	WalletConvert bool `json:"wallet_convert"` // 是否同时兑换系统钱包
+	Year  int `json:"year"  binding:"required"`
+	Month int `json:"month" binding:"required,min=1,max=12"`
 }
 
 // SettleMonth  POST /system/pap/settle
-// 管理员触发月度归档（可选同时兑换系统钱包）
+// 管理员触发月度归档
 func (h *AlliancePAPHandler) SettleMonth(c *gin.Context) {
 	var req settleMonthRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	operatorID := middleware.GetUserID(c)
-	result, err := h.svc.SettleMonth(req.Year, req.Month, req.WalletConvert, operatorID, getAllowCorpFilter(c))
+	result, err := h.svc.SettleMonth(req.Year, req.Month, getAllowCorpFilter(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

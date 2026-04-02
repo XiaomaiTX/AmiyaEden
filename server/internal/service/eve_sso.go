@@ -4,13 +4,16 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/cache"
 	"amiya-eden/pkg/eve"
+	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/jwt"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -93,28 +96,29 @@ func buildLoginScopes(extraScopes []string) []string {
 // ─────────────────────────────────────────────
 
 const (
-	stateCachePrefix = "eve:sso:state:"
-	stateCacheTTL    = 10 * time.Minute
+	stateCachePrefix            = "eve:sso:state:"
+	stateCacheTTL               = 10 * time.Minute
+	affiliationResponseMaxBytes = 1 << 20
 )
 
-// OnNewCharacterFunc 新角色首次出现时触发的钩子（由 jobs 层注入以避免循环依赖）
+// OnNewCharacterFunc 新人物首次出现时触发的钩子（由 jobs 层注入以避免循环依赖）
 // 在后台 goroutine 中运行，用于全量 ESI 刷新。全量刷新完成后应执行一次权限检查。
 var OnNewCharacterFunc func(characterID int64, userID uint)
 
-// OnNewCharacterSyncFunc 新角色同步钩子：在返回 JWT 之前调用，仅执行 affiliation 拉取 + 军团准入检查。
+// OnNewCharacterSyncFunc 新人物同步钩子：在返回 JWT 之前调用。
+// 负责刷新最小安全相关数据（如 affiliation / corp roles）并完成权限重算。
 // 必须快速返回（< 1s），调用方不会使用 goroutine。
 var OnNewCharacterSyncFunc func(characterID int64, userID uint)
 
-// OnCharacterBindFunc 已有角色完成绑定/重新登录时触发的钩子
-// 此时角色的 CorporationID 已存在于数据库，可立即进行军团准入检查
-// 注入示例：service.OnCharacterBindFunc = func(userID uint) { roleSvc.CheckCorpAccessAndAdjustRole(ctx, userID) }
-var OnCharacterBindFunc func(userID uint)
+// OnExistingCharacterSyncFunc 已有人物完成绑定/重新登录时触发的同步钩子。
+// 必须在签发 JWT 前完成，用于刷新 affiliation / corp roles 并重算权限。
+var OnExistingCharacterSyncFunc func(characterID int64, userID uint)
 
 // stateData OAuth state 中存储的数据
 type stateData struct {
 	ExtraScopes  []string `json:"extra_scopes,omitempty"`
 	RedirectURL  string   `json:"redirect_url,omitempty"`
-	BindToUserID uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定角色」流程，而非登录
+	BindToUserID uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定人物」流程，而非登录
 }
 
 // EveSSOService EVE SSO 业务逻辑层
@@ -123,16 +127,170 @@ type EveSSOService struct {
 	userRepo  *repository.UserRepository
 	roleSvc   *RoleService
 	eveClient *eve.Client
+	esiClient *esi.Client
 }
 
 func NewEveSSOService() *EveSSOService {
 	cfg := global.Config.EveSSO
 	return &EveSSOService{
-		charRepo:  repository.NewEveCharacterRepository(),
-		userRepo:  repository.NewUserRepository(),
-		roleSvc:   NewRoleService(),
-		eveClient: eve.NewClient(cfg.ClientID, cfg.ClientSecret, cfg.CallbackURL),
+		charRepo: repository.NewEveCharacterRepository(),
+		userRepo: repository.NewUserRepository(),
+		roleSvc:  NewRoleService(),
+		eveClient: eve.NewClientWithEndpoints(
+			cfg.ClientID,
+			cfg.ClientSecret,
+			cfg.CallbackURL,
+			cfg.SSOAuthorizeURL,
+			cfg.SSOTokenURL,
+			cfg.EVEImagesBaseURL,
+		),
+		esiClient: esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix),
 	}
+}
+
+func (s *EveSSOService) loadUserAndGenerateToken(userID uint) (string, *model.User, error) {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return "", nil, err
+	}
+
+	token, err := jwt.GenerateToken(user.ID, user.PrimaryCharacterID, user.Role, global.Config.JWT.ExpireDay)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return token, user, nil
+}
+
+type characterAffiliationSnapshot struct {
+	AllianceID    *int64 `json:"alliance_id,omitempty"`
+	CorporationID int64  `json:"corporation_id"`
+	FactionID     *int64 `json:"faction_id,omitempty"`
+}
+
+func resolveInitialSSORole(corporationID int64, allowCorporations []int64) string {
+	for _, allowedID := range allowCorporations {
+		if allowedID == corporationID {
+			return model.RoleUser
+		}
+	}
+	return model.RoleGuest
+}
+
+func buildDefaultSSOUser(portraitURL string, primaryCharacterID int64, clientIP string, now time.Time, role string) *model.User {
+	if role == "" {
+		role = model.RoleGuest
+	}
+
+	return &model.User{
+		Nickname:           "",
+		Avatar:             portraitURL,
+		Status:             1,
+		Role:               role,
+		PrimaryCharacterID: primaryCharacterID,
+		LastLoginAt:        &now,
+		LastLoginIP:        clientIP,
+	}
+}
+
+func (s *EveSSOService) fetchCharacterAffiliation(ctx context.Context, characterID int64) (*characterAffiliationSnapshot, error) {
+	var results []characterAffiliationSnapshot
+
+	if err := s.esiClient.PostJSONWithLimit(ctx, "/characters/affiliation/", "", []int64{characterID}, &results, affiliationResponseMaxBytes); err != nil {
+		return nil, fmt.Errorf("fetch affiliation: %w", err)
+	}
+	if len(results) == 0 {
+		return nil, errors.New("人物归属信息为空")
+	}
+	return &results[0], nil
+}
+
+func (s *EveSSOService) resolveInitialSSOState(ctx context.Context, characterID int64) (string, *characterAffiliationSnapshot) {
+	affiliation, err := s.fetchCharacterAffiliation(ctx, characterID)
+	if err != nil {
+		global.Logger.Warn("首次登录查询人物归属失败，回退为 guest",
+			zap.Int64("character_id", characterID),
+			zap.Error(err))
+		return model.RoleGuest, nil
+	}
+	return resolveInitialSSORole(affiliation.CorporationID, utils.GetAllowCorporations()), affiliation
+}
+
+func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, portraitURL string, primaryCharacterID int64, clientIP string, now time.Time, initialRole string) (*model.User, error) {
+	finalRole := initialRole
+	for _, adminCharID := range global.Config.App.SuperAdmins {
+		if adminCharID == primaryCharacterID {
+			finalRole = model.RoleSuperAdmin
+			global.Logger.Info("从配置文件授予超级管理员职权",
+				zap.Int64("character_id", primaryCharacterID))
+			break
+		}
+	}
+
+	user := buildDefaultSSOUser(portraitURL, primaryCharacterID, clientIP, now, finalRole)
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, err
+	}
+
+	s.roleSvc.EnsureUserHasRole(ctx, user.ID, user.Role)
+	return user, nil
+}
+
+// SyncConfigSuperAdmins 根据配置文件同步用户的 super_admin 职权
+// 如果用户的任意人物 ID 在配置列表中则授予，否则移除
+func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
+	charRepo := repository.NewEveCharacterRepository()
+	roleRepo := repository.NewRoleRepository()
+
+	chars, err := charRepo.ListByUserID(userID)
+	if err != nil {
+		global.Logger.Error("SyncConfigSuperAdmins 查询人物失败", zap.Uint("userID", userID), zap.Error(err))
+		return
+	}
+
+	userCharIDs := make(map[int64]struct{}, len(chars))
+	for _, c := range chars {
+		userCharIDs[c.CharacterID] = struct{}{}
+	}
+
+	shouldSuperAdmin := false
+	for _, adminCharID := range global.Config.App.SuperAdmins {
+		if _, ok := userCharIDs[adminCharID]; ok {
+			shouldSuperAdmin = true
+			break
+		}
+	}
+
+	currentCodes, err := roleRepo.GetUserRoleCodes(userID)
+	if err != nil {
+		global.Logger.Error("SyncConfigSuperAdmins 查询人物失败", zap.Uint("userID", userID), zap.Error(err))
+		return
+	}
+
+	hasSuperAdmin := model.ContainsRole(currentCodes, model.RoleSuperAdmin)
+
+	if shouldSuperAdmin && !hasSuperAdmin {
+		if err := roleRepo.AddUserRole(userID, model.RoleSuperAdmin); err != nil {
+			global.Logger.Error("SyncConfigSuperAdmins 授予 super_admin 失败", zap.Uint("userID", userID), zap.Error(err))
+			return
+		}
+		global.Logger.Info("SyncConfigSuperAdmins 授予超级管理员", zap.Uint("userID", userID))
+	} else if !shouldSuperAdmin && hasSuperAdmin {
+		if err := roleRepo.RemoveUserRole(userID, model.RoleSuperAdmin); err != nil {
+			global.Logger.Error("SyncConfigSuperAdmins 移除 super_admin 失败", zap.Uint("userID", userID), zap.Error(err))
+			return
+		}
+		global.Logger.Info("SyncConfigSuperAdmins 移除超级管理员", zap.Uint("userID", userID))
+	}
+}
+
+func applyAffiliationToCharacter(char *model.EveCharacter, affiliation *characterAffiliationSnapshot) {
+	if char == nil || affiliation == nil {
+		return
+	}
+	char.CorporationID = affiliation.CorporationID
+	char.AllianceID = affiliation.AllianceID
+	char.FactionID = affiliation.FactionID
 }
 
 // GetAuthURL 生成 EVE SSO 授权 URL，并将 state 存入 Redis
@@ -158,8 +316,8 @@ func (s *EveSSOService) GetAuthURL(ctx context.Context, extraScopes []string, re
 	return s.eveClient.BuildAuthURL(state, scopes), nil
 }
 
-// GetBindAuthURL 生成「绑定新角色」的 EVE SSO 授权 URL
-// 与 GetAuthURL 不同的是，state 中会记录当前登录用户 ID，回调时将角色绑到该用户下
+// GetBindAuthURL 生成「绑定新人物」的 EVE SSO 授权 URL
+// 与 GetAuthURL 不同的是，state 中会记录当前登录用户 ID，回调时将人物绑到该用户下
 func (s *EveSSOService) GetBindAuthURL(ctx context.Context, userID uint, extraScopes []string, redirectURL string) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
@@ -205,7 +363,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 		return nil, err
 	}
 
-	// 2. 解析 JWT access_token 获取角色信息
+	// 2. 解析 JWT access_token 获取人物信息
 	claims, err := eve.ParseAccessToken(tokenResp.AccessToken)
 	if err != nil {
 		return nil, err
@@ -217,7 +375,8 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 	tokenExpiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 	scopesStr := strings.Join(claims.GetScopes(), " ")
-	portraitURL := eve.PortraitURL(characterID)
+	portraitURL := s.eveClient.PortraitURL(characterID)
+	initialRole, affiliation := s.resolveInitialSSOState(ctx, characterID)
 
 	// 3. 查找或创建 EveCharacter
 	char, err := s.charRepo.GetByCharacterID(characterID)
@@ -228,9 +387,9 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 			return nil, err
 		}
 
-		// 该角色第一次出现
+		// 该人物第一次出现
 
-		// ── 绑定流程：将新角色绑定到已登录的用户 ──
+		// ── 绑定流程：将新人物绑定到已登录的用户 ──
 		if sd.BindToUserID > 0 {
 			user, err := s.userRepo.GetByID(sd.BindToUserID)
 			if err != nil {
@@ -251,17 +410,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 				return nil, err
 			}
 
-			// 同步执行 affiliation 拉取 + 军团准入检查，确保 JWT 生成前角色已正确设置
-			if OnNewCharacterSyncFunc != nil {
-				OnNewCharacterSyncFunc(characterID, user.ID)
-			}
-
-			// 触发新角色全量 ESI 刷新（后台异步）
-			if OnNewCharacterFunc != nil {
-				go OnNewCharacterFunc(characterID, user.ID)
-			}
-
-			// 如果用户还没有主角色，自动设为主角色
+			// 如果用户还没有主人物，自动设为主人物
 			if user.PrimaryCharacterID == 0 {
 				user.PrimaryCharacterID = characterID
 				if err := s.userRepo.Update(user); err != nil {
@@ -269,29 +418,28 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 				}
 			}
 
-			jwtToken, err := jwt.GenerateToken(user.ID, user.PrimaryCharacterID, user.Role, global.Config.JWT.ExpireDay)
+			// 同步执行 affiliation / corp roles 拉取与权限重算，确保 JWT 生成前职权已正确设置
+			if OnNewCharacterSyncFunc != nil {
+				OnNewCharacterSyncFunc(characterID, user.ID)
+			}
+
+			// 触发新人物全量 ESI 刷新（后台异步）
+			if OnNewCharacterFunc != nil {
+				go OnNewCharacterFunc(characterID, user.ID)
+			}
+
+			jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
 			if err != nil {
 				return nil, err
 			}
 			return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 		}
 
-		// ── 登录流程：首次登录，创建新用户 + 新角色 ──
-		user := &model.User{
-			Nickname:           claims.Name,
-			Avatar:             portraitURL,
-			Status:             1,
-			Role:               "user",
-			PrimaryCharacterID: characterID,
-			LastLoginAt:        &now,
-			LastLoginIP:        clientIP,
-		}
-		if err := s.userRepo.Create(user); err != nil {
+		// ── 登录流程：首次登录，创建新用户 + 新人物 ──
+		user, err := s.createDefaultSSOUser(ctx, portraitURL, characterID, clientIP, now, initialRole)
+		if err != nil {
 			return nil, err
 		}
-
-		// 确保新用户拥有默认角色（写入 user_roles 表）
-		s.roleSvc.EnsureUserHasDefaultRole(context.Background(), user.ID)
 
 		char = &model.EveCharacter{
 			CharacterID:   characterID,
@@ -303,39 +451,40 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 			TokenExpiry:   tokenExpiry,
 			Scopes:        scopesStr,
 		}
+		applyAffiliationToCharacter(char, affiliation)
 		if err := s.charRepo.Create(char); err != nil {
 			return nil, err
 		}
 
-		// 同步执行 affiliation 拉取 + 军团准入检查，确保 JWT 生成前角色已正确设置
+		// 同步执行 affiliation / corp roles 拉取与权限重算，确保 JWT 生成前职权已正确设置
 		if OnNewCharacterSyncFunc != nil {
 			OnNewCharacterSyncFunc(characterID, user.ID)
 		}
 
-		// 触发新角色全量 ESI 刷新（后台异步）
+		// 触发新人物全量 ESI 刷新（后台异步）
 		if OnNewCharacterFunc != nil {
 			go OnNewCharacterFunc(characterID, user.ID)
 		}
 
-		jwtToken, err := jwt.GenerateToken(user.ID, characterID, user.Role, global.Config.JWT.ExpireDay)
+		jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
 		if err != nil {
 			return nil, err
 		}
 		return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 	}
 
-	// 已有角色
+	// 已有人物
 
-	// ── 绑定流程：该角色已存在 ──
+	// ── 绑定流程：该人物已存在 ──
 	if sd.BindToUserID > 0 {
 		if char.UserID != sd.BindToUserID {
 			// 保存原用户ID
 			oldUserID := char.UserID
-			
+
 			// 检查原用户是否存在（是否被软删除）
 			_, err := s.userRepo.GetByID(oldUserID)
 			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-				// 原用户已被软删除（孤儿角色），直接重新绑定到新用户
+				// 原用户已被软删除（孤儿人物），直接重新绑定到新用户
 				char.UserID = sd.BindToUserID
 				char.AccessToken = tokenResp.AccessToken
 				char.RefreshToken = tokenResp.RefreshToken
@@ -353,8 +502,8 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 				if err != nil {
 					return nil, err
 				}
-				
-				// 如果用户还没有主角色，自动设为主角色
+
+				// 如果用户还没有主人物，自动设为主人物
 				if user.PrimaryCharacterID == 0 {
 					user.PrimaryCharacterID = characterID
 					if err := s.userRepo.Update(user); err != nil {
@@ -362,27 +511,27 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 					}
 				}
 
-				// 触发绑定钩子
-				if OnCharacterBindFunc != nil {
-					go OnCharacterBindFunc(user.ID)
+				// 同步刷新 affiliation / corp roles 并重算权限，确保 JWT 基于最新安全状态签发
+				if OnExistingCharacterSyncFunc != nil {
+					OnExistingCharacterSyncFunc(characterID, user.ID)
 				}
 
-				global.Logger.Info("孤儿角色重新绑定到新用户（绑定流程）",
+				global.Logger.Info("孤儿人物重新绑定到新用户（绑定流程）",
 					zap.Int64("characterID", characterID),
 					zap.Uint("oldUserID", oldUserID),
 					zap.Uint("newUserID", sd.BindToUserID))
 
-				jwtToken, err := jwt.GenerateToken(user.ID, user.PrimaryCharacterID, user.Role, global.Config.JWT.ExpireDay)
+				jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
 				if err != nil {
 					return nil, err
 				}
 				return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 			}
 
-			// 原用户存在，角色已绑定到其他账号，返回错误
-			return nil, errors.New("该角色已绑定到其他账号，无法再次绑定")
+			// 原用户存在，人物已绑定到其他账号，返回错误
+			return nil, errors.New("该人物已绑定到其他账号，无法再次绑定")
 		}
-		// 角色已属于当前用户，更新 Token 即可
+		// 人物已属于当前用户，更新 Token 即可
 		char.AccessToken = tokenResp.AccessToken
 		char.RefreshToken = tokenResp.RefreshToken
 		char.TokenExpiry = tokenExpiry
@@ -397,18 +546,18 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 		if err != nil {
 			return nil, err
 		}
-		// 已有角色，corp_id 有历史数据，立即触发军团准入检查
-		if OnCharacterBindFunc != nil {
-			go OnCharacterBindFunc(user.ID)
+		// 同步刷新 affiliation / corp roles 并重算权限，确保 JWT 基于最新安全状态签发
+		if OnExistingCharacterSyncFunc != nil {
+			OnExistingCharacterSyncFunc(characterID, user.ID)
 		}
-		jwtToken, err := jwt.GenerateToken(user.ID, user.PrimaryCharacterID, user.Role, global.Config.JWT.ExpireDay)
+		jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
 		if err != nil {
 			return nil, err
 		}
 		return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 	}
 
-	// ── 登录流程：已有角色重新登录 ──
+	// ── 登录流程：已有人物重新登录 ──
 	char.AccessToken = tokenResp.AccessToken
 	char.RefreshToken = tokenResp.RefreshToken
 	char.TokenExpiry = tokenExpiry
@@ -416,6 +565,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	char.CharacterName = claims.Name
 	char.PortraitURL = portraitURL
 	char.TokenInvalid = false
+	applyAffiliationToCharacter(char, affiliation)
 	if err := s.charRepo.Update(char); err != nil {
 		return nil, err
 	}
@@ -423,34 +573,58 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	// 更新用户最后登录信息
 	user, err := s.userRepo.GetByID(char.UserID)
 	if err != nil {
-		return nil, err
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+
+		oldUserID := char.UserID
+		orphanInitialRole := initialRole
+		if affiliation == nil {
+			orphanInitialRole = resolveInitialSSORole(char.CorporationID, utils.GetAllowCorporations())
+		}
+		user, err = s.createDefaultSSOUser(ctx, portraitURL, characterID, clientIP, now, orphanInitialRole)
+		if err != nil {
+			return nil, err
+		}
+
+		char.UserID = user.ID
+		if err := s.charRepo.Update(char); err != nil {
+			return nil, err
+		}
+
+		global.Logger.Info("孤儿人物重新创建用户（登录流程）",
+			zap.Int64("characterID", characterID),
+			zap.Uint("oldUserID", oldUserID),
+			zap.Uint("newUserID", user.ID))
 	}
 	user.LastLoginAt = &now
 	user.LastLoginIP = clientIP
-	// 如果用户还没有主角色，自动设为当前登录角色
+	// 如果用户还没有主人物，自动设为当前登录人物
 	if user.PrimaryCharacterID == 0 {
 		user.PrimaryCharacterID = characterID
 	}
-	// 同步头像和昵称为主角色
+	// 同步头像为当前登录人物，但保留用户自行填写的昵称
 	user.Avatar = portraitURL
-	user.Nickname = claims.Name
 	if err := s.userRepo.Update(user); err != nil {
 		return nil, err
 	}
 
-	// 已有角色重新登录，corp_id 有历史数据，立即触发军团准入检查
-	if OnCharacterBindFunc != nil {
-		go OnCharacterBindFunc(user.ID)
+	// 同步刷新 affiliation / corp roles 并重算权限，确保 JWT 基于最新安全状态签发
+	if OnExistingCharacterSyncFunc != nil {
+		OnExistingCharacterSyncFunc(characterID, user.ID)
 	}
 
-	jwtToken, err := jwt.GenerateToken(user.ID, user.PrimaryCharacterID, user.Role, global.Config.JWT.ExpireDay)
+	// 根据配置文件同步 super_admin 职权
+	SyncConfigSuperAdmins(context.Background(), user.ID)
+
+	jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
 	if err != nil {
 		return nil, err
 	}
 	return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 }
 
-// GetValidToken 获取指定角色的有效 access_token（如即将过期则自动刷新）
+// GetValidToken 获取指定人物的有效 access_token（如即将过期则自动刷新）
 // 供其他模块调用，用于发起 ESI 请求
 func (s *EveSSOService) GetValidToken(ctx context.Context, characterID int64) (string, error) {
 	char, err := s.charRepo.GetByCharacterID(characterID)
@@ -460,7 +634,7 @@ func (s *EveSSOService) GetValidToken(ctx context.Context, characterID int64) (s
 
 	// Token 已标记为失效
 	if char.TokenInvalid {
-		return "", errors.New("该角色的 token 已失效，请重新授权")
+		return "", errors.New("该人物的 token 已失效，请重新授权")
 	}
 
 	// Token 有效期剩余 < 3 分钟则刷新
@@ -473,7 +647,7 @@ func (s *EveSSOService) GetValidToken(ctx context.Context, characterID int64) (s
 	return char.AccessToken, nil
 }
 
-// refreshCharacterToken 刷新角色 Token 并持久化
+// refreshCharacterToken 刷新人物 Token 并持久化
 func (s *EveSSOService) refreshCharacterToken(ctx context.Context, char *model.EveCharacter) error {
 	tokenResp, err := s.eveClient.RefreshAccessToken(ctx, char.RefreshToken)
 	if err != nil {
@@ -498,20 +672,20 @@ func (s *EveSSOService) refreshCharacterToken(ctx context.Context, char *model.E
 	return s.charRepo.Update(char)
 }
 
-// GetCharactersByUserID 获取用户绑定的所有 EVE 角色（不含 Token）
+// GetCharactersByUserID 获取用户绑定的所有 EVE 人物（不含 Token）
 func (s *EveSSOService) GetCharactersByUserID(userID uint) ([]model.EveCharacter, error) {
 	return s.charRepo.ListByUserID(userID)
 }
 
-// SetPrimaryCharacter 设置用户的主角色
+// SetPrimaryCharacter 设置用户的主人物
 func (s *EveSSOService) SetPrimaryCharacter(userID uint, characterID int64) error {
-	// 验证该角色确实属于当前用户
+	// 验证该人物确实属于当前用户
 	char, err := s.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		return errors.New("角色不存在")
+		return errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return errors.New("该角色不属于当前用户")
+		return errors.New("该人物不属于当前用户")
 	}
 
 	user, err := s.userRepo.GetByID(userID)
@@ -521,30 +695,29 @@ func (s *EveSSOService) SetPrimaryCharacter(userID uint, characterID int64) erro
 
 	user.PrimaryCharacterID = characterID
 	user.Avatar = char.PortraitURL
-	user.Nickname = char.CharacterName
 	return s.userRepo.Update(user)
 }
 
-// UnbindCharacter 解除绑定某个 EVE 角色
+// UnbindCharacter 解除绑定某个 EVE 人物
 func (s *EveSSOService) UnbindCharacter(userID uint, characterID int64) error {
 	char, err := s.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		return errors.New("角色不存在")
+		return errors.New("人物不存在")
 	}
 	if char.UserID != userID {
-		return errors.New("该角色不属于当前用户")
+		return errors.New("该人物不属于当前用户")
 	}
 
-	// 确保至少保留一个角色
+	// 确保至少保留一个人物
 	chars, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
 		return err
 	}
 	if len(chars) <= 1 {
-		return errors.New("至少需要保留一个角色，无法解绑")
+		return errors.New("至少需要保留一个人物，无法解绑")
 	}
 
-	// 如果要解绑的是主角色，自动切换到另一个角色
+	// 如果要解绑的是主人物，自动切换到另一个人物
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		return err
@@ -554,7 +727,6 @@ func (s *EveSSOService) UnbindCharacter(userID uint, characterID int64) error {
 			if c.CharacterID != characterID {
 				user.PrimaryCharacterID = c.CharacterID
 				user.Avatar = c.PortraitURL
-				user.Nickname = c.CharacterName
 				break
 			}
 		}

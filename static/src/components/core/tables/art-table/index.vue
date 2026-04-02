@@ -3,10 +3,16 @@
 <!-- 扩展功能：分页组件、渲染自定义列、loading、表格全局边框、斑马纹、表格尺寸、表头背景配置 -->
 <!-- 获取 ref：默认暴露了 elTableRef 外部通过 ref.value.elTableRef 可以调用 el-table 方法 -->
 <template>
-  <div class="art-table" :class="{ 'is-empty': isEmpty }" :style="containerHeight">
+  <div
+    ref="artTableContainerRef"
+    class="art-table"
+    :class="{ 'is-empty': isEmpty }"
+    :style="containerHeight"
+  >
     <ElTable
       ref="elTableRef"
       v-loading="!!loading"
+      :class="presentation.tableClassNames"
       v-bind="{ ...$attrs, ...props, height, stripe, border, size, headerCellStyle }"
     >
       <template v-for="col in columns" :key="col.prop || col.type">
@@ -58,7 +64,7 @@
     <div
       class="pagination custom-pagination"
       v-if="showPagination"
-      :class="mergedPaginationOptions?.align"
+      :class="[mergedPaginationOptions?.align, ...presentation.paginationClassNames]"
       ref="paginationRef"
     >
       <ElPagination
@@ -83,11 +89,17 @@
   import { useCommon } from '@/hooks/core/useCommon'
   import { useTableHeight } from '@/hooks/core/useTableHeight'
   import { useResizeObserver, useWindowSize } from '@vueuse/core'
+  import {
+    resolveArtTablePresentation,
+    type ArtTablePaginationOptions,
+    type ArtTableVisualVariant
+  } from './presentation'
 
   defineOptions({ name: 'ArtTable' })
 
   const { width } = useWindowSize()
   const elTableRef = ref<InstanceType<typeof ElTable> | null>(null)
+  const artTableContainerRef = ref<HTMLElement>()
   const paginationRef = ref<HTMLElement>()
   const tableHeaderRef = ref<HTMLElement>()
   const tableStore = useTableStore()
@@ -104,22 +116,7 @@
   }
 
   /** 分页器配置选项接口 */
-  interface PaginationOptions {
-    /** 每页显示个数选择器的选项列表 */
-    pageSizes?: number[]
-    /** 分页器的对齐方式 */
-    align?: 'left' | 'center' | 'right'
-    /** 分页器的布局 */
-    layout?: string
-    /** 是否显示分页器背景 */
-    background?: boolean
-    /** 只有一页时是否隐藏分页器 */
-    hideOnSinglePage?: boolean
-    /** 分页器的大小 */
-    size?: 'small' | 'default' | 'large'
-    /** 分页器的页码数量 */
-    pagerCount?: number
-  }
+  type PaginationOptions = ArtTablePaginationOptions
 
   /** ArtTable 组件的 Props 接口 */
   interface ArtTableProps extends TableProps<Record<string, any>> {
@@ -131,6 +128,8 @@
     pagination?: PaginationConfig
     /** 分页配置 */
     paginationOptions?: PaginationOptions
+    /** 视觉变体 */
+    visualVariant?: ArtTableVisualVariant
     /** 空数据表格高度 */
     emptyHeight?: string
     /** 空数据时显示的文本 */
@@ -168,7 +167,7 @@
   })
 
   // 默认分页常量
-  const DEFAULT_PAGINATION_OPTIONS: PaginationOptions = {
+  const defaultPaginationOptions = computed<PaginationOptions>(() => ({
     pageSizes: [10, 20, 30, 50, 100],
     align: 'center',
     background: true,
@@ -176,18 +175,25 @@
     hideOnSinglePage: false,
     size: 'default',
     pagerCount: width.value > 1200 ? 7 : 5
-  }
-
-  // 合并分页配置
-  const mergedPaginationOptions = computed(() => ({
-    ...DEFAULT_PAGINATION_OPTIONS,
-    ...props.paginationOptions
   }))
 
+  const presentation = computed(() =>
+    resolveArtTablePresentation({
+      visualVariant: props.visualVariant,
+      border: props.border,
+      stripe: props.stripe,
+      paginationOptions: props.paginationOptions,
+      basePaginationOptions: defaultPaginationOptions.value
+    })
+  )
+
+  // 合并分页配置
+  const mergedPaginationOptions = computed(() => presentation.value.paginationOptions)
+
   // 边框 (优先级：props > store)
-  const border = computed(() => props.border ?? isBorder.value)
+  const border = computed(() => presentation.value.border ?? isBorder.value)
   // 斑马纹
-  const stripe = computed(() => props.stripe ?? isZebra.value)
+  const stripe = computed(() => presentation.value.stripe ?? isZebra.value)
   // 表格尺寸
   const size = computed(() => props.size ?? tableSize.value)
   // 数据是否为空
@@ -219,7 +225,9 @@
   })
 
   // 分页器与表格之间的间距常量（计算属性，响应 showTableHeader 变化）
-  const PAGINATION_SPACING = computed(() => (props.showTableHeader ? 6 : 15))
+  // 值需与 style.scss 中 .el-table { margin-top: 10px } 和 .pagination { margin-top: 13px } 匹配
+  // TABLE_HEADER_SPACING(12) + paginationSpacing(11) = 23 = el-table margin-top(10) + pagination margin-top(13)
+  const PAGINATION_SPACING = computed(() => (props.showTableHeader ? 11 : 15))
 
   // 使用表格高度计算 Hook
   const { containerHeight } = useTableHeight({
@@ -296,18 +304,18 @@
     (e: 'pagination:current-change', val: number): void
   }>()
 
-  // 查找并绑定表格头部元素 - 使用 VueUse 优化
+  // 查找并绑定表格头部元素 - 在父元素内查找，避免多实例时 ID 冲突
   const findTableHeader = () => {
     if (!props.showTableHeader) {
       tableHeaderRef.value = undefined
       return
     }
 
-    const tableHeader = document.getElementById('art-table-header')
+    const parent = artTableContainerRef.value?.parentElement
+    const tableHeader = parent?.querySelector<HTMLElement>('#art-table-header') ?? null
     if (tableHeader) {
       tableHeaderRef.value = tableHeader
     } else {
-      // 如果找不到表格头部，设置为 undefined，useElementSize 会返回 0
       tableHeaderRef.value = undefined
     }
   }

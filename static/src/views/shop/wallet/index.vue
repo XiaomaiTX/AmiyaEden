@@ -5,9 +5,9 @@
     <ElCard shadow="never" class="art-card">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-500">{{ $t('fleet.wallet.balance') }}</p>
+          <p class="text-sm text-gray-500">{{ $t('shop.myBalance') }}</p>
           <p class="text-3xl font-bold mt-1" :class="balanceColor">
-            {{ wallet ? formatISK(wallet.balance) : '-' }}
+            {{ wallet ? `${formatISK(wallet.balance)} ${$t('shop.currency')}` : '-' }}
           </p>
           <p v-if="wallet" class="text-xs text-gray-400 mt-1">
             {{ $t('common.updatedAt') }}: {{ formatTime(wallet.updated_at) }}
@@ -29,6 +29,7 @@
         :data="data"
         :columns="columns"
         :pagination="pagination"
+        visual-variant="ledger"
         @pagination:size-change="handleSizeChange"
         @pagination:current-change="handleCurrentChange"
       />
@@ -40,6 +41,7 @@
   import { useI18n } from 'vue-i18n'
   import { Refresh } from '@element-plus/icons-vue'
   import { ElCard, ElButton, ElTag } from 'element-plus'
+  import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import { fetchMyWallet, fetchMyWalletTransactions } from '@/api/sys-wallet'
 
@@ -50,13 +52,16 @@
   type WalletTransaction = Api.SysWallet.WalletTransaction
 
   // ─── 格式化工具 ───
-  const formatTime = (v: string) => (v ? new Date(v).toLocaleString() : '-')
-
   const formatISK = (v: number) =>
     new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(v)
+  const getRefTypeLabel = (value: string) => {
+    const key = `walletAdmin.refTypes.${value}`
+    const translated = t(key)
+    return translated === key ? value : translated
+  }
 
   // ─── 钱包余额 ───
   const wallet = ref<Api.SysWallet.Wallet | null>(null)
@@ -91,7 +96,7 @@
   } = useTable({
     core: {
       apiFn: fetchMyWalletTransactions,
-      apiParams: { current: 1, size: 20 },
+      apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {
@@ -102,14 +107,15 @@
             h(
               'span',
               { class: `font-medium ${row.amount >= 0 ? 'text-green-600' : 'text-red-500'}` },
-              `${row.amount >= 0 ? '+' : ''}${formatISK(row.amount)}`
+              `${row.amount >= 0 ? '+' : ''}${formatISK(row.amount)} ${t('shop.currency')}`
             )
         },
         {
           prop: 'balance_after',
           label: t('fleet.wallet.balanceAfter'),
           width: 140,
-          formatter: (row: WalletTransaction) => h('span', {}, formatISK(row.balance_after))
+          formatter: (row: WalletTransaction) =>
+            h('span', {}, `${formatISK(row.balance_after)} ${t('shop.currency')}`)
         },
         {
           prop: 'reason',
@@ -123,7 +129,7 @@
           minWidth: 120,
           maxWidth: 200,
           formatter: (row: WalletTransaction) =>
-            h(ElTag, { size: 'small', effect: 'plain' }, () => row.ref_type)
+            h(ElTag, { size: 'small', effect: 'plain' }, () => getRefTypeLabel(row.ref_type))
         },
         {
           prop: 'created_at',

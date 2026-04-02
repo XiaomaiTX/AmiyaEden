@@ -39,6 +39,7 @@
   import { ElButton, ElTag, ElMessageBox } from 'element-plus'
   import { Plus } from '@element-plus/icons-vue'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'FleetConfigs' })
@@ -50,13 +51,8 @@
   const userStore = useUserStore()
   const canManage = computed(() => {
     const roles = userStore.getUserInfo?.roles ?? []
-    return roles.some((r) => ['super_admin', 'admin', 'fc', 'srp'].includes(r))
+    return roles.some((r) => ['super_admin', 'admin', 'senior_fc'].includes(r))
   })
-
-  const formatTime = (v: string) => {
-    if (!v) return '-'
-    return new Date(v).toLocaleString()
-  }
 
   const {
     columns,
@@ -72,7 +68,7 @@
       apiFn: fetchFleetConfigList,
       apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
-        { type: 'index', width: 60, label: '序号' },
+        { type: 'index', width: 60, label: '#' },
         {
           prop: 'name',
           label: t('fleetConfig.fields.name'),

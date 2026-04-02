@@ -1,6 +1,6 @@
 <!-- ESI 自动权限映射管理 -->
 <template>
-  <div class="art-full-height">
+  <div>
     <!-- 页头操作区 -->
     <ElCard class="mb-4" shadow="never">
       <div class="flex items-center justify-between">
@@ -8,7 +8,7 @@
           <div class="text-base font-semibold">{{ t('autoRolePage.title') }}</div>
           <div class="mt-1 text-sm text-gray-500">
             {{ t('autoRolePage.description') }}<br />
-            {{ t('autoRolePage.directorHint') }}
+            {{ t('autoRolePage.directorHint', SYSTEM_IDENTITY_I18N) }}
           </div>
         </div>
         <ElButton type="primary" :loading="syncLoading" @click="handleTriggerSync">
@@ -46,7 +46,7 @@
           </ElTableColumn>
           <ElTableColumn :label="t('common.createdAt')" prop="created_at" width="180">
             <template #default="{ row }">
-              {{ formatDate(row.created_at) }}
+              {{ formatTime(row.created_at) }}
             </template>
           </ElTableColumn>
           <ElTableColumn :label="t('common.operation')" width="100" fixed="right">
@@ -83,7 +83,11 @@
             :label="t('autoRolePage.columns.corporationId')"
             prop="corporation_id"
             width="160"
-          />
+          >
+            <template #default="{ row }">
+              {{ row.corporation_name || row.corporation_id }}
+            </template>
+          </ElTableColumn>
           <ElTableColumn :label="t('autoRolePage.columns.titleId')" prop="title_id" width="100" />
           <ElTableColumn
             :label="t('autoRolePage.columns.titleName')"
@@ -106,7 +110,7 @@
           </ElTableColumn>
           <ElTableColumn :label="t('common.createdAt')" prop="created_at" width="180">
             <template #default="{ row }">
-              {{ formatDate(row.created_at) }}
+              {{ formatTime(row.created_at) }}
             </template>
           </ElTableColumn>
           <ElTableColumn :label="t('common.operation')" width="100" fixed="right">
@@ -127,7 +131,7 @@
       </ElTabPane>
     </ElTabs>
 
-    <!-- ─── 新增 ESI 角色映射对话框 ─── -->
+    <!-- ─── 新增 ESI 职权映射对话框 ─── -->
     <ElDialog
       v-model="esiRoleDialogVisible"
       :title="t('autoRolePage.createEsiRoleTitle')"
@@ -150,18 +154,18 @@
             <ElOption v-for="role in allEsiRoles" :key="role" :label="role" :value="role" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('autoRolePage.fields.systemRole')" prop="role_id">
+        <ElFormItem :label="t('autoRolePage.fields.systemRole')" prop="role_code">
           <ElSelect
-            v-model="esiRoleForm.role_id"
+            v-model="esiRoleForm.role_code"
             :placeholder="t('autoRolePage.placeholders.systemRole')"
             filterable
             style="width: 100%"
           >
             <ElOption
               v-for="role in allSystemRoles"
-              :key="role.id"
+              :key="role.code"
               :label="role.name"
-              :value="role.id"
+              :value="role.code"
             >
               <span>{{ role.name }}</span>
               <span class="ml-2 text-xs text-gray-400">{{ role.code }}</span>
@@ -204,24 +208,26 @@
                   t.title_name || $t('autoRolePage.titleFallback', { id: t.title_id })
                 }}</span>
                 <span class="ml-3 text-xs text-gray-400">
-                  {{ $t('autoRolePage.corpPrefix', { id: t.corporation_id }) }}
+                  {{
+                    t.corporation_name || $t('autoRolePage.corpFallback', { id: t.corporation_id })
+                  }}
                 </span>
               </div>
             </ElOption>
           </ElSelect>
         </ElFormItem>
-        <ElFormItem :label="t('autoRolePage.fields.systemRole')" prop="role_id">
+        <ElFormItem :label="t('autoRolePage.fields.systemRole')" prop="role_code">
           <ElSelect
-            v-model="titleForm.role_id"
+            v-model="titleForm.role_code"
             :placeholder="t('autoRolePage.placeholders.systemRole')"
             filterable
             style="width: 100%"
           >
             <ElOption
               v-for="role in allSystemRoles"
-              :key="role.id"
+              :key="role.code"
               :label="role.name"
-              :value="role.id"
+              :value="role.code"
             >
               <span>{{ role.name }}</span>
               <span class="ml-2 text-xs text-gray-400">{{ role.code }}</span>
@@ -244,6 +250,8 @@
   import { Plus } from '@element-plus/icons-vue'
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
+  import { SYSTEM_IDENTITY_I18N } from '@/constants/system-identity'
   import {
     fetchGetEsiRoleMappings,
     fetchCreateEsiRoleMapping,
@@ -253,7 +261,7 @@
     fetchDeleteEsiTitleMapping,
     fetchGetAllEsiRoles,
     fetchGetCorpTitles,
-    fetchGetAllRoles,
+    fetchGetRoleDefinitions,
     fetchTriggerAutoRoleSync
   } from '@/api/system-manage'
 
@@ -262,18 +270,20 @@
 
   type EsiRoleMapping = Api.SystemManage.EsiRoleMapping
   type EsiTitleMapping = Api.SystemManage.EsiTitleMapping
-  type RoleItem = Api.SystemManage.RoleItem
+  type RoleDefinition = Api.SystemManage.RoleDefinition
   type CorpTitleInfo = Api.SystemManage.CorpTitleInfo
 
   // ─── Tab ───
   const activeTab = ref('esi-role')
 
-  // ─── 角色标签颜色 ───
+  // ─── 职权标签颜色 ───
   const CODE_TYPE: Record<string, string> = {
     super_admin: 'danger',
     admin: 'warning',
     srp: '',
     fc: '',
+    senior_fc: 'warning',
+    captain: 'primary',
     user: 'success',
     guest: 'info'
   }
@@ -281,27 +291,15 @@
     return (CODE_TYPE[code] ?? '') as any
   }
 
-  // ─── 日期格式化 ───
-  function formatDate(dateStr: string) {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleString(undefined, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   // ─── 基础数据 ───
   const allEsiRoles = ref<string[]>([])
-  const allSystemRoles = ref<RoleItem[]>([])
+  const allSystemRoles = ref<RoleDefinition[]>([])
   const allCorpTitles = ref<CorpTitleInfo[]>([])
 
   async function loadBaseData() {
     const [esiRoles, systemRoles, corpTitles] = await Promise.all([
       fetchGetAllEsiRoles(),
-      fetchGetAllRoles(),
+      fetchGetRoleDefinitions(),
       fetchGetCorpTitles()
     ])
     allEsiRoles.value = esiRoles
@@ -310,7 +308,7 @@
     allCorpTitles.value = corpTitles
   }
 
-  // ─── ESI 角色映射 ───
+  // ─── ESI 职权映射 ───
   const esiRoleMappings = ref<EsiRoleMapping[]>([])
   const esiRoleLoading = ref(false)
 
@@ -333,22 +331,22 @@
     }
   }
 
-  // ─── 新增 ESI 角色映射 ───
+  // ─── 新增 ESI 职权映射 ───
   const esiRoleDialogVisible = ref(false)
   const esiRoleSubmitting = ref(false)
   const esiRoleFormRef = ref<FormInstance>()
   const esiRoleForm = reactive({
     esi_role: '',
-    role_id: undefined as number | undefined
+    role_code: '' as string
   })
   const esiRoleFormRules: FormRules = {
     esi_role: [{ required: true, message: t('autoRolePage.rules.esiRole'), trigger: 'change' }],
-    role_id: [{ required: true, message: t('autoRolePage.rules.systemRole'), trigger: 'change' }]
+    role_code: [{ required: true, message: t('autoRolePage.rules.systemRole'), trigger: 'change' }]
   }
 
   function openEsiRoleDialog() {
     esiRoleForm.esi_role = ''
-    esiRoleForm.role_id = undefined
+    esiRoleForm.role_code = ''
     esiRoleDialogVisible.value = true
   }
 
@@ -359,7 +357,7 @@
     try {
       await fetchCreateEsiRoleMapping({
         esi_role: esiRoleForm.esi_role,
-        role_id: esiRoleForm.role_id!
+        role_code: esiRoleForm.role_code
       })
       ElMessage.success(t('autoRolePage.mappingCreated'))
       esiRoleDialogVisible.value = false
@@ -403,11 +401,11 @@
     corporation_id: 0,
     title_id: 0,
     title_name: '',
-    role_id: undefined as number | undefined
+    role_code: '' as string
   })
   const titleFormRules: FormRules = {
     title_key: [{ required: true, message: t('autoRolePage.rules.title'), trigger: 'change' }],
-    role_id: [{ required: true, message: t('autoRolePage.rules.systemRole'), trigger: 'change' }]
+    role_code: [{ required: true, message: t('autoRolePage.rules.systemRole'), trigger: 'change' }]
   }
 
   function onTitleKeyChange(key: string) {
@@ -424,7 +422,7 @@
     titleForm.corporation_id = 0
     titleForm.title_id = 0
     titleForm.title_name = ''
-    titleForm.role_id = undefined
+    titleForm.role_code = ''
     titleDialogVisible.value = true
   }
 
@@ -437,7 +435,7 @@
         corporation_id: titleForm.corporation_id,
         title_id: titleForm.title_id,
         title_name: titleForm.title_name || undefined,
-        role_id: titleForm.role_id!
+        role_code: titleForm.role_code
       })
       ElMessage.success(t('autoRolePage.mappingCreated'))
       titleDialogVisible.value = false

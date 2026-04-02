@@ -63,7 +63,7 @@
           </ElTableColumn>
           <ElTableColumn prop="bidder_id" :label="$t('info.contractBidder')" />
           <ElTableColumn prop="date_bid" :label="$t('info.contractBidTime')" width="180">
-            <template #default="{ row }">{{ new Date(row.date_bid).toLocaleString() }}</template>
+            <template #default="{ row }">{{ formatTime(row.date_bid) }}</template>
           </ElTableColumn>
         </ElTable>
       </template>
@@ -83,6 +83,7 @@
 <script setup lang="ts">
   import { ElDialog, ElTable, ElTableColumn, ElTag, ElEmpty } from 'element-plus'
   import { fetchInfoContractDetail } from '@/api/eve-info'
+  import { formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'ContractDetailDialog' })

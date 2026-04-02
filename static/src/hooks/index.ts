@@ -1,9 +1,6 @@
 // 通用功能集合
 export { useCommon } from './core/useCommon'
 
-// 应用模式
-export { useAppMode } from './core/useAppMode'
-
 // 权限控制
 export { useAuth } from './core/useAuth'
 
@@ -30,6 +27,10 @@ export { useChart, useChartComponent, useChartOps } from './core/useChart'
 
 // ID → 名称批量解析
 export { useNameResolver } from './core/useNameResolver'
+
+// SRP 审批管理
+export { useSrpManage } from './srp/useSrpManage'
+export { useSrpWorkflow } from './srp/useSrpWorkflow'
 
 // 布局高度
 export { useLayoutHeight, useAutoLayoutHeight } from './core/useLayoutHeight'

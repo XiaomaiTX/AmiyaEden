@@ -17,22 +17,18 @@ import (
 
 // AlliancePAPService 联盟 PAP 业务逻辑层
 type AlliancePAPService struct {
-	repo       *repository.AlliancePAPRepository
-	charRepo   *repository.EveCharacterRepository
-	userRepo   *repository.UserRepository
-	walletRepo *repository.SysWalletRepository
-	cfgRepo    *repository.SysConfigRepository
-	http       *http.Client
+	repo     *repository.AlliancePAPRepository
+	charRepo *repository.EveCharacterRepository
+	userRepo *repository.UserRepository
+	http     *http.Client
 }
 
 func NewAlliancePAPService() *AlliancePAPService {
 	return &AlliancePAPService{
-		repo:       repository.NewAlliancePAPRepository(),
-		charRepo:   repository.NewEveCharacterRepository(),
-		userRepo:   repository.NewUserRepository(),
-		walletRepo: repository.NewSysWalletRepository(),
-		cfgRepo:    repository.NewSysConfigRepository(),
-		http:       &http.Client{Timeout: 30 * time.Second},
+		repo:     repository.NewAlliancePAPRepository(),
+		charRepo: repository.NewEveCharacterRepository(),
+		userRepo: repository.NewUserRepository(),
+		http:     &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -80,7 +76,7 @@ type alliancePAPRanking struct {
 
 const alliancePAPTimeLayout = "2006-01-02 15:04:05"
 
-// FetchAndStore 拉取指定主角色某月的联盟 PAP 数据并入库
+// FetchAndStore 拉取指定主人物某月的联盟 PAP 数据并入库
 func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) error {
 	cfg := global.Config.AlliancePAP
 	if cfg.BaseURL == "" || cfg.APIKey == "" {
@@ -102,7 +98,9 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 	if err != nil {
 		return fmt.Errorf("请求联盟 PAP API 失败: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -182,7 +180,7 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 		}
 	}
 
-	// API 未返回 corporation_id 时，从数据库角色表中查找
+	// API 未返回 corporation_id 时，从数据库人物表中查找
 	if corporationID == "" {
 		if char, err := s.charRepo.GetByCharacterName(mainChar); err == nil && char.CorporationID != 0 {
 			corporationID = strconv.FormatInt(char.CorporationID, 10)
@@ -208,7 +206,7 @@ func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) err
 	return s.repo.UpsertSummary(summary)
 }
 
-// FetchAllUsers 拉取系统中所有用户主角色的当前月 PAP 数据
+// FetchAllUsers 拉取系统中所有用户主人物的当前月 PAP 数据
 func (s *AlliancePAPService) FetchAllUsers(year, month int) {
 	userIDs, err := s.userRepo.ListAllIDs()
 	if err != nil {
@@ -236,9 +234,10 @@ func (s *AlliancePAPService) FetchAllUsers(year, month int) {
 }
 
 // ─── 修改接口 ───
+// PAPImportInfo 导入 PAP 信息
 type PAPImportInfo struct {
 	PrimaryCharacterName string  `json:"primary_character_name" binding:"required"`
-	MonthlyPAP           float64 `json:"monthly_pap,default=0" binding:"gte=0"`
+	MonthlyPAP           float64 `json:"monthly_pap" binding:"gte=0"`
 	CalculatedAt         string  `json:"calculated_at" binding:"required"`
 }
 
@@ -249,14 +248,14 @@ func (s *AlliancePAPService) ImportAlliancePAP(year, month int, data *PAPImportI
 		existingSummary = nil
 	}
 
-	var totalPap float64 = data.MonthlyPAP
-	var yearlyTotalPap float64 = data.MonthlyPAP
-	var monthlyRank int = 1
-	var yearlyRank int = 1
-	var globalMonthlyRank int = 1
-	var globalYearlyRank int = 1
-	var totalInCorp int = 0
-	var totalGlobal int = 0
+	totalPap := data.MonthlyPAP
+	yearlyTotalPap := data.MonthlyPAP
+	monthlyRank := 1
+	yearlyRank := 1
+	globalMonthlyRank := 1
+	globalYearlyRank := 1
+	totalInCorp := 0
+	totalGlobal := 0
 	calculatedAt, err := time.ParseInLocation(alliancePAPTimeLayout, data.CalculatedAt, time.UTC)
 
 	if err != nil {
@@ -331,175 +330,25 @@ func (s *AlliancePAPService) GetAllPAP(year, month int) ([]model.AlliancePAPSumm
 // GetAllPAPPaged 分页获取所有成员某月联盟 PAP 汇总（管理员）
 // corporationIDs 非空时只返回这些军团的数据
 func (s *AlliancePAPService) GetAllPAPPaged(year, month, page, pageSize int, corporationIDs []int64) ([]model.AlliancePAPSummary, int64, error) {
+	page = normalizePage(page)
+	pageSize = normalizeLedgerPageSize(pageSize)
+
 	return s.repo.ListAllSummariesPaged(year, month, page, pageSize, corporationIDs)
 }
 
-// ─── PAP 兑换配置 ───
-
-// PAPExchangeConfigDTO PAP 兑换配置视图对象
-type PAPExchangeConfigDTO struct {
-	WalletPerPAP float64 `json:"wallet_per_pap"`
-	Enabled      bool    `json:"enabled"`
-}
-
-// GetExchangeConfig 从 system_config 表读取 PAP 兑换配置
-func (s *AlliancePAPService) GetExchangeConfig() (*PAPExchangeConfigDTO, error) {
-	return &PAPExchangeConfigDTO{
-		WalletPerPAP: s.cfgRepo.GetFloat(model.SysConfigPAPWalletPerPAP, 1),
-		Enabled:      s.cfgRepo.GetBool(model.SysConfigPAPExchangeEnabled, true),
-	}, nil
-}
-
-// SetExchangeConfigRequest 更新兑换配置的请求结构
-type SetExchangeConfigRequest struct {
-	WalletPerPAP float64 `json:"wallet_per_pap" binding:"required,gt=0"`
-	Enabled      bool    `json:"enabled"`
-}
-
-// SetExchangeConfig 将 PAP 兑换配置写入 system_config 表（含缓存刷新）
-func (s *AlliancePAPService) SetExchangeConfig(req *SetExchangeConfigRequest) (*PAPExchangeConfigDTO, error) {
-	if err := s.cfgRepo.Set(model.SysConfigPAPWalletPerPAP,
-		fmt.Sprintf("%g", req.WalletPerPAP), "每 1 PAP 兑换的系统钱包数量"); err != nil {
-		return nil, err
-	}
-	enabledStr := "false"
-	if req.Enabled {
-		enabledStr = "true"
-	}
-	if err := s.cfgRepo.Set(model.SysConfigPAPExchangeEnabled, enabledStr, "PAP 兑换开关"); err != nil {
-		return nil, err
-	}
-	return &PAPExchangeConfigDTO{WalletPerPAP: req.WalletPerPAP, Enabled: req.Enabled}, nil
-}
-
-// ─── 月度归档 + PAP 兑换到系统钱包 ───
+// ─── 月度归档 ───
 
 // SettleMonthResult 月度结算结果
 type SettleMonthResult struct {
-	Year         int     `json:"year"`
-	Month        int     `json:"month"`
-	TotalUsers   int     `json:"total_users"`   // 本次参与结算的用户数
-	SkippedUsers int     `json:"skipped_users"` // 跳过（已兑换或找不到用户）
-	TotalWallet  float64 `json:"total_wallet"`  // 本次共发放系统钱包数量
+	Year  int `json:"year"`
+	Month int `json:"month"`
 }
 
-// SettleMonth 归档某月并将 PAP 批量兑换为系统钱包
-// 如果 walletConvert=true，则同时兑换；否则仅归档
-// corporationIDs 非空时只结算这些军团的数据
-func (s *AlliancePAPService) SettleMonth(year, month int, walletConvert bool, operatorID uint, corporationIDs []int64) (*SettleMonthResult, error) {
-	// 1. 归档
+// SettleMonth 归档某月的联盟 PAP 数据
+// corporationIDs 非空时只归档这些军团的数据
+func (s *AlliancePAPService) SettleMonth(year, month int, corporationIDs []int64) (*SettleMonthResult, error) {
 	if err := s.repo.MarkArchived(year, month); err != nil {
 		return nil, fmt.Errorf("归档失败: %w", err)
 	}
-
-	result := &SettleMonthResult{Year: year, Month: month}
-	if !walletConvert {
-		return result, nil
-	}
-
-	// 2. 获取兑换配置（来自 system_config，带缓存）
-	walletPerPAP := s.cfgRepo.GetFloat(model.SysConfigPAPWalletPerPAP, 1)
-	enabled := s.cfgRepo.GetBool(model.SysConfigPAPExchangeEnabled, true)
-	if !enabled {
-		return nil, fmt.Errorf("PAP 兑换功能已关闭，请在设置中开启")
-	}
-
-	// 3. 查找该月所有未兑换且 PAP > 0 的汇总
-	summaries, err := s.repo.ListUnredeemedSummaries(year, month, corporationIDs)
-	if err != nil {
-		return nil, fmt.Errorf("查询未兑换 PAP 失败: %w", err)
-	}
-
-	// 4. 逐条兑换
-	for _, summary := range summaries {
-		// 通过主角色名找到角色
-		char, err := s.charRepo.GetByCharacterName(summary.MainCharacter)
-		if err != nil || char.CharacterID == 0 {
-			global.Logger.Warn("PAP 结算：找不到角色",
-				zap.String("main_char", summary.MainCharacter))
-			result.SkippedUsers++
-			continue
-		}
-
-		// 找到绑定该主角色的用户
-		user, err := s.userRepo.GetByPrimaryCharacterID(char.CharacterID)
-		if err != nil || user == nil {
-			global.Logger.Warn("PAP 结算：找不到对应用户",
-				zap.String("main_char", summary.MainCharacter),
-				zap.Int64("character_id_int", int64(char.CharacterID)))
-			result.SkippedUsers++
-			continue
-		}
-
-		// 计算应发钱包数
-		walletAmount := summary.TotalPap * walletPerPAP
-		if walletAmount <= 0 {
-			result.SkippedUsers++
-			continue
-		}
-
-		// 检查该笔兑换是否已存在（防止重复入库）
-		refID := fmt.Sprintf("pap:%d:%d:%s", year, month, summary.MainCharacter)
-		if exists, _ := s.walletRepo.ExistsTransactionByRefID(refID); exists {
-			// 已存在同 RefID 的流水，直接标记已兑换并跳过
-			_ = s.repo.MarkSummaryRedeemed(summary.ID, walletAmount)
-			result.SkippedUsers++
-			continue
-		}
-
-		// 事务：获取钱包 → 加余额 → 写流水
-		wallet, err := s.walletRepo.GetOrCreateWallet(user.ID)
-		if err != nil {
-			global.Logger.Warn("PAP 结算：获取钱包失败",
-				zap.Uint("user_id", user.ID), zap.Error(err))
-			result.SkippedUsers++
-			continue
-		}
-
-		newBalance := wallet.Balance + walletAmount
-		tx := global.DB.Begin()
-
-		if err := s.walletRepo.UpdateBalanceTx(tx, user.ID, newBalance); err != nil {
-			tx.Rollback()
-			global.Logger.Warn("PAP 结算：更新余额失败",
-				zap.Uint("user_id", user.ID), zap.Error(err))
-			result.SkippedUsers++
-			continue
-		}
-
-		walletTx := &model.WalletTransaction{
-			UserID:       user.ID,
-			Amount:       walletAmount,
-			Reason:       fmt.Sprintf("%d年%d月联盟PAP兑换（%.2f PAP × %.2f）", year, month, summary.TotalPap, walletPerPAP),
-			RefType:      model.WalletRefPapConvert,
-			RefID:        refID,
-			BalanceAfter: newBalance,
-			OperatorID:   operatorID,
-		}
-		if err := s.walletRepo.CreateTransactionTx(tx, walletTx); err != nil {
-			tx.Rollback()
-			global.Logger.Warn("PAP 结算：写入流水失败",
-				zap.Uint("user_id", user.ID), zap.Error(err))
-			result.SkippedUsers++
-			continue
-		}
-
-		if err := tx.Commit().Error; err != nil {
-			global.Logger.Warn("PAP 结算：提交事务失败",
-				zap.Uint("user_id", user.ID), zap.Error(err))
-			result.SkippedUsers++
-			continue
-		}
-
-		// 标记汇总已兑换
-		if err := s.repo.MarkSummaryRedeemed(summary.ID, walletAmount); err != nil {
-			global.Logger.Warn("PAP 结算：标记兑换状态失败",
-				zap.Uint("summary_id", summary.ID), zap.Error(err))
-		}
-
-		result.TotalUsers++
-		result.TotalWallet += walletAmount
-	}
-
-	return result, nil
+	return &SettleMonthResult{Year: year, Month: month}, nil
 }

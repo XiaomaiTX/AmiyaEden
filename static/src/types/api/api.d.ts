@@ -7,7 +7,7 @@
  *
  * - 通用类型（分页参数、响应结构等）
  * - 认证类型（登录、用户信息等）
- * - 系统管理类型（用户、角色等）
+ * - 系统管理类型（用户、职权等）
  * - 全局命名空间声明
  *
  * ## 使用场景
@@ -74,7 +74,7 @@ declare namespace Api {
       refreshToken: string
     }
 
-    /** EVE 角色信息 */
+    /** EVE 人物信息 */
     interface EveCharacter {
       id: number
       character_id: number
@@ -101,29 +101,52 @@ declare namespace Api {
       user: {
         id: number
         nickname: string
+        qq: string
+        discord_id: string
         avatar: string
         status: number
         role: string
         primary_character_id: number
-        last_login_at: string
+        last_login_at: string | null
         last_login_ip: string
       }
       characters: EveCharacter[]
-      /** 用户所有活跃角色编码列表 */
+      /** 用户所有活跃职权编码列表 */
       roles: string[]
       /** 用户所有权限标识列表 */
       permissions: string[]
+      profile_complete: boolean
+      enforce_character_esi_restriction: boolean
+      is_currently_newbro?: boolean | null
+      is_mentor_mentee_eligible?: boolean | null
     }
 
     /** 用户信息（路由守卫和权限指令使用） */
     interface UserInfo {
-      buttons: string[]
       roles: string[]
       userId: number
       userName: string
       avatar: string
+      nickname: string
+      qq: string
+      discordId: string
+      profileComplete: boolean
+      enforceCharacterESIRestriction: boolean
+      isCurrentlyNewbro?: boolean
+      isMentorMenteeEligible?: boolean
       characters?: EveCharacter[]
       primaryCharacterId?: number
+    }
+  }
+
+  /** 导航徽章类型 */
+  namespace Badge {
+    interface BadgeCounts {
+      welfare_eligible?: number
+      srp_pending?: number
+      welfare_pending?: number
+      order_pending?: number
+      mentor_pending_applications?: number
     }
   }
 
@@ -132,13 +155,40 @@ declare namespace Api {
     /** 用户列表 */
     type UserList = Api.Common.PaginatedResponse<UserListItem>
 
-    /** 用户列表项（匹配后端 model.User） */
+    interface UserListCharacter {
+      character_id: number
+      character_name: string
+      portrait_url: string
+      total_sp: number
+      token_invalid: boolean
+    }
+
+    /** 用户列表项（匹配后端 model.UserListItem） */
     interface UserListItem {
       id: number
       nickname: string
+      qq: string
+      discord_id: string
       avatar: string
       status: number // 1:正常 0:禁用
-      role: string // 历史兼容字段
+      roles: string[]
+      characters: UserListCharacter[]
+      last_login_at: string | null
+      last_login_ip: string
+      created_at: string
+      updated_at: string
+    }
+
+    /** 用户详情（匹配后端 model.User） */
+    interface UserDetail {
+      id: number
+      nickname: string
+      qq: string
+      discord_id: string
+      avatar: string
+      status: number
+      role: string
+      primary_character_id: number
       last_login_at: string | null
       last_login_ip: string
       created_at: string
@@ -147,131 +197,35 @@ declare namespace Api {
 
     /** 用户搜索参数 */
     type UserSearchParams = Partial<{
-      nickname: string
+      keyword: string
       status: number
+      role: string
     }> &
       Partial<Api.Common.CommonSearchParams>
 
-    /** 角色列表（分页） */
-    type RoleList = Api.Common.PaginatedResponse<RoleItem>
-
-    /** 角色（匹配后端 model.Role） */
-    interface RoleItem {
-      id: number
+    /** 系统职权定义（纯内存，匹配后端 model.RoleDefinition） */
+    interface RoleDefinition {
       code: string
       name: string
       description: string
-      is_system: boolean
       sort: number
-      status: number
-      menu_ids?: number[]
-      created_at: string
-      updated_at: string
     }
 
-    /** 创建角色请求 */
-    interface CreateRoleParams {
-      code: string
-      name: string
-      description?: string
-      sort?: number
-    }
-
-    /** 更新角色请求 */
-    interface UpdateRoleParams {
-      name?: string
-      description?: string
-      sort?: number
-    }
-
-    /** 角色搜索参数 */
-    type RoleSearchParams = Partial<Api.Common.CommonSearchParams>
-
-    /** 菜单项（后端 model.Menu） */
-    interface MenuItem {
-      id: number
-      parent_id: number
-      type: 'dir' | 'menu' | 'button'
-      name: string
-      path: string
-      component: string
-      permission: string
-      title: string
-      icon: string
-      sort: number
-      is_hide: boolean
-      keep_alive: boolean
-      is_hide_tab: boolean
-      fixed_tab: boolean
-      status: number
-      children?: MenuItem[]
-      created_at: string
-      updated_at: string
-    }
-
-    /** 创建菜单请求 */
-    interface CreateMenuParams {
-      parent_id?: number
-      type: 'dir' | 'menu' | 'button'
-      name: string
-      path?: string
-      component?: string
-      permission?: string
-      title: string
-      icon?: string
-      sort?: number
-      is_hide?: boolean
-      keep_alive?: boolean
-      is_hide_tab?: boolean
-      fixed_tab?: boolean
-    }
-
-    /** 更新菜单请求 */
-    interface UpdateMenuParams {
-      parent_id?: number
-      type?: 'dir' | 'menu' | 'button'
-      name?: string
-      path?: string
-      component?: string
-      permission?: string
-      title?: string
-      icon?: string
-      sort?: number
-      is_hide?: boolean
-      keep_alive?: boolean
-      is_hide_tab?: boolean
-      fixed_tab?: boolean
-    }
-
-    /** 用户角色关联 */
-    interface UserRoleInfo {
-      role_ids: number[]
-      roles: RoleItem[]
-    }
-
-    /** ESI 军团角色 → 系统角色映射 */
+    /** ESI 军团职权 → 系统职权映射 */
     interface EsiRoleMapping {
       id: number
       esi_role: string
-      role_id: number
       role_code: string
       role_name: string
       created_at: string
     }
 
-    /** 创建 ESI 角色映射请求 */
-    interface CreateEsiRoleMappingParams {
-      esi_role: string
-      role_id: number
-    }
-
-    /** ESI 头衔 → 系统角色映射 */
+    /** ESI 头衔 → 系统职权映射 */
     interface EsiTitleMapping {
       id: number
       corporation_id: number
       title_id: number
       title_name: string
-      role_id: number
       role_code: string
       role_name: string
       created_at: string
@@ -280,16 +234,9 @@ declare namespace Api {
     /** 军团头衔信息（从头衔快照获取，用于前端下拉选择） */
     interface CorpTitleInfo {
       corporation_id: number
+      corporation_name: string
       title_id: number
       title_name: string
-    }
-
-    /** 创建 ESI 头衔映射请求 */
-    interface CreateEsiTitleMappingParams {
-      corporation_id: number
-      title_id: number
-      title_name?: string
-      role_id: number
     }
   }
 
@@ -317,13 +264,13 @@ declare namespace Api {
       error?: string
     }
 
-    /** 手动触发任务请求参数（指定角色） */
+    /** 手动触发任务请求参数（指定人物） */
     interface RunTaskParams {
       task_name: string
       character_id: number
     }
 
-    /** 手动触发任务请求参数（所有角色） */
+    /** 手动触发任务请求参数（所有人物） */
     interface RunTaskByNameParams {
       task_name: string
     }
@@ -353,6 +300,7 @@ declare namespace Api {
       fc_user_id: number
       fc_character_id: number
       fc_character_name: string
+      fc_display_name?: string
       esi_fleet_id: number | null
       fleet_config_id: number | null
       auto_srp_mode: 'disabled' | 'submit_only' | 'auto_approve'
@@ -417,6 +365,17 @@ declare namespace Api {
       issued_at: string | null
     }
 
+    /** 手动按人物名添加舰队成员请求 */
+    interface ManualAddFleetMembersParams {
+      character_names: string[]
+    }
+
+    /** 手动按人物名添加舰队成员结果 */
+    interface ManualAddFleetMembersResult {
+      added_character_names: string[]
+      missing_character_names: string[]
+    }
+
     /** PAP 记录 */
     interface PapLog {
       id: number
@@ -435,6 +394,44 @@ declare namespace Api {
       fc_character_name: string
       fleet_importance: string
       ship_type_id: number | null
+    }
+
+    /** 军团 PAP 汇总筛选周期 */
+    type PapSummaryPeriod = 'current_month' | 'last_month' | 'at_year' | 'all'
+
+    /** 军团 PAP 汇总查询参数 */
+    type CorporationPapSummaryParams = Partial<Api.Common.CommonSearchParams> & {
+      period?: PapSummaryPeriod
+      year?: number
+      corp_tickers?: string
+    }
+
+    /** 军团 PAP 汇总项 */
+    interface CorporationPapSummaryItem {
+      user_id: number
+      nickname: string
+      corp_ticker: string
+      main_character_name: string
+      character_count: number
+      strat_op_paps: number
+      skirmish_paps: number
+      alliance_strat_paps: number
+    }
+
+    /** 军团 PAP 页头概览 */
+    interface CorporationPapOverview {
+      filtered_pap_total: number
+      filtered_strat_op_total: number
+      all_pap_total: number
+      filtered_user_count: number
+      period: PapSummaryPeriod
+      year?: number
+    }
+
+    /** 军团 PAP 汇总分页响应 */
+    interface CorporationPapSummaryList
+      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
+      overview: CorporationPapOverview
     }
 
     /** 邀请链接 */
@@ -477,7 +474,7 @@ declare namespace Api {
     /** 钱包流水分页 */
     type WalletTransactionList = Api.Common.PaginatedResponse<WalletTransaction>
 
-    /** ESI 角色舰队信息 */
+    /** ESI 人物舰队信息 */
     interface CharacterFleetInfo {
       fleet_id: number
       fleet_boss_id: number
@@ -496,6 +493,34 @@ declare namespace Api {
       solar_system_id: number
       squad_id: number
       wing_id: number
+    }
+  }
+
+  /** PAP 兑换配置 */
+  namespace PapExchange {
+    interface RateItem {
+      pap_type: string
+      display_name: string
+      rate: number
+      updated_at: string
+    }
+
+    interface ConfigResponse {
+      rates: RateItem[]
+      fc_salary: number
+      fc_salary_monthly_limit: number
+    }
+
+    interface UpdateRateItem {
+      pap_type: string
+      display_name: string
+      rate: number
+    }
+
+    interface UpdateConfigParams {
+      rates: UpdateRateItem[]
+      fc_salary: number
+      fc_salary_monthly_limit: number
     }
   }
 
@@ -620,7 +645,137 @@ declare namespace Api {
     }
   }
 
-  /** 系统钱包类型（独立于 EVE Wallet） */
+  /** 军团技能计划类型 */
+  namespace SkillPlan {
+    /** 技能计划列表项 */
+    interface SkillPlanListItem {
+      id: number
+      title: string
+      description: string
+      ship_type_id: number | null
+      sort_order: number
+      created_by: number
+      created_at: string
+      updated_at: string
+      skill_count: number
+    }
+
+    /** 技能要求详情 */
+    interface SkillRequirement {
+      id: number
+      skill_plan_id: number
+      skill_type_id: number
+      skill_name: string
+      group_name: string
+      required_level: number
+      sort: number
+    }
+
+    /** 技能计划详情 */
+    interface SkillPlanDetail {
+      id: number
+      title: string
+      description: string
+      ship_type_id: number | null
+      ship_name: string
+      sort_order: number
+      created_by: number
+      created_at: string
+      updated_at: string
+      skill_count: number
+      skills: SkillRequirement[]
+    }
+
+    /** 技能计划分页列表 */
+    type SkillPlanList = Api.Common.PaginatedResponse<SkillPlanListItem>
+
+    /** 查询参数 */
+    type SkillPlanSearchParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    /** 单条技能要求请求 */
+    interface SkillRequirementParams {
+      skill_type_id: number
+      required_level: number
+    }
+
+    /** 创建技能计划请求 */
+    interface CreateSkillPlanParams {
+      title: string
+      description?: string
+      ship_type_id?: number
+      sort_order?: number
+      skills?: SkillRequirementParams[]
+      skills_text?: string
+    }
+
+    /** 更新技能计划请求 */
+    interface UpdateSkillPlanParams {
+      title: string
+      description?: string
+      ship_type_id?: number
+      sort_order?: number
+      skills?: SkillRequirementParams[]
+      skills_text?: string
+    }
+
+    /** 技能完成度人物选择 */
+    interface CheckSelection {
+      character_ids: number[]
+    }
+
+    interface CheckPlanSelection {
+      plan_ids: number[]
+    }
+
+    /** 技能完成度缺失技能 */
+    interface CompletionMissingSkill {
+      skill_type_id: number
+      skill_name: string
+      group_name: string
+      required_level: number
+      current_level: number
+    }
+
+    /** 单个技能计划完成度 */
+    interface CompletionPlan {
+      plan_id: number
+      plan_title: string
+      plan_description: string
+      ship_type_id: number | null
+      matched_skills: number
+      total_skills: number
+      fully_satisfied: boolean
+      missing_skills: CompletionMissingSkill[]
+    }
+
+    /** 单个人物完成度结果 */
+    interface CompletionCharacter {
+      character_id: number
+      character_name: string
+      portrait_url: string
+      completed_plans: number
+      total_plans: number
+      plans: CompletionPlan[]
+    }
+
+    /** 技能完成度检查结果 */
+    interface CompletionCheckResult {
+      characters: CompletionCharacter[]
+      plan_count: number
+    }
+
+    /** 手动执行检查参数 */
+    interface CompletionCheckParams {
+      character_ids?: number[]
+      language?: string
+    }
+  }
+
+  /** 伏羲币类型（独立于 EVE Wallet） */
   namespace SysWallet {
     /** 钱包信息 */
     interface Wallet {
@@ -643,6 +798,8 @@ declare namespace Api {
       operator_id: number
       created_at: string
       character_name?: string
+      nickname?: string
+      operator_name?: string
     }
 
     /** 钱包操作日志 */
@@ -673,6 +830,7 @@ declare namespace Api {
       current: number
       size: number
       user_id: number
+      user_keyword: string
       ref_type: string
     }>
 
@@ -688,6 +846,8 @@ declare namespace Api {
 
   /** SRP 补损管理类型 */
   namespace Srp {
+    type PayoutMode = 'manual_transfer' | 'fuxi_coin'
+
     /** 舰船标准补损金额 */
     interface ShipPrice {
       id: number
@@ -712,6 +872,7 @@ declare namespace Api {
     interface Application {
       id: number
       user_id: number
+      nickname?: string
       character_id: number
       character_name: string
       killmail_id: number
@@ -728,18 +889,18 @@ declare namespace Api {
       alliance_name: string
       recommended_amount: number
       final_amount: number
-      review_status: 'pending' | 'approved' | 'rejected'
+      review_status: 'submitted' | 'approved' | 'rejected'
       reviewed_by: number | null
       reviewed_at: string | null
       review_note: string
-      payout_status: 'pending' | 'paid'
+      payout_status: 'notpaid' | 'paid'
       paid_by: number | null
       paid_at: string | null
       created_at: string
       updated_at: string
       /** 关联舰队标题（后端填充） */
       fleet_title?: string
-      /** 关联舰队 FC 角色名（后端填充） */
+      /** 关联舰队 FC 人物名（后端填充） */
       fleet_fc_name?: string
     }
 
@@ -752,7 +913,6 @@ declare namespace Api {
       killmail_id: number
       fleet_id?: string | null
       note?: string
-      final_amount?: number
     }
 
     /** 申请搜索参数（管理端） */
@@ -761,6 +921,8 @@ declare namespace Api {
       character_id: number
       review_status: string
       payout_status: string
+      tab: string
+      keyword: string
     }> &
       Partial<Api.Common.CommonSearchParams>
 
@@ -774,6 +936,37 @@ declare namespace Api {
     /** 发放请求 */
     interface PayoutParams {
       final_amount?: number
+      mode?: PayoutMode
+    }
+
+    /** 批量发放汇总项 */
+    interface BatchPayoutSummary {
+      user_id: number
+      nickname?: string
+      main_character_id: number
+      main_character_name: string
+      total_amount: number
+      application_count: number
+    }
+
+    /** 伏羲币批量发放结果 */
+    interface BatchFuxiPayoutSummary {
+      application_count: number
+      user_count: number
+      total_isk_amount: number
+      total_fuxi_coin: number
+    }
+
+    /** 批量自动审批请求 */
+    interface AutoApproveParams {
+      fleet_id: string
+    }
+
+    /** 批量自动审批结果 */
+    interface AutoApproveSummary {
+      checked_count: number
+      approved_count: number
+      skipped_count: number
     }
 
     /** 快捷 KM 列表条目 */
@@ -824,6 +1017,162 @@ declare namespace Api {
     }
   }
 
+  /** 军团福利系统类型 */
+  namespace Welfare {
+    /** 福利定义 */
+    interface WelfareItem {
+      id: number
+      name: string
+      description: string
+      dist_mode: 'per_user' | 'per_character'
+      pay_by_fuxi_coin: number | null
+      require_skill_plan: boolean
+      skill_plan_ids: number[]
+      max_char_age_months: number | null
+      minimum_pap: number | null
+      require_evidence: boolean
+      example_evidence: string
+      status: number
+      sort_order: number
+      created_by: number
+      created_at: string
+      updated_at: string
+    }
+
+    /** 创建福利请求 */
+    interface CreateParams {
+      name: string
+      description?: string
+      dist_mode: 'per_user' | 'per_character'
+      pay_by_fuxi_coin?: number | null
+      require_skill_plan?: boolean
+      skill_plan_ids?: number[]
+      max_char_age_months?: number | null
+      minimum_pap?: number | null
+      require_evidence?: boolean
+      example_evidence?: string
+      status?: number
+      sort_order?: number
+    }
+
+    /** 更新福利请求 */
+    interface UpdateParams {
+      id: number
+      name: string
+      description?: string
+      dist_mode: 'per_user' | 'per_character'
+      pay_by_fuxi_coin?: number | null
+      require_skill_plan?: boolean
+      skill_plan_ids?: number[]
+      max_char_age_months?: number | null
+      minimum_pap?: number | null
+      require_evidence?: boolean
+      example_evidence?: string
+      status?: number
+      sort_order?: number
+    }
+
+    /** 福利查询参数 */
+    type SearchParams = Partial<{
+      current: number
+      size: number
+      status: number
+      name: string
+    }>
+
+    /** 可申请人物 */
+    interface EligibleCharacter {
+      character_id: number
+      character_name: string
+      can_apply_now: boolean
+      ineligible_reason?: 'pap' | 'skill' | 'pap_skill'
+    }
+
+    /** 可申请福利 */
+    interface EligibleWelfare {
+      id: number
+      name: string
+      description: string
+      dist_mode: 'per_user' | 'per_character'
+      skill_plan_names: string[]
+      require_evidence: boolean
+      example_evidence: string
+      can_apply_now: boolean
+      ineligible_reason?: 'pap' | 'skill' | 'pap_skill'
+      eligible_characters: EligibleCharacter[]
+    }
+
+    /** 我的申请记录 */
+    interface MyApplication {
+      id: number
+      welfare_id: number
+      welfare_name: string
+      character_name: string
+      status: 'requested' | 'delivered' | 'rejected'
+      reviewer_name: string
+      created_at: string
+      reviewed_at: string | null
+    }
+
+    /** 我的申请记录查询参数 */
+    type MyApplicationSearchParams = Partial<{
+      current: number
+      size: number
+      status: string
+    }>
+
+    /** 申请福利参数 */
+    interface ApplyParams {
+      welfare_id: number
+      character_id?: number
+      evidence_image?: string
+    }
+
+    /** 导入历史记录参数 */
+    interface ImportRecordsParams {
+      welfare_id: number
+      csv: string
+    }
+
+    /** 导入历史记录响应 */
+    interface ImportRecordsResult {
+      count: number
+    }
+
+    /** 管理端福利申请记录 */
+    interface AdminApplication {
+      id: number
+      welfare_id: number
+      welfare_name: string
+      welfare_description: string
+      user_id: number | null
+      applicant_nickname: string
+      character_name: string
+      qq: string
+      discord_id: string
+      evidence_image: string
+      status: 'requested' | 'delivered' | 'rejected'
+      reviewed_by: number
+      reviewer_name: string
+      created_at: string
+      reviewed_at: string | null
+    }
+
+    /** 管理端申请列表查询参数 */
+    type AdminApplicationSearchParams = Partial<{
+      current: number
+      size: number
+      status: string
+      keyword: string
+    }>
+
+    /** 审批请求参数 */
+    interface ReviewParams {
+      id: number
+      action: 'deliver' | 'reject'
+    }
+  }
+
   /** 商店系统类型 */
   namespace Shop {
     /** 商品 */
@@ -837,7 +1186,6 @@ declare namespace Api {
       max_per_user: number
       limit_period: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
-      need_approval: boolean
       status: number
       sort_order: number
       created_at: string
@@ -849,6 +1197,10 @@ declare namespace Api {
       id: number
       order_no: string
       user_id: number
+      main_character_name: string
+      nickname: string
+      qq: string
+      discord_id: string
       product_id: number
       product_name: string
       product_type: string
@@ -896,7 +1248,6 @@ declare namespace Api {
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type: 'normal' | 'redeem'
-      need_approval?: boolean
       status?: number
       sort_order?: number
     }
@@ -912,7 +1263,6 @@ declare namespace Api {
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
       type?: string
-      need_approval?: boolean
       status?: number
       sort_order?: number
     }
@@ -930,12 +1280,12 @@ declare namespace Api {
     type OrderSearchParams = Partial<{
       current: number
       size: number
-      user_id: number
-      product_id: number
+      keyword: string
+      statuses: string[]
       status: string
     }>
 
-    /** 订单审批请求 */
+    /** 订单操作请求 */
     interface OrderReviewParams {
       order_id: number
       remark?: string
@@ -948,107 +1298,6 @@ declare namespace Api {
       product_id: number
       status: string
     }>
-
-    // ─── 抽奖活动 ───
-
-    /** 抽奖奖品稀有度 */
-    type LotteryPrizeTier = 'normal' | 'rare' | 'legendary'
-
-    /** 抽奖奖品 */
-    interface LotteryPrize {
-      id: number
-      activity_id: number
-      name: string
-      image: string
-      tier: LotteryPrizeTier
-      probability_weight: number
-      total_stock: number
-      drawn_count: number
-      created_at: string
-      updated_at: string
-    }
-
-    /** 抽奖活动 */
-    interface LotteryActivity {
-      id: number
-      name: string
-      description: string
-      image: string
-      cost_per_draw: number
-      status: number
-      start_at: string | null
-      end_at: string | null
-      sort_order: number
-      prizes: LotteryPrize[]
-      created_at: string
-      updated_at: string
-    }
-
-    /** 抽奖记录 */
-    interface LotteryRecord {
-      id: number
-      user_id: number
-      activity_id: number
-      activity_name: string
-      prize_id: number
-      prize_name: string
-      prize_tier: LotteryPrizeTier
-      prize_image: string
-      cost: number
-      delivery_status: 'pending' | 'delivered'
-      created_at: string
-      updated_at: string
-    }
-
-    /** 抽奖结果 */
-    interface DrawResult {
-      prize: LotteryPrize
-    }
-
-    /** 创建抽奖活动参数 */
-    interface LotteryActivityCreateParams {
-      name: string
-      description?: string
-      image?: string
-      cost_per_draw?: number
-      status?: number
-      start_at?: string | null
-      end_at?: string | null
-      sort_order?: number
-    }
-
-    /** 更新抽奖活动参数 */
-    interface LotteryActivityUpdateParams {
-      id: number
-      name?: string
-      description?: string
-      image?: string
-      cost_per_draw?: number
-      status?: number
-      start_at?: string | null
-      end_at?: string | null
-      sort_order?: number
-    }
-
-    /** 创建奖品参数 */
-    interface LotteryPrizeCreateParams {
-      activity_id: number
-      name: string
-      image?: string
-      tier?: LotteryPrizeTier
-      probability_weight?: number
-      total_stock?: number
-    }
-
-    /** 更新奖品参数 */
-    interface LotteryPrizeUpdateParams {
-      id: number
-      name?: string
-      image?: string
-      tier?: LotteryPrizeTier
-      probability_weight?: number
-      total_stock?: number
-    }
   }
 
   /** 通知相关类型 */
@@ -1153,13 +1402,14 @@ declare namespace Api {
     }
   }
 
-  /** EVE 角色信息类型 */
+  /** EVE 人物信息类型 */
   namespace EveInfo {
     /** 钱包流水请求参数 */
     interface WalletRequest {
       character_id: number
       page: number
       page_size: number
+      ref_types?: string[]
     }
 
     /** 钱包流水条目 */
@@ -1179,6 +1429,7 @@ declare namespace Api {
     interface WalletResponse {
       balance: number
       journals: WalletJournal[]
+      ref_types: string[]
       total: number
       page: number
       page_size: number
@@ -1465,6 +1716,17 @@ declare namespace Api {
 
   /** SDE 数据查询类型 */
   namespace Sde {
+    interface ResolveNamesRequest {
+      language?: string
+      ids?: Record<string, number[]>
+      esi?: number[]
+    }
+
+    interface ResolveNamesResponse {
+      flat: Record<number, string>
+      names: Record<string, Record<number, string>>
+    }
+
     /** 模糊搜索请求 */
     interface FuzzySearchRequest {
       keyword: string
@@ -1497,7 +1759,7 @@ declare namespace Api {
       page_size?: number
     }
 
-    /** 个人刷怪报表请求（所有角色汇总） */
+    /** 个人刷怪报表请求（所有人物汇总） */
     interface NpcKillAllRequest {
       start_date?: string
       end_date?: string
@@ -1519,6 +1781,8 @@ declare namespace Api {
     interface Summary {
       total_bounty: number
       total_ess: number
+      total_incursion: number
+      total_mission: number
       total_tax: number
       actual_income: number
       total_records: number
@@ -1580,6 +1844,8 @@ declare namespace Api {
       character_name: string
       total_bounty: number
       total_ess: number
+      total_incursion: number
+      total_mission: number
       total_tax: number
       actual_income: number
       record_count: number
@@ -1591,6 +1857,445 @@ declare namespace Api {
       members: CorpMemberSummary[]
       by_system: BySystem[]
       trend: Trend[]
+    }
+  }
+
+  /** 新人帮扶 */
+  namespace Newbro {
+    interface CaptainCandidate {
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      captain_portrait_url: string
+      active_newbro_count: number
+      last_online_at: string | null
+    }
+
+    interface AffiliationSummary {
+      affiliation_id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_portrait_url: string
+      started_at: string
+      ended_at: string | null
+    }
+
+    interface MyAffiliationResponse {
+      is_currently_newbro: boolean
+      evaluated_at: string
+      rule_version: string
+      disqualified_reason: string
+      current_affiliation: AffiliationSummary | null
+      recent_affiliations: AffiliationSummary[]
+    }
+
+    interface SelectCaptainParams {
+      captain_user_id: number
+    }
+
+    interface SelectCaptainResponse {
+      affiliation_id: number
+      captain_user_id: number
+      started_at: string
+    }
+
+    type EndAffiliationResponse = Record<string, never>
+
+    interface CaptainEndAffiliationParams {
+      player_user_id: number
+    }
+
+    interface CaptainOverview {
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      active_player_count: number
+      historical_player_count: number
+      attributed_bounty_total: number
+      attribution_record_count: number
+    }
+
+    interface CaptainPlayerListItem {
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      player_nickname: string
+      player_portrait_url: string
+      started_at: string
+      ended_at: string | null
+      attributed_bounty_total: number
+    }
+
+    type CaptainPlayersResponse = Api.Common.PaginatedResponse<CaptainPlayerListItem>
+
+    interface CaptainEligiblePlayerCurrentAffiliation {
+      affiliation_id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      started_at: string
+    }
+
+    interface CaptainEligiblePlayerListItem {
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      player_nickname: string
+      player_portrait_url: string
+      current_affiliation: CaptainEligiblePlayerCurrentAffiliation | null
+    }
+
+    type CaptainEligiblePlayersResponse =
+      Api.Common.PaginatedResponse<CaptainEligiblePlayerListItem>
+
+    interface CaptainAttributionItem {
+      id: number
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      captain_character_id: number
+      captain_character_name: string
+      captain_wallet_journal_id: number
+      wallet_journal_id: number
+      ref_type: string
+      system_id: number
+      journal_at: string
+      amount: number
+      processed_at: string | null
+    }
+
+    interface CaptainAttributionSummary {
+      attributed_bounty_total: number
+      record_count: number
+    }
+
+    interface CaptainAttributionsResponse {
+      summary: CaptainAttributionSummary
+      list: CaptainAttributionItem[]
+      total: number
+      page: number
+      page_size: number
+    }
+
+    interface CaptainRewardSettlementItem {
+      id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      attribution_count: number
+      attributed_isk_total: number
+      bonus_rate: number
+      credited_value: number
+      processed_at: string
+    }
+
+    interface CaptainRewardSummary {
+      settlement_count: number
+      total_credited_value: number
+      last_processed_at: string | null
+    }
+
+    interface CaptainRewardSettlementsResponse {
+      summary: CaptainRewardSummary
+      list: CaptainRewardSettlementItem[]
+      total: number
+      page: number
+      page_size: number
+    }
+
+    type CaptainPlayerStatus = 'active' | 'historical' | 'all'
+
+    type CaptainPlayersParams = Partial<{
+      current: number
+      size: number
+      status: CaptainPlayerStatus
+    }>
+
+    type CaptainEligiblePlayersParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    interface CaptainEnrollPlayerParams {
+      player_user_id: number
+    }
+
+    type CaptainAttributionsParams = Partial<{
+      current: number
+      size: number
+      player_user_id: number
+      ref_type: string
+      start_date: string
+      end_date: string
+    }>
+
+    type CaptainRewardSettlementsParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    type AdminCaptainsParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    type AdminCaptainsResponse = Api.Common.PaginatedResponse<CaptainOverview>
+
+    interface AdminCaptainDetail {
+      overview: CaptainOverview
+      players: CaptainPlayerListItem[]
+      players_total: number
+      attributions: CaptainAttributionItem[]
+      attributions_total: number
+      attribution_summary: CaptainAttributionSummary
+    }
+
+    type AdminAffiliationHistoryParams = Partial<{
+      current: number
+      size: number
+      captain_search: string
+      player_search: string
+      change_start_date: string
+      change_end_date: string
+    }>
+
+    interface AdminAffiliationHistoryItem {
+      affiliation_id: number
+      player_user_id: number
+      player_character_id: number
+      player_character_name: string
+      player_nickname: string
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      changed_by_character_name: string
+      started_at: string
+      ended_at: string | null
+      created_at: string
+    }
+
+    type AdminAffiliationHistoryResponse = Api.Common.PaginatedResponse<AdminAffiliationHistoryItem>
+
+    type AdminRewardSettlementsParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    type AdminRewardSettlementsResponse = CaptainRewardSettlementsResponse
+
+    interface AttributionSyncResult {
+      processed_count: number
+      inserted_count: number
+      skipped_count: number
+      last_wallet_journal_id: number
+    }
+
+    interface RewardProcessResult {
+      processed_at: string
+      processed_captain_count: number
+      processed_attribution_count: number
+      settlement_count: number
+      total_credited_value: number
+    }
+
+    interface Settings {
+      max_character_sp: number
+      multi_character_sp: number
+      multi_character_threshold: number
+      refresh_interval_days: number
+      bonus_rate: number
+    }
+
+    interface UpdateSettingsParams {
+      max_character_sp: number
+      multi_character_sp: number
+      multi_character_threshold: number
+      refresh_interval_days: number
+      bonus_rate: number
+    }
+  }
+
+  /** 导师帮扶 */
+  namespace Mentor {
+    interface MentorCandidate {
+      mentor_user_id: number
+      mentor_character_id: number
+      mentor_character_name: string
+      mentor_nickname: string
+      qq: string
+      discord_id: string
+      mentor_portrait_url: string
+      active_mentee_count: number
+      last_online_at: string | null
+    }
+
+    type MentorRelationshipStatus = 'pending' | 'active' | 'rejected' | 'revoked' | 'graduated'
+
+    interface RelationshipView {
+      id: number
+      mentee_user_id: number
+      mentor_user_id: number
+      status: MentorRelationshipStatus
+      applied_at: string
+      responded_at: string | null
+      revoked_at: string | null
+      graduated_at: string | null
+      mentor_character_id: number
+      mentor_character_name: string
+      mentor_nickname: string
+      mentor_qq: string
+      mentor_discord_id: string
+      mentor_portrait_url: string
+      mentee_character_id: number
+      mentee_character_name: string
+      mentee_nickname: string
+      mentee_portrait_url: string
+    }
+
+    interface MyStatusResponse {
+      is_eligible: boolean
+      disqualified_reason: string
+      current_relationship: RelationshipView | null
+    }
+
+    interface ApplyParams {
+      mentor_user_id: number
+    }
+
+    interface ApplyResponse {
+      id: number
+      mentee_user_id: number
+      mentee_primary_character_id_at_start: number
+      mentor_user_id: number
+      status: MentorRelationshipStatus
+      applied_at: string
+      responded_at: string | null
+      revoked_at: string | null
+      revoked_by: number | null
+      graduated_at: string | null
+      created_at?: string
+      updated_at?: string
+    }
+
+    interface MenteeListItem {
+      relationship_id: number
+      mentee_user_id: number
+      mentee_character_id: number
+      mentee_character_name: string
+      mentee_nickname: string
+      mentee_portrait_url: string
+      mentee_qq: string
+      mentee_discord_id: string
+      mentee_total_sp: number
+      mentee_total_pap: number
+      mentee_days_active: number
+      status: MentorRelationshipStatus
+      applied_at: string
+      responded_at: string | null
+      graduated_at: string | null
+      distributed_stages: number[]
+      distributed_reward_amount: number
+    }
+
+    type MenteeListResponse = Api.Common.PaginatedResponse<MenteeListItem>
+
+    interface RelationshipActionParams {
+      relationship_id: number
+    }
+
+    type EmptyResponse = Record<string, never>
+
+    type MenteeStatusFilter = 'active' | 'pending' | 'rejected' | 'revoked' | 'graduated' | 'all'
+
+    type MentorMenteesParams = Partial<{
+      current: number
+      size: number
+      status: MenteeStatusFilter
+    }>
+
+    type AdminRelationshipsParams = Partial<{
+      current: number
+      size: number
+      status: MenteeStatusFilter
+      keyword: string
+    }>
+
+    type AdminRelationshipsResponse = Api.Common.PaginatedResponse<RelationshipView>
+
+    interface RewardDistributionView {
+      id: number
+      relationship_id: number
+      stage_id: number
+      stage_order: number
+      mentor_user_id: number
+      mentor_character_name: string
+      mentor_nickname: string
+      mentee_user_id: number
+      mentee_character_name: string
+      mentee_nickname: string
+      reward_amount: number
+      distributed_at: string
+      wallet_ref_id: string
+    }
+
+    type AdminRewardDistributionsParams = Partial<{
+      current: number
+      size: number
+      keyword: string
+    }>
+
+    type AdminRewardDistributionsResponse = Api.Common.PaginatedResponse<RewardDistributionView>
+
+    interface Settings {
+      max_character_sp: number
+      max_account_age_days: number
+    }
+
+    interface UpdateSettingsParams {
+      max_character_sp: number
+      max_account_age_days: number
+    }
+
+    type RewardConditionType = 'skill_points' | 'pap_count' | 'days_active'
+
+    interface RewardStage {
+      id: number
+      stage_order: number
+      name: string
+      condition_type: RewardConditionType
+      threshold: number
+      reward_amount: number
+      created_at?: string
+      updated_at?: string
+    }
+
+    interface RewardStageInput {
+      stage_order: number
+      name: string
+      condition_type: RewardConditionType
+      threshold: number
+      reward_amount: number
+    }
+
+    interface UpdateRewardStagesParams {
+      stages: RewardStageInput[]
+    }
+
+    interface RewardProcessResult {
+      processed_relationships: number
+      rewards_distributed: number
+      total_coin_awarded: number
+      graduated_count: number
     }
   }
 
@@ -1614,9 +2319,32 @@ declare namespace Api {
       site_title: string
     }
 
-    interface UpdateBasicConfigParams {
-      corp_id?: number
-      site_title?: string
+    interface AllowCorporationsConfig {
+      allow_corporations: number[]
+    }
+
+    interface UpdateAllowCorporationsParams {
+      allow_corporations: number[]
+    }
+
+    interface CharacterESIRestrictionConfig {
+      enforce_character_esi_restriction: boolean
+    }
+
+    interface UpdateCharacterESIRestrictionParams {
+      enforce_character_esi_restriction: boolean
+    }
+
+    interface SDEConfig {
+      api_key: string
+      proxy: string
+      download_url: string
+    }
+
+    interface UpdateSDEConfigParams {
+      api_key?: string
+      proxy?: string
+      download_url?: string
     }
   }
 }

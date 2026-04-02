@@ -1,4 +1,7 @@
 import request from '@/utils/http'
+import { isUserProfileComplete } from './auth-helpers'
+
+export { hasInvalidCharacterToken, isUserProfileComplete } from './auth-helpers'
 
 /**
  * 获取 EVE SSO 授权 URL（通过后端接口获取，前端直接跳转）
@@ -28,7 +31,7 @@ export function fetchEveSSOScopes() {
 }
 
 /**
- * 获取当前登录用户的 EVE 角色列表
+ * 获取当前登录用户的 EVE 人物列表
  */
 export function fetchMyCharacters() {
   return request.get<Api.Auth.EveCharacter[]>({
@@ -37,7 +40,7 @@ export function fetchMyCharacters() {
 }
 
 /**
- * 获取「绑定新角色」的 EVE SSO 授权 URL
+ * 获取「绑定新人物」的 EVE SSO 授权 URL
  * @param scopes 额外 ESI scopes（可选）
  */
 export async function getEveBindURL(scopes?: string[]): Promise<string> {
@@ -54,8 +57,8 @@ export async function getEveBindURL(scopes?: string[]): Promise<string> {
 }
 
 /**
- * 设置主角色
- * @param characterId EVE 角色 ID
+ * 设置主人物
+ * @param characterId EVE 人物 ID
  */
 export function setPrimaryCharacter(characterId: number) {
   return request.put({
@@ -64,12 +67,22 @@ export function setPrimaryCharacter(characterId: number) {
 }
 
 /**
- * 解绑角色
- * @param characterId EVE 角色 ID
+ * 解绑人物
+ * @param characterId EVE 人物 ID
  */
 export function unbindCharacter(characterId: number) {
   return request.del({
     url: `/api/v1/sso/eve/characters/${characterId}`
+  })
+}
+
+/**
+ * 更新当前登录用户的联系资料
+ */
+export function updateMyProfile(data: { nickname?: string; qq?: string; discord_id?: string }) {
+  return request.put({
+    url: '/api/v1/me',
+    data
   })
 }
 
@@ -82,21 +95,37 @@ export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
     url: '/api/v1/me'
   })
 
-  const { user, characters, roles: backendRoles, permissions } = data
+  const { user, characters, roles: backendRoles } = data
 
-  // 主角色：根据 primary_character_id 查找，找不到则用第一个，再 fallback 到用户信息
+  // 主人物：根据 primary_character_id 查找，找不到则用第一个，再 fallback 到用户信息
   const primaryChar =
     characters?.find((c) => c.character_id === user.primary_character_id) ?? characters?.[0]
 
-  // 直接使用后端角色编码，回退到 user.role
+  // 直接使用后端职权编码，回退到 user.role
   const roles = backendRoles && backendRoles.length > 0 ? backendRoles : [user.role ?? 'user']
 
   return {
     userId: user.id,
     userName: primaryChar?.character_name ?? user.nickname ?? `Capsuleer#${user.id}`,
     avatar: primaryChar?.portrait_url ?? user.avatar ?? '',
+    nickname: user.nickname ?? '',
+    qq: user.qq ?? '',
+    discordId: user.discord_id ?? '',
+    profileComplete:
+      data.profile_complete ??
+      isUserProfileComplete({
+        nickname: user.nickname ?? '',
+        qq: user.qq ?? '',
+        discordId: user.discord_id ?? ''
+      }),
+    enforceCharacterESIRestriction: data.enforce_character_esi_restriction !== false,
+    isCurrentlyNewbro:
+      typeof data.is_currently_newbro === 'boolean' ? data.is_currently_newbro : undefined,
+    isMentorMenteeEligible:
+      typeof data.is_mentor_mentee_eligible === 'boolean'
+        ? data.is_mentor_mentee_eligible
+        : undefined,
     roles,
-    buttons: permissions ?? [],
     characters: characters ?? [],
     primaryCharacterId: user.primary_character_id ?? 0
   }

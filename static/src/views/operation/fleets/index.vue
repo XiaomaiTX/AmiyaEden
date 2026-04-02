@@ -7,7 +7,7 @@
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
         <template #left>
-          <ElButton type="primary" :icon="Plus" @click="openCreateDialog">
+          <ElButton v-if="canManageFleet" type="primary" :icon="Plus" @click="openCreateDialog">
             {{ $t('fleet.create') }}
           </ElButton>
         </template>
@@ -64,12 +64,17 @@
             :placeholder="$t('fleet.fields.fleetConfigPlaceholder')"
             style="width: 100%"
             clearable
+            @change="handleFleetConfigChange"
           >
             <ElOption v-for="fc in fleetConfigs" :key="fc.id" :label="fc.name" :value="fc.id" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.autoSrpMode')">
-          <ElSelect v-model="formData.auto_srp_mode" style="width: 100%">
+          <ElSelect
+            v-model="formData.auto_srp_mode"
+            style="width: 100%"
+            @change="handleAutoSrpModeChange"
+          >
             <ElOption :label="$t('fleet.autoSrp.disabled')" value="disabled" />
             <ElOption :label="$t('fleet.autoSrp.submitOnly')" value="submit_only" />
             <ElOption :label="$t('fleet.autoSrp.autoApprove')" value="auto_approve" />
@@ -114,7 +119,15 @@
   import { useTable } from '@/hooks/core/useTable'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import FleetSearch from './modules/fleet-search.vue'
-  import { fetchFleetList, createFleet, updateFleet, deleteFleet } from '@/api/fleet'
+  import {
+    fetchFleetList,
+    createFleet,
+    updateFleet,
+    deleteFleet,
+    refreshFleetESI,
+    syncESIFleetMembers,
+    issuePap
+  } from '@/api/fleet'
   import { fetchFleetConfigList } from '@/api/fleet-config'
   import { fetchMyCharacters } from '@/api/auth'
   import {
@@ -128,6 +141,9 @@
   import { Plus } from '@element-plus/icons-vue'
   import { useRouter } from 'vue-router'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
+  import { useUserStore } from '@/store/modules/user'
+  import { resolveAutoSrpModeOnFleetConfigChange } from './autoSrpDefaults'
 
   defineOptions({ name: 'Fleets' })
 
@@ -135,18 +151,29 @@
 
   const { t } = useI18n()
   const router = useRouter()
+  const userStore = useUserStore()
+  const papActionFleetId = ref<string | null>(null)
+  const canManageFleet = computed(() => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    return roles.some((role) => ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role))
+  })
+  const canDeleteFleet = computed(() => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    return roles.some((role) => ['super_admin', 'admin'].includes(role))
+  })
+  // FC users may only edit/issue PAP for fleets they created; privileged roles are unrestricted.
+  const canManageThisFleet = (row: FleetItem): boolean => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    if (roles.some((r) => ['super_admin', 'admin', 'senior_fc'].includes(r))) return true
+    if (roles.includes('fc')) return row.fc_user_id === userStore.getUserInfo?.userId
+    return false
+  }
 
   // ─── 重要度颜色映射 ───
   const IMPORTANCE_MAP: Record<string, string> = {
     strat_op: 'danger',
     cta: 'warning',
     other: 'info'
-  }
-
-  // ─── 时间格式化 ───
-  const formatTime = (v: string) => {
-    if (!v) return '-'
-    return new Date(v).toLocaleString()
   }
 
   // 生成 YYYY-MM-DDTHH:mm:ssZ 格式的本地时间字符串（DatePicker value-format）
@@ -213,12 +240,13 @@
           prop: 'fc_character_name',
           label: t('fleet.fields.fc'),
           width: 160,
-          showOverflowTooltip: true
+          showOverflowTooltip: true,
+          formatter: (row: FleetItem) => row.fc_display_name || row.fc_character_name || '-'
         },
         {
           prop: 'pap_count',
-          label: t('fleet.fields.papCount'),
-          width: 100
+          label: t('common.quantity'),
+          width: 80
         },
         {
           prop: 'start_at',
@@ -240,13 +268,27 @@
         {
           prop: 'actions',
           label: t('common.operation'),
-          width: 200,
+          width: 240,
           fixed: 'right',
           formatter: (row: FleetItem) =>
-            h('div', { class: 'flex gap-1' }, [
+            h('div', { class: 'flex items-center gap-2' }, [
+              ...(canManageThisFleet(row)
+                ? [
+                    h(ArtButtonTable, {
+                      label: t('fleet.pap.issue'),
+                      elType: 'success',
+                      loading: papActionFleetId.value === row.id,
+                      onClick: () => handleIssuePapFromList(row)
+                    })
+                  ]
+                : []),
               h(ArtButtonTable, { type: 'view', onClick: () => goDetail(row) }),
-              h(ArtButtonTable, { type: 'edit', onClick: () => openEditDialog(row) }),
-              h(ArtButtonTable, { type: 'delete', onClick: () => handleDelete(row) })
+              ...(canManageThisFleet(row)
+                ? [h(ArtButtonTable, { type: 'edit', onClick: () => openEditDialog(row) })]
+                : []),
+              ...(canDeleteFleet.value
+                ? [h(ArtButtonTable, { type: 'delete', onClick: () => handleDelete(row) })]
+                : [])
             ])
         }
       ]
@@ -261,7 +303,7 @@
     getData()
   }
 
-  // ─── FC 候选角色列表 ───
+  // ─── FC 候选人物列表 ───
   const characters = ref<Api.Auth.EveCharacter[]>([])
 
   const loadCharacters = async () => {
@@ -283,6 +325,7 @@
   const submitLoading = ref(false)
   const formRef = ref<FormInstance>()
   const editingFleet = ref<FleetItem | null>(null)
+  const autoSrpModeTouched = ref(false)
 
   const formData = reactive({
     title: '',
@@ -315,6 +358,7 @@
     formData.fleet_config_id = undefined
     formData.auto_srp_mode = 'disabled'
     editingFleet.value = null
+    autoSrpModeTouched.value = false
   }
 
   function openCreateDialog() {
@@ -333,7 +377,21 @@
     formData.time_range = [row.start_at, row.end_at]
     formData.fleet_config_id = row.fleet_config_id ?? undefined
     formData.auto_srp_mode = row.auto_srp_mode ?? 'disabled'
+    autoSrpModeTouched.value = false
     dialogVisible.value = true
+  }
+
+  function handleFleetConfigChange(value?: number) {
+    formData.auto_srp_mode = resolveAutoSrpModeOnFleetConfigChange({
+      isEditing: !!editingFleet.value,
+      selectedFleetConfigId: value,
+      currentMode: formData.auto_srp_mode,
+      userTouchedMode: autoSrpModeTouched.value
+    })
+  }
+
+  function handleAutoSrpModeChange() {
+    autoSrpModeTouched.value = true
   }
 
   async function handleSubmit() {
@@ -392,6 +450,39 @@
       refreshData()
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('common.error'))
+    }
+  }
+
+  async function handleIssuePapFromList(row: FleetItem) {
+    try {
+      await ElMessageBox.confirm(
+        t('fleet.pap.issueWithSyncConfirm', { name: row.title }),
+        t('fleet.pap.title'),
+        {
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel'),
+          type: 'warning'
+        }
+      )
+    } catch {
+      return
+    }
+
+    papActionFleetId.value = row.id
+    try {
+      if (!row.esi_fleet_id) {
+        const refreshedFleet = await refreshFleetESI(row.id)
+        row.esi_fleet_id = refreshedFleet.esi_fleet_id ?? row.esi_fleet_id
+      }
+
+      await syncESIFleetMembers(row.id)
+      await issuePap(row.id)
+      ElMessage.success(t('fleet.pap.issueWithSyncSuccess'))
+      refreshData()
+    } catch (e: any) {
+      ElMessage.error(e?.message ?? t('common.error'))
+    } finally {
+      papActionFleetId.value = null
     }
   }
 

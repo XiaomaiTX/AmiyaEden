@@ -6,7 +6,8 @@ export const srpRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.srp.title',
-    icon: 'ri:shield-user-line'
+    icon: 'ri:shield-user-line',
+    login: true
   },
   children: [
     {
@@ -15,7 +16,8 @@ export const srpRoutes: AppRouteRecord = {
       component: '/srp/apply',
       meta: {
         title: 'menus.srp.srpApply',
-        keepAlive: true
+        keepAlive: true,
+        login: true
       }
     },
     {
@@ -25,7 +27,8 @@ export const srpRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.srp.srpManage',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'srp', 'fc']
+        roles: ['super_admin', 'admin', 'srp', 'fc'],
+        authList: [{ title: '审批', authMark: 'approve' }]
       }
     },
     {
@@ -35,7 +38,11 @@ export const srpRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.srp.srpPrices',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'srp']
+        roles: ['super_admin', 'admin'],
+        authList: [
+          { title: '新增价格', authMark: 'add_price' },
+          { title: '删除价格', authMark: 'delete_price' }
+        ]
       }
     }
   ]
