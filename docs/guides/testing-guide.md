@@ -5,7 +5,7 @@ owner: engineering
 last_reviewed: 2026-03-26
 source_of_truth:
   - docs/ai/repo-rules.md
-  - docs/guides/regression-test-plan.md
+  - docs/standards/regression-test-plan.md
   - server/go.mod
   - static/package.json
 ---

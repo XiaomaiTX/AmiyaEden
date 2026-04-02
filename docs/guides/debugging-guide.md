@@ -70,7 +70,7 @@ Do not patch symptoms. Common mistakes:
 
 ### Step 5: Add Regression Test
 
-After fixing, add a test that would have caught this bug. See `docs/guides/regression-test-plan.md` for the decision matrix on which layer to test.
+After fixing, add a test that would have caught this bug. See `docs/standards/regression-test-plan.md` for the decision matrix on which layer to test.
 
 ## Common Issue Patterns
 

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-03-21
+last_reviewed: 2026-04-02
 source_of_truth:
   - server/internal
   - server/pkg
@@ -96,7 +96,7 @@ source_of_truth:
 5. `docs/features/current/esi-refresh.md`
 6. `docs/guides/adding-esi-feature.md`
 
-### 修改表格页或复杂筛选页
+### 修改表格页、卡片记录页或复杂筛选页
 
 通常需要一起看：
 
@@ -104,6 +104,7 @@ source_of_truth:
 2. `static/src/components/core/tables/`
 3. `static/src/hooks/`
 4. `docs/standards/frontend-table-pages.md`
+5. `docs/standards/frontend-record-card-pages.md`
 
 ## 读代码顺序建议
 
