@@ -53,12 +53,12 @@
         <ElFormItem :label="$t('srp.prices.fields.amount')" prop="amount">
           <div class="million-isk-input" style="width: 100%">
             <ElInputNumber
-              :model-value="toMillionISKInput(form.amount)"
+              :model-value="iskToMillionInput(form.amount)"
               :min="0"
               :precision="2"
               :step="1"
               class="million-isk-input__control"
-              @update:model-value="(v) => (form.amount = fromMillionISKInput(v))"
+              @update:model-value="(v) => (form.amount = millionInputToIsk(v))"
             />
             <span class="million-isk-input__suffix">{{ $t('common.millionIsk') }}</span>
           </div>
@@ -77,7 +77,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { Plus } from '@element-plus/icons-vue'
-  import { formatTime } from '@utils/common'
+  import { formatIskSmart, formatTime, iskToMillionInput, millionInputToIsk } from '@utils/common'
   import {
     ElCard,
     ElButton,
@@ -98,7 +98,6 @@
   import { useUserStore } from '@/store/modules/user'
   import { fetchShipPrices, upsertShipPrice, deleteShipPrice } from '@/api/srp'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
-  import { fromMillionISKInput, toMillionISKInput } from '@/utils/iskUnits'
   import type { ColumnOption } from '@/types/component'
 
   defineOptions({ name: 'SrpPrices' })
@@ -128,12 +127,6 @@
       ]
     : []
 
-  // ─── 格式化 ───
-  const formatISK = (v: number) =>
-    new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-      (v ?? 0) / 1_000_000
-    )
-
   // ─── 列配置 ───
   const { columns, columnChecks } = useTableColumns<ShipPrice>(() => [
     { type: 'index', width: 60, label: '#' },
@@ -153,7 +146,7 @@
       label: t('srp.prices.columns.amount'),
       width: 200,
       formatter: (row: ShipPrice) =>
-        h('span', { class: 'font-medium text-blue-600' }, `${formatISK(row.amount)} M ISK`)
+        h('span', { class: 'font-medium text-blue-600' }, `${formatIskSmart(row.amount)} ISK`)
     },
     {
       prop: 'updated_at',

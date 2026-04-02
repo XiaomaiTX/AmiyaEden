@@ -129,7 +129,7 @@
   import { useRoute } from 'vue-router'
   import { useI18n } from 'vue-i18n'
   import { View } from '@element-plus/icons-vue'
-  import { formatTime } from '@utils/common'
+  import { formatIskSmart, formatTime } from '@utils/common'
   import {
     ElCard,
     ElTag,
@@ -230,7 +230,7 @@
           label: t('srp.apply.columns.estimatedValue'),
           width: 140,
           formatter: (row: Api.Srp.Application) =>
-            h('span', {}, `${formatISK(row.recommended_amount)} M ISK`)
+            h('span', {}, `${formatIskSmart(row.recommended_amount)} ISK`)
         },
         {
           prop: 'review_status',
@@ -252,7 +252,7 @@
           width: 130,
           formatter: (row: Api.Srp.Application) =>
             row.final_amount > 0
-              ? h('span', {}, `${formatISK(row.final_amount)} M ISK`)
+              ? h('span', {}, `${formatIskSmart(row.final_amount)} ISK`)
               : h('span', {}, '-')
         },
         {
@@ -461,11 +461,6 @@
   /* ── 工具函数 ── */
   const formatFleetLabel = (f: Api.Fleet.FleetItem) =>
     `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatTime(f.start_at)} ~ ${formatTime(f.end_at)}`
-  const formatISK = (v: number) =>
-    new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format((v ?? 0) / 1_000_000)
 
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
   const reviewStatusType = (s: string): TagType =>
