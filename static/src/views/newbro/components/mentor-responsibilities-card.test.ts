@@ -14,6 +14,6 @@ test('mentor responsibilities card renders a localized title and four responsibi
     'newbro.mentor.responsibilityItems.pvp',
     'newbro.mentor.responsibilityItems.scope'
   ]) {
-    assert.match(source, new RegExp(key.replace(/\./g, '\\.')))
+    assert.match(source, new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   }
 })
