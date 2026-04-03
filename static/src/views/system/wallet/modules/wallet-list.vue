@@ -2,9 +2,15 @@
 <template>
   <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
     <template #left>
-      <ElButton type="success" @click="emit('adjust', 0, 'add')">
-        {{ $t('walletAdmin.adjustBalance') }}
-      </ElButton>
+      <ElInput
+        v-model="userKeywordFilter"
+        :placeholder="$t('walletAdmin.placeholders.userKeywordFilter')"
+        clearable
+        style="width: 240px"
+        @clear="handleSearch"
+        @keyup.enter="handleSearch"
+      />
+      <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
     </template>
   </ArtTableHeader>
 
@@ -30,6 +36,7 @@
   const { t } = useI18n()
 
   type Wallet = Api.SysWallet.Wallet
+  const userKeywordFilter = ref('')
 
   const emit = defineEmits<{
     (e: 'adjust', userId: number, action: 'add' | 'deduct' | 'set'): void
@@ -44,17 +51,19 @@
     pagination,
     handleSizeChange,
     handleCurrentChange,
-    refreshData
+    refreshData,
+    getData,
+    searchParams
   } = useTable({
     core: {
       apiFn: adminListWallets,
       apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
-        { prop: 'user_id', label: '用户 ID', width: 100 },
+        { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100 },
         {
           prop: 'character_name',
-          label: '主人物',
+          label: t('walletAdmin.transactions.characterName'),
           minWidth: 160,
           formatter: (row: Wallet) => h('span', {}, row.character_name || '-')
         },
@@ -102,6 +111,14 @@
       ]
     }
   })
+
+  const handleSearch = () => {
+    Object.assign(searchParams, {
+      current: 1,
+      user_keyword: userKeywordFilter.value.trim() || undefined
+    })
+    getData()
+  }
 
   defineExpose({ refreshData })
 </script>

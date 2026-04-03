@@ -20,7 +20,7 @@ export function fetchMyWalletTransactions(data?: Partial<Api.Common.CommonSearch
 // ─── 管理员钱包管理 ───
 
 /** 管理员查询所有用户钱包 */
-export function adminListWallets(data?: Partial<Api.Common.CommonSearchParams>) {
+export function adminListWallets(data?: Api.SysWallet.WalletSearchParams) {
   return request.post<Api.Common.PaginatedResponse<Api.SysWallet.Wallet>>({
     url: '/api/v1/system/wallet/list',
     data: data ?? { current: 1, size: 200 }

@@ -150,22 +150,32 @@ type WalletTransactionFilter struct {
 	RefType     string
 }
 
+type WalletListFilter struct {
+	UserKeyword string
+}
+
+func applyWalletUserKeywordFilter(db *gorm.DB, userIDColumn string, userKeyword string) *gorm.DB {
+	if strings.TrimSpace(userKeyword) == "" {
+		return db
+	}
+
+	pattern := "%" + strings.ToLower(strings.TrimSpace(userKeyword)) + "%"
+	return db.Where(
+		userIDColumn+` IN (
+			SELECT DISTINCT search_u.id
+			FROM "user" search_u
+			LEFT JOIN eve_character search_ec ON search_ec.user_id = search_u.id
+			WHERE LOWER(search_u.nickname) LIKE ? OR LOWER(search_ec.character_name) LIKE ?
+		)`,
+		pattern, pattern,
+	)
+}
+
 func applyWalletTransactionUserFilter(db *gorm.DB, userIDColumn string, refTypeColumn string, filter WalletTransactionFilter) *gorm.DB {
 	if filter.UserID != nil {
 		db = db.Where(userIDColumn+" = ?", *filter.UserID)
 	}
-	if strings.TrimSpace(filter.UserKeyword) != "" {
-		pattern := "%" + strings.ToLower(strings.TrimSpace(filter.UserKeyword)) + "%"
-		db = db.Where(
-			userIDColumn+` IN (
-				SELECT DISTINCT u.id
-				FROM "user" u
-				LEFT JOIN eve_character ec ON ec.user_id = u.id
-				WHERE LOWER(u.nickname) LIKE ? OR LOWER(ec.character_name) LIKE ?
-			)`,
-			pattern, pattern,
-		)
-	}
+	db = applyWalletUserKeywordFilter(db, userIDColumn, filter.UserKeyword)
 	if filter.RefType != "" {
 		db = db.Where(refTypeColumn+" = ?", filter.RefType)
 	}
@@ -330,20 +340,27 @@ func (r *SysWalletRepository) ListWallets(page, pageSize int) ([]model.SystemWal
 }
 
 // ListWalletsWithCharacter 分页查询所有用户钱包（附带主人物名）
-func (r *SysWalletRepository) ListWalletsWithCharacter(page, pageSize int) ([]model.WalletWithCharacter, int64, error) {
+func buildWalletListWithCharacterQuery(db *gorm.DB, filter WalletListFilter) *gorm.DB {
+	query := db.Table("system_wallet sw").
+		Select("sw.*, COALESCE(ec.character_name, '') AS character_name").
+		Joins(`LEFT JOIN "user" u ON sw.user_id = u.id`).
+		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id")
+
+	return applyWalletUserKeywordFilter(query, "sw.user_id", filter.UserKeyword)
+}
+
+// ListWalletsWithCharacter 分页查询所有用户钱包（附带主人物名）
+func (r *SysWalletRepository) ListWalletsWithCharacter(page, pageSize int, filter WalletListFilter) ([]model.WalletWithCharacter, int64, error) {
 	var results []model.WalletWithCharacter
 	var total int64
 	offset := (page - 1) * pageSize
 
-	db := global.DB.Model(&model.SystemWallet{})
+	db := applyWalletUserKeywordFilter(global.DB.Model(&model.SystemWallet{}), "user_id", filter.UserKeyword)
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err := global.DB.Table("system_wallet sw").
-		Select("sw.*, COALESCE(ec.character_name, '') AS character_name").
-		Joins(`LEFT JOIN "user" u ON sw.user_id = u.id`).
-		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id").
+	err := buildWalletListWithCharacterQuery(global.DB, filter).
 		Order("sw.updated_at DESC").
 		Offset(offset).Limit(pageSize).
 		Scan(&results).Error
