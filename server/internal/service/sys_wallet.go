@@ -166,9 +166,9 @@ func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest)
 }
 
 // AdminListWallets 管理员查询所有钱包（附带主人物名）
-func (s *SysWalletService) AdminListWallets(page, pageSize int) ([]model.WalletWithCharacter, int64, error) {
+func (s *SysWalletService) AdminListWallets(page, pageSize int, filter repository.WalletListFilter) ([]model.WalletWithCharacter, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	return s.repo.ListWalletsWithCharacter(page, pageSize)
+	return s.repo.ListWalletsWithCharacter(page, pageSize, filter)
 }
 
 // AdminGetWallet 管理员查看指定用户钱包

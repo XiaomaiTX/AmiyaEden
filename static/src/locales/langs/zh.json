@@ -36,6 +36,7 @@
     "role": "职权",
     "name": "名称",
     "quantity": "数量",
+    "amount": "金额",
     "status": "状态",
     "save": "保存",
     "copy": "复制",
@@ -618,7 +619,7 @@
     "unitPrice": "单价（伏羲币）",
     "totalPrice": "总价（伏羲币）",
     "status": "状态",
-    "reviewerName": "处理人昵称",
+    "reviewerName": "操作人",
     "orderTime": "下单时间",
     "noOrders": "暂无订单",
     "myRedeemCodes": "我的兑换码",
@@ -1498,7 +1499,7 @@
         "review": "审批",
         "reviewNote": "审批备注",
         "payout": "发放",
-        "lastActor": "最后处理人",
+        "lastActor": "补损官",
         "action": "操作"
       }
     },
@@ -1796,7 +1797,7 @@
         "product": "商品",
         "quantity": "数量",
         "totalPrice": "总价",
-        "reviewerName": "处理人昵称",
+        "reviewerName": "操作人",
         "userRemark": "用户备注",
         "createdAt": "下单时间"
       },
