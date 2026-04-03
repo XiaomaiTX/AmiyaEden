@@ -36,8 +36,9 @@ func (h *SysWalletHandler) GetMyWallet(c *gin.Context) {
 
 // listRequest 通用分页请求
 type walletListRequest struct {
-	Current int `json:"current"`
-	Size    int `json:"size"`
+	Current     int    `json:"current"`
+	Size        int    `json:"size"`
+	UserKeyword string `json:"user_keyword"`
 }
 
 // GetMyTransactions POST /shop/wallet/my/transactions
@@ -72,8 +73,9 @@ func (h *SysWalletHandler) AdminListWallets(c *gin.Context) {
 		req.Size = 20
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
+	filter := repository.WalletListFilter{UserKeyword: req.UserKeyword}
 
-	wallets, total, err := h.svc.AdminListWallets(req.Current, req.Size)
+	wallets, total, err := h.svc.AdminListWallets(req.Current, req.Size, filter)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

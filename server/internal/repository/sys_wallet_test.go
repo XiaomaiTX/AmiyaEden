@@ -112,7 +112,32 @@ func TestListTransactionsWithCharacterAppliesUserKeywordAcrossNicknameAndCharact
 	if !strings.Contains(sql, `LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id`) {
 		t.Fatalf("expected wallet transaction query to join primary character, got SQL: %s", sql)
 	}
-	if !strings.Contains(sql, `LOWER(u.nickname) LIKE`) || !strings.Contains(sql, `LOWER(ec.character_name) LIKE`) {
+	if !strings.Contains(sql, `LOWER(search_u.nickname) LIKE`) || !strings.Contains(sql, `LOWER(search_ec.character_name) LIKE`) {
 		t.Fatalf("expected nickname and character name keyword search, got SQL: %s", sql)
+	}
+}
+
+func TestBuildWalletListWithCharacterQueryAppliesUserKeywordAcrossNicknameAndAnyCharacterName(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+	filter := WalletListFilter{UserKeyword: "bee"}
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildWalletListWithCharacterQuery(tx, filter).Find(&[]struct{}{})
+	})
+
+	if !strings.Contains(sql, `FROM system_wallet sw`) {
+		t.Fatalf("expected wallet list query to select from system_wallet, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `LEFT JOIN "user" u ON sw.user_id = u.id`) {
+		t.Fatalf("expected wallet list query to join user table, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id`) {
+		t.Fatalf("expected wallet list query to join primary character, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `LEFT JOIN eve_character search_ec ON search_ec.user_id = search_u.id`) {
+		t.Fatalf("expected wallet list keyword search to consider any bound character, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `LOWER(search_u.nickname) LIKE`) || !strings.Contains(sql, `LOWER(search_ec.character_name) LIKE`) {
+		t.Fatalf("expected wallet list keyword search across nickname and any character name, got SQL: %s", sql)
 	}
 }

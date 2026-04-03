@@ -835,6 +835,13 @@ declare namespace Api {
       reason: string
     }
 
+    /** 钱包列表查询参数 */
+    type WalletSearchParams = Partial<{
+      current: number
+      size: number
+      user_keyword: string
+    }>
+
     /** 流水查询参数 */
     type TransactionSearchParams = Partial<{
       current: number
