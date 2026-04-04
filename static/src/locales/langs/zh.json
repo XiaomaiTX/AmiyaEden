@@ -1313,8 +1313,8 @@
     "scopeCount": "项权限",
     "tokenInvalid": "(已失效)",
     "tokenHealth": {
-      "title": "只要存在任一已过期的 ESI 授权人物，就无法继续访问其他页面",
-      "requiredHint": "请重新授权所有已过期人物的 ESI，或解绑这些已过期人物，然后再离开本页面。"
+      "title": "主人物 ESI 已过期，或系统要求校验全部人物且存在已过期 ESI 时，无法继续访问其他页面",
+      "requiredHint": "请先重新授权主人物 ESI；如果当前启用了全人物校验，还需要处理其他已过期人物，然后再离开本页面。"
     },
     "bindFailed": "获取绑定链接失败",
     "setPrimarySuccess": "已将 {name} 设为主人物",

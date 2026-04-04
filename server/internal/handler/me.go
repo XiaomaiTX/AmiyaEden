@@ -48,10 +48,6 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	if characters == nil {
 		characters = []model.EveCharacter{}
 	}
-	if err := h.userSvc.ValidateCurrentUserBootstrap(user, characters); err != nil {
-		response.Fail(c, response.CodeUnauthorized, err.Error())
-		return
-	}
 
 	roles := middleware.GetUserRoles(c)
 	if roles == nil {

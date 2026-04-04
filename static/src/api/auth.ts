@@ -1,7 +1,11 @@
 import request from '@/utils/http'
 import { isUserProfileComplete } from './auth-helpers'
 
-export { hasInvalidCharacterToken, isUserProfileComplete } from './auth-helpers'
+export {
+  hasInvalidCharacterToken,
+  hasInvalidPrimaryCharacterToken,
+  isUserProfileComplete
+} from './auth-helpers'
 
 /**
  * 获取 EVE SSO 授权 URL（通过后端接口获取，前端直接跳转）
