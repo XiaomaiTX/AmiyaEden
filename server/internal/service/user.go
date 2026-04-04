@@ -46,13 +46,6 @@ func (s *UserService) GetUserByID(id uint) (*model.User, error) {
 	return s.repo.GetByID(id)
 }
 
-func (s *UserService) ValidateCurrentUserBootstrap(user *model.User, characters []model.EveCharacter) error {
-	if user == nil {
-		return errors.New("用户不存在")
-	}
-	return validatePrimaryCharacterTokenHealth(*user, characters)
-}
-
 func (s *UserService) ListUsers(page, pageSize int, filter repository.UserFilter) ([]model.UserListItem, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
 	users, total, err := s.repo.List(page, pageSize, filter)

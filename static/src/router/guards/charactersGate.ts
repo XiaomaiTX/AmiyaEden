@@ -1,4 +1,8 @@
-import { hasInvalidCharacterToken, isUserProfileComplete } from '@/api/auth-helpers'
+import {
+  hasInvalidCharacterToken,
+  hasInvalidPrimaryCharacterToken,
+  isUserProfileComplete
+} from '@/api/auth-helpers'
 
 export const PROFILE_SETUP_PATH = '/dashboard/characters'
 
@@ -15,6 +19,7 @@ type CharactersGateUserInfo = Partial<
     | 'qq'
     | 'discordId'
     | 'characters'
+    | 'primaryCharacterId'
     | 'enforceCharacterESIRestriction'
   >
 >
@@ -31,6 +36,7 @@ export function shouldRedirectToCharactersPage(
 
   return (
     !isUserProfileComplete(userInfo) ||
+    hasInvalidPrimaryCharacterToken(userInfo?.primaryCharacterId, userInfo?.characters) ||
     (userInfo?.enforceCharacterESIRestriction !== false &&
       hasInvalidCharacterToken(userInfo?.characters))
   )

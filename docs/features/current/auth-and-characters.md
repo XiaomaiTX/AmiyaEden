@@ -28,7 +28,7 @@ source_of_truth:
 - 通过 `/api/v1/me` 维护昵称、QQ、Discord ID 资料
 - 未填写昵称或未提供 QQ / Discord 任一联系方式时，前端强制停留在 `/dashboard/characters`
 - 可选启用：任一已绑定人物 ESI 失效时，前端强制停留在 `/dashboard/characters`
-- 主人物 ESI 已失效时，`/api/v1/me` 启动上下文失败并触发前端自动退出登录
+- 主人物 ESI 已失效时，`/api/v1/me` 仍返回启动上下文，前端强制停留在 `/dashboard/characters` 直到主人物重新授权
 
 ## 入口
 
@@ -54,7 +54,7 @@ source_of_truth:
 - 登录入口与回调是 `Public`
 - `/api/v1/me` 与人物绑定相关接口要求有效 `JWT`，允许 `guest` 使用
 - `guest` 通过这些接口完成权限上下文建立、人物绑定与资料补全，再决定是否能进入 `Login` 边界的业务页面
-- `/api/v1/me` 在主人物 `token_invalid = true` 时返回未授权，用于阻止失效主人物继续完成登录启动
+- `/api/v1/me` 会返回主人物 `token_invalid` 状态，供前端将用户锁定在 `/dashboard/characters` 直到主人物重新授权
 - `/api/v1/me` 同时返回 `enforce_character_esi_restriction`，供前端路由守卫决定是否对非主人物失效 ESI 启用页面停留限制
 - 首次 SSO 登录时，若主人物所属军团在 `allow_corporations` 内，后端会直接赋予 `user`；该列表运行时始终包含代码常量中的伏羲军团 Fuxi Legion（`98185110`）
 - 首次 SSO 登录时，若主人物 ID 在 `config.yaml` 的 `app.super_admins` 列表中，后端会直接赋予 `super_admin`
@@ -70,7 +70,7 @@ source_of_truth:
 - 当前登录后必须完成昵称与联系方式资料，才允许继续访问其他业务页面
 - QQ / Discord ID 的管理入口是 `/api/v1/me`；管理员侧 `/api/v1/system/user/:id` 不提供联系方式修改
 - 当前登录后若系统配置 `auth.enforce_character_esi_restriction = true`，则还必须保证所有已绑定人物的 ESI 有效，才允许离开 `/dashboard/characters`
-- 无论系统配置是否开启，主人物 ESI 已失效都会阻止 `/api/v1/me` 完成登录启动
+- 无论系统配置是否开启，主人物 ESI 已失效都会强制前端停留在 `/dashboard/characters`，直到主人物重新授权；不会自动退出登录
 - 重新绑定已存在人物会沿用当前 SSO 回调流程刷新该人物 token 并清除 `token_invalid`
 - QQ / Discord ID 的唯一性由后端校验
 - 职权编码与权限列表必须与后端返回保持一致，不做前端别名映射

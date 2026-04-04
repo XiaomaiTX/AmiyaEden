@@ -86,7 +86,7 @@
       </div>
 
       <ElAlert
-        v-if="enforceCharacterESIRestriction && hasInvalidCharacterToken"
+        v-if="showTokenHealthAlert"
         type="error"
         :closable="false"
         show-icon
@@ -178,6 +178,7 @@
     fetchMyCharacters,
     getEveBindURL,
     hasInvalidCharacterToken as hasInvalidCharacterTokenInList,
+    hasInvalidPrimaryCharacterToken as hasInvalidPrimaryCharacterTokenInList,
     isUserProfileComplete,
     setPrimaryCharacter,
     updateMyProfile,
@@ -209,6 +210,14 @@
     () => userStore.getUserInfo.enforceCharacterESIRestriction !== false
   )
   const hasInvalidCharacterToken = computed(() => hasInvalidCharacterTokenInList(characters.value))
+  const hasInvalidPrimaryCharacterToken = computed(() =>
+    hasInvalidPrimaryCharacterTokenInList(primaryCharacterId.value, characters.value)
+  )
+  const showTokenHealthAlert = computed(
+    () =>
+      hasInvalidPrimaryCharacterToken.value ||
+      (enforceCharacterESIRestriction.value && hasInvalidCharacterToken.value)
+  )
 
   const getTextLength = (value: string) => Array.from(value.trim()).length
 

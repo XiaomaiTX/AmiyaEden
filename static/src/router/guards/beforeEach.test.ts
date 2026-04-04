@@ -62,6 +62,24 @@ test('invalid non-primary character does not redirect when enforcement is disabl
   )
 })
 
+test('invalid primary character still redirects when enforcement is disabled', () => {
+  assert.equal(
+    shouldRedirectToCharactersPage(
+      { isLogin: true, path: '/system/user' },
+      {
+        enforceCharacterESIRestriction: false,
+        profileComplete: true,
+        primaryCharacterId: 9001,
+        characters: [
+          { character_id: 9001, token_invalid: true } as Api.Auth.EveCharacter,
+          { character_id: 9002, token_invalid: false } as Api.Auth.EveCharacter
+        ]
+      }
+    ),
+    true
+  )
+})
+
 test('guard refresh stores authoritative user info before redirect evaluation', async () => {
   const refreshedUser = {
     userId: 7,

@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestMeHandlerGetMeRejectsInvalidPrimaryCharacterToken(t *testing.T) {
+func TestMeHandlerGetMeAllowsInvalidPrimaryCharacterTokenForRefreshFlow(t *testing.T) {
 	db := newMeHandlerTestDB(t)
 	seedMeHandlerUser(t, db, true)
 
@@ -34,11 +34,20 @@ func TestMeHandlerGetMeRejectsInvalidPrimaryCharacterToken(t *testing.T) {
 	}()
 
 	recorder, result := performGetMeRequest(t, 1)
-	if recorder.Code != http.StatusUnauthorized {
-		t.Fatalf("expected http status 401, got %d", recorder.Code)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected http status 200, got %d", recorder.Code)
 	}
-	if result.Code != response.CodeUnauthorized {
-		t.Fatalf("expected unauthorized code, got %#v", result)
+	if result.Code != response.CodeOK {
+		t.Fatalf("expected success code, got %#v", result)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(result.Data, &payload); err != nil {
+		t.Fatalf("decode payload: %v", err)
+	}
+	characters, ok := payload["characters"].([]any)
+	if !ok || len(characters) != 2 {
+		t.Fatalf("expected two characters in payload, got %#v", payload["characters"])
 	}
 }
 
