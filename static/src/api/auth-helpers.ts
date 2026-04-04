@@ -17,3 +17,19 @@ export function hasInvalidCharacterToken(
 ): boolean {
   return characters?.some((character) => character.token_invalid) ?? false
 }
+
+export function hasInvalidPrimaryCharacterToken(
+  primaryCharacterId?: number,
+  characters?: Array<Pick<Api.Auth.EveCharacter, 'character_id' | 'token_invalid'>>
+): boolean {
+  if (!primaryCharacterId) {
+    return false
+  }
+
+  return (
+    characters?.some(
+      (character) =>
+        character.character_id === primaryCharacterId && character.token_invalid === true
+    ) ?? false
+  )
+}

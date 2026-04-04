@@ -1313,8 +1313,8 @@
     "scopeCount": "scopes",
     "tokenInvalid": "(Expired)",
     "tokenHealth": {
-      "title": "You cannot continue while any bound character has expired ESI access",
-      "requiredHint": "Refresh ESI for every expired character or unbind the expired characters before leaving this page."
+      "title": "You cannot continue while the primary character ESI is expired, or when policy requires all characters to be valid and any bound character is expired",
+      "requiredHint": "Refresh the primary character ESI first. If all-character enforcement is enabled, you must also refresh or unbind any other expired characters before leaving this page."
     },
     "bindFailed": "Failed to get bind URL",
     "setPrimarySuccess": "{name} is now the primary character",
