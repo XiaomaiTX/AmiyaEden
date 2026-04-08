@@ -97,6 +97,8 @@ source_of_truth:
 - `token_expiry`
 - `scopes`
 - `token_invalid`
+- `birthday`
+- `fuxi_legion_tenure_days`
 - `corporation_id`
 - `alliance_id`
 - `faction_id`
@@ -318,6 +320,7 @@ ESI 头衔到系统职权的映射表。
 - `require_skill_plan`
 - `max_char_age_months`
 - `minimum_pap`
+- `minimum_fuxi_legion_years`
 - `require_evidence`
 - `example_evidence`
 - `status`
@@ -330,6 +333,7 @@ ESI 头衔到系统职权的映射表。
 - 发放时，服务层会重新读取当前 `welfare` 行来决定是否发放伏羲币；若 `0 < pay_by_fuxi_coin < system_config.welfare.auto_approve_fuxi_coin_threshold`，该发放会在申请提交事务内直接发生
 - `system_config.welfare.auto_approve_fuxi_coin_threshold` 默认值为 `500`；管理员可在 `/welfare/settings` 调整，设置为 `0` 时关闭自动审批
 - 技能计划关联当前通过 `welfare_skill_plans` 关系表维护，不直接内嵌在 `welfare` 表列里
+- `minimum_fuxi_legion_years` 要求用户拥有至少一个角色，其在伏羲军团的累计任职时长达到该值；累计时长会缓存到 `eve_character.fuxi_legion_tenure_days`
 
 ### `welfare_application`
 

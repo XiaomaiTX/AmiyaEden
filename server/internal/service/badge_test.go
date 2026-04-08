@@ -18,7 +18,7 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 	global.DB = db
 	defer func() { global.DB = originalDB }()
 
-	user := model.User{Nickname: "Pilot One", QQ: "12345"}
+	user := model.User{BaseModel: model.BaseModel{ID: 910001}, Nickname: "Pilot One", QQ: "12345"}
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -108,43 +108,37 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 		want  BadgeCounts
 	}{
 		{
-			name:  "ordinary user only sees welfare eligible count",
+			name:  "ordinary user sees no badge counts before welfare cache is warmed",
 			roles: []string{model.RoleUser},
-			want: BadgeCounts{
-				BadgeCountWelfareEligible: 1,
-			},
+			want:  BadgeCounts{},
 		},
 		{
 			name:  "srp reviewer sees srp pending count",
 			roles: []string{model.RoleSRP},
 			want: BadgeCounts{
-				BadgeCountWelfareEligible: 1,
-				BadgeCountSrpPending:      2,
+				BadgeCountSrpPending: 2,
 			},
 		},
 		{
 			name:  "welfare officer sees welfare pending count but not shop order count",
 			roles: []string{model.RoleWelfare},
 			want: BadgeCounts{
-				BadgeCountWelfareEligible: 1,
-				BadgeCountWelfarePending:  1,
+				BadgeCountWelfarePending: 1,
 			},
 		},
 		{
 			name:  "admin sees every non zero count",
 			roles: []string{model.RoleAdmin},
 			want: BadgeCounts{
-				BadgeCountWelfareEligible: 1,
-				BadgeCountSrpPending:      2,
-				BadgeCountWelfarePending:  1,
-				BadgeCountOrderPending:    1,
+				BadgeCountSrpPending:     2,
+				BadgeCountWelfarePending: 1,
+				BadgeCountOrderPending:   1,
 			},
 		},
 		{
 			name:  "mentor sees pending mentee application count",
 			roles: []string{model.RoleMentor},
 			want: BadgeCounts{
-				BadgeCountWelfareEligible:           1,
 				BadgeCountMentorPendingApplications: 1,
 			},
 		},
@@ -163,13 +157,13 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 	}
 }
 
-func TestBadgeServiceGetBadgeCountsCountsPerCharacterWelfareOnce(t *testing.T) {
+func TestBadgeServiceGetBadgeCountsUsesCachedEligibleWelfareCount(t *testing.T) {
 	db := newBadgeServiceTestDB(t)
 	originalDB := global.DB
 	global.DB = db
 	defer func() { global.DB = originalDB }()
 
-	user := model.User{Nickname: "Pilot Two", QQ: "67890"}
+	user := model.User{BaseModel: model.BaseModel{ID: 910002}, Nickname: "Pilot Two", QQ: "67890"}
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -191,6 +185,10 @@ func TestBadgeServiceGetBadgeCountsCountsPerCharacterWelfareOnce(t *testing.T) {
 		t.Fatalf("create welfare: %v", err)
 	}
 
+	if _, err := NewWelfareService().GetEligibleWelfares(user.ID); err != nil {
+		t.Fatalf("warm welfare badge cache: %v", err)
+	}
+
 	svc := NewBadgeService()
 	got, err := svc.GetBadgeCounts(user.ID, []string{model.RoleUser})
 	if err != nil {
@@ -209,7 +207,7 @@ func TestBadgeServiceGetBadgeCountsOmitsZeroCounts(t *testing.T) {
 	global.DB = db
 	defer func() { global.DB = originalDB }()
 
-	user := model.User{Nickname: "Pilot Zero", QQ: "11111"}
+	user := model.User{BaseModel: model.BaseModel{ID: 910003}, Nickname: "Pilot Zero", QQ: "11111"}
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -230,9 +228,9 @@ func TestBadgeServiceGetBadgeCountsCountsPendingMentorApplicationsForCurrentMent
 	global.DB = db
 	defer func() { global.DB = originalDB }()
 
-	mentor := model.User{Nickname: "Mentor One", QQ: "12345"}
-	otherMentor := model.User{Nickname: "Mentor Two", QQ: "67890"}
-	mentee := model.User{Nickname: "Mentee One", QQ: "00000"}
+	mentor := model.User{BaseModel: model.BaseModel{ID: 910004}, Nickname: "Mentor One", QQ: "12345"}
+	otherMentor := model.User{BaseModel: model.BaseModel{ID: 910005}, Nickname: "Mentor Two", QQ: "67890"}
+	mentee := model.User{BaseModel: model.BaseModel{ID: 910006}, Nickname: "Mentee One", QQ: "00000"}
 	if err := db.Create(&mentor).Error; err != nil {
 		t.Fatalf("create mentor: %v", err)
 	}

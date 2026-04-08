@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -66,6 +67,9 @@ func (s *WelfareService) AdminCreateWelfare(w *model.Welfare) error {
 	if w.PayByFuxiCoin != nil && *w.PayByFuxiCoin < 0 {
 		return errors.New("伏羲币发放数量不能小于 0")
 	}
+	if w.MinimumFuxiLegionYears != nil && *w.MinimumFuxiLegionYears < 0 {
+		return errors.New("伏羲军团服役年限不能小于 0")
+	}
 	if w.RequireSkillPlan && len(w.SkillPlanIDs) == 0 {
 		return errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
@@ -89,18 +93,19 @@ func (s *WelfareService) AdminCreateWelfare(w *model.Welfare) error {
 
 // AdminUpdateWelfareRequest 更新福利请求
 type AdminUpdateWelfareRequest struct {
-	Name             string `json:"name"`
-	Description      string `json:"description"`
-	DistMode         string `json:"dist_mode"`
-	PayByFuxiCoin    *int   `json:"pay_by_fuxi_coin"`
-	RequireSkillPlan bool   `json:"require_skill_plan"`
-	SkillPlanIDs     []uint `json:"skill_plan_ids"`
-	MaxCharAgeMonths *int   `json:"max_char_age_months"`
-	MinimumPap       *int   `json:"minimum_pap"`
-	RequireEvidence  bool   `json:"require_evidence"`
-	ExampleEvidence  string `json:"example_evidence"`
-	Status           int8   `json:"status"`
-	SortOrder        *int   `json:"sort_order"`
+	Name                   string `json:"name"`
+	Description            string `json:"description"`
+	DistMode               string `json:"dist_mode"`
+	PayByFuxiCoin          *int   `json:"pay_by_fuxi_coin"`
+	RequireSkillPlan       bool   `json:"require_skill_plan"`
+	SkillPlanIDs           []uint `json:"skill_plan_ids"`
+	MaxCharAgeMonths       *int   `json:"max_char_age_months"`
+	MinimumPap             *int   `json:"minimum_pap"`
+	MinimumFuxiLegionYears *int   `json:"minimum_fuxi_legion_years"`
+	RequireEvidence        bool   `json:"require_evidence"`
+	ExampleEvidence        string `json:"example_evidence"`
+	Status                 int8   `json:"status"`
+	SortOrder              *int   `json:"sort_order"`
 }
 
 // AdminUpdateWelfare 更新福利
@@ -119,6 +124,9 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	if req.PayByFuxiCoin != nil && *req.PayByFuxiCoin < 0 {
 		return nil, errors.New("伏羲币发放数量不能小于 0")
 	}
+	if req.MinimumFuxiLegionYears != nil && *req.MinimumFuxiLegionYears < 0 {
+		return nil, errors.New("伏羲军团服役年限不能小于 0")
+	}
 	if req.RequireSkillPlan && len(req.SkillPlanIDs) == 0 {
 		return nil, errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
@@ -130,6 +138,7 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	w.RequireSkillPlan = req.RequireSkillPlan
 	w.MaxCharAgeMonths = req.MaxCharAgeMonths
 	w.MinimumPap = req.MinimumPap
+	w.MinimumFuxiLegionYears = req.MinimumFuxiLegionYears
 	w.RequireEvidence = req.RequireEvidence
 	w.ExampleEvidence = req.ExampleEvidence
 	w.Status = req.Status
@@ -218,19 +227,32 @@ type EligibleWelfareResp struct {
 	EligibleCharacters []EligibleCharacterResp `json:"eligible_characters"`
 }
 
-// buildIneligibleReason 根据不满足的条件构建原因字符串
-// 可能的值："pap"、"skill"、"pap_skill"
-func buildIneligibleReason(papBlocked bool, skillBlocked bool) string {
-	if papBlocked && skillBlocked {
+type welfareEligibilityBlockers struct {
+	Pap             bool
+	Skill           bool
+	FuxiLegionYears bool
+}
+
+// buildIneligibleReason 根据不满足的条件构建原因字符串。
+func buildIneligibleReason(blockers welfareEligibilityBlockers) string {
+	switch {
+	case blockers.Pap && blockers.Skill && blockers.FuxiLegionYears:
+		return "pap_skill_legion_years"
+	case blockers.Pap && blockers.Skill:
 		return "pap_skill"
-	}
-	if papBlocked {
+	case blockers.Pap && blockers.FuxiLegionYears:
+		return "pap_legion_years"
+	case blockers.Skill && blockers.FuxiLegionYears:
+		return "skill_legion_years"
+	case blockers.FuxiLegionYears:
+		return "legion_years"
+	case blockers.Pap:
 		return "pap"
-	}
-	if skillBlocked {
+	case blockers.Skill:
 		return "skill"
+	default:
+		return ""
 	}
-	return ""
 }
 
 func skillPlanNamesForWelfare(planIDs []uint, planNamesByID map[uint]string) []string {
@@ -358,10 +380,13 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 
 	// 5c. 预加载军团 PAP 总数（仅当有最低 PAP 限制的福利时）
 	needsMinimumPapCheck := false
+	needsFuxiLegionYearsCheck := false
 	for _, w := range welfares {
 		if w.MinimumPap != nil && *w.MinimumPap > 0 {
 			needsMinimumPapCheck = true
-			break
+		}
+		if w.MinimumFuxiLegionYears != nil && *w.MinimumFuxiLegionYears > 0 {
+			needsFuxiLegionYearsCheck = true
 		}
 	}
 	var totalPap float64
@@ -371,6 +396,9 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 			return nil, errors.New("获取 PAP 统计失败")
 		}
 		totalPap = total
+	}
+	if needsFuxiLegionYearsCheck && len(characters) > 0 {
+		s.ensureFuxiLegionTenureDays(characters)
 	}
 
 	now := time.Now()
@@ -383,15 +411,26 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 			continue
 		}
 		minimumPapBlocked := welfareMinimumPapRestrictionFailed(w.MinimumPap, totalPap)
+		minimumFuxiLegionYearsBlocked := welfareFuxiLegionYearsRestrictionFailed(characters, w.MinimumFuxiLegionYears)
 		if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 && !skillCheckReady {
 			continue
 		}
-		resp, ok := s.buildEligibleWelfareResp(user, characters, apps, w, skillCheckCache, minimumPapBlocked)
+		resp, ok := s.buildEligibleWelfareResp(
+			user,
+			characters,
+			apps,
+			w,
+			skillCheckCache,
+			minimumPapBlocked,
+			minimumFuxiLegionYearsBlocked,
+		)
 		if !ok {
 			continue
 		}
 		result = append(result, resp)
 	}
+
+	cacheEligibleWelfareBadgeCount(userID, result)
 
 	return result, nil
 }
@@ -410,6 +449,28 @@ func welfareMinimumPapRestrictionFailed(minimumPap *int, totalPap float64) bool 
 		return false
 	}
 	return totalPap <= float64(*minimumPap)
+}
+
+func characterHasEnoughFuxiLegionTenure(char model.EveCharacter, minimumYears int) bool {
+	if minimumYears <= 0 {
+		return true
+	}
+	if char.FuxiLegionTenureDays == nil {
+		return false
+	}
+	return *char.FuxiLegionTenureDays >= minimumYears*365
+}
+
+func welfareFuxiLegionYearsRestrictionFailed(characters []model.EveCharacter, minimumYears *int) bool {
+	if minimumYears == nil || *minimumYears <= 0 {
+		return false
+	}
+	for _, char := range characters {
+		if characterHasEnoughFuxiLegionTenure(char, *minimumYears) {
+			return false
+		}
+	}
+	return true
 }
 
 // isUserIneligible 检查 per_user 福利中用户是否已申请过（通过 QQ 或 DiscordID 匹配）
@@ -436,6 +497,7 @@ func (s *WelfareService) buildEligibleWelfareResp(
 	w model.Welfare,
 	skillCheckCache map[int64]map[uint]bool,
 	minimumPapBlocked bool,
+	minimumFuxiLegionYearsBlocked bool,
 ) (EligibleWelfareResp, bool) {
 	skillPlanNames := append([]string(nil), w.SkillPlanNames...)
 	if skillPlanNames == nil {
@@ -463,14 +525,26 @@ func (s *WelfareService) buildEligibleWelfareResp(
 		if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 {
 			skillBlocked = !s.anyCharacterSatisfiesSkillPlan(characters, w.SkillPlanIDs, skillCheckCache)
 		}
-		resp.CanApplyNow = !minimumPapBlocked && !skillBlocked
+		blockers := welfareEligibilityBlockers{
+			Pap:             minimumPapBlocked,
+			Skill:           skillBlocked,
+			FuxiLegionYears: minimumFuxiLegionYearsBlocked,
+		}
+		resp.CanApplyNow = buildIneligibleReason(blockers) == ""
 		if !resp.CanApplyNow {
-			resp.IneligibleReason = buildIneligibleReason(minimumPapBlocked, skillBlocked)
+			resp.IneligibleReason = buildIneligibleReason(blockers)
 		}
 		return resp, true
 	}
 
-	eligible := s.filterEligibleCharacters(characters, apps, w, skillCheckCache, minimumPapBlocked)
+	eligible := s.filterEligibleCharacters(
+		characters,
+		apps,
+		w,
+		skillCheckCache,
+		minimumPapBlocked,
+		minimumFuxiLegionYearsBlocked,
+	)
 	if len(eligible) == 0 {
 		return EligibleWelfareResp{}, false
 	}
@@ -485,6 +559,7 @@ func (s *WelfareService) filterEligibleCharacters(
 	w model.Welfare,
 	skillCheckCache map[int64]map[uint]bool,
 	minimumPapBlocked bool,
+	minimumFuxiLegionYearsBlocked bool,
 ) []EligibleCharacterResp {
 	// 构建已申请的人物集合
 	appliedCharIDs := make(map[int64]bool)
@@ -506,14 +581,19 @@ func (s *WelfareService) filterEligibleCharacters(
 		if w.RequireSkillPlan && len(w.SkillPlanIDs) > 0 {
 			skillBlocked = !s.characterSatisfiesAnySkillPlan(char.CharacterID, w.SkillPlanIDs, skillCheckCache)
 		}
-		canApplyNow := !minimumPapBlocked && !skillBlocked
+		blockers := welfareEligibilityBlockers{
+			Pap:             minimumPapBlocked,
+			Skill:           skillBlocked,
+			FuxiLegionYears: minimumFuxiLegionYearsBlocked,
+		}
+		canApplyNow := buildIneligibleReason(blockers) == ""
 		charResp := EligibleCharacterResp{
 			CharacterID:   char.CharacterID,
 			CharacterName: char.CharacterName,
 			CanApplyNow:   canApplyNow,
 		}
 		if !canApplyNow {
-			charResp.IneligibleReason = buildIneligibleReason(minimumPapBlocked, skillBlocked)
+			charResp.IneligibleReason = buildIneligibleReason(blockers)
 		}
 		eligible = append(eligible, charResp)
 	}
@@ -730,6 +810,9 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 	if welfare.MaxCharAgeMonths != nil && *welfare.MaxCharAgeMonths > 0 {
 		s.ensureBirthdays(characters)
 	}
+	if welfare.MinimumFuxiLegionYears != nil && *welfare.MinimumFuxiLegionYears > 0 {
+		s.ensureFuxiLegionTenureDays(characters)
+	}
 
 	var selectedChar model.EveCharacter
 
@@ -781,6 +864,9 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		if welfareMinimumPapRestrictionFailed(welfare.MinimumPap, totalPap) {
 			return nil, errors.New("您的军团 PAP 未达到该福利限制")
 		}
+	}
+	if welfareFuxiLegionYearsRestrictionFailed(characters, welfare.MinimumFuxiLegionYears) {
+		return nil, errors.New("您的人物未满足伏羲军团服役年限要求")
 	}
 
 	// 证明图片检查
@@ -846,6 +932,11 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 	}); err != nil {
 		return nil, errors.New("申请失败")
 	}
+
+	// Badge counts are cached in memory and refreshed only from welfare entry points.
+	// A stale badge is acceptable; a failed cache refresh must not fail the application.
+	_, _ = s.GetEligibleWelfares(userID)
+
 	return app, nil
 }
 
@@ -1322,6 +1413,11 @@ type esiCharacterPublicInfo struct {
 	Birthday string `json:"birthday"`
 }
 
+type esiCharacterCorporationHistoryItem struct {
+	CorporationID int64  `json:"corporation_id"`
+	StartDate     string `json:"start_date"`
+}
+
 // ensureBirthdays 确保人物列表中的 Birthday 字段已填充，缺失的从 ESI 获取并持久化
 func (s *WelfareService) ensureBirthdays(characters []model.EveCharacter) {
 	for i := range characters {
@@ -1336,6 +1432,20 @@ func (s *WelfareService) ensureBirthdays(characters []model.EveCharacter) {
 		// 持久化
 		if dbChar, err := s.charRepo.GetByCharacterID(characters[i].CharacterID); err == nil {
 			dbChar.Birthday = birthday
+			_ = s.charRepo.Save(dbChar)
+		}
+	}
+}
+
+func (s *WelfareService) ensureFuxiLegionTenureDays(characters []model.EveCharacter) {
+	for i := range characters {
+		tenureDays := s.fetchFuxiLegionTenureDaysFromESI(characters[i].CharacterID)
+		if tenureDays == nil {
+			continue
+		}
+		characters[i].FuxiLegionTenureDays = tenureDays
+		if dbChar, err := s.charRepo.GetByCharacterID(characters[i].CharacterID); err == nil {
+			dbChar.FuxiLegionTenureDays = tenureDays
 			_ = s.charRepo.Save(dbChar)
 		}
 	}
@@ -1367,4 +1477,69 @@ func (s *WelfareService) fetchBirthdayFromESI(characterID int64) *time.Time {
 		return nil
 	}
 	return &t
+}
+
+func (s *WelfareService) fetchFuxiLegionTenureDaysFromESI(characterID int64) *int {
+	if s.esiClient == nil {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var history []esiCharacterCorporationHistoryItem
+	if err := s.esiClient.Get(ctx, fmt.Sprintf("/characters/%d/corporationhistory/", characterID), "", &history); err != nil {
+		return nil
+	}
+
+	type corporationHistoryPeriod struct {
+		CorporationID int64
+		StartDate     time.Time
+	}
+
+	periods := make([]corporationHistoryPeriod, 0, len(history))
+	for _, item := range history {
+		if strings.TrimSpace(item.StartDate) == "" {
+			continue
+		}
+		startDate, err := time.Parse(time.RFC3339, item.StartDate)
+		if err != nil {
+			continue
+		}
+		periods = append(periods, corporationHistoryPeriod{
+			CorporationID: item.CorporationID,
+			StartDate:     startDate.UTC(),
+		})
+	}
+
+	if len(periods) == 0 {
+		return nil
+	}
+
+	sort.Slice(periods, func(i, j int) bool {
+		return periods[i].StartDate.Before(periods[j].StartDate)
+	})
+
+	totalDays := 0
+	for index, period := range periods {
+		if period.CorporationID != model.SystemCorporationID {
+			continue
+		}
+
+		endDate := time.Now().UTC()
+		if index+1 < len(periods) {
+			endDate = periods[index+1].StartDate
+		}
+		if endDate.Before(period.StartDate) {
+			continue
+		}
+
+		durationDays := int(endDate.Sub(period.StartDate).Hours() / 24)
+		if durationDays > 0 {
+			totalDays += durationDays
+		}
+	}
+
+	totalCopy := totalDays
+	return &totalCopy
 }

@@ -124,7 +124,14 @@
     skillPlanNames: string[]
     distMode: string
     canApplyNow: boolean
-    ineligibleReason?: 'pap' | 'skill' | 'pap_skill'
+    ineligibleReason?:
+      | 'pap'
+      | 'skill'
+      | 'pap_skill'
+      | 'legion_years'
+      | 'pap_legion_years'
+      | 'skill_legion_years'
+      | 'pap_skill_legion_years'
     characterId?: number
     characterName?: string
     requireEvidence: boolean
@@ -204,10 +211,10 @@
   const reasonMessages = computed(() => ({
     pap: t('welfareMy.ineligibleReasonPap'),
     skill: t('welfareMy.ineligibleReasonSkill'),
-    papSkill: t('welfareMy.ineligibleReasonPapSkill'),
+    legionYears: t('welfareMy.ineligibleReasonLegionYears'),
     skillPlan: (plans: string) => t('welfareMy.ineligibleReasonSkillPlan', { plans }),
-    papSkillPlan: (plans: string) => t('welfareMy.ineligibleReasonPapSkillPlan', { plans }),
-    planSeparator: t('welfareMy.skillPlanJoiner')
+    planSeparator: t('welfareMy.skillPlanJoiner'),
+    reasonSeparator: t('welfareMy.ineligibleReasonJoiner')
   }))
 
   function getIneligibleReasonContent(row: EligibleRow) {
