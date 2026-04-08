@@ -241,7 +241,7 @@
     "dashboard": {
       "title": "Dashboard",
       "console": "Console",
-      "npcKills": "NPC Kill Report"
+      "npcKills": "Corp NPC Kill Report"
     },
     "exception": {
       "title": "Exception",

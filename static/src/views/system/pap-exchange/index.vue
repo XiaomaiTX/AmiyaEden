@@ -45,7 +45,7 @@
 
         <ElFormItem>
           <ElButton
-            v-auth="'system:pap:exchange'"
+            v-auth="'edit_exchange_rate'"
             type="primary"
             :loading="saving"
             @click="handleSave"
@@ -61,7 +61,7 @@
         <div class="flex items-center justify-between">
           <h2 class="section-title">{{ t('papExchange.ratesSection') }}</h2>
           <ElButton
-            v-auth="'system:pap:exchange'"
+            v-auth="'edit_exchange_rate'"
             type="primary"
             :loading="saving"
             @click="handleSave"
