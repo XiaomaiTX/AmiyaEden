@@ -624,6 +624,39 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 }
 
+// ─────────────────────────────────────────────
+//  Token 刷新并发控制
+// ─────────────────────────────────────────────
+
+// tokenRefreshMu 保护 tokenRefreshLocks map 的读写
+var tokenRefreshMu sync.Mutex
+
+// tokenRefreshLocks 每个 characterID 一把锁，防止并发刷新同一人物的 token
+var tokenRefreshLocks = make(map[int64]*sync.Mutex)
+
+// getCharacterLock 返回指定人物的互斥锁（懒初始化）
+func getCharacterLock(characterID int64) *sync.Mutex {
+	tokenRefreshMu.Lock()
+	defer tokenRefreshMu.Unlock()
+	mu, ok := tokenRefreshLocks[characterID]
+	if !ok {
+		mu = &sync.Mutex{}
+		tokenRefreshLocks[characterID] = mu
+	}
+	return mu
+}
+
+// isTokenErrorPermanent 判断 ESI token 刷新错误是否为不可恢复错误。
+// 仅当 ESI 明确返回 invalid_grant / invalid_token 时才视为永久失效。
+func isTokenErrorPermanent(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "invalid_grant") ||
+		strings.Contains(msg, "invalid_token")
+}
+
 // GetValidToken 获取指定人物的有效 access_token（如即将过期则自动刷新）
 // 供其他模块调用，用于发起 ESI 请求
 func (s *EveSSOService) GetValidToken(ctx context.Context, characterID int64) (string, error) {
@@ -639,7 +672,12 @@ func (s *EveSSOService) GetValidToken(ctx context.Context, characterID int64) (s
 
 	// Token 有效期剩余 < 3 分钟则刷新
 	if time.Until(char.TokenExpiry) < 3*time.Minute {
-		if err := s.refreshCharacterToken(ctx, char); err != nil {
+		if err := s.refreshCharacterToken(ctx, characterID); err != nil {
+			return "", err
+		}
+		// 刷新后重新读取，拿到最新 access_token
+		char, err = s.charRepo.GetByCharacterID(characterID)
+		if err != nil {
 			return "", err
 		}
 	}
@@ -647,19 +685,55 @@ func (s *EveSSOService) GetValidToken(ctx context.Context, characterID int64) (s
 	return char.AccessToken, nil
 }
 
-// refreshCharacterToken 刷新人物 Token 并持久化
-func (s *EveSSOService) refreshCharacterToken(ctx context.Context, char *model.EveCharacter) error {
+// refreshCharacterToken 刷新人物 Token 并持久化。
+// 使用 per-character 互斥锁防止并发刷新：
+//   - 第一个 goroutine 执行实际刷新
+//   - 后续 goroutine 等锁释放后 re-read DB，发现 token 已更新则直接返回
+func (s *EveSSOService) refreshCharacterToken(ctx context.Context, characterID int64) error {
+	mu := getCharacterLock(characterID)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// 拿到锁后重新读取 — 可能别的 goroutine 已经刷新过了
+	char, err := s.charRepo.GetByCharacterID(characterID)
+	if err != nil {
+		return err
+	}
+	if char.TokenInvalid {
+		return errors.New("该人物的 token 已失效，请重新授权")
+	}
+	// 如果 token 还有 ≥ 3 分钟有效期，说明并发 goroutine 已完成刷新
+	if time.Until(char.TokenExpiry) >= 3*time.Minute {
+		return nil
+	}
+
 	tokenResp, err := s.eveClient.RefreshAccessToken(ctx, char.RefreshToken)
 	if err != nil {
-		char.TokenInvalid = true
-		_ = s.charRepo.Update(char)
+		if isTokenErrorPermanent(err) {
+			// 仅对永久性错误标记 token 失效
+			char.TokenInvalid = true
+			if dbErr := s.charRepo.Update(char); dbErr != nil {
+				global.Logger.Error("标记 token 失效写 DB 失败",
+					zap.Int64("character_id", characterID),
+					zap.Error(dbErr),
+				)
+			}
+		} else {
+			global.Logger.Warn("ESI token 刷新暂时失败（不标记失效）",
+				zap.Int64("character_id", characterID),
+				zap.Error(err),
+			)
+		}
 		return err
 	}
 
 	claims, err := eve.ParseAccessToken(tokenResp.AccessToken)
 	if err != nil {
-		char.TokenInvalid = true
-		_ = s.charRepo.Update(char)
+		// access_token 解析失败是意外情况，但 refresh_token 本身没有问题，不标记失效
+		global.Logger.Error("解析新 access_token 失败",
+			zap.Int64("character_id", characterID),
+			zap.Error(err),
+		)
 		return err
 	}
 

@@ -4,6 +4,8 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/pkg/eve/esi"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -161,5 +163,43 @@ func TestFetchCharacterAffiliationRejectsOversizedResponse(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "response exceeds") {
 		t.Fatalf("expected oversize error, got %v", err)
+	}
+}
+
+func TestIsTokenErrorPermanent(t *testing.T) {
+	tests := []struct {
+		name      string
+		err       error
+		permanent bool
+	}{
+		{"nil error", nil, false},
+		{"network timeout", errors.New("token request: context deadline exceeded"), false},
+		{"connection refused", errors.New("token request: dial tcp: connection refused"), false},
+		{"server 500", fmt.Errorf("EVE SSO error 500: internal server error"), false},
+		{"rate limit 429", fmt.Errorf("EVE SSO error 429: rate limited"), false},
+		{"invalid_grant", fmt.Errorf("EVE SSO error 400: {\"error\":\"invalid_grant\"}"), true},
+		{"invalid_token", fmt.Errorf("EVE SSO error 400: {\"error\":\"invalid_token\"}"), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isTokenErrorPermanent(tt.err)
+			if got != tt.permanent {
+				t.Fatalf("isTokenErrorPermanent(%v) = %v, want %v", tt.err, got, tt.permanent)
+			}
+		})
+	}
+}
+
+func TestGetCharacterLockReturnsSameLock(t *testing.T) {
+	mu1 := getCharacterLock(99999)
+	mu2 := getCharacterLock(99999)
+	if mu1 != mu2 {
+		t.Fatal("expected same mutex for same character ID")
+	}
+
+	mu3 := getCharacterLock(88888)
+	if mu1 == mu3 {
+		t.Fatal("expected different mutex for different character ID")
 	}
 }
