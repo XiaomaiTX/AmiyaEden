@@ -151,11 +151,11 @@ func TestCorporationKillmailsFreshRequiresSuccessfulCorpRun(t *testing.T) {
 	})
 
 	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
-	if queue.corporationKillmailsFresh(9901, true) {
+	if queue.corporationKillmailsFresh(9901, nil, true) {
 		t.Fatalf("expected corp coverage to stay false before any successful corp killmail refresh")
 	}
 	queue.setLastRun(&CorpKillmailsTask{}, model.EveCharacter{CorporationID: 9901}, time.Now())
-	if !queue.corporationKillmailsFresh(9901, true) {
+	if !queue.corporationKillmailsFresh(9901, nil, true) {
 		t.Fatalf("expected corp coverage after a successful corp killmail refresh")
 	}
 }
@@ -172,10 +172,10 @@ func TestCorporationKillmailsFreshUsesInactiveInterval(t *testing.T) {
 	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
 	recent := time.Now().Add(-2 * time.Hour)
 	queue.setLastRun(&CorpKillmailsTask{}, model.EveCharacter{CorporationID: 9901}, recent)
-	if queue.corporationKillmailsFresh(9901, true) {
+	if queue.corporationKillmailsFresh(9901, nil, true) {
 		t.Fatalf("expected active corp coverage to expire after 60 minutes")
 	}
-	if !queue.corporationKillmailsFresh(9901, false) {
+	if !queue.corporationKillmailsFresh(9901, nil, false) {
 		t.Fatalf("expected inactive corp coverage to remain fresh for the 1 day window")
 	}
 }
@@ -215,4 +215,101 @@ func newQueueCoverageTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db
+}
+
+type skippedQueueTask struct{}
+
+func (skippedQueueTask) Name() string        { return "skipped_queue_task" }
+func (skippedQueueTask) Description() string { return "skipped task" }
+func (skippedQueueTask) Priority() Priority  { return PriorityLow }
+func (skippedQueueTask) Interval() RefreshInterval {
+	return RefreshInterval{Active: time.Hour, Inactive: 2 * time.Hour}
+}
+func (skippedQueueTask) RequiredScopes() []TaskScope { return nil }
+func (skippedQueueTask) Execute(ctx *TaskContext) error {
+	return ErrTaskSkipped
+}
+
+type legacyQueueTask struct{}
+
+func (legacyQueueTask) Name() string        { return "legacy_queue_task" }
+func (legacyQueueTask) Description() string { return "legacy task" }
+func (legacyQueueTask) Priority() Priority  { return PriorityLow }
+func (legacyQueueTask) Interval() RefreshInterval {
+	return RefreshInterval{Active: time.Hour, Inactive: 2 * time.Hour}
+}
+func (legacyQueueTask) RequiredScopes() []TaskScope { return nil }
+func (legacyQueueTask) Execute(ctx *TaskContext) error {
+	return nil
+}
+
+func TestQueueExecuteTaskMarksSkippedStatusWithoutPersistingLastRun(t *testing.T) {
+	mini := miniredis.RunT(t)
+	oldRedis := global.Redis
+	global.Redis = redis.NewClient(&redis.Options{Addr: mini.Addr()})
+	t.Cleanup(func() {
+		_ = global.Redis.Close()
+		global.Redis = oldRedis
+	})
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
+	char := model.EveCharacter{CharacterID: 1001}
+	task := skippedQueueTask{}
+
+	queue.executeTask(context.Background(), task, char, true, true)
+
+	status := queue.statuses[fmt.Sprintf("%s:%d", task.Name(), char.CharacterID)]
+	if status == nil {
+		t.Fatal("expected task status to be recorded")
+	}
+	if status.Status != "skipped" {
+		t.Fatalf("expected skipped status, got %q", status.Status)
+	}
+	key := fmt.Sprintf("%s%s", lastRunKeyPrefix, queue.taskExecutionKey(task, char))
+	if mini.Exists(key) {
+		t.Fatalf("expected skipped task to avoid persisting last-run key %q", key)
+	}
+}
+
+func TestQueueNeedsRefreshFallsBackToLegacyLastRunKey(t *testing.T) {
+	mini := miniredis.RunT(t)
+	oldRedis := global.Redis
+	global.Redis = redis.NewClient(&redis.Options{Addr: mini.Addr()})
+	t.Cleanup(func() {
+		_ = global.Redis.Close()
+		global.Redis = oldRedis
+	})
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
+	task := legacyQueueTask{}
+	char := model.EveCharacter{CharacterID: 1001}
+	legacyKey := fmt.Sprintf("%s%s:%d", lastRunKeyPrefix, task.Name(), char.CharacterID)
+	legacyRun := time.Now().Add(-30 * time.Minute).Unix()
+	if err := mini.Set(legacyKey, fmt.Sprintf("%d", legacyRun)); err != nil {
+		t.Fatalf("set legacy key: %v", err)
+	}
+
+	if queue.needsRefresh(task, char, true) {
+		t.Fatal("expected fresh legacy last-run key to suppress refresh")
+	}
+}
+
+func TestCorporationKillmailsFreshFallsBackToLegacyProviderKeys(t *testing.T) {
+	mini := miniredis.RunT(t)
+	oldRedis := global.Redis
+	global.Redis = redis.NewClient(&redis.Options{Addr: mini.Addr()})
+	t.Cleanup(func() {
+		_ = global.Redis.Close()
+		global.Redis = oldRedis
+	})
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
+	legacyKey := fmt.Sprintf("%s%s:%d", lastRunKeyPrefix, (&CorpKillmailsTask{}).Name(), 1001)
+	if err := mini.Set(legacyKey, fmt.Sprintf("%d", time.Now().Add(-30*time.Minute).Unix())); err != nil {
+		t.Fatalf("set legacy provider key: %v", err)
+	}
+
+	if !queue.corporationKillmailsFresh(9901, []int64{1001}, true) {
+		t.Fatal("expected corporation freshness to use legacy provider keys during migration")
+	}
 }

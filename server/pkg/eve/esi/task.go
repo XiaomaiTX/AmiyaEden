@@ -13,7 +13,8 @@ import (
 var (
 	// ErrNotModified ESI 返回 304
 	ErrNotModified = errors.New("ESI: not modified")
-	// ErrTaskSkipped 表示任务因前置条件不满足而跳过，不应记录为刷新成功
+	// ErrTaskSkipped 表示任务因前置条件不满足而跳过。
+	// 队列应将其标记为 skipped，且不推进 last_run / next_run。
 	ErrTaskSkipped = errors.New("ESI: task skipped")
 )
 
@@ -151,6 +152,6 @@ type TaskStatus struct {
 	Priority    Priority   `json:"priority"`
 	LastRun     *time.Time `json:"last_run,omitempty"`
 	NextRun     *time.Time `json:"next_run,omitempty"`
-	Status      string     `json:"status"` // pending | running | success | failed
+	Status      string     `json:"status"` // pending | running | success | failed | skipped
 	Error       string     `json:"error,omitempty"`
 }

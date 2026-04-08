@@ -9,6 +9,7 @@ import (
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ─────────────────────────────────────────────
@@ -87,14 +88,21 @@ func (t *CorpKillmailsTask) Execute(ctx *TaskContext) error {
 		zap.Int("count", len(refs)),
 	)
 
+	killmailIDs := make([]int64, 0, len(refs))
+	for _, ref := range refs {
+		killmailIDs = append(killmailIDs, ref.KillmailID)
+	}
+	existingKillmails, err := t.loadExistingKillmails(killmailIDs)
+	if err != nil {
+		return fmt.Errorf("load existing corporation killmails: %w", err)
+	}
+	if err := t.ensureVictimLinks(existingKillmails, knownChars); err != nil {
+		return fmt.Errorf("ensure existing victim links: %w", err)
+	}
+
 	// 4. 逐个获取 killmail 详情并入库
 	for _, ref := range refs {
-		// 先检查数据库中是否已存在该 killmail
-		var count int64
-		global.DB.Model(&model.EveKillmailList{}).Where("kill_mail_id = ?", ref.KillmailID).Count(&count)
-		if count > 0 {
-			// 已存在，确保受害者关联
-			t.ensureVictimLink(ref.KillmailID, knownChars)
+		if _, exists := existingKillmails[ref.KillmailID]; exists {
 			continue
 		}
 
@@ -181,11 +189,18 @@ func (t *CorpKillmailsTask) Execute(ctx *TaskContext) error {
 
 		// 事务成功后，为已知人物创建关联
 		if victimCharID != 0 && knownChars[victimCharID] {
-			global.DB.Create(&model.EveCharacterKillmail{
+			global.DB.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "character_id"}, {Name: "killmail_id"}},
+				DoNothing: true,
+			}).Create(&model.EveCharacterKillmail{
 				CharacterID: victimCharID,
 				KillmailID:  ref.KillmailID,
 				Victim:      true,
 			})
+		}
+		existingKillmails[ref.KillmailID] = model.EveKillmailList{
+			KillmailID:  ref.KillmailID,
+			CharacterID: victimCharID,
 		}
 
 		global.Logger.Debug("[ESI] 军团 killmail 入库成功",
@@ -217,25 +232,39 @@ func hasCorpKillmailDirectorRole(characterID int64) bool {
 	return false
 }
 
-// ensureVictimLink 检查已有 killmail 的受害者是否为已知人物，若缺少关联则创建
-func (t *CorpKillmailsTask) ensureVictimLink(killmailID int64, knownChars map[int64]bool) {
-	var km model.EveKillmailList
-	if err := global.DB.Where("kill_mail_id = ?", killmailID).First(&km).Error; err != nil {
-		return
-	}
-	if km.CharacterID == 0 || !knownChars[km.CharacterID] {
-		return
+func (t *CorpKillmailsTask) loadExistingKillmails(killmailIDs []int64) (map[int64]model.EveKillmailList, error) {
+	existing := make(map[int64]model.EveKillmailList)
+	if len(killmailIDs) == 0 {
+		return existing, nil
 	}
 
-	var linkCount int64
-	global.DB.Model(&model.EveCharacterKillmail{}).
-		Where("character_id = ? AND killmail_id = ?", km.CharacterID, killmailID).
-		Count(&linkCount)
-	if linkCount == 0 {
-		global.DB.Create(&model.EveCharacterKillmail{
-			CharacterID: km.CharacterID,
+	var killmails []model.EveKillmailList
+	if err := global.DB.Where("kill_mail_id IN ?", killmailIDs).Find(&killmails).Error; err != nil {
+		return nil, err
+	}
+	for _, killmail := range killmails {
+		existing[killmail.KillmailID] = killmail
+	}
+	return existing, nil
+}
+
+func (t *CorpKillmailsTask) ensureVictimLinks(existingKillmails map[int64]model.EveKillmailList, knownChars map[int64]bool) error {
+	links := make([]model.EveCharacterKillmail, 0, len(existingKillmails))
+	for killmailID, killmail := range existingKillmails {
+		if killmail.CharacterID == 0 || !knownChars[killmail.CharacterID] {
+			continue
+		}
+		links = append(links, model.EveCharacterKillmail{
+			CharacterID: killmail.CharacterID,
 			KillmailID:  killmailID,
 			Victim:      true,
 		})
 	}
+	if len(links) == 0 {
+		return nil
+	}
+	return global.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "character_id"}, {Name: "killmail_id"}},
+		DoNothing: true,
+	}).Create(&links).Error
 }

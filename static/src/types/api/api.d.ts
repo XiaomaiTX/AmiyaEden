@@ -270,7 +270,7 @@ declare namespace Api {
       priority: number
       last_run?: string | null
       next_run?: string | null
-      status: 'pending' | 'running' | 'success' | 'failed'
+      status: 'pending' | 'running' | 'success' | 'failed' | 'skipped'
       error?: string
     }
 
