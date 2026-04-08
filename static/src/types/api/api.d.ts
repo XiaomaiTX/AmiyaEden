@@ -438,8 +438,8 @@ declare namespace Api {
     }
 
     /** 军团 PAP 汇总分页响应 */
-    interface CorporationPapSummaryList extends Api.Common
-      .PaginatedResponse<CorporationPapSummaryItem> {
+    interface CorporationPapSummaryList
+      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
       overview: CorporationPapOverview
     }
 
