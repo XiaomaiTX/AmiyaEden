@@ -202,19 +202,15 @@ func (r *WelfareRepository) CountApplicationsByWelfareID(welfareID uint) (int64,
 	return count, err
 }
 
-// CountApplicationsByUserAndWelfareTx counts all applications (any status) for a given
-// user_id and welfare_id within the provided transaction.
+// CountApplicationsByUserAndWelfareTx counts non-rejected applications for a given
+// user_id and welfare_id within the provided transaction.  Rejected applications do
+// not consume a character tier slot so multichar reward reduction stays fair.
 func (r *WelfareRepository) CountApplicationsByUserAndWelfareTx(tx *gorm.DB, userID uint, welfareID uint) (int64, error) {
 	var count int64
 	err := tx.Model(&model.WelfareApplication{}).
-		Where("user_id = ? AND welfare_id = ?", userID, welfareID).
+		Where("user_id = ? AND welfare_id = ? AND status != ?", userID, welfareID, model.WelfareAppStatusRejected).
 		Count(&count).Error
 	return count, err
-}
-
-// CreateApplication 创建福利申请
-func (r *WelfareRepository) CreateApplication(app *model.WelfareApplication) error {
-	return global.DB.Create(app).Error
 }
 
 // CreateApplicationTx 在事务中创建福利申请
@@ -228,17 +224,6 @@ func (r *WelfareRepository) BulkCreateApplications(apps []model.WelfareApplicati
 		return nil
 	}
 	return global.DB.Create(&apps).Error
-}
-
-// ListApplicationsByUserID 查询用户的所有福利申请
-func (r *WelfareRepository) ListApplicationsByUserID(userID uint, status string) ([]model.WelfareApplication, error) {
-	var list []model.WelfareApplication
-	db := global.DB.Where("user_id = ?", userID)
-	if status != "" {
-		db = db.Where("status = ?", status)
-	}
-	err := db.Order("id DESC").Find(&list).Error
-	return list, err
 }
 
 // buildApplicationsByUserIDQuery 构建用户福利申请查询条件
@@ -343,11 +328,6 @@ func (r *WelfareRepository) GetApplicationByIDForUpdateTx(tx *gorm.DB, id uint) 
 }
 
 // UpdateApplication 更新福利申请
-func (r *WelfareRepository) UpdateApplication(app *model.WelfareApplication) error {
-	return global.DB.Save(app).Error
-}
-
-// UpdateApplicationTx 在事务中更新福利申请
 func (r *WelfareRepository) UpdateApplicationTx(tx *gorm.DB, app *model.WelfareApplication) error {
 	return tx.Save(app).Error
 }

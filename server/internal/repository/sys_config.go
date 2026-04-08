@@ -172,19 +172,6 @@ func (r *SysConfigRepository) GetBool(key string, defaultVal bool) bool {
 	return v
 }
 
-// Invalidate 手动使某个 key 的缓存失效
-func (r *SysConfigRepository) Invalidate(keys ...string) {
-	if !sysConfigCacheAvailable() {
-		return
-	}
-
-	cacheKeys := make([]string, len(keys))
-	for i, k := range keys {
-		cacheKeys[i] = cacheKey(k)
-	}
-	_ = cache.Del(context.Background(), cacheKeys...)
-}
-
 // GetInt64Slice 获取 int64 数组配置；解析失败或不存在时返回 defaultVal
 func (r *SysConfigRepository) GetInt64Slice(key string, defaultVal []int64) ([]int64, error) {
 	raw, err := r.Get(key, "")
