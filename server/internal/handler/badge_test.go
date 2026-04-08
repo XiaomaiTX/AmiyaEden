@@ -3,6 +3,7 @@ package handler
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"encoding/json"
 	"fmt"
@@ -29,7 +30,7 @@ func TestBadgeHandlerGetBadgeCountsOmitsUnauthorizedFields(t *testing.T) {
 		t.Fatalf("expected success code, got %d", response.Code)
 	}
 
-	want := map[string]int64{"welfare_eligible": 1}
+	want := map[string]int64{}
 	if len(response.Data) != len(want) {
 		t.Fatalf("expected only permitted badge fields, got %#v", response.Data)
 	}
@@ -46,6 +47,27 @@ func TestBadgeHandlerGetBadgeCountsOmitsUnauthorizedFields(t *testing.T) {
 	}
 	if _, exists := response.Data["order_pending"]; exists {
 		t.Fatalf("expected unauthorized order_pending to be omitted, got %#v", response.Data)
+	}
+}
+
+func TestBadgeHandlerGetBadgeCountsUsesCachedWelfareEligibleCount(t *testing.T) {
+	db := newBadgeHandlerTestDB(t)
+	userID := seedBadgeHandlerTestData(t, db)
+
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	if _, err := service.NewWelfareService().GetEligibleWelfares(userID); err != nil {
+		t.Fatalf("warm welfare badge cache: %v", err)
+	}
+
+	result := performBadgeHandlerRequest(t, userID, []string{model.RoleUser})
+	if result.Code != 200 {
+		t.Fatalf("expected success code, got %d", result.Code)
+	}
+	if result.Data["welfare_eligible"] != 1 {
+		t.Fatalf("expected cached welfare eligible count, got %#v", result.Data)
 	}
 }
 
@@ -67,8 +89,8 @@ func TestBadgeHandlerGetBadgeCountsOmitsOrderPendingForWelfareRole(t *testing.T)
 	if response.Data["welfare_pending"] != 1 {
 		t.Fatalf("expected welfare role to receive welfare_pending badge, got %#v", response.Data)
 	}
-	if response.Data["welfare_eligible"] != 1 {
-		t.Fatalf("expected welfare role to receive welfare_eligible badge, got %#v", response.Data)
+	if _, exists := response.Data["welfare_eligible"]; exists {
+		t.Fatalf("expected cold welfare cache to omit welfare_eligible badge, got %#v", response.Data)
 	}
 	if _, exists := response.Data["srp_pending"]; exists {
 		t.Fatalf("expected srp_pending to remain omitted for welfare role, got %#v", response.Data)
@@ -106,11 +128,11 @@ func TestBadgeHandlerGetBadgeCountsReturnsSafeErrorMessage(t *testing.T) {
 	global.DB = db
 	defer func() { global.DB = originalDB }()
 
-	result := performBadgeHandlerRequest(t, 1, []string{model.RoleUser})
+	result := performBadgeHandlerRequest(t, 1, []string{model.RoleSRP})
 	if result.Code != response.CodeBizError {
 		t.Fatalf("expected business error code, got %#v", result)
 	}
-	if result.Msg != "获取可申请福利数量失败" {
+	if result.Msg != "获取补损待审批数量失败" {
 		t.Fatalf("expected transport-safe message, got %#v", result)
 	}
 }
@@ -147,7 +169,11 @@ func performBadgeHandlerRequest(t *testing.T, userID uint, roles []string) badge
 func seedBadgeHandlerTestData(t *testing.T, db *gorm.DB) uint {
 	t.Helper()
 
-	user := model.User{Nickname: "Pilot One", QQ: "12345"}
+	user := model.User{
+		BaseModel: model.BaseModel{ID: uint(time.Now().UnixNano())},
+		Nickname:  "Pilot One",
+		QQ:        "12345",
+	}
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}

@@ -1,10 +1,34 @@
 export interface WelfareReasonMessages {
   pap: string
   skill: string
-  papSkill: string
+  legionYears: string
   skillPlan: (plans: string) => string
-  papSkillPlan: (plans: string) => string
   planSeparator: string
+  reasonSeparator: string
+}
+
+interface ParsedWelfareReason {
+  hasPap: boolean
+  hasSkill: boolean
+  hasLegionYears: boolean
+}
+
+function parseWelfareIneligibleReason(
+  reason: Api.Welfare.EligibleWelfare['ineligible_reason'] | undefined
+): ParsedWelfareReason {
+  const tokenSet = new Set((reason ?? '').split('_').filter(Boolean))
+
+  return tokenSet.has('legion') && tokenSet.has('years')
+    ? {
+        hasPap: tokenSet.has('pap'),
+        hasSkill: tokenSet.has('skill'),
+        hasLegionYears: true
+      }
+    : {
+        hasPap: tokenSet.has('pap'),
+        hasSkill: tokenSet.has('skill'),
+        hasLegionYears: false
+      }
 }
 
 export function formatWelfareIneligibleReason(
@@ -14,18 +38,21 @@ export function formatWelfareIneligibleReason(
 ) {
   const planNames = (skillPlanNames ?? []).map((name) => name.trim()).filter(Boolean)
   const joinedPlanNames = planNames.join(messages.planSeparator)
+  const parts: string[] = []
+  const parsedReason = parseWelfareIneligibleReason(reason)
 
-  if (reason === 'skill' && joinedPlanNames) {
-    return messages.skillPlan(joinedPlanNames)
+  if (parsedReason.hasSkill) {
+    parts.push(joinedPlanNames ? messages.skillPlan(joinedPlanNames) : messages.skill)
   }
-  if (reason === 'pap_skill' && joinedPlanNames) {
-    return messages.papSkillPlan(joinedPlanNames)
+  if (parsedReason.hasPap) {
+    parts.push(messages.pap)
   }
-  if (reason === 'pap_skill') {
-    return messages.papSkill
+  if (parsedReason.hasLegionYears) {
+    parts.push(messages.legionYears)
   }
-  if (reason === 'pap') {
-    return messages.pap
+
+  if (parts.length > 0) {
+    return parts.join(messages.reasonSeparator)
   }
   return messages.skill
 }

@@ -177,6 +177,20 @@
             {{ t('welfareSettings.minimumPapHint') }}
           </div>
         </ElFormItem>
+        <ElFormItem :label="t('welfareSettings.minimumFuxiLegionYears')">
+          <ElInputNumber
+            v-model="formData.minimum_fuxi_legion_years"
+            :min="0"
+            :step="1"
+            :precision="0"
+            :placeholder="t('welfareSettings.minimumFuxiLegionYearsPlaceholder')"
+            controls-position="right"
+            style="width: 200px"
+          />
+          <div class="text-xs text-gray-400 mt-1">
+            {{ t('welfareSettings.minimumFuxiLegionYearsHint') }}
+          </div>
+        </ElFormItem>
         <ElFormItem :label="t('welfareSettings.payByFuxiCoin')">
           <ElInputNumber
             v-model="formData.pay_by_fuxi_coin"
@@ -564,6 +578,7 @@
     skill_plan_ids: [] as number[],
     max_char_age_months: undefined as number | undefined,
     minimum_pap: undefined as number | undefined,
+    minimum_fuxi_legion_years: undefined as number | undefined,
     require_evidence: false,
     example_evidence: '',
     status: 1 as number,
@@ -616,6 +631,7 @@
       skill_plan_ids: [],
       max_char_age_months: undefined,
       minimum_pap: undefined,
+      minimum_fuxi_legion_years: undefined,
       require_evidence: false,
       example_evidence: '',
       status: 1,
@@ -641,6 +657,7 @@
       skill_plan_ids: row.skill_plan_ids ?? [],
       max_char_age_months: row.max_char_age_months ?? undefined,
       minimum_pap: row.minimum_pap ?? undefined,
+      minimum_fuxi_legion_years: row.minimum_fuxi_legion_years ?? undefined,
       require_evidence: row.require_evidence ?? false,
       example_evidence: row.example_evidence ?? '',
       status: row.status,
@@ -661,6 +678,7 @@
         pay_by_fuxi_coin: formData.pay_by_fuxi_coin ?? null,
         max_char_age_months: formData.max_char_age_months || null,
         minimum_pap: formData.minimum_pap || null,
+        minimum_fuxi_legion_years: formData.minimum_fuxi_legion_years || null,
         example_evidence: formData.require_evidence ? formData.example_evidence : ''
       }
       if (editingItem.value) {

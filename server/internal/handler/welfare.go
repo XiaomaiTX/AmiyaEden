@@ -51,18 +51,19 @@ func NewWelfareHandler() *WelfareHandler {
 
 // adminWelfareCreateRequest 创建福利请求
 type adminWelfareCreateRequest struct {
-	Name             string `json:"name" binding:"required"`
-	Description      string `json:"description"`
-	DistMode         string `json:"dist_mode" binding:"required,oneof=per_user per_character"`
-	PayByFuxiCoin    *int   `json:"pay_by_fuxi_coin"`
-	RequireSkillPlan bool   `json:"require_skill_plan"`
-	SkillPlanIDs     []uint `json:"skill_plan_ids"`
-	MaxCharAgeMonths *int   `json:"max_char_age_months"`
-	MinimumPap       *int   `json:"minimum_pap"`
-	RequireEvidence  bool   `json:"require_evidence"`
-	ExampleEvidence  string `json:"example_evidence"`
-	Status           int8   `json:"status"`
-	SortOrder        int    `json:"sort_order"`
+	Name                   string `json:"name" binding:"required"`
+	Description            string `json:"description"`
+	DistMode               string `json:"dist_mode" binding:"required,oneof=per_user per_character"`
+	PayByFuxiCoin          *int   `json:"pay_by_fuxi_coin"`
+	RequireSkillPlan       bool   `json:"require_skill_plan"`
+	SkillPlanIDs           []uint `json:"skill_plan_ids"`
+	MaxCharAgeMonths       *int   `json:"max_char_age_months"`
+	MinimumPap             *int   `json:"minimum_pap"`
+	MinimumFuxiLegionYears *int   `json:"minimum_fuxi_legion_years"`
+	RequireEvidence        bool   `json:"require_evidence"`
+	ExampleEvidence        string `json:"example_evidence"`
+	Status                 int8   `json:"status"`
+	SortOrder              int    `json:"sort_order"`
 }
 
 // AdminCreateWelfare POST /system/welfare/add
@@ -74,19 +75,20 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 	}
 
 	w := &model.Welfare{
-		Name:             req.Name,
-		Description:      req.Description,
-		DistMode:         req.DistMode,
-		PayByFuxiCoin:    req.PayByFuxiCoin,
-		RequireSkillPlan: req.RequireSkillPlan,
-		SkillPlanIDs:     req.SkillPlanIDs,
-		MaxCharAgeMonths: req.MaxCharAgeMonths,
-		MinimumPap:       req.MinimumPap,
-		RequireEvidence:  req.RequireEvidence,
-		ExampleEvidence:  req.ExampleEvidence,
-		Status:           req.Status,
-		SortOrder:        req.SortOrder,
-		CreatedBy:        middleware.GetUserID(c),
+		Name:                   req.Name,
+		Description:            req.Description,
+		DistMode:               req.DistMode,
+		PayByFuxiCoin:          req.PayByFuxiCoin,
+		RequireSkillPlan:       req.RequireSkillPlan,
+		SkillPlanIDs:           req.SkillPlanIDs,
+		MaxCharAgeMonths:       req.MaxCharAgeMonths,
+		MinimumPap:             req.MinimumPap,
+		MinimumFuxiLegionYears: req.MinimumFuxiLegionYears,
+		RequireEvidence:        req.RequireEvidence,
+		ExampleEvidence:        req.ExampleEvidence,
+		Status:                 req.Status,
+		SortOrder:              req.SortOrder,
+		CreatedBy:              middleware.GetUserID(c),
 	}
 
 	if err := h.svc.AdminCreateWelfare(w); err != nil {

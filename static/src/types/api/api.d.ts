@@ -93,6 +93,7 @@ declare namespace Api {
       scopes: string
       token_expiry: string
       token_invalid: boolean
+      fuxi_legion_tenure_days?: number | null
       corporation_id: number
       alliance_id: number
     }
@@ -1058,6 +1059,7 @@ declare namespace Api {
       skill_plan_ids: number[]
       max_char_age_months: number | null
       minimum_pap: number | null
+      minimum_fuxi_legion_years: number | null
       require_evidence: boolean
       example_evidence: string
       status: number
@@ -1077,6 +1079,7 @@ declare namespace Api {
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
       minimum_pap?: number | null
+      minimum_fuxi_legion_years?: number | null
       require_evidence?: boolean
       example_evidence?: string
       status?: number
@@ -1094,6 +1097,7 @@ declare namespace Api {
       skill_plan_ids?: number[]
       max_char_age_months?: number | null
       minimum_pap?: number | null
+      minimum_fuxi_legion_years?: number | null
       require_evidence?: boolean
       example_evidence?: string
       status?: number
@@ -1121,7 +1125,14 @@ declare namespace Api {
       character_id: number
       character_name: string
       can_apply_now: boolean
-      ineligible_reason?: 'pap' | 'skill' | 'pap_skill'
+      ineligible_reason?:
+        | 'pap'
+        | 'skill'
+        | 'pap_skill'
+        | 'legion_years'
+        | 'pap_legion_years'
+        | 'skill_legion_years'
+        | 'pap_skill_legion_years'
     }
 
     /** 可申请福利 */
@@ -1134,7 +1145,14 @@ declare namespace Api {
       require_evidence: boolean
       example_evidence: string
       can_apply_now: boolean
-      ineligible_reason?: 'pap' | 'skill' | 'pap_skill'
+      ineligible_reason?:
+        | 'pap'
+        | 'skill'
+        | 'pap_skill'
+        | 'legion_years'
+        | 'pap_legion_years'
+        | 'skill_legion_years'
+        | 'pap_skill_legion_years'
       eligible_characters: EligibleCharacter[]
     }
 

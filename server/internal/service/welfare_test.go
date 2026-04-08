@@ -300,6 +300,70 @@ func TestWelfareMinimumPapRestrictionFailed(t *testing.T) {
 	}
 }
 
+func TestWelfareFuxiLegionYearsRestrictionFailed(t *testing.T) {
+	tests := []struct {
+		name         string
+		characters   []model.EveCharacter
+		minimumYears *int
+		want         bool
+	}{
+		{
+			name:         "nil minimum never blocks",
+			characters:   []model.EveCharacter{{CorporationID: model.SystemCorporationID}},
+			minimumYears: nil,
+			want:         false,
+		},
+		{
+			name: "character with enough cumulative legion tenure passes",
+			characters: []model.EveCharacter{{
+				CorporationID:        model.SystemCorporationID,
+				FuxiLegionTenureDays: func() *int { v := 365 * 4; return &v }(),
+			}},
+			minimumYears: func() *int { v := 4; return &v }(),
+			want:         false,
+		},
+		{
+			name: "character below cumulative legion tenure is blocked",
+			characters: []model.EveCharacter{{
+				CorporationID:        model.SystemCorporationID,
+				FuxiLegionTenureDays: func() *int { v := 364; return &v }(),
+			}},
+			minimumYears: func() *int { v := 1; return &v }(),
+			want:         true,
+		},
+		{
+			name: "former legion member still qualifies once cumulative tenure is enough",
+			characters: []model.EveCharacter{{
+				CorporationID:        12345,
+				FuxiLegionTenureDays: func() *int { v := 365; return &v }(),
+			}},
+			minimumYears: func() *int { v := 1; return &v }(),
+			want:         false,
+		},
+		{
+			name: "three non-consecutive nine month periods can pass a two year threshold",
+			characters: []model.EveCharacter{
+				{CorporationID: 12345},
+				{
+					CorporationID:        12345,
+					FuxiLegionTenureDays: func() *int { v := 30 * 27; return &v }(),
+				},
+			},
+			minimumYears: func() *int { v := 2; return &v }(),
+			want:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := welfareFuxiLegionYearsRestrictionFailed(tt.characters, tt.minimumYears)
+			if got != tt.want {
+				t.Fatalf("welfareFuxiLegionYearsRestrictionFailed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestBuildEligibleWelfareRespKeepsMinimumPapRestrictedWelfareVisible(t *testing.T) {
 	svc := &WelfareService{}
 
@@ -319,7 +383,7 @@ func TestBuildEligibleWelfareRespKeepsMinimumPapRestrictedWelfareVisible(t *test
 			RequireSkillPlan: false,
 		}
 
-		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, nil, true)
+		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, nil, true, false)
 		if !ok {
 			t.Fatal("expected minimum PAP restricted welfare to stay visible")
 		}
@@ -338,7 +402,7 @@ func TestBuildEligibleWelfareRespKeepsMinimumPapRestrictedWelfareVisible(t *test
 			RequireSkillPlan: false,
 		}
 
-		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, nil, true)
+		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, nil, true, false)
 		if !ok {
 			t.Fatal("expected minimum PAP restricted welfare to stay visible")
 		}
@@ -348,6 +412,62 @@ func TestBuildEligibleWelfareRespKeepsMinimumPapRestrictedWelfareVisible(t *test
 		for _, row := range got.EligibleCharacters {
 			if row.CanApplyNow {
 				t.Fatal("expected per-character welfare rows to be disabled when minimum PAP is not met")
+			}
+		}
+	})
+}
+
+func TestBuildEligibleWelfareRespKeepsFuxiLegionRestrictedWelfareVisible(t *testing.T) {
+	svc := &WelfareService{}
+
+	user := &model.User{QQ: "12345", DiscordID: "discord-1"}
+	characters := []model.EveCharacter{
+		{CharacterID: 1001, CharacterName: "Alpha", CorporationID: 12345},
+		{CharacterID: 1002, CharacterName: "Beta", CorporationID: 67890},
+	}
+	minimumYears := func() *int { v := 3; return &v }()
+
+	t.Run("per user welfare stays visible but disabled", func(t *testing.T) {
+		welfare := model.Welfare{
+			BaseModel:              model.BaseModel{ID: 14},
+			Name:                   "Per User Legion Tenure",
+			DistMode:               model.WelfareDistModePerUser,
+			MinimumFuxiLegionYears: minimumYears,
+		}
+
+		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, nil, false, true)
+		if !ok {
+			t.Fatal("expected legion tenure restricted welfare to stay visible")
+		}
+		if got.CanApplyNow {
+			t.Fatal("expected per-user welfare to be disabled when legion tenure is not met")
+		}
+		if got.IneligibleReason != "legion_years" {
+			t.Fatalf("ineligible reason = %q, want legion_years", got.IneligibleReason)
+		}
+	})
+
+	t.Run("per character welfare keeps rows visible but disabled", func(t *testing.T) {
+		welfare := model.Welfare{
+			BaseModel:              model.BaseModel{ID: 15},
+			Name:                   "Per Character Legion Tenure",
+			DistMode:               model.WelfareDistModePerCharacter,
+			MinimumFuxiLegionYears: minimumYears,
+		}
+
+		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, nil, false, true)
+		if !ok {
+			t.Fatal("expected legion tenure restricted welfare to stay visible")
+		}
+		if len(got.EligibleCharacters) != 2 {
+			t.Fatalf("expected 2 character rows, got %d", len(got.EligibleCharacters))
+		}
+		for _, row := range got.EligibleCharacters {
+			if row.CanApplyNow {
+				t.Fatal("expected per-character welfare rows to be disabled when legion tenure is not met")
+			}
+			if row.IneligibleReason != "legion_years" {
+				t.Fatalf("ineligible reason = %q, want legion_years", row.IneligibleReason)
 			}
 		}
 	})
@@ -379,7 +499,7 @@ func TestBuildEligibleWelfareRespIncludesFutureSkillOptions(t *testing.T) {
 			1002: {7: false},
 		}
 
-		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, skillCache, false)
+		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, skillCache, false, false)
 		if !ok {
 			t.Fatal("expected future-eligible welfare to stay visible")
 		}
@@ -407,7 +527,7 @@ func TestBuildEligibleWelfareRespIncludesFutureSkillOptions(t *testing.T) {
 			1002: {7: false},
 		}
 
-		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, skillCache, false)
+		got, ok := svc.buildEligibleWelfareResp(user, characters, nil, welfare, skillCache, false, false)
 		if !ok {
 			t.Fatal("expected per-character welfare to stay visible")
 		}
@@ -706,6 +826,147 @@ func TestApplyForWelfareUsesConfiguredAutoApproveThreshold(t *testing.T) {
 	}
 	if len(txs) != 0 {
 		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	}
+}
+
+func TestApplyForWelfareRejectsMissingFuxiLegionTenure(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	user := &model.User{
+		Nickname:           "Pilot",
+		QQ:                 "123456",
+		PrimaryCharacterID: 90000001,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	character := &model.EveCharacter{
+		CharacterID:          user.PrimaryCharacterID,
+		CharacterName:        "Pilot One",
+		UserID:               user.ID,
+		CorporationID:        12345,
+		FuxiLegionTenureDays: func() *int { v := 300; return &v }(),
+	}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	minimumYears := 2
+	welfare := &model.Welfare{
+		Name:                   "Veteran Reward",
+		DistMode:               model.WelfareDistModePerUser,
+		MinimumFuxiLegionYears: &minimumYears,
+		Status:                 model.WelfareStatusActive,
+		CreatedBy:              1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	svc := NewWelfareService()
+	_, err := svc.ApplyForWelfare(user.ID, &ApplyForWelfareRequest{WelfareID: welfare.ID})
+	if err == nil {
+		t.Fatal("expected ApplyForWelfare to reject users without enough Fuxi Legion tenure")
+	}
+}
+
+func TestGetEligibleWelfaresRefreshesBadgeCache(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	user := &model.User{
+		BaseModel:          model.BaseModel{ID: 930001},
+		Nickname:           "Pilot Cache",
+		QQ:                 "123456",
+		PrimaryCharacterID: 93000001,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	character := &model.EveCharacter{
+		CharacterID:   user.PrimaryCharacterID,
+		CharacterName: "Pilot Cache One",
+		UserID:        user.ID,
+	}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	welfare := &model.Welfare{
+		Name:      "Cacheable Welfare",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	welfareSvc := NewWelfareService()
+	if _, err := welfareSvc.GetEligibleWelfares(user.ID); err != nil {
+		t.Fatalf("GetEligibleWelfares() error = %v", err)
+	}
+
+	got, err := NewBadgeService().GetBadgeCounts(user.ID, []string{model.RoleUser})
+	if err != nil {
+		t.Fatalf("GetBadgeCounts() error = %v", err)
+	}
+	if got[BadgeCountWelfareEligible] != 1 {
+		t.Fatalf("expected warmed welfare badge cache to return 1, got %#v", got)
+	}
+}
+
+func TestApplyForWelfareRefreshesBadgeCache(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	user := &model.User{
+		BaseModel:          model.BaseModel{ID: 930002},
+		Nickname:           "Pilot Apply",
+		QQ:                 "654321",
+		PrimaryCharacterID: 93000002,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	character := &model.EveCharacter{
+		CharacterID:   user.PrimaryCharacterID,
+		CharacterName: "Pilot Apply One",
+		UserID:        user.ID,
+	}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	welfare := &model.Welfare{
+		Name:      "Apply Once Welfare",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	welfareSvc := NewWelfareService()
+	if _, err := welfareSvc.GetEligibleWelfares(user.ID); err != nil {
+		t.Fatalf("GetEligibleWelfares() error = %v", err)
+	}
+
+	if _, err := welfareSvc.ApplyForWelfare(user.ID, &ApplyForWelfareRequest{WelfareID: welfare.ID}); err != nil {
+		t.Fatalf("ApplyForWelfare() error = %v", err)
+	}
+
+	got, err := NewBadgeService().GetBadgeCounts(user.ID, []string{model.RoleUser})
+	if err != nil {
+		t.Fatalf("GetBadgeCounts() error = %v", err)
+	}
+	if _, ok := got[BadgeCountWelfareEligible]; ok {
+		t.Fatalf("expected welfare badge cache to refresh to zero after apply, got %#v", got)
 	}
 }
 
@@ -1190,6 +1451,24 @@ func TestAdminCreateWelfareRejectsNegativePayByFuxiCoin(t *testing.T) {
 	}
 }
 
+func TestAdminCreateWelfareRejectsNegativeMinimumFuxiLegionYears(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	negativeYears := -1
+	svc := NewWelfareService()
+	err := svc.AdminCreateWelfare(&model.Welfare{
+		Name:                   "Veteran Reward",
+		DistMode:               model.WelfareDistModePerUser,
+		MinimumFuxiLegionYears: &negativeYears,
+		Status:                 model.WelfareStatusActive,
+		CreatedBy:              1,
+	})
+	if err == nil {
+		t.Fatal("expected create to reject negative minimum_fuxi_legion_years")
+	}
+}
+
 func TestAdminUpdateWelfareRejectsNegativePayByFuxiCoin(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
@@ -1216,6 +1495,35 @@ func TestAdminUpdateWelfareRejectsNegativePayByFuxiCoin(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected update to reject negative pay_by_fuxi_coin")
+	}
+}
+
+func TestAdminUpdateWelfareRejectsNegativeMinimumFuxiLegionYears(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	welfare := &model.Welfare{
+		Name:      "Veteran Reward",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	negativeYears := -1
+	svc := NewWelfareService()
+	_, err := svc.AdminUpdateWelfare(welfare.ID, &AdminUpdateWelfareRequest{
+		Name:                   welfare.Name,
+		Description:            welfare.Description,
+		DistMode:               welfare.DistMode,
+		RequireSkillPlan:       false,
+		MinimumFuxiLegionYears: &negativeYears,
+		Status:                 welfare.Status,
+	})
+	if err == nil {
+		t.Fatal("expected update to reject negative minimum_fuxi_legion_years")
 	}
 }
 

@@ -18,7 +18,6 @@ const (
 type BadgeCounts map[string]int64
 
 type BadgeService struct {
-	welfareSvc  *WelfareService
 	srpRepo     *repository.SrpRepository
 	welfareRepo *repository.WelfareRepository
 	shopRepo    *repository.ShopRepository
@@ -27,7 +26,6 @@ type BadgeService struct {
 
 func NewBadgeService() *BadgeService {
 	return &BadgeService{
-		welfareSvc:  NewWelfareService(),
 		srpRepo:     repository.NewSrpRepository(),
 		welfareRepo: repository.NewWelfareRepository(),
 		shopRepo:    repository.NewShopRepository(),
@@ -149,27 +147,5 @@ func (s *BadgeService) GetBadgeCounts(userID uint, userRoles []string) (BadgeCou
 }
 
 func (s *BadgeService) countEligibleWelfares(userID uint) (int64, error) {
-	eligibleWelfares, err := s.welfareSvc.GetEligibleWelfares(userID)
-	if err != nil {
-		return 0, err
-	}
-
-	var count int64
-	for _, welfare := range eligibleWelfares {
-		if welfare.DistMode == model.WelfareDistModePerCharacter {
-			for _, character := range welfare.EligibleCharacters {
-				if character.CanApplyNow {
-					count++
-					break
-				}
-			}
-			continue
-		}
-
-		if welfare.CanApplyNow {
-			count++
-		}
-	}
-
-	return count, nil
+	return getCachedEligibleWelfareBadgeCount(userID), nil
 }
