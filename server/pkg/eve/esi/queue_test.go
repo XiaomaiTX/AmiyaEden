@@ -180,6 +180,29 @@ func TestCorporationKillmailsFreshUsesInactiveInterval(t *testing.T) {
 	}
 }
 
+func TestCharacterKillmailsFreshUsesDailyActiveInterval(t *testing.T) {
+	mini := miniredis.RunT(t)
+	oldRedis := global.Redis
+	global.Redis = redis.NewClient(&redis.Options{Addr: mini.Addr()})
+	t.Cleanup(func() {
+		_ = global.Redis.Close()
+		global.Redis = oldRedis
+	})
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
+	char := model.EveCharacter{CharacterID: 1001}
+
+	queue.setLastRun(&KillmailsTask{}, char, time.Now().Add(-23*time.Hour))
+	if queue.needsRefresh(&KillmailsTask{}, char, true) {
+		t.Fatalf("expected personal killmail refresh to stay fresh within the 24 hour active window")
+	}
+
+	queue.setLastRun(&KillmailsTask{}, char, time.Now().Add(-25*time.Hour))
+	if !queue.needsRefresh(&KillmailsTask{}, char, true) {
+		t.Fatalf("expected personal killmail refresh to expire after the 24 hour active window")
+	}
+}
+
 func newQueueCoverageTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
