@@ -589,7 +589,8 @@
     "evidenceDialogHint": "该福利需要您上传一张证明图片才能申请。",
     "exampleEvidenceLabel": "示例图片（管理员提供）：",
     "uploadEvidenceBtn": "选择图片",
-    "skillPlanningAlertPrefix": "如有技能不达标，可前往"
+    "skillPlanningAlertPrefix": "如有技能不达标，可前往",
+    "multicharRewardBanner": "多人物福利发放规则：按人物发放且附带伏羲币的福利，同一用户前 3 个人物获得 100% 伏羲币，第 4-6 个人物获得 50%，其余人物不获得伏羲币。具体数值以管理员配置为准。"
   },
   "welfareApproval": {
     "pendingTab": "待发放",
@@ -1170,7 +1171,8 @@
       "refType": "@:common.type",
       "time": "@:common.time",
       "empty": "暂无交易记录"
-    }
+    },
+    "multicharRewardBanner": "多人物奖励规则：同一用户在同一舰队中，前 3 个人物获得 100% PAP 奖励，第 4-6 个人物获得 50% 奖励，其余人物不获得奖励。具体数值以管理员配置为准。"
   },
   "fleetConfig": {
     "title": "舰队配置",
@@ -1660,7 +1662,16 @@
       "rate": "兑换比率",
       "rateUnit": "伏羲币 / 1 PAP",
       "updatedAt": "更新时间"
-    }
+    },
+    "multicharSection": "多人物奖励限制",
+    "multicharTip": "配置同一用户多个人物参与同一事件时的奖励递减规则，适用于 PAP 发放和按人物福利发放。",
+    "multicharFullCount": "满额奖励人物数",
+    "multicharFullCountHint": "每个用户前 N 个人物获得 100% 奖励，默认 3。",
+    "multicharReducedCount": "折扣奖励人物数",
+    "multicharReducedCountHint": "紧接满额人物之后的 N 个人物获得折扣奖励，默认 3。",
+    "multicharReducedPct": "折扣奖励百分比",
+    "multicharReducedPctHint": "折扣层级人物获得的奖励百分比（0-100），默认 50。",
+    "multicharCountUnit": "个人物"
   },
   "roleUi": {
     "userRoleDialog": {

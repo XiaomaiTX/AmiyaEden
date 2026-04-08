@@ -31,9 +31,12 @@ func NewPAPExchangeService() *PAPExchangeService {
 
 // PAPExchangeConfigResponse PAP 兑换配置响应
 type PAPExchangeConfigResponse struct {
-	Rates                []model.PAPTypeRate `json:"rates"`
-	FCSalary             float64             `json:"fc_salary"`
-	FCSalaryMonthlyLimit int                 `json:"fc_salary_monthly_limit"`
+	Rates                       []model.PAPTypeRate `json:"rates"`
+	FCSalary                    float64             `json:"fc_salary"`
+	FCSalaryMonthlyLimit        int                 `json:"fc_salary_monthly_limit"`
+	MulticharFullRewardCount    int                 `json:"multichar_full_reward_count"`
+	MulticharReducedRewardCount int                 `json:"multichar_reduced_reward_count"`
+	MulticharReducedRewardPct   int                 `json:"multichar_reduced_reward_pct"`
 }
 
 // GetConfig 获取所有 PAP 类型兑换汇率与 FC 工资
@@ -42,10 +45,14 @@ func (s *PAPExchangeService) GetConfig() (*PAPExchangeConfigResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	tierCfg := getMulticharRewardConfig(s.configRepo)
 	return &PAPExchangeConfigResponse{
-		Rates:                rates,
-		FCSalary:             s.getFCSalary(),
-		FCSalaryMonthlyLimit: s.getFCSalaryMonthlyLimit(),
+		Rates:                       rates,
+		FCSalary:                    s.getFCSalary(),
+		FCSalaryMonthlyLimit:        s.getFCSalaryMonthlyLimit(),
+		MulticharFullRewardCount:    tierCfg.FullRewardCount,
+		MulticharReducedRewardCount: tierCfg.ReducedRewardCount,
+		MulticharReducedRewardPct:   tierCfg.ReducedRewardPct,
 	}, nil
 }
 
@@ -58,9 +65,12 @@ type SetRateRequest struct {
 
 // UpdateConfigRequest 更新 PAP 兑换配置请求
 type UpdateConfigRequest struct {
-	Rates                []SetRateRequest `json:"rates" binding:"required"`
-	FCSalary             *float64         `json:"fc_salary" binding:"required,gte=0"`
-	FCSalaryMonthlyLimit *int             `json:"fc_salary_monthly_limit" binding:"required,gte=0"`
+	Rates                       []SetRateRequest `json:"rates" binding:"required"`
+	FCSalary                    *float64         `json:"fc_salary" binding:"required,gte=0"`
+	FCSalaryMonthlyLimit        *int             `json:"fc_salary_monthly_limit" binding:"required,gte=0"`
+	MulticharFullRewardCount    *int             `json:"multichar_full_reward_count" binding:"required,gte=0"`
+	MulticharReducedRewardCount *int             `json:"multichar_reduced_reward_count" binding:"required,gte=0"`
+	MulticharReducedRewardPct   *int             `json:"multichar_reduced_reward_pct" binding:"required,gte=0,lte=100"`
 }
 
 // UpdateConfig 批量更新 PAP 类型兑换汇率与 FC 工资
@@ -68,9 +78,12 @@ func (s *PAPExchangeService) UpdateConfig(req *UpdateConfigRequest) (*PAPExchang
 	if err := s.SetRates(req.Rates); err != nil {
 		return nil, err
 	}
-	items := newSysConfigBatch(2).
+	items := newSysConfigBatch(5).
 		AddFloat64(model.SysConfigPAPFCSalary, *req.FCSalary, "FC工资").
 		AddInt(model.SysConfigPAPFCSalaryLimit, *req.FCSalaryMonthlyLimit, "FC工资每月上限次数").
+		AddInt(model.SysConfigMulticharFullRewardCount, *req.MulticharFullRewardCount, "多人物满额奖励人物数").
+		AddInt(model.SysConfigMulticharReducedRewardCount, *req.MulticharReducedRewardCount, "多人物折扣奖励人物数").
+		AddInt(model.SysConfigMulticharReducedRewardPct, *req.MulticharReducedRewardPct, "多人物折扣奖励百分比").
 		Items()
 	if err := s.configRepo.SetMany(items); err != nil {
 		return nil, err

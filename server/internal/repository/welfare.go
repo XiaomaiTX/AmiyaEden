@@ -202,6 +202,16 @@ func (r *WelfareRepository) CountApplicationsByWelfareID(welfareID uint) (int64,
 	return count, err
 }
 
+// CountApplicationsByUserAndWelfareTx counts all applications (any status) for a given
+// user_id and welfare_id within the provided transaction.
+func (r *WelfareRepository) CountApplicationsByUserAndWelfareTx(tx *gorm.DB, userID uint, welfareID uint) (int64, error) {
+	var count int64
+	err := tx.Model(&model.WelfareApplication{}).
+		Where("user_id = ? AND welfare_id = ?", userID, welfareID).
+		Count(&count).Error
+	return count, err
+}
+
 // CreateApplication 创建福利申请
 func (r *WelfareRepository) CreateApplication(app *model.WelfareApplication) error {
 	return global.DB.Create(app).Error
