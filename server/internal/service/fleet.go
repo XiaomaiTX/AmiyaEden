@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -515,6 +516,7 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 	}
 	rateMap := s.rateRepo.GetRateMap()
 	walletRate := papImportanceToWalletRate(fleet.Importance, rateMap)
+	tierCfg := getMulticharRewardConfig(s.configRepo)
 	fcSalary := s.getPAPFCSalary()
 	fcSalaryMonthlyLimit := s.getPAPFCSalaryMonthlyLimit()
 	now := time.Now()
@@ -529,7 +531,7 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 		}
 	}
 
-	oldWalletPerUser := buildPapWalletByUser(toPapWalletEntriesFromLogs(oldLogs), walletRate)
+	oldWalletPerUser := buildPapWalletByUser(toPapWalletEntriesFromLogs(oldLogs), walletRate, tierCfg)
 	oldFCSalaryAmount := 0.0
 	if tx, lookupErr := s.walletRepo.GetTransactionByUserRefTypeRefIDInRange(
 		fleet.FCUserID,
@@ -559,8 +561,9 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 			IssuedBy:    userID,
 		})
 		newEntries = append(newEntries, papWalletEntry{
-			UserID:   m.UserID,
-			PapCount: fleet.PapCount,
+			UserID:      m.UserID,
+			CharacterID: m.CharacterID,
+			PapCount:    fleet.PapCount,
 		})
 	}
 
@@ -586,7 +589,7 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 	for uid := range oldWalletPerUser {
 		allUsers[uid] = struct{}{}
 	}
-	newWalletPerUser := buildPapWalletByUser(newEntries, walletRate)
+	newWalletPerUser := buildPapWalletByUser(newEntries, walletRate, tierCfg)
 	newFCSalaryAmount := 0.0
 	if fcInMembers || oldFCSalaryAmount > 0 {
 		// monthlyCount is only needed when this is a new entry (no prior salary for this fleet).
@@ -660,25 +663,50 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 }
 
 type papWalletEntry struct {
-	UserID   uint
-	PapCount float64
+	UserID      uint
+	CharacterID int64
+	PapCount    float64
 }
 
 func toPapWalletEntriesFromLogs(logs []model.FleetPapLog) []papWalletEntry {
 	entries := make([]papWalletEntry, 0, len(logs))
 	for _, log := range logs {
 		entries = append(entries, papWalletEntry{
-			UserID:   log.UserID,
-			PapCount: log.PapCount,
+			UserID:      log.UserID,
+			CharacterID: log.CharacterID,
+			PapCount:    log.PapCount,
 		})
 	}
 	return entries
 }
 
-func buildPapWalletByUser(entries []papWalletEntry, walletRate float64) map[uint]float64 {
-	result := make(map[uint]float64, len(entries))
-	for _, entry := range entries {
-		result[entry.UserID] += entry.PapCount * walletRate
+func buildPapWalletByUser(entries []papWalletEntry, walletRate float64, tierCfg MulticharRewardConfig) map[uint]float64 {
+	// Group entries by user
+	type userEntries struct {
+		entries []papWalletEntry
+	}
+	byUser := make(map[uint]*userEntries)
+	for _, e := range entries {
+		ue, ok := byUser[e.UserID]
+		if !ok {
+			ue = &userEntries{}
+			byUser[e.UserID] = ue
+		}
+		ue.entries = append(ue.entries, e)
+	}
+
+	result := make(map[uint]float64, len(byUser))
+	for uid, ue := range byUser {
+		// Sort by CharacterID for deterministic ordering
+		sort.Slice(ue.entries, func(i, j int) bool {
+			return ue.entries[i].CharacterID < ue.entries[j].CharacterID
+		})
+		var total float64
+		for i, e := range ue.entries {
+			multiplier := CharacterTierMultiplier(i+1, tierCfg.FullRewardCount, tierCfg.ReducedRewardCount, tierCfg.ReducedRewardPct)
+			total += e.PapCount * walletRate * multiplier
+		}
+		result[uid] = total
 	}
 	return result
 }

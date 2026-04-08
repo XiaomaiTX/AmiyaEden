@@ -661,13 +661,34 @@ func (s *WelfareService) applyDeliveredWelfareEffectsTx(
 		return errors.New("该福利配置了伏羲币发放，但申请记录缺少用户信息")
 	}
 
+	payAmount := float64(*welfare.PayByFuxiCoin)
+	if welfare.DistMode == model.WelfareDistModePerCharacter {
+		tierCfg := MulticharRewardConfig{
+			FullRewardCount:    model.SysConfigDefaultMulticharFullRewardCount,
+			ReducedRewardCount: model.SysConfigDefaultMulticharReducedRewardCount,
+			ReducedRewardPct:   model.SysConfigDefaultMulticharReducedRewardPct,
+		}
+		if s.cfgRepo != nil {
+			tierCfg = getMulticharRewardConfig(s.cfgRepo)
+		}
+
+		charCount, countErr := s.repo.CountApplicationsByUserAndWelfareTx(tx, *app.UserID, app.WelfareID)
+		if countErr != nil {
+			return fmt.Errorf("统计用户福利申请数失败: %w", countErr)
+		}
+		payAmount *= CharacterTierMultiplier(int(charCount), tierCfg.FullRewardCount, tierCfg.ReducedRewardCount, tierCfg.ReducedRewardPct)
+	}
+	if payAmount <= 0 {
+		return nil
+	}
+
 	reason := fmt.Sprintf("Welfare#%d Application#%d %s", welfare.ID, app.ID, welfare.Name)
 	refID := fmt.Sprintf("welfare_application:%d", app.ID)
 	return NewSysWalletService().ApplyWalletDeltaByOperatorTx(
 		tx,
 		*app.UserID,
 		reviewerID,
-		float64(*welfare.PayByFuxiCoin),
+		payAmount,
 		reason,
 		model.WalletRefWelfarePayout,
 		refID,

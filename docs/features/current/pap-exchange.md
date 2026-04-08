@@ -15,6 +15,7 @@ source_of_truth:
   - server/internal/router/router.go
   - static/src/api/pap-exchange.ts
   - static/src/views/system/pap-exchange
+  - server/internal/service/multichar_reward.go
 ---
 
 # PAP 兑换汇率
@@ -54,6 +55,26 @@ PAP 兑换汇率功能允许管理员为每种舰队行动类型（Skirmish / St
 - FC 工资单独写入 `wallet_transaction` 的 `pap_fc_salary` 流水类型，便于按月计数与审计
 - 三种 PAP 类型固定不可增删；管理页面仅允许修改汇率数值
 - 重新发放 PAP（re-issue）时钱包差量按汇率换算，与首次发放一致
+
+## 多人物奖励限制
+
+当同一用户有多个人物参与同一舰队时，PAP 奖励按人物数量递减：
+
+| 层级 | 默认人物数 | 奖励比例 |
+| --- | --- | --- |
+| 满额 | 前 3 个 | 100% |
+| 折扣 | 第 4–6 个 | 50% |
+| 无奖励 | 第 7 个起 | 0% |
+
+管理员可在「系统管理 → PAP兑换」页面配置三项参数：
+
+- `multichar.full_reward_count`（满额奖励人物数，默认 3）
+- `multichar.reduced_reward_count`（折扣奖励人物数，默认 3）
+- `multichar.reduced_reward_pct`（折扣百分比，默认 50）
+
+此限制仅影响 PAP 钱包奖励，不影响 FC 工资（FC 工资按自然人发放，不受人物数量限制）。
+
+人物排序方式为按 `CharacterID` 升序；排序仅在用户人物数超过满额层级时影响哪些人物落入折扣或无奖励层级。
 
 ## 入口
 

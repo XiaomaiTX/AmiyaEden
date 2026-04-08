@@ -588,7 +588,8 @@
     "evidenceDialogHint": "This welfare requires you to upload an image as evidence before applying.",
     "exampleEvidenceLabel": "Example (provided by admin):",
     "uploadEvidenceBtn": "Choose Image",
-    "skillPlanningAlertPrefix": "Go to "
+    "skillPlanningAlertPrefix": "Go to ",
+    "multicharRewardBanner": "Multi-character welfare policy: for per-character welfare with Fuxi Coin payout, the first 3 characters per user receive 100%, characters 4-6 receive 50%, and the rest receive no Fuxi Coin. Exact values depend on admin configuration."
   },
   "welfareApproval": {
     "pendingTab": "Pending Delivery",
@@ -1170,7 +1171,8 @@
       "refType": "@:common.type",
       "time": "@:common.time",
       "empty": "No transactions"
-    }
+    },
+    "multicharRewardBanner": "Multi-character reward policy: within the same fleet, the first 3 characters per user receive 100% PAP reward, characters 4-6 receive 50%, and the rest receive no reward. Exact values depend on admin configuration."
   },
   "fleetConfig": {
     "title": "Fleet Configs",
@@ -1660,7 +1662,16 @@
       "rate": "Exchange Rate",
       "rateUnit": "Fuxi Coin / 1 PAP",
       "updatedAt": "Updated At"
-    }
+    },
+    "multicharSection": "Multi-Character Reward Restriction",
+    "multicharTip": "Configure reward reduction tiers when a single user has multiple characters in the same event. Applies to PAP issuance and per-character welfare payouts.",
+    "multicharFullCount": "Full Reward Characters",
+    "multicharFullCountHint": "First N characters per user receive 100% reward. Default: 3.",
+    "multicharReducedCount": "Reduced Reward Characters",
+    "multicharReducedCountHint": "Next N characters after the full-reward tier receive a reduced reward. Default: 3.",
+    "multicharReducedPct": "Reduced Reward Percentage",
+    "multicharReducedPctHint": "Reward percentage for the reduced tier (0-100). Default: 50.",
+    "multicharCountUnit": "characters"
   },
   "roleUi": {
     "userRoleDialog": {

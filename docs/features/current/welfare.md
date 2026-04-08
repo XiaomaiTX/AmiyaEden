@@ -18,6 +18,7 @@ source_of_truth:
 - 管理员福利定义 CRUD（创建、编辑、删除、列表）
 - 福利定义支持可选整数配置 `pay_by_fuxi_coin`：当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 时，资格校验通过的申请会在提交时自动发放；其余大额或非伏羲币福利仍走人工审批发放，且发放时始终按当前配置计算伏羲币
 - 福利自动审批阈值通过 `system_config.welfare.auto_approve_fuxi_coin_threshold` 持久化，默认 `500`；管理员可在 `/welfare/settings` 的“自动审批配置” tab 调整，设置为 `0` 时关闭自动审批
+- 按人物发放且附带伏羲币的福利受多人物奖励限制：同一用户对同一福利的申请按数量递减奖励（默认前 3 个 100%、第 4–6 个 50%、其余 0%），参数与 PAP 兑换页面共享，详见 `docs/features/current/pap-exchange.md`
 - 两种发放模式：按自然人（per_user）、按人物（per_character）
 - 可选技能计划检查：可关联多个军团技能计划，技能合格才允许申请
 - 可选人物最大年龄限制（max_char_age_months）：可与 per_user / per_character 一起使用。系统会先按用户检查任一人物年龄，若任一人物超龄则该福利对该用户不可申请；若通过，再继续按发放模式筛选人物
@@ -110,7 +111,7 @@ source_of_truth:
 - per_user 去重基于 QQ / DiscordID 匹配（非 user_id），要求用户至少设置一个联系方式
 - per_character 去重基于 character_id 和 character_name
 - 申请时服务端二次校验资格，防止并发竞态
-- `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；小额伏羲币福利的“发放当下”就是申请提交事务本身
+- `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；按人物发放且附带伏羲币的福利还会按当前 `multichar.*` 层级配置乘算奖励倍率；小额伏羲币福利的“发放当下”就是申请提交事务本身
 - 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，福利发放会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
 - 当福利官在审批端执行 `requested -> delivered` 成功后，服务会尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，并在成功响应里附带 `mail_error` 供前端提示
 - 若 ESI 接受了发信请求，成功响应还可能附带邮件调试信息；具体字段以代码契约为准

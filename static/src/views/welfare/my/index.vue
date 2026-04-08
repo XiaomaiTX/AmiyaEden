@@ -11,6 +11,10 @@
         </p>
       </ElAlert>
 
+      <ElAlert type="info" :closable="true" class="mb-4" show-icon>
+        <p class="break-all">{{ t('welfareMy.multicharRewardBanner') }}</p>
+      </ElAlert>
+
       <ElTabs v-model="activeTab" @tab-change="handleTabChange">
         <!-- 申请福利 -->
         <ElTabPane :label="t('welfareMy.applyTab')" name="apply">

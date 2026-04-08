@@ -4,6 +4,14 @@
     <!-- 搜索栏 -->
     <FleetSearch v-model="searchForm" @search="handleSearch" @reset="resetSearchParams" />
 
+    <ElAlert
+      class="mb-3"
+      :title="$t('fleet.multicharRewardBanner')"
+      type="info"
+      :closable="true"
+      show-icon
+    />
+
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
         <template #left>
@@ -135,6 +143,7 @@
     ElButton,
     ElMessageBox,
     ElSwitch,
+    ElAlert,
     type FormInstance,
     type FormRules
   } from 'element-plus'

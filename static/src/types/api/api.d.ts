@@ -438,8 +438,8 @@ declare namespace Api {
     }
 
     /** 军团 PAP 汇总分页响应 */
-    interface CorporationPapSummaryList
-      extends Api.Common.PaginatedResponse<CorporationPapSummaryItem> {
+    interface CorporationPapSummaryList extends Api.Common
+      .PaginatedResponse<CorporationPapSummaryItem> {
       overview: CorporationPapOverview
     }
 
@@ -518,6 +518,9 @@ declare namespace Api {
       rates: RateItem[]
       fc_salary: number
       fc_salary_monthly_limit: number
+      multichar_full_reward_count: number
+      multichar_reduced_reward_count: number
+      multichar_reduced_reward_pct: number
     }
 
     interface UpdateRateItem {
@@ -530,6 +533,9 @@ declare namespace Api {
       rates: UpdateRateItem[]
       fc_salary: number
       fc_salary_monthly_limit: number
+      multichar_full_reward_count: number
+      multichar_reduced_reward_count: number
+      multichar_reduced_reward_pct: number
     }
   }
 
