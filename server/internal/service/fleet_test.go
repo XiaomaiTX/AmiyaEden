@@ -1,9 +1,15 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
+	"fmt"
 	"testing"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestPapImportanceToWalletRate(t *testing.T) {
@@ -225,6 +231,62 @@ func TestFleetServiceCanDeleteFleet(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateFleetClearsAutoSrpScheduleWhenDisabled(t *testing.T) {
+	db := newFleetServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	scheduledAt := time.Date(2026, time.April, 8, 14, 0, 0, 0, time.UTC)
+	fleet := &model.Fleet{
+		ID:                  "fleet-1",
+		Title:               "CTA",
+		StartAt:             scheduledAt.Add(-2 * time.Hour),
+		EndAt:               scheduledAt.Add(-1 * time.Hour),
+		Importance:          model.FleetImportanceCTA,
+		PapCount:            1,
+		FCUserID:            42,
+		FCCharacterID:       9001,
+		FCCharacterName:     "FC One",
+		AutoSrpMode:         model.FleetAutoSrpAutoApprove,
+		AutoSrpScheduledFor: &scheduledAt,
+	}
+	if err := db.Create(fleet).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+
+	svc := &FleetService{
+		repo:     repository.NewFleetRepository(),
+		charRepo: repository.NewEveCharacterRepository(),
+	}
+	disabled := model.FleetAutoSrpDisabled
+	if _, err := svc.UpdateFleet("fleet-1", 42, []string{model.RoleFC}, &UpdateFleetRequest{AutoSrpMode: &disabled}); err != nil {
+		t.Fatalf("update fleet: %v", err)
+	}
+
+	var stored model.Fleet
+	if err := db.Where("id = ?", "fleet-1").First(&stored).Error; err != nil {
+		t.Fatalf("reload fleet: %v", err)
+	}
+	if stored.AutoSrpScheduledFor != nil {
+		t.Fatalf("expected auto SRP schedule to be cleared when disabling, got %v", stored.AutoSrpScheduledFor)
+	}
+}
+
+func newFleetServiceTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	dsn := fmt.Sprintf("file:fleet_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&model.Fleet{}); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	return db
 }
 
 func TestNormalizeCharacterNames(t *testing.T) {

@@ -41,28 +41,28 @@ func NewAutoSrpService() *AutoSrpService {
 }
 
 // ProcessAutoSRP 自动 SRP 处理入口
-func (s *AutoSrpService) ProcessAutoSRP(fleetID string) {
+func (s *AutoSrpService) ProcessAutoSRP(fleetID string) error {
 	fleet, err := s.fleetRepo.GetByID(fleetID)
 	if err != nil {
 		global.Logger.Warn("[AutoSRP] 获取舰队失败", zap.String("fleet_id", fleetID), zap.Error(err))
-		return
+		return err
 	}
 
 	if fleet.AutoSrpMode == model.FleetAutoSrpDisabled {
-		return
+		return nil
 	}
 
 	ctx, err := s.buildFleetContext(fleetID)
 	if err != nil {
 		global.Logger.Warn("[AutoSRP] 构建舰队上下文失败", zap.String("fleet_id", fleetID), zap.Error(err))
-		return
+		return err
 	}
 
 	// 获取舰队成员
 	members, err := s.fleetRepo.ListMembers(fleetID)
 	if err != nil {
 		global.Logger.Warn("[AutoSRP] 获取成员失败", zap.String("fleet_id", fleetID), zap.Error(err))
-		return
+		return err
 	}
 
 	for _, member := range members {
@@ -73,6 +73,7 @@ func (s *AutoSrpService) ProcessAutoSRP(fleetID string) {
 		zap.String("fleet_id", fleetID),
 		zap.Int("members", len(members)),
 	)
+	return nil
 }
 
 func (s *AutoSrpService) buildFleetContext(fleetID string) (*autoSRPFleetContext, error) {

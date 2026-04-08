@@ -19,11 +19,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// FleetKMRefreshFunc 触发单个人物 KM 刷新的钩子，由 jobs 层注入以避免循环依赖
-var FleetKMRefreshFunc func(characterID int64)
-
-// FleetAutoSRPFunc 自动 SRP 处理钩子，由 jobs 层注入
-var FleetAutoSRPFunc func(fleetID string)
+// FleetAutoSRPFunc 自动 SRP 调度钩子，由 jobs 层注入
+var FleetAutoSRPFunc func(fleetID string, issuedAt time.Time)
 
 // FleetService 舰队业务逻辑层
 type FleetService struct {
@@ -279,6 +276,9 @@ func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRoles []stri
 	}
 	if req.AutoSrpMode != nil {
 		fleet.AutoSrpMode = normalizeAutoSrpMode(*req.AutoSrpMode)
+		if fleet.AutoSrpMode == model.FleetAutoSrpDisabled {
+			fleet.AutoSrpScheduledFor = nil
+		}
 	}
 
 	if err := s.repo.Update(fleet); err != nil {
@@ -520,6 +520,7 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 	fcSalary := s.getPAPFCSalary()
 	fcSalaryMonthlyLimit := s.getPAPFCSalaryMonthlyLimit()
 	now := time.Now()
+	scheduledFor := model.NormalizeFleetAutoSrpScheduledFor(now.Add(model.FleetAutoSrpDelay))
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	nextMonthStart := monthStart.AddDate(0, 1, 0)
 
@@ -559,6 +560,7 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 			UserID:      m.UserID,
 			PapCount:    fleet.PapCount,
 			IssuedBy:    userID,
+			IssuedAt:    now,
 		})
 		newEntries = append(newEntries, papWalletEntry{
 			UserID:      m.UserID,
@@ -647,6 +649,16 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 		}
 	}
 
+	if fleet.AutoSrpMode != model.FleetAutoSrpDisabled {
+		if err := tx.Model(&model.Fleet{}).
+			Where("id = ?", fleetID).
+			Update("auto_srp_scheduled_for", scheduledFor).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("更新自动 SRP 调度时间失败: %w", err)
+		}
+		fleet.AutoSrpScheduledFor = &scheduledFor
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("提交事务失败: %w", err)
 	}
@@ -656,8 +668,9 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 		go s.updateFleetMotd(fleet)
 	}
 
-	// 异步触发新成员的 KM 刷新（只刷新本次 PAP 新增的成员）
-	go s.triggerNewMembersKMRefresh(fleetID)
+	if FleetAutoSRPFunc != nil && fleet.AutoSrpMode != model.FleetAutoSrpDisabled {
+		FleetAutoSRPFunc(fleetID, now)
+	}
 
 	return nil
 }
@@ -753,52 +766,6 @@ func (s *FleetService) getPAPFCSalary() float64 {
 
 func (s *FleetService) getPAPFCSalaryMonthlyLimit() int {
 	return s.configRepo.GetInt(model.SysConfigPAPFCSalaryLimit, model.SysConfigDefaultPAPFCSalaryLimit)
-}
-
-// triggerNewMembersKMRefresh 对本舰队中需要 KM 刷新的成员执行触发：
-// 从未触发过，或上次触发时间超过 15 分钟（冷却期外）的成员才会被触发
-func (s *FleetService) triggerNewMembersKMRefresh(fleetID string) {
-	if FleetKMRefreshFunc == nil {
-		return
-	}
-	newMembers, err := s.repo.ListMembersForKMRefresh(fleetID)
-	if err != nil {
-		global.Logger.Warn("[Fleet] 查询待 KM 刷新成员失败",
-			zap.String("fleet_id", fleetID),
-			zap.Error(err),
-		)
-		return
-	}
-	if len(newMembers) == 0 {
-		return
-	}
-
-	charIDs := make([]int64, 0, len(newMembers))
-	for _, m := range newMembers {
-		charIDs = append(charIDs, m.CharacterID)
-	}
-
-	// 先标记，再触发——避免并发重复触发
-	if err := s.repo.MarkMembersKMRefreshed(fleetID, charIDs); err != nil {
-		global.Logger.Warn("[Fleet] 标记 KM 刷新状态失败",
-			zap.String("fleet_id", fleetID),
-			zap.Error(err),
-		)
-		// 即使标记失败也继续触发，下次 PAP 仍会重试
-	}
-
-	for _, charID := range charIDs {
-		FleetKMRefreshFunc(charID)
-	}
-	global.Logger.Info("[Fleet] 已触发舰队成员 KM 刷新",
-		zap.String("fleet_id", fleetID),
-		zap.Int("count", len(charIDs)),
-	)
-
-	// KM 刷新完成后触发自动 SRP
-	if FleetAutoSRPFunc != nil {
-		FleetAutoSRPFunc(fleetID)
-	}
 }
 
 // ListMembersWithPap 分页查询舰队成员（含 PAP 信息）
