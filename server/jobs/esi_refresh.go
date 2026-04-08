@@ -14,6 +14,17 @@ import (
 // esiQueue 全局 ESI 刷新队列实例
 var esiQueue *esi.Queue
 
+var newESIQueueForJobs = func() *esi.Queue {
+	return esi.NewQueue(
+		service.NewEveSSOService(),
+		repository.NewEveCharacterRepository(),
+	)
+}
+
+var startInitialESIQueueRun = func(queue *esi.Queue) {
+	go queue.Run()
+}
+
 // GetESIQueue 获取 ESI 刷新队列实例（供 handler 层使用）
 func GetESIQueue() *esi.Queue {
 	return esiQueue
@@ -21,10 +32,7 @@ func GetESIQueue() *esi.Queue {
 
 // registerESIRefreshJob 注册 ESI 数据刷新定时任务
 func registerESIRefreshJob(c *cron.Cron) {
-	esiQueue = esi.NewQueue(
-		service.NewEveSSOService(),
-		repository.NewEveCharacterRepository(),
-	)
+	esiQueue = newESIQueueForJobs()
 
 	rollSvc := service.NewRoleService()
 	autoRoleSvc := service.NewAutoRoleService()
@@ -98,4 +106,5 @@ func registerESIRefreshJob(c *cron.Cron) {
 		return
 	}
 	global.Logger.Info("注册 ESI 刷新定时任务成功", zap.Int("entry_id", int(id)))
+	startInitialESIQueueRun(esiQueue)
 }

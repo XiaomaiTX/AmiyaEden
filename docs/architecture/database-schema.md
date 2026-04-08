@@ -107,6 +107,25 @@ source_of_truth:
 
 - 一个 `user` 可以绑定多个 `eve_character`
 - `user.primary_character_id` 记录主人物的 EVE `character_id`
+- `fuxi_legion_tenure_days` 是从 `character_corporation_history` 推导出的缓存字段，不应再视为 request-time ESI 读取结果
+
+### `character_corporation_history`
+
+`character_corporation_history` 保存绑定人物的完整 ESI corporation history 快照。
+
+关键列包括：
+
+- `character_id`
+- `record_id`
+- `corporation_id`
+- `is_deleted`
+- `start_date`
+
+说明：
+
+- 行集按人物维度由 ESI 刷新队列全量替换，不保留软删除历史
+- `record_id` 保留 CCP 返回的原始记录标识，用于避免重复行和支持后续复用
+- 该表是 `eve_character.fuxi_legion_tenure_days` 的上游来源，也为后续 employment history 相关功能提供持久化数据
 
 ## 职权关联与权限数据
 
@@ -333,7 +352,7 @@ ESI 头衔到系统职权的映射表。
 - 发放时，服务层会重新读取当前 `welfare` 行来决定是否发放伏羲币；若 `0 < pay_by_fuxi_coin < system_config.welfare.auto_approve_fuxi_coin_threshold`，该发放会在申请提交事务内直接发生
 - `system_config.welfare.auto_approve_fuxi_coin_threshold` 默认值为 `500`；管理员可在 `/welfare/settings` 调整，设置为 `0` 时关闭自动审批
 - 技能计划关联当前通过 `welfare_skill_plans` 关系表维护，不直接内嵌在 `welfare` 表列里
-- `minimum_fuxi_legion_years` 要求用户拥有至少一个角色，其在伏羲军团的累计任职时长达到该值；累计时长会缓存到 `eve_character.fuxi_legion_tenure_days`
+- `minimum_fuxi_legion_years` 要求用户拥有至少一个角色，其在伏羲军团的累计任职时长达到该值；累计时长从 `character_corporation_history` 推导并缓存到 `eve_character.fuxi_legion_tenure_days`
 
 ### `welfare_application`
 
