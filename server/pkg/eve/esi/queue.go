@@ -90,16 +90,22 @@ func (q *Queue) Run() {
 		authorizedProviders = map[int64]int64{}
 	}
 	authorizedCorps := make(map[int64]bool)
+	corpProviderIDs := make(map[int64][]int64)
 	corpHasActiveProvider := make(map[int64]bool)
 	for characterID, corporationID := range authorizedProviders {
 		authorizedCorps[corporationID] = true
+		corpProviderIDs[corporationID] = append(corpProviderIDs[corporationID], characterID)
 		if activityMap[characterID] {
 			corpHasActiveProvider[corporationID] = true
 		}
 	}
 	corpCoverage := make(map[int64]bool)
 	for corporationID := range authorizedCorps {
-		if q.corporationKillmailsFresh(corporationID, corpHasActiveProvider[corporationID]) {
+		if q.corporationKillmailsFresh(
+			corporationID,
+			corpProviderIDs[corporationID],
+			corpHasActiveProvider[corporationID],
+		) {
 			corpCoverage[corporationID] = true
 		}
 	}
@@ -366,7 +372,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 				Description: task.Description(),
 				CharacterID: char.CharacterID,
 				Priority:    task.Priority(),
-				Status:      "success",
+				Status:      "skipped",
 			})
 			return
 		}
@@ -496,11 +502,21 @@ func buildAuthorizedCorpKillmailProviders(characters []model.EveCharacter) (map[
 	return providers, nil
 }
 
-func (q *Queue) corporationKillmailsFresh(corporationID int64, isActive bool) bool {
+func (q *Queue) corporationKillmailsFresh(corporationID int64, providerCharacterIDs []int64, isActive bool) bool {
 	if corporationID == 0 {
 		return false
 	}
-	return !q.needsRefresh(&CorpKillmailsTask{}, model.EveCharacter{CorporationID: corporationID}, isActive)
+	corpChar := model.EveCharacter{CorporationID: corporationID}
+	if !q.needsRefresh(&CorpKillmailsTask{}, corpChar, isActive) {
+		return true
+	}
+
+	legacyRun, ok := q.getFreshLegacyCorpLastRun(providerCharacterIDs, isActive)
+	if !ok {
+		return false
+	}
+	q.setLastRun(&CorpKillmailsTask{}, corpChar, legacyRun)
+	return true
 }
 
 func (q *Queue) executionLock(key string) *sync.Mutex {
@@ -519,7 +535,7 @@ func (q *Queue) executionLock(key string) *sync.Mutex {
 // ─────────────────────────────────────────────
 
 const (
-	lastRunKeyPrefix = "esi:refresh:lastrun:" // esi:refresh:lastrun:{task}:{characterID}
+	lastRunKeyPrefix = "esi:refresh:lastrun:" // esi:refresh:lastrun:{task}:char:{characterID} or {task}:corp:{corporationID}
 )
 
 func (q *Queue) setLastRun(task RefreshTask, char model.EveCharacter, t time.Time) {
@@ -530,10 +546,63 @@ func (q *Queue) setLastRun(task RefreshTask, char model.EveCharacter, t time.Tim
 func (q *Queue) getLastRun(task RefreshTask, char model.EveCharacter) (time.Time, error) {
 	key := fmt.Sprintf("%s%s", lastRunKeyPrefix, q.taskExecutionKey(task, char))
 	val, err := global.Redis.Get(context.Background(), key).Int64()
-	if err != nil {
+	if err == nil {
+		return time.Unix(val, 0), nil
+	}
+
+	legacyKey, ok := q.legacyLastRunKey(task, char)
+	if !ok {
 		return time.Time{}, err
 	}
-	return time.Unix(val, 0), nil
+
+	legacyVal, legacyErr := global.Redis.Get(context.Background(), legacyKey).Int64()
+	if legacyErr != nil {
+		return time.Time{}, err
+	}
+
+	lastRun := time.Unix(legacyVal, 0)
+	q.setLastRun(task, char, lastRun)
+	return lastRun, nil
+}
+
+func (q *Queue) legacyLastRunKey(task RefreshTask, char model.EveCharacter) (string, bool) {
+	if char.CharacterID == 0 {
+		return "", false
+	}
+	return fmt.Sprintf("%s%s:%d", lastRunKeyPrefix, task.Name(), char.CharacterID), true
+}
+
+func (q *Queue) getFreshLegacyCorpLastRun(providerCharacterIDs []int64, isActive bool) (time.Time, bool) {
+	if len(providerCharacterIDs) == 0 {
+		return time.Time{}, false
+	}
+
+	interval := (&CorpKillmailsTask{}).Interval()
+	dur := interval.Active
+	if !isActive {
+		dur = interval.Inactive
+	}
+
+	var freshest time.Time
+	for _, characterID := range providerCharacterIDs {
+		legacyKey := fmt.Sprintf("%s%s:%d", lastRunKeyPrefix, (&CorpKillmailsTask{}).Name(), characterID)
+		legacyVal, err := global.Redis.Get(context.Background(), legacyKey).Int64()
+		if err != nil {
+			continue
+		}
+		legacyRun := time.Unix(legacyVal, 0)
+		if time.Since(legacyRun) >= dur {
+			continue
+		}
+		if freshest.IsZero() || legacyRun.After(freshest) {
+			freshest = legacyRun
+		}
+	}
+
+	if freshest.IsZero() {
+		return time.Time{}, false
+	}
+	return freshest, true
 }
 
 // ─────────────────────────────────────────────
