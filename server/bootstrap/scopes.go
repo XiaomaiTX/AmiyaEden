@@ -17,7 +17,7 @@ func InitScopes() {
 	var count int
 	for _, task := range tasks {
 		for _, ts := range task.RequiredScopes() {
-			service.RegisterScope(task.Name(), ts.Scope, ts.Description, true)
+			service.RegisterScope(task.Name(), ts.Scope, ts.Description, !ts.Optional)
 			count++
 		}
 	}

@@ -25,9 +25,9 @@ func TestBuildLoginScopesIncludesPublicDataRegisteredAndExtraScopes(t *testing.T
 	scopeMu.Lock()
 	original := slices.Clone(registeredScopes)
 	registeredScopes = []RegisteredScope{
-		{Module: "killmail", Scope: "esi-killmails.read_killmails.v1"},
-		{Module: "wallet", Scope: "  esi-wallet.read_character_wallet.v1  "},
-		{Module: "empty", Scope: "   "},
+		{Module: "killmail", Scope: "esi-killmails.read_killmails.v1", Required: true},
+		{Module: "wallet", Scope: "  esi-wallet.read_character_wallet.v1  ", Required: true},
+		{Module: "empty", Scope: "   ", Required: true},
 	}
 	scopeMu.Unlock()
 	t.Cleanup(func() {

@@ -9,6 +9,7 @@ source_of_truth:
   - server/internal/service/auto_srp.go
   - server/internal/repository/srp.go
   - server/internal/repository/killmail.go
+  - server/jobs/auto_srp_schedule.go
   - static/src/api/srp.ts
   - static/src/views/srp
 ---
@@ -196,7 +197,22 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 - `auto_approve` 模式：验证通过的申请自动标记为 `approved`，备注”补损根据舰队的自动补损设置，已由系统自动批准。”
 - `submit_only` 模式：申请保持 `submitted` 状态，等待管理员手动审批
 - 不符合规则的配置和KM，依然允许成员手动自行提交补损申请，自动SRP机制会跳过这些KM
+### PAP 后延迟自动 SRP
 
+舰队 PAP 发放完成后，系统会为该舰队登记一次性自动 SRP 调度，计划时间为发放后 2 小时。
+
+- **执行逻辑**：到点后调用 `ProcessAutoSRP(fleetID)`；该次计划无论成功或失败都只尝试一次，且仅在 `auto_srp_scheduled_for` 仍指向本次计划时才会清空，避免覆盖更新的 PAP 计划
+- **重新发放**：若同一舰队重新发放 PAP，计划时间会重置为最新一次发放后的 2 小时
+- **重启恢复**：未执行的计划时间持久化在舰队表中，服务启动时会恢复这类一次性调度
+- **非目标行为**：PAP 发放本身不再为舰队成员逐个触发个人 killmail 刷新
+
+### 军团击杀邮件覆盖
+
+管理员可通过人物管理页面授权军团击杀邮件 scope（`esi-killmails.read_corporation_killmails.v1`），该 scope 标记为 `Optional`，不影响普通用户 SSO 登录。要实际拉取军团击杀邮件，该授权人物还需要在已同步的军团职权中具备 `Director`。
+
+- **ESI 任务**：`corporation_killmails` 定期拉取军团范围的击杀邮件（活跃间隔 60 分钟，非活跃 1 天）
+- **效果**：军团 KM 入库后，PAP 后 2 小时执行的一次性自动 SRP 任务可为成员匹配到更多击杀邮件，提高自动 SRP 覆盖率
+- **队列优化**：当某军团已经存在同时具备 `corporation_killmails` scope 与 `Director` 职权、且最近一次军团 KM 刷新仍在有效期内的授权人物时，自动 ESI 队列会跳过该军团成员的 `character_killmails` 自动刷新，避免重复消耗任务与 ESI 额度
 ## 关键不变量
 
 - 审核与发放是分离的接口，不要假设它们是一步完成
