@@ -29,8 +29,8 @@ func (t *TitlesTask) Priority() Priority  { return PriorityNormal }
 
 func (t *TitlesTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   6 * time.Hour,
-		Inactive: 7 * 24 * time.Hour,
+		Active:   24 * time.Hour,
+		Inactive: 24 * time.Hour,
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"sort"
 	"strings"
 	"time"
 
@@ -806,6 +805,7 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 	if err != nil {
 		return nil, errors.New("获取申请记录失败")
 	}
+	var skillCheckCache map[int64]map[uint]bool
 
 	if welfare.MaxCharAgeMonths != nil && *welfare.MaxCharAgeMonths > 0 {
 		s.ensureBirthdays(characters)
@@ -889,6 +889,7 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 			if !ok {
 				return nil, errors.New("获取技能计划失败")
 			}
+			skillCheckCache = cache
 
 			if welfare.DistMode == model.WelfareDistModePerUser {
 				if !s.anyCharacterSatisfiesSkillPlan(characters, welfare.SkillPlanIDs, cache) {
@@ -933,11 +934,41 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		return nil, errors.New("申请失败")
 	}
 
-	// Badge counts are cached in memory and refreshed only from welfare entry points.
-	// A stale badge is acceptable; a failed cache refresh must not fail the application.
-	_, _ = s.GetEligibleWelfares(userID)
+	// Badge counts are cached in memory. When the cache is already warm, update only
+	// this welfare's contribution and avoid a full eligibility recompute.
+	appsAfterApply := append(append(make([]model.WelfareApplication, 0, len(apps)+1), apps...), *app)
+	s.refreshEligibleWelfareBadgeCacheAfterApply(user, characters, appsAfterApply, welfare, skillCheckCache)
 
 	return app, nil
+}
+
+func (s *WelfareService) refreshEligibleWelfareBadgeCacheAfterApply(
+	user *model.User,
+	characters []model.EveCharacter,
+	apps []model.WelfareApplication,
+	welfare *model.Welfare,
+	skillCheckCache map[int64]map[uint]bool,
+) {
+	if user == nil || welfare == nil {
+		return
+	}
+
+	contributionAfterApply := int64(0)
+
+	resp, stillVisible := s.buildEligibleWelfareResp(
+		user,
+		characters,
+		apps,
+		*welfare,
+		skillCheckCache,
+		false,
+		false,
+	)
+	if stillVisible {
+		contributionAfterApply = countEligibleWelfareBadgeEntries([]EligibleWelfareResp{resp})
+	}
+
+	updateEligibleWelfareBadgeCountAfterApply(user.ID, contributionAfterApply)
 }
 
 // ─────────────────────────────────────────────
@@ -1413,11 +1444,6 @@ type esiCharacterPublicInfo struct {
 	Birthday string `json:"birthday"`
 }
 
-type esiCharacterCorporationHistoryItem struct {
-	CorporationID int64  `json:"corporation_id"`
-	StartDate     string `json:"start_date"`
-}
-
 // ensureBirthdays 确保人物列表中的 Birthday 字段已填充，缺失的从 ESI 获取并持久化
 func (s *WelfareService) ensureBirthdays(characters []model.EveCharacter) {
 	for i := range characters {
@@ -1439,14 +1465,14 @@ func (s *WelfareService) ensureBirthdays(characters []model.EveCharacter) {
 
 func (s *WelfareService) ensureFuxiLegionTenureDays(characters []model.EveCharacter) {
 	for i := range characters {
-		tenureDays := s.fetchFuxiLegionTenureDaysFromESI(characters[i].CharacterID)
-		if tenureDays == nil {
+		if characters[i].FuxiLegionTenureDays != nil {
 			continue
 		}
-		characters[i].FuxiLegionTenureDays = tenureDays
+		if s.charRepo == nil || global.DB == nil {
+			continue
+		}
 		if dbChar, err := s.charRepo.GetByCharacterID(characters[i].CharacterID); err == nil {
-			dbChar.FuxiLegionTenureDays = tenureDays
-			_ = s.charRepo.Save(dbChar)
+			characters[i].FuxiLegionTenureDays = dbChar.FuxiLegionTenureDays
 		}
 	}
 }
@@ -1477,69 +1503,4 @@ func (s *WelfareService) fetchBirthdayFromESI(characterID int64) *time.Time {
 		return nil
 	}
 	return &t
-}
-
-func (s *WelfareService) fetchFuxiLegionTenureDaysFromESI(characterID int64) *int {
-	if s.esiClient == nil {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	var history []esiCharacterCorporationHistoryItem
-	if err := s.esiClient.Get(ctx, fmt.Sprintf("/characters/%d/corporationhistory/", characterID), "", &history); err != nil {
-		return nil
-	}
-
-	type corporationHistoryPeriod struct {
-		CorporationID int64
-		StartDate     time.Time
-	}
-
-	periods := make([]corporationHistoryPeriod, 0, len(history))
-	for _, item := range history {
-		if strings.TrimSpace(item.StartDate) == "" {
-			continue
-		}
-		startDate, err := time.Parse(time.RFC3339, item.StartDate)
-		if err != nil {
-			continue
-		}
-		periods = append(periods, corporationHistoryPeriod{
-			CorporationID: item.CorporationID,
-			StartDate:     startDate.UTC(),
-		})
-	}
-
-	if len(periods) == 0 {
-		return nil
-	}
-
-	sort.Slice(periods, func(i, j int) bool {
-		return periods[i].StartDate.Before(periods[j].StartDate)
-	})
-
-	totalDays := 0
-	for index, period := range periods {
-		if period.CorporationID != model.SystemCorporationID {
-			continue
-		}
-
-		endDate := time.Now().UTC()
-		if index+1 < len(periods) {
-			endDate = periods[index+1].StartDate
-		}
-		if endDate.Before(period.StartDate) {
-			continue
-		}
-
-		durationDays := int(endDate.Sub(period.StartDate).Hours() / 24)
-		if durationDays > 0 {
-			totalDays += durationDays
-		}
-	}
-
-	totalCopy := totalDays
-	return &totalCopy
 }

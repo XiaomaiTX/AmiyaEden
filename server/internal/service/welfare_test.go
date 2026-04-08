@@ -3,9 +3,12 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/pkg/eve/esi"
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -967,6 +970,173 @@ func TestApplyForWelfareRefreshesBadgeCache(t *testing.T) {
 	}
 	if _, ok := got[BadgeCountWelfareEligible]; ok {
 		t.Fatalf("expected welfare badge cache to refresh to zero after apply, got %#v", got)
+	}
+}
+
+func TestApplyForWelfareAvoidsEligibilityRefetchESIAfterApply(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	user := &model.User{
+		BaseModel:          model.BaseModel{ID: 930003},
+		Nickname:           "Pilot No Refetch",
+		QQ:                 "111222",
+		PrimaryCharacterID: 93000003,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	character := &model.EveCharacter{
+		CharacterID:   user.PrimaryCharacterID,
+		CharacterName: "Pilot No Refetch One",
+		UserID:        user.ID,
+	}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	applyWelfare := &model.Welfare{
+		Name:      "Apply Without Refetch",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(applyWelfare).Error; err != nil {
+		t.Fatalf("create apply welfare: %v", err)
+	}
+
+	minimumYears := 1
+	blockedWelfare := &model.Welfare{
+		Name:                   "Blocked By Tenure",
+		DistMode:               model.WelfareDistModePerUser,
+		MinimumFuxiLegionYears: &minimumYears,
+		Status:                 model.WelfareStatusActive,
+		CreatedBy:              1,
+	}
+	if err := db.Create(blockedWelfare).Error; err != nil {
+		t.Fatalf("create blocked welfare: %v", err)
+	}
+
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[]"))
+	}))
+	t.Cleanup(server.Close)
+
+	svc := NewWelfareService()
+	svc.esiClient = esi.NewClientWithConfig(server.URL, "")
+
+	if _, err := svc.ApplyForWelfare(user.ID, &ApplyForWelfareRequest{WelfareID: applyWelfare.ID}); err != nil {
+		t.Fatalf("ApplyForWelfare() error = %v", err)
+	}
+	if requests != 0 {
+		t.Fatalf("expected apply path to avoid unrelated ESI refetch, got %d requests", requests)
+	}
+}
+
+func TestEnsureFuxiLegionTenureDaysSkipsCachedValuesForFormerMembers(t *testing.T) {
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[]"))
+	}))
+	t.Cleanup(server.Close)
+
+	existingTenureDays := 730
+	svc := &WelfareService{esiClient: esi.NewClientWithConfig(server.URL, "")}
+	characters := []model.EveCharacter{{
+		CharacterID:          93000004,
+		CorporationID:        12345,
+		FuxiLegionTenureDays: &existingTenureDays,
+	}}
+
+	svc.ensureFuxiLegionTenureDays(characters)
+
+	if requests != 0 {
+		t.Fatalf("expected cached tenure for former member to skip ESI fetch, got %d requests", requests)
+	}
+	if characters[0].FuxiLegionTenureDays == nil || *characters[0].FuxiLegionTenureDays != existingTenureDays {
+		t.Fatalf("expected cached tenure to remain unchanged, got %+v", characters[0].FuxiLegionTenureDays)
+	}
+}
+
+func TestEnsureFuxiLegionTenureDaysSkipsFormerMembersWithoutCachedValues(t *testing.T) {
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[]"))
+	}))
+	t.Cleanup(server.Close)
+
+	svc := &WelfareService{esiClient: esi.NewClientWithConfig(server.URL, "")}
+	characters := []model.EveCharacter{{
+		CharacterID:   93000006,
+		CorporationID: 12345,
+	}}
+
+	svc.ensureFuxiLegionTenureDays(characters)
+
+	if requests != 0 {
+		t.Fatalf("expected former member without cached tenure to skip ESI fetch, got %d requests", requests)
+	}
+	if characters[0].FuxiLegionTenureDays != nil {
+		t.Fatalf("expected former member tenure to stay nil, got %+v", characters[0].FuxiLegionTenureDays)
+	}
+}
+
+func TestEnsureFuxiLegionTenureDaysUsesPersistedValuesForCurrentMembers(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	persistedTenureDays := 12
+	character := &model.EveCharacter{
+		CharacterID:          93000005,
+		CharacterName:        "Pilot Current Fuxi",
+		UserID:               1,
+		CorporationID:        model.SystemCorporationID,
+		FuxiLegionTenureDays: &persistedTenureDays,
+	}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[]"))
+	}))
+	t.Cleanup(server.Close)
+
+	svc := NewWelfareService()
+	svc.esiClient = esi.NewClientWithConfig(server.URL, "")
+	characters := []model.EveCharacter{{
+		CharacterID:   character.CharacterID,
+		CharacterName: character.CharacterName,
+		UserID:        character.UserID,
+		CorporationID: model.SystemCorporationID,
+	}}
+
+	svc.ensureFuxiLegionTenureDays(characters)
+
+	if requests != 0 {
+		t.Fatalf("expected current member tenure to reuse persisted state without ESI fetch, got %d requests", requests)
+	}
+	if characters[0].FuxiLegionTenureDays == nil || *characters[0].FuxiLegionTenureDays != persistedTenureDays {
+		t.Fatalf("expected current member to load persisted tenure days, got %+v", characters[0].FuxiLegionTenureDays)
+	}
+
+	dbChar, err := svc.charRepo.GetByCharacterID(character.CharacterID)
+	if err != nil {
+		t.Fatalf("reload character: %v", err)
+	}
+	if dbChar.FuxiLegionTenureDays == nil || *dbChar.FuxiLegionTenureDays != persistedTenureDays {
+		t.Fatalf("expected persisted tenure days to remain unchanged, got %+v", dbChar.FuxiLegionTenureDays)
 	}
 }
 
