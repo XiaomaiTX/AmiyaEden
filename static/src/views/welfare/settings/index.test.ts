@@ -14,3 +14,10 @@ test('welfare settings exposes a dedicated admin-only auto-approve config tab', 
   assert.match(source, /t\('welfareSettings\.autoApproveThreshold'\)/)
   assert.match(source, /t\('welfareSettings\.autoApproveThresholdHint'\)/)
 })
+
+test('welfare settings wires the Fuxi Legion tenure threshold through the form payload', () => {
+  assert.match(source, /t\('welfareSettings\.minimumFuxiLegionYears'\)/)
+  assert.match(source, /v-model="formData\.minimum_fuxi_legion_years"/)
+  assert.match(source, /minimum_fuxi_legion_years:\s*row\.minimum_fuxi_legion_years \?\? undefined/)
+  assert.match(source, /minimum_fuxi_legion_years:\s*formData\.minimum_fuxi_legion_years \|\| null/)
+})

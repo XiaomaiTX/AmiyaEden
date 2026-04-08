@@ -16,7 +16,8 @@ type EveCharacter struct {
 	TokenInvalid  bool      `gorm:"not null;default:false" json:"token_invalid"`
 
 	// ESI 公开信息
-	Birthday *time.Time `gorm:""                         json:"birthday,omitempty"`
+	Birthday             *time.Time `gorm:""                         json:"birthday,omitempty"`
+	FuxiLegionTenureDays *int       `gorm:""                         json:"fuxi_legion_tenure_days,omitempty"`
 
 	// ESI Affiliation 归属信息
 	CorporationID int64  `gorm:"default:0;index"         json:"corporation_id"`

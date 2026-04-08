@@ -25,18 +25,19 @@ const (
 // Welfare 福利定义
 type Welfare struct {
 	BaseModel
-	Name             string `gorm:"size:256;not null"           json:"name"`
-	Description      string `gorm:"type:text"                   json:"description"`
-	DistMode         string `gorm:"size:20;not null;default:'per_user'" json:"dist_mode"`
-	PayByFuxiCoin    *int   `gorm:""                            json:"pay_by_fuxi_coin"`
-	RequireSkillPlan bool   `gorm:"default:false"               json:"require_skill_plan"`
-	MaxCharAgeMonths *int   `gorm:""                            json:"max_char_age_months"`
-	MinimumPap       *int   `gorm:""                            json:"minimum_pap"`
-	RequireEvidence  bool   `gorm:"default:false"               json:"require_evidence"`
-	ExampleEvidence  string `gorm:"type:text"                   json:"example_evidence"`
-	Status           int8   `gorm:"default:1"                   json:"status"`
-	SortOrder        int    `gorm:"default:0"                   json:"sort_order"`
-	CreatedBy        uint   `gorm:"not null"                    json:"created_by"`
+	Name                   string `gorm:"size:256;not null"           json:"name"`
+	Description            string `gorm:"type:text"                   json:"description"`
+	DistMode               string `gorm:"size:20;not null;default:'per_user'" json:"dist_mode"`
+	PayByFuxiCoin          *int   `gorm:""                            json:"pay_by_fuxi_coin"`
+	RequireSkillPlan       bool   `gorm:"default:false"               json:"require_skill_plan"`
+	MaxCharAgeMonths       *int   `gorm:""                            json:"max_char_age_months"`
+	MinimumPap             *int   `gorm:""                            json:"minimum_pap"`
+	MinimumFuxiLegionYears *int   `gorm:""                        json:"minimum_fuxi_legion_years"`
+	RequireEvidence        bool   `gorm:"default:false"               json:"require_evidence"`
+	ExampleEvidence        string `gorm:"type:text"                   json:"example_evidence"`
+	Status                 int8   `gorm:"default:1"                   json:"status"`
+	SortOrder              int    `gorm:"default:0"                   json:"sort_order"`
+	CreatedBy              uint   `gorm:"not null"                    json:"created_by"`
 
 	// 虚拟字段，不存库，由业务层填充
 	SkillPlanIDs   []uint   `gorm:"-" json:"skill_plan_ids"`

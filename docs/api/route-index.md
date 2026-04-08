@@ -47,7 +47,7 @@ source_of_truth:
 | GET | `/me` | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT |
 | PUT | `/me` | 更新当前用户昵称 / QQ / Discord ID | JWT |
 | POST | `/dashboard` | Dashboard 聚合数据 | JWT |
-| GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段 | Login |
+| GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格 | Login |
 | POST | `/notification/list` | 通知列表 | JWT |
 | POST | `/notification/unread-count` | 未读数 | JWT |
 | POST | `/notification/read` | 标记已读 | Login |

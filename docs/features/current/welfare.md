@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-08
+last_reviewed: 2026-04-09
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go
@@ -23,12 +23,14 @@ source_of_truth:
 - 可选技能计划检查：可关联多个军团技能计划，技能合格才允许申请
 - 可选人物最大年龄限制（max_char_age_months）：可与 per_user / per_character 一起使用。系统会先按用户检查任一人物年龄，若任一人物超龄则该福利对该用户不可申请；若通过，再继续按发放模式筛选人物
 - 可选军团舰队 PAP 门槛（minimum_pap）：若设置为大于 0 的值，申请人需拥有军团舰队 PAP 总数大于该值才可申请
+- 可选伏羲军团服役年限门槛（minimum_fuxi_legion_years）：若设置为大于 0 的值，申请人需拥有至少一个人物，其在伏羲军团 Fuxi Legion（`98185110`）的累计任职时长达到该值；累计时长按 corporation history 中所有在伏羲军团的任职区间求和，不要求连续；未达到时该福利仍保留在“申请福利”页，但会灰显并禁用申请按钮
 - 可选证明图片要求（require_evidence）：管理员可要求申请人上传图片作为证明，并可上传示例图片供参考
 - 用户自助申请福利，系统自动判断资格
 - 我的福利页会把当前可申请的福利和“未达到条件”的技能门槛福利一起展示；未达到条件项会灰显，只有当人物年龄符合限制时才会出现
 - 若福利要求证明图片，申请时弹窗提示上传；弹窗内同步展示管理员上传的示例图片
 - 若福利因技能规划未满足而暂不可申请，前端提示会列出对应的技能规划名称
 - 我的福利页面顶部提供前往技能规划完成度检查页的提醒链接
+- 导航栏福利徽章数使用进程内缓存；只会在用户进入“我的福利”页拉取 `/welfare/eligible` 成功后刷新，并在成功提交福利申请后尽力刷新。普通 `/badge-counts` 请求本身不会重新计算福利资格；服务重启后缓存可为空
 - 申请状态流转：默认 `requested → delivered / rejected`；但当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且申请人资格校验通过时，申请会直接写入 `delivered`
 - 当福利当前配置 `pay_by_fuxi_coin > 0` 时，福利发放会同步给申请人钱包入账，流水 `ref_type = welfare_payout`；小额伏羲币福利会在申请提交事务内直接完成这一步
 - 审批端执行 delivered 后，系统会以发放福利官的主人物为发件人尽力发送一封双语游戏内邮件；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果
@@ -51,6 +53,7 @@ source_of_truth:
   - 仅因技能不足暂不可申请的福利会保留在“申请福利”页，并以灰显状态展示
 - **人物年龄限制**（可选，适用于 per_user / per_character）：先按用户检查任一人物年龄（基于 ESI 生日），若任一人物超过限制月数则该福利对该用户不可申请；若通过，再继续按发放模式筛选人物。人物生日在首次检查时从 ESI 获取并持久化到 eve_character 表
 - **军团舰队 PAP 门槛**（可选，适用于 per_user / per_character）：若设置为大于 0 的数值，则申请人需拥有军团舰队 PAP 总数大于该值；未达到时该福利仍保留在“申请福利”页，但会灰显并禁用申请按钮
+- **伏羲军团服役年限门槛**（可选，适用于 per_user / per_character）：若设置为大于 0 的数值，则申请人需拥有至少一个人物，其在伏羲军团的累计任职时长达到该值；系统通过 ESI corporation history 汇总该人物所有属于伏羲军团的任职区间，并缓存累计天数到 `eve_character.fuxi_legion_tenure_days`
 
 ### 申请记录模型（WelfareApplication）
 
@@ -111,6 +114,7 @@ source_of_truth:
 - per_user 去重基于 QQ / DiscordID 匹配（非 user_id），要求用户至少设置一个联系方式
 - per_character 去重基于 character_id 和 character_name
 - 申请时服务端二次校验资格，防止并发竞态
+- 伏羲军团服役年限检查按单个人物的累计服役时长判断，不要求当前仍在伏羲军团，也不要求任职区间连续；当前仍在军团的人物会把正在进行中的任职区间累计到最新检查时刻
 - `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；按人物发放且附带伏羲币的福利还会按当前 `multichar.*` 层级配置乘算奖励倍率；小额伏羲币福利的“发放当下”就是申请提交事务本身
 - 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，福利发放会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
 - 当福利官在审批端执行 `requested -> delivered` 成功后，服务会尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，并在成功响应里附带 `mail_error` 供前端提示
@@ -121,6 +125,7 @@ source_of_truth:
 ## 主要代码文件
 
 - `server/internal/model/welfare.go`
+- `server/internal/model/eve_character.go`
 - `server/internal/repository/welfare.go`
 - `server/internal/service/welfare.go`
 - `server/internal/handler/welfare.go`
