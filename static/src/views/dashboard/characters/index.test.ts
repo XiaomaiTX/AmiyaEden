@@ -10,3 +10,9 @@ test('characters page renders a dedicated expired-esi alert', () => {
   assert.match(source, /characters\.tokenHealth/)
   assert.match(source, /type="error"/)
 })
+
+test('corp km enable button calls the zero-argument handler without passing a character', () => {
+  assert.match(source, /const handleEnableCorpKm = async \(\) =>/)
+  assert.doesNotMatch(source, /@click="handleEnableCorpKm\(char\)"/)
+  assert.match(source, /@click="handleEnableCorpKm"/)
+})

@@ -167,7 +167,7 @@
                 {{ $t('characters.corpKm.enabled') }}
               </ElTag>
               <ElTooltip v-else :content="$t('characters.corpKm.tooltip')" placement="top">
-                <ElButton size="small" type="warning" plain @click="handleEnableCorpKm(char)">
+                <ElButton size="small" type="warning" plain @click="handleEnableCorpKm">
                   {{ $t('characters.corpKm.enable') }}
                 </ElButton>
               </ElTooltip>
