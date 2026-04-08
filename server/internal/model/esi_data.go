@@ -14,6 +14,7 @@ type EveCharacterTitle = esimodel.EveCharacterTitle
 
 type EveCharacterCloneBaseInfo = esimodel.EveCharacterCloneBaseInfo
 type EveCharacterImplants = esimodel.EveCharacterImplants
+type CharacterCorporationHistory = esimodel.CharacterCorporationHistory
 
 type EveStructure = esimodel.EveStructure
 type CorpStructureInfo = esimodel.CorpStructureInfo

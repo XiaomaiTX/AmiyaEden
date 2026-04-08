@@ -70,6 +70,7 @@ func autoMigrate(db *gorm.DB) {
 		&model.EveCharacterTitle{},
 		&model.EveCharacterCloneBaseInfo{},
 		&model.EveCharacterImplants{},
+		&model.CharacterCorporationHistory{},
 		&model.EveStructure{},
 		&model.CorpStructureInfo{},
 		&model.EveStation{},

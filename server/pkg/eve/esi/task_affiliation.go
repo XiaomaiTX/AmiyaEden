@@ -30,8 +30,8 @@ func (t *AffiliationTask) Priority() Priority  { return PriorityNormal }
 
 func (t *AffiliationTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   2 * time.Hour,
-		Inactive: 2 * time.Hour, // 统一任务，不区分活跃度
+		Active:   6 * time.Hour,
+		Inactive: 6 * time.Hour, // 统一任务，不区分活跃度
 	}
 }
 

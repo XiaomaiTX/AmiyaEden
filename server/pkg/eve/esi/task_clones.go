@@ -31,8 +31,8 @@ func (t *ClonesTask) Priority() Priority  { return PriorityNormal }
 
 func (t *ClonesTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   6 * time.Hour,
-		Inactive: 7 * 24 * time.Hour,
+		Active:   24 * time.Hour,
+		Inactive: 24 * time.Hour,
 	}
 }
 

@@ -32,7 +32,7 @@ func (t *CorpRolesTask) Priority() Priority  { return PriorityHigh }
 
 func (t *CorpRolesTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   2 * time.Hour,
+		Active:   24 * time.Hour,
 		Inactive: 24 * time.Hour,
 	}
 }
