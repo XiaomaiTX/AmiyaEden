@@ -28,48 +28,7 @@
       class="mb-4"
     />
 
-    <ElCard shadow="never" class="mb-4" v-loading="settingsLoading">
-      <template #header>
-        <div class="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div class="text-base font-semibold">{{
-              t('system.mentorRewardStages.eligibilityTitle')
-            }}</div>
-            <div class="text-sm text-gray-500 mt-1">{{
-              t('system.mentorRewardStages.eligibilityDescription')
-            }}</div>
-          </div>
-          <ElButton type="primary" :loading="settingsSaving" @click="handleSaveEligibility">
-            {{ t('system.mentorRewardStages.saveEligibility') }}
-          </ElButton>
-        </div>
-      </template>
-
-      <ElForm label-width="220px" label-position="left" class="max-w-2xl">
-        <ElFormItem :label="t('system.mentorRewardStages.maxCharacterSP')">
-          <ElInputNumber
-            v-model="mentorSettings.max_character_sp"
-            :min="1"
-            :step="1000000"
-            :controls="false"
-            step-strictly
-            style="width: 100%"
-          />
-        </ElFormItem>
-        <ElFormItem :label="t('system.mentorRewardStages.maxAccountAgeDays')">
-          <ElInputNumber
-            v-model="mentorSettings.max_account_age_days"
-            :min="1"
-            :step="1"
-            :controls="false"
-            step-strictly
-            style="width: 100%"
-          />
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
-
-    <ElCard shadow="never" v-loading="loading">
+    <ElCard shadow="never" class="mb-4" v-loading="loading">
       <ElEmpty
         v-if="!stages.length && !loading"
         :description="t('system.mentorRewardStages.empty')"
@@ -138,6 +97,47 @@
           </template>
         </ElTableColumn>
       </ElTable>
+    </ElCard>
+
+    <ElCard shadow="never" v-loading="settingsLoading">
+      <template #header>
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div class="text-base font-semibold">{{
+              t('system.mentorRewardStages.eligibilityTitle')
+            }}</div>
+            <div class="text-sm text-gray-500 mt-1">{{
+              t('system.mentorRewardStages.eligibilityDescription')
+            }}</div>
+          </div>
+          <ElButton type="primary" :loading="settingsSaving" @click="handleSaveEligibility">
+            {{ t('system.mentorRewardStages.saveEligibility') }}
+          </ElButton>
+        </div>
+      </template>
+
+      <ElForm label-width="220px" label-position="left" class="max-w-2xl">
+        <ElFormItem :label="t('system.mentorRewardStages.maxCharacterSP')">
+          <ElInputNumber
+            v-model="mentorSettings.max_character_sp"
+            :min="1"
+            :step="1000000"
+            :controls="false"
+            step-strictly
+            style="width: 100%"
+          />
+        </ElFormItem>
+        <ElFormItem :label="t('system.mentorRewardStages.maxAccountAgeDays')">
+          <ElInputNumber
+            v-model="mentorSettings.max_account_age_days"
+            :min="1"
+            :step="1"
+            :controls="false"
+            step-strictly
+            style="width: 100%"
+          />
+        </ElFormItem>
+      </ElForm>
     </ElCard>
   </div>
 </template>
