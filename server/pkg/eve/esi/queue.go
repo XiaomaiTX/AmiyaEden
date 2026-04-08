@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -31,8 +32,10 @@ type Queue struct {
 	ssoSvc   TokenService
 	charRepo CharacterRepository
 
-	mu       sync.RWMutex
-	statuses map[string]*TaskStatus // key: "taskName:characterID"
+	mu         sync.RWMutex
+	statuses   map[string]*TaskStatus // key: "taskName:characterID"
+	runLocks   map[string]*sync.Mutex
+	runLocksMu sync.Mutex
 
 	// 并发控制：同一时间最多执行的任务数
 	concurrency int
@@ -44,6 +47,7 @@ func NewQueue(ssoSvc TokenService, charRepo CharacterRepository) *Queue {
 		ssoSvc:      ssoSvc,
 		charRepo:    charRepo,
 		statuses:    make(map[string]*TaskStatus),
+		runLocks:    make(map[string]*sync.Mutex),
 		concurrency: 5,
 	}
 }
@@ -80,6 +84,25 @@ func (q *Queue) Run() {
 
 	// 2. 检测人物活跃度
 	activityMap := q.checkActivity(ctx, characters)
+	authorizedProviders, err := buildAuthorizedCorpKillmailProviders(characters)
+	if err != nil {
+		global.Logger.Warn("[ESI Queue] 构建军团 KM 覆盖集失败", zap.Error(err))
+		authorizedProviders = map[int64]int64{}
+	}
+	authorizedCorps := make(map[int64]bool)
+	corpHasActiveProvider := make(map[int64]bool)
+	for characterID, corporationID := range authorizedProviders {
+		authorizedCorps[corporationID] = true
+		if activityMap[characterID] {
+			corpHasActiveProvider[corporationID] = true
+		}
+	}
+	corpCoverage := make(map[int64]bool)
+	for corporationID := range authorizedCorps {
+		if q.corporationKillmailsFresh(corporationID, corpHasActiveProvider[corporationID]) {
+			corpCoverage[corporationID] = true
+		}
+	}
 
 	// 3. 获取所有任务并按优先级排序
 	allTasks := AllTasks()
@@ -102,9 +125,18 @@ func (q *Queue) Run() {
 			if !q.hasRequiredScopes(char, task) {
 				continue
 			}
+			if task.Name() == "corporation_killmails" {
+				if _, ok := authorizedProviders[char.CharacterID]; !ok {
+					continue
+				}
+			}
+
+			if q.shouldSkipAutomaticTask(char, task, corpCoverage) {
+				continue
+			}
 
 			// 检查是否需要刷新（基于上次执行时间和刷新间隔）
-			if !q.needsRefresh(task, char.CharacterID, isActive) {
+			if !q.needsRefresh(task, char, isActive) {
 				continue
 			}
 
@@ -138,7 +170,7 @@ func (q *Queue) Run() {
 			defer wg.Done()
 			defer func() { <-sem }() // 释放
 
-			q.executeTask(ctx, j.task, j.character, j.isActive)
+			q.executeTask(ctx, j.task, j.character, j.isActive, false)
 		}(job)
 	}
 
@@ -161,7 +193,7 @@ func (q *Queue) RunTask(taskName string, characterID int64) error {
 	ctx := context.Background()
 	isActive := q.checkSingleActivity(ctx, *char)
 
-	q.executeTask(ctx, task, *char, isActive)
+	q.executeTask(ctx, task, *char, isActive, true)
 	return nil
 }
 
@@ -192,7 +224,7 @@ func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
 		go func(t RefreshTask) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			q.executeTask(ctx, t, *char, isActive)
+			q.executeTask(ctx, t, *char, isActive, true)
 		}(task)
 	}
 
@@ -214,15 +246,34 @@ func (q *Queue) RunTaskByName(taskName string) error {
 
 	ctx := context.Background()
 	activityMap := q.checkActivity(ctx, characters)
+	authorizedProviders := map[int64]int64{}
+	if task.Name() == "corporation_killmails" {
+		var buildErr error
+		authorizedProviders, buildErr = buildAuthorizedCorpKillmailProviders(characters)
+		if buildErr != nil {
+			return fmt.Errorf("build corporation killmail providers: %w", buildErr)
+		}
+	}
 
 	sem := make(chan struct{}, q.concurrency)
 	var wg sync.WaitGroup
+	seenKeys := make(map[string]struct{})
 
 	for i := range characters {
 		char := characters[i]
 		if !q.hasRequiredScopes(char, task) {
 			continue
 		}
+		if task.Name() == "corporation_killmails" {
+			if _, ok := authorizedProviders[char.CharacterID]; !ok {
+				continue
+			}
+		}
+		jobKey := q.taskExecutionKey(task, char)
+		if _, ok := seenKeys[jobKey]; ok {
+			continue
+		}
+		seenKeys[jobKey] = struct{}{}
 		isActive := activityMap[char.CharacterID]
 
 		wg.Add(1)
@@ -230,7 +281,7 @@ func (q *Queue) RunTaskByName(taskName string) error {
 		go func(ch model.EveCharacter, active bool) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			q.executeTask(ctx, task, ch, active)
+			q.executeTask(ctx, task, ch, active, true)
 		}(char, isActive)
 	}
 
@@ -243,8 +294,34 @@ func (q *Queue) RunTaskByName(taskName string) error {
 // ─────────────────────────────────────────────
 
 // executeTask 执行单个任务
-func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.EveCharacter, isActive bool) {
+func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.EveCharacter, isActive bool, force bool) {
 	statusKey := fmt.Sprintf("%s:%d", task.Name(), char.CharacterID)
+	executionKey := q.taskExecutionKey(task, char)
+	lock := q.executionLock(executionKey)
+	lock.Lock()
+	defer lock.Unlock()
+
+	if !force && !q.needsRefresh(task, char, isActive) {
+		lastRun, err := q.getLastRun(task, char)
+		if err == nil {
+			interval := task.Interval()
+			nextDur := interval.Active
+			if !isActive {
+				nextDur = interval.Inactive
+			}
+			nextRun := lastRun.Add(nextDur)
+			q.setStatus(statusKey, &TaskStatus{
+				TaskName:    task.Name(),
+				Description: task.Description(),
+				CharacterID: char.CharacterID,
+				Priority:    task.Priority(),
+				LastRun:     &lastRun,
+				NextRun:     &nextRun,
+				Status:      "success",
+			})
+		}
+		return
+	}
 
 	// 更新状态为 running
 	q.setStatus(statusKey, &TaskStatus{
@@ -283,6 +360,16 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 	}
 
 	if err := task.Execute(taskCtx); err != nil {
+		if errors.Is(err, ErrTaskSkipped) {
+			q.setStatus(statusKey, &TaskStatus{
+				TaskName:    task.Name(),
+				Description: task.Description(),
+				CharacterID: char.CharacterID,
+				Priority:    task.Priority(),
+				Status:      "success",
+			})
+			return
+		}
 		global.Logger.Error("[ESI Queue] 任务执行失败",
 			zap.String("task", task.Name()),
 			zap.Int64("character_id", char.CharacterID),
@@ -319,7 +406,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 	})
 
 	// 将上次执行时间持久化到 Redis
-	q.setLastRun(task.Name(), char.CharacterID, now)
+	q.setLastRun(task, char, now)
 
 	global.Logger.Debug("[ESI Queue] 任务执行成功",
 		zap.String("task", task.Name()),
@@ -328,8 +415,8 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 }
 
 // needsRefresh 判断任务是否需要刷新
-func (q *Queue) needsRefresh(task RefreshTask, characterID int64, isActive bool) bool {
-	lastRun, err := q.getLastRun(task.Name(), characterID)
+func (q *Queue) needsRefresh(task RefreshTask, char model.EveCharacter, isActive bool) bool {
+	lastRun, err := q.getLastRun(task, char)
 	if err != nil {
 		return true // 没有记录则需要刷新
 	}
@@ -359,6 +446,74 @@ func (q *Queue) hasRequiredScopes(char model.EveCharacter, task RefreshTask) boo
 	return true
 }
 
+func (q *Queue) shouldSkipAutomaticTask(char model.EveCharacter, task RefreshTask, corpCoverage map[int64]bool) bool {
+	if task.Name() != "character_killmails" || char.CorporationID == 0 {
+		return false
+	}
+	return corpCoverage[char.CorporationID]
+}
+
+func (q *Queue) taskExecutionKey(task RefreshTask, char model.EveCharacter) string {
+	if task.Name() == "corporation_killmails" && char.CorporationID != 0 {
+		return fmt.Sprintf("%s:corp:%d", task.Name(), char.CorporationID)
+	}
+	return fmt.Sprintf("%s:char:%d", task.Name(), char.CharacterID)
+}
+
+func buildAuthorizedCorpKillmailProviders(characters []model.EveCharacter) (map[int64]int64, error) {
+	providers := make(map[int64]int64)
+	candidates := make(map[int64]int64)
+	for i := range characters {
+		char := characters[i]
+		if char.CorporationID == 0 {
+			continue
+		}
+		for _, scope := range strings.Fields(char.Scopes) {
+			if scope == "esi-killmails.read_corporation_killmails.v1" {
+				candidates[char.CharacterID] = char.CorporationID
+				break
+			}
+		}
+	}
+	if len(candidates) == 0 {
+		return providers, nil
+	}
+
+	charIDs := make([]int64, 0, len(candidates))
+	for characterID := range candidates {
+		charIDs = append(charIDs, characterID)
+	}
+
+	var directorIDs []int64
+	if err := global.DB.Model(&model.EveCharacterCorpRole{}).
+		Where("character_id IN ? AND corp_role = ?", charIDs, "Director").
+		Pluck("character_id", &directorIDs).Error; err != nil {
+		return nil, err
+	}
+	for _, characterID := range directorIDs {
+		providers[characterID] = candidates[characterID]
+	}
+	return providers, nil
+}
+
+func (q *Queue) corporationKillmailsFresh(corporationID int64, isActive bool) bool {
+	if corporationID == 0 {
+		return false
+	}
+	return !q.needsRefresh(&CorpKillmailsTask{}, model.EveCharacter{CorporationID: corporationID}, isActive)
+}
+
+func (q *Queue) executionLock(key string) *sync.Mutex {
+	q.runLocksMu.Lock()
+	defer q.runLocksMu.Unlock()
+	if lock, ok := q.runLocks[key]; ok {
+		return lock
+	}
+	lock := &sync.Mutex{}
+	q.runLocks[key] = lock
+	return lock
+}
+
 // ─────────────────────────────────────────────
 //  Redis 状态存储
 // ─────────────────────────────────────────────
@@ -367,13 +522,13 @@ const (
 	lastRunKeyPrefix = "esi:refresh:lastrun:" // esi:refresh:lastrun:{task}:{characterID}
 )
 
-func (q *Queue) setLastRun(taskName string, characterID int64, t time.Time) {
-	key := fmt.Sprintf("%s%s:%d", lastRunKeyPrefix, taskName, characterID)
+func (q *Queue) setLastRun(task RefreshTask, char model.EveCharacter, t time.Time) {
+	key := fmt.Sprintf("%s%s", lastRunKeyPrefix, q.taskExecutionKey(task, char))
 	global.Redis.Set(context.Background(), key, t.Unix(), 0)
 }
 
-func (q *Queue) getLastRun(taskName string, characterID int64) (time.Time, error) {
-	key := fmt.Sprintf("%s%s:%d", lastRunKeyPrefix, taskName, characterID)
+func (q *Queue) getLastRun(task RefreshTask, char model.EveCharacter) (time.Time, error) {
+	key := fmt.Sprintf("%s%s", lastRunKeyPrefix, q.taskExecutionKey(task, char))
 	val, err := global.Redis.Get(context.Background(), key).Int64()
 	if err != nil {
 		return time.Time{}, err

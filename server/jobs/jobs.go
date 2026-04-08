@@ -10,6 +10,7 @@ import (
 // RegisterAll 统一注册所有定时任务
 func RegisterAll(c *cron.Cron) {
 	registerESIRefreshJob(c)
+	registerAutoSrpScheduler()
 	registerAlliancePAPJob(c)
 	RegisterRoleJobs(c)
 	RegisterAutoRoleJobs(c)

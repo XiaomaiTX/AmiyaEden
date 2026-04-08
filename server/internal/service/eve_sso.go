@@ -72,6 +72,9 @@ func buildLoginScopes(extraScopes []string) []string {
 	}
 	scopeMu.RLock()
 	for _, rs := range registeredScopes {
+		if !rs.Required {
+			continue
+		}
 		if s := strings.TrimSpace(rs.Scope); s != "" {
 			scopeSet[s] = struct{}{}
 		}

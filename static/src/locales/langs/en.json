@@ -1376,6 +1376,12 @@
         "qqDigits": "QQ number must contain digits only",
         "discordLength": "Discord ID must be 20 characters or fewer"
       }
+    },
+    "corpKm": {
+      "enable": "Enable Corp KM",
+      "enabled": "Corp KM Enabled",
+      "tooltip": "After authorization, the system will fetch killmails for this character's corporation for auto-SRP",
+      "enableFailed": "Failed to get corp KM authorization link"
     }
   },
   "srp": {

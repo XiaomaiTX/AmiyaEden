@@ -161,6 +161,17 @@
             >
               {{ $t('characters.unbind') }}
             </ElButton>
+            <!-- 军团KM监控（管理员可见） -->
+            <template v-if="isAdmin">
+              <ElTag v-if="hasCorpKmScope(char)" type="success" size="small" effect="light">
+                {{ $t('characters.corpKm.enabled') }}
+              </ElTag>
+              <ElTooltip v-else :content="$t('characters.corpKm.tooltip')" placement="top">
+                <ElButton size="small" type="warning" plain @click="handleEnableCorpKm(char)">
+                  {{ $t('characters.corpKm.enable') }}
+                </ElButton>
+              </ElTooltip>
+            </template>
           </div>
         </div>
       </div>
@@ -191,6 +202,16 @@
 
   const { t } = useI18n()
   const userStore = useUserStore()
+
+  const CORP_KM_SCOPE = 'esi-killmails.read_corporation_killmails.v1'
+
+  const isAdmin = computed(() => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    return roles.some((r) => ['super_admin', 'admin', 'srp'].includes(r))
+  })
+
+  const hasCorpKmScope = (char: Api.Auth.EveCharacter) =>
+    char.scopes?.split(' ').includes(CORP_KM_SCOPE) ?? false
 
   const loading = ref(false)
   const bindLoading = ref(false)
@@ -345,6 +366,16 @@
     } catch {
       bindLoading.value = false
       ElMessage.error(t('characters.bindFailed'))
+    }
+  }
+
+  /** 启用军团KM监控 */
+  const handleEnableCorpKm = async () => {
+    try {
+      const url = await getEveBindURL([CORP_KM_SCOPE])
+      window.location.href = url
+    } catch {
+      ElMessage.error(t('characters.corpKm.enableFailed'))
     }
   }
 

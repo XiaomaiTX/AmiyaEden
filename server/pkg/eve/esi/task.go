@@ -13,6 +13,8 @@ import (
 var (
 	// ErrNotModified ESI 返回 304
 	ErrNotModified = errors.New("ESI: not modified")
+	// ErrTaskSkipped 表示任务因前置条件不满足而跳过，不应记录为刷新成功
+	ErrTaskSkipped = errors.New("ESI: task skipped")
 )
 
 // ─────────────────────────────────────────────
@@ -47,6 +49,7 @@ type RefreshInterval struct {
 type TaskScope struct {
 	Scope       string // ESI scope 字符串
 	Description string // scope 描述
+	Optional    bool   // true = 不加入默认登录流程，仅管理员主动授权
 }
 
 // RefreshTask ESI 数据刷新任务接口

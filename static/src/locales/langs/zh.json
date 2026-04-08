@@ -1376,6 +1376,12 @@
         "qqDigits": "QQ 只能包含数字",
         "discordLength": "Discord ID 最多 20 个字符"
       }
+    },
+    "corpKm": {
+      "enable": "启用军团KM监控",
+      "enabled": "军团KM已启用",
+      "tooltip": "授权后，系统将自动拉取该人物所在军团的击杀邮件，用于自动补损",
+      "enableFailed": "获取军团KM授权链接失败"
     }
   },
   "srp": {
