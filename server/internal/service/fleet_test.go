@@ -42,18 +42,56 @@ func TestPapImportanceToWalletRateMissingKey(t *testing.T) {
 
 func TestBuildPapWalletByUser(t *testing.T) {
 	entries := []papWalletEntry{
-		{UserID: 1, PapCount: 12},
-		{UserID: 1, PapCount: 8},
-		{UserID: 2, PapCount: 5},
-		{UserID: 3, PapCount: 7},
+		{UserID: 1, CharacterID: 10, PapCount: 12},
+		{UserID: 1, CharacterID: 11, PapCount: 8},
+		{UserID: 2, CharacterID: 20, PapCount: 5},
+		{UserID: 3, CharacterID: 30, PapCount: 7},
 	}
 
-	got := buildPapWalletByUser(entries, 10)
+	tierCfg := MulticharRewardConfig{FullRewardCount: 999, ReducedRewardCount: 0, ReducedRewardPct: 0}
+	got := buildPapWalletByUser(entries, 10, tierCfg)
 
 	want := map[uint]float64{
 		1: 200,
 		2: 50,
 		3: 70,
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("buildPapWalletByUser() len = %d, want %d", len(got), len(want))
+	}
+	for uid, wantAmount := range want {
+		if got[uid] != wantAmount {
+			t.Fatalf("buildPapWalletByUser()[%d] = %v, want %v", uid, got[uid], wantAmount)
+		}
+	}
+}
+
+func TestBuildPapWalletByUserWithTiers(t *testing.T) {
+	// User 1 has 5 characters, User 2 has 1 character
+	entries := []papWalletEntry{
+		{UserID: 1, PapCount: 1, CharacterID: 100},
+		{UserID: 1, PapCount: 1, CharacterID: 101},
+		{UserID: 1, PapCount: 1, CharacterID: 102},
+		{UserID: 1, PapCount: 1, CharacterID: 103},
+		{UserID: 1, PapCount: 1, CharacterID: 104},
+		{UserID: 2, PapCount: 1, CharacterID: 200},
+	}
+
+	tierCfg := MulticharRewardConfig{
+		FullRewardCount:    3,
+		ReducedRewardCount: 3,
+		ReducedRewardPct:   50,
+	}
+	walletRate := 10.0
+
+	got := buildPapWalletByUser(entries, walletRate, tierCfg)
+
+	// User 1: 3 chars × 10 × 1.0 + 2 chars × 10 × 0.5 = 30 + 10 = 40
+	// User 2: 1 char × 10 × 1.0 = 10
+	want := map[uint]float64{
+		1: 40,
+		2: 10,
 	}
 
 	if len(got) != len(want) {
@@ -95,8 +133,8 @@ func TestCalculateFCSalaryAmount(t *testing.T) {
 
 func TestToPapWalletEntriesFromLogs(t *testing.T) {
 	logs := []model.FleetPapLog{
-		{UserID: 1, PapCount: 12},
-		{UserID: 2, PapCount: 34},
+		{UserID: 1, CharacterID: 10, PapCount: 12},
+		{UserID: 2, CharacterID: 20, PapCount: 34},
 	}
 
 	got := toPapWalletEntriesFromLogs(logs)
@@ -105,8 +143,8 @@ func TestToPapWalletEntriesFromLogs(t *testing.T) {
 		t.Fatalf("toPapWalletEntriesFromLogs() len = %d, want %d", len(got), len(logs))
 	}
 	for i := range logs {
-		if got[i].UserID != logs[i].UserID || got[i].PapCount != logs[i].PapCount {
-			t.Fatalf("entry %d = %+v, want %+v", i, got[i], logs[i])
+		if got[i].UserID != logs[i].UserID || got[i].PapCount != logs[i].PapCount || got[i].CharacterID != logs[i].CharacterID {
+			t.Fatalf("entry %d = %+v, want UserID=%d CharacterID=%d PapCount=%v", i, got[i], logs[i].UserID, logs[i].CharacterID, logs[i].PapCount)
 		}
 	}
 }

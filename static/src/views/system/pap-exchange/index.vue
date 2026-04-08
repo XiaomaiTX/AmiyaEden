@@ -56,6 +56,85 @@
       </ElForm>
     </ElCard>
 
+    <ElCard shadow="never" class="mb-4">
+      <template #header>
+        <h2 class="section-title">{{ t('papExchange.multicharSection') }}</h2>
+      </template>
+
+      <ElAlert
+        class="mb-4"
+        :title="t('papExchange.multicharTip')"
+        type="info"
+        :closable="false"
+        show-icon
+      />
+
+      <ElForm label-width="180px" style="max-width: 680px" v-loading="loading">
+        <ElFormItem :label="t('papExchange.multicharFullCount')">
+          <div class="field-block">
+            <div class="field-row">
+              <ElInputNumber
+                v-model="form.multichar_full_reward_count"
+                :min="0"
+                :precision="0"
+                :step="1"
+                :controls="false"
+                style="width: 180px"
+              />
+              <span class="text-sm text-secondary">{{ t('papExchange.multicharCountUnit') }}</span>
+            </div>
+            <div class="form-hint">{{ t('papExchange.multicharFullCountHint') }}</div>
+          </div>
+        </ElFormItem>
+
+        <ElFormItem :label="t('papExchange.multicharReducedCount')">
+          <div class="field-block">
+            <div class="field-row">
+              <ElInputNumber
+                v-model="form.multichar_reduced_reward_count"
+                :min="0"
+                :precision="0"
+                :step="1"
+                :controls="false"
+                style="width: 180px"
+              />
+              <span class="text-sm text-secondary">{{ t('papExchange.multicharCountUnit') }}</span>
+            </div>
+            <div class="form-hint">{{ t('papExchange.multicharReducedCountHint') }}</div>
+          </div>
+        </ElFormItem>
+
+        <ElFormItem :label="t('papExchange.multicharReducedPct')">
+          <div class="field-block">
+            <div class="field-row">
+              <ElInputNumber
+                v-model="form.multichar_reduced_reward_pct"
+                :min="0"
+                :max="100"
+                :precision="0"
+                :step="5"
+                :controls="false"
+                style="width: 180px"
+              />
+              <span class="text-sm text-secondary">%</span>
+            </div>
+            <div class="form-hint">{{ t('papExchange.multicharReducedPctHint') }}</div>
+          </div>
+        </ElFormItem>
+
+        <ElFormItem>
+          <ElButton
+            v-auth="'edit_exchange_rate'"
+            type="primary"
+            :loading="saving"
+            @click="handleSave"
+          >
+            {{ t('common.save') }}
+          </ElButton>
+        </ElFormItem>
+      </ElForm>
+    </ElCard>
+
     <ElCard shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
@@ -129,7 +208,10 @@
   const form = reactive<PAPExchangeConfig>({
     rates: [],
     fc_salary: 400,
-    fc_salary_monthly_limit: 5
+    fc_salary_monthly_limit: 5,
+    multichar_full_reward_count: 3,
+    multichar_reduced_reward_count: 3,
+    multichar_reduced_reward_pct: 50
   })
 
   async function loadRates() {
@@ -139,6 +221,9 @@
       form.rates = config.rates
       form.fc_salary = config.fc_salary
       form.fc_salary_monthly_limit = config.fc_salary_monthly_limit
+      form.multichar_full_reward_count = config.multichar_full_reward_count
+      form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
+      form.multichar_reduced_reward_pct = config.multichar_reduced_reward_pct
     } catch {
       ElMessage.error(t('papExchange.loadFailed'))
     } finally {
@@ -152,6 +237,9 @@
       const config = await updatePAPExchangeConfig({
         fc_salary: form.fc_salary,
         fc_salary_monthly_limit: form.fc_salary_monthly_limit,
+        multichar_full_reward_count: form.multichar_full_reward_count,
+        multichar_reduced_reward_count: form.multichar_reduced_reward_count,
+        multichar_reduced_reward_pct: form.multichar_reduced_reward_pct,
         rates: form.rates.map(({ pap_type, display_name, rate }) => ({
           pap_type,
           display_name,
@@ -161,6 +249,9 @@
       form.rates = config.rates
       form.fc_salary = config.fc_salary
       form.fc_salary_monthly_limit = config.fc_salary_monthly_limit
+      form.multichar_full_reward_count = config.multichar_full_reward_count
+      form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
+      form.multichar_reduced_reward_pct = config.multichar_reduced_reward_pct
       ElMessage.success(t('papExchange.saveSuccess'))
     } catch {
       ElMessage.error(t('papExchange.saveFailed'))

@@ -46,6 +46,9 @@ const (
 	SysConfigMenteeMaxAccountAgeDays = "mentor.mentee_max_account_age_days"
 
 	SysConfigWelfareAutoApproveFuxiCoinThreshold = "welfare.auto_approve_fuxi_coin_threshold"
+	SysConfigMulticharFullRewardCount    = "multichar.full_reward_count"    // 获得 100% 奖励的人物数（int）
+	SysConfigMulticharReducedRewardCount = "multichar.reduced_reward_count" // 获得折扣奖励的人物数（int）
+	SysConfigMulticharReducedRewardPct   = "multichar.reduced_reward_pct"   // 折扣奖励百分比（int, 0-100）
 
 	SysConfigDefaultSDEAPIKey      = "modify_your_api_key"
 	SysConfigDefaultSDEProxy       = ""
@@ -62,4 +65,8 @@ const (
 	SysConfigDefaultPAPFCSalary                    float64 = 400
 	SysConfigDefaultPAPFCSalaryLimit               int     = 5
 	SysConfigDefaultEnforceCharacterESIRestriction         = true
+
+	SysConfigDefaultMulticharFullRewardCount    = 3
+	SysConfigDefaultMulticharReducedRewardCount = 3
+	SysConfigDefaultMulticharReducedRewardPct   = 50
 )
