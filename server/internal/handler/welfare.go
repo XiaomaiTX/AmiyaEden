@@ -169,7 +169,7 @@ func (h *WelfareHandler) AdminListWelfares(c *gin.Context) {
 }
 
 type updateWelfareSettingsRequest struct {
-	AutoApproveFuxiCoinThreshold int `json:"auto_approve_fuxi_coin_threshold" binding:"required,gte=0"`
+	AutoApproveFuxiCoinThreshold *int `json:"auto_approve_fuxi_coin_threshold" binding:"required,gte=0"`
 }
 
 // AdminGetSettings GET /system/welfare/settings
@@ -186,7 +186,7 @@ func (h *WelfareHandler) AdminUpdateSettings(c *gin.Context) {
 	}
 
 	updated, err := h.settingsSvc.UpdateSettings(service.WelfareSettings{
-		AutoApproveFuxiCoinThreshold: req.AutoApproveFuxiCoinThreshold,
+		AutoApproveFuxiCoinThreshold: *req.AutoApproveFuxiCoinThreshold,
 	})
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())

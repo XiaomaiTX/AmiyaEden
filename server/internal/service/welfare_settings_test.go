@@ -113,3 +113,20 @@ func TestUpdateWelfareSettingsReturnsBatchWriteError(t *testing.T) {
 		t.Fatalf("expected no successful batch writes, got %d", store.setManyCalls)
 	}
 }
+
+func TestUpdateWelfareSettingsAcceptsZeroThreshold(t *testing.T) {
+	store := &fakeWelfareSettingsConfigStore{}
+	svc := &WelfareSettingsService{cfgRepo: store}
+	cfg := WelfareSettings{AutoApproveFuxiCoinThreshold: 0}
+
+	updated, err := svc.UpdateSettings(cfg)
+	if err != nil {
+		t.Fatalf("expected zero threshold to be accepted, got %v", err)
+	}
+	if updated.AutoApproveFuxiCoinThreshold != 0 {
+		t.Fatalf("expected threshold 0, got %d", updated.AutoApproveFuxiCoinThreshold)
+	}
+	if store.setManyCalls != 1 {
+		t.Fatalf("expected one batch write, got %d", store.setManyCalls)
+	}
+}
