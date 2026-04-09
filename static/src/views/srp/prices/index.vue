@@ -14,12 +14,7 @@
                 @keyup.enter="loadPrices"
                 @clear="loadPrices"
               />
-              <ElButton
-                v-if="canManagePrices"
-                type="primary"
-                :icon="Plus"
-                @click="openAddDialog"
-              >
+              <ElButton v-if="canManagePrices" type="primary" :icon="Plus" @click="openAddDialog">
                 {{ $t('srp.prices.addPrice') }}
               </ElButton>
               <ArtExcelExport
@@ -42,12 +37,7 @@
 
       <ElTabPane v-if="canConfigSrp" :label="$t('srp.config.tabTitle')" name="config">
         <ElCard shadow="never" style="max-width: 520px">
-          <ElForm
-            ref="configFormRef"
-            :model="configForm"
-            :rules="configRules"
-            label-width="200px"
-          >
+          <ElForm ref="configFormRef" :model="configForm" :rules="configRules" label-width="200px">
             <ElFormItem :label="$t('srp.config.amountLimitLabel')" prop="amount_limit">
               <div class="million-isk-input" style="width: 100%">
                 <ElInputNumber
@@ -56,9 +46,7 @@
                   :precision="2"
                   :step="10"
                   class="million-isk-input__control"
-                  @update:model-value="
-                    (v) => (configForm.amount_limit = millionInputToIsk(v))
-                  "
+                  @update:model-value="(v) => (configForm.amount_limit = millionInputToIsk(v))"
                 />
                 <span class="million-isk-input__suffix">{{ $t('common.millionIsk') }}</span>
               </div>
@@ -391,8 +379,7 @@
     amount_limit: [
       {
         required: true,
-        validator: (_r, v, cb) =>
-          v >= 0 ? cb() : cb(new Error(t('srp.config.amountLimitValid'))),
+        validator: (_r, v, cb) => (v >= 0 ? cb() : cb(new Error(t('srp.config.amountLimitValid')))),
         trigger: 'change'
       }
     ]
