@@ -30,6 +30,11 @@ func GetESIQueue() *esi.Queue {
 	return esiQueue
 }
 
+// SetTestESIQueue 设置测试用的 ESI 队列实例（仅用于测试）
+func SetTestESIQueue(queue *esi.Queue) {
+	esiQueue = queue
+}
+
 // registerESIRefreshJob 注册 ESI 数据刷新定时任务
 func registerESIRefreshJob(c *cron.Cron) {
 	esiQueue = newESIQueueForJobs()

@@ -56,11 +56,14 @@ source_of_truth:
 
 - 管理页面：`static/src/views/system/esi-refresh`
 - 路由：`/api/v1/esi/refresh/*`
+- 用户端技能刷新：`/api/v1/info/esi-refresh`
 - 运行时调度：`server/jobs/esi_refresh.go`
 
 ## 权限边界
 
 - 所有 `/api/v1/esi/refresh/*` 路由要求 `admin`
+- 新增 `/api/v1/info/esi-refresh` 端点，允许普通用户刷新自己角色的 ESI 数据，不受 `admin` 权限限制
+- 该端点通过角色所有权验证确保用户只能刷新自己的角色
 
 ## 关键不变量
 
