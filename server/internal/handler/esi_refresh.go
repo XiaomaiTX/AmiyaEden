@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/repository"
 	"amiya-eden/jobs"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
@@ -116,6 +118,43 @@ func (h *ESIRefreshHandler) RunTask(c *gin.Context) {
 	var req RunTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	queue := jobs.GetESIQueue()
+	if queue == nil {
+		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
+		return
+	}
+
+	if err := queue.RunTask(req.TaskName, req.CharacterID); err != nil {
+		response.Fail(c, response.CodeBizError, "任务触发失败: "+err.Error())
+		return
+	}
+
+	response.OK(c, gin.H{"message": "任务已触发"})
+}
+
+// RunMyCharacterTask 手动触发指定任务（仅限自己的角色）
+//
+// POST /api/v1/info/esi-refresh
+func (h *ESIRefreshHandler) RunMyCharacterTask(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req RunTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	charRepo := repository.NewEveCharacterRepository()
+	char, err := charRepo.GetByCharacterID(req.CharacterID)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "角色不存在")
+		return
+	}
+	if char.UserID != userID {
+		response.Fail(c, response.CodeForbidden, "无权操作此角色")
 		return
 	}
 

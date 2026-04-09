@@ -27,6 +27,16 @@
             <el-icon class="mr-1"><Refresh /></el-icon>
             {{ $t('common.refresh') }}
           </ElButton>
+          <ElButton
+            :loading="esiRefreshing"
+            size="small"
+            type="primary"
+            plain
+            @click="onESIRefreshClick"
+          >
+            <el-icon class="mr-1"><Download /></el-icon>
+            ESI 拉取
+          </ElButton>
         </div>
       </div>
     </ElCard>
@@ -208,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Refresh, Search } from '@element-plus/icons-vue'
+  import { Refresh, Search, Download } from '@element-plus/icons-vue'
   import {
     ElCard,
     ElSelect,
@@ -217,10 +227,12 @@
     ElButton,
     ElEmpty,
     ElProgress,
-    ElInput
+    ElInput,
+    ElMessageBox,
+    ElMessage
   } from 'element-plus'
   import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoSkills } from '@/api/eve-info'
+  import { fetchInfoSkills, runMyCharacterESIRefresh } from '@/api/eve-info'
   import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'EveInfoSkill' })
@@ -232,6 +244,7 @@
   const selectedCharacterId = ref<number>()
   const skillData = ref<Api.EveInfo.SkillResponse | null>(null)
   const loading = ref(false)
+  const esiRefreshing = ref(false)
   const searchKeyword = ref('')
   const selectedGroup = ref('')
 
@@ -392,6 +405,43 @@
     }
   }
 
+  const onESIRefreshClick = async () => {
+    if (!selectedCharacterId.value) return
+
+    const char = characters.value.find((c) => c.character_id === selectedCharacterId.value)
+    const charName = char?.character_name || String(selectedCharacterId.value)
+
+    try {
+      await ElMessageBox.confirm(`确认从 ESI 拉取角色「${charName}」的技能数据？`, 'ESI 拉取', {
+        confirmButtonText: '确认拉取',
+        cancelButtonText: '取消',
+        type: 'info'
+      })
+    } catch {
+      return
+    }
+
+    esiRefreshing.value = true
+    try {
+      await runMyCharacterESIRefresh({
+        task_name: 'character_skill',
+        character_id: selectedCharacterId.value
+      })
+      ElMessage.success('技能数据 ESI 刷新任务已提交，稍后可点击刷新按钮查看最新数据')
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || 'ESI 刷新任务提交失败'
+      if (msg.includes('无权') || e?.response?.status === 403) {
+        ElMessage.error('无权操作此角色')
+      } else if (msg.includes('角色不存在')) {
+        ElMessage.error('角色未找到')
+      } else {
+        ElMessage.error(msg)
+      }
+    } finally {
+      esiRefreshing.value = false
+    }
+  }
+
   const loadData = async () => {
     if (!selectedCharacterId.value) return
     loading.value = true
@@ -422,32 +472,32 @@
   /* ===== 主体布局 ===== */
   .skill-main {
     display: flex;
+    flex: 1;
     gap: 12px;
     min-height: 0;
-    flex: 1;
   }
 
   .skill-panel {
-    flex: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
+    padding: 16px;
+    overflow: hidden;
     background: var(--el-bg-color);
     border: 1px solid var(--el-border-color-light);
     border-radius: 6px;
-    padding: 16px;
-    overflow: hidden;
   }
 
   .queue-panel {
-    width: 420px;
-    min-width: 360px;
     display: flex;
     flex-direction: column;
+    width: 420px;
+    min-width: 360px;
+    padding: 16px;
+    overflow: hidden;
     background: var(--el-bg-color);
     border: 1px solid var(--el-border-color-light);
     border-radius: 6px;
-    padding: 16px;
-    overflow: hidden;
   }
 
   /* ===== 面板头 ===== */
@@ -455,8 +505,8 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 12px;
     padding-bottom: 8px;
+    margin-bottom: 12px;
     border-bottom: 1px solid var(--el-border-color-lighter);
   }
 
@@ -477,8 +527,8 @@
 
   .queue-max {
     font-size: 13px;
-    color: var(--el-text-color-secondary);
     font-weight: 400;
+    color: var(--el-text-color-secondary);
   }
 
   /* ===== 筛选栏 ===== */
@@ -502,23 +552,23 @@
     align-items: center;
     justify-content: space-between;
     padding: 6px 10px;
-    border-radius: 4px;
-    background: var(--el-fill-color-light);
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.15s;
-    user-select: none;
     overflow: hidden;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--el-fill-color-light);
+    border-radius: 4px;
+    transition: all 0.15s;
   }
 
   .category-cell::before {
-    content: '';
     position: absolute;
     inset: 0;
     width: var(--progress, 0%);
-    background: rgba(91, 164, 207, 0.18);
-    transition: width 0.4s ease;
     pointer-events: none;
+    content: '';
+    background: rgb(91 164 207 / 18%);
+    transition: width 0.4s ease;
   }
 
   .category-cell:hover {
@@ -526,9 +576,9 @@
   }
 
   .category-cell.active {
-    background: var(--el-color-primary-light-8);
-    color: var(--el-color-primary);
     font-weight: 500;
+    color: var(--el-color-primary);
+    background: var(--el-color-primary-light-8);
   }
 
   .category-cell.active::before {
@@ -542,32 +592,32 @@
   }
 
   .category-count {
-    margin-left: 6px;
-    font-weight: 600;
-    font-size: 14px;
     flex-shrink: 0;
+    margin-left: 6px;
+    font-size: 14px;
+    font-weight: 600;
     scrollbar-width: none;
   }
 
   /* ===== 技能列表 ===== */
   .skill-list {
+    display: grid;
     flex: 1;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2px;
+    align-content: start;
     overflow-y: auto;
     scrollbar-width: none;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    align-content: start;
-    gap: 2px;
   }
 
   .skill-row {
     display: flex;
-    align-items: center;
-    padding: 5px 8px;
-    border-radius: 3px;
-    font-size: 13px;
     gap: 8px;
+    align-items: center;
     min-width: 0;
+    padding: 5px 8px;
+    font-size: 13px;
+    border-radius: 3px;
   }
 
   .skill-row:hover {
@@ -595,23 +645,23 @@
   }
 
   .trained-check {
-    color: var(--el-color-success);
     font-weight: bold;
+    color: var(--el-color-success);
   }
 
   /* ===== 等级指示条 ===== */
   .level-bars {
     display: flex;
-    gap: 2px;
     flex-shrink: 0;
+    gap: 2px;
   }
 
   .level-bar {
+    display: inline-block;
     width: 12px;
     height: 10px;
-    border-radius: 1px;
     background: var(--el-border-color-lighter);
-    display: inline-block;
+    border-radius: 1px;
   }
 
   .level-bar.trained {
@@ -638,10 +688,10 @@
 
   .skill-book {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: flex-start;
     width: 68px; /* 与 5 个等级条总宽对齐 */
-    flex-shrink: 0;
     color: var(--el-text-color-placeholder);
   }
 
@@ -652,32 +702,32 @@
 
   /* ===== 当前训练 ===== */
   .current-training {
-    background: var(--el-fill-color-light);
-    border-radius: 6px;
     padding: 10px 12px;
     margin-bottom: 8px;
+    background: var(--el-fill-color-light);
+    border-radius: 6px;
   }
 
   .training-chevrons {
     display: flex;
     gap: 1px;
-    font-size: 12px;
-    color: #5ba4cf;
-    line-height: 1;
     margin-bottom: 4px;
-    letter-spacing: -2px;
+    font-size: 12px;
     font-weight: bold;
+    line-height: 1;
+    color: #5ba4cf;
+    letter-spacing: -2px;
   }
 
   .training-info {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .training-name {
-    font-weight: 600;
     font-size: 14px;
+    font-weight: 600;
   }
 
   .training-countdown {
@@ -695,11 +745,11 @@
 
   .queue-item {
     display: flex;
+    gap: 8px;
     align-items: center;
     padding: 5px 6px;
-    border-radius: 3px;
     font-size: 13px;
-    gap: 8px;
+    border-radius: 3px;
   }
 
   .queue-item:hover {
@@ -715,29 +765,29 @@
 
   .queue-time {
     flex-shrink: 0;
+    min-width: 90px;
     font-size: 12px;
     color: var(--el-text-color-secondary);
     text-align: right;
-    min-width: 90px;
   }
 
   /* ===== 队列底部统计 ===== */
   .queue-footer {
-    margin-top: auto;
     padding-top: 12px;
-    border-top: 1px solid var(--el-border-color-lighter);
+    margin-top: auto;
     font-size: 13px;
+    border-top: 1px solid var(--el-border-color-lighter);
   }
 
   .unallocated-sp {
-    text-align: right;
     margin-bottom: 8px;
     color: var(--el-text-color-secondary);
+    text-align: right;
   }
 
   .unallocated-sp .sp-value {
-    color: var(--el-color-success);
     font-weight: 600;
+    color: var(--el-color-success);
   }
 
   .total-training-time {
@@ -757,13 +807,13 @@
   }
 
   .queued-sp {
-    text-align: right;
     font-size: 12px;
     color: var(--el-text-color-secondary);
+    text-align: right;
   }
 
   /* ===== 响应式 ===== */
-  @media (max-width: 900px) {
+  @media (width <= 900px) {
     .skill-main {
       flex-direction: column;
     }

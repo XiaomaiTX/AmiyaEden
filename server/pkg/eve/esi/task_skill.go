@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"go.uber.org/zap"
 )
 
 func init() {
@@ -77,30 +75,38 @@ func (t *SkillTask) Execute(ctx *TaskContext) error {
 	tx := global.DB.Begin()
 	if err := tx.Model(&model.EveCharacterSkill{}).
 		Where("character_id = ?", ctx.CharacterID).
-		FirstOrCreate(&model.EveCharacterSkill{
-			CharacterID:   ctx.CharacterID,
+		Assign(&model.EveCharacterSkill{
 			TotalSP:       skillInfo.TotalSP,
 			UnallocatedSP: skillInfo.UnallocatedSP,
+		}).
+		FirstOrCreate(&model.EveCharacterSkill{
+			CharacterID: ctx.CharacterID,
 		}).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("create or update skill: %w", err)
 	}
 
-	for _, skill := range skillInfo.Skills {
-		if err := tx.Model(&model.EveCharacterSkills{}).
-			Where("character_id = ? AND skill_id = ?", ctx.CharacterID, skill.SkillID).
-			FirstOrCreate(&model.EveCharacterSkills{
+	if err := tx.Where("character_id = ?", ctx.CharacterID).
+		Delete(&model.EveCharacterSkills{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("delete old skills: %w", err)
+	}
+
+	if len(skillInfo.Skills) > 0 {
+		var skillRecords []model.EveCharacterSkills
+		for _, skill := range skillInfo.Skills {
+			skillRecords = append(skillRecords, model.EveCharacterSkills{
 				CharacterID:        ctx.CharacterID,
 				SkillID:            skill.SkillID,
 				ActiveLevel:        int(skill.ActiveSkillLevel),
 				TrainedLevel:       int(skill.TrainedSkillLevel),
 				SkillpointsInSkill: skill.SkillpointsInSkill,
-			}).Error; err != nil {
-			global.Logger.Warn("[ESI] 创建或更新技能记录失败",
-				zap.Int64("character_id", ctx.CharacterID),
-				zap.Int("skill_id", skill.SkillID),
-				zap.Error(err),
-			)
+			})
+		}
+
+		if err := tx.Create(&skillRecords).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("insert skill records: %w", err)
 		}
 	}
 

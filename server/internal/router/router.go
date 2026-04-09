@@ -175,6 +175,7 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// ─── EVE 人物信息 ───
 	infoH := handler.NewEveInfoHandler()
+	esiH := handler.NewESIRefreshHandler()
 	info := login.Group("/info")
 	{
 		info.POST("/wallet", infoH.GetWalletJournal)
@@ -184,6 +185,7 @@ func RegisterRoutes(r *gin.Engine) {
 		info.POST("/assets", infoH.GetAssets)
 		info.POST("/contracts", infoH.GetContracts)
 		info.POST("/contracts/detail", infoH.GetContractDetail)
+		info.POST("/esi-refresh", esiH.RunMyCharacterTask)
 	}
 
 	// ─── 装配 ───
@@ -292,7 +294,6 @@ func RegisterRoutes(r *gin.Engine) {
 	}
 
 	// ─── ESI 刷新队列 ───
-	esiH := handler.NewESIRefreshHandler()
 	esiRefresh := login.Group("/esi/refresh", middleware.RequireRole(model.RoleAdmin))
 	{
 		esiRefresh.GET("/tasks", esiH.GetTasks)

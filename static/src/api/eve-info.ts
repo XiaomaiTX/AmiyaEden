@@ -50,3 +50,11 @@ export function fetchInfoContractDetail(data: Api.EveInfo.ContractDetailRequest)
     data
   })
 }
+
+/** 手动触发指定角色的 ESI 刷新（仅限自己的角色） */
+export function runMyCharacterESIRefresh(params: Api.ESIRefresh.RunTaskParams) {
+  return request.post<{ message: string }>({
+    url: '/api/v1/info/esi-refresh',
+    data: params
+  })
+}
