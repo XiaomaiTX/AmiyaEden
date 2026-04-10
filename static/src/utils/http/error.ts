@@ -101,6 +101,7 @@ const getErrorMessage = (status: number): string => {
   const errorMap: Record<number, string> = {
     [ApiStatus.unauthorized]: 'httpMsg.unauthorized',
     [ApiStatus.forbidden]: 'httpMsg.forbidden',
+    [ApiStatus.conflict]: 'httpMsg.conflict',
     [ApiStatus.notFound]: 'httpMsg.notFound',
     [ApiStatus.methodNotAllowed]: 'httpMsg.methodNotAllowed',
     [ApiStatus.requestTimeout]: 'httpMsg.requestTimeout',

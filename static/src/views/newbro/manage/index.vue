@@ -1,18 +1,10 @@
 <template>
   <div class="newbro-manage-page art-full-height">
     <ElCard shadow="never" class="mb-4">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
         <div>
           <div class="text-lg font-semibold">{{ t('newbro.manage.title') }}</div>
           <div class="text-sm text-gray-500 mt-1">{{ t('newbro.manage.subtitle') }}</div>
-        </div>
-        <div class="flex items-center gap-3 flex-wrap">
-          <ElButton type="primary" :disabled="syncing" @click="runSync">
-            {{ t('newbro.manage.runSync') }}
-          </ElButton>
-          <ElButton type="success" :disabled="processingRewards" @click="runRewardProcessing">
-            {{ t('newbro.manage.runRewardProcessing') }}
-          </ElButton>
         </div>
       </div>
     </ElCard>
@@ -253,9 +245,7 @@
     fetchAdminAffiliationHistory,
     fetchAdminCaptainDetail,
     fetchAdminCaptainList,
-    fetchAdminRewardSettlements,
-    fetchRunCaptainAttributionSync,
-    fetchRunCaptainRewardProcessing
+    fetchAdminRewardSettlements
   } from '@/api/newbro'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
 
@@ -269,8 +259,6 @@
   const loadingCaptains = ref(false)
   const loadingHistory = ref(false)
   const loadingRewards = ref(false)
-  const syncing = ref(false)
-  const processingRewards = ref(false)
   const keyword = ref('')
   const rewardKeyword = ref('')
   const captains = ref<Api.Newbro.CaptainOverview[]>([])
@@ -573,52 +561,6 @@
 
   const showDetail = async (captainUserId: number) => {
     detail.value = await fetchAdminCaptainDetail(captainUserId)
-  }
-
-  const runSync = async () => {
-    syncing.value = true
-    try {
-      const result = await fetchRunCaptainAttributionSync()
-      ElMessage.success(
-        t('newbro.manage.syncSuccess', {
-          inserted: result.inserted_count,
-          processed: result.processed_count
-        })
-      )
-      await loadCaptains()
-      if (rewardLoaded.value) {
-        await loadRewards()
-      }
-      if (historyLoaded.value) {
-        await loadHistory()
-      }
-      if (detail.value) {
-        await showDetail(detail.value.overview.captain_user_id)
-      }
-    } finally {
-      syncing.value = false
-    }
-  }
-
-  const runRewardProcessing = async () => {
-    processingRewards.value = true
-    try {
-      const result = await fetchRunCaptainRewardProcessing()
-      ElMessage.success(
-        t('newbro.manage.rewardProcessSuccess', {
-          captains: result.processed_captain_count,
-          attributions: result.processed_attribution_count,
-          credited: formatCredit(result.total_credited_value)
-        })
-      )
-      await loadCaptains()
-      await loadRewards()
-      if (detail.value) {
-        await showDetail(detail.value.overview.captain_user_id)
-      }
-    } finally {
-      processingRewards.value = false
-    }
   }
 
   watch(activeTab, (value) => {

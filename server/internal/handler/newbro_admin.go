@@ -5,23 +5,18 @@ import (
 	"amiya-eden/pkg/response"
 	"math"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type NewbroAdminHandler struct {
 	reportSvc   *service.NewbroReportService
-	syncSvc     *service.CaptainBountySyncService
-	rewardSvc   *service.CaptainRewardProcessingService
 	settingsSvc *service.NewbroSettingsService
 }
 
 func NewNewbroAdminHandler() *NewbroAdminHandler {
 	return &NewbroAdminHandler{
 		reportSvc:   service.NewNewbroReportService(),
-		syncSvc:     service.NewCaptainBountySyncService(),
-		rewardSvc:   service.NewCaptainRewardProcessingService(),
 		settingsSvc: service.NewNewbroSettingsService(),
 	}
 }
@@ -47,24 +42,6 @@ func (h *NewbroAdminHandler) GetCaptainDetail(c *gin.Context) {
 		return
 	}
 	result, err := h.reportSvc.GetAdminCaptainDetail(uint(id))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, result)
-}
-
-func (h *NewbroAdminHandler) RunAttributionSync(c *gin.Context) {
-	result, err := h.syncSvc.RunSync(time.Now())
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, result)
-}
-
-func (h *NewbroAdminHandler) RunRewardProcessing(c *gin.Context) {
-	result, err := h.rewardSvc.Run(time.Now())
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

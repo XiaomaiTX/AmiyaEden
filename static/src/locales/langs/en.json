@@ -2,6 +2,7 @@
   "httpMsg": {
     "unauthorized": "Unauthorized access, please login again",
     "forbidden": "Access to this resource is forbidden",
+    "conflict": "The resource is in a conflicting state, please try again later",
     "notFound": "The requested resource does not exist",
     "methodNotAllowed": "Request method not allowed",
     "requestTimeout": "Request timeout, please try again later",
@@ -255,7 +256,7 @@
       "characters": "Characters",
       "userCenter": "User Center",
       "menu": "Menu Manage",
-      "esiRefresh": "Scheduled Tasks",
+      "taskManager": "Task Manager",
       "wallet": "Wallet Management",
       "alliancePap": "@:console.alliancePap",
       "papExchange": "PAP Exchange",
@@ -407,6 +408,157 @@
       "selectCard": "Click a card on the canvas to edit",
       "noCardSelected": "No card selected",
       "uploadBackground": "Upload Background"
+    }
+  },
+  "taskManager": {
+    "tabs": {
+      "tasks": "Tasks",
+      "history": "Execution History"
+    },
+    "columns": {
+      "name": "Task Name",
+      "description": "Description",
+      "category": "Category",
+      "type": "Type",
+      "schedule": "Schedule",
+      "lastRun": "Last Run",
+      "lastStatus": "Last Status",
+      "trigger": "Trigger",
+      "triggeredBy": "Triggered By",
+      "status": "Status",
+      "startedAt": "Started At",
+      "duration": "Duration",
+      "error": "Error",
+      "summary": "Summary"
+    },
+    "category": {
+      "esi": "ESI",
+      "operation": "Operation",
+      "system": "System"
+    },
+    "type": {
+      "recurring": "Recurring",
+      "triggered": "Triggered"
+    },
+    "trigger": {
+      "cron": "Scheduled",
+      "manual": "Manual",
+      "system": "System"
+    },
+    "status": {
+      "running": "Running",
+      "success": "Success",
+      "failed": "Failed"
+    },
+    "actions": {
+      "run": "Run",
+      "runAllEsi": "Full ESI Refresh",
+      "editSchedule": "Edit Schedule"
+    },
+    "confirm": {
+      "runTask": "Are you sure you want to run \"{name}\"?",
+      "runAllEsi": "Are you sure you want to trigger a full ESI refresh? This will run all ESI data refresh tasks in the background."
+    },
+    "filters": {
+      "taskName": "Filter task",
+      "status": "Filter status"
+    },
+    "fields": {
+      "cronExpr": "Cron Expression",
+      "defaultCron": "Default Schedule"
+    },
+    "placeholders": {
+      "cronExpr": "Enter a 6-field cron expression or an @every interval"
+    },
+    "messages": {
+      "taskTriggered": "Task \"{name}\" triggered",
+      "taskTriggerFailed": "Failed to trigger \"{name}\"",
+      "taskAlreadyRunning": "That task is already running. Please try again later.",
+      "scheduleUpdated": "Schedule updated",
+      "scheduleUpdateFailed": "Failed to update schedule",
+      "scheduleRequired": "Please enter a schedule expression",
+      "esiRefreshTriggered": "Full ESI refresh triggered",
+      "eventTriggered": "Event-triggered"
+    },
+    "tasks": {
+      "esi_refresh": {
+        "name": "ESI Data Refresh",
+        "description": "Refresh ESI data for registered characters"
+      },
+      "alliance_pap_hourly": {
+        "name": "Alliance PAP Hourly Refresh",
+        "description": "Refresh current-month alliance PAP data"
+      },
+      "alliance_pap_archive": {
+        "name": "Alliance PAP Monthly Archive",
+        "description": "Archive prior-month alliance PAP data"
+      },
+      "auto_role_sync": {
+        "name": "Auto Role Sync",
+        "description": "Synchronize auto roles for all users"
+      },
+      "corp_access_check": {
+        "name": "Corporation Access Check",
+        "description": "Check corporation access and adjust roles"
+      },
+      "captain_attribution_sync": {
+        "name": "Run Attribution Sync",
+        "description": "Synchronize captain bounty attributions"
+      },
+      "captain_reward_processing": {
+        "name": "Process Attribution Rewards",
+        "description": "Process captain attribution rewards"
+      },
+      "mentor_reward": {
+        "name": "Mentor Reward Processing",
+        "description": "Process mentor reward settlements"
+      },
+      "auto_srp": {
+        "name": "Automatic SRP",
+        "description": "Track event-driven automatic SRP processing"
+      }
+    },
+    "esi": {
+      "sections": {
+        "tasks": "ESI Queue Tasks",
+        "statuses": "ESI Runtime Status"
+      },
+      "columns": {
+        "priority": "Priority",
+        "activeInterval": "Active Interval",
+        "inactiveInterval": "Inactive Interval",
+        "requiredScopes": "Required Scopes",
+        "characterId": "Character ID",
+        "nextRun": "Next Run"
+      },
+      "filters": {
+        "taskName": "All tasks",
+        "status": "All statuses"
+      },
+      "priority": {
+        "critical": "Critical",
+        "high": "High",
+        "normal": "Normal",
+        "low": "Low"
+      },
+      "status": {
+        "pending": "Pending",
+        "running": "Running",
+        "success": "Success",
+        "failed": "Failed",
+        "skipped": "Skipped"
+      },
+      "confirm": {
+        "runTaskByName": "Are you sure you want to run \"{name}\" for all characters?"
+      },
+      "messages": {
+        "noScopes": "No scopes required",
+        "taskTriggeredAll": "Triggered \"{name}\" for all characters",
+        "taskTriggerFailedAll": "Failed to trigger \"{name}\"",
+        "characterTaskTriggered": "Triggered \"{name}\" for character {characterId}",
+        "characterTaskTriggerFailed": "Failed to trigger \"{name}\" for character {characterId}",
+        "refreshTriggerFailed": "Failed to trigger full ESI refresh"
+      }
     }
   },
   "info": {
@@ -1025,13 +1177,11 @@
     },
     "manage": {
       "title": "Support Management",
-      "subtitle": "Admins can review all captain performance and run attribution sync manually.",
+      "subtitle": "Admins can review all captain performance. Attribution sync and reward processing now run through Task Manager.",
       "performanceTab": "Captain Performance",
       "rewardHistoryTab": "Reward History",
       "affiliationHistoryTab": "Affiliation History",
       "keyword": "Search captain character or nickname",
-      "runSync": "Run Attribution Sync",
-      "runRewardProcessing": "Run Reward Processing",
       "captainPerformance": "Captain Performance",
       "affiliationHistoryTitle": "Affiliation Change History",
       "historyStartDate": "Change Start Date",
@@ -1053,15 +1203,13 @@
       "detailTitle": "Captain Detail - {name}",
       "detailPlayers": "Players",
       "detailAttributions": "Attributions",
-      "syncSuccess": "Attribution sync completed. Inserted {inserted} records after processing {processed}.",
       "rewardSettlementCount": "Reward Batches",
       "rewardTotalCredited": "Total Credited Value",
       "rewardLastProcessedAt": "Last Reward Time",
       "rewardAttributionCount": "Attributed Records",
       "rewardAttributedTotal": "Attributed Bounty Total",
       "rewardBonusRate": "Bonus Rate",
-      "rewardCreditedValue": "Credited Value",
-      "rewardProcessSuccess": "Reward processing completed for {captains} captains and {attributions} attribution records, crediting {credited} in total."
+      "rewardCreditedValue": "Credited Value"
     },
     "mentorManage": {
       "title": "Mentor Management",

@@ -296,6 +296,55 @@ declare namespace Api {
     type TaskStatusList = Api.Common.PaginatedResponse<TaskStatus>
   }
 
+  /** 任务管理器类型 */
+  namespace TaskManager {
+    interface TaskItem {
+      name: string
+      description: string
+      category: 'esi' | 'operation' | 'system'
+      type: 'recurring' | 'triggered'
+      runnable: boolean
+      cron_expr: string
+      default_cron: string
+      last_execution?: TaskLastExecution | null
+    }
+
+    interface TaskLastExecution {
+      status: 'running' | 'success' | 'failed'
+      started_at: string
+      finished_at?: string
+      duration_ms?: number
+      error?: string
+      summary?: string
+    }
+
+    interface TaskExecutionItem {
+      id: number
+      task_name: string
+      trigger: 'cron' | 'manual'
+      triggered_by?: number
+      triggered_by_name?: string
+      status: 'running' | 'success' | 'failed'
+      started_at: string
+      finished_at?: string
+      duration_ms?: number
+      error?: string
+      summary?: string
+    }
+
+    interface UpdateScheduleParams {
+      cron_expr: string
+    }
+
+    type TaskHistorySearchParams = Partial<{
+      task_name: string
+      status: string
+    }> &
+      Partial<Api.Common.CommonSearchParams>
+
+    type TaskHistoryList = Api.Common.PaginatedResponse<TaskExecutionItem>
+  }
+
   /** 舰队管理类型 */
   namespace Fleet {
     /** 舰队信息 */
@@ -2156,21 +2205,6 @@ declare namespace Api {
     }>
 
     type AdminRewardSettlementsResponse = CaptainRewardSettlementsResponse
-
-    interface AttributionSyncResult {
-      processed_count: number
-      inserted_count: number
-      skipped_count: number
-      last_wallet_journal_id: number
-    }
-
-    interface RewardProcessResult {
-      processed_at: string
-      processed_captain_count: number
-      processed_attribution_count: number
-      settlement_count: number
-      total_credited_value: number
-    }
 
     interface Settings {
       max_character_sp: number

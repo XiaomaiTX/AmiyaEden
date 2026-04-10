@@ -6,7 +6,7 @@ last_reviewed: 2026-03-20
 canonical: false
 source_of_truth:
   - AGENTS.md
-  - docs/features/current/esi-refresh.md
+    - docs/features/current/task-manager.md
   - docs/guides/adding-esi-feature.md
   - server/pkg/eve/esi
 ---
@@ -20,7 +20,7 @@ source_of_truth:
 它不是 repo-level canonical 文档，不能覆盖以下内容：
 
 - 仓库工程约束：`AGENTS.md`
-- 当前功能边界：`docs/features/current/esi-refresh.md`
+- 当前功能边界：`docs/features/current/task-manager.md`
 - 新增模块流程：`docs/guides/adding-esi-feature.md`
 - API / 权限 / 产品行为：`docs/api/*` 与 `docs/architecture/*`
 
@@ -143,7 +143,7 @@ fmt.Println(meta.RateLimitRemain) // 139
 建议阅读顺序：
 
 1. `AGENTS.md`
-2. `docs/features/current/esi-refresh.md`
+2. `docs/features/current/task-manager.md`
 3. `docs/guides/adding-esi-feature.md`
 4. 本文件
 

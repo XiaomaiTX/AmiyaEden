@@ -119,15 +119,3 @@ export function updateAdminNewbroSettings(data: Api.Newbro.UpdateSettingsParams)
     data
   })
 }
-
-export function fetchRunCaptainAttributionSync() {
-  return request.post<Api.Newbro.AttributionSyncResult>({
-    url: '/api/v1/system/newbro/attribution/sync'
-  })
-}
-
-export function fetchRunCaptainRewardProcessing() {
-  return request.post<Api.Newbro.RewardProcessResult>({
-    url: '/api/v1/system/newbro/reward/process'
-  })
-}

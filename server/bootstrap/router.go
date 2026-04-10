@@ -4,12 +4,13 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/router"
+	"amiya-eden/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 // InitRouter 初始化并返回 Gin 路由引擎
-func InitRouter() *gin.Engine {
+func InitRouter(taskSvc *service.TaskService) *gin.Engine {
 	gin.SetMode(global.Config.Server.Mode)
 
 	r := gin.New()
@@ -32,7 +33,7 @@ func InitRouter() *gin.Engine {
 	)
 
 	// 注册业务路由
-	router.RegisterRoutes(r)
+	router.RegisterRoutes(r, taskSvc)
 
 	global.Logger.Info("路由注册完成")
 	return r

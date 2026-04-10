@@ -4,20 +4,26 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
+	"amiya-eden/internal/taskregistry"
 	"amiya-eden/internal/utils"
 	"context"
 
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
 
-func RegisterRoleJobs(c *cron.Cron) {
-	id, err := c.AddFunc("0 0/5 * * * ?", roleCheckTask)
-	if err != nil {
-		global.Logger.Error("注册职权检查定时任务失败", zap.Error(err))
-		return
-	}
-	global.Logger.Info("注册职权检查定时任务成功", zap.Int("entry_id", int(id)))
+func registerCorpAccessCheckTask(reg *taskregistry.Registry) {
+	reg.Register(taskregistry.TaskDefinition{
+		Name:        "corp_access_check",
+		Description: "Check corporation access and adjust roles",
+		Category:    taskregistry.TaskCategorySystem,
+		Type:        taskregistry.TaskTypeRecurring,
+		DefaultCron: "0 0/5 * * * *",
+		RunFunc: func(ctx context.Context) error {
+			roleCheckTask()
+			return nil
+		},
+	})
+	global.Logger.Info("注册职权检查任务成功", zap.String("task_name", "corp_access_check"))
 }
 
 // roleCheckTask 遍历所有用户，根据军团准入列表调整用户权限

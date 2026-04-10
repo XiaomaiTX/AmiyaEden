@@ -25,14 +25,17 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
-      path: 'esi-refresh',
-      name: 'ESIRefresh',
-      component: '/system/esi-refresh',
+      path: 'task-manager',
+      name: 'TaskManager',
+      component: '/system/task-manager',
       meta: {
-        title: 'menus.system.esiRefresh',
+        title: 'menus.system.taskManager',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        authList: [{ title: '执行任务', authMark: 'execute_task' }]
+        authList: [
+          { title: '执行任务', authMark: 'execute_task' },
+          { title: '修改调度', authMark: 'update_schedule' }
+        ]
       }
     },
     {

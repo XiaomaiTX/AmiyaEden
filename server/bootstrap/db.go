@@ -136,6 +136,8 @@ func autoMigrate(db *gorm.DB) {
 		&model.AlliancePAPSummary{},
 		&model.PAPTypeRate{},
 		// 系统配置表
+		&model.TaskSchedule{},
+		&model.TaskExecution{},
 		&model.SystemConfig{},
 		// 名人堂相关表
 		&model.HallOfFameConfig{},
