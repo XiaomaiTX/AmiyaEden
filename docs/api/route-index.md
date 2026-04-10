@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-04-11
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -377,8 +377,6 @@ source_of_truth:
 | GET | `/system/newbro/captains/:user_id` | 队长详情（概览、关联玩家、归因明细） | `RequireRole(admin)` |
 | GET | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史 | `RequireRole(admin)` |
 | GET | `/system/newbro/rewards` | 队长奖励发放历史 | `RequireRole(admin)` |
-| POST | `/system/newbro/attribution/sync` | 手动执行队长赏金归因同步 | `RequireRole(admin)` |
-| POST | `/system/newbro/reward/process` | 手动执行队长奖励处理 | `RequireRole(admin)` |
 
 ### Shop Admin
 
