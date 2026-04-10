@@ -331,6 +331,57 @@
       "fittings": "My Fittings",
       "assets": "Assets",
       "contracts": "Contracts"
+    },
+    "hallOfFame": {
+      "title": "Fuxi Hall of Heroes",
+      "temple": "Temple",
+      "manage": "Manage"
+    }
+  },
+  "hallOfFame": {
+    "temple": {
+      "eyebrow": "Fuxi Hall of Heroes",
+      "emptyTitle": "No Heroes Enshrined Yet",
+      "emptySubtitle": "The Hall of Heroes is waiting for its first heroes"
+    },
+    "manage": {
+      "eyebrow": "Temple Architect",
+      "summary": "Drag cards across the board, reshape the stage, and tune each hero entry without leaving the page.",
+      "newCardName": "New Hero",
+      "dragHint": "drag",
+      "addCard": "Add Card",
+      "setBackground": "Set Background",
+      "saveLayout": "Save Layout",
+      "preview": "Preview",
+      "canvasWidth": "Canvas Width",
+      "canvasHeight": "Canvas Height",
+      "cardEditor": "Card Editor",
+      "name": "Name",
+      "titleField": "Title",
+      "description": "Description",
+      "avatar": "Avatar",
+      "changeAvatar": "Change Avatar",
+      "stylePreset": "Style Preset",
+      "gold": "Gold",
+      "silver": "Silver",
+      "bronze": "Bronze",
+      "custom": "Custom",
+      "bgColor": "Background Color",
+      "textColor": "Text Color",
+      "borderColor": "Border Color",
+      "fontSize": "Font Size",
+      "zIndex": "Layer",
+      "bringForward": "Bring Forward",
+      "sendBackward": "Send Backward",
+      "visible": "Visible",
+      "deleteCard": "Delete Card",
+      "deleteConfirm": "Are you sure you want to delete this card?",
+      "saveSuccess": "Saved successfully",
+      "saveFailed": "Save failed",
+      "deleteSuccess": "Deleted successfully",
+      "selectCard": "Click a card on the canvas to edit",
+      "noCardSelected": "No card selected",
+      "uploadBackground": "Upload Background"
     }
   },
   "info": {
