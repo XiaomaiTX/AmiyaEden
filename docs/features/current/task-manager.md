@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-04-11
 source_of_truth:
   - server/internal/router/router.go
   - server/bootstrap/cron.go
@@ -25,12 +25,13 @@ source_of_truth:
 
 ## 当前能力
 
-- `/system/task-manager` 将后台任务统一展示为「任务」与「执行历史」两个 tab
+- `/system/task-manager` 将后台任务统一展示为「任务」「ESI 状态」与「执行历史」三个 tab
 - 任务页展示任务名、说明、分类、任务类型、当前生效 cron、默认 cron 与最近一次执行结果
-- 管理员可手动触发支持运行的任务；ESI 相关的按人物执行、按任务名执行、全量执行与状态查询入口保留在同一页面中
+- ESI 状态页集中展示按人物执行、按任务名执行、全量执行与状态查询入口
+- 管理员可手动触发支持运行的任务；ESI 相关控制仍保留在同一页面中
 - `super_admin` 可修改周期任务的 cron；修改会立即重载运行时调度，并持久化到 `task_schedules`
 - 通用任务的 cron/manual 执行都会写入 `task_executions`，执行历史页支持按任务名与状态筛选
-- 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、联盟 PAP 抓取/归档、自动职权同步、军团准入检查、队长归因同步、队长奖励处理、导师奖励与自动 SRP
+- 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、队长归因同步、队长奖励处理、导师奖励与自动 SRP
 - `auto_srp` 属于事件驱动任务：会显示在任务页中，但没有手动触发入口，也不支持 cron 编辑
 - 服务启动时会注册任务定义、恢复 `task_schedules` 覆盖、恢复待执行的自动 SRP 延迟调度，并启动周期任务调度器
 
@@ -42,6 +43,7 @@ source_of_truth:
 | `alliance_pap_hourly` | `operation` | `recurring` | 是 | 抓取联盟 PAP 增量数据 |
 | `alliance_pap_archive` | `operation` | `recurring` | 是 | 执行联盟 PAP 月度归档 |
 | `auto_role_sync` | `system` | `recurring` | 是 | 同步自动职权 |
+| `task_execution_history_cleanup` | `system` | `recurring` | 是 | 清理超出保留期的任务执行历史 |
 | `corp_access_check` | `system` | `recurring` | 是 | 校验军团准入并调整基础职权 |
 | `captain_attribution_sync` | `operation` | `recurring` | 是 | 同步队长赏金归因，默认 `@every 13h` |
 | `captain_reward_processing` | `operation` | `recurring` | 是 | 处理队长归因奖励，默认 `@every 100h` |
