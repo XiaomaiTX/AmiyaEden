@@ -19,7 +19,8 @@ test('serialized card updates keep newer queued fields when an earlier request s
     name: 'Hero Alpha',
     title: 'Strategist',
     description: 'Keeps the fleet together.',
-    avatar: 'old-avatar',
+    character_id: 90000001,
+    badge_image: '',
     pos_x: 10,
     pos_y: 20,
     width: 220,
@@ -28,6 +29,8 @@ test('serialized card updates keep newer queued fields when an earlier request s
     custom_bg_color: '',
     custom_text_color: '',
     custom_border_color: '',
+    border_style: 'none',
+    title_color: '',
     font_size: 14,
     z_index: 3,
     visible: true,
@@ -40,20 +43,20 @@ test('serialized card updates keep newer queued fields when an earlier request s
   assert.deepEqual(first.patchToSend, { title: 'Founder' })
 
   const second = queueCardUpdateRequest(first.state, {
-    avatar: 'new-avatar',
+    character_id: 90000002,
     description: 'Final draft'
   })
 
   assert.equal(second.patchToSend, null)
   assert.deepEqual(second.state.queued, {
-    avatar: 'new-avatar',
+    character_id: 90000002,
     description: 'Final draft'
   })
 
   const settled = settleCardUpdateRequest(second.state)
 
   assert.deepEqual(settled.patchToSend, {
-    avatar: 'new-avatar',
+    character_id: 90000002,
     description: 'Final draft'
   })
   assert.deepEqual(
@@ -62,7 +65,7 @@ test('serialized card updates keep newer queued fields when an earlier request s
       {
         ...confirmedCard,
         title: 'Founder',
-        avatar: 'new-avatar',
+        character_id: 90000002,
         description: 'Final draft',
         width: 260
       },
@@ -70,7 +73,7 @@ test('serialized card updates keep newer queued fields when an earlier request s
     ),
     {
       ...confirmedCard,
-      avatar: 'new-avatar',
+      character_id: 90000002,
       description: 'Final draft',
       width: 260
     }

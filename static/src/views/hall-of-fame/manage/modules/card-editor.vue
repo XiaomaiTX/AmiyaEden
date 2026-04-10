@@ -12,18 +12,48 @@
 
     <div v-else class="card-editor__body">
       <div class="card-editor__avatar-block">
-        <img v-if="card.avatar" :src="card.avatar" :alt="card.name" class="card-editor__avatar" />
+        <img v-if="portraitUrl" :src="portraitUrl" :alt="card.name" class="card-editor__avatar" />
         <div v-else class="card-editor__avatar card-editor__avatar--placeholder">
           {{ card.name.slice(0, 1) || '?' }}
         </div>
-        <ElButton @click="openAvatarPicker">{{ t('hallOfFame.manage.changeAvatar') }}</ElButton>
-        <input
-          ref="avatarInputRef"
-          class="card-editor__file-input"
-          type="file"
-          accept="image/*"
-          @change="handleAvatarChange"
-        />
+
+        <div class="card-editor__badge-block">
+          <img
+            v-if="card.badge_image"
+            :src="card.badge_image"
+            :alt="t('hallOfFame.manage.badgeImage')"
+            class="card-editor__badge-image"
+          />
+          <div v-else class="card-editor__badge-placeholder">
+            {{ t('hallOfFame.manage.badgeImageHint') }}
+          </div>
+
+          <div class="card-editor__badge-actions">
+            <ElButton size="small" @click="openBadgeImagePicker">
+              {{
+                card.badge_image
+                  ? t('hallOfFame.manage.replaceBadgeImage')
+                  : t('hallOfFame.manage.uploadBadgeImage')
+              }}
+            </ElButton>
+            <ElButton
+              v-if="card.badge_image"
+              size="small"
+              text
+              @click="queueUpdate({ badge_image: '' })"
+            >
+              {{ t('hallOfFame.manage.removeBadgeImage') }}
+            </ElButton>
+          </div>
+
+          <input
+            ref="badgeInputRef"
+            class="card-editor__badge-input"
+            type="file"
+            accept="image/*"
+            @change="handleBadgeImageChange"
+          />
+        </div>
       </div>
 
       <div class="card-editor__fields">
@@ -44,6 +74,15 @@
         </label>
 
         <label>
+          <span>{{ t('hallOfFame.manage.characterId') }}</span>
+          <ElInput
+            :model-value="card.character_id > 0 ? String(card.character_id) : ''"
+            inputmode="numeric"
+            @update:model-value="handleCharacterIdChange"
+          />
+        </label>
+
+        <label>
           <span>{{ t('hallOfFame.manage.description') }}</span>
           <ElInput
             type="textarea"
@@ -58,9 +97,40 @@
           <ElSelect :model-value="card.style_preset" @update:model-value="handlePresetChange">
             <ElOption value="gold" :label="t('hallOfFame.manage.gold')" />
             <ElOption value="silver" :label="t('hallOfFame.manage.silver')" />
+            <ElOption value="darkred" :label="t('hallOfFame.manage.darkred')" />
+            <ElOption value="yellow" :label="t('hallOfFame.manage.yellow')" />
             <ElOption value="bronze" :label="t('hallOfFame.manage.bronze')" />
+            <ElOption value="rose" :label="t('hallOfFame.manage.rose')" />
+            <ElOption value="jade" :label="t('hallOfFame.manage.jade')" />
+            <ElOption value="midnight" :label="t('hallOfFame.manage.midnight')" />
             <ElOption value="custom" :label="t('hallOfFame.manage.custom')" />
           </ElSelect>
+        </label>
+
+        <label>
+          <span>{{ t('hallOfFame.manage.borderStyle') }}</span>
+          <ElSelect
+            :model-value="card.border_style || 'none'"
+            @update:model-value="handleBorderStyleChange"
+          >
+            <ElOption value="none" :label="t('hallOfFame.manage.borderNone')" />
+            <ElOption value="gilded" :label="t('hallOfFame.manage.borderGilded')" />
+            <ElOption value="imperial" :label="t('hallOfFame.manage.borderImperial')" />
+            <ElOption value="neon-circuit" :label="t('hallOfFame.manage.borderNeonCircuit')" />
+            <ElOption value="void-rift" :label="t('hallOfFame.manage.borderVoidRift')" />
+            <ElOption value="amarr" :label="t('hallOfFame.manage.borderAmarr')" />
+            <ElOption value="caldari" :label="t('hallOfFame.manage.borderCaldari')" />
+            <ElOption value="minmatar" :label="t('hallOfFame.manage.borderMinmatar')" />
+            <ElOption value="gallente" :label="t('hallOfFame.manage.borderGallente')" />
+          </ElSelect>
+        </label>
+
+        <label>
+          <span>{{ t('hallOfFame.manage.titleColor') }}</span>
+          <ElColorPicker
+            :model-value="card.title_color || defaultTitleColor"
+            @change="(value) => handleColorChange('title_color', value)"
+          />
         </label>
 
         <template v-if="card.style_preset === 'custom'">
@@ -91,30 +161,12 @@
           <span>{{ t('hallOfFame.manage.fontSize') }}</span>
           <ElSlider
             :min="12"
-            :max="24"
+            :max="32"
+            :show-input="true"
             :model-value="card.font_size || 14"
-            @change="(value) => queueUpdate({ font_size: Number(value) })"
+            @update:model-value="(value) => handleFontSizeChange(value)"
           />
         </label>
-
-        <div class="card-editor__row">
-          <label>
-            <span>{{ t('hallOfFame.manage.zIndex') }}</span>
-            <ElInputNumber
-              :min="0"
-              :max="999"
-              :model-value="card.z_index"
-              @update:model-value="handleLayerChange"
-            />
-          </label>
-          <label>
-            <span>{{ t('hallOfFame.manage.visible') }}</span>
-            <ElSwitch
-              :model-value="card.visible"
-              @update:model-value="(value) => queueUpdate({ visible: Boolean(value) })"
-            />
-          </label>
-        </div>
       </div>
 
       <div class="card-editor__danger-zone">
@@ -131,21 +183,21 @@
 </template>
 
 <script setup lang="ts">
-  import { onBeforeUnmount, ref } from 'vue'
+  import { computed, onBeforeUnmount, ref } from 'vue'
 
   import {
     ElButton,
     ElColorPicker,
     ElInput,
-    ElInputNumber,
     ElOption,
     ElPopconfirm,
     ElSelect,
-    ElSlider,
-    ElSwitch
+    ElSlider
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
+  import { buildHallOfFamePortraitUrl } from '../../portrait.helpers'
+  import { buildHeroCardStyle } from '../../temple/modules/temple-canvas.helpers'
   import { mergePendingCardUpdates } from './card-editor.helpers'
 
   const props = defineProps<{
@@ -154,15 +206,20 @@
 
   const emit = defineEmits<{
     update: [id: number, updates: Api.HallOfFame.UpdateCardParams]
-    'update-z-index': [id: number, value: number]
+    'upload-badge-image': [id: number, file: File]
     delete: [id: number]
-    'upload-avatar': [id: number, file: File]
   }>()
 
   const { t } = useI18n()
-  const avatarInputRef = ref<HTMLInputElement | null>(null)
+  const badgeInputRef = ref<HTMLInputElement | null>(null)
   const pendingUpdates = new Map<number, Api.HallOfFame.UpdateCardParams>()
   const pendingTimers = new Map<number, ReturnType<typeof setTimeout>>()
+  const portraitUrl = computed(() =>
+    props.card ? buildHallOfFamePortraitUrl(props.card.character_id) : ''
+  )
+  const defaultTitleColor = computed(() =>
+    props.card ? buildHeroCardStyle(props.card).titleColor : '#ffd86a'
+  )
 
   function queueUpdate(updates: Api.HallOfFame.UpdateCardParams) {
     if (!props.card) {
@@ -191,24 +248,43 @@
     queueUpdate({ style_preset: value })
   }
 
+  function handleBorderStyleChange(value: Api.HallOfFame.CardBorderStyle) {
+    queueUpdate({ border_style: value })
+  }
+
   function handleColorChange(
-    field: 'custom_bg_color' | 'custom_text_color' | 'custom_border_color',
+    field: 'custom_bg_color' | 'custom_text_color' | 'custom_border_color' | 'title_color',
     value: string | null
   ) {
     queueUpdate({ [field]: value || '' })
   }
 
-  function handleLayerChange(value?: number) {
-    if (props.card && typeof value === 'number') {
-      emit('update-z-index', props.card.id, value)
+  function handleFontSizeChange(value: number | number[]) {
+    if (typeof value === 'number') {
+      queueUpdate({ font_size: value })
     }
   }
 
-  function openAvatarPicker() {
-    avatarInputRef.value?.click()
+  function handleCharacterIdChange(value: string | number) {
+    const normalized = String(value ?? '').trim()
+    if (!normalized) {
+      queueUpdate({ character_id: 0 })
+      return
+    }
+
+    const digitsOnly = normalized.replace(/\D+/g, '')
+    if (!digitsOnly) {
+      return
+    }
+
+    queueUpdate({ character_id: Number(digitsOnly) })
   }
 
-  function handleAvatarChange(event: Event) {
+  function openBadgeImagePicker() {
+    badgeInputRef.value?.click()
+  }
+
+  function handleBadgeImageChange(event: Event) {
     if (!props.card) {
       return
     }
@@ -217,7 +293,7 @@
     const file = target.files?.[0]
 
     if (file) {
-      emit('upload-avatar', props.card.id, file)
+      emit('upload-badge-image', props.card.id, file)
     }
 
     target.value = ''
@@ -251,6 +327,18 @@
       pendingTimers.delete(id)
     }
   }
+
+  function flushPendingUpdates() {
+    for (const id of Array.from(pendingUpdates.keys())) {
+      flushPendingUpdate(id)
+    }
+  }
+
+  defineExpose<{
+    flushPendingUpdates: () => void
+  }>({
+    flushPendingUpdates
+  })
 
   onBeforeUnmount(() => {
     for (const timer of pendingTimers.values()) {
@@ -336,6 +424,52 @@
     text-transform: uppercase;
   }
 
+  .card-editor__badge-block {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-editor__badge-image,
+  .card-editor__badge-placeholder {
+    width: 100%;
+    max-width: 160px;
+    min-height: 68px;
+    border-radius: 16px;
+  }
+
+  .card-editor__badge-image {
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .card-editor__badge-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .card-editor__badge-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .card-editor__badge-input {
+    display: none;
+  }
+
   .card-editor__fields {
     display: flex;
     flex-direction: column;
@@ -352,25 +486,9 @@
     text-transform: uppercase;
   }
 
-  .card-editor__row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
   .card-editor__danger-zone {
     margin-top: 22px;
     display: flex;
     justify-content: flex-end;
-  }
-
-  .card-editor__file-input {
-    display: none;
-  }
-
-  @media (max-width: 960px) {
-    .card-editor__row {
-      grid-template-columns: 1fr;
-    }
   }
 </style>

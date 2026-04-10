@@ -19,6 +19,7 @@
     selected: boolean
     canvasWidth: number
     canvasHeight: number
+    zoomRatio: number
   }>()
 
   const emit = defineEmits<{
@@ -47,6 +48,8 @@
     width: `${cardWidth.value}px`,
     zIndex: String(props.card.z_index)
   }))
+
+  const effectiveZoomRatio = computed(() => (props.zoomRatio > 0 ? props.zoomRatio : 1))
 
   watch(
     () => [
@@ -80,11 +83,11 @@
             }
 
             const nextLeft = clampPx(
-              pixelLeft.value + event.dx,
+              pixelLeft.value + event.dx / effectiveZoomRatio.value,
               props.canvasWidth - target.offsetWidth
             )
             const nextTop = clampPx(
-              pixelTop.value + event.dy,
+              pixelTop.value + event.dy / effectiveZoomRatio.value,
               props.canvasHeight - target.offsetHeight
             )
 
@@ -102,8 +105,8 @@
         edges: { right: true, bottom: true },
         listeners: {
           move(event) {
-            cardWidth.value = Math.max(180, Math.round(event.rect.width))
-            cardHeight.value = Math.max(0, Math.round(event.rect.height))
+            cardWidth.value = Math.max(160, Math.round(event.rect.width / effectiveZoomRatio.value))
+            cardHeight.value = Math.max(0, Math.round(event.rect.height / effectiveZoomRatio.value))
 
             emit('update:size', {
               width: cardWidth.value,

@@ -5,6 +5,8 @@ import (
 	"amiya-eden/internal/repository"
 	"errors"
 	"math"
+	"regexp"
+	"strconv"
 )
 
 // HallOfFameService 名人堂业务逻辑层
@@ -91,6 +93,7 @@ func (s *HallOfFameService) GetTemple() (*TempleResponse, error) {
 	if cards == nil {
 		cards = []model.HallOfFameCard{}
 	}
+	normalizeHallOfFameCards(cards)
 	return &TempleResponse{Config: *cfg, Cards: cards}, nil
 }
 
@@ -105,6 +108,7 @@ func (s *HallOfFameService) ListAllCards() ([]model.HallOfFameCard, error) {
 	if cards == nil {
 		cards = []model.HallOfFameCard{}
 	}
+	normalizeHallOfFameCards(cards)
 	return cards, nil
 }
 
@@ -113,7 +117,8 @@ type CreateCardRequest struct {
 	Name              string  `json:"name" binding:"required"`
 	Title             string  `json:"title"`
 	Description       string  `json:"description"`
-	Avatar            string  `json:"avatar"`
+	CharacterID       int64   `json:"character_id"`
+	BadgeImage        string  `json:"badge_image"`
 	PosX              float64 `json:"pos_x"`
 	PosY              float64 `json:"pos_y"`
 	Width             int     `json:"width"`
@@ -122,6 +127,8 @@ type CreateCardRequest struct {
 	CustomBgColor     string  `json:"custom_bg_color"`
 	CustomTextColor   string  `json:"custom_text_color"`
 	CustomBorderColor string  `json:"custom_border_color"`
+	BorderStyle       string  `json:"border_style"`
+	TitleColor        string  `json:"title_color"`
 	FontSize          int     `json:"font_size"`
 	ZIndex            int     `json:"z_index"`
 	Visible           *bool   `json:"visible"`
@@ -138,9 +145,16 @@ func (s *HallOfFameService) CreateCard(req *CreateCardRequest) (*model.HallOfFam
 	if !isValidStylePreset(preset) {
 		return nil, errors.New("无效的样式预设")
 	}
+	borderStyle := req.BorderStyle
+	if borderStyle == "" {
+		borderStyle = "none"
+	}
+	if !isValidBorderStyle(borderStyle) {
+		return nil, errors.New("无效的边框样式")
+	}
 	width := req.Width
 	if width <= 0 {
-		width = 200
+		width = 196
 	}
 	visible := true
 	if req.Visible != nil {
@@ -151,7 +165,9 @@ func (s *HallOfFameService) CreateCard(req *CreateCardRequest) (*model.HallOfFam
 		Name:              req.Name,
 		Title:             req.Title,
 		Description:       req.Description,
-		Avatar:            req.Avatar,
+		CharacterID:       req.CharacterID,
+		Avatar:            "",
+		BadgeImage:        req.BadgeImage,
 		PosX:              clampPercent(req.PosX),
 		PosY:              clampPercent(req.PosY),
 		Width:             width,
@@ -160,6 +176,8 @@ func (s *HallOfFameService) CreateCard(req *CreateCardRequest) (*model.HallOfFam
 		CustomBgColor:     req.CustomBgColor,
 		CustomTextColor:   req.CustomTextColor,
 		CustomBorderColor: req.CustomBorderColor,
+		BorderStyle:       borderStyle,
+		TitleColor:        req.TitleColor,
 		FontSize:          req.FontSize,
 		ZIndex:            req.ZIndex,
 		Visible:           visible,
@@ -175,7 +193,8 @@ type UpdateCardRequest struct {
 	Name              *string  `json:"name"`
 	Title             *string  `json:"title"`
 	Description       *string  `json:"description"`
-	Avatar            *string  `json:"avatar"`
+	CharacterID       *int64   `json:"character_id"`
+	BadgeImage        *string  `json:"badge_image"`
 	PosX              *float64 `json:"pos_x"`
 	PosY              *float64 `json:"pos_y"`
 	Width             *int     `json:"width"`
@@ -184,6 +203,8 @@ type UpdateCardRequest struct {
 	CustomBgColor     *string  `json:"custom_bg_color"`
 	CustomTextColor   *string  `json:"custom_text_color"`
 	CustomBorderColor *string  `json:"custom_border_color"`
+	BorderStyle       *string  `json:"border_style"`
+	TitleColor        *string  `json:"title_color"`
 	FontSize          *int     `json:"font_size"`
 	ZIndex            *int     `json:"z_index"`
 	Visible           *bool    `json:"visible"`
@@ -217,7 +238,12 @@ func (s *HallOfFameService) UpdateCard(id uint, req *UpdateCardRequest) (*model.
 		return nil, err
 	}
 
-	return s.repo.GetCardByID(id)
+	nextCard, err := s.repo.GetCardByID(id)
+	if err != nil {
+		return nil, err
+	}
+	normalizeHallOfFameCard(nextCard)
+	return nextCard, nil
 }
 
 // DeleteCard soft-deletes a card.
@@ -247,11 +273,19 @@ func clampPercent(v float64) float64 {
 }
 
 var validStylePresets = map[string]bool{
-	"gold": true, "silver": true, "bronze": true, "custom": true,
+	"gold": true, "silver": true, "darkred": true, "yellow": true, "bronze": true, "rose": true, "jade": true, "midnight": true, "custom": true,
 }
 
 func isValidStylePreset(s string) bool {
 	return validStylePresets[s]
+}
+
+var validBorderStyles = map[string]bool{
+	"none": true, "gilded": true, "imperial": true, "neon-circuit": true, "void-rift": true, "amarr": true, "caldari": true, "minmatar": true, "gallente": true,
+}
+
+func isValidBorderStyle(s string) bool {
+	return validBorderStyles[s]
 }
 
 func buildHallOfFameCardUpdateMap(req *UpdateCardRequest) (map[string]interface{}, error) {
@@ -273,8 +307,12 @@ func buildHallOfFameCardUpdateMap(req *UpdateCardRequest) (map[string]interface{
 	if req.Description != nil {
 		updates["description"] = *req.Description
 	}
-	if req.Avatar != nil {
-		updates["avatar"] = *req.Avatar
+	if req.CharacterID != nil {
+		updates["character_id"] = *req.CharacterID
+		updates["avatar"] = ""
+	}
+	if req.BadgeImage != nil {
+		updates["badge_image"] = *req.BadgeImage
 	}
 	if req.StylePreset != nil {
 		if !isValidStylePreset(*req.StylePreset) {
@@ -291,6 +329,15 @@ func buildHallOfFameCardUpdateMap(req *UpdateCardRequest) (map[string]interface{
 	if req.CustomBorderColor != nil {
 		updates["custom_border_color"] = *req.CustomBorderColor
 	}
+	if req.BorderStyle != nil {
+		if !isValidBorderStyle(*req.BorderStyle) {
+			return nil, errors.New("无效的边框样式")
+		}
+		updates["border_style"] = *req.BorderStyle
+	}
+	if req.TitleColor != nil {
+		updates["title_color"] = *req.TitleColor
+	}
 	if req.FontSize != nil {
 		updates["font_size"] = *req.FontSize
 	}
@@ -299,6 +346,36 @@ func buildHallOfFameCardUpdateMap(req *UpdateCardRequest) (map[string]interface{
 	}
 
 	return updates, nil
+}
+
+var legacyHallOfFamePortraitPattern = regexp.MustCompile(`/characters/(\d+)/portrait`)
+
+func normalizeHallOfFameCards(cards []model.HallOfFameCard) {
+	for index := range cards {
+		normalizeHallOfFameCard(&cards[index])
+	}
+}
+
+func normalizeHallOfFameCard(card *model.HallOfFameCard) {
+	if card == nil {
+		return
+	}
+
+	if card.CharacterID > 0 || card.Avatar == "" {
+		return
+	}
+
+	match := legacyHallOfFamePortraitPattern.FindStringSubmatch(card.Avatar)
+	if len(match) != 2 {
+		return
+	}
+
+	characterID, err := strconv.ParseInt(match[1], 10, 64)
+	if err != nil {
+		return
+	}
+
+	card.CharacterID = characterID
 }
 
 func buildHallOfFameLayoutUpdates(requests []CardLayoutUpdateRequest) ([]model.CardLayoutUpdate, error) {

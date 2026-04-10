@@ -28,6 +28,14 @@ export function uploadHofBackground(file: File) {
   return uploadImageAsDataUrl(file, '/api/v1/system/hall-of-fame/upload-background')
 }
 
+export function uploadHofBadgeImage(file: File) {
+  if (file.size > 300 * 1024) {
+    throw new Error('hall_of_fame_badge_image_too_large')
+  }
+
+  return uploadImageAsDataUrl(file)
+}
+
 // ─── Admin: Cards ───
 
 export function fetchHofCards() {
