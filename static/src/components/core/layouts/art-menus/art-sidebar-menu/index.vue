@@ -107,6 +107,8 @@
             @close="handleMenuClose"
           />
         </ElMenu>
+
+        <ArtVersionDisplay v-if="menuOpen" />
       </ElScrollbar>
 
       <!-- 双列菜单右侧折叠按钮 -->
