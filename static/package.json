@@ -1,6 +1,6 @@
 {
   "name": "art-design-pro",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "engines": {
     "node": ">=20.19.0",
@@ -8,8 +8,10 @@
   },
   "scripts": {
     "dev": "vite --open",
+    "prebuild": "node scripts/sync-version.js",
     "build": "vite build",
     "serve": "vite preview",
+    "check:version": "node scripts/check-version-bump.js",
     "lint": "eslint",
     "test:unit": "tsx --test \"src/**/*.test.ts\" \"src/**/*.spec.ts\" \"src/**/*.test.tsx\" \"src/**/*.spec.tsx\"",
     "fix": "eslint --fix",
