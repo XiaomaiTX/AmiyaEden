@@ -5,6 +5,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
+	"amiya-eden/internal/taskregistry"
 	"errors"
 	"testing"
 	"time"
@@ -86,14 +87,21 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 		t.Fatal("expected InitCron to configure service.RescheduleFn")
 	}
 
-	entries := global.Cron.Entries()
-	if len(entries) != 8 {
-		t.Fatalf("scheduled recurring task count = %d, want 8", len(entries))
-	}
-
 	tasks, err := taskSvc.GetTasks()
 	if err != nil {
 		t.Fatalf("GetTasks returned error: %v", err)
+	}
+
+	expectedRecurringCount := 0
+	for _, task := range tasks {
+		if task.Type == taskregistry.TaskTypeRecurring {
+			expectedRecurringCount++
+		}
+	}
+
+	entries := global.Cron.Entries()
+	if len(entries) != expectedRecurringCount {
+		t.Fatalf("scheduled recurring task count = %d, want %d", len(entries), expectedRecurringCount)
 	}
 
 	var mentorRewardCron string
