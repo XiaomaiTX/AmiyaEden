@@ -32,34 +32,35 @@ type TaskInfoItem struct {
 
 // GetTasks 获取所有已注册的刷新任务定义
 //
-// GET /api/v1/esi/refresh/tasks
+// GET /api/v1/tasks/esi/tasks
 func (h *ESIRefreshHandler) GetTasks(c *gin.Context) {
 	allTasks := esi.AllTasks()
 	items := make([]TaskInfoItem, 0, len(allTasks))
-	for _, t := range allTasks {
+	for _, task := range allTasks {
 		scopes := make([]string, 0)
-		for _, s := range t.RequiredScopes() {
-			scopes = append(scopes, s.Scope)
+		for _, scope := range task.RequiredScopes() {
+			scopes = append(scopes, scope.Scope)
 		}
 		items = append(items, TaskInfoItem{
-			Name:             t.Name(),
-			Description:      t.Description(),
-			Priority:         int(t.Priority()),
-			ActiveInterval:   formatDuration(t.Interval().Active),
-			InactiveInterval: formatDuration(t.Interval().Inactive),
+			Name:             task.Name(),
+			Description:      task.Description(),
+			Priority:         int(task.Priority()),
+			ActiveInterval:   formatDuration(task.Interval().Active),
+			InactiveInterval: formatDuration(task.Interval().Inactive),
 			RequiredScopes:   scopes,
 		})
 	}
-	// 按优先级排序
+
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Priority < items[j].Priority
 	})
+
 	response.OK(c, items)
 }
 
 // GetStatuses 获取所有任务的运行时状态（支持分页和筛选）
 //
-// GET /api/v1/esi/refresh/statuses?current=1&size=20&task_name=xxx&status=xxx
+// GET /api/v1/tasks/esi/statuses?current=1&size=20&task_name=xxx&status=xxx
 func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
@@ -113,7 +114,7 @@ type RunTaskRequest struct {
 
 // RunTask 手动触发指定任务（指定人物）
 //
-// POST /api/v1/esi/refresh/run
+// POST /api/v1/tasks/esi/run
 func (h *ESIRefreshHandler) RunTask(c *gin.Context) {
 	var req RunTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -179,7 +180,7 @@ type RunTaskByNameRequest struct {
 
 // RunTaskByName 手动触发指定任务（所有人物）
 //
-// POST /api/v1/esi/refresh/run-task
+// POST /api/v1/tasks/esi/run-task
 func (h *ESIRefreshHandler) RunTaskByName(c *gin.Context) {
 	var req RunTaskByNameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -202,7 +203,7 @@ func (h *ESIRefreshHandler) RunTaskByName(c *gin.Context) {
 
 // RunAll 手动触发全量刷新
 //
-// POST /api/v1/esi/refresh/run-all
+// POST /api/v1/tasks/esi/run-all
 func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
@@ -214,7 +215,7 @@ func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
 	response.OK(c, gin.H{"message": "全量刷新已触发"})
 }
 
-// formatDuration 格式化 time.Duration 为可读字符串
+// formatDuration 格式化 time.Duration 为可读字符串。
 func formatDuration(d time.Duration) string {
 	if d >= 24*time.Hour {
 		days := int(d / (24 * time.Hour))

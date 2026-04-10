@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/handler"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +22,7 @@ var (
 )
 
 // RegisterRoutes 注册所有业务路由
-func RegisterRoutes(r *gin.Engine) {
+func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// ─── 上传文件静态目录 ───
 	r.Static("/uploads", "./uploads")
 
@@ -176,6 +177,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// ─── EVE 人物信息 ───
 	infoH := handler.NewEveInfoHandler()
 	esiH := handler.NewESIRefreshHandler()
+	taskH := handler.NewTaskHandler(taskSvc)
 	info := login.Group("/info")
 	{
 		info.POST("/wallet", infoH.GetWalletJournal)
@@ -293,14 +295,22 @@ func RegisterRoutes(r *gin.Engine) {
 		srp.PUT("/applications/users/:user_id/payout", payoutSRP, srpH.BatchPayoutByUser)
 	}
 
-	// ─── ESI 刷新队列 ───
-	esiRefresh := login.Group("/esi/refresh", middleware.RequireRole(model.RoleAdmin))
+	// ─── 任务管理 ───
+	tasks := login.Group("/tasks", middleware.RequireRole(model.RoleAdmin))
 	{
-		esiRefresh.GET("/tasks", esiH.GetTasks)
-		esiRefresh.GET("/statuses", esiH.GetStatuses)
-		esiRefresh.POST("/run", esiH.RunTask)
-		esiRefresh.POST("/run-task", esiH.RunTaskByName)
-		esiRefresh.POST("/run-all", esiH.RunAll)
+		tasks.GET("", taskH.GetTasks)
+		tasks.GET("/history", taskH.GetHistory)
+		tasks.POST("/:name/run", taskH.RunTask)
+		tasks.PUT("/:name/schedule", middleware.RequireRole(model.RoleSuperAdmin), taskH.UpdateSchedule)
+
+		esiTasks := tasks.Group("/esi")
+		{
+			esiTasks.GET("/tasks", esiH.GetTasks)
+			esiTasks.GET("/statuses", esiH.GetStatuses)
+			esiTasks.POST("/run", esiH.RunTask)
+			esiTasks.POST("/run-task", esiH.RunTaskByName)
+			esiTasks.POST("/run-all", esiH.RunAll)
+		}
 	}
 
 	// ─── 系统管理（需要 admin 职权）───
@@ -371,8 +381,6 @@ func RegisterRoutes(r *gin.Engine) {
 		adminNewbro.GET("/captains/:user_id", newbroAdminH.GetCaptainDetail)
 		adminNewbro.GET("/affiliations/history", newbroAdminH.ListAffiliationHistory)
 		adminNewbro.GET("/rewards", newbroAdminH.ListRewardSettlements)
-		adminNewbro.POST("/attribution/sync", newbroAdminH.RunAttributionSync)
-		adminNewbro.POST("/reward/process", newbroAdminH.RunRewardProcessing)
 	}
 
 	mentorAdminH := handler.NewMentorAdminHandler()

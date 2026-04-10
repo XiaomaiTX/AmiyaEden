@@ -4,10 +4,10 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
+	"amiya-eden/internal/taskregistry"
 	"amiya-eden/pkg/eve/esi"
 	"context"
 
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
 
@@ -35,8 +35,8 @@ func SetTestESIQueue(queue *esi.Queue) {
 	esiQueue = queue
 }
 
-// registerESIRefreshJob 注册 ESI 数据刷新定时任务
-func registerESIRefreshJob(c *cron.Cron) {
+// registerESIRefreshTask 注册 ESI 数据刷新任务定义。
+func registerESIRefreshTask(reg *taskregistry.Registry) {
 	esiQueue = newESIQueueForJobs()
 
 	rollSvc := service.NewRoleService()
@@ -102,14 +102,17 @@ func registerESIRefreshJob(c *cron.Cron) {
 		runSigninSecuritySync(characterID, userID)
 	}
 
-	// 每 5 分钟执行一次调度（队列内部根据各任务间隔判断是否需要刷新）
-	id, err := c.AddFunc("0 */5 * * * *", func() {
-		esiQueue.Run()
+	reg.Register(taskregistry.TaskDefinition{
+		Name:        "esi_refresh",
+		Description: "Refresh ESI data for registered characters",
+		Category:    taskregistry.TaskCategoryESI,
+		Type:        taskregistry.TaskTypeRecurring,
+		DefaultCron: "0 */5 * * * *",
+		RunFunc: func(ctx context.Context) error {
+			esiQueue.Run()
+			return nil
+		},
 	})
-	if err != nil {
-		global.Logger.Error("注册 ESI 刷新定时任务失败", zap.Error(err))
-		return
-	}
-	global.Logger.Info("注册 ESI 刷新定时任务成功", zap.Int("entry_id", int(id)))
+	global.Logger.Info("注册 ESI 刷新任务成功", zap.String("task_name", "esi_refresh"))
 	startInitialESIQueueRun(esiQueue)
 }

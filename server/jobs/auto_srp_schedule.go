@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
+	"amiya-eden/internal/taskregistry"
 	"sync"
 	"time"
 
@@ -48,6 +49,18 @@ func registerAutoSrpScheduler() {
 			)
 		}
 	}
+}
+
+func registerAutoSrpTask(reg *taskregistry.Registry) {
+	registerAutoSrpScheduler()
+	reg.Register(taskregistry.TaskDefinition{
+		Name:        "auto_srp",
+		Description: "Track event-driven automatic SRP processing",
+		Category:    taskregistry.TaskCategoryOperation,
+		Type:        taskregistry.TaskTypeTriggered,
+		RunFunc:     nil,
+	})
+	global.Logger.Info("注册自动 SRP 任务成功", zap.String("task_name", "auto_srp"))
 }
 
 func (s *fleetAutoSrpScheduler) Restore() error {

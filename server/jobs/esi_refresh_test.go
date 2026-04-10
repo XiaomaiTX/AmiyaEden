@@ -2,14 +2,14 @@ package jobs
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/taskregistry"
 	"amiya-eden/pkg/eve/esi"
 	"testing"
 
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
 
-func TestRegisterESIRefreshJobStartsInitialQueuePass(t *testing.T) {
+func TestRegisterESIRefreshTaskStartsInitialQueuePass(t *testing.T) {
 	oldQueueFactory := newESIQueueForJobs
 	oldStartupRun := startInitialESIQueueRun
 	oldLogger := global.Logger
@@ -35,16 +35,29 @@ func TestRegisterESIRefreshJobStartsInitialQueuePass(t *testing.T) {
 		}
 	}
 
-	c := cron.New(cron.WithSeconds())
-	registerESIRefreshJob(c)
+	reg := taskregistry.New()
+	registerESIRefreshTask(reg)
 
 	if esiQueue == nil {
-		t.Fatal("expected registerESIRefreshJob to initialize the global ESI queue")
+		t.Fatal("expected registerESIRefreshTask to initialize the global ESI queue")
 	}
 	if !started {
-		t.Fatal("expected registerESIRefreshJob to trigger one immediate startup queue pass")
+		t.Fatal("expected registerESIRefreshTask to trigger one immediate startup queue pass")
 	}
-	if len(c.Entries()) != 1 {
-		t.Fatalf("expected exactly one cron entry, got %d", len(c.Entries()))
+	def, ok := reg.Get("esi_refresh")
+	if !ok {
+		t.Fatal("expected esi_refresh task definition to be registered")
+	}
+	if def.Category != taskregistry.TaskCategoryESI {
+		t.Fatalf("category = %q, want %q", def.Category, taskregistry.TaskCategoryESI)
+	}
+	if def.Type != taskregistry.TaskTypeRecurring {
+		t.Fatalf("type = %q, want %q", def.Type, taskregistry.TaskTypeRecurring)
+	}
+	if def.DefaultCron != "0 */5 * * * *" {
+		t.Fatalf("default cron = %q, want %q", def.DefaultCron, "0 */5 * * * *")
+	}
+	if def.RunFunc == nil {
+		t.Fatal("expected esi_refresh task to have a run function")
 	}
 }

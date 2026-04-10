@@ -1,14 +1,99 @@
 package router
 
 import (
+	"amiya-eden/config"
+	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
+	"amiya-eden/internal/service"
+	"amiya-eden/internal/taskregistry"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
+
+func newTaskRouterTestService(t *testing.T) *service.TaskService {
+	t.Helper()
+
+	dsn := "file:task_router_test_" + time.Now().Format("150405.000000000") + "?mode=memory&cache=shared"
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}); err != nil {
+		t.Fatalf("auto migrate task router models: %v", err)
+	}
+
+	registry := taskregistry.New()
+	repo := repository.NewTaskRepositoryWithDB(db)
+	return service.NewTaskService(registry, repo)
+}
+
+func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	oldConfig := global.Config
+	oldLogger := global.Logger
+	global.Config = &config.Config{}
+	config.ApplyDefaults(global.Config)
+	global.Logger = zap.NewNop()
+	t.Cleanup(func() {
+		global.Config = oldConfig
+		global.Logger = oldLogger
+	})
+
+	r := gin.New()
+
+	RegisterRoutes(r, newTaskRouterTestService(t))
+
+	routes := r.Routes()
+	want := map[string]string{
+		http.MethodGet:  "/api/v1/tasks",
+		http.MethodPost: "/api/v1/tasks/:name/run",
+		http.MethodPut:  "/api/v1/tasks/:name/schedule",
+	}
+
+	for method, path := range want {
+		if !routeExists(routes, method, path) {
+			t.Fatalf("expected route %s %s to be registered", method, path)
+		}
+	}
+
+	if !routeExists(routes, http.MethodGet, "/api/v1/tasks/history") {
+		t.Fatal("expected route GET /api/v1/tasks/history to be registered")
+	}
+	if !routeExists(routes, http.MethodGet, "/api/v1/tasks/esi/tasks") {
+		t.Fatal("expected route GET /api/v1/tasks/esi/tasks to be registered")
+	}
+	if !routeExists(routes, http.MethodGet, "/api/v1/tasks/esi/statuses") {
+		t.Fatal("expected route GET /api/v1/tasks/esi/statuses to be registered")
+	}
+	if routeExists(routes, http.MethodGet, "/api/v1/esi/refresh/tasks") {
+		t.Fatal("expected legacy GET /api/v1/esi/refresh/tasks route to be removed")
+	}
+	if routeExists(routes, http.MethodPost, "/api/v1/system/newbro/attribution/sync") {
+		t.Fatal("expected legacy POST /api/v1/system/newbro/attribution/sync route to be removed")
+	}
+	if routeExists(routes, http.MethodPost, "/api/v1/system/newbro/reward/process") {
+		t.Fatal("expected legacy POST /api/v1/system/newbro/reward/process route to be removed")
+	}
+}
+
+func routeExists(routes gin.RoutesInfo, method, path string) bool {
+	for _, route := range routes {
+		if route.Method == method && route.Path == path {
+			return true
+		}
+	}
+	return false
+}
 
 func TestSrpManageRolesIncludeAdmin(t *testing.T) {
 	if !containsRoleCode(srpPriceManageRoles, model.RoleAdmin) {
