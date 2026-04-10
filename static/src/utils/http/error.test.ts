@@ -8,8 +8,8 @@ const zhLocaleSource = readFileSync(new URL('../../locales/langs/zh.json', impor
 const enLocaleSource = readFileSync(new URL('../../locales/langs/en.json', import.meta.url), 'utf8')
 
 test('HTTP error handling recognizes conflict responses explicitly', () => {
-	assert.match(statusSource, /conflict = 409/)
-	assert.match(errorSource, /\[ApiStatus\.conflict\]: 'httpMsg\.conflict'/)
-	assert.match(zhLocaleSource, /"conflict"\s*:/)
-	assert.match(enLocaleSource, /"conflict"\s*:/)
+  assert.match(statusSource, /conflict = 409/)
+  assert.match(errorSource, /\[ApiStatus\.conflict\]: 'httpMsg\.conflict'/)
+  assert.match(zhLocaleSource, /"conflict"\s*:/)
+  assert.match(enLocaleSource, /"conflict"\s*:/)
 })

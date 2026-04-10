@@ -166,10 +166,8 @@
       return h('span', { class: 'text-gray-400' }, '-')
     }
 
-    return h(
-      ElTag,
-      { type: statusTagType(status), size: 'small', effect: 'plain' },
-      () => t(`taskManager.status.${status}`)
+    return h(ElTag, { type: statusTagType(status), size: 'small', effect: 'plain' }, () =>
+      t(`taskManager.status.${status}`)
     )
   }
 
@@ -211,10 +209,8 @@
       label: t('taskManager.columns.category'),
       width: 120,
       formatter: (row: Api.TaskManager.TaskItem) =>
-        h(
-          ElTag,
-          { type: categoryTagType(row.category), size: 'small', effect: 'plain' },
-          () => t(`taskManager.category.${row.category}`)
+        h(ElTag, { type: categoryTagType(row.category), size: 'small', effect: 'plain' }, () =>
+          t(`taskManager.category.${row.category}`)
         )
     },
     {
@@ -222,10 +218,8 @@
       label: t('taskManager.columns.type'),
       width: 120,
       formatter: (row: Api.TaskManager.TaskItem) =>
-        h(
-          ElTag,
-          { type: typeTagType(row.type), size: 'small', effect: 'plain' },
-          () => t(`taskManager.type.${row.type}`)
+        h(ElTag, { type: typeTagType(row.type), size: 'small', effect: 'plain' }, () =>
+          t(`taskManager.type.${row.type}`)
         )
     },
     {
@@ -292,7 +286,9 @@
       if (isHttpError(error) && error.code === ApiStatus.conflict) {
         ElMessage.error(t('taskManager.messages.taskAlreadyRunning'))
       } else {
-        ElMessage.error(t('taskManager.messages.taskTriggerFailed', { name: taskDisplayName(task) }))
+        ElMessage.error(
+          t('taskManager.messages.taskTriggerFailed', { name: taskDisplayName(task) })
+        )
       }
     } finally {
       runningTaskNames.value.delete(task.name)
