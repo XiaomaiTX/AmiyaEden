@@ -13,7 +13,7 @@ test('buildNewCardPayload creates a centered visible card with sensible defaults
     name: 'Hero Candidate',
     pos_x: 50,
     pos_y: 50,
-    width: 220,
+    width: 196,
     style_preset: 'gold',
     z_index: 8,
     visible: true
@@ -60,7 +60,8 @@ test('patchCardById merges changed fields without clobbering unrelated local sta
       name: 'Hero Alpha',
       title: 'Strategist',
       description: 'Keeps the fleet together.',
-      avatar: 'old-avatar',
+      character_id: 90000001,
+      badge_image: '',
       pos_x: 10,
       pos_y: 20,
       width: 220,
@@ -69,6 +70,8 @@ test('patchCardById merges changed fields without clobbering unrelated local sta
       custom_bg_color: '',
       custom_text_color: '',
       custom_border_color: '',
+      border_style: 'none',
+      title_color: '',
       font_size: 14,
       z_index: 3,
       visible: true,
@@ -78,14 +81,15 @@ test('patchCardById merges changed fields without clobbering unrelated local sta
   ]
 
   const afterTitle = patchCardById(cards, 1, { title: 'Founder' })
-  const afterAvatar = patchCardById(afterTitle, 1, { avatar: 'new-avatar' })
+  const afterCharacter = patchCardById(afterTitle, 1, { character_id: 90000002 })
 
-  assert.deepEqual(afterAvatar[0], {
+  assert.deepEqual(afterCharacter[0], {
     id: 1,
     name: 'Hero Alpha',
     title: 'Founder',
     description: 'Keeps the fleet together.',
-    avatar: 'new-avatar',
+    character_id: 90000002,
+    badge_image: '',
     pos_x: 10,
     pos_y: 20,
     width: 220,
@@ -94,6 +98,8 @@ test('patchCardById merges changed fields without clobbering unrelated local sta
     custom_bg_color: '',
     custom_text_color: '',
     custom_border_color: '',
+    border_style: 'none',
+    title_color: '',
     font_size: 14,
     z_index: 3,
     visible: true,

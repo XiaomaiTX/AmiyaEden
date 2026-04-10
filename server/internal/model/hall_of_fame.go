@@ -29,7 +29,9 @@ type HallOfFameCard struct {
 	Name              string  `gorm:"size:256;not null"         json:"name"`
 	Title             string  `gorm:"size:512"                  json:"title"`
 	Description       string  `gorm:"type:text"                 json:"description"`
-	Avatar            string  `gorm:"type:text"                 json:"avatar"` // base64 data URL
+	CharacterID       int64   `gorm:"default:0;index"           json:"character_id"` // EVE character ID for portrait URL
+	Avatar            string  `gorm:"type:text"                 json:"-"`            // legacy portrait storage, kept only for migration fallback
+	BadgeImage        string  `gorm:"type:text"                 json:"badge_image"`
 	PosX              float64 `gorm:"default:10"                json:"pos_x"`  // 0-100 percentage
 	PosY              float64 `gorm:"default:10"                json:"pos_y"`  // 0-100 percentage
 	Width             int     `gorm:"default:200"               json:"width"`  // logical px
@@ -38,6 +40,8 @@ type HallOfFameCard struct {
 	CustomBgColor     string  `gorm:"size:32"                   json:"custom_bg_color"`
 	CustomTextColor   string  `gorm:"size:32"                   json:"custom_text_color"`
 	CustomBorderColor string  `gorm:"size:32"                   json:"custom_border_color"`
+	BorderStyle       string  `gorm:"size:32;default:'none'"    json:"border_style"`
+	TitleColor        string  `gorm:"size:32"                   json:"title_color"`
 	FontSize          int     `gorm:"default:0"                 json:"font_size"` // 0 = default
 	ZIndex            int     `gorm:"default:0"                 json:"z_index"`
 	Visible           bool    `gorm:"default:true"              json:"visible"`

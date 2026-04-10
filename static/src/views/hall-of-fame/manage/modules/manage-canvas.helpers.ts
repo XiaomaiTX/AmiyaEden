@@ -13,7 +13,7 @@ export function buildNewCardPayload(
     name,
     pos_x: 50,
     pos_y: 50,
-    width: 220,
+    width: 196,
     style_preset: 'gold',
     z_index: maxZIndex + 1,
     visible: true

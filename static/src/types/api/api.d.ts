@@ -2414,7 +2414,27 @@ declare namespace Api {
 
   // ─── 名人堂 ───
   namespace HallOfFame {
-    type CardStylePreset = 'gold' | 'silver' | 'bronze' | 'custom'
+    type CardStylePreset =
+      | 'gold'
+      | 'silver'
+      | 'darkred'
+      | 'yellow'
+      | 'bronze'
+      | 'rose'
+      | 'jade'
+      | 'midnight'
+      | 'custom'
+
+    type CardBorderStyle =
+      | 'none'
+      | 'gilded'
+      | 'imperial'
+      | 'neon-circuit'
+      | 'void-rift'
+      | 'amarr'
+      | 'caldari'
+      | 'minmatar'
+      | 'gallente'
 
     interface Config {
       id: number
@@ -2430,7 +2450,8 @@ declare namespace Api {
       name: string
       title: string
       description: string
-      avatar: string
+      character_id: number
+      badge_image: string
       pos_x: number
       pos_y: number
       width: number
@@ -2439,6 +2460,8 @@ declare namespace Api {
       custom_bg_color: string
       custom_text_color: string
       custom_border_color: string
+      border_style: CardBorderStyle
+      title_color: string
       font_size: number
       z_index: number
       visible: boolean
@@ -2461,7 +2484,8 @@ declare namespace Api {
       name: string
       title?: string
       description?: string
-      avatar?: string
+      character_id?: number
+      badge_image?: string
       pos_x?: number
       pos_y?: number
       width?: number
@@ -2470,6 +2494,8 @@ declare namespace Api {
       custom_bg_color?: string
       custom_text_color?: string
       custom_border_color?: string
+      border_style?: CardBorderStyle
+      title_color?: string
       font_size?: number
       z_index?: number
       visible?: boolean
@@ -2479,11 +2505,14 @@ declare namespace Api {
       name?: string
       title?: string
       description?: string
-      avatar?: string
+      character_id?: number
+      badge_image?: string
       style_preset?: CardStylePreset
       custom_bg_color?: string
       custom_text_color?: string
       custom_border_color?: string
+      border_style?: CardBorderStyle
+      title_color?: string
       font_size?: number
       visible?: boolean
     }

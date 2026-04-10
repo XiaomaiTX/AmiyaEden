@@ -14,11 +14,13 @@
       v-if="config"
       :canvas-width="config.canvas_width"
       :canvas-height="config.canvas_height"
+      :zoom-percent="canvasZoom"
       :saving="saving"
       @add-card="handleAddCard"
       @upload-background="handleBackgroundUpload"
       @update:canvas-width="handleCanvasWidthChange"
       @update:canvas-height="handleCanvasHeightChange"
+      @update:zoom-percent="handleCanvasZoomChange"
       @save-layout="handleSaveLayout"
       @preview="handlePreview"
     />
@@ -28,17 +30,18 @@
         :config="config"
         :cards="cards"
         :selected-card-id="selectedCardId"
+        :zoom-ratio="canvasZoom / 100"
         @select-card="handleSelectCard"
         @update-card-position="handleCardPositionUpdate"
         @update-card-size="handleCardSizeUpdate"
       />
 
       <CardEditor
+        ref="cardEditorRef"
         :card="selectedCard"
         @update="handleCardUpdate"
-        @update-z-index="handleCardZIndexUpdate"
+        @upload-badge-image="handleBadgeImageUpload"
         @delete="handleCardDelete"
-        @upload-avatar="handleAvatarUpload"
       />
     </section>
   </div>
@@ -57,20 +60,22 @@
     deleteHofCard,
     fetchHofCards,
     fetchHofConfig,
+    uploadHofBadgeImage,
     updateHofCard,
     updateHofConfig,
     uploadHofBackground
   } from '@/api/hall-of-fame'
-  import { uploadImageAsDataUrl } from '@/api/upload'
 
   import CanvasToolbar from './modules/canvas-toolbar.vue'
   import CardEditor from './modules/card-editor.vue'
   import ManageCanvas from './modules/manage-canvas.vue'
+  import { clampHallOfFameZoom } from '../temple/modules/temple-canvas.helpers'
   import {
     buildNewCardPayload,
     patchCardById,
     toLayoutUpdates
   } from './modules/manage-canvas.helpers'
+  import { saveHallOfFamePreviewDraft } from './modules/manage-preview.helpers'
   import {
     getMissingCardIdFromError,
     rebuildCardFromConfirmedState,
@@ -90,6 +95,8 @@
   const confirmedCards = ref<Api.HallOfFame.Card[]>([])
   const selectedCardId = ref<number | null>(null)
   const cardUpdateQueues = ref<Record<number, CardUpdateQueueState>>({})
+  const cardEditorRef = ref<{ flushPendingUpdates: () => void } | null>(null)
+  const canvasZoom = ref(100)
 
   const selectedCard = computed(
     () => cards.value.find((card) => card.id === selectedCardId.value) ?? null
@@ -158,6 +165,10 @@
     dirty.value = true
   }
 
+  function handleCanvasZoomChange(value: number) {
+    canvasZoom.value = clampHallOfFameZoom(value)
+  }
+
   function handleCardPositionUpdate(id: number, posX: number, posY: number) {
     cards.value = patchCardById(cards.value, id, {
       pos_x: posX,
@@ -170,13 +181,6 @@
     cards.value = patchCardById(cards.value, id, {
       width,
       height
-    })
-    dirty.value = true
-  }
-
-  function handleCardZIndexUpdate(id: number, zIndex: number) {
-    cards.value = patchCardById(cards.value, id, {
-      z_index: zIndex
     })
     dirty.value = true
   }
@@ -238,6 +242,20 @@
     }
   }
 
+  async function handleBadgeImageUpload(id: number, file: File) {
+    try {
+      const { url } = await uploadHofBadgeImage(file)
+      handleCardUpdate(id, { badge_image: url })
+    } catch (error) {
+      if (error instanceof Error && error.message === 'hall_of_fame_badge_image_too_large') {
+        ElMessage.error(t('hallOfFame.manage.badgeImageTooLarge'))
+        return
+      }
+
+      showError(error)
+    }
+  }
+
   function handleCardUpdate(id: number, updates: Api.HallOfFame.UpdateCardParams) {
     const currentCard = cards.value.find((card) => card.id === id)
     if (!currentCard) {
@@ -251,15 +269,6 @@
 
     if (queuedRequest.patchToSend) {
       void persistCardUpdate(id, queuedRequest.patchToSend)
-    }
-  }
-
-  async function handleAvatarUpload(id: number, file: File) {
-    try {
-      const { url } = await uploadImageAsDataUrl(file)
-      handleCardUpdate(id, { avatar: url })
-    } catch (error) {
-      showError(error)
     }
   }
 
@@ -279,7 +288,21 @@
   }
 
   function handlePreview() {
-    const previewUrl = router.resolve({ name: 'HallOfFameTemple' }).href
+    if (!config.value) {
+      return
+    }
+
+    cardEditorRef.value?.flushPendingUpdates()
+
+    const previewUrl = saveHallOfFamePreviewDraft(
+      window.localStorage,
+      router.resolve({ name: 'HallOfFameTemple' }).href,
+      {
+        config: config.value,
+        cards: cards.value.filter((card) => card.visible)
+      }
+    )
+
     window.open(previewUrl, '_blank', 'noopener')
   }
 
