@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-10
 source_of_truth:
   - server/main.go
   - server/bootstrap
@@ -21,7 +21,7 @@ source_of_truth:
 3. 初始化 JWT
 4. 初始化数据库
 5. 初始化 Redis
-6. 初始化 cron
+6. 初始化任务注册表与 cron 调度
 7. 异步检查 SDE
 8. 注册 ESI scopes
 9. 初始化 HTTP 路由
@@ -42,9 +42,17 @@ SDE 检查更新当前行为：
 - 自定义索引补齐
 - schema 规范化与兼容处理
 
+## 任务调度启动副作用
+
+- `bootstrap.InitCron()` 会构建运行时 `taskregistry.Registry`，并由 `server/jobs/` 注册所有当前任务定义
+- 周期任务会优先读取 `task_schedules` 中的管理员覆盖 cron；未配置时使用代码中的默认 cron
+- 通过 cron 或 `/api/v1/tasks/:name/run` 触发的通用任务会写入 `task_executions`
+- `auto_srp` 会在启动时恢复未到点的延迟执行 timer，但它本身不是 cron 周期任务
+- ESI 刷新队列在服务启动后仍会立即补跑一次，避免新启动实例长时间等待下一个周期
+
 ## 运行时提示
 
 - 新人物 SSO 成功后，后台会触发 ESI 全量刷新与自动权限同步
-- ESI 刷新队列按 cron 调度，不要求手工逐个任务启动
+- 后台任务由统一任务管理器调度；周期任务支持管理员查看与超级管理员重设 cron
 - SDE 缺失会直接影响舰队配置 EFT 解析、名称翻译、搜索等共享能力
 - `register` 页面源码仍在仓库中，但不是当前支持的登录架构；`forget-password` 页面已移除

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-10
 source_of_truth:
   - server/internal
   - server/pkg
@@ -31,9 +31,10 @@ source_of_truth:
 | `server/internal/middleware/` | JWT、日志、CORS、统一请求前置逻辑 | `server/internal/router/`、`docs/architecture/auth-and-permissions.md` |
 | `server/internal/handler/` | HTTP 请求解析与响应返回 | `server/internal/service/`、`server/pkg/response/` |
 | `server/internal/service/` | 业务规则、权限判断、跨仓储编排、ESI/SSO 集成 | `server/internal/repository/`、对应 feature doc |
+| `server/internal/taskregistry/` | 运行时任务定义、任务分类元数据、进程内执行锁 | `server/jobs/`、`server/bootstrap/cron.go`、`server/internal/service/task.go` |
 | `server/internal/repository/` | 数据访问、查询拼接、结果映射 | `server/internal/model/`、`docs/standards/testing-and-verification.md` |
 | `server/internal/model/` | GORM 模型、职权常量 | `docs/architecture/database-schema.md`、`docs/architecture/auth-and-permissions.md` |
-| `server/jobs/` | 定时任务 | `server/bootstrap/`、`docs/architecture/runtime-and-startup.md` |
+| `server/jobs/` | 后台任务定义与执行实现，包含 cron 与事件驱动任务 | `server/internal/taskregistry/`、`server/bootstrap/`、`docs/architecture/runtime-and-startup.md` |
 | `server/pkg/eve/` | EVE SSO / ESI 基础能力 | `server/internal/service/`、`docs/guides/adding-esi-feature.md` |
 | `server/pkg/response/` | 统一响应封装 | `server/internal/handler/` |
 
@@ -75,6 +76,20 @@ source_of_truth:
 6. `static/src/types/api/api.d.ts`
 7. `docs/api/route-index.md`
 
+### 修改后台任务、调度或执行历史
+
+通常需要一起看：
+
+1. `server/internal/taskregistry/`
+2. `server/jobs/`
+3. `server/bootstrap/cron.go`
+4. `server/internal/service/task.go`
+5. `server/internal/repository/task.go`
+6. `server/internal/model/task.go`
+7. `static/src/api/task-manager.ts`
+8. `static/src/views/system/task-manager`
+9. `docs/features/current/task-manager.md`
+
 ### 修改权限、菜单、按钮点位
 
 通常需要一起看：
@@ -94,7 +109,7 @@ source_of_truth:
 2. `server/internal/service/`
 3. `server/internal/handler/eve_sso.go`
 4. `docs/features/current/auth-and-characters.md`
-5. `docs/features/current/esi-refresh.md`
+5. `docs/features/current/task-manager.md`
 6. `docs/guides/adding-esi-feature.md`
 
 ### 修改表格页、卡片记录页或复杂筛选页
