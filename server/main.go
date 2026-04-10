@@ -31,13 +31,13 @@ func main() {
 	bootstrap.InitRedis()
 
 	// 初始化定时任务
-	bootstrap.InitCron()
+	taskSvc := bootstrap.InitCron()
 
 	// 将 ESI 任务模块的 scope 注册到 SSO 服务
 	bootstrap.InitScopes()
 
 	// 初始化路由
-	r := bootstrap.InitRouter()
+	r := bootstrap.InitRouter(taskSvc)
 
 	// 启动 HTTP 服务
 	srv := &http.Server{
