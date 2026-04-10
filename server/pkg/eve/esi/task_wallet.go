@@ -206,6 +206,7 @@ func (t *WalletTask) fetchWalletTransactions(ctx context.Context, taskCtx *TaskC
 		}
 
 		nextFromID := batch[0].TransactionID
+		newEntries := 0
 		for _, entry := range batch {
 			if entry.TransactionID < nextFromID {
 				nextFromID = entry.TransactionID
@@ -215,9 +216,13 @@ func (t *WalletTask) fetchWalletTransactions(ctx context.Context, taskCtx *TaskC
 			}
 			seen[entry.TransactionID] = struct{}{}
 			results = append(results, entry)
+			newEntries++
 		}
 
 		if fromID != 0 && nextFromID >= fromID {
+			if newEntries == 0 {
+				return results, nil
+			}
 			return nil, fmt.Errorf("fetch wallet transactions: pagination did not advance from_id=%d next_from_id=%d", fromID, nextFromID)
 		}
 		fromID = nextFromID
