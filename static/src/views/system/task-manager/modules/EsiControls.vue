@@ -1,7 +1,11 @@
 <template>
   <div class="task-manager-esi">
     <ElCard class="art-table-card" shadow="never">
-      <ArtTableHeader v-model:columns="taskColumnChecks" :loading="tasksLoading" @refresh="loadTasks">
+      <ArtTableHeader
+        v-model:columns="taskColumnChecks"
+        :loading="tasksLoading"
+        @refresh="loadTasks"
+      >
         <template #left>
           <div class="task-manager-esi__header-group">
             <span class="font-medium">{{ t('taskManager.esi.sections.tasks') }}</span>
@@ -14,63 +18,21 @@
 
       <ArtTable :loading="tasksLoading" :data="tasks" :columns="taskColumns" />
     </ElCard>
-
-    <ElCard class="art-table-card" shadow="never">
-      <ArtTableHeader v-model:columns="statusColumnChecks" :loading="statusLoading" @refresh="refreshData">
-        <template #left>
-          <div class="task-manager-esi__header-group task-manager-esi__header-group--wrap">
-            <span class="font-medium">{{ t('taskManager.esi.sections.statuses') }}</span>
-            <ElSelect
-              v-model="filterForm.task_name"
-              :placeholder="t('taskManager.esi.filters.taskName')"
-              clearable
-              filterable
-              style="width: 180px"
-              @change="handleSearch"
-            >
-              <ElOption v-for="task in tasks" :key="task.name" :label="task.description" :value="task.name" />
-            </ElSelect>
-            <ElSelect
-              v-model="filterForm.status"
-              :placeholder="t('taskManager.esi.filters.status')"
-              clearable
-              style="width: 140px"
-              @change="handleSearch"
-            >
-              <ElOption :label="t('taskManager.esi.status.pending')" value="pending" />
-              <ElOption :label="t('taskManager.esi.status.running')" value="running" />
-              <ElOption :label="t('taskManager.esi.status.success')" value="success" />
-              <ElOption :label="t('taskManager.esi.status.failed')" value="failed" />
-              <ElOption :label="t('taskManager.esi.status.skipped')" value="skipped" />
-            </ElSelect>
-          </div>
-        </template>
-      </ArtTableHeader>
-
-      <ArtTable
-        :loading="statusLoading"
-        :data="statusData"
-        :columns="statusColumns"
-        :pagination="pagination"
-        visual-variant="ledger"
-        @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
-      />
-    </ElCard>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ElButton, ElCard, ElMessage, ElMessageBox, ElOption, ElSelect, ElTag } from 'element-plus'
+  import { ElButton, ElCard, ElMessage, ElMessageBox, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { h } from 'vue'
-  import { formatTime } from '@utils/common'
-  import { fetchESIRefreshTasks, fetchESIRefreshStatuses, runESIRefreshAll, runESIRefreshTask, runESIRefreshTaskByName } from '@/api/esi-refresh'
-  import { useTable } from '@/hooks/core/useTable'
+  import {
+    fetchESIRefreshTasks,
+    runESIRefreshAll,
+    runESIRefreshTaskByName
+  } from '@/api/esi-refresh'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
 
   type TaskInfo = Api.ESIRefresh.TaskInfo
-  type TaskStatus = Api.ESIRefresh.TaskStatus
 
   const { t } = useI18n()
 
@@ -96,24 +58,10 @@
     return map[priority as keyof typeof map] ?? `P${priority}`
   }
 
-  const statusType = (status: TaskStatus['status']) => {
-    const map = {
-      pending: 'info',
-      running: 'warning',
-      success: 'success',
-      failed: 'danger',
-      skipped: 'info'
-    } as const
-
-    return map[status]
-  }
-
   const runningByName = ref(new Set<string>())
-  const runningTasks = ref(new Set<string>())
   const tasks = ref<TaskInfo[]>([])
   const tasksLoading = ref(false)
   const runAllLoading = ref(false)
-  const filterForm = reactive({ task_name: '', status: '' })
 
   const { columns: taskColumns, columnChecks: taskColumnChecks } = useTableColumns<TaskInfo>(() => [
     { type: 'index', width: 60, label: '#' },
@@ -152,7 +100,7 @@
           ? h(
               'div',
               { class: 'flex flex-wrap gap-1 py-1' },
-              row.required_scopes.map(scope =>
+              row.required_scopes.map((scope) =>
                 h(ElTag, { size: 'small', effect: 'plain', key: scope }, () => scope)
               )
             )
@@ -177,96 +125,6 @@
     }
   ])
 
-  const {
-    columns: statusColumns,
-    columnChecks: statusColumnChecks,
-    data: statusData,
-    loading: statusLoading,
-    pagination,
-    handleSizeChange,
-    handleCurrentChange,
-    refreshData,
-    getData,
-    searchParams
-  } = useTable<typeof fetchESIRefreshStatuses>({
-    core: {
-      apiFn: fetchESIRefreshStatuses,
-      apiParams: { current: 1, size: 20 },
-      columnsFactory: () => [
-        { type: 'index', width: 60, label: '#' },
-        { prop: 'task_name', label: t('taskManager.columns.name'), width: 200, showOverflowTooltip: true },
-        {
-          prop: 'description',
-          label: t('taskManager.columns.description'),
-          minWidth: 160,
-          showOverflowTooltip: true
-        },
-        {
-          prop: 'character_id',
-          label: t('taskManager.esi.columns.characterId'),
-          width: 120
-        },
-        {
-          prop: 'priority',
-          label: t('taskManager.esi.columns.priority'),
-          width: 100,
-          formatter: (row: TaskStatus) =>
-            h(ElTag, { type: priorityType(row.priority), size: 'small', effect: 'plain' }, () =>
-              priorityLabel(row.priority)
-            )
-        },
-        {
-          prop: 'status',
-          label: t('taskManager.columns.status'),
-          width: 100,
-          formatter: (row: TaskStatus) =>
-            h(ElTag, { type: statusType(row.status), size: 'small', effect: 'plain' }, () =>
-              t(`taskManager.esi.status.${row.status}`)
-            )
-        },
-        {
-          prop: 'last_run',
-          label: t('taskManager.columns.lastRun'),
-          width: 180,
-          formatter: (row: TaskStatus) => formatTime(row.last_run)
-        },
-        {
-          prop: 'next_run',
-          label: t('taskManager.esi.columns.nextRun'),
-          width: 180,
-          formatter: (row: TaskStatus) => formatTime(row.next_run)
-        },
-        {
-          prop: 'error',
-          label: t('taskManager.columns.error'),
-          minWidth: 200,
-          showOverflowTooltip: true,
-          formatter: (row: TaskStatus) =>
-            row.error
-              ? h('span', { class: 'text-red-500' }, row.error)
-              : h('span', { class: 'text-gray-400' }, '-')
-        },
-        {
-          prop: 'actions',
-          label: t('common.operation'),
-          width: 100,
-          fixed: 'right',
-          formatter: (row: TaskStatus) =>
-            h(
-              ElButton,
-              {
-                size: 'small',
-                type: 'primary',
-                loading: runningTasks.value.has(`${row.task_name}_${row.character_id}`),
-                onClick: () => handleRunTask(row)
-              },
-              () => t('taskManager.actions.run')
-            )
-        }
-      ]
-    }
-  })
-
   async function loadTasks() {
     tasksLoading.value = true
     try {
@@ -276,15 +134,6 @@
     } finally {
       tasksLoading.value = false
     }
-  }
-
-  function handleSearch() {
-    Object.assign(searchParams, {
-      current: 1,
-      task_name: filterForm.task_name || undefined,
-      status: filterForm.status || undefined
-    })
-    getData()
   }
 
   async function handleRunTaskByName(row: TaskInfo) {
@@ -306,37 +155,10 @@
     try {
       await runESIRefreshTaskByName({ task_name: row.name })
       ElMessage.success(t('taskManager.esi.messages.taskTriggeredAll', { name: row.description }))
-      window.setTimeout(() => {
-        refreshData()
-      }, 2000)
     } catch {
       ElMessage.error(t('taskManager.esi.messages.taskTriggerFailedAll', { name: row.description }))
     } finally {
       runningByName.value.delete(row.name)
-    }
-  }
-
-  async function handleRunTask(row: TaskStatus) {
-    const key = `${row.task_name}_${row.character_id}`
-    runningTasks.value.add(key)
-    try {
-      await runESIRefreshTask({ task_name: row.task_name, character_id: row.character_id })
-      ElMessage.success(
-        t('taskManager.esi.messages.characterTaskTriggered', {
-          name: row.description,
-          characterId: row.character_id
-        })
-      )
-      refreshData()
-    } catch {
-      ElMessage.error(
-        t('taskManager.esi.messages.characterTaskTriggerFailed', {
-          name: row.description,
-          characterId: row.character_id
-        })
-      )
-    } finally {
-      runningTasks.value.delete(key)
     }
   }
 
@@ -355,9 +177,6 @@
     try {
       await runESIRefreshAll()
       ElMessage.success(t('taskManager.messages.esiRefreshTriggered'))
-      window.setTimeout(() => {
-        refreshData()
-      }, 2000)
     } catch {
       ElMessage.error(t('taskManager.esi.messages.refreshTriggerFailed'))
     } finally {
@@ -381,9 +200,5 @@
     display: flex;
     align-items: center;
     gap: 12px;
-  }
-
-  .task-manager-esi__header-group--wrap {
-    flex-wrap: wrap;
   }
 </style>
