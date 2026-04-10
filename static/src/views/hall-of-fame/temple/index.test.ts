@@ -15,5 +15,7 @@ test('hall of fame temple page exists and loads temple data into a canvas compon
   assert.match(source, /import TempleCanvas from '\.\/modules\/temple-canvas\.vue'/)
   assert.match(source, /hallOfFame\.temple\.emptyTitle/)
   assert.match(source, /hallOfFame\.temple\.emptySubtitle/)
+  assert.doesNotMatch(source, /menus\.hallOfFame\.temple/)
+  assert.doesNotMatch(source, /hallOfFame\.temple\.eyebrow/)
   assert.match(source, /onMounted\(/)
 })

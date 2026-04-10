@@ -1,14 +1,16 @@
 <template>
-  <div ref="containerRef" class="temple-canvas-shell">
-    <div class="temple-canvas-shell__viewport" :style="viewportStyle">
-      <div class="temple-canvas" :style="canvasStyle">
-        <div
-          v-for="card in cards"
-          :key="card.id"
-          class="temple-canvas__card"
-          :style="getCardPositionStyle(card)"
-        >
-          <HeroCard :card="card" interactive />
+  <div class="temple-canvas-shell">
+    <div class="temple-canvas-shell__viewport">
+      <div class="temple-canvas-shell__stage" :style="stageStyle">
+        <div class="temple-canvas" :style="canvasStyle">
+          <div
+            v-for="card in cards"
+            :key="card.id"
+            class="temple-canvas__card"
+            :style="getCardPositionStyle(card)"
+          >
+            <HeroCard :card="card" interactive />
+          </div>
         </div>
       </div>
     </div>
@@ -16,36 +18,26 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref } from 'vue'
-
-  import { useElementSize } from '@vueuse/core'
+  import { computed } from 'vue'
 
   import HeroCard from './hero-card.vue'
-  import { getTempleScale } from './temple-canvas.helpers'
 
   const props = defineProps<{
     config: Api.HallOfFame.Config
     cards: Api.HallOfFame.Card[]
   }>()
 
-  const containerRef = ref<HTMLElement | null>(null)
-  const { width: containerWidth } = useElementSize(containerRef)
-
-  const scale = computed(() =>
-    getTempleScale(containerWidth.value, props.config.canvas_width, props.config.canvas_height)
-  )
-
-  const viewportStyle = computed(() => ({
-    height: `${scale.value.wrapperHeight}px`
-  }))
-
   const canvasStyle = computed(() => ({
     width: `${props.config.canvas_width}px`,
     height: `${props.config.canvas_height}px`,
-    transform: `scale(${scale.value.ratio})`,
     backgroundImage: props.config.background_image
       ? `url(${props.config.background_image})`
       : undefined
+  }))
+
+  const stageStyle = computed(() => ({
+    width: `${props.config.canvas_width}px`,
+    height: `${props.config.canvas_height}px`
   }))
 
   function getCardPositionStyle(card: Api.HallOfFame.Card) {
@@ -59,21 +51,21 @@
 
 <style scoped>
   .temple-canvas-shell {
-    width: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    width: max-content;
+    min-width: 100%;
   }
 
   .temple-canvas-shell__viewport {
+    overflow: visible;
+  }
+
+  .temple-canvas-shell__stage {
     position: relative;
-    width: 100%;
   }
 
   .temple-canvas {
     position: absolute;
-    top: 0;
-    left: 0;
-    transform-origin: top left;
+    inset: 0 auto auto 0;
     border-radius: 32px;
     overflow: hidden;
     background:

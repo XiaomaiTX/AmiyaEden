@@ -35,6 +35,25 @@
           @update:model-value="handleHeightChange"
         />
       </label>
+      <label class="canvas-toolbar__field canvas-toolbar__field--zoom">
+        <span>{{ t('hallOfFame.manage.canvasZoom') }}</span>
+        <div class="canvas-toolbar__zoom">
+          <ElButton @click="adjustZoom(-10)">{{ t('hallOfFame.manage.zoomOut') }}</ElButton>
+          <ElSlider
+            class="canvas-toolbar__zoom-slider"
+            :min="40"
+            :max="160"
+            :step="10"
+            :model-value="zoomPercent"
+            @update:model-value="handleZoomChange"
+          />
+          <ElButton @click="adjustZoom(10)">{{ t('hallOfFame.manage.zoomIn') }}</ElButton>
+          <ElButton @click="emit('update:zoomPercent', 100)">
+            {{ t('hallOfFame.manage.resetZoom') }}
+          </ElButton>
+          <strong>{{ zoomPercent }}%</strong>
+        </div>
+      </label>
     </div>
 
     <div class="canvas-toolbar__group canvas-toolbar__group--actions">
@@ -51,12 +70,15 @@
 <script setup lang="ts">
   import { ref } from 'vue'
 
-  import { ElButton, ElInputNumber } from 'element-plus'
+  import { ElButton, ElInputNumber, ElSlider } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
-  defineProps<{
+  import { clampHallOfFameZoom } from '../../temple/modules/temple-canvas.helpers'
+
+  const props = defineProps<{
     canvasWidth: number
     canvasHeight: number
+    zoomPercent: number
     saving: boolean
   }>()
 
@@ -65,6 +87,7 @@
     'upload-background': [file: File]
     'update:canvasWidth': [value: number]
     'update:canvasHeight': [value: number]
+    'update:zoomPercent': [value: number]
     'save-layout': []
     preview: []
   }>()
@@ -97,6 +120,16 @@
     if (typeof value === 'number') {
       emit('update:canvasHeight', value)
     }
+  }
+
+  function handleZoomChange(value: number | number[]) {
+    if (typeof value === 'number') {
+      emit('update:zoomPercent', clampHallOfFameZoom(value))
+    }
+  }
+
+  function adjustZoom(delta: number) {
+    emit('update:zoomPercent', clampHallOfFameZoom(props.zoomPercent + delta))
   }
 </script>
 
@@ -137,6 +170,24 @@
     font-size: 12px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .canvas-toolbar__field--zoom {
+    flex: 1 1 360px;
+    align-items: flex-start;
+  }
+
+  .canvas-toolbar__zoom {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .canvas-toolbar__zoom-slider {
+    flex: 1 1 180px;
+    min-width: 140px;
   }
 
   .canvas-toolbar__file-input {
