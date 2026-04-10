@@ -396,7 +396,9 @@ func TestTaskService_UpdateScheduleRevertsRuntimeWhenPersistenceFails(t *testing
 	const callbackName = "task_schedule_persist_fail"
 	if err := db.Callback().Create().Before("gorm:create").Register(callbackName, func(tx *gorm.DB) {
 		if tx.Statement != nil && tx.Statement.Table == "task_schedules" {
-			tx.AddError(persistErr)
+			if err := tx.AddError(persistErr); err != nil && !errors.Is(err, persistErr) {
+				t.Fatalf("inject persistence error: %v", err)
+			}
 		}
 	}); err != nil {
 		t.Fatalf("register failing create callback: %v", err)
