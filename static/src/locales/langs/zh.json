@@ -413,6 +413,7 @@
   "taskManager": {
     "tabs": {
       "tasks": "任务列表",
+      "esiStatuses": "ESI 运行状态",
       "history": "执行历史"
     },
     "columns": {
