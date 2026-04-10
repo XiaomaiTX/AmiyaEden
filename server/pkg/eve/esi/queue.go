@@ -68,17 +68,17 @@ func (q *Queue) SetConcurrency(n int) {
 // 由 cron 定时触发
 func (q *Queue) Run() {
 	ctx := context.Background()
-	global.Logger.Info("[ESI Queue] 开始刷新调度")
+	queueZapLogger().Info("[ESI Queue] 开始刷新调度")
 
 	// 1. 获取所有有 refresh_token 的人物
 	characters, err := q.charRepo.ListAllWithToken()
 	if err != nil {
-		global.Logger.Error("[ESI Queue] 获取人物列表失败", zap.Error(err))
+		queueZapLogger().Error("[ESI Queue] 获取人物列表失败", zap.Error(err))
 		return
 	}
 
 	if len(characters) == 0 {
-		global.Logger.Info("[ESI Queue] 没有需要刷新的人物")
+		queueZapLogger().Info("[ESI Queue] 没有需要刷新的人物")
 		return
 	}
 
@@ -86,7 +86,7 @@ func (q *Queue) Run() {
 	activityMap := q.checkActivity(ctx, characters)
 	authorizedProviders, err := buildAuthorizedCorpKillmailProviders(characters)
 	if err != nil {
-		global.Logger.Warn("[ESI Queue] 构建军团 KM 覆盖集失败", zap.Error(err))
+		queueZapLogger().Warn("[ESI Queue] 构建军团 KM 覆盖集失败", zap.Error(err))
 		authorizedProviders = map[int64]int64{}
 	}
 	authorizedCorps := make(map[int64]bool)
@@ -155,11 +155,11 @@ func (q *Queue) Run() {
 	}
 
 	if len(jobs) == 0 {
-		global.Logger.Info("[ESI Queue] 没有需要执行的任务")
+		queueZapLogger().Info("[ESI Queue] 没有需要执行的任务")
 		return
 	}
 
-	global.Logger.Info("[ESI Queue] 开始执行刷新任务",
+	queueZapLogger().Info("[ESI Queue] 开始执行刷新任务",
 		zap.Int("total_jobs", len(jobs)),
 		zap.Int("characters", len(characters)),
 	)
@@ -181,7 +181,7 @@ func (q *Queue) Run() {
 	}
 
 	wg.Wait()
-	global.Logger.Info("[ESI Queue] 刷新调度完成")
+	queueZapLogger().Info("[ESI Queue] 刷新调度完成")
 }
 
 // RunTask 手动执行某个指定任务（管理页面触发）
@@ -207,7 +207,7 @@ func (q *Queue) RunTask(taskName string, characterID int64) error {
 func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
 	char, err := q.charRepo.GetByCharacterID(characterID)
 	if err != nil {
-		global.Logger.Error("[ESI Queue] RunAllForCharacter: 人物不存在",
+		queueZapLogger().Error("[ESI Queue] RunAllForCharacter: 人物不存在",
 			zap.Int64("character_id", characterID),
 			zap.Error(err),
 		)
@@ -235,7 +235,7 @@ func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
 	}
 
 	wg.Wait()
-	global.Logger.Info("[ESI Queue] 新人物全量刷新完成", zap.Int64("character_id", characterID))
+	queueZapLogger().Info("[ESI Queue] 新人物全量刷新完成", zap.Int64("character_id", characterID))
 }
 
 // RunTaskByName 对所有拥有所需 scope 的人物执行指定任务
@@ -341,7 +341,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 	// 获取有效 Token
 	accessToken, err := q.ssoSvc.GetValidToken(ctx, char.CharacterID)
 	if err != nil {
-		global.Logger.Error("[ESI Queue] 获取 Token 失败",
+		queueZapLogger().Error("[ESI Queue] 获取 Token 失败",
 			zap.String("task", task.Name()),
 			zap.Int64("character_id", char.CharacterID),
 			zap.Error(err),
@@ -376,7 +376,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 			})
 			return
 		}
-		global.Logger.Error("[ESI Queue] 任务执行失败",
+		queueZapLogger().Error("[ESI Queue] 任务执行失败",
 			zap.String("task", task.Name()),
 			zap.Int64("character_id", char.CharacterID),
 			zap.Error(err),
@@ -414,7 +414,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 	// 将上次执行时间持久化到 Redis
 	q.setLastRun(task, char, now)
 
-	global.Logger.Debug("[ESI Queue] 任务执行成功",
+	queueZapLogger().Debug("[ESI Queue] 任务执行成功",
 		zap.String("task", task.Name()),
 		zap.Int64("character_id", char.CharacterID),
 	)
@@ -457,6 +457,13 @@ func (q *Queue) shouldSkipAutomaticTask(char model.EveCharacter, task RefreshTas
 		return false
 	}
 	return corpCoverage[char.CorporationID]
+}
+
+func queueZapLogger() *zap.Logger {
+	if global.Logger != nil {
+		return global.Logger
+	}
+	return zap.NewNop()
 }
 
 func (q *Queue) taskExecutionKey(task RefreshTask, char model.EveCharacter) string {

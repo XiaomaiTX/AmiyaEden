@@ -70,6 +70,17 @@ func TestQueueTaskExecutionKeyUsesCorporationForCorporationKillmails(t *testing.
 	}
 }
 
+func TestQueueRunHandlesNilGlobalLogger(t *testing.T) {
+	oldLogger := global.Logger
+	global.Logger = nil
+	t.Cleanup(func() {
+		global.Logger = oldLogger
+	})
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
+	queue.Run()
+}
+
 func TestQueueNeedsRefreshSharesCorporationKillmailLastRunAcrossProviders(t *testing.T) {
 	mini := miniredis.RunT(t)
 	oldRedis := global.Redis
