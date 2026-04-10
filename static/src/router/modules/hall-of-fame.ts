@@ -1,0 +1,34 @@
+import { AppRouteRecord } from '@/types/router'
+
+export const hallOfFameRoutes: AppRouteRecord = {
+  path: '/hall-of-fame',
+  name: 'HallOfFameRoot',
+  component: '/index/index',
+  meta: {
+    title: 'menus.hallOfFame.title',
+    icon: 'ri:trophy-line',
+    login: true
+  },
+  children: [
+    {
+      path: 'temple',
+      name: 'HallOfFameTemple',
+      component: '/hall-of-fame/temple',
+      meta: {
+        title: 'menus.hallOfFame.temple',
+        keepAlive: true,
+        login: true
+      }
+    },
+    {
+      path: 'manage',
+      name: 'HallOfFameManage',
+      component: '/hall-of-fame/manage',
+      meta: {
+        title: 'menus.hallOfFame.manage',
+        keepAlive: false,
+        roles: ['super_admin', 'admin']
+      }
+    }
+  ]
+}

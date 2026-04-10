@@ -9,6 +9,7 @@ import { welfareRoutes } from './welfare'
 import { shopRoutes } from './shop'
 import { infoRoutes } from './info'
 import { newbroRoutes } from './newbro'
+import { hallOfFameRoutes } from './hall-of-fame'
 
 /**
  * 导出所有模块化路由
@@ -22,6 +23,7 @@ export const routeModules: AppRouteRecord[] = [
   newbroRoutes,
   shopRoutes,
   srpRoutes,
+  hallOfFameRoutes,
   systemRoutes,
   exceptionRoutes
 ]
