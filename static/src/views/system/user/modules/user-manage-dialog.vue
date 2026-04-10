@@ -310,8 +310,8 @@
       ElMessage.success(getSuccessMessage())
       dialogVisible.value = false
       emit('saved')
-    } catch (error: any) {
-      ElMessage.error(error?.message ?? getFailedMessage())
+    } catch (error: unknown) {
+      ElMessage.error(error instanceof Error ? error.message : getFailedMessage())
     } finally {
       submitting.value = false
     }

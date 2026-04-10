@@ -23,15 +23,18 @@ export function readHallOfFamePreviewDraft(storage: PreviewStorage, previewId: s
     return null
   }
 
-  const rawDraft = storage.getItem(buildPreviewStorageKey(previewId))
+  const key = buildPreviewStorageKey(previewId)
+  const rawDraft = storage.getItem(key)
   if (!rawDraft) {
     return null
   }
 
   try {
-    return JSON.parse(rawDraft) as Api.HallOfFame.TempleResponse
+    const draft = JSON.parse(rawDraft) as Api.HallOfFame.TempleResponse
+    storage.removeItem(key)
+    return draft
   } catch {
-    storage.removeItem(buildPreviewStorageKey(previewId))
+    storage.removeItem(key)
     return null
   }
 }

@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -92,9 +91,8 @@ func (h *HallOfFameHandler) CreateCard(c *gin.Context) {
 
 // UpdateCard PUT /api/v1/system/hall-of-fame/cards/:id
 func (h *HallOfFameHandler) UpdateCard(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的卡片 ID")
+	id := requireUintID(c, "id", "卡片 ID")
+	if id == 0 {
 		return
 	}
 	var req service.UpdateCardRequest
@@ -102,7 +100,7 @@ func (h *HallOfFameHandler) UpdateCard(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	card, err := h.svc.UpdateCard(uint(id), &req)
+	card, err := h.svc.UpdateCard(id, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -112,12 +110,11 @@ func (h *HallOfFameHandler) UpdateCard(c *gin.Context) {
 
 // DeleteCard DELETE /api/v1/system/hall-of-fame/cards/:id
 func (h *HallOfFameHandler) DeleteCard(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, "无效的卡片 ID")
+	id := requireUintID(c, "id", "卡片 ID")
+	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteCard(uint(id)); err != nil {
+	if err := h.svc.DeleteCard(id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
