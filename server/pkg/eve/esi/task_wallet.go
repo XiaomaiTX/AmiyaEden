@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"gorm.io/gorm/clause"
 )
 
 func init() {
@@ -86,83 +88,138 @@ func (t *WalletTask) Execute(ctx *TaskContext) error {
 	}
 
 	// 3. 获取钱包市场交易
-	var walletTransactions []WalletTransaction
-	path = fmt.Sprintf("/characters/%d/wallet/transactions", ctx.CharacterID)
-	if _, err := ctx.Client.GetPaginated(bgCtx, path, ctx.AccessToken, &walletTransactions); err != nil {
-		return fmt.Errorf("fetch wallet transactions: %w", err)
+	walletTransactions, err := t.fetchWalletTransactions(bgCtx, ctx)
+	if err != nil {
+		return err
 	}
 
 	// 入库
 	tx := global.DB.Begin()
-	var count int64
-	global.DB.Model(&model.EVECharacterWallet{}).Where("character_id = ?", ctx.CharacterID).Count(&count)
-	if count == 0 {
-		tx.Create(&model.EVECharacterWallet{
-			CharacterID: ctx.CharacterID,
-			Balance:     balance, // 直接使用 float64
-		})
-	} else {
-		// 更新余额
-		tx.Model(&model.EVECharacterWallet{}).
-			Where("character_id = ?", ctx.CharacterID).
-			Update("balance", balance)
+	if tx.Error != nil {
+		return fmt.Errorf("begin wallet transaction db tx: %w", tx.Error)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	if err := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "character_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"balance", "update_time"}),
+	}).Create(&model.EVECharacterWallet{
+		CharacterID: ctx.CharacterID,
+		Balance:     balance,
+	}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("upsert wallet balance: %w", err)
 	}
 
 	var waitingEntries []model.EVECharacterWalletJournal
+	seenJournalIDs := make(map[int64]struct{}, len(walletJournal))
 	for _, entry := range walletJournal {
-		global.DB.Model(&model.EVECharacterWalletJournal{}).Where("ID = ?", entry.ID).Count(&count)
-		if count == 0 {
-			waitingEntries = append(waitingEntries, model.EVECharacterWalletJournal{
-				ID:            entry.ID,
-				CharacterID:   ctx.CharacterID,
-				Amount:        entry.Amount,
-				Balance:       entry.Balance,
-				ContextID:     entry.ContextID,
-				ContextIDType: entry.ContextIDType,
-				Date:          entry.Date,
-				Description:   entry.Description,
-				FirstPartyID:  entry.FirstPartyID,
-				Reason:        entry.Reason,
-				RefType:       entry.RefType,
-				SecondPartyID: entry.SecondPartyID,
-				Tax:           entry.Tax,
-				TaxReceiverID: entry.TaxReceiverID,
-			})
+		if _, ok := seenJournalIDs[entry.ID]; ok {
+			continue
 		}
+		seenJournalIDs[entry.ID] = struct{}{}
+
+		waitingEntries = append(waitingEntries, model.EVECharacterWalletJournal{
+			ID:            entry.ID,
+			CharacterID:   ctx.CharacterID,
+			Amount:        entry.Amount,
+			Balance:       entry.Balance,
+			ContextID:     entry.ContextID,
+			ContextIDType: entry.ContextIDType,
+			Date:          entry.Date,
+			Description:   entry.Description,
+			FirstPartyID:  entry.FirstPartyID,
+			Reason:        entry.Reason,
+			RefType:       entry.RefType,
+			SecondPartyID: entry.SecondPartyID,
+			Tax:           entry.Tax,
+			TaxReceiverID: entry.TaxReceiverID,
+		})
 	}
 	if len(waitingEntries) > 0 {
-		if err := tx.Create(&waitingEntries).Error; err != nil {
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&waitingEntries).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("insert wallet journal: %w", err)
 		}
 	}
 
 	var waitingTransactions []model.EVECharacterWalletTransaction
-	for _, t := range walletTransactions {
-		global.DB.Model(&model.EVECharacterWalletTransaction{}).Where("transaction_id = ?", t.TransactionID).Count(&count)
-		if count == 0 {
-			waitingTransactions = append(waitingTransactions, model.EVECharacterWalletTransaction{
-				TransactionID: t.TransactionID,
-				CharacterID:   ctx.CharacterID,
-				ClientID:      t.ClientID,
-				Date:          t.Date,
-				IsBuy:         t.IsBuy,
-				IsPersonal:    t.IsPersonal,
-				JournalRefID:  t.JournalRefID,
-				LocationID:    t.LocationID,
-				Quantity:      t.Quantity,
-				TypeID:        t.TypeID,
-				UnitPrice:     t.UnitPrice,
-			})
+	seenTransactionIDs := make(map[int64]struct{}, len(walletTransactions))
+	for _, txEntry := range walletTransactions {
+		if _, ok := seenTransactionIDs[txEntry.TransactionID]; ok {
+			continue
 		}
+		seenTransactionIDs[txEntry.TransactionID] = struct{}{}
+
+		waitingTransactions = append(waitingTransactions, model.EVECharacterWalletTransaction{
+			TransactionID: txEntry.TransactionID,
+			CharacterID:   ctx.CharacterID,
+			ClientID:      txEntry.ClientID,
+			Date:          txEntry.Date,
+			IsBuy:         txEntry.IsBuy,
+			IsPersonal:    txEntry.IsPersonal,
+			JournalRefID:  txEntry.JournalRefID,
+			LocationID:    txEntry.LocationID,
+			Quantity:      txEntry.Quantity,
+			TypeID:        txEntry.TypeID,
+			UnitPrice:     txEntry.UnitPrice,
+		})
 	}
 	if len(waitingTransactions) > 0 {
-		if err := tx.Create(&waitingTransactions).Error; err != nil {
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&waitingTransactions).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("insert wallet transactions: %w", err)
 		}
 	}
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("commit wallet transaction db tx: %w", err)
+	}
 
 	return nil
+}
+
+func (t *WalletTask) fetchWalletTransactions(ctx context.Context, taskCtx *TaskContext) ([]WalletTransaction, error) {
+	basePath := fmt.Sprintf("/characters/%d/wallet/transactions", taskCtx.CharacterID)
+	var (
+		results []WalletTransaction
+		fromID  int64
+	)
+	seen := make(map[int64]struct{})
+
+	for {
+		path := basePath
+		if fromID != 0 {
+			path = fmt.Sprintf("%s?from_id=%d", basePath, fromID)
+		}
+
+		var batch []WalletTransaction
+		if err := taskCtx.Client.Get(ctx, path, taskCtx.AccessToken, &batch); err != nil {
+			return nil, fmt.Errorf("fetch wallet transactions: %w", err)
+		}
+		if len(batch) == 0 {
+			return results, nil
+		}
+
+		nextFromID := batch[0].TransactionID
+		for _, entry := range batch {
+			if entry.TransactionID < nextFromID {
+				nextFromID = entry.TransactionID
+			}
+			if _, ok := seen[entry.TransactionID]; ok {
+				continue
+			}
+			seen[entry.TransactionID] = struct{}{}
+			results = append(results, entry)
+		}
+
+		if fromID != 0 && nextFromID >= fromID {
+			return nil, fmt.Errorf("fetch wallet transactions: pagination did not advance from_id=%d next_from_id=%d", fromID, nextFromID)
+		}
+		fromID = nextFromID
+	}
 }
