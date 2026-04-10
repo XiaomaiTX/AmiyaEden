@@ -151,10 +151,8 @@
           label: t('taskManager.columns.trigger'),
           width: 110,
           formatter: (row: Api.TaskManager.TaskExecutionItem) =>
-            h(
-              ElTag,
-              { type: triggerTagType(row.trigger), size: 'small', effect: 'plain' },
-              () => t(`taskManager.trigger.${row.trigger}`)
+            h(ElTag, { type: triggerTagType(row.trigger), size: 'small', effect: 'plain' }, () =>
+              t(`taskManager.trigger.${row.trigger}`)
             )
         },
         {
@@ -168,10 +166,8 @@
           label: t('taskManager.columns.status'),
           width: 110,
           formatter: (row: Api.TaskManager.TaskExecutionItem) =>
-            h(
-              ElTag,
-              { type: statusTagType(row.status), size: 'small', effect: 'plain' },
-              () => t(`taskManager.status.${row.status}`)
+            h(ElTag, { type: statusTagType(row.status), size: 'small', effect: 'plain' }, () =>
+              t(`taskManager.status.${row.status}`)
             )
         },
         {
