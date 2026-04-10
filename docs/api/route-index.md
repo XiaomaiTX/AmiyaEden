@@ -126,6 +126,7 @@ source_of_truth:
 | POST | `/info/assets` | 资产 | Login |
 | POST | `/info/contracts` | 合同列表 | Login |
 | POST | `/info/contracts/detail` | 合同详情 | Login |
+| POST | `/info/esi-refresh` | 手动触发指定角色的技能 ESI 刷新（仅限自己的角色） | Login |
 | POST | `/info/fittings` | 装配列表 | Login |
 | POST | `/info/fittings/save` | 保存装配 | Login |
 | POST | `/info/npc-kills` | 个人 NPC 刷怪报表 | Login |
@@ -163,6 +164,7 @@ source_of_truth:
 | GET | `/newbro/affiliation/me` | 当前用户的新人资格快照与队长关联历史 | Login |
 | GET | `/newbro/affiliations/history` | 当前用户的帮扶关系变更历史 | Login |
 | POST | `/newbro/affiliation/select` | 选择或切换队长 | `Login` + 当前新人资格 |
+
 | POST | `/newbro/affiliation/end` | 结束当前与队长的帮扶关系 | `Login` + 当前新人资格 |
 
 ### Captain Side
@@ -238,15 +240,24 @@ source_of_truth:
 | PUT | `/srp/applications/:id/payout` | 发放补损 | `RequireRole(srp, senior_fc, admin)` |
 | PUT | `/srp/applications/users/:user_id/payout` | 按用户批量发放补损 | `RequireRole(srp, senior_fc, admin)` |
 
-## ESI Refresh
+## Tasks
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/esi/refresh/tasks` | 任务列表 | `RequireRole(admin)` |
-| GET | `/esi/refresh/statuses` | 状态汇总 | `RequireRole(admin)` |
-| POST | `/esi/refresh/run` | 执行队列调度 | `RequireRole(admin)` |
-| POST | `/esi/refresh/run-task` | 按名称执行任务 | `RequireRole(admin)` |
-| POST | `/esi/refresh/run-all` | 对人物执行全部任务 | `RequireRole(admin)` |
+| GET | `/tasks` | 任务列表；返回任务分类、类型、当前调度、默认调度、最近一次执行与是否支持手动触发 | `RequireRole(admin)` |
+| GET | `/tasks/history` | 执行历史分页；支持按 `task_name` 与 `status` 过滤 | `RequireRole(admin)` |
+| POST | `/tasks/:name/run` | 手动触发通用任务；同名任务正在运行时返回 `409 Conflict` | `RequireRole(admin)` |
+| PUT | `/tasks/:name/schedule` | 更新周期任务调度（6 段 cron 或 `@every` 描述符），并立即重载运行时调度 | `RequireRole(super_admin)` |
+
+### ESI Task Operations
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/tasks/esi/tasks` | ESI 队列任务定义列表 | `RequireRole(admin)` |
+| GET | `/tasks/esi/statuses` | ESI 队列人物状态汇总 | `RequireRole(admin)` |
+| POST | `/tasks/esi/run` | 对指定人物执行单个 ESI 任务 | `RequireRole(admin)` |
+| POST | `/tasks/esi/run-task` | 对全部人物执行指定 ESI 任务 | `RequireRole(admin)` |
+| POST | `/tasks/esi/run-all` | 对全部人物执行 ESI 全量刷新 | `RequireRole(admin)` |
 
 ## System
 
