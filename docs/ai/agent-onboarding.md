@@ -52,7 +52,7 @@ Read:
 2. `docs/architecture/module-map.md`
 3. `docs/architecture/runtime-and-startup.md`
 4. `docs/features/current/auth-and-characters.md`
-5. `docs/features/current/esi-refresh.md`
+5. `docs/features/current/task-manager.md`
 6. `docs/guides/adding-esi-feature.md`
 
 Read local `README.md` files under `server/pkg/eve/esi/` only when the task is clearly in that area.
