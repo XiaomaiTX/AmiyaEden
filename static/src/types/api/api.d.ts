@@ -2411,4 +2411,90 @@ declare namespace Api {
       download_url?: string
     }
   }
+
+  // ─── 名人堂 ───
+  namespace HallOfFame {
+    type CardStylePreset = 'gold' | 'silver' | 'bronze' | 'custom'
+
+    interface Config {
+      id: number
+      background_image: string
+      canvas_width: number
+      canvas_height: number
+      created_at: string
+      updated_at: string
+    }
+
+    interface Card {
+      id: number
+      name: string
+      title: string
+      description: string
+      avatar: string
+      pos_x: number
+      pos_y: number
+      width: number
+      height: number
+      style_preset: CardStylePreset
+      custom_bg_color: string
+      custom_text_color: string
+      custom_border_color: string
+      font_size: number
+      z_index: number
+      visible: boolean
+      created_at: string
+      updated_at: string
+    }
+
+    interface TempleResponse {
+      config: Config
+      cards: Card[]
+    }
+
+    interface UpdateConfigParams {
+      background_image?: string
+      canvas_width?: number
+      canvas_height?: number
+    }
+
+    interface CreateCardParams {
+      name: string
+      title?: string
+      description?: string
+      avatar?: string
+      pos_x?: number
+      pos_y?: number
+      width?: number
+      height?: number
+      style_preset?: CardStylePreset
+      custom_bg_color?: string
+      custom_text_color?: string
+      custom_border_color?: string
+      font_size?: number
+      z_index?: number
+      visible?: boolean
+    }
+
+    interface UpdateCardParams {
+      name?: string
+      title?: string
+      description?: string
+      avatar?: string
+      style_preset?: CardStylePreset
+      custom_bg_color?: string
+      custom_text_color?: string
+      custom_border_color?: string
+      font_size?: number
+      visible?: boolean
+    }
+
+    interface CardLayoutUpdate {
+      id: number
+      pos_x: number
+      pos_y: number
+      width: number
+      height: number
+      z_index: number
+    }
+  }
 }

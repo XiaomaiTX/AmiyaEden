@@ -331,6 +331,57 @@
       "basicConfig": "@:setting.basics.title",
       "newbroSettings": "帮扶设置",
       "mentorRewardStages": "导师奖励阶段"
+    },
+    "hallOfFame": {
+      "title": "伏羲名人堂",
+      "temple": "圣殿",
+      "manage": "管理"
+    }
+  },
+  "hallOfFame": {
+    "temple": {
+      "eyebrow": "伏羲英灵圣殿",
+      "emptyTitle": "暂无入殿英雄",
+      "emptySubtitle": "名人堂尚未添加英雄卡片"
+    },
+    "manage": {
+      "eyebrow": "圣殿设计台",
+      "summary": "在同一画布中拖拽卡片、调整舞台尺寸，并即时打磨每位英雄的形象与故事。",
+      "newCardName": "新英雄",
+      "dragHint": "拖拽",
+      "addCard": "添加卡片",
+      "setBackground": "设置背景",
+      "saveLayout": "保存布局",
+      "preview": "预览",
+      "canvasWidth": "画布宽度",
+      "canvasHeight": "画布高度",
+      "cardEditor": "卡片编辑",
+      "name": "名称",
+      "titleField": "称号",
+      "description": "描述",
+      "avatar": "头像",
+      "changeAvatar": "更换头像",
+      "stylePreset": "样式预设",
+      "gold": "金色",
+      "silver": "银色",
+      "bronze": "铜色",
+      "custom": "自定义",
+      "bgColor": "背景色",
+      "textColor": "文字色",
+      "borderColor": "边框色",
+      "fontSize": "字体大小",
+      "zIndex": "层级",
+      "bringForward": "上移一层",
+      "sendBackward": "下移一层",
+      "visible": "可见",
+      "deleteCard": "删除卡片",
+      "deleteConfirm": "确定删除该卡片吗？",
+      "saveSuccess": "保存成功",
+      "saveFailed": "保存失败",
+      "deleteSuccess": "删除成功",
+      "selectCard": "点击画布上的卡片进行编辑",
+      "noCardSelected": "未选中卡片",
+      "uploadBackground": "上传背景图"
     }
   },
   "info": {
