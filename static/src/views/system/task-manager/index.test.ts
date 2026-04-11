@@ -42,6 +42,15 @@ test('task manager page uses tabs with extracted task and history modules', () =
   assert.match(tasksTabSource, /runTask\(/)
   assert.match(tasksTabSource, /<ElDialog/)
   assert.match(tasksTabSource, /<EsiControls \/>/)
+  assert.match(tasksTabSource, /scheduleForm\s*=\s*reactive\(\{[\s\S]*mode:\s*'cron'/)
+  assert.match(tasksTabSource, /scheduleForm\s*=\s*reactive\(\{[\s\S]*intervalValue:\s*1/)
+  assert.match(tasksTabSource, /scheduleForm\s*=\s*reactive\(\{[\s\S]*intervalUnit:\s*'m'/)
+  assert.match(tasksTabSource, /taskManager\.fields\.scheduleMode/)
+  assert.match(tasksTabSource, /taskManager\.fields\.intervalValue/)
+  assert.match(tasksTabSource, /taskManager\.fields\.intervalUnit/)
+  assert.match(tasksTabSource, /taskManager\.mode\.cron/)
+  assert.match(tasksTabSource, /taskManager\.mode\.every/)
+  assert.match(tasksTabSource, /taskManager\.intervalUnits\./)
 
   assert.match(esiControlsSource, /fetchESIRefreshTasks\(/)
   assert.match(esiControlsSource, /runESIRefreshTaskByName\(/)
@@ -54,6 +63,12 @@ test('task manager page uses tabs with extracted task and history modules', () =
   assert.match(esiStatusesTabSource, /runESIRefreshTask\(/)
   assert.match(esiStatusesTabSource, /taskManager\.esi\.sections\.statuses/)
   assert.match(esiStatusesTabSource, /taskManager\.esi\.filters\.taskName/)
+  assert.match(esiStatusesTabSource, /taskManager\.esi\.filters\.character/)
+  assert.match(esiStatusesTabSource, /v-model="filterForm\.character"/)
+  assert.match(
+    esiStatusesTabSource,
+    /searchParams,\s*\{[\s\S]*character:\s*filterForm\.character \|\| undefined/
+  )
   assert.match(esiStatusesTabSource, /taskManager\.esi\.status\.running/)
 
   assert.match(historyTabSource, /apiFn:\s*fetchTaskHistory/)
@@ -98,9 +113,19 @@ test('task manager types and locales exist and the legacy page is removed', () =
   assert.match(zhLocaleSource, /"taskManager"\s*:/)
   assert.match(zhLocaleSource, /"tabs"\s*:\s*\{[\s\S]*"tasks"\s*:/)
   assert.match(zhLocaleSource, /"esiStatuses"\s*:/)
+  assert.match(zhLocaleSource, /"character"\s*:\s*"按人物 ID 或名称筛选"/)
+  assert.match(zhLocaleSource, /"scheduleMode"\s*:/)
+  assert.match(zhLocaleSource, /"intervalValue"\s*:/)
+  assert.match(zhLocaleSource, /"intervalUnit"\s*:/)
+  assert.match(zhLocaleSource, /"intervalUnits"\s*:/)
   assert.match(zhLocaleSource, /"menus"\s*:\s*\{[\s\S]*"taskManager"\s*:/)
   assert.match(enLocaleSource, /"taskManager"\s*:/)
   assert.match(enLocaleSource, /"esiStatuses"\s*:/)
+  assert.match(enLocaleSource, /"character"\s*:\s*"Filter by character ID or name"/)
+  assert.match(enLocaleSource, /"scheduleMode"\s*:/)
+  assert.match(enLocaleSource, /"intervalValue"\s*:/)
+  assert.match(enLocaleSource, /"intervalUnit"\s*:/)
+  assert.match(enLocaleSource, /"intervalUnits"\s*:/)
   assert.match(enLocaleSource, /"menus"\s*:\s*\{[\s\S]*"taskManager"\s*:/)
 
   assert.equal(legacyPageExists, false)

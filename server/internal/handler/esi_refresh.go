@@ -8,6 +8,8 @@ import (
 	"amiya-eden/pkg/response"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +30,18 @@ type TaskInfoItem struct {
 	ActiveInterval   string   `json:"active_interval"`
 	InactiveInterval string   `json:"inactive_interval"`
 	RequiredScopes   []string `json:"required_scopes"`
+}
+
+type TaskStatusItem struct {
+	TaskName      string     `json:"task_name"`
+	Description   string     `json:"description"`
+	CharacterID   int64      `json:"character_id"`
+	CharacterName string     `json:"character_name,omitempty"`
+	Priority      int        `json:"priority"`
+	LastRun       *time.Time `json:"last_run,omitempty"`
+	NextRun       *time.Time `json:"next_run,omitempty"`
+	Status        string     `json:"status"`
+	Error         string     `json:"error,omitempty"`
 }
 
 // GetTasks 获取所有已注册的刷新任务定义
@@ -60,7 +74,7 @@ func (h *ESIRefreshHandler) GetTasks(c *gin.Context) {
 
 // GetStatuses 获取所有任务的运行时状态（支持分页和筛选）
 //
-// GET /api/v1/tasks/esi/statuses?current=1&size=20&task_name=xxx&status=xxx
+// GET /api/v1/tasks/esi/statuses?current=1&size=20&task_name=xxx&status=xxx&character=xxx
 func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	queue := jobs.GetESIQueue()
 	if queue == nil {
@@ -69,12 +83,31 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	}
 
 	all := queue.GetAllStatuses()
+	charRepo := repository.NewEveCharacterRepository()
+	characterNames := make(map[int64]string, len(all))
+	characterIDs := make([]int64, 0, len(all))
+	seenCharacterIDs := make(map[int64]struct{}, len(all))
+	for _, status := range all {
+		if _, exists := seenCharacterIDs[status.CharacterID]; exists {
+			continue
+		}
+		seenCharacterIDs[status.CharacterID] = struct{}{}
+		characterIDs = append(characterIDs, status.CharacterID)
+	}
+	if chars, err := charRepo.ListByCharacterIDs(characterIDs); err == nil {
+		for _, char := range chars {
+			characterNames[char.CharacterID] = char.CharacterName
+		}
+	}
 
 	// 筛选
 	taskNameFilter := c.Query("task_name")
 	statusFilter := c.Query("status")
+	characterFilter := strings.TrimSpace(c.Query("character"))
+	characterFilterLower := strings.ToLower(characterFilter)
+	characterIDFilter, characterParseErr := strconv.ParseInt(characterFilter, 10, 64)
 
-	filtered := make([]*esi.TaskStatus, 0, len(all))
+	filtered := make([]TaskStatusItem, 0, len(all))
 	for _, s := range all {
 		if taskNameFilter != "" && s.TaskName != taskNameFilter {
 			continue
@@ -82,7 +115,25 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 		if statusFilter != "" && s.Status != statusFilter {
 			continue
 		}
-		filtered = append(filtered, s)
+		characterName := characterNames[s.CharacterID]
+		if characterFilter != "" {
+			matchesCharacterID := characterParseErr == nil && s.CharacterID == characterIDFilter
+			matchesCharacterName := strings.Contains(strings.ToLower(characterName), characterFilterLower)
+			if !matchesCharacterID && !matchesCharacterName {
+				continue
+			}
+		}
+		filtered = append(filtered, TaskStatusItem{
+			TaskName:      s.TaskName,
+			Description:   s.Description,
+			CharacterID:   s.CharacterID,
+			CharacterName: characterName,
+			Priority:      int(s.Priority),
+			LastRun:       s.LastRun,
+			NextRun:       s.NextRun,
+			Status:        s.Status,
+			Error:         s.Error,
+		})
 	}
 
 	total := len(filtered)

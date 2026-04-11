@@ -465,8 +465,19 @@
       "status": "Filter status"
     },
     "fields": {
+      "scheduleMode": "Schedule Mode",
+      "intervalValue": "Interval Value",
+      "intervalUnit": "Interval Unit",
       "cronExpr": "Cron Expression",
       "defaultCron": "Default Schedule"
+    },
+    "mode": {
+      "cron": "Cron Expression",
+      "every": "Fixed Interval"
+    },
+    "intervalUnits": {
+      "m": "Minutes",
+      "h": "Hours"
     },
     "placeholders": {
       "cronExpr": "Enter a 6-field cron expression or an @every interval"
@@ -537,6 +548,7 @@
         "nextRun": "Next Run"
       },
       "filters": {
+        "character": "Filter by character ID or name",
         "taskName": "All tasks",
         "status": "All statuses"
       },

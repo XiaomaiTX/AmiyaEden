@@ -262,6 +262,7 @@ declare namespace Api {
       task_name: string
       description: string
       character_id: number
+      character_name?: string
       priority: number
       last_run?: string | null
       next_run?: string | null
@@ -282,6 +283,7 @@ declare namespace Api {
 
     /** 任务状态搜索参数（分页 + 筛选） */
     type TaskStatusSearchParams = Partial<{
+      character: string
       task_name: string
       status: string
     }> &

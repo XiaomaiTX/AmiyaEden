@@ -622,6 +622,13 @@ func (q *Queue) setStatus(key string, status *TaskStatus) {
 	q.statuses[key] = status
 }
 
+// SetStatusesForTest 替换整个 statuses 映射（仅供测试使用）
+func (q *Queue) SetStatusesForTest(statuses map[string]*TaskStatus) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.statuses = statuses
+}
+
 // GetAllStatuses 获取所有任务状态（用于 API 展示）
 func (q *Queue) GetAllStatuses() []*TaskStatus {
 	q.mu.RLock()
