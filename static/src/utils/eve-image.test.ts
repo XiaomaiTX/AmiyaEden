@@ -10,6 +10,17 @@ test('buildEveCharacterPortraitUrl returns the standard portrait URL', () => {
   )
 })
 
+test('buildEveCharacterPortraitUrl normalizes unsupported portrait sizes', () => {
+  assert.equal(
+    buildEveCharacterPortraitUrl(90000001, 24),
+    'https://images.evetech.net/characters/90000001/portrait?size=32'
+  )
+  assert.equal(
+    buildEveCharacterPortraitUrl(90000001, 36),
+    'https://images.evetech.net/characters/90000001/portrait?size=64'
+  )
+})
+
 test('buildEveCharacterPortraitUrl returns an empty string for non-positive ids', () => {
   assert.equal(buildEveCharacterPortraitUrl(0), '')
 })
