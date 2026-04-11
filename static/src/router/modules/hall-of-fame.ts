@@ -6,8 +6,7 @@ export const hallOfFameRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.hallOfFame.title',
-    icon: 'ri:trophy-line',
-    login: true
+    icon: 'ri:trophy-line'
   },
   children: [
     {
@@ -28,6 +27,15 @@ export const hallOfFameRoutes: AppRouteRecord = {
         title: 'menus.hallOfFame.manage',
         keepAlive: false,
         roles: ['super_admin', 'admin']
+      }
+    },
+    {
+      path: 'current-manage',
+      name: 'HallOfFameCurrentManage',
+      component: '/hall-of-fame/current-manage',
+      meta: {
+        title: 'menus.hallOfFame.currentManage',
+        keepAlive: true
       }
     }
   ]

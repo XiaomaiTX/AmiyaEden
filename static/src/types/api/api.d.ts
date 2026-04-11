@@ -2548,4 +2548,72 @@ declare namespace Api {
       z_index: number
     }
   }
+
+  namespace FuxiAdmin {
+    interface Config {
+      id: number
+      base_font_size: number
+      created_at: string
+      updated_at: string
+    }
+
+    interface Tier {
+      id: number
+      name: string
+      sort_order: number
+      created_at: string
+      updated_at: string
+    }
+
+    interface Admin {
+      id: number
+      tier_id: number
+      name: string
+      title: string
+      contact_qq: string
+      contact_discord: string
+      character_id: number
+      created_at: string
+      updated_at: string
+    }
+
+    interface TierWithAdmins extends Tier {
+      admins: Admin[]
+    }
+
+    interface DirectoryResponse {
+      config: Config
+      tiers: TierWithAdmins[]
+    }
+
+    interface UpdateConfigParams {
+      base_font_size?: number
+    }
+
+    interface CreateTierParams {
+      name: string
+    }
+
+    interface UpdateTierParams {
+      name?: string
+    }
+
+    interface CreateAdminParams {
+      tier_id: number
+      name: string
+      title?: string
+      contact_qq?: string
+      contact_discord?: string
+      character_id?: number
+    }
+
+    interface UpdateAdminParams {
+      tier_id?: number
+      name?: string
+      title?: string
+      contact_qq?: string
+      contact_discord?: string
+      character_id?: number
+    }
+  }
 }

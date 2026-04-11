@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-11
+last_reviewed: 2026-04-12
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -35,6 +35,12 @@ source_of_truth:
 | POST | `/sde/types` | 批量查询 type 信息 | Public |
 | POST | `/sde/names` | 批量查询名称映射 | Public |
 | POST | `/sde/search` | 模糊搜索物品 / 成员 | Public |
+
+### Fuxi Admin Directory
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/fuxi-admins` | 公开目录（配置 + 层级 + 管理员） | Public |
 
 ## Authenticated Base
 
@@ -366,6 +372,20 @@ source_of_truth:
 | PUT | `/system/hall-of-fame/cards/batch-layout` | 批量保存卡片坐标、尺寸与层级 | `RequireRole(admin)` |
 | PUT | `/system/hall-of-fame/cards/:id` | 更新单张英雄卡片内容、样式或显示状态 | `RequireRole(admin)` |
 | DELETE | `/system/hall-of-fame/cards/:id` | 删除英雄卡片 | `RequireRole(admin)` |
+
+### Fuxi Admin Directory Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/fuxi-admins/config` | 获取伏羲管理名录配置（单例） | `RequireRole(admin)` |
+| PUT | `/system/fuxi-admins/config` | 更新字体大小配置 | `RequireRole(admin)` |
+| GET | `/system/fuxi-admins/tiers` | 获取层级列表 | `RequireRole(admin)` |
+| POST | `/system/fuxi-admins/tiers` | 创建新层级 | `RequireRole(admin)` |
+| PUT | `/system/fuxi-admins/tiers/:id` | 更新层级名称 | `RequireRole(admin)` |
+| DELETE | `/system/fuxi-admins/tiers/:id` | 删除层级（级联删除管理员） | `RequireRole(admin)` |
+| POST | `/system/fuxi-admins` | 创建管理员 | `RequireRole(admin)` |
+| PUT | `/system/fuxi-admins/:id` | 更新管理员 | `RequireRole(admin)` |
+| DELETE | `/system/fuxi-admins/:id` | 删除管理员 | `RequireRole(admin)` |
 
 ### Newbro Admin
 
