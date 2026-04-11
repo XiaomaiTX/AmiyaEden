@@ -94,6 +94,12 @@ test('newbro mentor selection route requires mentor mentee eligibility', () => {
   assert.equal(mentorRoute?.meta.requiresMentorMenteeEligibility, true)
 })
 
+test('newbro manage route keeps readonly menu access for captains', () => {
+  const manageRoute = actualNewbroRoutes.children?.find((route) => route.name === 'NewbroManage')
+
+  assert.deepEqual(manageRoute?.meta.roles, ['super_admin', 'admin', 'captain'])
+})
+
 test('applyMenuAccessFilter hides AutoRole from admins but keeps it for super admins', () => {
   const adminFiltered = applyMenuAccessFilter([systemRoutes], ['admin'])
   const adminSystemMenu = adminFiltered[0]

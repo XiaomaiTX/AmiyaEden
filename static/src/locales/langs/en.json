@@ -306,7 +306,7 @@
       "selectMentor": "Choose Mentor",
       "captain": "I Am Captain",
       "mentor": "I Am Mentor",
-      "manage": "Support Manage",
+      "manage": "Support Records",
       "mentorManage": "Mentor Manage"
     },
     "role": {
@@ -1181,7 +1181,7 @@
       "rejectSuccess": "Application rejected"
     },
     "manage": {
-      "title": "Support Management",
+      "title": "Support Records",
       "subtitle": "Admins can review all captain performance. Attribution sync and reward processing now run through Task Manager.",
       "performanceTab": "Captain Performance",
       "rewardHistoryTab": "Reward History",

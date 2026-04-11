@@ -379,8 +379,12 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminNewbro.PUT("/settings", newbroAdminH.UpdateSettings)
 		adminNewbro.GET("/captains", newbroAdminH.ListCaptains)
 		adminNewbro.GET("/captains/:user_id", newbroAdminH.GetCaptainDetail)
-		adminNewbro.GET("/affiliations/history", newbroAdminH.ListAffiliationHistory)
-		adminNewbro.GET("/rewards", newbroAdminH.ListRewardSettlements)
+	}
+	// 帮扶记录只读接口：管理员或队长均可访问
+	newbroRecords := login.Group("/system/newbro", middleware.RequireRole(model.RoleAdmin, model.RoleCaptain))
+	{
+		newbroRecords.GET("/affiliations/history", newbroAdminH.ListAffiliationHistory)
+		newbroRecords.GET("/rewards", newbroAdminH.ListRewardSettlements)
 	}
 
 	mentorAdminH := handler.NewMentorAdminHandler()

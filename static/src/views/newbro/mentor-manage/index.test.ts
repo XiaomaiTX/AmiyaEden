@@ -28,6 +28,12 @@ test('pending mentor applications use cancel-specific admin copy', () => {
   assert.match(source, /newbro\.mentorManage\.revokeSuccess/)
 })
 
+test('mentor manage page does not render a standalone title card', () => {
+  assert.doesNotMatch(source, /newbro\.mentorManage\.title/)
+  assert.doesNotMatch(source, /newbro\.mentorManage\.subtitle/)
+  assert.match(source, /common\.refresh/)
+})
+
 test('mentor manage page includes a reward distribution records tab with ledger pagination', () => {
   assert.match(source, /<ElTabs v-model="activeTab"/)
   assert.match(source, /newbro\.mentorManage\.relationshipsTab/)
