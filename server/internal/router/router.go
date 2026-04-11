@@ -498,6 +498,26 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminHof.PUT("/cards/:id", hofH.UpdateCard)
 		adminHof.DELETE("/cards/:id", hofH.DeleteCard)
 	}
+
+	// ─── 伏羲管理人员名录 ───
+	fuxiAdminH := handler.NewFuxiAdminHandler()
+
+	// 公开端点（无需认证，访客可访问）
+	api.GET("/fuxi-admins", fuxiAdminH.GetDirectory)
+
+	// 管理端点（admin group 已要求 RoleAdmin）
+	adminFuxiAdmin := admin.Group("/fuxi-admins")
+	{
+		adminFuxiAdmin.GET("/config", fuxiAdminH.GetConfig)
+		adminFuxiAdmin.PUT("/config", fuxiAdminH.UpdateConfig)
+		adminFuxiAdmin.GET("/tiers", fuxiAdminH.ListTiers)
+		adminFuxiAdmin.POST("/tiers", fuxiAdminH.CreateTier)
+		adminFuxiAdmin.PUT("/tiers/:id", fuxiAdminH.UpdateTier)
+		adminFuxiAdmin.DELETE("/tiers/:id", fuxiAdminH.DeleteTier)
+		adminFuxiAdmin.POST("", fuxiAdminH.CreateAdmin)
+		adminFuxiAdmin.PUT("/:id", fuxiAdminH.UpdateAdmin)
+		adminFuxiAdmin.DELETE("/:id", fuxiAdminH.DeleteAdmin)
+	}
 }
 
 func registerAdminAutoRoleRoutes(admin *gin.RouterGroup, autoRoleH *handler.AutoRoleHandler) {
