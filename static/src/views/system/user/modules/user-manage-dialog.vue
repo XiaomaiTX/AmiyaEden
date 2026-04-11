@@ -6,64 +6,82 @@
     align-center
     @open="onOpen"
   >
-    <ElForm ref="formRef" :model="form" :rules="rules" label-position="top" class="grid gap-4">
-      <ElFormItem :label="$t('common.user')">
-        <div class="flex items-center gap-2">
-          <ElAvatar
-            :size="32"
-            :src="buildEveCharacterPortraitUrl(userData?.primary_character_id ?? 0, 32)"
-          />
-          <span>{{ userData?.nickname || $t('userAdmin.unnamed') }}</span>
+    <ElForm
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      label-position="left"
+      label-width="96px"
+      class="user-manage-dialog__form"
+    >
+      <div class="user-manage-dialog__summary">
+        <ElAvatar
+          :size="36"
+          :src="buildEveCharacterPortraitUrl(userData?.primary_character_id ?? 0, 36)"
+        />
+        <div class="user-manage-dialog__summary-content">
+          <div class="user-manage-dialog__summary-name">
+            {{ userData?.nickname || $t('userAdmin.unnamed') }}
+          </div>
+          <div class="user-manage-dialog__summary-meta">
+            {{ $t('common.user') }}
+          </div>
         </div>
-      </ElFormItem>
+      </div>
 
       <template v-if="canEditProfile">
-        <div v-if="canEditRoles" class="text-sm font-medium">
+        <div v-if="canEditRoles" class="user-manage-dialog__section-title">
           {{ t('userAdmin.profileDialog.title') }}
         </div>
 
-        <ElFormItem :label="$t('characters.profile.nickname')" prop="nickname">
-          <ElInput
-            v-model="form.nickname"
-            :maxlength="20"
-            clearable
-            show-word-limit
-            :placeholder="$t('characters.profile.nicknamePlaceholder')"
-          />
-        </ElFormItem>
-
-        <template v-if="canEditContacts">
-          <ElFormItem :label="$t('characters.profile.qq')" prop="qq">
+        <div class="user-manage-dialog__grid">
+          <ElFormItem
+            class="user-manage-dialog__span-2"
+            :label="$t('characters.profile.nickname')"
+            prop="nickname"
+          >
             <ElInput
-              v-model="form.qq"
+              v-model="form.nickname"
               :maxlength="20"
               clearable
               show-word-limit
-              :placeholder="$t('characters.profile.qqPlaceholder')"
+              :placeholder="$t('characters.profile.nicknamePlaceholder')"
             />
           </ElFormItem>
 
-          <ElFormItem :label="$t('characters.profile.discordId')" prop="discordId">
-            <ElInput
-              v-model="form.discordId"
-              :maxlength="20"
-              clearable
-              show-word-limit
-              :placeholder="$t('characters.profile.discordPlaceholder')"
-            />
-          </ElFormItem>
-        </template>
+          <template v-if="canEditContacts">
+            <ElFormItem :label="$t('characters.profile.qq')" prop="qq">
+              <ElInput
+                v-model="form.qq"
+                :maxlength="20"
+                clearable
+                show-word-limit
+                :placeholder="$t('characters.profile.qqPlaceholder')"
+              />
+            </ElFormItem>
+
+            <ElFormItem :label="$t('characters.profile.discordId')" prop="discordId">
+              <ElInput
+                v-model="form.discordId"
+                :maxlength="20"
+                clearable
+                show-word-limit
+                :placeholder="$t('characters.profile.discordPlaceholder')"
+              />
+            </ElFormItem>
+          </template>
+        </div>
       </template>
 
       <ElDivider v-if="canEditProfile && canEditRoles" />
 
       <template v-if="canEditRoles">
-        <div v-if="canEditProfile" class="text-sm font-medium">
+        <div v-if="canEditProfile" class="user-manage-dialog__section-title">
           {{ t('userAdmin.roleManageTitle') }}
         </div>
 
-        <ElFormItem :label="$t('common.role')">
-          <ElCheckboxGroup v-model="selectedRoleCodes">
+        <ElFormItem :label="$t('common.role')" class="user-manage-dialog__roles-form-item">
+          <ElCheckboxGroup v-model="selectedRoleCodes" class="user-manage-dialog__roles">
             <ElCheckbox
               v-for="role in allRoles"
               :key="role.code"
@@ -73,7 +91,7 @@
                 (role.code === 'admin' && !(isSuperAdmin || isEditingSelf))
               "
             >
-              {{ role.name }}
+              {{ getLocalizedRoleName(role) }}
             </ElCheckbox>
           </ElCheckboxGroup>
         </ElFormItem>
@@ -129,7 +147,7 @@
     canEditRoles: false
   })
   const emit = defineEmits<Emits>()
-  const { t } = useI18n()
+  const { t, te } = useI18n()
 
   const validationMessageKeys: Record<UserManageDialogValidationError, string> = {
     nicknameRequired: 'characters.profile.validation.nicknameRequired',
@@ -179,6 +197,11 @@
     }
 
     callback(new Error(t(validationMessageKeys[errorCode])))
+  }
+
+  const getLocalizedRoleName = (role: Api.SystemManage.RoleDefinition) => {
+    const key = `userAdmin.roles.${role.code}`
+    return te(key) ? t(key) : role.name
   }
 
   const rules = computed<FormRules>(() => {
@@ -321,3 +344,78 @@
     }
   }
 </script>
+
+<style scoped>
+  .user-manage-dialog__form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .user-manage-dialog__summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 4px;
+  }
+
+  .user-manage-dialog__summary-content {
+    min-width: 0;
+  }
+
+  .user-manage-dialog__summary-name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .user-manage-dialog__summary-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.2;
+  }
+
+  .user-manage-dialog__section-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .user-manage-dialog__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+  }
+
+  .user-manage-dialog__span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .user-manage-dialog__roles-form-item {
+    margin-bottom: 0;
+  }
+
+  .user-manage-dialog__roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  :deep(.user-manage-dialog__form .el-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.user-manage-dialog__form .el-form-item__label) {
+    padding-right: 10px;
+  }
+
+  @media (max-width: 640px) {
+    .user-manage-dialog__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .user-manage-dialog__span-2 {
+      grid-column: auto;
+    }
+  }
+</style>
