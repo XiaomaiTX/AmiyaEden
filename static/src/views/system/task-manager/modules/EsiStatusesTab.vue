@@ -1,5 +1,18 @@
 <template>
   <div class="task-manager-esi-statuses">
+    <div class="task-manager-esi-statuses__filters">
+      <ElInput
+        v-model="filterForm.character"
+        :placeholder="t('taskManager.esi.filters.character')"
+        clearable
+        style="width: 240px"
+        @change="handleSearch"
+        @clear="handleSearch"
+      />
+      <ElButton type="primary" @click="handleSearch">{{ t('common.search') }}</ElButton>
+      <ElButton @click="resetFilters">{{ t('common.reset') }}</ElButton>
+    </div>
+
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader
         v-model:columns="statusColumnChecks"
@@ -57,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElButton, ElCard, ElMessage, ElOption, ElSelect, ElTag } from 'element-plus'
+  import { ElButton, ElCard, ElInput, ElMessage, ElOption, ElSelect, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { h } from 'vue'
   import { formatTime } from '@utils/common'
@@ -109,7 +122,7 @@
 
   const tasks = ref<TaskInfo[]>([])
   const runningTasks = ref(new Set<string>())
-  const filterForm = reactive({ task_name: '', status: '' })
+  const filterForm = reactive({ task_name: '', status: '', character: '' })
 
   const {
     columns: statusColumns,
@@ -139,6 +152,13 @@
           label: t('taskManager.columns.description'),
           minWidth: 160,
           showOverflowTooltip: true
+        },
+        {
+          prop: 'character_name',
+          label: t('common.name'),
+          width: 180,
+          showOverflowTooltip: true,
+          formatter: (row: TaskStatus) => row.character_name || '-'
         },
         {
           prop: 'character_id',
@@ -217,10 +237,18 @@
   function handleSearch() {
     Object.assign(searchParams, {
       current: 1,
+      character: filterForm.character || undefined,
       task_name: filterForm.task_name || undefined,
       status: filterForm.status || undefined
     })
     getData()
+  }
+
+  function resetFilters() {
+    filterForm.character = ''
+    filterForm.task_name = ''
+    filterForm.status = ''
+    handleSearch()
   }
 
   async function handleRunTask(row: TaskStatus) {
@@ -257,6 +285,13 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+
+  .task-manager-esi-statuses__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
   }
 
   .task-manager-esi-statuses__header-group {

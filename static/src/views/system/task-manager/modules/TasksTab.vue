@@ -20,10 +20,28 @@
         <ElFormItem :label="t('taskManager.fields.defaultCron')">
           <span class="font-mono text-sm">{{ scheduleForm.defaultCron || '-' }}</span>
         </ElFormItem>
+        <ElFormItem :label="t('taskManager.fields.scheduleMode')">
+          <ElRadioGroup v-model="scheduleForm.mode">
+            <ElRadioButton value="cron">{{ t('taskManager.mode.cron') }}</ElRadioButton>
+            <ElRadioButton value="every">{{ t('taskManager.mode.every') }}</ElRadioButton>
+          </ElRadioGroup>
+        </ElFormItem>
+        <template v-if="scheduleForm.mode === 'every'">
+          <ElFormItem :label="t('taskManager.fields.intervalValue')">
+            <ElInputNumber v-model="scheduleForm.intervalValue" :min="1" :step="1" />
+          </ElFormItem>
+          <ElFormItem :label="t('taskManager.fields.intervalUnit')">
+            <ElSelect v-model="scheduleForm.intervalUnit">
+              <ElOption :label="t('taskManager.intervalUnits.m')" value="m" />
+              <ElOption :label="t('taskManager.intervalUnits.h')" value="h" />
+            </ElSelect>
+          </ElFormItem>
+        </template>
         <ElFormItem :label="t('taskManager.fields.cronExpr')">
           <ElInput
             v-model="scheduleForm.cronExpr"
             :placeholder="t('taskManager.placeholders.cronExpr')"
+            :disabled="scheduleForm.mode === 'every'"
           />
         </ElFormItem>
       </ElForm>
@@ -53,8 +71,13 @@
     ElForm,
     ElFormItem,
     ElInput,
+    ElInputNumber,
     ElMessage,
     ElMessageBox,
+    ElOption,
+    ElRadioButton,
+    ElRadioGroup,
+    ElSelect,
     ElTag
   } from 'element-plus'
   import { computed, h } from 'vue'
@@ -72,9 +95,14 @@
   const scheduleForm = reactive({
     name: '',
     displayName: '',
+    mode: 'cron' as 'cron' | 'every',
     cronExpr: '',
-    defaultCron: ''
+    defaultCron: '',
+    intervalValue: 1,
+    intervalUnit: 'm' as 'm' | 'h'
   })
+
+  const everyExprPattern = /^@every\s+(\d+)([mh])$/i
 
   const canUpdateSchedule = computed(() => {
     const roles = userStore.info?.roles ?? []
@@ -127,10 +155,16 @@
   const canRunTask = (task: Api.TaskManager.TaskItem) => task.runnable
 
   const openScheduleDialog = (task: Api.TaskManager.TaskItem) => {
+    const activeCronExpr = task.cron_expr || task.default_cron
+    const everyMatch = activeCronExpr.match(everyExprPattern)
+
     scheduleForm.name = task.name
     scheduleForm.displayName = taskDisplayName(task)
-    scheduleForm.cronExpr = task.cron_expr || task.default_cron
+    scheduleForm.cronExpr = activeCronExpr
     scheduleForm.defaultCron = task.default_cron
+    scheduleForm.mode = everyMatch ? 'every' : 'cron'
+    scheduleForm.intervalValue = everyMatch ? Number(everyMatch[1]) : 1
+    scheduleForm.intervalUnit = everyMatch ? (everyMatch[2].toLowerCase() as 'm' | 'h') : 'm'
     scheduleDialogVisible.value = true
   }
 
@@ -296,7 +330,11 @@
   }
 
   async function handleScheduleUpdate() {
-    const cronExpr = scheduleForm.cronExpr.trim()
+    const cronExpr =
+      scheduleForm.mode === 'every'
+        ? `@every ${scheduleForm.intervalValue}${scheduleForm.intervalUnit}`
+        : scheduleForm.cronExpr.trim()
+
     if (!cronExpr) {
       ElMessage.error(t('taskManager.messages.scheduleRequired'))
       return

@@ -465,8 +465,19 @@
       "status": "筛选状态"
     },
     "fields": {
+      "scheduleMode": "调度方式",
+      "intervalValue": "间隔数值",
+      "intervalUnit": "间隔单位",
       "cronExpr": "Cron 表达式",
       "defaultCron": "默认调度"
+    },
+    "mode": {
+      "cron": "Cron 表达式",
+      "every": "固定间隔"
+    },
+    "intervalUnits": {
+      "m": "分钟",
+      "h": "小时"
     },
     "placeholders": {
       "cronExpr": "请输入 6 段 Cron 表达式或 @every 间隔"
@@ -537,6 +548,7 @@
         "nextRun": "下次运行"
       },
       "filters": {
+        "character": "按人物 ID 或名称筛选",
         "taskName": "全部任务",
         "status": "全部状态"
       },
