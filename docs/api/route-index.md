@@ -375,8 +375,8 @@ source_of_truth:
 | PUT | `/system/newbro/settings` | 更新帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
 | GET | `/system/newbro/captains` | 队长绩效列表 | `RequireRole(admin)` |
 | GET | `/system/newbro/captains/:user_id` | 队长详情（概览、关联玩家、归因明细） | `RequireRole(admin)` |
-| GET | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史 | `RequireRole(admin)` |
-| GET | `/system/newbro/rewards` | 队长奖励发放历史 | `RequireRole(admin)` |
+| GET | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史 | `RequireRole(admin, captain)` |
+| GET | `/system/newbro/rewards` | 队长奖励发放历史 | `RequireRole(admin, captain)` |
 
 ### Shop Admin
 

@@ -1,16 +1,10 @@
 <template>
   <div class="mentor-manage-page art-full-height">
-    <ElCard shadow="never" class="mb-4">
-      <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <div class="text-lg font-semibold">{{ t('newbro.mentorManage.title') }}</div>
-          <div class="text-sm text-gray-500 mt-1">{{ t('newbro.mentorManage.subtitle') }}</div>
-        </div>
-        <ElButton class="min-w-[120px]" :disabled="refreshDisabled" @click="handleRefresh">{{
-          $t('common.refresh')
-        }}</ElButton>
-      </div>
-    </ElCard>
+    <div class="mb-4 flex justify-end">
+      <ElButton class="min-w-[120px]" :disabled="refreshDisabled" @click="handleRefresh">{{
+        $t('common.refresh')
+      }}</ElButton>
+    </div>
 
     <ElTabs v-model="activeTab" @tab-change="handleTabChange">
       <ElTabPane :label="t('newbro.mentorManage.relationshipsTab')" name="relationships">

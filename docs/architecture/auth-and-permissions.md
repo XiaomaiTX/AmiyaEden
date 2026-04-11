@@ -182,7 +182,8 @@ source_of_truth:
 - `新人选队长` 不是纯职权权限，而是 `Login + 当前新人资格`
 - `新人选导师` 不是纯职权权限，而是 `Login + 当前导师学员资格`
 - `新人选导师` 页面入口依赖 `/api/v1/me` 返回的 `is_mentor_mentee_eligible` 做路由与菜单过滤；页面加载后仍会读取 `/api/v1/mentor/me` 做二次 UX 校验，后端服务层也会再次校验
-- `队长帮扶` 需要真实系统职权 `captain`；普通 `admin` 应使用 `帮扶管理` 页面，而不是把 `admin` 当作 captain 的别名
+- `队长帮扶` 需要真实系统职权 `captain`；普通 `admin` 应使用 `帮扶记录` 页面，而不是把 `admin` 当作 captain 的别名
+- `帮扶记录` 页面可对 `admin` / `super_admin` 提供完整管理视图，同时对仅有 `captain` 的用户提供只读入口；当前放宽的是全量 `奖励发放历史` 与 `关系变更历史`，绩效与详情仍不开放
 - `导师帮扶` 需要真实系统职权 `mentor`；普通 `admin` 不能访问导师 dashboard 接口
 - `导师管理` 与 `导师奖励阶段` 仍属于 `admin` 管理面，不是 mentor 的延伸权限
 
