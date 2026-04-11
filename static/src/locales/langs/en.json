@@ -334,9 +334,10 @@
       "contracts": "Contracts"
     },
     "hallOfFame": {
-      "title": "Fuxi Hall of Heroes",
-      "temple": "Main Hall",
-      "manage": "Manage"
+      "title": "Fuxi Center",
+      "temple": "Fuxi Hall of Heroes",
+      "manage": "Edit Hall of Heroes",
+      "currentManage": "Current Fuxi Management"
     }
   },
   "hallOfFame": {
@@ -408,6 +409,37 @@
       "selectCard": "Click a card on the canvas to edit",
       "noCardSelected": "No card selected",
       "uploadBackground": "Upload Background"
+    },
+    "currentManage": {
+      "title": "Current Fuxi Management",
+      "emptyTitle": "No Fuxi Admins Yet",
+      "emptySubtitle": "Admins can click \"Add Tier\" to start building the directory",
+      "addTier": "Add Tier",
+      "editTier": "Edit Tier Name",
+      "deleteTier": "Delete Tier",
+      "deleteTierConfirm": "Deleting this tier will also remove all its admins. Continue?",
+      "addAdmin": "Add Admin",
+      "editAdmin": "Edit",
+      "deleteAdmin": "Delete",
+      "deleteAdminConfirm": "Delete this admin?",
+      "tierEmpty": "No admins in this tier",
+      "tierName": "Tier Name",
+      "tierNamePlaceholder": "e.g. Senior Leadership",
+      "tierNameRequired": "Tier name cannot be empty",
+      "tierLabel": "Tier",
+      "tierPlaceholder": "Select tier",
+      "tierRequired": "Please select a tier",
+      "nameLabel": "Name",
+      "nameRequired": "Name cannot be empty",
+      "titleLabel": "Title",
+      "characterIdLabel": "Character ID",
+      "characterIdPlaceholder": "Enter EVE character ID to show portrait",
+      "contactQqLabel": "QQ",
+      "contactDiscordLabel": "Discord",
+      "baseFontSize": "Font Size",
+      "saveFailed": "Save failed",
+      "saveSuccess": "Saved successfully",
+      "deleteSuccess": "Deleted successfully"
     }
   },
   "taskManager": {

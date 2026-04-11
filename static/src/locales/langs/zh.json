@@ -334,9 +334,10 @@
       "mentorRewardStages": "导师奖励阶段"
     },
     "hallOfFame": {
-      "title": "伏羲名人堂",
-      "temple": "主殿",
-      "manage": "管理"
+      "title": "伏羲中心",
+      "temple": "伏羲名人堂",
+      "manage": "编辑名人堂",
+      "currentManage": "当前伏羲管理"
     }
   },
   "hallOfFame": {
@@ -408,6 +409,37 @@
       "selectCard": "点击画布上的卡片进行编辑",
       "noCardSelected": "未选中卡片",
       "uploadBackground": "上传背景图"
+    },
+    "currentManage": {
+      "title": "当前伏羲管理",
+      "emptyTitle": "暂无伏羲管理员",
+      "emptySubtitle": "管理员可点击「添加层级」开始构建名录",
+      "addTier": "添加层级",
+      "editTier": "编辑层级名称",
+      "deleteTier": "删除层级",
+      "deleteTierConfirm": "删除该层级将同时删除其下所有管理员，确定继续？",
+      "addAdmin": "添加管理员",
+      "editAdmin": "编辑",
+      "deleteAdmin": "删除",
+      "deleteAdminConfirm": "确定删除该管理员？",
+      "tierEmpty": "该层级暂无管理员",
+      "tierName": "层级名称",
+      "tierNamePlaceholder": "例：高层管理",
+      "tierNameRequired": "层级名称不能为空",
+      "tierLabel": "所属层级",
+      "tierPlaceholder": "请选择层级",
+      "tierRequired": "请选择所属层级",
+      "nameLabel": "姓名",
+      "nameRequired": "姓名不能为空",
+      "titleLabel": "职位",
+      "characterIdLabel": "角色 ID",
+      "characterIdPlaceholder": "输入 EVE 角色 ID 以显示头像",
+      "contactQqLabel": "QQ",
+      "contactDiscordLabel": "Discord",
+      "baseFontSize": "字体大小",
+      "saveFailed": "保存失败",
+      "saveSuccess": "保存成功",
+      "deleteSuccess": "删除成功"
     }
   },
   "taskManager": {
