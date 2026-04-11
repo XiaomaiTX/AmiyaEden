@@ -190,6 +190,81 @@ func TestRunMyCharacterTask_RejectsMissingParameters(t *testing.T) {
 	}
 }
 
+func TestGetStatuses_FiltersByCharacterIDOrName(t *testing.T) {
+	setupTest(t)
+	defer teardownTest(t)
+
+	db := newESIRefreshHandlerTestDB(t)
+	seedUserWithCharacter(t, db, 1, 9001, "Amiya Main")
+	seedUserWithCharacter(t, db, 2, 9002, "Kal'tsit Alt")
+
+	setupGlobalDependencies(t, db)
+
+	queue := setupMockESIQueue(t, db)
+	setQueueStatusesForTest(queue, map[string]*esi.TaskStatus{
+		"character_skill:9001": {
+			TaskName:    "character_skill",
+			Description: "Character Skill",
+			CharacterID: 9001,
+			Priority:    50,
+			Status:      "success",
+		},
+		"character_wallet:9002": {
+			TaskName:    "character_wallet",
+			Description: "Character Wallet",
+			CharacterID: 9002,
+			Priority:    50,
+			Status:      "pending",
+		},
+	})
+	getESIQueueWasSet = true
+	jobs.SetTestESIQueue(queue)
+
+	recorder := performGetStatusesRequest(t, "/api/v1/tasks/esi/statuses?character=amiya")
+
+	var result esiRefreshHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.Code != response.CodeOK {
+		t.Fatalf("expected success code, got code=%d, msg=%s", result.Code, result.Msg)
+	}
+
+	var page struct {
+		List []struct {
+			CharacterID   int64  `json:"character_id"`
+			CharacterName string `json:"character_name"`
+		} `json:"list"`
+		Total int64 `json:"total"`
+	}
+	if err := json.Unmarshal(result.Data, &page); err != nil {
+		t.Fatalf("decode page data: %v", err)
+	}
+	if page.Total != 1 {
+		t.Fatalf("expected total=1 for character-name filter, got %d", page.Total)
+	}
+	if len(page.List) != 1 || page.List[0].CharacterID != 9001 || page.List[0].CharacterName != "Amiya Main" {
+		t.Fatalf("unexpected filtered result: %+v", page.List)
+	}
+
+	recorder = performGetStatusesRequest(t, "/api/v1/tasks/esi/statuses?character=9002")
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.Code != response.CodeOK {
+		t.Fatalf("expected success code, got code=%d, msg=%s", result.Code, result.Msg)
+	}
+	if err := json.Unmarshal(result.Data, &page); err != nil {
+		t.Fatalf("decode page data: %v", err)
+	}
+	if page.Total != 1 {
+		t.Fatalf("expected total=1 for character-id filter, got %d", page.Total)
+	}
+	if len(page.List) != 1 || page.List[0].CharacterID != 9002 || page.List[0].CharacterName != "Kal'tsit Alt" {
+		t.Fatalf("unexpected filtered result: %+v", page.List)
+	}
+}
+
 func performRunMyCharacterTaskRequest(t *testing.T, userID uint, characterID int64, taskName string) *httptest.ResponseRecorder {
 	t.Helper()
 
@@ -208,6 +283,19 @@ func performRunMyCharacterTaskRequest(t *testing.T, userID uint, characterID int
 	ctx.Set("roles", []string{model.RoleUser})
 
 	NewESIRefreshHandler().RunMyCharacterTask(ctx)
+
+	return recorder
+}
+
+func performGetStatusesRequest(t *testing.T, target string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, target, nil)
+
+	NewESIRefreshHandler().GetStatuses(ctx)
 
 	return recorder
 }
@@ -297,6 +385,10 @@ func setupMockESIQueue(t *testing.T, db *gorm.DB) *esi.Queue {
 	queue := esi.NewQueue(mockSSO, mockCharRepo)
 	queue.SetConcurrency(1)
 	return queue
+}
+
+func setQueueStatusesForTest(queue *esi.Queue, statuses map[string]*esi.TaskStatus) {
+	queue.SetStatusesForTest(statuses)
 }
 
 type mockTokenService struct{}
