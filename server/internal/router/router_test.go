@@ -10,6 +10,8 @@ import (
 	"amiya-eden/internal/taskregistry"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -158,6 +160,19 @@ func TestSkillPlanReadAllowsLoggedInUserAndWriteStillRequiresManager(t *testing.
 	assertRouteStatus(t, managerRouter, http.MethodPut, "/skill-planning/skill-plans/reorder", http.StatusNoContent)
 	assertRouteStatus(t, managerRouter, http.MethodPut, "/skill-planning/skill-plans/1", http.StatusNoContent)
 	assertRouteStatus(t, managerRouter, http.MethodDelete, "/skill-planning/skill-plans/1", http.StatusNoContent)
+}
+
+func TestFuxiAdminDirectoryReadUsesLoggedInRouteGroup(t *testing.T) {
+	source, err := os.ReadFile("router.go")
+	if err != nil {
+		t.Fatalf("read router.go: %v", err)
+	}
+	if !containsSnippet(string(source), `login.Group("/fuxi-admins")`) {
+		t.Fatal("expected fuxi-admin directory read route to be registered under login group")
+	}
+	if containsSnippet(string(source), `api.GET("/fuxi-admins", fuxiAdminH.GetDirectory)`) {
+		t.Fatal("expected anonymous fuxi-admin directory GET route to be removed")
+	}
 }
 
 func TestSystemWebhookRequiresSuperAdmin(t *testing.T) {
@@ -454,4 +469,8 @@ func containsRoleCode(codes []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func containsSnippet(source string, snippet string) bool {
+	return strings.Contains(source, snippet)
 }

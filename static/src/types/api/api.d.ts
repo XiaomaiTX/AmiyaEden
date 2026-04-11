@@ -2553,6 +2553,13 @@ declare namespace Api {
     interface Config {
       id: number
       base_font_size: number
+      card_width: number
+      page_background_color: string
+      card_background_color: string
+      card_border_color: string
+      tier_title_color: string
+      name_text_color: string
+      body_text_color: string
       created_at: string
       updated_at: string
     }
@@ -2570,6 +2577,7 @@ declare namespace Api {
       tier_id: number
       name: string
       title: string
+      description: string
       contact_qq: string
       contact_discord: string
       character_id: number
@@ -2588,6 +2596,13 @@ declare namespace Api {
 
     interface UpdateConfigParams {
       base_font_size?: number
+      card_width?: number
+      page_background_color?: string
+      card_background_color?: string
+      card_border_color?: string
+      tier_title_color?: string
+      name_text_color?: string
+      body_text_color?: string
     }
 
     interface CreateTierParams {
@@ -2602,6 +2617,7 @@ declare namespace Api {
       tier_id: number
       name: string
       title?: string
+      description?: string
       contact_qq?: string
       contact_discord?: string
       character_id?: number
@@ -2611,6 +2627,7 @@ declare namespace Api {
       tier_id?: number
       name?: string
       title?: string
+      description?: string
       contact_qq?: string
       contact_discord?: string
       character_id?: number
