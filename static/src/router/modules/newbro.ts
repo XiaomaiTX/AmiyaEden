@@ -59,7 +59,7 @@ export const newbroRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.newbro.manage',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin', 'captain']
       }
     },
     {

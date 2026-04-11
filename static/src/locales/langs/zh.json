@@ -289,7 +289,7 @@
       "selectMentor": "新人选导师",
       "captain": "我是队长",
       "mentor": "我是导师",
-      "manage": "帮扶管理",
+      "manage": "帮扶记录",
       "mentorManage": "导师管理"
     },
     "role": {
@@ -1182,7 +1182,7 @@
       "rejectSuccess": "申请已拒绝"
     },
     "manage": {
-      "title": "帮扶管理",
+      "title": "帮扶记录",
       "subtitle": "管理员可以查看全部队长绩效，归因同步与奖励处理已迁移到任务管理。",
       "performanceTab": "队长绩效",
       "rewardHistoryTab": "奖励发放历史",

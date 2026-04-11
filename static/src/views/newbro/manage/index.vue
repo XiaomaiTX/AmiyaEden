@@ -1,16 +1,11 @@
 <template>
   <div class="newbro-manage-page art-full-height">
-    <ElCard shadow="never" class="mb-4">
-      <div>
-        <div>
-          <div class="text-lg font-semibold">{{ t('newbro.manage.title') }}</div>
-          <div class="text-sm text-gray-500 mt-1">{{ t('newbro.manage.subtitle') }}</div>
-        </div>
-      </div>
-    </ElCard>
-
     <ElTabs v-model="activeTab">
-      <ElTabPane :label="t('newbro.manage.performanceTab')" name="performance">
+      <ElTabPane
+        v-if="managePageTabs.includes('performance')"
+        :label="t('newbro.manage.performanceTab')"
+        name="performance"
+      >
         <ElCard shadow="never" class="mb-4">
           <template #header>
             <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -128,7 +123,11 @@
         </ElCard>
       </ElTabPane>
 
-      <ElTabPane :label="t('newbro.manage.rewardHistoryTab')" name="rewards">
+      <ElTabPane
+        v-if="managePageTabs.includes('rewards')"
+        :label="t('newbro.manage.rewardHistoryTab')"
+        name="rewards"
+      >
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
           <ElCard shadow="never">
             <div class="text-sm text-gray-500">{{ t('newbro.manage.rewardSettlementCount') }}</div>
@@ -181,7 +180,11 @@
         </ElCard>
       </ElTabPane>
 
-      <ElTabPane :label="t('newbro.manage.affiliationHistoryTab')" name="history">
+      <ElTabPane
+        v-if="managePageTabs.includes('history')"
+        :label="t('newbro.manage.affiliationHistoryTab')"
+        name="history"
+      >
         <ElCard shadow="never" class="mb-4">
           <template #header>
             <span>{{ t('newbro.manage.affiliationHistoryTitle') }}</span>
@@ -241,6 +244,7 @@
   import type { ColumnOption } from '@/types/component'
   import { useI18n } from 'vue-i18n'
   import { useEnterSearch } from '@/hooks/core/useEnterSearch'
+  import { useUserStore } from '@/store/modules/user'
   import {
     fetchAdminAffiliationHistory,
     fetchAdminCaptainDetail,
@@ -254,8 +258,10 @@
   const { t } = useI18n()
   const { formatDateTime, formatIsk, formatCredit, formatPercentage } = useNewbroFormatters()
   const { createEnterSearchHandler } = useEnterSearch()
+  const userStore = useUserStore()
 
-  const activeTab = ref('performance')
+  const captainReadonlyDefaultTab = 'rewards'
+  const activeTab = ref<'performance' | 'rewards' | 'history'>('performance')
   const loadingCaptains = ref(false)
   const loadingHistory = ref(false)
   const loadingRewards = ref(false)
@@ -275,6 +281,18 @@
     total_credited_value: 0,
     last_processed_at: null
   })
+  const isCaptainReadonly = computed(() => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    return (
+      roles.includes('captain') && !roles.some((role) => ['super_admin', 'admin'].includes(role))
+    )
+  })
+  const canViewPerformanceTab = computed(() => !isCaptainReadonly.value)
+  const managePageTabs = computed(() =>
+    canViewPerformanceTab.value
+      ? ['performance', 'rewards', 'history']
+      : [captainReadonlyDefaultTab, 'history']
+  )
   const historyFilters = reactive({
     captainSearch: '',
     playerSearch: '',
@@ -432,6 +450,12 @@
   ])
 
   const loadCaptains = async () => {
+    if (!canViewPerformanceTab.value) {
+      captains.value = []
+      detail.value = null
+      page.total = 0
+      return
+    }
     loadingCaptains.value = true
     try {
       const data = await fetchAdminCaptainList({
@@ -450,14 +474,15 @@
     loadingHistory.value = true
     try {
       const [changeStartDate, changeEndDate] = historyFilters.dateRange
-      const data = await fetchAdminAffiliationHistory({
+      const requestParams = {
         current: historyPage.current,
         size: historyPage.size,
         captain_search: historyFilters.captainSearch || undefined,
         player_search: historyFilters.playerSearch || undefined,
         change_start_date: changeStartDate || undefined,
         change_end_date: changeEndDate || undefined
-      })
+      }
+      const data = await fetchAdminAffiliationHistory(requestParams)
       historyRows.value = data.list
       historyPage.total = data.total
       historyLoaded.value = true
@@ -469,11 +494,12 @@
   const loadRewards = async () => {
     loadingRewards.value = true
     try {
-      const data = await fetchAdminRewardSettlements({
+      const requestParams = {
         current: rewardPage.current,
         size: rewardPage.size,
         keyword: rewardKeyword.value.trim() || undefined
-      })
+      }
+      const data = await fetchAdminRewardSettlements(requestParams)
       rewardRows.value = data.list
       rewardSummary.value = data.summary
       rewardPage.total = data.total
@@ -564,6 +590,10 @@
   }
 
   watch(activeTab, (value) => {
+    if (isCaptainReadonly.value && value === 'performance') {
+      activeTab.value = captainReadonlyDefaultTab
+      return
+    }
     if (value === 'rewards') {
       void ensureRewardsLoaded()
     }
@@ -573,6 +603,11 @@
   })
 
   onMounted(() => {
+    if (isCaptainReadonly.value) {
+      activeTab.value = captainReadonlyDefaultTab
+      // watcher handles ensureRewardsLoaded when tab changes to captainReadonlyDefaultTab
+      return
+    }
     loadCaptains()
   })
 </script>
