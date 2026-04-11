@@ -17,4 +17,7 @@ test('manage canvas exposes a synced top scrollbar for wide canvases', () => {
   assert.match(source, /handleTopScrollbarScroll/)
   assert.match(source, /handleViewportScroll/)
   assert.match(source, /target\.scrollLeft = source\.scrollLeft/)
+  assert.match(source, /min-width:\s*0/)
+  assert.match(source, /overflow-x:\s*auto/)
+  assert.match(source, /overflow-y:\s*auto/)
 })

@@ -28,6 +28,14 @@ test('hall of fame manage page exists and wires admin APIs into the editor layou
   assert.match(source, /dirty/)
 })
 
+test('hall of fame manage page does not render a standalone title card', () => {
+  const source = readFileSync(fileUrl, 'utf8')
+
+  assert.doesNotMatch(source, /hallOfFame\.manage\.eyebrow/)
+  assert.doesNotMatch(source, /hallOfFame\.manage\.summary/)
+  assert.doesNotMatch(source, /<section class="hall-of-fame-manage__hero">/)
+})
+
 test('hall of fame manage page flushes editor drafts into a dedicated preview snapshot', () => {
   const source = readFileSync(fileUrl, 'utf8')
 

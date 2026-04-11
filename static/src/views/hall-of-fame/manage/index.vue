@@ -1,15 +1,5 @@
 <template>
   <div class="hall-of-fame-manage art-full-height" v-loading="loading">
-    <section class="hall-of-fame-manage__hero">
-      <div>
-        <p class="hall-of-fame-manage__eyebrow">{{ t('hallOfFame.manage.eyebrow') }}</p>
-        <h1>{{ t('menus.hallOfFame.manage') }}</h1>
-      </div>
-      <p class="hall-of-fame-manage__summary">
-        {{ t('hallOfFame.manage.summary') }}
-      </p>
-    </section>
-
     <CanvasToolbar
       v-if="config"
       :canvas-width="config.canvas_width"
@@ -385,6 +375,7 @@
   .hall-of-fame-manage {
     display: flex;
     min-height: 100%;
+    min-width: 0;
     flex-direction: column;
     gap: 18px;
     padding: 24px;
@@ -430,6 +421,7 @@
   .hall-of-fame-manage__workspace {
     display: grid;
     min-height: 0;
+    min-width: 0;
     flex: 1;
     grid-template-columns: minmax(0, 1fr) 340px;
     gap: 18px;

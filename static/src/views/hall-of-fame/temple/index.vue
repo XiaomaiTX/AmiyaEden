@@ -68,6 +68,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100%;
+    min-width: 0;
     padding: 24px;
     background:
       radial-gradient(circle at top left, rgba(246, 206, 112, 0.16), transparent 24%),
@@ -79,22 +80,28 @@
     display: flex;
     flex: 1;
     min-height: 0;
+    min-width: 0;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 32px;
     background: rgba(7, 15, 26, 0.6);
   }
 
   .hall-of-fame-temple__canvas-wrap {
+    width: 100%;
     height: 100%;
     min-height: 0;
-    overflow: auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: auto;
   }
 
   .hall-of-fame-temple__card :deep(.el-card__body) {
     display: flex;
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: auto;
   }
 
   .hall-of-fame-temple__empty {
