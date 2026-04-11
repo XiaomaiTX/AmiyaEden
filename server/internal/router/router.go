@@ -502,8 +502,11 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// ─── 伏羲管理人员名录 ───
 	fuxiAdminH := handler.NewFuxiAdminHandler()
 
-	// 公开端点（无需认证，访客可访问）
-	api.GET("/fuxi-admins", fuxiAdminH.GetDirectory)
+	// 登录用户端点（无需管理权限）
+	loginFuxiAdmin := login.Group("/fuxi-admins")
+	{
+		loginFuxiAdmin.GET("", fuxiAdminH.GetDirectory)
+	}
 
 	// 管理端点（admin group 已要求 RoleAdmin）
 	adminFuxiAdmin := admin.Group("/fuxi-admins")

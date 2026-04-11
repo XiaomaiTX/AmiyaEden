@@ -10,13 +10,11 @@
   >
     <ElForm :model="form" label-width="90px">
       <ElFormItem :label="t('hallOfFame.currentManage.tierLabel')" required>
-        <ElSelect v-model="form.tierId" :placeholder="t('hallOfFame.currentManage.tierPlaceholder')">
-          <ElOption
-            v-for="tier in tiers"
-            :key="tier.id"
-            :label="tier.name"
-            :value="tier.id"
-          />
+        <ElSelect
+          v-model="form.tierId"
+          :placeholder="t('hallOfFame.currentManage.tierPlaceholder')"
+        >
+          <ElOption v-for="tier in tiers" :key="tier.id" :label="tier.name" :value="tier.id" />
         </ElSelect>
       </ElFormItem>
 
@@ -26,6 +24,15 @@
 
       <ElFormItem :label="t('hallOfFame.currentManage.titleLabel')">
         <ElInput v-model="form.title" />
+      </ElFormItem>
+
+      <ElFormItem :label="t('hallOfFame.currentManage.descriptionLabel')">
+        <ElInput
+          v-model="form.description"
+          type="textarea"
+          :rows="3"
+          :placeholder="t('hallOfFame.currentManage.descriptionPlaceholder')"
+        />
       </ElFormItem>
 
       <ElFormItem :label="t('hallOfFame.currentManage.characterIdLabel')">
@@ -67,6 +74,7 @@
   const props = defineProps<{
     modelValue: boolean
     admin: Api.FuxiAdmin.Admin | null
+    defaultTierId: number | null
     tiers: Api.FuxiAdmin.Tier[]
   }>()
 
@@ -82,6 +90,7 @@
     tierId: 0,
     name: '',
     title: '',
+    description: '',
     characterId: 0,
     contactQq: '',
     contactDiscord: ''
@@ -95,9 +104,10 @@
     () => props.modelValue,
     (open) => {
       if (open) {
-        form.tierId = props.admin?.tier_id ?? props.tiers[0]?.id ?? 0
+        form.tierId = props.admin?.tier_id ?? props.defaultTierId ?? props.tiers[0]?.id ?? 0
         form.name = props.admin?.name ?? ''
         form.title = props.admin?.title ?? ''
+        form.description = props.admin?.description ?? ''
         form.characterId = props.admin?.character_id ?? 0
         form.contactQq = props.admin?.contact_qq ?? ''
         form.contactDiscord = props.admin?.contact_discord ?? ''
@@ -106,7 +116,15 @@
   )
 
   function handleClosed() {
-    Object.assign(form, { tierId: 0, name: '', title: '', characterId: 0, contactQq: '', contactDiscord: '' })
+    Object.assign(form, {
+      tierId: 0,
+      name: '',
+      title: '',
+      description: '',
+      characterId: 0,
+      contactQq: '',
+      contactDiscord: ''
+    })
   }
 
   async function handleSubmit() {
@@ -124,6 +142,7 @@
         tier_id: form.tierId,
         name: form.name.trim(),
         title: form.title.trim(),
+        description: form.description.trim(),
         character_id: form.characterId || 0,
         contact_qq: form.contactQq.trim(),
         contact_discord: form.contactDiscord.trim()
@@ -134,7 +153,9 @@
       emit('saved', saved)
       emit('update:modelValue', false)
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('hallOfFame.currentManage.saveFailed'))
+      ElMessage.error(
+        error instanceof Error ? error.message : t('hallOfFame.currentManage.saveFailed')
+      )
     } finally {
       saving.value = false
     }

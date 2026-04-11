@@ -1,6 +1,6 @@
 import request from '@/utils/http'
 
-// ─── Public ───
+// ─── Logged-in directory view ───
 
 export function fetchFuxiAdminDirectory() {
   return request.get<Api.FuxiAdmin.DirectoryResponse>({

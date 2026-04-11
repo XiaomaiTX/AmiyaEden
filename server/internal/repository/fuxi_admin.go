@@ -32,8 +32,18 @@ func (r *FuxiAdminRepository) GetConfig() (*model.FuxiAdminConfig, error) {
 func (r *FuxiAdminRepository) UpsertConfig(cfg *model.FuxiAdminConfig) error {
 	cfg.ID = 1
 	return global.DB.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"base_font_size", "updated_at"}),
+		Columns: []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"base_font_size",
+			"card_width",
+			"page_background_color",
+			"card_background_color",
+			"card_border_color",
+			"tier_title_color",
+			"name_text_color",
+			"body_text_color",
+			"updated_at",
+		}),
 	}).Create(cfg).Error
 }
 
