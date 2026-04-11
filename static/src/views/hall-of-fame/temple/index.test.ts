@@ -18,4 +18,6 @@ test('hall of fame temple page exists and loads temple data into a canvas compon
   assert.doesNotMatch(source, /menus\.hallOfFame\.temple/)
   assert.doesNotMatch(source, /hallOfFame\.temple\.eyebrow/)
   assert.match(source, /onMounted\(/)
+  assert.match(source, /overflow-x:\s*auto/)
+  assert.match(source, /overflow-y:\s*auto/)
 })

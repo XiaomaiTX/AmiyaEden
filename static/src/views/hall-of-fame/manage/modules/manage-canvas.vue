@@ -99,6 +99,7 @@
 <style scoped>
   .manage-canvas-shell {
     min-height: 0;
+    min-width: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -121,7 +122,9 @@
   .manage-canvas-shell__viewport {
     height: 100%;
     min-height: 720px;
-    overflow: auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: auto;
     padding: 16px;
   }
 
