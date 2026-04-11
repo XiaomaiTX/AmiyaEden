@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 
 import {
   buildUserManageUpdatePayload,
@@ -38,6 +39,27 @@ test('user manage dialog payload excludes contacts when contact editing is disab
   assert.deepEqual(payload, {
     nickname: 'Test User'
   })
+})
+
+test('user manage dialog uses a compact left-labeled form layout', () => {
+  const source = readFileSync(new URL('./user-manage-dialog.vue', import.meta.url), 'utf8')
+
+  assert.match(source, /label-position="left"/)
+  assert.match(source, /class="user-manage-dialog__grid"/)
+  assert.doesNotMatch(source, /label-position="top"/)
+})
+
+test('user manage dialog localizes role labels through the component i18n scope', () => {
+  const source = readFileSync(new URL('./user-manage-dialog.vue', import.meta.url), 'utf8')
+
+  assert.match(source, /const \{ t, te \} = useI18n\(\)/)
+  assert.match(
+    source,
+    /const getLocalizedRoleName = \(role: Api\.SystemManage\.RoleDefinition\) =>/
+  )
+  assert.match(source, /return te\(key\) \? t\(key\) : role\.name/)
+  assert.match(source, /\{\{ getLocalizedRoleName\(role\) \}\}/)
+  assert.doesNotMatch(source, /\{\{ role\.name \}\}/)
 })
 
 test('user manage dialog nickname validation still requires a non-empty nickname', () => {

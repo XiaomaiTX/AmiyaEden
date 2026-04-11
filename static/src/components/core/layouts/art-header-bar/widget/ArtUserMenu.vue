@@ -29,9 +29,9 @@
             <span class="block text-sm font-medium text-g-800 truncate">{{
               userInfo.userName
             }}</span>
-            <span class="block mt-0.5 text-xs text-g-500 truncate">{{
-              userInfo.roles?.[0] || ''
-            }}</span>
+            <span class="block mt-0.5 text-xs leading-5 text-g-500 whitespace-normal break-words">
+              {{ localizedRoleNames }}
+            </span>
           </div>
         </div>
         <ul class="py-4 mt-3 border-t border-g-300/80">
@@ -55,6 +55,7 @@
   import { ElMessageBox } from 'element-plus'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useUserStore } from '@/store/modules/user'
+  import { getRoleNames } from '@/utils/i18n/role'
 
   defineOptions({ name: 'ArtUserMenu' })
 
@@ -67,6 +68,7 @@
   const userAvatar = computed(() =>
     buildEveCharacterPortraitUrl(userInfo.value.primaryCharacterId ?? 0)
   )
+  const localizedRoleNames = computed(() => getRoleNames(userInfo.value.roles ?? []).join(', '))
 
   /**
    * 页面跳转
