@@ -4,7 +4,11 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"errors"
+	"regexp"
+	"strings"
 )
+
+var fuxiAdminHexColorPattern = regexp.MustCompile(`^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
 
 // FuxiAdminService 伏羲管理人员名录业务层
 type FuxiAdminService struct {
@@ -30,7 +34,14 @@ type FuxiAdminDirectoryResponse struct {
 // ─── Request types ───
 
 type FuxiAdminUpdateConfigRequest struct {
-	BaseFontSize *int `json:"base_font_size"`
+	BaseFontSize        *int    `json:"base_font_size"`
+	CardWidth           *int    `json:"card_width"`
+	PageBackgroundColor *string `json:"page_background_color"`
+	CardBackgroundColor *string `json:"card_background_color"`
+	CardBorderColor     *string `json:"card_border_color"`
+	TierTitleColor      *string `json:"tier_title_color"`
+	NameTextColor       *string `json:"name_text_color"`
+	BodyTextColor       *string `json:"body_text_color"`
 }
 
 type FuxiAdminCreateTierRequest struct {
@@ -45,6 +56,7 @@ type FuxiAdminCreateAdminRequest struct {
 	TierID         uint   `json:"tier_id"`
 	Name           string `json:"name"`
 	Title          string `json:"title"`
+	Description    string `json:"description"`
 	ContactQQ      string `json:"contact_qq"`
 	ContactDiscord string `json:"contact_discord"`
 	CharacterID    int64  `json:"character_id"`
@@ -54,6 +66,7 @@ type FuxiAdminUpdateAdminRequest struct {
 	TierID         *uint   `json:"tier_id"`
 	Name           *string `json:"name"`
 	Title          *string `json:"title"`
+	Description    *string `json:"description"`
 	ContactQQ      *string `json:"contact_qq"`
 	ContactDiscord *string `json:"contact_discord"`
 	CharacterID    *int64  `json:"character_id"`
@@ -87,10 +100,66 @@ func (s *FuxiAdminService) UpdateConfig(req *FuxiAdminUpdateConfigRequest) (*mod
 		}
 		cfg.BaseFontSize = *req.BaseFontSize
 	}
+	if req.CardWidth != nil {
+		if *req.CardWidth < 160 || *req.CardWidth > 420 {
+			return nil, errors.New("卡片宽度必须在 160–420 之间")
+		}
+		cfg.CardWidth = *req.CardWidth
+	}
+	if req.PageBackgroundColor != nil {
+		color, err := normalizeFuxiAdminHexColor(*req.PageBackgroundColor, "页面背景色")
+		if err != nil {
+			return nil, err
+		}
+		cfg.PageBackgroundColor = color
+	}
+	if req.CardBackgroundColor != nil {
+		color, err := normalizeFuxiAdminHexColor(*req.CardBackgroundColor, "卡片背景色")
+		if err != nil {
+			return nil, err
+		}
+		cfg.CardBackgroundColor = color
+	}
+	if req.CardBorderColor != nil {
+		color, err := normalizeFuxiAdminHexColor(*req.CardBorderColor, "卡片边框色")
+		if err != nil {
+			return nil, err
+		}
+		cfg.CardBorderColor = color
+	}
+	if req.TierTitleColor != nil {
+		color, err := normalizeFuxiAdminHexColor(*req.TierTitleColor, "层级标题颜色")
+		if err != nil {
+			return nil, err
+		}
+		cfg.TierTitleColor = color
+	}
+	if req.NameTextColor != nil {
+		color, err := normalizeFuxiAdminHexColor(*req.NameTextColor, "姓名文字颜色")
+		if err != nil {
+			return nil, err
+		}
+		cfg.NameTextColor = color
+	}
+	if req.BodyTextColor != nil {
+		color, err := normalizeFuxiAdminHexColor(*req.BodyTextColor, "其他文字颜色")
+		if err != nil {
+			return nil, err
+		}
+		cfg.BodyTextColor = color
+	}
 	if err := s.repo.UpsertConfig(cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func normalizeFuxiAdminHexColor(input string, label string) (string, error) {
+	color := strings.TrimSpace(input)
+	if !fuxiAdminHexColorPattern.MatchString(color) {
+		return "", errors.New(label + "必须是十六进制颜色值")
+	}
+	return color, nil
 }
 
 // ─── Directory (public) ───
@@ -187,7 +256,8 @@ func (s *FuxiAdminService) DeleteTier(id uint) error {
 // ─── Admins ───
 
 func (s *FuxiAdminService) CreateAdmin(req *FuxiAdminCreateAdminRequest) (*model.FuxiAdmin, error) {
-	if req.Name == "" {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
 		return nil, errors.New("姓名不能为空")
 	}
 	if _, err := s.repo.GetTierByID(req.TierID); err != nil {
@@ -195,10 +265,11 @@ func (s *FuxiAdminService) CreateAdmin(req *FuxiAdminCreateAdminRequest) (*model
 	}
 	admin := &model.FuxiAdmin{
 		TierID:         req.TierID,
-		Name:           req.Name,
-		Title:          req.Title,
-		ContactQQ:      req.ContactQQ,
-		ContactDiscord: req.ContactDiscord,
+		Name:           name,
+		Title:          strings.TrimSpace(req.Title),
+		Description:    strings.TrimSpace(req.Description),
+		ContactQQ:      strings.TrimSpace(req.ContactQQ),
+		ContactDiscord: strings.TrimSpace(req.ContactDiscord),
 		CharacterID:    req.CharacterID,
 	}
 	if err := s.repo.CreateAdmin(admin); err != nil {
@@ -219,19 +290,23 @@ func (s *FuxiAdminService) UpdateAdmin(id uint, req *FuxiAdminUpdateAdminRequest
 		admin.TierID = *req.TierID
 	}
 	if req.Name != nil {
-		if *req.Name == "" {
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
 			return nil, errors.New("姓名不能为空")
 		}
-		admin.Name = *req.Name
+		admin.Name = name
 	}
 	if req.Title != nil {
-		admin.Title = *req.Title
+		admin.Title = strings.TrimSpace(*req.Title)
+	}
+	if req.Description != nil {
+		admin.Description = strings.TrimSpace(*req.Description)
 	}
 	if req.ContactQQ != nil {
-		admin.ContactQQ = *req.ContactQQ
+		admin.ContactQQ = strings.TrimSpace(*req.ContactQQ)
 	}
 	if req.ContactDiscord != nil {
-		admin.ContactDiscord = *req.ContactDiscord
+		admin.ContactDiscord = strings.TrimSpace(*req.ContactDiscord)
 	}
 	if req.CharacterID != nil {
 		admin.CharacterID = *req.CharacterID

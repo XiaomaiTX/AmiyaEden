@@ -8,7 +8,10 @@
   >
     <ElForm :model="form" @submit.prevent="handleSubmit">
       <ElFormItem :label="t('hallOfFame.currentManage.tierName')" required>
-        <ElInput v-model="form.name" :placeholder="t('hallOfFame.currentManage.tierNamePlaceholder')" />
+        <ElInput
+          v-model="form.name"
+          :placeholder="t('hallOfFame.currentManage.tierNamePlaceholder')"
+        />
       </ElFormItem>
     </ElForm>
 
@@ -68,7 +71,9 @@
       emit('saved', saved)
       emit('update:modelValue', false)
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('hallOfFame.currentManage.saveFailed'))
+      ElMessage.error(
+        error instanceof Error ? error.message : t('hallOfFame.currentManage.saveFailed')
+      )
     } finally {
       saving.value = false
     }

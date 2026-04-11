@@ -1,5 +1,5 @@
 <template>
-  <section class="fuxi-tier-section">
+  <section class="fuxi-tier-section" :style="sectionStyle">
     <div class="fuxi-tier-section__header">
       <h3 class="fuxi-tier-section__title">{{ tier.name }}</h3>
       <div v-if="canEdit" class="fuxi-tier-section__header-actions">
@@ -20,7 +20,7 @@
         v-for="admin in tier.admins"
         :key="admin.id"
         :admin="admin"
-        :base-font-size="baseFontSize"
+        :style-config="styleConfig"
         :can-edit="canEdit"
         @edit="$emit('edit-admin', admin)"
         @delete="$emit('delete-admin', admin)"
@@ -34,12 +34,13 @@
 </template>
 
 <script setup lang="ts">
+  import { computed } from 'vue'
   import { useI18n } from 'vue-i18n'
   import AdminCard from './admin-card.vue'
 
-  defineProps<{
+  const props = defineProps<{
     tier: Api.FuxiAdmin.TierWithAdmins
-    baseFontSize: number
+    styleConfig: Api.FuxiAdmin.Config
     canEdit: boolean
   }>()
 
@@ -52,6 +53,11 @@
   }>()
 
   const { t } = useI18n()
+  const sectionStyle = computed(() => ({
+    '--tier-title-color': props.styleConfig.tier_title_color,
+    '--tier-divider-color': props.styleConfig.card_border_color,
+    '--tier-empty-color': props.styleConfig.body_text_color
+  }))
 </script>
 
 <style scoped>
@@ -67,12 +73,12 @@
     justify-content: space-between;
     gap: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 215, 128, 0.18);
+    border-bottom: 1px solid var(--tier-divider-color, #d9a441);
   }
 
   .fuxi-tier-section__title {
     margin: 0;
-    color: #f8d26b;
+    color: var(--tier-title-color, #f8d26b);
     font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -90,16 +96,13 @@
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
+    align-items: flex-start;
     justify-content: center;
-  }
-
-  .fuxi-tier-section__cards > * {
-    width: 160px;
   }
 
   .fuxi-tier-section__empty {
     margin: 0;
-    color: rgba(255, 255, 255, 0.38);
+    color: var(--tier-empty-color, #d7dfef);
     font-size: 13px;
     text-align: center;
     padding: 16px 0;
@@ -109,10 +112,6 @@
     .fuxi-tier-section__header {
       flex-direction: column;
       align-items: flex-start;
-    }
-
-    .fuxi-tier-section__cards > * {
-      width: 140px;
     }
   }
 </style>

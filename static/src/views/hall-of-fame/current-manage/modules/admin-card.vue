@@ -15,6 +15,7 @@
     <div class="fuxi-admin-card__body">
       <p class="fuxi-admin-card__name">{{ admin.name }}</p>
       <p v-if="admin.title" class="fuxi-admin-card__title">{{ admin.title }}</p>
+      <p v-if="admin.description" class="fuxi-admin-card__description">{{ admin.description }}</p>
       <div class="fuxi-admin-card__contacts">
         <span v-if="admin.contact_qq" class="fuxi-admin-card__contact">
           <span class="fuxi-admin-card__contact-label">QQ</span>
@@ -45,7 +46,7 @@
 
   const props = defineProps<{
     admin: Api.FuxiAdmin.Admin
-    baseFontSize: number
+    styleConfig: Api.FuxiAdmin.Config
     canEdit: boolean
   }>()
 
@@ -60,36 +61,59 @@
     props.admin.character_id > 0 ? buildHallOfFamePortraitUrl(props.admin.character_id, 128) : ''
   )
 
-  const cardStyle = computed(() => ({
-    '--card-font-size': `${props.baseFontSize}px`
-  }))
+  const cardStyle = computed(() => {
+    const nameFontSize = props.styleConfig.base_font_size
+    return {
+      '--card-width': `${props.styleConfig.card_width}px`,
+      '--card-name-font-size': `${nameFontSize}px`,
+      '--card-title-font-size': `${Math.max(nameFontSize - 2, 8)}px`,
+      '--card-description-font-size': `${Math.max(nameFontSize - 3, 8)}px`,
+      '--card-contact-font-size': `${Math.max(nameFontSize - 3, 8)}px`,
+      '--card-background-color': props.styleConfig.card_background_color,
+      '--card-border-color': props.styleConfig.card_border_color,
+      '--card-name-color': props.styleConfig.name_text_color,
+      '--card-body-color': props.styleConfig.body_text_color
+    }
+  })
 </script>
 
 <style scoped>
   .fuxi-admin-card {
+    flex: 0 0 var(--card-width, 240px);
+    width: var(--card-width, 240px);
+    max-width: 100%;
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     gap: 12px;
-    padding: 20px 16px 16px;
+    padding: 20px 18px 18px;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(12, 22, 40, 0.72);
-    text-align: center;
-    transition: border-color 0.2s;
+    border: 1px solid var(--card-border-color, #d9a441);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0) 58%),
+      var(--card-background-color, #1b324c);
+    text-align: left;
+    box-shadow: 0 20px 45px rgba(4, 10, 18, 0.2);
+    transition:
+      border-color 0.2s,
+      transform 0.2s;
   }
 
   .fuxi-admin-card:hover {
-    border-color: rgba(255, 215, 128, 0.28);
+    transform: translateY(-2px);
+    box-shadow:
+      0 24px 48px rgba(4, 10, 18, 0.24),
+      0 0 0 1px var(--card-border-color, #d9a441);
   }
 
   .fuxi-admin-card__portrait-wrap {
+    align-self: center;
     width: 80px;
     height: 80px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid rgba(255, 215, 128, 0.3);
+    border: 2px solid var(--card-border-color, #d9a441);
     flex-shrink: 0;
   }
 
@@ -105,8 +129,8 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    background: rgba(255, 215, 0, 0.12);
-    color: #f8d26b;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--card-border-color, #d9a441);
     font-size: 28px;
     font-weight: 700;
   }
@@ -121,43 +145,58 @@
 
   .fuxi-admin-card__name {
     margin: 0;
-    color: #fff7d6;
-    font-size: var(--card-font-size, 14px);
-    font-weight: 600;
-    line-height: 1.4;
+    color: var(--card-name-color, #fff7d6);
+    font-size: var(--card-name-font-size, 14px);
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
   }
 
   .fuxi-admin-card__title {
     margin: 0;
-    color: rgba(255, 255, 255, 0.72);
-    font-size: calc(var(--card-font-size, 14px) - 2px);
+    color: var(--card-body-color, #d7dfef);
+    font-size: var(--card-title-font-size, 12px);
     line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .fuxi-admin-card__description {
+    margin: 2px 0 0;
+    color: var(--card-body-color, #d7dfef);
+    font-size: var(--card-description-font-size, 11px);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .fuxi-admin-card__contacts {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    margin-top: 4px;
+    gap: 6px;
+    margin-top: 8px;
   }
 
   .fuxi-admin-card__contact {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 4px;
-    color: rgba(255, 255, 255, 0.55);
-    font-size: calc(var(--card-font-size, 14px) - 3px);
+    color: var(--card-body-color, #d7dfef);
+    font-size: var(--card-contact-font-size, 10px);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
   }
 
   .fuxi-admin-card__contact-label {
     padding: 1px 4px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 215, 128, 0.8);
-    font-size: 10px;
+    border: 1px solid var(--card-border-color, #d9a441);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--card-border-color, #d9a441);
+    font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.04em;
+    flex-shrink: 0;
   }
 
   .fuxi-admin-card__edit-overlay {
@@ -165,14 +204,20 @@
     gap: 4px;
     opacity: 0;
     position: absolute;
-    bottom: 8px;
-    left: 0;
-    right: 0;
-    justify-content: center;
+    top: 10px;
+    right: 10px;
+    justify-content: flex-end;
     transition: opacity 0.2s;
   }
 
   .fuxi-admin-card:hover .fuxi-admin-card__edit-overlay {
     opacity: 1;
+  }
+
+  @media (max-width: 600px) {
+    .fuxi-admin-card {
+      flex-basis: 100%;
+      width: 100%;
+    }
   }
 </style>

@@ -40,7 +40,7 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/fuxi-admins` | 公开目录（配置 + 层级 + 管理员） | Public |
+| GET | `/fuxi-admins` | 登录用户目录（配置 + 层级 + 管理员） | Login |
 
 ## Authenticated Base
 

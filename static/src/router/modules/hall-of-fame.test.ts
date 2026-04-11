@@ -12,12 +12,13 @@ test('hall of fame routes expose the renamed root and the current management tab
   assert.match(source, /component:\s*'\/hall-of-fame\/current-manage'/)
 })
 
-test('current-manage tab has no role restriction so all users and guests can view it', () => {
+test('current-manage tab requires login but no admin role restriction', () => {
   // The current-manage route must not have a roles restriction
   // Extract just the current-manage block and verify it contains no roles key
   const currentManageBlock = source.slice(
     source.indexOf("'current-manage'"),
     source.indexOf("'current-manage'") + 400
   )
+  assert.match(currentManageBlock, /login:\s*true/)
   assert.doesNotMatch(currentManageBlock, /roles:/)
 })

@@ -35,7 +35,8 @@ export const hallOfFameRoutes: AppRouteRecord = {
       component: '/hall-of-fame/current-manage',
       meta: {
         title: 'menus.hallOfFame.currentManage',
-        keepAlive: true
+        keepAlive: true,
+        login: true
       }
     }
   ]
