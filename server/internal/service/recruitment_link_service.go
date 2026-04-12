@@ -79,7 +79,12 @@ func (s *RecruitmentLinkService) GenerateLink(userID uint, now time.Time) (*mode
 	settings := s.settingsSvc.GetSettings()
 	cooldown := time.Duration(settings.RecruitCooldownDays) * 24 * time.Hour
 
-	rec := &model.NewbroRecruitment{UserID: userID, Source: model.RecruitmentSourceLink, GeneratedAt: now}
+	// Assign a unique placeholder before insert to avoid a unique-constraint
+	// collision on Code when multiple users generate links concurrently.
+	// The user row is locked via SELECT FOR UPDATE inside the transaction, so
+	// ~<userID> is unique across in-flight transactions for different users.
+	// The placeholder is overwritten with base62(ID) within the same transaction.
+	rec := &model.NewbroRecruitment{UserID: userID, Source: model.RecruitmentSourceLink, GeneratedAt: now, Code: fmt.Sprintf("~%d", userID)}
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		if _, err := s.userRepo.GetByIDForUpdateTx(tx, userID); err != nil {
 			return err

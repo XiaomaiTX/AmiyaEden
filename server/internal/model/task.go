@@ -27,3 +27,10 @@ type TaskExecution struct {
 }
 
 func (TaskExecution) TableName() string { return "task_executions" }
+
+// TaskExecutionHistoryItem is the read model returned by task history queries.
+// It extends the persisted execution record with the triggerer's nickname.
+type TaskExecutionHistoryItem struct {
+	TaskExecution
+	TriggeredByName string `gorm:"->;column:triggered_by_name" json:"triggered_by_name,omitempty"`
+}
