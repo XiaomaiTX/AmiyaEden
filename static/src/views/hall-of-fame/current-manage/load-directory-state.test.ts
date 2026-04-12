@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { HttpError } from '@/utils/http/error'
 import { ApiStatus } from '@/utils/http/status'
 
 import { loadFuxiAdminDirectoryState } from './load-directory-state'
@@ -43,7 +42,7 @@ test('loadFuxiAdminDirectoryState returns the localized fallback message on fail
 
 test('loadFuxiAdminDirectoryState suppresses the page-owned toast for unauthorized failures', async () => {
   const result = await loadFuxiAdminDirectoryState(async () => {
-    throw new HttpError('Unauthorized', ApiStatus.unauthorized)
+    throw { code: ApiStatus.unauthorized }
   }, 'Failed to load the current Fuxi admin directory')
 
   assert.equal(result.directory, null)
