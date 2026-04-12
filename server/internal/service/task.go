@@ -228,7 +228,7 @@ func (s *TaskService) UpdateSchedule(taskName, cronExpr string, updatedBy uint) 
 	return nil
 }
 
-func (s *TaskService) GetExecutionHistory(taskName, status string, page, pageSize int) ([]model.TaskExecution, int64, error) {
+func (s *TaskService) GetExecutionHistory(taskName, status string, page, pageSize int) ([]model.TaskExecutionHistoryItem, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
 	if pageSize > taskHistoryMaxSize {
 		pageSize = taskHistoryMaxSize

@@ -75,6 +75,8 @@ test('task manager page uses tabs with extracted task and history modules', () =
   assert.match(historyTabSource, /visual-variant="ledger"/)
   assert.match(historyTabSource, /apiParams:\s*\{\s*current:\s*1,\s*size:\s*200\s*\}/)
   assert.match(historyTabSource, /taskManager\.columns\.triggeredBy/)
+  assert.match(historyTabSource, /taskManager\.columns\.triggeredById/)
+  assert.match(historyTabSource, /prop:\s*'triggered_by'/)
 })
 
 test('task manager route and API wrappers use unified task endpoints', () => {

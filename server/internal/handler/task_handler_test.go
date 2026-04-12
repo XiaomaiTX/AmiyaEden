@@ -33,13 +33,13 @@ type taskHandlerConflictResponse struct {
 }
 
 type taskHistoryPage struct {
-	List     []model.TaskExecution `json:"list"`
-	Total    int64                 `json:"total"`
-	Page     int                   `json:"page"`
-	PageSize int                   `json:"pageSize"`
+	List     []model.TaskExecutionHistoryItem `json:"list"`
+	Total    int64                            `json:"total"`
+	Page     int                              `json:"page"`
+	PageSize int                              `json:"pageSize"`
 }
 
-func newTaskHandlerTestDeps(t *testing.T) (*taskregistry.Registry, *repository.TaskRepository, *service.TaskService, *TaskHandler) {
+func newTaskHandlerTestDeps(t *testing.T) (*taskregistry.Registry, *repository.TaskRepository, *service.TaskService, *TaskHandler, *gorm.DB) {
 	t.Helper()
 
 	dsn := fmt.Sprintf("file:%s_%d?mode=memory&cache=shared", t.Name(), time.Now().UnixNano())
@@ -47,7 +47,7 @@ func newTaskHandlerTestDeps(t *testing.T) (*taskregistry.Registry, *repository.T
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}); err != nil {
+	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}, &model.User{}); err != nil {
 		t.Fatalf("auto migrate task models: %v", err)
 	}
 
@@ -60,7 +60,7 @@ func newTaskHandlerTestDeps(t *testing.T) (*taskregistry.Registry, *repository.T
 		service.RescheduleFn = nil
 	})
 
-	return registry, repo, svc, handler
+	return registry, repo, svc, handler, db
 }
 
 func setupTaskHandlerTestRouter(h *TaskHandler, userID uint) *gin.Engine {
@@ -108,7 +108,7 @@ func waitForTaskExecution(t *testing.T, repo *repository.TaskRepository, taskNam
 }
 
 func TestTaskHandler_GetTasksEmpty(t *testing.T) {
-	_, _, _, h := newTaskHandlerTestDeps(t)
+	_, _, _, h, _ := newTaskHandlerTestDeps(t)
 	r := setupTaskHandlerTestRouter(h, 1)
 
 	w := httptest.NewRecorder()
@@ -134,7 +134,7 @@ func TestTaskHandler_GetTasksEmpty(t *testing.T) {
 }
 
 func TestTaskHandler_RunTaskOK(t *testing.T) {
-	registry, repo, _, h := newTaskHandlerTestDeps(t)
+	registry, repo, _, h, _ := newTaskHandlerTestDeps(t)
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "test_task",
 		Description: "Runs successfully",
@@ -173,7 +173,7 @@ func TestTaskHandler_RunTaskOK(t *testing.T) {
 }
 
 func TestTaskHandler_RunTaskNotFound(t *testing.T) {
-	_, _, _, h := newTaskHandlerTestDeps(t)
+	_, _, _, h, _ := newTaskHandlerTestDeps(t)
 	r := setupTaskHandlerTestRouter(h, 1)
 
 	w := httptest.NewRecorder()
@@ -191,7 +191,7 @@ func TestTaskHandler_RunTaskNotFound(t *testing.T) {
 }
 
 func TestTaskHandler_RunTaskAlreadyRunningReturns409(t *testing.T) {
-	registry, _, _, h := newTaskHandlerTestDeps(t)
+	registry, _, _, h, _ := newTaskHandlerTestDeps(t)
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "slow_task",
 		Description: "Blocks until released",
@@ -228,7 +228,7 @@ func TestTaskHandler_RunTaskAlreadyRunningReturns409(t *testing.T) {
 }
 
 func TestTaskHandler_UpdateScheduleOK(t *testing.T) {
-	registry, repo, _, h := newTaskHandlerTestDeps(t)
+	registry, repo, _, h, _ := newTaskHandlerTestDeps(t)
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "sched_task",
 		Description: "Recurring task",
@@ -272,7 +272,7 @@ func TestTaskHandler_UpdateScheduleOK(t *testing.T) {
 }
 
 func TestTaskHandler_UpdateScheduleInvalidCron(t *testing.T) {
-	registry, _, _, h := newTaskHandlerTestDeps(t)
+	registry, _, _, h, _ := newTaskHandlerTestDeps(t)
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "sched_task_invalid",
 		Description: "Recurring task",
@@ -302,7 +302,11 @@ func TestTaskHandler_UpdateScheduleInvalidCron(t *testing.T) {
 }
 
 func TestTaskHandler_GetHistory(t *testing.T) {
-	_, repo, _, h := newTaskHandlerTestDeps(t)
+	_, repo, _, h, db := newTaskHandlerTestDeps(t)
+	triggeredBy := uint(42)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: triggeredBy}, Nickname: "History Nick"}).Error; err != nil {
+		t.Fatalf("create user fixture: %v", err)
+	}
 	startedAt := time.Now().UTC()
 	finishedAt := startedAt.Add(2 * time.Second)
 	durationMs := finishedAt.Sub(startedAt).Milliseconds()
@@ -314,7 +318,7 @@ func TestTaskHandler_GetHistory(t *testing.T) {
 		FinishedAt:  &finishedAt,
 		DurationMs:  &durationMs,
 		Summary:     "done",
-		TriggeredBy: nil,
+		TriggeredBy: &triggeredBy,
 	}); err != nil {
 		t.Fatalf("CreateExecution returned error: %v", err)
 	}
@@ -345,5 +349,11 @@ func TestTaskHandler_GetHistory(t *testing.T) {
 	}
 	if page.List[0].TaskName != "history_task" {
 		t.Fatalf("task_name = %q, want %q", page.List[0].TaskName, "history_task")
+	}
+	if page.List[0].TriggeredBy == nil || *page.List[0].TriggeredBy != triggeredBy {
+		t.Fatalf("triggered_by = %v, want %d", page.List[0].TriggeredBy, triggeredBy)
+	}
+	if page.List[0].TriggeredByName != "History Nick" {
+		t.Fatalf("triggered_by_name = %q, want %q", page.List[0].TriggeredByName, "History Nick")
 	}
 }

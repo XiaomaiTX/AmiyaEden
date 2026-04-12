@@ -468,6 +468,7 @@
       "lastStatus": "上次状态",
       "trigger": "触发方式",
       "triggeredBy": "触发者",
+      "triggeredById": "触发者ID",
       "status": "状态",
       "startedAt": "开始时间",
       "duration": "耗时",

@@ -85,7 +85,7 @@ func (r *TaskRepository) UpdateExecution(execution *model.TaskExecution) error {
 	return nil
 }
 
-func (r *TaskRepository) ListExecutions(taskName, status string, page, pageSize int) ([]model.TaskExecution, int64, error) {
+func (r *TaskRepository) ListExecutions(taskName, status string, page, pageSize int) ([]model.TaskExecutionHistoryItem, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -93,12 +93,15 @@ func (r *TaskRepository) ListExecutions(taskName, status string, page, pageSize 
 		pageSize = 20
 	}
 
-	query := r.dbOrGlobal().Model(&model.TaskExecution{})
+	query := r.dbOrGlobal().
+		Table("task_executions AS te").
+		Select(`te.*, COALESCE(NULLIF(trigger_user.nickname, ''), '') AS triggered_by_name`).
+		Joins(`LEFT JOIN "user" AS trigger_user ON trigger_user.id = te.triggered_by`)
 	if taskName != "" {
-		query = query.Where("task_name = ?", taskName)
+		query = query.Where("te.task_name = ?", taskName)
 	}
 	if status != "" {
-		query = query.Where("status = ?", status)
+		query = query.Where("te.status = ?", status)
 	}
 
 	var total int64
@@ -106,10 +109,10 @@ func (r *TaskRepository) ListExecutions(taskName, status string, page, pageSize 
 		return nil, 0, err
 	}
 
-	var executions []model.TaskExecution
+	var executions []model.TaskExecutionHistoryItem
 	err := query.
-		Order("started_at DESC").
-		Order("id DESC").
+		Order("te.started_at DESC").
+		Order("te.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&executions).Error

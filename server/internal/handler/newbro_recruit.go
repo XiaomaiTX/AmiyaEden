@@ -25,7 +25,7 @@ func NewNewbroRecruitHandler() *NewbroRecruitHandler {
 // POST /api/v1/newbro/recruit/link
 func (h *NewbroRecruitHandler) GenerateLink(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	rec, _, err := h.linkSvc.GenerateLink(userID, time.Now())
+	rec, isNew, err := h.linkSvc.GenerateLink(userID, time.Now())
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -34,6 +34,7 @@ func (h *NewbroRecruitHandler) GenerateLink(c *gin.Context) {
 		"id":           rec.ID,
 		"code":         rec.Code,
 		"generated_at": rec.GeneratedAt,
+		"is_new":       isNew,
 	})
 }
 
@@ -102,7 +103,7 @@ func (h *NewbroRecruitHandler) ConfirmDirectReferrer(c *gin.Context) {
 }
 
 // GetAdminLinks returns paginated recruitment links for all users (admin only).
-// GET /api/v1/system/recruit/links
+// GET /api/v1/system/newbro/recruit/links
 func (h *NewbroRecruitHandler) GetAdminLinks(c *gin.Context) {
 	page, pageSize, err := parsePaginationQuery(c, 20, 100)
 	if err != nil {

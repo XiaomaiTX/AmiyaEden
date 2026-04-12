@@ -468,6 +468,7 @@
       "lastStatus": "Last Status",
       "trigger": "Trigger",
       "triggeredBy": "Triggered By",
+      "triggeredById": "Triggered By ID",
       "status": "Status",
       "startedAt": "Started At",
       "duration": "Duration",
