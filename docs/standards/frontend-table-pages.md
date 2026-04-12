@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-04-03
+last_reviewed: 2026-04-12
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
@@ -44,6 +44,24 @@ Preferred page structure:
 
 If the page is mixed layout or analytics-like, you may still use this pattern for the table section itself.
 
+## Overflow And Height Ownership
+
+- Paginated table pages must declare who owns overflow. Clipped table content is a layout bug.
+- If the page should grow naturally with content, avoid `art-full-height` and let the application shell own scrolling.
+- If the page uses `art-full-height`, the table section must complete the height chain through every intermediate wrapper that participates in layout.
+  - Typical wrappers include `ElCard` body, `ElTabs`, `el-tabs__content`, and `el-tab-pane`.
+  - Use `display: flex`, `flex-direction: column`, and `min-height: 0` on those wrappers so `ArtTable` can consume the remaining height.
+- Do not rely on `overflow: hidden` alone on card bodies, tab panes, or page wrappers. Hidden overflow is only valid when a descendant table region clearly owns scrolling.
+- Tabbed table pages must keep each tab pane height-aware. A table inside `ElTabs` is incomplete until the tab content area can either expand naturally or hand remaining height to the table.
+
+Recommended full-height tabbed table pattern:
+
+- page root uses `art-full-height`
+- `ElCard` body uses flex column layout with `min-height: 0`
+- `ElTabs` grows with `flex: 1` and `min-height: 0`
+- `el-tabs__content` uses `flex: 1`, `min-height: 0`, and only hides overflow when the descendant table region owns scrolling
+- `el-tab-pane` uses `display: flex`, `flex-direction: column`, `height: 100%`, and `min-height: 0`
+
 ## Theme-Safe Styles
 
 - Do not hardcode light backgrounds or gradients (`#fff`, very bright RGB values) for table rows, expandable panels, or selection states; they will appear as glaring white bands in dark mode.
@@ -77,6 +95,7 @@ Before finishing:
 - Is this paginated table using `useTable` unless there is a real exception?
 - If it is ledger-style, is it using `visual-variant="ledger"`?
 - If it adds a compact inline copy action, is it reusing `ArtCopyButton`?
+- If the page uses `art-full-height` or `ElTabs`, is the overflow owner explicit and is the height chain complete?
 - Are API calls outside the view?
 - Are visible strings localized?
 - Is the implementation following existing page patterns instead of inventing a one-off abstraction?

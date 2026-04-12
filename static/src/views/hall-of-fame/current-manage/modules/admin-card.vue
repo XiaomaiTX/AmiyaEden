@@ -4,26 +4,33 @@
       <img
         v-if="portraitUrl"
         :src="portraitUrl"
-        :alt="admin.name"
+        :alt="admin.nickname"
         class="fuxi-admin-card__portrait"
       />
       <div v-else class="fuxi-admin-card__portrait fuxi-admin-card__portrait--placeholder">
-        {{ admin.name.slice(0, 1) || '?' }}
+        {{ admin.nickname.slice(0, 1) || '?' }}
       </div>
     </div>
 
     <div class="fuxi-admin-card__body">
-      <p class="fuxi-admin-card__name">{{ admin.name }}</p>
-      <p v-if="admin.title" class="fuxi-admin-card__title">{{ admin.title }}</p>
+      <p class="fuxi-admin-card__name">{{ admin.nickname }}</p>
+      <p v-if="admin.character_name" class="fuxi-admin-card__title">
+        {{ admin.character_name }}
+      </p>
       <p v-if="admin.description" class="fuxi-admin-card__description">{{ admin.description }}</p>
       <div class="fuxi-admin-card__contacts">
         <span v-if="admin.contact_qq" class="fuxi-admin-card__contact">
           <span class="fuxi-admin-card__contact-label">QQ</span>
-          {{ admin.contact_qq }}
+          <span class="fuxi-admin-card__contact-value">{{ admin.contact_qq }}</span>
+          <ArtCopyButton :text="admin.contact_qq" :aria-label="`${t('common.copy')} QQ`" />
         </span>
         <span v-if="admin.contact_discord" class="fuxi-admin-card__contact">
           <span class="fuxi-admin-card__contact-label">DC</span>
-          {{ admin.contact_discord }}
+          <span class="fuxi-admin-card__contact-value">{{ admin.contact_discord }}</span>
+          <ArtCopyButton
+            :text="admin.contact_discord"
+            :aria-label="`${t('common.copy')} Discord`"
+          />
         </span>
       </div>
     </div>
@@ -42,6 +49,7 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
   import { buildHallOfFamePortraitUrl } from '@/views/hall-of-fame/portrait.helpers'
 
   const props = defineProps<{
@@ -184,6 +192,12 @@
     color: var(--card-body-color, #d7dfef);
     font-size: var(--card-contact-font-size, 10px);
     line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .fuxi-admin-card__contact-value {
+    min-width: 0;
+    flex: 1;
     overflow-wrap: anywhere;
   }
 

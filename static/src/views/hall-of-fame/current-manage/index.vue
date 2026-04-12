@@ -1,7 +1,7 @@
 <template>
   <div class="fuxi-directory art-full-height" :style="directoryStyle" v-loading="loading">
     <div class="fuxi-directory__inner">
-      <div v-if="canEdit" class="fuxi-directory__admin-bar">
+      <div v-if="canEdit && directory" class="fuxi-directory__admin-bar">
         <section class="fuxi-directory__settings-group">
           <p class="fuxi-directory__settings-title">
             {{ t('hallOfFame.currentManage.layoutSettings') }}
@@ -39,6 +39,7 @@
             <span>{{ t('hallOfFame.currentManage.pageBackgroundColor') }}</span>
             <ElColorPicker
               v-model="pageBackgroundColor"
+              :show-alpha="false"
               @change="(value) => handleColorConfigChange('page_background_color', value)"
             />
           </label>
@@ -47,6 +48,7 @@
             <span>{{ t('hallOfFame.currentManage.cardBackgroundColor') }}</span>
             <ElColorPicker
               v-model="cardBackgroundColor"
+              :show-alpha="false"
               @change="(value) => handleColorConfigChange('card_background_color', value)"
             />
           </label>
@@ -55,6 +57,7 @@
             <span>{{ t('hallOfFame.currentManage.cardBorderColor') }}</span>
             <ElColorPicker
               v-model="cardBorderColor"
+              :show-alpha="false"
               @change="(value) => handleColorConfigChange('card_border_color', value)"
             />
           </label>
@@ -69,6 +72,7 @@
             <span>{{ t('hallOfFame.currentManage.tierTitleColor') }}</span>
             <ElColorPicker
               v-model="tierTitleColor"
+              :show-alpha="false"
               @change="(value) => handleColorConfigChange('tier_title_color', value)"
             />
           </label>
@@ -77,6 +81,7 @@
             <span>{{ t('hallOfFame.currentManage.nameTextColor') }}</span>
             <ElColorPicker
               v-model="nameTextColor"
+              :show-alpha="false"
               @change="(value) => handleColorConfigChange('name_text_color', value)"
             />
           </label>
@@ -85,6 +90,7 @@
             <span>{{ t('hallOfFame.currentManage.bodyTextColor') }}</span>
             <ElColorPicker
               v-model="bodyTextColor"
+              :show-alpha="false"
               @change="(value) => handleColorConfigChange('body_text_color', value)"
             />
           </label>
@@ -110,6 +116,10 @@
           @edit-admin="openEditAdmin"
           @delete-admin="handleDeleteAdmin"
         />
+      </div>
+
+      <div v-else-if="loadErrorMessage && !directory" class="fuxi-directory__error">
+        <ElAlert :title="loadErrorMessage" type="error" :closable="false" show-icon />
       </div>
 
       <div v-else-if="!loading" class="fuxi-directory__empty">
@@ -143,6 +153,7 @@
   } from '@/api/fuxi-admins'
   import { useUserStore } from '@/store/modules/user'
 
+  import { loadFuxiAdminDirectoryState } from './load-directory-state'
   import AdminCardDialog from './modules/admin-card-dialog.vue'
   import TierDialog from './modules/tier-dialog.vue'
   import TierSection from './modules/tier-section.vue'
@@ -166,8 +177,9 @@
   const adminDialogOpen = ref(false)
   const editingAdmin = ref<Api.FuxiAdmin.Admin | null>(null)
   const addingAdminToTierId = ref<number | null>(null)
+  const loadErrorMessage = ref<string | null>(null)
   let pendingConfigSnapshot: Api.FuxiAdmin.UpdateConfigParams | null = null
-  let configSaveInFlight = false
+  const configSaveInFlight = ref(false)
 
   const canEdit = computed(() => {
     const roles = userStore.getUserInfo?.roles ?? []
@@ -198,16 +210,26 @@
 
   async function loadDirectory() {
     loading.value = true
-    try {
-      directory.value = await fetchFuxiAdminDirectory()
-      syncLocalConfig(directory.value.config)
-    } catch (error) {
-      ElMessage.error(
-        error instanceof Error ? error.message : t('hallOfFame.currentManage.saveFailed')
-      )
-    } finally {
-      loading.value = false
+    loadErrorMessage.value = null
+    const loadFailedMessage = t('hallOfFame.currentManage.loadFailed')
+
+    const {
+      directory: nextDirectory,
+      loadErrorMessage: nextLoadErrorMessage,
+      showErrorToast
+    } = await loadFuxiAdminDirectoryState(fetchFuxiAdminDirectory, loadFailedMessage)
+
+    if (nextDirectory) {
+      directory.value = nextDirectory
+      syncLocalConfig(nextDirectory.config)
+    } else if (nextLoadErrorMessage) {
+      loadErrorMessage.value = nextLoadErrorMessage
+      if (showErrorToast) {
+        ElMessage.error(nextLoadErrorMessage)
+      }
     }
+
+    loading.value = false
   }
 
   function syncLocalConfig(config: Api.FuxiAdmin.Config) {
@@ -242,7 +264,7 @@
 
   function queueConfigSave() {
     pendingConfigSnapshot = buildConfigUpdateSnapshot()
-    if (!configSaveInFlight) {
+    if (!configSaveInFlight.value) {
       void flushConfigSaveQueue()
     }
   }
@@ -254,7 +276,7 @@
 
     const snapshot = pendingConfigSnapshot
     pendingConfigSnapshot = null
-    configSaveInFlight = true
+    configSaveInFlight.value = true
 
     try {
       const savedConfig = await updateFuxiAdminConfig(snapshot)
@@ -270,7 +292,7 @@
         error instanceof Error ? error.message : t('hallOfFame.currentManage.saveFailed')
       )
     } finally {
-      configSaveInFlight = false
+      configSaveInFlight.value = false
     }
 
     if (pendingConfigSnapshot) {
@@ -520,6 +542,13 @@
     flex-direction: column;
     gap: 8px;
     min-width: 0;
+  }
+
+  .fuxi-directory__error,
+  .fuxi-directory__empty {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .fuxi-directory__control span {

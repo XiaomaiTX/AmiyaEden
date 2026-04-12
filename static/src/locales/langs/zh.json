@@ -67,20 +67,11 @@
   "setting": {
     "menuType": {
       "title": "菜单布局",
-      "list": [
-        "垂直",
-        "水平",
-        "混合",
-        "双列"
-      ]
+      "list": ["垂直", "水平", "混合", "双列"]
     },
     "theme": {
       "title": "主题风格",
-      "list": [
-        "浅色",
-        "深色",
-        "系统"
-      ]
+      "list": ["浅色", "深色", "系统"]
     },
     "menu": {
       "title": "菜单风格"
@@ -90,17 +81,11 @@
     },
     "box": {
       "title": "盒子样式",
-      "list": [
-        "边框",
-        "阴影"
-      ]
+      "list": ["边框", "阴影"]
     },
     "container": {
       "title": "容器宽度",
-      "list": [
-        "铺满",
-        "定宽"
-      ]
+      "list": ["铺满", "定宽"]
     },
     "basics": {
       "title": "基础配置",
@@ -146,12 +131,8 @@
   "notice": {
     "title": "通知",
     "btnRead": "标为已读",
-    "bar": [
-      "通知"
-    ],
-    "text": [
-      "暂无"
-    ],
+    "bar": ["通知"],
+    "text": ["暂无"],
     "viewAll": "查看全部"
   },
   "console": {
@@ -412,6 +393,7 @@
     },
     "currentManage": {
       "title": "当前伏羲管理",
+      "loadFailed": "加载当前伏羲管理名录失败",
       "emptyTitle": "暂无伏羲管理员",
       "emptySubtitle": "管理员可点击「添加层级」开始构建名录",
       "addTier": "添加层级",
@@ -426,12 +408,12 @@
       "tierName": "层级名称",
       "tierNamePlaceholder": "例：高层管理",
       "tierNameRequired": "层级名称不能为空",
-      "tierLabel": "所属层级",
-      "tierPlaceholder": "请选择层级",
-      "tierRequired": "请选择所属层级",
-      "nameLabel": "姓名",
-      "nameRequired": "姓名不能为空",
-      "titleLabel": "职位",
+      "tierLabel": "职位",
+      "tierPlaceholder": "请选择职位",
+      "tierRequired": "请选择职位",
+      "nameLabel": "昵称",
+      "nameRequired": "昵称不能为空",
+      "titleLabel": "人物名称",
       "descriptionLabel": "简介",
       "descriptionPlaceholder": "输入职责简介、分工或对外联系说明",
       "characterIdLabel": "角色 ID",
