@@ -6,6 +6,7 @@ const (
 	RoleSuperAdmin = "super_admin"
 	RoleAdmin      = "admin"
 	RoleSRP        = "srp"
+	RoleShopOrder  = "shop_order_manage"
 	RoleFC         = "fc"
 	RoleSeniorFC   = "senior_fc"
 	RoleCaptain    = "captain"
@@ -43,6 +44,7 @@ var SystemRoleDefinitions = []RoleDefinition{
 	{Code: RoleSeniorFC, Name: "Senior FC", I18nKey: "roles.senior_fc", Description: "Senior Fleet Commander, manages fleet configurations and skill plans", Sort: 85},
 	{Code: RoleFC, Name: "FC", I18nKey: "roles.fc", Description: "Fleet Commander, manages fleets and operations", Sort: 70},
 	{Code: RoleSRP, Name: "SRP Officer", I18nKey: "roles.srp", Description: "SRP approval and ship price management", Sort: 60},
+	{Code: RoleShopOrder, Name: "Order Management", I18nKey: "roles.shop_order_manage", Description: "Shop order review and history access", Sort: 55},
 	{Code: RoleWelfare, Name: "Welfare Officer", I18nKey: "roles.welfare", Description: "Corporation welfare approval and management", Sort: 50},
 	{Code: RoleCaptain, Name: "Captain", I18nKey: "roles.captain", Description: "Newbro mentor captain view permissions", Sort: 30},
 	{Code: RoleMentor, Name: "Mentor", I18nKey: "roles.mentor", Description: "Mentor support view permissions", Sort: 25},

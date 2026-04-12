@@ -3,16 +3,6 @@
   <div class="shop-products">
     <!-- 筛选栏 -->
     <div class="filter-bar mb-4 flex items-center gap-3">
-      <ElSelect
-        v-model="typeFilter"
-        :placeholder="$t('shop.allTypes')"
-        clearable
-        style="width: 140px"
-        @change="handleTypeChange"
-      >
-        <ElOption :label="$t('shop.typeNormal')" value="normal" />
-        <ElOption :label="$t('shop.typeRedeem')" value="redeem" />
-      </ElSelect>
       <ElButton :loading="loading" @click="refreshData">
         <el-icon class="mr-1"><Refresh /></el-icon>
         {{ $t('common.refresh') }}
@@ -63,11 +53,6 @@
               </span>
             </div>
           </div>
-          <div class="product-tags mt-2">
-            <ElTag v-if="item.type === 'redeem'" size="small" type="warning" effect="plain">
-              {{ $t('shop.typeRedeem') }}
-            </ElTag>
-          </div>
           <ElButton
             class="mt-3"
             type="primary"
@@ -100,16 +85,7 @@
 
 <script setup lang="ts">
   import { Refresh, ShoppingBag } from '@element-plus/icons-vue'
-  import {
-    ElCard,
-    ElTag,
-    ElButton,
-    ElSelect,
-    ElOption,
-    ElPagination,
-    ElEmpty,
-    ElTooltip
-  } from 'element-plus'
+  import { ElCard, ElButton, ElPagination, ElEmpty, ElTooltip } from 'element-plus'
   import { formatFuxiCoinAmount } from '@utils/common'
   import { fetchProducts } from '@/api/shop'
   import { useTable } from '@/hooks/core/useTable'
@@ -123,8 +99,6 @@
     (e: 'refreshed'): void
   }>()
 
-  const typeFilter = ref<string | undefined>(undefined)
-
   /** 图片加载失败时尝试回退：render → icon */
   function onImgError(e: Event) {
     const img = e.target as HTMLImageElement
@@ -133,26 +107,13 @@
     }
   }
 
-  const {
-    data,
-    loading,
-    pagination,
-    searchParams,
-    getData,
-    handleSizeChange,
-    handleCurrentChange,
-    refreshData
-  } = useTable({
-    core: {
-      apiFn: fetchProducts,
-      apiParams: { current: 1, size: 12, type: undefined as string | undefined }
-    }
-  })
-
-  function handleTypeChange() {
-    searchParams.type = typeFilter.value || undefined
-    getData()
-  }
+  const { data, loading, pagination, handleSizeChange, handleCurrentChange, refreshData } =
+    useTable({
+      core: {
+        apiFn: fetchProducts,
+        apiParams: { current: 1, size: 12 }
+      }
+    })
 
   // 供父页面调用（购买成功后刷新）
   defineExpose({ refresh: refreshData })

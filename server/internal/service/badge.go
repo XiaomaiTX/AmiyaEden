@@ -98,7 +98,7 @@ func (s *BadgeService) GetBadgeCounts(userID uint, userRoles []string) (BadgeCou
 	}
 
 	// 4. 商店订单
-	if model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
+	if model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin, model.RoleShopOrder) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

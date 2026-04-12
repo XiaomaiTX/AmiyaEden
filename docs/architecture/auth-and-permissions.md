@@ -63,6 +63,7 @@ source_of_truth:
 | `senior_fc` | 高级FC | 85 |
 | `fc` | FC | 70 |
 | `srp` | SRP 官员 | 60 |
+| `shop_order_manage` | 订单管理 | 55 |
 | `welfare` | 福利官 | 50 |
 | `captain` | 新人队长 | 30 |
 | `mentor` | 导师 | 25 |
@@ -85,12 +86,12 @@ source_of_truth:
 
 ### 矩阵（操作者 → 目标职权）
 
-| 操作者 \ 可分配目标职权 | super_admin | admin | senior_fc | fc | srp | welfare | captain | mentor | user | guest |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **super_admin**（操作他人） | ✗ 仅配置文件 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **super_admin**（操作自己） | 自动保留 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **admin** | ✗ | ⚠️ 仅已有admin可保留 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **其他所有职权** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| 操作者 \ 可分配目标职权 | super_admin | admin | senior_fc | fc | srp | shop_order_manage | welfare | captain | mentor | user | guest |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **super_admin**（操作他人） | ✗ 仅配置文件 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **super_admin**（操作自己） | 自动保留 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **admin** | ✗ | ⚠️ 仅已有admin可保留 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **其他所有职权** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
 
 ### 用户管理权限
 

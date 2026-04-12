@@ -1,4 +1,4 @@
-<!-- 商店订单管理页面（管理员 / 福利官） -->
+<!-- 商店订单管理页面（管理员 / 订单官） -->
 <template>
   <div class="shop-order-manage-page art-full-height">
     <ElTabs v-model="activeTab" class="art-table-card p-4">

@@ -156,7 +156,6 @@ source_of_truth:
 | POST | `/shop/product/detail` | 商品详情 | Login |
 | POST | `/shop/buy` | 购买商品 | Login |
 | POST | `/shop/orders` | 我的订单 | Login |
-| POST | `/shop/redeem/list` | 我的兑换码 | Login |
 
 ## Hall of Fame
 
@@ -428,10 +427,9 @@ source_of_truth:
 | POST | `/system/shop/product/add` | 新增商品 | `RequireRole(admin)` |
 | POST | `/system/shop/product/edit` | 编辑商品 | `RequireRole(admin)` |
 | POST | `/system/shop/product/delete` | 删除商品 | `RequireRole(admin)` |
-| POST | `/system/shop/order/list` | 订单列表 | `RequireRole(admin)` |
-| POST | `/system/shop/order/deliver` | 发放订单（成功后尽力发送一封以执行发放官员主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin)` |
-| POST | `/system/shop/order/reject` | 驳回订单 | `RequireRole(admin)` |
-| POST | `/system/shop/redeem/list` | 兑换码列表 | `RequireRole(admin)` |
+| POST | `/system/shop/order/list` | 订单列表 | `RequireRole(admin, shop_order_manage)` |
+| POST | `/system/shop/order/deliver` | 发放订单（成功后尽力发送一封以执行发放官员主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin, shop_order_manage)` |
+| POST | `/system/shop/order/reject` | 驳回订单 | `RequireRole(admin, shop_order_manage)` |
 
 ### Auto Role / Webhook
 

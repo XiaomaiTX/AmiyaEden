@@ -21,7 +21,6 @@
         <ElOption :label="$t('walletAdmin.refTypes.pap_fc_salary')" value="pap_fc_salary" />
         <ElOption :label="$t('walletAdmin.refTypes.admin_adjust')" value="admin_adjust" />
         <ElOption :label="$t('walletAdmin.refTypes.manual')" value="manual" />
-        <ElOption :label="$t('walletAdmin.refTypes.redeem')" value="redeem" />
         <ElOption :label="$t('walletAdmin.refTypes.srp_payout')" value="srp_payout" />
         <ElOption :label="$t('walletAdmin.refTypes.welfare_payout')" value="welfare_payout" />
         <ElOption :label="$t('walletAdmin.refTypes.shop_purchase')" value="shop_purchase" />
@@ -64,7 +63,6 @@
     pap_fc_salary: { label: t('walletAdmin.refTypes.pap_fc_salary'), tag: 'success' },
     admin_adjust: { label: t('walletAdmin.refTypes.admin_adjust'), tag: 'warning' },
     manual: { label: t('walletAdmin.refTypes.manual'), tag: '' },
-    redeem: { label: t('walletAdmin.refTypes.redeem'), tag: 'danger' },
     srp_payout: { label: t('walletAdmin.refTypes.srp_payout'), tag: 'primary' },
     welfare_payout: { label: t('walletAdmin.refTypes.welfare_payout'), tag: 'success' },
     shop_purchase: { label: t('walletAdmin.refTypes.shop_purchase'), tag: 'info' },

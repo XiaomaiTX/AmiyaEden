@@ -82,3 +82,19 @@ func TestSystemRoleDefinitionsIncludeMentor(t *testing.T) {
 
 	t.Fatal("expected mentor to be present in system role seeds")
 }
+
+func TestSystemRoleDefinitionsIncludeShopOrderManage(t *testing.T) {
+	for _, role := range SystemRoleDefinitions {
+		if role.Code == RoleShopOrder {
+			if role.Name == "" {
+				t.Fatal("expected shop_order_manage seed to have a name")
+			}
+			if role.Description == "" {
+				t.Fatal("expected shop_order_manage seed to have a description")
+			}
+			return
+		}
+	}
+
+	t.Fatal("expected shop_order_manage to be present in system role seeds")
+}

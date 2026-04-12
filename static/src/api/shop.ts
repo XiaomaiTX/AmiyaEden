@@ -34,14 +34,6 @@ export function fetchMyOrders(data?: Partial<Api.Common.CommonSearchParams & { s
   })
 }
 
-/** 获取我的兑换码 */
-export function fetchMyRedeemCodes(data?: Partial<Api.Common.CommonSearchParams>) {
-  return request.post<Api.Common.PaginatedResponse<Api.Shop.RedeemCode>>({
-    url: '/api/v1/shop/redeem/list',
-    data: data ?? { current: 1, size: 20 }
-  })
-}
-
 // ─── 管理员商店管理 ───
 
 /** 管理员查询商品列表 */
@@ -105,13 +97,5 @@ export function adminRejectOrder(data: Api.Shop.OrderReviewParams) {
   return request.post<Api.Shop.Order>({
     url: '/api/v1/system/shop/order/reject',
     data
-  })
-}
-
-/** 管理员查询兑换码 */
-export function adminListRedeemCodes(data?: Api.Shop.RedeemSearchParams) {
-  return request.post<Api.Common.PaginatedResponse<Api.Shop.RedeemCode>>({
-    url: '/api/v1/system/shop/redeem/list',
-    data: data ?? { current: 1, size: 20 }
   })
 }

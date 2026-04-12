@@ -195,3 +195,12 @@ test('applyMenuAccessFilter hides ShopOrderManage from welfare officers', () => 
     false
   )
 })
+
+test('applyMenuAccessFilter keeps ShopOrderManage for shop order officers', () => {
+  const shopOrderShopMenu = applyMenuAccessFilter([shopRoutes], ['shop_order_manage'])[0]
+
+  assert.equal(
+    shopOrderShopMenu.children?.some((route) => route.name === 'ShopOrderManage'),
+    true
+  )
+})
