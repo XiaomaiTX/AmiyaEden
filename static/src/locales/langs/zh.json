@@ -57,6 +57,19 @@
     "recipient": "收件人",
     "mailId": "Mail ID"
   },
+  "recruit": {
+    "title": "加入我们",
+    "subtitle": "请输入您的 QQ 号，完成后我们将引导您加入 QQ 群",
+    "qqLabel": "QQ 号码",
+    "qqPlaceholder": "请输入您的 QQ 号（5-20 位数字）",
+    "qqRequired": "请输入 QQ 号码",
+    "qqInvalid": "QQ 号码格式不正确（5-20 位数字）",
+    "submitBtn": "提交",
+    "submitError": "提交失败，请稍后重试",
+    "successTitle": "提交成功",
+    "successSubtitle": "感谢您的参与！点击下方按钮加入 QQ 群",
+    "goToQQ": "加入 QQ 群"
+  },
   "search": {
     "placeholder": "搜索页面",
     "historyTitle": "搜索历史",
@@ -217,6 +230,7 @@
     "login": {
       "title": "登录"
     },
+    "recruitLanding": "加入我们",
     "outside": {
       "title": "内嵌页面"
     },
@@ -268,6 +282,7 @@
       "title": "新人帮扶",
       "selectCaptain": "新人选队长",
       "selectMentor": "新人选导师",
+      "recruitLink": "招新链接",
       "captain": "我是队长",
       "mentor": "我是导师",
       "manage": "帮扶记录",
@@ -1667,6 +1682,22 @@
         "discordLength": "Discord ID 最多 20 个字符"
       }
     },
+    "directReferral": {
+      "title": "补录推荐人",
+      "subtitle": "如果你是近期注册且没有通过招新链接入驻，仍可以通过推荐人的 QQ 补录推荐奖励。",
+      "windowTag": "注册 7 天内可用",
+      "fillProfileQQFirst": "请先在上方资料卡中填写并保存自己的 QQ，然后再检查推荐人。",
+      "referrerQQ": "推荐人 QQ",
+      "referrerQQPlaceholder": "请输入推荐人的 QQ",
+      "qqRequired": "请先输入 QQ 再进行检查",
+      "checkBtn": "检查 QQ",
+      "checkSuccess": "已找到推荐人",
+      "confirmHint": "确认后，推荐人会获得与招新链接成功招募相同的奖励。",
+      "nickname": "昵称",
+      "mainCharacter": "主人物",
+      "confirmBtn": "确认推荐人",
+      "confirmSuccess": "推荐人已确认，奖励已发放"
+    },
     "corpKm": {
       "enable": "启用军团KM监控",
       "enabled": "军团KM已启用",
@@ -2380,6 +2411,16 @@
       "refreshIntervalDaysPlaceholder": "当前仍是新人的用户超过该天数后会重算",
       "rewardTitle": "队长奖励",
       "rewardHint": "奖励处理会按未处理归因赏金汇总后，使用这里的百分比换算系统积分。这个奖励应该根据ESS抽成(40%)适当上调，因为我们后台记录不另外计算ESS分成奖励。",
+      "recruitTitle": "招募链接",
+      "recruitHint": "配置招募链接功能：QQ 群邀请地址、每次有效招募的奖励金额，以及用户重新生成链接前的冷却天数。",
+      "recruitQQURL": "QQ 群邀请链接",
+      "recruitQQURLPlaceholder": "https://qun.qq.com/universal-share/...",
+      "recruitRewardAmount": "有效招募奖励",
+      "recruitRewardAmountPlaceholder": "请输入奖励伏羲币数量",
+      "recruitCooldownDays": "链接冷却天数",
+      "recruitCooldownDaysPlaceholder": "请输入冷却天数（最少 1 天）",
+      "fuxiCoinUnit": "伏羲币",
+      "daysUnit": "天",
       "bonusRate": "奖励比例",
       "bonusRatePlaceholder": "请输入奖励比例，按百分比填写",
       "save": "保存设置",

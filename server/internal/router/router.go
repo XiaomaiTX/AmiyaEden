@@ -211,6 +211,16 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		newbro.POST("/affiliation/end", newbroUserH.EndAffiliation)
 	}
 
+	// ─── 招募链接（用户）───
+	recruitUser := login.Group("/newbro/recruit")
+	{
+		recruitUser.POST("/link", recruitH.GenerateLink)
+		recruitUser.GET("/links", recruitH.GetMyLinks)
+		recruitUser.GET("/direct-referral", recruitH.GetDirectReferralStatus)
+		recruitUser.POST("/direct-referral/check", recruitH.CheckDirectReferrer)
+		recruitUser.POST("/direct-referral/confirm", recruitH.ConfirmDirectReferrer)
+	}
+
 	newbroCaptainH := handler.NewNewbroCaptainHandler()
 	newbroCaptain := login.Group("/newbro/captain", middleware.RequireRole(model.RoleCaptain))
 	{
@@ -251,7 +261,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		shop.POST("/product/detail", shopH.GetProductDetail)
 		shop.POST("/buy", shopH.BuyProduct)
 		shop.POST("/orders", shopH.GetMyOrders)
-		shop.POST("/redeem/list", shopH.GetMyRedeemCodes)
 
 		shopWallet.POST("/my", walletH.GetMyWallet)
 		shopWallet.POST("/my/transactions", walletH.GetMyTransactions)

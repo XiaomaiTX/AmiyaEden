@@ -57,6 +57,19 @@
     "recipient": "recipient",
     "mailId": "mail ID"
   },
+  "recruit": {
+    "title": "Join Us",
+    "subtitle": "Enter your QQ number and we'll guide you into the QQ group.",
+    "qqLabel": "QQ Number",
+    "qqPlaceholder": "Enter your QQ number (5-20 digits)",
+    "qqRequired": "QQ number is required",
+    "qqInvalid": "Invalid QQ format (5-20 digits only)",
+    "submitBtn": "Submit",
+    "submitError": "Submission failed, please try again",
+    "successTitle": "Submitted",
+    "successSubtitle": "Thank you! Click the button below to join the QQ group.",
+    "goToQQ": "Join QQ Group"
+  },
   "search": {
     "placeholder": "Search page",
     "historyTitle": "Search history",
@@ -217,6 +230,7 @@
     "login": {
       "title": "Login"
     },
+    "recruitLanding": "Join Us",
     "outside": {
       "title": "Outside"
     },
@@ -285,6 +299,7 @@
       "title": "Newbro Support",
       "selectCaptain": "Choose Captain",
       "selectMentor": "Choose Mentor",
+      "recruitLink": "Recruit Link",
       "captain": "I Am Captain",
       "mentor": "I Am Mentor",
       "manage": "Support Records",
@@ -1254,6 +1269,38 @@
       "rewardBonusRate": "Bonus Rate",
       "rewardCreditedValue": "Credited Value"
     },
+    "recruitLink": {
+      "title": "Recruit Link",
+      "subtitle": "Generate your personal recruitment link and share it. The system tracks QQ registrations and rewards valid recruits.",
+      "myLinksTab": "My Links",
+      "adminTab": "All Links",
+      "generateBtn": "Generate Recruit Link",
+      "yourLink": "Your Recruitment Link",
+      "noGeneratedLink": "No generated recruitment link yet.",
+      "directReferralRecord": "Direct referral record",
+      "generateSuccess": "Recruitment link generated",
+      "generateFailed": "Generation failed",
+      "empty": "No recruitment links yet",
+      "noEntries": "No entries yet",
+      "colQQ": "QQ Number",
+      "colEnteredAt": "Submitted At",
+      "colStatus": "Status",
+      "colRewardedAt": "Rewarded At",
+      "colUserId": "User ID",
+      "colCode": "Code",
+      "colSource": "Source",
+      "colGeneratedAt": "Generated At",
+      "colEntries": "Entries",
+      "source": {
+        "link": "Recruit Link",
+        "direct_referral": "Direct Referral"
+      },
+      "status": {
+        "ongoing": "Ongoing",
+        "valid": "Valid",
+        "stalled": "Stalled"
+      }
+    },
     "mentorManage": {
       "title": "Mentor Management",
       "subtitle": "Admins can review every mentor relationship and the mentor reward distribution ledger.",
@@ -1666,6 +1713,22 @@
         "qqDigits": "QQ number must contain digits only",
         "discordLength": "Discord ID must be 20 characters or fewer"
       }
+    },
+    "directReferral": {
+      "title": "Add Your Referrer",
+      "subtitle": "If you joined recently and missed a recruit link, you can still credit the referrer who brought you in by entering their QQ.",
+      "windowTag": "Available within 7 days",
+      "fillProfileQQFirst": "Fill in your own QQ in the profile card above and save before checking a referrer.",
+      "referrerQQ": "Referrer QQ",
+      "referrerQQPlaceholder": "Enter your referrer's QQ number",
+      "qqRequired": "Enter a QQ number before checking",
+      "checkBtn": "Check QQ",
+      "checkSuccess": "Referrer found",
+      "confirmHint": "Once confirmed, the referrer will receive the same reward as a successful recruit-link referral.",
+      "nickname": "Nickname",
+      "mainCharacter": "Main Character",
+      "confirmBtn": "Confirm Referrer",
+      "confirmSuccess": "Referrer confirmed and rewarded"
     },
     "corpKm": {
       "enable": "Enable Corp KM",
@@ -2364,7 +2427,7 @@
     },
     "newbroSettings": {
       "title": "Newbro Settings",
-      "subtitle": "Manage newbro eligibility rules, eligibility refresh cadence, and captain reward percentages.",
+      "subtitle": "Manage newbro eligibility rules, eligibility refresh cadence, captain reward percentages, and recruit link settings.",
       "saveSuccess": "Newbro settings saved",
       "eligibilityTitle": "Eligibility Rules",
       "eligibilityHint": "Eligibility is evaluated against skill point snapshots across all characters bound to the user.",

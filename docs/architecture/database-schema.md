@@ -44,6 +44,8 @@ source_of_truth:
 
 因此，当前 schema 不是通过单独的 SQL migration 目录维护，而是通过 GORM 模型 + 启动时补偿逻辑维护。
 
+已被代码移除的历史列或表，也通过 `server/bootstrap/db.go` 里的启动期 cleanup 逻辑条件删除，而不是放在独立 SQL migration 目录中。
+
 ## 核心表分组
 
 当前应用表大致分为这些分组：
@@ -78,6 +80,7 @@ source_of_truth:
 
 - 当前产品认证入口是 EVE SSO，不是账号密码
 - `qq` 与 `discord_id` 是当前资料补全与唯一性校验的一部分
+- `qq` 在数据库层面对非空值有唯一约束；未填写时使用空值，不参与唯一性判断
 - `primary_character_id` 指向用户当前主人物的 EVE `character_id`
 - 用户头像 URL 不再持久化，接口与前端都在读取时根据 `primary_character_id` 推导
 - `role` 仍然保留，但它不是当前 RBAC 的权威来源

@@ -43,7 +43,7 @@ type WalletTransaction struct {
 	UserID       uint      `gorm:"not null;index;index:idx_wt_user_created,priority:1" json:"user_id"`
 	Amount       float64   `gorm:"not null"                   json:"amount"` // 正数=收入 负数=支出
 	Reason       string    `gorm:"size:256"                   json:"reason"`
-	RefType      string    `gorm:"size:64;index"              json:"ref_type"` // pap_reward / pap_fc_salary / manual / redeem / admin_adjust
+	RefType      string    `gorm:"size:64;index"              json:"ref_type"` // pap_reward / pap_fc_salary / manual / admin_adjust
 	RefID        string    `gorm:"size:64"                    json:"ref_id"`   // 关联 ID（如 fleet_id）
 	BalanceAfter float64   `gorm:"not null"                   json:"balance_after"`
 	OperatorID   uint      `gorm:"default:0;index"            json:"operator_id"` // 操作人 user_id（系统操作为 0）
@@ -73,7 +73,6 @@ const (
 	WalletRefPapFCSalary         = "pap_fc_salary"         // FC 工资
 	WalletRefPapConvert          = "pap_convert"           // 联盟 PAP 月度兑换
 	WalletRefManual              = "manual"                // 手动操作
-	WalletRefRedeem              = "redeem"                // 兑换消费
 	WalletRefAdminAdjust         = "admin_adjust"          // 管理员调整
 	WalletRefSrpPayout           = "srp_payout"            // SRP 补损发放
 	WalletRefWelfarePayout       = "welfare_payout"        // 福利审批发放
@@ -81,6 +80,7 @@ const (
 	WalletRefShopRefund          = "shop_refund"           // 商城退款（拒绝订单）
 	WalletRefNewbroCaptainReward = "newbro_captain_reward" // 队长帮扶奖励
 	WalletRefMentorReward        = "mentor_reward"         // 导师帮扶奖励
+	WalletRefRecruitReward       = "recruit_link_reward"   // 招募链接奖励
 )
 
 // 钱包操作日志动作

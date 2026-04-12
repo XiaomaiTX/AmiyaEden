@@ -100,6 +100,12 @@ test('newbro manage route keeps readonly menu access for captains', () => {
   assert.deepEqual(manageRoute?.meta.roles, ['super_admin', 'admin', 'captain'])
 })
 
+test('newbro recruit link route is the last child under Newbro', () => {
+  const childNames = actualNewbroRoutes.children?.map((route) => route.name)
+
+  assert.deepEqual(childNames?.at(-1), 'NewbroRecruitLink')
+})
+
 test('applyMenuAccessFilter hides AutoRole from admins but keeps it for super admins', () => {
   const adminFiltered = applyMenuAccessFilter([systemRoutes], ['admin'])
   const adminSystemMenu = adminFiltered[0]
