@@ -966,10 +966,11 @@ func (s *SrpService) sendPayoutMails(ctx context.Context, payerID uint, apps []*
 }
 
 func (s *SrpService) buildPayoutMailContent(apps []*model.SrpApplication) (string, string) {
+	shipNames := s.resolveSrpMailShipNames(apps)
 	if len(apps) == 1 {
 		app := apps[0]
 		subject := fmt.Sprintf("[SRP 发放通知 / SRP Payout Notice] %s - %s", app.CharacterName, formatISKCompact(app.FinalAmount))
-		return subject, buildSinglePayoutMailBody(app, s.resolveFleetTitle(app))
+		return subject, buildSinglePayoutMailBody(app, s.resolveFleetTitle(app), shipNames[app.ShipTypeID])
 	}
 
 	fleetTitles := make(map[uint]string, len(apps))
@@ -979,7 +980,7 @@ func (s *SrpService) buildPayoutMailContent(apps []*model.SrpApplication) (strin
 		}
 		fleetTitles[app.ID] = s.resolveFleetTitle(app)
 	}
-	return buildBatchPayoutMailContent(apps, fleetTitles)
+	return buildBatchPayoutMailContent(apps, fleetTitles, shipNames)
 }
 
 func (s *SrpService) resolveFleetTitle(app *model.SrpApplication) string {
@@ -1012,13 +1013,103 @@ func formatISKCompact(amount float64) string {
 	}
 }
 
-func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string) string {
-	shipDisplay := app.ShipName
-	if shipDisplay == "" {
-		shipDisplay = fmt.Sprintf("Type %d", app.ShipTypeID)
+type localizedMailText struct {
+	ZH string
+	EN string
+}
+
+func fallbackSrpMailShipName(app *model.SrpApplication) string {
+	if app == nil {
+		return ""
+	}
+	shipDisplay := strings.TrimSpace(app.ShipName)
+	if shipDisplay != "" {
+		return shipDisplay
+	}
+	if app.ShipTypeID > 0 {
+		return fmt.Sprintf("Type %d", app.ShipTypeID)
+	}
+	return "Unknown"
+}
+
+func normalizeLocalizedMailText(text localizedMailText) localizedMailText {
+	text.ZH = strings.TrimSpace(text.ZH)
+	text.EN = strings.TrimSpace(text.EN)
+	if text.ZH == "" {
+		text.ZH = text.EN
+	}
+	if text.EN == "" {
+		text.EN = text.ZH
+	}
+	return text
+}
+
+func resolveSrpMailShipName(app *model.SrpApplication, shipNames map[int64]localizedMailText) localizedMailText {
+	fallback := fallbackSrpMailShipName(app)
+	if app == nil {
+		return localizedMailText{ZH: fallback, EN: fallback}
+	}
+	if shipNames != nil {
+		if localized := normalizeLocalizedMailText(shipNames[app.ShipTypeID]); localized.ZH != "" || localized.EN != "" {
+			return localized
+		}
+	}
+	return localizedMailText{ZH: fallback, EN: fallback}
+}
+
+func (s *SrpService) resolveSrpMailShipNames(apps []*model.SrpApplication) map[int64]localizedMailText {
+	if s == nil || s.sdeRepo == nil || len(apps) == 0 {
+		return map[int64]localizedMailText{}
+	}
+
+	typeIDSet := make(map[int64]struct{})
+	for _, app := range apps {
+		if app == nil || app.ShipTypeID <= 0 {
+			continue
+		}
+		typeIDSet[app.ShipTypeID] = struct{}{}
+	}
+	if len(typeIDSet) == 0 {
+		return map[int64]localizedMailText{}
+	}
+
+	typeIDs := make([]int, 0, len(typeIDSet))
+	for typeID := range typeIDSet {
+		typeIDs = append(typeIDs, int(typeID))
+	}
+
+	result := make(map[int64]localizedMailText, len(typeIDs))
+	if zhInfos, err := s.sdeRepo.GetTypes(typeIDs, nil, "zh"); err == nil {
+		for _, info := range zhInfos {
+			localized := result[int64(info.TypeID)]
+			localized.ZH = strings.TrimSpace(info.TypeName)
+			result[int64(info.TypeID)] = localized
+		}
+	}
+	if enInfos, err := s.sdeRepo.GetTypes(typeIDs, nil, "en"); err == nil {
+		for _, info := range enInfos {
+			localized := result[int64(info.TypeID)]
+			localized.EN = strings.TrimSpace(info.TypeName)
+			result[int64(info.TypeID)] = localized
+		}
+	}
+
+	for typeID, localized := range result {
+		result[typeID] = normalizeLocalizedMailText(localized)
+	}
+	return result
+}
+
+func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string, shipName localizedMailText) string {
+	shipName = normalizeLocalizedMailText(shipName)
+	if shipName.ZH == "" && shipName.EN == "" {
+		fallback := fallbackSrpMailShipName(app)
+		shipName = localizedMailText{ZH: fallback, EN: fallback}
 	}
 	amountDisplay := formatISKCompact(app.FinalAmount)
 	zkillURL := fmt.Sprintf("https://zkillboard.com/kill/%d/", app.KillmailID)
+	note := strings.TrimSpace(app.Note)
+	reviewNote := strings.TrimSpace(app.ReviewNote)
 
 	var bodyBuilder strings.Builder
 	fmt.Fprintf(&bodyBuilder, "%s 你好，\n\n", app.CharacterName)
@@ -1027,8 +1118,14 @@ func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string) str
 		fmt.Fprintf(&bodyBuilder, "关联舰队：%s\n", fleetTitle)
 	}
 	fmt.Fprintf(&bodyBuilder, "损失时间：%s\n", app.KillmailTime.Format("2006-01-02 15:04:05"))
-	fmt.Fprintf(&bodyBuilder, "损失舰船：%s\n", shipDisplay)
+	fmt.Fprintf(&bodyBuilder, "损失舰船：%s\n", shipName.ZH)
 	fmt.Fprintf(&bodyBuilder, "发放金额：%s\n", amountDisplay)
+	if note != "" {
+		fmt.Fprintf(&bodyBuilder, "申请备注：%s\n", note)
+	}
+	if reviewNote != "" {
+		fmt.Fprintf(&bodyBuilder, "审批备注：%s\n", reviewNote)
+	}
 	fmt.Fprintf(&bodyBuilder, "zKillboard：<url=%s>查看击毁报告</url>\n\n", zkillURL)
 	bodyBuilder.WriteString("=============\n\n")
 	bodyBuilder.WriteString("Hello ")
@@ -1039,8 +1136,14 @@ func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string) str
 		fmt.Fprintf(&bodyBuilder, "Linked Fleet: %s\n", fleetTitle)
 	}
 	fmt.Fprintf(&bodyBuilder, "Loss Time: %s\n", app.KillmailTime.Format("2006-01-02 15:04:05"))
-	fmt.Fprintf(&bodyBuilder, "Ship Lost: %s\n", shipDisplay)
+	fmt.Fprintf(&bodyBuilder, "Ship Lost: %s\n", shipName.EN)
 	fmt.Fprintf(&bodyBuilder, "Payout Amount: %s\n", amountDisplay)
+	if note != "" {
+		fmt.Fprintf(&bodyBuilder, "Application Note: %s\n", note)
+	}
+	if reviewNote != "" {
+		fmt.Fprintf(&bodyBuilder, "Review Note: %s\n", reviewNote)
+	}
 	fmt.Fprintf(&bodyBuilder, "zKillboard: <url=%s>View Killmail</url>\n\n", zkillURL)
 
 	bodyBuilder.WriteString("────────────────────────\n")
@@ -1052,7 +1155,7 @@ func buildSinglePayoutMailBody(app *model.SrpApplication, fleetTitle string) str
 
 // buildBatchPayoutMailContent 为批量发放生成聚合邮件主题和内容
 // apps: 同一个收件人（recipient_character_id）的所有申请
-func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[uint]string) (string, string) {
+func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[uint]string, shipNames map[int64]localizedMailText) (string, string) {
 	if len(apps) == 0 {
 		return "", ""
 	}
@@ -1071,15 +1174,14 @@ func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[u
 	fmt.Fprintf(&bodyBuilder, "Your %d SRP payouts have been completed. Total: %s. Details are as follows:\n\n", len(apps), formatISKCompact(totalISK))
 
 	for i, app := range apps {
-		shipDisplay := app.ShipName
-		if shipDisplay == "" {
-			shipDisplay = fmt.Sprintf("Type %d", app.ShipTypeID)
-		}
+		shipName := resolveSrpMailShipName(app, shipNames)
 		zkillURL := fmt.Sprintf("https://zkillboard.com/kill/%d/", app.KillmailID)
 		fleetTitle := ""
 		if fleetTitles != nil {
 			fleetTitle = fleetTitles[app.ID]
 		}
+		note := strings.TrimSpace(app.Note)
+		reviewNote := strings.TrimSpace(app.ReviewNote)
 		bodyBuilder.WriteString("────────────────────────\n")
 		fmt.Fprintf(&bodyBuilder, "第 %d 条\n", i+1)
 		if fleetTitle != "" {
@@ -1087,8 +1189,14 @@ func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[u
 		}
 		fmt.Fprintf(&bodyBuilder, "  zKillboard：<url=%s>查看击毁报告</url>\n", zkillURL)
 		fmt.Fprintf(&bodyBuilder, "  损失时间：%s\n", app.KillmailTime.Format("2006-01-02 15:04:05"))
-		fmt.Fprintf(&bodyBuilder, "  损失舰船：%s\n", shipDisplay)
+		fmt.Fprintf(&bodyBuilder, "  损失舰船：%s\n", shipName.ZH)
 		fmt.Fprintf(&bodyBuilder, "  发放金额：%s\n", formatISKCompact(app.FinalAmount))
+		if note != "" {
+			fmt.Fprintf(&bodyBuilder, "  申请备注：%s\n", note)
+		}
+		if reviewNote != "" {
+			fmt.Fprintf(&bodyBuilder, "  审批备注：%s\n", reviewNote)
+		}
 
 		fmt.Fprintf(&bodyBuilder, "  Item %d\n", i+1)
 		if fleetTitle != "" {
@@ -1096,8 +1204,14 @@ func buildBatchPayoutMailContent(apps []*model.SrpApplication, fleetTitles map[u
 		}
 		fmt.Fprintf(&bodyBuilder, "  zKillboard: <url=%s>View Killmail</url>\n", zkillURL)
 		fmt.Fprintf(&bodyBuilder, "  Loss Time: %s\n", app.KillmailTime.Format("2006-01-02 15:04:05"))
-		fmt.Fprintf(&bodyBuilder, "  Ship Lost: %s\n", shipDisplay)
+		fmt.Fprintf(&bodyBuilder, "  Ship Lost: %s\n", shipName.EN)
 		fmt.Fprintf(&bodyBuilder, "  Payout Amount: %s\n", formatISKCompact(app.FinalAmount))
+		if note != "" {
+			fmt.Fprintf(&bodyBuilder, "  Application Note: %s\n", note)
+		}
+		if reviewNote != "" {
+			fmt.Fprintf(&bodyBuilder, "  Review Note: %s\n", reviewNote)
+		}
 	}
 
 	bodyBuilder.WriteString("────────────────────────\n\n")
