@@ -727,10 +727,13 @@
     "esiCheckTokenInvalidTip": "Token is invalid, some data may not refresh. Please re-bind the character to restore authorization.",
     "esiCheckSelectChar": "Select Character",
     "esiCheckCoverage": "{granted}/{total} authorized",
-    "esiCheckClickToDetail": "Click to view details",
     "esiCheckReauthTip": "Missing scopes require re-binding the character to authorize",
-    "esiCheckNoData": "No ESI authorization data",
-    "esiCheckNoCharacters": "No bound characters"
+    "esiCheckReauth": "Re-authorize",
+    "esiCheckReauthFailed": "Failed to get authorization URL",
+    "esiCheckNoCharacters": "No bound characters",
+    "esiCheckAllCharactersCount": "{count} character(s) total",
+    "esiCheckAllValid": "All authorizations valid",
+    "esiCheckInvalidCount": "{count} character(s) with issues"
   },
   "npcKill": {
     "title": "NPC Kill Report",

@@ -16,12 +16,20 @@ test('character detail shows alert when token is invalid', () => {
   assert.match(source, /esiCheckTokenInvalidTip/)
 })
 
-test('character detail shows reauth tip for missing scopes', () => {
-  assert.match(source, /hasMissingScopes/)
+test('character detail shows reauth tip only for missing required scopes', () => {
+  assert.match(source, /hasMissingRequiredScopes/)
+  assert.match(source, /r\.required/)
   assert.match(source, /esiCheckReauthTip/)
 })
 
-test('character detail computes coverage summary', () => {
+test('character detail reauth button calls getEveBindURL', () => {
+  assert.match(source, /getEveBindURL/)
+  assert.match(source, /window\.location\.href/)
+  assert.match(source, /esiCheckReauthFailed/)
+})
+
+test('character detail coverage summary counts only required scopes', () => {
   assert.match(source, /formatCoverage/)
   assert.match(source, /esiCheckCoverage/)
+  assert.match(source, /s\.required/)
 })

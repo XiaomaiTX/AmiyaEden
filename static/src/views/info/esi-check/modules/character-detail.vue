@@ -26,6 +26,9 @@
         <span v-if="selectedCharacter" class="text-sm text-gray-500">
           {{ formatCoverage(selectedCharacter) }}
         </span>
+        <ElButton type="primary" plain :loading="reauthLoading" @click="handleReauth">
+          {{ $t('info.esiCheckReauth') }}
+        </ElButton>
       </div>
 
       <ElAlert
@@ -38,7 +41,7 @@
         class="mb-4"
       />
 
-      <div v-if="selectedCharacter && hasMissingScopes" class="mb-4">
+      <div v-if="selectedCharacter && hasMissingRequiredScopes" class="mb-4">
         <ElAlert :title="$t('info.esiCheckReauthTip')" type="warning" show-icon :closable="false" />
       </div>
 
@@ -79,6 +82,8 @@
 
 <script setup lang="ts">
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
+  import { getEveBindURL } from '@/api/auth'
+  import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'CharacterDetail' })
@@ -94,6 +99,19 @@
   }>()
 
   const { t } = useI18n()
+
+  const reauthLoading = ref(false)
+
+  const handleReauth = async () => {
+    reauthLoading.value = true
+    try {
+      const url = await getEveBindURL()
+      window.location.href = url
+    } catch {
+      reauthLoading.value = false
+      ElMessage.error(t('info.esiCheckReauthFailed'))
+    }
+  }
 
   const selectedCharacter = computed(
     () => props.characters.find((c) => c.character_id === props.selectedCharacterId) ?? null
@@ -117,13 +135,17 @@
     }))
   })
 
-  const hasMissingScopes = computed(() => scopeRows.value.some((r) => !r.authorized))
+  const hasMissingRequiredScopes = computed(() =>
+    scopeRows.value.some((r) => r.required && !r.authorized)
+  )
 
   const formatCoverage = (char: Api.Auth.EveCharacter): string => {
+    const requiredScopes = props.scopes.filter((s) => s.required)
+    if (requiredScopes.length === 0) return ''
     const scopeSet = parseScopeSet(char.scopes)
     const granted = char.token_invalid
       ? 0
-      : props.scopes.filter((s) => scopeSet.has(s.scope)).length
-    return t('info.esiCheckCoverage', { granted, total: props.scopes.length })
+      : requiredScopes.filter((s) => scopeSet.has(s.scope)).length
+    return t('info.esiCheckCoverage', { granted, total: requiredScopes.length })
   }
 </script>
