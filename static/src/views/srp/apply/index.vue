@@ -247,6 +247,14 @@
           }
         },
         {
+          prop: 'review_note',
+          label: t('srp.apply.columns.reviewNote'),
+          minWidth: 160,
+          showOverflowTooltip: true,
+          formatter: (row: Api.Srp.Application) =>
+            h('span', { class: row.review_note ? '' : 'text-gray-400' }, row.review_note || '-')
+        },
+        {
           prop: 'payout_status',
           label: t('srp.apply.columns.payoutStatus'),
           width: 100,
