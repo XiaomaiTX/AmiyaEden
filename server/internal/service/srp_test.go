@@ -215,6 +215,92 @@ func TestBuildSrpPayoutWalletReason(t *testing.T) {
 	}
 }
 
+func TestBuildSinglePayoutMailBodyUsesLocalizedShipNamesAndRemark(t *testing.T) {
+	app := &model.SrpApplication{
+		CharacterName: "Pilot One",
+		KillmailID:    880001,
+		KillmailTime:  time.Date(2026, time.April, 12, 10, 30, 0, 0, time.UTC),
+		FinalAmount:   12_345_678,
+		Note:          "请尽快处理",
+		ReviewNote:    "已核实属实",
+	}
+
+	body := buildSinglePayoutMailBody(app, "海燕护航", localizedMailText{
+		ZH: "守卫级",
+		EN: "Guardian",
+	})
+
+	if !strings.Contains(body, "关联舰队：海燕护航") {
+		t.Fatalf("expected Chinese fleet title in body, got %q", body)
+	}
+	if !strings.Contains(body, "损失舰船：守卫级") {
+		t.Fatalf("expected Chinese ship name in body, got %q", body)
+	}
+	if !strings.Contains(body, "Ship Lost: Guardian") {
+		t.Fatalf("expected English ship name in body, got %q", body)
+	}
+	if !strings.Contains(body, "申请备注：请尽快处理") {
+		t.Fatalf("expected Chinese application note in body, got %q", body)
+	}
+	if !strings.Contains(body, "审批备注：已核实属实") {
+		t.Fatalf("expected Chinese review note in body, got %q", body)
+	}
+	if !strings.Contains(body, "Application Note: 请尽快处理") {
+		t.Fatalf("expected English application note label in body, got %q", body)
+	}
+	if !strings.Contains(body, "Review Note: 已核实属实") {
+		t.Fatalf("expected English review note label in body, got %q", body)
+	}
+}
+
+func TestBuildBatchPayoutMailContentUsesLocalizedShipNamesAndRemark(t *testing.T) {
+	apps := []*model.SrpApplication{
+		{
+			ID:            1,
+			CharacterName: "Pilot One",
+			ShipTypeID:    22436,
+			KillmailID:    880001,
+			KillmailTime:  time.Date(2026, time.April, 12, 10, 30, 0, 0, time.UTC),
+			FinalAmount:   10_000_000,
+			Note:          "第一条备注",
+			ReviewNote:    "第一条审批备注",
+		},
+	}
+
+	subject, body := buildBatchPayoutMailContent(
+		apps,
+		map[uint]string{1: "海燕护航"},
+		map[int64]localizedMailText{
+			22436: {
+				ZH: "守卫级",
+				EN: "Guardian",
+			},
+		},
+	)
+
+	if !strings.Contains(subject, "Pilot One") {
+		t.Fatalf("expected subject to include recipient name, got %q", subject)
+	}
+	if !strings.Contains(body, "损失舰船：守卫级") {
+		t.Fatalf("expected Chinese ship name in batch body, got %q", body)
+	}
+	if !strings.Contains(body, "Ship Lost: Guardian") {
+		t.Fatalf("expected English ship name in batch body, got %q", body)
+	}
+	if !strings.Contains(body, "申请备注：第一条备注") {
+		t.Fatalf("expected Chinese application note in batch body, got %q", body)
+	}
+	if !strings.Contains(body, "审批备注：第一条审批备注") {
+		t.Fatalf("expected Chinese review note in batch body, got %q", body)
+	}
+	if !strings.Contains(body, "Application Note: 第一条备注") {
+		t.Fatalf("expected English application note in batch body, got %q", body)
+	}
+	if !strings.Contains(body, "Review Note: 第一条审批备注") {
+		t.Fatalf("expected English review note in batch body, got %q", body)
+	}
+}
+
 func TestPayoutFuxiCoinModeCreditsWalletAndMarksApplicationPaid(t *testing.T) {
 	db := newSrpServiceTestDB(t)
 	oldDB := global.DB
