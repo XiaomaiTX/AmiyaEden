@@ -27,7 +27,9 @@ func newFuxiAdminRepoTestDB(t *testing.T) *gorm.DB {
 
 func TestFuxiAdminRepoUpsertConfigCreatesDefault(t *testing.T) {
 	db := newFuxiAdminRepoTestDB(t)
+	oldDB := global.DB
 	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
 	repo := NewFuxiAdminRepository()
 
 	cfg := model.DefaultFuxiAdminConfig()
@@ -49,7 +51,9 @@ func TestFuxiAdminRepoUpsertConfigCreatesDefault(t *testing.T) {
 
 func TestFuxiAdminRepoListAdminsByTierReturnsOnlyMatchingTier(t *testing.T) {
 	db := newFuxiAdminRepoTestDB(t)
+	oldDB := global.DB
 	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
 	repo := NewFuxiAdminRepository()
 
 	tier1 := model.FuxiAdminTier{Name: "High"}
@@ -73,7 +77,9 @@ func TestFuxiAdminRepoListAdminsByTierReturnsOnlyMatchingTier(t *testing.T) {
 
 func TestFuxiAdminRepoDeleteAdminsByTierIDRemovesAll(t *testing.T) {
 	db := newFuxiAdminRepoTestDB(t)
+	oldDB := global.DB
 	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
 	repo := NewFuxiAdminRepository()
 
 	tier := model.FuxiAdminTier{Name: "Mid"}
