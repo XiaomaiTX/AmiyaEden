@@ -53,6 +53,12 @@ export const infoRoutes: AppRouteRecord = {
       name: 'EveInfoContracts',
       component: '/info/contracts',
       meta: { title: 'menus.info.contracts', keepAlive: true, login: true }
+    },
+    {
+      path: 'esi-check',
+      name: 'EveInfoEsiCheck',
+      component: '/info/esi-check',
+      meta: { title: 'menus.info.esiCheck', keepAlive: true, login: true }
     }
   ]
 }

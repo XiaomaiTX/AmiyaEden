@@ -310,7 +310,8 @@
       "npcKills": "刷怪报表",
       "fittings": "我的装配",
       "assets": "人物资产",
-      "contracts": "人物合同"
+      "contracts": "人物合同",
+      "esiCheck": "ESI 授权检查"
     },
     "system": {
       "title": "系统管理",
@@ -728,7 +729,27 @@
     "contractStatusRejected": "已拒绝",
     "contractStatusFailed": "已失败",
     "contractStatusDeleted": "已删除",
-    "contractStatusReversed": "已撤销"
+    "contractStatusReversed": "已撤销",
+    "esiCheckOverview": "授权总览",
+    "esiCheckDetail": "人物详情",
+    "esiCheckScope": "Scope",
+    "esiCheckDescription": "用途",
+    "esiCheckModule": "模块",
+    "esiCheckRequired": "必需",
+    "esiCheckOptional": "可选",
+    "esiCheckAuthorized": "已授权",
+    "esiCheckMissing": "缺失",
+    "esiCheckTokenInvalid": "Token 已失效",
+    "esiCheckTokenInvalidTip": "Token 已失效，部分数据可能无法刷新。请重新绑定人物以恢复授权。",
+    "esiCheckSelectChar": "请选择人物",
+    "esiCheckCoverage": "{granted}/{total} 已授权",
+    "esiCheckReauthTip": "缺失的 scope 需要重新绑定人物以获取授权",
+    "esiCheckReauth": "重新授权",
+    "esiCheckReauthFailed": "获取授权链接失败",
+    "esiCheckNoCharacters": "暂无绑定人物",
+    "esiCheckAllCharactersCount": "共 {count} 个人物",
+    "esiCheckAllValid": "全部授权正常",
+    "esiCheckInvalidCount": "{count} 个人物授权异常"
   },
   "npcKill": {
     "title": "刷怪报表",
