@@ -53,18 +53,19 @@ last_reviewed: 2026-04-12
 
 页面分为两个层级，自上而下：
 
-1. **Overview 区域** — 所有人物的 ESI 授权总览矩阵
-2. **Detail 区域** — 选中人物的详细 scope 授权列表
+1. **Overview 区域** — ESI 授权状态总览（badge 列表展示失效人物）
+2. **Detail 区域** — 选中人物的详细 scope 授权列表 + 重新授权按钮
 
 ### 第一层：Overview 总览区
 
 #### 功能说明
 
-- 以矩阵形式展示用户所有人物 × 系统所需 scope 的授权状态
-- 每个人物一列，每个 scope 一行，交叉格显示 ✅ / ❌
-- 人物列头显示头像 + 名称，Token 失效时列头标红警告
-- 矩阵底部汇总每个人物的授权覆盖率（如 `12/15 已授权`）
-- 点击人物列头可滚动/展开至下方 Detail 区域查看该人物详情
+- 以简洁 badge 形式展示 ESI 授权总览，替代复杂的 scope × character 矩阵
+- 显示人物总数（如"共 3 个人物"）
+- 全部有效时显示绿色 `所有授权均有效` 标签
+- 存在失效人物时显示红色 badge（如"2 个人物存在异常"）+ 失效人物名称 badge 列表
+- 失效判定：`token_invalid === true` 或缺少任一已注册 scope
+- 点击失效人物 badge 可跳转至 Detail 区域查看该人物详情
 
 #### 数据流
 
@@ -77,10 +78,11 @@ last_reviewed: 2026-04-12
    → 获取当前用户人物列表
    → EveCharacter[]: [{character_id, character_name, scopes, token_invalid, ...}]
 
-3. 前端计算授权矩阵：
+3. 前端计算失效人物列表：
    - 将每个人物的 scopes（空格分隔字符串）→ Set<string>
-   - 构建 scopes × characters 二维矩阵
-   - 每个格子判断 scope 是否在人物 scope Set 中
+   - 判定失效条件：token_invalid 或任一**必需**（required）scope 不在人物 scope Set 中
+   - 可选 scope 未授权不属于异常
+   - 筛选出 invalidCharacters 列表
 ```
 
 #### 布局设计
@@ -88,31 +90,24 @@ last_reviewed: 2026-04-12
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │  ESI 授权总览                                                                │
-├────────────────────────────┬──────────┬──────────┬──────────┬────────────────┤
-│  Scope (按模块分组)          │ [头像]    │ [头像]    │ [头像]    │               │
-│                            │  人物A    │  人物B    │  人物C    │               │
-│ ──── 钱包模块 ────────────────────────────────────────────────────────────── │
-│  esi-wallet.read_charact.. │    ✅    │    ✅    │    ❌    │               │
-│ ──── 击杀邮件模块 ────────────────────────────────────────────────────────── │
-│  esi-killmails.read_kill.. │    ✅    │    ❌    │    ✅    │               │
-│ ──── 舰队模块 ───────────────────────────────────────────────────────────── │
-│  esi-fleets.read_fleet.v1  │    ❌    │    ❌    │    ❌    │               │
-│  esi-fleets.write_fleet..  │    ❌    │    ❌    │    ❌    │               │
-│ ──── SRP 模块 ────────────────────────────────────────────────────────────── │
-│  esi-ui.open_window.v1     │    ✅    │    ❌    │    ❌    │               │
-│ ──────────────────────────────────────────────────────────────────────────────│
-│  覆盖率                     │  3/7     │  2/7⚠   │  2/7     │               │
-└────────────────────────────┴──────────┴──────────┴──────────┴────────────────┘
-  ⚠ = Token 已失效
-```
+├──────────────────────────────────────────────────────────────────────────────┤
+│  共 3 个人物  [✅ 所有授权均有效]                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 
-当人物较多（>5）时，人物列水平滚动，Scope 列固定。
+失效时的布局：
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ESI 授权总览                                                                │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  共 3 个人物  [2 个人物存在异常]  [⚠ 人物A]  [⚠ 人物B]                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
 
 ### 第二层：Detail 详情区
 
 #### 功能说明
 
 - 顶部人物选择器（与 wallet、skill 等页面一致，使用 ElSelect + Avatar）
+- 人物选择器旁提供「重新授权」按钮（ElButton），调用 `getEveBindURL()` 跳转 EVE SSO，等价于"添加新人物"操作
 - 展示选中人物的完整 scope 列表，包含：
   - scope 名称
   - 用途描述
@@ -125,20 +120,20 @@ last_reviewed: 2026-04-12
 #### 布局设计
 
 ```
-┌─────────────────────────────────────────────────┐
-│  ⚠ Token 已失效，部分数据可能无法刷新             │  ← 仅 token_invalid 时显示
-├─────────────────────────────────────────────────┤
-│  [人物选择器 ▼]  状态摘要: ✅ 3/7 已授权          │
-├─────────────────────────────────────────────────┤
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ⚠ Token 已失效，部分数据可能无法刷新             ← 仅 token_invalid 时显示  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  [人物选择器 ▼]  状态摘要: ✅ 3/7 已授权  [重新授权]                           │
+├──────────────────────────────────────────────────────────────────────────────┤
 │  Scope                          │ 用途    │ 模块  │ 必需 │ 状态  │
-│ ─────────────────────────────────────────────── │
+│ ────────────────────────────────────────────────────────────────────────── │
 │  esi-wallet.read_character_...  │ 读取钱包 │ 钱包  │  是  │  ✅   │
 │  esi-killmails.read_killmail... │ 读取击杀 │ 击杀  │  是  │  ✅   │
 │  esi-fleets.read_fleet.v1      │ 读取舰队 │ 舰队  │  否  │  ❌   │
 │  esi-fleets.write_fleet.v1     │ 写入舰队 │ 舰队  │  否  │  ❌   │
 │  esi-ui.open_window.v1         │ 打开窗口 │ SRP  │  否  │  ❌   │
-│  ...                                            │
-└─────────────────────────────────────────────────┘
+│  ...                                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 组件拆分
@@ -159,15 +154,15 @@ static/src/views/info/esi-check/
 #### overview-matrix.vue
 
 - Props：`scopes: RegisteredScope[]`、`characters: EveCharacter[]`
-- 职责：渲染 scope × character 矩阵，计算每个格子的授权状态
-- 交互：点击人物列头 → emit `select-character` 事件，通知父组件切换 Detail 区域的选中人物
-- 模块分组：按 scope.module 分组，使用 ElDivider 或行分隔
+- 职责：计算失效人物列表，以 badge 形式展示授权总览
+- 交互：点击失效人物 badge → emit `select-character` 事件，通知父组件切换 Detail 区域的选中人物
 
 #### character-detail.vue
 
-- Props：`scopes: RegisteredScope[]`、`character: EveCharacter | null`
+- Props：`scopes: RegisteredScope[]`、`characters: EveCharacter[]`、`selectedCharacterId?: number`
 - 职责：渲染单人物的 scope 详细列表
-- 内部包含人物选择器（ElSelect + Avatar），切换人物时 emit `update:character`
+- 内部包含人物选择器（ElSelect + Avatar）+「重新授权」按钮（调用 `getEveBindURL()` 跳转 SSO）
+- 切换人物时 emit `update:selected-character-id`
 - Token 失效时显示 ElAlert 警告
 
 ### 变更清单
@@ -176,7 +171,7 @@ static/src/views/info/esi-check/
 |---|---|---|
 | `server/internal/service/eve_sso.go` | 修改 | `RegisteredScope` 结构体补充 JSON tag（`json:"module"` 等），修复 API 返回 PascalCase 导致前端读取全部为 `undefined` 的问题 |
 | `static/src/router/modules/info.ts` | 修改 | 新增 `esi-check` 子路由 |
-| `static/src/locales/langs/zh.json` | 修改 | 新增 `menus.info.esiCheck` 及 18 个页面 i18n key |
+| `static/src/locales/langs/zh.json` | 修改 | 新增 `menus.info.esiCheck` 及页面 i18n key |
 | `static/src/locales/langs/en.json` | 修改 | 新增对应英文翻译 |
 | `static/src/views/info/esi-check/index.vue` | **新建** | 页面入口组件 |
 | `static/src/views/info/esi-check/modules/overview-matrix.vue` | **新建** | 总览矩阵组件 |
@@ -186,7 +181,12 @@ static/src/views/info/esi-check/
 | `static/src/views/info/esi-check/modules/character-detail.test.ts` | **新建** | 详情组件测试（4 案例） |
 | `docs/features/current/info-and-reporting.md` | 修改 | 新增 ESI 授权检查能力描述与前端页面入口 |
 
-> **实现偏差说明**：草案中计划修改 `static/src/api/eve-info.ts` 新增 API 封装，实际实现中发现 `static/src/api/auth.ts` 中已有 `fetchEveSSOScopes()` 和 `fetchMyCharacters()`，直接复用，无需新增 API 封装。`character-detail.vue` 的 Props 从草案的 `character: EveCharacter | null` 调整为 `characters + selectedCharacterId` 模式，与项目其他页面（如 wallet）保持一致。
+> **实现偏差说明**：
+> 1. 草案中计划修改 `static/src/api/eve-info.ts` 新增 API 封装，实际实现中发现 `static/src/api/auth.ts` 中已有 `fetchEveSSOScopes()` 和 `fetchMyCharacters()`，直接复用，无需新增 API 封装。
+> 2. `character-detail.vue` 的 Props 从草案的 `character: EveCharacter | null` 调整为 `characters + selectedCharacterId` 模式，与项目其他页面（如 wallet）保持一致。
+> 3. `overview-matrix.vue` 从草案的 scope × character 矩阵简化为 badge 列表形式，仅展示失效人物数量和名称，大幅降低视觉复杂度。
+> 4. `character-detail.vue` 新增「重新授权」按钮（`ElButton`），调用 `getEveBindURL()` 跳转 EVE SSO，等价于"添加新人物"操作，方便用户直接在 ESI 检查页面完成重新授权。
+> 5. 失效判定和覆盖率统计仅关注**必需** scope（`required: true`），可选 scope 未授权不属于异常，不纳入覆盖率计算。
 
 ### 路由注册
 
@@ -215,13 +215,14 @@ info.esiCheck.missing        = "缺失" / "Missing"
 info.esiCheck.tokenInvalid   = "Token 已失效" / "Token Invalid"
 info.esiCheck.tokenInvalidTip= "Token 已失效，部分数据可能无法刷新" / "Token is invalid, some data may not refresh"
 info.esiCheck.selectChar     = "请选择人物" / "Select Character"
-info.esiCheck.allGranted     = "所有授权均已就绪" / "All authorizations are ready"
-info.esiCheck.someMissing    = "有 {n} 个授权缺失" / "{n} authorizations missing"
 info.esiCheck.coverage       = "{granted}/{total} 已授权" / "{granted}/{total} authorized"
-info.esiCheck.clickToDetail  = "点击查看详情" / "Click to view details"
 info.esiCheck.reauthTip      = "缺失的 scope 需要重新绑定人物以获取授权" / "Missing scopes require re-binding the character to authorize"
-info.esiCheck.noData         = "暂无 ESI 授权数据" / "No ESI authorization data"
+info.esiCheck.reauth         = "重新授权" / "Re-authorize"
+info.esiCheck.reauthFailed   = "获取授权链接失败" / "Failed to get authorization URL"
 info.esiCheck.noCharacters   = "暂无绑定人物" / "No bound characters"
+info.esiCheck.allCharactersCount = "共 {count} 个人物" / "{count} character(s) total"
+info.esiCheck.allValid       = "所有授权均有效" / "All authorizations valid"
+info.esiCheck.invalidCount   = "{count} 个人物存在异常" / "{count} character(s) with issues"
 ```
 
 ## 实现时需同步更新的项目文档
@@ -269,14 +270,14 @@ info.esiCheck.noCharacters   = "暂无绑定人物" / "No bound characters"
 
 #### 2. `static/src/views/info/esi-check/modules/overview-matrix.test.ts`
 
-Overview 矩阵的核心逻辑断言：
+Overview 总览的核心逻辑断言：
 
 | 测试案例 | 验证内容 |
 |---|---|
-| 按模块分组 scope | 源码中使用 `scope.module` 进行分组逻辑 |
-| Token 失效人物列头有警告标识 | `token_invalid` 为 true 时渲染警告样式/图标 |
-| 覆盖率计算逻辑 | 授权数 / 总 scope 数的计算公式存在 |
-| 点击人物列头触发 select 事件 | 存在 `emit('select-character', ...)` 调用 |
+| 失效人物列表计算 | `token_invalid` 或缺少**必需** scope（`required: true`）的人物被筛选为 `invalidCharacters`；可选 scope 未授权不计入 |
+| 全部有效时显示成功标签 | `invalidCharacters` 为空时渲染 `esiCheckAllValid` |
+| 存在失效人物时显示 badge 列表 | `invalidCharacters` 非空时渲染红色计数 badge + 人物名称 badge |
+| 点击人物 badge 触发 select 事件 | 存在 `emit('select-character', ...)` 调用 |
 
 #### 3. `static/src/views/info/esi-check/modules/character-detail.test.ts`
 
@@ -286,8 +287,9 @@ Overview 矩阵的核心逻辑断言：
 |---|---|
 | scope 列表渲染授权状态 | 通过 character.scopes 判断每个 scope 是否已授权 |
 | Token 失效时显示警告横幅 | `token_invalid` 为 true 时渲染 ElAlert |
-| 缺失 scope 显示重新授权提示 | 未授权 scope 旁显示引导文案 |
-| 授权摘要计算 | 已授权数 / 总 scope 数 |
+| 缺失必需 scope 显示重新授权提示 | 仅当**必需** scope（`required: true`）缺失时显示引导文案；可选 scope 未授权不触发提示 |
+| 重新授权按钮调用 getEveBindURL | 源码中引用 `getEveBindURL()` 并在成功时执行 `window.location.href` 跳转 |
+| 授权摘要计算 | 已授权必需 scope 数 / 必需 scope 总数（仅统计 `required: true`） |
 
 ### 可选：纯函数提取测试
 
@@ -296,7 +298,7 @@ Overview 矩阵的核心逻辑断言：
 - `parseScopes('') → Set{}`
 - `parseScopes('esi-wallet.v1 esi-skills.v1') → Set{'esi-wallet.v1', 'esi-skills.v1'}`
 - `parseScopes` 处理连续空格、前后空格
-- 矩阵构建：空人物列表 → 空矩阵；单人物单 scope → 正确判定
+- 失效人物筛选：空人物列表 → 空；单人物缺少必需 scope → 被标记为失效；缺少可选 scope → 不标记
 
 ### 无需测试的部分
 
@@ -312,7 +314,7 @@ Overview 矩阵的核心逻辑断言：
 
 - 不新建后端 API
 - 不修改数据模型
-- 不实现自动重新授权流程（仅提供引导提示）
+- 不实现自动重新授权流程（提供手动「重新授权」按钮，用户点击后跳转 SSO）
 
 ### 后端 JSON tag 修复影响范围
 

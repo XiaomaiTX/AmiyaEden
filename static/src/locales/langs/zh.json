@@ -728,10 +728,13 @@
     "esiCheckTokenInvalidTip": "Token 已失效，部分数据可能无法刷新。请重新绑定人物以恢复授权。",
     "esiCheckSelectChar": "请选择人物",
     "esiCheckCoverage": "{granted}/{total} 已授权",
-    "esiCheckClickToDetail": "点击查看详情",
     "esiCheckReauthTip": "缺失的 scope 需要重新绑定人物以获取授权",
-    "esiCheckNoData": "暂无 ESI 授权数据",
-    "esiCheckNoCharacters": "暂无绑定人物"
+    "esiCheckReauth": "重新授权",
+    "esiCheckReauthFailed": "获取授权链接失败",
+    "esiCheckNoCharacters": "暂无绑定人物",
+    "esiCheckAllCharactersCount": "共 {count} 个人物",
+    "esiCheckAllValid": "全部授权正常",
+    "esiCheckInvalidCount": "{count} 个人物授权异常"
   },
   "npcKill": {
     "title": "刷怪报表",
