@@ -268,12 +268,6 @@ func (s *ShopService) GetMyOrders(userID uint, page, pageSize int, status string
 	return responses, total, nil
 }
 
-// GetMyRedeemCodes 获取我的兑换码
-func (s *ShopService) GetMyRedeemCodes(userID uint, page, pageSize int) ([]model.ShopRedeemCode, int64, error) {
-	normalizePageRequest(&page, &pageSize, 20, 100)
-	return s.repo.ListRedeemCodesByUser(userID, page, pageSize)
-}
-
 // ─────────────────────────────────────────────
 //  管理员端
 // ─────────────────────────────────────────────
@@ -382,23 +376,6 @@ func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, remark st
 	order.ReviewedAt = &now
 	order.ReviewRemark = remark
 
-	// 兑换码类商品 — 生成兑换码
-	product, err := s.repo.GetProductByID(order.ProductID)
-	if err == nil && product.Type == model.ProductTypeRedeem {
-		for i := 0; i < order.Quantity; i++ {
-			code := &model.ShopRedeemCode{
-				OrderID:   order.ID,
-				ProductID: product.ID,
-				UserID:    order.UserID,
-				Code:      generateRedeemCode(),
-				Status:    model.RedeemStatusUnused,
-			}
-			if err := s.repo.CreateRedeemCode(code); err != nil {
-				return nil, MailAttemptSummary{}, fmt.Errorf("生成兑换码失败: %w", err)
-			}
-		}
-	}
-
 	if err := s.repo.UpdateOrder(order); err != nil {
 		return nil, MailAttemptSummary{}, fmt.Errorf("更新订单失败: %w", err)
 	}
@@ -456,13 +433,15 @@ func (s *ShopService) sendOrderDeliveryMail(ctx context.Context, operatorID uint
 		deliveredOrder.ProductName,
 		deliveredOrder.Quantity,
 		sender.DisplayName,
+		deliveredOrder.Remark,
+		deliveredOrder.ReviewRemark,
 	)
 	mailID, err := mailSupport.send(ctx, sender.CharacterID, sender.AccessToken, recipient.CharacterID, subject, body)
 	summary.MailID = mailID
 	return summary, err
 }
 
-func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, officerDisplayName string) (string, string) {
+func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, officerDisplayName, orderRemark, deliveryRemark string) (string, string) {
 	orderNo = strings.TrimSpace(orderNo)
 	if orderNo == "" {
 		orderNo = "N/A"
@@ -478,6 +457,8 @@ func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, 
 	if officerDisplayName == "" {
 		officerDisplayName = "Officer"
 	}
+	orderRemark = strings.TrimSpace(orderRemark)
+	deliveryRemark = strings.TrimSpace(deliveryRemark)
 
 	subject := fmt.Sprintf("订单发放通知 / Order Delivery Notice %s", orderItem)
 	var bodyBuilder strings.Builder
@@ -486,6 +467,12 @@ func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, 
 	fmt.Fprintf(&bodyBuilder, "订单编号：%s\n", orderNo)
 	fmt.Fprintf(&bodyBuilder, "订单内容：%s\n", orderItem)
 	fmt.Fprintf(&bodyBuilder, "数量：%d\n", quantity)
+	if orderRemark != "" {
+		fmt.Fprintf(&bodyBuilder, "备注：%s\n", orderRemark)
+	}
+	if deliveryRemark != "" {
+		fmt.Fprintf(&bodyBuilder, "发放备注：%s\n", deliveryRemark)
+	}
 	bodyBuilder.WriteString("请检查你的钱包或合同。\n")
 	bodyBuilder.WriteString("感谢你的耐心等待。\n")
 	bodyBuilder.WriteString("==============\n\n")
@@ -494,6 +481,12 @@ func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, 
 	fmt.Fprintf(&bodyBuilder, "Order No: %s\n", orderNo)
 	fmt.Fprintf(&bodyBuilder, "Item: %s\n", orderItem)
 	fmt.Fprintf(&bodyBuilder, "Quantity: %d\n", quantity)
+	if orderRemark != "" {
+		fmt.Fprintf(&bodyBuilder, "Remark: %s\n", orderRemark)
+	}
+	if deliveryRemark != "" {
+		fmt.Fprintf(&bodyBuilder, "Delivery Remark: %s\n", deliveryRemark)
+	}
 	bodyBuilder.WriteString("Please check your wallet or contract.\n")
 	bodyBuilder.WriteString("Thank you for your patience.\n")
 
@@ -536,12 +529,6 @@ func (s *ShopService) AdminRejectOrder(orderID uint, operatorID uint, remark str
 	return order, nil
 }
 
-// AdminListRedeemCodes 管理员查询兑换码
-func (s *ShopService) AdminListRedeemCodes(page, pageSize int, productID *uint, status string) ([]model.ShopRedeemCode, int64, error) {
-	normalizePageRequest(&page, &pageSize, 20, 100)
-	return s.repo.AdminListRedeemCodes(page, pageSize, productID, status)
-}
-
 // ─────────────────────────────────────────────
 //  工具函数
 // ─────────────────────────────────────────────
@@ -550,17 +537,6 @@ func (s *ShopService) AdminListRedeemCodes(page, pageSize int, productID *uint, 
 func generateOrderNo() string {
 	const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 	code := make([]byte, 8)
-	for i := range code {
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
-		code[i] = charset[n.Int64()]
-	}
-	return string(code)
-}
-
-// generateRedeemCode 生成兑换码: 16位大写字母+数字
-func generateRedeemCode() string {
-	const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // 去掉易混淆字符
-	code := make([]byte, 16)
 	for i := range code {
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		code[i] = charset[n.Int64()]

@@ -127,6 +127,13 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 			},
 		},
 		{
+			name:  "shop order officer sees shop order pending count only",
+			roles: []string{model.RoleShopOrder},
+			want: BadgeCounts{
+				BadgeCountOrderPending: 1,
+			},
+		},
+		{
 			name:  "admin sees every non zero count",
 			roles: []string{model.RoleAdmin},
 			want: BadgeCounts{

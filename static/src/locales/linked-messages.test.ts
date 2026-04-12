@@ -23,14 +23,11 @@ const linkedMessages = {
     'shop.manage.status',
     'alliancePap.columns.status',
     'shopAdmin.products.statusPlaceholder',
-    'shopAdmin.products.fields.status',
-    'shopAdmin.redeem.statusPlaceholder'
+    'shopAdmin.products.fields.status'
   ],
   'common.type': [
     'info.journalType',
     'npcKill.journalRefType',
-    'shop.manage.type',
-    'shop.manage.colType',
     'fleet.wallet.refType',
     'shopAdmin.products.fields.type',
     'webhook.fields.type',
@@ -77,7 +74,7 @@ const linkedMessages = {
   'common.close': ['search.exitKeydown'],
   'common.copied': ['welfareApproval.copied', 'srp.manage.copied'],
   'common.copyFailed': ['welfareApproval.copyFailed', 'srp.manage.copyFailed'],
-  'common.createdAt': ['fleet.fields.createdAt', 'shopAdmin.redeem.table.createdAt'],
+  'common.createdAt': ['fleet.fields.createdAt'],
   'common.delete': ['shop.manage.deleteBtn', 'srp.prices.deleteBtn'],
   'common.edit': ['srp.manage.editBtn', 'srp.prices.editBtn'],
   'common.save': ['srp.prices.saveBtn', 'system.basicConfig.save'],
@@ -97,12 +94,6 @@ const linkedMessages = {
     'characters.profile.nickname',
     'srp.manage.columns.nickname',
     'shopAdmin.orders.table.nickname'
-  ],
-  'shop.redeemCode': [
-    'shop.typeRedeem',
-    'shopAdmin.products.typeRedeem',
-    'shopAdmin.products.values.redeem',
-    'shopAdmin.redeem.table.code'
   ],
   'welfareApproval.rejectBtn': [
     'newbro.mentor.reject',

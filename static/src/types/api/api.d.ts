@@ -1291,7 +1291,7 @@ declare namespace Api {
       stock: number
       max_per_user: number
       limit_period: 'forever' | 'daily' | 'weekly' | 'monthly'
-      type: 'normal' | 'redeem'
+      type: 'normal'
       status: number
       sort_order: number
       created_at: string
@@ -1326,20 +1326,6 @@ declare namespace Api {
 
     type OrderActionResult = Order & Api.Common.MailActionResult
 
-    /** 兑换码 */
-    interface RedeemCode {
-      id: number
-      order_id: number
-      product_id: number
-      user_id: number
-      code: string
-      status: 'unused' | 'used' | 'expired'
-      used_at: string | null
-      expires_at: string | null
-      created_at: string
-      updated_at: string
-    }
-
     /** 购买请求 */
     interface BuyParams {
       product_id: number
@@ -1356,7 +1342,7 @@ declare namespace Api {
       stock?: number
       max_per_user?: number
       limit_period?: 'forever' | 'daily' | 'weekly' | 'monthly'
-      type: 'normal' | 'redeem'
+      type: 'normal'
       status?: number
       sort_order?: number
     }
@@ -1399,14 +1385,6 @@ declare namespace Api {
       order_id: number
       remark?: string
     }
-
-    /** 兑换码查询参数 */
-    type RedeemSearchParams = Partial<{
-      current: number
-      size: number
-      product_id: number
-      status: string
-    }>
   }
 
   /** 通知相关类型 */

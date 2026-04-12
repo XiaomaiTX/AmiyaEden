@@ -915,7 +915,6 @@
     "products": "Products",
     "allTypes": "All Types",
     "typeNormal": "Normal",
-    "typeRedeem": "@:shop.redeemCode",
     "myBalance": "My Balance",
     "unlimitedStock": "In Stock",
     "stockRemaining": "Stock: {n}",
@@ -938,12 +937,11 @@
     "totalPrice": "Total",
     "status": "@:common.status",
     "reviewerName": "Operator",
+    "submitterRemark": "Submitter Remark",
+    "reviewRemark": "Processor Remark",
     "orderTime": "Order Time",
     "noOrders": "No orders yet",
-    "myRedeemCodes": "My Redeem Codes",
-    "redeemCode": "Redeem Code",
     "expiresAt": "Expires At",
-    "noRedeemCodes": "No redeem codes",
     "buyTitle": "Purchase",
     "remark": "Remark",
     "remarkPlaceholder": "Optional remark",
@@ -971,8 +969,6 @@
       "type": "@:common.type",
       "typeNormal": "Normal",
       "typeNormalShort": "Normal",
-      "typeRedeem": "Redeem / Service",
-      "typeRedeemShort": "Redeem",
       "stock": "Stock",
       "stockUnlimited": "Unlimited",
       "stockUnlimitedHint": "-1 = unlimited stock",
@@ -1787,6 +1783,7 @@
         "finalAmount": "Final Amount",
         "actualAmount": "Amount",
         "reviewStatus": "Review",
+        "reviewNote": "Review Note",
         "paid": "Paid",
         "payoutStatus": "Payout",
         "lastActor": "Last Actor",
@@ -2114,8 +2111,7 @@
       "products": "Product Management",
       "orders": "Order Management",
       "ordersSubtitle": "When delivering an order, copy and paste the order number into the contract description or transfer note.",
-      "orderHistory": "Order History",
-      "redeem": "Redeem Code Management"
+      "orderHistory": "Order History"
     },
     "products": {
       "createProduct": "Add Product",
@@ -2123,8 +2119,6 @@
       "typePlaceholder": "Product type",
       "statusPlaceholder": "@:common.status",
       "typeNormal": "Normal Product",
-      "typeRedeem": "@:shop.redeemCode",
-      "typeRedeemService": "Redeem Code / Service",
       "statusOnSale": "On Sale",
       "statusOffSale": "Off Sale",
       "dialogCreate": "Add Product",
@@ -2160,7 +2154,6 @@
       },
       "values": {
         "normal": "Normal",
-        "redeem": "@:shop.redeemCode",
         "unlimited": "Unlimited",
         "noLimit": "No Limit"
       },
@@ -2213,23 +2206,6 @@
         "rejectSuccess": "Rejected",
         "actionFailed": "Operation failed"
       }
-    },
-    "redeem": {
-      "productIdPlaceholder": "Product ID",
-      "statusPlaceholder": "@:common.status",
-      "status": {
-        "unused": "Unused",
-        "used": "Used",
-        "expired": "Expired"
-      },
-      "table": {
-        "productId": "Product ID",
-        "userId": "User ID",
-        "orderId": "Order ID",
-        "code": "@:shop.redeemCode",
-        "createdAt": "@:common.createdAt",
-        "expiresAt": "Expires At"
-      }
     }
   },
   "walletAdmin": {
@@ -2267,7 +2243,6 @@
       "pap_fc_salary": "FC Salary",
       "admin_adjust": "Admin Adjustment",
       "manual": "Manual",
-      "redeem": "Redeem Spend",
       "srp_payout": "SRP Payout",
       "welfare_payout": "Welfare Payout",
       "shop_purchase": "Shop Purchase",

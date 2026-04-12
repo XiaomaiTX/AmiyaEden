@@ -108,25 +108,6 @@ func (h *ShopHandler) GetMyOrders(c *gin.Context) {
 	response.OKWithPage(c, list, total, req.Current, req.Size)
 }
 
-// GetMyRedeemCodes POST /shop/redeem/list
-// 获取我的兑换码
-func (h *ShopHandler) GetMyRedeemCodes(c *gin.Context) {
-	var req shopListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		req.Current = 1
-		req.Size = 20
-	}
-	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
-
-	userID := middleware.GetUserID(c)
-	list, total, err := h.svc.GetMyRedeemCodes(userID, req.Current, req.Size)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
-}
-
 // ─────────────────────────────────────────────
 //  管理员端（全部 POST）
 // ─────────────────────────────────────────────
@@ -140,7 +121,7 @@ type adminProductCreateRequest struct {
 	Stock       int     `json:"stock"`        // -1=无限，>=0 有限
 	MaxPerUser  int     `json:"max_per_user"` // 0=不限购
 	LimitPeriod string  `json:"limit_period"` // forever / daily / weekly / monthly
-	Type        string  `json:"type" binding:"required,oneof=normal redeem"`
+	Type        string  `json:"type" binding:"required,oneof=normal"`
 	Status      int8    `json:"status"`
 	SortOrder   int     `json:"sort_order"`
 }
@@ -327,30 +308,4 @@ func (h *ShopHandler) AdminRejectOrder(c *gin.Context) {
 		return
 	}
 	response.OK(c, order)
-}
-
-// adminRedeemListRequest 兑换码列表请求
-type adminRedeemListRequest struct {
-	Current   int    `json:"current"`
-	Size      int    `json:"size"`
-	ProductID *uint  `json:"product_id"`
-	Status    string `json:"status"`
-}
-
-// AdminListRedeemCodes POST /system/shop/redeem/list
-// 管理员查询兑换码
-func (h *ShopHandler) AdminListRedeemCodes(c *gin.Context) {
-	var req adminRedeemListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		req.Current = 1
-		req.Size = 20
-	}
-	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
-
-	list, total, err := h.svc.AdminListRedeemCodes(req.Current, req.Size, req.ProductID, req.Status)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
 }
