@@ -13,7 +13,7 @@ var (
 	srpPriceManageRoles          = []string{model.RoleAdmin, model.RoleSeniorFC}
 	srpManageRoles               = []string{model.RoleSRP, model.RoleSeniorFC, model.RoleAdmin}
 	srpPayoutRoles               = []string{model.RoleSRP, model.RoleSeniorFC, model.RoleAdmin}
-	shopOrderManageRoles         = []string{model.RoleAdmin}
+	shopOrderManageRoles         = []string{model.RoleAdmin, model.RoleShopOrder}
 	welfareApprovalRoles         = []string{model.RoleAdmin, model.RoleWelfare}
 	skillPlanManageRoles         = []string{model.RoleAdmin, model.RoleSeniorFC}
 	autoRoleManageRoles          = []string{model.RoleSuperAdmin}
@@ -45,6 +45,13 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		sde.POST("/types", sdeH.GetTypes)
 		sde.POST("/names", sdeH.GetNames)
 		sde.POST("/search", sdeH.FuzzySearch)
+	}
+
+	// ─── 招募链接（公开）───
+	recruitH := handler.NewNewbroRecruitHandler()
+	recruit := api.Group("/recruit")
+	{
+		recruit.POST("/:code/submit", recruitH.SubmitQQ)
 	}
 
 	// ─── 需要登录 ───
@@ -388,7 +395,10 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminNewbro.PUT("/settings", newbroAdminH.UpdateSettings)
 		adminNewbro.GET("/captains", newbroAdminH.ListCaptains)
 		adminNewbro.GET("/captains/:user_id", newbroAdminH.GetCaptainDetail)
+		// 招募链接管理
+		adminNewbro.GET("/recruit/links", recruitH.GetAdminLinks)
 	}
+
 	// 帮扶记录只读接口：管理员或队长均可访问
 	newbroRecords := login.Group("/system/newbro", middleware.RequireRole(model.RoleAdmin, model.RoleCaptain))
 	{
@@ -429,11 +439,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminShopProduct.POST("/edit", adminShopH.AdminUpdateProduct)
 		adminShopProduct.POST("/delete", adminShopH.AdminDeleteProduct)
 	}
-	adminShopRedeem := admin.Group("/shop/redeem")
-	{
-		adminShopRedeem.POST("/list", adminShopH.AdminListRedeemCodes)
-	}
-
 	// 商店订单（仅管理员）
 	shopOrder := login.Group("/system/shop/order", middleware.RequireRole(shopOrderManageRoles...))
 	{

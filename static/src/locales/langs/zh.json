@@ -937,7 +937,6 @@
     "products": "商品列表",
     "allTypes": "全部类型",
     "typeNormal": "普通商品",
-    "typeRedeem": "@:shop.redeemCode",
     "myBalance": "我的余额",
     "unlimitedStock": "库存充足",
     "stockRemaining": "库存: {n}",
@@ -960,12 +959,11 @@
     "totalPrice": "总价（伏羲币）",
     "status": "@:common.status",
     "reviewerName": "操作人",
+    "submitterRemark": "下单备注",
+    "reviewRemark": "处理备注",
     "orderTime": "下单时间",
     "noOrders": "暂无订单",
-    "myRedeemCodes": "我的兑换码",
-    "redeemCode": "兑换码",
     "expiresAt": "过期时间",
-    "noRedeemCodes": "暂无兑换码",
     "buyTitle": "购买商品",
     "remark": "备注",
     "remarkPlaceholder": "备注信息（可选）",
@@ -993,8 +991,6 @@
       "type": "@:common.type",
       "typeNormal": "普通商品",
       "typeNormalShort": "普通",
-      "typeRedeem": "兑换码/服务",
-      "typeRedeemShort": "兑换码",
       "stock": "库存",
       "stockUnlimited": "无限",
       "stockUnlimitedHint": "-1 = 无限库存",
@@ -2103,8 +2099,7 @@
       "products": "商品管理",
       "orders": "订单管理",
       "ordersSubtitle": "发放订单时，请复制粘贴订单号至合同描述或转账理由。",
-      "orderHistory": "订单历史",
-      "redeem": "兑换码管理"
+      "orderHistory": "订单历史"
     },
     "products": {
       "createProduct": "新增商品",
@@ -2112,8 +2107,6 @@
       "typePlaceholder": "商品类型",
       "statusPlaceholder": "@:common.status",
       "typeNormal": "普通商品",
-      "typeRedeem": "@:shop.redeemCode",
-      "typeRedeemService": "兑换码/服务",
       "statusOnSale": "上架",
       "statusOffSale": "下架",
       "dialogCreate": "新增商品",
@@ -2149,7 +2142,6 @@
       },
       "values": {
         "normal": "普通",
-        "redeem": "@:shop.redeemCode",
         "unlimited": "无限",
         "noLimit": "不限"
       },
@@ -2202,23 +2194,6 @@
         "rejectSuccess": "已拒绝",
         "actionFailed": "操作失败"
       }
-    },
-    "redeem": {
-      "productIdPlaceholder": "商品 ID",
-      "statusPlaceholder": "@:common.status",
-      "status": {
-        "unused": "未使用",
-        "used": "已使用",
-        "expired": "已过期"
-      },
-      "table": {
-        "productId": "商品ID",
-        "userId": "用户ID",
-        "orderId": "订单ID",
-        "code": "@:shop.redeemCode",
-        "createdAt": "@:common.createdAt",
-        "expiresAt": "过期时间"
-      }
     }
   },
   "walletAdmin": {
@@ -2256,7 +2231,6 @@
       "pap_fc_salary": "FC 工资",
       "admin_adjust": "管理员调整",
       "manual": "手动操作",
-      "redeem": "兑换消费",
       "srp_payout": "SRP 补损",
       "welfare_payout": "福利发放",
       "shop_purchase": "商城购买",

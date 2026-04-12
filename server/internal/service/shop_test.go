@@ -152,7 +152,14 @@ func TestAdminDeliverOrderReturnsMailAttemptSummaryWhenMailSucceeds(t *testing.T
 }
 
 func TestBuildShopOrderDeliveryMailContentIncludesBilingualOfficerNotice(t *testing.T) {
-	subject, body := buildShopOrderDeliveryMailContent("ORD-20260403", "Navy Omen", 2, "Amiya")
+	subject, body := buildShopOrderDeliveryMailContent(
+		"ORD-20260403",
+		"Navy Omen",
+		2,
+		"Amiya",
+		"请发到主角色",
+		"已通过军团合同发放",
+	)
 
 	if !strings.Contains(subject, "订单发放通知") || !strings.Contains(subject, "Order Delivery Notice") {
 		t.Fatalf("unexpected subject: %q", subject)
@@ -168,6 +175,12 @@ func TestBuildShopOrderDeliveryMailContentIncludesBilingualOfficerNotice(t *test
 	}
 	if !strings.Contains(body, "数量：2") {
 		t.Fatalf("expected Chinese body to include quantity, got %q", body)
+	}
+	if !strings.Contains(body, "备注：请发到主角色") {
+		t.Fatalf("expected Chinese body to include order remark, got %q", body)
+	}
+	if !strings.Contains(body, "发放备注：已通过军团合同发放") {
+		t.Fatalf("expected Chinese body to include delivery remark, got %q", body)
 	}
 	if !strings.Contains(body, "请检查你的钱包或合同") {
 		t.Fatalf("expected Chinese body to mention wallet or contract, got %q", body)
@@ -186,6 +199,12 @@ func TestBuildShopOrderDeliveryMailContentIncludesBilingualOfficerNotice(t *test
 	}
 	if !strings.Contains(body, "Quantity: 2") {
 		t.Fatalf("expected English body to include quantity, got %q", body)
+	}
+	if !strings.Contains(body, "Remark: 请发到主角色") {
+		t.Fatalf("expected English body to include order remark, got %q", body)
+	}
+	if !strings.Contains(body, "Delivery Remark: 已通过军团合同发放") {
+		t.Fatalf("expected English body to include delivery remark, got %q", body)
 	}
 	if !strings.Contains(body, "Please check your wallet or contract.") {
 		t.Fatalf("expected English body to mention wallet or contract, got %q", body)
@@ -206,7 +225,6 @@ func newShopServiceTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&model.ShopProduct{},
 		&model.ShopOrder{},
-		&model.ShopRedeemCode{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}

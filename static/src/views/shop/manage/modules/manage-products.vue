@@ -15,15 +15,6 @@
             @keyup.enter="handleSearch"
           />
           <ElSelect
-            v-model="typeFilter"
-            :placeholder="t('shop.manage.filterType')"
-            clearable
-            style="width: 140px"
-            @change="handleSearch"
-          >
-            <ElOption :label="t('shop.manage.typeNormal')" value="normal" />
-          </ElSelect>
-          <ElSelect
             v-model="statusFilter"
             :placeholder="t('shop.manage.filterStatus')"
             clearable
@@ -115,11 +106,6 @@
           style="width: 200px"
         />
       </ElFormItem>
-      <ElFormItem :label="t('shop.manage.type')" prop="type">
-        <ElSelect v-model="formData.type" style="width: 200px">
-          <ElOption :label="t('shop.manage.typeNormal')" value="normal" />
-        </ElSelect>
-      </ElFormItem>
       <ElFormItem :label="t('shop.manage.stock')">
         <ElInputNumber v-model="formData.stock" :min="-1" style="width: 200px" />
         <span class="ml-2 text-xs text-gray-400">{{ t('shop.manage.stockUnlimitedHint') }}</span>
@@ -189,13 +175,6 @@
   type Product = Api.Shop.Product
 
   // ─── 商品类型/状态映射 ───
-  const PRODUCT_TYPE_CONFIG = computed(
-    () =>
-      ({
-        normal: { label: t('shop.manage.typeNormalShort'), type: 'primary' }
-      }) as unknown as Record<string, { label: string; type: string }>
-  )
-
   const PRODUCT_STATUS_CONFIG = computed(
     () =>
       ({
@@ -206,7 +185,6 @@
 
   // ─── 搜索过滤状态 ───
   const nameFilter = ref('')
-  const typeFilter = ref('')
   const statusFilter = ref<number | undefined>(undefined)
 
   const {
@@ -245,19 +223,6 @@
           label: t('shop.productName'),
           minWidth: 140,
           showOverflowTooltip: true
-        },
-        {
-          prop: 'type',
-          label: t('shop.manage.colType'),
-          width: 100,
-          formatter: (row: Product) => {
-            const cfg = PRODUCT_TYPE_CONFIG.value[row.type] ?? { label: row.type, type: 'info' }
-            return h(
-              ElTag,
-              { type: cfg.type as any, size: 'small', effect: 'plain' },
-              () => cfg.label
-            )
-          }
         },
         {
           prop: 'price',
@@ -323,7 +288,6 @@
   function handleSearch() {
     Object.assign(searchParams, {
       name: nameFilter.value || undefined,
-      type: typeFilter.value || undefined,
       status: statusFilter.value,
       current: 1
     })
@@ -332,7 +296,6 @@
 
   function handleReset() {
     nameFilter.value = ''
-    typeFilter.value = ''
     statusFilter.value = undefined
     resetSearchParams()
   }
@@ -348,7 +311,7 @@
     description: '',
     image: '',
     price: 1,
-    type: 'normal' as 'normal' | 'redeem',
+    type: 'normal' as const,
     stock: -1,
     max_per_user: 0,
     limit_period: 'forever' as 'forever' | 'daily' | 'weekly' | 'monthly',
@@ -358,8 +321,7 @@
 
   const formRules = computed<FormRules>(() => ({
     name: [{ required: true, message: t('shop.manage.validName'), trigger: 'blur' }],
-    price: [{ required: true, message: t('shop.manage.validPrice'), trigger: 'blur' }],
-    type: [{ required: true, message: t('shop.manage.validType'), trigger: 'change' }]
+    price: [{ required: true, message: t('shop.manage.validPrice'), trigger: 'blur' }]
   }))
 
   function resetForm() {

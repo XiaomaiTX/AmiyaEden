@@ -243,7 +243,7 @@ func TestAutoRoleRequiresSuperAdmin(t *testing.T) {
 	assertRouteStatus(t, superAdminRouter, http.MethodPost, "/system/auto-role/sync", http.StatusNoContent)
 }
 
-func TestShopOrderRoutesRequireAdmin(t *testing.T) {
+func TestShopOrderRoutesAllowShopOrderManageRole(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	if containsRoleCode(shopOrderManageRoles, model.RoleWelfare) {
@@ -252,11 +252,19 @@ func TestShopOrderRoutesRequireAdmin(t *testing.T) {
 	if !containsRoleCode(shopOrderManageRoles, model.RoleAdmin) {
 		t.Fatalf("expected shopOrderManageRoles to include admin, got %v", shopOrderManageRoles)
 	}
+	if !containsRoleCode(shopOrderManageRoles, model.RoleShopOrder) {
+		t.Fatalf("expected shopOrderManageRoles to include shop_order_manage, got %v", shopOrderManageRoles)
+	}
 
 	welfareRouter := newShopOrderPermissionTestRouter([]string{model.RoleWelfare})
 	assertRouteStatus(t, welfareRouter, http.MethodPost, "/system/shop/order/list", http.StatusForbidden)
 	assertRouteStatus(t, welfareRouter, http.MethodPost, "/system/shop/order/deliver", http.StatusForbidden)
 	assertRouteStatus(t, welfareRouter, http.MethodPost, "/system/shop/order/reject", http.StatusForbidden)
+
+	shopOrderRouter := newShopOrderPermissionTestRouter([]string{model.RoleShopOrder})
+	assertRouteStatus(t, shopOrderRouter, http.MethodPost, "/system/shop/order/list", http.StatusNoContent)
+	assertRouteStatus(t, shopOrderRouter, http.MethodPost, "/system/shop/order/deliver", http.StatusNoContent)
+	assertRouteStatus(t, shopOrderRouter, http.MethodPost, "/system/shop/order/reject", http.StatusNoContent)
 
 	adminRouter := newShopOrderPermissionTestRouter([]string{model.RoleAdmin})
 	assertRouteStatus(t, adminRouter, http.MethodPost, "/system/shop/order/list", http.StatusNoContent)

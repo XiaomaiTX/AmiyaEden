@@ -120,6 +120,7 @@
     super_admin: { type: 'danger', text: t('userAdmin.roles.super_admin') },
     admin: { type: 'warning', text: t('userAdmin.roles.admin') },
     srp: { type: 'success', text: t('userAdmin.roles.srp') },
+    shop_order_manage: { type: 'success', text: t('userAdmin.roles.shop_order_manage') },
     senior_fc: { type: 'warning', text: t('userAdmin.roles.senior_fc') },
     fc: { type: 'warning', text: t('userAdmin.roles.fc') },
     captain: { type: 'primary', text: t('userAdmin.roles.captain') },

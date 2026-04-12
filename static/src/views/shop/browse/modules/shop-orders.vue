@@ -50,6 +50,7 @@
   }
 
   const statusFilter = ref<string | undefined>(undefined)
+  const REVIEW_REMARK_COLUMN_PROP = 'review_remark'
 
   const {
     columns,
@@ -61,7 +62,11 @@
     getData,
     handleSizeChange,
     handleCurrentChange,
-    refreshData
+    refreshData,
+    addColumn,
+    removeColumn,
+    getColumnConfig,
+    getAllColumns
   } = useTable({
     core: {
       apiFn: fetchMyOrders,
@@ -126,6 +131,14 @@
             h('span', { class: row.reviewer_name ? '' : 'text-gray-400' }, row.reviewer_name || '-')
         },
         {
+          prop: 'remark',
+          label: t('shop.submitterRemark'),
+          minWidth: 160,
+          showOverflowTooltip: true,
+          formatter: (row: Order) =>
+            h('span', { class: row.remark ? '' : 'text-gray-400' }, row.remark || '-')
+        },
+        {
           prop: 'created_at',
           label: t('shop.orderTime'),
           width: 180,
@@ -134,6 +147,35 @@
       ]
     }
   })
+
+  const REVIEW_REMARK_COLUMN = {
+    prop: REVIEW_REMARK_COLUMN_PROP,
+    label: t('shop.reviewRemark'),
+    minWidth: 160,
+    showOverflowTooltip: true
+  }
+
+  function syncReviewerRemarkColumn(rows: Order[]) {
+    if (!addColumn || !removeColumn || !getColumnConfig || !getAllColumns) {
+      return
+    }
+
+    const hasReviewerRemarks = rows.some((row) => Boolean(row.review_remark?.trim()))
+    const hasReviewRemarkColumn = Boolean(getColumnConfig(REVIEW_REMARK_COLUMN_PROP))
+    const createdAtIndex = getAllColumns().findIndex((col) => col.prop === 'created_at')
+    const insertIndex = createdAtIndex >= 0 ? createdAtIndex : undefined
+
+    if (hasReviewerRemarks && !hasReviewRemarkColumn) {
+      addColumn(REVIEW_REMARK_COLUMN, insertIndex)
+      return
+    }
+
+    if (!hasReviewerRemarks && hasReviewRemarkColumn) {
+      removeColumn(REVIEW_REMARK_COLUMN_PROP)
+    }
+  }
+
+  watch(data, syncReviewerRemarkColumn, { immediate: true })
 
   function handleStatusChange() {
     searchParams.status = statusFilter.value || undefined

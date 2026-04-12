@@ -10,7 +10,6 @@ import "time"
 
 const (
 	ProductTypeNormal = "normal" // 普通商品
-	ProductTypeRedeem = "redeem" // 兑换码/服务类商品
 )
 
 // ─── 商品状态 ───
@@ -37,14 +36,6 @@ const (
 	OrderStatusRejected  = "rejected"  // 已拒绝（钱包已退款）
 )
 
-// ─── 兑换码状态 ───
-
-const (
-	RedeemStatusUnused  = "unused"
-	RedeemStatusUsed    = "used"
-	RedeemStatusExpired = "expired"
-)
-
 // ─── 数据模型 ───
 
 // ShopProduct 商品
@@ -57,7 +48,7 @@ type ShopProduct struct {
 	Stock       int     `gorm:"default:-1"                     json:"stock"`         // -1 = 无限库存
 	MaxPerUser  int     `gorm:"default:0"                      json:"max_per_user"`  // 0 = 不限购
 	LimitPeriod string  `gorm:"size:20;default:'forever'"       json:"limit_period"` // forever / daily / weekly / monthly
-	Type        string  `gorm:"size:20;default:'normal';index" json:"type"`          // normal / redeem
+	Type        string  `gorm:"size:20;default:'normal';index" json:"type"`          // normal
 	Status      int8    `gorm:"default:1;index"                json:"status"`        // 1=上架 0=下架
 	SortOrder   int     `gorm:"default:0"                      json:"sort_order"`    // 排序（越大越靠前）
 }
@@ -88,17 +79,3 @@ type ShopOrder struct {
 }
 
 func (ShopOrder) TableName() string { return "shop_order" }
-
-// ShopRedeemCode 兑换码
-type ShopRedeemCode struct {
-	BaseModel
-	OrderID   uint       `gorm:"index;not null"              json:"order_id"`
-	ProductID uint       `gorm:"index"                       json:"product_id"`
-	UserID    uint       `gorm:"index"                       json:"user_id"`
-	Code      string     `gorm:"size:50;uniqueIndex"         json:"code"`
-	Status    string     `gorm:"size:20;default:'unused'"    json:"status"` // unused / used / expired
-	UsedAt    *time.Time `json:"used_at"`
-	ExpiresAt *time.Time `json:"expires_at"`
-}
-
-func (ShopRedeemCode) TableName() string { return "shop_redeem_code" }
