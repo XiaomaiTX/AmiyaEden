@@ -26,8 +26,19 @@ func newFuxiAdminServiceTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
+func useFuxiAdminServiceTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	db := newFuxiAdminServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	return db
+}
+
 func TestFuxiAdminGetConfigReturnsDefaultWhenAbsent(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	cfg, err := svc.GetConfig()
@@ -40,7 +51,7 @@ func TestFuxiAdminGetConfigReturnsDefaultWhenAbsent(t *testing.T) {
 }
 
 func TestFuxiAdminUpdateConfigValidatesRange(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tooSmall := 5
@@ -69,7 +80,7 @@ func TestFuxiAdminUpdateConfigValidatesRange(t *testing.T) {
 }
 
 func TestFuxiAdminUpdateConfigStoresStyleOptions(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	pageBackgroundColor := "#10243a"
@@ -127,7 +138,7 @@ func TestFuxiAdminUpdateConfigStoresStyleOptions(t *testing.T) {
 }
 
 func TestFuxiAdminCreateTierRejectsEmptyName(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	_, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: ""})
@@ -137,7 +148,7 @@ func TestFuxiAdminCreateTierRejectsEmptyName(t *testing.T) {
 }
 
 func TestFuxiAdminCreateTierRejectsWhitespaceOnlyName(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	_, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "   "})
@@ -147,7 +158,7 @@ func TestFuxiAdminCreateTierRejectsWhitespaceOnlyName(t *testing.T) {
 }
 
 func TestFuxiAdminCreateTierTrimsWhitespace(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "  Ops  "})
@@ -160,7 +171,7 @@ func TestFuxiAdminCreateTierTrimsWhitespace(t *testing.T) {
 }
 
 func TestFuxiAdminCreateAdminRejectsInvalidTierID(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	_, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: 999, Nickname: "Ghost"})
@@ -170,7 +181,7 @@ func TestFuxiAdminCreateAdminRejectsInvalidTierID(t *testing.T) {
 }
 
 func TestFuxiAdminUpdateTierRejectsWhitespaceOnlyName(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
@@ -186,7 +197,7 @@ func TestFuxiAdminUpdateTierRejectsWhitespaceOnlyName(t *testing.T) {
 }
 
 func TestFuxiAdminUpdateTierTrimsWhitespace(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
@@ -205,7 +216,7 @@ func TestFuxiAdminUpdateTierTrimsWhitespace(t *testing.T) {
 }
 
 func TestFuxiAdminCreateAdminStoresDescription(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	_, _ = svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
@@ -238,7 +249,7 @@ func TestFuxiAdminCreateAdminStoresDescription(t *testing.T) {
 }
 
 func TestFuxiAdminGetDirectoryGroupsAdminsByTier(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	_, _ = svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "High"})
@@ -261,7 +272,7 @@ func TestFuxiAdminGetDirectoryGroupsAdminsByTier(t *testing.T) {
 }
 
 func TestFuxiAdminDeleteTierCascadesToAdmins(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	_, _ = svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Mid"})
@@ -280,7 +291,7 @@ func TestFuxiAdminDeleteTierCascadesToAdmins(t *testing.T) {
 }
 
 func TestFuxiAdminDeleteTierReturnsNotFoundWhenTierMissing(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	err := svc.DeleteTier(999)
@@ -296,7 +307,7 @@ func TestFuxiAdminDeleteTierReturnsNotFoundWhenTierMissing(t *testing.T) {
 }
 
 func TestFuxiAdminDeleteTierRollsBackWhenTierDeleteFails(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Mid"})
@@ -338,7 +349,7 @@ func TestFuxiAdminDeleteTierRollsBackWhenTierDeleteFails(t *testing.T) {
 }
 
 func TestFuxiAdminUpdateTierPreservesInfrastructureErrors(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
@@ -368,7 +379,7 @@ func TestFuxiAdminUpdateTierPreservesInfrastructureErrors(t *testing.T) {
 }
 
 func TestFuxiAdminUpdateAdminPreservesInfrastructureErrors(t *testing.T) {
-	global.DB = newFuxiAdminServiceTestDB(t)
+	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
 	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
