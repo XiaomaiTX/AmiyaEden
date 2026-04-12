@@ -774,3 +774,33 @@
     })
   })
 </script>
+
+<style scoped lang="scss">
+  .welfare-settings-page {
+    :deep(.el-card__body) {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    :deep(.el-tabs) {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    :deep(.el-tabs__content) {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    :deep(.el-tab-pane) {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+  }
+</style>

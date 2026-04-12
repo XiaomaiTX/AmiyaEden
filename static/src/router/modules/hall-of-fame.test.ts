@@ -12,13 +12,22 @@ test('hall of fame routes expose the renamed root and the current management tab
   assert.match(source, /component:\s*'\/hall-of-fame\/current-manage'/)
 })
 
-test('current-manage tab requires login but no admin role restriction', () => {
-  // The current-manage route must not have a roles restriction
-  // Extract just the current-manage block and verify it contains no roles key
+test('hall of fame root keeps login gating and current-manage stays login-only', () => {
+  const rootBlock = source.slice(
+    source.indexOf("name: 'HallOfFameRoot'"),
+    source.indexOf('children: [')
+  )
+  assert.match(rootBlock, /login:\s*true/)
+
   const currentManageBlock = source.slice(
     source.indexOf("'current-manage'"),
     source.indexOf("'current-manage'") + 400
   )
   assert.match(currentManageBlock, /login:\s*true/)
   assert.doesNotMatch(currentManageBlock, /roles:/)
+})
+
+test('manage tab still requires admin roles', () => {
+  const manageBlock = source.slice(source.indexOf("'manage'"), source.indexOf("'manage'") + 400)
+  assert.match(manageBlock, /roles:\s*\[\s*'super_admin',\s*'admin'\s*\]/)
 })

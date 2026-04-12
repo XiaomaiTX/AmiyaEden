@@ -23,3 +23,10 @@ test('welfare settings wires the Fuxi Legion tenure threshold through the form p
   assert.match(source, /max_char_age_months:\s*formData\.max_char_age_months \?\? null/)
   assert.match(source, /minimum_pap:\s*formData\.minimum_pap \?\? null/)
 })
+
+test('welfare settings page keeps the table tab content full-height so the list does not clip', () => {
+  assert.match(source, /:deep\(\.el-card__body\)\s*\{[\s\S]*display:\s*flex/)
+  assert.match(source, /:deep\(\.el-tabs\)\s*\{[\s\S]*flex:\s*1/)
+  assert.match(source, /:deep\(\.el-tabs__content\)\s*\{[\s\S]*overflow:\s*hidden/)
+  assert.match(source, /:deep\(\.el-tab-pane\)\s*\{[\s\S]*height:\s*100%/)
+})

@@ -6,7 +6,8 @@ export const hallOfFameRoutes: AppRouteRecord = {
   component: '/index/index',
   meta: {
     title: 'menus.hallOfFame.title',
-    icon: 'ri:trophy-line'
+    icon: 'ri:trophy-line',
+    login: true
   },
   children: [
     {

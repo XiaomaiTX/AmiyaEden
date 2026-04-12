@@ -8,14 +8,14 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
+	"amiya-eden/pkg/jwt"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -163,16 +163,13 @@ func TestSkillPlanReadAllowsLoggedInUserAndWriteStillRequiresManager(t *testing.
 }
 
 func TestFuxiAdminDirectoryReadUsesLoggedInRouteGroup(t *testing.T) {
-	source, err := os.ReadFile("router.go")
-	if err != nil {
-		t.Fatalf("read router.go: %v", err)
-	}
-	if !containsSnippet(string(source), `login.Group("/fuxi-admins")`) {
-		t.Fatal("expected fuxi-admin directory read route to be registered under login group")
-	}
-	if containsSnippet(string(source), `api.GET("/fuxi-admins", fuxiAdminH.GetDirectory)`) {
-		t.Fatal("expected anonymous fuxi-admin directory GET route to be removed")
-	}
+	gin.SetMode(gin.TestMode)
+
+	router, userToken, guestToken := newFuxiAdminDirectoryRouteTestRouter(t)
+
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins?token="+userToken, http.StatusOK)
 }
 
 func TestSystemWebhookRequiresSuperAdmin(t *testing.T) {
@@ -336,6 +333,72 @@ func newSkillPlanPermissionTestRouter(roles []string) *gin.Engine {
 	return r
 }
 
+func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, string) {
+	t.Helper()
+
+	db := newFuxiAdminDirectoryRouteTestDB(t)
+
+	oldConfig := global.Config
+	oldLogger := global.Logger
+	oldDB := global.DB
+	oldRedis := global.Redis
+
+	global.Config = &config.Config{}
+	config.ApplyDefaults(global.Config)
+	global.Logger = zap.NewNop()
+	global.DB = db
+	global.Redis = redis.NewClient(&redis.Options{
+		Addr:         "127.0.0.1:0",
+		DialTimeout:  10 * time.Millisecond,
+		ReadTimeout:  10 * time.Millisecond,
+		WriteTimeout: 10 * time.Millisecond,
+		PoolTimeout:  10 * time.Millisecond,
+		MaxRetries:   0,
+	})
+
+	t.Cleanup(func() {
+		global.Config = oldConfig
+		global.Logger = oldLogger
+		global.DB = oldDB
+		if global.Redis != nil {
+			_ = global.Redis.Close()
+		}
+		global.Redis = oldRedis
+	})
+
+	if err := db.Create(&model.UserRole{UserID: 1, RoleCode: model.RoleUser}).Error; err != nil {
+		t.Fatalf("create user role: %v", err)
+	}
+
+	jwt.Init("fuxi-admin-router-test-secret")
+	userToken, err := jwt.GenerateToken(1, 1001, model.RoleUser, 1)
+	if err != nil {
+		t.Fatalf("generate token: %v", err)
+	}
+	guestToken, err := jwt.GenerateToken(2, 1002, model.RoleGuest, 1)
+	if err != nil {
+		t.Fatalf("generate guest token: %v", err)
+	}
+
+	r := gin.New()
+	RegisterRoutes(r, newTaskRouterTestService(t))
+	return r, userToken, guestToken
+}
+
+func newFuxiAdminDirectoryRouteTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	dsn := "file:fuxi_admin_router_test_" + time.Now().Format("150405.000000000") + "?mode=memory&cache=shared"
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&model.UserRole{}, &model.FuxiAdminConfig{}, &model.FuxiAdminTier{}, &model.FuxiAdmin{}); err != nil {
+		t.Fatalf("auto migrate fuxi admin router models: %v", err)
+	}
+	return db
+}
+
 func newSrpPricePermissionTestRouter(roles []string) *gin.Engine {
 	r := gin.New()
 	injectRoles := func(c *gin.Context) {
@@ -469,8 +532,4 @@ func containsRoleCode(codes []string, target string) bool {
 		}
 	}
 	return false
-}
-
-func containsSnippet(source string, snippet string) bool {
-	return strings.Contains(source, snippet)
 }

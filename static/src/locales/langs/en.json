@@ -67,20 +67,11 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": [
-        "Vertical",
-        "Horizontal",
-        "Mixed",
-        "Dual"
-      ]
+      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
     },
     "theme": {
       "title": "Theme Style",
-      "list": [
-        "Light",
-        "Dark",
-        "System"
-      ]
+      "list": ["Light", "Dark", "System"]
     },
     "menu": {
       "title": "Menu Style"
@@ -90,17 +81,11 @@
     },
     "box": {
       "title": "Box Style",
-      "list": [
-        "Border",
-        "Shadow"
-      ]
+      "list": ["Border", "Shadow"]
     },
     "container": {
       "title": "Container Width",
-      "list": [
-        "Full",
-        "Boxed"
-      ]
+      "list": ["Full", "Boxed"]
     },
     "basics": {
       "title": "Basic Config",
@@ -146,12 +131,8 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": [
-      "Notice"
-    ],
-    "text": [
-      "No"
-    ],
+    "bar": ["Notice"],
+    "text": ["No"],
     "viewAll": "View all"
   },
   "worktab": {
@@ -412,6 +393,7 @@
     },
     "currentManage": {
       "title": "Current Fuxi Management",
+      "loadFailed": "Failed to load the current Fuxi admin directory",
       "emptyTitle": "No Fuxi Admins Yet",
       "emptySubtitle": "Admins can click \"Add Tier\" to start building the directory",
       "addTier": "Add Tier",
@@ -426,12 +408,12 @@
       "tierName": "Tier Name",
       "tierNamePlaceholder": "e.g. Senior Leadership",
       "tierNameRequired": "Tier name cannot be empty",
-      "tierLabel": "Tier",
-      "tierPlaceholder": "Select tier",
-      "tierRequired": "Please select a tier",
-      "nameLabel": "Name",
-      "nameRequired": "Name cannot be empty",
-      "titleLabel": "Title",
+      "tierLabel": "Position",
+      "tierPlaceholder": "Select position",
+      "tierRequired": "Please select a position",
+      "nameLabel": "Nickname",
+      "nameRequired": "Nickname cannot be empty",
+      "titleLabel": "Character Name",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Describe responsibilities, scope, or the best way to reach this admin",
       "characterIdLabel": "Character ID",

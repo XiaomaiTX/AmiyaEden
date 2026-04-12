@@ -52,7 +52,7 @@ func TestRunMyCharacterTask_AllowsUserToRefreshOwnCharacter(t *testing.T) {
 
 	setupGlobalDependencies(t, db)
 
-	queue := setupMockESIQueue(t, db)
+	queue := setupMockESIQueue(t)
 	getESIQueueWasSet = true
 	jobs.SetTestESIQueue(queue)
 
@@ -137,7 +137,7 @@ func TestRunMyCharacterTask_RejectsInvalidTaskName(t *testing.T) {
 
 	setupGlobalDependencies(t, db)
 
-	queue := setupMockESIQueue(t, db)
+	queue := setupMockESIQueue(t)
 	getESIQueueWasSet = true
 	jobs.SetTestESIQueue(queue)
 
@@ -200,7 +200,7 @@ func TestGetStatuses_FiltersByCharacterIDOrName(t *testing.T) {
 
 	setupGlobalDependencies(t, db)
 
-	queue := setupMockESIQueue(t, db)
+	queue := setupMockESIQueue(t)
 	setQueueStatusesForTest(queue, map[string]*esi.TaskStatus{
 		"character_skill:9001": {
 			TaskName:    "character_skill",
@@ -376,7 +376,7 @@ func teardownTest(t *testing.T) {
 	}
 }
 
-func setupMockESIQueue(t *testing.T, db *gorm.DB) *esi.Queue {
+func setupMockESIQueue(t *testing.T) *esi.Queue {
 	t.Helper()
 
 	mockSSO := &mockTokenService{}

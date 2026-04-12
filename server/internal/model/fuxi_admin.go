@@ -47,13 +47,13 @@ func (FuxiAdminTier) TableName() string { return "fuxi_admin_tier" }
 // FuxiAdmin 伏羲管理人员
 type FuxiAdmin struct {
 	BaseModel
-	TierID         uint   `gorm:"not null;index"    json:"tier_id"`
-	Name           string `gorm:"size:256;not null" json:"name"`
-	Title          string `gorm:"size:512"          json:"title"`
-	Description    string `gorm:"size:1024"         json:"description"`
-	ContactQQ      string `gorm:"size:64"           json:"contact_qq"`
-	ContactDiscord string `gorm:"size:256"          json:"contact_discord"`
-	CharacterID    int64  `gorm:"default:0"         json:"character_id"`
+	TierID         uint   `gorm:"not null;index"                     json:"tier_id"`
+	Nickname       string `gorm:"size:256;not null"  json:"nickname"`
+	CharacterName  string `gorm:"size:512"           json:"character_name"`
+	Description    string `gorm:"size:1024"          json:"description"`
+	ContactQQ      string `gorm:"size:64"            json:"contact_qq"`
+	ContactDiscord string `gorm:"size:256"           json:"contact_discord"`
+	CharacterID    int64  `gorm:"default:0"          json:"character_id"`
 }
 
 func (FuxiAdmin) TableName() string { return "fuxi_admin" }
