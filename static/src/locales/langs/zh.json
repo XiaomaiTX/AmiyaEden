@@ -1025,6 +1025,7 @@
       "super_admin": "超级管理员",
       "admin": "管理员",
       "srp": "补损官",
+      "shop_order_manage": "订单管理",
       "fc": "FC",
       "senior_fc": "资深FC",
       "captain": "队长",
@@ -1265,6 +1266,38 @@
       "rewardAttributedTotal": "归因赏金总额",
       "rewardBonusRate": "奖励比例",
       "rewardCreditedValue": "发放积分"
+    },
+    "recruitLink": {
+      "title": "招新链接",
+      "subtitle": "生成专属招募链接，分享给潜在新成员；系统自动检测 QQ 注册结果并发放奖励。",
+      "myLinksTab": "我的链接",
+      "adminTab": "全部链接",
+      "generateBtn": "生成招新链接",
+      "yourLink": "您的招募链接",
+      "noGeneratedLink": "暂时还没有生成过招新链接。",
+      "directReferralRecord": "直接推荐记录",
+      "generateSuccess": "招募链接已生成",
+      "generateFailed": "生成失败",
+      "empty": "还没有招募链接",
+      "noEntries": "暂无招募记录",
+      "colQQ": "QQ 号码",
+      "colEnteredAt": "提交时间",
+      "colStatus": "状态",
+      "colRewardedAt": "奖励时间",
+      "colUserId": "用户 ID",
+      "colCode": "链接码",
+      "colSource": "来源",
+      "colGeneratedAt": "生成时间",
+      "colEntries": "招募记录",
+      "source": {
+        "link": "招新链接",
+        "direct_referral": "直接推荐"
+      },
+      "status": {
+        "ongoing": "进行中",
+        "valid": "有效",
+        "stalled": "已搁置"
+      }
     },
     "mentorManage": {
       "title": "导师管理",
@@ -1751,6 +1784,7 @@
         "finalAmount": "最终金额",
         "actualAmount": "实补金额",
         "reviewStatus": "审核状态",
+        "reviewNote": "审批备注",
         "paid": "已打款",
         "payoutStatus": "发放状态",
         "lastActor": "最后处理人",
@@ -2369,7 +2403,7 @@
     },
     "newbroSettings": {
       "title": "帮扶设置",
-      "subtitle": "统一管理新人资格判定规则、资格快照刷新周期与队长奖励比例。",
+      "subtitle": "统一管理新人资格判定规则、资格快照刷新周期、队长奖励比例与招募链接配置。",
       "saveSuccess": "帮扶设置已保存",
       "eligibilityTitle": "新人资格判定",
       "eligibilityHint": "当前规则会基于用户全部绑定人物的技能点快照进行判定。",
