@@ -72,6 +72,94 @@
       </div>
     </div>
 
+    <div
+      v-if="directReferralStatus.show_card"
+      v-loading="directReferralLoading"
+      class="art-card-sm p-6 mb-4"
+    >
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="max-w-2xl">
+          <h2 class="text-lg font-medium">{{ $t('characters.directReferral.title') }}</h2>
+          <p class="mt-1 text-sm text-g-500">{{ $t('characters.directReferral.subtitle') }}</p>
+        </div>
+        <ElTag type="info" effect="light" round>
+          {{ $t('characters.directReferral.windowTag') }}
+        </ElTag>
+      </div>
+
+      <ElAlert
+        v-if="directReferralStatus.needs_profile_qq"
+        type="warning"
+        :closable="false"
+        class="mt-4"
+        :title="$t('characters.directReferral.fillProfileQQFirst')"
+      />
+
+      <template v-else>
+        <div class="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <ElFormItem :label="$t('characters.directReferral.referrerQQ')" class="mb-0">
+            <ElInput
+              v-model="directReferrerQQ"
+              :maxlength="20"
+              clearable
+              :placeholder="$t('characters.directReferral.referrerQQPlaceholder')"
+            />
+          </ElFormItem>
+
+          <ElButton
+            type="primary"
+            plain
+            :loading="directReferralChecking"
+            :disabled="!directReferrerQQ.trim()"
+            @click="handleCheckDirectReferrer"
+          >
+            {{ $t('characters.directReferral.checkBtn') }}
+          </ElButton>
+        </div>
+
+        <p class="mt-3 text-sm text-g-500">{{ $t('characters.directReferral.confirmHint') }}</p>
+
+        <ElCard
+          v-if="directReferrerCandidate"
+          shadow="never"
+          class="mt-4 border border-primary/20 bg-primary/5"
+        >
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center gap-4 min-w-0">
+              <ElAvatar
+                :size="56"
+                :src="buildDirectReferrerPortraitUrl(directReferrerCandidate) || undefined"
+              >
+                {{ directReferrerCandidate.nickname.slice(0, 1) }}
+              </ElAvatar>
+
+              <div class="min-w-0">
+                <div class="text-base font-medium truncate">
+                  {{ directReferrerCandidate.nickname }}
+                </div>
+                <div class="mt-1 text-sm text-g-500 truncate">
+                  {{ $t('characters.directReferral.mainCharacter') }}:
+                  {{ directReferrerCandidate.primary_character_name }}
+                </div>
+                <div class="mt-1 text-sm text-g-500 truncate">
+                  {{ $t('characters.directReferral.nickname') }}:
+                  {{ directReferrerCandidate.nickname }}
+                </div>
+              </div>
+            </div>
+
+            <ElButton
+              type="primary"
+              :loading="directReferralConfirming"
+              @click="handleConfirmDirectReferrer"
+            >
+              {{ $t('characters.directReferral.confirmBtn') }}
+            </ElButton>
+          </div>
+        </ElCard>
+      </template>
+    </div>
+
     <div class="art-card-sm p-6">
       <!-- 页头 -->
       <div class="flex items-center justify-between mb-6">
@@ -196,6 +284,11 @@
     unbindCharacter
   } from '@/api/auth'
   import { fetchGetUserInfo } from '@/api/auth'
+  import {
+    checkDirectReferrerQQ,
+    confirmDirectReferrer,
+    fetchDirectReferralStatus
+  } from '@/api/newbro'
   import { useUserStore } from '@/store/modules/user'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
@@ -219,8 +312,18 @@
   const profileSaving = ref(false)
   const switchingId = ref<number | null>(null)
   const unbindingId = ref<number | null>(null)
+  const directReferralLoading = ref(false)
+  const directReferralChecking = ref(false)
+  const directReferralConfirming = ref(false)
   const profileFormRef = ref<FormInstance>()
   const characters = ref<Api.Auth.EveCharacter[]>([])
+  const directReferralStatus = ref<Api.Newbro.DirectReferralStatus>({
+    show_card: false,
+    needs_profile_qq: false
+  })
+  const directReferrerCandidate = ref<Api.Newbro.DirectReferrerCandidate | null>(null)
+  const directReferrerQQ = ref('')
+  const checkedDirectReferrerQQ = ref('')
   const primaryCharacterId = ref<number>(0)
   const profileForm = reactive({
     nickname: '',
@@ -321,6 +424,13 @@
     return `${list.length} ${t('characters.scopeCount')}`
   }
 
+  const buildDirectReferrerPortraitUrl = (candidate: Api.Newbro.DirectReferrerCandidate) => {
+    if (!candidate.primary_character_id) {
+      return ''
+    }
+    return buildEveCharacterPortraitUrl(candidate.primary_character_id)
+  }
+
   /** 加载人物列表 */
   const loadCharacters = async () => {
     loading.value = true
@@ -341,6 +451,68 @@
     syncProfileForm()
   }
 
+  const loadDirectReferralStatus = async () => {
+    directReferralLoading.value = true
+    try {
+      directReferralStatus.value = await fetchDirectReferralStatus()
+      if (!directReferralStatus.value.show_card || directReferralStatus.value.needs_profile_qq) {
+        directReferrerCandidate.value = null
+        checkedDirectReferrerQQ.value = ''
+      }
+    } catch (error) {
+      directReferralStatus.value = { show_card: false, needs_profile_qq: false }
+      directReferrerCandidate.value = null
+      directReferrerQQ.value = ''
+      checkedDirectReferrerQQ.value = ''
+      ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
+    } finally {
+      directReferralLoading.value = false
+    }
+  }
+
+  const handleCheckDirectReferrer = async () => {
+    const qq = directReferrerQQ.value.trim()
+    if (!qq) {
+      ElMessage.warning(t('characters.directReferral.qqRequired'))
+      return
+    }
+
+    directReferralChecking.value = true
+    directReferrerCandidate.value = null
+    checkedDirectReferrerQQ.value = ''
+    try {
+      directReferrerCandidate.value = await checkDirectReferrerQQ({ qq })
+      checkedDirectReferrerQQ.value = qq
+      ElMessage.success(t('characters.directReferral.checkSuccess'))
+    } catch (error) {
+      ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
+    } finally {
+      directReferralChecking.value = false
+    }
+  }
+
+  const handleConfirmDirectReferrer = async () => {
+    if (!directReferrerCandidate.value) {
+      return
+    }
+
+    directReferralConfirming.value = true
+    try {
+      await confirmDirectReferrer({
+        referrer_user_id: directReferrerCandidate.value.user_id
+      })
+      ElMessage.success(t('characters.directReferral.confirmSuccess'))
+      directReferrerQQ.value = ''
+      directReferrerCandidate.value = null
+      checkedDirectReferrerQQ.value = ''
+      await loadDirectReferralStatus()
+    } catch (error) {
+      ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
+    } finally {
+      directReferralConfirming.value = false
+    }
+  }
+
   const handleSaveProfile = async () => {
     await profileFormRef.value?.validate()
 
@@ -352,6 +524,10 @@
         discord_id: profileForm.discordId.trim()
       })
       await refreshUserInfo()
+      directReferrerQQ.value = ''
+      directReferrerCandidate.value = null
+      checkedDirectReferrerQQ.value = ''
+      await loadDirectReferralStatus()
       ElMessage.success(t('characters.profile.saveSuccess'))
     } finally {
       profileSaving.value = false
@@ -436,5 +612,16 @@
     { immediate: true }
   )
 
-  onMounted(loadCharacters)
+  watch(directReferrerQQ, (value) => {
+    if (value.trim() === checkedDirectReferrerQQ.value) {
+      return
+    }
+    directReferrerCandidate.value = null
+    checkedDirectReferrerQQ.value = ''
+  })
+
+  onMounted(() => {
+    void loadCharacters()
+    void loadDirectReferralStatus()
+  })
 </script>

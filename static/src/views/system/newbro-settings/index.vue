@@ -98,6 +98,51 @@
       </ElCard>
 
       <ElCard shadow="never" class="mt-4">
+        <template #header>
+          <div class="section-title">{{ t('system.newbroSettings.recruitTitle') }}</div>
+          <div class="section-hint">{{ t('system.newbroSettings.recruitHint') }}</div>
+        </template>
+
+        <ElFormItem :label="t('system.newbroSettings.recruitQQURL')" prop="recruit_qq_url">
+          <ElInput
+            v-model="form.recruit_qq_url"
+            class="url-input"
+            :placeholder="t('system.newbroSettings.recruitQQURLPlaceholder')"
+          />
+        </ElFormItem>
+
+        <ElFormItem
+          :label="t('system.newbroSettings.recruitRewardAmount')"
+          prop="recruit_reward_amount"
+        >
+          <ElInputNumber
+            v-model="form.recruit_reward_amount"
+            :min="0"
+            :step="1"
+            :precision="2"
+            :controls="false"
+            class="number-input"
+            :placeholder="t('system.newbroSettings.recruitRewardAmountPlaceholder')"
+          />
+          <span class="input-suffix">{{ t('system.newbroSettings.fuxiCoinUnit') }}</span>
+        </ElFormItem>
+
+        <ElFormItem
+          :label="t('system.newbroSettings.recruitCooldownDays')"
+          prop="recruit_cooldown_days"
+        >
+          <ElInputNumber
+            v-model="form.recruit_cooldown_days"
+            :min="1"
+            :controls="false"
+            class="number-input"
+            :placeholder="t('system.newbroSettings.recruitCooldownDaysPlaceholder')"
+          />
+          <span class="input-suffix">{{ t('system.newbroSettings.daysUnit') }}</span>
+        </ElFormItem>
+      </ElCard>
+
+      <ElCard shadow="never" class="mt-4">
         <ElButton type="primary" :disabled="saving" @click="handleSave">
           {{ t('system.newbroSettings.save') }}
         </ElButton>
@@ -113,6 +158,7 @@
     ElCard,
     ElForm,
     ElFormItem,
+    ElInput,
     ElInputNumber,
     ElMessage,
     type FormInstance,
@@ -133,7 +179,10 @@
     multi_character_sp: 10000000,
     multi_character_threshold: 3,
     refresh_interval_days: 7,
-    bonus_rate: 20
+    bonus_rate: 20,
+    recruit_qq_url: '',
+    recruit_reward_amount: 50,
+    recruit_cooldown_days: 90
   })
 
   const rules: FormRules = {
@@ -181,6 +230,31 @@
         message: t('system.newbroSettings.validation.mustBeZeroOrGreater'),
         trigger: 'blur'
       }
+    ],
+    recruit_qq_url: [
+      {
+        required: false,
+        type: 'string',
+        trigger: 'blur'
+      }
+    ],
+    recruit_reward_amount: [
+      {
+        required: true,
+        type: 'number',
+        min: 0,
+        message: t('system.newbroSettings.validation.mustBeZeroOrGreater'),
+        trigger: 'blur'
+      }
+    ],
+    recruit_cooldown_days: [
+      {
+        required: true,
+        type: 'number',
+        min: 1,
+        message: t('system.newbroSettings.validation.mustBeGreaterThanZero'),
+        trigger: 'blur'
+      }
     ]
   }
 
@@ -193,6 +267,9 @@
       form.multi_character_threshold = data.multi_character_threshold
       form.refresh_interval_days = data.refresh_interval_days
       form.bonus_rate = data.bonus_rate
+      form.recruit_qq_url = data.recruit_qq_url
+      form.recruit_reward_amount = data.recruit_reward_amount
+      form.recruit_cooldown_days = data.recruit_cooldown_days
     } finally {
       loading.value = false
     }
@@ -208,13 +285,19 @@
         multi_character_sp: form.multi_character_sp,
         multi_character_threshold: form.multi_character_threshold,
         refresh_interval_days: form.refresh_interval_days,
-        bonus_rate: form.bonus_rate
+        bonus_rate: form.bonus_rate,
+        recruit_qq_url: form.recruit_qq_url,
+        recruit_reward_amount: form.recruit_reward_amount,
+        recruit_cooldown_days: form.recruit_cooldown_days
       })
       form.max_character_sp = data.max_character_sp
       form.multi_character_sp = data.multi_character_sp
       form.multi_character_threshold = data.multi_character_threshold
       form.refresh_interval_days = data.refresh_interval_days
       form.bonus_rate = data.bonus_rate
+      form.recruit_qq_url = data.recruit_qq_url
+      form.recruit_reward_amount = data.recruit_reward_amount
+      form.recruit_cooldown_days = data.recruit_cooldown_days
       ElMessage.success(t('system.newbroSettings.saveSuccess'))
     } finally {
       saving.value = false
@@ -256,6 +339,10 @@
 
   .number-input {
     width: 280px;
+  }
+
+  .url-input {
+    width: 480px;
   }
 
   .input-suffix {

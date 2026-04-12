@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"strings"
 	"testing"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -287,6 +288,56 @@ func TestUpdateUserByAdmin(t *testing.T) {
 			t.Fatalf("expected super admin contact edit on protected target to be rejected, got %v", err)
 		}
 	})
+}
+
+func TestUpdateCurrentProfileAllowsQQChangeWhenPendingRecruitLinkEntryExists(t *testing.T) {
+	db := newUserDeletionTestDB(t)
+	if err := db.AutoMigrate(&model.NewbroRecruitment{}, &model.NewbroRecruitmentEntry{}); err != nil {
+		t.Fatalf("auto migrate recruit tables: %v", err)
+	}
+
+	now := model.BaseModel{CreatedAt: time.Date(2026, 4, 12, 12, 0, 0, 0, time.UTC)}
+	seedUserForDeletion(t, db, model.User{
+		BaseModel: now,
+		Nickname:  "Amiya",
+		QQ:        "12345",
+		Role:      model.RoleUser,
+	}, []string{model.RoleUser})
+
+	recruitment := &model.NewbroRecruitment{UserID: 99, Code: "link-1", Source: model.RecruitmentSourceLink, GeneratedAt: now.CreatedAt.Add(-72 * time.Hour)}
+	if err := db.Create(recruitment).Error; err != nil {
+		t.Fatalf("seed recruitment: %v", err)
+	}
+	if err := db.Create(&model.NewbroRecruitmentEntry{
+		RecruitmentID: recruitment.ID,
+		QQ:            "12345",
+		EnteredAt:     now.CreatedAt.Add(-24 * time.Hour),
+		Source:        model.RecruitEntrySourceLink,
+		Status:        model.RecruitEntryStatusOngoing,
+	}).Error; err != nil {
+		t.Fatalf("seed recruitment entry: %v", err)
+	}
+
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	newQQ := "54321"
+	updated, err := NewUserService().UpdateCurrentProfile(1, UserPatch{QQ: &newQQ})
+	if err != nil {
+		t.Fatalf("expected QQ change to succeed even with a pending recruit-link entry, got %v", err)
+	}
+	if updated.QQ != newQQ {
+		t.Fatalf("expected returned user QQ %q, got %q", newQQ, updated.QQ)
+	}
+
+	reloaded, err := NewUserService().GetUserByID(1)
+	if err != nil {
+		t.Fatalf("reload updated user: %v", err)
+	}
+	if reloaded.QQ != newQQ {
+		t.Fatalf("expected QQ to update to %q, got %q", newQQ, reloaded.QQ)
+	}
 }
 
 func newUserDeletionTestDB(t *testing.T) *gorm.DB {

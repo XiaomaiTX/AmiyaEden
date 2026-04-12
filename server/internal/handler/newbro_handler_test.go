@@ -60,7 +60,10 @@ func TestUpdateNewbroSettingsRequestAllowsZeroBonusRate(t *testing.T) {
 		"multi_character_sp": 10000000,
 		"multi_character_threshold": 3,
 		"refresh_interval_days": 7,
-		"bonus_rate": 0
+		"bonus_rate": 0,
+		"recruit_qq_url": "https://example.com/qq",
+		"recruit_reward_amount": 0,
+		"recruit_cooldown_days": 90
 	}`))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
@@ -70,5 +73,8 @@ func TestUpdateNewbroSettingsRequestAllowsZeroBonusRate(t *testing.T) {
 	}
 	if req.BonusRate == nil || *req.BonusRate != 0 {
 		t.Fatalf("expected bonus_rate pointer to preserve explicit zero, got %#v", req.BonusRate)
+	}
+	if req.RecruitRewardAmount == nil || *req.RecruitRewardAmount != 0 {
+		t.Fatalf("expected recruit_reward_amount pointer to preserve explicit zero, got %#v", req.RecruitRewardAmount)
 	}
 }

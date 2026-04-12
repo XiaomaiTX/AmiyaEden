@@ -11,7 +11,12 @@ import (
 
 type NewbroAdminHandler struct {
 	reportSvc   *service.NewbroReportService
-	settingsSvc *service.NewbroSettingsService
+	settingsSvc newbroAdminSettingsService
+}
+
+type newbroAdminSettingsService interface {
+	GetSettings() service.NewbroSettings
+	UpdateSettings(cfg service.NewbroSettings) (service.NewbroSettings, error)
 }
 
 func NewNewbroAdminHandler() *NewbroAdminHandler {
@@ -55,6 +60,9 @@ type UpdateNewbroSettingsRequest struct {
 	MultiCharacterThreshold int      `json:"multi_character_threshold" binding:"required,gt=0"`
 	RefreshIntervalDays     int      `json:"refresh_interval_days" binding:"required,gt=0"`
 	BonusRate               *float64 `json:"bonus_rate" binding:"required,gte=0"`
+	RecruitQQURL            string   `json:"recruit_qq_url"`
+	RecruitRewardAmount     *float64 `json:"recruit_reward_amount" binding:"required,gte=0"`
+	RecruitCooldownDays     int      `json:"recruit_cooldown_days" binding:"required,gt=0"`
 }
 
 func (h *NewbroAdminHandler) GetSettings(c *gin.Context) {
@@ -74,6 +82,9 @@ func (h *NewbroAdminHandler) UpdateSettings(c *gin.Context) {
 		MultiCharacterThreshold: req.MultiCharacterThreshold,
 		RefreshIntervalDays:     req.RefreshIntervalDays,
 		BonusRate:               *req.BonusRate,
+		RecruitQQURL:            req.RecruitQQURL,
+		RecruitRewardAmount:     *req.RecruitRewardAmount,
+		RecruitCooldownDays:     req.RecruitCooldownDays,
 	})
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())

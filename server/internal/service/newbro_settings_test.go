@@ -32,6 +32,10 @@ func (f *fakeNewbroSettingsConfigStore) SetMany(items []repository.SysConfigUpse
 	return f.setManyErr
 }
 
+func (f *fakeNewbroSettingsConfigStore) GetString(_ string, defaultVal string) string {
+	return defaultVal
+}
+
 func TestDefaultNewbroSettings(t *testing.T) {
 	cfg := DefaultNewbroSettings()
 
@@ -170,6 +174,9 @@ func TestUpdateNewbroSettingsPersistsAllKeysInSingleBatch(t *testing.T) {
 		MultiCharacterThreshold: 4,
 		RefreshIntervalDays:     9,
 		BonusRate:               35,
+		RecruitQQURL:            "https://example.com/qq",
+		RecruitRewardAmount:     100,
+		RecruitCooldownDays:     60,
 	}
 
 	updated, err := svc.UpdateSettings(cfg)
@@ -182,8 +189,8 @@ func TestUpdateNewbroSettingsPersistsAllKeysInSingleBatch(t *testing.T) {
 	if store.setManyCalls != 1 {
 		t.Fatalf("expected exactly one batch write, got %d", store.setManyCalls)
 	}
-	if len(store.setManyItems) != 5 {
-		t.Fatalf("expected 5 settings entries, got %d", len(store.setManyItems))
+	if len(store.setManyItems) != 8 {
+		t.Fatalf("expected 8 settings entries, got %d", len(store.setManyItems))
 	}
 
 	gotKeys := []string{
@@ -192,6 +199,9 @@ func TestUpdateNewbroSettingsPersistsAllKeysInSingleBatch(t *testing.T) {
 		store.setManyItems[2].Key,
 		store.setManyItems[3].Key,
 		store.setManyItems[4].Key,
+		store.setManyItems[5].Key,
+		store.setManyItems[6].Key,
+		store.setManyItems[7].Key,
 	}
 	wantKeys := []string{
 		model.SysConfigNewbroMaxCharacterSP,
@@ -199,6 +209,9 @@ func TestUpdateNewbroSettingsPersistsAllKeysInSingleBatch(t *testing.T) {
 		model.SysConfigNewbroMultiCharacterThreshold,
 		model.SysConfigNewbroRefreshIntervalDays,
 		model.SysConfigNewbroBonusRate,
+		model.SysConfigNewbroRecruitQQURL,
+		model.SysConfigNewbroRecruitRewardAmount,
+		model.SysConfigNewbroRecruitCooldownDays,
 	}
 	for i := range wantKeys {
 		if gotKeys[i] != wantKeys[i] {

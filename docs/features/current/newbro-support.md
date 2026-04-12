@@ -2,15 +2,20 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/newbro_service.go
   - server/internal/service/newbro_report.go
   - server/internal/service/newbro_settings.go
+  - server/internal/service/recruitment_link_service.go
+  - server/internal/service/recruitment_entry_service.go
   - server/internal/handler/newbro_admin.go
+  - server/internal/handler/newbro_recruit.go
+  - server/jobs/newbro_recruitment.go
   - static/src/api/newbro.ts
   - static/src/views/newbro
+  - static/src/views/auth/recruit
   - static/src/views/system/newbro-settings
 ---
 
@@ -107,13 +112,68 @@ source_of_truth:
 - 每次处理会写入一条 `captain_reward_settlement`，并把参与结算的归因记录统一回写同一个 `processed_at`
 - 队长奖励流水使用伏羲币 `ref_type = newbro_captain_reward`
 
+## 招募链接
+
+### 功能概述
+
+- 每位已登录且非 `guest` 的用户都可在 `新人帮扶 -> 招新链接` 页面生成专属招募链接
+- 链接 `code` 使用 `newbro_recruitment.id` 的 base62 编码，前端公开落地页路径为 `/#/r/:code`
+- 用户重新生成链接前必须等待配置的冷却天数，默认值为 `90` 天
+- 注册时间在 `7` 天内、具备真实非 `guest` 职权、且尚未通过招募链接或直接推荐形成有效招募奖励的用户，可在 `Dashboard -> 人物管理` 的“联系方式与昵称”卡片下补录推荐人 QQ；若本人资料里尚未保存 QQ，卡片会先提示补齐后再允许确认
+- 直接推荐会先按推荐人 QQ 检查系统内有效用户；确认时提交候选人的 `user_id`，通过后直接创建一条 `source = direct_referral` 的招募记录，并按招募链接成功招募的同等金额立即发放奖励
+- 直接推荐生成的记录仅用于展示和奖励归档，不参与“重新生成招募链接”的冷却判断
+- 公开访客访问链接后，可在无需登录的落地页提交 QQ 号码；提交成功后前端展示加入 QQ 群按钮，跳转目标由管理员配置
+- 系统每天凌晨 `2` 点执行 `recruit_link_check` 任务，批量检查所有 `ongoing` 状态的招募条目：
+  - 若 QQ 号已对应系统内一个在提交时间之后创建的用户，则该条目标记为 `valid`
+  - 若 QQ 号对应的用户创建时间早于提交时间，则该条目标记为 `stalled`
+  - 若条目在冷却期内始终未匹配到用户，且提交时间已超过冷却天数，则该条目标记为 `stalled`
+- 有效招募会发放伏羲币奖励，钱包流水 `ref_type = recruit_link_reward`
+- 管理员可在 `系统管理 -> 帮扶设置` 配置 QQ 群邀请链接、每次有效招募奖励金额与冷却天数
+
+### 入口
+
+用户侧：
+
+- `POST /api/v1/newbro/recruit/link` — 生成招募链接
+- `GET /api/v1/newbro/recruit/links` — 获取当前用户全部招募链接及其招募条目
+- `GET /api/v1/newbro/recruit/direct-referral` — 获取当前用户是否可补录推荐人
+- `POST /api/v1/newbro/recruit/direct-referral/check` — 按 QQ 检查推荐人是否有效
+- `POST /api/v1/newbro/recruit/direct-referral/confirm` — 按推荐人 `user_id` 确认直接推荐并立即发奖
+
+公开（无需登录）：
+
+- `POST /api/v1/recruit/:code/submit` — 提交 QQ 号码
+
+管理侧：
+
+- `GET /api/v1/system/newbro/recruit/links` — 分页获取全部用户的招募链接
+- `GET /api/v1/system/newbro/settings`
+- `PUT /api/v1/system/newbro/settings`
+
+### 前端页面
+
+- `static/src/views/newbro/recruit-link` — 用户侧招新链接页；管理员会额外看到“全部链接”tab
+- `static/src/views/dashboard/characters` — 联系方式资料卡下的直接推荐补录入口
+- `static/src/views/auth/recruit` — 公开落地页
+
+### 关键不变量
+
+- 单个用户每次重新生成链接都会产生新记录，但历史链接的招募条目仍会继续参与状态检查
+- 同一条招募链接下 `(recruitment_id, qq)` 只允许存在一条提交记录，重复提交按幂等成功处理
+- 招募奖励通过 `wallet_ref_id = recruit_matched_user:{matched_user_id}` 保证按被招募人幂等，不会因重复提交相同 QQ 而重复发放
+- 直接推荐与招募链接共用同一套奖励幂等键；同一被招募用户只能成功结算一次
+- 直接推荐记录必须标记 `source = direct_referral`，便于在招募记录中与普通招募链接区分
+- 公开招募落地页不依赖登录态
+
 ## 入口
 
 ### 前端页面
 
 - `static/src/views/newbro/select-captain` — 新人选队长
+- `static/src/views/newbro/recruit-link` — 招新链接
 - `static/src/views/newbro/captain` — 我是队长
 - `static/src/views/newbro/manage` — 帮扶记录
+- `static/src/views/auth/recruit` — 公开招募落地页
 - `static/src/views/system/newbro-settings` — 帮扶设置
 
 ### 后端路由
@@ -125,6 +185,15 @@ source_of_truth:
 - `GET /api/v1/newbro/affiliations/history`
 - `POST /api/v1/newbro/affiliation/select`
 - `POST /api/v1/newbro/affiliation/end`
+- `POST /api/v1/newbro/recruit/link`
+- `GET /api/v1/newbro/recruit/links`
+- `GET /api/v1/newbro/recruit/direct-referral`
+- `POST /api/v1/newbro/recruit/direct-referral/check`
+- `POST /api/v1/newbro/recruit/direct-referral/confirm`
+
+公开：
+
+- `POST /api/v1/recruit/:code/submit`
 
 队长侧：
 
@@ -140,6 +209,7 @@ source_of_truth:
 
 - `GET /api/v1/system/newbro/settings`
 - `PUT /api/v1/system/newbro/settings`
+- `GET /api/v1/system/newbro/recruit/links`
 - `GET /api/v1/system/newbro/captains`
 - `GET /api/v1/system/newbro/captains/:user_id`
 - `GET /api/v1/system/newbro/affiliations/history`
@@ -205,14 +275,19 @@ source_of_truth:
 - `server/internal/service/newbro_service.go`
 - `server/internal/service/captain_reward_processing.go`
 - `server/internal/service/newbro_settings.go`
+- `server/internal/service/recruitment_link_service.go`
+- `server/internal/service/recruitment_entry_service.go`
 - `server/internal/service/newbro_report.go`
 - `server/internal/handler/newbro_user.go`
 - `server/internal/handler/newbro_captain.go`
 - `server/internal/handler/newbro_admin.go`
+- `server/internal/handler/newbro_recruit.go`
+- `server/jobs/newbro_recruitment.go`
 - `static/src/api/newbro.ts`
 - `static/src/router/modules/newbro.ts`
 - `static/src/router/modules/system.ts`
 - `static/src/views/newbro/`
+- `static/src/views/auth/recruit/`
 - `static/src/views/system/newbro-settings/`
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`

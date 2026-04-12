@@ -36,6 +36,12 @@ source_of_truth:
 | POST | `/sde/names` | 批量查询名称映射 | Public |
 | POST | `/sde/search` | 模糊搜索物品 / 成员 | Public |
 
+### 招募链接
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/recruit/:code/submit` | 提交 QQ 号 | Public |
+
 ### Fuxi Admin Directory
 
 | Method | Path | 说明 | 权限 |
@@ -173,6 +179,16 @@ source_of_truth:
 
 | POST | `/newbro/affiliation/end` | 结束当前与队长的帮扶关系 | `Login` + 当前新人资格 |
 
+### Recruit Link User Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/newbro/recruit/link` | 生成招募链接 | Login |
+| GET | `/newbro/recruit/links` | 获取我的招募链接列表 | Login |
+| GET | `/newbro/recruit/direct-referral` | 获取当前用户是否可补录推荐人 | Login |
+| POST | `/newbro/recruit/direct-referral/check` | 按 QQ 检查直接推荐人 | Login |
+| POST | `/newbro/recruit/direct-referral/confirm` | 按推荐人 `user_id` 确认直接推荐并立即发放招募奖励 | Login |
+
 ### Captain Side
 
 | Method | Path | 说明 | 权限 |
@@ -184,6 +200,12 @@ source_of_truth:
 | GET | `/newbro/captain/eligible-players` | 可加入帮扶的新人列表 | `RequireRole(captain)` |
 | POST | `/newbro/captain/enroll` | 手动加入新人到帮扶 | `RequireRole(captain)` |
 | POST | `/newbro/captain/affiliation/end` | 解除指定新人与当前队长的关系 | `RequireRole(captain)` |
+
+### Recruit Link Admin Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/newbro/recruit/links` | 分页获取所有用户招募链接 | `RequireRole(admin)` |
 
 ## Mentor System
 

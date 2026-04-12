@@ -71,6 +71,16 @@ export const newbroRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin']
       }
+    },
+    {
+      path: 'recruit-link',
+      name: 'NewbroRecruitLink',
+      component: '/newbro/recruit-link',
+      meta: {
+        title: 'menus.newbro.recruitLink',
+        keepAlive: true,
+        login: true
+      }
     }
   ]
 }
