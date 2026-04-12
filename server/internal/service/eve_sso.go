@@ -28,10 +28,10 @@ import (
 
 // RegisteredScope 其他模块注册的 ESI Scope
 type RegisteredScope struct {
-	Module      string // 注册模块名
-	Scope       string // ESI scope 字符串
-	Description string // 描述（向用户展示）
-	Required    bool   // 是否为必选 scope
+	Module      string `json:"module"`      // 注册模块名
+	Scope       string `json:"scope"`       // ESI scope 字符串
+	Description string `json:"description"` // 描述（向用户展示）
+	Required    bool   `json:"required"`    // 是否为必选 scope
 }
 
 var (

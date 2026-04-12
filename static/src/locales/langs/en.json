@@ -312,7 +312,8 @@
       "npcKills": "NPC Kills",
       "fittings": "My Fittings",
       "assets": "Assets",
-      "contracts": "Contracts"
+      "contracts": "Contracts",
+      "esiCheck": "ESI Auth Check"
     },
     "hallOfFame": {
       "title": "Fuxi Center",
@@ -712,7 +713,24 @@
     "contractStatusRejected": "Rejected",
     "contractStatusFailed": "Failed",
     "contractStatusDeleted": "Deleted",
-    "contractStatusReversed": "Reversed"
+    "contractStatusReversed": "Reversed",
+    "esiCheckOverview": "Authorization Overview",
+    "esiCheckDetail": "Character Detail",
+    "esiCheckScope": "Scope",
+    "esiCheckDescription": "Description",
+    "esiCheckModule": "Module",
+    "esiCheckRequired": "Required",
+    "esiCheckOptional": "Optional",
+    "esiCheckAuthorized": "Authorized",
+    "esiCheckMissing": "Missing",
+    "esiCheckTokenInvalid": "Token Invalid",
+    "esiCheckTokenInvalidTip": "Token is invalid, some data may not refresh. Please re-bind the character to restore authorization.",
+    "esiCheckSelectChar": "Select Character",
+    "esiCheckCoverage": "{granted}/{total} authorized",
+    "esiCheckClickToDetail": "Click to view details",
+    "esiCheckReauthTip": "Missing scopes require re-binding the character to authorize",
+    "esiCheckNoData": "No ESI authorization data",
+    "esiCheckNoCharacters": "No bound characters"
   },
   "npcKill": {
     "title": "NPC Kill Report",

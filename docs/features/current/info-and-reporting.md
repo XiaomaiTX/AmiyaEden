@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-03
+last_reviewed: 2026-04-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/eve_info.go
@@ -29,6 +29,11 @@ source_of_truth:
 - 装配列表与保存
 - 个人 NPC 刷怪报表（详见 [npc-kills.md](npc-kills.md)）
 - 全量 NPC 刷怪报表（详见 [npc-kills.md](npc-kills.md)）
+- ESI 授权检查
+  - 总览矩阵：横轴为绑定人物，纵轴为注册 scope，按模块分组，显示每人各 scope 的授权状态
+  - 人物详情：下拉选择人物，展示 scope 列表含授权状态、用途说明、模块归属
+  - Token 失效时标记警告，缺失 scope 提示需重新绑定
+  - 数据来源：`GET /api/v1/sso/eve/scopes`（公开）+ `GET /api/v1/sso/eve/characters`（需 JWT）
 
 ## 前端金额展示
 
@@ -47,6 +52,7 @@ source_of_truth:
 - `static/src/views/info/assets`
 - `static/src/views/info/contracts`
 - `static/src/views/info/fittings`
+- `static/src/views/info/esi-check`
 - `static/src/views/info/npc-kills`
 - `static/src/views/dashboard/npc-kills`
 
