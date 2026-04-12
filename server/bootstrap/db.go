@@ -104,7 +104,6 @@ func autoMigrate(db *gorm.DB) {
 		// 商店相关表
 		&model.ShopProduct{},
 		&model.ShopOrder{},
-		&model.ShopRedeemCode{},
 		// SRP 补损相关表
 		&model.SrpShipPrice{},
 		&model.SrpApplication{},
@@ -131,6 +130,9 @@ func autoMigrate(db *gorm.DB) {
 		&model.MentorMenteeRelationship{},
 		&model.MentorRewardStage{},
 		&model.MentorRewardDistribution{},
+		// 招募链接相关表
+		&model.NewbroRecruitment{},
+		&model.NewbroRecruitmentEntry{},
 		// 联盟 PAP 相关表
 		&model.AlliancePAPRecord{},
 		&model.AlliancePAPSummary{},
@@ -199,6 +201,7 @@ func obsoleteTables() []string {
 		"shop_lottery_record",
 		"shop_lottery_prize",
 		"shop_lottery_activity",
+		"shop_redeem_code",
 		"srp_payout_mail_log",
 	}
 }
@@ -233,6 +236,12 @@ func newbroCustomIndexStatements() []string {
 	}
 }
 
+func userCustomIndexStatements() []string {
+	return []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_qq_unique ON "user" (qq) WHERE qq IS NOT NULL AND qq <> ''`,
+	}
+}
+
 func badgeCountIndexStatements() []string {
 	return []string{
 		// Badge count queries: SRP pending
@@ -249,7 +258,8 @@ func badgeCountIndexStatements() []string {
 }
 
 func ensureCustomIndexes(db *gorm.DB) {
-	allStatements := append(newbroCustomIndexStatements(), badgeCountIndexStatements()...)
+	allStatements := append(newbroCustomIndexStatements(), userCustomIndexStatements()...)
+	allStatements = append(allStatements, badgeCountIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))

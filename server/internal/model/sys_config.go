@@ -41,6 +41,9 @@ const (
 	SysConfigNewbroMultiCharacterThreshold = "newbro.multi_character_threshold"
 	SysConfigNewbroRefreshIntervalDays     = "newbro.refresh_interval_days"
 	SysConfigNewbroBonusRate               = "newbro.bonus_rate"
+	SysConfigNewbroRecruitQQURL            = "newbro.recruit_qq_url"
+	SysConfigNewbroRecruitRewardAmount     = "newbro.recruit_reward_amount"
+	SysConfigNewbroRecruitCooldownDays     = "newbro.recruit_cooldown_days"
 
 	SysConfigMenteeMaxCharacterSP    = "mentor.mentee_max_character_sp"
 	SysConfigMenteeMaxAccountAgeDays = "mentor.mentee_max_account_age_days"
@@ -61,6 +64,8 @@ const (
 	SysConfigDefaultNewbroMultiCharacterThreshold               = 3
 	SysConfigDefaultNewbroRefreshIntervalDays                   = 7
 	SysConfigDefaultNewbroBonusRate                     float64 = 20
+	SysConfigDefaultNewbroRecruitRewardAmount           float64 = 50
+	SysConfigDefaultNewbroRecruitCooldownDays                   = 90
 	SysConfigDefaultMenteeMaxCharacterSP                int64   = 4_000_000
 	SysConfigDefaultMenteeMaxAccountAgeDays                     = 7
 	SysConfigDefaultWelfareAutoApproveFuxiCoinThreshold         = 500

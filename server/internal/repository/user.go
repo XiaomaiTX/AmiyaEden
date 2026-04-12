@@ -105,6 +105,13 @@ func (r *UserRepository) GetByQQ(qq string) (*model.User, error) {
 	return &user, nil
 }
 
+// ListByQQ 根据 QQ 号码查询全部匹配用户
+func (r *UserRepository) ListByQQ(qq string) ([]model.User, error) {
+	var users []model.User
+	err := global.DB.Where("qq = ?", qq).Order("id ASC").Find(&users).Error
+	return users, err
+}
+
 // GetByDiscordID 根据 Discord ID 查询用户
 func (r *UserRepository) GetByDiscordID(discordID string) (*model.User, error) {
 	var user model.User

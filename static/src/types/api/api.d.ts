@@ -2198,12 +2198,72 @@ declare namespace Api {
 
     type AdminRewardSettlementsResponse = CaptainRewardSettlementsResponse
 
+    interface RecruitEntry {
+      id: number
+      qq: string
+      entered_at: string
+      source: 'link' | 'direct_referral'
+      status: 'ongoing' | 'valid' | 'stalled'
+      matched_user_id: number
+      rewarded_at: string | null
+    }
+
+    interface RecruitLink {
+      id: number
+      code: string
+      source: 'link' | 'direct_referral'
+      generated_at: string
+      entries: RecruitEntry[]
+    }
+
+    interface AdminRecruitLink extends RecruitLink {
+      user_id: number
+    }
+
+    interface GenerateLinkResponse {
+      id: number
+      code: string
+      generated_at: string
+      is_new: boolean
+    }
+
+    interface SubmitQQRequest {
+      qq: string
+    }
+
+    interface SubmitQQResponse {
+      qq_url: string
+    }
+
+    interface DirectReferralStatus {
+      show_card: boolean
+      needs_profile_qq: boolean
+    }
+
+    interface DirectReferrerCandidate {
+      user_id: number
+      nickname: string
+      primary_character_id: number
+      primary_character_name: string
+    }
+
+    interface CheckDirectReferrerParams {
+      qq: string
+    }
+
+    interface ConfirmDirectReferrerParams {
+      referrer_user_id: number
+    }
+
     interface Settings {
       max_character_sp: number
       multi_character_sp: number
       multi_character_threshold: number
       refresh_interval_days: number
       bonus_rate: number
+      recruit_qq_url: string
+      recruit_reward_amount: number
+      recruit_cooldown_days: number
     }
 
     interface UpdateSettingsParams {
@@ -2212,6 +2272,9 @@ declare namespace Api {
       multi_character_threshold: number
       refresh_interval_days: number
       bonus_rate: number
+      recruit_qq_url: string
+      recruit_reward_amount: number
+      recruit_cooldown_days: number
     }
   }
 

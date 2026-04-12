@@ -116,6 +116,15 @@ func (r *SysConfigRepository) SetMany(items []SysConfigUpsertItem) error {
 	return nil
 }
 
+// GetString 获取 string 配置；不存在时返回 defaultVal
+func (r *SysConfigRepository) GetString(key string, defaultVal string) string {
+	raw, err := r.Get(key, defaultVal)
+	if err != nil {
+		return defaultVal
+	}
+	return raw
+}
+
 // GetFloat 获取 float64 配置；解析失败或不存在时返回 defaultVal
 func (r *SysConfigRepository) GetFloat(key string, defaultVal float64) float64 {
 	raw, err := r.Get(key, fmt.Sprintf("%g", defaultVal))

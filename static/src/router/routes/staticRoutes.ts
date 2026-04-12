@@ -26,6 +26,12 @@ export const staticRoutes: AppRouteRecordRaw[] = [
     meta: { title: 'menus.login.title', isHideTab: true }
   },
   {
+    path: '/r/:code',
+    name: 'RecruitLanding',
+    component: () => import('@views/auth/recruit/index.vue'),
+    meta: { title: 'menus.recruitLanding', isHideTab: true }
+  },
+  {
     path: '/403',
     name: 'Exception403',
     component: () => import('@views/exception/403/index.vue'),
