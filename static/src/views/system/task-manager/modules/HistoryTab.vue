@@ -110,16 +110,7 @@
   }
 
   const triggeredByLabel = (row: Api.TaskManager.TaskExecutionItem) => {
-    if (row.trigger === 'cron') {
-      return t('taskManager.trigger.system')
-    }
-    if (row.triggered_by_name) {
-      return row.triggered_by_name
-    }
-    if (row.triggered_by != null) {
-      return `#${row.triggered_by}`
-    }
-    return '-'
+    return row.triggered_by_name || '-'
   }
 
   const {
@@ -160,6 +151,13 @@
           label: t('taskManager.columns.triggeredBy'),
           width: 150,
           formatter: (row: Api.TaskManager.TaskExecutionItem) => triggeredByLabel(row)
+        },
+        {
+          prop: 'triggered_by',
+          label: t('taskManager.columns.triggeredById'),
+          width: 120,
+          formatter: (row: Api.TaskManager.TaskExecutionItem) =>
+            row.triggered_by != null ? row.triggered_by : '-'
         },
         {
           prop: 'status',

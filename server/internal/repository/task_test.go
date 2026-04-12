@@ -20,7 +20,7 @@ func newTaskTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}); err != nil {
+	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}, &model.User{}); err != nil {
 		t.Fatalf("auto migrate task models: %v", err)
 	}
 
@@ -213,11 +213,15 @@ func TestTaskRepository_ListExecutions(t *testing.T) {
 	db := newTaskTestDB(t)
 	repo := &TaskRepository{db: db}
 	base := time.Date(2026, time.April, 10, 14, 0, 0, 0, time.UTC)
+	triggeredBy := uint(42)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: triggeredBy}, Nickname: "Trigger Nick"}).Error; err != nil {
+		t.Fatalf("create user fixture: %v", err)
+	}
 
 	fixtures := []model.TaskExecution{
 		{TaskName: "task-a", Trigger: "cron", Status: "success", StartedAt: base.Add(1 * time.Minute)},
 		{TaskName: "task-a", Trigger: "cron", Status: "failed", StartedAt: base.Add(2 * time.Minute)},
-		{TaskName: "task-a", Trigger: "manual", Status: "success", StartedAt: base.Add(3 * time.Minute)},
+		{TaskName: "task-a", Trigger: "manual", Status: "success", StartedAt: base.Add(3 * time.Minute), TriggeredBy: &triggeredBy},
 		{TaskName: "task-b", Trigger: "cron", Status: "success", StartedAt: base.Add(4 * time.Minute)},
 	}
 	for _, exec := range fixtures {
@@ -239,6 +243,9 @@ func TestTaskRepository_ListExecutions(t *testing.T) {
 	}
 	if execs[0].StartedAt != base.Add(3*time.Minute) {
 		t.Fatalf("first page started_at = %v, want %v", execs[0].StartedAt, base.Add(3*time.Minute))
+	}
+	if execs[0].TriggeredByName != "Trigger Nick" {
+		t.Fatalf("first page triggered_by_name = %q, want %q", execs[0].TriggeredByName, "Trigger Nick")
 	}
 
 	nextPage, nextTotal, err := repo.ListExecutions("task-a", "success", 2, 1)

@@ -32,7 +32,7 @@ func newTaskServiceTestDepsWithDB(t *testing.T) (*taskregistry.Registry, *reposi
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}); err != nil {
+	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}, &model.User{}); err != nil {
 		t.Fatalf("auto migrate task models: %v", err)
 	}
 
@@ -54,8 +54,11 @@ func newTaskServiceTestDeps(t *testing.T) (*taskregistry.Registry, *repository.T
 }
 
 func TestTaskService_RunTaskSuccess(t *testing.T) {
-	registry, repo, svc := newTaskServiceTestDeps(t)
+	registry, repo, svc, db := newTaskServiceTestDepsWithDB(t)
 	triggeredBy := uint(42)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: triggeredBy}, Nickname: "Trigger Nick"}).Error; err != nil {
+		t.Fatalf("create user fixture: %v", err)
+	}
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "ok_task",
 		Description: "Runs successfully",
@@ -89,6 +92,9 @@ func TestTaskService_RunTaskSuccess(t *testing.T) {
 	}
 	if execs[0].TriggeredBy == nil || *execs[0].TriggeredBy != triggeredBy {
 		t.Fatalf("triggered_by = %v, want %d", execs[0].TriggeredBy, triggeredBy)
+	}
+	if execs[0].TriggeredByName != "Trigger Nick" {
+		t.Fatalf("triggered_by_name = %q, want %q", execs[0].TriggeredByName, "Trigger Nick")
 	}
 	if execs[0].Status != "success" {
 		t.Fatalf("status = %q, want success", execs[0].Status)

@@ -267,10 +267,15 @@ func (s *RecruitmentEntryService) ConfirmDirectReferral(currentUserID, referrerU
 			return errors.New("请先在联系方式中填写自己的 QQ 并保存")
 		}
 
+		// Use currentUserID as a unique placeholder: the alreadyRewarded guard above
+		// (enforced inside the row lock) ensures at most one insert per currentUserID,
+		// so ~<currentUserID> cannot collide with another in-flight insert.
+		// The placeholder is overwritten with base62(ID) within the same transaction.
 		recruitment := &model.NewbroRecruitment{
 			UserID:      referrerUserID,
 			Source:      model.RecruitmentSourceDirectReferral,
 			GeneratedAt: now,
+			Code:        fmt.Sprintf("~%d", currentUserID),
 		}
 		if err := s.repo.CreateTx(tx, recruitment); err != nil {
 			return err
