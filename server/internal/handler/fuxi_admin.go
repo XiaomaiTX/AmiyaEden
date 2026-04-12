@@ -1,19 +1,41 @@
 package handler
 
 import (
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
+type fuxiAdminService interface {
+	GetDirectory() (*service.FuxiAdminDirectoryResponse, error)
+	GetConfig() (*model.FuxiAdminConfig, error)
+	UpdateConfig(req *service.FuxiAdminUpdateConfigRequest) (*model.FuxiAdminConfig, error)
+	ListTiers() ([]model.FuxiAdminTier, error)
+	CreateTier(req *service.FuxiAdminCreateTierRequest) (*model.FuxiAdminTier, error)
+	UpdateTier(id uint, req *service.FuxiAdminUpdateTierRequest) (*model.FuxiAdminTier, error)
+	DeleteTier(id uint) error
+	CreateAdmin(req *service.FuxiAdminCreateAdminRequest) (*model.FuxiAdmin, error)
+	UpdateAdmin(id uint, req *service.FuxiAdminUpdateAdminRequest) (*model.FuxiAdmin, error)
+	DeleteAdmin(id uint) error
+}
+
 // FuxiAdminHandler 伏羲管理人员名录处理器
 type FuxiAdminHandler struct {
-	svc *service.FuxiAdminService
+	svc fuxiAdminService
 }
 
 func NewFuxiAdminHandler() *FuxiAdminHandler {
 	return &FuxiAdminHandler{svc: service.NewFuxiAdminService()}
+}
+
+func respondFuxiAdminError(c *gin.Context, err error, fallback string) {
+	message := fallback
+	if service.IsUserVisibleError(err) {
+		message = err.Error()
+	}
+	response.Fail(c, response.CodeBizError, message)
 }
 
 // ─── Public ───
@@ -22,7 +44,7 @@ func NewFuxiAdminHandler() *FuxiAdminHandler {
 func (h *FuxiAdminHandler) GetDirectory(c *gin.Context) {
 	dir, err := h.svc.GetDirectory()
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "获取伏羲管理名录失败")
 		return
 	}
 	response.OK(c, dir)
@@ -34,7 +56,7 @@ func (h *FuxiAdminHandler) GetDirectory(c *gin.Context) {
 func (h *FuxiAdminHandler) GetConfig(c *gin.Context) {
 	cfg, err := h.svc.GetConfig()
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "获取伏羲管理名录配置失败")
 		return
 	}
 	response.OK(c, cfg)
@@ -49,7 +71,7 @@ func (h *FuxiAdminHandler) UpdateConfig(c *gin.Context) {
 	}
 	cfg, err := h.svc.UpdateConfig(&req)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "更新伏羲管理名录配置失败")
 		return
 	}
 	response.OK(c, cfg)
@@ -61,7 +83,7 @@ func (h *FuxiAdminHandler) UpdateConfig(c *gin.Context) {
 func (h *FuxiAdminHandler) ListTiers(c *gin.Context) {
 	tiers, err := h.svc.ListTiers()
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "获取伏羲管理层级失败")
 		return
 	}
 	response.OK(c, tiers)
@@ -76,7 +98,7 @@ func (h *FuxiAdminHandler) CreateTier(c *gin.Context) {
 	}
 	tier, err := h.svc.CreateTier(&req)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "创建伏羲管理层级失败")
 		return
 	}
 	response.OK(c, tier)
@@ -95,7 +117,7 @@ func (h *FuxiAdminHandler) UpdateTier(c *gin.Context) {
 	}
 	tier, err := h.svc.UpdateTier(id, &req)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "更新伏羲管理层级失败")
 		return
 	}
 	response.OK(c, tier)
@@ -108,7 +130,7 @@ func (h *FuxiAdminHandler) DeleteTier(c *gin.Context) {
 		return
 	}
 	if err := h.svc.DeleteTier(id); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "删除伏羲管理层级失败")
 		return
 	}
 	response.OK(c, nil)
@@ -125,7 +147,7 @@ func (h *FuxiAdminHandler) CreateAdmin(c *gin.Context) {
 	}
 	admin, err := h.svc.CreateAdmin(&req)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "创建伏羲管理员失败")
 		return
 	}
 	response.OK(c, admin)
@@ -144,7 +166,7 @@ func (h *FuxiAdminHandler) UpdateAdmin(c *gin.Context) {
 	}
 	admin, err := h.svc.UpdateAdmin(id, &req)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "更新伏羲管理员失败")
 		return
 	}
 	response.OK(c, admin)
@@ -157,7 +179,7 @@ func (h *FuxiAdminHandler) DeleteAdmin(c *gin.Context) {
 		return
 	}
 	if err := h.svc.DeleteAdmin(id); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
+		respondFuxiAdminError(c, err, "删除伏羲管理员失败")
 		return
 	}
 	response.OK(c, nil)

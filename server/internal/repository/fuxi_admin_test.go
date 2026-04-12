@@ -57,8 +57,8 @@ func TestFuxiAdminRepoListAdminsByTierReturnsOnlyMatchingTier(t *testing.T) {
 	db.Create(&tier1)
 	db.Create(&tier2)
 
-	admin1 := model.FuxiAdmin{TierID: tier1.ID, Name: "Alpha"}
-	admin2 := model.FuxiAdmin{TierID: tier2.ID, Name: "Beta"}
+	admin1 := model.FuxiAdmin{TierID: tier1.ID, Nickname: "Alpha"}
+	admin2 := model.FuxiAdmin{TierID: tier2.ID, Nickname: "Beta"}
 	db.Create(&admin1)
 	db.Create(&admin2)
 
@@ -66,7 +66,7 @@ func TestFuxiAdminRepoListAdminsByTierReturnsOnlyMatchingTier(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list admins: %v", err)
 	}
-	if len(got) != 1 || got[0].Name != "Alpha" {
+	if len(got) != 1 || got[0].Nickname != "Alpha" {
 		t.Fatalf("expected 1 admin Alpha, got %+v", got)
 	}
 }
@@ -78,8 +78,8 @@ func TestFuxiAdminRepoDeleteAdminsByTierIDRemovesAll(t *testing.T) {
 
 	tier := model.FuxiAdminTier{Name: "Mid"}
 	db.Create(&tier)
-	db.Create(&model.FuxiAdmin{TierID: tier.ID, Name: "X"})
-	db.Create(&model.FuxiAdmin{TierID: tier.ID, Name: "Y"})
+	db.Create(&model.FuxiAdmin{TierID: tier.ID, Nickname: "X"})
+	db.Create(&model.FuxiAdmin{TierID: tier.ID, Nickname: "Y"})
 
 	if err := repo.DeleteAdminsByTierID(tier.ID); err != nil {
 		t.Fatalf("delete by tier: %v", err)

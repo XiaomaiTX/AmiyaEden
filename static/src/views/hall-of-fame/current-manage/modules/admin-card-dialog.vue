@@ -19,11 +19,11 @@
       </ElFormItem>
 
       <ElFormItem :label="t('hallOfFame.currentManage.nameLabel')" required>
-        <ElInput v-model="form.name" />
+        <ElInput v-model="form.nickname" />
       </ElFormItem>
 
       <ElFormItem :label="t('hallOfFame.currentManage.titleLabel')">
-        <ElInput v-model="form.title" />
+        <ElInput v-model="form.characterName" />
       </ElFormItem>
 
       <ElFormItem :label="t('hallOfFame.currentManage.descriptionLabel')">
@@ -88,8 +88,8 @@
   const saving = ref(false)
   const form = reactive({
     tierId: 0,
-    name: '',
-    title: '',
+    nickname: '',
+    characterName: '',
     description: '',
     characterId: 0,
     contactQq: '',
@@ -105,8 +105,8 @@
     (open) => {
       if (open) {
         form.tierId = props.admin?.tier_id ?? props.defaultTierId ?? props.tiers[0]?.id ?? 0
-        form.name = props.admin?.name ?? ''
-        form.title = props.admin?.title ?? ''
+        form.nickname = props.admin?.nickname ?? ''
+        form.characterName = props.admin?.character_name ?? ''
         form.description = props.admin?.description ?? ''
         form.characterId = props.admin?.character_id ?? 0
         form.contactQq = props.admin?.contact_qq ?? ''
@@ -118,8 +118,8 @@
   function handleClosed() {
     Object.assign(form, {
       tierId: 0,
-      name: '',
-      title: '',
+      nickname: '',
+      characterName: '',
       description: '',
       characterId: 0,
       contactQq: '',
@@ -128,7 +128,7 @@
   }
 
   async function handleSubmit() {
-    if (!form.name.trim()) {
+    if (!form.nickname.trim()) {
       ElMessage.warning(t('hallOfFame.currentManage.nameRequired'))
       return
     }
@@ -140,8 +140,8 @@
     try {
       const payload = {
         tier_id: form.tierId,
-        name: form.name.trim(),
-        title: form.title.trim(),
+        nickname: form.nickname.trim(),
+        character_name: form.characterName.trim(),
         description: form.description.trim(),
         character_id: form.characterId || 0,
         contact_qq: form.contactQq.trim(),

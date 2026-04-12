@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -135,13 +136,71 @@ func TestFuxiAdminCreateTierRejectsEmptyName(t *testing.T) {
 	}
 }
 
+func TestFuxiAdminCreateTierRejectsWhitespaceOnlyName(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	_, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "   "})
+	if err == nil {
+		t.Fatal("expected error for whitespace-only tier name")
+	}
+}
+
+func TestFuxiAdminCreateTierTrimsWhitespace(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "  Ops  "})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	if tier.Name != "Ops" {
+		t.Fatalf("expected trimmed tier name, got %q", tier.Name)
+	}
+}
+
 func TestFuxiAdminCreateAdminRejectsInvalidTierID(t *testing.T) {
 	global.DB = newFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()
 
-	_, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: 999, Name: "Ghost"})
+	_, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: 999, Nickname: "Ghost"})
 	if err == nil {
 		t.Fatal("expected error for non-existent tier")
+	}
+}
+
+func TestFuxiAdminUpdateTierRejectsWhitespaceOnlyName(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	blank := "   "
+
+	_, err = svc.UpdateTier(tier.ID, &FuxiAdminUpdateTierRequest{Name: &blank})
+	if err == nil {
+		t.Fatal("expected error for whitespace-only tier name")
+	}
+}
+
+func TestFuxiAdminUpdateTierTrimsWhitespace(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	name := "  Command  "
+
+	updatedTier, err := svc.UpdateTier(tier.ID, &FuxiAdminUpdateTierRequest{Name: &name})
+	if err != nil {
+		t.Fatalf("UpdateTier: %v", err)
+	}
+	if updatedTier.Name != "Command" {
+		t.Fatalf("expected trimmed tier name, got %q", updatedTier.Name)
 	}
 }
 
@@ -154,10 +213,10 @@ func TestFuxiAdminCreateAdminStoresDescription(t *testing.T) {
 	tierID := tiers[0].ID
 
 	admin, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{
-		TierID:      tierID,
-		Name:        "Alpha",
-		Title:       "Coordinator",
-		Description: "Handles alliance operations and escalation",
+		TierID:        tierID,
+		Nickname:      "Alpha",
+		CharacterName: "Coordinator",
+		Description:   "Handles alliance operations and escalation",
 	})
 	if err != nil {
 		t.Fatalf("CreateAdmin: %v", err)
@@ -186,8 +245,8 @@ func TestFuxiAdminGetDirectoryGroupsAdminsByTier(t *testing.T) {
 	tiers, _ := svc.ListTiers()
 	highTierID := tiers[0].ID
 
-	_, _ = svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: highTierID, Name: "Alpha"})
-	_, _ = svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: highTierID, Name: "Beta"})
+	_, _ = svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: highTierID, Nickname: "Alpha"})
+	_, _ = svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: highTierID, Nickname: "Beta"})
 
 	dir, err := svc.GetDirectory()
 	if err != nil {
@@ -208,7 +267,7 @@ func TestFuxiAdminDeleteTierCascadesToAdmins(t *testing.T) {
 	_, _ = svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Mid"})
 	tiers, _ := svc.ListTiers()
 	tierID := tiers[0].ID
-	_, _ = svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: tierID, Name: "Member"})
+	_, _ = svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: tierID, Nickname: "Member"})
 
 	if err := svc.DeleteTier(tierID); err != nil {
 		t.Fatalf("DeleteTier: %v", err)
@@ -217,5 +276,127 @@ func TestFuxiAdminDeleteTierCascadesToAdmins(t *testing.T) {
 	dir, _ := svc.GetDirectory()
 	if len(dir.Tiers) != 0 {
 		t.Fatalf("expected 0 tiers after delete, got %d", len(dir.Tiers))
+	}
+}
+
+func TestFuxiAdminDeleteTierReturnsNotFoundWhenTierMissing(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	err := svc.DeleteTier(999)
+	if err == nil {
+		t.Fatal("expected not-found error")
+	}
+	if !IsUserVisibleError(err) {
+		t.Fatalf("expected not-found error to be user-visible, got %v", err)
+	}
+	if err.Error() != "层级不存在" {
+		t.Fatalf("expected 层级不存在, got %v", err)
+	}
+}
+
+func TestFuxiAdminDeleteTierRollsBackWhenTierDeleteFails(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Mid"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	if _, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: tier.ID, Nickname: "Member"}); err != nil {
+		t.Fatalf("CreateAdmin: %v", err)
+	}
+
+	callbackName := fmt.Sprintf("fuxi_admin_fail_delete_%d", time.Now().UnixNano())
+	if err := global.DB.Callback().Delete().Before("gorm:delete").Register(callbackName, func(tx *gorm.DB) {
+		if tx.Statement != nil && tx.Statement.Table == (model.FuxiAdminTier{}).TableName() {
+			_ = tx.AddError(errors.New("forced tier delete failure"))
+		}
+	}); err != nil {
+		t.Fatalf("register delete callback: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := global.DB.Callback().Delete().Remove(callbackName); err != nil {
+			t.Errorf("remove delete callback: %v", err)
+		}
+	})
+
+	if err := svc.DeleteTier(tier.ID); err == nil {
+		t.Fatal("expected DeleteTier to fail")
+	}
+
+	dir, err := svc.GetDirectory()
+	if err != nil {
+		t.Fatalf("GetDirectory: %v", err)
+	}
+	if len(dir.Tiers) != 1 {
+		t.Fatalf("expected tier delete rollback to keep 1 tier, got %d", len(dir.Tiers))
+	}
+	if len(dir.Tiers[0].Admins) != 1 {
+		t.Fatalf("expected tier delete rollback to keep 1 admin, got %d", len(dir.Tiers[0].Admins))
+	}
+}
+
+func TestFuxiAdminUpdateTierPreservesInfrastructureErrors(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	renamed := "Operations"
+
+	sqlDB, err := global.DB.DB()
+	if err != nil {
+		t.Fatalf("open sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	_, err = svc.UpdateTier(tier.ID, &FuxiAdminUpdateTierRequest{Name: &renamed})
+	if err == nil {
+		t.Fatal("expected infrastructure error")
+	}
+	if IsUserVisibleError(err) {
+		t.Fatalf("expected infrastructure error to remain non-user-visible, got %v", err)
+	}
+	if err.Error() == "层级不存在" {
+		t.Fatalf("expected infrastructure error instead of not-found message, got %v", err)
+	}
+}
+
+func TestFuxiAdminUpdateAdminPreservesInfrastructureErrors(t *testing.T) {
+	global.DB = newFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	admin, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: tier.ID, Nickname: "Alpha"})
+	if err != nil {
+		t.Fatalf("CreateAdmin: %v", err)
+	}
+	renamed := "Bravo"
+
+	sqlDB, err := global.DB.DB()
+	if err != nil {
+		t.Fatalf("open sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	_, err = svc.UpdateAdmin(admin.ID, &FuxiAdminUpdateAdminRequest{Nickname: &renamed})
+	if err == nil {
+		t.Fatal("expected infrastructure error")
+	}
+	if IsUserVisibleError(err) {
+		t.Fatalf("expected infrastructure error to remain non-user-visible, got %v", err)
+	}
+	if err.Error() == "管理员不存在" {
+		t.Fatalf("expected infrastructure error instead of not-found message, got %v", err)
 	}
 }

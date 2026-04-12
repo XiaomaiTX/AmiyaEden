@@ -6,9 +6,35 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 var fuxiAdminHexColorPattern = regexp.MustCompile(`^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`)
+
+type UserVisibleError struct {
+	message string
+}
+
+func (e *UserVisibleError) Error() string {
+	return e.message
+}
+
+func NewUserVisibleError(message string) error {
+	return &UserVisibleError{message: message}
+}
+
+func IsUserVisibleError(err error) bool {
+	var target *UserVisibleError
+	return errors.As(err, &target)
+}
+
+func wrapFuxiAdminLookupError(err error, notFoundMessage string) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return NewUserVisibleError(notFoundMessage)
+	}
+	return err
+}
 
 // FuxiAdminService 伏羲管理人员名录业务层
 type FuxiAdminService struct {
@@ -54,8 +80,8 @@ type FuxiAdminUpdateTierRequest struct {
 
 type FuxiAdminCreateAdminRequest struct {
 	TierID         uint   `json:"tier_id"`
-	Name           string `json:"name"`
-	Title          string `json:"title"`
+	Nickname       string `json:"nickname"`
+	CharacterName  string `json:"character_name"`
 	Description    string `json:"description"`
 	ContactQQ      string `json:"contact_qq"`
 	ContactDiscord string `json:"contact_discord"`
@@ -64,8 +90,8 @@ type FuxiAdminCreateAdminRequest struct {
 
 type FuxiAdminUpdateAdminRequest struct {
 	TierID         *uint   `json:"tier_id"`
-	Name           *string `json:"name"`
-	Title          *string `json:"title"`
+	Nickname       *string `json:"nickname"`
+	CharacterName  *string `json:"character_name"`
 	Description    *string `json:"description"`
 	ContactQQ      *string `json:"contact_qq"`
 	ContactDiscord *string `json:"contact_discord"`
@@ -96,13 +122,13 @@ func (s *FuxiAdminService) UpdateConfig(req *FuxiAdminUpdateConfigRequest) (*mod
 	}
 	if req.BaseFontSize != nil {
 		if *req.BaseFontSize < 8 || *req.BaseFontSize > 32 {
-			return nil, errors.New("字体大小必须在 8–32 之间")
+			return nil, NewUserVisibleError("字体大小必须在 8–32 之间")
 		}
 		cfg.BaseFontSize = *req.BaseFontSize
 	}
 	if req.CardWidth != nil {
 		if *req.CardWidth < 160 || *req.CardWidth > 420 {
-			return nil, errors.New("卡片宽度必须在 160–420 之间")
+			return nil, NewUserVisibleError("卡片宽度必须在 160–420 之间")
 		}
 		cfg.CardWidth = *req.CardWidth
 	}
@@ -157,7 +183,7 @@ func (s *FuxiAdminService) UpdateConfig(req *FuxiAdminUpdateConfigRequest) (*mod
 func normalizeFuxiAdminHexColor(input string, label string) (string, error) {
 	color := strings.TrimSpace(input)
 	if !fuxiAdminHexColorPattern.MatchString(color) {
-		return "", errors.New(label + "必须是十六进制颜色值")
+		return "", NewUserVisibleError(label + "必须是十六进制颜色值")
 	}
 	return color, nil
 }
@@ -212,15 +238,16 @@ func (s *FuxiAdminService) ListTiers() ([]model.FuxiAdminTier, error) {
 }
 
 func (s *FuxiAdminService) CreateTier(req *FuxiAdminCreateTierRequest) (*model.FuxiAdminTier, error) {
-	if req.Name == "" {
-		return nil, errors.New("层级名称不能为空")
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, NewUserVisibleError("层级名称不能为空")
 	}
 	maxSort, err := s.repo.MaxTierSortOrder()
 	if err != nil {
 		return nil, err
 	}
 	tier := &model.FuxiAdminTier{
-		Name:      req.Name,
+		Name:      name,
 		SortOrder: maxSort + 1,
 	}
 	if err := s.repo.CreateTier(tier); err != nil {
@@ -232,13 +259,14 @@ func (s *FuxiAdminService) CreateTier(req *FuxiAdminCreateTierRequest) (*model.F
 func (s *FuxiAdminService) UpdateTier(id uint, req *FuxiAdminUpdateTierRequest) (*model.FuxiAdminTier, error) {
 	tier, err := s.repo.GetTierByID(id)
 	if err != nil {
-		return nil, errors.New("层级不存在")
+		return nil, wrapFuxiAdminLookupError(err, "层级不存在")
 	}
 	if req.Name != nil {
-		if *req.Name == "" {
-			return nil, errors.New("层级名称不能为空")
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, NewUserVisibleError("层级名称不能为空")
 		}
-		tier.Name = *req.Name
+		tier.Name = name
 	}
 	if err := s.repo.UpdateTier(tier); err != nil {
 		return nil, err
@@ -247,26 +275,32 @@ func (s *FuxiAdminService) UpdateTier(id uint, req *FuxiAdminUpdateTierRequest) 
 }
 
 func (s *FuxiAdminService) DeleteTier(id uint) error {
-	if err := s.repo.DeleteAdminsByTierID(id); err != nil {
-		return err
+	err := s.repo.Transaction(func(txRepo *repository.FuxiAdminRepository) error {
+		if err := txRepo.DeleteAdminsByTierID(id); err != nil {
+			return err
+		}
+		return txRepo.DeleteTier(id)
+	})
+	if err != nil {
+		return wrapFuxiAdminLookupError(err, "层级不存在")
 	}
-	return s.repo.DeleteTier(id)
+	return nil
 }
 
 // ─── Admins ───
 
 func (s *FuxiAdminService) CreateAdmin(req *FuxiAdminCreateAdminRequest) (*model.FuxiAdmin, error) {
-	name := strings.TrimSpace(req.Name)
-	if name == "" {
-		return nil, errors.New("姓名不能为空")
+	nickname := strings.TrimSpace(req.Nickname)
+	if nickname == "" {
+		return nil, NewUserVisibleError("昵称不能为空")
 	}
 	if _, err := s.repo.GetTierByID(req.TierID); err != nil {
-		return nil, errors.New("层级不存在")
+		return nil, wrapFuxiAdminLookupError(err, "层级不存在")
 	}
 	admin := &model.FuxiAdmin{
 		TierID:         req.TierID,
-		Name:           name,
-		Title:          strings.TrimSpace(req.Title),
+		Nickname:       nickname,
+		CharacterName:  strings.TrimSpace(req.CharacterName),
 		Description:    strings.TrimSpace(req.Description),
 		ContactQQ:      strings.TrimSpace(req.ContactQQ),
 		ContactDiscord: strings.TrimSpace(req.ContactDiscord),
@@ -281,23 +315,23 @@ func (s *FuxiAdminService) CreateAdmin(req *FuxiAdminCreateAdminRequest) (*model
 func (s *FuxiAdminService) UpdateAdmin(id uint, req *FuxiAdminUpdateAdminRequest) (*model.FuxiAdmin, error) {
 	admin, err := s.repo.GetAdminByID(id)
 	if err != nil {
-		return nil, errors.New("管理员不存在")
+		return nil, wrapFuxiAdminLookupError(err, "管理员不存在")
 	}
 	if req.TierID != nil {
 		if _, err := s.repo.GetTierByID(*req.TierID); err != nil {
-			return nil, errors.New("层级不存在")
+			return nil, wrapFuxiAdminLookupError(err, "层级不存在")
 		}
 		admin.TierID = *req.TierID
 	}
-	if req.Name != nil {
-		name := strings.TrimSpace(*req.Name)
-		if name == "" {
-			return nil, errors.New("姓名不能为空")
+	if req.Nickname != nil {
+		nickname := strings.TrimSpace(*req.Nickname)
+		if nickname == "" {
+			return nil, NewUserVisibleError("昵称不能为空")
 		}
-		admin.Name = name
+		admin.Nickname = nickname
 	}
-	if req.Title != nil {
-		admin.Title = strings.TrimSpace(*req.Title)
+	if req.CharacterName != nil {
+		admin.CharacterName = strings.TrimSpace(*req.CharacterName)
 	}
 	if req.Description != nil {
 		admin.Description = strings.TrimSpace(*req.Description)
@@ -319,7 +353,7 @@ func (s *FuxiAdminService) UpdateAdmin(id uint, req *FuxiAdminUpdateAdminRequest
 
 func (s *FuxiAdminService) DeleteAdmin(id uint) error {
 	if _, err := s.repo.GetAdminByID(id); err != nil {
-		return errors.New("管理员不存在")
+		return wrapFuxiAdminLookupError(err, "管理员不存在")
 	}
 	return s.repo.DeleteAdmin(id)
 }

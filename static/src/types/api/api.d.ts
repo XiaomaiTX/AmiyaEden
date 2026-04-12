@@ -2575,8 +2575,8 @@ declare namespace Api {
     interface Admin {
       id: number
       tier_id: number
-      name: string
-      title: string
+      nickname: string
+      character_name: string
       description: string
       contact_qq: string
       contact_discord: string
@@ -2615,8 +2615,8 @@ declare namespace Api {
 
     interface CreateAdminParams {
       tier_id: number
-      name: string
-      title?: string
+      nickname: string
+      character_name?: string
       description?: string
       contact_qq?: string
       contact_discord?: string
@@ -2625,8 +2625,8 @@ declare namespace Api {
 
     interface UpdateAdminParams {
       tier_id?: number
-      name?: string
-      title?: string
+      nickname?: string
+      character_name?: string
       description?: string
       contact_qq?: string
       contact_discord?: string

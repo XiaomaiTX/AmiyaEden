@@ -4,7 +4,8 @@ import request from '@/utils/http'
 
 export function fetchFuxiAdminDirectory() {
   return request.get<Api.FuxiAdmin.DirectoryResponse>({
-    url: '/api/v1/fuxi-admins'
+    url: '/api/v1/fuxi-admins',
+    showErrorMessage: false
   })
 }
 
