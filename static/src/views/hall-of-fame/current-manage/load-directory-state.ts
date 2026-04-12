@@ -1,10 +1,18 @@
-import { HttpError } from '@/utils/http/error'
 import { ApiStatus } from '@/utils/http/status'
 
 export interface LoadFuxiAdminDirectoryStateResult {
   directory: Api.FuxiAdmin.DirectoryResponse | null
   loadErrorMessage: string | null
   showErrorToast: boolean
+}
+
+function isUnauthorizedHttpError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === ApiStatus.unauthorized
+  )
 }
 
 export async function loadFuxiAdminDirectoryState(
@@ -21,7 +29,7 @@ export async function loadFuxiAdminDirectoryState(
     return {
       directory: null,
       loadErrorMessage: loadFailedMessage,
-      showErrorToast: !(error instanceof HttpError && error.code === ApiStatus.unauthorized)
+      showErrorToast: !isUnauthorizedHttpError(error)
     }
   }
 }
