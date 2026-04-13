@@ -1,6 +1,9 @@
 package service
 
-import "amiya-eden/internal/repository"
+import (
+	"amiya-eden/internal/repository"
+	"fmt"
+)
 
 // EveInfoService EVE 人物信息业务逻辑层
 type EveInfoService struct {
@@ -97,6 +100,12 @@ type InfoSkillResponse struct {
 	SkillQueue    []InfoSkillQueueItem `json:"skill_queue"`
 }
 
+// skillTypeInfo holds SDE name data for a skill type
+type skillTypeInfo struct {
+	TypeName, GroupName string
+	GroupID             int
+}
+
 // ─────────────────────────────────────────────
 //  业务方法
 // ─────────────────────────────────────────────
@@ -122,7 +131,7 @@ func (s *EveInfoService) GetWalletJournal(userID uint, req *InfoWalletRequest) (
 	// 获取流水
 	journals, total, err := s.walletRepo.GetWalletJournals(req.CharacterID, req.Page, req.PageSize, req.RefTypes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get wallet journals for character %d: %w", req.CharacterID, err)
 	}
 
 	refTypes, err := s.walletRepo.ListWalletJournalRefTypes(req.CharacterID)
@@ -186,14 +195,13 @@ func (s *EveInfoService) GetCharacterSkills(userID uint, req *InfoSkillRequest) 
 	// 获取人物已注射的技能列表，构建快查 map
 	skillList, err := s.skillRepo.GetSkillList(int(req.CharacterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill list for character %d: %w", req.CharacterID, err)
 	}
 	learnedMap := make(map[int]struct {
 		ActiveLevel        int
 		TrainedLevel       int
 		SkillpointsInSkill int64
 	}, len(skillList))
-	learnedCount := 0
 	for _, sk := range skillList {
 		learnedMap[sk.SkillID] = struct {
 			ActiveLevel        int
@@ -204,13 +212,12 @@ func (s *EveInfoService) GetCharacterSkills(userID uint, req *InfoSkillRequest) 
 			TrainedLevel:       sk.TrainedLevel,
 			SkillpointsInSkill: sk.SkillpointsInSkill,
 		}
-		learnedCount++
 	}
 
 	// 从 SDE 获取技能分类（categoryID=16）下的全量技能列表
 	allSdeSkills, err := s.sdeRepo.GetTypesByCategoryID(SkillCategoryID, lang)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get SDE skills by category: %w", err)
 	}
 
 	// 合并：SDE 全量技能 + 人物已注射数据
@@ -231,18 +238,12 @@ func (s *EveInfoService) GetCharacterSkills(userID uint, req *InfoSkillRequest) 
 		}
 		result.Skills = append(result.Skills, item)
 	}
-	result.SkillCount = learnedCount // 已注射技能数
+	result.SkillCount = len(skillList) // 已注射技能数
 
 	// typeInfoMap 供队列名称查询复用
-	typeInfoMap := make(map[int]struct {
-		TypeName, GroupName string
-		GroupID             int
-	}, len(allSdeSkills))
+	typeInfoMap := make(map[int]skillTypeInfo, len(allSdeSkills))
 	for _, sde := range allSdeSkills {
-		typeInfoMap[sde.TypeID] = struct {
-			TypeName, GroupName string
-			GroupID             int
-		}{
+		typeInfoMap[sde.TypeID] = skillTypeInfo{
 			TypeName:  sde.TypeName,
 			GroupName: sde.GroupName,
 			GroupID:   sde.GroupID,
@@ -265,10 +266,7 @@ func (s *EveInfoService) GetCharacterSkills(userID uint, req *InfoSkillRequest) 
 			queueTypeInfos, err := s.sdeRepo.GetTypes(queueSkillIDs, &published, lang)
 			if err == nil {
 				for _, t := range queueTypeInfos {
-					typeInfoMap[t.TypeID] = struct {
-						TypeName, GroupName string
-						GroupID             int
-					}{
+					typeInfoMap[t.TypeID] = skillTypeInfo{
 						TypeName:  t.TypeName,
 						GroupName: t.GroupName,
 						GroupID:   t.GroupID,
@@ -358,7 +356,7 @@ func (s *EveInfoService) GetCharacterShips(userID uint, req *InfoShipRequest) (*
 	// 1. 获取人物已注射技能 => map[skillID]activeLevel
 	skillList, err := s.skillRepo.GetSkillList(int(req.CharacterID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill list for character %d: %w", req.CharacterID, err)
 	}
 	charSkills := make(map[int]int, len(skillList))
 	for _, sk := range skillList {
@@ -368,7 +366,7 @@ func (s *EveInfoService) GetCharacterShips(userID uint, req *InfoShipRequest) (*
 	// 2. 获取所有舰船（categoryID=6）
 	ships, err := s.sdeRepo.GetShipsByCategoryID(lang)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get ships by category: %w", err)
 	}
 
 	// 收集所有舰船 typeID
@@ -380,7 +378,7 @@ func (s *EveInfoService) GetCharacterShips(userID uint, req *InfoShipRequest) (*
 	// 3. 批量获取舰船技能需求
 	reqs, err := s.sdeRepo.GetShipSkillRequirements(shipIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get ship skill requirements: %w", err)
 	}
 	// 按 shipTypeID 分组
 	reqMap := make(map[int][]repository.ShipSkillReq)

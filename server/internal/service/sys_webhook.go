@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,8 +28,9 @@ type WebhookConfig struct {
 
 // WebhookService Webhook 业务逻辑层
 type WebhookService struct {
-	repo webhookConfigStore
-	http *http.Client
+	repo            webhookConfigStore
+	fleetConfigRepo *repository.FleetConfigRepository
+	http            *http.Client
 }
 
 type webhookConfigStore interface {
@@ -39,14 +41,18 @@ type webhookConfigStore interface {
 
 func NewWebhookService() *WebhookService {
 	return &WebhookService{
-		repo: repository.NewSysConfigRepository(),
-		http: &http.Client{Timeout: 10 * time.Second},
+		repo:            repository.NewSysConfigRepository(),
+		fleetConfigRepo: repository.NewFleetConfigRepository(),
+		http:            &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
 // GetConfig 获取 Webhook 配置
 func (s *WebhookService) GetConfig() (*WebhookConfig, error) {
-	url, _ := s.repo.Get(model.SysConfigWebhookURL, "")
+	url, err := s.repo.Get(model.SysConfigWebhookURL, "")
+	if err != nil {
+		return nil, fmt.Errorf("read webhook URL config: %w", err)
+	}
 	enabled := s.repo.GetBool(model.SysConfigWebhookEnabled, false)
 	wtype, _ := s.repo.Get(model.SysConfigWebhookType, "discord")
 	tmpl, _ := s.repo.Get(model.SysConfigWebhookFleetTemplate, defaultFleetTemplate)
@@ -112,9 +118,8 @@ func (s *WebhookService) SendFleetPing(fleet *model.Fleet) error {
 	// 舰队配置信息
 	fleetConfigInfo := ""
 	if fleet.FleetConfigID != nil && *fleet.FleetConfigID > 0 {
-		fcRepo := repository.NewFleetConfigRepository()
-		if fc, fcErr := fcRepo.GetByID(*fleet.FleetConfigID); fcErr == nil {
-			fittings, _ := fcRepo.ListFittingsByConfigID(fc.ID)
+		if fc, fcErr := s.fleetConfigRepo.GetByID(*fleet.FleetConfigID); fcErr == nil {
+			fittings, _ := s.fleetConfigRepo.ListFittingsByConfigID(fc.ID)
 			fleetConfigInfo = fc.Name
 			if len(fittings) > 0 {
 				var names []string
@@ -203,7 +208,8 @@ func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("webhook 返回错误状态码: %d", resp.StatusCode)
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("webhook 返回错误状态码: %d: %s", resp.StatusCode, string(respBody))
 	}
 	return nil
 }

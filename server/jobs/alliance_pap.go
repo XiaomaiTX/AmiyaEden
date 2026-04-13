@@ -50,9 +50,9 @@ func registerAlliancePAPTasks(reg *taskregistry.Registry) {
 
 			if err := papRepo.MarkArchived(year, month); err != nil {
 				global.Logger.Error("联盟 PAP 归档标记失败", zap.Error(err))
-			} else {
-				global.Logger.Info("联盟 PAP 月度归档完成", zap.Int("year", year), zap.Int("month", month))
+				return err
 			}
+			global.Logger.Info("联盟 PAP 月度归档完成", zap.Int("year", year), zap.Int("month", month))
 			return nil
 		},
 	})
