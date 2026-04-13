@@ -151,7 +151,11 @@ func NewMentorRewardService() *MentorRewardService {
 }
 
 func (s *MentorRewardService) GetStages() ([]model.MentorRewardStage, error) {
-	return s.stageRepo.ListAll()
+	stages, err := s.stageRepo.ListAll()
+	if err != nil {
+		return nil, fmt.Errorf("list mentor reward stages: %w", err)
+	}
+	return stages, nil
 }
 
 func (s *MentorRewardService) UpdateStages(inputs []MentorRewardStageInput) ([]model.MentorRewardStage, error) {
@@ -159,9 +163,13 @@ func (s *MentorRewardService) UpdateStages(inputs []MentorRewardStageInput) ([]m
 		return nil, err
 	}
 	if err := s.stageRepo.ReplaceAll(buildMentorRewardStages(inputs)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("replace mentor reward stages: %w", err)
 	}
-	return s.stageRepo.ListAll()
+	stages, err := s.stageRepo.ListAll()
+	if err != nil {
+		return nil, fmt.Errorf("reload mentor reward stages: %w", err)
+	}
+	return stages, nil
 }
 
 func (s *MentorRewardService) ListAdminRewardDistributions(
@@ -171,14 +179,14 @@ func (s *MentorRewardService) ListAdminRewardDistributions(
 ) ([]MentorRewardDistributionView, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
 	if err := s.backfillMissingRewardDistributionSnapshots(); err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("backfill mentor reward distribution snapshots: %w", err)
 	}
 
 	rows, total, err := s.distRepo.ListAdminPaged(repository.MentorRewardDistributionAdminFilter{
 		Keyword: keyword,
 	}, page, pageSize)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("list mentor reward distributions: %w", err)
 	}
 	if len(rows) == 0 {
 		return []MentorRewardDistributionView{}, total, nil
@@ -208,8 +216,11 @@ func (s *MentorRewardService) ListAdminRewardDistributions(
 
 func (s *MentorRewardService) backfillMissingRewardDistributionSnapshots() error {
 	rows, err := s.distRepo.ListMissingSnapshots()
-	if err != nil || len(rows) == 0 {
-		return err
+	if err != nil {
+		return fmt.Errorf("list distributions missing snapshots: %w", err)
+	}
+	if len(rows) == 0 {
+		return nil
 	}
 
 	userIDs := make([]uint, 0, len(rows)*2)
@@ -218,7 +229,7 @@ func (s *MentorRewardService) backfillMissingRewardDistributionSnapshots() error
 	}
 	users, err := s.userRepo.ListByIDs(userIDs)
 	if err != nil {
-		return err
+		return fmt.Errorf("load distribution snapshot users: %w", err)
 	}
 
 	userByID := make(map[uint]model.User, len(users))
@@ -232,7 +243,7 @@ func (s *MentorRewardService) backfillMissingRewardDistributionSnapshots() error
 
 	characters, err := s.charRepo.ListByCharacterIDs(characterIDs)
 	if err != nil {
-		return err
+		return fmt.Errorf("load distribution snapshot characters: %w", err)
 	}
 	characterByID := make(map[int64]model.EveCharacter, len(characters))
 	for _, character := range characters {
@@ -274,7 +285,7 @@ func (s *MentorRewardService) backfillMissingRewardDistributionSnapshots() error
 			menteeCharacterName,
 			menteeNickname,
 		); err != nil {
-			return err
+			return fmt.Errorf("persist distribution snapshot for row %d: %w", row.ID, err)
 		}
 	}
 
@@ -284,7 +295,7 @@ func (s *MentorRewardService) backfillMissingRewardDistributionSnapshots() error
 func (s *MentorRewardService) ProcessRewards(now time.Time) (*MentorRewardProcessResult, error) {
 	stages, err := s.stageRepo.ListAll()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list mentor reward stages: %w", err)
 	}
 	if len(stages) == 0 {
 		return &MentorRewardProcessResult{}, nil
@@ -292,7 +303,7 @@ func (s *MentorRewardService) ProcessRewards(now time.Time) (*MentorRewardProces
 
 	relationships, err := s.relRepo.ListActiveRelationships()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list active mentor relationships: %w", err)
 	}
 
 	result := &MentorRewardProcessResult{}
@@ -335,7 +346,7 @@ func (s *MentorRewardService) processActiveRelationshipSnapshot(
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil
 			}
-			return err
+			return fmt.Errorf("load relationship %d for update: %w", relationship.ID, err)
 		}
 		if currentRelationship.Status != model.MentorRelationStatusActive {
 			return nil
@@ -379,7 +390,7 @@ func (s *MentorRewardService) processActiveRelationshipSnapshot(
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("process relationship %d snapshot: %w", relationship.ID, err)
 	}
 	return outcome, nil
 }
@@ -387,11 +398,11 @@ func (s *MentorRewardService) processActiveRelationshipSnapshot(
 func (s *MentorRewardService) getMenteeMetrics(userID uint) (*mentorMetrics, error) {
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load mentee %d user: %w", userID, err)
 	}
 	characters, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list mentee %d characters: %w", userID, err)
 	}
 	characterIDs := make([]int64, 0, len(characters))
 	for _, character := range characters {
@@ -399,11 +410,11 @@ func (s *MentorRewardService) getMenteeMetrics(userID uint) (*mentorMetrics, err
 	}
 	totalSP, err := s.skillRepo.SumTotalSPByCharacterIDs(characterIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sum mentee %d total SP: %w", userID, err)
 	}
 	totalPap, err := s.fleetRepo.SumPapByUserTotal(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sum mentee %d total PAP: %w", userID, err)
 	}
 	return &mentorMetrics{
 		TotalSP:    totalSP,
@@ -417,20 +428,20 @@ func (s *MentorRewardService) buildRewardDistributionSnapshot(
 ) (*mentorRewardDistributionSnapshot, error) {
 	mentorUser, err := s.userRepo.GetByID(rel.MentorUserID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load mentor user %d: %w", rel.MentorUserID, err)
 	}
 	menteeUser, err := s.userRepo.GetByID(rel.MenteeUserID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load mentee user %d: %w", rel.MenteeUserID, err)
 	}
 
 	mentorCharacterName, err := s.getRewardDistributionCharacterName(mentorUser.PrimaryCharacterID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load mentor character %d: %w", mentorUser.PrimaryCharacterID, err)
 	}
 	menteeCharacterName, err := s.getRewardDistributionCharacterName(menteeUser.PrimaryCharacterID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load mentee character %d: %w", menteeUser.PrimaryCharacterID, err)
 	}
 
 	return &mentorRewardDistributionSnapshot{
@@ -451,7 +462,7 @@ func (s *MentorRewardService) getRewardDistributionCharacterName(characterID int
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", nil
 		}
-		return "", err
+		return "", fmt.Errorf("get character %d: %w", characterID, err)
 	}
 	return character.CharacterName, nil
 }
@@ -481,7 +492,10 @@ func (s *MentorRewardService) distributeStageRewardTx(
 		WalletRefID:         walletRefID,
 	}
 	if err := s.distRepo.CreateTx(tx, dist); err != nil {
-		return err
+		return fmt.Errorf("create mentor reward distribution: %w", err)
 	}
-	return s.walletSvc.ApplyWalletDeltaTx(tx, rel.MentorUserID, stage.RewardAmount, reason, model.WalletRefMentorReward, walletRefID)
+	if err := s.walletSvc.ApplyWalletDeltaTx(tx, rel.MentorUserID, stage.RewardAmount, reason, model.WalletRefMentorReward, walletRefID); err != nil {
+		return fmt.Errorf("apply mentor reward wallet delta: %w", err)
+	}
+	return nil
 }

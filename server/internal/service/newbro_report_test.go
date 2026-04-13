@@ -251,6 +251,102 @@ func TestNewbroReportServiceListAllCaptainOverviewsIgnoresDeletedCaptains(t *tes
 	}
 }
 
+func TestNewbroReportServiceListAllCaptainOverviewsBatchesCaptainAggregateQueries(t *testing.T) {
+	db := newNewbroReportTestDB(
+		t,
+		&model.User{},
+		&model.UserRole{},
+		&model.EveCharacter{},
+		&model.NewbroCaptainAffiliation{},
+		&model.CaptainBountyAttribution{},
+	)
+	useNewbroReportTestDB(t, db)
+
+	captainOne := model.User{BaseModel: model.BaseModel{ID: 21}, Nickname: "Captain One", Role: model.RoleCaptain, PrimaryCharacterID: 910001}
+	captainTwo := model.User{BaseModel: model.BaseModel{ID: 22}, Nickname: "Captain Two", Role: model.RoleCaptain, PrimaryCharacterID: 910002}
+	players := []model.User{
+		{BaseModel: model.BaseModel{ID: 31}, Nickname: "Player One", PrimaryCharacterID: 920001},
+		{BaseModel: model.BaseModel{ID: 32}, Nickname: "Player Two", PrimaryCharacterID: 920002},
+		{BaseModel: model.BaseModel{ID: 33}, Nickname: "Player Three", PrimaryCharacterID: 920003},
+	}
+	users := append([]model.User{captainOne, captainTwo}, players...)
+	if err := db.Create(&users).Error; err != nil {
+		t.Fatalf("create users: %v", err)
+	}
+
+	roles := []model.UserRole{{UserID: captainOne.ID, RoleCode: model.RoleCaptain}, {UserID: captainTwo.ID, RoleCode: model.RoleCaptain}}
+	if err := db.Create(&roles).Error; err != nil {
+		t.Fatalf("create captain roles: %v", err)
+	}
+
+	characters := []model.EveCharacter{
+		{CharacterID: 910001, CharacterName: "Captain One Main", UserID: captainOne.ID},
+		{CharacterID: 910002, CharacterName: "Captain Two Main", UserID: captainTwo.ID},
+		{CharacterID: 920001, CharacterName: "Player One Main", UserID: 31},
+		{CharacterID: 920002, CharacterName: "Player Two Main", UserID: 32},
+		{CharacterID: 920003, CharacterName: "Player Three Main", UserID: 33},
+	}
+	if err := db.Create(&characters).Error; err != nil {
+		t.Fatalf("create characters: %v", err)
+	}
+
+	now := time.Date(2026, time.April, 13, 12, 0, 0, 0, time.UTC)
+	affiliations := []model.NewbroCaptainAffiliation{
+		{CaptainUserID: captainOne.ID, PlayerUserID: 31, PlayerPrimaryCharacterIDAtStart: 920001, StartedAt: now.Add(-48 * time.Hour)},
+		{CaptainUserID: captainTwo.ID, PlayerUserID: 32, PlayerPrimaryCharacterIDAtStart: 920002, StartedAt: now.Add(-72 * time.Hour), EndedAt: func() *time.Time { endedAt := now.Add(-24 * time.Hour); return &endedAt }()},
+		{CaptainUserID: captainTwo.ID, PlayerUserID: 33, PlayerPrimaryCharacterIDAtStart: 920003, StartedAt: now.Add(-12 * time.Hour)},
+	}
+	if err := db.Create(&affiliations).Error; err != nil {
+		t.Fatalf("create affiliations: %v", err)
+	}
+
+	attributions := []model.CaptainBountyAttribution{
+		{AffiliationID: 1, PlayerUserID: 31, PlayerCharacterID: 920001, CaptainUserID: captainOne.ID, CaptainCharacterID: 910001, CaptainWalletJournalID: 5001, WalletJournalID: 6001, RefType: "bounty_prizes", SystemID: 30000142, JournalAt: now, Amount: 200},
+		{AffiliationID: 2, PlayerUserID: 33, PlayerCharacterID: 920003, CaptainUserID: captainTwo.ID, CaptainCharacterID: 910002, CaptainWalletJournalID: 5002, WalletJournalID: 6002, RefType: "bounty_prizes", SystemID: 30000143, JournalAt: now.Add(-time.Hour), Amount: 50},
+	}
+	if err := db.Create(&attributions).Error; err != nil {
+		t.Fatalf("create attributions: %v", err)
+	}
+
+	queryCount := 0
+	const callbackName = "count_captain_overview_queries"
+	if err := db.Callback().Query().Before("gorm:query").Register(callbackName, func(tx *gorm.DB) {
+		queryCount++
+	}); err != nil {
+		t.Fatalf("register query counter: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Callback().Query().Remove(callbackName)
+	})
+
+	svc := NewNewbroReportService()
+	got, total, err := svc.ListAllCaptainOverviews(1, 20, "")
+	if err != nil {
+		t.Fatalf("ListAllCaptainOverviews() error = %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("ListAllCaptainOverviews() total = %d, want 2", total)
+	}
+	if len(got) != 2 {
+		t.Fatalf("ListAllCaptainOverviews() len = %d, want 2", len(got))
+	}
+	if queryCount > 6 {
+		t.Fatalf("ListAllCaptainOverviews() query count = %d, want <= 6", queryCount)
+	}
+	if got[0].CaptainUserID != captainOne.ID {
+		t.Fatalf("expected captain with larger bounty total to sort first, got %+v", got)
+	}
+	if got[0].ActivePlayerCount != 1 || got[0].HistoricalPlayerCount != 1 {
+		t.Fatalf("unexpected captain one counts: %+v", got[0])
+	}
+	if got[1].CaptainUserID != captainTwo.ID {
+		t.Fatalf("expected second captain to be %d, got %+v", captainTwo.ID, got)
+	}
+	if got[1].ActivePlayerCount != 1 || got[1].HistoricalPlayerCount != 2 {
+		t.Fatalf("unexpected captain two counts: %+v", got[1])
+	}
+}
+
 func newNewbroReportTestDB(t *testing.T, models ...interface{}) *gorm.DB {
 	t.Helper()
 

@@ -255,6 +255,43 @@ func (s *NewbroReportService) listRewardSettlements(
 	}, buildCaptainRewardSettlementItems(rows, profiles), total, nil
 }
 
+func (s *NewbroReportService) listCaptainOverviews(userIDs []uint) ([]CaptainOverview, error) {
+	uniqueUserIDs := uniqueNonZeroUserIDs(userIDs)
+	if len(uniqueUserIDs) == 0 {
+		return []CaptainOverview{}, nil
+	}
+
+	profiles, err := s.loadCaptainProfiles(uniqueUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	activeCounts, historicalCounts, err := s.affRepo.SummarizeDistinctPlayersByCaptainUserIDs(uniqueUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	bountyTotals, recordCounts, err := s.attrRepo.SumByCaptainUserIDs(uniqueUserIDs, supportedPlayerAttributionRefTypeList())
+	if err != nil {
+		return nil, err
+	}
+
+	overviews := make([]CaptainOverview, 0, len(uniqueUserIDs))
+	for _, userID := range uniqueUserIDs {
+		profile, ok := profiles[userID]
+		if !ok {
+			continue
+		}
+		overviews = append(overviews, *buildCaptainOverview(
+			userID,
+			profile,
+			activeCounts[userID],
+			historicalCounts[userID],
+			bountyTotals[userID],
+			recordCounts[userID],
+		))
+	}
+	return overviews, nil
+}
+
 func (s *NewbroReportService) ListAllCaptainOverviews(page, pageSize int, keyword string) ([]CaptainOverview, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 100)
 
@@ -266,13 +303,9 @@ func (s *NewbroReportService) ListAllCaptainOverviews(page, pageSize int, keywor
 	if err != nil {
 		return nil, 0, err
 	}
-	overviews := make([]CaptainOverview, 0, len(userIDs))
-	for _, userID := range userIDs {
-		overview, err := s.GetCaptainOverview(userID)
-		if err != nil {
-			return nil, 0, err
-		}
-		overviews = append(overviews, *overview)
+	overviews, err := s.listCaptainOverviews(userIDs)
+	if err != nil {
+		return nil, 0, err
 	}
 	sort.Slice(overviews, func(i, j int) bool {
 		if overviews[i].AttributedBountyTotal != overviews[j].AttributedBountyTotal {
