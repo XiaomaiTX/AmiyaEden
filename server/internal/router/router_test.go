@@ -36,7 +36,7 @@ func newTaskRouterTestService(t *testing.T) *service.TaskService {
 
 	registry := taskregistry.New()
 	repo := repository.NewTaskRepositoryWithDB(db)
-	return service.NewTaskService(registry, repo)
+	return service.NewTaskService(registry, repo, nil)
 }
 
 func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {

@@ -38,11 +38,7 @@ func newTaskServiceTestDepsWithDB(t *testing.T) (*taskregistry.Registry, *reposi
 
 	registry := taskregistry.New()
 	repo := repository.NewTaskRepositoryWithDB(db)
-	svc := NewTaskService(registry, repo)
-
-	t.Cleanup(func() {
-		RescheduleFn = nil
-	})
+	svc := NewTaskService(registry, repo, nil)
 
 	return registry, repo, svc, db
 }
@@ -263,7 +259,7 @@ func TestTaskService_UpdateScheduleValidRecurringTaskPersistsSchedule(t *testing
 	rescheduleCalls := 0
 	var rescheduledTask string
 	var rescheduledCron string
-	RescheduleFn = func(taskName, cronExpr string) error {
+	svc.reschedule = func(taskName, cronExpr string) error {
 		rescheduleCalls++
 		rescheduledTask = taskName
 		rescheduledCron = cronExpr
@@ -353,7 +349,7 @@ func TestTaskService_UpdateScheduleReturnsRescheduleError(t *testing.T) {
 	})
 
 	wantErr := errors.New("reschedule failed")
-	RescheduleFn = func(taskName, cronExpr string) error {
+	svc.reschedule = func(taskName, cronExpr string) error {
 		return wantErr
 	}
 
@@ -393,7 +389,7 @@ func TestTaskService_UpdateScheduleRevertsRuntimeWhenPersistenceFails(t *testing
 	}
 
 	rescheduled := make([]string, 0, 2)
-	RescheduleFn = func(taskName, cronExpr string) error {
+	svc.reschedule = func(taskName, cronExpr string) error {
 		rescheduled = append(rescheduled, cronExpr)
 		return nil
 	}
@@ -453,7 +449,7 @@ func TestTaskService_UpdateScheduleSerializesConcurrentUpdates(t *testing.T) {
 	secondEntered := make(chan struct{})
 	releaseFirst := make(chan struct{})
 	callCount := 0
-	RescheduleFn = func(taskName, cronExpr string) error {
+	svc.reschedule = func(taskName, cronExpr string) error {
 		callCount++
 		switch callCount {
 		case 1:
@@ -524,7 +520,7 @@ func TestTaskService_UpdateScheduleSerializesConcurrentUpdates(t *testing.T) {
 
 func TestTaskService_UpdateScheduleSerializesAcrossServiceInstances(t *testing.T) {
 	registry, repo, svc, _ := newTaskServiceTestDepsWithDB(t)
-	svc2 := NewTaskService(registry, repo)
+	svc2 := NewTaskService(registry, repo, nil)
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "cron_task_multi_service",
 		Description: "Recurring task",
@@ -540,7 +536,7 @@ func TestTaskService_UpdateScheduleSerializesAcrossServiceInstances(t *testing.T
 	secondEntered := make(chan struct{})
 	releaseFirst := make(chan struct{})
 	callCount := 0
-	RescheduleFn = func(taskName, cronExpr string) error {
+	reschedule := func(taskName, cronExpr string) error {
 		callCount++
 		switch callCount {
 		case 1:
@@ -551,6 +547,8 @@ func TestTaskService_UpdateScheduleSerializesAcrossServiceInstances(t *testing.T
 		}
 		return nil
 	}
+	svc.reschedule = reschedule
+	svc2.reschedule = reschedule
 
 	firstDone := make(chan error, 1)
 	secondDone := make(chan error, 1)
@@ -616,7 +614,7 @@ func TestTaskService_UpdateScheduleAcceptsEveryDescriptor(t *testing.T) {
 
 	var rescheduledTask string
 	var rescheduledCron string
-	RescheduleFn = func(taskName, cronExpr string) error {
+	svc.reschedule = func(taskName, cronExpr string) error {
 		rescheduledTask = taskName
 		rescheduledCron = cronExpr
 		return nil

@@ -4,7 +4,6 @@ import (
 	"amiya-eden/config"
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
 	"errors"
 	"testing"
@@ -47,7 +46,6 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 	oldDB := global.DB
 	oldLogger := global.Logger
 	oldCron := global.Cron
-	oldRescheduleFn := service.RescheduleFn
 
 	db := newCronBootstrapTestDB(t)
 	global.Config = &config.Config{}
@@ -55,7 +53,6 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 	global.DB = db
 	global.Logger = zap.NewNop()
 	global.Cron = nil
-	service.RescheduleFn = nil
 
 	t.Cleanup(func() {
 		if global.Cron != nil {
@@ -69,7 +66,6 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 		global.DB = oldDB
 		global.Logger = oldLogger
 		global.Cron = oldCron
-		service.RescheduleFn = oldRescheduleFn
 	})
 
 	if err := db.Create(&model.TaskSchedule{TaskName: "mentor_reward", CronExpr: "0 30 3 * * *", UpdatedBy: 1}).Error; err != nil {
@@ -82,9 +78,6 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 	}
 	if global.Cron == nil {
 		t.Fatal("expected InitCron to initialize the global cron scheduler")
-	}
-	if service.RescheduleFn == nil {
-		t.Fatal("expected InitCron to configure service.RescheduleFn")
 	}
 
 	tasks, err := taskSvc.GetTasks()
@@ -115,7 +108,7 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 		t.Fatalf("mentor_reward cron = %q, want %q", mentorRewardCron, "0 30 3 * * *")
 	}
 
-	if err := service.RescheduleFn("mentor_reward", "0 0 4 * * *"); err != nil {
-		t.Fatalf("RescheduleFn returned error: %v", err)
+	if err := taskSvc.UpdateSchedule("mentor_reward", "0 0 4 * * *", 1); err != nil {
+		t.Fatalf("UpdateSchedule returned error: %v", err)
 	}
 }

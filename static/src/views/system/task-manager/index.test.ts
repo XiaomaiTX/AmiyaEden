@@ -41,10 +41,15 @@ test('task manager page uses tabs with extracted task and history modules', () =
   assert.match(tasksTabSource, /fetchTasks\(/)
   assert.match(tasksTabSource, /runTask\(/)
   assert.match(tasksTabSource, /<ElDialog/)
+  assert.match(tasksTabSource, /destroy-on-close/)
   assert.match(tasksTabSource, /<EsiControls \/>/)
-  assert.match(tasksTabSource, /scheduleForm\s*=\s*reactive\(\{[\s\S]*mode:\s*'cron'/)
-  assert.match(tasksTabSource, /scheduleForm\s*=\s*reactive\(\{[\s\S]*intervalValue:\s*1/)
-  assert.match(tasksTabSource, /scheduleForm\s*=\s*reactive\(\{[\s\S]*intervalUnit:\s*'m'/)
+  assert.match(tasksTabSource, /createScheduleForm\s*=\s*\(\)\s*=>\s*\(\{[\s\S]*mode:\s*'cron'/)
+  assert.match(tasksTabSource, /createScheduleForm\s*=\s*\(\)\s*=>\s*\(\{[\s\S]*intervalValue:\s*1/)
+  assert.match(
+    tasksTabSource,
+    /createScheduleForm\s*=\s*\(\)\s*=>\s*\(\{[\s\S]*intervalUnit:\s*'m'/
+  )
+  assert.match(tasksTabSource, /resetScheduleForm\(\)/)
   assert.match(tasksTabSource, /taskManager\.fields\.scheduleMode/)
   assert.match(tasksTabSource, /taskManager\.fields\.intervalValue/)
   assert.match(tasksTabSource, /taskManager\.fields\.intervalUnit/)
