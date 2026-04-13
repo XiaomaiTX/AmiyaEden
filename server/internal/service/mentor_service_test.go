@@ -1,10 +1,15 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestShouldBlockSelfMentorApplication(t *testing.T) {
@@ -140,4 +145,107 @@ func TestBuildMentorRelationshipViewIncludesMentorContact(t *testing.T) {
 	if _, exists := raw["mentee_portrait_url"]; exists {
 		t.Fatalf("expected relationship view to omit mentee_portrait_url, got %#v", raw["mentee_portrait_url"])
 	}
+}
+
+func TestMentorServiceListMyMenteesRejectsUnknownStatus(t *testing.T) {
+	db := newMentorServiceTestDB(t)
+	useMentorServiceTestDB(t, db)
+
+	svc := NewMentorService()
+	_, _, err := svc.ListMyMentees(42, "completed", 1, 20)
+	if err == nil {
+		t.Fatal("expected ListMyMentees to reject an unknown mentor relationship status")
+	}
+}
+
+func TestMentorServiceAdminListAllRelationshipsBatchesProfileLookups(t *testing.T) {
+	db := newMentorServiceTestDB(t)
+	useMentorServiceTestDB(t, db)
+
+	mentor := model.User{BaseModel: model.BaseModel{ID: 11}, Nickname: "Mentor", QQ: "123", DiscordID: "mentor#1", PrimaryCharacterID: 910001}
+	menteeOne := model.User{BaseModel: model.BaseModel{ID: 21}, Nickname: "Mentee One", PrimaryCharacterID: 920001}
+	menteeTwo := model.User{BaseModel: model.BaseModel{ID: 22}, Nickname: "Mentee Two", PrimaryCharacterID: 920002}
+	users := []model.User{mentor, menteeOne, menteeTwo}
+	if err := db.Create(&users).Error; err != nil {
+		t.Fatalf("create users: %v", err)
+	}
+
+	characters := []model.EveCharacter{
+		{CharacterID: 910001, CharacterName: "Helpful Mentor", UserID: mentor.ID},
+		{CharacterID: 920001, CharacterName: "Curious Mentee", UserID: menteeOne.ID},
+		{CharacterID: 920002, CharacterName: "Another Mentee", UserID: menteeTwo.ID},
+	}
+	if err := db.Create(&characters).Error; err != nil {
+		t.Fatalf("create characters: %v", err)
+	}
+
+	appliedAt := time.Date(2026, time.April, 13, 9, 0, 0, 0, time.UTC)
+	relationships := []model.MentorMenteeRelationship{
+		{MentorUserID: mentor.ID, MenteeUserID: menteeOne.ID, Status: model.MentorRelationStatusActive, AppliedAt: appliedAt},
+		{MentorUserID: mentor.ID, MenteeUserID: menteeTwo.ID, Status: model.MentorRelationStatusPending, AppliedAt: appliedAt.Add(-time.Hour)},
+	}
+	if err := db.Create(&relationships).Error; err != nil {
+		t.Fatalf("create relationships: %v", err)
+	}
+
+	queryCount := 0
+	const callbackName = "count_admin_relationship_queries"
+	if err := db.Callback().Query().Before("gorm:query").Register(callbackName, func(tx *gorm.DB) {
+		queryCount++
+	}); err != nil {
+		t.Fatalf("register query counter: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Callback().Query().Remove(callbackName)
+	})
+
+	svc := NewMentorService()
+	views, total, err := svc.AdminListAllRelationships("", "", 1, 20)
+	if err != nil {
+		t.Fatalf("AdminListAllRelationships() error = %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("AdminListAllRelationships() total = %d, want 2", total)
+	}
+	if len(views) != 2 {
+		t.Fatalf("AdminListAllRelationships() len = %d, want 2", len(views))
+	}
+	if queryCount > 4 {
+		t.Fatalf("AdminListAllRelationships() query count = %d, want <= 4", queryCount)
+	}
+
+	viewByMenteeID := make(map[uint]MentorRelationshipView, len(views))
+	for _, view := range views {
+		viewByMenteeID[view.MenteeUserID] = view
+	}
+	if viewByMenteeID[menteeOne.ID].MentorCharacterName != "Helpful Mentor" {
+		t.Fatalf("mentee one mentor character = %q, want %q", viewByMenteeID[menteeOne.ID].MentorCharacterName, "Helpful Mentor")
+	}
+	if viewByMenteeID[menteeTwo.ID].MenteeCharacterName != "Another Mentee" {
+		t.Fatalf("mentee two character = %q, want %q", viewByMenteeID[menteeTwo.ID].MenteeCharacterName, "Another Mentee")
+	}
+}
+
+func newMentorServiceTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	dsn := fmt.Sprintf("file:mentor_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.MentorMenteeRelationship{}); err != nil {
+		t.Fatalf("auto migrate mentor service models: %v", err)
+	}
+	return db
+}
+
+func useMentorServiceTestDB(t *testing.T, db *gorm.DB) {
+	t.Helper()
+
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() {
+		global.DB = oldDB
+	})
 }

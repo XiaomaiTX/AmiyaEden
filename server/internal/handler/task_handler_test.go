@@ -39,7 +39,7 @@ type taskHistoryPage struct {
 	PageSize int                              `json:"pageSize"`
 }
 
-func newTaskHandlerTestDeps(t *testing.T) (*taskregistry.Registry, *repository.TaskRepository, *service.TaskService, *TaskHandler, *gorm.DB) {
+func newTaskHandlerTestDeps(t *testing.T, reschedule ...func(taskName, cronExpr string) error) (*taskregistry.Registry, *repository.TaskRepository, *service.TaskService, *TaskHandler, *gorm.DB) {
 	t.Helper()
 
 	dsn := fmt.Sprintf("file:%s_%d?mode=memory&cache=shared", t.Name(), time.Now().UnixNano())
@@ -53,12 +53,12 @@ func newTaskHandlerTestDeps(t *testing.T) (*taskregistry.Registry, *repository.T
 
 	registry := taskregistry.New()
 	repo := repository.NewTaskRepositoryWithDB(db)
-	svc := service.NewTaskService(registry, repo)
+	var rescheduleFn func(taskName, cronExpr string) error
+	if len(reschedule) > 0 {
+		rescheduleFn = reschedule[0]
+	}
+	svc := service.NewTaskService(registry, repo, rescheduleFn)
 	handler := NewTaskHandler(svc)
-
-	t.Cleanup(func() {
-		service.RescheduleFn = nil
-	})
 
 	return registry, repo, svc, handler, db
 }
@@ -228,7 +228,9 @@ func TestTaskHandler_RunTaskAlreadyRunningReturns409(t *testing.T) {
 }
 
 func TestTaskHandler_UpdateScheduleOK(t *testing.T) {
-	registry, repo, _, h, _ := newTaskHandlerTestDeps(t)
+	registry, repo, _, h, _ := newTaskHandlerTestDeps(t, func(taskName, cronExpr string) error {
+		return nil
+	})
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "sched_task",
 		Description: "Recurring task",
@@ -239,9 +241,6 @@ func TestTaskHandler_UpdateScheduleOK(t *testing.T) {
 			return nil
 		},
 	})
-	service.RescheduleFn = func(taskName, cronExpr string) error {
-		return nil
-	}
 	r := setupTaskHandlerTestRouter(h, 7)
 
 	body, _ := json.Marshal(map[string]string{"cron_expr": "0 */10 * * * *"})

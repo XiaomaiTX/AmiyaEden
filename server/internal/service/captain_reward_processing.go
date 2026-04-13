@@ -96,7 +96,7 @@ func (s *CaptainRewardProcessingService) Run(now time.Time) (*CaptainRewardProce
 	for {
 		rows, err := s.attrRepo.ListUnprocessed(captainRewardProcessingFetchLimit)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list unprocessed attributions: %w", err)
 		}
 		if len(rows) == 0 {
 			break
@@ -140,7 +140,7 @@ func (s *CaptainRewardProcessingService) Run(now time.Time) (*CaptainRewardProce
 				return nil
 			})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("process captain %d batch: %w", batch.CaptainUserID, err)
 			}
 
 			result.ProcessedCaptainCount++

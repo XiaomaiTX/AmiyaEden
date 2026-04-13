@@ -48,3 +48,13 @@ func (r *CloneRepository) GetStructureByID(structureID int64) (*model.EveStructu
 func (r *CloneRepository) UpsertStructure(s *model.EveStructure) error {
 	return global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(s).Error
 }
+
+// GetStationName 查询 NPC 空间站名称（staStations SDE 表）
+func (r *CloneRepository) GetStationName(stationID int64) (string, error) {
+	var name string
+	err := global.DB.Table(`"staStations"`).
+		Select(`"stationName"`).
+		Where(`"stationID" = ?`, stationID).
+		Scan(&name).Error
+	return name, err
+}

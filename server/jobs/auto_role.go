@@ -18,7 +18,7 @@ func registerAutoRoleSyncTask(reg *taskregistry.Registry) {
 		Type:        taskregistry.TaskTypeRecurring,
 		DefaultCron: "0 2/10 * * * *",
 		RunFunc: func(ctx context.Context) error {
-			autoRoleSyncTask()
+			autoRoleSyncTask(ctx)
 			return nil
 		},
 	})
@@ -26,8 +26,7 @@ func registerAutoRoleSyncTask(reg *taskregistry.Registry) {
 }
 
 // autoRoleSyncTask 根据 ESI 军团职权 + 头衔映射，自动同步所有用户权限
-func autoRoleSyncTask() {
-	ctx := context.Background()
+func autoRoleSyncTask(ctx context.Context) {
 	autoRoleSvc := service.NewAutoRoleService()
 	autoRoleSvc.SyncAllUsersAutoRoles(ctx)
 }

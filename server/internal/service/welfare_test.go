@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
 	"amiya-eden/pkg/eve/esi"
 	"context"
 	"errors"
@@ -300,6 +301,39 @@ func TestWelfareMinimumPapRestrictionFailed(t *testing.T) {
 				t.Fatalf("welfareMinimumPapRestrictionFailed() = %v, want %v", got, tt.wantBlock)
 			}
 		})
+	}
+}
+
+func TestFillWelfareSkillPlanNamesReturnsEnrichedCopy(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	plans := []model.SkillPlan{
+		{ID: 1, Title: "Starter Plan", CreatedBy: 1},
+		{ID: 2, Title: "Logistics Plan", CreatedBy: 1},
+	}
+	if err := db.Create(&plans).Error; err != nil {
+		t.Fatalf("create skill plans: %v", err)
+	}
+
+	svc := &WelfareService{planRepo: repository.NewSkillPlanRepository()}
+	input := []model.Welfare{
+		{BaseModel: model.BaseModel{ID: 11}, SkillPlanIDs: []uint{1, 2}},
+		{BaseModel: model.BaseModel{ID: 12}},
+	}
+
+	enriched, err := svc.fillWelfareSkillPlanNames(input)
+	if err != nil {
+		t.Fatalf("fillWelfareSkillPlanNames() error = %v", err)
+	}
+	if len(enriched[0].SkillPlanNames) != 2 {
+		t.Fatalf("enriched skill plan names = %#v, want 2 names", enriched[0].SkillPlanNames)
+	}
+	if len(input[0].SkillPlanNames) != 0 {
+		t.Fatalf("expected input welfare slice to remain unchanged, got %#v", input[0].SkillPlanNames)
+	}
+	if enriched[1].SkillPlanNames == nil {
+		t.Fatal("expected enriched welfare with no plans to get an empty skill plan name slice")
 	}
 }
 
@@ -1715,6 +1749,7 @@ func newWelfareServiceTestDB(t *testing.T) *gorm.DB {
 		&model.Welfare{},
 		&model.WelfareSkillPlan{},
 		&model.WelfareApplication{},
+		&model.SkillPlan{},
 		&model.SystemConfig{},
 		&model.User{},
 		&model.EveCharacter{},
