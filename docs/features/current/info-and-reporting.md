@@ -18,6 +18,9 @@ source_of_truth:
 ## 当前能力
 
 - 钱包流水
+  - 钱包流水数据通过 ESI 任务 `character_wallet` 定期刷新
+  - 用户可通过页面顶部的"ESI 拉取"按钮手动触发钱包数据刷新（仅限自己绑定的角色）
+  - 刷新为异步任务，提交后需等待任务完成并通过"刷新"按钮查看最新数据
 - 技能列表
   - 技能列表与总技能点数据通过 ESI 任务 `character_skill` 定期刷新
   - 用户可通过页面顶部的"ESI 拉取"按钮手动触发技能数据刷新（仅限自己绑定的角色）
@@ -65,7 +68,7 @@ source_of_truth:
 - `/api/v1/info/assets`
 - `/api/v1/info/contracts`
 - `/api/v1/info/contracts/detail`
-- `/api/v1/info/esi-refresh` - 手动触发指定角色的技能 ESI 刷新（仅限自己的角色，需 `Login` 权限）
+- `/api/v1/info/esi-refresh` - 手动触发指定角色的 ESI 刷新（支持技能、钱包等任务，仅限自己的角色，需 `Login` 权限）
 - `/api/v1/info/fittings`
 - `/api/v1/info/fittings/save`
 - `/api/v1/info/npc-kills`
@@ -84,6 +87,7 @@ source_of_truth:
 - NPC 刷怪既有用户视角也有管理员视角，文档和实现都要区分清楚
 - 装配功能属于 Info 模块，但也被舰队配置与自动 SRP 复用
 - 技能相关表（`eve_character_skill`、`eve_character_skills`、`eve_character_skill_queue`）采用"整表重建"更新模式，不保留历史快照
+- 钱包相关表（`eve_character_wallet_journal` 等）由 `character_wallet` ESI 任务定期更新，新增记录不覆盖历史
 
 ## 主要代码文件
 
