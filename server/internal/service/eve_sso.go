@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/config"
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
@@ -152,8 +153,17 @@ type EveSSOService struct {
 	esiClient *esi.Client
 }
 
+func configuredEveSSOConfig() config.EveSSOConfig {
+	resolvedConfig := &config.Config{}
+	if global.Config != nil {
+		*resolvedConfig = *global.Config
+	}
+	config.ApplyDefaults(resolvedConfig)
+	return resolvedConfig.EveSSO
+}
+
 func NewEveSSOService() *EveSSOService {
-	cfg := global.Config.EveSSO
+	cfg := configuredEveSSOConfig()
 	return &EveSSOService{
 		charRepo: repository.NewEveCharacterRepository(),
 		userRepo: repository.NewUserRepository(),

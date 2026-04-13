@@ -1,11 +1,9 @@
 package service
 
 import (
-	"amiya-eden/global"
 	"amiya-eden/internal/repository"
 	"amiya-eden/pkg/eve/esi"
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -66,24 +64,15 @@ func newInGameMailSupport(
 }
 
 func newConfiguredEveSSOService() *EveSSOService {
-	if global.Config == nil {
-		return nil
-	}
 	return NewEveSSOService()
 }
 
 func newConfiguredESIClient() *esi.Client {
-	if global.Config == nil {
-		return nil
-	}
-	return esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
+	cfg := configuredEveSSOConfig()
+	return esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix)
 }
 
 func (s inGameMailSupport) resolveUserPrimaryCharacter(userID uint) (resolvedMailRecipient, error) {
-	if s.userRepo == nil {
-		return resolvedMailRecipient{}, errors.New("in-game mail user repository unavailable")
-	}
-
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
 		return resolvedMailRecipient{}, fmt.Errorf("用户不存在(user_id=%d): %w", userID, err)
@@ -91,9 +80,6 @@ func (s inGameMailSupport) resolveUserPrimaryCharacter(userID uint) (resolvedMai
 	recipient := resolvedMailRecipient{CharacterID: user.PrimaryCharacterID}
 	if user.PrimaryCharacterID == 0 {
 		return recipient, fmt.Errorf("用户主角色未设置(user_id=%d)", userID)
-	}
-	if s.charRepo == nil {
-		return recipient, errors.New("in-game mail character repository unavailable")
 	}
 
 	char, err := s.charRepo.GetByCharacterID(user.PrimaryCharacterID)
@@ -105,10 +91,6 @@ func (s inGameMailSupport) resolveUserPrimaryCharacter(userID uint) (resolvedMai
 }
 
 func (s inGameMailSupport) resolveSender(ctx context.Context, senderUserID uint) (resolvedMailSender, error) {
-	if s.userRepo == nil || s.charRepo == nil || s.ssoSvc == nil {
-		return resolvedMailSender{}, errors.New("in-game mail dependencies unavailable")
-	}
-
 	user, err := s.userRepo.GetByID(senderUserID)
 	if err != nil {
 		return resolvedMailSender{}, fmt.Errorf("发信用户不存在(user_id=%d): %w", senderUserID, err)
@@ -153,10 +135,6 @@ func (s inGameMailSupport) send(
 	subject string,
 	body string,
 ) (int64, error) {
-	if s.esiClient == nil {
-		return 0, errors.New("in-game mail client unavailable")
-	}
-
 	path := fmt.Sprintf("/characters/%d/mail/", senderCharacterID)
 	var mailID int64
 	err := s.esiClient.PostCreatedJSON(ctx, path, accessToken, inGameMailSendRequest{

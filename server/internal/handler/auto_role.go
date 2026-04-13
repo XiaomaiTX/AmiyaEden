@@ -80,7 +80,7 @@ func (h *AutoRoleHandler) ListEsiTitleMappings(c *gin.Context) {
 
 // ListCorpTitles 获取数据库中所有军团头衔（用于前端下拉选择）
 func (h *AutoRoleHandler) ListCorpTitles(c *gin.Context) {
-	titles, err := h.svc.ListCorpTitles()
+	titles, err := h.svc.ListCorpTitles(c.Request.Context())
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

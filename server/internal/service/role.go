@@ -17,12 +17,14 @@ import (
 type RoleService struct {
 	repo     *repository.RoleRepository
 	userRepo *repository.UserRepository
+	charRepo *repository.EveCharacterRepository
 }
 
 func NewRoleService() *RoleService {
 	return &RoleService{
 		repo:     repository.NewRoleRepository(),
 		userRepo: repository.NewUserRepository(),
+		charRepo: repository.NewEveCharacterRepository(),
 	}
 }
 
@@ -46,7 +48,7 @@ func (s *RoleService) GetUserRoleNames(ctx context.Context, userID uint) ([]stri
 
 	roles, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get role codes for user %d: %w", userID, err)
 	}
 	if len(roles) == 0 {
 		roles = []string{model.RoleGuest}
@@ -81,7 +83,7 @@ func (s *RoleService) ListRoleDefinitions() []model.RoleDefinition {
 func (s *RoleService) GetUserRoles(userID uint) ([]model.RoleDefinition, error) {
 	codes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get role codes for user %d: %w", userID, err)
 	}
 	defs := make([]model.RoleDefinition, 0, len(codes))
 	for _, code := range codes {
@@ -95,7 +97,7 @@ func (s *RoleService) GetUserRoles(userID uint) ([]model.RoleDefinition, error) 
 func (s *RoleService) SetUserRoles(ctx context.Context, _ uint, operatorRoles []string, userID uint, roleCodes []string) error {
 	currentCodes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("get role codes for user %d: %w", userID, err)
 	}
 
 	for _, code := range roleCodes {
@@ -196,11 +198,15 @@ func filterOutRole(codes []string, target string) []string {
 func (s *RoleService) SyncUserPrimaryRole(userID uint) {
 	codes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil || len(codes) == 0 {
-		_ = s.userRepo.UpdateRole(userID, model.RoleGuest)
+		if err := s.userRepo.UpdateRole(userID, model.RoleGuest); err != nil {
+			global.Logger.Warn("[Role] 同步主职权失败", zap.Uint("user_id", userID), zap.Error(err))
+		}
 		return
 	}
 	// 取第一个（已按 sort 排序）
-	_ = s.userRepo.UpdateRole(userID, codes[0])
+	if err := s.userRepo.UpdateRole(userID, codes[0]); err != nil {
+		global.Logger.Warn("[Role] 同步主职权失败", zap.Uint("user_id", userID), zap.Error(err))
+	}
 }
 
 // CheckCorpAccessAndAdjustRole 检查用户名下所有人物的军团归属是否在准入列表内
@@ -213,20 +219,19 @@ func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID u
 
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("get user %d: %w", userID, err)
 	}
 
-	charRepo := repository.NewEveCharacterRepository()
-	chars, err := charRepo.ListByUserID(userID)
+	chars, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("list characters for user %d: %w", userID, err)
 	}
 
 	hasAccess := hasAllowedPrimaryCharacter(user.PrimaryCharacterID, chars, allowSet)
 
 	rollCodes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("get role codes for user %d: %w", userID, err)
 	}
 
 	if model.ContainsAnyRole(rollCodes, model.RoleSuperAdmin) {
@@ -237,7 +242,9 @@ func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID u
 		if model.ContainsRole(rollCodes, model.RoleUser) {
 			return nil
 		}
-		_ = s.repo.RemoveUserRole(userID, model.RoleGuest)
+		if err := s.repo.RemoveUserRole(userID, model.RoleGuest); err != nil {
+			global.Logger.Warn("[CorpCheck] 移除 guest 职权失败", zap.Uint("user_id", userID), zap.Error(err))
+		}
 		if err := s.repo.AddUserRole(userID, model.RoleUser); err != nil {
 			return err
 		}

@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm/clause"
 )
 
 // ─────────────────────────────────────────────
@@ -88,7 +87,7 @@ func NewCloneService() *CloneService {
 }
 
 // GetCharacterImplants 获取人物克隆体/植入体信息
-func (s *CloneService) GetCharacterImplants(userID uint, req *InfoImplantsRequest) (*InfoImplantsResponse, error) {
+func (s *CloneService) GetCharacterImplants(ctx context.Context, userID uint, req *InfoImplantsRequest) (*InfoImplantsResponse, error) {
 	// 校验人物归属
 	if err := requireOwnedCharacter(s.charRepo, userID, req.CharacterID); err != nil {
 		return nil, err
@@ -118,13 +117,13 @@ func (s *CloneService) GetCharacterImplants(userID uint, req *InfoImplantsReques
 			LocationID:   baseInfo.HomeLocationID,
 			LocationType: baseInfo.HomeLocationType,
 		}
-		result.HomeLocation.LocationName = s.resolveLocationName(req.CharacterID, baseInfo.HomeLocationID, baseInfo.HomeLocationType)
+		result.HomeLocation.LocationName = s.resolveLocationName(ctx, req.CharacterID, baseInfo.HomeLocationID, baseInfo.HomeLocationType)
 	}
 
 	// 3. 获取所有植入体记录
 	implants, err := s.cloneRepo.GetImplants(req.CharacterID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get implants for character %d: %w", req.CharacterID, err)
 	}
 
 	// 按 JumpCloneID 分组
@@ -184,7 +183,7 @@ func (s *CloneService) GetCharacterImplants(userID uint, req *InfoImplantsReques
 	for _, jcID := range jumpCloneOrder {
 		jc := jumpCloneMap[jcID]
 		// 解析位置名称
-		jc.Location.LocationName = s.resolveLocationName(req.CharacterID, jc.Location.LocationID, jc.Location.LocationType)
+		jc.Location.LocationName = s.resolveLocationName(ctx, req.CharacterID, jc.Location.LocationID, jc.Location.LocationType)
 		// 填充植入体名称
 		for i := range jc.Implants {
 			jc.Implants[i].ImplantName = implantNameMap[jc.Implants[i].ImplantID]
@@ -204,7 +203,7 @@ func (s *CloneService) resolveImplantNames(typeIDs []int, lang string) map[int]s
 
 	// 去重
 	unique := make(map[int]struct{})
-	deduped := make([]int, 0)
+	deduped := make([]int, 0, len(typeIDs))
 	for _, id := range typeIDs {
 		if _, ok := unique[id]; !ok {
 			unique[id] = struct{}{}
@@ -224,7 +223,7 @@ func (s *CloneService) resolveImplantNames(typeIDs []int, lang string) map[int]s
 }
 
 // resolveLocationName 解析位置名称（建筑/空间站）
-func (s *CloneService) resolveLocationName(characterID, locationID int64, locationType string) string {
+func (s *CloneService) resolveLocationName(ctx context.Context, characterID, locationID int64, locationType string) string {
 	if locationID == 0 {
 		return ""
 	}
@@ -237,7 +236,7 @@ func (s *CloneService) resolveLocationName(characterID, locationID int64, locati
 		}
 
 		// 缓存未命中，从 ESI 获取
-		return s.fetchAndCacheStructure(characterID, locationID)
+		return s.fetchAndCacheStructure(ctx, characterID, locationID)
 	}
 
 	// station（NPC 空间站）— 通过 SDE 查询翻译
@@ -261,11 +260,7 @@ func (s *CloneService) resolveLocationName(characterID, locationID int64, locati
 
 // resolveStationName 查询 NPC 空间站名称
 func (s *CloneService) resolveStationName(stationID int64) string {
-	var name string
-	err := global.DB.Table(`"staStations"`).
-		Select(`"stationName"`).
-		Where(`"stationID" = ?`, stationID).
-		Scan(&name).Error
+	name, err := s.cloneRepo.GetStationName(stationID)
 	if err != nil || name == "" {
 		return fmt.Sprintf("Station-%d", stationID)
 	}
@@ -273,9 +268,9 @@ func (s *CloneService) resolveStationName(stationID int64) string {
 }
 
 // fetchAndCacheStructure 从 ESI 获取建筑详情并入库
-func (s *CloneService) fetchAndCacheStructure(characterID, structureID int64) string {
+func (s *CloneService) fetchAndCacheStructure(ctx context.Context, characterID, structureID int64) string {
 	// 获取人物的 access token
-	accessToken, err := s.ssoSvc.GetValidToken(context.Background(), characterID)
+	accessToken, err := s.ssoSvc.GetValidToken(ctx, characterID)
 	if err != nil {
 		global.Logger.Warn("[Clone] 获取 access token 失败",
 			zap.Int64("character_id", characterID),
@@ -299,7 +294,7 @@ func (s *CloneService) fetchAndCacheStructure(characterID, structureID int64) st
 
 	var detail structureDetail
 	structurePath := fmt.Sprintf("/universe/structures/%d/", structureID)
-	if err := s.esiGet(context.Background(), structurePath, accessToken, &detail); err != nil {
+	if err := s.esiGet(ctx, structurePath, accessToken, &detail); err != nil {
 		global.Logger.Warn("[Clone] 获取建筑详情失败",
 			zap.Int64("structure_id", structureID),
 			zap.Error(err),
@@ -319,7 +314,7 @@ func (s *CloneService) fetchAndCacheStructure(characterID, structureID int64) st
 		Z:             detail.Position.Z,
 		UpdateAt:      time.Now().Unix(),
 	}
-	if err := global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(record).Error; err != nil {
+	if err := s.cloneRepo.UpsertStructure(record); err != nil {
 		global.Logger.Warn("[Clone] 缓存建筑信息失败",
 			zap.Int64("structure_id", structureID),
 			zap.Error(err),

@@ -93,7 +93,7 @@ func (h *EveInfoHandler) GetCharacterImplants(c *gin.Context) {
 		return
 	}
 
-	result, err := h.cloneSvc.GetCharacterImplants(userID, &req)
+	result, err := h.cloneSvc.GetCharacterImplants(c.Request.Context(), userID, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

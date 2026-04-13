@@ -19,7 +19,7 @@ func registerCorpAccessCheckTask(reg *taskregistry.Registry) {
 		Type:        taskregistry.TaskTypeRecurring,
 		DefaultCron: "0 0/5 * * * *",
 		RunFunc: func(ctx context.Context) error {
-			roleCheckTask()
+			roleCheckTask(ctx)
 			return nil
 		},
 	})
@@ -27,14 +27,13 @@ func registerCorpAccessCheckTask(reg *taskregistry.Registry) {
 }
 
 // roleCheckTask 遍历所有用户，根据军团准入列表调整用户权限
-func roleCheckTask() {
+func roleCheckTask(ctx context.Context) {
 	// 未配置允许军团列表时跳过
 	allowCorps := utils.GetAllowCorporations()
 	if len(allowCorps) == 0 {
 		return
 	}
 
-	ctx := context.Background()
 	userRepo := repository.NewUserRepository()
 	rollSvc := service.NewRoleService()
 
