@@ -37,7 +37,28 @@ func InitCron() *service.TaskService {
 
 	var entryMu sync.Mutex
 	entryIDs := make(map[string]cron.EntryID)
-	taskSvc := service.NewTaskService(reg, taskRepo)
+	var taskSvc *service.TaskService
+	rescheduleTask := func(taskName, cronExpr string) error {
+		entryMu.Lock()
+		defer entryMu.Unlock()
+
+		if oldID, ok := entryIDs[taskName]; ok {
+			c.Remove(oldID)
+		}
+
+		newID, err := c.AddFunc(cronExpr, func() {
+			taskSvc.RunTaskFromCron(taskName)
+		})
+		if err != nil {
+			cronZapLogger().Error("[Cron] 重新调度任务失败", zap.String("task", taskName), zap.Error(err))
+			return err
+		}
+
+		entryIDs[taskName] = newID
+		cronZapLogger().Info("[Cron] 重新调度任务成功", zap.String("task", taskName), zap.String("cron", cronExpr))
+		return nil
+	}
+	taskSvc = service.NewTaskService(reg, taskRepo, rescheduleTask)
 
 	for _, definition := range reg.All() {
 		if definition.Type != taskregistry.TaskTypeRecurring || definition.DefaultCron == "" {
@@ -59,27 +80,6 @@ func InitCron() *service.TaskService {
 		}
 		entryIDs[taskName] = entryID
 		cronZapLogger().Info("[Cron] 注册任务成功", zap.String("task", taskName), zap.String("cron", cronExpr))
-	}
-
-	service.RescheduleFn = func(taskName, cronExpr string) error {
-		entryMu.Lock()
-		defer entryMu.Unlock()
-
-		if oldID, ok := entryIDs[taskName]; ok {
-			c.Remove(oldID)
-		}
-
-		newID, err := c.AddFunc(cronExpr, func() {
-			taskSvc.RunTaskFromCron(taskName)
-		})
-		if err != nil {
-			cronZapLogger().Error("[Cron] 重新调度任务失败", zap.String("task", taskName), zap.Error(err))
-			return err
-		}
-
-		entryIDs[taskName] = newID
-		cronZapLogger().Info("[Cron] 重新调度任务成功", zap.String("task", taskName), zap.String("cron", cronExpr))
-		return nil
 	}
 
 	c.Start()

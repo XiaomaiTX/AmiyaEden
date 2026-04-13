@@ -27,8 +27,6 @@ var (
 	ErrTaskLockNotHeld            = errors.New("task lock is not held")
 	errTaskReschedulerUnavailable = errors.New("task rescheduler is not configured")
 
-	RescheduleFn func(taskName, cronExpr string) error
-
 	taskCronParser    = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 	nopTaskLogger     = zap.NewNop()
 	taskScheduleLocks sync.Map
@@ -44,8 +42,9 @@ const (
 )
 
 type TaskService struct {
-	registry *taskregistry.Registry
-	repo     *repository.TaskRepository
+	registry   *taskregistry.Registry
+	repo       *repository.TaskRepository
+	reschedule func(taskName, cronExpr string) error
 }
 
 type TaskItem struct {
@@ -68,10 +67,11 @@ type TaskLastExecution struct {
 	Summary    string     `json:"summary,omitempty"`
 }
 
-func NewTaskService(registry *taskregistry.Registry, repo *repository.TaskRepository) *TaskService {
+func NewTaskService(registry *taskregistry.Registry, repo *repository.TaskRepository, reschedule func(taskName, cronExpr string) error) *TaskService {
 	return &TaskService{
-		registry: registry,
-		repo:     repo,
+		registry:   registry,
+		repo:       repo,
+		reschedule: reschedule,
 	}
 }
 
@@ -206,11 +206,11 @@ func (s *TaskService) UpdateSchedule(taskName, cronExpr string, updatedBy uint) 
 	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	if RescheduleFn == nil {
+	if s.reschedule == nil {
 		return errTaskReschedulerUnavailable
 	}
 
-	if err := RescheduleFn(taskName, normalizedCron); err != nil {
+	if err := s.reschedule(taskName, normalizedCron); err != nil {
 		return err
 	}
 
@@ -219,7 +219,7 @@ func (s *TaskService) UpdateSchedule(taskName, cronExpr string, updatedBy uint) 
 		CronExpr:  normalizedCron,
 		UpdatedBy: updatedBy,
 	}); err != nil {
-		if revertErr := RescheduleFn(taskName, previousCron); revertErr != nil {
+		if revertErr := s.reschedule(taskName, previousCron); revertErr != nil {
 			s.logger().Error("failed to revert runtime schedule after persistence error", zap.String("task_name", taskName), zap.String("revert_cron", previousCron), zap.Error(revertErr))
 		}
 		return err

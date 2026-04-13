@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/repository"
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -336,28 +337,43 @@ func (s *MentorService) RejectApplication(mentorUserID, relationshipID uint) err
 	return s.relRepo.UpdateStatus(relationshipID, model.MentorRelationStatusRejected, map[string]any{"responded_at": s.now()})
 }
 
-func normalizeMentorStatuses(status string) []string {
-	switch status {
-	case "active":
-		return []string{model.MentorRelationStatusActive}
-	case "pending":
-		return []string{model.MentorRelationStatusPending}
-	case "rejected":
-		return []string{model.MentorRelationStatusRejected}
-	case "revoked":
-		return []string{model.MentorRelationStatusRevoked}
-	case "graduated":
-		return []string{model.MentorRelationStatusGraduated}
+func normalizeMentorStatus(status string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(status)) {
 	case "all", "":
-		return nil
+		return "", nil
+	case "active":
+		return model.MentorRelationStatusActive, nil
+	case "pending":
+		return model.MentorRelationStatusPending, nil
+	case "rejected":
+		return model.MentorRelationStatusRejected, nil
+	case "revoked":
+		return model.MentorRelationStatusRevoked, nil
+	case "graduated":
+		return model.MentorRelationStatusGraduated, nil
 	default:
-		return []string{model.MentorRelationStatusActive}
+		return "", errors.New("无效的导师关系状态")
 	}
+}
+
+func normalizeMentorStatuses(status string) ([]string, error) {
+	normalizedStatus, err := normalizeMentorStatus(status)
+	if err != nil {
+		return nil, err
+	}
+	if normalizedStatus == "" {
+		return nil, nil
+	}
+	return []string{normalizedStatus}, nil
 }
 
 func (s *MentorService) ListMyMentees(mentorUserID uint, status string, page, pageSize int) ([]MentorMenteeListItem, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 100)
-	rows, total, err := s.relRepo.ListByMentorUserID(mentorUserID, normalizeMentorStatuses(status), page, pageSize)
+	statuses, err := normalizeMentorStatuses(status)
+	if err != nil {
+		return nil, 0, err
+	}
+	rows, total, err := s.relRepo.ListByMentorUserID(mentorUserID, statuses, page, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -392,23 +408,45 @@ func (s *MentorService) AdminRevokeRelationship(adminUserID, relationshipID uint
 
 func (s *MentorService) AdminListAllRelationships(status, keyword string, page, pageSize int) ([]MentorRelationshipView, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 200)
-	rows, total, err := s.relRepo.ListAllPaged(repository.MentorRelationshipAdminFilter{Status: status, Keyword: keyword}, page, pageSize)
+	normalizedStatus, err := normalizeMentorStatus(status)
 	if err != nil {
 		return nil, 0, err
 	}
-	views := make([]MentorRelationshipView, 0, len(rows))
-	for i := range rows {
-		view, err := s.enrichRelationshipView(&rows[i])
-		if err != nil {
-			return nil, 0, err
-		}
-		views = append(views, *view)
+	rows, total, err := s.relRepo.ListAllPaged(repository.MentorRelationshipAdminFilter{Status: normalizedStatus, Keyword: keyword}, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	views, err := s.enrichRelationshipViews(rows)
+	if err != nil {
+		return nil, 0, err
 	}
 	return views, total, nil
 }
 
 func (s *MentorService) enrichRelationshipView(rel *model.MentorMenteeRelationship) (*MentorRelationshipView, error) {
-	users, err := s.userRepo.ListByIDs([]uint{rel.MentorUserID, rel.MenteeUserID})
+	if rel == nil {
+		return nil, nil
+	}
+	views, err := s.enrichRelationshipViews([]model.MentorMenteeRelationship{*rel})
+	if err != nil {
+		return nil, err
+	}
+	if len(views) == 0 {
+		return nil, nil
+	}
+	return &views[0], nil
+}
+
+func (s *MentorService) enrichRelationshipViews(rows []model.MentorMenteeRelationship) ([]MentorRelationshipView, error) {
+	if len(rows) == 0 {
+		return []MentorRelationshipView{}, nil
+	}
+
+	userIDs := make([]uint, 0, len(rows)*2)
+	for _, row := range rows {
+		userIDs = append(userIDs, row.MentorUserID, row.MenteeUserID)
+	}
+	users, err := s.userRepo.ListByIDs(uniqueNonZeroUserIDs(userIDs))
 	if err != nil {
 		return nil, err
 	}
@@ -429,13 +467,15 @@ func (s *MentorService) enrichRelationshipView(rel *model.MentorMenteeRelationsh
 		charByID[char.CharacterID] = char
 	}
 
-	mentorUser := userByID[rel.MentorUserID]
-	menteeUser := userByID[rel.MenteeUserID]
-	mentorChar := charByID[mentorUser.PrimaryCharacterID]
-	menteeChar := charByID[menteeUser.PrimaryCharacterID]
-
-	view := buildMentorRelationshipView(*rel, mentorUser, menteeUser, mentorChar, menteeChar)
-	return &view, nil
+	views := make([]MentorRelationshipView, 0, len(rows))
+	for _, row := range rows {
+		mentorUser := userByID[row.MentorUserID]
+		menteeUser := userByID[row.MenteeUserID]
+		mentorChar := charByID[mentorUser.PrimaryCharacterID]
+		menteeChar := charByID[menteeUser.PrimaryCharacterID]
+		views = append(views, buildMentorRelationshipView(row, mentorUser, menteeUser, mentorChar, menteeChar))
+	}
+	return views, nil
 }
 
 func (s *MentorService) enrichMenteeListItems(rows []model.MentorMenteeRelationship) ([]MentorMenteeListItem, error) {

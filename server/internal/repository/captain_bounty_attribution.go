@@ -63,6 +63,45 @@ func (r *CaptainBountyAttributionRepository) SumByCaptainUserID(
 	return result.BountyTotal, result.RecordCount, err
 }
 
+func (r *CaptainBountyAttributionRepository) SumByCaptainUserIDs(
+	captainUserIDs []uint,
+	supportedRefTypes []string,
+) (map[uint]float64, map[uint]int64, error) {
+	bountyTotals := make(map[uint]float64, len(captainUserIDs))
+	recordCounts := make(map[uint]int64, len(captainUserIDs))
+	if len(captainUserIDs) == 0 {
+		return bountyTotals, recordCounts, nil
+	}
+
+	type row struct {
+		CaptainUserID uint
+		BountyTotal   float64
+		RecordCount   int64
+	}
+
+	query := global.DB.Model(&model.CaptainBountyAttribution{}).
+		Where("captain_user_id IN ?", captainUserIDs)
+	if len(supportedRefTypes) > 0 {
+		query = query.Select(
+			"captain_user_id, COALESCE(SUM(CASE WHEN ref_type IN ? THEN amount ELSE 0 END), 0) AS bounty_total, COUNT(*) AS record_count",
+			supportedRefTypes,
+		)
+	} else {
+		query = query.Select("captain_user_id, 0 AS bounty_total, COUNT(*) AS record_count")
+	}
+
+	var rows []row
+	err := query.Group("captain_user_id").Scan(&rows).Error
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, row := range rows {
+		bountyTotals[row.CaptainUserID] = row.BountyTotal
+		recordCounts[row.CaptainUserID] = row.RecordCount
+	}
+	return bountyTotals, recordCounts, nil
+}
+
 func (r *CaptainBountyAttributionRepository) SumByCaptainAndPlayerUserID(
 	captainUserID,
 	playerUserID uint,

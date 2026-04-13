@@ -2,6 +2,7 @@ package service
 
 import (
 	"amiya-eden/internal/repository"
+	"fmt"
 )
 
 type EveSkillService struct {
@@ -23,14 +24,14 @@ type EveCharacterSkill struct {
 	SkillpointsInSkill int64 `json:"skillpoints_in_skill"`
 }
 
-type Total struct {
+type SkillGroupTotal struct {
 	GroupID int64 `json:"group_id"`
 	Num     int   `json:"num"`
 }
 type EveSkillResponse struct {
 	TotalSP   int64               `json:"total_sp"`
 	SkillList []EveCharacterSkill `json:"skill_list"`
-	Totals    []Total             `json:"totals"`
+	Totals    []SkillGroupTotal   `json:"totals"`
 }
 
 func (s *EveSkillService) GetEveCharacterSkills(characterID int) (*EveSkillResponse, error) {
@@ -38,16 +39,17 @@ func (s *EveSkillService) GetEveCharacterSkills(characterID int) (*EveSkillRespo
 
 	skill, err := s.skillRepo.GetSkill(characterID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill for character %d: %w", characterID, err)
 	}
 	result.TotalSP = skill.TotalSP
 
 	list, err := s.skillRepo.GetSkillList(characterID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill list for character %d: %w", characterID, err)
 	}
 
 	skillIDs := make([]int, 0, len(list))
+	result.SkillList = make([]EveCharacterSkill, 0, len(list))
 	for _, sk := range list {
 		skillIDs = append(skillIDs, sk.SkillID)
 		result.SkillList = append(result.SkillList, EveCharacterSkill{
@@ -58,10 +60,10 @@ func (s *EveSkillService) GetEveCharacterSkills(characterID int) (*EveSkillRespo
 		})
 	}
 
-	b := true
-	typeInfos, err := s.sdeRepo.GetTypes(skillIDs, &b, "en")
+	published := true
+	typeInfos, err := s.sdeRepo.GetTypes(skillIDs, &published, "en")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill type info for character %d: %w", characterID, err)
 	}
 
 	groups := make(map[int64]int)
@@ -70,7 +72,7 @@ func (s *EveSkillService) GetEveCharacterSkills(characterID int) (*EveSkillRespo
 	}
 
 	for gid, num := range groups {
-		result.Totals = append(result.Totals, Total{GroupID: gid, Num: num})
+		result.Totals = append(result.Totals, SkillGroupTotal{GroupID: gid, Num: num})
 	}
 
 	return result, nil

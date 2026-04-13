@@ -49,7 +49,7 @@ func (h *FittingsHandler) SaveFitting(c *gin.Context) {
 		return
 	}
 
-	result, err := h.svc.SaveFitting(userID, &req)
+	result, err := h.svc.SaveFitting(c.Request.Context(), userID, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

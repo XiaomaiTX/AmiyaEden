@@ -145,6 +145,37 @@ func (r *NewbroCaptainAffiliationRepository) CountDistinctPlayersByCaptainUserID
 	return count, err
 }
 
+func (r *NewbroCaptainAffiliationRepository) SummarizeDistinctPlayersByCaptainUserIDs(userIDs []uint) (map[uint]int64, map[uint]int64, error) {
+	activeCounts := make(map[uint]int64, len(userIDs))
+	historicalCounts := make(map[uint]int64, len(userIDs))
+	if len(userIDs) == 0 {
+		return activeCounts, historicalCounts, nil
+	}
+
+	type row struct {
+		CaptainUserID         uint
+		ActivePlayerCount     int64
+		HistoricalPlayerCount int64
+	}
+
+	var rows []row
+	err := global.DB.Model(&model.NewbroCaptainAffiliation{}).
+		Select(`captain_user_id,
+			COUNT(DISTINCT CASE WHEN ended_at IS NULL THEN player_user_id END) AS active_player_count,
+			COUNT(DISTINCT player_user_id) AS historical_player_count`).
+		Where("captain_user_id IN ?", userIDs).
+		Group("captain_user_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, row := range rows {
+		activeCounts[row.CaptainUserID] = row.ActivePlayerCount
+		historicalCounts[row.CaptainUserID] = row.HistoricalPlayerCount
+	}
+	return activeCounts, historicalCounts, nil
+}
+
 func buildCaptainEligiblePlayerListQuery(db *gorm.DB, captainUserID uint, keyword string) *gorm.DB {
 	query := db.Model(&model.User{}).
 		Joins(`JOIN newbro_player_state ON newbro_player_state.user_id = "user".id`).

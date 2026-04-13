@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"fmt"
 	"time"
 )
 
@@ -75,12 +76,12 @@ func (s *MentorEligibilityService) GetRules() MenteeEligibilityRules {
 func (s *MentorEligibilityService) EvaluateEligibility(userID uint) (*MenteeEligibilityResult, error) {
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get user %d: %w", userID, err)
 	}
 
 	characters, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list characters for user %d: %w", userID, err)
 	}
 	characterIDs := make([]int64, 0, len(characters))
 	for _, character := range characters {
@@ -89,7 +90,7 @@ func (s *MentorEligibilityService) EvaluateEligibility(userID uint) (*MenteeElig
 
 	skillTotals, err := s.skillRepo.GetSkillTotalsByCharacterIDs(characterIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get skill totals for user %d: %w", userID, err)
 	}
 
 	snapshots := make([]MenteeCharacterSnapshot, 0, len(characters))

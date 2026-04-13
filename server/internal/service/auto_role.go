@@ -8,6 +8,7 @@ import (
 	"amiya-eden/pkg/eve/esi"
 	"context"
 	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -17,6 +18,7 @@ type AutoRoleService struct {
 	autoRoleRepo *repository.AutoRoleRepository
 	roleRepo     *repository.RoleRepository
 	charRepo     *repository.EveCharacterRepository
+	userRepo     *repository.UserRepository
 	roleSvc      *RoleService
 }
 
@@ -25,6 +27,7 @@ func NewAutoRoleService() *AutoRoleService {
 		autoRoleRepo: repository.NewAutoRoleRepository(),
 		roleRepo:     repository.NewRoleRepository(),
 		charRepo:     repository.NewEveCharacterRepository(),
+		userRepo:     repository.NewUserRepository(),
 		roleSvc:      NewRoleService(),
 	}
 }
@@ -35,10 +38,9 @@ func NewAutoRoleService() *AutoRoleService {
 func (s *AutoRoleService) ListEsiRoleMappings() ([]model.EsiRoleMapping, error) {
 	mappings, err := s.autoRoleRepo.ListEsiRoleMappings()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list ESI role mappings: %w", err)
 	}
-	fillRoleMappingNames(mappings)
-	return mappings, nil
+	return withRoleMappingNames(mappings), nil
 }
 
 // CreateEsiRoleMapping 创建 ESI 职权映射
@@ -58,7 +60,7 @@ func (s *AutoRoleService) CreateEsiRoleMapping(esiRole string, roleCode string) 
 		RoleCode: roleCode,
 	}
 	if err := s.autoRoleRepo.CreateEsiRoleMapping(mapping); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create ESI role mapping: %w", err)
 	}
 	if def, ok := model.GetRoleDefinition(roleCode); ok {
 		mapping.RoleName = def.Name
@@ -82,20 +84,19 @@ func (s *AutoRoleService) GetAllEsiRoles() []string {
 func (s *AutoRoleService) ListEsiTitleMappings() ([]model.EsiTitleMapping, error) {
 	mappings, err := s.autoRoleRepo.ListEsiTitleMappings()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list ESI title mappings: %w", err)
 	}
-	fillTitleMappingNames(mappings)
-	return mappings, nil
+	return withTitleMappingNames(mappings), nil
 }
 
 // ListCorpTitles 获取数据库中所有去重的军团头衔（用于前端下拉选择）
-func (s *AutoRoleService) ListCorpTitles() ([]repository.CorpTitleInfo, error) {
+func (s *AutoRoleService) ListCorpTitles(ctx context.Context) ([]repository.CorpTitleInfo, error) {
 	titles, err := s.autoRoleRepo.ListDistinctCorpTitles()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list distinct corp titles: %w", err)
 	}
 
-	corpNames, err := s.fetchCorporationNames(titles)
+	corpNames, err := s.fetchCorporationNames(ctx, titles)
 	if err != nil {
 		global.Logger.Warn("[AutoRole] Failed to fetch corporation names from ESI",
 			zap.Error(err),
@@ -116,7 +117,7 @@ type esiNameEntry struct {
 	Name string `json:"name"`
 }
 
-func (s *AutoRoleService) fetchCorporationNames(titles []repository.CorpTitleInfo) (map[int64]string, error) {
+func (s *AutoRoleService) fetchCorporationNames(ctx context.Context, titles []repository.CorpTitleInfo) (map[int64]string, error) {
 	corpIDSet := make(map[int64]struct{})
 	for _, t := range titles {
 		if t.CorporationID > 0 {
@@ -135,13 +136,13 @@ func (s *AutoRoleService) fetchCorporationNames(titles []repository.CorpTitleInf
 	client := esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
 	var esiResults []esiNameEntry
 	if err := client.PostJSON(
-		context.Background(),
+		ctx,
 		"/universe/names?datasource=tranquility",
 		"",
 		corpIDs,
 		&esiResults,
 	); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetch corporation names from ESI: %w", err)
 	}
 
 	nameMap := make(map[int64]string, len(esiResults))
@@ -168,7 +169,7 @@ func (s *AutoRoleService) CreateEsiTitleMapping(corpID int64, titleID int, title
 		RoleCode:      roleCode,
 	}
 	if err := s.autoRoleRepo.CreateEsiTitleMapping(mapping); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create ESI title mapping: %w", err)
 	}
 	if def, ok := model.GetRoleDefinition(roleCode); ok {
 		mapping.RoleName = def.Name
@@ -187,7 +188,7 @@ func (s *AutoRoleService) DeleteEsiTitleMapping(id uint) error {
 func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) error {
 	currentCodes, err := s.roleRepo.GetUserRoleCodes(userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("get role codes for user %d: %w", userID, err)
 	}
 	if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
 		return nil
@@ -195,7 +196,7 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 
 	chars, err := s.charRepo.ListByUserID(userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("list characters for user %d: %w", userID, err)
 	}
 	if len(chars) == 0 {
 		return nil
@@ -324,8 +325,7 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 
 // SyncAllUsersAutoRoles 同步所有用户的自动权限（供定时任务调用）
 func (s *AutoRoleService) SyncAllUsersAutoRoles(ctx context.Context) {
-	userRepo := repository.NewUserRepository()
-	ids, err := userRepo.ListAllIDs()
+	ids, err := s.userRepo.ListAllIDs()
 	if err != nil {
 		global.Logger.Error("[AutoRole] 查询用户 ID 列表失败", zap.Error(err))
 		return
@@ -344,20 +344,26 @@ func (s *AutoRoleService) SyncAllUsersAutoRoles(ctx context.Context) {
 
 // ─── 内部辅助 ───
 
-func fillRoleMappingNames(mappings []model.EsiRoleMapping) {
+func withRoleMappingNames(mappings []model.EsiRoleMapping) []model.EsiRoleMapping {
+	result := make([]model.EsiRoleMapping, len(mappings))
 	for i, m := range mappings {
 		if def, ok := model.GetRoleDefinition(m.RoleCode); ok {
-			mappings[i].RoleName = def.Name
+			m.RoleName = def.Name
 		}
+		result[i] = m
 	}
+	return result
 }
 
-func fillTitleMappingNames(mappings []model.EsiTitleMapping) {
+func withTitleMappingNames(mappings []model.EsiTitleMapping) []model.EsiTitleMapping {
+	result := make([]model.EsiTitleMapping, len(mappings))
 	for i, m := range mappings {
 		if def, ok := model.GetRoleDefinition(m.RoleCode); ok {
-			mappings[i].RoleName = def.Name
+			m.RoleName = def.Name
 		}
+		result[i] = m
 	}
+	return result
 }
 
 func isValidEsiRole(name string) bool {

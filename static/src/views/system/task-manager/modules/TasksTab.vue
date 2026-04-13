@@ -12,6 +12,8 @@
       v-model="scheduleDialogVisible"
       :title="t('taskManager.actions.editSchedule')"
       width="520px"
+      destroy-on-close
+      @closed="resetScheduleForm"
     >
       <ElForm label-width="120px">
         <ElFormItem :label="t('taskManager.columns.name')">
@@ -92,15 +94,20 @@
   const scheduleDialogVisible = ref(false)
   const scheduleSaving = ref(false)
   const runningTaskNames = ref(new Set<string>())
-  const scheduleForm = reactive({
+  type ScheduleMode = 'cron' | 'every'
+  type ScheduleIntervalUnit = 'm' | 'h'
+
+  const createScheduleForm = () => ({
     name: '',
     displayName: '',
-    mode: 'cron' as 'cron' | 'every',
+    mode: 'cron' as ScheduleMode,
     cronExpr: '',
     defaultCron: '',
     intervalValue: 1,
-    intervalUnit: 'm' as 'm' | 'h'
+    intervalUnit: 'm' as ScheduleIntervalUnit
   })
+
+  const scheduleForm = reactive(createScheduleForm())
 
   const everyExprPattern = /^@every\s+(\d+)([mh])$/i
 
@@ -155,6 +162,8 @@
   const canRunTask = (task: Api.TaskManager.TaskItem) => task.runnable
 
   const openScheduleDialog = (task: Api.TaskManager.TaskItem) => {
+    resetScheduleForm()
+
     const activeCronExpr = task.cron_expr || task.default_cron
     const everyMatch = activeCronExpr.match(everyExprPattern)
 
@@ -166,6 +175,10 @@
     scheduleForm.intervalValue = everyMatch ? Number(everyMatch[1]) : 1
     scheduleForm.intervalUnit = everyMatch ? (everyMatch[2].toLowerCase() as 'm' | 'h') : 'm'
     scheduleDialogVisible.value = true
+  }
+
+  const resetScheduleForm = () => {
+    Object.assign(scheduleForm, createScheduleForm())
   }
 
   const renderScheduleCell = (task: Api.TaskManager.TaskItem) => {

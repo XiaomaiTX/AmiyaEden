@@ -11,7 +11,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 // FittingsService 装配业务逻辑层
@@ -19,6 +22,8 @@ type FittingsService struct {
 	charRepo    *repository.EveCharacterRepository
 	fittingRepo *repository.FittingsRepository
 	sdeRepo     *repository.SdeRepository
+	ssoSvc      *EveSSOService
+	http        *http.Client
 }
 
 func NewFittingsService() *FittingsService {
@@ -26,6 +31,8 @@ func NewFittingsService() *FittingsService {
 		charRepo:    repository.NewEveCharacterRepository(),
 		fittingRepo: repository.NewFittingsRepository(),
 		sdeRepo:     repository.NewSdeRepository(),
+		ssoSvc:      NewEveSSOService(),
+		http:        &http.Client{Timeout: 30 * time.Second},
 	}
 }
 
@@ -268,14 +275,9 @@ func (s *FittingsService) GetFittings(userID uint, req *FittingsRequest) (*Fitti
 		for _, sg := range slotGroupMap {
 			slots = append(slots, *sg)
 		}
-		// 简单冒泡排序
-		for i := 0; i < len(slots); i++ {
-			for j := i + 1; j < len(slots); j++ {
-				if slots[j].OrderID < slots[i].OrderID {
-					slots[i], slots[j] = slots[j], slots[i]
-				}
-			}
-		}
+		sort.Slice(slots, func(i, j int) bool {
+			return slots[i].OrderID < slots[j].OrderID
+		})
 		resp.Slots = slots
 		result.Fittings = append(result.Fittings, resp)
 	}
@@ -284,31 +286,38 @@ func (s *FittingsService) GetFittings(userID uint, req *FittingsRequest) (*Fitti
 }
 
 // SaveFitting 保存装配（同步 ESI + 数据库）
-func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*FittingResponse, error) {
+func (s *FittingsService) SaveFitting(ctx context.Context, userID uint, req *SaveFittingRequest) (*FittingResponse, error) {
 	char, err := findOwnedCharacter(s.charRepo, userID, req.CharacterID)
 	if err != nil {
 		return nil, err
 	}
 
-	if char.AccessToken == "" || char.TokenInvalid {
+	// 获取有效 token（自动刷新）
+	accessToken, err := s.ssoSvc.GetValidToken(ctx, char.CharacterID)
+	if err != nil {
 		return nil, errors.New("人物 Token 不可用，请重新绑定")
 	}
-
-	httpClient := &http.Client{Timeout: 30 * time.Second}
-	bgCtx := context.Background()
 
 	// 如果有 fittingID，先删除 ESI 上的旧装配
 	if req.FittingID != nil && *req.FittingID > 0 {
 		deleteURL := fmt.Sprintf("%s/characters/%d/fittings/%d/", global.Config.EveSSO.ESIBaseURL, req.CharacterID, *req.FittingID)
-		delReq, _ := http.NewRequestWithContext(bgCtx, http.MethodDelete, deleteURL, nil)
-		delReq.Header.Set("Authorization", "Bearer "+char.AccessToken)
-		resp, err := httpClient.Do(delReq)
+		delReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, deleteURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("构建 ESI 删除请求失败: %w", err)
+		}
+		delReq.Header.Set("Authorization", "Bearer "+accessToken)
+		resp, err := s.http.Do(delReq)
 		if err == nil {
 			_ = resp.Body.Close()
 		}
 
 		// 删除数据库中的旧记录
-		_ = s.fittingRepo.DeleteFitting(*req.FittingID, req.CharacterID)
+		if err := s.fittingRepo.DeleteFitting(*req.FittingID, req.CharacterID); err != nil {
+			global.Logger.Warn("[Fittings] 删除旧装配记录失败",
+				zap.Int64("fitting_id", *req.FittingID),
+				zap.Int64("character_id", req.CharacterID),
+				zap.Error(err))
+		}
 	}
 
 	// 在 ESI 上创建新装配
@@ -334,15 +343,15 @@ func (s *FittingsService) SaveFitting(userID uint, req *SaveFittingRequest) (*Fi
 	}
 
 	postURL := fmt.Sprintf("%s/characters/%d/fittings/", global.Config.EveSSO.ESIBaseURL, req.CharacterID)
-	postReq, err := http.NewRequestWithContext(bgCtx, http.MethodPost, postURL, bytes.NewReader(bodyBytes))
+	postReq, err := http.NewRequestWithContext(ctx, http.MethodPost, postURL, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("构建 ESI 请求失败: %w", err)
 	}
-	postReq.Header.Set("Authorization", "Bearer "+char.AccessToken)
+	postReq.Header.Set("Authorization", "Bearer "+accessToken)
 	postReq.Header.Set("Content-Type", "application/json")
 	postReq.Header.Set("Accept", "application/json")
 
-	resp, err := httpClient.Do(postReq)
+	resp, err := s.http.Do(postReq)
 	if err != nil {
 		return nil, fmt.Errorf("ESI 创建装配失败: %w", err)
 	}

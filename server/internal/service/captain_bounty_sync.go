@@ -54,12 +54,10 @@ func selectCaptainWalletJournalMatch(
 		}
 		if candidate.Date.Before(best.Date) {
 			best = candidate
-			bestDelta = candidateDelta
 			continue
 		}
 		if candidate.Date.Equal(best.Date) && candidate.ID < best.ID {
 			best = candidate
-			bestDelta = candidateDelta
 		}
 	}
 

@@ -432,7 +432,7 @@ func (s *NpcKillService) calcByNpc(journals []model.EVECharacterWalletJournal, l
 // calcBySystem 按地点分类统计
 func (s *NpcKillService) calcBySystem(journals []model.EVECharacterWalletJournal) []NpcKillBySystem {
 	systemMap := make(map[int]*NpcKillBySystem)
-	solarSystemIDs := make(map[int]bool)
+	solarSystemIDs := make(map[int]struct{})
 
 	for _, j := range journals {
 		if j.RefType != "bounty_prizes" {
@@ -442,7 +442,7 @@ func (s *NpcKillService) calcBySystem(journals []model.EVECharacterWalletJournal
 		if sysID == 0 {
 			continue
 		}
-		solarSystemIDs[sysID] = true
+		solarSystemIDs[sysID] = struct{}{}
 
 		sys, ok := systemMap[sysID]
 		if !ok {
@@ -515,10 +515,10 @@ func (s *NpcKillService) calcTrend(journals []model.EVECharacterWalletJournal) [
 // buildJournalItems 构建流水条目
 func (s *NpcKillService) buildJournalItems(journals []model.EVECharacterWalletJournal, charNameMap map[int64]string) []NpcKillJournalItem {
 	// 收集星系 ID
-	solarSystemIDs := make(map[int]bool)
+	solarSystemIDs := make(map[int]struct{})
 	for _, j := range journals {
 		if j.RefType == "bounty_prizes" && j.ContextID != 0 {
-			solarSystemIDs[int(j.ContextID)] = true
+			solarSystemIDs[int(j.ContextID)] = struct{}{}
 		}
 	}
 	ids := make([]int, 0, len(solarSystemIDs))

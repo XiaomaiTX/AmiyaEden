@@ -67,8 +67,10 @@ func isActiveAffiliationConflictError(err error) bool {
 	if errors.Is(err, gorm.ErrDuplicatedKey) {
 		return true
 	}
-	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "duplicate") && strings.Contains(msg, "newbro_captain_affiliation")
+	message := strings.ToLower(strings.TrimSpace(err.Error()))
+	return strings.Contains(message, "duplicate key value") ||
+		strings.Contains(message, "unique constraint") ||
+		strings.Contains(message, "unique failed")
 }
 
 func resolveCaptainAffiliationCreateError(

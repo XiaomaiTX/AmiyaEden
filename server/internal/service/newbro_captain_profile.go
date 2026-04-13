@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"fmt"
 )
 
 func uniqueNonZeroUserIDs(userIDs []uint) []uint {
@@ -38,7 +39,7 @@ func loadCaptainProfiles(
 
 	users, err := userRepo.ListByIDs(uniqueUserIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load users by IDs: %w", err)
 	}
 
 	primaryCharacterIDs := make([]int64, 0, len(users))
@@ -54,7 +55,7 @@ func loadCaptainProfiles(
 
 	chars, err := charRepo.ListByCharacterIDs(primaryCharacterIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load primary characters: %w", err)
 	}
 	for _, char := range chars {
 		user := userByPrimaryID[char.CharacterID]

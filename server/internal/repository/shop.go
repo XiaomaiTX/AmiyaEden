@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ShopRepository 商店数据访问层
@@ -101,6 +102,13 @@ func (r *ShopRepository) DecrStockTx(tx *gorm.DB, productID uint, qty int) error
 	return nil
 }
 
+// RestoreStockTx 恢复库存（仅对有限库存商品生效；无限库存或已删除商品跳过）
+func (r *ShopRepository) RestoreStockTx(tx *gorm.DB, productID uint, qty int) error {
+	return tx.Model(&model.ShopProduct{}).
+		Where("id = ? AND stock >= 0", productID).
+		UpdateColumn("stock", gorm.Expr("stock + ?", qty)).Error
+}
+
 // ─────────────────────────────────────────────
 //  订单
 // ─────────────────────────────────────────────
@@ -125,10 +133,43 @@ func (r *ShopRepository) UpdateOrderTx(tx *gorm.DB, o *model.ShopOrder) error {
 	return tx.Save(o).Error
 }
 
+// UpdateOrderReviewTx 在事务中基于当前状态更新订单审核结果，避免并发审核相互覆盖。
+func (r *ShopRepository) UpdateOrderReviewTx(
+	tx *gorm.DB,
+	orderID uint,
+	expectedCurrentStatus string,
+	nextStatus string,
+	operatorID uint,
+	reviewedAt time.Time,
+	remark string,
+) (bool, error) {
+	result := tx.Model(&model.ShopOrder{}).
+		Where("id = ? AND status = ?", orderID, expectedCurrentStatus).
+		Updates(map[string]any{
+			"status":        nextStatus,
+			"reviewed_by":   operatorID,
+			"reviewed_at":   reviewedAt,
+			"review_remark": remark,
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
 // GetOrderByID 根据 ID 获取订单
 func (r *ShopRepository) GetOrderByID(id uint) (*model.ShopOrder, error) {
 	var o model.ShopOrder
 	if err := global.DB.First(&o, id).Error; err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// GetOrderByIDForUpdateTx 在事务中按 ID 获取订单并加锁，避免并发审核重复处理。
+func (r *ShopRepository) GetOrderByIDForUpdateTx(tx *gorm.DB, id uint) (*model.ShopOrder, error) {
+	var o model.ShopOrder
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&o, id).Error; err != nil {
 		return nil, err
 	}
 	return &o, nil

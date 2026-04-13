@@ -282,7 +282,10 @@ func (s *SdeService) shouldRetryWithoutProxy(err error) bool {
 // fetchLatestRelease 获取 GitHub 最新 release 信息
 func (s *SdeService) fetchLatestRelease() (*githubRelease, error) {
 	url := s.getDownloadURL()
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("build GitHub release request: %w", err)
+	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", sdeUserAgent)
 	resp, err := s.doRequestWithProxyFallback(30*time.Second, func(client *http.Client) (*http.Response, error) {
@@ -482,7 +485,10 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	br := bzip2.NewReader(f)
 
 	outName := strings.TrimSuffix(filepath.Base(srcPath), ".bz2")
-	outPath := filepath.Join(destDir, outName)
+	outPath, err := safeJoin(destDir, outName)
+	if err != nil {
+		return "", err
+	}
 	out, err := os.Create(outPath)
 	if err != nil {
 		return "", err
@@ -623,7 +629,11 @@ func importSQL(sqlPath string) error {
 			global.Logger.Warn("[SDE] 事务提交失败，尝试回滚", zap.Error(err))
 			_ = tx.Rollback()
 		}
-		tx, _ = conn.BeginTx(context.Background(), nil)
+		var beginErr error
+		tx, beginErr = conn.BeginTx(context.Background(), nil)
+		if beginErr != nil {
+			global.Logger.Error("[SDE] 开启事务失败", zap.Error(beginErr))
+		}
 		txCount = 0
 	}
 
@@ -638,7 +648,11 @@ func importSQL(sqlPath string) error {
 	// rollbackTx 回滚当前事务并立即开启下一个（DML 失败时调用）
 	rollbackTx := func() {
 		_ = tx.Rollback()
-		tx, _ = conn.BeginTx(context.Background(), nil)
+		var beginErr error
+		tx, beginErr = conn.BeginTx(context.Background(), nil)
+		if beginErr != nil {
+			global.Logger.Error("[SDE] 开启事务失败", zap.Error(beginErr))
+		}
 		txCount = 0
 	}
 
