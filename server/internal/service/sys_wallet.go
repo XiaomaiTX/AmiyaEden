@@ -80,89 +80,72 @@ type AdminAdjustRequest struct {
 
 // AdminAdjust 管理员调整用户钱包余额
 func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest) (*model.SystemWallet, error) {
-	// 获取或创建目标用户钱包
-	wallet, err := s.repo.GetOrCreateWallet(req.TargetUID)
+	var adjustedWallet *model.SystemWallet
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		wallet, err := s.repo.GetOrCreateWalletTx(tx, req.TargetUID)
+		if err != nil {
+			return fmt.Errorf("获取用户钱包失败: %w", err)
+		}
+
+		oldBalance := wallet.Balance
+		var newBalance float64
+		var txAmount float64
+
+		switch req.Action {
+		case model.WalletActionAdd:
+			newBalance = oldBalance + req.Amount
+			txAmount = req.Amount
+		case model.WalletActionDeduct:
+			newBalance = oldBalance - req.Amount
+			if newBalance < 0 {
+				return errors.New("余额不足，无法扣减")
+			}
+			txAmount = -req.Amount
+		case model.WalletActionSet:
+			newBalance = req.Amount
+			txAmount = newBalance - oldBalance
+		default:
+			return errors.New("无效的操作类型")
+		}
+
+		if err := s.repo.UpdateBalanceTx(tx, req.TargetUID, newBalance); err != nil {
+			return fmt.Errorf("更新余额失败: %w", err)
+		}
+
+		walletTx := &model.WalletTransaction{
+			UserID:       req.TargetUID,
+			Amount:       txAmount,
+			Reason:       req.Reason,
+			RefType:      model.WalletRefAdminAdjust,
+			RefID:        fmt.Sprintf("admin:%d", operatorID),
+			BalanceAfter: newBalance,
+			OperatorID:   operatorID,
+		}
+		if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
+			return fmt.Errorf("写入流水失败: %w", err)
+		}
+
+		log := &model.WalletLog{
+			OperatorID: operatorID,
+			TargetUID:  req.TargetUID,
+			Action:     req.Action,
+			Amount:     req.Amount,
+			Before:     oldBalance,
+			After:      newBalance,
+			Reason:     req.Reason,
+		}
+		if err := s.repo.CreateLogTx(tx, log); err != nil {
+			return fmt.Errorf("写入操作日志失败: %w", err)
+		}
+
+		wallet.Balance = newBalance
+		adjustedWallet = wallet
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("获取用户钱包失败: %w", err)
+		return nil, err
 	}
-
-	oldBalance := wallet.Balance
-	var newBalance float64
-
-	switch req.Action {
-	case model.WalletActionAdd:
-		newBalance = oldBalance + req.Amount
-	case model.WalletActionDeduct:
-		newBalance = oldBalance - req.Amount
-		if newBalance < 0 {
-			return nil, errors.New("余额不足，无法扣减")
-		}
-	case model.WalletActionSet:
-		newBalance = req.Amount
-	default:
-		return nil, errors.New("无效的操作类型")
-	}
-
-	// 事务：更新余额 + 写流水 + 写日志
-	tx := global.DB.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// 1. 更新余额
-	if err := s.repo.UpdateBalanceTx(tx, req.TargetUID, newBalance); err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("更新余额失败: %w", err)
-	}
-
-	// 2. 写流水
-	var txAmount float64
-	switch req.Action {
-	case model.WalletActionAdd:
-		txAmount = req.Amount
-	case model.WalletActionDeduct:
-		txAmount = -req.Amount
-	case model.WalletActionSet:
-		txAmount = newBalance - oldBalance
-	}
-
-	walletTx := &model.WalletTransaction{
-		UserID:       req.TargetUID,
-		Amount:       txAmount,
-		Reason:       req.Reason,
-		RefType:      model.WalletRefAdminAdjust,
-		RefID:        fmt.Sprintf("admin:%d", operatorID),
-		BalanceAfter: newBalance,
-		OperatorID:   operatorID,
-	}
-	if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("写入流水失败: %w", err)
-	}
-
-	// 3. 写操作日志
-	log := &model.WalletLog{
-		OperatorID: operatorID,
-		TargetUID:  req.TargetUID,
-		Action:     req.Action,
-		Amount:     req.Amount,
-		Before:     oldBalance,
-		After:      newBalance,
-		Reason:     req.Reason,
-	}
-	if err := s.repo.CreateLogTx(tx, log); err != nil {
-		tx.Rollback()
-		return nil, fmt.Errorf("写入操作日志失败: %w", err)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return nil, fmt.Errorf("提交事务失败: %w", err)
-	}
-
-	wallet.Balance = newBalance
-	return wallet, nil
+	return adjustedWallet, nil
 }
 
 // AdminListWallets 管理员查询所有钱包（附带主人物名）
@@ -232,6 +215,8 @@ func (s *SysWalletService) ApplyWalletDeltaTx(tx *gorm.DB, userID uint, delta fl
 	return s.ApplyWalletDeltaByOperatorTx(tx, userID, 0, delta, reason, refType, refID)
 }
 
+// ApplyWalletDeltaByOperatorTx applies a wallet delta inside an existing transaction.
+// Negative deltas clamp the resulting balance at zero instead of failing.
 func (s *SysWalletService) ApplyWalletDeltaByOperatorTx(tx *gorm.DB, userID uint, operatorID uint, delta float64, reason, refType, refID string) error {
 	if delta == 0 {
 		return nil

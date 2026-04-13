@@ -266,19 +266,20 @@ func skillPlanNamesForWelfare(planIDs []uint, planNamesByID map[uint]string) []s
 	return names
 }
 
-func (s *WelfareService) fillWelfareSkillPlanNames(welfares []model.Welfare) error {
+func (s *WelfareService) fillWelfareSkillPlanNames(welfares []model.Welfare) ([]model.Welfare, error) {
+	enrichedWelfares := append([]model.Welfare(nil), welfares...)
 	planIDSet := make(map[uint]struct{})
-	for _, welfare := range welfares {
+	for _, welfare := range enrichedWelfares {
 		for _, planID := range welfare.SkillPlanIDs {
 			planIDSet[planID] = struct{}{}
 		}
 	}
 
 	if len(planIDSet) == 0 {
-		for index := range welfares {
-			welfares[index].SkillPlanNames = []string{}
+		for index := range enrichedWelfares {
+			enrichedWelfares[index].SkillPlanNames = []string{}
 		}
-		return nil
+		return enrichedWelfares, nil
 	}
 
 	planIDs := make([]uint, 0, len(planIDSet))
@@ -288,7 +289,7 @@ func (s *WelfareService) fillWelfareSkillPlanNames(welfares []model.Welfare) err
 
 	plans, err := s.planRepo.ListByIDs(planIDs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	planNamesByID := make(map[uint]string, len(plans))
@@ -296,17 +297,17 @@ func (s *WelfareService) fillWelfareSkillPlanNames(welfares []model.Welfare) err
 		planNamesByID[plan.ID] = strings.TrimSpace(plan.Title)
 	}
 
-	for index := range welfares {
-		welfares[index].SkillPlanNames = skillPlanNamesForWelfare(
-			welfares[index].SkillPlanIDs,
+	for index := range enrichedWelfares {
+		enrichedWelfares[index].SkillPlanNames = skillPlanNamesForWelfare(
+			enrichedWelfares[index].SkillPlanIDs,
 			planNamesByID,
 		)
-		if welfares[index].SkillPlanNames == nil {
-			welfares[index].SkillPlanNames = []string{}
+		if enrichedWelfares[index].SkillPlanNames == nil {
+			enrichedWelfares[index].SkillPlanNames = []string{}
 		}
 	}
 
-	return nil
+	return enrichedWelfares, nil
 }
 
 // GetEligibleWelfares 获取用户可申请的福利列表
@@ -331,7 +332,8 @@ func (s *WelfareService) GetEligibleWelfares(userID uint) ([]EligibleWelfareResp
 	if len(welfares) == 0 {
 		return []EligibleWelfareResp{}, nil
 	}
-	if err := s.fillWelfareSkillPlanNames(welfares); err != nil {
+	welfares, err = s.fillWelfareSkillPlanNames(welfares)
+	if err != nil {
 		return nil, errors.New("获取技能计划失败")
 	}
 
