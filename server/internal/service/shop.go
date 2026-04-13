@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 // ShopService 商店业务逻辑层
@@ -185,10 +186,23 @@ func (s *ShopService) BuyProduct(userID uint, req *BuyRequest) (*model.ShopOrder
 func (s *ShopService) rollbackOrder(order *model.ShopOrder, product *model.ShopProduct) {
 	if product != nil && product.Stock >= 0 {
 		product.Stock += order.Quantity
-		_ = s.repo.UpdateProduct(product)
+		if err := s.repo.UpdateProduct(product); err != nil && global.Logger != nil {
+			global.Logger.Error("商店订单回滚恢复库存失败",
+				zap.Uint("order_id", order.ID),
+				zap.String("order_no", order.OrderNo),
+				zap.Uint("product_id", product.ID),
+				zap.Error(err),
+			)
+		}
 	}
 	order.Status = model.OrderStatusRejected
-	_ = s.repo.UpdateOrder(order)
+	if err := s.repo.UpdateOrder(order); err != nil && global.Logger != nil {
+		global.Logger.Error("商店订单回滚更新状态失败",
+			zap.Uint("order_id", order.ID),
+			zap.String("order_no", order.OrderNo),
+			zap.Error(err),
+		)
+	}
 }
 
 // getUserSnapshot 获取用户信息快照（主人物名、昵称、QQ、Discord）
@@ -362,26 +376,49 @@ func (s *ShopService) AdminListOrders(page, pageSize int, filter repository.Orde
 
 // AdminDeliverOrder 发放订单
 func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, remark string) (*model.ShopOrder, MailAttemptSummary, error) {
-	order, err := s.repo.GetOrderByID(orderID)
+	var deliveredOrder *model.ShopOrder
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		order, err := s.repo.GetOrderByIDForUpdateTx(tx, orderID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("订单不存在")
+			}
+			return fmt.Errorf("加载订单失败: %w", err)
+		}
+		if order.Status != model.OrderStatusRequested {
+			return fmt.Errorf("订单状态为 %s，无法发放", order.Status)
+		}
+
+		now := time.Now()
+		updated, err := s.repo.UpdateOrderReviewTx(
+			tx,
+			order.ID,
+			model.OrderStatusRequested,
+			model.OrderStatusDelivered,
+			operatorID,
+			now,
+			remark,
+		)
+		if err != nil {
+			return fmt.Errorf("更新订单失败: %w", err)
+		}
+		if !updated {
+			return errors.New("订单状态已变更，请刷新后重试")
+		}
+
+		order.Status = model.OrderStatusDelivered
+		order.ReviewedBy = &operatorID
+		order.ReviewedAt = &now
+		order.ReviewRemark = remark
+		deliveredOrder = order
+		return nil
+	})
 	if err != nil {
-		return nil, MailAttemptSummary{}, errors.New("订单不存在")
-	}
-	if order.Status != model.OrderStatusRequested {
-		return nil, MailAttemptSummary{}, fmt.Errorf("订单状态为 %s，无法发放", order.Status)
+		return nil, MailAttemptSummary{}, err
 	}
 
-	now := time.Now()
-	order.Status = model.OrderStatusDelivered
-	order.ReviewedBy = &operatorID
-	order.ReviewedAt = &now
-	order.ReviewRemark = remark
-
-	if err := s.repo.UpdateOrder(order); err != nil {
-		return nil, MailAttemptSummary{}, fmt.Errorf("更新订单失败: %w", err)
-	}
-
-	mailSummary := s.attemptOrderDeliveryMail(operatorID, order)
-	return order, mailSummary, nil
+	mailSummary := s.attemptOrderDeliveryMail(operatorID, deliveredOrder)
+	return deliveredOrder, mailSummary, nil
 }
 
 func (s *ShopService) attemptOrderDeliveryMail(operatorID uint, deliveredOrder *model.ShopOrder) MailAttemptSummary {
@@ -495,38 +532,58 @@ func buildShopOrderDeliveryMailContent(orderNo, orderItem string, quantity int, 
 
 // AdminRejectOrder 拒绝订单（退款）
 func (s *ShopService) AdminRejectOrder(orderID uint, operatorID uint, remark string) (*model.ShopOrder, error) {
-	order, err := s.repo.GetOrderByID(orderID)
+	var rejectedOrder *model.ShopOrder
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		order, err := s.repo.GetOrderByIDForUpdateTx(tx, orderID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("订单不存在")
+			}
+			return fmt.Errorf("加载订单失败: %w", err)
+		}
+		if order.Status != model.OrderStatusRequested {
+			return fmt.Errorf("订单状态为 %s，无法拒绝", order.Status)
+		}
+
+		if err := s.repo.RestoreStockTx(tx, order.ProductID, order.Quantity); err != nil {
+			return fmt.Errorf("恢复库存失败: %w", err)
+		}
+
+		reason := fmt.Sprintf("商品订单退款: %s x%d", order.ProductName, order.Quantity)
+		refID := fmt.Sprintf("order:%s", order.OrderNo)
+		if err := s.walletSvc.ApplyWalletDeltaTx(tx, order.UserID, order.TotalPrice, reason, model.WalletRefShopRefund, refID); err != nil {
+			return fmt.Errorf("退款失败: %w", err)
+		}
+
+		now := time.Now()
+		updated, err := s.repo.UpdateOrderReviewTx(
+			tx,
+			order.ID,
+			model.OrderStatusRequested,
+			model.OrderStatusRejected,
+			operatorID,
+			now,
+			remark,
+		)
+		if err != nil {
+			return fmt.Errorf("更新订单失败: %w", err)
+		}
+		if !updated {
+			return errors.New("订单状态已变更，请刷新后重试")
+		}
+		order.Status = model.OrderStatusRejected
+		order.ReviewedBy = &operatorID
+		order.ReviewedAt = &now
+		order.ReviewRemark = remark
+
+		rejectedOrder = order
+		return nil
+	})
 	if err != nil {
-		return nil, errors.New("订单不存在")
-	}
-	if order.Status != model.OrderStatusRequested {
-		return nil, fmt.Errorf("订单状态为 %s，无法拒绝", order.Status)
+		return nil, err
 	}
 
-	// 恢复库存
-	product, err := s.repo.GetProductByID(order.ProductID)
-	if err == nil && product.Stock >= 0 {
-		product.Stock += order.Quantity
-		_ = s.repo.UpdateProduct(product)
-	}
-
-	// 退款
-	reason := fmt.Sprintf("商品订单退款: %s x%d", order.ProductName, order.Quantity)
-	refID := fmt.Sprintf("order:%s", order.OrderNo)
-	if err := s.walletSvc.CreditUser(order.UserID, order.TotalPrice, reason, model.WalletRefShopRefund, refID); err != nil {
-		return nil, fmt.Errorf("退款失败: %w", err)
-	}
-
-	now := time.Now()
-	order.Status = model.OrderStatusRejected
-	order.ReviewedBy = &operatorID
-	order.ReviewedAt = &now
-	order.ReviewRemark = remark
-	if err := s.repo.UpdateOrder(order); err != nil {
-		return nil, fmt.Errorf("更新订单失败: %w", err)
-	}
-
-	return order, nil
+	return rejectedOrder, nil
 }
 
 // ─────────────────────────────────────────────

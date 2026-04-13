@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
 	"context"
 	"errors"
 	"fmt"
@@ -225,6 +226,8 @@ func newShopServiceTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&model.ShopProduct{},
 		&model.ShopOrder{},
+		&model.SystemWallet{},
+		&model.WalletTransaction{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
@@ -269,5 +272,171 @@ func TestBuildShopOrderResponsesIncludesReviewerNickname(t *testing.T) {
 	}
 	if got[1].ReviewerName != "" {
 		t.Fatalf("expected empty reviewer nickname for unreviewed order, got %q", got[1].ReviewerName)
+	}
+}
+
+func TestAdminRejectOrderRollsBackRefundAndStockWhenOrderUpdateFails(t *testing.T) {
+	db := newShopServiceTestDB(t)
+	useShopServiceTestDB(t, db)
+
+	product := &model.ShopProduct{
+		Name:      "Navy Omen",
+		Price:     10,
+		Stock:     3,
+		Type:      model.ProductTypeNormal,
+		Status:    model.ProductStatusOnSale,
+		SortOrder: 1,
+	}
+	if err := db.Create(product).Error; err != nil {
+		t.Fatalf("create product: %v", err)
+	}
+
+	order := &model.ShopOrder{
+		OrderNo:           "ORDER003",
+		UserID:            42,
+		MainCharacterName: "Pilot One",
+		Nickname:          "Pilot",
+		ProductID:         product.ID,
+		ProductName:       product.Name,
+		ProductType:       product.Type,
+		Quantity:          2,
+		UnitPrice:         product.Price,
+		TotalPrice:        product.Price * 2,
+		Status:            model.OrderStatusRequested,
+	}
+	if err := db.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	if err := db.Create(&model.SystemWallet{UserID: order.UserID, Balance: 50}).Error; err != nil {
+		t.Fatalf("create wallet: %v", err)
+	}
+
+	updateErr := errors.New("inject order update failure")
+	const callbackName = "shop_order_update_failure"
+	if err := db.Callback().Update().Before("gorm:update").Register(callbackName, func(tx *gorm.DB) {
+		if tx.Statement != nil && tx.Statement.Table == "shop_order" {
+			if err := tx.AddError(updateErr); err != nil && !errors.Is(err, updateErr) {
+				t.Fatalf("inject order update failure: %v", err)
+			}
+		}
+	}); err != nil {
+		t.Fatalf("register failing update callback: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Callback().Update().Remove(callbackName)
+	})
+
+	svc := &ShopService{repo: repository.NewShopRepository(), walletSvc: NewSysWalletService()}
+	_, err := svc.AdminRejectOrder(order.ID, 77, "refund failed")
+	if err == nil {
+		t.Fatal("expected AdminRejectOrder to fail when order update fails")
+	}
+	if !strings.Contains(err.Error(), "更新订单失败") {
+		t.Fatalf("AdminRejectOrder() error = %v, want wrapped order update error", err)
+	}
+
+	var storedOrder model.ShopOrder
+	if err := db.First(&storedOrder, order.ID).Error; err != nil {
+		t.Fatalf("reload order: %v", err)
+	}
+	if storedOrder.Status != model.OrderStatusRequested {
+		t.Fatalf("order status = %q, want %q", storedOrder.Status, model.OrderStatusRequested)
+	}
+
+	var storedProduct model.ShopProduct
+	if err := db.First(&storedProduct, product.ID).Error; err != nil {
+		t.Fatalf("reload product: %v", err)
+	}
+	if storedProduct.Stock != 3 {
+		t.Fatalf("product stock = %d, want 3", storedProduct.Stock)
+	}
+
+	var storedWallet model.SystemWallet
+	if err := db.Where("user_id = ?", order.UserID).First(&storedWallet).Error; err != nil {
+		t.Fatalf("reload wallet: %v", err)
+	}
+	if storedWallet.Balance != 50 {
+		t.Fatalf("wallet balance = %v, want 50", storedWallet.Balance)
+	}
+
+	var txCount int64
+	if err := db.Model(&model.WalletTransaction{}).Count(&txCount).Error; err != nil {
+		t.Fatalf("count wallet transactions: %v", err)
+	}
+	if txCount != 0 {
+		t.Fatalf("wallet transaction count = %d, want 0", txCount)
+	}
+}
+
+func TestUpdateOrderReviewTxRequiresExpectedStatus(t *testing.T) {
+	db := newShopServiceTestDB(t)
+	useShopServiceTestDB(t, db)
+
+	product := &model.ShopProduct{
+		Name:      "Navy Omen",
+		Price:     10,
+		Stock:     -1,
+		Type:      model.ProductTypeNormal,
+		Status:    model.ProductStatusOnSale,
+		SortOrder: 1,
+	}
+	if err := db.Create(product).Error; err != nil {
+		t.Fatalf("create product: %v", err)
+	}
+
+	order := &model.ShopOrder{
+		OrderNo:           "ORDER004",
+		UserID:            42,
+		MainCharacterName: "Pilot One",
+		Nickname:          "Pilot",
+		ProductID:         product.ID,
+		ProductName:       product.Name,
+		ProductType:       product.Type,
+		Quantity:          1,
+		UnitPrice:         product.Price,
+		TotalPrice:        product.Price,
+		Status:            model.OrderStatusRequested,
+	}
+	if err := db.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	if err := db.Model(&model.ShopOrder{}).
+		Where("id = ?", order.ID).
+		Update("status", model.OrderStatusRejected).Error; err != nil {
+		t.Fatalf("set order status rejected: %v", err)
+	}
+
+	repo := repository.NewShopRepository()
+	var updated bool
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		updated, err = repo.UpdateOrderReviewTx(
+			tx,
+			order.ID,
+			model.OrderStatusRequested,
+			model.OrderStatusDelivered,
+			77,
+			time.Now(),
+			"deliver now",
+		)
+		return err
+	}); err != nil {
+		t.Fatalf("UpdateOrderReviewTx() error = %v", err)
+	}
+	if updated {
+		t.Fatal("expected UpdateOrderReviewTx to skip orders whose status no longer matches")
+	}
+
+	var storedOrder model.ShopOrder
+	if err := db.First(&storedOrder, order.ID).Error; err != nil {
+		t.Fatalf("reload order: %v", err)
+	}
+	if storedOrder.Status != model.OrderStatusRejected {
+		t.Fatalf("order status = %q, want %q", storedOrder.Status, model.OrderStatusRejected)
+	}
+	if storedOrder.ReviewedBy != nil {
+		t.Fatalf("reviewed_by = %v, want nil after skipped review update", storedOrder.ReviewedBy)
 	}
 }
