@@ -30,10 +30,10 @@ func (r *EveCharacterRepository) GetByCharacterID(characterID int64) (*model.Eve
 	return &char, err
 }
 
-// ListByUserID 查询某用户绑定的所有人物
+// ListByUserID 查询某用户绑定的所有人物（按角色名称升序排列）
 func (r *EveCharacterRepository) ListByUserID(userID uint) ([]model.EveCharacter, error) {
 	var chars []model.EveCharacter
-	err := global.DB.Where("user_id = ?", userID).Find(&chars).Error
+	err := global.DB.Where("user_id = ?", userID).Order("character_name ASC").Find(&chars).Error
 	return chars, err
 }
 

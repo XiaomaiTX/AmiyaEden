@@ -5,6 +5,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/taskregistry"
+	"amiya-eden/jobs"
 	"errors"
 	"testing"
 	"time"
@@ -46,6 +47,7 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 	oldDB := global.DB
 	oldLogger := global.Logger
 	oldCron := global.Cron
+	oldESIQueue := jobs.GetESIQueue()
 
 	db := newCronBootstrapTestDB(t)
 	global.Config = &config.Config{}
@@ -53,6 +55,12 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 	global.DB = db
 	global.Logger = zap.NewNop()
 	global.Cron = nil
+
+	if err := db.Create(&model.TaskSchedule{TaskName: "mentor_reward", CronExpr: "0 30 3 * * *", UpdatedBy: 1}).Error; err != nil {
+		t.Fatalf("seed task schedule override: %v", err)
+	}
+
+	jobs.SetTestESIQueue(nil)
 
 	t.Cleanup(func() {
 		if global.Cron != nil {
@@ -66,11 +74,8 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 		global.DB = oldDB
 		global.Logger = oldLogger
 		global.Cron = oldCron
+		jobs.SetTestESIQueue(oldESIQueue)
 	})
-
-	if err := db.Create(&model.TaskSchedule{TaskName: "mentor_reward", CronExpr: "0 30 3 * * *", UpdatedBy: 1}).Error; err != nil {
-		t.Fatalf("seed task schedule override: %v", err)
-	}
 
 	taskSvc := InitCron()
 	if taskSvc == nil {

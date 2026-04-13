@@ -23,6 +23,16 @@
               </div>
             </ElOption>
           </ElSelect>
+          <ElButton
+            :loading="esiRefreshing"
+            size="small"
+            type="primary"
+            plain
+            @click="onESIRefreshClick"
+          >
+            <el-icon class="mr-1"><Download /></el-icon>
+            ESI 拉取
+          </ElButton>
           <span class="text-sm text-gray-500">{{ $t('info.journalTypeFilter') }}</span>
           <ElSelect
             v-model="selectedRefTypes"
@@ -75,9 +85,10 @@
 
 <script setup lang="ts">
   import { useTable } from '@/hooks/core/useTable'
-  import { ElTag, ElAvatar, ElSelect, ElOption } from 'element-plus'
+  import { ElTag, ElAvatar, ElSelect, ElOption, ElMessageBox, ElMessage } from 'element-plus'
+  import { Download } from '@element-plus/icons-vue'
   import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoWallet } from '@/api/eve-info'
+  import { fetchInfoWallet, runMyCharacterESIRefresh } from '@/api/eve-info'
   import { formatIskPlain } from '@/utils/common'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useI18n } from 'vue-i18n'
@@ -87,6 +98,8 @@
   type WalletJournal = Api.EveInfo.WalletJournal
 
   const { t } = useI18n()
+
+  const esiRefreshing = ref(false)
 
   // ─── 余额（从 API 响应中捕获） ───
   const walletBalance = ref<number | null>(null)
@@ -234,6 +247,43 @@
 
   const onJournalTypeChange = () => {
     applyFilters()
+  }
+
+  const onESIRefreshClick = async () => {
+    if (!selectedCharacterId.value) return
+
+    const char = characters.value.find((c) => c.character_id === selectedCharacterId.value)
+    const charName = char?.character_name || String(selectedCharacterId.value)
+
+    try {
+      await ElMessageBox.confirm(`确认从 ESI 拉取角色「${charName}」的钱包数据？`, 'ESI 拉取', {
+        confirmButtonText: '确认拉取',
+        cancelButtonText: '取消',
+        type: 'info'
+      })
+    } catch {
+      return
+    }
+
+    esiRefreshing.value = true
+    try {
+      await runMyCharacterESIRefresh({
+        task_name: 'character_wallet',
+        character_id: selectedCharacterId.value
+      })
+      ElMessage.success('钱包数据 ESI 刷新任务已提交，稍后可点击刷新按钮查看最新数据')
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || 'ESI 刷新任务提交失败'
+      if (msg.includes('无权') || e?.response?.status === 403) {
+        ElMessage.error('无权操作此角色')
+      } else if (msg.includes('角色不存在')) {
+        ElMessage.error('角色未找到')
+      } else {
+        ElMessage.error(msg)
+      }
+    } finally {
+      esiRefreshing.value = false
+    }
   }
 
   const loadCharacters = async () => {
