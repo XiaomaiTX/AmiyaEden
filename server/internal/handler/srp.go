@@ -43,8 +43,7 @@ func (h *SrpHandler) ListShipPrices(c *gin.Context) {
 // UpsertShipPrice POST /srp/prices
 func (h *SrpHandler) UpsertShipPrice(c *gin.Context) {
 	var req service.UpsertShipPriceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -95,8 +94,7 @@ func (h *SrpHandler) GetSrpConfig(c *gin.Context) {
 // UpdateSrpConfig PUT /srp/config
 func (h *SrpHandler) UpdateSrpConfig(c *gin.Context) {
 	var req UpdateSrpConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	if err := h.sysConfigRepo.Set(
@@ -117,8 +115,7 @@ func (h *SrpHandler) UpdateSrpConfig(c *gin.Context) {
 // SubmitApplication POST /srp/applications
 func (h *SrpHandler) SubmitApplication(c *gin.Context) {
 	var req service.SubmitApplicationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -150,13 +147,18 @@ func (h *SrpHandler) ListMyApplications(c *gin.Context) {
 // GetMyKillmails GET /srp/my-killmails?character_id=xxx
 func (h *SrpHandler) GetMyKillmails(c *gin.Context) {
 	userID := middleware.GetUserID(c)
+	options, err := parseSrpKillmailListOptions(c)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 	var characterID int64
 	if cidStr := c.Query("character_id"); cidStr != "" {
 		if cid, err := strconv.ParseInt(cidStr, 10, 64); err == nil {
 			characterID = cid
 		}
 	}
-	kms, err := h.svc.GetMyKillmails(userID, characterID)
+	kms, err := h.svc.GetMyKillmails(userID, characterID, options)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -171,13 +173,45 @@ func (h *SrpHandler) GetFleetKillmails(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "缺少 fleet_id 参数")
 		return
 	}
+	options, err := parseSrpKillmailListOptions(c)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
 	userID := middleware.GetUserID(c)
-	kms, err := h.svc.GetFleetKillmails(userID, fleetID)
+	kms, err := h.svc.GetFleetKillmails(userID, fleetID, options)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
 	response.OK(c, kms)
+}
+
+func parseSrpKillmailListOptions(c *gin.Context) (service.KillmailListOptions, error) {
+	limit, err := parseIntQuery(c, "limit", 200)
+	if err != nil {
+		return service.KillmailListOptions{}, err
+	}
+	if limit < 1 {
+		limit = 200
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	excludeSubmitted := false
+	if raw := c.Query("exclude_submitted"); raw != "" {
+		parsed, err := strconv.ParseBool(raw)
+		if err != nil {
+			return service.KillmailListOptions{}, fmt.Errorf("invalid exclude_submitted query parameter: expected boolean")
+		}
+		excludeSubmitted = parsed
+	}
+
+	return service.KillmailListOptions{
+		Limit:            limit,
+		ExcludeSubmitted: excludeSubmitted,
+	}, nil
 }
 
 // ─────────────────────────────────────────────
@@ -228,8 +262,7 @@ func (h *SrpHandler) ListBatchPayoutSummary(c *gin.Context) {
 // RunFleetAutoApproval PUT /srp/applications/auto-approve
 func (h *SrpHandler) RunFleetAutoApproval(c *gin.Context) {
 	var req service.RunFleetAutoApprovalRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	reviewerID := middleware.GetUserID(c)
@@ -263,8 +296,7 @@ func (h *SrpHandler) ReviewApplication(c *gin.Context) {
 		return
 	}
 	var req service.ReviewApplicationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	reviewerID := middleware.GetUserID(c)
@@ -284,8 +316,7 @@ func (h *SrpHandler) Payout(c *gin.Context) {
 		return
 	}
 	var req service.SrpPayoutRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	payerID := middleware.GetUserID(c)
@@ -339,8 +370,7 @@ func (h *SrpHandler) BatchPayoutAsFuxiCoin(c *gin.Context) {
 // 通过 ESI 在客户端打开人物信息窗口
 func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
 	var req service.OpenInfoWindowRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	userID := middleware.GetUserID(c)
@@ -354,8 +384,7 @@ func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
 // GetKillmailDetail POST /srp/killmails/detail
 func (h *SrpHandler) GetKillmailDetail(c *gin.Context) {
 	var req service.KillmailDetailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+	if !bindJSON(c, &req) {
 		return
 	}
 	detail, err := h.svc.GetKillmailDetail(&req)

@@ -1058,6 +1058,12 @@ declare namespace Api {
       victim_name: string
     }
 
+    interface KillmailListParams {
+      character_id?: number
+      limit?: number
+      exclude_submitted?: boolean
+    }
+
     /** KM 装配详情请求 */
     interface KillmailDetailRequest {
       killmail_id: number

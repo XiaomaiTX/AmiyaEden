@@ -10,6 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func bindJSON(c *gin.Context, req any) bool {
+	if err := c.ShouldBindJSON(req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return false
+	}
+	return true
+}
+
 // requireUintID extracts, validates, and returns a uint path param.
 // Returns 0 and writes an error response if the param is missing or invalid.
 func requireUintID(c *gin.Context, param string, displayNames ...string) uint {
