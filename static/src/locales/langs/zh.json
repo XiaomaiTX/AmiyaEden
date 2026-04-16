@@ -860,11 +860,11 @@
     "exampleEvidence": "示例证明图片",
     "uploadExampleEvidence": "上传示例图片",
     "uploadFailed": "上传失败",
-    "dragHint": "拖拽调整显示顺序",
+    "dragHint": "拖拽调整当前页顺序",
     "reorderSaving": "保存排序中…",
     "reorderFailed": "排序保存失败",
     "sortOrder": "排序值",
-    "sortOrderHint": "数值越小越靠前，跨分页排序请直接填写数字"
+    "sortOrderHint": "数值越小越靠前。跨分页排序请直接填写数字，当前页拖拽会保留该页的排序区间。"
   },
   "welfareMy": {
     "applyTab": "申请福利",
@@ -1609,10 +1609,10 @@
     "deleteSuccess": "技能计划删除成功",
     "deleteConfirm": "确定要删除技能计划「{title}」吗？此操作不可恢复。",
     "searchPlaceholder": "搜索技能计划标题或描述",
-    "dragHint": "拖拽调整显示顺序",
+    "dragHint": "拖拽调整当前页顺序",
     "reorderFailed": "排序保存失败",
     "sortOrder": "排序值",
-    "sortOrderHint": "数值越小越靠前，跨分页排序请直接填写数字",
+    "sortOrderHint": "数值越小越靠前。跨分页排序请直接填写数字，当前页拖拽会保留该页的排序区间。",
     "listTitle": "技能计划列表",
     "detailTitle": "计划详情",
     "emptyList": "暂无技能计划",

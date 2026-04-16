@@ -79,6 +79,15 @@ Recommended full-height tabbed table pattern:
 - For “selected” or “expanded” cards/rows, keep the background at most one brightness step lighter than the surrounding surface; use border and shadow emphasis instead of large areas of pure white.
 - When adding custom table or list visuals, manually verify the page in both light and dark modes and adjust colors using theme tokens rather than fixed hex values.
 
+## Paginated Sort Rule
+
+- If a paginated management page supports both drag-and-drop reorder and a persisted numeric `sort_order`, treat them as two views of the same global ordering contract.
+- Do not rewrite reordered page slices to `0..n-1` or any other page-local index range. That causes collisions with other pages and makes the global order unstable.
+- For drag-and-drop inside a paginated slice, preserve that slice's existing persisted `sort_order` slots and only remap those slots to the reordered IDs.
+- For cross-page moves, provide an explicit numeric sort field and document that it is the authoritative cross-page control.
+- After a successful reorder mutation, refresh or reconcile the local row state before opening edit dialogs again so stale `sort_order` values are not resubmitted.
+- If an edit dialog depends on a detail endpoint, that detail response must include every persisted field the dialog can save, including `sort_order`.
+
 ## Inline Copy Rule
 
 - For compact inline copy actions attached to a text value inside a table cell, list row, or expanded record row, reuse the shared `ArtCopyButton`.
@@ -107,6 +116,7 @@ Before finishing:
 - If it adds a compact inline copy action, is it reusing `ArtCopyButton`?
 - If a form selector or action on the same page depends on record history, is that eligibility coming from the backend instead of the visible table page?
 - If the page uses `art-full-height` or `ElTabs`, is the overflow owner explicit and is the height chain complete?
+- If the page supports drag sorting plus a numeric sort field, does drag reorder preserve persisted sort slots instead of resetting to page-local indices?
 - Are API calls outside the view?
 - Are visible strings localized?
 - Is the implementation following existing page patterns instead of inventing a one-off abstraction?

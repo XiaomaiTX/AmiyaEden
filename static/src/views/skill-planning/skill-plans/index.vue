@@ -359,8 +359,10 @@
     reorderSaving.value = true
     try {
       await reorderSkillPlans(plans.value.map((p) => p.id))
+      await loadPlans(selectedPlanId.value)
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('skillPlan.reorderFailed'))
+      await loadPlans(selectedPlanId.value)
     } finally {
       reorderSaving.value = false
     }

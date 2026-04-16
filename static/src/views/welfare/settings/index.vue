@@ -756,8 +756,10 @@
       reorderSaving.value = true
       try {
         await adminReorderWelfares(data.value.map((row) => row.id))
+        await refreshData()
       } catch (e: any) {
         ElMessage.error(e?.message ?? t('welfareSettings.reorderFailed'))
+        await refreshData()
       } finally {
         reorderSaving.value = false
       }
