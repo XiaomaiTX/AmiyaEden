@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-04-12
+last_reviewed: 2026-04-17
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
@@ -32,6 +32,16 @@ For bounded management/config tables:
 
 - use normal `ArtTable` defaults
 - smaller page sizes are fine
+
+## Actionable Selectors And Paginated Data
+
+- Do not derive mutation eligibility, duplicate prevention, or selectable-candidate state from the current page of a paginated table.
+- A paginated history table is a presentation slice, not an authoritative dataset for a form, dropdown, or action button elsewhere on the page.
+- If a selector or action depends on whether a record was already submitted, claimed, reviewed, or otherwise consumed, ask the backend for eligible candidates or backend-computed eligibility flags.
+- Frontend disabling is UX only. If the backend still rejects a choice, the preferred fix is usually to move the candidate filtering or eligibility calculation server-side instead of broadening the client-side fetch.
+- When a page mixes a submission form with a paginated history table, review them separately:
+  - the form needs an authoritative candidate source
+  - the table only needs the page slice chosen for presentation
 
 ## Layout Pattern
 
@@ -95,6 +105,7 @@ Before finishing:
 - Is this paginated table using `useTable` unless there is a real exception?
 - If it is ledger-style, is it using `visual-variant="ledger"`?
 - If it adds a compact inline copy action, is it reusing `ArtCopyButton`?
+- If a form selector or action on the same page depends on record history, is that eligibility coming from the backend instead of the visible table page?
 - If the page uses `art-full-height` or `ElTabs`, is the overflow owner explicit and is the height chain complete?
 - Are API calls outside the view?
 - Are visible strings localized?

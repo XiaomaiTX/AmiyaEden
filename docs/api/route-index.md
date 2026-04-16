@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-12
+last_reviewed: 2026-04-17
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -252,8 +252,8 @@ source_of_truth:
 | DELETE | `/srp/prices/:id` | 删除价格 | `RequireRole(admin, senior_fc)` |
 | POST | `/srp/applications` | 提交补损申请 | Login |
 | GET | `/srp/applications/me` | 我的补损申请 | Login |
-| GET | `/srp/killmails/me` | 我的 KM | Login |
-| GET | `/srp/killmails/fleet/:fleet_id` | 指定舰队 KM | Login |
+| GET | `/srp/killmails/me` | 我的 KM；支持可选查询参数 `character_id`、`limit`、`exclude_submitted` | Login |
+| GET | `/srp/killmails/fleet/:fleet_id` | 指定舰队 KM；支持可选查询参数 `limit`、`exclude_submitted` | Login |
 | POST | `/srp/killmails/detail` | KM 详情 | Login |
 | POST | `/srp/open-info-window` | 打开游戏内信息窗口 | Login |
 | GET | `/srp/config` | 获取 SRP 配置 | `RequireRole(admin)` |

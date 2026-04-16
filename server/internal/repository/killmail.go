@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // KillmailRepository 击杀邮件数据访问层
@@ -27,35 +29,49 @@ func (r *KillmailRepository) GetKillmailByID(killmailID int64) (*model.EveKillma
 	return &km, err
 }
 
-// ListCharacterKillmailsByCharacterIDs 按人物 ID 列表查询关联记录
-func (r *KillmailRepository) ListCharacterKillmailsByCharacterIDs(charIDs []int64) ([]model.EveCharacterKillmail, error) {
-	var list []model.EveCharacterKillmail
-	err := global.DB.Where("character_id IN ?", charIDs).Find(&list).Error
-	return list, err
+type VictimKillmailListFilter struct {
+	CharacterIDs             []int64
+	Since                    *time.Time
+	StartAt                  *time.Time
+	EndAt                    *time.Time
+	ExcludeSubmittedByUserID *uint
+	Limit                    int
 }
 
-// ListVictimKillmailsByCharacterID 查询人物作为受害者的 KM 关联记录
-func (r *KillmailRepository) ListVictimKillmailsByCharacterID(characterID int64) ([]model.EveCharacterKillmail, error) {
-	var list []model.EveCharacterKillmail
-	err := global.DB.Where("character_id = ? AND victim = ?", characterID, true).Find(&list).Error
-	return list, err
+func buildVictimKillmailListQuery(db *gorm.DB, filter VictimKillmailListFilter) *gorm.DB {
+	query := db.Model(&model.EveKillmailList{}).
+		Where("character_id IN ?", filter.CharacterIDs).
+		Order("kill_mail_time DESC")
+
+	if filter.Since != nil {
+		query = query.Where("kill_mail_time >= ?", *filter.Since)
+	}
+	if filter.StartAt != nil && filter.EndAt != nil {
+		query = query.Where("kill_mail_time BETWEEN ? AND ?", *filter.StartAt, *filter.EndAt)
+	}
+	if filter.ExcludeSubmittedByUserID != nil {
+		query = query.Where(`NOT EXISTS (
+			SELECT 1
+			FROM srp_application
+			WHERE srp_application.user_id = ?
+			  AND srp_application.killmail_id = eve_killmail_list.kill_mail_id
+		)`, *filter.ExcludeSubmittedByUserID)
+	}
+	if filter.Limit > 0 {
+		query = query.Limit(filter.Limit)
+	}
+
+	return query
 }
 
-// ListKillmailsByIDsSince 按 ID 列表查询 KM，过滤 since 之后的记录，按时间降序，限制条数
-func (r *KillmailRepository) ListKillmailsByIDsSince(kmIDs []int64, since time.Time, limit int) ([]model.EveKillmailList, error) {
+// ListVictimKillmailLists 查询人物作为受害者的 KM 主记录，支持时间范围、排除已提交 SRP 与条数限制
+func (r *KillmailRepository) ListVictimKillmailLists(filter VictimKillmailListFilter) ([]model.EveKillmailList, error) {
+	if len(filter.CharacterIDs) == 0 {
+		return []model.EveKillmailList{}, nil
+	}
+
 	var list []model.EveKillmailList
-	err := global.DB.Where("kill_mail_id IN ? AND kill_mail_time >= ?", kmIDs, since).
-		Order("kill_mail_time DESC").
-		Limit(limit).
-		Find(&list).Error
-	return list, err
-}
-
-// ListKillmailsByIDsInTimeRange 按 ID 列表查询 KM，限定时间范围
-func (r *KillmailRepository) ListKillmailsByIDsInTimeRange(kmIDs []int64, startAt, endAt time.Time) ([]model.EveKillmailList, error) {
-	var list []model.EveKillmailList
-	err := global.DB.Where("kill_mail_id IN ? AND kill_mail_time BETWEEN ? AND ?", kmIDs, startAt, endAt).
-		Find(&list).Error
+	err := buildVictimKillmailListQuery(global.DB, filter).Find(&list).Error
 	return list, err
 }
 
