@@ -31,7 +31,6 @@
                 :key="km.killmail_id"
                 :value="km.killmail_id"
                 :label="formatKmLabel(km)"
-                :disabled="submittedKmIds.has(km.killmail_id)"
               />
             </ElSelect>
             <ElButton :disabled="!form.killmail_id" @click="openKmPreview">
@@ -107,17 +106,19 @@
     </ElCard>
 
     <!-- 我的补损申请 -->
-    <ElCard class="art-table-card mt-4" shadow="never">
+    <ElCard class="art-table-card srp-apply-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
 
-      <ArtTable
-        :loading="loading"
-        :data="data"
-        :columns="columns"
-        :pagination="pagination"
-        @pagination:size-change="handleSizeChange"
-        @pagination:current-change="handleCurrentChange"
-      />
+      <div class="srp-apply-table-shell">
+        <ArtTable
+          :loading="loading"
+          :data="data"
+          :columns="columns"
+          :pagination="pagination"
+          @pagination:size-change="handleSizeChange"
+          @pagination:current-change="handleCurrentChange"
+        />
+      </div>
     </ElCard>
 
     <!-- KM 预览弹窗 -->
@@ -161,6 +162,11 @@
   defineOptions({ name: 'SrpApply' })
 
   const OTHER_ACTION = '__other__'
+  const KILLMAIL_DROPDOWN_LIMIT = 50
+  const killmailDropdownParams: Api.Srp.KillmailListParams = {
+    limit: KILLMAIL_DROPDOWN_LIMIT,
+    exclude_submitted: true
+  }
   const route = useRoute()
   const { t } = useI18n()
   const { getName, resolve: resolveNames } = useNameResolver()
@@ -193,7 +199,7 @@
   } = useTable({
     core: {
       apiFn: fetchMyApplications,
-      apiParams: { current: 1, size: 5 },
+      apiParams: { current: 1, size: 20 },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {
@@ -347,7 +353,6 @@
 
   const showNoteArea = computed(() => form.fleet_id === OTHER_ACTION)
   const noteRequired = computed(() => form.fleet_id === OTHER_ACTION || !form.fleet_id)
-  const submittedKmIds = computed(() => new Set((data.value ?? []).map((a) => a.killmail_id)))
 
   // 选中的舰队详情（非"__other__"且非空时显示）
   const selectedFleetDetail = computed(() => {
@@ -390,11 +395,11 @@
     form.killmail_id = 0
     try {
       if (form.fleet_id && form.fleet_id !== OTHER_ACTION) {
-        const list = await fetchFleetKillmails(form.fleet_id)
+        const list = await fetchFleetKillmails(form.fleet_id, killmailDropdownParams)
         fleetKillmails.value = list ?? []
         if (!list?.length) ElMessage.info(t('srp.apply.noKmFound'))
       } else {
-        const list = await fetchMyKillmails()
+        const list = await fetchMyKillmails(killmailDropdownParams)
         fleetKillmails.value = list ?? []
       }
 
@@ -454,8 +459,7 @@
       form.fleet_id = ''
       form.recommended_amount = 0
       form.character_id = 0
-      loadKillmails()
-      refreshData()
+      await Promise.all([loadKillmails(), refreshData()])
     } catch {
       /* handled */
     } finally {
@@ -506,14 +510,46 @@
 </script>
 
 <style scoped>
+  .srp-apply-page {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+  }
+
   .apply-card :deep(.el-card__header) {
     padding: 12px 16px;
   }
 
   .km-select-row {
     display: flex;
+    align-items: flex-start;
     gap: 8px;
     width: 100%;
+  }
+
+  .km-select-row :deep(.el-select) {
+    min-width: 0;
+  }
+
+  .srp-apply-table-card {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .srp-apply-table-card :deep(.el-card__body) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .srp-apply-table-shell {
+    flex: 1;
+    min-height: 0;
   }
 
   .fleet-info-section {
@@ -551,5 +587,11 @@
   .fleet-detail-label {
     font-weight: 500;
     min-width: 50px;
+  }
+
+  @media (max-width: 768px) {
+    .km-select-row {
+      flex-direction: column;
+    }
   }
 </style>

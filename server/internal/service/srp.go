@@ -275,6 +275,17 @@ func buildSrpApplicationResponses(apps []model.SrpApplication, userMap map[uint]
 	return result
 }
 
+func (s *SrpService) enrichApplication(app *model.SrpApplication) *SrpApplicationResponse {
+	if app == nil {
+		return nil
+	}
+	responses := s.enrichWithFleetInfo([]model.SrpApplication{*app})
+	if len(responses) == 0 {
+		return &SrpApplicationResponse{SrpApplication: *app}
+	}
+	return &responses[0]
+}
+
 // enrichWithFleetInfo 为申请列表填充舰队信息
 func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpApplicationResponse {
 	userIDSet := make(map[uint]bool)
@@ -350,37 +361,7 @@ func (s *SrpService) GetApplication(id uint) (*SrpApplicationResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp := &SrpApplicationResponse{SrpApplication: *app}
-	if user, uerr := s.userRepo.GetByID(app.UserID); uerr == nil {
-		resp.Nickname = user.Nickname
-	}
-	actorIDSet := make(map[uint]struct{})
-	if app.ReviewedBy != nil {
-		actorIDSet[*app.ReviewedBy] = struct{}{}
-	}
-	if app.PaidBy != nil {
-		actorIDSet[*app.PaidBy] = struct{}{}
-	}
-	if len(actorIDSet) > 0 {
-		actorIDs := make([]uint, 0, len(actorIDSet))
-		for actorID := range actorIDSet {
-			actorIDs = append(actorIDs, actorID)
-		}
-		if users, uerr := s.userRepo.ListByIDs(actorIDs); uerr == nil {
-			actorMap := make(map[uint]model.User, len(users))
-			for _, user := range users {
-				actorMap[user.ID] = user
-			}
-			resp.LastActorNickname = resolveSrpLastActorNickname(*app, actorMap)
-		}
-	}
-	if app.FleetID != nil && *app.FleetID != "" {
-		if fleet, ferr := s.fleetRepo.GetByID(*app.FleetID); ferr == nil {
-			resp.FleetTitle = fleet.Title
-			resp.FleetFCName = fleet.FCCharacterName
-		}
-	}
-	return resp, nil
+	return s.enrichApplication(app), nil
 }
 
 // enrichBatchPayoutSummaryRows 批量填充用户昵称和主人物名到汇总行
@@ -1263,67 +1244,30 @@ type FleetKillmailItem struct {
 	VictimName    string    `json:"victim_name"`
 }
 
-// GetMyKillmails 获取当前用户所有人物作为受害者的 KM 列表（不限舰队，最近 200 条）
-// 若 characterID > 0，则只返回指定人物的 KM（需属于当前用户）
-func (s *SrpService) GetMyKillmails(userID uint, characterID int64) ([]FleetKillmailItem, error) {
-	chars, err := s.charRepo.ListByUserID(userID)
-	if err != nil || len(chars) == 0 {
-		return []FleetKillmailItem{}, nil
-	}
-	charNameMap := make(map[int64]string)
-	var charIDs []int64
-	if characterID > 0 {
-		for _, c := range chars {
-			if c.CharacterID == characterID {
-				charIDs = []int64{characterID}
-				charNameMap[characterID] = c.CharacterName
-				break
-			}
-		}
-		if len(charIDs) == 0 {
-			return []FleetKillmailItem{}, nil
-		}
-	} else {
-		for _, c := range chars {
-			charIDs = append(charIDs, c.CharacterID)
-			charNameMap[c.CharacterID] = c.CharacterName
-		}
-	}
+const (
+	defaultKillmailListLimit = 200
+	maxKillmailListLimit     = 200
+)
 
-	ckmList, err := s.kmRepo.ListCharacterKillmailsByCharacterIDs(charIDs)
-	if err != nil {
-		return nil, err
-	}
-	if len(ckmList) == 0 {
-		return []FleetKillmailItem{}, nil
-	}
+// KillmailListOptions 控制 KM 候选列表的后端过滤规则
+type KillmailListOptions struct {
+	Limit            int  `json:"limit"`
+	ExcludeSubmitted bool `json:"exclude_submitted"`
+}
 
-	kmIDs := make([]int64, 0, len(ckmList))
-	kmCharMap := make(map[int64]int64) // killmail_id -> character_id
-	for _, ckm := range ckmList {
-		kmIDs = append(kmIDs, ckm.KillmailID)
-		kmCharMap[ckm.KillmailID] = ckm.CharacterID
+func normalizeKillmailListOptions(options KillmailListOptions) KillmailListOptions {
+	if options.Limit <= 0 {
+		options.Limit = defaultKillmailListLimit
 	}
-
-	// 只查询最近 30 天的 KM
-	since := time.Now().AddDate(0, 0, -30)
-
-	kms, err := s.kmRepo.ListKillmailsByIDsSince(kmIDs, since, 200)
-	if err != nil {
-		return nil, err
+	if options.Limit > maxKillmailListLimit {
+		options.Limit = maxKillmailListLimit
 	}
+	return options
+}
 
-	charIDSet := make(map[int64]bool)
-	for _, id := range charIDs {
-		charIDSet[id] = true
-	}
-
+func buildFleetKillmailItems(kms []model.EveKillmailList, charNameMap map[int64]string) []FleetKillmailItem {
 	result := make([]FleetKillmailItem, 0, len(kms))
 	for _, km := range kms {
-		// 只返回受害者是当前用户人物的 KM
-		if !charIDSet[km.CharacterID] {
-			continue
-		}
 		result = append(result, FleetKillmailItem{
 			KillmailID:    km.KillmailID,
 			KillmailTime:  km.KillmailTime,
@@ -1333,11 +1277,75 @@ func (s *SrpService) GetMyKillmails(userID uint, characterID int64) ([]FleetKill
 			VictimName:    charNameMap[km.CharacterID],
 		})
 	}
-	return result, nil
+	return result
+}
+
+func selectUserCharacterIDs(
+	chars []model.EveCharacter,
+	include func(model.EveCharacter) bool,
+) ([]int64, map[int64]string) {
+	charIDs := make([]int64, 0, len(chars))
+	charNameMap := make(map[int64]string)
+	for _, char := range chars {
+		if !include(char) {
+			continue
+		}
+		charIDs = append(charIDs, char.CharacterID)
+		charNameMap[char.CharacterID] = char.CharacterName
+	}
+	return charIDs, charNameMap
+}
+
+func buildUserKillmailListFilter(userID uint, characterIDs []int64, options KillmailListOptions) repository.VictimKillmailListFilter {
+	filter := repository.VictimKillmailListFilter{
+		CharacterIDs: characterIDs,
+		Limit:        options.Limit,
+	}
+	if options.ExcludeSubmitted {
+		filter.ExcludeSubmittedByUserID = &userID
+	}
+	return filter
+}
+
+func (s *SrpService) listKillmailCandidates(
+	filter repository.VictimKillmailListFilter,
+	charNameMap map[int64]string,
+) ([]FleetKillmailItem, error) {
+	kms, err := s.kmRepo.ListVictimKillmailLists(filter)
+	if err != nil {
+		return nil, err
+	}
+	return buildFleetKillmailItems(kms, charNameMap), nil
+}
+
+// GetMyKillmails 获取当前用户所有人物作为受害者的 KM 列表（不限舰队，最近 200 条）
+// 若 characterID > 0，则只返回指定人物的 KM（需属于当前用户）
+func (s *SrpService) GetMyKillmails(userID uint, characterID int64, options KillmailListOptions) ([]FleetKillmailItem, error) {
+	options = normalizeKillmailListOptions(options)
+
+	chars, err := s.charRepo.ListByUserID(userID)
+	if err != nil || len(chars) == 0 {
+		return []FleetKillmailItem{}, nil
+	}
+	charIDs, charNameMap := selectUserCharacterIDs(chars, func(char model.EveCharacter) bool {
+		return characterID == 0 || char.CharacterID == characterID
+	})
+	if len(charIDs) == 0 {
+		return []FleetKillmailItem{}, nil
+	}
+
+	// 只查询最近 30 天的 KM
+	since := time.Now().AddDate(0, 0, -30)
+
+	filter := buildUserKillmailListFilter(userID, charIDs, options)
+	filter.Since = &since
+	return s.listKillmailCandidates(filter, charNameMap)
 }
 
 // GetFleetKillmails 获取符合舰队时间范围和成员资格的当前用户 KM 列表
-func (s *SrpService) GetFleetKillmails(userID uint, fleetID string) ([]FleetKillmailItem, error) {
+func (s *SrpService) GetFleetKillmails(userID uint, fleetID string, options KillmailListOptions) ([]FleetKillmailItem, error) {
+	options = normalizeKillmailListOptions(options)
+
 	// 1. 获取舰队信息
 	fleet, err := s.fleetRepo.GetByID(fleetID)
 	if err != nil {
@@ -1359,57 +1367,18 @@ func (s *SrpService) GetFleetKillmails(userID uint, fleetID string) ([]FleetKill
 	for _, m := range members {
 		memberSet[m.CharacterID] = true
 	}
-	var validCharIDs []int64
-	charNameMap := make(map[int64]string)
-	for _, c := range chars {
-		if memberSet[c.CharacterID] {
-			validCharIDs = append(validCharIDs, c.CharacterID)
-			charNameMap[c.CharacterID] = c.CharacterName
-		}
-	}
+	validCharIDs, charNameMap := selectUserCharacterIDs(chars, func(char model.EveCharacter) bool {
+		return memberSet[char.CharacterID]
+	})
 	if len(validCharIDs) == 0 {
 		return []FleetKillmailItem{}, nil
 	}
 
 	// 4. 查询这些人物在舰队时间段内的 KM
-	ckmList, err := s.kmRepo.ListCharacterKillmailsByCharacterIDs(validCharIDs)
-	if err != nil {
-		return nil, err
-	}
-	if len(ckmList) == 0 {
-		return []FleetKillmailItem{}, nil
-	}
-	kmIDSet := make(map[int64]int64) // killmail_id -> character_id
-	for _, ckm := range ckmList {
-		kmIDSet[ckm.KillmailID] = ckm.CharacterID
-	}
-	kmIDs := make([]int64, 0, len(kmIDSet))
-	for kid := range kmIDSet {
-		kmIDs = append(kmIDs, kid)
-	}
-
-	kms, err := s.kmRepo.ListKillmailsByIDsInTimeRange(kmIDs, fleet.StartAt, fleet.EndAt)
-	if err != nil {
-		return nil, err
-	}
-
-	// 5. 只返回受害人物是用户自己人物的 KM
-	result := make([]FleetKillmailItem, 0, len(kms))
-	for _, km := range kms {
-		if !memberSet[km.CharacterID] {
-			continue
-		}
-		name := charNameMap[km.CharacterID]
-		result = append(result, FleetKillmailItem{
-			KillmailID:    km.KillmailID,
-			KillmailTime:  km.KillmailTime,
-			ShipTypeID:    km.ShipTypeID,
-			SolarSystemID: km.SolarSystemID,
-			CharacterID:   km.CharacterID,
-			VictimName:    name,
-		})
-	}
-	return result, nil
+	filter := buildUserKillmailListFilter(userID, validCharIDs, options)
+	filter.StartAt = &fleet.StartAt
+	filter.EndAt = &fleet.EndAt
+	return s.listKillmailCandidates(filter, charNameMap)
 }
 
 // ─────────────────────────────────────────────

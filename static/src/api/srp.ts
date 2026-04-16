@@ -61,17 +61,18 @@ export function fetchMyApplications(params?: Partial<Api.Common.CommonSearchPara
 }
 
 /** 获取舰队范围内可用的 KM 列表（快捷申请） */
-export function fetchFleetKillmails(fleetId: string) {
+export function fetchFleetKillmails(fleetId: string, params?: Api.Srp.KillmailListParams) {
   return request.get<Api.Srp.FleetKillmailItem[]>({
-    url: `/api/v1/srp/killmails/fleet/${fleetId}`
+    url: `/api/v1/srp/killmails/fleet/${fleetId}`,
+    params
   })
 }
 
 /** 获取当前用户所有人物的全部 KM 列表（不限舰队；可按 characterId 筛选） */
-export function fetchMyKillmails(characterId?: number) {
+export function fetchMyKillmails(params?: Api.Srp.KillmailListParams) {
   return request.get<Api.Srp.FleetKillmailItem[]>({
     url: '/api/v1/srp/killmails/me',
-    params: characterId ? { character_id: characterId } : undefined
+    params
   })
 }
 

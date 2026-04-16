@@ -826,6 +826,186 @@ func TestPayoutAsFuxiCoinStoresPayerAsWalletOperator(t *testing.T) {
 	}
 }
 
+func TestGetMyKillmailsExcludesSubmittedKillmailsBeforeApplyingLimit(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	now := time.Now().UTC()
+
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   90001001,
+		CharacterName: "Pilot One",
+		UserID:        42,
+	}).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	killmails := []model.EveKillmailList{
+		{
+			KillmailID:    880003,
+			KillmailHash:  "hash-3",
+			KillmailTime:  now.Add(-1 * time.Hour),
+			CharacterID:   90001001,
+			ShipTypeID:    22436,
+			SolarSystemID: 30000142,
+		},
+		{
+			KillmailID:    880002,
+			KillmailHash:  "hash-2",
+			KillmailTime:  now.Add(-2 * time.Hour),
+			CharacterID:   90001001,
+			ShipTypeID:    22452,
+			SolarSystemID: 30000143,
+		},
+		{
+			KillmailID:    880001,
+			KillmailHash:  "hash-1",
+			KillmailTime:  now.Add(-3 * time.Hour),
+			CharacterID:   90001001,
+			ShipTypeID:    22460,
+			SolarSystemID: 30000144,
+		},
+	}
+	if err := db.Create(&killmails).Error; err != nil {
+		t.Fatalf("create killmails: %v", err)
+	}
+
+	if err := db.Create(&model.SrpApplication{
+		UserID:        42,
+		CharacterID:   90001001,
+		CharacterName: "Pilot One",
+		KillmailID:    880003,
+		ShipTypeID:    22436,
+		KillmailTime:  now.Add(-1 * time.Hour),
+		ReviewStatus:  model.SrpReviewSubmitted,
+		PayoutStatus:  model.SrpPayoutNotPaid,
+	}).Error; err != nil {
+		t.Fatalf("create srp application: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	list, err := svc.GetMyKillmails(42, 0, KillmailListOptions{
+		Limit:            2,
+		ExcludeSubmitted: true,
+	})
+	if err != nil {
+		t.Fatalf("GetMyKillmails() error = %v", err)
+	}
+
+	if len(list) != 2 {
+		t.Fatalf("len(list) = %d, want 2", len(list))
+	}
+	if list[0].KillmailID != 880002 || list[1].KillmailID != 880001 {
+		t.Fatalf("killmail order = [%d %d], want [880002 880001]", list[0].KillmailID, list[1].KillmailID)
+	}
+	if list[0].VictimName != "Pilot One" || list[1].VictimName != "Pilot One" {
+		t.Fatalf("victim names = [%q %q], want Pilot One for both", list[0].VictimName, list[1].VictimName)
+	}
+}
+
+func TestGetFleetKillmailsExcludesSubmittedKillmailsAndKeepsNewestEligibleOrder(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	now := time.Now().UTC()
+	fleetID := "fleet-apply-test"
+
+	if err := db.Create(&model.Fleet{
+		ID:              fleetID,
+		Title:           "CTA Fleet",
+		StartAt:         now.Add(-6 * time.Hour),
+		EndAt:           now.Add(6 * time.Hour),
+		Importance:      model.FleetImportanceCTA,
+		FCUserID:        7,
+		FCCharacterID:   90009999,
+		FCCharacterName: "FC One",
+		AutoSrpMode:     model.FleetAutoSrpDisabled,
+	}).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   90002001,
+		CharacterName: "Pilot Fleet",
+		UserID:        7,
+	}).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	if err := db.Create(&model.FleetMember{
+		FleetID:       fleetID,
+		CharacterID:   90002001,
+		CharacterName: "Pilot Fleet",
+		UserID:        7,
+	}).Error; err != nil {
+		t.Fatalf("create fleet member: %v", err)
+	}
+
+	killmails := []model.EveKillmailList{
+		{
+			KillmailID:    990003,
+			KillmailHash:  "fleet-hash-3",
+			KillmailTime:  now.Add(-30 * time.Minute),
+			CharacterID:   90002001,
+			ShipTypeID:    22436,
+			SolarSystemID: 30000142,
+		},
+		{
+			KillmailID:    990002,
+			KillmailHash:  "fleet-hash-2",
+			KillmailTime:  now.Add(-90 * time.Minute),
+			CharacterID:   90002001,
+			ShipTypeID:    22452,
+			SolarSystemID: 30000143,
+		},
+		{
+			KillmailID:    990001,
+			KillmailHash:  "fleet-hash-1",
+			KillmailTime:  now.Add(-150 * time.Minute),
+			CharacterID:   90002001,
+			ShipTypeID:    22460,
+			SolarSystemID: 30000144,
+		},
+	}
+	if err := db.Create(&killmails).Error; err != nil {
+		t.Fatalf("create killmails: %v", err)
+	}
+
+	if err := db.Create(&model.SrpApplication{
+		UserID:        7,
+		CharacterID:   90002001,
+		CharacterName: "Pilot Fleet",
+		KillmailID:    990003,
+		ShipTypeID:    22436,
+		KillmailTime:  now.Add(-30 * time.Minute),
+		ReviewStatus:  model.SrpReviewSubmitted,
+		PayoutStatus:  model.SrpPayoutNotPaid,
+		FleetID:       &fleetID,
+	}).Error; err != nil {
+		t.Fatalf("create srp application: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	list, err := svc.GetFleetKillmails(7, fleetID, KillmailListOptions{
+		Limit:            2,
+		ExcludeSubmitted: true,
+	})
+	if err != nil {
+		t.Fatalf("GetFleetKillmails() error = %v", err)
+	}
+
+	if len(list) != 2 {
+		t.Fatalf("len(list) = %d, want 2", len(list))
+	}
+	if list[0].KillmailID != 990002 || list[1].KillmailID != 990001 {
+		t.Fatalf("killmail order = [%d %d], want [990002 990001]", list[0].KillmailID, list[1].KillmailID)
+	}
+}
+
 func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -837,6 +1017,8 @@ func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.EveCharacter{},
+		&model.EveKillmailList{},
+		&model.FleetMember{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
 		&model.SrpApplication{},

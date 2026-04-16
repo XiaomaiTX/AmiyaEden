@@ -189,31 +189,16 @@ func (s *AutoSrpService) processOneMember(
 	itemsByFitting map[uint][]model.FleetConfigFittingItem,
 	repByItem map[uint][]model.FleetConfigFittingItemReplacement,
 ) {
-	// 查找该成员的受害 KM
-	killmails, err := s.kmRepo.ListVictimKillmailsByCharacterID(member.CharacterID)
-	if err != nil || len(killmails) == 0 {
+	kmList, err := s.kmRepo.ListVictimKillmailLists(repository.VictimKillmailListFilter{
+		CharacterIDs: []int64{member.CharacterID},
+		StartAt:      &fleet.StartAt,
+		EndAt:        &fleet.EndAt,
+	})
+	if err != nil || len(kmList) == 0 {
 		return
 	}
 
-	// 批量获取 KM 详情，同时按时间范围过滤
-	killmailIDs := make([]int64, len(killmails))
-	for i, ckm := range killmails {
-		killmailIDs[i] = ckm.KillmailID
-	}
-	kmList, err := s.kmRepo.ListKillmailsByIDsInTimeRange(killmailIDs, fleet.StartAt, fleet.EndAt)
-	if err != nil {
-		return
-	}
-	kmByID := make(map[int64]model.EveKillmailList, len(kmList))
 	for _, km := range kmList {
-		kmByID[km.KillmailID] = km
-	}
-
-	for _, ckm := range killmails {
-		km, ok := kmByID[ckm.KillmailID]
-		if !ok {
-			continue
-		}
 
 		// 查找对应的装配配置
 		fitting, ok := fittingByShip[km.ShipTypeID]
@@ -237,7 +222,7 @@ func (s *AutoSrpService) processOneMember(
 			UserID:            member.UserID,
 			CharacterID:       member.CharacterID,
 			CharacterName:     member.CharacterName,
-			KillmailID:        ckm.KillmailID,
+			KillmailID:        km.KillmailID,
 			FleetID:           &fleetID,
 			Note:              "",
 			ShipTypeID:        km.ShipTypeID,
@@ -263,7 +248,7 @@ func (s *AutoSrpService) processOneMember(
 				continue
 			}
 			global.Logger.Warn("[AutoSRP] 创建申请失败",
-				zap.Int64("killmail_id", ckm.KillmailID),
+				zap.Int64("killmail_id", km.KillmailID),
 				zap.Int64("character_id", member.CharacterID),
 				zap.Error(err),
 			)

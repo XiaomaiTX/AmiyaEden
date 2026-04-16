@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-03
+last_reviewed: 2026-04-17
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/srp.go
@@ -116,6 +116,13 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 7. **金额设定**：在提交申请时，系统自动根据上方推荐金额计算方法计算推荐金额和初始最终金额
 8. **创建申请**：初始状态 `review_status = submitted`，`payout_status = notpaid`
 
+### 申请页前端交互
+
+- 申请页下方“我的补损申请”表格默认每页显示 `20` 条记录
+- 申请页 killmail 下拉只展示最近 `50` 条候选 KM
+- 该下拉的“已提交过 SRP，不可再次申请”规则由后端候选列表负责过滤；前端不会再从当前页申请表里推导 disable 集合
+- 原因：申请表是分页后的展示切片，不是候选 killmail 的权威数据源；重复提交约束必须由后端验证并最好由后端候选接口直接过滤
+
 ### 审批
 
 由 `SrpService.ReviewApplication` 处理：
@@ -171,8 +178,8 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 
 ### KM 查询
 
-- **我的 KM**（`GetMyKillmails`）：返回当前用户所有人物作为受害者的最近 30 天 KM，限 200 条
-- **按舰队筛选 KM**（`GetFleetKillmails`）：返回当前用户在指定舰队时间范围内、且为舰队成员的人物的受害 KM
+- **我的 KM**（`GetMyKillmails`）：返回当前用户所有人物作为受害者的最近 30 天 KM，默认最多 `200` 条；申请页会带 `limit=50&exclude_submitted=true`，只拿最近 50 条仍可提交的候选 KM
+- **按舰队筛选 KM**（`GetFleetKillmails`）：返回当前用户在指定舰队时间范围内、且为舰队成员的人物的受害 KM；申请页同样会带 `limit=50&exclude_submitted=true`
 - **KM 详情**（`GetKillmailDetail`）：返回 KM 装配详情，按槽位类别分组并合并同类物品，支持中英文名称
 
 ## 自动 SRP（Auto-SRP）
