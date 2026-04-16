@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-03
+last_reviewed: 2026-04-17
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/skill_plan.go
@@ -17,6 +17,7 @@ source_of_truth:
 - 军团技能计划的列表、详情、创建、编辑、删除
 - 创建 / 编辑技能计划时可选一个舰船图标，并在列表中展示
 - 粘贴技能文本解析为技能计划条目
+- 管理员可拖拽调整当前页内的技能计划顺序，也可直接编辑 `sort_order` 做跨分页排序
 - 通过独立顶级菜单“技能规划”进入技能计划页面
 - 任意 `Login` 用户都可查看技能计划列表 / 详情；管理按钮只对可维护角色显示
 - 用户可在”检查完成度”页面保存自己的人物选择和规划选择，并把人物技能与选中的军团规划逐项比对
@@ -47,6 +48,7 @@ source_of_truth:
 - 技能规划是独立顶级导航，不再挂在舰队行动下
 - 前端静态路由与后端 API 当前都归属 `SkillPlanning` 模块
 - 页面实现位于 `static/src/views/skill-planning` 目录，修改时保持模块边界一致
+- 技能计划列表按 `sort_order ASC, id DESC` 排序；当前页拖拽只重排该页已有排序区间，跨分页移动依赖显式 `sort_order`
 - 完成度检查页面与技能计划列表页共享同一 `Login` 读权限边界，避免普通登录用户在检查页看到误导性的访问拒绝提示
 - 人物选择和规划选择都会按用户持久化保存，用户再次进入”检查完成度”时不需要重新选择
 - 完成度检查只允许比较当前用户自己绑定的人物

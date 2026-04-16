@@ -859,11 +859,11 @@
     "exampleEvidence": "Example Evidence",
     "uploadExampleEvidence": "Upload Example Image",
     "uploadFailed": "Upload failed",
-    "dragHint": "Drag to reorder",
+    "dragHint": "Drag to reorder within this page",
     "reorderSaving": "Saving order…",
     "reorderFailed": "Failed to save order",
     "sortOrder": "Sort Order",
-    "sortOrderHint": "Lower number = higher position. Use a number to reorder across pages."
+    "sortOrderHint": "Lower number = higher position. Use a number for cross-page ordering; drag-and-drop preserves this page's existing order band."
   },
   "welfareMy": {
     "applyTab": "Apply for Welfare",
@@ -1609,10 +1609,10 @@
     "deleteSuccess": "Skill plan deleted",
     "deleteConfirm": "Are you sure you want to delete skill plan \"{title}\"? This cannot be undone.",
     "searchPlaceholder": "Search skill plan title or description",
-    "dragHint": "Drag to reorder",
+    "dragHint": "Drag to reorder within this page",
     "reorderFailed": "Failed to save order",
     "sortOrder": "Sort Order",
-    "sortOrderHint": "Lower number = higher position. Use a number to reorder across pages.",
+    "sortOrderHint": "Lower number = higher position. Use a number for cross-page ordering; drag-and-drop preserves this page's existing order band.",
     "listTitle": "Skill Plans",
     "detailTitle": "Plan Details",
     "emptyList": "No skill plans",

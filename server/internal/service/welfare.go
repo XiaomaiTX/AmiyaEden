@@ -193,9 +193,20 @@ func (s *WelfareService) AdminReorderWelfares(ids []uint) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	updates := make([]repository.WelfareSortUpdate, len(ids))
-	for i, id := range ids {
-		updates[i] = repository.WelfareSortUpdate{ID: id, SortOrder: i}
+
+	welfares, err := s.repo.ListWelfaresByIDs(ids)
+	if err != nil {
+		return err
+	}
+
+	assignments, err := buildSortOrderAssignments(ids, projectWelfareSortRecords(welfares))
+	if err != nil {
+		return err
+	}
+
+	updates := make([]repository.WelfareSortUpdate, len(assignments))
+	for i, assignment := range assignments {
+		updates[i] = repository.WelfareSortUpdate{ID: assignment.ID, SortOrder: assignment.SortOrder}
 	}
 	return s.repo.UpdateWelfareSortOrders(updates)
 }
@@ -264,6 +275,17 @@ func skillPlanNamesForWelfare(planIDs []uint, planNamesByID map[uint]string) []s
 		names = append(names, name)
 	}
 	return names
+}
+
+func projectWelfareSortRecords(welfares []model.Welfare) []sortOrderRecord {
+	records := make([]sortOrderRecord, 0, len(welfares))
+	for _, welfare := range welfares {
+		records = append(records, sortOrderRecord{
+			ID:        welfare.ID,
+			SortOrder: welfare.SortOrder,
+		})
+	}
+	return records
 }
 
 func (s *WelfareService) fillWelfareSkillPlanNames(welfares []model.Welfare) ([]model.Welfare, error) {
