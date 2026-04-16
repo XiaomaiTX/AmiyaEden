@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-17
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go
@@ -16,6 +16,7 @@ source_of_truth:
 ## 当前能力
 
 - 管理员福利定义 CRUD（创建、编辑、删除、列表）
+- 管理员可拖拽调整当前页内的福利顺序，也可直接编辑 `sort_order` 做跨分页排序
 - 福利定义支持可选整数配置 `pay_by_fuxi_coin`：当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 时，资格校验通过的申请会在提交时自动发放；其余大额或非伏羲币福利仍走人工审批发放，且发放时始终按当前配置计算伏羲币
 - 福利自动审批阈值通过 `system_config.welfare.auto_approve_fuxi_coin_threshold` 持久化，默认 `500`；管理员可在 `/welfare/settings` 的“自动审批配置” tab 调整，设置为 `0` 时关闭自动审批
 - 按人物发放且附带伏羲币的福利受多人物奖励限制：同一用户对同一福利的申请按数量递减奖励（默认前 3 个 100%、第 4–6 个 50%、其余 0%），参数与 PAP 兑换页面共享，详见 `docs/features/current/pap-exchange.md`
@@ -121,6 +122,7 @@ source_of_truth:
 - 若 ESI 接受了发信请求，成功响应还可能附带邮件调试信息；具体字段以代码契约为准
 - 导入历史福利记录只写福利申请历史，不补写 `welfare_payout` 钱包流水
 - 技能计划检查复用 skill_plan 模块，福利定义通过 welfare_skill_plans 关联表支持多技能计划
+- 福利设置列表按 `sort_order ASC, id DESC` 排序；当前页拖拽只重排该页已有排序区间，跨分页移动依赖显式 `sort_order`
 
 ## 主要代码文件
 

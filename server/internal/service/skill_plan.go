@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 )
@@ -84,6 +85,7 @@ type SkillPlanDetailResp struct {
 	Description string               `json:"description"`
 	ShipTypeID  *int                 `json:"ship_type_id"`
 	ShipName    string               `json:"ship_name"`
+	SortOrder   int                  `json:"sort_order"`
 	CreatedBy   uint                 `json:"created_by"`
 	CreatedAt   string               `json:"created_at"`
 	UpdatedAt   string               `json:"updated_at"`
@@ -294,9 +296,20 @@ func (s *SkillPlanService) ReorderSkillPlans(ids []uint, userRoles []string) err
 	if len(ids) == 0 {
 		return nil
 	}
-	updates := make([]repository.SkillPlanSortUpdate, len(ids))
-	for i, id := range ids {
-		updates[i] = repository.SkillPlanSortUpdate{ID: id, SortOrder: i}
+
+	plans, err := s.repo.ListByIDs(ids)
+	if err != nil {
+		return err
+	}
+
+	assignments, err := buildSortOrderAssignments(ids, projectSkillPlanSortRecords(plans))
+	if err != nil {
+		return err
+	}
+
+	updates := make([]repository.SkillPlanSortUpdate, len(assignments))
+	for i, assignment := range assignments {
+		updates[i] = repository.SkillPlanSortUpdate{ID: assignment.ID, SortOrder: assignment.SortOrder}
 	}
 	return s.repo.UpdateSortOrders(updates)
 }
@@ -856,18 +869,78 @@ func (s *SkillPlanService) buildDetailResp(plan *model.SkillPlan, skills []model
 		})
 	}
 
+	return newSkillPlanDetailResp(plan, shipName, detailSkills), nil
+}
+
+type sortOrderRecord struct {
+	ID        uint
+	SortOrder int
+}
+
+type sortOrderAssignment struct {
+	ID        uint
+	SortOrder int
+}
+
+func buildSortOrderAssignments(ids []uint, current []sortOrderRecord) ([]sortOrderAssignment, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if len(current) != len(ids) {
+		return nil, errors.New("排序项不存在或已变更，请刷新后重试")
+	}
+
+	currentByID := make(map[uint]sortOrderRecord, len(current))
+	for _, item := range current {
+		currentByID[item.ID] = item
+	}
+
+	sort.Slice(current, func(i, j int) bool {
+		if current[i].SortOrder == current[j].SortOrder {
+			return current[i].ID > current[j].ID
+		}
+		return current[i].SortOrder < current[j].SortOrder
+	})
+
+	assignments := make([]sortOrderAssignment, 0, len(ids))
+	for index, id := range ids {
+		if _, ok := currentByID[id]; !ok {
+			return nil, errors.New("排序项不存在或已变更，请刷新后重试")
+		}
+		assignments = append(assignments, sortOrderAssignment{
+			ID:        id,
+			SortOrder: current[index].SortOrder,
+		})
+	}
+
+	return assignments, nil
+}
+
+func projectSkillPlanSortRecords(plans []model.SkillPlan) []sortOrderRecord {
+	records := make([]sortOrderRecord, 0, len(plans))
+	for _, plan := range plans {
+		records = append(records, sortOrderRecord{
+			ID:        plan.ID,
+			SortOrder: plan.SortOrder,
+		})
+	}
+	return records
+}
+
+func newSkillPlanDetailResp(plan *model.SkillPlan, shipName string, detailSkills []SkillPlanSkillResp) *SkillPlanDetailResp {
 	return &SkillPlanDetailResp{
 		ID:          plan.ID,
 		Title:       plan.Title,
 		Description: plan.Description,
 		ShipTypeID:  plan.ShipTypeID,
 		ShipName:    shipName,
+		SortOrder:   plan.SortOrder,
 		CreatedBy:   plan.CreatedBy,
 		CreatedAt:   plan.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   plan.UpdatedAt.Format(time.RFC3339),
 		SkillCount:  len(detailSkills),
 		Skills:      detailSkills,
-	}, nil
+	}
 }
 
 func (s *SkillPlanService) loadSkillTypeInfoMap(skills []model.SkillPlanSkill, lang string) (map[int]repository.TypeInfo, error) {
