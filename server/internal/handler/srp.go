@@ -144,7 +144,7 @@ func (h *SrpHandler) ListMyApplications(c *gin.Context) {
 	response.OKWithPage(c, list, total, page, pageSize)
 }
 
-// GetMyKillmails GET /srp/my-killmails?character_id=xxx
+// GetMyKillmails GET /srp/killmails/me?character_id=xxx
 func (h *SrpHandler) GetMyKillmails(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	options, err := parseSrpKillmailListOptions(c)
@@ -166,7 +166,7 @@ func (h *SrpHandler) GetMyKillmails(c *gin.Context) {
 	response.OK(c, kms)
 }
 
-// GetFleetKillmails GET /srp/fleet-killmails?fleet_id=xxx
+// GetFleetKillmails GET /srp/killmails/fleet/:fleet_id
 func (h *SrpHandler) GetFleetKillmails(c *gin.Context) {
 	fleetID := c.Param("fleet_id")
 	if fleetID == "" {

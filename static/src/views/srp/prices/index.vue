@@ -21,7 +21,7 @@
                 :data="exportPricesData"
                 :headers="pricesExportHeaders"
                 :filename="`srp-prices_${new Date().toLocaleDateString()}`"
-                sheet-name="SRP价格表"
+                :sheet-name="$t('srp.prices.title')"
                 :button-text="$t('srp.prices.exportBtn')"
                 type="success"
               />
@@ -205,12 +205,12 @@
   ])
 
   // ─── 导出 ───
-  const pricesExportHeaders = {
-    ship_type_id: 'TypeID',
-    ship_name: '舰船名称',
-    amount: '标准补损金额',
-    updated_at: '最后更新'
-  }
+  const pricesExportHeaders = computed(() => ({
+    ship_type_id: t('srp.prices.columns.typeId'),
+    ship_name: t('srp.prices.columns.name'),
+    amount: t('srp.prices.columns.amount'),
+    updated_at: t('srp.prices.columns.updatedAt')
+  }))
   const exportPricesData = computed(() =>
     prices.value.map((p) => ({
       ship_type_id: p.ship_type_id,
