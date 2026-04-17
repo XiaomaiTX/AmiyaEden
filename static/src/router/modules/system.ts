@@ -64,26 +64,6 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
-      path: 'newbro-settings',
-      name: 'NewbroSettings',
-      component: '/system/newbro-settings',
-      meta: {
-        title: 'menus.system.newbroSettings',
-        keepAlive: true,
-        roles: ['super_admin', 'admin']
-      }
-    },
-    {
-      path: 'mentor-reward-stages',
-      name: 'MentorRewardStages',
-      component: '/system/mentor-reward-stages',
-      meta: {
-        title: 'menus.system.mentorRewardStages',
-        keepAlive: true,
-        roles: ['super_admin', 'admin']
-      }
-    },
-    {
       path: 'pap',
       name: 'AlliancePAP',
       component: '/system/pap',

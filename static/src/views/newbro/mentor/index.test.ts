@@ -3,6 +3,14 @@ import test from 'node:test'
 import { readFileSync } from 'node:fs'
 
 const source = readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
+const zhLocaleSource = readFileSync(
+  new URL('../../../locales/langs/zh.json', import.meta.url),
+  'utf8'
+)
+const enLocaleSource = readFileSync(
+  new URL('../../../locales/langs/en.json', import.meta.url),
+  'utf8'
+)
 
 test('mentee summary cards show mentee contact details in both tables', () => {
   const menteeColumns =
@@ -29,11 +37,21 @@ test('mentor dashboard hides applied and graduated time columns', () => {
 test('mentor dashboard includes a read-only reward stage config tab', () => {
   assert.match(source, /newbro\.mentor\.rewardStagesTab/)
   assert.match(source, /newbro\.mentor\.rewardStagesTitle/)
+  assert.match(source, /newbro\.mentor\.rewardStagesDescription/)
   assert.match(source, /fetchMentorDashboardRewardStages/)
   assert.match(source, /newbro\.mentorConditionTypes\./)
   assert.match(source, /system\.mentorRewardStages\.stageOrder/)
   assert.match(source, /system\.mentorRewardStages\.stageName/)
   assert.match(source, /system\.mentorRewardStages\.rewardAmount/)
+
+  assert.match(
+    zhLocaleSource,
+    /"rewardStagesDescription"\s*:\s*"仅供查看，实际配置与奖励执行仍由管理员在导师管理页的设置奖励阶段页签维护。"/
+  )
+  assert.match(
+    enLocaleSource,
+    /"rewardStagesDescription"\s*:\s*"Read-only view\. Admins manage stage rules and manual processing from the Configure Reward Stages tab in Mentor Management\."/
+  )
 })
 
 test('mentee list shows accumulated distributed reward amount', () => {

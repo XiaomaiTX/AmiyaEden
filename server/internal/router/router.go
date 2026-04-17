@@ -391,8 +391,10 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	newbroAdminH := handler.NewNewbroAdminHandler()
 	adminNewbro := admin.Group("/newbro")
 	{
-		adminNewbro.GET("/settings", newbroAdminH.GetSettings)
-		adminNewbro.PUT("/settings", newbroAdminH.UpdateSettings)
+		adminNewbro.GET("/support-settings", newbroAdminH.GetSupportSettings)
+		adminNewbro.PUT("/support-settings", newbroAdminH.UpdateSupportSettings)
+		adminNewbro.GET("/recruit-settings", newbroAdminH.GetRecruitSettings)
+		adminNewbro.PUT("/recruit-settings", newbroAdminH.UpdateRecruitSettings)
 		adminNewbro.GET("/captains", newbroAdminH.ListCaptains)
 		adminNewbro.GET("/captains/:user_id", newbroAdminH.GetCaptainDetail)
 		// 招募链接管理

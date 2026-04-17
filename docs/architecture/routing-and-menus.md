@@ -48,6 +48,8 @@ source_of_truth:
 ## 当前不变量
 
 - `新人选队长` 仅受前端静态路由过滤影响，通过 `meta.requiresNewbro = true` 和后端返回的 `is_currently_newbro` 状态控制访问权限
-- `帮扶记录` 页面允许 `captain` 进入只读页签，但不能因此绕过后端的管理权限边界
+- `队长管理` 页面允许 `captain` 进入只读页签，但不能因此绕过后端的管理权限边界
+- `招新链接` 页面为 `admin` / `super_admin` 追加 `全部链接` 与 `链接设置` tab，但不新增独立系统管理路由
+- `导师奖励阶段` 不再是独立前端路由；管理员通过 `新人帮扶 / 导师管理` 页面的 `设置奖励阶段` tab 进入该管理能力，路由权限仍由 `newbro/mentor-manage` 的 `meta.roles` 控制
 - 路由改动若涉及权限边界，必须同步更新 API / feature 文档
 - 路由架构说明只维护在 `docs/` 中

@@ -138,6 +138,10 @@
           />
         </ElCard>
       </ElTabPane>
+
+      <ElTabPane v-if="isAdmin" :label="t('newbro.recruitLink.settingsTab')" name="settings" lazy>
+        <NewbroAdminSettingsPanel ref="linkSettingsPanelRef" mode="recruit" />
+      </ElTabPane>
     </ElTabs>
   </div>
 </template>
@@ -152,14 +156,16 @@
   import { useTable } from '@/hooks/core/useTable'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
   import { useUserStore } from '@/store/modules/user'
+  import NewbroAdminSettingsPanel from '@/views/newbro/components/admin-settings-panel.vue'
 
   defineOptions({ name: 'NewbroRecruitLink' })
 
   const { t } = useI18n()
   const { formatDateTime } = useNewbroFormatters()
   const userStore = useUserStore()
+  const linkSettingsPanelRef = ref<{ reloadSettings: () => Promise<void> } | null>(null)
 
-  const activeTab = ref<'my' | 'admin'>('my')
+  const activeTab = ref<'my' | 'admin' | 'settings'>('my')
   const generating = ref(false)
   const myLinksLoading = ref(false)
   const myLinks = ref<Api.Newbro.RecruitLink[]>([])
@@ -318,9 +324,17 @@
     void loadMyLinks()
   })
 
-  watch(activeTab, (tab) => {
+  watch([activeTab, isAdmin], ([tab, admin]) => {
+    if (!admin && tab !== 'my') {
+      activeTab.value = 'my'
+      return
+    }
+
     if (tab === 'admin') {
       ensureAdminLoaded()
+    }
+    if (tab === 'settings') {
+      void linkSettingsPanelRef.value?.reloadSettings()
     }
   })
 </script>
