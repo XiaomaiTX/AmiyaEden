@@ -2,11 +2,13 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-04-02
+last_reviewed: 2026-04-17
 source_of_truth:
   - static/src/assets/styles/core/app.scss
   - static/src/views/newbro/select-mentor/index.vue
-  - static/src/views/system/mentor-reward-stages/index.vue
+  - static/src/views/newbro/mentor-manage/index.vue
+  - static/src/views/newbro/select-captain/index.vue
+  - static/src/views/info/assets/index.vue
 ---
 
 # Frontend Record Card Page Standard

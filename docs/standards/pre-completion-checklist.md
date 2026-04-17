@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-17
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/dependency-layering.md
@@ -19,6 +19,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - This file is the completion gate.
 - `docs/standards/testing-and-verification.md` is the canonical source for commands, coverage rules, and allowed exceptions.
 - If a required check or test is skipped, state the reason explicitly.
+- No speculative backward-compatibility alias, hidden redirect, fallback payload, deprecated route, duplicate endpoint/contract, or shadow page may be introduced unless an explicit migration requirement says otherwise.
 
 ## Checklist by Change Type
 
@@ -28,6 +29,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - [ ] `cd server && go build ./...`
 - [ ] `cd server && go test ./...`
 - [ ] Scope stayed focused; no unrelated refactor was introduced
+- [ ] No speculative backward-compatibility alias, fallback, or duplicate contract was introduced without an explicit migration requirement
 - [ ] No layer violations were introduced
 - [ ] If this is a bug fix, a regression test was added or updated
 - [ ] If an API contract changed, frontend API wrappers and types were updated
@@ -40,6 +42,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - [ ] `cd static && pnpm exec vue-tsc --noEmit`
 - [ ] If a pure helper or hook changed, `cd static && pnpm test:unit`
 - [ ] Scope stayed focused; no unrelated refactor was introduced
+- [ ] No speculative backward-compatibility alias, fallback, hidden redirect, or shadow page was introduced without an explicit migration requirement
 - [ ] No direct HTTP calls were added to views
 - [ ] All new user-facing strings were added to both `zh.json` and `en.json`
 - [ ] If behavior changed, the relevant feature doc was updated
@@ -54,6 +57,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - [ ] `cd static && pnpm exec vue-tsc --noEmit`
 - [ ] If relevant, `cd static && pnpm test:unit`
 - [ ] Scope stayed focused; no unrelated refactor was introduced
+- [ ] No speculative backward-compatibility alias, fallback, hidden redirect, or duplicate contract was introduced without an explicit migration requirement
 - [ ] Frontend API wrapper was updated
 - [ ] Shared TypeScript types were updated
 - [ ] Backend response fields and frontend type fields match
