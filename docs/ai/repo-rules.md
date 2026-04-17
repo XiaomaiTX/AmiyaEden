@@ -2,7 +2,7 @@
 status: active
 doc_type: agent-rules
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-17
 source_of_truth:
   - AGENTS.md
   - CLAUDE.md
@@ -106,6 +106,10 @@ The supported authentication flow is EVE SSO. Legacy auth-related pages may stil
 10. **Prefer established patterns**
    - Follow repository conventions before introducing new abstractions
 
+11. **No speculative backward compatibility**
+   - Do not add compatibility aliases, hidden redirects, fallback payloads, deprecated routes, duplicate endpoints, or shadow pages unless the user or canonical docs explicitly require a migration window
+   - When replacing a contract or route intentionally, prefer a clean cut and update callers, docs, and tests in the same change
+
 ## Documentation Routing
 
 Start here when working in unfamiliar areas:
@@ -156,6 +160,8 @@ When changing an endpoint, update in this order:
 
 Do not allow contract drift across backend, API wrappers, shared types, and UI usage.
 
+If the old contract is intentionally being removed, remove superseded wrappers, routes, and docs in the same change rather than preserving a compatibility shim by default.
+
 ## Repository-Specific Rules
 
 ### Backend
@@ -199,6 +205,7 @@ If progress stalls, re-read the relevant docs, inspect the current implementatio
 - do not introduce patterns that contradict repository conventions
 - do not broaden scope without clear reason
 - do not add one-off abstractions with no demonstrated reuse
+- do not add speculative backward-compatibility code without an explicit requirement and end condition
 - do not leave commented-out code, placeholder files, or context-free TODOs
 
 ### Divergence Rule
