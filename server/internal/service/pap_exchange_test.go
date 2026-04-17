@@ -33,6 +33,7 @@ func (f *fakePAPExchangeRateStore) Save(rates []model.PAPTypeRate) error {
 type fakePAPExchangeConfigStore struct {
 	fcSalary                    float64
 	fcSalaryMonthlyLimit        int
+	adminAward                  int
 	multicharFullRewardCount    int
 	multicharReducedRewardCount int
 	multicharReducedRewardPct   int
@@ -41,6 +42,7 @@ type fakePAPExchangeConfigStore struct {
 	setManyErr                  error
 	hasSalary                   bool
 	hasLimit                    bool
+	hasAdminAward               bool
 	hasMulticharFull            bool
 	hasMulticharReduced         bool
 	hasMulticharPct             bool
@@ -58,6 +60,10 @@ func (f *fakePAPExchangeConfigStore) GetInt(key string, defaultVal int) int {
 	case model.SysConfigPAPFCSalaryLimit:
 		if f.hasLimit {
 			return f.fcSalaryMonthlyLimit
+		}
+	case model.SysConfigPAPAdminAward:
+		if f.hasAdminAward {
+			return f.adminAward
 		}
 	case model.SysConfigMulticharFullRewardCount:
 		if f.hasMulticharFull {
@@ -97,6 +103,13 @@ func (f *fakePAPExchangeConfigStore) SetMany(items []repository.SysConfigUpsertI
 			}
 			f.fcSalaryMonthlyLimit = value
 			f.hasLimit = true
+		case model.SysConfigPAPAdminAward:
+			value, err := strconv.Atoi(item.Value)
+			if err != nil {
+				return err
+			}
+			f.adminAward = value
+			f.hasAdminAward = true
 		case model.SysConfigMulticharFullRewardCount:
 			value, err := strconv.Atoi(item.Value)
 			if err != nil {
@@ -129,6 +142,7 @@ func TestPAPExchangeUpdateConfigPersistsSingleBatch(t *testing.T) {
 	svc := &PAPExchangeService{rateRepo: rateStore, configRepo: configStore}
 	fcSalary := 5.5
 	fcSalaryMonthlyLimit := 3
+	adminAward := 12
 	multicharFull := 4
 	multicharReduced := 2
 	multicharPct := 75
@@ -137,6 +151,7 @@ func TestPAPExchangeUpdateConfigPersistsSingleBatch(t *testing.T) {
 		Rates:                       []SetRateRequest{{PapType: "cta", DisplayName: "CTA", Rate: 1.5}},
 		FCSalary:                    &fcSalary,
 		FCSalaryMonthlyLimit:        &fcSalaryMonthlyLimit,
+		AdminAward:                  &adminAward,
 		MulticharFullRewardCount:    &multicharFull,
 		MulticharReducedRewardCount: &multicharReduced,
 		MulticharReducedRewardPct:   &multicharPct,
@@ -147,14 +162,17 @@ func TestPAPExchangeUpdateConfigPersistsSingleBatch(t *testing.T) {
 	if configStore.setManyCalls != 1 {
 		t.Fatalf("expected exactly one batch write, got %d", configStore.setManyCalls)
 	}
-	if len(configStore.setManyItems) != 5 {
-		t.Fatalf("expected 5 config items, got %d", len(configStore.setManyItems))
+	if len(configStore.setManyItems) != 6 {
+		t.Fatalf("expected 6 config items, got %d", len(configStore.setManyItems))
 	}
 	if updated.FCSalary != fcSalary {
 		t.Fatalf("expected fc salary %v, got %v", fcSalary, updated.FCSalary)
 	}
 	if updated.FCSalaryMonthlyLimit != fcSalaryMonthlyLimit {
 		t.Fatalf("expected monthly limit %d, got %d", fcSalaryMonthlyLimit, updated.FCSalaryMonthlyLimit)
+	}
+	if updated.AdminAward != adminAward {
+		t.Fatalf("expected admin award %d, got %d", adminAward, updated.AdminAward)
 	}
 	if updated.MulticharFullRewardCount != multicharFull {
 		t.Fatalf("expected multichar full %d, got %d", multicharFull, updated.MulticharFullRewardCount)
@@ -167,5 +185,44 @@ func TestPAPExchangeUpdateConfigPersistsSingleBatch(t *testing.T) {
 	}
 	if len(updated.Rates) != 1 || updated.Rates[0].Rate != 1.5 {
 		t.Fatalf("expected updated PAP rates to round-trip, got %+v", updated.Rates)
+	}
+}
+
+func TestPAPExchangeGetConfigResolvesAdminAwardDefaultsAndZero(t *testing.T) {
+	tests := []struct {
+		name  string
+		store *fakePAPExchangeConfigStore
+		want  int
+	}{
+		{
+			name:  "defaults to configured constant when unset",
+			store: &fakePAPExchangeConfigStore{},
+			want:  model.SysConfigDefaultPAPAdminAward,
+		},
+		{
+			name: "preserves configured zero award",
+			store: &fakePAPExchangeConfigStore{
+				adminAward:    0,
+				hasAdminAward: true,
+			},
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := &PAPExchangeService{
+				rateRepo:   &fakePAPExchangeRateStore{},
+				configRepo: tt.store,
+			}
+
+			cfg, err := svc.GetConfig()
+			if err != nil {
+				t.Fatalf("GetConfig() error = %v", err)
+			}
+			if cfg.AdminAward != tt.want {
+				t.Fatalf("admin award = %d, want %d", cfg.AdminAward, tt.want)
+			}
+		})
 	}
 }

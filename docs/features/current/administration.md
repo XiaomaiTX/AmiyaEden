@@ -36,7 +36,7 @@ source_of_truth:
 - 超级管理员模拟登录
 - 自动权限映射（ESI corp roles / corp titles -> system roles）
 - 联盟 PAP 列表、抓取、导入、月度归档（钱包兑换暂不启用）
-- 军团 PAP 兑换汇率配置（Skirmish / Strategic / CTA 三种类型，外加 FC 工资与每月工资上限，影响舰队 PAP 发放时的钱包换算）
+- 军团 PAP 兑换汇率配置（Skirmish / Strategic / CTA 三种类型，外加 FC 工资、每月工资上限与人工发放奖励，影响舰队 PAP 发放与福利/商城人工发放时的钱包行为）
 - Webhook 配置与测试
 
 ## 入口

@@ -18,6 +18,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var adminDeliveryReviewerRoles = []string{model.RoleAdmin}
+
+var welfareOfficerReviewerRoles = []string{model.RoleWelfare}
+
 func TestValidateReviewTransition(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1209,7 +1213,7 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
 
@@ -1235,21 +1239,56 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 		t.Fatalf("wallet balance = %v, want 25", wallet.Balance)
 	}
 
+	var reviewerWallet model.SystemWallet
+	if err := db.Where("user_id = ?", 77).First(&reviewerWallet).Error; err != nil {
+		t.Fatalf("load reviewer wallet: %v", err)
+	}
+	if reviewerWallet.Balance != 10 {
+		t.Fatalf("reviewer wallet balance = %v, want 10", reviewerWallet.Balance)
+	}
+
 	var txs []model.WalletTransaction
 	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 1 {
-		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	if len(txs) != 2 {
+		t.Fatalf("wallet transaction count = %d, want 2", len(txs))
 	}
-	if txs[0].RefType != model.WalletRefWelfarePayout {
-		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, model.WalletRefWelfarePayout)
+
+	var payoutTx *model.WalletTransaction
+	var awardTx *model.WalletTransaction
+	for i := range txs {
+		tx := &txs[i]
+		switch tx.RefType {
+		case model.WalletRefWelfarePayout:
+			payoutTx = tx
+		case "admin_award":
+			awardTx = tx
+		}
 	}
-	if txs[0].RefID != fmt.Sprintf("welfare_application:%d", app.ID) {
-		t.Fatalf("wallet tx ref_id = %q", txs[0].RefID)
+	if payoutTx == nil {
+		t.Fatal("expected welfare payout transaction")
 	}
-	if txs[0].OperatorID != 77 {
-		t.Fatalf("wallet tx operator_id = %d, want 77", txs[0].OperatorID)
+	if payoutTx.RefID != fmt.Sprintf("welfare_application:%d", app.ID) {
+		t.Fatalf("wallet tx ref_id = %q", payoutTx.RefID)
+	}
+	if payoutTx.OperatorID != 77 {
+		t.Fatalf("wallet tx operator_id = %d, want 77", payoutTx.OperatorID)
+	}
+	if awardTx == nil {
+		t.Fatal("expected admin award transaction")
+	}
+	if awardTx.UserID != 77 {
+		t.Fatalf("award wallet tx user_id = %d, want 77", awardTx.UserID)
+	}
+	if awardTx.Amount != 10 {
+		t.Fatalf("award wallet tx amount = %v, want 10", awardTx.Amount)
+	}
+	if awardTx.RefID != fmt.Sprintf("admin_welfare_delivery:%d", app.ID) {
+		t.Fatalf("award wallet tx ref_id = %q", awardTx.RefID)
+	}
+	if awardTx.OperatorID != 0 {
+		t.Fatalf("award wallet tx operator_id = %d, want 0", awardTx.OperatorID)
 	}
 }
 
@@ -1300,7 +1339,7 @@ func TestAdminReviewApplicationDeliverAttemptsInGameMailButIgnoresMailErrors(t *
 		}, errors.New("mail failed")
 	}
 
-	mailSummary, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"})
+	mailSummary, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
 	if err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
@@ -1358,7 +1397,7 @@ func TestBuildWelfareDeliveryMailContentIncludesBilingualOfficerNotice(t *testin
 	}
 }
 
-func TestAdminReviewApplicationDeliverWithoutConfiguredPayoutSkipsWalletCredit(t *testing.T) {
+func TestAdminReviewApplicationDeliverWithoutConfiguredPayoutStillCreditsAdminAward(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
 
@@ -1385,7 +1424,7 @@ func TestAdminReviewApplicationDeliverWithoutConfiguredPayoutSkipsWalletCredit(t
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
 
@@ -1393,8 +1432,17 @@ func TestAdminReviewApplicationDeliverWithoutConfiguredPayoutSkipsWalletCredit(t
 	if err := db.Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 0 {
-		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	if len(txs) != 1 {
+		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	}
+	if txs[0].UserID != 77 {
+		t.Fatalf("wallet tx user_id = %d, want 77", txs[0].UserID)
+	}
+	if txs[0].RefType != "admin_award" {
+		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, "admin_award")
+	}
+	if txs[0].Amount != 10 {
+		t.Fatalf("wallet tx amount = %v, want 10", txs[0].Amount)
 	}
 }
 
@@ -1433,7 +1481,7 @@ func TestAdminReviewApplicationDeliverUsesApprovalTimePayoutConfig(t *testing.T)
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
 
@@ -1445,15 +1493,44 @@ func TestAdminReviewApplicationDeliverUsesApprovalTimePayoutConfig(t *testing.T)
 		t.Fatalf("wallet balance = %v, want 35", wallet.Balance)
 	}
 
+	var reviewerWallet model.SystemWallet
+	if err := db.Where("user_id = ?", 77).First(&reviewerWallet).Error; err != nil {
+		t.Fatalf("load reviewer wallet: %v", err)
+	}
+	if reviewerWallet.Balance != 10 {
+		t.Fatalf("reviewer wallet balance = %v, want 10", reviewerWallet.Balance)
+	}
+
 	var txs []model.WalletTransaction
 	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 1 {
-		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	if len(txs) != 2 {
+		t.Fatalf("wallet transaction count = %d, want 2", len(txs))
 	}
-	if txs[0].Amount != 35 {
-		t.Fatalf("wallet tx amount = %v, want 35", txs[0].Amount)
+
+	var payoutTx *model.WalletTransaction
+	var awardTx *model.WalletTransaction
+	for i := range txs {
+		tx := &txs[i]
+		switch tx.RefType {
+		case model.WalletRefWelfarePayout:
+			payoutTx = tx
+		case "admin_award":
+			awardTx = tx
+		}
+	}
+	if payoutTx == nil {
+		t.Fatal("expected welfare payout transaction")
+	}
+	if payoutTx.Amount != 35 {
+		t.Fatalf("wallet tx amount = %v, want 35", payoutTx.Amount)
+	}
+	if awardTx == nil {
+		t.Fatal("expected admin award transaction")
+	}
+	if awardTx.Amount != 10 {
+		t.Fatalf("award wallet tx amount = %v, want 10", awardTx.Amount)
 	}
 }
 
@@ -1484,7 +1561,7 @@ func TestAdminReviewApplicationDeliverWithConfiguredPayoutRequiresUserID(t *test
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"}); err == nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err == nil {
 		t.Fatal("expected deliver to fail when payout requires user_id")
 	}
 
@@ -1534,7 +1611,7 @@ func TestAdminReviewApplicationRejectStillStampsReviewerAuditFields(t *testing.T
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "reject"}); err != nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "reject"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
 
@@ -1561,7 +1638,7 @@ func TestAdminReviewApplicationRejectStillStampsReviewerAuditFields(t *testing.T
 	}
 }
 
-func TestAdminReviewApplicationSecondDeliverAttemptDoesNotCreateSecondPayout(t *testing.T) {
+func TestAdminReviewApplicationSecondDeliverAttemptDoesNotCreateSecondPayoutOrAward(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
 
@@ -1590,10 +1667,10 @@ func TestAdminReviewApplicationSecondDeliverAttemptDoesNotCreateSecondPayout(t *
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("first deliver error = %v", err)
 	}
-	if _, err := svc.AdminReviewApplication(app.ID, 77, &AdminReviewApplicationRequest{Action: "deliver"}); err == nil {
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err == nil {
 		t.Fatal("expected second deliver attempt to fail")
 	}
 
@@ -1601,8 +1678,160 @@ func TestAdminReviewApplicationSecondDeliverAttemptDoesNotCreateSecondPayout(t *
 	if err := db.Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
+	if len(txs) != 2 {
+		t.Fatalf("wallet transaction count = %d, want 2", len(txs))
+	}
+}
+
+func TestAdminReviewApplicationDeliverWithZeroAdminAwardSkipsAwardCredit(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	if err := db.Create(&model.SystemConfig{
+		Key:   "pap.admin_award",
+		Value: "0",
+		Desc:  "admin award",
+	}).Error; err != nil {
+		t.Fatalf("create system config: %v", err)
+	}
+
+	welfare := &model.Welfare{
+		Name:      "Starter Pack",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	userID := uint(42)
+	app := &model.WelfareApplication{
+		WelfareID:     welfare.ID,
+		UserID:        &userID,
+		CharacterID:   90000001,
+		CharacterName: "Pilot One",
+		Status:        model.WelfareAppStatusRequested,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	svc := NewWelfareService()
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
+	if len(txs) != 0 {
+		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	}
+}
+
+func TestAdminReviewApplicationDeliverWithCustomAdminAwardUsesConfiguredAmount(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	if err := db.Create(&model.SystemConfig{
+		Key:   model.SysConfigPAPAdminAward,
+		Value: "18",
+		Desc:  "admin award",
+	}).Error; err != nil {
+		t.Fatalf("create system config: %v", err)
+	}
+
+	welfare := &model.Welfare{
+		Name:      "Starter Pack",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	userID := uint(42)
+	app := &model.WelfareApplication{
+		WelfareID:     welfare.ID,
+		UserID:        &userID,
+		CharacterID:   90000001,
+		CharacterName: "Pilot One",
+		Status:        model.WelfareAppStatusRequested,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	svc := NewWelfareService()
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+
+	var reviewerWallet model.SystemWallet
+	if err := db.Where("user_id = ?", 77).First(&reviewerWallet).Error; err != nil {
+		t.Fatalf("load reviewer wallet: %v", err)
+	}
+	if reviewerWallet.Balance != 18 {
+		t.Fatalf("reviewer wallet balance = %v, want 18", reviewerWallet.Balance)
+	}
+}
+
+func TestAdminReviewApplicationDeliverByWelfareOfficerSkipsAdminAward(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	payout := 25
+	welfare := &model.Welfare{
+		Name:          "Starter Pack",
+		DistMode:      model.WelfareDistModePerUser,
+		PayByFuxiCoin: &payout,
+		Status:        model.WelfareStatusActive,
+		CreatedBy:     1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	userID := uint(42)
+	app := &model.WelfareApplication{
+		WelfareID:     welfare.ID,
+		UserID:        &userID,
+		CharacterID:   90000001,
+		CharacterName: "Pilot One",
+		Status:        model.WelfareAppStatusRequested,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	svc := NewWelfareService()
+	if _, err := svc.AdminReviewApplication(app.ID, 77, welfareOfficerReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+
+	var applicantWallet model.SystemWallet
+	if err := db.Where("user_id = ?", userID).First(&applicantWallet).Error; err != nil {
+		t.Fatalf("load applicant wallet: %v", err)
+	}
+	if applicantWallet.Balance != 25 {
+		t.Fatalf("applicant wallet balance = %v, want 25", applicantWallet.Balance)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
 	if len(txs) != 1 {
 		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	}
+	if txs[0].RefType != model.WalletRefWelfarePayout {
+		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, model.WalletRefWelfarePayout)
+	}
+	if txs[0].UserID != userID {
+		t.Fatalf("wallet tx user_id = %d, want %d", txs[0].UserID, userID)
 	}
 }
 

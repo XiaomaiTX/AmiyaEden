@@ -281,7 +281,8 @@ func (h *ShopHandler) AdminDeliverOrder(c *gin.Context) {
 	}
 
 	operatorID := middleware.GetUserID(c)
-	order, mailSummary, err := h.svc.AdminDeliverOrder(req.OrderID, operatorID, req.Remark)
+	operatorRoles := middleware.GetUserRoles(c)
+	order, mailSummary, err := h.svc.AdminDeliverOrder(req.OrderID, operatorID, operatorRoles, req.Remark)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

@@ -34,6 +34,7 @@ source_of_truth:
 - 导航栏福利徽章数使用进程内缓存；只会在用户进入“我的福利”页拉取 `/welfare/eligible` 成功后刷新，并在成功提交福利申请后尽力更新。普通 `/badge-counts` 请求本身不会重新计算福利资格；服务重启后或缓存条目过期后计数可为空
 - 申请状态流转：默认 `requested → delivered / rejected`；但当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且申请人资格校验通过时，申请会直接写入 `delivered`
 - 当福利当前配置 `pay_by_fuxi_coin > 0` 时，福利发放会同步给申请人钱包入账，流水 `ref_type = welfare_payout`；小额伏羲币福利会在申请提交事务内直接完成这一步
+- 当管理员在审批端执行人工 `requested -> delivered` 成功时，系统会按 PAP 兑换页的 `admin-award` 配置额外给执行人钱包入账一笔奖励，默认 10 伏羲币，流水 `ref_type = admin_award`；仅有 `welfare` 职权的福利官不会领取该奖励，系统自动发放的小额伏羲币福利也不会领取该奖励
 - 审批端执行 delivered 后，系统会以发放福利官的主人物为发件人尽力发送一封双语游戏内邮件；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果
 - 若发放已成功但邮件发送失败，审批界面会继续显示成功提示，并额外弹出一条包含后端错误内容的警告提示
 - 我的福利页面"已领取福利" tab 展示审批福利官昵称；系统自动发放的小额伏羲币申请该列为空
@@ -118,6 +119,7 @@ source_of_truth:
 - 伏羲军团服役年限检查按单个人物的累计服役时长判断，不要求任职区间连续；该人物的累计服役时长由 `character_corporation_history` 推导并缓存到 `eve_character.fuxi_legion_tenure_days`
 - `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；按人物发放且附带伏羲币的福利还会按当前 `multichar.*` 层级配置乘算奖励倍率；小额伏羲币福利的“发放当下”就是申请提交事务本身
 - 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，福利发放会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
+- 当管理员在福利审批端执行人工发放且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `welfare` 职权的福利官不会写入，配置值为 `0` 时也不写入
 - 当福利官在审批端执行 `requested -> delivered` 成功后，服务会尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，并在成功响应里附带 `mail_error` 供前端提示
 - 若 ESI 接受了发信请求，成功响应还可能附带邮件调试信息；具体字段以代码契约为准
 - 导入历史福利记录只写福利申请历史，不补写 `welfare_payout` 钱包流水

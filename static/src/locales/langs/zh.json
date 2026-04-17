@@ -2048,6 +2048,8 @@
     "fcSalaryMonthlyLimit": "FC工资上限次数",
     "fcSalaryMonthlyLimitHint": "同一名 FC 每月最多可领取的工资次数，默认 5 次。",
     "fcSalaryMonthlyLimitUnit": "次 / 月",
+    "adminAward": "管理发放奖励",
+    "adminAwardHint": "管理员执行福利审批发放或商店订单发放成功后，自动获得此数量伏羲币；仅有福利官或订单管理职权的执行人不会获得。设为 0 可关闭，默认 10。",
     "columns": {
       "type": "PAP 类型",
       "rate": "兑换比率",
@@ -2270,6 +2272,7 @@
       "pap_reward": "PAP 奖励",
       "pap_fc_salary": "FC 工资",
       "admin_adjust": "管理员调整",
+      "admin_award": "管理发放奖励",
       "manual": "手动操作",
       "srp_payout": "SRP 补损",
       "welfare_payout": "福利发放",

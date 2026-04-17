@@ -19,6 +19,7 @@ const (
 	SysConfigPAPExchangeEnabled = "pap.exchange_enabled" // PAP 兑换是否开启（bool）
 	SysConfigPAPFCSalary        = "pap.fc_salary"        // FC 工资（float）
 	SysConfigPAPFCSalaryLimit   = "pap.fc_salary_limit"  // FC 工资每月上限次数（int）
+	SysConfigPAPAdminAward      = "pap.admin_award"      // 管理发放奖励（int）
 
 	SysConfigWebhookURL           = "webhook.url"            // Webhook URL
 	SysConfigWebhookEnabled       = "webhook.enabled"        // 是否启用（bool）
@@ -71,6 +72,7 @@ const (
 	SysConfigDefaultWelfareAutoApproveFuxiCoinThreshold         = 500
 	SysConfigDefaultPAPFCSalary                         float64 = 400
 	SysConfigDefaultPAPFCSalaryLimit                    int     = 5
+	SysConfigDefaultPAPAdminAward                       int     = 10
 	SysConfigDefaultEnforceCharacterESIRestriction              = true
 
 	SysConfigDefaultMulticharFullRewardCount    = 3

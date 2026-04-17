@@ -32,11 +32,13 @@ PAP 兑换汇率功能允许管理员为每种舰队行动类型（Skirmish / St
 - 默认汇率：Skirmish 10、Strategic 30、CTA 50（伏羲币 / 1 PAP）
 - 管理员可在同一页面设置 `FC工资`，默认值为 400 伏羲币
 - 管理员可在同一页面设置 `FC工资上限次数`，默认值为每月 5 次
+- 管理员可在同一页面设置 `admin-award`，默认值为 10 伏羲币；当管理员在福利审批页或商店订单管理页执行人工发放成功时，会自动获得该奖励，设为 `0` 可关闭；仅有 `welfare` / `shop_order_manage` 职权的执行人不会领取该奖励
 - FC 对某舰队执行「发放 PAP」时，系统根据该舰队的 `importance` 字段自动选择对应汇率
 - 若被发放成员的 `user_id` 等于舰队 `FCUserID`，则该成员按固定工资发放；若该 FC 本月已达到工资上限，则本次工资记为 0
 - 汇率持久化于数据库 `pap_type_rate` 表；缺失行在首次读取时用默认值自动补全
 - FC 工资持久化于 `system_config` 表，键名为 `pap.fc_salary`
 - FC 工资上限次数持久化于 `system_config` 表，键名为 `pap.fc_salary_limit`
+- 管理发放奖励持久化于 `system_config` 表，键名为 `pap.admin_award`
 
 ## PAP 类型映射
 
