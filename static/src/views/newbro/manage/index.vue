@@ -236,6 +236,15 @@
           />
         </ElCard>
       </ElTabPane>
+
+      <ElTabPane
+        v-if="managePageTabs.includes('settings')"
+        :label="t('newbro.manage.settingsTab')"
+        name="settings"
+        lazy
+      >
+        <NewbroAdminSettingsPanel ref="supportSettingsPanelRef" mode="support" />
+      </ElTabPane>
     </ElTabs>
   </div>
 </template>
@@ -245,6 +254,7 @@
   import { useI18n } from 'vue-i18n'
   import { useEnterSearch } from '@/hooks/core/useEnterSearch'
   import { useUserStore } from '@/store/modules/user'
+  import NewbroAdminSettingsPanel from '@/views/newbro/components/admin-settings-panel.vue'
   import {
     fetchAdminAffiliationHistory,
     fetchAdminCaptainDetail,
@@ -259,9 +269,10 @@
   const { formatDateTime, formatIsk, formatCredit, formatPercentage } = useNewbroFormatters()
   const { createEnterSearchHandler } = useEnterSearch()
   const userStore = useUserStore()
+  const supportSettingsPanelRef = ref<{ reloadSettings: () => Promise<void> } | null>(null)
 
   const captainReadonlyDefaultTab = 'rewards'
-  const activeTab = ref<'performance' | 'rewards' | 'history'>('performance')
+  const activeTab = ref<'performance' | 'rewards' | 'history' | 'settings'>('performance')
   const loadingCaptains = ref(false)
   const loadingHistory = ref(false)
   const loadingRewards = ref(false)
@@ -290,7 +301,7 @@
   const canViewPerformanceTab = computed(() => !isCaptainReadonly.value)
   const managePageTabs = computed(() =>
     canViewPerformanceTab.value
-      ? ['performance', 'rewards', 'history']
+      ? ['performance', 'rewards', 'history', 'settings']
       : [captainReadonlyDefaultTab, 'history']
   )
   const historyFilters = reactive({
@@ -589,9 +600,9 @@
     detail.value = await fetchAdminCaptainDetail(captainUserId)
   }
 
-  watch(activeTab, (value) => {
-    if (isCaptainReadonly.value && value === 'performance') {
-      activeTab.value = captainReadonlyDefaultTab
+  watch([activeTab, managePageTabs], ([value]) => {
+    if (!managePageTabs.value.includes(value)) {
+      activeTab.value = managePageTabs.value[0] as typeof activeTab.value
       return
     }
     if (value === 'rewards') {
@@ -599,6 +610,9 @@
     }
     if (value === 'history') {
       void ensureHistoryLoaded()
+    }
+    if (value === 'settings') {
+      void supportSettingsPanelRef.value?.reloadSettings()
     }
   })
 

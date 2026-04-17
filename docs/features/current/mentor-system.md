@@ -16,7 +16,6 @@ source_of_truth:
   - static/src/views/newbro/select-mentor
   - static/src/views/newbro/mentor
   - static/src/views/newbro/mentor-manage
-  - static/src/views/system/mentor-reward-stages
 ---
 
 # 导师系统
@@ -36,7 +35,7 @@ source_of_truth:
 - 当导师存在待处理学员申请时，`新人帮扶` 一级菜单与 `我是导师` 菜单会显示相同的待处理数量徽标
 - 管理员可在 `导师管理` 页面查看全部导师关系；对 `pending` 状态可取消学员申请，对 `active` 状态可撤销导师关系
 - 管理员可在 `导师管理` 页面查看导师奖励发放记录，按 ledger 方式分页展示，并支持按导师人物名或昵称搜索
-- 管理员可在 `导师奖励阶段` 页面配置阶段化奖励规则、学员资格阈值，并手动执行一次奖励处理
+- 管理员可在 `导师管理` 页面的 `设置奖励阶段` tab 配置阶段化奖励规则、学员资格阈值，并手动执行一次奖励处理
 - 每日定时任务会自动扫描进行中的导师关系，按阶段顺序发放伏羲币奖励；当全部阶段都已发放后，关系会被标记为 `graduated`
 
 ## 学员资格判定
@@ -50,7 +49,7 @@ source_of_truth:
 
 - 资格判定读取用户全部已绑定人物的技能点快照
 - 当前数据模型没有持久化“加入允许军团的时间”，因此导师系统当前使用 `user.created_at` 作为账号年龄窗口，而不是 corp join timestamp
-- 管理员可在 `导师奖励阶段` 页面修改上述两个阈值；保存后会立即作用于菜单资格快照、候选导师列表与申请校验
+- 管理员可在 `导师管理` 页面的 `设置奖励阶段` tab 修改上述两个阈值；保存后会立即作用于菜单资格快照、候选导师列表与申请校验
 - 候选导师列表与申请接口虽然挂在 `Login` 路由组下，但服务层会再次校验学员资格
 - 如果用户没有任何可评估人物，资格判定结果会返回 `no_characters`
 
@@ -75,7 +74,7 @@ source_of_truth:
 - `static/src/views/newbro/mentor-manage` — 导师管理
   - 导师关系 tab：查看全部导师关系，支持按导师/学员人物名或昵称筛选
   - 奖励发放记录 tab：按 ledger 方式分页显示导师奖励发放记录，并支持按导师人物名或昵称搜索
-- `static/src/views/system/mentor-reward-stages` — 导师奖励阶段
+  - `设置奖励阶段` tab：配置奖励阶段、学员资格阈值，并支持手动执行一次奖励处理
 
 ### 后端路由
 
@@ -114,8 +113,7 @@ source_of_truth:
 - 页面加载后仍会读取 `/api/v1/mentor/me` 做二次 UX 校验；导师候选与申请动作也会在后端服务层再次校验
 - 当当前导师关系状态变为 `active` 后，页面不再展示 `可选导师` 区块
 - `我是导师` 页面要求真实系统职权 `mentor`
-- `导师管理` 页面要求 `admin`
-- `导师奖励阶段` 页面要求 `admin`
+- `导师管理` 页面及其 `设置奖励阶段` tab 要求 `admin`
 - 管理员不是导师的隐式别名；普通 `admin` 只能使用管理页，不能访问导师 dashboard 接口
 
 ## 关键不变量
@@ -146,6 +144,5 @@ source_of_truth:
 - `static/src/views/newbro/select-mentor/`
 - `static/src/views/newbro/mentor/`
 - `static/src/views/newbro/mentor-manage/`
-- `static/src/views/system/mentor-reward-stages/`
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`

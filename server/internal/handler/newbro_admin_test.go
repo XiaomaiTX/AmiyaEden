@@ -14,58 +14,117 @@ import (
 )
 
 type fakeNewbroAdminSettingsService struct {
-	getSettingsResp service.NewbroSettings
-	updateResp      service.NewbroSettings
-	updateErr       error
-	updateCalls     int
-	lastUpdate      service.NewbroSettings
+	getSupportResp     service.NewbroSupportSettings
+	getRecruitResp     service.NewbroRecruitSettings
+	updateSupportResp  service.NewbroSupportSettings
+	updateRecruitResp  service.NewbroRecruitSettings
+	updateErr          error
+	supportUpdateCalls int
+	recruitUpdateCalls int
+	lastSupportUpdate  service.NewbroSupportSettings
+	lastRecruitUpdate  service.NewbroRecruitSettings
 }
 
-func (f *fakeNewbroAdminSettingsService) GetSettings() service.NewbroSettings {
-	return f.getSettingsResp
+func (f *fakeNewbroAdminSettingsService) GetSupportSettings() service.NewbroSupportSettings {
+	return f.getSupportResp
 }
 
-func (f *fakeNewbroAdminSettingsService) UpdateSettings(cfg service.NewbroSettings) (service.NewbroSettings, error) {
-	f.updateCalls++
-	f.lastUpdate = cfg
+func (f *fakeNewbroAdminSettingsService) UpdateSupportSettings(cfg service.NewbroSupportSettings) (service.NewbroSupportSettings, error) {
+	f.supportUpdateCalls++
+	f.lastSupportUpdate = cfg
 	if f.updateErr != nil {
-		return service.NewbroSettings{}, f.updateErr
+		return service.NewbroSupportSettings{}, f.updateErr
 	}
-	return f.updateResp, nil
+	return f.updateSupportResp, nil
 }
 
-func TestNewbroAdminGetSettingsReturnsRecruitFields(t *testing.T) {
+func (f *fakeNewbroAdminSettingsService) GetRecruitSettings() service.NewbroRecruitSettings {
+	return f.getRecruitResp
+}
+
+func (f *fakeNewbroAdminSettingsService) UpdateRecruitSettings(cfg service.NewbroRecruitSettings) (service.NewbroRecruitSettings, error) {
+	f.recruitUpdateCalls++
+	f.lastRecruitUpdate = cfg
+	if f.updateErr != nil {
+		return service.NewbroRecruitSettings{}, f.updateErr
+	}
+	return f.updateRecruitResp, nil
+}
+
+func TestNewbroAdminGetSupportSettingsReturnsSupportFields(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/newbro/settings", nil)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/newbro/support-settings", nil)
 
 	handler := &NewbroAdminHandler{
 		settingsSvc: &fakeNewbroAdminSettingsService{
-			getSettingsResp: service.NewbroSettings{
+			getSupportResp: service.NewbroSupportSettings{
 				MaxCharacterSP:          20_000_000,
 				MultiCharacterSP:        10_000_000,
 				MultiCharacterThreshold: 3,
 				RefreshIntervalDays:     7,
 				BonusRate:               20,
-				RecruitQQURL:            "https://example.com/qq",
-				RecruitRewardAmount:     50,
-				RecruitCooldownDays:     90,
 			},
 		},
 	}
 
-	handler.GetSettings(ctx)
+	handler.GetSupportSettings(ctx)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", recorder.Code)
 	}
 
 	var resp struct {
-		Code int                    `json:"code"`
-		Msg  string                 `json:"msg"`
-		Data service.NewbroSettings `json:"data"`
+		Code int                           `json:"code"`
+		Msg  string                        `json:"msg"`
+		Data service.NewbroSupportSettings `json:"data"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.Code != 200 {
+		t.Fatalf("expected response code 200, got %d", resp.Code)
+	}
+	if resp.Data.MaxCharacterSP != 20_000_000 {
+		t.Fatalf("expected max_character_sp 20000000, got %d", resp.Data.MaxCharacterSP)
+	}
+	if resp.Data.BonusRate != 20 {
+		t.Fatalf("expected bonus_rate 20, got %v", resp.Data.BonusRate)
+	}
+	if resp.Data.RefreshIntervalDays != 7 {
+		t.Fatalf("expected refresh_interval_days 7, got %d", resp.Data.RefreshIntervalDays)
+	}
+}
+
+func TestNewbroAdminGetRecruitSettingsReturnsRecruitFields(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/newbro/recruit-settings", nil)
+
+	handler := &NewbroAdminHandler{
+		settingsSvc: &fakeNewbroAdminSettingsService{
+			getRecruitResp: service.NewbroRecruitSettings{
+				RecruitQQURL:        "https://example.com/qq",
+				RecruitRewardAmount: 50,
+				RecruitCooldownDays: 90,
+			},
+		},
+	}
+
+	handler.GetRecruitSettings(ctx)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+
+	var resp struct {
+		Code int                           `json:"code"`
+		Msg  string                        `json:"msg"`
+		Data service.NewbroRecruitSettings `json:"data"`
 	}
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal response: %v", err)
@@ -84,19 +143,16 @@ func TestNewbroAdminGetSettingsReturnsRecruitFields(t *testing.T) {
 	}
 }
 
-func TestNewbroAdminUpdateSettingsReturnsUpdatedRecruitFields(t *testing.T) {
+func TestNewbroAdminUpdateSupportSettingsReturnsUpdatedSupportFields(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	settingsSvc := &fakeNewbroAdminSettingsService{
-		updateResp: service.NewbroSettings{
+		updateSupportResp: service.NewbroSupportSettings{
 			MaxCharacterSP:          21_000_000,
 			MultiCharacterSP:        11_000_000,
 			MultiCharacterThreshold: 4,
 			RefreshIntervalDays:     9,
 			BonusRate:               0,
-			RecruitQQURL:            "https://example.com/new-qq",
-			RecruitRewardAmount:     0,
-			RecruitCooldownDays:     120,
 		},
 	}
 
@@ -104,35 +160,88 @@ func TestNewbroAdminUpdateSettingsReturnsUpdatedRecruitFields(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(
 		http.MethodPut,
-		"/api/v1/system/newbro/settings",
-		bytes.NewBufferString(`{"max_character_sp":21000000,"multi_character_sp":11000000,"multi_character_threshold":4,"refresh_interval_days":9,"bonus_rate":0,"recruit_qq_url":"https://example.com/new-qq","recruit_reward_amount":0,"recruit_cooldown_days":120}`),
+		"/api/v1/system/newbro/support-settings",
+		bytes.NewBufferString(`{"max_character_sp":21000000,"multi_character_sp":11000000,"multi_character_threshold":4,"refresh_interval_days":9,"bonus_rate":0}`),
 	)
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
 	handler := &NewbroAdminHandler{settingsSvc: settingsSvc}
 
-	handler.UpdateSettings(ctx)
+	handler.UpdateSupportSettings(ctx)
 
-	if settingsSvc.updateCalls != 1 {
-		t.Fatalf("expected one update call, got %d", settingsSvc.updateCalls)
+	if settingsSvc.supportUpdateCalls != 1 {
+		t.Fatalf("expected one support update call, got %d", settingsSvc.supportUpdateCalls)
 	}
-	if settingsSvc.lastUpdate.BonusRate != 0 {
-		t.Fatalf("expected service to receive bonus_rate 0, got %v", settingsSvc.lastUpdate.BonusRate)
+	if settingsSvc.lastSupportUpdate.BonusRate != 0 {
+		t.Fatalf("expected service to receive bonus_rate 0, got %v", settingsSvc.lastSupportUpdate.BonusRate)
 	}
-	if settingsSvc.lastUpdate.RecruitRewardAmount != 0 {
-		t.Fatalf("expected service to receive recruit_reward_amount 0, got %v", settingsSvc.lastUpdate.RecruitRewardAmount)
+	if settingsSvc.lastSupportUpdate.RefreshIntervalDays != 9 {
+		t.Fatalf("expected service to receive refresh_interval_days 9, got %d", settingsSvc.lastSupportUpdate.RefreshIntervalDays)
 	}
-	if settingsSvc.lastUpdate.RecruitQQURL != "https://example.com/new-qq" {
-		t.Fatalf("expected service to receive recruit_qq_url, got %q", settingsSvc.lastUpdate.RecruitQQURL)
-	}
-	if settingsSvc.lastUpdate.RecruitCooldownDays != 120 {
-		t.Fatalf("expected service to receive recruit_cooldown_days 120, got %d", settingsSvc.lastUpdate.RecruitCooldownDays)
+	if settingsSvc.lastSupportUpdate.MultiCharacterThreshold != 4 {
+		t.Fatalf("expected service to receive multi_character_threshold 4, got %d", settingsSvc.lastSupportUpdate.MultiCharacterThreshold)
 	}
 
 	var resp struct {
-		Code int                    `json:"code"`
-		Msg  string                 `json:"msg"`
-		Data service.NewbroSettings `json:"data"`
+		Code int                           `json:"code"`
+		Msg  string                        `json:"msg"`
+		Data service.NewbroSupportSettings `json:"data"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if resp.Code != 200 {
+		t.Fatalf("expected response code 200, got %d", resp.Code)
+	}
+	if resp.Data.BonusRate != 0 {
+		t.Fatalf("expected response bonus_rate 0, got %v", resp.Data.BonusRate)
+	}
+	if resp.Data.RefreshIntervalDays != 9 {
+		t.Fatalf("expected response refresh_interval_days 9, got %d", resp.Data.RefreshIntervalDays)
+	}
+}
+
+func TestNewbroAdminUpdateRecruitSettingsReturnsUpdatedRecruitFields(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	settingsSvc := &fakeNewbroAdminSettingsService{
+		updateRecruitResp: service.NewbroRecruitSettings{
+			RecruitQQURL:        "https://example.com/new-qq",
+			RecruitRewardAmount: 0,
+			RecruitCooldownDays: 120,
+		},
+	}
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(
+		http.MethodPut,
+		"/api/v1/system/newbro/recruit-settings",
+		bytes.NewBufferString(`{"recruit_qq_url":"https://example.com/new-qq","recruit_reward_amount":0,"recruit_cooldown_days":120}`),
+	)
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	handler := &NewbroAdminHandler{settingsSvc: settingsSvc}
+
+	handler.UpdateRecruitSettings(ctx)
+
+	if settingsSvc.recruitUpdateCalls != 1 {
+		t.Fatalf("expected one recruit update call, got %d", settingsSvc.recruitUpdateCalls)
+	}
+	if settingsSvc.lastRecruitUpdate.RecruitRewardAmount != 0 {
+		t.Fatalf("expected service to receive recruit_reward_amount 0, got %v", settingsSvc.lastRecruitUpdate.RecruitRewardAmount)
+	}
+	if settingsSvc.lastRecruitUpdate.RecruitQQURL != "https://example.com/new-qq" {
+		t.Fatalf("expected service to receive recruit_qq_url, got %q", settingsSvc.lastRecruitUpdate.RecruitQQURL)
+	}
+	if settingsSvc.lastRecruitUpdate.RecruitCooldownDays != 120 {
+		t.Fatalf("expected service to receive recruit_cooldown_days 120, got %d", settingsSvc.lastRecruitUpdate.RecruitCooldownDays)
+	}
+
+	var resp struct {
+		Code int                           `json:"code"`
+		Msg  string                        `json:"msg"`
+		Data service.NewbroRecruitSettings `json:"data"`
 	}
 	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("unmarshal response: %v", err)
@@ -148,15 +257,15 @@ func TestNewbroAdminUpdateSettingsReturnsUpdatedRecruitFields(t *testing.T) {
 	}
 }
 
-func TestNewbroAdminUpdateSettingsReturnsBusinessError(t *testing.T) {
+func TestNewbroAdminUpdateRecruitSettingsReturnsBusinessError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(
 		http.MethodPut,
-		"/api/v1/system/newbro/settings",
-		bytes.NewBufferString(`{"max_character_sp":21000000,"multi_character_sp":11000000,"multi_character_threshold":4,"refresh_interval_days":9,"bonus_rate":0,"recruit_qq_url":"https://example.com/new-qq","recruit_reward_amount":0,"recruit_cooldown_days":120}`),
+		"/api/v1/system/newbro/recruit-settings",
+		bytes.NewBufferString(`{"recruit_qq_url":"https://example.com/new-qq","recruit_reward_amount":0,"recruit_cooldown_days":120}`),
 	)
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
@@ -164,7 +273,7 @@ func TestNewbroAdminUpdateSettingsReturnsBusinessError(t *testing.T) {
 		settingsSvc: &fakeNewbroAdminSettingsService{updateErr: errors.New("write failed")},
 	}
 
-	handler.UpdateSettings(ctx)
+	handler.UpdateRecruitSettings(ctx)
 
 	var resp struct {
 		Code int    `json:"code"`

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-12
+last_reviewed: 2026-04-17
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/newbro_service.go
@@ -16,7 +16,6 @@ source_of_truth:
   - static/src/api/newbro.ts
   - static/src/views/newbro
   - static/src/views/auth/recruit
-  - static/src/views/system/newbro-settings
 ---
 
 # 新人帮扶模块
@@ -37,8 +36,10 @@ source_of_truth:
 - 新增按钮让新人可以主动解除当前与队长的关联，队长也可以在 `新人列表` 中结束某个玩家的帮扶关系；相关历史依旧会写入 `newbro_captain_affiliation` 历史记录
 - `收益归因明细` 页签展示概览卡片、赏金归因记录与奖励发放历史
 - 管理员可查看全量队长绩效，列表与详情都会展示队长主人物名和昵称；赏金归因同步与奖励处理统一通过任务管理执行
-- `帮扶记录` 页面新增 `奖励发放历史` tab，按“每次处理、每名队长一行”的粒度展示历史结算结果
-- `帮扶记录` 页面新增 `关系变更历史` tab，可按变更时间、队长用户 ID、新人人物 ID 查看全量关系记录，并显示实际创建该关系的人物
+- `队长管理` 页面新增 `奖励发放历史` tab，按“每次处理、每名队长一行”的粒度展示历史结算结果
+- `队长管理` 页面新增 `关系变更历史` tab，可按变更时间、队长用户 ID、新人人物 ID 查看全量关系记录，并显示实际创建该关系的人物
+- `队长管理` 页面新增 `帮扶设置` tab，集中管理新人资格判定、资格快照刷新周期与队长奖励比例
+- `招新链接` 页面新增管理员 `链接设置` tab，集中管理 QQ 群邀请地址、有效招募奖励与链接冷却天数
 - 赏金归因结果会持久化到 ledger 表，供后续队长奖励结算直接使用；奖励处理后会回写 `processed_at`
 
 ## 前端金额展示
@@ -61,7 +62,7 @@ source_of_truth:
 - 已判定为非新人的用户，只有在规则版本变化时才会重新计算
 - 当前仍是新人的用户，缓存快照超过配置的刷新间隔后才会重新计算
 - 如果刷新后发现用户已不再符合新人资格，服务层会在同一次刷新中结束其当前 active 的队长关联
-- 管理员可在 `系统管理 -> 帮扶设置` 调整资格阈值、刷新间隔与队长奖励比例
+- 管理员可在 `新人帮扶 -> 队长管理 -> 帮扶设置` 调整资格阈值、刷新间隔与队长奖励比例
 
 当前配置面向持久化行为的含义：
 
@@ -128,7 +129,7 @@ source_of_truth:
   - 若 QQ 号对应的用户创建时间早于提交时间，则该条目标记为 `stalled`
   - 若条目在冷却期内始终未匹配到用户，且提交时间已超过冷却天数，则该条目标记为 `stalled`
 - 有效招募会发放伏羲币奖励，钱包流水 `ref_type = recruit_link_reward`
-- 管理员可在 `系统管理 -> 帮扶设置` 配置 QQ 群邀请链接、每次有效招募奖励金额与冷却天数
+- 管理员可在 `新人帮扶 -> 招新链接 -> 链接设置` 配置 QQ 群邀请链接、每次有效招募奖励金额与冷却天数
 
 ### 入口
 
@@ -147,12 +148,12 @@ source_of_truth:
 管理侧：
 
 - `GET /api/v1/system/newbro/recruit/links` — 分页获取全部用户的招募链接
-- `GET /api/v1/system/newbro/settings`
-- `PUT /api/v1/system/newbro/settings`
+- `GET /api/v1/system/newbro/recruit-settings`
+- `PUT /api/v1/system/newbro/recruit-settings`
 
 ### 前端页面
 
-- `static/src/views/newbro/recruit-link` — 用户侧招新链接页；管理员会额外看到“全部链接”tab
+- `static/src/views/newbro/recruit-link` — 用户侧招新链接页；管理员会额外看到“全部链接”与“链接设置”tab
 - `static/src/views/dashboard/characters` — 联系方式资料卡下的直接推荐补录入口
 - `static/src/views/auth/recruit` — 公开落地页
 
@@ -172,9 +173,8 @@ source_of_truth:
 - `static/src/views/newbro/select-captain` — 新人选队长
 - `static/src/views/newbro/recruit-link` — 招新链接
 - `static/src/views/newbro/captain` — 我是队长
-- `static/src/views/newbro/manage` — 帮扶记录
+- `static/src/views/newbro/manage` — 队长管理
 - `static/src/views/auth/recruit` — 公开招募落地页
-- `static/src/views/system/newbro-settings` — 帮扶设置
 
 ### 后端路由
 
@@ -207,8 +207,10 @@ source_of_truth:
 
 管理侧：
 
-- `GET /api/v1/system/newbro/settings`
-- `PUT /api/v1/system/newbro/settings`
+- `GET /api/v1/system/newbro/support-settings`
+- `PUT /api/v1/system/newbro/support-settings`
+- `GET /api/v1/system/newbro/recruit-settings`
+- `PUT /api/v1/system/newbro/recruit-settings`
 - `GET /api/v1/system/newbro/recruit/links`
 - `GET /api/v1/system/newbro/captains`
 - `GET /api/v1/system/newbro/captains/:user_id`
@@ -233,7 +235,7 @@ source_of_truth:
 - 招募列表也会排除当前已经 active 挂在该队长名下的玩家，但允许把符合资格、当前挂在其他队长名下的玩家切换过来
 - 队长结束关系时，只能结束当前属于自己的 active 关系
 
-### 帮扶记录
+### 队长管理
 
 - 绩效页展示全部队长的概览排行，并支持查看单个队长详情；使用普通分页，默认每页 `20` 条
 - 绩效页搜索支持按队长当前昵称或任一已绑定人物名检索
@@ -242,8 +244,14 @@ source_of_truth:
 - 关系变更历史页支持按变更日期、队长人物名或昵称、新人人物名或昵称过滤
 - 关系变更历史页名称筛选不区分大小写
 - 关系变更历史页的 `change_start_date` / `change_end_date` 必须使用 `YYYY-MM-DD`；非法日期会返回参数错误
+- `帮扶设置` tab 仅对 `admin` / `super_admin` 展示，并调用 `/api/v1/system/newbro/support-settings` 保存资格与奖励配置
 - 具备真实职权 `captain` 但不具备 `admin` / `super_admin` 的用户可只读访问 `奖励发放历史` 与 `关系变更历史`
 - captain 在该页可查看全量奖励发放历史与关系变更历史，但仍不能访问绩效页或修改任何数据
+
+### 招新链接
+
+- 管理员在该页可进入 `全部链接` 与 `链接设置` 两个额外 tab 管理招募数据与招募配置
+- `链接设置` tab 调用 `/api/v1/system/newbro/recruit-settings`，只处理 QQ 群邀请链接、有效招募奖励与冷却天数
 
 ## 权限边界
 
@@ -252,7 +260,7 @@ source_of_truth:
   - 是已登录且非 `guest`
   - 当前 `newbro_player_state.is_currently_newbro = true`
 - `我是队长` 页面要求真实职权 `captain`
-- `帮扶记录` 页面对 `admin` / `super_admin` 开放完整能力；对仅有 `captain` 的用户开放只读的 `奖励发放历史` 与 `关系变更历史`
+- `队长管理` 页面对 `admin` / `super_admin` 开放完整能力；对仅有 `captain` 的用户开放只读的 `奖励发放历史` 与 `关系变更历史`
 - 后端服务层会再次校验资格或职权，前端菜单隐藏只属于 UX
 
 ## 关键不变量
@@ -288,6 +296,5 @@ source_of_truth:
 - `static/src/router/modules/system.ts`
 - `static/src/views/newbro/`
 - `static/src/views/auth/recruit/`
-- `static/src/views/system/newbro-settings/`
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`

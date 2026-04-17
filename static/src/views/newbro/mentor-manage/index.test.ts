@@ -5,6 +5,14 @@ import { readFileSync } from 'node:fs'
 const source = readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
 const apiSource = readFileSync(new URL('../../../api/mentor.ts', import.meta.url), 'utf8')
 const typeSource = readFileSync(new URL('../../../types/api/api.d.ts', import.meta.url), 'utf8')
+const newbroRouterSource = readFileSync(
+  new URL('../../../router/modules/newbro.ts', import.meta.url),
+  'utf8'
+)
+const systemRouterSource = readFileSync(
+  new URL('../../../router/modules/system.ts', import.meta.url),
+  'utf8'
+)
 const docSource = readFileSync(
   new URL('../../../../../docs/features/current/mentor-system.md', import.meta.url),
   'utf8'
@@ -38,11 +46,74 @@ test('mentor manage page includes a reward distribution records tab with ledger 
   assert.match(source, /<ElTabs v-model="activeTab"/)
   assert.match(source, /newbro\.mentorManage\.relationshipsTab/)
   assert.match(source, /newbro\.mentorManage\.rewardRecordsTab/)
+  assert.match(source, /newbro\.mentorManage\.rewardStagesTab/)
   assert.match(source, /fetchAdminMentorRewardDistributions/)
   assert.match(source, /visual-variant="ledger"/)
   assert.match(
     source,
     /rewardHistoryPaginationOptions = \{\s*pageSizes: \[50, 100, 200, 500, 1000\]/
+  )
+})
+
+test('mentor manage page hosts reward stage settings and removes the standalone system route', () => {
+  assert.match(source, /fetchMentorSettings/)
+  assert.match(source, /updateMentorSettings/)
+  assert.match(source, /fetchMentorRewardStages/)
+  assert.match(source, /updateMentorRewardStages/)
+  assert.match(source, /runMentorRewardProcessing/)
+  assert.match(source, /newbro\.mentorManage\.rewardStagesLoadFailed/)
+  assert.match(source, /newbro\.mentorManage\.rewardStagesNotReady/)
+  assert.match(source, /v-if="rewardStagesLoadFailed"/)
+  assert.match(source, /system\.mentorRewardStages\.eligibilityTitle/)
+  assert.match(source, /system\.mentorRewardStages\.maxCharacterSP/)
+  assert.match(source, /system\.mentorRewardStages\.maxAccountAgeDays/)
+  assert.match(source, /system\.mentorRewardStages\.runProcess/)
+  assert.doesNotMatch(source, /<template>\s*<div class="[^"]*\bart-full-height\b[^"]*">/)
+
+  assert.match(newbroRouterSource, /path: 'mentor-manage'[\s\S]*roles: \['super_admin', 'admin'\]/)
+  assert.doesNotMatch(systemRouterSource, /path: 'mentor-reward-stages'/)
+
+  assert.match(
+    docSource,
+    /管理员可在 `导师管理` 页面查看全部导师关系；对 `pending` 状态可取消学员申请，对 `active` 状态可撤销导师关系/
+  )
+  assert.match(
+    docSource,
+    /管理员可在 `导师管理` 页面(?:的)? `设置奖励阶段` tab 配置阶段化奖励规则、学员资格阈值，并手动执行一次奖励处理/
+  )
+
+  assert.match(zhLocaleSource, /"rewardStagesTab"\s*:\s*"设置奖励阶段"/)
+  assert.match(zhLocaleSource, /"rewardStagesLoadFailed"\s*:/)
+  assert.match(zhLocaleSource, /"rewardStagesNotReady"\s*:/)
+  assert.match(enLocaleSource, /"rewardStagesTab"\s*:/)
+  assert.match(enLocaleSource, /"rewardStagesLoadFailed"\s*:/)
+  assert.match(enLocaleSource, /"rewardStagesNotReady"\s*:/)
+})
+
+test('mentor manage reward stage and eligibility number inputs stay integer-only', () => {
+  const inputNumbers = source.match(/<ElInputNumber[\s\S]*?\/>/g) ?? []
+  const rewardStageInputs = inputNumbers.filter((inputNumber) =>
+    /row\.stage_order|row\.threshold|row\.reward_amount|mentorSettings\.max_character_sp|mentorSettings\.max_account_age_days/.test(
+      inputNumber
+    )
+  )
+
+  assert.equal(rewardStageInputs.length, 5)
+
+  for (const inputNumber of rewardStageInputs) {
+    assert.match(inputNumber, /:controls="false"/)
+    assert.match(inputNumber, /step-strictly/)
+    assert.doesNotMatch(inputNumber, /:precision=/)
+    assert.doesNotMatch(inputNumber, /0\.01/)
+  }
+
+  assert.match(
+    source,
+    /v-model="mentorSettings\.max_character_sp"[\s\S]*?:step="1000000"[\s\S]*?step-strictly/
+  )
+  assert.match(
+    source,
+    /v-model="mentorSettings\.max_account_age_days"[\s\S]*?:step="1"[\s\S]*?step-strictly/
   )
 })
 

@@ -285,7 +285,7 @@
       "recruitLink": "招新链接",
       "captain": "我是队长",
       "mentor": "我是导师",
-      "manage": "帮扶记录",
+      "manage": "队长管理",
       "mentorManage": "导师管理"
     },
     "role": {
@@ -326,9 +326,7 @@
       "npcKills": "刷怪报表",
       "autoRole": "自动权限",
       "webhook": "Webhook 通知",
-      "basicConfig": "@:setting.basics.title",
-      "newbroSettings": "帮扶设置",
-      "mentorRewardStages": "导师奖励阶段"
+      "basicConfig": "@:setting.basics.title"
     },
     "hallOfFame": {
       "title": "伏羲中心",
@@ -1223,7 +1221,7 @@
       "applicationsTitle": "待处理申请",
       "menteesTitle": "学员列表",
       "rewardStagesTitle": "当前奖励阶段配置",
-      "rewardStagesDescription": "仅供查看，实际配置与奖励执行仍由管理员在导师奖励阶段页面维护。",
+      "rewardStagesDescription": "仅供查看，实际配置与奖励执行仍由管理员在导师管理页的设置奖励阶段页签维护。",
       "rewardStagesEmpty": "当前未配置奖励阶段",
       "responsibilitiesTitle": "导师职责",
       "responsibilitiesDescription": "以下职责说明会同时展示给学员和导师，用于明确导师帮扶的范围。",
@@ -1254,11 +1252,13 @@
       "rejectSuccess": "申请已拒绝"
     },
     "manage": {
-      "title": "帮扶记录",
+      "title": "队长管理",
       "subtitle": "管理员可以查看全部队长绩效，归因同步与奖励处理已迁移到任务管理。",
       "performanceTab": "队长绩效",
       "rewardHistoryTab": "奖励发放历史",
       "affiliationHistoryTab": "关系变更历史",
+      "settingsTab": "帮扶设置",
+      "settingsSubtitle": "统一管理新人资格判定规则、资格快照刷新周期与队长奖励比例。",
       "keyword": "搜索队长人物名或昵称",
       "captainPerformance": "队长绩效",
       "affiliationHistoryTitle": "关系变更历史",
@@ -1294,6 +1294,8 @@
       "subtitle": "生成专属招募链接，分享给潜在新成员；系统自动检测 QQ 注册结果并发放奖励。",
       "myLinksTab": "我的链接",
       "adminTab": "全部链接",
+      "settingsTab": "链接设置",
+      "settingsSubtitle": "配置招募链接功能：QQ 群邀请地址、每次有效招募的奖励金额，以及用户重新生成链接前的冷却天数。",
       "generateBtn": "生成招新链接",
       "yourLink": "您的招募链接",
       "noGeneratedLink": "暂时还没有生成过招新链接。",
@@ -1326,6 +1328,9 @@
       "subtitle": "管理员可以查看全部导师关系，以及导师奖励发放记录。",
       "relationshipsTab": "导师关系",
       "rewardRecordsTab": "奖励发放记录",
+      "rewardStagesTab": "设置奖励阶段",
+      "rewardStagesLoadFailed": "奖励阶段配置加载失败，请刷新后重试。",
+      "rewardStagesNotReady": "请先等待奖励阶段配置加载完成，再执行该操作。",
       "keyword": "搜索导师或学员人物名 / 昵称",
       "rewardKeyword": "搜索导师人物名或昵称",
       "status": "关系状态",

@@ -412,8 +412,10 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/newbro/settings` | 获取帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
-| PUT | `/system/newbro/settings` | 更新帮扶设置（资格阈值、刷新间隔与奖励比例） | `RequireRole(admin)` |
+| GET | `/system/newbro/support-settings` | 获取帮扶设置（资格阈值、刷新间隔、奖励比例） | `RequireRole(admin)` |
+| PUT | `/system/newbro/support-settings` | 更新帮扶设置（资格阈值、刷新间隔、奖励比例） | `RequireRole(admin)` |
+| GET | `/system/newbro/recruit-settings` | 获取招募链接设置（QQ 邀请链接、奖励金额、冷却天数） | `RequireRole(admin)` |
+| PUT | `/system/newbro/recruit-settings` | 更新招募链接设置（QQ 邀请链接、奖励金额、冷却天数） | `RequireRole(admin)` |
 | GET | `/system/newbro/captains` | 队长绩效列表 | `RequireRole(admin)` |
 | GET | `/system/newbro/captains/:user_id` | 队长详情（概览、关联玩家、归因明细） | `RequireRole(admin)` |
 | GET | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史 | `RequireRole(admin, captain)` |
