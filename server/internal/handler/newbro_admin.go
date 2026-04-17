@@ -15,8 +15,10 @@ type NewbroAdminHandler struct {
 }
 
 type newbroAdminSettingsService interface {
-	GetSettings() service.NewbroSettings
-	UpdateSettings(cfg service.NewbroSettings) (service.NewbroSettings, error)
+	GetSupportSettings() service.NewbroSupportSettings
+	UpdateSupportSettings(cfg service.NewbroSupportSettings) (service.NewbroSupportSettings, error)
+	GetRecruitSettings() service.NewbroRecruitSettings
+	UpdateRecruitSettings(cfg service.NewbroRecruitSettings) (service.NewbroRecruitSettings, error)
 }
 
 func NewNewbroAdminHandler() *NewbroAdminHandler {
@@ -54,37 +56,61 @@ func (h *NewbroAdminHandler) GetCaptainDetail(c *gin.Context) {
 	response.OK(c, result)
 }
 
-type UpdateNewbroSettingsRequest struct {
+type UpdateNewbroSupportSettingsRequest struct {
 	MaxCharacterSP          int64    `json:"max_character_sp" binding:"required,gt=0"`
 	MultiCharacterSP        int64    `json:"multi_character_sp" binding:"required,gt=0"`
 	MultiCharacterThreshold int      `json:"multi_character_threshold" binding:"required,gt=0"`
 	RefreshIntervalDays     int      `json:"refresh_interval_days" binding:"required,gt=0"`
 	BonusRate               *float64 `json:"bonus_rate" binding:"required,gte=0"`
-	RecruitQQURL            string   `json:"recruit_qq_url"`
-	RecruitRewardAmount     *float64 `json:"recruit_reward_amount" binding:"required,gte=0"`
-	RecruitCooldownDays     int      `json:"recruit_cooldown_days" binding:"required,gt=0"`
 }
 
-func (h *NewbroAdminHandler) GetSettings(c *gin.Context) {
-	response.OK(c, h.settingsSvc.GetSettings())
+type UpdateNewbroRecruitSettingsRequest struct {
+	RecruitQQURL        string   `json:"recruit_qq_url"`
+	RecruitRewardAmount *float64 `json:"recruit_reward_amount" binding:"required,gte=0"`
+	RecruitCooldownDays int      `json:"recruit_cooldown_days" binding:"required,gt=0"`
 }
 
-func (h *NewbroAdminHandler) UpdateSettings(c *gin.Context) {
-	var req UpdateNewbroSettingsRequest
+func (h *NewbroAdminHandler) GetSupportSettings(c *gin.Context) {
+	response.OK(c, h.settingsSvc.GetSupportSettings())
+}
+
+func (h *NewbroAdminHandler) UpdateSupportSettings(c *gin.Context) {
+	var req UpdateNewbroSupportSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "invalid request: "+err.Error())
 		return
 	}
 
-	updated, err := h.settingsSvc.UpdateSettings(service.NewbroSettings{
+	updated, err := h.settingsSvc.UpdateSupportSettings(service.NewbroSupportSettings{
 		MaxCharacterSP:          req.MaxCharacterSP,
 		MultiCharacterSP:        req.MultiCharacterSP,
 		MultiCharacterThreshold: req.MultiCharacterThreshold,
 		RefreshIntervalDays:     req.RefreshIntervalDays,
 		BonusRate:               *req.BonusRate,
-		RecruitQQURL:            req.RecruitQQURL,
-		RecruitRewardAmount:     *req.RecruitRewardAmount,
-		RecruitCooldownDays:     req.RecruitCooldownDays,
+	})
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, updated)
+}
+
+func (h *NewbroAdminHandler) GetRecruitSettings(c *gin.Context) {
+	response.OK(c, h.settingsSvc.GetRecruitSettings())
+}
+
+func (h *NewbroAdminHandler) UpdateRecruitSettings(c *gin.Context) {
+	var req UpdateNewbroRecruitSettingsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "invalid request: "+err.Error())
+		return
+	}
+
+	updated, err := h.settingsSvc.UpdateRecruitSettings(service.NewbroRecruitSettings{
+		RecruitQQURL:        req.RecruitQQURL,
+		RecruitRewardAmount: *req.RecruitRewardAmount,
+		RecruitCooldownDays: req.RecruitCooldownDays,
 	})
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())

@@ -50,31 +50,52 @@ func TestParseOptionalUintQueryParamRejectsOverflow(t *testing.T) {
 	}
 }
 
-func TestUpdateNewbroSettingsRequestAllowsZeroBonusRate(t *testing.T) {
+func TestUpdateNewbroSupportSettingsRequestAllowsZeroBonusRate(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/newbro/settings", bytes.NewBufferString(`{
+	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/newbro/support-settings", bytes.NewBufferString(`{
 		"max_character_sp": 20000000,
 		"multi_character_sp": 10000000,
 		"multi_character_threshold": 3,
 		"refresh_interval_days": 7,
-		"bonus_rate": 0,
-		"recruit_qq_url": "https://example.com/qq",
-		"recruit_reward_amount": 0,
-		"recruit_cooldown_days": 90
+		"bonus_rate": 0
 	}`))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
-	var req UpdateNewbroSettingsRequest
+	var req UpdateNewbroSupportSettingsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		t.Fatalf("expected zero bonus_rate to bind successfully, got %v", err)
 	}
 	if req.BonusRate == nil || *req.BonusRate != 0 {
 		t.Fatalf("expected bonus_rate pointer to preserve explicit zero, got %#v", req.BonusRate)
 	}
+	if req.RefreshIntervalDays != 7 {
+		t.Fatalf("expected refresh_interval_days 7, got %d", req.RefreshIntervalDays)
+	}
+}
+
+func TestUpdateNewbroRecruitSettingsRequestAllowsZeroRewardAmount(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/newbro/recruit-settings", bytes.NewBufferString(`{
+		"recruit_qq_url": "https://example.com/qq",
+		"recruit_reward_amount": 0,
+		"recruit_cooldown_days": 90
+	}`))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	var req UpdateNewbroRecruitSettingsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		t.Fatalf("expected zero recruit_reward_amount to bind successfully, got %v", err)
+	}
 	if req.RecruitRewardAmount == nil || *req.RecruitRewardAmount != 0 {
 		t.Fatalf("expected recruit_reward_amount pointer to preserve explicit zero, got %#v", req.RecruitRewardAmount)
+	}
+	if req.RecruitCooldownDays != 90 {
+		t.Fatalf("expected recruit_cooldown_days 90, got %d", req.RecruitCooldownDays)
 	}
 }

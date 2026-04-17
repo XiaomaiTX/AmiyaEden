@@ -2239,23 +2239,35 @@ declare namespace Api {
       referrer_user_id: number
     }
 
-    interface Settings {
+    interface SupportSettings {
       max_character_sp: number
       multi_character_sp: number
       multi_character_threshold: number
       refresh_interval_days: number
       bonus_rate: number
+    }
+
+    interface UpdateSupportSettingsParams {
+      max_character_sp: number
+      multi_character_sp: number
+      multi_character_threshold: number
+      refresh_interval_days: number
+      bonus_rate: number
+    }
+
+    interface RecruitSettings {
       recruit_qq_url: string
       recruit_reward_amount: number
       recruit_cooldown_days: number
     }
 
-    interface UpdateSettingsParams {
-      max_character_sp: number
-      multi_character_sp: number
-      multi_character_threshold: number
-      refresh_interval_days: number
-      bonus_rate: number
+    interface Settings extends SupportSettings, RecruitSettings {}
+
+    interface UpdateSettingsParams
+      extends UpdateSupportSettingsParams,
+        UpdateRecruitSettingsParams {}
+
+    interface UpdateRecruitSettingsParams {
       recruit_qq_url: string
       recruit_reward_amount: number
       recruit_cooldown_days: number

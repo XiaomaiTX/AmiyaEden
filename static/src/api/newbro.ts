@@ -107,15 +107,28 @@ export function fetchAdminRewardSettlements(params?: Api.Newbro.AdminRewardSettl
   })
 }
 
-export function fetchAdminNewbroSettings() {
-  return request.get<Api.Newbro.Settings>({
-    url: '/api/v1/system/newbro/settings'
+export function fetchAdminNewbroSupportSettings() {
+  return request.get<Api.Newbro.SupportSettings>({
+    url: '/api/v1/system/newbro/support-settings'
   })
 }
 
-export function updateAdminNewbroSettings(data: Api.Newbro.UpdateSettingsParams) {
-  return request.put<Api.Newbro.Settings>({
-    url: '/api/v1/system/newbro/settings',
+export function updateAdminNewbroSupportSettings(data: Api.Newbro.UpdateSupportSettingsParams) {
+  return request.put<Api.Newbro.SupportSettings>({
+    url: '/api/v1/system/newbro/support-settings',
+    data
+  })
+}
+
+export function fetchAdminNewbroRecruitSettings() {
+  return request.get<Api.Newbro.RecruitSettings>({
+    url: '/api/v1/system/newbro/recruit-settings'
+  })
+}
+
+export function updateAdminNewbroRecruitSettings(data: Api.Newbro.UpdateRecruitSettingsParams) {
+  return request.put<Api.Newbro.RecruitSettings>({
+    url: '/api/v1/system/newbro/recruit-settings',
     data
   })
 }

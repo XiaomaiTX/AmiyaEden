@@ -220,6 +220,92 @@ func TestUpdateNewbroSettingsPersistsAllKeysInSingleBatch(t *testing.T) {
 	}
 }
 
+func TestUpdateNewbroSupportSettingsPersistsSupportKeysOnly(t *testing.T) {
+	store := &fakeNewbroSettingsConfigStore{}
+	svc := &NewbroSettingsService{cfgRepo: store}
+	cfg := NewbroSupportSettings{
+		MaxCharacterSP:          21_000_000,
+		MultiCharacterSP:        11_000_000,
+		MultiCharacterThreshold: 4,
+		RefreshIntervalDays:     9,
+		BonusRate:               35,
+	}
+
+	updated, err := svc.UpdateSupportSettings(cfg)
+	if err != nil {
+		t.Fatalf("expected update to succeed, got %v", err)
+	}
+	if updated != cfg {
+		t.Fatalf("expected updated support settings %v, got %v", cfg, updated)
+	}
+	if store.setManyCalls != 1 {
+		t.Fatalf("expected exactly one batch write, got %d", store.setManyCalls)
+	}
+	if len(store.setManyItems) != 5 {
+		t.Fatalf("expected 5 settings entries, got %d", len(store.setManyItems))
+	}
+
+	gotKeys := []string{
+		store.setManyItems[0].Key,
+		store.setManyItems[1].Key,
+		store.setManyItems[2].Key,
+		store.setManyItems[3].Key,
+		store.setManyItems[4].Key,
+	}
+	wantKeys := []string{
+		model.SysConfigNewbroMaxCharacterSP,
+		model.SysConfigNewbroMultiCharacterSP,
+		model.SysConfigNewbroMultiCharacterThreshold,
+		model.SysConfigNewbroRefreshIntervalDays,
+		model.SysConfigNewbroBonusRate,
+	}
+	for i := range wantKeys {
+		if gotKeys[i] != wantKeys[i] {
+			t.Fatalf("unexpected key at index %d: got %q want %q", i, gotKeys[i], wantKeys[i])
+		}
+	}
+}
+
+func TestUpdateNewbroRecruitSettingsPersistsRecruitKeysOnly(t *testing.T) {
+	store := &fakeNewbroSettingsConfigStore{}
+	svc := &NewbroSettingsService{cfgRepo: store}
+	cfg := NewbroRecruitSettings{
+		RecruitQQURL:        "https://example.com/qq",
+		RecruitRewardAmount: 100,
+		RecruitCooldownDays: 60,
+	}
+
+	updated, err := svc.UpdateRecruitSettings(cfg)
+	if err != nil {
+		t.Fatalf("expected update to succeed, got %v", err)
+	}
+	if updated != cfg {
+		t.Fatalf("expected updated recruit settings %v, got %v", cfg, updated)
+	}
+	if store.setManyCalls != 1 {
+		t.Fatalf("expected exactly one batch write, got %d", store.setManyCalls)
+	}
+	if len(store.setManyItems) != 3 {
+		t.Fatalf("expected 3 settings entries, got %d", len(store.setManyItems))
+	}
+
+	gotKeys := []string{
+		store.setManyItems[0].Key,
+		store.setManyItems[1].Key,
+		store.setManyItems[2].Key,
+	}
+	wantKeys := []string{
+		model.SysConfigNewbroRecruitQQURL,
+		model.SysConfigNewbroRecruitRewardAmount,
+		model.SysConfigNewbroRecruitCooldownDays,
+	}
+	for i := range wantKeys {
+		if gotKeys[i] != wantKeys[i] {
+			t.Fatalf("unexpected key at index %d: got %q want %q", i, gotKeys[i], wantKeys[i])
+		}
+	}
+}
+
 func TestUpdateNewbroSettingsReturnsBatchWriteError(t *testing.T) {
 	store := &fakeNewbroSettingsConfigStore{setManyErr: errors.New("write failed")}
 	svc := &NewbroSettingsService{cfgRepo: store}

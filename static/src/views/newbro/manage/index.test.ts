@@ -8,6 +8,10 @@ const routerSource = readFileSync(
   new URL('../../../router/modules/newbro.ts', import.meta.url),
   'utf8'
 )
+const systemRouterSource = readFileSync(
+  new URL('../../../router/modules/system.ts', import.meta.url),
+  'utf8'
+)
 const zhLocaleSource = readFileSync(
   new URL('../../../locales/langs/zh.json', import.meta.url),
   'utf8'
@@ -48,10 +52,26 @@ test('newbro manage route is available to captains and the page keeps captains o
   assert.match(managePageSource, /import \{ useUserStore \} from '@\/store\/modules\/user'/)
   assert.match(managePageSource, /const userStore = useUserStore\(\)/)
   assert.match(managePageSource, /const isCaptainReadonly = computed\(/)
-  assert.match(managePageSource, /const canViewPerformanceTab = computed\(/)
-  assert.match(managePageSource, /const managePageTabs = computed\(/)
   assert.match(managePageSource, /const captainReadonlyDefaultTab = 'rewards'/)
-  assert.match(managePageSource, /if \(isCaptainReadonly\.value && value === 'performance'\)/)
+  assert.match(
+    managePageSource,
+    /\?\s*\['performance', 'rewards', 'history', 'settings'\]\s*:\s*\[captainReadonlyDefaultTab, 'history'\]/
+  )
+  assert.match(managePageSource, /if \(!managePageTabs\.value\.includes\(value\)\)/)
+})
+
+test('newbro manage page exposes an admin support settings tab and removes the old system route', () => {
+  assert.match(managePageSource, /newbro\.manage\.settingsTab/)
+  assert.match(managePageSource, /v-if="managePageTabs\.includes\('settings'\)"/)
+  assert.match(managePageSource, /name="settings"[\s\S]*lazy/)
+  assert.match(newbroApiSource, /export function fetchAdminNewbroSupportSettings\(/)
+  assert.match(newbroApiSource, /export function updateAdminNewbroSupportSettings\(/)
+  assert.doesNotMatch(newbroApiSource, /export function fetchAdminNewbroSettings\(/)
+  assert.doesNotMatch(newbroApiSource, /export function updateAdminNewbroSettings\(/)
+
+  assert.doesNotMatch(systemRouterSource, /path:\s*'newbro-settings'/)
+  assert.doesNotMatch(systemRouterSource, /name:\s*'NewbroSettings'/)
+  assert.doesNotMatch(systemRouterSource, /menus\.system\.newbroSettings/)
 })
 
 test('newbro manage page uses shared readonly record APIs for captain access', () => {
@@ -63,7 +83,10 @@ test('newbro manage page uses shared readonly record APIs for captain access', (
   assert.doesNotMatch(newbroApiSource, /export function fetchCaptainAffiliationHistory\(/)
 })
 
-test('newbro manage labels use 帮扶记录 naming', () => {
-  assert.match(zhLocaleSource, /"manage"\s*:\s*"帮扶记录"/)
-  assert.match(enLocaleSource, /"manage"\s*:\s*"Support Records"/)
+test('newbro manage labels use 队长管理 naming', () => {
+  assert.match(zhLocaleSource, /"manage"\s*:\s*"队长管理"/)
+  assert.match(zhLocaleSource, /"settingsTab"\s*:\s*"帮扶设置"/)
+
+  assert.match(enLocaleSource, /"manage"\s*:\s*"Captain Management"/)
+  assert.match(enLocaleSource, /"settingsTab"\s*:\s*"Support Settings"/)
 })

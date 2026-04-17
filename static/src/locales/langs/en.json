@@ -258,9 +258,7 @@
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
       "webhook": "Webhook Notifications",
-      "basicConfig": "@:setting.basics.title",
-      "newbroSettings": "Newbro Settings",
-      "mentorRewardStages": "Mentor Reward Stages"
+      "basicConfig": "@:setting.basics.title"
     },
     "welfare": {
       "title": "Corp Welfare",
@@ -302,7 +300,7 @@
       "recruitLink": "Recruit Link",
       "captain": "I Am Captain",
       "mentor": "I Am Mentor",
-      "manage": "Support Records",
+      "manage": "Captain Management",
       "mentorManage": "Mentor Manage"
     },
     "role": {
@@ -1222,7 +1220,7 @@
       "applicationsTitle": "Pending Applications",
       "menteesTitle": "Mentee List",
       "rewardStagesTitle": "Current Reward Stage Config",
-      "rewardStagesDescription": "Read-only view. Admins still manage stage rules and manual processing from the Mentor Reward Stages page.",
+      "rewardStagesDescription": "Read-only view. Admins manage stage rules and manual processing from the Configure Reward Stages tab in Mentor Management.",
       "rewardStagesEmpty": "No reward stages configured yet",
       "responsibilitiesTitle": "Mentor Responsibilities",
       "responsibilitiesDescription": "This guidance is shown to both mentees and mentors so the mentor scope stays explicit.",
@@ -1253,11 +1251,13 @@
       "rejectSuccess": "Application rejected"
     },
     "manage": {
-      "title": "Support Records",
+      "title": "Captain Management",
       "subtitle": "Admins can review all captain performance. Attribution sync and reward processing now run through Task Manager.",
       "performanceTab": "Captain Performance",
       "rewardHistoryTab": "Reward History",
       "affiliationHistoryTab": "Affiliation History",
+      "settingsTab": "Support Settings",
+      "settingsSubtitle": "Manage newbro eligibility rules, eligibility refresh cadence, and captain reward percentages.",
       "keyword": "Search captain character or nickname",
       "captainPerformance": "Captain Performance",
       "affiliationHistoryTitle": "Affiliation Change History",
@@ -1293,6 +1293,8 @@
       "subtitle": "Generate your personal recruitment link and share it. The system tracks QQ registrations and rewards valid recruits.",
       "myLinksTab": "My Links",
       "adminTab": "All Links",
+      "settingsTab": "Link Settings",
+      "settingsSubtitle": "Configure the recruitment link feature: QQ group invitation URL, reward per valid recruitment, and cooldown days before a user can regenerate their link.",
       "generateBtn": "Generate Recruit Link",
       "yourLink": "Your Recruitment Link",
       "noGeneratedLink": "No generated recruitment link yet.",
@@ -1325,6 +1327,9 @@
       "subtitle": "Admins can review every mentor relationship and the mentor reward distribution ledger.",
       "relationshipsTab": "Relationships",
       "rewardRecordsTab": "Reward Records",
+      "rewardStagesTab": "Configure Reward Stages",
+      "rewardStagesLoadFailed": "Failed to load reward stage settings. Refresh and try again.",
+      "rewardStagesNotReady": "Wait for the reward stage settings to finish loading before making changes.",
       "keyword": "Search mentor or mentee by character name / nickname",
       "rewardKeyword": "Search mentor by character name or nickname",
       "status": "Relationship Status",
