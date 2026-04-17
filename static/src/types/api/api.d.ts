@@ -565,6 +565,7 @@ declare namespace Api {
       rates: RateItem[]
       fc_salary: number
       fc_salary_monthly_limit: number
+      admin_award: number
       multichar_full_reward_count: number
       multichar_reduced_reward_count: number
       multichar_reduced_reward_pct: number
@@ -580,6 +581,7 @@ declare namespace Api {
       rates: UpdateRateItem[]
       fc_salary: number
       fc_salary_monthly_limit: number
+      admin_award: number
       multichar_full_reward_count: number
       multichar_reduced_reward_count: number
       multichar_reduced_reward_pct: number

@@ -1139,7 +1139,7 @@ func (s *WelfareService) AdminDeleteApplication(id uint) error {
 	return s.repo.DeleteApplication(id)
 }
 
-func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, req *AdminReviewApplicationRequest) (MailAttemptSummary, error) {
+func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, reviewerRoles []string, req *AdminReviewApplicationRequest) (MailAttemptSummary, error) {
 	var deliveredWelfare *model.Welfare
 	var deliveredApp *model.WelfareApplication
 
@@ -1166,6 +1166,16 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, req
 			}
 			if err := s.applyDeliveredWelfareEffectsTx(tx, welfare, app, reviewerID); err != nil {
 				return err
+			}
+			if err := applyConfiguredAdminAwardTx(
+				tx,
+				s.cfgRepo,
+				reviewerRoles,
+				reviewerID,
+				fmt.Sprintf("管理员发放奖励: 福利 %s", welfare.Name),
+				buildWelfareAdminAwardRefID(app.ID),
+			); err != nil {
+				return fmt.Errorf("发放管理员奖励失败: %w", err)
 			}
 
 			appCopy := *app

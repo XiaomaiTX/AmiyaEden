@@ -43,6 +43,23 @@
           </div>
         </ElFormItem>
 
+        <ElFormItem :label="t('papExchange.adminAward')">
+          <div class="field-block">
+            <div class="field-row">
+              <ElInputNumber
+                v-model="form.admin_award"
+                :min="0"
+                :precision="0"
+                :step="1"
+                :controls="false"
+                style="width: 180px"
+              />
+              <span class="text-sm text-secondary">{{ t('papExchange.fcSalaryUnit') }}</span>
+            </div>
+            <div class="form-hint">{{ t('papExchange.adminAwardHint') }}</div>
+          </div>
+        </ElFormItem>
+
         <ElFormItem>
           <ElButton
             v-auth="'edit_exchange_rate'"
@@ -209,6 +226,7 @@
     rates: [],
     fc_salary: 400,
     fc_salary_monthly_limit: 5,
+    admin_award: 10,
     multichar_full_reward_count: 3,
     multichar_reduced_reward_count: 3,
     multichar_reduced_reward_pct: 50
@@ -221,6 +239,7 @@
       form.rates = config.rates
       form.fc_salary = config.fc_salary
       form.fc_salary_monthly_limit = config.fc_salary_monthly_limit
+      form.admin_award = config.admin_award
       form.multichar_full_reward_count = config.multichar_full_reward_count
       form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
       form.multichar_reduced_reward_pct = config.multichar_reduced_reward_pct
@@ -237,6 +256,7 @@
       const config = await updatePAPExchangeConfig({
         fc_salary: form.fc_salary,
         fc_salary_monthly_limit: form.fc_salary_monthly_limit,
+        admin_award: form.admin_award,
         multichar_full_reward_count: form.multichar_full_reward_count,
         multichar_reduced_reward_count: form.multichar_reduced_reward_count,
         multichar_reduced_reward_pct: form.multichar_reduced_reward_pct,
@@ -249,6 +269,7 @@
       form.rates = config.rates
       form.fc_salary = config.fc_salary
       form.fc_salary_monthly_limit = config.fc_salary_monthly_limit
+      form.admin_award = config.admin_award
       form.multichar_full_reward_count = config.multichar_full_reward_count
       form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
       form.multichar_reduced_reward_pct = config.multichar_reduced_reward_pct
