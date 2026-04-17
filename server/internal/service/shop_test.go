@@ -15,6 +15,10 @@ import (
 	"gorm.io/gorm"
 )
 
+var adminDeliveryOperatorRoles = []string{model.RoleAdmin}
+
+var shopOrderManagerOperatorRoles = []string{model.RoleShopOrder}
+
 func TestAdminDeliverOrderAttemptsInGameMailButIgnoresMailErrors(t *testing.T) {
 	db := newShopServiceTestDB(t)
 	useShopServiceTestDB(t, db)
@@ -66,7 +70,7 @@ func TestAdminDeliverOrderAttemptsInGameMailButIgnoresMailErrors(t *testing.T) {
 		}, errors.New("mail failed")
 	}
 
-	deliveredOrder, mailSummary, err := svc.AdminDeliverOrder(order.ID, 77, "contract issued")
+	deliveredOrder, mailSummary, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "contract issued")
 	if err != nil {
 		t.Fatalf("AdminDeliverOrder() error = %v", err)
 	}
@@ -137,7 +141,7 @@ func TestAdminDeliverOrderReturnsMailAttemptSummaryWhenMailSucceeds(t *testing.T
 		}, nil
 	}
 
-	_, mailSummary, err := svc.AdminDeliverOrder(order.ID, 77, "contract issued")
+	_, mailSummary, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "contract issued")
 	if err != nil {
 		t.Fatalf("AdminDeliverOrder() error = %v", err)
 	}
@@ -226,6 +230,7 @@ func newShopServiceTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&model.ShopProduct{},
 		&model.ShopOrder{},
+		&model.SystemConfig{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
 	); err != nil {
@@ -242,6 +247,238 @@ func useShopServiceTestDB(t *testing.T, db *gorm.DB) {
 	t.Cleanup(func() {
 		global.DB = previous
 	})
+}
+
+func TestAdminDeliverOrderCreditsConfiguredAdminAward(t *testing.T) {
+	db := newShopServiceTestDB(t)
+	useShopServiceTestDB(t, db)
+
+	product := &model.ShopProduct{
+		Name:      "Navy Omen",
+		Price:     10,
+		Stock:     -1,
+		Type:      model.ProductTypeNormal,
+		Status:    model.ProductStatusOnSale,
+		SortOrder: 1,
+	}
+	if err := db.Create(product).Error; err != nil {
+		t.Fatalf("create product: %v", err)
+	}
+
+	order := &model.ShopOrder{
+		OrderNo:           "ORDER-ADMIN-AWARD",
+		UserID:            42,
+		MainCharacterName: "Pilot One",
+		Nickname:          "Pilot",
+		ProductID:         product.ID,
+		ProductName:       product.Name,
+		ProductType:       product.Type,
+		Quantity:          1,
+		UnitPrice:         product.Price,
+		TotalPrice:        product.Price,
+		Status:            model.OrderStatusRequested,
+	}
+	if err := db.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	svc := NewShopService()
+	svc.orderDeliveryMailSender = nil
+
+	if _, _, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "delivered"); err != nil {
+		t.Fatalf("AdminDeliverOrder() error = %v", err)
+	}
+
+	var reviewerWallet model.SystemWallet
+	if err := db.Where("user_id = ?", 77).First(&reviewerWallet).Error; err != nil {
+		t.Fatalf("load reviewer wallet: %v", err)
+	}
+	if reviewerWallet.Balance != 10 {
+		t.Fatalf("reviewer wallet balance = %v, want 10", reviewerWallet.Balance)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
+	if len(txs) != 1 {
+		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	}
+	if txs[0].UserID != 77 {
+		t.Fatalf("wallet tx user_id = %d, want 77", txs[0].UserID)
+	}
+	if txs[0].RefType != "admin_award" {
+		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, "admin_award")
+	}
+	if txs[0].RefID != fmt.Sprintf("admin_shop_delivery:%d", order.ID) {
+		t.Fatalf("wallet tx ref_id = %q", txs[0].RefID)
+	}
+	if txs[0].OperatorID != 0 {
+		t.Fatalf("wallet tx operator_id = %d, want 0", txs[0].OperatorID)
+	}
+}
+
+func TestAdminDeliverOrderWithZeroAdminAwardSkipsCredit(t *testing.T) {
+	db := newShopServiceTestDB(t)
+	useShopServiceTestDB(t, db)
+
+	if err := db.Create(&model.SystemConfig{
+		Key:   "pap.admin_award",
+		Value: "0",
+		Desc:  "admin award",
+	}).Error; err != nil {
+		t.Fatalf("create system config: %v", err)
+	}
+
+	product := &model.ShopProduct{
+		Name:      "Navy Omen",
+		Price:     10,
+		Stock:     -1,
+		Type:      model.ProductTypeNormal,
+		Status:    model.ProductStatusOnSale,
+		SortOrder: 1,
+	}
+	if err := db.Create(product).Error; err != nil {
+		t.Fatalf("create product: %v", err)
+	}
+
+	order := &model.ShopOrder{
+		OrderNo:           "ORDER-ADMIN-AWARD-ZERO",
+		UserID:            42,
+		MainCharacterName: "Pilot One",
+		Nickname:          "Pilot",
+		ProductID:         product.ID,
+		ProductName:       product.Name,
+		ProductType:       product.Type,
+		Quantity:          1,
+		UnitPrice:         product.Price,
+		TotalPrice:        product.Price,
+		Status:            model.OrderStatusRequested,
+	}
+	if err := db.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	svc := NewShopService()
+	svc.orderDeliveryMailSender = nil
+
+	if _, _, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "delivered"); err != nil {
+		t.Fatalf("AdminDeliverOrder() error = %v", err)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
+	if len(txs) != 0 {
+		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	}
+}
+
+func TestAdminDeliverOrderWithCustomAdminAwardCreditsConfiguredAmount(t *testing.T) {
+	db := newShopServiceTestDB(t)
+	useShopServiceTestDB(t, db)
+
+	if err := db.Create(&model.SystemConfig{
+		Key:   model.SysConfigPAPAdminAward,
+		Value: "18",
+		Desc:  "admin award",
+	}).Error; err != nil {
+		t.Fatalf("create system config: %v", err)
+	}
+
+	product := &model.ShopProduct{
+		Name:      "Navy Omen",
+		Price:     10,
+		Stock:     -1,
+		Type:      model.ProductTypeNormal,
+		Status:    model.ProductStatusOnSale,
+		SortOrder: 1,
+	}
+	if err := db.Create(product).Error; err != nil {
+		t.Fatalf("create product: %v", err)
+	}
+
+	order := &model.ShopOrder{
+		OrderNo:           "ORDER-ADMIN-AWARD-CUSTOM",
+		UserID:            42,
+		MainCharacterName: "Pilot One",
+		Nickname:          "Pilot",
+		ProductID:         product.ID,
+		ProductName:       product.Name,
+		ProductType:       product.Type,
+		Quantity:          1,
+		UnitPrice:         product.Price,
+		TotalPrice:        product.Price,
+		Status:            model.OrderStatusRequested,
+	}
+	if err := db.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	svc := NewShopService()
+	svc.orderDeliveryMailSender = nil
+
+	if _, _, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "delivered"); err != nil {
+		t.Fatalf("AdminDeliverOrder() error = %v", err)
+	}
+
+	var reviewerWallet model.SystemWallet
+	if err := db.Where("user_id = ?", 77).First(&reviewerWallet).Error; err != nil {
+		t.Fatalf("load reviewer wallet: %v", err)
+	}
+	if reviewerWallet.Balance != 18 {
+		t.Fatalf("reviewer wallet balance = %v, want 18", reviewerWallet.Balance)
+	}
+}
+
+func TestAdminDeliverOrderByShopOrderManagerSkipsAdminAward(t *testing.T) {
+	db := newShopServiceTestDB(t)
+	useShopServiceTestDB(t, db)
+
+	product := &model.ShopProduct{
+		Name:      "Navy Omen",
+		Price:     10,
+		Stock:     -1,
+		Type:      model.ProductTypeNormal,
+		Status:    model.ProductStatusOnSale,
+		SortOrder: 1,
+	}
+	if err := db.Create(product).Error; err != nil {
+		t.Fatalf("create product: %v", err)
+	}
+
+	order := &model.ShopOrder{
+		OrderNo:           "ORDER-ADMIN-AWARD-SHOP-ROLE",
+		UserID:            42,
+		MainCharacterName: "Pilot One",
+		Nickname:          "Pilot",
+		ProductID:         product.ID,
+		ProductName:       product.Name,
+		ProductType:       product.Type,
+		Quantity:          1,
+		UnitPrice:         product.Price,
+		TotalPrice:        product.Price,
+		Status:            model.OrderStatusRequested,
+	}
+	if err := db.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+
+	svc := NewShopService()
+	svc.orderDeliveryMailSender = nil
+
+	if _, _, err := svc.AdminDeliverOrder(order.ID, 77, shopOrderManagerOperatorRoles, "delivered"); err != nil {
+		t.Fatalf("AdminDeliverOrder() error = %v", err)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
+	if len(txs) != 0 {
+		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	}
 }
 
 func TestBuildShopOrderResponsesIncludesReviewerNickname(t *testing.T) {

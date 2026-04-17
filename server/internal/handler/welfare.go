@@ -317,7 +317,8 @@ func (h *WelfareHandler) AdminReviewApplication(c *gin.Context) {
 	}
 
 	reviewerID := middleware.GetUserID(c)
-	mailSummary, err := h.svc.AdminReviewApplication(req.ID, reviewerID, &service.AdminReviewApplicationRequest{
+	reviewerRoles := middleware.GetUserRoles(c)
+	mailSummary, err := h.svc.AdminReviewApplication(req.ID, reviewerID, reviewerRoles, &service.AdminReviewApplicationRequest{
 		Action: req.Action,
 	})
 	if err != nil {

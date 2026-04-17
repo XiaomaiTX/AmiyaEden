@@ -23,6 +23,7 @@ type shopOrderDeliveryMailSender func(ctx context.Context, operatorID uint, deli
 type ShopService struct {
 	repo      *repository.ShopRepository
 	walletSvc *SysWalletService
+	cfgRepo   adminAwardConfigReader
 	userRepo  *repository.UserRepository
 	charRepo  *repository.EveCharacterRepository
 	ssoSvc    *EveSSOService
@@ -35,6 +36,7 @@ func NewShopService() *ShopService {
 	svc := &ShopService{
 		repo:      repository.NewShopRepository(),
 		walletSvc: NewSysWalletService(),
+		cfgRepo:   repository.NewSysConfigRepository(),
 		userRepo:  repository.NewUserRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
 		ssoSvc:    newConfiguredEveSSOService(),
@@ -375,7 +377,7 @@ func (s *ShopService) AdminListOrders(page, pageSize int, filter repository.Orde
 }
 
 // AdminDeliverOrder 发放订单
-func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, remark string) (*model.ShopOrder, MailAttemptSummary, error) {
+func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, operatorRoles []string, remark string) (*model.ShopOrder, MailAttemptSummary, error) {
 	var deliveredOrder *model.ShopOrder
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		order, err := s.repo.GetOrderByIDForUpdateTx(tx, orderID)
@@ -404,6 +406,17 @@ func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, remark st
 		}
 		if !updated {
 			return errors.New("订单状态已变更，请刷新后重试")
+		}
+
+		if err := applyConfiguredAdminAwardTx(
+			tx,
+			s.cfgRepo,
+			operatorRoles,
+			operatorID,
+			fmt.Sprintf("管理员发放奖励: 商店订单 %s", order.OrderNo),
+			buildShopAdminAwardRefID(order.ID),
+		); err != nil {
+			return fmt.Errorf("发放管理员奖励失败: %w", err)
 		}
 
 		order.Status = model.OrderStatusDelivered

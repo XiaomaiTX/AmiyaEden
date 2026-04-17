@@ -2048,6 +2048,8 @@
     "fcSalaryMonthlyLimit": "FC Salary Monthly Cap",
     "fcSalaryMonthlyLimitHint": "The maximum number of salary payouts a single FC can receive each month. Default: 5.",
     "fcSalaryMonthlyLimitUnit": "times / month",
+    "adminAward": "Admin Delivery Award",
+    "adminAwardHint": "When an admin manually delivers a welfare claim or shop order, the admin receives this many Fuxi Coin automatically. Welfare officers and shop-order operators do not receive it. Set to 0 to disable. Default: 10.",
     "columns": {
       "type": "PAP Type",
       "rate": "Exchange Rate",
@@ -2270,6 +2272,7 @@
       "pap_reward": "PAP Reward",
       "pap_fc_salary": "FC Salary",
       "admin_adjust": "Admin Adjustment",
+      "admin_award": "Admin Delivery Award",
       "manual": "Manual",
       "srp_payout": "SRP Payout",
       "welfare_payout": "Welfare Payout",
