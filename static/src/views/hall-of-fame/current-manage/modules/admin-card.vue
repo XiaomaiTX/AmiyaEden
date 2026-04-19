@@ -18,6 +18,18 @@
         {{ admin.character_name }}
       </p>
       <p v-if="admin.description" class="fuxi-admin-card__description">{{ admin.description }}</p>
+      <div v-if="stats" class="fuxi-admin-card__stats">
+        <span v-if="stats.fleetLedCount > 0">
+          {{ t('hallOfFame.currentManage.fleetLedCount', { count: stats.fleetLedCount }) }}
+        </span>
+        <span v-if="stats.welfareDeliveryCount > 0">
+          {{
+            t('hallOfFame.currentManage.welfareDeliveryCount', {
+              count: stats.welfareDeliveryCount
+            })
+          }}
+        </span>
+      </div>
       <div class="fuxi-admin-card__contacts">
         <span v-if="admin.contact_qq" class="fuxi-admin-card__contact">
           <span class="fuxi-admin-card__contact-label">QQ</span>
@@ -53,7 +65,7 @@
   import { buildHallOfFamePortraitUrl } from '@/views/hall-of-fame/portrait.helpers'
 
   const props = defineProps<{
-    admin: Api.FuxiAdmin.Admin
+    admin: Api.FuxiAdmin.Admin | Api.FuxiAdmin.ManageAdmin
     styleConfig: Api.FuxiAdmin.Config
     canEdit: boolean
   }>()
@@ -68,6 +80,21 @@
   const portraitUrl = computed(() =>
     props.admin.character_id > 0 ? buildHallOfFamePortraitUrl(props.admin.character_id, 128) : ''
   )
+
+  const stats = computed(() => {
+    if (!('fleet_led_count' in props.admin)) {
+      return null
+    }
+
+    if (props.admin.fleet_led_count <= 0 && props.admin.welfare_delivery_count <= 0) {
+      return null
+    }
+
+    return {
+      fleetLedCount: props.admin.fleet_led_count,
+      welfareDeliveryCount: props.admin.welfare_delivery_count
+    }
+  })
 
   const cardStyle = computed(() => {
     const nameFontSize = props.styleConfig.base_font_size
@@ -175,6 +202,16 @@
     line-height: 1.6;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+  }
+
+  .fuxi-admin-card__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    color: var(--card-body-color, #d7dfef);
+    font-size: var(--card-description-font-size, 11px);
+    line-height: 1.5;
   }
 
   .fuxi-admin-card__contacts {

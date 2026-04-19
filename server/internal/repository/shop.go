@@ -27,6 +27,33 @@ func (r *ShopRepository) CountPendingOrders() (int64, error) {
 	return count, err
 }
 
+func (r *ShopRepository) CountDeliveredByReviewers(userIDs []uint) (map[uint]int64, error) {
+	result := make(map[uint]int64, len(userIDs))
+	if len(userIDs) == 0 {
+		return result, nil
+	}
+
+	type row struct {
+		ReviewedBy uint
+		Count      int64
+	}
+
+	var rows []row
+	err := global.DB.Model(&model.ShopOrder{}).
+		Select("reviewed_by, COUNT(*) AS count").
+		Where("reviewed_by IN ? AND status = ?", userIDs, model.OrderStatusDelivered).
+		Group("reviewed_by").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		result[row.ReviewedBy] = row.Count
+	}
+	return result, nil
+}
+
 // ─────────────────────────────────────────────
 //  商品
 // ─────────────────────────────────────────────

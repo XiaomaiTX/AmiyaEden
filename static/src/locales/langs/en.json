@@ -445,6 +445,10 @@
       "tierTitleColor": "Tier Title",
       "nameTextColor": "Name Text",
       "bodyTextColor": "Other Text",
+      "fleetLedCount": "Fleets led: {count}",
+      "welfareDeliveryCount": "Welfare deliveries: {count}",
+      "welfareDeliveryOffset": "Welfare delivery offset (legacy)",
+      "welfareDeliveryOffsetTip": "Only super admins can edit this. Use it to backfill deliveries completed before this feature launched.",
       "saveFailed": "Save failed",
       "saveSuccess": "Saved successfully",
       "deleteSuccess": "Deleted successfully"

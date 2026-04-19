@@ -2650,9 +2650,24 @@ declare namespace Api {
       admins: Admin[]
     }
 
+    interface ManageAdmin extends Admin {
+      welfare_delivery_offset: number
+      fleet_led_count: number
+      welfare_delivery_count: number
+    }
+
+    interface ManageTierWithAdmins extends Tier {
+      admins: ManageAdmin[]
+    }
+
     interface DirectoryResponse {
       config: Config
       tiers: TierWithAdmins[]
+    }
+
+    interface ManageDirectoryResponse {
+      config: Config
+      tiers: ManageTierWithAdmins[]
     }
 
     interface UpdateConfigParams {
@@ -2692,6 +2707,7 @@ declare namespace Api {
       contact_qq?: string
       contact_discord?: string
       character_id?: number
+      welfare_delivery_offset?: number
     }
   }
 }

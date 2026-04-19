@@ -172,6 +172,17 @@ func TestFuxiAdminDirectoryReadUsesLoggedInRouteGroup(t *testing.T) {
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins?token="+userToken, http.StatusOK)
 }
 
+func TestFuxiAdminManageDirectoryRequiresAdminRole(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router, userToken, adminToken, guestToken := newFuxiAdminManageDirectoryRouteTestRouter(t)
+
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory?token="+adminToken, http.StatusOK)
+}
+
 func TestSystemWebhookRequiresSuperAdmin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -391,6 +402,66 @@ func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, st
 	r := gin.New()
 	RegisterRoutes(r, newTaskRouterTestService(t))
 	return r, userToken, guestToken
+}
+
+func newFuxiAdminManageDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, string, string) {
+	t.Helper()
+
+	db := newFuxiAdminDirectoryRouteTestDB(t)
+
+	oldConfig := global.Config
+	oldLogger := global.Logger
+	oldDB := global.DB
+	oldRedis := global.Redis
+
+	global.Config = &config.Config{}
+	config.ApplyDefaults(global.Config)
+	global.Logger = zap.NewNop()
+	global.DB = db
+	global.Redis = redis.NewClient(&redis.Options{
+		Addr:         "127.0.0.1:0",
+		DialTimeout:  10 * time.Millisecond,
+		ReadTimeout:  10 * time.Millisecond,
+		WriteTimeout: 10 * time.Millisecond,
+		PoolTimeout:  10 * time.Millisecond,
+		MaxRetries:   0,
+	})
+
+	t.Cleanup(func() {
+		global.Config = oldConfig
+		global.Logger = oldLogger
+		global.DB = oldDB
+		if global.Redis != nil {
+			_ = global.Redis.Close()
+		}
+		global.Redis = oldRedis
+	})
+
+	roles := []model.UserRole{
+		{UserID: 1, RoleCode: model.RoleUser},
+		{UserID: 2, RoleCode: model.RoleAdmin},
+	}
+	if err := db.Create(&roles).Error; err != nil {
+		t.Fatalf("create user roles: %v", err)
+	}
+
+	jwt.Init("fuxi-admin-manage-router-test-secret")
+	userToken, err := jwt.GenerateToken(1, 1001, model.RoleUser, 1)
+	if err != nil {
+		t.Fatalf("generate user token: %v", err)
+	}
+	adminToken, err := jwt.GenerateToken(2, 1002, model.RoleAdmin, 1)
+	if err != nil {
+		t.Fatalf("generate admin token: %v", err)
+	}
+	guestToken, err := jwt.GenerateToken(3, 1003, model.RoleGuest, 1)
+	if err != nil {
+		t.Fatalf("generate guest token: %v", err)
+	}
+
+	r := gin.New()
+	RegisterRoutes(r, newTaskRouterTestService(t))
+	return r, userToken, adminToken, guestToken
 }
 
 func newFuxiAdminDirectoryRouteTestDB(t *testing.T) *gorm.DB {

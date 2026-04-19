@@ -398,14 +398,15 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
+| GET | `/system/fuxi-admins/manage-directory` | 获取管理端名录（含带队次数、福利发放次数与历史偏移） | `RequireRole(admin)` |
 | GET | `/system/fuxi-admins/config` | 获取伏羲管理名录配置（单例） | `RequireRole(admin)` |
 | PUT | `/system/fuxi-admins/config` | 更新字体大小配置 | `RequireRole(admin)` |
 | GET | `/system/fuxi-admins/tiers` | 获取层级列表 | `RequireRole(admin)` |
 | POST | `/system/fuxi-admins/tiers` | 创建新层级 | `RequireRole(admin)` |
 | PUT | `/system/fuxi-admins/tiers/:id` | 更新层级名称 | `RequireRole(admin)` |
 | DELETE | `/system/fuxi-admins/tiers/:id` | 删除层级（级联删除管理员） | `RequireRole(admin)` |
-| POST | `/system/fuxi-admins` | 创建管理员 | `RequireRole(admin)` |
-| PUT | `/system/fuxi-admins/:id` | 更新管理员 | `RequireRole(admin)` |
+| POST | `/system/fuxi-admins` | 创建管理员；响应包含管理端统计字段 | `RequireRole(admin)` |
+| PUT | `/system/fuxi-admins/:id` | 更新管理员；`welfare_delivery_offset` 仅 `super_admin` 可改，响应包含管理端统计字段 | `RequireRole(admin)` |
 | DELETE | `/system/fuxi-admins/:id` | 删除管理员 | `RequireRole(admin)` |
 
 ### Newbro Admin

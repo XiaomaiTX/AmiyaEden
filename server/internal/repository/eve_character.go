@@ -57,6 +57,24 @@ func (r *EveCharacterRepository) ListByCharacterIDs(characterIDs []int64) ([]mod
 	return chars, err
 }
 
+func (r *EveCharacterRepository) ListUserIDsByCharacterIDs(characterIDs []int64) (map[int64]uint, error) {
+	result := make(map[int64]uint, len(characterIDs))
+	if len(characterIDs) == 0 {
+		return result, nil
+	}
+
+	chars, err := r.ListByCharacterIDs(characterIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, char := range chars {
+		result[char.CharacterID] = char.UserID
+	}
+
+	return result, nil
+}
+
 // Update 更新人物信息
 func (r *EveCharacterRepository) Update(char *model.EveCharacter) error {
 	return global.DB.Save(char).Error
