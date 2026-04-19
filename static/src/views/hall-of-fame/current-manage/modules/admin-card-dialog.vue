@@ -53,6 +53,16 @@
       <ElFormItem :label="t('hallOfFame.currentManage.contactDiscordLabel')">
         <ElInput v-model="form.contactDiscord" />
       </ElFormItem>
+
+      <ElFormItem
+        v-if="canEditOffset && admin"
+        :label="t('hallOfFame.currentManage.welfareDeliveryOffset')"
+      >
+        <ElInputNumber v-model="form.welfareDeliveryOffset" :min="0" :step="1" />
+        <p class="admin-card-dialog__field-tip">
+          {{ t('hallOfFame.currentManage.welfareDeliveryOffsetTip') }}
+        </p>
+      </ElFormItem>
     </ElForm>
 
     <template #footer>
@@ -73,14 +83,15 @@
 
   const props = defineProps<{
     modelValue: boolean
-    admin: Api.FuxiAdmin.Admin | null
+    admin: Api.FuxiAdmin.Admin | Api.FuxiAdmin.ManageAdmin | null
+    canEditOffset: boolean
     defaultTierId: number | null
     tiers: Api.FuxiAdmin.Tier[]
   }>()
 
   const emit = defineEmits<{
     'update:modelValue': [value: boolean]
-    saved: [admin: Api.FuxiAdmin.Admin]
+    saved: [admin: Api.FuxiAdmin.ManageAdmin]
   }>()
 
   const { t } = useI18n()
@@ -92,9 +103,18 @@
     characterName: '',
     description: '',
     characterId: 0,
+    welfareDeliveryOffset: 0,
     contactQq: '',
     contactDiscord: ''
   })
+
+  function getManageAdminOffset(admin: Api.FuxiAdmin.Admin | Api.FuxiAdmin.ManageAdmin | null) {
+    if (!admin || !('welfare_delivery_offset' in admin)) {
+      return 0
+    }
+
+    return admin.welfare_delivery_offset
+  }
 
   const portraitPreviewUrl = computed(() =>
     form.characterId > 0 ? buildHallOfFamePortraitUrl(form.characterId, 64) : ''
@@ -109,6 +129,7 @@
         form.characterName = props.admin?.character_name ?? ''
         form.description = props.admin?.description ?? ''
         form.characterId = props.admin?.character_id ?? 0
+        form.welfareDeliveryOffset = getManageAdminOffset(props.admin)
         form.contactQq = props.admin?.contact_qq ?? ''
         form.contactDiscord = props.admin?.contact_discord ?? ''
       }
@@ -122,6 +143,7 @@
       characterName: '',
       description: '',
       characterId: 0,
+      welfareDeliveryOffset: 0,
       contactQq: '',
       contactDiscord: ''
     })
@@ -138,7 +160,7 @@
     }
     saving.value = true
     try {
-      const payload = {
+      const basePayload = {
         tier_id: form.tierId,
         nickname: form.nickname.trim(),
         character_name: form.characterName.trim(),
@@ -146,10 +168,14 @@
         character_id: form.characterId || 0,
         contact_qq: form.contactQq.trim(),
         contact_discord: form.contactDiscord.trim()
-      }
+      } satisfies Api.FuxiAdmin.CreateAdminParams
+
       const saved = props.admin
-        ? await updateFuxiAdmin(props.admin.id, payload)
-        : await createFuxiAdmin(payload)
+        ? await updateFuxiAdmin(props.admin.id, {
+            ...basePayload,
+            ...(props.canEditOffset ? { welfare_delivery_offset: form.welfareDeliveryOffset } : {})
+          })
+        : await createFuxiAdmin(basePayload)
       emit('saved', saved)
       emit('update:modelValue', false)
     } catch (error) {
@@ -163,6 +189,13 @@
 </script>
 
 <style scoped>
+  .admin-card-dialog__field-tip {
+    margin: 8px 0 0;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
   .admin-card-dialog__portrait-preview {
     margin-top: 8px;
   }

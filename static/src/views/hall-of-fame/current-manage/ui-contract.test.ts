@@ -18,7 +18,7 @@ const zhMessages = JSON.parse(
 test('current-manage page removes the title banner and exposes color controls', () => {
   assert.doesNotMatch(indexSource, /hallOfFame\.currentManage\.title/)
   assert.match(indexSource, /ElColorPicker/)
-  assert.match(indexSource, /v-if="canEdit && directory"/)
+  assert.match(indexSource, /v-if="hasManageAccess && directory"/)
   assert.match(
     indexSource,
     /pageBackgroundColor|cardBackgroundColor|cardBorderColor|tierTitleColor|nameTextColor|bodyTextColor/
@@ -46,6 +46,26 @@ test('current-manage page exposes an explicit load failure state with dedicated 
   assert.match(indexSource, /v-else-if="loadErrorMessage/)
   assert.equal(typeof enMessages.hallOfFame.currentManage.loadFailed, 'string')
   assert.equal(typeof zhMessages.hallOfFame.currentManage.loadFailed, 'string')
+})
+
+test('current-manage page falls back to the public directory when manage access is denied', () => {
+  assert.match(indexSource, /loadFuxiAdminPageDirectory/)
+  assert.match(indexSource, /hadManageAccess: hasManageAccess\.value/)
+  assert.match(indexSource, /loadManageDirectory: fetchFuxiAdminManageDirectory/)
+  assert.match(indexSource, /loadPublicDirectory: fetchFuxiAdminDirectory/)
+  assert.match(indexSource, /hasManageAccess\.value = nextManageAccess/)
+})
+
+test('current-manage page merges saved admins back into the local directory state', () => {
+  assert.match(indexSource, /mergeSavedAdminIntoDirectory/)
+  assert.match(indexSource, /directory\.value = mergeSavedAdminIntoDirectory\(/)
+  assert.match(indexSource, /directory\.value as Api\.FuxiAdmin\.ManageDirectoryResponse/)
+  assert.match(indexSource, /savedAdmin/)
+})
+
+test('admin-card dialog restricts the welfare delivery offset to non-negative values', () => {
+  assert.match(adminDialogSource, /welfareDeliveryOffset/)
+  assert.match(adminDialogSource, /:min="0"/)
 })
 
 test('admin-card dialog accepts a default tier id for add flows', () => {

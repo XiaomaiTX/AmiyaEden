@@ -20,7 +20,16 @@ func newFuxiAdminServiceTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.FuxiAdminConfig{}, &model.FuxiAdminTier{}, &model.FuxiAdmin{}); err != nil {
+	if err := db.AutoMigrate(
+		&model.FuxiAdminConfig{},
+		&model.FuxiAdminTier{},
+		&model.FuxiAdmin{},
+		&model.User{},
+		&model.EveCharacter{},
+		&model.Fleet{},
+		&model.WelfareApplication{},
+		&model.ShopOrder{},
+	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db
@@ -409,5 +418,161 @@ func TestFuxiAdminUpdateAdminPreservesInfrastructureErrors(t *testing.T) {
 	}
 	if err.Error() == "管理员不存在" {
 		t.Fatalf("expected infrastructure error instead of not-found message, got %v", err)
+	}
+}
+
+func TestFuxiAdminGetManageDirectoryIncludesCountsAndOffset(t *testing.T) {
+	useFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+
+	linkedUser := model.User{Nickname: "Linked User", PrimaryCharacterID: 9999}
+	if err := global.DB.Create(&linkedUser).Error; err != nil {
+		t.Fatalf("create linked user: %v", err)
+	}
+	linkedCharacter := model.EveCharacter{CharacterID: 1001, CharacterName: "Linked Alt", UserID: linkedUser.ID}
+	if err := global.DB.Create(&linkedCharacter).Error; err != nil {
+		t.Fatalf("create linked character: %v", err)
+	}
+
+	admins := []model.FuxiAdmin{
+		{TierID: tier.ID, Nickname: "Linked", CharacterID: 1001, WelfareDeliveryOffset: 4},
+		{TierID: tier.ID, Nickname: "Unlinked", CharacterID: 2002},
+	}
+	if err := global.DB.Create(&admins).Error; err != nil {
+		t.Fatalf("create admins: %v", err)
+	}
+
+	deletedAt := time.Now()
+	fleets := []model.Fleet{
+		{ID: "fleet-1", Title: "Fleet One", StartAt: time.Now(), EndAt: time.Now().Add(time.Hour), Importance: model.FleetImportanceOther, FCUserID: linkedUser.ID, FCCharacterID: 1001, FCCharacterName: "Linked"},
+		{ID: "fleet-2", Title: "Fleet Two", StartAt: time.Now(), EndAt: time.Now().Add(time.Hour), Importance: model.FleetImportanceOther, FCUserID: linkedUser.ID, FCCharacterID: 1001, FCCharacterName: "Linked"},
+		{ID: "fleet-3", Title: "Deleted Fleet", StartAt: time.Now(), EndAt: time.Now().Add(time.Hour), Importance: model.FleetImportanceOther, FCUserID: linkedUser.ID, FCCharacterID: 1001, FCCharacterName: "Linked", DeletedAt: &deletedAt},
+	}
+	if err := global.DB.Create(&fleets).Error; err != nil {
+		t.Fatalf("create fleets: %v", err)
+	}
+
+	welfareApps := []model.WelfareApplication{
+		{WelfareID: 1, CharacterID: 1001, CharacterName: "One", Status: model.WelfareAppStatusDelivered, ReviewedBy: linkedUser.ID},
+		{WelfareID: 1, CharacterID: 1002, CharacterName: "Two", Status: model.WelfareAppStatusDelivered, ReviewedBy: linkedUser.ID},
+		{WelfareID: 1, CharacterID: 1003, CharacterName: "Three", Status: model.WelfareAppStatusRequested, ReviewedBy: linkedUser.ID},
+	}
+	if err := global.DB.Create(&welfareApps).Error; err != nil {
+		t.Fatalf("create welfare applications: %v", err)
+	}
+
+	reviewedBy := linkedUser.ID
+	shopOrders := []model.ShopOrder{
+		{OrderNo: "SO-1", UserID: linkedUser.ID, ProductID: 1, ProductName: "One", ProductType: model.ProductTypeNormal, UnitPrice: 1, TotalPrice: 1, Status: model.OrderStatusDelivered, ReviewedBy: &reviewedBy},
+		{OrderNo: "SO-2", UserID: linkedUser.ID, ProductID: 1, ProductName: "Two", ProductType: model.ProductTypeNormal, UnitPrice: 1, TotalPrice: 1, Status: model.OrderStatusDelivered, ReviewedBy: &reviewedBy},
+		{OrderNo: "SO-3", UserID: linkedUser.ID, ProductID: 1, ProductName: "Three", ProductType: model.ProductTypeNormal, UnitPrice: 1, TotalPrice: 1, Status: model.OrderStatusDelivered, ReviewedBy: &reviewedBy},
+		{OrderNo: "SO-4", UserID: linkedUser.ID, ProductID: 1, ProductName: "Four", ProductType: model.ProductTypeNormal, UnitPrice: 1, TotalPrice: 1, Status: model.OrderStatusRequested, ReviewedBy: &reviewedBy},
+	}
+	if err := global.DB.Create(&shopOrders).Error; err != nil {
+		t.Fatalf("create shop orders: %v", err)
+	}
+
+	dir, err := svc.GetManageDirectory()
+	if err != nil {
+		t.Fatalf("GetManageDirectory: %v", err)
+	}
+	if len(dir.Tiers) != 1 {
+		t.Fatalf("expected 1 tier, got %d", len(dir.Tiers))
+	}
+	if len(dir.Tiers[0].Admins) != 2 {
+		t.Fatalf("expected 2 admins, got %d", len(dir.Tiers[0].Admins))
+	}
+
+	gotByNickname := make(map[string]FuxiAdminManageAdmin, len(dir.Tiers[0].Admins))
+	for _, admin := range dir.Tiers[0].Admins {
+		gotByNickname[admin.Nickname] = admin
+	}
+
+	linked := gotByNickname["Linked"]
+	if linked.FleetLedCount != 2 {
+		t.Fatalf("expected linked admin fleet count 2, got %d", linked.FleetLedCount)
+	}
+	if linked.WelfareDeliveryCount != 9 {
+		t.Fatalf("expected linked admin welfare delivery count 9, got %d", linked.WelfareDeliveryCount)
+	}
+	if linked.WelfareDeliveryOffset != 4 {
+		t.Fatalf("expected linked admin offset 4, got %d", linked.WelfareDeliveryOffset)
+	}
+
+	unlinked := gotByNickname["Unlinked"]
+	if unlinked.FleetLedCount != 0 {
+		t.Fatalf("expected unlinked admin fleet count 0, got %d", unlinked.FleetLedCount)
+	}
+	if unlinked.WelfareDeliveryCount != 0 {
+		t.Fatalf("expected unlinked admin welfare delivery count 0, got %d", unlinked.WelfareDeliveryCount)
+	}
+}
+
+func TestFuxiAdminUpdateAdminRejectsNegativeWelfareDeliveryOffset(t *testing.T) {
+	useFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+	admin, err := svc.CreateAdmin(&FuxiAdminCreateAdminRequest{TierID: tier.ID, Nickname: "Alpha"})
+	if err != nil {
+		t.Fatalf("CreateAdmin: %v", err)
+	}
+
+	negativeOffset := -1
+	_, err = svc.UpdateAdmin(admin.ID, &FuxiAdminUpdateAdminRequest{WelfareDeliveryOffset: &negativeOffset})
+	if err == nil {
+		t.Fatal("expected negative welfare delivery offset to be rejected")
+	}
+	if !IsUserVisibleError(err) {
+		t.Fatalf("expected user-visible error, got %v", err)
+	}
+	if err.Error() != "福利发放次数偏移不能为负数" {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestFuxiAdminGetManageDirectoryFallsBackToPrimaryCharacterLookup(t *testing.T) {
+	useFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	tier, err := svc.CreateTier(&FuxiAdminCreateTierRequest{Name: "Ops"})
+	if err != nil {
+		t.Fatalf("CreateTier: %v", err)
+	}
+
+	linkedUser := model.User{Nickname: "Primary Linked User", PrimaryCharacterID: 3003}
+	if err := global.DB.Create(&linkedUser).Error; err != nil {
+		t.Fatalf("create linked user: %v", err)
+	}
+
+	admins := []model.FuxiAdmin{{TierID: tier.ID, Nickname: "Primary Linked", CharacterID: 3003}}
+	if err := global.DB.Create(&admins).Error; err != nil {
+		t.Fatalf("create admins: %v", err)
+	}
+
+	fleets := []model.Fleet{
+		{ID: "fleet-primary-1", Title: "Fleet One", StartAt: time.Now(), EndAt: time.Now().Add(time.Hour), Importance: model.FleetImportanceOther, FCUserID: linkedUser.ID, FCCharacterID: 3003, FCCharacterName: "Primary Linked"},
+	}
+	if err := global.DB.Create(&fleets).Error; err != nil {
+		t.Fatalf("create fleets: %v", err)
+	}
+
+	dir, err := svc.GetManageDirectory()
+	if err != nil {
+		t.Fatalf("GetManageDirectory: %v", err)
+	}
+	if len(dir.Tiers) != 1 || len(dir.Tiers[0].Admins) != 1 {
+		t.Fatalf("unexpected directory shape: %+v", dir.Tiers)
+	}
+	if dir.Tiers[0].Admins[0].FleetLedCount != 1 {
+		t.Fatalf("expected primary-character fallback fleet count 1, got %d", dir.Tiers[0].Admins[0].FleetLedCount)
 	}
 }

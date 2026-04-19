@@ -95,6 +95,24 @@ func (r *UserRepository) GetByPrimaryCharacterID(characterID int64) (*model.User
 	return &user, nil
 }
 
+func (r *UserRepository) ListByPrimaryCharacterIDs(characterIDs []int64) (map[int64]uint, error) {
+	result := make(map[int64]uint, len(characterIDs))
+	if len(characterIDs) == 0 {
+		return result, nil
+	}
+
+	var users []model.User
+	err := global.DB.Where("primary_character_id IN ?", characterIDs).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, user := range users {
+		result[user.PrimaryCharacterID] = user.ID
+	}
+	return result, nil
+}
+
 // GetByQQ 根据 QQ 号码查询用户
 func (r *UserRepository) GetByQQ(qq string) (*model.User, error) {
 	var user model.User

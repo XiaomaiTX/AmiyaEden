@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
@@ -10,6 +11,8 @@ import (
 
 type fuxiAdminService interface {
 	GetDirectory() (*service.FuxiAdminDirectoryResponse, error)
+	GetManageDirectory() (*service.FuxiAdminManageDirectoryResponse, error)
+	GetManageAdmin(id uint) (*service.FuxiAdminManageAdmin, error)
 	GetConfig() (*model.FuxiAdminConfig, error)
 	UpdateConfig(req *service.FuxiAdminUpdateConfigRequest) (*model.FuxiAdminConfig, error)
 	ListTiers() ([]model.FuxiAdminTier, error)
@@ -38,6 +41,15 @@ func respondFuxiAdminError(c *gin.Context, err error, fallback string) {
 	response.Fail(c, response.CodeBizError, message)
 }
 
+func buildFallbackManageAdmin(admin *model.FuxiAdmin) *service.FuxiAdminManageAdmin {
+	return &service.FuxiAdminManageAdmin{
+		FuxiAdmin:             *admin,
+		WelfareDeliveryOffset: admin.WelfareDeliveryOffset,
+		FleetLedCount:         0,
+		WelfareDeliveryCount:  int64(admin.WelfareDeliveryOffset),
+	}
+}
+
 // ─── Public ───
 
 // GetDirectory GET /api/v1/fuxi-admins
@@ -45,6 +57,16 @@ func (h *FuxiAdminHandler) GetDirectory(c *gin.Context) {
 	dir, err := h.svc.GetDirectory()
 	if err != nil {
 		respondFuxiAdminError(c, err, "获取伏羲管理名录失败")
+		return
+	}
+	response.OK(c, dir)
+}
+
+// GetManageDirectory GET /api/v1/system/fuxi-admins/manage-directory
+func (h *FuxiAdminHandler) GetManageDirectory(c *gin.Context) {
+	dir, err := h.svc.GetManageDirectory()
+	if err != nil {
+		respondFuxiAdminError(c, err, "获取伏羲管理名录管理视图失败")
 		return
 	}
 	response.OK(c, dir)
@@ -150,7 +172,12 @@ func (h *FuxiAdminHandler) CreateAdmin(c *gin.Context) {
 		respondFuxiAdminError(c, err, "创建伏羲管理员失败")
 		return
 	}
-	response.OK(c, admin)
+	manageAdmin, err := h.svc.GetManageAdmin(admin.ID)
+	if err != nil {
+		response.OK(c, buildFallbackManageAdmin(admin))
+		return
+	}
+	response.OK(c, manageAdmin)
 }
 
 // UpdateAdmin PUT /api/v1/system/fuxi-admins/:id
@@ -164,12 +191,21 @@ func (h *FuxiAdminHandler) UpdateAdmin(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
+	if req.WelfareDeliveryOffset != nil && !model.IsSuperAdmin(middleware.GetUserRoles(c)) {
+		response.Fail(c, response.CodeForbidden, "仅超级管理员可修改福利发放次数偏移")
+		return
+	}
 	admin, err := h.svc.UpdateAdmin(id, &req)
 	if err != nil {
 		respondFuxiAdminError(c, err, "更新伏羲管理员失败")
 		return
 	}
-	response.OK(c, admin)
+	manageAdmin, err := h.svc.GetManageAdmin(admin.ID)
+	if err != nil {
+		response.OK(c, buildFallbackManageAdmin(admin))
+		return
+	}
+	response.OK(c, manageAdmin)
 }
 
 // DeleteAdmin DELETE /api/v1/system/fuxi-admins/:id

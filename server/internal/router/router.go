@@ -527,6 +527,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// 管理端点（admin group 已要求 RoleAdmin）
 	adminFuxiAdmin := admin.Group("/fuxi-admins")
 	{
+		adminFuxiAdmin.GET("/manage-directory", fuxiAdminH.GetManageDirectory)
 		adminFuxiAdmin.GET("/config", fuxiAdminH.GetConfig)
 		adminFuxiAdmin.PUT("/config", fuxiAdminH.UpdateConfig)
 		adminFuxiAdmin.GET("/tiers", fuxiAdminH.ListTiers)

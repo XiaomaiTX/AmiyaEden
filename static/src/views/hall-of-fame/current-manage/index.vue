@@ -1,7 +1,7 @@
 <template>
   <div class="fuxi-directory art-full-height" :style="directoryStyle" v-loading="loading">
     <div class="fuxi-directory__inner">
-      <div v-if="canEdit && directory" class="fuxi-directory__admin-bar">
+      <div v-if="hasManageAccess && directory" class="fuxi-directory__admin-bar">
         <section class="fuxi-directory__settings-group">
           <p class="fuxi-directory__settings-title">
             {{ t('hallOfFame.currentManage.layoutSettings') }}
@@ -109,7 +109,7 @@
           :key="tier.id"
           :tier="tier"
           :style-config="styleConfig"
-          :can-edit="canEdit"
+          :can-edit="hasManageAccess"
           @edit-tier="openEditTier(tier)"
           @delete-tier="handleDeleteTier(tier)"
           @add-admin="openAddAdmin(tier)"
@@ -133,6 +133,7 @@
     <AdminCardDialog
       v-model="adminDialogOpen"
       :admin="editingAdmin"
+      :can-edit-offset="isSuperAdmin"
       :default-tier-id="addingAdminToTierId"
       :tiers="allTiers"
       @saved="handleAdminSaved"
@@ -149,20 +150,26 @@
     deleteFuxiAdmin,
     deleteFuxiAdminTier,
     fetchFuxiAdminDirectory,
+    fetchFuxiAdminManageDirectory,
     updateFuxiAdminConfig
   } from '@/api/fuxi-admins'
   import { useUserStore } from '@/store/modules/user'
 
-  import { loadFuxiAdminDirectoryState } from './load-directory-state'
+  import { mergeSavedAdminIntoDirectory } from './directory-merge'
+  import { loadFuxiAdminPageDirectory } from './load-directory-state'
   import AdminCardDialog from './modules/admin-card-dialog.vue'
   import TierDialog from './modules/tier-dialog.vue'
   import TierSection from './modules/tier-section.vue'
+
+  type DirectoryResponse = Api.FuxiAdmin.DirectoryResponse | Api.FuxiAdmin.ManageDirectoryResponse
+  type EditableTier = Api.FuxiAdmin.TierWithAdmins | Api.FuxiAdmin.ManageTierWithAdmins
+  type EditableAdmin = Api.FuxiAdmin.Admin | Api.FuxiAdmin.ManageAdmin
 
   const { t } = useI18n()
   const userStore = useUserStore()
 
   const loading = ref(false)
-  const directory = ref<Api.FuxiAdmin.DirectoryResponse | null>(null)
+  const directory = ref<DirectoryResponse | null>(null)
   const localFontSize = ref(14)
   const cardWidth = ref(240)
   const pageBackgroundColor = ref('#10243a')
@@ -175,16 +182,18 @@
   const tierDialogOpen = ref(false)
   const editingTier = ref<Api.FuxiAdmin.Tier | null>(null)
   const adminDialogOpen = ref(false)
-  const editingAdmin = ref<Api.FuxiAdmin.Admin | null>(null)
+  const editingAdmin = ref<EditableAdmin | null>(null)
   const addingAdminToTierId = ref<number | null>(null)
   const loadErrorMessage = ref<string | null>(null)
+  const hasManageAccess = ref(false)
   let pendingConfigSnapshot: Api.FuxiAdmin.UpdateConfigParams | null = null
   const configSaveInFlight = ref(false)
 
-  const canEdit = computed(() => {
-    const roles = userStore.getUserInfo?.roles ?? []
-    return roles.some((role) => ['super_admin', 'admin'].includes(role))
-  })
+  const roles = computed(() => userStore.getUserInfo?.roles ?? [])
+  const hasEditRole = computed(() =>
+    roles.value.some((role) => ['super_admin', 'admin'].includes(role))
+  )
+  const isSuperAdmin = computed(() => hasManageAccess.value && roles.value.includes('super_admin'))
 
   const allTiers = computed<Api.FuxiAdmin.Tier[]>(() => directory.value?.tiers ?? [])
   const styleConfig = computed<Api.FuxiAdmin.Config>(() => ({
@@ -211,13 +220,20 @@
   async function loadDirectory() {
     loading.value = true
     loadErrorMessage.value = null
-    const loadFailedMessage = t('hallOfFame.currentManage.loadFailed')
-
     const {
       directory: nextDirectory,
       loadErrorMessage: nextLoadErrorMessage,
-      showErrorToast
-    } = await loadFuxiAdminDirectoryState(fetchFuxiAdminDirectory, loadFailedMessage)
+      showErrorToast,
+      hasManageAccess: nextManageAccess
+    } = await loadFuxiAdminPageDirectory({
+      hadManageAccess: hasManageAccess.value,
+      hasEditRole: hasEditRole.value,
+      loadFailedMessage: t('hallOfFame.currentManage.loadFailed'),
+      loadManageDirectory: fetchFuxiAdminManageDirectory,
+      loadPublicDirectory: fetchFuxiAdminDirectory
+    })
+
+    hasManageAccess.value = nextManageAccess
 
     if (nextDirectory) {
       directory.value = nextDirectory
@@ -357,7 +373,7 @@
     tierDialogOpen.value = true
   }
 
-  function openEditTier(tier: Api.FuxiAdmin.TierWithAdmins) {
+  function openEditTier(tier: EditableTier) {
     editingTier.value = tier
     tierDialogOpen.value = true
   }
@@ -381,7 +397,7 @@
     directory.value.tiers = sortTiers(directory.value.tiers)
   }
 
-  async function handleDeleteTier(tier: Api.FuxiAdmin.TierWithAdmins) {
+  async function handleDeleteTier(tier: EditableTier) {
     try {
       await ElMessageBox.confirm(
         t('hallOfFame.currentManage.deleteTierConfirm'),
@@ -409,48 +425,29 @@
     }
   }
 
-  function openAddAdmin(tier: Api.FuxiAdmin.TierWithAdmins) {
+  function openAddAdmin(tier: EditableTier) {
     editingAdmin.value = null
     addingAdminToTierId.value = tier.id
     adminDialogOpen.value = true
   }
 
-  function openEditAdmin(admin: Api.FuxiAdmin.Admin) {
+  function openEditAdmin(admin: EditableAdmin) {
     editingAdmin.value = admin
     addingAdminToTierId.value = null
     adminDialogOpen.value = true
   }
 
-  function handleAdminSaved(savedAdmin: Api.FuxiAdmin.Admin) {
-    if (!directory.value) {
-      return
-    }
-
-    for (const tier of directory.value.tiers) {
-      const idx = tier.admins.findIndex((admin) => admin.id === savedAdmin.id)
-      if (idx >= 0) {
-        if (savedAdmin.tier_id !== tier.id) {
-          tier.admins = tier.admins.filter((admin) => admin.id !== savedAdmin.id)
-          const newTier = directory.value.tiers.find((item) => item.id === savedAdmin.tier_id)
-          if (newTier) {
-            newTier.admins = [...newTier.admins, savedAdmin]
-          }
-        } else {
-          tier.admins[idx] = savedAdmin
-        }
-        addingAdminToTierId.value = null
-        return
-      }
-    }
-
-    const targetTier = directory.value.tiers.find((tier) => tier.id === savedAdmin.tier_id)
-    if (targetTier) {
-      targetTier.admins = [...targetTier.admins, savedAdmin]
+  function handleAdminSaved(savedAdmin: Api.FuxiAdmin.ManageAdmin) {
+    if (directory.value && hasManageAccess.value) {
+      directory.value = mergeSavedAdminIntoDirectory(
+        directory.value as Api.FuxiAdmin.ManageDirectoryResponse,
+        savedAdmin
+      )
     }
     addingAdminToTierId.value = null
   }
 
-  async function handleDeleteAdmin(admin: Api.FuxiAdmin.Admin) {
+  async function handleDeleteAdmin(admin: EditableAdmin) {
     try {
       await ElMessageBox.confirm(
         t('hallOfFame.currentManage.deleteAdminConfirm'),
