@@ -39,7 +39,7 @@
   import AdminCard from './admin-card.vue'
 
   const props = defineProps<{
-    tier: Api.FuxiAdmin.TierWithAdmins
+    tier: Api.FuxiAdmin.TierWithAdmins | Api.FuxiAdmin.ManageTierWithAdmins
     styleConfig: Api.FuxiAdmin.Config
     canEdit: boolean
   }>()
@@ -48,8 +48,8 @@
     'edit-tier': []
     'delete-tier': []
     'add-admin': []
-    'edit-admin': [admin: Api.FuxiAdmin.Admin]
-    'delete-admin': [admin: Api.FuxiAdmin.Admin]
+    'edit-admin': [admin: Api.FuxiAdmin.Admin | Api.FuxiAdmin.ManageAdmin]
+    'delete-admin': [admin: Api.FuxiAdmin.Admin | Api.FuxiAdmin.ManageAdmin]
   }>()
 
   const { t } = useI18n()

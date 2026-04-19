@@ -445,6 +445,10 @@
       "tierTitleColor": "层级标题色",
       "nameTextColor": "姓名文字色",
       "bodyTextColor": "其他文字色",
+      "fleetLedCount": "带队次数：{count}",
+      "welfareDeliveryCount": "福利发放次数：{count}",
+      "welfareDeliveryOffset": "福利发放次数偏移（历史数据）",
+      "welfareDeliveryOffsetTip": "仅超级管理员可修改。用于补齐本功能上线前的发放次数。",
       "saveFailed": "保存失败",
       "saveSuccess": "保存成功",
       "deleteSuccess": "删除成功"

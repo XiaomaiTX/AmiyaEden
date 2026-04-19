@@ -10,7 +10,7 @@ test('fuxi directory page renders tier sections and empty state', () => {
 })
 
 test('fuxi directory page shows editor-only settings for layout and grouped colors', () => {
-  assert.match(source, /canEdit/)
+  assert.match(source, /hasManageAccess/)
   assert.match(source, /hallOfFame\.currentManage\.addTier/)
   assert.match(source, /hallOfFame\.currentManage\.baseFontSize/)
   assert.match(source, /hallOfFame\.currentManage\.cardWidth/)

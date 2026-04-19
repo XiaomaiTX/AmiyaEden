@@ -47,6 +47,33 @@ func (r *FleetRepository) Update(fleet *model.Fleet) error {
 	return global.DB.Save(fleet).Error
 }
 
+func (r *FleetRepository) CountByCreatorUserIDs(userIDs []uint) (map[uint]int64, error) {
+	result := make(map[uint]int64, len(userIDs))
+	if len(userIDs) == 0 {
+		return result, nil
+	}
+
+	type row struct {
+		FCUserID uint
+		Count    int64
+	}
+
+	var rows []row
+	err := global.DB.Model(&model.Fleet{}).
+		Select("fc_user_id, COUNT(*) AS count").
+		Where("fc_user_id IN ? AND deleted_at IS NULL", userIDs).
+		Group("fc_user_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		result[row.FCUserID] = row.Count
+	}
+	return result, nil
+}
+
 // SoftDelete 软删除舰队
 func (r *FleetRepository) SoftDelete(id string) error {
 	return global.DB.Model(&model.Fleet{}).Where("id = ?", id).
