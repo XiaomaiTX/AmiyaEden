@@ -439,22 +439,28 @@ func (s *ShopService) attemptOrderDeliveryMail(operatorID uint, deliveredOrder *
 		return MailAttemptSummary{}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	summary, err := s.orderDeliveryMailSender(ctx, operatorID, deliveredOrder)
-	if err != nil {
-		if global.Logger != nil {
+	orderSnapshot := cloneShopOrderForMail(deliveredOrder)
+	dispatchMailAttemptAsync(
+		func(ctx context.Context) (MailAttemptSummary, error) {
+			return s.orderDeliveryMailSender(ctx, operatorID, orderSnapshot)
+		},
+		func(_ MailAttemptSummary, err error) {
+			if global.Logger == nil {
+				return
+			}
 			global.Logger.Warn("商店订单发放后邮件尝试失败",
 				zap.Uint("operator_user_id", operatorID),
-				zap.Uint("order_id", deliveredOrder.ID),
-				zap.String("order_no", deliveredOrder.OrderNo),
+				zap.Uint("order_id", orderSnapshot.ID),
+				zap.String("order_no", orderSnapshot.OrderNo),
 				zap.Error(err),
 			)
-		}
-		return summary.withError(err)
-	}
-	return summary
+		},
+		"商店订单发放后邮件异步任务异常",
+		zap.Uint("operator_user_id", operatorID),
+		zap.Uint("order_id", orderSnapshot.ID),
+		zap.String("order_no", orderSnapshot.OrderNo),
+	)
+	return MailAttemptSummary{}
 }
 
 func (s *ShopService) sendOrderDeliveryMail(ctx context.Context, operatorID uint, deliveredOrder *model.ShopOrder) (MailAttemptSummary, error) {

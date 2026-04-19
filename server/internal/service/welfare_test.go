@@ -1213,6 +1213,7 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
@@ -1292,7 +1293,7 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 	}
 }
 
-func TestAdminReviewApplicationDeliverAttemptsInGameMailButIgnoresMailErrors(t *testing.T) {
+func TestAdminReviewApplicationDeliverDispatchesInGameMailAsynchronously(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
 
@@ -1319,38 +1320,72 @@ func TestAdminReviewApplicationDeliverAttemptsInGameMailButIgnoresMailErrors(t *
 	}
 
 	svc := NewWelfareService()
-	mailAttempted := false
+	started := make(chan struct {
+		reviewerID    uint
+		welfareID     uint
+		applicationID uint
+	}, 1)
+	finished := make(chan struct{})
+	release := make(chan struct{})
+	released := false
+	t.Cleanup(func() {
+		if !released {
+			close(release)
+		}
+	})
 	svc.deliveryMailSender = func(ctx context.Context, reviewerID uint, deliveredWelfare *model.Welfare, deliveredApp *model.WelfareApplication) (MailAttemptSummary, error) {
-		mailAttempted = true
-		if reviewerID != 77 {
-			t.Fatalf("reviewerID = %d, want 77", reviewerID)
-		}
-		if deliveredWelfare.ID != welfare.ID {
-			t.Fatalf("welfare id = %d, want %d", deliveredWelfare.ID, welfare.ID)
-		}
-		if deliveredApp.ID != app.ID {
-			t.Fatalf("application id = %d, want %d", deliveredApp.ID, app.ID)
-		}
-		return MailAttemptSummary{
-			MailSenderCharacterID:      90000077,
-			MailSenderCharacterName:    "Officer Main",
-			MailRecipientCharacterID:   90000042,
-			MailRecipientCharacterName: "Pilot Main",
-		}, errors.New("mail failed")
+		defer close(finished)
+		started <- struct {
+			reviewerID    uint
+			welfareID     uint
+			applicationID uint
+		}{reviewerID: reviewerID, welfareID: deliveredWelfare.ID, applicationID: deliveredApp.ID}
+		<-release
+		return MailAttemptSummary{}, errors.New("mail failed")
 	}
 
-	mailSummary, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
-	if err != nil {
-		t.Fatalf("AdminReviewApplication() error = %v", err)
+	resultCh := make(chan struct {
+		mailSummary MailAttemptSummary
+		err         error
+	}, 1)
+	go func() {
+		mailSummary, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
+		resultCh <- struct {
+			mailSummary MailAttemptSummary
+			err         error
+		}{mailSummary: mailSummary, err: err}
+	}()
+
+	select {
+	case attempt := <-started:
+		if attempt.reviewerID != 77 {
+			t.Fatalf("reviewerID = %d, want 77", attempt.reviewerID)
+		}
+		if attempt.welfareID != welfare.ID {
+			t.Fatalf("welfare id = %d, want %d", attempt.welfareID, welfare.ID)
+		}
+		if attempt.applicationID != app.ID {
+			t.Fatalf("application id = %d, want %d", attempt.applicationID, app.ID)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("expected deliver to start in-game mail dispatch")
 	}
-	if !mailAttempted {
-		t.Fatal("expected deliver to attempt in-game mail after successful delivery")
+
+	var result struct {
+		mailSummary MailAttemptSummary
+		err         error
 	}
-	if !strings.Contains(mailSummary.MailError, "mail failed") {
-		t.Fatalf("mailError = %q, want to contain %q", mailSummary.MailError, "mail failed")
+	select {
+	case result = <-resultCh:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("expected AdminReviewApplication to return without waiting for mail sender")
 	}
-	if mailSummary.MailSenderCharacterID != 90000077 || mailSummary.MailRecipientCharacterID != 90000042 {
-		t.Fatalf("unexpected mail summary: %#v", mailSummary)
+
+	if result.err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", result.err)
+	}
+	if result.mailSummary != (MailAttemptSummary{}) {
+		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", result.mailSummary)
 	}
 
 	var updated model.WelfareApplication
@@ -1362,6 +1397,67 @@ func TestAdminReviewApplicationDeliverAttemptsInGameMailButIgnoresMailErrors(t *
 	}
 	if updated.ReviewedBy != 77 {
 		t.Fatalf("reviewed_by = %d, want 77", updated.ReviewedBy)
+	}
+
+	close(release)
+	released = true
+	select {
+	case <-finished:
+	case <-time.After(time.Second):
+		t.Fatal("expected async mail sender to finish after release")
+	}
+}
+
+func TestAdminReviewApplicationDeliverReturnsEmptyMailSummaryWhenMailRunsAsync(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	welfare := &model.Welfare{
+		Name:      "Welcome Pack",
+		DistMode:  model.WelfareDistModePerUser,
+		Status:    model.WelfareStatusActive,
+		CreatedBy: 1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	userID := uint(42)
+	app := &model.WelfareApplication{
+		WelfareID:     welfare.ID,
+		UserID:        &userID,
+		CharacterID:   90000001,
+		CharacterName: "Pilot One",
+		Status:        model.WelfareAppStatusRequested,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	svc := NewWelfareService()
+	mailAttempted := make(chan struct{}, 1)
+	svc.deliveryMailSender = func(ctx context.Context, reviewerID uint, deliveredWelfare *model.Welfare, deliveredApp *model.WelfareApplication) (MailAttemptSummary, error) {
+		mailAttempted <- struct{}{}
+		return MailAttemptSummary{
+			MailID:                     123456789,
+			MailSenderCharacterID:      90000077,
+			MailSenderCharacterName:    "Officer Main",
+			MailRecipientCharacterID:   90000042,
+			MailRecipientCharacterName: "Pilot Main",
+		}, nil
+	}
+
+	mailSummary, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
+	if err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+	if mailSummary != (MailAttemptSummary{}) {
+		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", mailSummary)
+	}
+	select {
+	case <-mailAttempted:
+	case <-time.After(time.Second):
+		t.Fatal("expected deliver to trigger in-game mail sender asynchronously")
 	}
 }
 
@@ -1424,6 +1520,7 @@ func TestAdminReviewApplicationDeliverWithoutConfiguredPayoutStillCreditsAdminAw
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
@@ -1481,6 +1578,7 @@ func TestAdminReviewApplicationDeliverUsesApprovalTimePayoutConfig(t *testing.T)
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
@@ -1667,6 +1765,7 @@ func TestAdminReviewApplicationSecondDeliverAttemptDoesNotCreateSecondPayoutOrAw
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("first deliver error = %v", err)
 	}
@@ -1718,6 +1817,7 @@ func TestAdminReviewApplicationDeliverWithZeroAdminAwardSkipsAwardCredit(t *test
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
@@ -1766,6 +1866,7 @@ func TestAdminReviewApplicationDeliverWithCustomAdminAwardUsesConfiguredAmount(t
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
@@ -1808,6 +1909,7 @@ func TestAdminReviewApplicationDeliverByWelfareOfficerSkipsAdminAward(t *testing
 	}
 
 	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
 	if _, err := svc.AdminReviewApplication(app.ID, 77, welfareOfficerReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}

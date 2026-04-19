@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-20
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go
@@ -35,8 +35,7 @@ source_of_truth:
 - 申请状态流转：默认 `requested → delivered / rejected`；但当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且申请人资格校验通过时，申请会直接写入 `delivered`
 - 当福利当前配置 `pay_by_fuxi_coin > 0` 时，福利发放会同步给申请人钱包入账，流水 `ref_type = welfare_payout`；小额伏羲币福利会在申请提交事务内直接完成这一步
 - 当管理员在审批端执行人工 `requested -> delivered` 成功时，系统会按 PAP 兑换页的 `admin-award` 配置额外给执行人钱包入账一笔奖励，默认 10 伏羲币，流水 `ref_type = admin_award`；仅有 `welfare` 职权的福利官不会领取该奖励，系统自动发放的小额伏羲币福利也不会领取该奖励
-- 审批端执行 delivered 后，系统会以发放福利官的主人物为发件人尽力发送一封双语游戏内邮件；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果
-- 若发放已成功但邮件发送失败，审批界面会继续显示成功提示，并额外弹出一条包含后端错误内容的警告提示
+- 审批端执行 delivered 后，系统会以发放福利官的主人物为发件人异步尽力发送一封双语游戏内邮件；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果，也不会阻塞继续审批下一条申请
 - 我的福利页面"已领取福利" tab 展示审批福利官昵称；系统自动发放的小额伏羲币申请该列为空
 - 福利审批页面：福利官/管理员浏览待发放申请，执行发放或拒绝操作；审批列表展示申请人上传的证明图片缩略图，并支持原页预览，行悬停时展示福利描述。`0 < pay_by_fuxi_coin < 当前自动审批阈值` 的小额伏羲币申请不会进入待发放队列，历史记录中的“福利官”列显示为“系统”
 - 福利审批页面的人物列提供共享内联复制按钮，便于复制申请人物名
@@ -120,8 +119,8 @@ source_of_truth:
 - `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；按人物发放且附带伏羲币的福利还会按当前 `multichar.*` 层级配置乘算奖励倍率；小额伏羲币福利的“发放当下”就是申请提交事务本身
 - 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，福利发放会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
 - 当管理员在福利审批端执行人工发放且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `welfare` 职权的福利官不会写入，配置值为 `0` 时也不写入
-- 当福利官在审批端执行 `requested -> delivered` 成功后，服务会尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，并在成功响应里附带 `mail_error` 供前端提示
-- 若 ESI 接受了发信请求，成功响应还可能附带邮件调试信息；具体字段以代码契约为准
+- 当福利官在审批端执行 `requested -> delivered` 成功后，服务会异步尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，也不阻塞审批端继续处理下一条申请
+- 福利审批接口仍复用通用邮件结果结构，但异步路径下成功响应不等待即时邮件结果；具体字段以代码契约为准
 - 导入历史福利记录只写福利申请历史，不补写 `welfare_payout` 钱包流水
 - 技能计划检查复用 skill_plan 模块，福利定义通过 welfare_skill_plans 关联表支持多技能计划
 - 福利设置列表按 `sort_order ASC, id DESC` 排序；当前页拖拽只重排该页已有排序区间，跨分页移动依赖显式 `sort_order`
