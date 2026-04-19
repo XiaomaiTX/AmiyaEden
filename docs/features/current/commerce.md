@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-20
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/shop.go
@@ -22,8 +22,7 @@ source_of_truth:
 - 管理员商品管理、订单发放/拒绝、订单历史；
 - `shop_order_manage` 仅开放订单管理 / 订单历史页及对应订单审批接口，不开放商品管理或钱包管理；
 - 商店订单管理页执行人工发放成功后，系统会按 PAP 兑换页的 `admin-award` 配置额外给管理员执行人钱包入账一笔奖励，默认 10 伏羲币，设为 `0` 可关闭，流水 `ref_type = admin_award`；仅有 `shop_order_manage` 职权的执行人不会领取该奖励
-- 订单发放成功后，系统会以执行发放官员的主人物为发件人尽力发送一封双语游戏内邮件，并附带下单备注与发放备注（若有）；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果
-- 若订单已成功发放但邮件发送失败，订单管理界面会继续显示发放成功，并额外弹出一条包含后端错误内容的警告提示
+- 订单发放成功后，系统会以执行发放官员的主人物为发件人异步尽力发送一封双语游戏内邮件，并附带下单备注与发放备注（若有）；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果，也不会阻塞继续处理下一单
 - 管理员伏羲币调整、流水、日志
 
 ## 货币展示边界
@@ -125,8 +124,8 @@ source_of_truth:
 - 商店商品图片上传当前通过 `/upload/image` 返回 base64 data URL，不写入项目文件夹；大小上限 2MB，仅支持 jpeg/png/webp
 - 钱包在下单时立即扣款；拒绝订单时通过 `CreditUser` 退款，流水类型为 `shop_refund`
 - 管理员执行订单人工发放成功且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `shop_order_manage` 职权的执行人不会写入
-- `requested -> delivered` 成功后，服务会尽力向下单用户主人物发送一封双语发放通知邮件，发件人为执行发放的官员主人物；邮件失败只记录告警、不回滚订单发放，并在成功响应里附带 `mail_error` 供前端提示
-- 若 ESI 接受了发信请求，成功响应还可能附带邮件调试信息；具体字段以代码契约为准
+- `requested -> delivered` 成功后，服务会异步尽力向下单用户主人物发送一封双语发放通知邮件，发件人为执行发放的官员主人物；邮件失败只记录告警、不回滚订单发放，也不阻塞管理端继续处理下一单
+- 订单发放接口仍复用通用邮件结果结构，但异步路径下成功响应不等待即时邮件结果；具体字段以代码契约为准
 
 ## 主要代码文件
 
