@@ -839,21 +839,10 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 	if err != nil {
 		return nil, err
 	}
-	allRows, err := s.repo.ListCorporationPapSummaryAll(repository.FleetPapSummaryFilter{})
-	if err != nil {
-		return nil, err
-	}
 
-	userIDs := make([]uint, 0, len(rows)+len(allRows))
-	seenUsers := make(map[uint]struct{}, len(rows)+len(allRows))
+	userIDs := make([]uint, 0, len(rows))
+	seenUsers := make(map[uint]struct{}, len(rows))
 	for _, row := range rows {
-		if _, ok := seenUsers[row.UserID]; ok {
-			continue
-		}
-		seenUsers[row.UserID] = struct{}{}
-		userIDs = append(userIDs, row.UserID)
-	}
-	for _, row := range allRows {
 		if _, ok := seenUsers[row.UserID]; ok {
 			continue
 		}
@@ -884,6 +873,7 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 	}
 
 	items := make([]CorporationPapSummaryItem, 0, len(rows))
+	filteredUserIDs := make([]uint, 0, len(rows))
 	var filteredPapTotal float64
 	var filteredStratOpTotal float64
 	for _, row := range rows {
@@ -902,14 +892,20 @@ func (s *FleetService) GetCorporationPapSummary(page, pageSize int, period strin
 		})
 		filteredPapTotal += row.StratOpPaps + row.SkirmishPaps
 		filteredStratOpTotal += row.StratOpPaps
+		filteredUserIDs = append(filteredUserIDs, row.UserID)
 	}
 
 	var allPapTotal float64
-	for _, row := range allRows {
-		if !matchesCorpFilter(row.UserID) {
-			continue
+	if normalizedPeriod == CorporationPapPeriodAll {
+		allPapTotal = filteredPapTotal
+	} else {
+		allTotals, err := s.repo.SumPapTotalsByUserIDs(filteredUserIDs)
+		if err != nil {
+			return nil, err
 		}
-		allPapTotal += row.StratOpPaps + row.SkirmishPaps
+		for _, total := range allTotals {
+			allPapTotal += total
+		}
 	}
 
 	total := int64(len(items))
@@ -1263,6 +1259,13 @@ func (s *FleetService) resolveCorporationTickers(corporationIDs []int64) (map[in
 		}
 		seen[corpID] = struct{}{}
 
+		if ticker, ok := getCachedCorpTicker(corpID); ok {
+			if ticker != "" {
+				tickerByCorpID[corpID] = ticker
+			}
+			continue
+		}
+
 		var corpInfo struct {
 			Ticker string `json:"ticker"`
 		}
@@ -1271,6 +1274,7 @@ func (s *FleetService) resolveCorporationTickers(corporationIDs []int64) (map[in
 			continue
 		}
 		tickerByCorpID[corpID] = corpInfo.Ticker
+		setCachedCorpTicker(corpID, corpInfo.Ticker)
 	}
 
 	return tickerByCorpID, nil
