@@ -1198,22 +1198,29 @@ func (s *WelfareService) attemptDeliveryMail(reviewerID uint, deliveredWelfare *
 		return MailAttemptSummary{}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	summary, err := s.deliveryMailSender(ctx, reviewerID, deliveredWelfare, deliveredApp)
-	if err != nil {
-		if global.Logger != nil {
+	welfareSnapshot := cloneWelfareForMail(deliveredWelfare)
+	appSnapshot := cloneWelfareApplicationForMail(deliveredApp)
+	dispatchMailAttemptAsync(
+		func(ctx context.Context) (MailAttemptSummary, error) {
+			return s.deliveryMailSender(ctx, reviewerID, welfareSnapshot, appSnapshot)
+		},
+		func(_ MailAttemptSummary, err error) {
+			if global.Logger == nil {
+				return
+			}
 			global.Logger.Warn("福利发放后邮件尝试失败",
 				zap.Uint("reviewer_user_id", reviewerID),
-				zap.Uint("welfare_id", deliveredWelfare.ID),
-				zap.Uint("application_id", deliveredApp.ID),
+				zap.Uint("welfare_id", welfareSnapshot.ID),
+				zap.Uint("application_id", appSnapshot.ID),
 				zap.Error(err),
 			)
-		}
-		return summary.withError(err)
-	}
-	return summary
+		},
+		"福利发放后邮件异步任务异常",
+		zap.Uint("reviewer_user_id", reviewerID),
+		zap.Uint("welfare_id", welfareSnapshot.ID),
+		zap.Uint("application_id", appSnapshot.ID),
+	)
+	return MailAttemptSummary{}
 }
 
 func (s *WelfareService) sendDeliveryMail(

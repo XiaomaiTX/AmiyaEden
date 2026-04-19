@@ -19,7 +19,7 @@ var adminDeliveryOperatorRoles = []string{model.RoleAdmin}
 
 var shopOrderManagerOperatorRoles = []string{model.RoleShopOrder}
 
-func TestAdminDeliverOrderAttemptsInGameMailButIgnoresMailErrors(t *testing.T) {
+func TestAdminDeliverOrderDispatchesInGameMailAsynchronously(t *testing.T) {
 	db := newShopServiceTestDB(t)
 	useShopServiceTestDB(t, db)
 
@@ -53,36 +53,75 @@ func TestAdminDeliverOrderAttemptsInGameMailButIgnoresMailErrors(t *testing.T) {
 	}
 
 	svc := NewShopService()
-	mailAttempted := false
+	started := make(chan struct {
+		operatorID uint
+		orderID    uint
+	}, 1)
+	finished := make(chan struct{})
+	release := make(chan struct{})
+	released := false
+	t.Cleanup(func() {
+		if !released {
+			close(release)
+		}
+	})
 	svc.orderDeliveryMailSender = func(ctx context.Context, operatorID uint, deliveredOrder *model.ShopOrder) (MailAttemptSummary, error) {
-		mailAttempted = true
-		if operatorID != 77 {
-			t.Fatalf("operatorID = %d, want 77", operatorID)
-		}
-		if deliveredOrder.ID != order.ID {
-			t.Fatalf("order id = %d, want %d", deliveredOrder.ID, order.ID)
-		}
-		return MailAttemptSummary{
-			MailSenderCharacterID:      90000077,
-			MailSenderCharacterName:    "Officer Main",
-			MailRecipientCharacterID:   90000042,
-			MailRecipientCharacterName: "Pilot Main",
-		}, errors.New("mail failed")
+		defer close(finished)
+		started <- struct {
+			operatorID uint
+			orderID    uint
+		}{operatorID: operatorID, orderID: deliveredOrder.ID}
+		<-release
+		return MailAttemptSummary{}, errors.New("mail failed")
 	}
 
-	deliveredOrder, mailSummary, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "contract issued")
-	if err != nil {
-		t.Fatalf("AdminDeliverOrder() error = %v", err)
+	resultCh := make(chan struct {
+		order       *model.ShopOrder
+		mailSummary MailAttemptSummary
+		err         error
+	}, 1)
+	go func() {
+		deliveredOrder, mailSummary, err := svc.AdminDeliverOrder(order.ID, 77, adminDeliveryOperatorRoles, "contract issued")
+		resultCh <- struct {
+			order       *model.ShopOrder
+			mailSummary MailAttemptSummary
+			err         error
+		}{order: deliveredOrder, mailSummary: mailSummary, err: err}
+	}()
+
+	select {
+	case attempt := <-started:
+		if attempt.operatorID != 77 {
+			t.Fatalf("operatorID = %d, want 77", attempt.operatorID)
+		}
+		if attempt.orderID != order.ID {
+			t.Fatalf("order id = %d, want %d", attempt.orderID, order.ID)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("expected deliver to start in-game mail dispatch")
 	}
-	if !mailAttempted {
-		t.Fatal("expected deliver to attempt in-game mail after successful delivery")
+
+	var result struct {
+		order       *model.ShopOrder
+		mailSummary MailAttemptSummary
+		err         error
 	}
-	if !strings.Contains(mailSummary.MailError, "mail failed") {
-		t.Fatalf("mailError = %q, want to contain %q", mailSummary.MailError, "mail failed")
+	select {
+	case result = <-resultCh:
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("expected AdminDeliverOrder to return without waiting for mail sender")
 	}
-	if mailSummary.MailSenderCharacterID != 90000077 || mailSummary.MailRecipientCharacterID != 90000042 {
-		t.Fatalf("unexpected mail summary: %#v", mailSummary)
+
+	if result.err != nil {
+		t.Fatalf("AdminDeliverOrder() error = %v", result.err)
 	}
+	if result.mailSummary != (MailAttemptSummary{}) {
+		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", result.mailSummary)
+	}
+	if result.order == nil {
+		t.Fatal("expected delivered order")
+	}
+	deliveredOrder := result.order
 	if deliveredOrder.Status != model.OrderStatusDelivered {
 		t.Fatalf("status = %q, want %q", deliveredOrder.Status, model.OrderStatusDelivered)
 	}
@@ -97,9 +136,17 @@ func TestAdminDeliverOrderAttemptsInGameMailButIgnoresMailErrors(t *testing.T) {
 	if updated.ReviewedBy == nil || *updated.ReviewedBy != 77 {
 		t.Fatalf("reviewed_by = %v, want 77", updated.ReviewedBy)
 	}
+
+	close(release)
+	released = true
+	select {
+	case <-finished:
+	case <-time.After(time.Second):
+		t.Fatal("expected async mail sender to finish after release")
+	}
 }
 
-func TestAdminDeliverOrderReturnsMailAttemptSummaryWhenMailSucceeds(t *testing.T) {
+func TestAdminDeliverOrderReturnsEmptyMailSummaryWhenMailRunsAsync(t *testing.T) {
 	db := newShopServiceTestDB(t)
 	useShopServiceTestDB(t, db)
 
@@ -131,7 +178,9 @@ func TestAdminDeliverOrderReturnsMailAttemptSummaryWhenMailSucceeds(t *testing.T
 	}
 
 	svc := NewShopService()
+	mailAttempted := make(chan struct{}, 1)
 	svc.orderDeliveryMailSender = func(ctx context.Context, operatorID uint, deliveredOrder *model.ShopOrder) (MailAttemptSummary, error) {
+		mailAttempted <- struct{}{}
 		return MailAttemptSummary{
 			MailID:                     123456789,
 			MailSenderCharacterID:      90000077,
@@ -145,14 +194,13 @@ func TestAdminDeliverOrderReturnsMailAttemptSummaryWhenMailSucceeds(t *testing.T
 	if err != nil {
 		t.Fatalf("AdminDeliverOrder() error = %v", err)
 	}
-	if mailSummary.MailError != "" {
-		t.Fatalf("mailError = %q, want empty", mailSummary.MailError)
+	if mailSummary != (MailAttemptSummary{}) {
+		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", mailSummary)
 	}
-	if mailSummary.MailID != 123456789 {
-		t.Fatalf("mailID = %d, want 123456789", mailSummary.MailID)
-	}
-	if mailSummary.MailSenderCharacterName != "Officer Main" || mailSummary.MailRecipientCharacterName != "Pilot Main" {
-		t.Fatalf("unexpected mail summary: %#v", mailSummary)
+	select {
+	case <-mailAttempted:
+	case <-time.After(time.Second):
+		t.Fatal("expected deliver to trigger in-game mail sender asynchronously")
 	}
 }
 
