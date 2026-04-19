@@ -70,6 +70,13 @@ func (q *Queue) Run() {
 	ctx := context.Background()
 	queueZapLogger().Info("[ESI Queue] 开始刷新调度")
 
+	// Tests and early-startup code can invoke the queue before the shared DB
+	// has been configured. Exit cleanly instead of panicking in the repository.
+	if global.DB == nil {
+		queueZapLogger().Warn("[ESI Queue] 数据库未初始化，跳过本次刷新调度")
+		return
+	}
+
 	// 1. 获取所有有 refresh_token 的人物
 	characters, err := q.charRepo.ListAllWithToken()
 	if err != nil {

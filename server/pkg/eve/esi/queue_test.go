@@ -81,6 +81,25 @@ func TestQueueRunHandlesNilGlobalLogger(t *testing.T) {
 	queue.Run()
 }
 
+func TestQueueRunSkipsWhenGlobalDBIsNil(t *testing.T) {
+	oldDB := global.DB
+	oldLogger := global.Logger
+	global.DB = nil
+	global.Logger = nil
+	t.Cleanup(func() {
+		global.DB = oldDB
+		global.Logger = oldLogger
+	})
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{
+		listCharacters: []model.EveCharacter{
+			{CharacterID: 1001, RefreshToken: "refresh-token"},
+		},
+	})
+
+	queue.Run()
+}
+
 func TestQueueNeedsRefreshSharesCorporationKillmailLastRunAcrossProviders(t *testing.T) {
 	mini := miniredis.RunT(t)
 	oldRedis := global.Redis
