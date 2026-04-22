@@ -130,6 +130,56 @@ func (s *RecruitmentEntryService) buildDirectReferrerCandidate(user *model.User)
 	}, nil
 }
 
+func validateDirectReferralStatus(status *DirectReferralStatus) error {
+	if !status.ShowCard {
+		return errors.New("当前不满足补录推荐人条件")
+	}
+	if status.NeedsProfileQQ {
+		return errors.New("请先在联系方式中填写自己的 QQ 并保存")
+	}
+	return nil
+}
+
+func (s *RecruitmentEntryService) ensureDirectReferrerEligible(referrer *model.User, currentUserID uint, selfReferralMessage string) error {
+	if referrer == nil {
+		return errors.New("未找到符合条件的推荐人")
+	}
+	if referrer.ID == currentUserID {
+		return errors.New(selfReferralMessage)
+	}
+
+	roleCodes, err := s.loadUserRoleCodes(referrer)
+	if err != nil {
+		return err
+	}
+	if !model.HasNonGuestRole(roleCodes) {
+		return errors.New("未找到符合条件的推荐人")
+	}
+	return nil
+}
+
+func (s *RecruitmentEntryService) loadDirectReferrerByQQ(currentUserID uint, referrerQQ string) (*model.User, error) {
+	referrer, err := s.getUniqueUserByQQ(referrerQQ)
+	if err != nil {
+		return nil, errors.New("未找到符合条件的推荐人")
+	}
+	if err := s.ensureDirectReferrerEligible(referrer, currentUserID, "不能将自己填写为推荐人"); err != nil {
+		return nil, err
+	}
+	return referrer, nil
+}
+
+func (s *RecruitmentEntryService) loadDirectReferrerByID(currentUserID, referrerUserID uint) (*model.User, error) {
+	referrer, err := s.userRepo.GetByID(referrerUserID)
+	if err != nil {
+		return nil, errors.New("未找到符合条件的推荐人")
+	}
+	if err := s.ensureDirectReferrerEligible(referrer, currentUserID, "未找到符合条件的推荐人"); err != nil {
+		return nil, err
+	}
+	return referrer, nil
+}
+
 func (s *RecruitmentEntryService) GetDirectReferralStatus(userID uint, now time.Time) (*DirectReferralStatus, error) {
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
@@ -166,11 +216,8 @@ func (s *RecruitmentEntryService) LookupDirectReferrer(currentUserID uint, refer
 	if err != nil {
 		return nil, err
 	}
-	if !status.ShowCard {
-		return nil, errors.New("当前不满足补录推荐人条件")
-	}
-	if status.NeedsProfileQQ {
-		return nil, errors.New("请先在联系方式中填写自己的 QQ 并保存")
+	if err := validateDirectReferralStatus(status); err != nil {
+		return nil, err
 	}
 
 	referrerQQ = strings.TrimSpace(referrerQQ)
@@ -178,20 +225,9 @@ func (s *RecruitmentEntryService) LookupDirectReferrer(currentUserID uint, refer
 		return nil, err
 	}
 
-	referrer, err := s.getUniqueUserByQQ(referrerQQ)
-	if err != nil || referrer == nil {
-		return nil, errors.New("未找到符合条件的推荐人")
-	}
-	if referrer.ID == currentUserID {
-		return nil, errors.New("不能将自己填写为推荐人")
-	}
-
-	roleCodes, err := s.loadUserRoleCodes(referrer)
+	referrer, err := s.loadDirectReferrerByQQ(currentUserID, referrerQQ)
 	if err != nil {
 		return nil, err
-	}
-	if !model.HasNonGuestRole(roleCodes) {
-		return nil, errors.New("未找到符合条件的推荐人")
 	}
 
 	candidate, err := s.buildDirectReferrerCandidate(referrer)
@@ -206,27 +242,13 @@ func (s *RecruitmentEntryService) ConfirmDirectReferral(currentUserID, referrerU
 	if err != nil {
 		return nil, err
 	}
-	if !status.ShowCard {
-		return nil, errors.New("当前不满足补录推荐人条件")
-	}
-	if status.NeedsProfileQQ {
-		return nil, errors.New("请先在联系方式中填写自己的 QQ 并保存")
-	}
-
-	referrer, err := s.userRepo.GetByID(referrerUserID)
-	if err != nil || referrer == nil {
-		return nil, errors.New("未找到符合条件的推荐人")
-	}
-	if referrer.ID == currentUserID {
-		return nil, errors.New("未找到符合条件的推荐人")
-	}
-
-	roleCodes, err := s.loadUserRoleCodes(referrer)
-	if err != nil {
+	if err := validateDirectReferralStatus(status); err != nil {
 		return nil, err
 	}
-	if !model.HasNonGuestRole(roleCodes) {
-		return nil, errors.New("未找到符合条件的推荐人")
+
+	referrer, err := s.loadDirectReferrerByID(currentUserID, referrerUserID)
+	if err != nil {
+		return nil, err
 	}
 
 	confirmed, err := s.buildDirectReferrerCandidate(referrer)
@@ -238,86 +260,106 @@ func (s *RecruitmentEntryService) ConfirmDirectReferral(currentUserID, referrerU
 	rewardRefID := buildRecruitRewardRefID(currentUserID)
 
 	if err := global.DB.Transaction(func(tx *gorm.DB) error {
-		lockedCurrentUser, err := s.userRepo.GetByIDForUpdateTx(tx, currentUserID)
-		if err != nil {
-			return err
-		}
-		lockedReferrer, err := s.userRepo.GetByIDForUpdateTx(tx, referrerUserID)
-		if err != nil {
-			return err
-		}
-		// Intentionally generic: this guard runs inside a lock and should never be
-		// reached in normal flow (the pre-transaction check already rejects self-referral
-		// with a descriptive message). Using the same generic message avoids leaking
-		// internal state to a caller who has somehow bypassed the pre-check.
-		if lockedReferrer.ID == currentUserID {
-			return errors.New("未找到符合条件的推荐人")
-		}
-
-		alreadyRewarded, err := s.repo.HasEntryWithWalletRefIDTx(tx, rewardRefID)
-		if err != nil {
-			return err
-		}
-		if alreadyRewarded {
-			return errors.New("当前账号已经存在招募记录")
-		}
-
-		currentUserQQ := strings.TrimSpace(lockedCurrentUser.QQ)
-		if currentUserQQ == "" {
-			return errors.New("请先在联系方式中填写自己的 QQ 并保存")
-		}
-
-		// Use currentUserID as a unique placeholder: the alreadyRewarded guard above
-		// (enforced inside the row lock) ensures at most one insert per currentUserID,
-		// so ~<currentUserID> cannot collide with another in-flight insert.
-		// The placeholder is overwritten with base62(ID) within the same transaction.
-		recruitment := &model.NewbroRecruitment{
-			UserID:      referrerUserID,
-			Source:      model.RecruitmentSourceDirectReferral,
-			GeneratedAt: now,
-			Code:        fmt.Sprintf("~%d", currentUserID),
-		}
-		if err := s.repo.CreateTx(tx, recruitment); err != nil {
-			return err
-		}
-		recruitment.Code = base62Encode(recruitment.ID)
-		if err := s.repo.UpdateCodeTx(tx, recruitment.ID, recruitment.Code); err != nil {
-			return err
-		}
-
-		rewardedAt := now
-		walletRefID := rewardRefID
-		entry := &model.NewbroRecruitmentEntry{
-			RecruitmentID: recruitment.ID,
-			QQ:            currentUserQQ,
-			EnteredAt:     lockedCurrentUser.CreatedAt,
-			Source:        model.RecruitEntrySourceDirectReferral,
-			Status:        model.RecruitEntryStatusValid,
-			MatchedUserID: currentUserID,
-			RewardedAt:    &rewardedAt,
-			WalletRefID:   &walletRefID,
-		}
-		if err := s.repo.CreateEntryTx(tx, entry); err != nil {
-			return err
-		}
-
-		reason := "招募链接奖励（直接推荐）"
-		if currentUserQQ != "" {
-			reason = fmt.Sprintf("招募链接奖励（直接推荐 QQ %s）", currentUserQQ)
-		}
-		return s.walletSvc.ApplyWalletDeltaTx(
-			tx,
-			referrerUserID,
-			rewardAmount,
-			reason,
-			model.WalletRefRecruitReward,
-			rewardRefID,
-		)
+		return s.confirmDirectReferralTx(tx, currentUserID, referrerUserID, rewardAmount, rewardRefID, now)
 	}); err != nil {
 		return nil, err
 	}
 
 	return confirmed, nil
+}
+
+func (s *RecruitmentEntryService) confirmDirectReferralTx(tx *gorm.DB, currentUserID, referrerUserID uint, rewardAmount float64, rewardRefID string, now time.Time) error {
+	lockedCurrentUser, lockedReferrer, err := s.lockDirectReferralUsers(tx, currentUserID, referrerUserID)
+	if err != nil {
+		return err
+	}
+	if lockedReferrer.ID == currentUserID {
+		return errors.New("未找到符合条件的推荐人")
+	}
+
+	alreadyRewarded, err := s.repo.HasEntryWithWalletRefIDTx(tx, rewardRefID)
+	if err != nil {
+		return err
+	}
+	if alreadyRewarded {
+		return errors.New("当前账号已经存在招募记录")
+	}
+
+	currentUserQQ := strings.TrimSpace(lockedCurrentUser.QQ)
+	if currentUserQQ == "" {
+		return errors.New("请先在联系方式中填写自己的 QQ 并保存")
+	}
+
+	return s.createDirectReferralRewardTx(
+		tx,
+		currentUserID,
+		referrerUserID,
+		lockedCurrentUser.CreatedAt,
+		currentUserQQ,
+		rewardAmount,
+		rewardRefID,
+		now,
+	)
+}
+
+func (s *RecruitmentEntryService) lockDirectReferralUsers(tx *gorm.DB, currentUserID, referrerUserID uint) (*model.User, *model.User, error) {
+	lockedCurrentUser, err := s.userRepo.GetByIDForUpdateTx(tx, currentUserID)
+	if err != nil {
+		return nil, nil, err
+	}
+	lockedReferrer, err := s.userRepo.GetByIDForUpdateTx(tx, referrerUserID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return lockedCurrentUser, lockedReferrer, nil
+}
+
+func (s *RecruitmentEntryService) createDirectReferralRewardTx(tx *gorm.DB, currentUserID, referrerUserID uint, currentUserCreatedAt time.Time, currentUserQQ string, rewardAmount float64, rewardRefID string, now time.Time) error {
+	recruitment := &model.NewbroRecruitment{
+		UserID:      referrerUserID,
+		Source:      model.RecruitmentSourceDirectReferral,
+		GeneratedAt: now,
+		Code:        fmt.Sprintf("~%d", currentUserID),
+	}
+	if err := s.repo.CreateTx(tx, recruitment); err != nil {
+		return err
+	}
+	recruitment.Code = base62Encode(recruitment.ID)
+	if err := s.repo.UpdateCodeTx(tx, recruitment.ID, recruitment.Code); err != nil {
+		return err
+	}
+
+	rewardedAt := now
+	walletRefID := rewardRefID
+	entry := &model.NewbroRecruitmentEntry{
+		RecruitmentID: recruitment.ID,
+		QQ:            currentUserQQ,
+		EnteredAt:     currentUserCreatedAt,
+		Source:        model.RecruitEntrySourceDirectReferral,
+		Status:        model.RecruitEntryStatusValid,
+		MatchedUserID: currentUserID,
+		RewardedAt:    &rewardedAt,
+		WalletRefID:   &walletRefID,
+	}
+	if err := s.repo.CreateEntryTx(tx, entry); err != nil {
+		return err
+	}
+
+	return s.walletSvc.ApplyWalletDeltaTx(
+		tx,
+		referrerUserID,
+		rewardAmount,
+		buildDirectReferralRewardReason(currentUserQQ),
+		model.WalletRefRecruitReward,
+		rewardRefID,
+	)
+}
+
+func buildDirectReferralRewardReason(currentUserQQ string) string {
+	if currentUserQQ == "" {
+		return "招募链接奖励（直接推荐）"
+	}
+	return fmt.Sprintf("招募链接奖励（直接推荐 QQ %s）", currentUserQQ)
 }
 
 // validateQQ returns an error if the QQ string is not 5-20 digits.
@@ -390,6 +432,120 @@ func (s *RecruitmentEntryService) SubmitQQ(code, qq string, now time.Time) (stri
 	return settings.RecruitQQURL, nil
 }
 
+func mergeRecruitEntryResult(result *RecruitEntryResult, delta RecruitEntryResult) {
+	result.ProcessedCount += delta.ProcessedCount
+	result.ValidCount += delta.ValidCount
+	result.StalledCount += delta.StalledCount
+	result.TotalCoinAwarded += delta.TotalCoinAwarded
+}
+
+func (s *RecruitmentEntryService) lookupMatchedUserForEntry(entry model.NewbroRecruitmentEntry) (*model.User, bool, bool) {
+	users, err := s.userRepo.ListByQQ(entry.QQ)
+	if err != nil {
+		global.Logger.Error("按 QQ 查询用户失败",
+			zap.Uint("entry_id", entry.ID), zap.String("qq", entry.QQ), zap.Error(err))
+		return nil, false, true
+	}
+	if len(users) > 1 {
+		global.Logger.Error("按 QQ 匹配到多个用户，跳过本次招募归因",
+			zap.Uint("entry_id", entry.ID), zap.String("qq", entry.QQ), zap.Int("match_count", len(users)))
+		return nil, false, true
+	}
+	if len(users) == 0 {
+		return nil, false, false
+	}
+	user := users[0]
+	return &user, true, false
+}
+
+func (s *RecruitmentEntryService) markEntryStalledResult(entryID uint, logMessage string) RecruitEntryResult {
+	if err := s.repo.MarkEntryStalled(entryID); err != nil {
+		global.Logger.Error(logMessage, zap.Uint("entry_id", entryID), zap.Error(err))
+		return RecruitEntryResult{}
+	}
+	return RecruitEntryResult{ProcessedCount: 1, StalledCount: 1}
+}
+
+func (s *RecruitmentEntryService) processValidOngoingEntry(entry model.NewbroRecruitmentEntry, user *model.User, rewardAmount float64, now time.Time) RecruitEntryResult {
+	rewardRefID := buildRecruitRewardRefID(user.ID)
+	alreadyClaimed, err := s.repo.HasEntryWithWalletRefID(rewardRefID)
+	if err != nil {
+		global.Logger.Error("检查招募奖励去重失败", zap.Uint("entry_id", entry.ID), zap.Error(err))
+		return RecruitEntryResult{}
+	}
+	if alreadyClaimed {
+		return s.markEntryStalledResult(entry.ID, "标记重复招募记录为 stalled 失败")
+	}
+
+	recruitment, err := s.repo.GetRecruitmentByID(entry.RecruitmentID)
+	if err != nil {
+		global.Logger.Error("加载招募记录失败", zap.Uint("entry_id", entry.ID), zap.Uint("recruitment_id", entry.RecruitmentID), zap.Error(err))
+		return RecruitEntryResult{}
+	}
+	if recruitment == nil {
+		global.Logger.Error("招募记录不存在", zap.Uint("entry_id", entry.ID), zap.Uint("recruitment_id", entry.RecruitmentID))
+		return RecruitEntryResult{}
+	}
+
+	if err := s.rewardOngoingEntry(entry, recruitment.UserID, user.ID, rewardAmount, rewardRefID, now); err != nil {
+		delta := s.resolveRewardConflict(entry.ID, rewardRefID)
+		if delta.ProcessedCount != 0 {
+			return delta
+		}
+		global.Logger.Error("处理招募奖励失败", zap.Uint("entry_id", entry.ID), zap.Error(err))
+		return RecruitEntryResult{}
+	}
+
+	return RecruitEntryResult{ProcessedCount: 1, ValidCount: 1, TotalCoinAwarded: rewardAmount}
+}
+
+func (s *RecruitmentEntryService) rewardOngoingEntry(entry model.NewbroRecruitmentEntry, recruiterUserID, matchedUserID uint, rewardAmount float64, rewardRefID string, now time.Time) error {
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		rewardedAt := now
+		if err := s.repo.MarkEntryValidTx(tx, entry.ID, matchedUserID, rewardedAt, rewardRefID); err != nil {
+			return err
+		}
+		return s.walletSvc.ApplyWalletDeltaTx(
+			tx,
+			recruiterUserID,
+			rewardAmount,
+			fmt.Sprintf("招募链接奖励（招募 QQ %s）", entry.QQ),
+			model.WalletRefRecruitReward,
+			rewardRefID,
+		)
+	})
+}
+
+func (s *RecruitmentEntryService) resolveRewardConflict(entryID uint, rewardRefID string) RecruitEntryResult {
+	alreadyClaimed, err := s.repo.HasEntryWithWalletRefID(rewardRefID)
+	if err == nil && alreadyClaimed {
+		return s.markEntryStalledResult(entryID, "标记重复招募记录为 stalled 失败")
+	}
+	return RecruitEntryResult{}
+}
+
+func (s *RecruitmentEntryService) processOngoingEntry(entry model.NewbroRecruitmentEntry, now time.Time, cooldownDays int, rewardAmount float64) RecruitEntryResult {
+	user, userFound, shouldSkip := s.lookupMatchedUserForEntry(entry)
+	if shouldSkip {
+		return RecruitEntryResult{}
+	}
+
+	userCreatedAt := time.Time{}
+	if userFound {
+		userCreatedAt = user.CreatedAt
+	}
+
+	newStatus := resolveEntryStatus(entry.EnteredAt, userCreatedAt, userFound, now, cooldownDays)
+	switch newStatus {
+	case model.RecruitEntryStatusOngoing:
+		return RecruitEntryResult{}
+	case model.RecruitEntryStatusStalled:
+		return s.markEntryStalledResult(entry.ID, "标记招募记录为 stalled 失败")
+	default:
+		return s.processValidOngoingEntry(entry, user, rewardAmount, now)
+	}
+}
+
 // ProcessOngoingEntries is the daily job logic. It resolves pending entry statuses.
 func (s *RecruitmentEntryService) ProcessOngoingEntries(now time.Time) (*RecruitEntryResult, error) {
 	settings := s.settingsSvc.GetSettings()
@@ -411,103 +567,7 @@ func (s *RecruitmentEntryService) ProcessOngoingEntries(now time.Time) (*Recruit
 
 		for _, entry := range entries {
 			lastID = entry.ID
-			users, userErr := s.userRepo.ListByQQ(entry.QQ)
-			if userErr != nil {
-				global.Logger.Error("按 QQ 查询用户失败",
-					zap.Uint("entry_id", entry.ID), zap.String("qq", entry.QQ), zap.Error(userErr))
-				continue
-			}
-			if len(users) > 1 {
-				global.Logger.Error("按 QQ 匹配到多个用户，跳过本次招募归因",
-					zap.Uint("entry_id", entry.ID), zap.String("qq", entry.QQ), zap.Int("match_count", len(users)))
-				continue
-			}
-			userFound := len(users) == 1
-			var user *model.User
-			if userFound {
-				user = &users[0]
-			}
-
-			var userCreatedAt time.Time
-			if userFound {
-				userCreatedAt = user.CreatedAt
-			}
-
-			newStatus := resolveEntryStatus(entry.EnteredAt, userCreatedAt, userFound, now, cooldownDays)
-
-			if newStatus == model.RecruitEntryStatusOngoing {
-				continue
-			}
-
-			if newStatus == model.RecruitEntryStatusStalled {
-				if err := s.repo.MarkEntryStalled(entry.ID); err != nil {
-					global.Logger.Error("标记招募记录为 stalled 失败",
-						zap.Uint("entry_id", entry.ID), zap.Error(err))
-					continue
-				}
-				result.ProcessedCount++
-				result.StalledCount++
-				continue
-			}
-
-			rewardRefID := buildRecruitRewardRefID(user.ID)
-			alreadyClaimed, err := s.repo.HasEntryWithWalletRefID(rewardRefID)
-			if err != nil {
-				global.Logger.Error("检查招募奖励去重失败",
-					zap.Uint("entry_id", entry.ID), zap.Error(err))
-				continue
-			}
-			if alreadyClaimed {
-				if err := s.repo.MarkEntryStalled(entry.ID); err != nil {
-					global.Logger.Error("标记重复招募记录为 stalled 失败",
-						zap.Uint("entry_id", entry.ID), zap.Error(err))
-					continue
-				}
-				result.ProcessedCount++
-				result.StalledCount++
-				continue
-			}
-
-			// valid: award coins in a transaction
-			rec, err := s.repo.GetRecruitmentByID(entry.RecruitmentID)
-			if err != nil || rec == nil {
-				global.Logger.Error("招募记录不存在",
-					zap.Uint("entry_id", entry.ID), zap.Error(err))
-				continue
-			}
-
-			txErr := global.DB.Transaction(func(tx *gorm.DB) error {
-				rewardedAt := now
-				if err := s.repo.MarkEntryValidTx(tx, entry.ID, user.ID, rewardedAt, rewardRefID); err != nil {
-					return err
-				}
-				reason := fmt.Sprintf("招募链接奖励（招募 QQ %s）", entry.QQ)
-				return s.walletSvc.ApplyWalletDeltaTx(
-					tx,
-					rec.UserID,
-					rewardAmount,
-					reason,
-					model.WalletRefRecruitReward,
-					rewardRefID,
-				)
-			})
-			if txErr != nil {
-				alreadyClaimed, claimErr := s.repo.HasEntryWithWalletRefID(rewardRefID)
-				if claimErr == nil && alreadyClaimed {
-					if err := s.repo.MarkEntryStalled(entry.ID); err == nil {
-						result.ProcessedCount++
-						result.StalledCount++
-						continue
-					}
-				}
-				global.Logger.Error("处理招募奖励失败",
-					zap.Uint("entry_id", entry.ID), zap.Error(txErr))
-				continue
-			}
-
-			result.ProcessedCount++
-			result.ValidCount++
-			result.TotalCoinAwarded += rewardAmount
+			mergeRecruitEntryResult(result, s.processOngoingEntry(entry, now, cooldownDays, rewardAmount))
 		}
 
 		if len(entries) < batchSize {
