@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -49,7 +48,7 @@ type fittingInfo struct {
 type fittingsResponse []fittingInfo
 
 func (t *FittingsTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/fittings/", ctx.CharacterID)
 
 	var fittings fittingsResponse

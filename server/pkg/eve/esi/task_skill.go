@@ -3,8 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-
-	"context"
 	"fmt"
 	"time"
 )
@@ -58,7 +56,7 @@ type SkillInfo struct {
 }
 
 func (t *SkillTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 
 	var skillInfo SkillInfo
 	path := fmt.Sprintf("/characters/%d/skills", ctx.CharacterID)

@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/taskregistry"
+	"amiya-eden/pkg/background"
 	"context"
 	"errors"
 	"fmt"
@@ -21,10 +22,10 @@ import (
 func newTaskServiceTestDepsWithDB(t *testing.T) (*taskregistry.Registry, *repository.TaskRepository, *TaskService, *gorm.DB) {
 	t.Helper()
 
-	originalLogger := global.Logger
-	global.Logger = zap.NewNop()
+	originalLogger := global.CurrentLogger()
+	global.SetLogger(zap.NewNop())
 	t.Cleanup(func() {
-		global.Logger = originalLogger
+		global.SetLogger(originalLogger)
 	})
 
 	dsn := fmt.Sprintf("file:%s_%d?mode=memory&cache=shared", t.Name(), time.Now().UnixNano())
@@ -240,6 +241,44 @@ func TestTaskService_RunTaskNotRunnable(t *testing.T) {
 	err := svc.RunTask(context.Background(), "triggered_only", nil)
 	if !errors.Is(err, ErrTaskNotRunnable) {
 		t.Fatalf("RunTask error = %v, want ErrTaskNotRunnable", err)
+	}
+}
+
+func TestTaskService_RunTaskFromCronUsesBackgroundTaskManagerContext(t *testing.T) {
+	registry, _, svc := newTaskServiceTestDeps(t)
+	oldManager := global.BackgroundTaskManager()
+	mgr := background.New(context.Background(), func() *zap.Logger { return global.Logger })
+	global.SetBackgroundTaskManager(mgr)
+	t.Cleanup(func() {
+		global.SetBackgroundTaskManager(oldManager)
+	})
+
+	if err := mgr.Shutdown(time.Second); err != nil {
+		t.Fatalf("Shutdown returned error: %v", err)
+	}
+
+	seenCtxErr := make(chan error, 1)
+	registry.Register(taskregistry.TaskDefinition{
+		Name:        "cron_context_task",
+		Description: "Observes cron context",
+		Category:    taskregistry.TaskCategorySystem,
+		Type:        taskregistry.TaskTypeRecurring,
+		DefaultCron: "0 */5 * * * *",
+		RunFunc: func(ctx context.Context) error {
+			seenCtxErr <- ctx.Err()
+			return nil
+		},
+	})
+
+	svc.RunTaskFromCron("cron_context_task")
+
+	select {
+	case err := <-seenCtxErr:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("cron task context error = %v, want %v", err, context.Canceled)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for cron task execution")
 	}
 }
 

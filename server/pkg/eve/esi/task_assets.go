@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -79,7 +78,7 @@ type AssetName struct {
 }
 
 func (t *AssetsTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 
 	// 1. 获取资产列表（自动分页）
 	path := fmt.Sprintf("/characters/%d/assets/", ctx.CharacterID)

@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -43,7 +42,7 @@ type corporationHistoryResponse struct {
 }
 
 func (t *CorporationHistoryTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/corporationhistory/", ctx.CharacterID)
 
 	var historyResp []corporationHistoryResponse

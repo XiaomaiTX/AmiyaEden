@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -87,7 +86,7 @@ type ContractItem struct {
 }
 
 func (t *ContractsTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 
 	// 1. 获取合同列表（自动分页）
 	contractPath := fmt.Sprintf("/characters/%d/contracts/", ctx.CharacterID)

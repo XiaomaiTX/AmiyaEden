@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -47,7 +46,7 @@ type CharacterTitle struct {
 }
 
 func (t *TitlesTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/titles/", ctx.CharacterID)
 
 	var titles []CharacterTitle

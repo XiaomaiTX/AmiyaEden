@@ -1,17 +1,21 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
+	"amiya-eden/pkg/background"
 	"amiya-eden/pkg/response"
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,6 +45,15 @@ type taskHistoryPage struct {
 
 func newTaskHandlerTestDeps(t *testing.T, reschedule ...func(taskName, cronExpr string) error) (*taskregistry.Registry, *repository.TaskRepository, *service.TaskService, *TaskHandler, *gorm.DB) {
 	t.Helper()
+
+	originalManager := global.BackgroundTaskManager()
+	global.SetBackgroundTaskManager(nil)
+	t.Cleanup(func() {
+		if currentManager := global.BackgroundTaskManager(); currentManager != nil && currentManager != originalManager {
+			_ = currentManager.Shutdown(time.Second)
+		}
+		global.SetBackgroundTaskManager(originalManager)
+	})
 
 	dsn := fmt.Sprintf("file:%s_%d?mode=memory&cache=shared", t.Name(), time.Now().UnixNano())
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
@@ -170,6 +183,127 @@ func TestTaskHandler_RunTaskOK(t *testing.T) {
 	if execution.TriggeredBy == nil || *execution.TriggeredBy != 42 {
 		t.Fatalf("triggered_by = %v, want 42", execution.TriggeredBy)
 	}
+}
+
+func TestTaskHandler_RunTaskUsesBackgroundTaskManagerContext(t *testing.T) {
+	registry, repo, _, h, _ := newTaskHandlerTestDeps(t)
+	mgr := background.New(context.Background(), global.CurrentLogger)
+	global.SetBackgroundTaskManager(mgr)
+
+	started := make(chan struct{})
+	ctxErrs := make(chan error, 1)
+	registry.Register(taskregistry.TaskDefinition{
+		Name:        "tracked_task",
+		Description: "Waits for shutdown",
+		Category:    taskregistry.TaskCategorySystem,
+		Type:        taskregistry.TaskTypeRecurring,
+		DefaultCron: "0 */5 * * * *",
+		RunFunc: func(ctx context.Context) error {
+			close(started)
+			<-ctx.Done()
+			ctxErrs <- ctx.Err()
+			return ctx.Err()
+		},
+	})
+	r := setupTaskHandlerTestRouter(h, 7)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/tasks/tracked_task/run", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTTP status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	result := decodeTaskHandlerResponse(t, w.Body.Bytes())
+	if result.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", result.Code, response.CodeOK)
+	}
+
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for tracked task to start")
+	}
+
+	if err := mgr.Shutdown(time.Second); err != nil {
+		t.Fatalf("Shutdown returned error: %v", err)
+	}
+
+	select {
+	case err := <-ctxErrs:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("task context err = %v, want %v", err, context.Canceled)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for tracked task shutdown")
+	}
+
+	execution := waitForTaskExecution(t, repo, "tracked_task")
+	if execution.Status != "failed" {
+		t.Fatalf("status = %q, want %q", execution.Status, "failed")
+	}
+	if !strings.Contains(execution.Error, context.Canceled.Error()) {
+		t.Fatalf("error = %q, want substring %q", execution.Error, context.Canceled.Error())
+	}
+	if execution.Trigger != "manual" {
+		t.Fatalf("trigger = %q, want %q", execution.Trigger, "manual")
+	}
+	if execution.TriggeredBy == nil || *execution.TriggeredBy != 7 {
+		t.Fatalf("triggered_by = %v, want 7", execution.TriggeredBy)
+	}
+}
+
+func TestTaskHandler_RunTaskRejectsSchedulingWhenBackgroundManagerIsStopping(t *testing.T) {
+	registry, repo, _, h, _ := newTaskHandlerTestDeps(t)
+	mgr := background.New(context.Background(), global.CurrentLogger)
+	global.SetBackgroundTaskManager(mgr)
+
+	if err := mgr.Shutdown(time.Second); err != nil {
+		t.Fatalf("Shutdown returned error: %v", err)
+	}
+
+	registry.Register(taskregistry.TaskDefinition{
+		Name:        "closing_task",
+		Description: "Should not start",
+		Category:    taskregistry.TaskCategorySystem,
+		Type:        taskregistry.TaskTypeRecurring,
+		DefaultCron: "0 */5 * * * *",
+		RunFunc: func(ctx context.Context) error {
+			return nil
+		},
+	})
+	r := setupTaskHandlerTestRouter(h, 9)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/tasks/closing_task/run", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("HTTP status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	result := decodeTaskHandlerResponse(t, w.Body.Bytes())
+	if result.Code != response.CodeBizError {
+		t.Fatalf("response code = %d, want %d", result.Code, response.CodeBizError)
+	}
+	if result.Msg != "服务正在关闭，任务未启动" {
+		t.Fatalf("response msg = %q, want %q", result.Msg, "服务正在关闭，任务未启动")
+	}
+
+	execution, err := repo.GetLastExecution("closing_task")
+	if err != nil {
+		t.Fatalf("GetLastExecution returned error: %v", err)
+	}
+	if execution != nil {
+		t.Fatalf("expected no execution record, got %#v", execution)
+	}
+
+	handle, ok := registry.TryLock("closing_task")
+	if !ok || handle == nil {
+		t.Fatal("expected closing task lock to be released when scheduling fails")
+	}
+	handle.Release()
 }
 
 func TestTaskHandler_RunTaskNotFound(t *testing.T) {

@@ -58,7 +58,7 @@ func InitLogger() {
 	core := zapcore.NewTee(fileCore, consoleCore)
 	logger := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 
-	global.Logger = logger
+	global.SetLogger(logger)
 
 	zap.ReplaceGlobals(logger)
 }

@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -71,24 +72,26 @@ func TestQueueTaskExecutionKeyUsesCorporationForCorporationKillmails(t *testing.
 }
 
 func TestQueueRunHandlesNilGlobalLogger(t *testing.T) {
-	oldLogger := global.Logger
-	global.Logger = nil
+	oldLogger := global.CurrentLogger()
+	global.SetLogger(nil)
 	t.Cleanup(func() {
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 	})
 
 	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
-	queue.Run()
+	if err := queue.Run(context.Background()); err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
 }
 
 func TestQueueRunSkipsWhenGlobalDBIsNil(t *testing.T) {
 	oldDB := global.DB
-	oldLogger := global.Logger
+	oldLogger := global.CurrentLogger()
 	global.DB = nil
-	global.Logger = nil
+	global.SetLogger(nil)
 	t.Cleanup(func() {
 		global.DB = oldDB
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 	})
 
 	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{
@@ -97,7 +100,9 @@ func TestQueueRunSkipsWhenGlobalDBIsNil(t *testing.T) {
 		},
 	})
 
-	queue.Run()
+	if err := queue.Run(context.Background()); err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
 }
 
 func TestQueueNeedsRefreshSharesCorporationKillmailLastRunAcrossProviders(t *testing.T) {
@@ -273,6 +278,58 @@ func (legacyQueueTask) Execute(ctx *TaskContext) error {
 	return nil
 }
 
+type contextAwareQueueTask struct {
+	name string
+	seen chan context.Context
+}
+
+func (t *contextAwareQueueTask) Name() string        { return t.name }
+func (t *contextAwareQueueTask) Description() string { return "context-aware task" }
+func (t *contextAwareQueueTask) Priority() Priority  { return PriorityLow }
+func (t *contextAwareQueueTask) Interval() RefreshInterval {
+	return RefreshInterval{Active: time.Hour, Inactive: 2 * time.Hour}
+}
+func (t *contextAwareQueueTask) RequiredScopes() []TaskScope { return nil }
+func (t *contextAwareQueueTask) Execute(ctx *TaskContext) error {
+	t.seen <- ctx.Context
+	return nil
+}
+
+func TestQueueRunTaskPropagatesContextToTask(t *testing.T) {
+	type contextKey string
+	const key contextKey = "queue-propagation"
+
+	task := &contextAwareQueueTask{
+		name: fmt.Sprintf("context_aware_queue_task_%d", time.Now().UnixNano()),
+		seen: make(chan context.Context, 1),
+	}
+	Register(task)
+
+	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{
+		characters: map[int64]model.EveCharacter{
+			1001: {CharacterID: 1001},
+		},
+	})
+
+	runCtx := context.WithValue(context.Background(), key, "expected")
+
+	if err := queue.RunTask(runCtx, task.name, 1001); err != nil {
+		t.Fatalf("RunTask returned error: %v", err)
+	}
+
+	select {
+	case seenCtx := <-task.seen:
+		if seenCtx == nil {
+			t.Fatal("expected task to receive a context")
+		}
+		if got := seenCtx.Value(key); got != "expected" {
+			t.Fatalf("task context value = %v, want %q", got, "expected")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for task execution")
+	}
+}
+
 func TestQueueExecuteTaskMarksSkippedStatusWithoutPersistingLastRun(t *testing.T) {
 	mini := miniredis.RunT(t)
 	oldRedis := global.Redis
@@ -286,7 +343,9 @@ func TestQueueExecuteTaskMarksSkippedStatusWithoutPersistingLastRun(t *testing.T
 	char := model.EveCharacter{CharacterID: 1001}
 	task := skippedQueueTask{}
 
-	queue.executeTask(context.Background(), task, char, true, true)
+	if err := queue.executeTask(context.Background(), task, char, true, true); !errors.Is(err, ErrTaskSkipped) {
+		t.Fatalf("executeTask() error = %v, want %v", err, ErrTaskSkipped)
+	}
 
 	status := queue.statuses[fmt.Sprintf("%s:%d", task.Name(), char.CharacterID)]
 	if status == nil {

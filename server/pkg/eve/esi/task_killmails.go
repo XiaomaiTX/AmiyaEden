@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -89,7 +88,7 @@ type KillmailDetail struct {
 }
 
 func (t *KillmailsTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 
 	// 1. 获取最近的 killmail 列表（自动分页）
 	recentPath := fmt.Sprintf("/characters/%d/killmails/recent/", ctx.CharacterID)

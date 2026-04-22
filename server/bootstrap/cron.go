@@ -105,8 +105,8 @@ func (l *cronLogger) Error(err error, msg string, keysAndValues ...interface{}) 
 }
 
 func cronZapLogger() *zap.Logger {
-	if global.Logger != nil {
-		return global.Logger
+	if logger := global.CurrentLogger(); logger != nil {
+		return logger
 	}
 	return nopCronLogger
 }
