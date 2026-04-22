@@ -2,10 +2,11 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-23
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/dependency-layering.md
+  - docs/standards/documentation-governance.md
 ---
 
 # Pre-Completion Checklist
@@ -20,6 +21,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - `docs/standards/testing-and-verification.md` is the canonical source for commands, coverage rules, and allowed exceptions.
 - If a required check or test is skipped, state the reason explicitly.
 - No speculative backward-compatibility alias, hidden redirect, fallback payload, deprecated route, duplicate endpoint/contract, or shadow page may be introduced unless an explicit migration requirement says otherwise.
+- Durable backend or architecture decisions that are not obvious from code must be documented in the nearest canonical doc per `docs/standards/documentation-governance.md`.
 
 ## Checklist by Change Type
 
@@ -35,6 +37,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - [ ] If an API contract changed, frontend API wrappers and types were updated
 - [ ] If a route was added or changed, `docs/api/route-index.md` was updated
 - [ ] If behavior changed, the relevant feature doc was updated
+- [ ] If a non-obvious durable backend design decision changed, the nearest canonical doc captures the decision, rationale, invariants, and primary code files
 
 ### Frontend-Only Change
 
@@ -63,6 +66,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - [ ] Backend response fields and frontend type fields match
 - [ ] `docs/api/route-index.md` was updated if the route surface or permission boundary changed
 - [ ] The relevant feature doc was updated if behavior changed
+- [ ] If a non-obvious durable backend or contract design decision changed, the nearest canonical doc captures the decision, rationale, invariants, and primary code files
 
 ### Permission or Role Change
 
@@ -91,6 +95,7 @@ Use this checklist before marking work complete. Skip only items that do not app
 - [ ] Frontend routes and page access metadata were added if required
 - [ ] Backend and frontend routes were registered if required
 - [ ] The change follows the existing module structure pattern
+- [ ] Non-obvious durable backend design decisions are captured in the feature, API, architecture, or standard doc that owns the subject
 - [ ] At least one regression test covers key behavior, unless explicitly justified otherwise
 
 ## Test Selection Reference

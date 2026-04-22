@@ -2,7 +2,7 @@
 status: active
 doc_type: agent-rules
 owner: engineering
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-23
 source_of_truth:
   - AGENTS.md
   - CLAUDE.md
@@ -109,6 +109,11 @@ The supported authentication flow is EVE SSO. Legacy auth-related pages may stil
 11. **No speculative backward compatibility**
    - Do not add compatibility aliases, hidden redirects, fallback payloads, deprecated routes, duplicate endpoints, or shadow pages unless the user or canonical docs explicitly require a migration window
    - When replacing a contract or route intentionally, prefer a clean cut and update callers, docs, and tests in the same change
+
+12. **Design rationale is repository memory**
+   - Durable backend or architecture decisions that are not obvious from code must be documented in the nearest canonical doc
+   - Capture the decision, rationale, invariants, and primary code files rather than relying on chat, PR text, commit messages, or agent memory
+   - Follow `docs/standards/documentation-governance.md` for placement and scope
 
 ## Documentation Routing
 
