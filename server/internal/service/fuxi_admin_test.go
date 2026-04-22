@@ -146,6 +146,73 @@ func TestFuxiAdminUpdateConfigStoresStyleOptions(t *testing.T) {
 	}
 }
 
+func TestFuxiAdminUpdateConfigRejectsInvalidColors(t *testing.T) {
+	useFuxiAdminServiceTestDB(t)
+	svc := NewFuxiAdminService()
+
+	invalidColor := "not-a-color"
+	tests := []struct {
+		name  string
+		want  string
+		build func(*string) *FuxiAdminUpdateConfigRequest
+	}{
+		{
+			name: "page background",
+			want: "页面背景色必须是十六进制颜色值",
+			build: func(color *string) *FuxiAdminUpdateConfigRequest {
+				return &FuxiAdminUpdateConfigRequest{PageBackgroundColor: color}
+			},
+		},
+		{
+			name: "card background",
+			want: "卡片背景色必须是十六进制颜色值",
+			build: func(color *string) *FuxiAdminUpdateConfigRequest {
+				return &FuxiAdminUpdateConfigRequest{CardBackgroundColor: color}
+			},
+		},
+		{
+			name: "card border",
+			want: "卡片边框色必须是十六进制颜色值",
+			build: func(color *string) *FuxiAdminUpdateConfigRequest {
+				return &FuxiAdminUpdateConfigRequest{CardBorderColor: color}
+			},
+		},
+		{
+			name: "tier title",
+			want: "层级标题颜色必须是十六进制颜色值",
+			build: func(color *string) *FuxiAdminUpdateConfigRequest {
+				return &FuxiAdminUpdateConfigRequest{TierTitleColor: color}
+			},
+		},
+		{
+			name: "name text",
+			want: "姓名文字颜色必须是十六进制颜色值",
+			build: func(color *string) *FuxiAdminUpdateConfigRequest {
+				return &FuxiAdminUpdateConfigRequest{NameTextColor: color}
+			},
+		},
+		{
+			name: "body text",
+			want: "其他文字颜色必须是十六进制颜色值",
+			build: func(color *string) *FuxiAdminUpdateConfigRequest {
+				return &FuxiAdminUpdateConfigRequest{BodyTextColor: color}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := svc.UpdateConfig(tc.build(&invalidColor))
+			if err == nil {
+				t.Fatalf("expected invalid color error for %s", tc.name)
+			}
+			if err.Error() != tc.want {
+				t.Fatalf("UpdateConfig error = %q, want %q", err.Error(), tc.want)
+			}
+		})
+	}
+}
+
 func TestFuxiAdminCreateTierRejectsEmptyName(t *testing.T) {
 	useFuxiAdminServiceTestDB(t)
 	svc := NewFuxiAdminService()

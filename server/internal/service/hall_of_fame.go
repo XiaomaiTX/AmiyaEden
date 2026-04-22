@@ -266,20 +266,22 @@ func clampPercent(v float64) float64 {
 	return math.Max(0, math.Min(100, v))
 }
 
-var validStylePresets = map[string]bool{
-	"gold": true, "silver": true, "darkred": true, "yellow": true, "bronze": true, "rose": true, "jade": true, "midnight": true, "custom": true,
-}
-
 func isValidStylePreset(s string) bool {
-	return validStylePresets[s]
-}
-
-var validBorderStyles = map[string]bool{
-	"none": true, "gilded": true, "imperial": true, "neon-circuit": true, "void-rift": true, "amarr": true, "caldari": true, "minmatar": true, "gallente": true,
+	switch s {
+	case "gold", "silver", "darkred", "yellow", "bronze", "rose", "jade", "midnight", "custom":
+		return true
+	default:
+		return false
+	}
 }
 
 func isValidBorderStyle(s string) bool {
-	return validBorderStyles[s]
+	switch s {
+	case "none", "gilded", "imperial", "neon-circuit", "void-rift", "amarr", "caldari", "minmatar", "gallente":
+		return true
+	default:
+		return false
+	}
 }
 
 func buildHallOfFameCardUpdateMap(req *UpdateCardRequest) (map[string]interface{}, error) {

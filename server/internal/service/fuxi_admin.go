@@ -162,52 +162,40 @@ func (s *FuxiAdminService) UpdateConfig(req *FuxiAdminUpdateConfigRequest) (*mod
 		}
 		cfg.CardWidth = *req.CardWidth
 	}
-	if req.PageBackgroundColor != nil {
-		color, err := normalizeFuxiAdminHexColor(*req.PageBackgroundColor, "页面背景色")
-		if err != nil {
-			return nil, err
-		}
-		cfg.PageBackgroundColor = color
+	if err := applyOptionalFuxiAdminColor(&cfg.PageBackgroundColor, req.PageBackgroundColor, "页面背景色"); err != nil {
+		return nil, err
 	}
-	if req.CardBackgroundColor != nil {
-		color, err := normalizeFuxiAdminHexColor(*req.CardBackgroundColor, "卡片背景色")
-		if err != nil {
-			return nil, err
-		}
-		cfg.CardBackgroundColor = color
+	if err := applyOptionalFuxiAdminColor(&cfg.CardBackgroundColor, req.CardBackgroundColor, "卡片背景色"); err != nil {
+		return nil, err
 	}
-	if req.CardBorderColor != nil {
-		color, err := normalizeFuxiAdminHexColor(*req.CardBorderColor, "卡片边框色")
-		if err != nil {
-			return nil, err
-		}
-		cfg.CardBorderColor = color
+	if err := applyOptionalFuxiAdminColor(&cfg.CardBorderColor, req.CardBorderColor, "卡片边框色"); err != nil {
+		return nil, err
 	}
-	if req.TierTitleColor != nil {
-		color, err := normalizeFuxiAdminHexColor(*req.TierTitleColor, "层级标题颜色")
-		if err != nil {
-			return nil, err
-		}
-		cfg.TierTitleColor = color
+	if err := applyOptionalFuxiAdminColor(&cfg.TierTitleColor, req.TierTitleColor, "层级标题颜色"); err != nil {
+		return nil, err
 	}
-	if req.NameTextColor != nil {
-		color, err := normalizeFuxiAdminHexColor(*req.NameTextColor, "姓名文字颜色")
-		if err != nil {
-			return nil, err
-		}
-		cfg.NameTextColor = color
+	if err := applyOptionalFuxiAdminColor(&cfg.NameTextColor, req.NameTextColor, "姓名文字颜色"); err != nil {
+		return nil, err
 	}
-	if req.BodyTextColor != nil {
-		color, err := normalizeFuxiAdminHexColor(*req.BodyTextColor, "其他文字颜色")
-		if err != nil {
-			return nil, err
-		}
-		cfg.BodyTextColor = color
+	if err := applyOptionalFuxiAdminColor(&cfg.BodyTextColor, req.BodyTextColor, "其他文字颜色"); err != nil {
+		return nil, err
 	}
 	if err := s.repo.UpsertConfig(cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func applyOptionalFuxiAdminColor(target *string, input *string, label string) error {
+	if input == nil {
+		return nil
+	}
+	color, err := normalizeFuxiAdminHexColor(*input, label)
+	if err != nil {
+		return err
+	}
+	*target = color
+	return nil
 }
 
 func normalizeFuxiAdminHexColor(input string, label string) (string, error) {
