@@ -310,12 +310,12 @@ func TestRecruitmentEntryService_ProcessOngoingEntriesDrainsBacklogBeyondBatchLi
 func TestRecruitmentEntryService_ProcessOngoingEntriesKeepsEntryOngoingOnUserLookupError(t *testing.T) {
 	db := newRecruitmentEntryServiceTestDB(t)
 	oldDB := global.DB
-	oldLogger := global.Logger
+	oldLogger := global.CurrentLogger()
 	global.DB = db
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	t.Cleanup(func() {
 		global.DB = oldDB
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 	})
 
 	now := time.Date(2026, 4, 12, 12, 0, 0, 0, time.UTC)
@@ -356,12 +356,12 @@ func TestRecruitmentEntryService_ProcessOngoingEntriesKeepsEntryOngoingOnUserLoo
 func TestRecruitmentEntryService_ProcessOngoingEntriesKeepsEntryOngoingWhenQQMatchesMultipleUsers(t *testing.T) {
 	db := newRecruitmentEntryServiceTestDB(t)
 	oldDB := global.DB
-	oldLogger := global.Logger
+	oldLogger := global.CurrentLogger()
 	global.DB = db
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	t.Cleanup(func() {
 		global.DB = oldDB
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 	})
 
 	now := time.Date(2026, 4, 12, 12, 0, 0, 0, time.UTC)
@@ -411,6 +411,64 @@ func TestRecruitmentEntryService_ProcessOngoingEntriesKeepsEntryOngoingWhenQQMat
 	}
 	if txCount != 0 {
 		t.Fatalf("expected ambiguous QQ to avoid wallet credits, got %d transactions", txCount)
+	}
+}
+
+func TestRecruitmentEntryService_ProcessOngoingEntriesKeepsEntryOngoingWhenRecruitmentMissing(t *testing.T) {
+	db := newRecruitmentEntryServiceTestDB(t)
+	oldDB := global.DB
+	oldLogger := global.CurrentLogger()
+	global.DB = db
+	global.SetLogger(zap.NewNop())
+	t.Cleanup(func() {
+		global.DB = oldDB
+		global.SetLogger(oldLogger)
+	})
+
+	now := time.Date(2026, 4, 12, 12, 0, 0, 0, time.UTC)
+	entry := &model.NewbroRecruitmentEntry{
+		RecruitmentID: 999999,
+		QQ:            "123456",
+		EnteredAt:     now.Add(-2 * time.Hour),
+		Status:        model.RecruitEntryStatusOngoing,
+	}
+	if err := db.Create(entry).Error; err != nil {
+		t.Fatalf("seed entry: %v", err)
+	}
+
+	matchedUser := &model.User{
+		BaseModel: model.BaseModel{CreatedAt: now.Add(-time.Hour)},
+		Nickname:  "matched-user",
+		QQ:        entry.QQ,
+		Role:      model.RoleUser,
+	}
+	if err := db.Create(matchedUser).Error; err != nil {
+		t.Fatalf("seed matched user: %v", err)
+	}
+
+	svc := NewRecruitmentEntryService()
+	result, err := svc.ProcessOngoingEntries(now)
+	if err != nil {
+		t.Fatalf("ProcessOngoingEntries() error = %v", err)
+	}
+	if result.ProcessedCount != 0 {
+		t.Fatalf("expected missing recruitment to skip processing, got %d processed entries", result.ProcessedCount)
+	}
+
+	var refreshed model.NewbroRecruitmentEntry
+	if err := db.First(&refreshed, entry.ID).Error; err != nil {
+		t.Fatalf("reload entry: %v", err)
+	}
+	if refreshed.Status != model.RecruitEntryStatusOngoing {
+		t.Fatalf("expected entry to remain ongoing when recruitment is missing, got %q", refreshed.Status)
+	}
+
+	var txCount int64
+	if err := db.Model(&model.WalletTransaction{}).Count(&txCount).Error; err != nil {
+		t.Fatalf("count wallet transactions: %v", err)
+	}
+	if txCount != 0 {
+		t.Fatalf("expected missing recruitment to avoid wallet credits, got %d transactions", txCount)
 	}
 }
 
