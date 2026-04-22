@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -52,7 +51,7 @@ type Notification struct {
 }
 
 func (t *NotificationsTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/notifications/", ctx.CharacterID)
 
 	var notifications []Notification

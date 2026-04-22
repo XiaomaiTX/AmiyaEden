@@ -462,7 +462,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 			// 触发新人物全量 ESI 刷新（后台异步）
 			if OnNewCharacterFunc != nil {
-				go OnNewCharacterFunc(characterID, user.ID)
+				OnNewCharacterFunc(characterID, user.ID)
 			}
 
 			jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
@@ -499,7 +499,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 		// 触发新人物全量 ESI 刷新（后台异步）
 		if OnNewCharacterFunc != nil {
-			go OnNewCharacterFunc(characterID, user.ID)
+			OnNewCharacterFunc(characterID, user.ID)
 		}
 
 		jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)

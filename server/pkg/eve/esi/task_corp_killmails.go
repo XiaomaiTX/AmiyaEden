@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -44,7 +43,7 @@ func (t *CorpKillmailsTask) RequiredScopes() []TaskScope {
 }
 
 func (t *CorpKillmailsTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	if !hasCorpKillmailDirectorRole(ctx.CharacterID) {
 		global.Logger.Debug("[ESI] 军团击杀邮件：人物缺少 Director 职权，跳过刷新",
 			zap.Int64("character_id", ctx.CharacterID),

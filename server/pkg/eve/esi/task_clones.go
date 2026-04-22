@@ -3,7 +3,6 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"context"
 	"fmt"
 	"time"
 
@@ -69,7 +68,7 @@ type JumpFatigue struct {
 }
 
 func (t *ClonesTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 
 	// 1. 获取克隆体信息
 	clonePath := fmt.Sprintf("/characters/%d/clones/", ctx.CharacterID)

@@ -44,15 +44,17 @@ func (q *Queue) checkActivity(ctx context.Context, characters []model.EveCharact
 func (q *Queue) checkSingleActivity(ctx context.Context, char model.EveCharacter) bool {
 	// 先查 Redis 缓存
 	cacheKey := fmt.Sprintf("%s%d", activityCachePrefix, char.CharacterID)
-	val, err := global.Redis.Get(ctx, cacheKey).Result()
-	if err == nil {
-		return val == "1"
+	if global.Redis != nil {
+		val, err := global.Redis.Get(ctx, cacheKey).Result()
+		if err == nil {
+			return val == "1"
+		}
 	}
 
 	// 查 ESI
 	accessToken, err := q.ssoSvc.GetValidToken(ctx, char.CharacterID)
 	if err != nil {
-		global.Logger.Warn("[ESI Activity] 获取 Token 失败，默认活跃",
+		queueZapLogger().Warn("[ESI Activity] 获取 Token 失败，默认活跃",
 			zap.Int64("character_id", char.CharacterID),
 			zap.Error(err),
 		)
@@ -62,7 +64,7 @@ func (q *Queue) checkSingleActivity(ctx context.Context, char model.EveCharacter
 	path := fmt.Sprintf("/characters/%d/online/", char.CharacterID)
 	var status OnlineStatus
 	if err := q.client.Get(ctx, path, accessToken, &status); err != nil {
-		global.Logger.Warn("[ESI Activity] 查询在线状态失败，默认活跃",
+		queueZapLogger().Warn("[ESI Activity] 查询在线状态失败，默认活跃",
 			zap.Int64("character_id", char.CharacterID),
 			zap.Error(err),
 		)
@@ -79,7 +81,9 @@ func (q *Queue) checkSingleActivity(ctx context.Context, char model.EveCharacter
 	if isActive {
 		activeVal = "1"
 	}
-	global.Redis.Set(ctx, cacheKey, activeVal, activityCacheTTL)
+	if global.Redis != nil {
+		global.Redis.Set(ctx, cacheKey, activeVal, activityCacheTTL)
+	}
 
 	return isActive
 }

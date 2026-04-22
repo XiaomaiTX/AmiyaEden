@@ -1,6 +1,7 @@
 package esi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -81,10 +82,18 @@ type RefreshTask interface {
 
 // TaskContext 任务执行上下文
 type TaskContext struct {
+	Context     context.Context
 	CharacterID int64
 	AccessToken string
 	Client      *Client
 	IsActive    bool // 人物是否活跃
+}
+
+func (ctx *TaskContext) ContextOrBackground() context.Context {
+	if ctx != nil && ctx.Context != nil {
+		return ctx.Context
+	}
+	return context.Background()
 }
 
 // ─────────────────────────────────────────────

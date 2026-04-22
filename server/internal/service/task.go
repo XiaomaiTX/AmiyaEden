@@ -177,7 +177,7 @@ func (s *TaskService) RunTaskFromCron(taskName string) {
 	}
 	defer release.Release()
 
-	if err := s.executeAndLog(context.Background(), taskName, taskTriggerCron, nil, definition.RunFunc); err != nil {
+	if err := s.executeAndLog(global.BackgroundContext(), taskName, taskTriggerCron, nil, definition.RunFunc); err != nil {
 		s.logger().Warn("task execution failed", zap.String("task_name", taskName), zap.String("trigger", taskTriggerCron), zap.Error(err))
 	}
 }

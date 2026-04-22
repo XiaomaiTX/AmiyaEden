@@ -29,9 +29,9 @@ func (f *fakeAutoSrpRunner) ProcessAutoSRP(fleetID string) error {
 
 func newAutoSrpSchedulerTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	oldLogger := global.Logger
-	global.Logger = zap.NewNop()
-	t.Cleanup(func() { global.Logger = oldLogger })
+	oldLogger := global.CurrentLogger()
+	global.SetLogger(zap.NewNop())
+	t.Cleanup(func() { global.SetLogger(oldLogger) })
 
 	dsn := fmt.Sprintf("file:auto_srp_scheduler_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})

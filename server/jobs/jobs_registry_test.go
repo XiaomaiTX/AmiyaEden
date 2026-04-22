@@ -18,14 +18,14 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 	oldQueue := esiQueue
 
 	t.Cleanup(func() {
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 		global.DB = oldDB
 		newESIQueueForJobs = oldQueueFactory
 		startInitialESIQueueRun = oldStartupRun
 		esiQueue = oldQueue
 	})
 
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	global.DB = newAutoSrpSchedulerTestDB(t)
 	newESIQueueForJobs = func() *esi.Queue {
 		return &esi.Queue{}
@@ -84,11 +84,11 @@ func TestRegisterAutoSrpTaskRegistersTriggeredTask(t *testing.T) {
 	oldDB := global.DB
 
 	t.Cleanup(func() {
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 		global.DB = oldDB
 	})
 
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	global.DB = newAutoSrpSchedulerTestDB(t)
 
 	reg := taskregistry.New()
