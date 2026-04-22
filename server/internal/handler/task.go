@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
@@ -69,10 +70,14 @@ func (h *TaskHandler) RunTask(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		ctx := taskregistry.ContextWithLockHandle(context.Background(), handle)
-		_ = h.svc.RunTaskLocked(ctx, taskName, &triggeredBy)
-	}()
+	if ok := global.EnsureBackgroundTaskManager().Go("task_manual_"+taskName, func(ctx context.Context) error {
+		ctx = taskregistry.ContextWithLockHandle(ctx, handle)
+		return h.svc.RunTaskLocked(ctx, taskName, &triggeredBy)
+	}); !ok {
+		handle.Release()
+		response.Fail(c, response.CodeBizError, "服务正在关闭，任务未启动")
+		return
+	}
 
 	response.OK(c, gin.H{"message": "任务已触发"})
 }

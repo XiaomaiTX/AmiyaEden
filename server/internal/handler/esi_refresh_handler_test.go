@@ -6,6 +6,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/jobs"
+	"amiya-eden/pkg/background"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
 	"bytes"
@@ -55,8 +56,9 @@ func TestRunMyCharacterTask_AllowsUserToRefreshOwnCharacter(t *testing.T) {
 	queue := setupMockESIQueue(t)
 	getESIQueueWasSet = true
 	jobs.SetTestESIQueue(queue)
+	taskName := registerSuccessfulHandlerQueueTask(t)
 
-	recorder := performRunMyCharacterTaskRequest(t, 1, 9001, "character_skill")
+	recorder := performRunMyCharacterTaskRequest(t, 1, 9001, taskName)
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected http status 200, got %d", recorder.Code)
 	}
@@ -265,6 +267,80 @@ func TestGetStatuses_FiltersByCharacterIDOrName(t *testing.T) {
 	}
 }
 
+func TestRunTaskByName_RejectsSchedulingWhenBackgroundManagerIsStopping(t *testing.T) {
+	setupTest(t)
+	defer teardownTest(t)
+
+	oldManager := global.BackgroundTaskManager()
+	mgr := background.New(context.Background(), func() *zap.Logger { return zap.NewNop() })
+	global.SetBackgroundTaskManager(mgr)
+	t.Cleanup(func() {
+		global.SetBackgroundTaskManager(oldManager)
+	})
+	if err := mgr.Shutdown(time.Second); err != nil {
+		t.Fatalf("Shutdown returned error: %v", err)
+	}
+
+	getESIQueueWasSet = true
+	jobs.SetTestESIQueue(setupMockESIQueue(t))
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	bodyBytes, _ := json.Marshal(map[string]string{"task_name": "character_skill"})
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/tasks/esi/run-task", bytes.NewBuffer(bodyBytes))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	NewESIRefreshHandler().RunTaskByName(ctx)
+
+	var result esiRefreshHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.Code != response.CodeBizError {
+		t.Fatalf("expected biz error code, got code=%d, msg=%s", result.Code, result.Msg)
+	}
+	if result.Msg != "服务正在关闭，任务未启动" {
+		t.Fatalf("unexpected message: %s", result.Msg)
+	}
+}
+
+func TestRunAll_RejectsSchedulingWhenBackgroundManagerIsStopping(t *testing.T) {
+	setupTest(t)
+	defer teardownTest(t)
+
+	oldManager := global.BackgroundTaskManager()
+	mgr := background.New(context.Background(), func() *zap.Logger { return zap.NewNop() })
+	global.SetBackgroundTaskManager(mgr)
+	t.Cleanup(func() {
+		global.SetBackgroundTaskManager(oldManager)
+	})
+	if err := mgr.Shutdown(time.Second); err != nil {
+		t.Fatalf("Shutdown returned error: %v", err)
+	}
+
+	getESIQueueWasSet = true
+	jobs.SetTestESIQueue(setupMockESIQueue(t))
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/tasks/esi/run-all", nil)
+
+	NewESIRefreshHandler().RunAll(ctx)
+
+	var result esiRefreshHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.Code != response.CodeBizError {
+		t.Fatalf("expected biz error code, got code=%d, msg=%s", result.Code, result.Msg)
+	}
+	if result.Msg != "服务正在关闭，任务未启动" {
+		t.Fatalf("unexpected message: %s", result.Msg)
+	}
+}
+
 func performRunMyCharacterTaskRequest(t *testing.T, userID uint, characterID int64, taskName string) *httptest.ResponseRecorder {
 	t.Helper()
 
@@ -319,10 +395,10 @@ func setupGlobalDependencies(t *testing.T, db *gorm.DB) {
 
 	originalDB := global.DB
 	originalRedis := global.Redis
-	originalLogger := global.Logger
+	originalLogger := global.CurrentLogger()
 	global.DB = db
 	global.Redis = redis.NewClient(&redis.Options{Addr: "127.0.0.1:0"})
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 
 	t.Cleanup(func() {
 		global.DB = originalDB
@@ -330,7 +406,7 @@ func setupGlobalDependencies(t *testing.T, db *gorm.DB) {
 			_ = global.Redis.Close()
 		}
 		global.Redis = originalRedis
-		global.Logger = originalLogger
+		global.SetLogger(originalLogger)
 	})
 }
 
@@ -385,6 +461,31 @@ func setupMockESIQueue(t *testing.T) *esi.Queue {
 	queue := esi.NewQueue(mockSSO, mockCharRepo)
 	queue.SetConcurrency(1)
 	return queue
+}
+
+type successfulHandlerQueueTask struct {
+	name string
+}
+
+func (t *successfulHandlerQueueTask) Name() string        { return t.name }
+func (t *successfulHandlerQueueTask) Description() string { return "successful handler task" }
+func (t *successfulHandlerQueueTask) Priority() esi.Priority {
+	return esi.PriorityLow
+}
+func (t *successfulHandlerQueueTask) Interval() esi.RefreshInterval {
+	return esi.RefreshInterval{Active: time.Hour, Inactive: 2 * time.Hour}
+}
+func (t *successfulHandlerQueueTask) RequiredScopes() []esi.TaskScope { return nil }
+func (t *successfulHandlerQueueTask) Execute(ctx *esi.TaskContext) error {
+	return nil
+}
+
+func registerSuccessfulHandlerQueueTask(t *testing.T) string {
+	t.Helper()
+
+	taskName := fmt.Sprintf("successful_handler_queue_task_%d", time.Now().UnixNano())
+	esi.Register(&successfulHandlerQueueTask{name: taskName})
+	return taskName
 }
 
 func setQueueStatusesForTest(queue *esi.Queue, statuses map[string]*esi.TaskStatus) {

@@ -2,7 +2,6 @@ package esi
 
 import (
 	"amiya-eden/global"
-	"context"
 	"fmt"
 	"time"
 
@@ -41,7 +40,7 @@ func (t *OnlineTask) RequiredScopes() []TaskScope {
 }
 
 func (t *OnlineTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/online/", ctx.CharacterID)
 
 	var status OnlineStatus

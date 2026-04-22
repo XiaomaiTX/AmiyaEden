@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -38,18 +39,19 @@ type Queue struct {
 	runLocksMu sync.Mutex
 
 	// 并发控制：同一时间最多执行的任务数
-	concurrency int
+	concurrency atomic.Int32
 }
 
 func NewQueue(ssoSvc TokenService, charRepo CharacterRepository) *Queue {
-	return &Queue{
-		client:      NewClient(),
-		ssoSvc:      ssoSvc,
-		charRepo:    charRepo,
-		statuses:    make(map[string]*TaskStatus),
-		runLocks:    make(map[string]*sync.Mutex),
-		concurrency: 5,
+	queue := &Queue{
+		client:   NewClient(),
+		ssoSvc:   ssoSvc,
+		charRepo: charRepo,
+		statuses: make(map[string]*TaskStatus),
+		runLocks: make(map[string]*sync.Mutex),
 	}
+	queue.concurrency.Store(5)
+	return queue
 }
 
 // SetConcurrency 设置最大并发数
@@ -57,7 +59,7 @@ func (q *Queue) SetConcurrency(n int) {
 	if n < 1 {
 		n = 1
 	}
-	q.concurrency = n
+	q.concurrency.Store(int32(n))
 }
 
 // ─────────────────────────────────────────────
@@ -66,27 +68,30 @@ func (q *Queue) SetConcurrency(n int) {
 
 // Run 执行一次完整的刷新调度
 // 由 cron 定时触发
-func (q *Queue) Run() {
-	ctx := context.Background()
+func (q *Queue) Run(ctx context.Context) error {
+	ctx = normalizeQueueContext(ctx)
 	queueZapLogger().Info("[ESI Queue] 开始刷新调度")
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 
 	// Tests and early-startup code can invoke the queue before the shared DB
 	// has been configured. Exit cleanly instead of panicking in the repository.
 	if global.DB == nil {
 		queueZapLogger().Warn("[ESI Queue] 数据库未初始化，跳过本次刷新调度")
-		return
+		return nil
 	}
 
 	// 1. 获取所有有 refresh_token 的人物
 	characters, err := q.charRepo.ListAllWithToken()
 	if err != nil {
 		queueZapLogger().Error("[ESI Queue] 获取人物列表失败", zap.Error(err))
-		return
+		return fmt.Errorf("list characters: %w", err)
 	}
 
 	if len(characters) == 0 {
 		queueZapLogger().Info("[ESI Queue] 没有需要刷新的人物")
-		return
+		return nil
 	}
 
 	// 2. 检测人物活跃度
@@ -163,7 +168,7 @@ func (q *Queue) Run() {
 
 	if len(jobs) == 0 {
 		queueZapLogger().Info("[ESI Queue] 没有需要执行的任务")
-		return
+		return nil
 	}
 
 	queueZapLogger().Info("[ESI Queue] 开始执行刷新任务",
@@ -172,10 +177,26 @@ func (q *Queue) Run() {
 	)
 
 	// 5. 使用信号量控制并发执行
-	sem := make(chan struct{}, q.concurrency)
+	sem := make(chan struct{}, q.concurrencyLimit())
 	var wg sync.WaitGroup
+	var firstErr error
+	var firstErrMu sync.Mutex
+	recordErr := func(err error) {
+		if err == nil || errors.Is(err, ErrTaskSkipped) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
+		firstErrMu.Lock()
+		defer firstErrMu.Unlock()
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
 
 	for _, job := range jobs {
+		if err := ctx.Err(); err != nil {
+			recordErr(err)
+			break
+		}
 		wg.Add(1)
 		sem <- struct{}{} // 占位
 
@@ -183,16 +204,21 @@ func (q *Queue) Run() {
 			defer wg.Done()
 			defer func() { <-sem }() // 释放
 
-			q.executeTask(ctx, j.task, j.character, j.isActive, false)
+			recordErr(q.executeTask(ctx, j.task, j.character, j.isActive, false))
 		}(job)
 	}
 
 	wg.Wait()
 	queueZapLogger().Info("[ESI Queue] 刷新调度完成")
+	if firstErr != nil {
+		return firstErr
+	}
+	return ctx.Err()
 }
 
 // RunTask 手动执行某个指定任务（管理页面触发）
-func (q *Queue) RunTask(taskName string, characterID int64) error {
+func (q *Queue) RunTask(ctx context.Context, taskName string, characterID int64) error {
+	ctx = normalizeQueueContext(ctx)
 	task, ok := GetTask(taskName)
 	if !ok {
 		return fmt.Errorf("task %q not found", taskName)
@@ -203,32 +229,47 @@ func (q *Queue) RunTask(taskName string, characterID int64) error {
 		return fmt.Errorf("character %d not found: %w", characterID, err)
 	}
 
-	ctx := context.Background()
 	isActive := q.checkSingleActivity(ctx, *char)
 
-	q.executeTask(ctx, task, *char, isActive, true)
-	return nil
+	return q.executeTask(ctx, task, *char, isActive, true)
 }
 
 // RunAllForCharacter 对指定人物执行全部任务，忽略刷新间隔（用于新人物首次登录时的全量初始化）
-func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
+func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) error {
+	ctx = normalizeQueueContext(ctx)
 	char, err := q.charRepo.GetByCharacterID(characterID)
 	if err != nil {
 		queueZapLogger().Error("[ESI Queue] RunAllForCharacter: 人物不存在",
 			zap.Int64("character_id", characterID),
 			zap.Error(err),
 		)
-		return
+		return fmt.Errorf("character %d not found: %w", characterID, err)
 	}
 
 	isActive := q.checkSingleActivity(ctx, *char)
 	allTasks := AllTasks()
 	sortedTasks := sortTasksByPriority(allTasks)
 
-	sem := make(chan struct{}, q.concurrency)
+	sem := make(chan struct{}, q.concurrencyLimit())
 	var wg sync.WaitGroup
+	var firstErr error
+	var firstErrMu sync.Mutex
+	recordErr := func(err error) {
+		if err == nil || errors.Is(err, ErrTaskSkipped) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
+		firstErrMu.Lock()
+		defer firstErrMu.Unlock()
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
 
 	for _, task := range sortedTasks {
+		if err := ctx.Err(); err != nil {
+			recordErr(err)
+			break
+		}
 		if !q.hasRequiredScopes(*char, task) {
 			continue
 		}
@@ -237,16 +278,21 @@ func (q *Queue) RunAllForCharacter(ctx context.Context, characterID int64) {
 		go func(t RefreshTask) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			q.executeTask(ctx, t, *char, isActive, true)
+			recordErr(q.executeTask(ctx, t, *char, isActive, true))
 		}(task)
 	}
 
 	wg.Wait()
 	queueZapLogger().Info("[ESI Queue] 新人物全量刷新完成", zap.Int64("character_id", characterID))
+	if firstErr != nil {
+		return firstErr
+	}
+	return ctx.Err()
 }
 
 // RunTaskByName 对所有拥有所需 scope 的人物执行指定任务
-func (q *Queue) RunTaskByName(taskName string) error {
+func (q *Queue) RunTaskByName(ctx context.Context, taskName string) error {
+	ctx = normalizeQueueContext(ctx)
 	task, ok := GetTask(taskName)
 	if !ok {
 		return fmt.Errorf("task %q not found", taskName)
@@ -257,7 +303,6 @@ func (q *Queue) RunTaskByName(taskName string) error {
 		return fmt.Errorf("list characters: %w", err)
 	}
 
-	ctx := context.Background()
 	activityMap := q.checkActivity(ctx, characters)
 	authorizedProviders := map[int64]int64{}
 	if task.Name() == "corporation_killmails" {
@@ -268,11 +313,27 @@ func (q *Queue) RunTaskByName(taskName string) error {
 		}
 	}
 
-	sem := make(chan struct{}, q.concurrency)
+	sem := make(chan struct{}, q.concurrencyLimit())
 	var wg sync.WaitGroup
 	seenKeys := make(map[string]struct{})
+	var firstErr error
+	var firstErrMu sync.Mutex
+	recordErr := func(err error) {
+		if err == nil || errors.Is(err, ErrTaskSkipped) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return
+		}
+		firstErrMu.Lock()
+		defer firstErrMu.Unlock()
+		if firstErr == nil {
+			firstErr = err
+		}
+	}
 
 	for i := range characters {
+		if err := ctx.Err(); err != nil {
+			recordErr(err)
+			break
+		}
 		char := characters[i]
 		if !q.hasRequiredScopes(char, task) {
 			continue
@@ -294,12 +355,15 @@ func (q *Queue) RunTaskByName(taskName string) error {
 		go func(ch model.EveCharacter, active bool) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			q.executeTask(ctx, task, ch, active, true)
+			recordErr(q.executeTask(ctx, task, ch, active, true))
 		}(char, isActive)
 	}
 
 	wg.Wait()
-	return nil
+	if firstErr != nil {
+		return firstErr
+	}
+	return ctx.Err()
 }
 
 // ─────────────────────────────────────────────
@@ -307,12 +371,24 @@ func (q *Queue) RunTaskByName(taskName string) error {
 // ─────────────────────────────────────────────
 
 // executeTask 执行单个任务
-func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.EveCharacter, isActive bool, force bool) {
+func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.EveCharacter, isActive bool, force bool) error {
+	ctx = normalizeQueueContext(ctx)
 	statusKey := fmt.Sprintf("%s:%d", task.Name(), char.CharacterID)
 	executionKey := q.taskExecutionKey(task, char)
 	lock := q.executionLock(executionKey)
 	lock.Lock()
 	defer lock.Unlock()
+	if err := ctx.Err(); err != nil {
+		q.setStatus(statusKey, &TaskStatus{
+			TaskName:    task.Name(),
+			Description: task.Description(),
+			CharacterID: char.CharacterID,
+			Priority:    task.Priority(),
+			Status:      "failed",
+			Error:       err.Error(),
+		})
+		return err
+	}
 
 	if !force && !q.needsRefresh(task, char, isActive) {
 		lastRun, err := q.getLastRun(task, char)
@@ -333,7 +409,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 				Status:      "success",
 			})
 		}
-		return
+		return nil
 	}
 
 	// 更新状态为 running
@@ -361,11 +437,12 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 			Status:      "failed",
 			Error:       err.Error(),
 		})
-		return
+		return err
 	}
 
 	// 执行任务
 	taskCtx := &TaskContext{
+		Context:     ctx,
 		CharacterID: char.CharacterID,
 		AccessToken: accessToken,
 		Client:      q.client,
@@ -381,7 +458,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 				Priority:    task.Priority(),
 				Status:      "skipped",
 			})
-			return
+			return err
 		}
 		queueZapLogger().Error("[ESI Queue] 任务执行失败",
 			zap.String("task", task.Name()),
@@ -396,7 +473,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 			Status:      "failed",
 			Error:       err.Error(),
 		})
-		return
+		return err
 	}
 
 	// 成功：记录上次执行时间
@@ -425,6 +502,22 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 		zap.String("task", task.Name()),
 		zap.Int64("character_id", char.CharacterID),
 	)
+	return nil
+}
+
+func normalizeQueueContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
+}
+
+func (q *Queue) concurrencyLimit() int {
+	limit := int(q.concurrency.Load())
+	if limit < 1 {
+		return 1
+	}
+	return limit
 }
 
 // needsRefresh 判断任务是否需要刷新
@@ -553,11 +646,17 @@ const (
 )
 
 func (q *Queue) setLastRun(task RefreshTask, char model.EveCharacter, t time.Time) {
+	if global.Redis == nil {
+		return
+	}
 	key := fmt.Sprintf("%s%s", lastRunKeyPrefix, q.taskExecutionKey(task, char))
 	global.Redis.Set(context.Background(), key, t.Unix(), 0)
 }
 
 func (q *Queue) getLastRun(task RefreshTask, char model.EveCharacter) (time.Time, error) {
+	if global.Redis == nil {
+		return time.Time{}, errors.New("redis is not initialized")
+	}
 	key := fmt.Sprintf("%s%s", lastRunKeyPrefix, q.taskExecutionKey(task, char))
 	val, err := global.Redis.Get(context.Background(), key).Int64()
 	if err == nil {
@@ -588,6 +687,9 @@ func (q *Queue) legacyLastRunKey(task RefreshTask, char model.EveCharacter) (str
 
 func (q *Queue) getFreshLegacyCorpLastRun(providerCharacterIDs []int64, isActive bool) (time.Time, bool) {
 	if len(providerCharacterIDs) == 0 {
+		return time.Time{}, false
+	}
+	if global.Redis == nil {
 		return time.Time{}, false
 	}
 

@@ -71,7 +71,7 @@ type WalletJournalResult []WalletJournalEntry
 
 // Execute 执行钱包数据刷新
 func (t *WalletTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 
 	// 1. 获取钱包余额
 	var balance float64

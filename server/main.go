@@ -3,8 +3,10 @@ package main
 import (
 	"amiya-eden/bootstrap"
 	"amiya-eden/global"
+	"amiya-eden/pkg/background"
 	"amiya-eden/pkg/jwt"
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,6 +22,9 @@ func main() {
 
 	// 初始化日志
 	bootstrap.InitLogger()
+	global.SetBackgroundTaskManager(background.New(context.Background(), func() *zap.Logger {
+		return global.Logger
+	}))
 
 	// 初始化 JWT 密钥
 	jwt.Init(global.Config.JWT.Secret)
@@ -58,16 +63,70 @@ func main() {
 	<-quit
 
 	global.Logger.Info("正在关闭服务...")
+	shutdownServer(srv, stopCronScheduler(), global.BackgroundTaskManager(), 5*time.Second)
+	global.Logger.Info("服务已退出")
+}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+func stopCronScheduler() context.Context {
+	if global.Cron == nil {
+		return nil
+	}
+	return global.Cron.Stop()
+}
 
-	// 停止定时任务
-	global.Cron.Stop()
+func shutdownServer(srv *http.Server, cronStopCtx context.Context, backgroundTaskManager *background.Manager, timeout time.Duration) {
+	deadline := time.Now().Add(timeout)
+	shutdownDone := make(chan error, 1)
+	go func() {
+		if srv == nil {
+			shutdownDone <- nil
+			return
+		}
 
-	if err := srv.Shutdown(ctx); err != nil {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			shutdownDone <- context.DeadlineExceeded
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), remaining)
+		defer cancel()
+		shutdownDone <- srv.Shutdown(ctx)
+	}()
+
+	if err := <-shutdownDone; err != nil && !errors.Is(err, http.ErrServerClosed) {
 		global.Logger.Error("服务关闭异常", zap.Error(err))
 	}
+	if err := waitForContext(cronStopCtx, time.Until(deadline)); err != nil {
+		global.Logger.Warn("定时任务关闭超时", zap.Error(err))
+	}
 
-	global.Logger.Info("服务已退出")
+	if backgroundTaskManager != nil {
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			remaining = time.Nanosecond
+		}
+		if err := backgroundTaskManager.Shutdown(remaining); err != nil {
+			global.Logger.Warn("后台任务关闭超时", zap.Error(err))
+		}
+	}
+}
+
+func waitForContext(ctx context.Context, timeout time.Duration) error {
+	if ctx == nil {
+		return nil
+	}
+	if timeout <= 0 {
+		return context.DeadlineExceeded
+	}
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case <-timer.C:
+		return context.DeadlineExceeded
+	}
 }

@@ -42,13 +42,13 @@ func newTaskRouterTestService(t *testing.T) *service.TaskService {
 func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	oldConfig := global.Config
-	oldLogger := global.Logger
+	oldLogger := global.CurrentLogger()
 	global.Config = &config.Config{}
 	config.ApplyDefaults(global.Config)
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	t.Cleanup(func() {
 		global.Config = oldConfig
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 	})
 
 	r := gin.New()
@@ -358,13 +358,13 @@ func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, st
 	db := newFuxiAdminDirectoryRouteTestDB(t)
 
 	oldConfig := global.Config
-	oldLogger := global.Logger
+	oldLogger := global.CurrentLogger()
 	oldDB := global.DB
 	oldRedis := global.Redis
 
 	global.Config = &config.Config{}
 	config.ApplyDefaults(global.Config)
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	global.DB = db
 	global.Redis = redis.NewClient(&redis.Options{
 		Addr:         "127.0.0.1:0",
@@ -377,7 +377,7 @@ func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, st
 
 	t.Cleanup(func() {
 		global.Config = oldConfig
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 		global.DB = oldDB
 		if global.Redis != nil {
 			_ = global.Redis.Close()
@@ -410,13 +410,13 @@ func newFuxiAdminManageDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, stri
 	db := newFuxiAdminDirectoryRouteTestDB(t)
 
 	oldConfig := global.Config
-	oldLogger := global.Logger
+	oldLogger := global.CurrentLogger()
 	oldDB := global.DB
 	oldRedis := global.Redis
 
 	global.Config = &config.Config{}
 	config.ApplyDefaults(global.Config)
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	global.DB = db
 	global.Redis = redis.NewClient(&redis.Options{
 		Addr:         "127.0.0.1:0",
@@ -429,7 +429,7 @@ func newFuxiAdminManageDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, stri
 
 	t.Cleanup(func() {
 		global.Config = oldConfig
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 		global.DB = oldDB
 		if global.Redis != nil {
 			_ = global.Redis.Close()

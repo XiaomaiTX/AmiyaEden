@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/repository"
 	"amiya-eden/jobs"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
@@ -179,7 +181,7 @@ func (h *ESIRefreshHandler) RunTask(c *gin.Context) {
 		return
 	}
 
-	if err := queue.RunTask(req.TaskName, req.CharacterID); err != nil {
+	if err := queue.RunTask(c.Request.Context(), req.TaskName, req.CharacterID); err != nil {
 		response.Fail(c, response.CodeBizError, "任务触发失败: "+err.Error())
 		return
 	}
@@ -216,7 +218,7 @@ func (h *ESIRefreshHandler) RunMyCharacterTask(c *gin.Context) {
 		return
 	}
 
-	if err := queue.RunTask(req.TaskName, req.CharacterID); err != nil {
+	if err := queue.RunTask(c.Request.Context(), req.TaskName, req.CharacterID); err != nil {
 		response.Fail(c, response.CodeBizError, "任务触发失败: "+err.Error())
 		return
 	}
@@ -245,9 +247,12 @@ func (h *ESIRefreshHandler) RunTaskByName(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		_ = queue.RunTaskByName(req.TaskName)
-	}()
+	if ok := global.EnsureBackgroundTaskManager().Go("esi_run_task_by_name", func(ctx context.Context) error {
+		return queue.RunTaskByName(ctx, req.TaskName)
+	}); !ok {
+		response.Fail(c, response.CodeBizError, "服务正在关闭，任务未启动")
+		return
+	}
 
 	response.OK(c, gin.H{"message": fmt.Sprintf("任务 %s 已触发（所有人物）", req.TaskName)})
 }
@@ -262,7 +267,10 @@ func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
 		return
 	}
 
-	go queue.Run() // 异步执行，避免超时
+	if ok := global.EnsureBackgroundTaskManager().Go("esi_run_all", queue.Run); !ok {
+		response.Fail(c, response.CodeBizError, "服务正在关闭，任务未启动")
+		return
+	}
 	response.OK(c, gin.H{"message": "全量刷新已触发"})
 }
 

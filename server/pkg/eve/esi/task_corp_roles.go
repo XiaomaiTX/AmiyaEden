@@ -5,7 +5,6 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
-	"context"
 	"fmt"
 	"time"
 
@@ -52,7 +51,7 @@ type corpRolesResponse struct {
 }
 
 func (t *CorpRolesTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/roles/", ctx.CharacterID)
 
 	var rolesResp corpRolesResponse

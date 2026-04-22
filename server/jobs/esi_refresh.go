@@ -5,8 +5,10 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
+	"amiya-eden/pkg/background"
 	"amiya-eden/pkg/eve/esi"
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 )
@@ -22,7 +24,15 @@ var newESIQueueForJobs = func() *esi.Queue {
 }
 
 var startInitialESIQueueRun = func(queue *esi.Queue) {
-	go queue.Run()
+	if queue == nil {
+		return
+	}
+
+	if err := background.RunOrSchedule(context.Background(), global.EnsureBackgroundTaskManager(), "esi_initial_refresh", func(ctx context.Context) error {
+		return queue.Run(ctx)
+	}); err != nil && global.Logger != nil {
+		global.Logger.Warn("初始 ESI 刷新任务执行失败", zap.Error(err))
+	}
 }
 
 // GetESIQueue 获取 ESI 刷新队列实例（供 handler 层使用）
@@ -46,7 +56,7 @@ func registerESIRefreshTask(reg *taskregistry.Registry) {
 		ctx := context.Background()
 
 		// 先刷新 affiliation，确保 corporation_id 是当前值。
-		if err := esiQueue.RunTask("character_affiliation", characterID); err != nil {
+		if err := esiQueue.RunTask(ctx, "character_affiliation", characterID); err != nil {
 			global.Logger.Warn("[ESI SyncHook] affiliation 任务执行失败",
 				zap.Int64("character_id", characterID),
 				zap.Error(err),
@@ -54,7 +64,7 @@ func registerESIRefreshTask(reg *taskregistry.Registry) {
 		}
 
 		// 再刷新 corp roles，让 allow_corporations 过滤作用在最新军团上。
-		if err := esiQueue.RunTask("character_corp_roles", characterID); err != nil {
+		if err := esiQueue.RunTask(ctx, "character_corp_roles", characterID); err != nil {
 			global.Logger.Warn("[ESI SyncHook] corp roles 任务执行失败",
 				zap.Int64("character_id", characterID),
 				zap.Error(err),
@@ -84,17 +94,34 @@ func registerESIRefreshTask(reg *taskregistry.Registry) {
 
 	// 注入新人物全量刷新钩子：SSO 回调完成后后台异步执行，跑全部 ESI 任务，完成后补一次军团准入检查 + 自动权限同步
 	service.OnNewCharacterFunc = func(characterID int64, userID uint) {
-		ctx := context.Background()
-		esiQueue.RunAllForCharacter(ctx, characterID)
-		if err := rollSvc.CheckCorpAccessAndAdjustRole(ctx, userID); err != nil {
-			global.Logger.Warn("[ESI FullRefreshHook] 权限检查失败",
+		taskName := fmt.Sprintf("esi_new_character_%d", characterID)
+		err := background.RunOrSchedule(context.Background(), global.EnsureBackgroundTaskManager(), taskName, func(ctx context.Context) error {
+			if err := esiQueue.RunAllForCharacter(ctx, characterID); err != nil {
+				return err
+			}
+			if err := rollSvc.CheckCorpAccessAndAdjustRole(ctx, userID); err != nil {
+				global.Logger.Warn("[ESI FullRefreshHook] 权限检查失败",
+					zap.Int64("character_id", characterID),
+					zap.Uint("user_id", userID),
+					zap.Error(err),
+				)
+			}
+			if err := autoRoleSvc.SyncUserAutoRoles(ctx, userID); err != nil {
+				global.Logger.Warn("[ESI FullRefreshHook] 自动权限同步失败",
+					zap.Int64("character_id", characterID),
+					zap.Uint("user_id", userID),
+					zap.Error(err),
+				)
+			}
+			return nil
+		})
+		if err != nil && global.Logger != nil {
+			global.Logger.Warn("[ESI FullRefreshHook] 全量刷新任务执行失败",
 				zap.Int64("character_id", characterID),
 				zap.Uint("user_id", userID),
 				zap.Error(err),
 			)
 		}
-		// ESI 全量刷新完成后同步自动权限（corp_roles + titles 已入库）
-		_ = autoRoleSvc.SyncUserAutoRoles(ctx, userID)
 	}
 
 	// 注入已有人物绑定/重登录同步钩子：JWT 生成前先刷新 affiliation / corp roles，再重算权限
@@ -109,8 +136,7 @@ func registerESIRefreshTask(reg *taskregistry.Registry) {
 		Type:        taskregistry.TaskTypeRecurring,
 		DefaultCron: "0 */5 * * * *",
 		RunFunc: func(ctx context.Context) error {
-			esiQueue.Run()
-			return nil
+			return esiQueue.Run(ctx)
 		},
 	})
 	global.Logger.Info("注册 ESI 刷新任务成功", zap.String("task_name", "esi_refresh"))

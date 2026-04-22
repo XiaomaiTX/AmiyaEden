@@ -49,7 +49,7 @@ type AffiliationResult struct {
 
 func (t *AffiliationTask) Execute(ctx *TaskContext) error {
 	// 单个人物模式：仅查询当前人物
-	return t.fetchAffiliation(ctx.Client, []int64{ctx.CharacterID})
+	return t.fetchAffiliation(ctx.ContextOrBackground(), ctx.Client, []int64{ctx.CharacterID})
 }
 
 // ExecuteBatch 批量查询人物归属（最多 1000 个）
@@ -61,16 +61,15 @@ func (t *AffiliationTask) ExecuteBatch(client *Client, characterIDs []int64) err
 		if end > len(characterIDs) {
 			end = len(characterIDs)
 		}
-		if err := t.fetchAffiliation(client, characterIDs[i:end]); err != nil {
+		if err := t.fetchAffiliation(context.Background(), client, characterIDs[i:end]); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (t *AffiliationTask) fetchAffiliation(client *Client, ids []int64) error {
+func (t *AffiliationTask) fetchAffiliation(ctx context.Context, client *Client, ids []int64) error {
 	var results []AffiliationResult
-	ctx := context.Background()
 
 	if err := client.PostJSON(ctx, "/characters/affiliation/", "", ids, &results); err != nil {
 		return fmt.Errorf("fetch affiliation: %w", err)

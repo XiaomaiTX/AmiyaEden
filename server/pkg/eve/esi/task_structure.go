@@ -5,7 +5,6 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/utils"
 	app_utils "amiya-eden/pkg/utils"
-	"context"
 	"fmt"
 	"time"
 
@@ -73,7 +72,7 @@ type eveStructureDetail struct {
 }
 
 func (t *StructureTask) Execute(ctx *TaskContext) error {
-	bgCtx := context.Background()
+	bgCtx := ctx.ContextOrBackground()
 	now := time.Now().Unix()
 
 	// 0. 判断是否权限

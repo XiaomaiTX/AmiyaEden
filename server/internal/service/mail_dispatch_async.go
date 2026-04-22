@@ -3,7 +3,9 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/pkg/background"
 	"context"
+	"errors"
 	"runtime/debug"
 	"time"
 
@@ -22,7 +24,7 @@ func dispatchMailAttemptAsync(
 		return
 	}
 
-	go func() {
+	runDispatch := func(ctx context.Context) error {
 		defer func() {
 			recovered := recover()
 			if recovered == nil || global.Logger == nil {
@@ -37,14 +39,17 @@ func dispatchMailAttemptAsync(
 			global.Logger.Error(panicMessage, fields...)
 		}()
 
-		ctx, cancel := context.WithTimeout(context.Background(), asyncMailDispatchTimeout)
+		ctx, cancel := context.WithTimeout(ctx, asyncMailDispatchTimeout)
 		defer cancel()
 
 		summary, err := send(ctx)
-		if err != nil && onError != nil {
+		if err != nil && !errors.Is(err, context.Canceled) && onError != nil {
 			onError(summary.withError(err), err)
 		}
-	}()
+		return err
+	}
+
+	_ = background.RunOrSchedule(context.Background(), global.EnsureBackgroundTaskManager(), "mail_dispatch", runDispatch)
 }
 
 func cloneShopOrderForMail(order *model.ShopOrder) *model.ShopOrder {
