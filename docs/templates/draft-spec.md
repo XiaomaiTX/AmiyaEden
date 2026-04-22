@@ -2,7 +2,7 @@
 status: template
 doc_type: template
 owner: engineering
-last_reviewed: 2026-03-20
+last_reviewed: 2026-04-23
 ---
 
 # Draft Spec Name
@@ -16,15 +16,22 @@ last_reviewed: 2026-03-20
 
 ## 背景
 
-- 
+- TODO
 
 ## 提案内容
 
-- 
+- TODO
+
+## 设计理由
+
+- 决策：
+- 理由：
+- 取舍 / 未采用方案：
+- 如果落地，必须迁移到的权威文档：
 
 ## 未决问题
 
-- 
+- TODO
 
 ## 明确声明
 
@@ -33,4 +40,4 @@ last_reviewed: 2026-03-20
 
 ## 升级路径
 
-- 当哪些部分落地后，需要迁移到 `docs/features/current/`
+- TODO：说明哪些部分落地后，需要迁移到 `docs/features/current/`

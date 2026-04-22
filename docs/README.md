@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-04-02
+last_reviewed: 2026-04-23
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
@@ -94,10 +94,12 @@ source_of_truth:
 ## 文档更新规则
 
 - 当前行为变化时，优先更新对应的 `docs/architecture`、`docs/api`、`docs/features/current`。
+- 持久的后端技术设计决策如果不能从代码直接看出，应在同一次变更中写入最近的权威文档，记录决策、理由、必须保留的不变量和主要代码文件。
 - 新增工程约束时，更新 `docs/ai/repo-rules.md` 或 `docs/standards`，不要把规则写进 feature doc。
 - 测试与验证规则优先维护在 `docs/ai/repo-rules.md` 与 `docs/standards/testing-and-verification.md`。
 - 新增尚未落地的设计时，只放进 `docs/specs/draft`。
 - 不要在多个文件里重复维护同一份职权定义、路由表、权限矩阵。
+- 不要创建泛化的 backend decision dump；如果已有 architecture / api / feature / standard 文档拥有该主题，应把设计说明放在那里。
 - 不要保留并行的“第二套文档入口”。
 - 仓库内允许存在少量模块级 `README.md` 作为局部实现说明，但它们不是 repo-level canonical doc，不能覆盖 `docs/ai/repo-rules.md` 与 `docs/`。
 - 根目录 `README.md` 应保持适合新开发者快速上手，但若涉及工程规则、当前架构边界、接口裁决，仍以 `docs/ai/repo-rules.md` 与 `docs/` 为准。
