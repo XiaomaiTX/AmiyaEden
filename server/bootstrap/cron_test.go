@@ -6,6 +6,8 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/taskregistry"
 	"amiya-eden/jobs"
+	"amiya-eden/pkg/background"
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -18,9 +20,9 @@ import (
 
 func TestCronLoggerHandlesNilGlobalLogger(t *testing.T) {
 	oldLogger := global.Logger
-	global.Logger = nil
+	global.SetLogger(nil)
 	t.Cleanup(func() {
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 	})
 
 	logger := newCronLogger()
@@ -48,13 +50,15 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 	oldLogger := global.Logger
 	oldCron := global.Cron
 	oldESIQueue := jobs.GetESIQueue()
+	oldManager := global.BackgroundTaskManager()
 
 	db := newCronBootstrapTestDB(t)
 	global.Config = &config.Config{}
 	config.ApplyDefaults(global.Config)
 	global.DB = db
-	global.Logger = zap.NewNop()
+	global.SetLogger(zap.NewNop())
 	global.Cron = nil
+	global.SetBackgroundTaskManager(background.New(context.Background(), func() *zap.Logger { return global.Logger }))
 
 	if err := db.Create(&model.TaskSchedule{TaskName: "mentor_reward", CronExpr: "0 30 3 * * *", UpdatedBy: 1}).Error; err != nil {
 		t.Fatalf("seed task schedule override: %v", err)
@@ -70,10 +74,14 @@ func TestInitCronReturnsTaskServiceAndSchedulesRecurringTasks(t *testing.T) {
 			case <-time.After(2 * time.Second):
 			}
 		}
+		if manager := global.BackgroundTaskManager(); manager != nil {
+			_ = manager.Shutdown(2 * time.Second)
+		}
 		global.Config = oldConfig
 		global.DB = oldDB
-		global.Logger = oldLogger
+		global.SetLogger(oldLogger)
 		global.Cron = oldCron
+		global.SetBackgroundTaskManager(oldManager)
 		jobs.SetTestESIQueue(oldESIQueue)
 	})
 
