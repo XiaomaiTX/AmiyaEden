@@ -40,6 +40,7 @@ source_of_truth:
 - `meta.requiresNewbro = true` 表示还要通过当前用户的新人大类资格快照检查
 - 同一路由不要再用 `meta.roles` 伪装“任意非 guest 登录用户”
 - guest 可访问的 onboarding / self-service 页面不要错误标成 `meta.login = true`，因为这会把它们提升为“非 guest 才可访问”
+- `meta.isHide = true` 会同时从菜单树、水平菜单和全局搜索中移除该路由入口，但不等于删除路由本身
 
 ## 按钮权限
 
@@ -51,5 +52,6 @@ source_of_truth:
 - `队长管理` 页面允许 `captain` 进入只读页签，但不能因此绕过后端的管理权限边界
 - `招新链接` 页面为 `admin` / `super_admin` 追加 `全部链接` 与 `链接设置` tab，但不新增独立系统管理路由
 - `导师奖励阶段` 不再是独立前端路由；管理员通过 `新人帮扶 / 导师管理` 页面的 `设置奖励阶段` tab 进入该管理能力，路由权限仍由 `newbro/mentor-manage` 的 `meta.roles` 控制
+- `伏羲中心 / Fuxi Center` 当前被前端路由标记为 `meta.isHide = true`，因此暂时不在导航和全局搜索中展示，但直达路由仍保留
 - 路由改动若涉及权限边界，必须同步更新 API / feature 文档
 - 路由架构说明只维护在 `docs/` 中

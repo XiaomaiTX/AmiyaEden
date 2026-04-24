@@ -18,6 +18,7 @@ test('hall of fame root keeps login gating and current-manage stays login-only',
     source.indexOf('children: [')
   )
   assert.match(rootBlock, /login:\s*true/)
+  assert.match(rootBlock, /isHide:\s*true/)
 
   const currentManageBlock = source.slice(
     source.indexOf("'current-manage'"),

@@ -18,6 +18,7 @@ source_of_truth:
 - 伏羲名人堂页面向所有 `Login` 用户展示名人堂画布、背景图与全部可见卡片
 - 编辑名人堂页面向 `admin` 开放，支持新增、编辑、删除、拖拽摆放、修改卡片尺寸，以及编辑卡片文案、人物 ID、主题、称号颜色、字体大小和头像下方小图
 - 当前伏羲管理页面向已登录用户开放，管理员可在页内直接编辑
+- 当前伏羲中心入口暂时在前端导航中隐藏；直达名人堂相关路由仍保留可访问
 - 管理页支持上传主殿背景图，直接保存为 base64 data URL，不落盘
 - 卡片样式支持 `gold`、`silver`、`darkred`、`yellow`、`bronze`、`rose`、`jade`、`midnight`、`custom` 九种主题；自定义主题允许单独配置背景色、文字色和边框色
 - 卡片支持独立于颜色主题的 `border_style` 选择，可选 `none` 与 8 种 decorative SVG frame overlays；未选择装饰边框时继续使用 `border-color` 作为回退
@@ -58,6 +59,7 @@ source_of_truth:
 - `伏羲名人堂 / Fuxi Hall of Heroes` 子页面要求 `login: true`
 - `编辑名人堂 / Edit Hall of Heroes` 子页面要求 `roles: ['super_admin', 'admin']`
 - `当前伏羲管理 / Current Fuxi Management` 子页面要求 `login: true`，页内编辑控件仍由管理员角色控制
+- 伏羲中心根节点当前带有 `meta.isHide = true`，因此不会出现在侧边栏、水平菜单或全局搜索中，但子路由权限与访问规则保持不变
 - 后端管理接口统一挂在 `/system/hall-of-fame/*` 下，由 `admin` 路由组保护
 
 ## 数据模型
