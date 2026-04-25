@@ -62,3 +62,8 @@ source_of_truth:
 - `static/src/router/modules/skill-planning.ts`
 - `static/src/views/skill-planning/skill-plans`
 - `static/src/views/skill-planning/completion-check`
+
+## Compatibility Notes (2026-04-25)
+
+- Skill plan `skills_text` parsing now accepts localized client export lines such as `<localized hint="Large Artillery Specialization">大型火炮专业研究*</localized> 4`.
+- During save, parser normalization removes markup tags and trailing `*`, then resolves with the existing skill-name mapping and stores in the current concise structured format.

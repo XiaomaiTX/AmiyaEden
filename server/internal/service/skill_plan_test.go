@@ -223,6 +223,38 @@ func TestNormalizeSkillPlanName(t *testing.T) {
 	}
 }
 
+func TestNormalizeSkillPlanDisplayName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "plain text",
+			input: "Advanced Planetology",
+			want:  "Advanced Planetology",
+		},
+		{
+			name:  "localized tag with trailing star",
+			input: `<localized hint="Large Artillery Specialization">大型火炮专业研究*</localized>`,
+			want:  "大型火炮专业研究",
+		},
+		{
+			name:  "trims surrounding whitespace",
+			input: "  <localized>Advanced Planetology*</localized>  ",
+			want:  "Advanced Planetology",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeSkillPlanDisplayName(tt.input); got != tt.want {
+				t.Fatalf("normalizeSkillPlanDisplayName(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCompareSkillPlanRequirements(t *testing.T) {
 	plan := model.SkillPlan{ID: 7, Title: "Logistics Core"}
 	skills := []model.SkillPlanSkill{
@@ -266,6 +298,7 @@ func TestSkillPlanTextLinePattern(t *testing.T) {
 		"Graviton Physics 5",
 		"Tactical Logistics Reconfiguration IV",
 		"Capital Shield Operation     4",
+		`<localized hint="Large Artillery Specialization">大型火炮专业研究*</localized> 4`,
 	}
 
 	for _, line := range lines {

@@ -586,6 +586,7 @@ type normalizedSkillEntry struct {
 }
 
 var skillPlanTextLinePattern = regexp.MustCompile(`^(.*?)[[:space:]]+([1-5]|I|II|III|IV|V)$`)
+var skillPlanMarkupPattern = regexp.MustCompile(`<[^>]+>`)
 
 func (s *SkillPlanService) normalizeSkillPlanInputs(skills []SkillPlanSkillReq, skillsText string, lang string) ([]SkillPlanSkillReq, error) {
 	trimmedText := strings.TrimSpace(skillsText)
@@ -693,7 +694,7 @@ func (s *SkillPlanService) parseSkillPlanText(skillsText string, lang string) ([
 			return nil, fmt.Errorf("第 %d 行等级无效: %w", idx+1, err)
 		}
 
-		name := strings.TrimSpace(match[1])
+		name := normalizeSkillPlanDisplayName(match[1])
 		if name == "" {
 			return nil, fmt.Errorf("第 %d 行缺少技能名称", idx+1)
 		}
@@ -783,6 +784,13 @@ func parseSkillPlanLevelToken(token string) (int, error) {
 
 func normalizeSkillPlanName(name string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(name))), " ")
+}
+
+func normalizeSkillPlanDisplayName(name string) string {
+	cleaned := skillPlanMarkupPattern.ReplaceAllString(name, "")
+	cleaned = strings.TrimSpace(cleaned)
+	cleaned = strings.TrimRight(cleaned, "*")
+	return strings.TrimSpace(cleaned)
 }
 
 func (s *SkillPlanService) loadSkillNameMap(lang string) (map[string]repository.TypeInfo, error) {
