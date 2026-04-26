@@ -4,25 +4,22 @@ import test from 'node:test'
 
 const source = readFileSync(new URL('./index.vue', import.meta.url), 'utf8')
 
-test('completion check missing-skills list renders the shared copy button for each skill name', () => {
-  const tooltipBlock = source.match(
-    /<ElTooltip\s+v-if="!plan\.fully_satisfied\s*&&\s*plan\.missing_skills\.length"[\s\S]*?<\/ElTooltip>/
-  )
-
-  assert.ok(tooltipBlock, 'expected tooltip content block')
-  assert.match(
-    source,
-    /import ArtCopyButton from '@\/components\/core\/forms\/art-copy-button\/index.vue'/
-  )
-  assert.match(source, /missing-skills__name-row/)
-  assert.match(source, /<ArtCopyButton\s+:text="skill\.skill_name"/)
-  assert.doesNotMatch(tooltipBlock[0], /ArtCopyButton/)
-})
-
-test('completion check merges corp and personal plans and renders scope prefix labels', () => {
-  assert.match(source, /fetchPersonalSkillPlanList/)
-  assert.match(source, /planOptionLabel/)
-  assert.match(source, /formatPlanLabel\(plan\)/)
+test('completion check renders prefixed plan labels in the result list', () => {
+  assert.match(source, /formatCompletionPlanLabel\(plan\)/)
+  assert.match(source, /planLabelMap/)
+  assert.match(source, /skillPlanCheck\.planOptionLabel/)
   assert.match(source, /skillPlan\.scope\.personal/)
   assert.match(source, /skillPlan\.scope\.corp/)
+})
+
+test('completion check exposes one-click copy for missing skills and copies required levels', () => {
+  const missingSkillsBlock = source.match(
+    /<div v-if="plan\.missing_skills\.length" class="missing-skills">[\s\S]*?<\/div>\s*<\/div>\s*<\/ElCollapseItem>/
+  )
+
+  assert.ok(missingSkillsBlock, 'expected missing skills block')
+  assert.match(source, /skillPlanCheck\.copyMissingSkills/)
+  assert.match(source, /copyMissingSkills\(plan\)/)
+  assert.match(source, /`\$\{skill\.skill_name\} \$\{skill\.required_level\}`/)
+  assert.doesNotMatch(source, /ArtCopyButton/)
 })

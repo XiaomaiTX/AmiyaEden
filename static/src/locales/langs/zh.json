@@ -1690,6 +1690,7 @@
     "planIncomplete": "未满足",
     "missingCount": "缺失 {count} 项",
     "missingSkillsTitle": "缺失技能",
+    "copyMissingSkills": "复制未训练的技能",
     "requiredVsCurrent": "需求 {required} 级，当前 {current} 级",
     "planCompleteSummary": "该人物已完整满足此技能规划。",
     "planIncompleteSummary": "当前完成 {matched} / {total} 项技能要求。",

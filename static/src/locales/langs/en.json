@@ -1690,6 +1690,7 @@
     "planIncomplete": "Incomplete",
     "missingCount": "{count} missing",
     "missingSkillsTitle": "Missing Skills",
+    "copyMissingSkills": "Copy Missing Skills",
     "requiredVsCurrent": "Required Lv.{required}, current Lv.{current}",
     "planCompleteSummary": "This character fully satisfies the selected skill plan.",
     "planIncompleteSummary": "{matched} / {total} skill requirements are currently satisfied.",
