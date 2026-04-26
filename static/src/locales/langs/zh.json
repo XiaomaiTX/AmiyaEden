@@ -2392,7 +2392,8 @@
     },
     "messages": {
       "authorizationSaved": "授权配置已保存",
-      "refreshSuccess": "建筑刷新完成，共更新 {count} 条",
+      "refreshQueued": "已加入后台刷新队列，请稍后手动刷新列表查看结果",
+      "refreshAlreadyRunning": "该军团建筑刷新任务正在执行，请稍后重试",
       "selectCorporationFirst": "请先选择一个军团"
     },
     "empty": {

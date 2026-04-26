@@ -23,7 +23,12 @@ export function fetchCorporationStructureList(data: Api.Dashboard.CorporationStr
 }
 
 export function refreshCorporationStructures(corporationId: number) {
-  return request.post<{ corporation_id: number; refreshed: number; message: string }>({
+  return request.post<{
+    corporation_id: number
+    queued: boolean
+    running: boolean
+    message: string
+  }>({
     url: '/api/v1/dashboard/corporation-structures/refresh',
     data: { corporation_id: corporationId }
   })

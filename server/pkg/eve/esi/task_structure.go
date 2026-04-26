@@ -13,6 +13,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const (
+	structureTaskPaginationConcurrency = 2
+	structureTaskDetailInterval        = 500 * time.Millisecond
+)
+
 func init() {
 	Register(&StructureTask{})
 }
@@ -108,7 +113,13 @@ func (t *StructureTask) Execute(ctx *TaskContext) error {
 	// 1. 获取人物所在军团的建筑列表
 	var esiStructures []corpStructureESIResp
 	corpStructuresPath := fmt.Sprintf("/corporations/%d/structures/", corpID)
-	_, err = ctx.Client.GetPaginated(bgCtx, corpStructuresPath, ctx.AccessToken, &esiStructures)
+	_, err = ctx.Client.GetPaginatedWithConcurrency(
+		bgCtx,
+		corpStructuresPath,
+		ctx.AccessToken,
+		&esiStructures,
+		structureTaskPaginationConcurrency,
+	)
 	if err != nil {
 		global.Logger.Warn("[ESI] 获取军团建筑信息失败",
 			zap.Int64("character_id", ctx.CharacterID),
@@ -151,7 +162,14 @@ func (t *StructureTask) Execute(ctx *TaskContext) error {
 	}
 
 	// 3. 逐个获取建筑详情并 Upsert EveStructure
-	for _, s := range esiStructures {
+	for i, s := range esiStructures {
+		if i > 0 {
+			select {
+			case <-time.After(structureTaskDetailInterval):
+			case <-bgCtx.Done():
+				return bgCtx.Err()
+			}
+		}
 		var detail eveStructureDetail
 		structurePath := fmt.Sprintf("/universe/structures/%d/", s.StructureID)
 		if err := ctx.Client.Get(bgCtx, structurePath, ctx.AccessToken, &detail); err != nil {

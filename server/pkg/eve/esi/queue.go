@@ -133,6 +133,7 @@ func (q *Queue) Run(ctx context.Context) error {
 		isActive  bool
 	}
 	var jobs []pendingJob
+	seenExecutionKeys := make(map[string]struct{})
 
 	for _, task := range sortedTasks {
 		for i := range characters {
@@ -157,6 +158,11 @@ func (q *Queue) Run(ctx context.Context) error {
 			if !q.needsRefresh(task, char, isActive) {
 				continue
 			}
+			executionKey := q.taskExecutionKey(task, char)
+			if _, exists := seenExecutionKeys[executionKey]; exists {
+				continue
+			}
+			seenExecutionKeys[executionKey] = struct{}{}
 
 			jobs = append(jobs, pendingJob{
 				task:      task,
@@ -567,7 +573,7 @@ func queueZapLogger() *zap.Logger {
 }
 
 func (q *Queue) taskExecutionKey(task RefreshTask, char model.EveCharacter) string {
-	if task.Name() == "corporation_killmails" && char.CorporationID != 0 {
+	if (task.Name() == "corporation_killmails" || task.Name() == "eve_structures") && char.CorporationID != 0 {
 		return fmt.Sprintf("%s:corp:%d", task.Name(), char.CorporationID)
 	}
 	return fmt.Sprintf("%s:char:%d", task.Name(), char.CharacterID)

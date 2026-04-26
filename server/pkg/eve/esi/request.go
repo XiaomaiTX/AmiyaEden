@@ -30,8 +30,8 @@ const (
 	maxRetries = 3
 	// retryBaseDelay 重试初始退避时间
 	retryBaseDelay = 2 * time.Second
-	// paginationConcurrency 分页并发拉取数
-	paginationConcurrency = 10
+	// defaultPaginationConcurrency 默认分页并发拉取数
+	defaultPaginationConcurrency = 10
 )
 
 // ─────────────────────────────────────────────
@@ -290,7 +290,7 @@ func (c *Client) doRequest(ctx context.Context, url string, accessToken string) 
 // GetWithMeta 发起 GET 请求并返回解码后的数据和响应元数据
 // 相比 Get，额外返回 ResponseMeta 以便调用方感知缓存/限速状态
 func (c *Client) GetWithMeta(ctx context.Context, path string, accessToken string, dest interface{}) (*ResponseMeta, error) {
-	url := c.baseURL + path
+	url := c.buildURL(path)
 	body, meta, err := c.doRequest(ctx, url, accessToken)
 	if err != nil {
 		return meta, fmt.Errorf("ESI GET %s: %w", path, err)
@@ -322,6 +322,20 @@ func (c *Client) GetWithMeta(ctx context.Context, path string, accessToken strin
 //
 // 返回第一页的 ResponseMeta 和任何错误
 func (c *Client) GetPaginated(ctx context.Context, path string, accessToken string, dest interface{}) (*ResponseMeta, error) {
+	return c.GetPaginatedWithConcurrency(ctx, path, accessToken, dest, defaultPaginationConcurrency)
+}
+
+// GetPaginatedWithConcurrency 自动处理分页 GET，并允许调用方指定分页并发数。
+func (c *Client) GetPaginatedWithConcurrency(
+	ctx context.Context,
+	path string,
+	accessToken string,
+	dest interface{},
+	concurrency int,
+) (*ResponseMeta, error) {
+	if concurrency < 1 {
+		concurrency = 1
+	}
 	// 1. 请求第一页
 	page1URL := c.buildPageURL(path, 1)
 	body, meta, err := c.doRequest(ctx, page1URL, accessToken)
@@ -366,7 +380,7 @@ func (c *Client) GetPaginated(ctx context.Context, path string, accessToken stri
 		mu       sync.Mutex
 		fetchErr error
 	)
-	sem := make(chan struct{}, paginationConcurrency)
+	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 
 	for page := 2; page <= totalPages; page++ {
@@ -447,7 +461,7 @@ func (c *Client) GetPaginated(ctx context.Context, path string, accessToken stri
 
 // buildPageURL 构建带分页参数的完整 URL
 func (c *Client) buildPageURL(path string, page int) string {
-	base := c.baseURL + path
+	base := c.buildURL(path)
 	if strings.Contains(path, "?") {
 		return fmt.Sprintf("%s&page=%d", base, page)
 	}
