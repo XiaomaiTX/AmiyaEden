@@ -72,6 +72,9 @@ func (s *WelfareService) AdminCreateWelfare(w *model.Welfare) error {
 	if w.RequireSkillPlan && len(w.SkillPlanIDs) == 0 {
 		return errors.New("需要技能计划时必须选择至少一个技能计划")
 	}
+	if err := s.validateCorpSkillPlanIDs(w.SkillPlanIDs); err != nil {
+		return err
+	}
 
 	skillPlanIDs := w.SkillPlanIDs
 	if err := s.repo.CreateWelfare(w); err != nil {
@@ -128,6 +131,9 @@ func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequ
 	}
 	if req.RequireSkillPlan && len(req.SkillPlanIDs) == 0 {
 		return nil, errors.New("需要技能计划时必须选择至少一个技能计划")
+	}
+	if err := s.validateCorpSkillPlanIDs(req.SkillPlanIDs); err != nil {
+		return nil, err
 	}
 
 	w.Name = req.Name
@@ -277,6 +283,34 @@ func skillPlanNamesForWelfare(planIDs []uint, planNamesByID map[uint]string) []s
 	return names
 }
 
+func (s *WelfareService) validateCorpSkillPlanIDs(planIDs []uint) error {
+	if len(planIDs) == 0 {
+		return nil
+	}
+
+	uniqueIDs := make([]uint, 0, len(planIDs))
+	seen := make(map[uint]struct{}, len(planIDs))
+	for _, id := range planIDs {
+		if id == 0 {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		uniqueIDs = append(uniqueIDs, id)
+	}
+	plans, err := s.planRepo.ListByIDsAndScope(uniqueIDs, model.SkillPlanScopeCorp)
+	if err != nil {
+		return errors.New("获取技能计划失败")
+	}
+	if len(plans) != len(uniqueIDs) {
+		return errors.New("福利仅允许关联军团技能计划")
+	}
+
+	return nil
+}
+
 func projectWelfareSortRecords(welfares []model.Welfare) []sortOrderRecord {
 	records := make([]sortOrderRecord, 0, len(welfares))
 	for _, welfare := range welfares {
@@ -309,7 +343,7 @@ func (s *WelfareService) fillWelfareSkillPlanNames(welfares []model.Welfare) ([]
 		planIDs = append(planIDs, planID)
 	}
 
-	plans, err := s.planRepo.ListByIDs(planIDs)
+	plans, err := s.planRepo.ListByIDsAndScope(planIDs, model.SkillPlanScopeCorp)
 	if err != nil {
 		return nil, err
 	}
@@ -905,7 +939,15 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		if err != nil {
 			return nil, errors.New("获取技能计划失败")
 		}
-		welfare.SkillPlanIDs = planIDs
+		validPlans, err := s.planRepo.ListByIDsAndScope(planIDs, model.SkillPlanScopeCorp)
+		if err != nil {
+			return nil, errors.New("获取技能计划失败")
+		}
+		validPlanIDs := make([]uint, 0, len(validPlans))
+		for _, plan := range validPlans {
+			validPlanIDs = append(validPlanIDs, plan.ID)
+		}
+		welfare.SkillPlanIDs = validPlanIDs
 
 		if len(welfare.SkillPlanIDs) > 0 {
 			welfares := []model.Welfare{*welfare}

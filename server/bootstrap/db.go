@@ -159,6 +159,7 @@ func autoMigrate(db *gorm.DB) {
 	}
 
 	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
+	ensureSkillPlanScopes(db)
 	dropObsoleteSchema(db)
 	ensureCustomIndexes(db)
 
@@ -178,6 +179,15 @@ func autoMigrate(db *gorm.DB) {
 
 	// 迁移旧 User.Role 字段到 user_role 表
 	roleSvc.MigrateExistingUsers()
+}
+
+func ensureSkillPlanScopes(db *gorm.DB) {
+	if err := db.Exec(
+		`UPDATE skill_plan SET plan_scope = ? WHERE plan_scope IS NULL OR plan_scope = ''`,
+		model.SkillPlanScopeCorp,
+	).Error; err != nil {
+		global.Logger.Warn("回填 skill_plan.plan_scope 失败", zap.Error(err))
+	}
 }
 
 // dropObsoleteSchema 删除历史遗留的已被移除的列和表

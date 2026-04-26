@@ -18,3 +18,11 @@ test('completion check missing-skills list renders the shared copy button for ea
   assert.match(source, /<ArtCopyButton\s+:text="skill\.skill_name"/)
   assert.doesNotMatch(tooltipBlock[0], /ArtCopyButton/)
 })
+
+test('completion check merges corp and personal plans and renders scope prefix labels', () => {
+  assert.match(source, /fetchPersonalSkillPlanList/)
+  assert.match(source, /planOptionLabel/)
+  assert.match(source, /formatPlanLabel\(plan\)/)
+  assert.match(source, /skillPlan\.scope\.personal/)
+  assert.match(source, /skillPlan\.scope\.corp/)
+})

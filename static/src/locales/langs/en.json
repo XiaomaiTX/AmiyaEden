@@ -291,6 +291,7 @@
     "skillPlanning": {
       "title": "Skill Planning",
       "skillPlans": "Manage Corp Plans",
+      "personalSkillPlans": "My Skill Plans",
       "completionCheck": "Check Completion"
     },
     "newbro": {
@@ -1664,6 +1665,10 @@
       "skill": "Skill",
       "group": "Group",
       "requiredLevel": "Required Level"
+    },
+    "scope": {
+      "corp": "Corp",
+      "personal": "Personal"
     }
   },
   "skillPlanCheck": {
@@ -1692,7 +1697,8 @@
     "selectedPlans": "Selected Plans",
     "noPlansSelected": "No plans selected yet",
     "noAvailablePlans": "No available plans",
-    "planSelectionSaved": "Plan selection saved"
+    "planSelectionSaved": "Plan selection saved",
+    "planOptionLabel": "{scope} - {title}"
   },
   "characters": {
     "title": "EVE Characters",

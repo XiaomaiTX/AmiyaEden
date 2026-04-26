@@ -51,7 +51,7 @@
         <template v-if="selectedPlanItems.length">
           <div class="selected-plans__list">
             <ElTag v-for="plan in selectedPlanItems" :key="plan.id" effect="light" round>
-              {{ plan.title }}
+              {{ formatPlanLabel(plan) }}
             </ElTag>
           </div>
         </template>
@@ -294,7 +294,7 @@
             class="character-option"
           >
             <div class="character-option__content">
-              <span>{{ plan.title }}</span>
+              <span>{{ formatPlanLabel(plan) }}</span>
             </div>
           </ElCheckbox>
         </ElCheckboxGroup>
@@ -323,6 +323,7 @@
   import { fetchMyCharacters } from '@/api/auth'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import {
+    fetchPersonalSkillPlanList,
     fetchSkillPlanCheckSelection,
     fetchSkillPlanCheckPlanSelection,
     fetchSkillPlanList,
@@ -381,6 +382,17 @@
     return allPlans.value.filter((plan) => selectedSet.has(plan.id))
   })
 
+  function planScopeLabel(scope: Api.SkillPlan.SkillPlanScope) {
+    return scope === 'personal' ? t('skillPlan.scope.personal') : t('skillPlan.scope.corp')
+  }
+
+  function formatPlanLabel(plan: Api.SkillPlan.SkillPlanListItem) {
+    return t('skillPlanCheck.planOptionLabel', {
+      scope: planScopeLabel(plan.plan_scope),
+      title: plan.title
+    })
+  }
+
   function syncDraftSelection() {
     draftCharacterIds.value = [...selectedCharacterIds.value]
   }
@@ -421,8 +433,11 @@
 
   async function loadAllPlans() {
     try {
-      const res = await fetchSkillPlanList({ current: 1, size: 200 })
-      allPlans.value = res?.list ?? []
+      const [corpRes, personalRes] = await Promise.all([
+        fetchSkillPlanList({ current: 1, size: 200 }),
+        fetchPersonalSkillPlanList({ current: 1, size: 200 })
+      ])
+      allPlans.value = [...(corpRes?.list ?? []), ...(personalRes?.list ?? [])]
     } catch {
       allPlans.value = []
     }

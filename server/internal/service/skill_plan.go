@@ -59,6 +59,7 @@ type SkillPlanListItemResp struct {
 	ID          uint   `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	PlanScope   string `json:"plan_scope"`
 	ShipTypeID  *int   `json:"ship_type_id"`
 	SortOrder   int    `json:"sort_order"`
 	CreatedBy   uint   `json:"created_by"`
@@ -83,6 +84,7 @@ type SkillPlanDetailResp struct {
 	ID          uint                 `json:"id"`
 	Title       string               `json:"title"`
 	Description string               `json:"description"`
+	PlanScope   string               `json:"plan_scope"`
 	ShipTypeID  *int                 `json:"ship_type_id"`
 	ShipName    string               `json:"ship_name"`
 	SortOrder   int                  `json:"sort_order"`
@@ -148,6 +150,23 @@ type SkillPlanCheckResultResp struct {
 
 // CreateSkillPlan 创建技能计划
 func (s *SkillPlanService) CreateSkillPlan(userID uint, req *CreateSkillPlanRequest, lang string) (*SkillPlanDetailResp, error) {
+	return s.createSkillPlanByScope(userID, req, lang, model.SkillPlanScopeCorp)
+}
+
+func (s *SkillPlanService) CreatePersonalSkillPlan(
+	userID uint,
+	req *CreateSkillPlanRequest,
+	lang string,
+) (*SkillPlanDetailResp, error) {
+	return s.createSkillPlanByScope(userID, req, lang, model.SkillPlanScopePersonal)
+}
+
+func (s *SkillPlanService) createSkillPlanByScope(
+	userID uint,
+	req *CreateSkillPlanRequest,
+	lang string,
+	planScope string,
+) (*SkillPlanDetailResp, error) {
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
 
@@ -162,6 +181,7 @@ func (s *SkillPlanService) CreateSkillPlan(userID uint, req *CreateSkillPlanRequ
 	plan := &model.SkillPlan{
 		Title:       title,
 		Description: description,
+		PlanScope:   planScope,
 		ShipTypeID:  normalizeOptionalSkillPlanShipTypeID(req.ShipTypeID),
 		CreatedBy:   userID,
 	}
@@ -181,9 +201,30 @@ func (s *SkillPlanService) CreateSkillPlan(userID uint, req *CreateSkillPlanRequ
 
 // ListSkillPlans 获取技能计划列表
 func (s *SkillPlanService) ListSkillPlans(page, pageSize int, keyword string) ([]SkillPlanListItemResp, int64, error) {
+	return s.listSkillPlansByScope(0, page, pageSize, keyword, model.SkillPlanScopeCorp)
+}
+
+func (s *SkillPlanService) ListPersonalSkillPlans(
+	userID uint,
+	page, pageSize int,
+	keyword string,
+) ([]SkillPlanListItemResp, int64, error) {
+	return s.listSkillPlansByScope(userID, page, pageSize, keyword, model.SkillPlanScopePersonal)
+}
+
+func (s *SkillPlanService) listSkillPlansByScope(
+	userID uint,
+	page, pageSize int,
+	keyword string,
+	planScope string,
+) ([]SkillPlanListItemResp, int64, error) {
 	normalizePageRequest(&page, &pageSize, 50, 100)
 
-	plans, total, err := s.repo.List(page, pageSize, strings.TrimSpace(keyword))
+	var createdBy *uint
+	if planScope == model.SkillPlanScopePersonal {
+		createdBy = &userID
+	}
+	plans, total, err := s.repo.ListByScope(page, pageSize, strings.TrimSpace(keyword), planScope, createdBy)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -209,6 +250,7 @@ func (s *SkillPlanService) ListSkillPlans(page, pageSize int, keyword string) ([
 			ID:          plan.ID,
 			Title:       plan.Title,
 			Description: plan.Description,
+			PlanScope:   plan.PlanScope,
 			ShipTypeID:  plan.ShipTypeID,
 			SortOrder:   plan.SortOrder,
 			CreatedBy:   plan.CreatedBy,
@@ -224,11 +266,22 @@ func (s *SkillPlanService) ListSkillPlans(page, pageSize int, keyword string) ([
 // GetSkillPlan 获取技能计划详情
 func (s *SkillPlanService) GetSkillPlan(id uint, lang string) (*SkillPlanDetailResp, error) {
 	plan, err := s.repo.GetByID(id)
-	if err != nil {
+	if err != nil || plan.PlanScope != model.SkillPlanScopeCorp {
 		return nil, errors.New("技能计划不存在")
 	}
+	return s.getSkillPlanByID(plan, lang)
+}
 
-	skills, err := s.repo.ListSkillsByPlanID(id)
+func (s *SkillPlanService) GetPersonalSkillPlan(id uint, userID uint, lang string) (*SkillPlanDetailResp, error) {
+	plan, err := s.repo.GetByID(id)
+	if err != nil || plan.PlanScope != model.SkillPlanScopePersonal || plan.CreatedBy != userID {
+		return nil, errors.New("技能计划不存在")
+	}
+	return s.getSkillPlanByID(plan, lang)
+}
+
+func (s *SkillPlanService) getSkillPlanByID(plan *model.SkillPlan, lang string) (*SkillPlanDetailResp, error) {
+	skills, err := s.repo.ListSkillsByPlanID(plan.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +292,36 @@ func (s *SkillPlanService) GetSkillPlan(id uint, lang string) (*SkillPlanDetailR
 // UpdateSkillPlan 更新技能计划
 func (s *SkillPlanService) UpdateSkillPlan(id uint, userID uint, userRoles []string, req *UpdateSkillPlanRequest, lang string) (*SkillPlanDetailResp, error) {
 	plan, err := s.repo.GetByID(id)
-	if err != nil {
+	if err != nil || plan.PlanScope != model.SkillPlanScopeCorp {
 		return nil, errors.New("技能计划不存在")
 	}
 	if !canManageSkillPlan(plan.CreatedBy, userID, userRoles) {
 		return nil, errors.New("权限不足")
 	}
+	return s.updateSkillPlan(plan, req, lang)
+}
 
+func (s *SkillPlanService) UpdatePersonalSkillPlan(
+	id uint,
+	userID uint,
+	req *UpdateSkillPlanRequest,
+	lang string,
+) (*SkillPlanDetailResp, error) {
+	plan, err := s.repo.GetByID(id)
+	if err != nil || plan.PlanScope != model.SkillPlanScopePersonal {
+		return nil, errors.New("技能计划不存在")
+	}
+	if plan.CreatedBy != userID {
+		return nil, errors.New("权限不足")
+	}
+	return s.updateSkillPlan(plan, req, lang)
+}
+
+func (s *SkillPlanService) updateSkillPlan(
+	plan *model.SkillPlan,
+	req *UpdateSkillPlanRequest,
+	lang string,
+) (*SkillPlanDetailResp, error) {
 	title := strings.TrimSpace(req.Title)
 	description := strings.TrimSpace(req.Description)
 	normalizedSkills, err := s.normalizeSkillPlanInputs(req.Skills, req.SkillsText, lang)
@@ -279,10 +355,21 @@ func (s *SkillPlanService) UpdateSkillPlan(id uint, userID uint, userRoles []str
 // DeleteSkillPlan 删除技能计划
 func (s *SkillPlanService) DeleteSkillPlan(id uint, userID uint, userRoles []string) error {
 	plan, err := s.repo.GetByID(id)
-	if err != nil {
+	if err != nil || plan.PlanScope != model.SkillPlanScopeCorp {
 		return errors.New("技能计划不存在")
 	}
 	if !canManageSkillPlan(plan.CreatedBy, userID, userRoles) {
+		return errors.New("权限不足")
+	}
+	return s.repo.Delete(id)
+}
+
+func (s *SkillPlanService) DeletePersonalSkillPlan(id uint, userID uint) error {
+	plan, err := s.repo.GetByID(id)
+	if err != nil || plan.PlanScope != model.SkillPlanScopePersonal {
+		return errors.New("技能计划不存在")
+	}
+	if plan.CreatedBy != userID {
 		return errors.New("权限不足")
 	}
 	return s.repo.Delete(id)
@@ -297,9 +384,39 @@ func (s *SkillPlanService) ReorderSkillPlans(ids []uint, userRoles []string) err
 		return nil
 	}
 
-	plans, err := s.repo.ListByIDs(ids)
+	plans, err := s.repo.ListByIDsAndScope(ids, model.SkillPlanScopeCorp)
 	if err != nil {
 		return err
+	}
+
+	assignments, err := buildSortOrderAssignments(ids, projectSkillPlanSortRecords(plans))
+	if err != nil {
+		return err
+	}
+
+	updates := make([]repository.SkillPlanSortUpdate, len(assignments))
+	for i, assignment := range assignments {
+		updates[i] = repository.SkillPlanSortUpdate{ID: assignment.ID, SortOrder: assignment.SortOrder}
+	}
+	return s.repo.UpdateSortOrders(updates)
+}
+
+func (s *SkillPlanService) ReorderPersonalSkillPlans(ids []uint, userID uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	plans, err := s.repo.ListByIDsAndScope(ids, model.SkillPlanScopePersonal)
+	if err != nil {
+		return err
+	}
+	if len(plans) != len(ids) {
+		return errors.New("排序项不存在或已变更，请刷新后重试")
+	}
+	for _, plan := range plans {
+		if plan.CreatedBy != userID {
+			return errors.New("权限不足")
+		}
 	}
 
 	assignments, err := buildSortOrderAssignments(ids, projectSkillPlanSortRecords(plans))
@@ -363,13 +480,13 @@ func (s *SkillPlanService) SaveCheckSelection(userID uint, req *SkillPlanCheckSe
 }
 
 func (s *SkillPlanService) GetCheckPlanSelection(userID uint) (*SkillPlanCheckPlanSelectionResp, error) {
-	allPlans, err := s.repo.ListAll()
+	visiblePlans, err := s.repo.ListVisibleForUser(userID)
 	if err != nil {
 		return nil, errors.New("获取技能计划列表失败")
 	}
 
-	existingSet := make(map[uint]struct{}, len(allPlans))
-	for _, plan := range allPlans {
+	existingSet := make(map[uint]struct{}, len(visiblePlans))
+	for _, plan := range visiblePlans {
 		existingSet[plan.ID] = struct{}{}
 	}
 
@@ -380,8 +497,8 @@ func (s *SkillPlanService) GetCheckPlanSelection(userID uint) (*SkillPlanCheckPl
 
 	// If user has no saved selection, default to all plans
 	if len(savedIDs) == 0 {
-		allIDs := make([]uint, 0, len(allPlans))
-		for _, plan := range allPlans {
+		allIDs := make([]uint, 0, len(visiblePlans))
+		for _, plan := range visiblePlans {
 			allIDs = append(allIDs, plan.ID)
 		}
 		return &SkillPlanCheckPlanSelectionResp{PlanIDs: allIDs}, nil
@@ -408,13 +525,13 @@ func (s *SkillPlanService) GetCheckPlanSelection(userID uint) (*SkillPlanCheckPl
 }
 
 func (s *SkillPlanService) SaveCheckPlanSelection(userID uint, req *SkillPlanCheckPlanSelectionRequest) (*SkillPlanCheckPlanSelectionResp, error) {
-	allPlans, err := s.repo.ListAll()
+	visiblePlans, err := s.repo.ListVisibleForUser(userID)
 	if err != nil {
 		return nil, errors.New("获取技能计划列表失败")
 	}
 
-	existingSet := make(map[uint]struct{}, len(allPlans))
-	for _, plan := range allPlans {
+	existingSet := make(map[uint]struct{}, len(visiblePlans))
+	for _, plan := range visiblePlans {
 		existingSet[plan.ID] = struct{}{}
 	}
 
@@ -474,7 +591,7 @@ func (s *SkillPlanService) RunCompletionCheck(userID uint, req *RunSkillPlanChec
 		characterMap[char.CharacterID] = char
 	}
 
-	allPlans, err := s.repo.ListAll()
+	visiblePlans, err := s.repo.ListVisibleForUser(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -487,13 +604,13 @@ func (s *SkillPlanService) RunCompletionCheck(userID uint, req *RunSkillPlanChec
 		for _, id := range planSelection.PlanIDs {
 			selectedSet[id] = struct{}{}
 		}
-		for _, plan := range allPlans {
+		for _, plan := range visiblePlans {
 			if _, ok := selectedSet[plan.ID]; ok {
 				plans = append(plans, plan)
 			}
 		}
 	} else {
-		plans = allPlans
+		plans = visiblePlans
 	}
 
 	planIDs := make([]uint, 0, len(plans))
@@ -940,6 +1057,7 @@ func newSkillPlanDetailResp(plan *model.SkillPlan, shipName string, detailSkills
 		ID:          plan.ID,
 		Title:       plan.Title,
 		Description: plan.Description,
+		PlanScope:   plan.PlanScope,
 		ShipTypeID:  plan.ShipTypeID,
 		ShipName:    shipName,
 		SortOrder:   plan.SortOrder,

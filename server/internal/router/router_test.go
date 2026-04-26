@@ -150,6 +150,12 @@ func TestSkillPlanReadAllowsLoggedInUserAndWriteStillRequiresManager(t *testing.
 	ordinaryRouter := newSkillPlanPermissionTestRouter([]string{"user"})
 	assertRouteStatus(t, ordinaryRouter, http.MethodGet, "/skill-planning/skill-plans", http.StatusNoContent)
 	assertRouteStatus(t, ordinaryRouter, http.MethodGet, "/skill-planning/skill-plans/1", http.StatusNoContent)
+	assertRouteStatus(t, ordinaryRouter, http.MethodGet, "/skill-planning/personal-skill-plans", http.StatusNoContent)
+	assertRouteStatus(t, ordinaryRouter, http.MethodGet, "/skill-planning/personal-skill-plans/1", http.StatusNoContent)
+	assertRouteStatus(t, ordinaryRouter, http.MethodPost, "/skill-planning/personal-skill-plans", http.StatusNoContent)
+	assertRouteStatus(t, ordinaryRouter, http.MethodPut, "/skill-planning/personal-skill-plans/reorder", http.StatusNoContent)
+	assertRouteStatus(t, ordinaryRouter, http.MethodPut, "/skill-planning/personal-skill-plans/1", http.StatusNoContent)
+	assertRouteStatus(t, ordinaryRouter, http.MethodDelete, "/skill-planning/personal-skill-plans/1", http.StatusNoContent)
 	assertRouteStatus(t, ordinaryRouter, http.MethodPost, "/skill-planning/skill-plans", http.StatusForbidden)
 	assertRouteStatus(t, ordinaryRouter, http.MethodPut, "/skill-planning/skill-plans/reorder", http.StatusForbidden)
 	assertRouteStatus(t, ordinaryRouter, http.MethodPut, "/skill-planning/skill-plans/1", http.StatusForbidden)
@@ -348,6 +354,14 @@ func newSkillPlanPermissionTestRouter(roles []string) *gin.Engine {
 	write.PUT("/reorder", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	write.PUT("/:id", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	write.DELETE("/:id", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+	personal := r.Group("/skill-planning/personal-skill-plans", injectRoles, middleware.RequireLoginUser())
+	personal.GET("", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	personal.GET("/:id", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	personal.POST("", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	personal.PUT("/reorder", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	personal.PUT("/:id", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	personal.DELETE("/:id", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	return r
 }

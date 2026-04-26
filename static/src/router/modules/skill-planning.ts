@@ -29,6 +29,16 @@ export const skillPlanningRoutes: AppRouteRecord = {
         keepAlive: true,
         login: true
       }
+    },
+    {
+      path: 'personal-skill-plans',
+      name: 'PersonalSkillPlans',
+      component: '/skill-planning/personal-skill-plans',
+      meta: {
+        title: 'menus.skillPlanning.personalSkillPlans',
+        keepAlive: true,
+        login: true
+      }
     }
   ]
 }

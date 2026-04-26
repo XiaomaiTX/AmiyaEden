@@ -712,11 +712,14 @@ declare namespace Api {
 
   /** 军团技能计划类型 */
   namespace SkillPlan {
+    type SkillPlanScope = 'corp' | 'personal'
+
     /** 技能计划列表项 */
     interface SkillPlanListItem {
       id: number
       title: string
       description: string
+      plan_scope: SkillPlanScope
       ship_type_id: number | null
       sort_order: number
       created_by: number
@@ -741,6 +744,7 @@ declare namespace Api {
       id: number
       title: string
       description: string
+      plan_scope: SkillPlanScope
       ship_type_id: number | null
       ship_name: string
       sort_order: number

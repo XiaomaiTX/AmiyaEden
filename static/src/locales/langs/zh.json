@@ -276,6 +276,7 @@
     "skillPlanning": {
       "title": "技能规划",
       "skillPlans": "管理军团规划",
+      "personalSkillPlans": "我的技能规划",
       "completionCheck": "检查完成度"
     },
     "newbro": {
@@ -1664,6 +1665,10 @@
       "skill": "技能",
       "group": "技能组",
       "requiredLevel": "要求等级"
+    },
+    "scope": {
+      "corp": "军团",
+      "personal": "个人"
     }
   },
   "skillPlanCheck": {
@@ -1692,7 +1697,8 @@
     "selectedPlans": "已选择规划",
     "noPlansSelected": "尚未选择规划",
     "noAvailablePlans": "暂无可用规划",
-    "planSelectionSaved": "规划选择已保存"
+    "planSelectionSaved": "规划选择已保存",
+    "planOptionLabel": "{scope} - {title}"
   },
   "characters": {
     "title": "EVE 人物管理",
