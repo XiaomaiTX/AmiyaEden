@@ -144,6 +144,7 @@
   import { createPersonalSkillPlan, updatePersonalSkillPlan } from '@/api/skill-plan'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
   import { useUserStore } from '@/store/modules/user'
+  import { createLocalUid } from '@/utils/id'
   import { Delete, Plus } from '@element-plus/icons-vue'
   import { ElInputNumber, ElMessage, type FormInstance, type FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
@@ -207,7 +208,7 @@
     fallbackLevel = 1
   ): SkillFormItem {
     return {
-      uid: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      uid: createLocalUid('skill'),
       skill_type_id: skill?.skill_type_id ?? null,
       skill_name: skill?.skill_name ?? '',
       group_name: skill?.group_name ?? '',

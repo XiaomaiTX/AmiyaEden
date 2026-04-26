@@ -384,19 +384,14 @@ func (s *SkillPlanService) ReorderSkillPlans(ids []uint, userRoles []string) err
 		return nil
 	}
 
-	plans, err := s.repo.ListByIDsAndScope(ids, model.SkillPlanScopeCorp)
+	plans, err := s.repo.ListAllByScope(model.SkillPlanScopeCorp, nil)
 	if err != nil {
 		return err
 	}
 
-	assignments, err := buildSortOrderAssignments(ids, projectSkillPlanSortRecords(plans))
+	updates, err := buildSkillPlanScopeReorderUpdates(ids, plans)
 	if err != nil {
 		return err
-	}
-
-	updates := make([]repository.SkillPlanSortUpdate, len(assignments))
-	for i, assignment := range assignments {
-		updates[i] = repository.SkillPlanSortUpdate{ID: assignment.ID, SortOrder: assignment.SortOrder}
 	}
 	return s.repo.UpdateSortOrders(updates)
 }
@@ -406,27 +401,13 @@ func (s *SkillPlanService) ReorderPersonalSkillPlans(ids []uint, userID uint) er
 		return nil
 	}
 
-	plans, err := s.repo.ListByIDsAndScope(ids, model.SkillPlanScopePersonal)
+	plans, err := s.repo.ListAllByScope(model.SkillPlanScopePersonal, &userID)
 	if err != nil {
 		return err
 	}
-	if len(plans) != len(ids) {
-		return errors.New("排序项不存在或已变更，请刷新后重试")
-	}
-	for _, plan := range plans {
-		if plan.CreatedBy != userID {
-			return errors.New("权限不足")
-		}
-	}
-
-	assignments, err := buildSortOrderAssignments(ids, projectSkillPlanSortRecords(plans))
+	updates, err := buildSkillPlanScopeReorderUpdates(ids, plans)
 	if err != nil {
 		return err
-	}
-
-	updates := make([]repository.SkillPlanSortUpdate, len(assignments))
-	for i, assignment := range assignments {
-		updates[i] = repository.SkillPlanSortUpdate{ID: assignment.ID, SortOrder: assignment.SortOrder}
 	}
 	return s.repo.UpdateSortOrders(updates)
 }
@@ -1007,6 +988,62 @@ type sortOrderAssignment struct {
 	SortOrder int
 }
 
+const skillPlanSortOrderStep = 10
+
+func buildSkillPlanScopeReorderUpdates(ids []uint, plans []model.SkillPlan) ([]repository.SkillPlanSortUpdate, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if len(plans) == 0 {
+		return nil, errors.New("排序项不存在或已变更，请刷新后重试")
+	}
+
+	seenIDs := make(map[uint]struct{}, len(ids))
+	for _, id := range ids {
+		if _, exists := seenIDs[id]; exists {
+			return nil, errors.New("排序项存在重复，请刷新后重试")
+		}
+		seenIDs[id] = struct{}{}
+	}
+
+	orderedIDs := make([]uint, 0, len(plans))
+	planExists := make(map[uint]struct{}, len(plans))
+	for _, plan := range plans {
+		orderedIDs = append(orderedIDs, plan.ID)
+		planExists[plan.ID] = struct{}{}
+	}
+
+	for _, id := range ids {
+		if _, ok := planExists[id]; !ok {
+			return nil, errors.New("排序项不存在或已变更，请刷新后重试")
+		}
+	}
+
+	reorderedIDs := mergeReorderedIDsIntoScope(orderedIDs, ids, seenIDs)
+	updates := make([]repository.SkillPlanSortUpdate, 0, len(reorderedIDs))
+	for index, id := range reorderedIDs {
+		updates = append(updates, repository.SkillPlanSortUpdate{
+			ID:        id,
+			SortOrder: (index + 1) * skillPlanSortOrderStep,
+		})
+	}
+	return updates, nil
+}
+
+func mergeReorderedIDsIntoScope(orderedIDs []uint, reorderedIDs []uint, reorderedSet map[uint]struct{}) []uint {
+	merged := make([]uint, len(orderedIDs))
+	reorderedIndex := 0
+	for index, id := range orderedIDs {
+		if _, ok := reorderedSet[id]; ok {
+			merged[index] = reorderedIDs[reorderedIndex]
+			reorderedIndex++
+			continue
+		}
+		merged[index] = id
+	}
+	return merged
+}
+
 func buildSortOrderAssignments(ids []uint, current []sortOrderRecord) ([]sortOrderAssignment, error) {
 	if len(ids) == 0 {
 		return nil, nil
@@ -1039,17 +1076,6 @@ func buildSortOrderAssignments(ids []uint, current []sortOrderRecord) ([]sortOrd
 	}
 
 	return assignments, nil
-}
-
-func projectSkillPlanSortRecords(plans []model.SkillPlan) []sortOrderRecord {
-	records := make([]sortOrderRecord, 0, len(plans))
-	for _, plan := range plans {
-		records = append(records, sortOrderRecord{
-			ID:        plan.ID,
-			SortOrder: plan.SortOrder,
-		})
-	}
-	return records
 }
 
 func newSkillPlanDetailResp(plan *model.SkillPlan, shipName string, detailSkills []SkillPlanSkillResp) *SkillPlanDetailResp {
