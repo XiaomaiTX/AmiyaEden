@@ -140,7 +140,9 @@
                           loading="lazy"
                           @error="onShipImageError"
                         />
-                        <span class="plan-header__title">{{ plan.plan_title }}</span>
+                        <span class="plan-header__title">{{
+                          formatCompletionPlanLabel(plan)
+                        }}</span>
                         <span v-if="plan.plan_description" class="plan-header__info">i</span>
                         <ElTag
                           :type="plan.fully_satisfied ? 'success' : 'danger'"
@@ -209,9 +211,14 @@
                   </div>
 
                   <div v-if="plan.missing_skills.length" class="missing-skills">
-                    <div class="missing-skills__title">{{
-                      $t('skillPlanCheck.missingSkillsTitle')
-                    }}</div>
+                    <div class="missing-skills__header">
+                      <div class="missing-skills__title">{{
+                        $t('skillPlanCheck.missingSkillsTitle')
+                      }}</div>
+                      <ElButton size="small" text @click="copyMissingSkills(plan)">
+                        {{ $t('skillPlanCheck.copyMissingSkills') }}
+                      </ElButton>
+                    </div>
                     <ul class="missing-skills__list">
                       <li
                         v-for="skill in plan.missing_skills"
@@ -219,7 +226,6 @@
                       >
                         <span class="missing-skills__name-row">
                           <span class="name">{{ skill.skill_name }}</span>
-                          <ArtCopyButton :text="skill.skill_name" />
                         </span>
                         <span class="meta">
                           {{
@@ -319,9 +325,9 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { ElMessage } from 'element-plus'
-  import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
   import { fetchMyCharacters } from '@/api/auth'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
+  import { useClipboardCopy } from '@/hooks/core/useClipboardCopy'
   import {
     fetchPersonalSkillPlanList,
     fetchSkillPlanCheckSelection,
@@ -339,6 +345,7 @@
   const userStore = useUserStore()
 
   const currentLang = computed(() => userStore.language || 'zh')
+  const { copyText } = useClipboardCopy()
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterIds = ref<number[]>([])
   const draftCharacterIds = ref<number[]>([])
@@ -382,6 +389,10 @@
     return allPlans.value.filter((plan) => selectedSet.has(plan.id))
   })
 
+  const planLabelMap = computed(() => {
+    return new Map(allPlans.value.map((plan) => [plan.id, plan]))
+  })
+
   function planScopeLabel(scope: Api.SkillPlan.SkillPlanScope) {
     return scope === 'personal' ? t('skillPlan.scope.personal') : t('skillPlan.scope.corp')
   }
@@ -391,6 +402,29 @@
       scope: planScopeLabel(plan.plan_scope),
       title: plan.title
     })
+  }
+
+  function formatCompletionPlanLabel(plan: Api.SkillPlan.CompletionPlan) {
+    const matchedPlan = planLabelMap.value.get(plan.plan_id)
+
+    if (!matchedPlan) {
+      return plan.plan_title
+    }
+
+    return t('skillPlanCheck.planOptionLabel', {
+      scope: planScopeLabel(matchedPlan.plan_scope),
+      title: plan.plan_title
+    })
+  }
+
+  function copyMissingSkills(plan: Api.SkillPlan.CompletionPlan) {
+    const text = plan.missing_skills
+      .map((skill) => `${skill.skill_name} ${skill.required_level}`)
+      .join('\n')
+
+    if (!text) return
+
+    void copyText(text)
   }
 
   function syncDraftSelection() {
@@ -693,10 +727,17 @@
     padding: 12px 14px;
   }
 
+  .missing-skills__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
   .missing-skills__title {
     font-weight: 600;
     color: var(--el-color-danger);
-    margin-bottom: 8px;
   }
 
   .missing-skills__list {
@@ -712,10 +753,6 @@
     align-items: center;
     gap: 4px;
     max-width: 100%;
-  }
-
-  .missing-skills__name-row :deep(.art-copy-button) {
-    flex-shrink: 0;
   }
 
   .missing-skills__list .name,
