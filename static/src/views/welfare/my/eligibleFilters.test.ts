@@ -38,7 +38,6 @@ const rows: Row[] = [
 
 const defaultFilters: EligibleFilters = {
   roleFilter: '',
-  naturalPersonFilter: '',
   welfareNameFilter: ''
 }
 
@@ -49,22 +48,11 @@ test('filterEligibleRows keeps all rows when filters are empty', () => {
   )
 })
 
-test('filterEligibleRows applies role filter and natural person filter as intersection', () => {
+test('filterEligibleRows applies role filter with welfare name filter as intersection', () => {
   assert.deepEqual(
     filterEligibleRows(rows, {
       roleFilter: 'Current User (Natural Person)',
-      naturalPersonFilter: 'per_user',
       welfareNameFilter: 'Alpha'
-    }).map((row) => row.id),
-    ['per-user-1']
-  )
-})
-
-test('filterEligibleRows keeps only per_user rows when naturalPersonFilter is per_user', () => {
-  assert.deepEqual(
-    filterEligibleRows(rows, {
-      ...defaultFilters,
-      naturalPersonFilter: 'per_user'
     }).map((row) => row.id),
     ['per-user-1']
   )

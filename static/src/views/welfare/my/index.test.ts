@@ -17,9 +17,10 @@ test('welfare my page keeps the tab content full-height so tables can scroll ins
   assert.match(source, /:deep\(\.el-tab-pane\)\s*\{[\s\S]*height:\s*100%/)
 })
 
-test('welfare my apply tab provides local filter controls for role, natural person, and welfare name', () => {
+test('welfare my apply tab provides role and welfare-name filters with all option', () => {
   assert.match(source, /v-model="roleFilter"/)
-  assert.match(source, /v-model="naturalPersonFilter"/)
+  assert.match(source, /t\('welfareMy\.filterAll'\)/)
+  assert.doesNotMatch(source, /v-model="naturalPersonFilter"/)
   assert.match(source, /v-model="welfareNameFilter"/)
   assert.match(source, /handleEligibleFilterChange/)
   assert.match(source, /handleEligibleFilterReset/)
