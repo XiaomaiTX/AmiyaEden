@@ -56,7 +56,7 @@ func (h *CorporationStructureHandler) RefreshStructures(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	result, err := h.svc.RefreshStructures(c.Request.Context(), req)
+	result, err := h.svc.EnqueueRefreshStructures(c.Request.Context(), req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

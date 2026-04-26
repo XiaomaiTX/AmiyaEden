@@ -2392,7 +2392,8 @@
     },
     "messages": {
       "authorizationSaved": "Authorization settings saved",
-      "refreshSuccess": "Structure refresh completed. {count} records updated.",
+      "refreshQueued": "Refresh has been queued in background. Refresh the list later to see updates.",
+      "refreshAlreadyRunning": "A refresh job for this corporation is already running.",
       "selectCorporationFirst": "Select a corporation first"
     },
     "empty": {

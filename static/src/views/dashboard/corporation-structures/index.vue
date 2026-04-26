@@ -260,12 +260,13 @@
     refreshingCorpId.value = corporationId
     try {
       const result = await refreshCorporationStructures(corporationId)
-      ElMessage.success(
-        t('corporationStructures.messages.refreshSuccess', {
-          count: result.refreshed
-        })
-      )
-      await loadStructures()
+      if (result.running) {
+        ElMessage.warning(
+          result.message || t('corporationStructures.messages.refreshAlreadyRunning')
+        )
+        return
+      }
+      ElMessage.success(result.message || t('corporationStructures.messages.refreshQueued'))
     } finally {
       refreshingCorpId.value = 0
     }

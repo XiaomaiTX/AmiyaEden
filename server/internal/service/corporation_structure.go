@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -25,7 +26,13 @@ type CorporationStructureService struct {
 	repo          *repository.CorporationStructureRepository
 	ssoSvc        *EveSSOService
 	esiClient     *esi.Client
+	refreshGuards sync.Map
 }
+
+const (
+	corporationStructurePaginationConcurrency = 2
+	corporationStructureDetailInterval        = 500 * time.Millisecond
+)
 
 func NewCorporationStructureService() *CorporationStructureService {
 	cfg := global.Config.EveSSO
@@ -103,7 +110,8 @@ type CorporationStructureRefreshRequest struct {
 
 type CorporationStructureRefreshResponse struct {
 	CorporationID int64  `json:"corporation_id"`
-	Refreshed     int    `json:"refreshed"`
+	Queued        bool   `json:"queued"`
+	Running       bool   `json:"running"`
 	Message       string `json:"message"`
 }
 
@@ -114,7 +122,7 @@ type corpManageContext struct {
 }
 
 func (s *CorporationStructureService) GetSettings(ctx context.Context) (*CorporationStructuresSettingsResponse, error) {
-	manageCtx, err := s.buildManageContext(ctx)
+	manageCtx, err := s.buildManageContext(ctx, true)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +168,7 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	ctx context.Context,
 	req CorporationStructureAuthorizationUpdate,
 ) error {
-	manageCtx, err := s.buildManageContext(ctx)
+	manageCtx, err := s.buildManageContext(ctx, false)
 	if err != nil {
 		return err
 	}
@@ -197,7 +205,7 @@ func (s *CorporationStructureService) ListStructures(
 	ctx context.Context,
 	req CorporationStructureListRequest,
 ) (*CorporationStructureListResponse, error) {
-	manageCtx, err := s.buildManageContext(ctx)
+	manageCtx, err := s.buildManageContext(ctx, true)
 	if err != nil {
 		return nil, err
 	}
@@ -303,45 +311,92 @@ func (s *CorporationStructureService) RefreshStructures(
 	ctx context.Context,
 	req CorporationStructureRefreshRequest,
 ) (*CorporationStructureRefreshResponse, error) {
-	if req.CorporationID <= 0 {
-		return nil, errors.New("corporation_id 必须为正整数")
-	}
-	manageCtx, err := s.buildManageContext(ctx)
+	guard, err := s.prepareRefresh(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+	if err := guard.Start("该军团建筑刷新任务"); err != nil {
+		return &CorporationStructureRefreshResponse{
+			CorporationID: req.CorporationID,
+			Queued:        false,
+			Running:       true,
+			Message:       err.Error(),
+		}, nil
+	}
+	defer guard.Finish()
 
-	managed := false
-	for _, corpID := range manageCtx.corporationIDs {
-		if corpID == req.CorporationID {
-			managed = true
-			break
+	refreshed, runErr := s.runRefreshStructures(ctx, req)
+	if runErr != nil {
+		return nil, runErr
+	}
+	return &CorporationStructureRefreshResponse{
+		CorporationID: req.CorporationID,
+		Queued:        false,
+		Running:       false,
+		Message:       fmt.Sprintf("军团建筑数据刷新完成，共更新 %d 条", refreshed),
+	}, nil
+}
+
+func (s *CorporationStructureService) EnqueueRefreshStructures(
+	ctx context.Context,
+	req CorporationStructureRefreshRequest,
+) (*CorporationStructureRefreshResponse, error) {
+	guard, err := s.prepareRefresh(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := guard.Start("该军团建筑刷新任务"); err != nil {
+		return &CorporationStructureRefreshResponse{
+			CorporationID: req.CorporationID,
+			Queued:        false,
+			Running:       true,
+			Message:       err.Error(),
+		}, nil
+	}
+
+	taskName := fmt.Sprintf("dashboard_corp_structures_refresh_%d", req.CorporationID)
+	ok := global.EnsureBackgroundTaskManager().Go(taskName, func(bgCtx context.Context) error {
+		defer guard.Finish()
+		refreshed, runErr := s.runRefreshStructures(bgCtx, req)
+		if runErr != nil {
+			global.Logger.Warn("[CorporationStructures] 后台刷新失败",
+				zap.Int64("corporation_id", req.CorporationID),
+				zap.Error(runErr))
+			return runErr
 		}
-	}
-	if !managed {
-		return nil, errors.New("无权刷新该军团建筑数据")
+		global.Logger.Info("[CorporationStructures] 后台刷新完成",
+			zap.Int64("corporation_id", req.CorporationID),
+			zap.Int("refreshed", refreshed))
+		return nil
+	})
+	if !ok {
+		guard.Finish()
+		return nil, errors.New("服务正在关闭，任务未启动")
 	}
 
-	authMap := s.loadAuthorizationMap()
-	characterID := authMap[req.CorporationID]
-	if characterID == 0 {
-		return nil, errors.New("该军团未配置 Director 授权角色")
-	}
+	return &CorporationStructureRefreshResponse{
+		CorporationID: req.CorporationID,
+		Queued:        true,
+		Running:       false,
+		Message:       "已加入后台刷新队列",
+	}, nil
+}
 
-	allowedCharacter := false
-	for _, option := range manageCtx.directorByCorp[req.CorporationID] {
-		if option.CharacterID == characterID {
-			allowedCharacter = true
-			break
-		}
+func (s *CorporationStructureService) runRefreshStructures(
+	ctx context.Context,
+	req CorporationStructureRefreshRequest,
+) (int, error) {
+	if req.CorporationID <= 0 {
+		return 0, errors.New("corporation_id 必须为正整数")
 	}
-	if !allowedCharacter {
-		return nil, errors.New("已配置角色不再具备 Director 权限，请重新配置")
+	characterID, err := s.resolveRefreshAuthorization(ctx, req.CorporationID)
+	if err != nil {
+		return 0, err
 	}
 
 	token, err := s.ssoSvc.GetValidToken(ctx, characterID)
 	if err != nil {
-		return nil, errors.New("获取授权角色 Token 失败")
+		return 0, errors.New("获取授权角色 Token 失败")
 	}
 
 	type corpStructureESIResp struct {
@@ -366,8 +421,14 @@ func (s *CorporationStructureService) RefreshStructures(
 
 	structuresPath := fmt.Sprintf("/corporations/%d/structures/", req.CorporationID)
 	var esiStructures []corpStructureESIResp
-	if _, err := s.esiClient.GetPaginated(ctx, structuresPath, token, &esiStructures); err != nil {
-		return nil, fmt.Errorf("拉取军团建筑失败: %w", err)
+	if _, err := s.esiClient.GetPaginatedWithConcurrency(
+		ctx,
+		structuresPath,
+		token,
+		&esiStructures,
+		corporationStructurePaginationConcurrency,
+	); err != nil {
+		return 0, fmt.Errorf("拉取军团建筑失败: %w", err)
 	}
 
 	now := time.Now().Unix()
@@ -385,7 +446,7 @@ func (s *CorporationStructureService) RefreshStructures(
 	}
 	eveStructures := make([]model.EveStructure, 0, len(esiStructures))
 
-	for _, st := range esiStructures {
+	for idx, st := range esiStructures {
 		servicesJSON, _ := json.Marshal(st.Services)
 		corpRecords = append(corpRecords, model.CorpStructureInfo{
 			CorporationID:      req.CorporationID,
@@ -405,6 +466,14 @@ func (s *CorporationStructureService) RefreshStructures(
 			UnanchorsAt:        st.UnanchorsAt,
 			UpdateAt:           now,
 		})
+
+		if idx > 0 {
+			select {
+			case <-time.After(corporationStructureDetailInterval):
+			case <-ctx.Done():
+				return 0, ctx.Err()
+			}
+		}
 
 		var detail structureDetail
 		path := fmt.Sprintf("/universe/structures/%d/", st.StructureID)
@@ -429,20 +498,19 @@ func (s *CorporationStructureService) RefreshStructures(
 	}
 
 	if err := s.repo.UpsertCorpStructures(corpRecords); err != nil {
-		return nil, errors.New("写入军团建筑快照失败")
+		return 0, errors.New("写入军团建筑快照失败")
 	}
 	if err := s.repo.UpsertStructures(eveStructures); err != nil {
-		return nil, errors.New("写入建筑详情快照失败")
+		return 0, errors.New("写入建筑详情快照失败")
 	}
 
-	return &CorporationStructureRefreshResponse{
-		CorporationID: req.CorporationID,
-		Refreshed:     len(corpRecords),
-		Message:       "军团建筑数据刷新完成",
-	}, nil
+	return len(corpRecords), nil
 }
 
-func (s *CorporationStructureService) buildManageContext(ctx context.Context) (*corpManageContext, error) {
+func (s *CorporationStructureService) buildManageContext(
+	ctx context.Context,
+	resolveNames bool,
+) (*corpManageContext, error) {
 	adminIDs, err := s.roleRepo.GetRoleUserIDs(model.RoleAdmin)
 	if err != nil {
 		return nil, errors.New("读取管理员用户失败")
@@ -480,12 +548,75 @@ func (s *CorporationStructureService) buildManageContext(ctx context.Context) (*
 		directorByCorp[director.CorporationID] = append(directorByCorp[director.CorporationID], director)
 	}
 
-	corpNameByID := s.resolveCorporationNames(ctx, corporationIDs)
+	corpNameByID := make(map[int64]string, len(corporationIDs))
+	for _, corpID := range corporationIDs {
+		corpNameByID[corpID] = fmt.Sprintf("Corporation-%d", corpID)
+	}
+	if resolveNames {
+		corpNameByID = s.resolveCorporationNames(ctx, corporationIDs)
+	}
 	return &corpManageContext{
 		corporationIDs: corporationIDs,
 		corpNameByID:   corpNameByID,
 		directorByCorp: directorByCorp,
 	}, nil
+}
+
+func (s *CorporationStructureService) resolveRefreshAuthorization(
+	ctx context.Context,
+	corporationID int64,
+) (int64, error) {
+	if corporationID <= 0 {
+		return 0, errors.New("corporation_id 必须为正整数")
+	}
+
+	manageCtx, err := s.buildManageContext(ctx, false)
+	if err != nil {
+		return 0, err
+	}
+	managed := false
+	for _, corpID := range manageCtx.corporationIDs {
+		if corpID == corporationID {
+			managed = true
+			break
+		}
+	}
+	if !managed {
+		return 0, errors.New("无权刷新该军团建筑数据")
+	}
+
+	authMap := s.loadAuthorizationMap()
+	characterID := authMap[corporationID]
+	if characterID == 0 {
+		return 0, errors.New("该军团未配置 Director 授权角色")
+	}
+
+	allowedCharacter := false
+	for _, option := range manageCtx.directorByCorp[corporationID] {
+		if option.CharacterID == characterID {
+			allowedCharacter = true
+			break
+		}
+	}
+	if !allowedCharacter {
+		return 0, errors.New("已配置角色不再具备 Director 权限，请重新配置")
+	}
+	return characterID, nil
+}
+
+func (s *CorporationStructureService) getRefreshGuard(corporationID int64) *exclusiveRunGuard {
+	guard, _ := s.refreshGuards.LoadOrStore(corporationID, &exclusiveRunGuard{})
+	return guard.(*exclusiveRunGuard)
+}
+
+func (s *CorporationStructureService) prepareRefresh(
+	ctx context.Context,
+	req CorporationStructureRefreshRequest,
+) (*exclusiveRunGuard, error) {
+	if _, err := s.resolveRefreshAuthorization(ctx, req.CorporationID); err != nil {
+		return nil, err
+	}
+	return s.getRefreshGuard(req.CorporationID), nil
 }
 
 func (s *CorporationStructureService) resolveCorporationNames(
