@@ -163,6 +163,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	skillPlanH := handler.NewSkillPlanHandler()
 	skillPlanning := login.Group("/skill-planning")
 	skillPlan := skillPlanning.Group("/skill-plans")
+	personalSkillPlan := skillPlanning.Group("/personal-skill-plans")
 	{
 		viewSkillPlans := middleware.RequireLoginUser()
 		manageSkillPlans := middleware.RequireRole(skillPlanManageRoles...)
@@ -179,6 +180,13 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		skillPlan.PUT("/reorder", manageSkillPlans, skillPlanH.ReorderSkillPlans)
 		skillPlan.PUT("/:id", manageSkillPlans, skillPlanH.UpdateSkillPlan)
 		skillPlan.DELETE("/:id", manageSkillPlans, skillPlanH.DeleteSkillPlan)
+
+		personalSkillPlan.GET("", viewSkillPlans, skillPlanH.ListPersonalSkillPlans)
+		personalSkillPlan.GET("/:id", viewSkillPlans, skillPlanH.GetPersonalSkillPlan)
+		personalSkillPlan.POST("", viewSkillPlans, skillPlanH.CreatePersonalSkillPlan)
+		personalSkillPlan.PUT("/reorder", viewSkillPlans, skillPlanH.ReorderPersonalSkillPlans)
+		personalSkillPlan.PUT("/:id", viewSkillPlans, skillPlanH.UpdatePersonalSkillPlan)
+		personalSkillPlan.DELETE("/:id", viewSkillPlans, skillPlanH.DeletePersonalSkillPlan)
 	}
 
 	// ─── EVE 人物信息 ───

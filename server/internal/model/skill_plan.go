@@ -2,11 +2,17 @@ package model
 
 import "time"
 
-// SkillPlan 军团技能计划
+const (
+	SkillPlanScopeCorp     = "corp"
+	SkillPlanScopePersonal = "personal"
+)
+
+// SkillPlan 技能计划
 type SkillPlan struct {
 	ID          uint      `gorm:"primarykey"         json:"id"`
 	Title       string    `gorm:"size:256;not null"  json:"title"`
 	Description string    `gorm:"type:text"          json:"description"`
+	PlanScope   string    `gorm:"size:32;not null;default:'corp';index" json:"plan_scope"`
 	ShipTypeID  *int      `gorm:"index"              json:"ship_type_id"`
 	SortOrder   int       `gorm:"default:0"          json:"sort_order"`
 	CreatedBy   uint      `gorm:"not null;index"     json:"created_by"`

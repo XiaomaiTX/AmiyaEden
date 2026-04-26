@@ -126,6 +126,12 @@ source_of_truth:
 | PUT | `/skill-planning/skill-plans/reorder` | 调整技能计划排序 | `RequireRole(admin, senior_fc)` |
 | PUT | `/skill-planning/skill-plans/:id` | 更新技能计划 | `RequireRole(admin, senior_fc)` |
 | DELETE | `/skill-planning/skill-plans/:id` | 删除技能计划 | `RequireRole(admin, senior_fc)` |
+| GET | `/skill-planning/personal-skill-plans` | 当前用户个人技能计划列表 | Login |
+| GET | `/skill-planning/personal-skill-plans/:id` | 当前用户个人技能计划详情 | Login |
+| POST | `/skill-planning/personal-skill-plans` | 创建当前用户个人技能计划 | Login |
+| PUT | `/skill-planning/personal-skill-plans/reorder` | 调整当前用户个人技能计划排序 | Login |
+| PUT | `/skill-planning/personal-skill-plans/:id` | 更新当前用户个人技能计划 | Login |
+| DELETE | `/skill-planning/personal-skill-plans/:id` | 删除当前用户个人技能计划 | Login |
 
 ## Info
 

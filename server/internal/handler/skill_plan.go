@@ -21,6 +21,25 @@ func NewSkillPlanHandler() *SkillPlanHandler {
 	}
 }
 
+func (h *SkillPlanHandler) CreatePersonalSkillPlan(c *gin.Context) {
+	var req service.CreateSkillPlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.svc.CreatePersonalSkillPlan(
+		middleware.GetUserID(c),
+		&req,
+		resolveRequestLang(c),
+	)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
 // CreateSkillPlan 创建技能计划
 func (h *SkillPlanHandler) CreateSkillPlan(c *gin.Context) {
 	var req service.CreateSkillPlanRequest
@@ -56,6 +75,28 @@ func (h *SkillPlanHandler) ListSkillPlans(c *gin.Context) {
 	response.OKWithPage(c, records, total, page, pageSize)
 }
 
+func (h *SkillPlanHandler) ListPersonalSkillPlans(c *gin.Context) {
+	page, pageSize, err := parsePaginationQuery(c, 50, 100)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
+	keyword := c.Query("keyword")
+
+	records, total, err := h.svc.ListPersonalSkillPlans(
+		middleware.GetUserID(c),
+		page,
+		pageSize,
+		keyword,
+	)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OKWithPage(c, records, total, page, pageSize)
+}
+
 // GetSkillPlan 获取技能计划详情
 func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
 	id := requireUintID(c, "id", "技能计划 ID")
@@ -64,6 +105,21 @@ func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
 	}
 
 	result, err := h.svc.GetSkillPlan(id, resolveRequestLang(c))
+	if err != nil {
+		response.Fail(c, response.CodeNotFound, err.Error())
+		return
+	}
+
+	response.OK(c, result)
+}
+
+func (h *SkillPlanHandler) GetPersonalSkillPlan(c *gin.Context) {
+	id := requireUintID(c, "id", "技能计划 ID")
+	if id == 0 {
+		return
+	}
+
+	result, err := h.svc.GetPersonalSkillPlan(id, middleware.GetUserID(c), resolveRequestLang(c))
 	if err != nil {
 		response.Fail(c, response.CodeNotFound, err.Error())
 		return
@@ -100,6 +156,27 @@ func (h *SkillPlanHandler) UpdateSkillPlan(c *gin.Context) {
 	response.OK(c, result)
 }
 
+func (h *SkillPlanHandler) UpdatePersonalSkillPlan(c *gin.Context) {
+	id := requireUintID(c, "id", "技能计划 ID")
+	if id == 0 {
+		return
+	}
+
+	var req service.UpdateSkillPlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.svc.UpdatePersonalSkillPlan(id, middleware.GetUserID(c), &req, resolveRequestLang(c))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, result)
+}
+
 // DeleteSkillPlan 删除技能计划
 func (h *SkillPlanHandler) DeleteSkillPlan(c *gin.Context) {
 	id := requireUintID(c, "id", "技能计划 ID")
@@ -108,6 +185,21 @@ func (h *SkillPlanHandler) DeleteSkillPlan(c *gin.Context) {
 	}
 
 	err := h.svc.DeleteSkillPlan(id, middleware.GetUserID(c), middleware.GetUserRoles(c))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, nil)
+}
+
+func (h *SkillPlanHandler) DeletePersonalSkillPlan(c *gin.Context) {
+	id := requireUintID(c, "id", "技能计划 ID")
+	if id == 0 {
+		return
+	}
+
+	err := h.svc.DeletePersonalSkillPlan(id, middleware.GetUserID(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -126,6 +218,21 @@ func (h *SkillPlanHandler) ReorderSkillPlans(c *gin.Context) {
 		return
 	}
 	if err := h.svc.ReorderSkillPlans(req.IDs, middleware.GetUserRoles(c)); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (h *SkillPlanHandler) ReorderPersonalSkillPlans(c *gin.Context) {
+	var req struct {
+		IDs []uint `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+	if err := h.svc.ReorderPersonalSkillPlans(req.IDs, middleware.GetUserID(c)); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

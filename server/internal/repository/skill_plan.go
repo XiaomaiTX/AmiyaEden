@@ -51,6 +51,16 @@ func (r *SkillPlanRepository) ListByIDs(ids []uint) ([]model.SkillPlan, error) {
 	return plans, err
 }
 
+// ListByIDsAndScope 根据 ID 列表和范围获取技能计划
+func (r *SkillPlanRepository) ListByIDsAndScope(ids []uint, planScope string) ([]model.SkillPlan, error) {
+	var plans []model.SkillPlan
+	if len(ids) == 0 {
+		return plans, nil
+	}
+	err := global.DB.Where("id IN ? AND plan_scope = ?", ids, planScope).Find(&plans).Error
+	return plans, err
+}
+
 // List 分页获取技能计划
 func (r *SkillPlanRepository) List(page, pageSize int, keyword string) ([]model.SkillPlan, int64, error) {
 	var plans []model.SkillPlan
@@ -74,10 +84,63 @@ func (r *SkillPlanRepository) List(page, pageSize int, keyword string) ([]model.
 	return plans, total, nil
 }
 
+// ListByScope 分页获取指定范围的技能计划
+func (r *SkillPlanRepository) ListByScope(
+	page, pageSize int,
+	keyword string,
+	planScope string,
+	createdBy *uint,
+) ([]model.SkillPlan, int64, error) {
+	var plans []model.SkillPlan
+	var total int64
+
+	offset := (page - 1) * pageSize
+	db := global.DB.Model(&model.SkillPlan{}).Where("plan_scope = ?", planScope)
+	if createdBy != nil {
+		db = db.Where("created_by = ?", *createdBy)
+	}
+
+	if keyword != "" {
+		pattern := "%" + keyword + "%"
+		db = db.Where("title ILIKE ? OR description ILIKE ?", pattern, pattern)
+	}
+
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	if err := db.Order("sort_order ASC, id DESC").Offset(offset).Limit(pageSize).Find(&plans).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return plans, total, nil
+}
+
 // ListAll 获取全部技能计划
 func (r *SkillPlanRepository) ListAll() ([]model.SkillPlan, error) {
 	var plans []model.SkillPlan
 	err := global.DB.Order("sort_order ASC, id DESC").Find(&plans).Error
+	return plans, err
+}
+
+// ListAllByScope 获取指定范围的全部技能计划
+func (r *SkillPlanRepository) ListAllByScope(planScope string, createdBy *uint) ([]model.SkillPlan, error) {
+	var plans []model.SkillPlan
+	db := global.DB.Where("plan_scope = ?", planScope)
+	if createdBy != nil {
+		db = db.Where("created_by = ?", *createdBy)
+	}
+	err := db.Order("sort_order ASC, id DESC").Find(&plans).Error
+	return plans, err
+}
+
+// ListVisibleForUser 获取用户可见的技能计划（军团 + 本人个人）
+func (r *SkillPlanRepository) ListVisibleForUser(userID uint) ([]model.SkillPlan, error) {
+	var plans []model.SkillPlan
+	err := global.DB.
+		Where("plan_scope = ?", model.SkillPlanScopeCorp).
+		Or("plan_scope = ? AND created_by = ?", model.SkillPlanScopePersonal, userID).
+		Order("sort_order ASC, id DESC").
+		Find(&plans).Error
 	return plans, err
 }
 

@@ -8,6 +8,13 @@ export function fetchSkillPlanList(params?: Api.SkillPlan.SkillPlanSearchParams)
   })
 }
 
+export function fetchPersonalSkillPlanList(params?: Api.SkillPlan.SkillPlanSearchParams) {
+  return request.get<Api.SkillPlan.SkillPlanList>({
+    url: '/api/v1/skill-planning/personal-skill-plans',
+    params
+  })
+}
+
 /** 获取军团技能计划详情 */
 export function fetchSkillPlanDetail(id: number, lang?: string) {
   return request.get<Api.SkillPlan.SkillPlanDetail>({
@@ -16,10 +23,25 @@ export function fetchSkillPlanDetail(id: number, lang?: string) {
   })
 }
 
+export function fetchPersonalSkillPlanDetail(id: number, lang?: string) {
+  return request.get<Api.SkillPlan.SkillPlanDetail>({
+    url: `/api/v1/skill-planning/personal-skill-plans/${id}`,
+    params: lang ? { lang } : undefined
+  })
+}
+
 /** 创建军团技能计划 */
 export function createSkillPlan(data: Api.SkillPlan.CreateSkillPlanParams, lang?: string) {
   return request.post<Api.SkillPlan.SkillPlanDetail>({
     url: '/api/v1/skill-planning/skill-plans',
+    data,
+    params: lang ? { lang } : undefined
+  })
+}
+
+export function createPersonalSkillPlan(data: Api.SkillPlan.CreateSkillPlanParams, lang?: string) {
+  return request.post<Api.SkillPlan.SkillPlanDetail>({
+    url: '/api/v1/skill-planning/personal-skill-plans',
     data,
     params: lang ? { lang } : undefined
   })
@@ -38,6 +60,18 @@ export function updateSkillPlan(
   })
 }
 
+export function updatePersonalSkillPlan(
+  id: number,
+  data: Api.SkillPlan.UpdateSkillPlanParams,
+  lang?: string
+) {
+  return request.put<Api.SkillPlan.SkillPlanDetail>({
+    url: `/api/v1/skill-planning/personal-skill-plans/${id}`,
+    data,
+    params: lang ? { lang } : undefined
+  })
+}
+
 /** 批量更新技能计划排序 */
 export function reorderSkillPlans(ids: number[]) {
   return request.put({
@@ -46,10 +80,23 @@ export function reorderSkillPlans(ids: number[]) {
   })
 }
 
+export function reorderPersonalSkillPlans(ids: number[]) {
+  return request.put({
+    url: '/api/v1/skill-planning/personal-skill-plans/reorder',
+    data: { ids }
+  })
+}
+
 /** 删除军团技能计划 */
 export function deleteSkillPlan(id: number) {
   return request.del({
     url: `/api/v1/skill-planning/skill-plans/${id}`
+  })
+}
+
+export function deletePersonalSkillPlan(id: number) {
+  return request.del({
+    url: `/api/v1/skill-planning/personal-skill-plans/${id}`
   })
 }
 
