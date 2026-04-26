@@ -870,6 +870,12 @@
   "welfareMy": {
     "applyTab": "Apply for Welfare",
     "applicationsTab": "My Applications",
+    "filterRole": "Role",
+    "filterNaturalPerson": "Natural Person",
+    "filterWelfareName": "Welfare Name",
+    "filterAll": "All",
+    "filterNaturalPersonOnly": "Natural Person Only",
+    "currentUserNaturalPerson": "Current User (Natural Person)",
     "welfareName": "Welfare Name",
     "characterName": "Character Name",
     "description": "Description",

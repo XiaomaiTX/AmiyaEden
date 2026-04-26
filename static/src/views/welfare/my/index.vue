@@ -18,6 +18,49 @@
       <ElTabs v-model="activeTab" @tab-change="handleTabChange">
         <!-- 申请福利 -->
         <ElTabPane :label="t('welfareMy.applyTab')" name="apply">
+          <div class="mb-3 flex items-center gap-3 flex-wrap">
+            <ElSelect
+              v-model="roleFilter"
+              clearable
+              style="width: 200px"
+              :placeholder="t('welfareMy.filterRole')"
+              @change="handleEligibleFilterChange"
+            >
+              <ElOption
+                v-for="option in roleFilterOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </ElSelect>
+            <ElSelect
+              v-model="naturalPersonFilter"
+              style="width: 160px"
+              :placeholder="t('welfareMy.filterNaturalPerson')"
+              @change="handleEligibleFilterChange"
+            >
+              <ElOption :label="t('welfareMy.filterAll')" value="" />
+              <ElOption
+                :label="t('welfareMy.filterNaturalPersonOnly')"
+                :value="NATURAL_PERSON_FILTER_VALUE"
+              />
+            </ElSelect>
+            <ElSelect
+              v-model="welfareNameFilter"
+              clearable
+              style="width: 220px"
+              :placeholder="t('welfareMy.filterWelfareName')"
+              @change="handleEligibleFilterChange"
+            >
+              <ElOption
+                v-for="option in welfareNameFilterOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
+            </ElSelect>
+            <ElButton @click="handleEligibleFilterReset">{{ t('common.reset') }}</ElButton>
+          </div>
           <ArtTable
             :loading="eligibleLoading"
             :data="pagedEligibleRows"
@@ -93,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTag, ElButton, ElUpload, ElMessage, ElTooltip } from 'element-plus'
+  import { ElTag, ElButton, ElUpload, ElMessage, ElTooltip, ElSelect, ElOption } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@utils/common'
   import {
@@ -103,6 +146,13 @@
     uploadWelfareEvidence
   } from '@/api/welfare'
   import { sortEligibleRows } from './eligibleRows'
+  import {
+    buildRoleFilterOptions,
+    buildWelfareNameFilterOptions,
+    filterEligibleRows,
+    paginateEligibleRows,
+    type EligibleFilters
+  } from './eligibleFilters'
   import { formatWelfareIneligibleReason } from './ineligibleReason'
   import { useI18n } from 'vue-i18n'
 
@@ -111,6 +161,8 @@
 
   // ─── Tab state ───
   const activeTab = ref('apply')
+  const NATURAL_PERSON_FILTER_VALUE = 'per_user'
+  const naturalPersonRoleLabel = computed(() => t('welfareMy.currentUserNaturalPerson'))
 
   // ─── 申请福利 Tab ───
 
@@ -136,7 +188,21 @@
     characterName?: string
     requireEvidence: boolean
     exampleEvidence: string
+    isNaturalPersonRow: boolean
+    roleFilterValue: string
   }
+
+  const roleFilter = ref('')
+  const naturalPersonFilter = ref<EligibleFilters['naturalPersonFilter']>('')
+  const welfareNameFilter = ref('')
+  const eligibleAllRows = ref<EligibleRow[]>([])
+
+  const roleFilterOptions = computed(() =>
+    buildRoleFilterOptions(eligibleAllRows.value, naturalPersonRoleLabel.value)
+  )
+  const welfareNameFilterOptions = computed(() =>
+    buildWelfareNameFilterOptions(eligibleAllRows.value)
+  )
 
   function flattenEligibleWelfares(welfares: Api.Welfare.EligibleWelfare[]): EligibleRow[] {
     const rows: EligibleRow[] = []
@@ -154,7 +220,9 @@
         rows.push({
           ...shared,
           canApplyNow: w.can_apply_now,
-          ineligibleReason: w.ineligible_reason
+          ineligibleReason: w.ineligible_reason,
+          isNaturalPersonRow: true,
+          roleFilterValue: naturalPersonRoleLabel.value
         })
       } else {
         for (const char of w.eligible_characters) {
@@ -163,7 +231,9 @@
             canApplyNow: char.can_apply_now,
             ineligibleReason: char.ineligible_reason,
             characterId: char.character_id,
-            characterName: char.character_name
+            characterName: char.character_name,
+            isNaturalPersonRow: false,
+            roleFilterValue: char.character_name
           })
         }
       }
@@ -176,10 +246,17 @@
   ): Promise<Api.Common.PaginatedResponse<EligibleRow>> {
     const welfares = await getEligibleWelfares()
     const rows = flattenEligibleWelfares(welfares ?? [])
+    eligibleAllRows.value = rows
+    const filters: EligibleFilters = {
+      roleFilter: roleFilter.value,
+      naturalPersonFilter: naturalPersonFilter.value,
+      welfareNameFilter: welfareNameFilter.value
+    }
+    const filteredRows = filterEligibleRows(rows, filters)
     const { current, size } = params
     return {
-      list: rows.slice((current - 1) * size, current * size),
-      total: rows.length,
+      list: paginateEligibleRows(filteredRows, current, size),
+      total: filteredRows.length,
       page: current,
       pageSize: size
     }
@@ -199,6 +276,17 @@
       immediate: false
     }
   })
+
+  function handleEligibleFilterChange() {
+    loadEligibleWelfares()
+  }
+
+  function handleEligibleFilterReset() {
+    roleFilter.value = ''
+    naturalPersonFilter.value = ''
+    welfareNameFilter.value = ''
+    loadEligibleWelfares()
+  }
 
   const DIST_MODE_CONFIG = computed(
     () =>
