@@ -17,6 +17,7 @@ func (EveStructure) TableName() string { return "eve_structures" }
 type CorpStructureInfo struct {
 	CorporationID      int64  `gorm:"index"      json:"corporation_id"`
 	StructureID        int64  `gorm:"primaryKey" json:"structure_id"`
+	Services           string `gorm:"type:text"  json:"services"`
 	FuelExpires        string `gorm:""           json:"fuel_expires"`
 	Name               string `gorm:""           json:"name"`
 	NextReinforceApply string `gorm:""           json:"next_reinforce_apply"`

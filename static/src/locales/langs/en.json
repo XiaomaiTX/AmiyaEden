@@ -237,7 +237,8 @@
     "dashboard": {
       "title": "Dashboard",
       "console": "Console",
-      "npcKills": "Corp NPC Kill Report"
+      "npcKills": "Corp NPC Kill Report",
+      "corporationStructures": "Corporation Structures"
     },
     "exception": {
       "title": "Exception",
@@ -2355,6 +2356,48 @@
         "alliance": "Alliance",
         "internal": "Internal"
       }
+    }
+  },
+  "corporationStructures": {
+    "title": "Corporation Structures",
+    "subtitle": "Review structure snapshots for manageable corporations and configure one Director-authorized character per corporation for data refresh.",
+    "tabs": {
+      "list": "Structure List",
+      "settings": "Settings"
+    },
+    "allCorporations": "All Corporations",
+    "noServices": "No active services",
+    "filters": {
+      "corporation": "Select Corporation"
+    },
+    "actions": {
+      "refreshSelected": "Refresh Selected Corporation",
+      "refreshThisCorporation": "Refresh This Corporation"
+    },
+    "table": {
+      "corporation": "Corporation",
+      "state": "State",
+      "system": "System / Security",
+      "name": "Structure Name",
+      "type": "Structure Type",
+      "services": "Services",
+      "fuelRemaining": "Fuel Remaining",
+      "reinforceHour": "Reinforce Hour",
+      "updatedAt": "Updated At",
+      "directorCharacter": "Director Authorized Character",
+      "actions": "Actions"
+    },
+    "placeholders": {
+      "selectDirector": "Select a Director character"
+    },
+    "messages": {
+      "authorizationSaved": "Authorization settings saved",
+      "refreshSuccess": "Structure refresh completed. {count} records updated.",
+      "selectCorporationFirst": "Select a corporation first"
+    },
+    "empty": {
+      "list": "No structure data available",
+      "settings": "No manageable corporations"
     }
   },
   "shopBrowse": {

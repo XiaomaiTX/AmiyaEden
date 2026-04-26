@@ -237,7 +237,8 @@
     "dashboard": {
       "title": "仪表盘",
       "console": "工作台",
-      "npcKills": "军团刷怪报表"
+      "npcKills": "军团刷怪报表",
+      "corporationStructures": "军团建筑"
     },
     "exception": {
       "title": "异常页面",
@@ -2355,6 +2356,48 @@
         "alliance": "联盟",
         "internal": "内部"
       }
+    }
+  },
+  "corporationStructures": {
+    "title": "军团建筑",
+    "subtitle": "查看可管理军团的建筑快照，并配置每个军团用于拉取建筑数据的 Director 授权角色。",
+    "tabs": {
+      "list": "建筑列表",
+      "settings": "设置"
+    },
+    "allCorporations": "全部军团",
+    "noServices": "无在线服务",
+    "filters": {
+      "corporation": "选择军团"
+    },
+    "actions": {
+      "refreshSelected": "刷新所选军团建筑",
+      "refreshThisCorporation": "刷新该军团"
+    },
+    "table": {
+      "corporation": "军团",
+      "state": "状态",
+      "system": "星系 / 安全",
+      "name": "建筑名称",
+      "type": "建筑类型",
+      "services": "服务",
+      "fuelRemaining": "燃料剩余",
+      "reinforceHour": "增强时间",
+      "updatedAt": "更新时间",
+      "directorCharacter": "Director 授权角色",
+      "actions": "操作"
+    },
+    "placeholders": {
+      "selectDirector": "请选择 Director 角色"
+    },
+    "messages": {
+      "authorizationSaved": "授权配置已保存",
+      "refreshSuccess": "建筑刷新完成，共更新 {count} 条",
+      "selectCorporationFirst": "请先选择一个军团"
+    },
+    "empty": {
+      "list": "暂无建筑数据",
+      "settings": "暂无可管理军团"
     }
   },
   "shopBrowse": {

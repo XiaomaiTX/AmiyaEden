@@ -338,6 +338,76 @@ func TestWelfareApprovalRoutesAllowWelfareWhileDeleteStaysAdminOnly(t *testing.T
 	)
 }
 
+func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	adminRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleAdmin})
+	assertRouteStatus(t, adminRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusNoContent)
+	assertRouteStatus(
+		t,
+		adminRouter,
+		http.MethodPut,
+		"/dashboard/corporation-structures/settings/authorizations",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(t, adminRouter, http.MethodPost, "/dashboard/corporation-structures/list", http.StatusNoContent)
+	assertRouteStatus(t, adminRouter, http.MethodPost, "/dashboard/corporation-structures/refresh", http.StatusNoContent)
+
+	superAdminRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleSuperAdmin})
+	assertRouteStatus(
+		t,
+		superAdminRouter,
+		http.MethodGet,
+		"/dashboard/corporation-structures/settings",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(
+		t,
+		superAdminRouter,
+		http.MethodPut,
+		"/dashboard/corporation-structures/settings/authorizations",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(
+		t,
+		superAdminRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/list",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(
+		t,
+		superAdminRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/refresh",
+		http.StatusNoContent,
+	)
+
+	userRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleUser})
+	assertRouteStatus(t, userRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusForbidden)
+	assertRouteStatus(
+		t,
+		userRouter,
+		http.MethodPut,
+		"/dashboard/corporation-structures/settings/authorizations",
+		http.StatusForbidden,
+	)
+	assertRouteStatus(t, userRouter, http.MethodPost, "/dashboard/corporation-structures/list", http.StatusForbidden)
+	assertRouteStatus(t, userRouter, http.MethodPost, "/dashboard/corporation-structures/refresh", http.StatusForbidden)
+
+	guestRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleGuest})
+	assertRouteStatus(t, guestRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusForbidden)
+	assertRouteStatus(
+		t,
+		guestRouter,
+		http.MethodPut,
+		"/dashboard/corporation-structures/settings/authorizations",
+		http.StatusForbidden,
+	)
+	assertRouteStatus(t, guestRouter, http.MethodPost, "/dashboard/corporation-structures/list", http.StatusForbidden)
+	assertRouteStatus(t, guestRouter, http.MethodPost, "/dashboard/corporation-structures/refresh", http.StatusForbidden)
+}
+
 func newSkillPlanPermissionTestRouter(roles []string) *gin.Engine {
 	r := gin.New()
 	injectRoles := func(c *gin.Context) {
@@ -586,6 +656,23 @@ func newSystemBasicConfigPermissionTestRouter(roles []string) *gin.Engine {
 	basicConfig.PUT("/allow-corporations", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.GET("/character-esi-restriction", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.PUT("/character-esi-restriction", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+	return r
+}
+
+func newDashboardCorporationStructuresPermissionTestRouter(roles []string) *gin.Engine {
+	r := gin.New()
+	injectRoles := func(c *gin.Context) {
+		c.Set("roles", roles)
+		c.Next()
+	}
+
+	dashboard := r.Group("/dashboard", injectRoles, middleware.RequireLoginUser())
+	corpStructures := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleAdmin))
+	corpStructures.GET("/settings", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.PUT("/settings/authorizations", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.POST("/list", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.POST("/refresh", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	return r
 }
