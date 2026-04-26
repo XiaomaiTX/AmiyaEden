@@ -871,6 +871,12 @@
   "welfareMy": {
     "applyTab": "申请福利",
     "applicationsTab": "已领取福利",
+    "filterRole": "角色",
+    "filterNaturalPerson": "自然人",
+    "filterWelfareName": "福利名称",
+    "filterAll": "全部",
+    "filterNaturalPersonOnly": "仅自然人",
+    "currentUserNaturalPerson": "当前用户(自然人)",
     "welfareName": "福利名称",
     "characterName": "人物名称",
     "description": "描述",
