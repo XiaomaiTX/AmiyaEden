@@ -26,23 +26,12 @@
               :placeholder="t('welfareMy.filterRole')"
               @change="handleEligibleFilterChange"
             >
+              <ElOption :label="t('welfareMy.filterAll')" value="" />
               <ElOption
                 v-for="option in roleFilterOptions"
                 :key="option.value"
                 :label="option.label"
                 :value="option.value"
-              />
-            </ElSelect>
-            <ElSelect
-              v-model="naturalPersonFilter"
-              style="width: 160px"
-              :placeholder="t('welfareMy.filterNaturalPerson')"
-              @change="handleEligibleFilterChange"
-            >
-              <ElOption :label="t('welfareMy.filterAll')" value="" />
-              <ElOption
-                :label="t('welfareMy.filterNaturalPersonOnly')"
-                :value="NATURAL_PERSON_FILTER_VALUE"
               />
             </ElSelect>
             <ElSelect
@@ -161,7 +150,6 @@
 
   // ─── Tab state ───
   const activeTab = ref('apply')
-  const NATURAL_PERSON_FILTER_VALUE = 'per_user'
   const naturalPersonRoleLabel = computed(() => t('welfareMy.currentUserNaturalPerson'))
 
   // ─── 申请福利 Tab ───
@@ -193,7 +181,6 @@
   }
 
   const roleFilter = ref('')
-  const naturalPersonFilter = ref<EligibleFilters['naturalPersonFilter']>('')
   const welfareNameFilter = ref('')
   const eligibleAllRows = ref<EligibleRow[]>([])
 
@@ -249,7 +236,6 @@
     eligibleAllRows.value = rows
     const filters: EligibleFilters = {
       roleFilter: roleFilter.value,
-      naturalPersonFilter: naturalPersonFilter.value,
       welfareNameFilter: welfareNameFilter.value
     }
     const filteredRows = filterEligibleRows(rows, filters)
@@ -283,7 +269,6 @@
 
   function handleEligibleFilterReset() {
     roleFilter.value = ''
-    naturalPersonFilter.value = ''
     welfareNameFilter.value = ''
     loadEligibleWelfares()
   }

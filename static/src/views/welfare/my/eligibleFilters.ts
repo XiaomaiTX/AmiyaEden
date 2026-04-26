@@ -1,6 +1,5 @@
 export interface EligibleFilters {
   roleFilter: string
-  naturalPersonFilter: '' | 'per_user'
   welfareNameFilter: string
 }
 
@@ -21,10 +20,6 @@ export function filterEligibleRows<T extends EligibleFilterRowLike>(
 ): T[] {
   return rows.filter((row) => {
     if (filters.roleFilter && row.roleFilterValue !== filters.roleFilter) {
-      return false
-    }
-
-    if (filters.naturalPersonFilter === 'per_user' && !row.isNaturalPersonRow) {
       return false
     }
 
