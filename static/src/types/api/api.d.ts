@@ -1499,6 +1499,59 @@ declare namespace Api {
       pap_stats: PapStats
       srp_list: SrpItem[]
     }
+
+    interface CorporationStructureServiceInfo {
+      name: string
+      state: string
+    }
+
+    interface CorporationStructureRow {
+      corporation_id: number
+      corporation_name: string
+      structure_id: number
+      name: string
+      type_id: number
+      type_name: string
+      system_id: number
+      system_name: string
+      security: number
+      state: string
+      services: CorporationStructureServiceInfo[]
+      fuel_expires: string
+      fuel_remaining: string
+      reinforce_hour: number
+      updated_at: number
+    }
+
+    interface CorporationStructureListRequest {
+      corporation_id?: number
+    }
+
+    interface CorporationStructureDirectorCharacterOption {
+      user_id: number
+      character_id: number
+      character_name: string
+    }
+
+    interface CorporationStructureManageCorporationOption {
+      corporation_id: number
+      corporation_name: string
+      authorized_character_id: number
+      director_characters: CorporationStructureDirectorCharacterOption[]
+    }
+
+    interface CorporationStructuresSettings {
+      corporations: CorporationStructureManageCorporationOption[]
+    }
+
+    interface CorporationStructureAuthorizationBinding {
+      corporation_id: number
+      character_id: number
+    }
+
+    interface CorporationStructureAuthorizationUpdate {
+      authorizations: CorporationStructureAuthorizationBinding[]
+    }
   }
 
   /** EVE 人物信息类型 */

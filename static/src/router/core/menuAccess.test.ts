@@ -163,6 +163,27 @@ test('CorpNpcKillReport lives under Dashboard for admins only', () => {
   )
 })
 
+test('DashboardCorporationStructures lives under Dashboard for admins only', () => {
+  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'])[0]
+  const superAdminDashboard = applyMenuAccessFilter([dashboardRoutes], ['super_admin'])[0]
+  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'])[0]
+
+  const adminRoute = adminDashboard.children?.find(
+    (route) => route.name === 'DashboardCorporationStructures'
+  )
+
+  assert.equal(adminRoute?.path, 'corporation-structures')
+  assert.deepEqual(adminRoute?.meta.roles, ['super_admin', 'admin'])
+  assert.equal(
+    superAdminDashboard.children?.some((route) => route.name === 'DashboardCorporationStructures'),
+    true
+  )
+  assert.equal(
+    userDashboard.children?.some((route) => route.name === 'DashboardCorporationStructures'),
+    false
+  )
+})
+
 test('applyMenuAccessFilter keeps SRP prices for SRP, admin, senior fc, and super admins', () => {
   const adminSrpMenu = applyMenuAccessFilter([srpRoutes], ['admin'])[0]
   const seniorFCSrpMenu = applyMenuAccessFilter([srpRoutes], ['senior_fc'])[0]

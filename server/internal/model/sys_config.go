@@ -36,6 +36,7 @@ const (
 
 	SysConfigAllowCorporations              = "app.allow_corporations"                 // 允许访问的公司 ID 列表 (JSON 数组)
 	SysConfigEnforceCharacterESIRestriction = "auth.enforce_character_esi_restriction" // 是否强制限制失效人物 ESI 停留在人物页面
+	SysConfigDashboardCorpStructuresAuth    = "dashboard.corporation_structures_authorizations"
 
 	SysConfigNewbroMaxCharacterSP          = "newbro.max_character_sp"
 	SysConfigNewbroMultiCharacterSP        = "newbro.multi_character_sp"

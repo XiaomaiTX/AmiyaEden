@@ -79,6 +79,15 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	dashboardH := handler.NewDashboardHandler()
 	auth.POST("/dashboard", dashboardH.GetDashboard)
+	corpStructureH := handler.NewCorporationStructureHandler()
+	dashboard := login.Group("/dashboard")
+	{
+		corpStructures := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleAdmin))
+		corpStructures.GET("/settings", corpStructureH.GetSettings)
+		corpStructures.PUT("/settings/authorizations", corpStructureH.UpdateAuthorizations)
+		corpStructures.POST("/list", corpStructureH.ListStructures)
+		corpStructures.POST("/refresh", corpStructureH.RefreshStructures)
+	}
 	badgeH := handler.NewBadgeHandler()
 	login.GET("/badge-counts", badgeH.GetBadgeCounts)
 

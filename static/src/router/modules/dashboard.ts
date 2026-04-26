@@ -37,6 +37,16 @@ export const dashboardRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin']
       }
+    },
+    {
+      path: 'corporation-structures',
+      name: 'DashboardCorporationStructures',
+      component: '/dashboard/corporation-structures',
+      meta: {
+        title: 'menus.dashboard.corporationStructures',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
     }
   ]
 }

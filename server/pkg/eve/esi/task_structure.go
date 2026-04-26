@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/utils"
 	app_utils "amiya-eden/pkg/utils"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -124,9 +125,11 @@ func (t *StructureTask) Execute(ctx *TaskContext) error {
 	// 2. 批量 Upsert CorpStructureInfo
 	corpRecords := make([]model.CorpStructureInfo, 0, len(esiStructures))
 	for _, s := range esiStructures {
+		servicesJSON, _ := json.Marshal(s.Services)
 		corpRecords = append(corpRecords, model.CorpStructureInfo{
 			CorporationID:      corpID,
 			StructureID:        s.StructureID,
+			Services:           string(servicesJSON),
 			FuelExpires:        s.FuelExpires,
 			Name:               s.Name,
 			NextReinforceApply: s.NextReinforceApply,
