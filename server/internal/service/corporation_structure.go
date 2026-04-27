@@ -67,16 +67,6 @@ var (
 			"hull_vulnerable",
 		},
 	}
-	corporationStructureAbnormalStateSet = map[string]struct{}{
-		"low_power":         {},
-		"abandoned":         {},
-		"shield_reinforce":  {},
-		"shield_vulnerable": {},
-		"armor_reinforce":   {},
-		"armor_vulnerable":  {},
-		"hull_reinforce":    {},
-		"hull_vulnerable":   {},
-	}
 	corporationStructureSupportedSortBy = map[string]struct{}{
 		corporationStructureSortFuelRemainingHours: {},
 		corporationStructureSortSecurity:           {},
@@ -145,7 +135,6 @@ type CorporationStructureListRequest struct {
 	PageSize         int      `json:"page_size"`
 	Keyword          string   `json:"keyword"`
 	StateGroups      []string `json:"state_groups"`
-	AbnormalOnly     bool     `json:"abnormal_only"`
 	FuelBucket       string   `json:"fuel_bucket"`
 	FuelMinHours     *int     `json:"fuel_min_hours"`
 	FuelMaxHours     *int     `json:"fuel_max_hours"`
@@ -862,7 +851,7 @@ func filterCorporationStructureRows(
 	req CorporationStructureListRequest,
 	now time.Time,
 ) []CorporationStructureRow {
-	stateSet := buildSelectedStateSet(req.StateGroups, req.AbnormalOnly)
+	stateSet := buildSelectedStateSet(req.StateGroups)
 	systemSet := toInt64Set(req.SystemIDs)
 	typeSet := toInt64Set(req.TypeIDs)
 	serviceNames := normalizeLowerStringList(req.ServiceNames)
@@ -917,7 +906,7 @@ func filterCorporationStructureRows(
 	return filtered
 }
 
-func buildSelectedStateSet(stateGroups []string, abnormalOnly bool) map[string]struct{} {
+func buildSelectedStateSet(stateGroups []string) map[string]struct{} {
 	selected := make(map[string]struct{})
 	for _, group := range stateGroups {
 		groupStates, ok := corporationStructureStateGroupMap[group]
@@ -925,11 +914,6 @@ func buildSelectedStateSet(stateGroups []string, abnormalOnly bool) map[string]s
 			continue
 		}
 		for _, state := range groupStates {
-			selected[state] = struct{}{}
-		}
-	}
-	if abnormalOnly {
-		for state := range corporationStructureAbnormalStateSet {
 			selected[state] = struct{}{}
 		}
 	}

@@ -252,19 +252,6 @@ func TestCorporationStructureListFiltersAndSorts(t *testing.T) {
 
 	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{
 		CorporationID: 9001,
-		AbnormalOnly:  true,
-		Page:          1,
-		PageSize:      20,
-	})
-	if err != nil {
-		t.Fatalf("ListStructures abnormal only returned error: %v", err)
-	}
-	if resp.Total != 3 {
-		t.Fatalf("abnormal_only expected total 3, got %d", resp.Total)
-	}
-
-	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
-		CorporationID: 9001,
 		FuelBucket:    "lt_24h",
 		Page:          1,
 		PageSize:      20,
