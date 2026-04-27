@@ -46,6 +46,7 @@ static/dist/
 # Temp Logs
 server/tmp/
 server/logs/
+server/.gocache/
 
 # VSCode Personcal Workspace
 AmiyaEden.code-workspace

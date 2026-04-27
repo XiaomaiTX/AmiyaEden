@@ -1534,7 +1534,6 @@ declare namespace Api {
       page_size?: number
       keyword?: string
       state_groups?: string[]
-      abnormal_only?: boolean
       fuel_bucket?: 'all' | 'lt_24h' | 'lt_72h' | 'lt_168h' | 'custom'
       fuel_min_hours?: number
       fuel_max_hours?: number

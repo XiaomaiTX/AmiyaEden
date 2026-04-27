@@ -75,9 +75,6 @@
                   $t('corporationStructures.stateGroups.reinforced')
                 }}</ElCheckboxButton>
               </ElCheckboxGroup>
-              <ElCheckbox v-model="filters.abnormal_only" class="ml-3">
-                {{ $t('corporationStructures.filters.abnormalOnly') }}
-              </ElCheckbox>
             </ElFormItem>
 
             <ElFormItem
@@ -353,7 +350,6 @@
     corporation_id: 0,
     keyword: '',
     state_groups: [] as string[],
-    abnormal_only: true,
     fuel_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['fuel_bucket'],
     fuel_min_hours: undefined as number | undefined,
     fuel_max_hours: undefined as number | undefined,
@@ -393,7 +389,6 @@
       page_size: params.size,
       keyword: params.keyword || undefined,
       state_groups: params.state_groups?.length ? params.state_groups : undefined,
-      abnormal_only: !!params.abnormal_only,
       fuel_bucket: params.fuel_bucket,
       fuel_min_hours: normalizeFuelHours(params.fuel_min_hours),
       fuel_max_hours: normalizeFuelHours(params.fuel_max_hours),
@@ -447,7 +442,6 @@
         corporation_id: 0,
         keyword: '',
         state_groups: [],
-        abnormal_only: true,
         fuel_bucket: 'all',
         fuel_min_hours: undefined,
         fuel_max_hours: undefined,
@@ -595,7 +589,6 @@
     searchParams.corporation_id = filters.corporation_id
     searchParams.keyword = filters.keyword
     searchParams.state_groups = [...filters.state_groups]
-    searchParams.abnormal_only = filters.abnormal_only
     searchParams.fuel_bucket = filters.fuel_bucket
     searchParams.fuel_min_hours =
       filters.fuel_bucket === 'custom' ? filters.fuel_min_hours : undefined
