@@ -15,20 +15,24 @@ type EveStructure struct {
 func (EveStructure) TableName() string { return "eve_structures" }
 
 type CorpStructureInfo struct {
-	CorporationID      int64  `gorm:"index"      json:"corporation_id"`
-	StructureID        int64  `gorm:"primaryKey" json:"structure_id"`
-	Services           string `gorm:"type:text"  json:"services"`
-	FuelExpires        string `gorm:""           json:"fuel_expires"`
-	Name               string `gorm:""           json:"name"`
-	NextReinforceApply string `gorm:""           json:"next_reinforce_apply"`
-	NextReinforceHour  int    `gorm:""           json:"next_reinforce_hour"`
-	ProfileID          int64  `gorm:""           json:"profile_id"`
-	ReinforceHour      int    `gorm:""           json:"reinforce_hour"`
-	State              string `gorm:""           json:"state"`
-	StateTimerEnd      string `gorm:""           json:"state_timer_end"`
-	StateTimerStart    string `gorm:""           json:"state_timer_start"`
-	SystemID           int64  `gorm:""           json:"system_id"`
-	TypeID             int64  `gorm:""           json:"type_id"`
-	UnanchorsAt        string `gorm:""           json:"unanchors_at"`
-	UpdateAt           int64  `gorm:""           json:"update_at"`
+	CorporationID      int64   `gorm:"index"      json:"corporation_id"`
+	CorporationName    string  `gorm:""           json:"corporation_name"`
+	StructureID        int64   `gorm:"primaryKey" json:"structure_id"`
+	Services           string  `gorm:"type:text"  json:"services"`
+	FuelExpires        string  `gorm:""           json:"fuel_expires"`
+	Name               string  `gorm:""           json:"name"`
+	NextReinforceApply string  `gorm:""           json:"next_reinforce_apply"`
+	NextReinforceHour  int     `gorm:""           json:"next_reinforce_hour"`
+	ProfileID          int64   `gorm:""           json:"profile_id"`
+	ReinforceHour      int     `gorm:""           json:"reinforce_hour"`
+	State              string  `gorm:""           json:"state"`
+	StateTimerEnd      string  `gorm:""           json:"state_timer_end"`
+	StateTimerStart    string  `gorm:""           json:"state_timer_start"`
+	SystemID           int64   `gorm:""           json:"system_id"`
+	SystemName         string  `gorm:""           json:"system_name"`
+	Security           float64 `gorm:""          json:"security"`
+	TypeID             int64   `gorm:""           json:"type_id"`
+	TypeName           string  `gorm:""           json:"type_name"`
+	UnanchorsAt        string  `gorm:""           json:"unanchors_at"`
+	UpdateAt           int64   `gorm:""           json:"update_at"`
 }
