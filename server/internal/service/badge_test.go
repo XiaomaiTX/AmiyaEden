@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/utils"
 	"fmt"
 	"reflect"
 	"testing"
@@ -286,6 +287,86 @@ func TestBadgeServiceGetBadgeCountsCountsPendingMentorApplicationsForCurrentMent
 	}
 }
 
+func TestBadgeServiceGetBadgeCountsIncludesCorporationStructuresAttentionForAdmin(t *testing.T) {
+	db := newBadgeServiceTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	defer func() {
+		global.DB = originalDB
+		utils.InvalidateAllowCorporationsCache()
+	}()
+
+	admin := model.User{BaseModel: model.BaseModel{ID: 910007}, Nickname: "Admin One", QQ: "99999"}
+	if err := db.Create(&admin).Error; err != nil {
+		t.Fatalf("create admin: %v", err)
+	}
+	if err := db.Create(&model.UserRole{UserID: admin.ID, RoleCode: model.RoleAdmin}).Error; err != nil {
+		t.Fatalf("create admin role: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   9901,
+		CharacterName: "Admin Character",
+		UserID:        admin.ID,
+		CorporationID: 9001,
+	}).Error; err != nil {
+		t.Fatalf("create admin character: %v", err)
+	}
+	if err := db.Create(&model.SystemConfig{
+		Key:   model.SysConfigAllowCorporations,
+		Value: "[9001]",
+	}).Error; err != nil {
+		t.Fatalf("create allow corps config: %v", err)
+	}
+	if err := db.Create(&model.SystemConfig{
+		Key:   model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays,
+		Value: "2",
+	}).Error; err != nil {
+		t.Fatalf("create fuel threshold config: %v", err)
+	}
+	if err := db.Create(&model.SystemConfig{
+		Key:   model.SysConfigDashboardCorpStructuresTimerNoticeThresholdDays,
+		Value: "2",
+	}).Error; err != nil {
+		t.Fatalf("create timer threshold config: %v", err)
+	}
+
+	now := time.Now().UTC()
+	rows := []model.CorpStructureInfo{
+		{
+			CorporationID: 9001,
+			StructureID:   1,
+			FuelExpires:   now.Add(6 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			CorporationID: 9001,
+			StructureID:   2,
+			StateTimerEnd: now.Add(8 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			CorporationID: 9001,
+			StructureID:   3,
+			FuelExpires:   now.Add(9 * 24 * time.Hour).Format(time.RFC3339),
+			StateTimerEnd: now.Add(9 * 24 * time.Hour).Format(time.RFC3339),
+		},
+	}
+	if err := db.Create(&rows).Error; err != nil {
+		t.Fatalf("create corporation structures: %v", err)
+	}
+
+	svc := NewBadgeService()
+	got, err := svc.GetBadgeCounts(admin.ID, []string{model.RoleAdmin})
+	if err != nil {
+		t.Fatalf("GetBadgeCounts() error = %v", err)
+	}
+	if got[BadgeCountCorporationStructuresAttention] != 2 {
+		t.Fatalf(
+			"expected corporation structures attention badge count 2, got %#v",
+			got,
+		)
+	}
+}
+
 func newBadgeServiceTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -296,13 +377,17 @@ func newBadgeServiceTestDB(t *testing.T) *gorm.DB {
 	}
 	if err := db.AutoMigrate(
 		&model.User{},
+		&model.UserRole{},
+		&model.SystemConfig{},
 		&model.EveCharacter{},
+		&model.EveCharacterCorpRole{},
 		&model.MentorMenteeRelationship{},
 		&model.Welfare{},
 		&model.WelfareSkillPlan{},
 		&model.WelfareApplication{},
 		&model.ShopOrder{},
 		&model.SrpApplication{},
+		&model.CorpStructureInfo{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}

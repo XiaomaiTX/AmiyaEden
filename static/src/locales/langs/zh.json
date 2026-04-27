@@ -2409,6 +2409,13 @@
     "actions": {
       "refreshSelected": "触发所选军团后台刷新任务"
     },
+    "settings": {
+      "noticeThresholds": "通知阈值",
+      "fuelNoticeThreshold": "燃料剩余阈值",
+      "timerNoticeThreshold": "增强时间阈值",
+      "daysUnit": "天",
+      "noticeThresholdHint": "0 = 关闭提醒"
+    },
     "table": {
       "corporation": "军团",
       "state": "状态",

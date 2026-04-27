@@ -3,25 +3,28 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
 	"sync"
 )
 
 const (
-	BadgeCountWelfareEligible           = "welfare_eligible"
-	BadgeCountSrpPending                = "srp_pending"
-	BadgeCountWelfarePending            = "welfare_pending"
-	BadgeCountOrderPending              = "order_pending"
-	BadgeCountMentorPendingApplications = "mentor_pending_applications"
+	BadgeCountWelfareEligible                = "welfare_eligible"
+	BadgeCountSrpPending                     = "srp_pending"
+	BadgeCountWelfarePending                 = "welfare_pending"
+	BadgeCountOrderPending                   = "order_pending"
+	BadgeCountMentorPendingApplications      = "mentor_pending_applications"
+	BadgeCountCorporationStructuresAttention = "corporation_structures_attention"
 )
 
 type BadgeCounts map[string]int64
 
 type BadgeService struct {
-	srpRepo     *repository.SrpRepository
-	welfareRepo *repository.WelfareRepository
-	shopRepo    *repository.ShopRepository
-	mentorRepo  *repository.MentorRelationshipRepository
+	srpRepo              *repository.SrpRepository
+	welfareRepo          *repository.WelfareRepository
+	shopRepo             *repository.ShopRepository
+	mentorRepo           *repository.MentorRelationshipRepository
+	corpStructureService *CorporationStructureService
 }
 
 func NewBadgeService() *BadgeService {
@@ -30,6 +33,12 @@ func NewBadgeService() *BadgeService {
 		welfareRepo: repository.NewWelfareRepository(),
 		shopRepo:    repository.NewShopRepository(),
 		mentorRepo:  repository.NewMentorRelationshipRepository(),
+		corpStructureService: &CorporationStructureService{
+			roleRepo:      repository.NewRoleRepository(),
+			charRepo:      repository.NewEveCharacterRepository(),
+			sysConfigRepo: repository.NewSysConfigRepository(),
+			repo:          repository.NewCorporationStructureRepository(),
+		},
 	}
 }
 
@@ -133,6 +142,26 @@ func (s *BadgeService) GetBadgeCounts(userID uint, userRoles []string) (BadgeCou
 			}
 			if pending > 0 {
 				counts[BadgeCountMentorPendingApplications] = pending
+			}
+		}()
+	}
+
+	// 6. 军团建筑提醒
+	if model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			attentionCount, err := s.corpStructureService.CountAttentionStructures(context.Background())
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				if firstErr == nil {
+					firstErr = errors.New("获取军团建筑提醒数量失败")
+				}
+				return
+			}
+			if attentionCount > 0 {
+				counts[BadgeCountCorporationStructuresAttention] = attentionCount
 			}
 		}()
 	}

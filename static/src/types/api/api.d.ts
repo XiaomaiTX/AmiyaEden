@@ -154,6 +154,7 @@ declare namespace Api {
       welfare_pending?: number
       order_pending?: number
       mentor_pending_applications?: number
+      corporation_structures_attention?: number
     }
   }
 
@@ -1609,6 +1610,8 @@ declare namespace Api {
 
     interface CorporationStructuresSettings {
       corporations: CorporationStructureManageCorporationOption[]
+      fuel_notice_threshold_days: number
+      timer_notice_threshold_days: number
     }
 
     interface CorporationStructureAuthorizationBinding {
@@ -1618,6 +1621,8 @@ declare namespace Api {
 
     interface CorporationStructureAuthorizationUpdate {
       authorizations: CorporationStructureAuthorizationBinding[]
+      fuel_notice_threshold_days?: number
+      timer_notice_threshold_days?: number
     }
 
     interface CorporationStructureRunTaskRequest {

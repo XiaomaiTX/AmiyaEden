@@ -46,6 +46,8 @@ const (
 
 	corporationStructureSortOrderAsc  = "asc"
 	corporationStructureSortOrderDesc = "desc"
+
+	hoursPerDay = 24
 )
 
 var (
@@ -173,7 +175,9 @@ type ManageCorporationOption struct {
 }
 
 type CorporationStructuresSettingsResponse struct {
-	Corporations []ManageCorporationOption `json:"corporations"`
+	Corporations             []ManageCorporationOption `json:"corporations"`
+	FuelNoticeThresholdDays  int                       `json:"fuel_notice_threshold_days"`
+	TimerNoticeThresholdDays int                       `json:"timer_notice_threshold_days"`
 }
 
 type CorporationStructureAuthorizationBinding struct {
@@ -182,7 +186,9 @@ type CorporationStructureAuthorizationBinding struct {
 }
 
 type CorporationStructureAuthorizationUpdate struct {
-	Authorizations []CorporationStructureAuthorizationBinding `json:"authorizations"`
+	Authorizations           []CorporationStructureAuthorizationBinding `json:"authorizations"`
+	FuelNoticeThresholdDays  *int                                       `json:"fuel_notice_threshold_days"`
+	TimerNoticeThresholdDays *int                                       `json:"timer_notice_threshold_days"`
 }
 
 type CorporationStructureRunTaskRequest struct {
@@ -242,6 +248,7 @@ func (s *CorporationStructureService) GetSettings(ctx context.Context) (*Corpora
 		return nil, err
 	}
 	authMap := s.loadAuthorizationMap()
+	thresholds := s.loadNoticeThresholdSettings()
 
 	corporations := make([]ManageCorporationOption, 0, len(manageCtx.corporationIDs))
 	for _, corpID := range manageCtx.corporationIDs {
@@ -276,7 +283,11 @@ func (s *CorporationStructureService) GetSettings(ctx context.Context) (*Corpora
 		})
 	}
 
-	return &CorporationStructuresSettingsResponse{Corporations: corporations}, nil
+	return &CorporationStructuresSettingsResponse{
+		Corporations:             corporations,
+		FuelNoticeThresholdDays:  thresholds.FuelNoticeThresholdDays,
+		TimerNoticeThresholdDays: thresholds.TimerNoticeThresholdDays,
+	}, nil
 }
 
 func (s *CorporationStructureService) UpdateAuthorizations(
@@ -313,7 +324,67 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 		}
 	}
 
-	return s.saveAuthorizationMap(currentMap)
+	if err := s.saveAuthorizationMap(currentMap); err != nil {
+		return err
+	}
+
+	thresholds := s.loadNoticeThresholdSettings()
+	if req.FuelNoticeThresholdDays != nil {
+		thresholds.FuelNoticeThresholdDays = *req.FuelNoticeThresholdDays
+	}
+	if req.TimerNoticeThresholdDays != nil {
+		thresholds.TimerNoticeThresholdDays = *req.TimerNoticeThresholdDays
+	}
+	return s.saveNoticeThresholdSettings(thresholds)
+}
+
+func (s *CorporationStructureService) CountAttentionStructures(ctx context.Context) (int64, error) {
+	manageCtx, err := s.buildManageContext(ctx, false)
+	if err != nil {
+		return 0, err
+	}
+
+	thresholds := s.loadNoticeThresholdSettings()
+	if thresholds.FuelNoticeThresholdDays <= 0 && thresholds.TimerNoticeThresholdDays <= 0 {
+		return 0, nil
+	}
+
+	structures, err := s.repo.ListCorpStructures(manageCtx.corporationIDs)
+	if err != nil {
+		return 0, errors.New("查询军团建筑提醒数据失败")
+	}
+	if len(structures) == 0 {
+		return 0, nil
+	}
+
+	now := time.Now()
+	fuelThresholdHours := thresholds.FuelNoticeThresholdDays * hoursPerDay
+	timerDeadline := now.Add(time.Duration(thresholds.TimerNoticeThresholdDays*hoursPerDay) * time.Hour)
+	attentionStructures := make(map[string]struct{}, len(structures))
+
+	for _, st := range structures {
+		matched := false
+		if thresholds.FuelNoticeThresholdDays > 0 {
+			remainingHours, _ := calculateFuelRemaining(st.FuelExpires, now)
+			if remainingHours != nil && *remainingHours <= fuelThresholdHours {
+				matched = true
+			}
+		}
+
+		if !matched && thresholds.TimerNoticeThresholdDays > 0 {
+			timerEnd, ok := parseFlexibleTime(st.StateTimerEnd)
+			if ok && !timerEnd.Before(now) && !timerEnd.After(timerDeadline) {
+				matched = true
+			}
+		}
+
+		if matched {
+			key := fmt.Sprintf("%d:%d", st.CorporationID, st.StructureID)
+			attentionStructures[key] = struct{}{}
+		}
+	}
+
+	return int64(len(attentionStructures)), nil
 }
 
 func (s *CorporationStructureService) ListStructures(
@@ -616,6 +687,55 @@ func (s *CorporationStructureService) saveAuthorizationMap(authorizations map[in
 		string(data),
 		"dashboard 军团建筑 director 授权角色映射",
 	)
+}
+
+type corporationStructureNoticeThresholdSettings struct {
+	FuelNoticeThresholdDays  int
+	TimerNoticeThresholdDays int
+}
+
+func (s *CorporationStructureService) loadNoticeThresholdSettings() corporationStructureNoticeThresholdSettings {
+	return corporationStructureNoticeThresholdSettings{
+		FuelNoticeThresholdDays: normalizeNoticeThresholdDays(s.sysConfigRepo.GetInt(
+			model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays,
+			model.SysConfigDefaultDashboardCorpStructuresFuelNoticeThresholdDays,
+		)),
+		TimerNoticeThresholdDays: normalizeNoticeThresholdDays(s.sysConfigRepo.GetInt(
+			model.SysConfigDashboardCorpStructuresTimerNoticeThresholdDays,
+			model.SysConfigDefaultDashboardCorpStructuresTimerNoticeThresholdDays,
+		)),
+	}
+}
+
+func (s *CorporationStructureService) saveNoticeThresholdSettings(
+	settings corporationStructureNoticeThresholdSettings,
+) error {
+	if settings.FuelNoticeThresholdDays < 0 {
+		return errors.New("燃料剩余提醒阈值不能小于 0")
+	}
+	if settings.TimerNoticeThresholdDays < 0 {
+		return errors.New("增强时间提醒阈值不能小于 0")
+	}
+
+	return s.sysConfigRepo.SetMany([]repository.SysConfigUpsertItem{
+		{
+			Key:   model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays,
+			Value: strconv.Itoa(settings.FuelNoticeThresholdDays),
+			Desc:  "dashboard 军团建筑提醒：燃料剩余阈值（天）",
+		},
+		{
+			Key:   model.SysConfigDashboardCorpStructuresTimerNoticeThresholdDays,
+			Value: strconv.Itoa(settings.TimerNoticeThresholdDays),
+			Desc:  "dashboard 军团建筑提醒：增强时间阈值（天）",
+		},
+	})
+}
+
+func normalizeNoticeThresholdDays(days int) int {
+	if days < 0 {
+		return 0
+	}
+	return days
 }
 
 func (s *CorporationStructureService) loadSystemMetaMap(systemIDs []int64) map[int64]corporationStructureSystemMeta {
