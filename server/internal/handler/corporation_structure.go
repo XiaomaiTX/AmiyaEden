@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/service"
+	"amiya-eden/jobs"
 	"amiya-eden/pkg/response"
+	"context"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,16 +54,36 @@ func (h *CorporationStructureHandler) ListStructures(c *gin.Context) {
 	response.OK(c, result)
 }
 
-func (h *CorporationStructureHandler) RefreshStructures(c *gin.Context) {
-	var req service.CorporationStructureRefreshRequest
+func (h *CorporationStructureHandler) RunTask(c *gin.Context) {
+	var req service.CorporationStructureRunTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	result, err := h.svc.EnqueueRefreshStructures(c.Request.Context(), req)
+	characterID, err := h.svc.ResolveRefreshAuthorizationCharacter(c.Request.Context(), req.CorporationID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, result)
+
+	queue := jobs.GetESIQueue()
+	if queue == nil {
+		response.Fail(c, response.CodeBizError, "刷新队列未初始化")
+		return
+	}
+
+	taskName := fmt.Sprintf("dashboard_run_corporation_structures_%d", req.CorporationID)
+	if ok := global.EnsureBackgroundTaskManager().Go(taskName, func(ctx context.Context) error {
+		return queue.RunTask(ctx, "corporation_structures", characterID)
+	}); !ok {
+		response.Fail(c, response.CodeBizError, "服务正在关闭，任务未启动")
+		return
+	}
+
+	response.OK(c, service.CorporationStructureRunTaskResponse{
+		CorporationID: req.CorporationID,
+		Queued:        true,
+		Running:       false,
+		Message:       "已触发后台 ESI 刷新任务",
+	})
 }

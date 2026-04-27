@@ -19,12 +19,15 @@ test('corporation structures page wires settings and list tabs', () => {
   assert.match(source, /corporationStructures\.tabs\.list/)
   assert.match(source, /corporationStructures\.tabs\.settings/)
   assert.match(source, /saveAuthorizations/)
-  assert.match(source, /handleRefreshCorporation/)
+  assert.match(source, /handleRunTaskForSelectedCorporation/)
+  assert.doesNotMatch(source, /handleRefreshCorporation/)
+  assert.doesNotMatch(source, /refreshThisCorporation/)
 })
 
 test('corporation structures api module exposes all required endpoints', () => {
   assert.match(apiSource, /\/api\/v1\/dashboard\/corporation-structures\/settings/)
   assert.match(apiSource, /\/settings\/authorizations/)
   assert.match(apiSource, /\/corporation-structures\/list/)
-  assert.match(apiSource, /\/corporation-structures\/refresh/)
+  assert.match(apiSource, /\/corporation-structures\/run-task/)
+  assert.doesNotMatch(apiSource, /\/corporation-structures\/refresh/)
 })

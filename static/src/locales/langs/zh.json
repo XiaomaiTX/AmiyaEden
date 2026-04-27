@@ -2371,8 +2371,7 @@
       "corporation": "选择军团"
     },
     "actions": {
-      "refreshSelected": "刷新所选军团建筑",
-      "refreshThisCorporation": "刷新该军团"
+      "refreshSelected": "触发所选军团后台刷新任务"
     },
     "table": {
       "corporation": "军团",
@@ -2384,15 +2383,14 @@
       "fuelRemaining": "燃料剩余",
       "reinforceHour": "增强时间",
       "updatedAt": "更新时间",
-      "directorCharacter": "Director 授权角色",
-      "actions": "操作"
+      "directorCharacter": "Director 授权角色"
     },
     "placeholders": {
       "selectDirector": "请选择 Director 角色"
     },
     "messages": {
       "authorizationSaved": "授权配置已保存",
-      "refreshQueued": "已加入后台刷新队列，请稍后手动刷新列表查看结果",
+      "refreshQueued": "已触发后台任务，请稍后刷新列表查看结果",
       "refreshAlreadyRunning": "该军团建筑刷新任务正在执行，请稍后重试",
       "selectCorporationFirst": "请先选择一个军团"
     },

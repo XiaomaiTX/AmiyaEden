@@ -1552,6 +1552,17 @@ declare namespace Api {
     interface CorporationStructureAuthorizationUpdate {
       authorizations: CorporationStructureAuthorizationBinding[]
     }
+
+    interface CorporationStructureRunTaskRequest {
+      corporation_id: number
+    }
+
+    interface CorporationStructureRunTaskResponse {
+      corporation_id: number
+      queued: boolean
+      running: boolean
+      message: string
+    }
   }
 
   /** EVE 人物信息类型 */

@@ -4,9 +4,11 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -101,6 +103,11 @@ func (q *Queue) Run(ctx context.Context) error {
 		queueZapLogger().Warn("[ESI Queue] 构建军团 KM 覆盖集失败", zap.Error(err))
 		authorizedProviders = map[int64]int64{}
 	}
+	authorizedStructureProviders, err := buildAuthorizedCorpStructureProviders(characters)
+	if err != nil {
+		queueZapLogger().Warn("[ESI Queue] 构建军团建筑授权集失败", zap.Error(err))
+		authorizedStructureProviders = map[int64]int64{}
+	}
 	authorizedCorps := make(map[int64]bool)
 	corpProviderIDs := make(map[int64][]int64)
 	corpHasActiveProvider := make(map[int64]bool)
@@ -146,6 +153,11 @@ func (q *Queue) Run(ctx context.Context) error {
 			}
 			if task.Name() == "corporation_killmails" {
 				if _, ok := authorizedProviders[char.CharacterID]; !ok {
+					continue
+				}
+			}
+			if task.Name() == "corporation_structures" {
+				if _, ok := authorizedStructureProviders[char.CharacterID]; !ok {
 					continue
 				}
 			}
@@ -311,11 +323,19 @@ func (q *Queue) RunTaskByName(ctx context.Context, taskName string) error {
 
 	activityMap := q.checkActivity(ctx, characters)
 	authorizedProviders := map[int64]int64{}
+	authorizedStructureProviders := map[int64]int64{}
 	if task.Name() == "corporation_killmails" {
 		var buildErr error
 		authorizedProviders, buildErr = buildAuthorizedCorpKillmailProviders(characters)
 		if buildErr != nil {
 			return fmt.Errorf("build corporation killmail providers: %w", buildErr)
+		}
+	}
+	if task.Name() == "corporation_structures" {
+		var buildErr error
+		authorizedStructureProviders, buildErr = buildAuthorizedCorpStructureProviders(characters)
+		if buildErr != nil {
+			return fmt.Errorf("build corporation structure providers: %w", buildErr)
 		}
 	}
 
@@ -346,6 +366,11 @@ func (q *Queue) RunTaskByName(ctx context.Context, taskName string) error {
 		}
 		if task.Name() == "corporation_killmails" {
 			if _, ok := authorizedProviders[char.CharacterID]; !ok {
+				continue
+			}
+		}
+		if task.Name() == "corporation_structures" {
+			if _, ok := authorizedStructureProviders[char.CharacterID]; !ok {
 				continue
 			}
 		}
@@ -573,7 +598,7 @@ func queueZapLogger() *zap.Logger {
 }
 
 func (q *Queue) taskExecutionKey(task RefreshTask, char model.EveCharacter) string {
-	if (task.Name() == "corporation_killmails" || task.Name() == "eve_structures") && char.CorporationID != 0 {
+	if (task.Name() == "corporation_killmails" || task.Name() == "corporation_structures") && char.CorporationID != 0 {
 		return fmt.Sprintf("%s:corp:%d", task.Name(), char.CorporationID)
 	}
 	return fmt.Sprintf("%s:char:%d", task.Name(), char.CharacterID)
@@ -613,6 +638,86 @@ func buildAuthorizedCorpKillmailProviders(characters []model.EveCharacter) (map[
 		providers[characterID] = candidates[characterID]
 	}
 	return providers, nil
+}
+
+func buildAuthorizedCorpStructureProviders(characters []model.EveCharacter) (map[int64]int64, error) {
+	providers := make(map[int64]int64)
+	authorizations, err := loadCorpStructureAuthorizationMap()
+	if err != nil {
+		return nil, err
+	}
+	if len(authorizations) == 0 {
+		return providers, nil
+	}
+
+	charByID := make(map[int64]model.EveCharacter, len(characters))
+	for i := range characters {
+		char := characters[i]
+		if char.CharacterID > 0 {
+			charByID[char.CharacterID] = char
+		}
+	}
+
+	candidates := make(map[int64]int64)
+	for corporationID, characterID := range authorizations {
+		if corporationID <= 0 || characterID <= 0 {
+			continue
+		}
+		char, ok := charByID[characterID]
+		if !ok {
+			continue
+		}
+		if char.CorporationID != corporationID {
+			continue
+		}
+		candidates[characterID] = corporationID
+	}
+	if len(candidates) == 0 {
+		return providers, nil
+	}
+
+	charIDs := make([]int64, 0, len(candidates))
+	for characterID := range candidates {
+		charIDs = append(charIDs, characterID)
+	}
+
+	var directorIDs []int64
+	if err := global.DB.Model(&model.EveCharacterCorpRole{}).
+		Where("character_id IN ? AND corp_role = ?", charIDs, "Director").
+		Pluck("character_id", &directorIDs).Error; err != nil {
+		return nil, err
+	}
+	for _, characterID := range directorIDs {
+		providers[characterID] = candidates[characterID]
+	}
+	return providers, nil
+}
+
+func loadCorpStructureAuthorizationMap() (map[int64]int64, error) {
+	var raw string
+	if err := global.DB.Model(&model.SystemConfig{}).
+		Where("key = ?", model.SysConfigDashboardCorpStructuresAuth).
+		Pluck("value", &raw).Error; err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(raw) == "" {
+		return map[int64]int64{}, nil
+	}
+
+	parsed := make(map[string]int64)
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return map[int64]int64{}, nil
+	}
+
+	result := make(map[int64]int64, len(parsed))
+	for corporationIDRaw, characterID := range parsed {
+		corporationID, err := strconv.ParseInt(corporationIDRaw, 10, 64)
+		if err != nil || corporationID <= 0 || characterID <= 0 {
+			continue
+		}
+		result[corporationID] = characterID
+	}
+	return result, nil
 }
 
 func (q *Queue) corporationKillmailsFresh(corporationID int64, providerCharacterIDs []int64, isActive bool) bool {

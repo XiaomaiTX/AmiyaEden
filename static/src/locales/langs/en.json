@@ -2371,8 +2371,7 @@
       "corporation": "Select Corporation"
     },
     "actions": {
-      "refreshSelected": "Refresh Selected Corporation",
-      "refreshThisCorporation": "Refresh This Corporation"
+      "refreshSelected": "Run Background Task for Selected Corporation"
     },
     "table": {
       "corporation": "Corporation",
@@ -2384,15 +2383,14 @@
       "fuelRemaining": "Fuel Remaining",
       "reinforceHour": "Reinforce Hour",
       "updatedAt": "Updated At",
-      "directorCharacter": "Director Authorized Character",
-      "actions": "Actions"
+      "directorCharacter": "Director Authorized Character"
     },
     "placeholders": {
       "selectDirector": "Select a Director character"
     },
     "messages": {
       "authorizationSaved": "Authorization settings saved",
-      "refreshQueued": "Refresh has been queued in background. Refresh the list later to see updates.",
+      "refreshQueued": "Background task has been queued. Refresh the list later to see updates.",
       "refreshAlreadyRunning": "A refresh job for this corporation is already running.",
       "selectCorporationFirst": "Select a corporation first"
     },
