@@ -2431,11 +2431,11 @@
       "shield_vulnerable": "在线",
       "low_power": "低能量",
       "abandoned": "废弃",
-      "shield_reinforce": "护盾强化中",
-      "armor_reinforce": "装甲强化中",
-      "armor_vulnerable": "装甲易损",
-      "hull_reinforce": "结构强化中",
-      "hull_vulnerable": "结构易损"
+      "shield_reinforce": "护盾增强中",
+      "armor_reinforce": "装甲增强中",
+      "armor_vulnerable": "装甲可被攻击",
+      "hull_reinforce": "结构增强中",
+      "hull_vulnerable": "结构可被攻击"
     },
     "messages": {
       "authorizationSaved": "授权配置已保存",
