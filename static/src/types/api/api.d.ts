@@ -1514,17 +1514,85 @@ declare namespace Api {
       type_name: string
       system_id: number
       system_name: string
+      region_id: number
+      region_name: string
       security: number
       state: string
       services: CorporationStructureServiceInfo[]
       fuel_expires: string
       fuel_remaining: string
+      fuel_remaining_hours: number | null
       reinforce_hour: number
+      state_timer_start: string
+      state_timer_end: string
       updated_at: number
     }
 
     interface CorporationStructureListRequest {
       corporation_id?: number
+      page?: number
+      page_size?: number
+      keyword?: string
+      state_groups?: string[]
+      abnormal_only?: boolean
+      fuel_bucket?: 'all' | 'lt_24h' | 'lt_72h' | 'lt_168h' | 'custom'
+      fuel_min_hours?: number
+      fuel_max_hours?: number
+      system_ids?: number[]
+      security_bands?: ('highsec' | 'lowsec' | 'nullsec')[]
+      security_min?: number
+      security_max?: number
+      type_ids?: number[]
+      service_names?: string[]
+      service_match_mode?: 'and' | 'or'
+      timer_bucket?: 'all' | 'current_hour' | 'next_2_hours' | 'custom'
+      timer_start?: string
+      timer_end?: string
+      sort_by?:
+        | 'fuel_remaining_hours'
+        | 'security'
+        | 'reinforce_hour'
+        | 'state_timer_end'
+        | 'updated_at'
+        | 'system_name'
+        | 'name'
+        | 'type_name'
+        | 'corporation_name'
+      sort_order?: 'asc' | 'desc'
+    }
+
+    interface CorporationStructureListResponse {
+      items: CorporationStructureRow[]
+      total: number
+      page: number
+      page_size: number
+    }
+
+    interface CorporationStructureFilterOptionsRequest {
+      corporation_id?: number
+    }
+
+    interface CorporationStructureSystemOption {
+      system_id: number
+      system_name: string
+      region_id: number
+      region_name: string
+      security: number
+    }
+
+    interface CorporationStructureTypeOption {
+      type_id: number
+      type_name: string
+    }
+
+    interface CorporationStructureServiceOption {
+      name: string
+    }
+
+    interface CorporationStructureFilterOptionsResponse {
+      systems: CorporationStructureSystemOption[]
+      types: CorporationStructureTypeOption[]
+      services: CorporationStructureServiceOption[]
     }
 
     interface CorporationStructureDirectorCharacterOption {

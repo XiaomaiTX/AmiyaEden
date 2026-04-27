@@ -16,9 +16,18 @@ export function updateCorporationStructureAuthorizations(
 }
 
 export function fetchCorporationStructureList(data: Api.Dashboard.CorporationStructureListRequest) {
-  return request.post<{ items: Api.Dashboard.CorporationStructureRow[] }>({
+  return request.post<Api.Dashboard.CorporationStructureListResponse>({
     url: '/api/v1/dashboard/corporation-structures/list',
     data
+  })
+}
+
+export function fetchCorporationStructureFilterOptions(
+  params?: Api.Dashboard.CorporationStructureFilterOptionsRequest
+) {
+  return request.get<Api.Dashboard.CorporationStructureFilterOptionsResponse>({
+    url: '/api/v1/dashboard/corporation-structures/filter-options',
+    params
   })
 }
 

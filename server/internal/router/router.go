@@ -85,6 +85,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		corpStructures := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleAdmin))
 		corpStructures.GET("/settings", corpStructureH.GetSettings)
 		corpStructures.PUT("/settings/authorizations", corpStructureH.UpdateAuthorizations)
+		corpStructures.GET("/filter-options", corpStructureH.GetFilterOptions)
 		corpStructures.POST("/list", corpStructureH.ListStructures)
 		corpStructures.POST("/run-task", corpStructureH.RunTask)
 	}

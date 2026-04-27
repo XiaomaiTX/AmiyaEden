@@ -180,6 +180,206 @@ func TestCorporationStructureListUsesSnapshotFieldsAndPlaceholders(t *testing.T)
 	}
 }
 
+func TestCorporationStructureListFiltersAndSorts(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	now := time.Now().UTC()
+	seedRows := []model.CorpStructureInfo{
+		{
+			CorporationID:   9001,
+			CorporationName: "Snapshot Corp",
+			StructureID:     1,
+			Name:            "Alpha",
+			TypeID:          35832,
+			TypeName:        "Astrahus",
+			SystemID:        30000142,
+			SystemName:      "Jita",
+			Security:        0.9,
+			State:           "shield_vulnerable",
+			Services:        `[{"name":"market","state":"online"},{"name":"industry","state":"online"}]`,
+			FuelExpires:     now.Add(10 * time.Hour).Format(time.RFC3339),
+			StateTimerEnd:   now.Add(90 * time.Minute).Format(time.RFC3339),
+			UpdateAt:        now.Unix(),
+		},
+		{
+			CorporationID:   9001,
+			CorporationName: "Snapshot Corp",
+			StructureID:     2,
+			Name:            "Beta",
+			TypeID:          35833,
+			TypeName:        "Fortizar",
+			SystemID:        30002187,
+			SystemName:      "Otsasai",
+			Security:        0.3,
+			State:           "low_power",
+			Services:        `[{"name":"market","state":"online"}]`,
+			FuelExpires:     now.Add(60 * time.Hour).Format(time.RFC3339),
+			StateTimerEnd:   now.Add(6 * time.Hour).Format(time.RFC3339),
+			UpdateAt:        now.Unix(),
+		},
+		{
+			CorporationID:   9001,
+			CorporationName: "Snapshot Corp",
+			StructureID:     3,
+			Name:            "Gamma",
+			TypeID:          35834,
+			TypeName:        "Keepstar",
+			SystemID:        30002510,
+			SystemName:      "MJ-13",
+			Security:        -0.1,
+			State:           "abandoned",
+			Services:        `[{"name":"reaction","state":"online"}]`,
+			FuelExpires:     "",
+			StateTimerEnd:   "",
+			UpdateAt:        now.Unix(),
+		},
+	}
+	for _, row := range seedRows {
+		if err := db.Create(&row).Error; err != nil {
+			t.Fatalf("seed row failed: %v", err)
+		}
+	}
+
+	svc := newCorporationStructureServiceForTest()
+
+	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		AbnormalOnly:  true,
+		Page:          1,
+		PageSize:      20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures abnormal only returned error: %v", err)
+	}
+	if resp.Total != 3 {
+		t.Fatalf("abnormal_only expected total 3, got %d", resp.Total)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		FuelBucket:    "lt_24h",
+		Page:          1,
+		PageSize:      20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures fuel filter returned error: %v", err)
+	}
+	if resp.Total != 1 || resp.Items[0].StructureID != 1 {
+		t.Fatalf("fuel lt_24h expected structure #1 only, got total=%d", resp.Total)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID:    9001,
+		ServiceNames:     []string{"market", "industry"},
+		ServiceMatchMode: "and",
+		Page:             1,
+		PageSize:         20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures service and returned error: %v", err)
+	}
+	if resp.Total != 1 || resp.Items[0].StructureID != 1 {
+		t.Fatalf("service and expected structure #1 only, got total=%d", resp.Total)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID:    9001,
+		ServiceNames:     []string{"market", "reaction"},
+		ServiceMatchMode: "or",
+		Page:             1,
+		PageSize:         20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures service or returned error: %v", err)
+	}
+	if resp.Total != 3 {
+		t.Fatalf("service or expected total 3, got %d", resp.Total)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		TimerBucket:   "next_2_hours",
+		Page:          1,
+		PageSize:      20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures timer bucket returned error: %v", err)
+	}
+	if resp.Total != 1 || resp.Items[0].StructureID != 1 {
+		t.Fatalf("next_2_hours expected structure #1 only, got total=%d", resp.Total)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		Page:          1,
+		PageSize:      20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures default sort returned error: %v", err)
+	}
+	if len(resp.Items) < 3 {
+		t.Fatalf("expected 3 rows for default sort, got %d", len(resp.Items))
+	}
+	if resp.Items[0].StructureID != 1 || resp.Items[1].StructureID != 2 || resp.Items[2].StructureID != 3 {
+		t.Fatalf("default sort expected 1,2,3 by fuel asc with nil last, got %d,%d,%d",
+			resp.Items[0].StructureID, resp.Items[1].StructureID, resp.Items[2].StructureID)
+	}
+}
+
+func TestCorporationStructureFilterOptions(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID:   9001,
+		CorporationName: "Snapshot Corp",
+		StructureID:     111,
+		Name:            "Alpha Structure",
+		TypeID:          35832,
+		TypeName:        "Astrahus",
+		SystemID:        30000142,
+		SystemName:      "Jita",
+		Security:        0.9,
+		State:           "shield_vulnerable",
+		Services:        `[{"name":"market","state":"online"},{"name":"industry","state":"online"}]`,
+		UpdateAt:        time.Now().Unix(),
+	}).Error; err != nil {
+		t.Fatalf("seed snapshot row: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	resp, err := svc.GetFilterOptions(context.Background(), CorporationStructureFilterOptionsRequest{
+		CorporationID: 9001,
+	})
+	if err != nil {
+		t.Fatalf("GetFilterOptions returned error: %v", err)
+	}
+	if len(resp.Systems) != 1 || resp.Systems[0].SystemID != 30000142 {
+		t.Fatalf("expected single system option, got %+v", resp.Systems)
+	}
+	if len(resp.Types) != 1 || resp.Types[0].TypeID != 35832 {
+		t.Fatalf("expected single type option, got %+v", resp.Types)
+	}
+	if len(resp.Services) != 2 {
+		t.Fatalf("expected two service options, got %+v", resp.Services)
+	}
+}
+
 func newCorporationStructureServiceForTest() *CorporationStructureService {
 	return &CorporationStructureService{
 		roleRepo:      repository.NewRoleRepository(),
@@ -206,6 +406,8 @@ func newCorporationStructureServiceTestDB(t *testing.T) *gorm.DB {
 		&model.EveCharacter{},
 		&model.EveCharacterCorpRole{},
 		&model.CorpStructureInfo{},
+		&model.MapSolarSystem{},
+		&model.MapRegion{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
