@@ -196,7 +196,7 @@ func (s *CorporationStructureService) ListStructures(
 	ctx context.Context,
 	req CorporationStructureListRequest,
 ) (*CorporationStructureListResponse, error) {
-	manageCtx, err := s.buildManageContext(ctx, true)
+	manageCtx, err := s.buildManageContext(ctx, false)
 	if err != nil {
 		return nil, err
 	}
@@ -221,51 +221,18 @@ func (s *CorporationStructureService) ListStructures(
 		return nil, errors.New("查询建筑快照失败")
 	}
 
-	typeIDs := make([]int, 0)
-	systemIDs := make([]int64, 0)
-	typeSet := map[int]struct{}{}
-	systemSet := map[int64]struct{}{}
-	for _, st := range structures {
-		if st.TypeID > 0 {
-			typeID := int(st.TypeID)
-			if _, ok := typeSet[typeID]; !ok {
-				typeSet[typeID] = struct{}{}
-				typeIDs = append(typeIDs, typeID)
-			}
-		}
-		if st.SystemID > 0 {
-			if _, ok := systemSet[st.SystemID]; !ok {
-				systemSet[st.SystemID] = struct{}{}
-				systemIDs = append(systemIDs, st.SystemID)
-			}
-		}
-	}
-
-	typeNames := map[int64]string{}
-	if len(typeIDs) > 0 {
-		typeInfos, typeErr := s.sdeRepo.GetTypes(typeIDs, nil, "zh")
-		if typeErr == nil {
-			for _, info := range typeInfos {
-				typeNames[int64(info.TypeID)] = info.TypeName
-			}
-		}
-	}
-
-	systemInfoByID := s.resolveSystems(ctx, systemIDs)
-
 	items := make([]CorporationStructureRow, 0, len(structures))
 	for _, st := range structures {
-		systemInfo := systemInfoByID[st.SystemID]
 		row := CorporationStructureRow{
 			CorporationID:   st.CorporationID,
-			CorporationName: manageCtx.corpNameByID[st.CorporationID],
+			CorporationName: st.CorporationName,
 			StructureID:     st.StructureID,
 			Name:            st.Name,
 			TypeID:          st.TypeID,
-			TypeName:        typeNames[st.TypeID],
+			TypeName:        st.TypeName,
 			SystemID:        st.SystemID,
-			SystemName:      systemInfo.Name,
-			Security:        systemInfo.Security,
+			SystemName:      st.SystemName,
+			Security:        st.Security,
 			State:           st.State,
 			Services:        convertStructureServices(st.Services),
 			FuelExpires:     st.FuelExpires,
@@ -275,6 +242,9 @@ func (s *CorporationStructureService) ListStructures(
 		}
 		if row.Name == "" {
 			row.Name = fmt.Sprintf("Structure-%d", st.StructureID)
+		}
+		if row.CorporationName == "" {
+			row.CorporationName = fmt.Sprintf("Corporation-%d", st.CorporationID)
 		}
 		if row.TypeName == "" {
 			row.TypeName = fmt.Sprintf("Type-%d", st.TypeID)
@@ -422,31 +392,6 @@ func (s *CorporationStructureService) resolveCorporationNames(
 		}
 	}
 	return names
-}
-
-type systemInfo struct {
-	Name     string
-	Security float64
-}
-
-func (s *CorporationStructureService) resolveSystems(ctx context.Context, systemIDs []int64) map[int64]systemInfo {
-	result := make(map[int64]systemInfo, len(systemIDs))
-	type esiSystem struct {
-		Name           string  `json:"name"`
-		SecurityStatus float64 `json:"security_status"`
-	}
-	for _, systemID := range systemIDs {
-		var info esiSystem
-		path := fmt.Sprintf("/universe/systems/%d/", systemID)
-		if err := s.esiClient.Get(ctx, path, "", &info); err != nil {
-			continue
-		}
-		result[systemID] = systemInfo{
-			Name:     info.Name,
-			Security: info.SecurityStatus,
-		}
-	}
-	return result
 }
 
 func (s *CorporationStructureService) loadAuthorizationMap() map[int64]int64 {

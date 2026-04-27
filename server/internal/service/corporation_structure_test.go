@@ -1,8 +1,18 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
+	"amiya-eden/internal/utils"
+	"amiya-eden/pkg/eve/esi"
+	"context"
+	"fmt"
 	"testing"
+	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestDeduplicateManagedCorporationIDs(t *testing.T) {
@@ -87,4 +97,143 @@ func TestValidateAuthorizationBindings(t *testing.T) {
 			t.Fatal("expected non-director character to be rejected")
 		}
 	})
+}
+
+func TestCorporationStructureListUsesSnapshotFieldsAndPlaceholders(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID:   9001,
+		CorporationName: "Snapshot Corp",
+		StructureID:     111,
+		Name:            "Alpha Structure",
+		TypeID:          35832,
+		TypeName:        "Astrahus",
+		SystemID:        30000142,
+		SystemName:      "Jita",
+		Security:        0.9,
+		State:           "shield_vulnerable",
+		UpdateAt:        time.Now().Unix(),
+	}).Error; err != nil {
+		t.Fatalf("seed snapshot row #1: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   222,
+		Name:          "",
+		TypeID:        35833,
+		TypeName:      "",
+		SystemID:      30002187,
+		SystemName:    "",
+		Security:      0,
+		State:         "low_power",
+		UpdateAt:      time.Now().Unix(),
+	}).Error; err != nil {
+		t.Fatalf("seed snapshot row #2: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{CorporationID: 9001})
+	if err != nil {
+		t.Fatalf("ListStructures returned error: %v", err)
+	}
+	if len(resp.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(resp.Items))
+	}
+
+	byID := make(map[int64]CorporationStructureRow, len(resp.Items))
+	for _, item := range resp.Items {
+		byID[item.StructureID] = item
+	}
+
+	first := byID[111]
+	if first.CorporationName != "Snapshot Corp" {
+		t.Fatalf("expected snapshot corporation name, got %q", first.CorporationName)
+	}
+	if first.TypeName != "Astrahus" {
+		t.Fatalf("expected snapshot type name, got %q", first.TypeName)
+	}
+	if first.SystemName != "Jita" {
+		t.Fatalf("expected snapshot system name, got %q", first.SystemName)
+	}
+	if first.Security != 0.9 {
+		t.Fatalf("expected snapshot security 0.9, got %v", first.Security)
+	}
+
+	second := byID[222]
+	if second.CorporationName != "Corporation-9001" {
+		t.Fatalf("expected fallback corporation placeholder, got %q", second.CorporationName)
+	}
+	if second.TypeName != "Type-35833" {
+		t.Fatalf("expected fallback type placeholder, got %q", second.TypeName)
+	}
+	if second.SystemName != "System-30002187" {
+		t.Fatalf("expected fallback system placeholder, got %q", second.SystemName)
+	}
+}
+
+func newCorporationStructureServiceForTest() *CorporationStructureService {
+	return &CorporationStructureService{
+		roleRepo:      repository.NewRoleRepository(),
+		charRepo:      repository.NewEveCharacterRepository(),
+		sysConfigRepo: repository.NewSysConfigRepository(),
+		sdeRepo:       repository.NewSdeRepository(),
+		repo:          repository.NewCorporationStructureRepository(),
+		esiClient:     esi.NewClientWithConfig("http://127.0.0.1:1", ""),
+	}
+}
+
+func newCorporationStructureServiceTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	dsn := fmt.Sprintf("file:corp_structure_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(
+		&model.User{},
+		&model.UserRole{},
+		&model.SystemConfig{},
+		&model.EveCharacter{},
+		&model.EveCharacterCorpRole{},
+		&model.CorpStructureInfo{},
+	); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+	return db
+}
+
+func seedCorporationStructureManageScope(t *testing.T, db *gorm.DB, corpID int64) {
+	t.Helper()
+
+	admin := &model.User{BaseModel: model.BaseModel{ID: 1}, Nickname: "admin", Role: model.RoleAdmin}
+	if err := db.Create(admin).Error; err != nil {
+		t.Fatalf("create admin user: %v", err)
+	}
+	if err := db.Create(&model.UserRole{UserID: 1, RoleCode: model.RoleAdmin}).Error; err != nil {
+		t.Fatalf("create admin role: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   91000001,
+		CharacterName: "Admin Character",
+		UserID:        1,
+		CorporationID: corpID,
+	}).Error; err != nil {
+		t.Fatalf("create admin character: %v", err)
+	}
+	if err := db.Create(&model.SystemConfig{
+		Key:   model.SysConfigAllowCorporations,
+		Value: fmt.Sprintf("[%d]", corpID),
+	}).Error; err != nil {
+		t.Fatalf("create allow corporations config: %v", err)
+	}
 }
