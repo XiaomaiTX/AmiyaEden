@@ -223,6 +223,291 @@ func TestCorporationStructuresTaskExecuteUsesPlaceholdersWhenNoSnapshotAndNoLook
 	}
 }
 
+func TestCorporationStructuresTaskExecuteDeletesMissingStructures(t *testing.T) {
+	db := newCorporationStructuresTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	const (
+		characterID   = int64(90010011)
+		corporationID = int64(555011)
+		systemID      = int64(30000142)
+		typeID        = int64(35832)
+	)
+	seedCorporationStructuresTaskScope(t, db, characterID, corporationID)
+
+	existingIDs := []int64{1020000000111, 1020000000112, 1020000000113}
+	for _, structureID := range existingIDs {
+		if err := db.Create(&model.CorpStructureInfo{
+			CorporationID: corporationID,
+			StructureID:   structureID,
+			SystemID:      systemID,
+			TypeID:        typeID,
+			Name:          fmt.Sprintf("Existing-%d", structureID),
+		}).Error; err != nil {
+			t.Fatalf("seed existing structure %d: %v", structureID, err)
+		}
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch req.URL.Path {
+		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
+			w.Header().Set("X-Pages", "1")
+			_, _ = w.Write([]byte(fmt.Sprintf(`[
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"A","services":[]},
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"low_power","name":"B","services":[]}
+]`, corporationID, existingIDs[0], systemID, typeID, corporationID, existingIDs[1], systemID, typeID)))
+		case "/universe/names":
+			_, _ = w.Write([]byte(fmt.Sprintf(`[{"id":%d,"name":"Test Corp"}]`, corporationID)))
+		case fmt.Sprintf("/universe/structures/%d/", existingIDs[0]):
+			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"A","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)))
+		case fmt.Sprintf("/universe/structures/%d/", existingIDs[1]):
+			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"B","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":4,"y":5,"z":6}}`, corporationID, systemID, typeID)))
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorporationStructuresTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("execute task: %v", err)
+	}
+
+	var rows []model.CorpStructureInfo
+	if err := db.Where("corporation_id = ?", corporationID).
+		Order("structure_id ASC").
+		Find(&rows).Error; err != nil {
+		t.Fatalf("load corp snapshots: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("row count = %d, want 2", len(rows))
+	}
+	if rows[0].StructureID != existingIDs[0] || rows[1].StructureID != existingIDs[1] {
+		t.Fatalf("remaining structure ids = [%d, %d], want [%d, %d]",
+			rows[0].StructureID, rows[1].StructureID, existingIDs[0], existingIDs[1])
+	}
+}
+
+func TestCorporationStructuresTaskExecuteClearsCorporationWhenESIReturnsEmpty(t *testing.T) {
+	db := newCorporationStructuresTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	const (
+		characterID    = int64(90010012)
+		corporationID  = int64(555012)
+		otherCorpID    = int64(555013)
+		targetStructID = int64(1020000000121)
+		otherStructID  = int64(1020000000131)
+	)
+	seedCorporationStructuresTaskScope(t, db, characterID, corporationID)
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: corporationID,
+		StructureID:   targetStructID,
+		Name:          "Will-Be-Deleted",
+	}).Error; err != nil {
+		t.Fatalf("seed target corp structure: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: otherCorpID,
+		StructureID:   otherStructID,
+		Name:          "Should-Stay",
+	}).Error; err != nil {
+		t.Fatalf("seed other corp structure: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch req.URL.Path {
+		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
+			w.Header().Set("X-Pages", "1")
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorporationStructuresTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("execute task: %v", err)
+	}
+
+	var targetCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", corporationID).
+		Count(&targetCount).Error; err != nil {
+		t.Fatalf("count target corp snapshots: %v", err)
+	}
+	if targetCount != 0 {
+		t.Fatalf("target corp row count = %d, want 0", targetCount)
+	}
+
+	var otherCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", otherCorpID).
+		Count(&otherCount).Error; err != nil {
+		t.Fatalf("count other corp snapshots: %v", err)
+	}
+	if otherCount != 1 {
+		t.Fatalf("other corp row count = %d, want 1", otherCount)
+	}
+}
+
+func TestCorporationStructuresTaskExecuteDoesNotDeleteOnFetchFailure(t *testing.T) {
+	db := newCorporationStructuresTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	const (
+		characterID   = int64(90010013)
+		corporationID = int64(555014)
+		structureID   = int64(1020000000141)
+	)
+	seedCorporationStructuresTaskScope(t, db, characterID, corporationID)
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: corporationID,
+		StructureID:   structureID,
+		Name:          "Persist-On-Error",
+	}).Error; err != nil {
+		t.Fatalf("seed existing structure: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch req.URL.Path {
+		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
+			http.Error(w, `{"error":"boom"}`, http.StatusInternalServerError)
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorporationStructuresTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err == nil {
+		t.Fatal("expected execute error, got nil")
+	}
+
+	var count int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", corporationID).
+		Count(&count).Error; err != nil {
+		t.Fatalf("count corp snapshots: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("row count = %d, want 1", count)
+	}
+}
+
+func TestCorporationStructuresTaskExecuteOnlyDeletesTargetCorporation(t *testing.T) {
+	db := newCorporationStructuresTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	const (
+		characterID   = int64(90010014)
+		corporationID = int64(555015)
+		otherCorpID   = int64(555016)
+		systemID      = int64(30000142)
+		typeID        = int64(35832)
+	)
+	seedCorporationStructuresTaskScope(t, db, characterID, corporationID)
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: corporationID,
+		StructureID:   1020000000151,
+		Name:          "Target-Old",
+	}).Error; err != nil {
+		t.Fatalf("seed target structure: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: otherCorpID,
+		StructureID:   1020000000161,
+		Name:          "Other-Stay",
+	}).Error; err != nil {
+		t.Fatalf("seed other corp structure: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch req.URL.Path {
+		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
+			w.Header().Set("X-Pages", "1")
+			_, _ = w.Write([]byte(fmt.Sprintf(`[
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"Target-New","services":[]}
+]`, corporationID, int64(1020000000152), systemID, typeID)))
+		case "/universe/names":
+			_, _ = w.Write([]byte(fmt.Sprintf(`[{"id":%d,"name":"Test Corp"}]`, corporationID)))
+		case fmt.Sprintf("/universe/structures/%d/", int64(1020000000152)):
+			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"Target-New","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":7,"y":8,"z":9}}`, corporationID, systemID, typeID)))
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorporationStructuresTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("execute task: %v", err)
+	}
+
+	var targetRows []model.CorpStructureInfo
+	if err := db.Where("corporation_id = ?", corporationID).Find(&targetRows).Error; err != nil {
+		t.Fatalf("load target corp rows: %v", err)
+	}
+	if len(targetRows) != 1 || targetRows[0].StructureID != 1020000000152 {
+		t.Fatalf("target corp rows = %+v, want one row with structure_id 1020000000152", targetRows)
+	}
+
+	var otherCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", otherCorpID).
+		Count(&otherCount).Error; err != nil {
+		t.Fatalf("count other corp rows: %v", err)
+	}
+	if otherCount != 1 {
+		t.Fatalf("other corp row count = %d, want 1", otherCount)
+	}
+}
+
 func seedCorporationStructuresTaskScope(t *testing.T, db *gorm.DB, characterID, corporationID int64) {
 	t.Helper()
 	if err := db.Create(&model.EveCharacter{

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -141,6 +142,16 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 	}
 
 	if len(esiStructures) == 0 {
+		deletedCount, err := syncCorporationStructureSnapshots(corporationID, nil, nil)
+		if err != nil {
+			return err
+		}
+		corpStructuresLogger().Debug("[ESI] 军团建筑信息刷新完成",
+			zap.Int64("character_id", ctx.CharacterID),
+			zap.Int64("corporation_id", corporationID),
+			zap.Int("count", 0),
+			zap.Int64("deleted_count", deletedCount),
+		)
 		return nil
 	}
 
@@ -210,8 +221,9 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 			UpdateAt:           now,
 		})
 	}
-	if err := global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(&corpRecords).Error; err != nil {
-		return fmt.Errorf("upsert corp structures: %w", err)
+	deletedCount, err := syncCorporationStructureSnapshots(corporationID, corpRecords, structureIDs)
+	if err != nil {
+		return err
 	}
 
 	structureDetails := make([]model.EveStructure, 0, len(esiStructures))
@@ -259,8 +271,39 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		zap.Int64("character_id", ctx.CharacterID),
 		zap.Int64("corporation_id", corporationID),
 		zap.Int("count", len(esiStructures)),
+		zap.Int64("deleted_count", deletedCount),
 	)
 	return nil
+}
+
+func syncCorporationStructureSnapshots(
+	corporationID int64,
+	records []model.CorpStructureInfo,
+	structureIDs []int64,
+) (int64, error) {
+	var deletedRows int64
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		if len(records) > 0 {
+			if err := tx.Clauses(clause.OnConflict{UpdateAll: true}).Create(&records).Error; err != nil {
+				return fmt.Errorf("upsert corp structures: %w", err)
+			}
+		}
+
+		deleteQuery := tx.Where("corporation_id = ?", corporationID)
+		if len(structureIDs) > 0 {
+			deleteQuery = deleteQuery.Where("structure_id NOT IN ?", structureIDs)
+		}
+		result := deleteQuery.Delete(&model.CorpStructureInfo{})
+		if result.Error != nil {
+			return fmt.Errorf("delete stale corp structures: %w", result.Error)
+		}
+		deletedRows = result.RowsAffected
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return deletedRows, nil
 }
 
 func loadExistingCorpStructureSnapshots(
