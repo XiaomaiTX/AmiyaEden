@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-27
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/badge.go
@@ -20,8 +20,9 @@ source_of_truth:
 
 ## 当前能力
 
-- 顶部或侧边导航菜单支持基于后端实时计算结果显示数字徽章
+- 顶部或侧边导航菜单支持基于后端统计与缓存结果显示数字徽章
 - 徽章数据在登录后的动态路由初始化阶段获取一次
+- `welfare_eligible` 由内存缓存提供，其他字段按对应服务计算
 - 返回结果只包含当前用户有权查看且值大于 `0` 的字段
 - 前端会将子菜单徽章自动汇总到父菜单，无需为父菜单单独配置后端字段
 

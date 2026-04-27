@@ -2,10 +2,11 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-04-27
 source_of_truth:
   - server/bootstrap/db.go
   - server/internal/model
+  - server/internal/model/sys_config.go
   - server/internal/service/role.go
   - server/internal/service/eve_sso.go
 ---
@@ -386,6 +387,30 @@ ESI 头衔到系统职权的映射表。
 - 该流水使用 `ref_type = welfare_payout`
 - `ref_id` 当前按 `welfare_application:<application_id>` 生成，用于追踪该次福利发放
 - 导入历史福利记录不会补写 `welfare_payout` 钱包流水
+
+### `system_config`
+
+`system_config` 仍然是当前应用的全局键值配置表。
+
+与军团建筑管理相关的当前键包括：
+
+- `dashboard.corporation_structures_authorizations`
+  - 保存军团到授权 Director 人物的 JSON 映射
+  - 这是 Dashboard 军团建筑管理页写入授权关系的持久化来源
+- `dashboard.corporation_structures_fuel_notice_threshold_days`
+  - 保存燃料提醒阈值，单位为天
+  - 默认值为 `7`
+  - 值为 `0` 时关闭燃料提醒
+- `dashboard.corporation_structures_timer_notice_threshold_days`
+  - 保存增强计时提醒阈值，单位为天
+  - 默认值为 `7`
+  - 值为 `0` 时关闭增强计时提醒
+
+说明：
+
+- 这些配置键由军团建筑设置页读写
+- 提醒计数和列表页都依赖它们来决定当前可见范围与徽章数量
+- 授权映射必须指向当前可管理军团中的有效 Director 人物
 
 ## 当前未采用的 schema 设计
 

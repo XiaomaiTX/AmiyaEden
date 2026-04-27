@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-20
+last_reviewed: 2026-04-27
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go

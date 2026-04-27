@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-17
+last_reviewed: 2026-04-27
 source_of_truth:
   - server/internal/router/router.go
 ---
