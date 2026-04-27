@@ -86,7 +86,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		corpStructures.GET("/settings", corpStructureH.GetSettings)
 		corpStructures.PUT("/settings/authorizations", corpStructureH.UpdateAuthorizations)
 		corpStructures.POST("/list", corpStructureH.ListStructures)
-		corpStructures.POST("/refresh", corpStructureH.RefreshStructures)
+		corpStructures.POST("/run-task", corpStructureH.RunTask)
 	}
 	badgeH := handler.NewBadgeHandler()
 	login.GET("/badge-counts", badgeH.GetBadgeCounts)

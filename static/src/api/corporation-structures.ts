@@ -22,14 +22,11 @@ export function fetchCorporationStructureList(data: Api.Dashboard.CorporationStr
   })
 }
 
-export function refreshCorporationStructures(corporationId: number) {
-  return request.post<{
-    corporation_id: number
-    queued: boolean
-    running: boolean
-    message: string
-  }>({
-    url: '/api/v1/dashboard/corporation-structures/refresh',
-    data: { corporation_id: corporationId }
+export function runCorporationStructuresTask(
+  data: Api.Dashboard.CorporationStructureRunTaskRequest
+) {
+  return request.post<Api.Dashboard.CorporationStructureRunTaskResponse>({
+    url: '/api/v1/dashboard/corporation-structures/run-task',
+    data
   })
 }

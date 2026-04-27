@@ -32,9 +32,9 @@
             </ElButton>
             <ElButton
               type="primary"
-              :loading="refreshingCorpId === selectedCorpId && selectedCorpId > 0"
+              :loading="runningTaskCorpId === selectedCorpId && selectedCorpId > 0"
               :disabled="selectedCorpId === 0"
-              @click="handleRefreshSelectedCorporation"
+              @click="handleRunTaskForSelectedCorporation"
             >
               {{ $t('corporationStructures.actions.refreshSelected') }}
             </ElButton>
@@ -139,18 +139,6 @@
                 </ElSelect>
               </template>
             </ElTableColumn>
-            <ElTableColumn :label="$t('corporationStructures.table.actions')" width="180">
-              <template #default="{ row }">
-                <ElButton
-                  size="small"
-                  type="primary"
-                  :loading="refreshingCorpId === row.corporation_id"
-                  @click="handleRefreshCorporation(row.corporation_id)"
-                >
-                  {{ $t('corporationStructures.actions.refreshThisCorporation') }}
-                </ElButton>
-              </template>
-            </ElTableColumn>
           </ElTable>
 
           <ElEmpty
@@ -171,7 +159,7 @@
   import {
     fetchCorporationStructureList,
     fetchCorporationStructureSettings,
-    refreshCorporationStructures,
+    runCorporationStructuresTask,
     updateCorporationStructureAuthorizations
   } from '@/api/corporation-structures'
 
@@ -190,7 +178,7 @@
   const settingsLoading = ref(false)
   const listLoading = ref(false)
   const savingAuthorizations = ref(false)
-  const refreshingCorpId = ref<number>(0)
+  const runningTaskCorpId = ref<number>(0)
   const selectedCorpId = ref<number>(0)
   const authorizationByCorp = reactive<Record<number, number>>({})
 
@@ -256,10 +244,10 @@
     }
   }
 
-  const handleRefreshCorporation = async (corporationId: number) => {
-    refreshingCorpId.value = corporationId
+  const handleRunTaskForCorporation = async (corporationId: number) => {
+    runningTaskCorpId.value = corporationId
     try {
-      const result = await refreshCorporationStructures(corporationId)
+      const result = await runCorporationStructuresTask({ corporation_id: corporationId })
       if (result.running) {
         ElMessage.warning(
           result.message || t('corporationStructures.messages.refreshAlreadyRunning')
@@ -268,16 +256,16 @@
       }
       ElMessage.success(result.message || t('corporationStructures.messages.refreshQueued'))
     } finally {
-      refreshingCorpId.value = 0
+      runningTaskCorpId.value = 0
     }
   }
 
-  const handleRefreshSelectedCorporation = async () => {
+  const handleRunTaskForSelectedCorporation = async () => {
     if (selectedCorpId.value <= 0) {
       ElMessage.warning(t('corporationStructures.messages.selectCorporationFirst'))
       return
     }
-    await handleRefreshCorporation(selectedCorpId.value)
+    await handleRunTaskForCorporation(selectedCorpId.value)
   }
 
   const formatServices = (services: Api.Dashboard.CorporationStructureServiceInfo[]) => {

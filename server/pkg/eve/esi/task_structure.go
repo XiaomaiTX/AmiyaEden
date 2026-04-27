@@ -3,10 +3,10 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/utils"
-	app_utils "amiya-eden/pkg/utils"
-	"encoding/json"
+	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	structureTaskPaginationConcurrency = 2
-	structureTaskDetailInterval        = 500 * time.Millisecond
+	personalStructureTaskDetailInterval = 500 * time.Millisecond
+	minStructureID                      = 1_000_000_000_000
 )
 
 func init() {
@@ -25,7 +25,7 @@ func init() {
 type StructureTask struct{}
 
 func (t *StructureTask) Name() string        { return "eve_structures" }
-func (t *StructureTask) Description() string { return "EVE 建筑信息" }
+func (t *StructureTask) Description() string { return "EVE 建筑详情（个人相关）" }
 func (t *StructureTask) Priority() Priority  { return PriorityLow }
 
 func (t *StructureTask) Interval() RefreshInterval {
@@ -38,34 +38,10 @@ func (t *StructureTask) Interval() RefreshInterval {
 func (t *StructureTask) RequiredScopes() []TaskScope {
 	return []TaskScope{
 		{Scope: "esi-universe.read_structures.v1", Description: "读取建筑信息"},
-		{Scope: "esi-corporations.read_structures.v1", Description: "读取军团建筑信息"},
 	}
 }
 
-// corpStructureESIResp ESI 返回的军团建筑原始数据
-type corpStructureESIResp struct {
-	CorporationID      int64  `json:"corporation_id"`
-	FuelExpires        string `json:"fuel_expires"`
-	Name               string `json:"name"`
-	NextReinforceApply string `json:"next_reinforce_apply"`
-	NextReinforceHour  int    `json:"next_reinforce_hour"`
-	ProfileID          int64  `json:"profile_id"`
-	ReinforceHour      int    `json:"reinforce_hour"`
-	Services           []struct {
-		Name  string `json:"name"`
-		State string `json:"state"`
-	} `json:"services"`
-	State           string `json:"state"`
-	StateTimerEnd   string `json:"state_timer_end"`
-	StateTimerStart string `json:"state_timer_start"`
-	StructureID     int64  `json:"structure_id"`
-	SystemID        int64  `json:"system_id"`
-	TypeID          int64  `json:"type_id"`
-	UnanchorsAt     string `json:"unanchors_at"`
-}
-
-// eveStructureDetail ESI 返回的建筑详情
-type eveStructureDetail struct {
+type universeStructureDetail struct {
 	Name     string `json:"name"`
 	OwnerID  int64  `json:"owner_id"`
 	Position struct {
@@ -79,109 +55,39 @@ type eveStructureDetail struct {
 
 func (t *StructureTask) Execute(ctx *TaskContext) error {
 	bgCtx := ctx.ContextOrBackground()
+
+	structureIDs, err := loadPersonalStructureIDs(bgCtx, ctx.CharacterID)
+	if err != nil {
+		return fmt.Errorf("load personal structure ids: %w", err)
+	}
+	if len(structureIDs) == 0 {
+		return nil
+	}
+
 	now := time.Now().Unix()
-
-	// 0. 判断是否权限
-	var corpRoles []string
-	err := global.DB.Model(&model.EveCharacterCorpRole{}).
-		Where("character_id = ?", ctx.CharacterID).
-		Pluck("corp_role", &corpRoles).Error
-	if err != nil {
-		return fmt.Errorf("query corp roles: %w", err)
-	}
-	if !app_utils.ContainsAny(corpRoles, []string{"Director", "Station_Manager"}) {
-		global.Logger.Debug("[ESI] 人物没有足够的军团职权，跳过建筑信息刷新",
-			zap.Int64("character_id", ctx.CharacterID),
-			zap.Strings("corp_roles", corpRoles))
-		return nil
-	}
-
-	var corpID int64
-	err = global.DB.Model(&model.EveCharacter{}).
-		Where("character_id = ?", ctx.CharacterID).
-		Pluck("corporation_id", &corpID).Error
-	if err != nil {
-		return fmt.Errorf("query corporation id: %w", err)
-	}
-	if !isCorporationAllowed(corpID, utils.GetAllowCorporations()) {
-		global.Logger.Debug("[ESI] 人物所在军团不在 allow_corporations，跳过建筑信息刷新",
-			zap.Int64("character_id", ctx.CharacterID),
-			zap.Int64("corporation_id", corpID))
-		return nil
-	}
-
-	// 1. 获取人物所在军团的建筑列表
-	var esiStructures []corpStructureESIResp
-	corpStructuresPath := fmt.Sprintf("/corporations/%d/structures/", corpID)
-	_, err = ctx.Client.GetPaginatedWithConcurrency(
-		bgCtx,
-		corpStructuresPath,
-		ctx.AccessToken,
-		&esiStructures,
-		structureTaskPaginationConcurrency,
-	)
-	if err != nil {
-		global.Logger.Warn("[ESI] 获取军团建筑信息失败",
-			zap.Int64("character_id", ctx.CharacterID),
-			zap.Int64("corporation_id", corpID),
-			zap.Error(err),
-		)
-		return fmt.Errorf("fetch corp structures: %w", err)
-	}
-
-	if len(esiStructures) == 0 {
-		return nil
-	}
-
-	// 2. 批量 Upsert CorpStructureInfo
-	corpRecords := make([]model.CorpStructureInfo, 0, len(esiStructures))
-	for _, s := range esiStructures {
-		servicesJSON, _ := json.Marshal(s.Services)
-		corpRecords = append(corpRecords, model.CorpStructureInfo{
-			CorporationID:      corpID,
-			StructureID:        s.StructureID,
-			Services:           string(servicesJSON),
-			FuelExpires:        s.FuelExpires,
-			Name:               s.Name,
-			NextReinforceApply: s.NextReinforceApply,
-			NextReinforceHour:  s.NextReinforceHour,
-			ProfileID:          s.ProfileID,
-			ReinforceHour:      s.ReinforceHour,
-			State:              s.State,
-			StateTimerEnd:      s.StateTimerEnd,
-			StateTimerStart:    s.StateTimerStart,
-			SystemID:           s.SystemID,
-			TypeID:             s.TypeID,
-			UnanchorsAt:        s.UnanchorsAt,
-			UpdateAt:           now,
-		})
-	}
-	if err := global.DB.Clauses(clause.OnConflict{UpdateAll: true}).
-		Create(&corpRecords).Error; err != nil {
-		return fmt.Errorf("upsert corp structures: %w", err)
-	}
-
-	// 3. 逐个获取建筑详情并 Upsert EveStructure
-	for i, s := range esiStructures {
+	records := make([]model.EveStructure, 0, len(structureIDs))
+	for i, structureID := range structureIDs {
 		if i > 0 {
 			select {
-			case <-time.After(structureTaskDetailInterval):
+			case <-time.After(personalStructureTaskDetailInterval):
 			case <-bgCtx.Done():
 				return bgCtx.Err()
 			}
 		}
-		var detail eveStructureDetail
-		structurePath := fmt.Sprintf("/universe/structures/%d/", s.StructureID)
+
+		var detail universeStructureDetail
+		structurePath := fmt.Sprintf("/universe/structures/%d/", structureID)
 		if err := ctx.Client.Get(bgCtx, structurePath, ctx.AccessToken, &detail); err != nil {
-			global.Logger.Warn("[ESI] 获取建筑详情失败",
-				zap.Int64("structure_id", s.StructureID),
+			global.Logger.Debug("[ESI] 获取个人关联建筑详情失败，跳过",
+				zap.Int64("character_id", ctx.CharacterID),
+				zap.Int64("structure_id", structureID),
 				zap.Error(err),
 			)
 			continue
 		}
 
-		record := model.EveStructure{
-			StructureID:   s.StructureID,
+		records = append(records, model.EveStructure{
+			StructureID:   structureID,
 			StructureName: detail.Name,
 			OwnerID:       detail.OwnerID,
 			TypeID:        detail.TypeID,
@@ -190,20 +96,80 @@ func (t *StructureTask) Execute(ctx *TaskContext) error {
 			Y:             detail.Position.Y,
 			Z:             detail.Position.Z,
 			UpdateAt:      now,
-		}
-		if err := global.DB.Clauses(clause.OnConflict{UpdateAll: true}).
-			Create(&record).Error; err != nil {
-			global.Logger.Warn("[ESI] Upsert 建筑详情失败",
-				zap.Int64("structure_id", s.StructureID),
-				zap.Error(err),
-			)
+		})
+	}
+
+	if len(records) == 0 {
+		return nil
+	}
+
+	if err := global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(&records).Error; err != nil {
+		return fmt.Errorf("upsert personal structures: %w", err)
+	}
+
+	global.Logger.Debug("[ESI] 个人关联建筑详情刷新完成",
+		zap.Int64("character_id", ctx.CharacterID),
+		zap.Int("count", len(records)),
+	)
+	return nil
+}
+
+func loadPersonalStructureIDs(ctx context.Context, characterID int64) ([]int64, error) {
+	idSet := make(map[int64]struct{})
+
+	var assetLocationIDs []int64
+	if err := global.DB.WithContext(ctx).
+		Model(&model.EveCharacterAsset{}).
+		Where("character_id = ? AND location_id > 0", characterID).
+		Distinct("location_id").
+		Pluck("location_id", &assetLocationIDs).Error; err != nil {
+		return nil, err
+	}
+	for _, locationID := range assetLocationIDs {
+		if isLikelyStructureID(locationID) {
+			idSet[locationID] = struct{}{}
 		}
 	}
 
-	global.Logger.Debug("[ESI] 建筑信息刷新完成",
-		zap.Int64("character_id", ctx.CharacterID),
-		zap.Int("count", len(esiStructures)),
-	)
+	var homeLocationIDs []int64
+	if err := global.DB.WithContext(ctx).
+		Model(&model.EveCharacterCloneBaseInfo{}).
+		Where("character_id = ? AND home_location_id > 0 AND LOWER(home_location_type) = ?", characterID, "structure").
+		Distinct("home_location_id").
+		Pluck("home_location_id", &homeLocationIDs).Error; err != nil {
+		return nil, err
+	}
+	for _, locationID := range homeLocationIDs {
+		if isLikelyStructureID(locationID) {
+			idSet[locationID] = struct{}{}
+		}
+	}
 
-	return nil
+	var implantLocations []struct {
+		LocationID   int64
+		LocationType string
+	}
+	if err := global.DB.WithContext(ctx).
+		Model(&model.EveCharacterImplants{}).
+		Select("location_id, location_type").
+		Where("character_id = ? AND location_id > 0", characterID).
+		Scan(&implantLocations).Error; err != nil {
+		return nil, err
+	}
+	for _, location := range implantLocations {
+		if strings.EqualFold(location.LocationType, "structure") && isLikelyStructureID(location.LocationID) {
+			idSet[location.LocationID] = struct{}{}
+		}
+	}
+
+	ids := make([]int64, 0, len(idSet))
+	for structureID := range idSet {
+		ids = append(ids, structureID)
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids, nil
+}
+
+func isLikelyStructureID(locationID int64) bool {
+	return locationID >= minStructureID
 }

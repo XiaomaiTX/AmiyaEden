@@ -351,7 +351,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		http.StatusNoContent,
 	)
 	assertRouteStatus(t, adminRouter, http.MethodPost, "/dashboard/corporation-structures/list", http.StatusNoContent)
-	assertRouteStatus(t, adminRouter, http.MethodPost, "/dashboard/corporation-structures/refresh", http.StatusNoContent)
+	assertRouteStatus(
+		t,
+		adminRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/run-task",
+		http.StatusNoContent,
+	)
 
 	superAdminRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleSuperAdmin})
 	assertRouteStatus(
@@ -379,7 +385,7 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		t,
 		superAdminRouter,
 		http.MethodPost,
-		"/dashboard/corporation-structures/refresh",
+		"/dashboard/corporation-structures/run-task",
 		http.StatusNoContent,
 	)
 
@@ -393,7 +399,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		http.StatusForbidden,
 	)
 	assertRouteStatus(t, userRouter, http.MethodPost, "/dashboard/corporation-structures/list", http.StatusForbidden)
-	assertRouteStatus(t, userRouter, http.MethodPost, "/dashboard/corporation-structures/refresh", http.StatusForbidden)
+	assertRouteStatus(
+		t,
+		userRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/run-task",
+		http.StatusForbidden,
+	)
 
 	guestRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleGuest})
 	assertRouteStatus(t, guestRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusForbidden)
@@ -405,7 +417,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		http.StatusForbidden,
 	)
 	assertRouteStatus(t, guestRouter, http.MethodPost, "/dashboard/corporation-structures/list", http.StatusForbidden)
-	assertRouteStatus(t, guestRouter, http.MethodPost, "/dashboard/corporation-structures/refresh", http.StatusForbidden)
+	assertRouteStatus(
+		t,
+		guestRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/run-task",
+		http.StatusForbidden,
+	)
 }
 
 func newSkillPlanPermissionTestRouter(roles []string) *gin.Engine {
@@ -672,7 +690,7 @@ func newDashboardCorporationStructuresPermissionTestRouter(roles []string) *gin.
 	corpStructures.GET("/settings", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.PUT("/settings/authorizations", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.POST("/list", func(c *gin.Context) { c.Status(http.StatusNoContent) })
-	corpStructures.POST("/refresh", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.POST("/run-task", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	return r
 }

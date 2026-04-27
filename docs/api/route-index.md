@@ -62,7 +62,7 @@ source_of_truth:
 | GET | `/dashboard/corporation-structures/settings` | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射 | `RequireRole(admin)` |
 | PUT | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射 | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/list` | 读取军团建筑快照列表 | `RequireRole(admin)` |
-| POST | `/dashboard/corporation-structures/refresh` | 使用已授权 Director 角色触发单个军团建筑后台刷新（异步入队） | `RequireRole(admin)` |
+| POST | `/dashboard/corporation-structures/run-task` | 使用已授权 Director 角色触发单个军团建筑后台 ESI 任务（异步入队） | `RequireRole(admin)` |
 | GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格 | Login |
 | POST | `/notification/list` | 通知列表 | JWT |
 | POST | `/notification/unread-count` | 未读数 | JWT |
