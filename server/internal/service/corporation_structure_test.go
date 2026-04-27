@@ -367,6 +367,176 @@ func TestCorporationStructureFilterOptions(t *testing.T) {
 	}
 }
 
+func TestCorporationStructureSettingsThresholds(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+
+	svc := newCorporationStructureServiceForTest()
+
+	settings, err := svc.GetSettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetSettings returned error: %v", err)
+	}
+	if settings.FuelNoticeThresholdDays != model.SysConfigDefaultDashboardCorpStructuresFuelNoticeThresholdDays {
+		t.Fatalf(
+			"expected default fuel threshold %d, got %d",
+			model.SysConfigDefaultDashboardCorpStructuresFuelNoticeThresholdDays,
+			settings.FuelNoticeThresholdDays,
+		)
+	}
+	if settings.TimerNoticeThresholdDays != model.SysConfigDefaultDashboardCorpStructuresTimerNoticeThresholdDays {
+		t.Fatalf(
+			"expected default timer threshold %d, got %d",
+			model.SysConfigDefaultDashboardCorpStructuresTimerNoticeThresholdDays,
+			settings.TimerNoticeThresholdDays,
+		)
+	}
+
+	fuelThreshold := 3
+	timerThreshold := 5
+	err = svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations:           []CorporationStructureAuthorizationBinding{},
+		FuelNoticeThresholdDays:  &fuelThreshold,
+		TimerNoticeThresholdDays: &timerThreshold,
+	})
+	if err != nil {
+		t.Fatalf("UpdateAuthorizations returned error: %v", err)
+	}
+
+	updated, err := svc.GetSettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetSettings after update returned error: %v", err)
+	}
+	if updated.FuelNoticeThresholdDays != fuelThreshold {
+		t.Fatalf("expected fuel threshold %d, got %d", fuelThreshold, updated.FuelNoticeThresholdDays)
+	}
+	if updated.TimerNoticeThresholdDays != timerThreshold {
+		t.Fatalf("expected timer threshold %d, got %d", timerThreshold, updated.TimerNoticeThresholdDays)
+	}
+}
+
+func TestCorporationStructureSettingsRejectsNegativeThresholds(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+
+	svc := newCorporationStructureServiceForTest()
+	negative := -1
+
+	err := svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations:          []CorporationStructureAuthorizationBinding{},
+		FuelNoticeThresholdDays: &negative,
+	})
+	if err == nil {
+		t.Fatal("expected negative fuel threshold to be rejected")
+	}
+}
+
+func TestCorporationStructureCountAttentionStructures(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+
+	now := time.Now().UTC()
+	seedRows := []model.CorpStructureInfo{
+		{
+			CorporationID: 9001,
+			StructureID:   1,
+			FuelExpires:   now.Add(6 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			CorporationID: 9001,
+			StructureID:   2,
+			StateTimerEnd: now.Add(12 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			CorporationID: 9001,
+			StructureID:   3,
+			FuelExpires:   now.Add(6 * time.Hour).Format(time.RFC3339),
+			StateTimerEnd: now.Add(6 * time.Hour).Format(time.RFC3339),
+		},
+		{
+			CorporationID: 9001,
+			StructureID:   4,
+			FuelExpires:   now.Add(9 * 24 * time.Hour).Format(time.RFC3339),
+			StateTimerEnd: now.Add(9 * 24 * time.Hour).Format(time.RFC3339),
+		},
+	}
+	for _, row := range seedRows {
+		if err := db.Create(&row).Error; err != nil {
+			t.Fatalf("seed row failed: %v", err)
+		}
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	if err := svc.sysConfigRepo.SetMany([]repository.SysConfigUpsertItem{
+		{
+			Key:   model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays,
+			Value: "2",
+			Desc:  "test",
+		},
+		{
+			Key:   model.SysConfigDashboardCorpStructuresTimerNoticeThresholdDays,
+			Value: "2",
+			Desc:  "test",
+		},
+	}); err != nil {
+		t.Fatalf("set thresholds: %v", err)
+	}
+
+	count, err := svc.CountAttentionStructures(context.Background())
+	if err != nil {
+		t.Fatalf("CountAttentionStructures returned error: %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("expected 3 attention structures, got %d", count)
+	}
+
+	if err := svc.sysConfigRepo.SetMany([]repository.SysConfigUpsertItem{
+		{
+			Key:   model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays,
+			Value: "0",
+			Desc:  "test",
+		},
+		{
+			Key:   model.SysConfigDashboardCorpStructuresTimerNoticeThresholdDays,
+			Value: "0",
+			Desc:  "test",
+		},
+	}); err != nil {
+		t.Fatalf("set zero thresholds: %v", err)
+	}
+	count, err = svc.CountAttentionStructures(context.Background())
+	if err != nil {
+		t.Fatalf("CountAttentionStructures with zero thresholds returned error: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected 0 attention structures with zero thresholds, got %d", count)
+	}
+}
+
 func newCorporationStructureServiceForTest() *CorporationStructureService {
 	return &CorporationStructureService{
 		roleRepo:      repository.NewRoleRepository(),

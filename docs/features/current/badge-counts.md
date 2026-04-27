@@ -9,6 +9,7 @@ source_of_truth:
   - server/internal/repository/srp.go
   - server/internal/repository/welfare.go
   - server/internal/repository/shop.go
+  - server/internal/service/corporation_structure.go
   - static/src/api/badge.ts
   - static/src/store/modules/badge.ts
   - static/src/store/modules/badge.helpers.ts
@@ -37,6 +38,7 @@ source_of_truth:
 | `srp_pending` | `super_admin` / `admin` / `srp` / `fc` | `review_status IN ('submitted', 'approved') AND payout_status = 'notpaid'` 的 SRP 申请数 |
 | `welfare_pending` | `super_admin` / `admin` / `welfare` | `status = 'requested'` 的福利申请数 |
 | `order_pending` | `super_admin` / `admin` / `shop_order_manage` | `status = 'requested'` 的商店订单数 |
+| `corporation_structures_attention` | `super_admin` / `admin` | 当前可管理军团中需关注建筑数（去重后）；命中任一规则：1) `fuel_remaining_hours <= fuel_notice_threshold_days * 24`（阈值 > 0，含已到期）；2) `now <= state_timer_end <= now + timer_notice_threshold_days * 24h`（阈值 > 0） |
 
 ## 前端映射
 
@@ -46,6 +48,7 @@ source_of_truth:
 | `WelfareApproval` | `welfare_pending` |
 | `SrpManage` | `srp_pending` |
 | `ShopOrderManage` | `order_pending` |
+| `DashboardCorporationStructures` | `corporation_structures_attention` |
 
 ## 徽章规则
 

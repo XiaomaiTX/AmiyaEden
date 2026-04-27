@@ -59,12 +59,12 @@ source_of_truth:
 | GET | `/me` | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT |
 | PUT | `/me` | 更新当前用户昵称 / QQ / Discord ID | JWT |
 | POST | `/dashboard` | Dashboard 聚合数据 | JWT |
-| GET | `/dashboard/corporation-structures/settings` | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射 | `RequireRole(admin)` |
-| PUT | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射 | `RequireRole(admin)` |
+| GET | `/dashboard/corporation-structures/settings` | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射，同时返回全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（天） | `RequireRole(admin)` |
+| PUT | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射；可同时更新全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（`>=0`，`0` 表示关闭） | `RequireRole(admin)` |
 | GET | `/dashboard/corporation-structures/filter-options` | 获取建筑列表筛选元数据（星系、类型、服务） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/list` | 按多条件筛选读取军团建筑快照分页列表（支持排序） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/run-task` | 使用已授权 Director 角色触发单个军团建筑后台 ESI 任务（异步入队） | `RequireRole(admin)` |
-| GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格 | Login |
+| GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格。`super_admin/admin` 额外返回军团建筑提醒计数 `corporation_structures_attention` | Login |
 | POST | `/notification/list` | 通知列表 | JWT |
 | POST | `/notification/unread-count` | 未读数 | JWT |
 | POST | `/notification/read` | 标记已读 | Login |

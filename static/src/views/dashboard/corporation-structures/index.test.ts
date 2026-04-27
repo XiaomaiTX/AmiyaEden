@@ -24,6 +24,14 @@ test('corporation structures page wires settings and list tabs', () => {
   assert.doesNotMatch(source, /refreshThisCorporation/)
 })
 
+test('corporation structures settings includes notice thresholds and submits them together', () => {
+  assert.match(source, /corporationStructures\.settings\.noticeThresholds/)
+  assert.match(source, /noticeThresholds\.fuel_notice_threshold_days/)
+  assert.match(source, /noticeThresholds\.timer_notice_threshold_days/)
+  assert.match(source, /fuel_notice_threshold_days:\s*normalizeThresholdDays/)
+  assert.match(source, /timer_notice_threshold_days:\s*normalizeThresholdDays/)
+})
+
 test('corporation structures api module exposes all required endpoints', () => {
   assert.match(apiSource, /\/api\/v1\/dashboard\/corporation-structures\/settings/)
   assert.match(apiSource, /\/settings\/authorizations/)

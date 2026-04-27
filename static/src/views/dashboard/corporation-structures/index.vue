@@ -258,6 +258,42 @@
 
       <ElTabPane :label="$t('corporationStructures.tabs.settings')" name="settings">
         <ElCard shadow="never" class="art-table-card">
+          <ElFormItem :label="$t('corporationStructures.settings.noticeThresholds')" class="mb-4">
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-g-500">
+                  {{ $t('corporationStructures.settings.fuelNoticeThreshold') }}
+                </span>
+                <ElInputNumber
+                  v-model="noticeThresholds.fuel_notice_threshold_days"
+                  :min="0"
+                  :step="1"
+                  step-strictly
+                />
+                <span class="text-sm text-g-500">{{
+                  $t('corporationStructures.settings.daysUnit')
+                }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-g-500">
+                  {{ $t('corporationStructures.settings.timerNoticeThreshold') }}
+                </span>
+                <ElInputNumber
+                  v-model="noticeThresholds.timer_notice_threshold_days"
+                  :min="0"
+                  :step="1"
+                  step-strictly
+                />
+                <span class="text-sm text-g-500">{{
+                  $t('corporationStructures.settings.daysUnit')
+                }}</span>
+              </div>
+              <span class="text-xs text-g-500">
+                {{ $t('corporationStructures.settings.noticeThresholdHint') }}
+              </span>
+            </div>
+          </ElFormItem>
+
           <div class="flex flex-wrap items-center gap-3 mb-4">
             <ElButton :loading="settingsLoading" @click="loadSettings">
               {{ $t('common.refresh') }}
@@ -332,7 +368,13 @@
   const router = useRouter()
 
   const settings = ref<Api.Dashboard.CorporationStructuresSettings>({
-    corporations: []
+    corporations: [],
+    fuel_notice_threshold_days: 7,
+    timer_notice_threshold_days: 7
+  })
+  const noticeThresholds = reactive({
+    fuel_notice_threshold_days: 7,
+    timer_notice_threshold_days: 7
   })
   const settingsLoading = ref(false)
   const savingAuthorizations = ref(false)
@@ -375,6 +417,13 @@
   const normalizeFuelHours = (value: number | undefined) => {
     if (value == null || Number.isNaN(value)) {
       return undefined
+    }
+    return Math.max(0, Math.floor(value))
+  }
+
+  const normalizeThresholdDays = (value: number) => {
+    if (Number.isNaN(value)) {
+      return 0
     }
     return Math.max(0, Math.floor(value))
   }
@@ -558,6 +607,12 @@
     settings.value.corporations.forEach((item) => {
       authorizationByCorp[item.corporation_id] = item.authorized_character_id || 0
     })
+    noticeThresholds.fuel_notice_threshold_days = normalizeThresholdDays(
+      settings.value.fuel_notice_threshold_days
+    )
+    noticeThresholds.timer_notice_threshold_days = normalizeThresholdDays(
+      settings.value.timer_notice_threshold_days
+    )
   }
 
   const loadSettings = async () => {
@@ -634,7 +689,15 @@
 
     savingAuthorizations.value = true
     try {
-      await updateCorporationStructureAuthorizations({ authorizations })
+      await updateCorporationStructureAuthorizations({
+        authorizations,
+        fuel_notice_threshold_days: normalizeThresholdDays(
+          noticeThresholds.fuel_notice_threshold_days
+        ),
+        timer_notice_threshold_days: normalizeThresholdDays(
+          noticeThresholds.timer_notice_threshold_days
+        )
+      })
       await loadSettings()
       ElMessage.success(t('corporationStructures.messages.authorizationSaved'))
     } finally {

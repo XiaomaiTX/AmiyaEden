@@ -2409,6 +2409,13 @@
     "actions": {
       "refreshSelected": "Run Background Task for Selected Corporation"
     },
+    "settings": {
+      "noticeThresholds": "Notification Thresholds",
+      "fuelNoticeThreshold": "Fuel Remaining Threshold",
+      "timerNoticeThreshold": "Reinforce Timer Threshold",
+      "daysUnit": "days",
+      "noticeThresholdHint": "0 = disable reminders"
+    },
     "table": {
       "corporation": "Corporation",
       "state": "State",
