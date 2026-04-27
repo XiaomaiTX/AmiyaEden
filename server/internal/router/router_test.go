@@ -346,6 +346,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 	assertRouteStatus(
 		t,
 		adminRouter,
+		http.MethodGet,
+		"/dashboard/corporation-structures/filter-options",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(
+		t,
+		adminRouter,
 		http.MethodPut,
 		"/dashboard/corporation-structures/settings/authorizations",
 		http.StatusNoContent,
@@ -365,6 +372,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		superAdminRouter,
 		http.MethodGet,
 		"/dashboard/corporation-structures/settings",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(
+		t,
+		superAdminRouter,
+		http.MethodGet,
+		"/dashboard/corporation-structures/filter-options",
 		http.StatusNoContent,
 	)
 	assertRouteStatus(
@@ -394,6 +408,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 	assertRouteStatus(
 		t,
 		userRouter,
+		http.MethodGet,
+		"/dashboard/corporation-structures/filter-options",
+		http.StatusForbidden,
+	)
+	assertRouteStatus(
+		t,
+		userRouter,
 		http.MethodPut,
 		"/dashboard/corporation-structures/settings/authorizations",
 		http.StatusForbidden,
@@ -409,6 +430,13 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 
 	guestRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleGuest})
 	assertRouteStatus(t, guestRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusForbidden)
+	assertRouteStatus(
+		t,
+		guestRouter,
+		http.MethodGet,
+		"/dashboard/corporation-structures/filter-options",
+		http.StatusForbidden,
+	)
 	assertRouteStatus(
 		t,
 		guestRouter,
@@ -689,6 +717,7 @@ func newDashboardCorporationStructuresPermissionTestRouter(roles []string) *gin.
 	corpStructures := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleAdmin))
 	corpStructures.GET("/settings", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.PUT("/settings/authorizations", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.GET("/filter-options", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.POST("/list", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.POST("/run-task", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 

@@ -45,8 +45,25 @@ func (h *CorporationStructureHandler) UpdateAuthorizations(c *gin.Context) {
 
 func (h *CorporationStructureHandler) ListStructures(c *gin.Context) {
 	var req service.CorporationStructureListRequest
-	_ = c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
 	result, err := h.svc.ListStructures(c.Request.Context(), req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+func (h *CorporationStructureHandler) GetFilterOptions(c *gin.Context) {
+	var req service.CorporationStructureFilterOptionsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	result, err := h.svc.GetFilterOptions(c.Request.Context(), req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

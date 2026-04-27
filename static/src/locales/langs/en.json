@@ -2368,7 +2368,44 @@
     "allCorporations": "All Corporations",
     "noServices": "No active services",
     "filters": {
-      "corporation": "Select Corporation"
+      "corporation": "Corporation",
+      "keyword": "Search",
+      "systems": "Solar System",
+      "stateGroups": "State",
+      "abnormalOnly": "Only abnormal",
+      "fuel": "Fuel Remaining",
+      "security": "Security",
+      "types": "Structure Type",
+      "services": "Services",
+      "timer": "Reinforce Timer"
+    },
+    "stateGroups": {
+      "online": "Online",
+      "lowPower": "Low Power",
+      "abandoned": "Abandoned",
+      "reinforced": "Under Attack/Reinforced"
+    },
+    "fuelBuckets": {
+      "all": "All",
+      "lt24h": "< 24h",
+      "lt3d": "< 3d",
+      "lt7d": "< 7d",
+      "custom": "Custom"
+    },
+    "securityBands": {
+      "highsec": "Highsec (>=0.5)",
+      "lowsec": "Lowsec (0~0.4)",
+      "nullsec": "Nullsec (<0)"
+    },
+    "serviceMatch": {
+      "and": "Must include selected",
+      "or": "Include any selected"
+    },
+    "timerBuckets": {
+      "all": "All",
+      "currentHour": "Current Hour",
+      "next2Hours": "Next 2 Hours",
+      "custom": "Custom Range"
     },
     "actions": {
       "refreshSelected": "Run Background Task for Selected Corporation"
@@ -2382,11 +2419,23 @@
       "services": "Services",
       "fuelRemaining": "Fuel Remaining",
       "reinforceHour": "Reinforce Hour",
+      "timerEnd": "Timer End",
       "updatedAt": "Updated At",
       "directorCharacter": "Director Authorized Character"
     },
     "placeholders": {
-      "selectDirector": "Select a Director character"
+      "selectDirector": "Select a Director character",
+      "keyword": "Search by structure/system/alias"
+    },
+    "states": {
+      "shield_vulnerable": "Online",
+      "low_power": "Low Power",
+      "abandoned": "Abandoned",
+      "shield_reinforce": "Shield Reinforced",
+      "armor_reinforce": "Armor Reinforced",
+      "armor_vulnerable": "Armor Vulnerable",
+      "hull_reinforce": "Hull Reinforced",
+      "hull_vulnerable": "Hull Vulnerable"
     },
     "messages": {
       "authorizationSaved": "Authorization settings saved",

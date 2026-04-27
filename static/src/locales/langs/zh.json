@@ -2368,7 +2368,44 @@
     "allCorporations": "全部军团",
     "noServices": "无在线服务",
     "filters": {
-      "corporation": "选择军团"
+      "corporation": "军团",
+      "keyword": "搜索",
+      "systems": "星系",
+      "stateGroups": "状态",
+      "abnormalOnly": "仅显示异常",
+      "fuel": "燃料剩余",
+      "security": "安全等级",
+      "types": "建筑类型",
+      "services": "服务",
+      "timer": "增强时间"
+    },
+    "stateGroups": {
+      "online": "在线",
+      "lowPower": "低能量",
+      "abandoned": "废弃",
+      "reinforced": "受攻击/强化中"
+    },
+    "fuelBuckets": {
+      "all": "全部",
+      "lt24h": "< 24小时",
+      "lt3d": "< 3天",
+      "lt7d": "< 7天",
+      "custom": "自定义范围"
+    },
+    "securityBands": {
+      "highsec": "高安 (>=0.5)",
+      "lowsec": "低安 (0~0.4)",
+      "nullsec": "00 (<0)"
+    },
+    "serviceMatch": {
+      "and": "必须包含所选服务",
+      "or": "包含任意服务"
+    },
+    "timerBuckets": {
+      "all": "全部",
+      "currentHour": "当前小时",
+      "next2Hours": "未来2小时",
+      "custom": "自定义时间段"
     },
     "actions": {
       "refreshSelected": "触发所选军团后台刷新任务"
@@ -2382,11 +2419,23 @@
       "services": "服务",
       "fuelRemaining": "燃料剩余",
       "reinforceHour": "增强时间",
+      "timerEnd": "结束时间",
       "updatedAt": "更新时间",
       "directorCharacter": "Director 授权角色"
     },
     "placeholders": {
-      "selectDirector": "请选择 Director 角色"
+      "selectDirector": "请选择 Director 角色",
+      "keyword": "输入建筑名/星系名/缩写"
+    },
+    "states": {
+      "shield_vulnerable": "在线",
+      "low_power": "低能量",
+      "abandoned": "废弃",
+      "shield_reinforce": "护盾强化中",
+      "armor_reinforce": "装甲强化中",
+      "armor_vulnerable": "装甲易损",
+      "hull_reinforce": "结构强化中",
+      "hull_vulnerable": "结构易损"
     },
     "messages": {
       "authorizationSaved": "授权配置已保存",
