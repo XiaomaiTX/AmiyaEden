@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-04-27
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -28,6 +28,7 @@ source_of_truth:
 - [commerce.md](current/commerce.md)
 - [administration.md](current/administration.md)
 - [task-manager.md](current/task-manager.md)
+- [corporation-structures.md](current/corporation-structures.md)
 - [sde.md](current/sde.md)
 
 ## Feature Doc 最少要回答的问题

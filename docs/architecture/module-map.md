@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-04-27
 source_of_truth:
   - server/internal
   - server/pkg
@@ -111,6 +111,21 @@ source_of_truth:
 4. `docs/features/current/auth-and-characters.md`
 5. `docs/features/current/task-manager.md`
 6. `docs/guides/adding-esi-feature.md`
+
+### 修改军团建筑管理
+
+通常需要一起看：
+
+1. `server/internal/router/`
+2. `server/internal/handler/corporation_structure.go`
+3. `server/internal/service/corporation_structure.go`
+4. `server/internal/repository/corporation_structure.go`
+5. `server/internal/model/sys_config.go`
+6. `static/src/api/corporation-structures.ts`
+7. `static/src/views/dashboard/corporation-structures`
+8. `docs/features/current/corporation-structures.md`
+9. `docs/features/current/badge-counts.md`
+10. `docs/api/route-index.md`
 
 ### 修改表格页、卡片记录页或复杂筛选页
 
