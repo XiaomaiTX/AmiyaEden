@@ -4,12 +4,13 @@
       <div class="filter-row">
         <ElDatePicker
           v-model="dateRange"
+          class="filter-date-range"
           type="daterange"
           value-format="YYYY-MM-DD"
           format="YYYY-MM-DD"
           :start-placeholder="$t('walletAdmin.analysis.startDate')"
           :end-placeholder="$t('walletAdmin.analysis.endDate')"
-          style="width: 280px"
+          :teleported="true"
         />
         <ElSelect
           v-model="refTypes"
@@ -369,6 +370,11 @@
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
+
+    .filter-date-range {
+      flex: 0 0 280px;
+      min-width: 280px;
+    }
   }
 
   .summary-grid {
@@ -394,6 +400,10 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+
+    > * {
+      min-width: 0;
+    }
   }
 
   @media (max-width: 1280px) {
