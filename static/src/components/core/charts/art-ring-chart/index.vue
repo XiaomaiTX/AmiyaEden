@@ -51,9 +51,9 @@
 
           switch (props.legendPosition) {
             case 'left':
-              return ['60%', '50%']
+              return ['62%', '50%']
             case 'right':
-              return ['40%', '50%']
+              return ['34%', '50%']
             case 'top':
               return ['50%', '60%']
             case 'bottom':
@@ -69,7 +69,16 @@
                 formatter: '{b}: {c} ({d}%)'
               })
             : undefined,
-          legend: props.showLegend ? getLegendStyle(props.legendPosition) : undefined,
+          legend: props.showLegend
+            ? getLegendStyle(props.legendPosition, {
+                // 图例项较多或中文较长时，启用滚动并限制可用区域，避免被容器边界截断
+                type: 'scroll',
+                pageIconColor: '#888',
+                pageTextStyle: {
+                  color: isDark.value ? '#ccc' : '#666'
+                }
+              })
+            : undefined,
           series: [
             {
               name: '数据占比',

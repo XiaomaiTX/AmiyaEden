@@ -324,9 +324,11 @@ export function useChart(options: UseChartOptions = {}) {
       case 'right':
         return {
           ...baseConfig,
-          right: 0,
+          right: 12,
+          left: '58%',
           top: 'center',
           orient: 'vertical',
+          align: 'left',
           icon: 'roundRect'
         }
       default:

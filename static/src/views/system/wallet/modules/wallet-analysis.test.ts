@@ -16,3 +16,12 @@ test('wallet analysis tables use ArtTable ledger variant instead of native ElTab
 test('wallet analysis summary still uses totalBalance i18n key', () => {
   assert.match(source, /label:\s*t\('walletAdmin\.analysis\.totalBalance'\)/)
 })
+
+test('wallet analysis keeps date range picker visible in filter row', () => {
+  assert.match(source, /<ElDatePicker[\s\S]*class="filter-date-range"/)
+  assert.match(source, /\.filter-date-range\s*\{[\s\S]*min-width:\s*280px/)
+})
+
+test('wallet analysis grid items can shrink to prevent chart overflow clipping', () => {
+  assert.match(source, /\.grid-two\s*\{[\s\S]*>\s*\*\s*\{[\s\S]*min-width:\s*0/)
+})
