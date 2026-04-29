@@ -87,42 +87,28 @@
           <template #header>
             <span class="font-medium">{{ $t('walletAdmin.analysis.topInflowUsers') }}</span>
           </template>
-          <ElTable :data="analytics?.top_inflow_users ?? []" stripe border max-height="320">
-            <ElTableColumn
-              prop="user_id"
-              :label="$t('walletAdmin.transactions.userId')"
-              width="100"
-            />
-            <ElTableColumn
-              prop="character_name"
-              :label="$t('walletAdmin.transactions.characterName')"
-              min-width="160"
-            />
-            <ElTableColumn :label="$t('walletAdmin.analysis.amount')" min-width="140" align="right">
-              <template #default="{ row }">{{ formatFuxiCoinAmount(row.amount) }}</template>
-            </ElTableColumn>
-          </ElTable>
+          <ArtTable
+            :data="analytics?.top_inflow_users ?? []"
+            :columns="topUserColumns"
+            visual-variant="ledger"
+            :show-table-header="false"
+            :height="320"
+            :empty-text="$t('walletAdmin.analysis.empty')"
+          />
         </ElCard>
 
         <ElCard shadow="never">
           <template #header>
             <span class="font-medium">{{ $t('walletAdmin.analysis.topOutflowUsers') }}</span>
           </template>
-          <ElTable :data="analytics?.top_outflow_users ?? []" stripe border max-height="320">
-            <ElTableColumn
-              prop="user_id"
-              :label="$t('walletAdmin.transactions.userId')"
-              width="100"
-            />
-            <ElTableColumn
-              prop="character_name"
-              :label="$t('walletAdmin.transactions.characterName')"
-              min-width="160"
-            />
-            <ElTableColumn :label="$t('walletAdmin.analysis.amount')" min-width="140" align="right">
-              <template #default="{ row }">{{ formatFuxiCoinAmount(row.amount) }}</template>
-            </ElTableColumn>
-          </ElTable>
+          <ArtTable
+            :data="analytics?.top_outflow_users ?? []"
+            :columns="topUserColumns"
+            visual-variant="ledger"
+            :show-table-header="false"
+            :height="320"
+            :empty-text="$t('walletAdmin.analysis.empty')"
+          />
         </ElCard>
       </div>
 
@@ -132,108 +118,39 @@
         </template>
         <ElCollapse>
           <ElCollapseItem :title="$t('walletAdmin.analysis.largeTransactions')" name="large">
-            <ElTable
+            <ArtTable
               :data="analytics?.anomalies.large_transactions ?? []"
-              stripe
-              border
-              max-height="280"
-            >
-              <ElTableColumn prop="id" label="ID" width="90" />
-              <ElTableColumn
-                prop="user_id"
-                :label="$t('walletAdmin.transactions.userId')"
-                width="100"
-              />
-              <ElTableColumn
-                prop="character_name"
-                :label="$t('walletAdmin.transactions.characterName')"
-                min-width="140"
-              />
-              <ElTableColumn prop="ref_type" :label="$t('common.type')" min-width="120" />
-              <ElTableColumn
-                :label="$t('walletAdmin.analysis.amount')"
-                min-width="140"
-                align="right"
-              >
-                <template #default="{ row }">{{ formatFuxiCoinAmount(row.amount) }}</template>
-              </ElTableColumn>
-              <ElTableColumn prop="created_at" :label="$t('common.time')" min-width="180" />
-            </ElTable>
+              :columns="largeTransactionColumns"
+              visual-variant="ledger"
+              :show-table-header="false"
+              :height="280"
+              :empty-text="$t('walletAdmin.analysis.empty')"
+            />
           </ElCollapseItem>
 
           <ElCollapseItem :title="$t('walletAdmin.analysis.frequentAdjustments')" name="frequent">
-            <ElTable
+            <ArtTable
               :data="analytics?.anomalies.frequent_adjustments ?? []"
-              stripe
-              border
-              max-height="280"
-            >
-              <ElTableColumn
-                prop="target_uid"
-                :label="$t('walletAdmin.logs.targetUser')"
-                width="120"
-              />
-              <ElTableColumn
-                prop="character_name"
-                :label="$t('walletAdmin.transactions.characterName')"
-                min-width="140"
-              />
-              <ElTableColumn
-                prop="adjust_count"
-                :label="$t('walletAdmin.analysis.adjustCount')"
-                width="120"
-              />
-              <ElTableColumn
-                :label="$t('walletAdmin.analysis.amountTotal')"
-                min-width="140"
-                align="right"
-              >
-                <template #default="{ row }">{{ formatFuxiCoinAmount(row.amount_total) }}</template>
-              </ElTableColumn>
-              <ElTableColumn
-                prop="last_adjustment_time"
-                :label="$t('walletAdmin.analysis.lastAdjustmentTime')"
-                min-width="180"
-              />
-            </ElTable>
+              :columns="frequentAdjustmentColumns"
+              visual-variant="ledger"
+              :show-table-header="false"
+              :height="280"
+              :empty-text="$t('walletAdmin.analysis.empty')"
+            />
           </ElCollapseItem>
 
           <ElCollapseItem
             :title="$t('walletAdmin.analysis.operatorConcentration')"
             name="concentration"
           >
-            <ElTable
+            <ArtTable
               :data="analytics?.anomalies.operator_concentration ?? []"
-              stripe
-              border
-              max-height="280"
-            >
-              <ElTableColumn
-                prop="operator_id"
-                :label="$t('walletAdmin.logs.operator')"
-                width="120"
-              />
-              <ElTableColumn
-                prop="operator_name"
-                :label="$t('walletAdmin.analysis.operatorName')"
-                min-width="140"
-              />
-              <ElTableColumn
-                prop="count"
-                :label="$t('walletAdmin.analysis.adjustCount')"
-                width="120"
-              />
-              <ElTableColumn
-                :label="$t('walletAdmin.analysis.amountTotal')"
-                min-width="140"
-                align="right"
-              >
-                <template #default="{ row }">{{ formatFuxiCoinAmount(row.amount_total) }}</template>
-              </ElTableColumn>
-              <ElTableColumn :label="$t('walletAdmin.analysis.ratio')" width="120">
-                <template #default="{ row }">{{ `${(row.ratio * 100).toFixed(2)}%` }}</template>
-              </ElTableColumn>
-            </ElTable>
+              :columns="operatorConcentrationColumns"
+              visual-variant="ledger"
+              :show-table-header="false"
+              :height="280"
+              :empty-text="$t('walletAdmin.analysis.empty')"
+            />
           </ElCollapseItem>
         </ElCollapse>
       </ElCard>
@@ -244,6 +161,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { ElMessage } from 'element-plus'
+  import { ColumnOption } from '@/types'
   import { formatFuxiCoinAmount } from '@utils/common'
   import { adminGetWalletAnalytics } from '@/api/sys-wallet'
   import ArtLineChart from '@/components/core/charts/art-line-chart/index.vue'
@@ -353,6 +271,67 @@
     )
   })
 
+  const topUserColumns = computed<ColumnOption[]>(() => [
+    { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100 },
+    { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 160 },
+    {
+      label: t('walletAdmin.analysis.amount'),
+      minWidth: 140,
+      align: 'right',
+      formatter: (row: { amount: number }) => h('span', {}, formatFuxiCoinAmount(row.amount))
+    }
+  ])
+
+  const largeTransactionColumns = computed<ColumnOption[]>(() => [
+    { prop: 'id', label: 'ID', width: 90 },
+    { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100 },
+    { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 140 },
+    { prop: 'ref_type', label: t('common.type'), minWidth: 120 },
+    {
+      label: t('walletAdmin.analysis.amount'),
+      minWidth: 140,
+      align: 'right',
+      formatter: (row: { amount: number }) => h('span', {}, formatFuxiCoinAmount(row.amount))
+    },
+    { prop: 'created_at', label: t('common.time'), minWidth: 180 }
+  ])
+
+  const frequentAdjustmentColumns = computed<ColumnOption[]>(() => [
+    { prop: 'target_uid', label: t('walletAdmin.logs.targetUser'), width: 120 },
+    { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 140 },
+    { prop: 'adjust_count', label: t('walletAdmin.analysis.adjustCount'), width: 120 },
+    {
+      label: t('walletAdmin.analysis.amountTotal'),
+      minWidth: 140,
+      align: 'right',
+      formatter: (row: { amount_total: number }) =>
+        h('span', {}, formatFuxiCoinAmount(row.amount_total))
+    },
+    {
+      prop: 'last_adjustment_time',
+      label: t('walletAdmin.analysis.lastAdjustmentTime'),
+      minWidth: 180
+    }
+  ])
+
+  const operatorConcentrationColumns = computed<ColumnOption[]>(() => [
+    { prop: 'operator_id', label: t('walletAdmin.logs.operator'), width: 120 },
+    { prop: 'operator_name', label: t('walletAdmin.analysis.operatorName'), minWidth: 140 },
+    { prop: 'count', label: t('walletAdmin.analysis.adjustCount'), width: 120 },
+    {
+      label: t('walletAdmin.analysis.amountTotal'),
+      minWidth: 140,
+      align: 'right',
+      formatter: (row: { amount_total: number }) =>
+        h('span', {}, formatFuxiCoinAmount(row.amount_total))
+    },
+    {
+      label: t('walletAdmin.analysis.ratio'),
+      width: 120,
+      formatter: (row: { ratio: number }) => h('span', {}, `${(row.ratio * 100).toFixed(2)}%`)
+    }
+  ])
+
   const loadData = async () => {
     if (!dateRange.value?.[0] || !dateRange.value?.[1]) return
     loading.value = true
@@ -378,6 +357,10 @@
   .wallet-analysis {
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
     gap: 12px;
   }
 

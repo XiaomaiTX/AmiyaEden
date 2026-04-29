@@ -2343,7 +2343,7 @@
       "userKeyword": "Filter by character or nickname",
       "walletCount": "Wallet Count",
       "activeWalletCount": "Active Wallets",
-      "totalBalance": "Total Balance",
+      "totalBalance": "Current Holdings",
       "incomeTotal": "Total Income",
       "expenseTotal": "Total Expense",
       "netFlow": "Net Flow",
