@@ -42,10 +42,10 @@ source_of_truth:
 - `/ticket/my-tickets`
 - `/ticket/create`
 - `/ticket/detail/:id`
-- `/system/ticket-management`
-- `/system/ticket-categories`
-- `/system/ticket-statistics`
-- `/system/ticket-detail/:id`
+- `/ticket/management`
+- `/ticket/categories`
+- `/ticket/statistics`
+- `/ticket/admin-detail/:id`
 
 ### 后端路由
 

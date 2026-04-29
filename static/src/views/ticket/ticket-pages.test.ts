@@ -8,15 +8,16 @@ const detailSource = readFileSync(new URL('./detail/index.vue', import.meta.url)
 
 test('my tickets page uses member ticket list API with status filter and detail/create navigation', () => {
   assert.match(myTicketsSource, /import \{ listMyTickets \} from '@\/api\/ticket'/)
-  assert.match(
-    myTicketsSource,
-    /listMyTickets\(\{ current: 1, size: 50, status: filters\.value\.status \}\)/
-  )
+  assert.match(myTicketsSource, /apiFn:\s*listMyTickets/)
+  assert.match(myTicketsSource, /status:\s*filters\.value\.status/)
   assert.match(myTicketsSource, /router\.push\(\{ name: 'TicketCreate' \}\)/)
   assert.match(
     myTicketsSource,
     /router\.push\(\{ name: 'TicketDetail', params: \{ id: String\(id\) \} \}\)/
   )
+  assert.match(myTicketsSource, /<ArtTableHeader v-model:columns="columnChecks"/)
+  assert.match(myTicketsSource, /<ArtTable/)
+  assert.doesNotMatch(myTicketsSource, /<ElTable :data=/)
   assert.match(myTicketsSource, /TicketStatusBadge/)
   assert.match(myTicketsSource, /TicketPriorityBadge/)
 })

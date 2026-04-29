@@ -268,7 +268,10 @@
       "title": "Ticket Center",
       "myTickets": "My Tickets",
       "create": "Create Ticket",
-      "detail": "Ticket Detail"
+      "detail": "Ticket Detail",
+      "management": "Ticket Management",
+      "categories": "Ticket Categories",
+      "statistics": "Ticket Statistics"
     },
     "welfare": {
       "title": "Corp Welfare",
@@ -2441,8 +2444,11 @@
     },
     "category": {
       "create": "Create Category",
+      "nameEn": "EN Name",
       "sortOrder": "Sort Order",
-      "enabled": "Enabled"
+      "enabled": "Enabled",
+      "on": "ON",
+      "off": "OFF"
     },
     "messages": {
       "required": "Please fill required fields",

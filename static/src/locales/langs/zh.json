@@ -256,7 +256,10 @@
       "title": "工单中心",
       "myTickets": "我的工单",
       "create": "提交工单",
-      "detail": "工单详情"
+      "detail": "工单详情",
+      "management": "工单管理",
+      "categories": "工单分类",
+      "statistics": "工单统计"
     },
     "shop": {
       "title": "商店",
@@ -678,8 +681,11 @@
     },
     "category": {
       "create": "新建分类",
+      "nameEn": "英文名称",
       "sortOrder": "排序",
-      "enabled": "启用"
+      "enabled": "启用",
+      "on": "启用",
+      "off": "停用"
     },
     "messages": {
       "required": "请填写必填项",

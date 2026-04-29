@@ -15,9 +15,10 @@ test('ticket management page uses admin list and status/priority update APIs', (
     manageSource,
     /import \{[\s\S]*adminListTickets,[\s\S]*adminUpdateTicketPriority,[\s\S]*adminUpdateTicketStatus[\s\S]*\} from '@\/api\/ticket'/
   )
+  assert.match(manageSource, /apiFn:\s*adminListTickets/)
   assert.match(
     manageSource,
-    /await adminListTickets\(\{[\s\S]*keyword: filters\.keyword,[\s\S]*status: filters\.status[\s\S]*\}\)/
+    /apiParams:\s*\{[\s\S]*keyword:\s*filters\.keyword,[\s\S]*status:\s*filters\.status[\s\S]*\}/
   )
   assert.match(manageSource, /await adminUpdateTicketStatus\(id, \{ status \}\)/)
   assert.match(manageSource, /await adminUpdateTicketPriority\(id, \{ priority \}\)/)
@@ -25,6 +26,9 @@ test('ticket management page uses admin list and status/priority update APIs', (
     manageSource,
     /router\.push\(\{ name: 'TicketAdminDetail', params: \{ id: String\(id\) \} \}\)/
   )
+  assert.match(manageSource, /<ArtTableHeader v-model:columns="columnChecks"/)
+  assert.match(manageSource, /<ArtTable/)
+  assert.doesNotMatch(manageSource, /<ElTable :data=/)
 })
 
 test('ticket admin detail page loads ticket replies history and supports internal reply submit', () => {
@@ -47,10 +51,14 @@ test('ticket categories page supports list create update delete admin APIs', () 
     categoriesSource,
     /import \{[\s\S]*adminCreateTicketCategory,[\s\S]*adminDeleteTicketCategory,[\s\S]*adminListTicketCategories,[\s\S]*adminUpdateTicketCategory[\s\S]*\} from '@\/api\/ticket'/
   )
-  assert.match(categoriesSource, /list\.value = await adminListTicketCategories\(\)/)
+  assert.match(categoriesSource, /apiFn:\s*listTicketCategoriesTable/)
+  assert.match(categoriesSource, /const list = await adminListTicketCategories\(\)/)
   assert.match(categoriesSource, /await adminCreateTicketCategory\(form\)/)
   assert.match(categoriesSource, /await adminUpdateTicketCategory\(editingId\.value, form\)/)
   assert.match(categoriesSource, /await adminDeleteTicketCategory\(id\)/)
+  assert.match(categoriesSource, /<ArtTableHeader v-model:columns="columnChecks"/)
+  assert.match(categoriesSource, /<ArtTable :loading="loading" :data="data" :columns="columns" \/>/)
+  assert.doesNotMatch(categoriesSource, /<ElTable :data=/)
 })
 
 test('ticket statistics page loads dashboard stats through adminTicketStatistics API', () => {

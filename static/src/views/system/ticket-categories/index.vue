@@ -1,32 +1,19 @@
 <template>
-  <div class="ticket-page">
+  <div class="ticket-page art-full-height">
     <div>
       <ElButton type="primary" @click="openCreate">{{ t('ticket.category.create') }}</ElButton>
     </div>
-    <ElTable :data="list" v-loading="loading">
-      <ElTableColumn prop="id" label="ID" width="80" />
-      <ElTableColumn prop="name" :label="t('common.name')" min-width="180" />
-      <ElTableColumn prop="name_en" label="EN Name" min-width="180" />
-      <ElTableColumn prop="sort_order" :label="t('ticket.category.sortOrder')" width="120" />
-      <ElTableColumn :label="t('ticket.category.enabled')" width="120">
-        <template #default="{ row }">
-          <ElTag :type="row.enabled ? 'success' : 'info'">{{ row.enabled ? 'ON' : 'OFF' }}</ElTag>
-        </template>
-      </ElTableColumn>
-      <ElTableColumn :label="t('common.operation')" width="180" fixed="right">
-        <template #default="{ row }">
-          <ElButton link type="primary" @click="openEdit(row)">{{ t('common.edit') }}</ElButton>
-          <ElButton link type="danger" @click="remove(row.id)">{{ t('common.delete') }}</ElButton>
-        </template>
-      </ElTableColumn>
-    </ElTable>
+    <ElCard class="art-table-card" shadow="never">
+      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
+      <ArtTable :loading="loading" :data="data" :columns="columns" />
+    </ElCard>
 
     <ElDialog v-model="visible" :title="editingId ? t('common.edit') : t('ticket.category.create')">
       <ElForm :model="form" label-width="120px">
         <ElFormItem :label="t('common.name')">
           <ElInput v-model="form.name" />
         </ElFormItem>
-        <ElFormItem label="EN Name">
+        <ElFormItem :label="t('ticket.category.nameEn')">
           <ElInput v-model="form.name_en" />
         </ElFormItem>
         <ElFormItem :label="t('common.reason')">
@@ -54,16 +41,15 @@
     adminListTicketCategories,
     adminUpdateTicketCategory
   } from '@/api/ticket'
-  import { ElMessage } from 'element-plus'
+  import { useTable } from '@/hooks/core/useTable'
+  import { ElButton, ElMessage, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'TicketCategoriesPage' })
 
   const { t } = useI18n()
-  const loading = ref(false)
   const visible = ref(false)
   const editingId = ref(0)
-  const list = ref<Api.Ticket.TicketCategory[]>([])
   const form = reactive<Api.Ticket.UpsertCategoryParams>({
     name: '',
     name_en: '',
@@ -80,16 +66,55 @@
     form.enabled = true
   }
 
-  const loadCategories = async () => {
-    loading.value = true
-    try {
-      list.value = await adminListTicketCategories()
-    } catch (error: any) {
-      ElMessage.error(error?.message || t('ticket.messages.loadFailed'))
-    } finally {
-      loading.value = false
+  const listTicketCategoriesTable = async (
+    _params?: Api.Ticket.TicketListParams
+  ): Promise<Api.Common.PaginatedResponse<Api.Ticket.TicketCategory>> => {
+    void _params
+    const list = await adminListTicketCategories()
+
+    return {
+      list,
+      total: list.length,
+      page: 1,
+      pageSize: list.length || 10
     }
   }
+
+  const { columns, columnChecks, data, loading, refreshData } = useTable({
+    core: {
+      apiFn: listTicketCategoriesTable,
+      columnsFactory: () => [
+        { prop: 'id', label: 'ID', width: 80 },
+        { prop: 'name', label: t('common.name'), minWidth: 180 },
+        { prop: 'name_en', label: t('ticket.category.nameEn'), minWidth: 180 },
+        { prop: 'sort_order', label: t('ticket.category.sortOrder'), width: 120 },
+        {
+          prop: 'enabled',
+          label: t('ticket.category.enabled'),
+          width: 120,
+          formatter: (row) =>
+            h(ElTag, { type: row.enabled ? 'success' : 'info' }, () =>
+              row.enabled ? t('ticket.category.on') : t('ticket.category.off')
+            )
+        },
+        {
+          prop: 'operation',
+          label: t('common.operation'),
+          width: 180,
+          fixed: 'right',
+          formatter: (row) =>
+            h('div', {}, [
+              h(ElButton, { link: true, type: 'primary', onClick: () => openEdit(row) }, () =>
+                t('common.edit')
+              ),
+              h(ElButton, { link: true, type: 'danger', onClick: () => remove(row.id) }, () =>
+                t('common.delete')
+              )
+            ])
+        }
+      ]
+    }
+  })
 
   const openCreate = () => {
     editingId.value = 0
@@ -120,7 +145,7 @@
       }
       visible.value = false
       ElMessage.success(t('ticket.messages.updated'))
-      await loadCategories()
+      await refreshData()
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
     }
@@ -130,13 +155,11 @@
     try {
       await adminDeleteTicketCategory(id)
       ElMessage.success(t('ticket.messages.deleted'))
-      await loadCategories()
+      await refreshData()
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.deleteFailed'))
     }
   }
-
-  onMounted(loadCategories)
 </script>
 
 <style scoped>

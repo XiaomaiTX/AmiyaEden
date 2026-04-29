@@ -7,6 +7,7 @@ import { skillPlanningRoutes } from '../modules/skill-planning'
 import { shopRoutes } from '../modules/shop'
 import { srpRoutes } from '../modules/srp'
 import { systemRoutes } from '../modules/system'
+import { ticketRoutes } from '../modules/ticket'
 import { applyMenuAccessFilter, pruneEmptyMenus } from './menuAccess'
 
 const newbroRoutes: AppRouteRecord[] = [
@@ -181,6 +182,40 @@ test('DashboardCorporationStructures lives under Dashboard for admins only', () 
   assert.equal(
     userDashboard.children?.some((route) => route.name === 'DashboardCorporationStructures'),
     false
+  )
+})
+
+test('system menu no longer includes ticket admin pages', () => {
+  const adminSystem = applyMenuAccessFilter([systemRoutes], ['admin'])[0]
+
+  assert.equal(
+    adminSystem.children?.some((route) => route.name === 'TicketManagement'),
+    false
+  )
+  assert.equal(
+    adminSystem.children?.some((route) => route.name === 'TicketCategories'),
+    false
+  )
+  assert.equal(
+    adminSystem.children?.some((route) => route.name === 'TicketStatistics'),
+    false
+  )
+})
+
+test('ticket center includes admin pages for admin roles', () => {
+  const adminTicket = applyMenuAccessFilter([ticketRoutes], ['admin'])[0]
+
+  assert.equal(
+    adminTicket.children?.some((route) => route.name === 'TicketManagement'),
+    true
+  )
+  assert.equal(
+    adminTicket.children?.some((route) => route.name === 'TicketCategories'),
+    true
+  )
+  assert.equal(
+    adminTicket.children?.some((route) => route.name === 'TicketStatistics'),
+    true
   )
 })
 
