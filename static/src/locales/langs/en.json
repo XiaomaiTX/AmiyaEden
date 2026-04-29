@@ -2528,6 +2528,9 @@
       "updatedAt": "Updated At",
       "directorCharacter": "Director Authorized Character"
     },
+    "options": {
+      "disabled": "None (disable this corporation structures dashboard)"
+    },
     "placeholders": {
       "selectDirector": "Select a Director character",
       "keyword": "Search by structure/system/alias"

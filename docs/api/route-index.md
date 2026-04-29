@@ -60,7 +60,7 @@ source_of_truth:
 | PUT | `/me` | 更新当前用户昵称 / QQ / Discord ID | JWT |
 | POST | `/dashboard` | Dashboard 聚合数据 | JWT |
 | GET | `/dashboard/corporation-structures/settings` | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射，同时返回全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（天） | `RequireRole(admin)` |
-| PUT | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射；可同时更新全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（`>=0`，`0` 表示关闭） | `RequireRole(admin)` |
+| PUT | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射；`character_id=0` 表示该军团不参与军团建筑 ESI 刷新；可同时更新全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（`>=0`，`0` 表示关闭） | `RequireRole(admin)` |
 | GET | `/dashboard/corporation-structures/filter-options` | 获取建筑列表筛选元数据（星系、类型、服务） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/list` | 按多条件筛选读取军团建筑快照分页列表（支持排序） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/run-task` | 使用已授权 Director 角色触发单个军团建筑后台 ESI 任务（异步入队） | `RequireRole(admin)` |

@@ -2528,6 +2528,9 @@
       "updatedAt": "更新时间",
       "directorCharacter": "Director 授权角色"
     },
+    "options": {
+      "disabled": "无（不启用该军团建筑仪表盘）"
+    },
     "placeholders": {
       "selectDirector": "请选择 Director 角色",
       "keyword": "输入建筑名/星系名/缩写"

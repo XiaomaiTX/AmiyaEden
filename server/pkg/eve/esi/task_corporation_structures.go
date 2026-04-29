@@ -33,8 +33,8 @@ func (t *CorporationStructuresTask) Priority() Priority  { return PriorityLow }
 
 func (t *CorporationStructuresTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   3 * 24 * time.Hour,
-		Inactive: 7 * 24 * time.Hour,
+		Active:   24 * time.Hour,
+		Inactive: 24 * time.Hour,
 	}
 }
 

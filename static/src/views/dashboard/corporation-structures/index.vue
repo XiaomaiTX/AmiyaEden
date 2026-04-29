@@ -322,6 +322,7 @@
                   class="w-full"
                   @clear="authorizationByCorp[row.corporation_id] = 0"
                 >
+                  <ElOption :label="$t('corporationStructures.options.disabled')" :value="0" />
                   <ElOption
                     v-for="option in row.director_characters"
                     :key="option.character_id"
