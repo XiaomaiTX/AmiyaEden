@@ -24,6 +24,7 @@ source_of_truth:
 - 商店订单管理页执行人工发放成功后，系统会按 PAP 兑换页的 `admin-award` 配置额外给管理员执行人钱包入账一笔奖励，默认 10 伏羲币，设为 `0` 可关闭，流水 `ref_type = admin_award`；仅有 `shop_order_manage` 职权的执行人不会领取该奖励
 - 订单发放成功后，系统会以执行发放官员的主人物为发件人异步尽力发送一封双语游戏内邮件，并附带下单备注与发放备注（若有）；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果，也不会阻塞继续处理下一单
 - 管理员伏羲币调整、流水、日志
+- 管理员伏羲币分析概览（按时间窗聚合 summary / trend / ref_type / 异常面板）
 
 ## 货币展示边界
 
@@ -120,6 +121,7 @@ source_of_truth:
 - 用户侧 `/shop/wallet` 交易流水，以及管理端钱包列表、钱包流水、钱包操作日志，都按 ledger 视图处理
 - 管理端钱包列表支持按当前用户昵称或任意已绑定人物名搜索
 - 管理端钱包流水的用户筛选按 `/system/user` 一致语义执行，支持昵称或任意已绑定人物名搜索
+- 管理端 `/system/wallet/analytics` 支持 `start_date`、`end_date`、`ref_types`、`user_keyword`、`top_n`；时间窗最大 365 天，默认 `top_n=10`，响应包含 `summary`、`daily_series`、`ref_type_breakdown`、`top_inflow_users`、`top_outflow_users`、`admin_adjust_stats`、`anomalies`
 - 商店、兑换码虽然都在 `Shop` 目录下，但用户态与管理态接口是分开的
 - 商店商品图片上传当前通过 `/upload/image` 返回 base64 data URL，不写入项目文件夹；大小上限 2MB，仅支持 jpeg/png/webp
 - 钱包在下单时立即扣款；拒绝订单时通过 `CreditUser` 退款，流水类型为 `shop_refund`

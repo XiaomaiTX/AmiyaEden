@@ -460,6 +460,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminWallet.POST("/adjust", adminWalletH.AdminAdjust)
 		adminWallet.POST("/transactions", adminWalletH.AdminListTransactions)
 		adminWallet.POST("/logs", adminWalletH.AdminListLogs)
+		adminWallet.POST("/analytics", adminWalletH.AdminAnalytics)
 	}
 
 	// 商店管理（管理员）

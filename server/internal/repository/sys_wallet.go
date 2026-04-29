@@ -154,6 +154,70 @@ type WalletListFilter struct {
 	UserKeyword string
 }
 
+type WalletAnalyticsFilter struct {
+	StartAt     time.Time
+	EndAt       time.Time
+	RefTypes    []string
+	UserKeyword string
+}
+
+type WalletAnalyticsSummaryAgg struct {
+	WalletCount       int64
+	ActiveWalletCount int64
+	TotalBalance      float64
+	IncomeTotal       float64
+	ExpenseTotal      float64
+}
+
+type WalletAnalyticsDailyAgg struct {
+	Date    string
+	Income  float64
+	Expense float64
+}
+
+type WalletAnalyticsRefTypeAgg struct {
+	RefType string
+	Income  float64
+	Expense float64
+	Count   int64
+}
+
+type WalletAnalyticsTopUserAgg struct {
+	UserID        uint
+	CharacterName string
+	Amount        float64
+}
+
+type WalletAnalyticsOperatorAgg struct {
+	OperatorID   uint
+	OperatorName string
+	Count        int64
+	AmountTotal  float64
+}
+
+type WalletAnalyticsAdminAdjustStatsAgg struct {
+	Count       int64
+	AmountTotal float64
+	ByOperator  []WalletAnalyticsOperatorAgg
+}
+
+type WalletAnalyticsLargeTransactionAgg struct {
+	ID            uint
+	UserID        uint
+	CharacterName string
+	Amount        float64
+	RefType       string
+	CreatedAt     time.Time
+}
+
+type WalletAnalyticsFrequentAdjustmentAgg struct {
+	TargetUID          uint
+	CharacterName      string
+	AdjustCount        int64
+	AmountTotal        float64
+	LastAdjustmentTime time.Time
+}
+
 func applyWalletUserKeywordFilter(db *gorm.DB, userIDColumn string, userKeyword string) *gorm.DB {
 	if strings.TrimSpace(userKeyword) == "" {
 		return db
@@ -178,6 +242,15 @@ func applyWalletTransactionUserFilter(db *gorm.DB, userIDColumn string, refTypeC
 	db = applyWalletUserKeywordFilter(db, userIDColumn, filter.UserKeyword)
 	if filter.RefType != "" {
 		db = db.Where(refTypeColumn+" = ?", filter.RefType)
+	}
+	return db
+}
+
+func applyWalletAnalyticsFilter(db *gorm.DB, userIDColumn string, refTypeColumn string, createdAtColumn string, filter WalletAnalyticsFilter) *gorm.DB {
+	db = db.Where(createdAtColumn+" >= ? AND "+createdAtColumn+" < ?", filter.StartAt, filter.EndAt)
+	db = applyWalletUserKeywordFilter(db, userIDColumn, filter.UserKeyword)
+	if len(filter.RefTypes) > 0 {
+		db = db.Where(refTypeColumn+" IN ?", filter.RefTypes)
 	}
 	return db
 }
@@ -368,4 +441,228 @@ func (r *SysWalletRepository) ListWalletsWithCharacter(page, pageSize int, filte
 		return nil, 0, err
 	}
 	return results, total, nil
+}
+
+func (r *SysWalletRepository) GetWalletAnalyticsSummary(filter WalletAnalyticsFilter) (WalletAnalyticsSummaryAgg, error) {
+	var result WalletAnalyticsSummaryAgg
+
+	activeUsersQuery := applyWalletAnalyticsFilter(
+		global.DB.Model(&model.WalletTransaction{}).Select("DISTINCT user_id"),
+		"user_id",
+		"ref_type",
+		"created_at",
+		filter,
+	)
+
+	if err := global.DB.Model(&model.SystemWallet{}).
+		Where("user_id IN (?)", activeUsersQuery).
+		Count(&result.WalletCount).Error; err != nil {
+		return result, err
+	}
+	result.ActiveWalletCount = result.WalletCount
+
+	if err := global.DB.Model(&model.SystemWallet{}).
+		Select("COALESCE(SUM(balance), 0)").
+		Where("user_id IN (?)", activeUsersQuery).
+		Scan(&result.TotalBalance).Error; err != nil {
+		return result, err
+	}
+
+	type txTotals struct {
+		Income  float64
+		Expense float64
+	}
+	var totals txTotals
+	txQuery := applyWalletAnalyticsFilter(global.DB.Model(&model.WalletTransaction{}), "user_id", "ref_type", "created_at", filter)
+	if err := txQuery.Select(`
+		COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS income,
+		COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) AS expense
+	`).Scan(&totals).Error; err != nil {
+		return result, err
+	}
+
+	result.IncomeTotal = totals.Income
+	result.ExpenseTotal = totals.Expense
+	return result, nil
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsDailySeries(filter WalletAnalyticsFilter) ([]WalletAnalyticsDailyAgg, error) {
+	var rows []WalletAnalyticsDailyAgg
+	query := applyWalletAnalyticsFilter(
+		global.DB.Model(&model.WalletTransaction{}),
+		"user_id",
+		"ref_type",
+		"created_at",
+		filter,
+	)
+
+	err := query.Select(`
+		DATE(created_at) AS date,
+		COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS income,
+		COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) AS expense
+	`).
+		Group("DATE(created_at)").
+		Order("date ASC").
+		Scan(&rows).Error
+	return rows, err
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsRefTypeBreakdown(filter WalletAnalyticsFilter) ([]WalletAnalyticsRefTypeAgg, error) {
+	var rows []WalletAnalyticsRefTypeAgg
+	query := applyWalletAnalyticsFilter(
+		global.DB.Model(&model.WalletTransaction{}),
+		"user_id",
+		"ref_type",
+		"created_at",
+		filter,
+	)
+
+	err := query.Select(`
+		ref_type,
+		COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS income,
+		COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END), 0) AS expense,
+		COUNT(*) AS count
+	`).
+		Group("ref_type").
+		Order("COUNT(*) DESC, ref_type ASC").
+		Scan(&rows).Error
+	return rows, err
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsTopUsers(filter WalletAnalyticsFilter, inflow bool, topN int) ([]WalletAnalyticsTopUserAgg, error) {
+	var rows []WalletAnalyticsTopUserAgg
+	query := global.DB.Table("wallet_transaction wt").
+		Joins(`LEFT JOIN "user" u ON wt.user_id = u.id`).
+		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id")
+	query = applyWalletAnalyticsFilter(query, "wt.user_id", "wt.ref_type", "wt.created_at", filter)
+	if inflow {
+		query = query.Where("wt.amount > 0")
+	} else {
+		query = query.Where("wt.amount < 0")
+	}
+
+	err := query.Select(`
+		wt.user_id,
+		COALESCE(ec.character_name, '') AS character_name,
+		COALESCE(SUM(ABS(wt.amount)), 0) AS amount
+	`).
+		Group("wt.user_id, ec.character_name").
+		Order("amount DESC, wt.user_id ASC").
+		Limit(topN).
+		Scan(&rows).Error
+	return rows, err
+}
+
+func (r *SysWalletRepository) GetWalletAnalyticsAdminAdjustStats(filter WalletAnalyticsFilter, topN int) (WalletAnalyticsAdminAdjustStatsAgg, error) {
+	result := WalletAnalyticsAdminAdjustStatsAgg{ByOperator: make([]WalletAnalyticsOperatorAgg, 0)}
+	query := global.DB.Table("wallet_log wl")
+	query = query.Where("wl.created_at >= ? AND wl.created_at < ?", filter.StartAt, filter.EndAt)
+	query = applyWalletUserKeywordFilter(query, "wl.target_uid", filter.UserKeyword)
+
+	type totalRow struct {
+		Count       int64
+		AmountTotal float64
+	}
+	var total totalRow
+	if err := query.Select("COUNT(*) AS count, COALESCE(SUM(wl.amount), 0) AS amount_total").Scan(&total).Error; err != nil {
+		return result, err
+	}
+	result.Count = total.Count
+	result.AmountTotal = total.AmountTotal
+
+	var byOperator []WalletAnalyticsOperatorAgg
+	err := query.
+		Select(`
+			wl.operator_id,
+			CASE
+				WHEN wl.operator_id = 0 THEN ''
+				ELSE COALESCE(NULLIF(operator_u.nickname, ''), operator_ec.character_name, '')
+			END AS operator_name,
+			COUNT(*) AS count,
+			COALESCE(SUM(wl.amount), 0) AS amount_total
+		`).
+		Joins(`LEFT JOIN "user" operator_u ON wl.operator_id = operator_u.id`).
+		Joins("LEFT JOIN eve_character operator_ec ON operator_u.primary_character_id = operator_ec.character_id").
+		Group("wl.operator_id, operator_u.nickname, operator_ec.character_name").
+		Order("amount_total DESC, wl.operator_id ASC").
+		Limit(topN).
+		Scan(&byOperator).Error
+	if err != nil {
+		return result, err
+	}
+	result.ByOperator = byOperator
+	return result, nil
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsAbsoluteAmounts(filter WalletAnalyticsFilter) ([]float64, error) {
+	var values []float64
+	query := applyWalletAnalyticsFilter(global.DB.Model(&model.WalletTransaction{}), "user_id", "ref_type", "created_at", filter)
+	err := query.Select("ABS(amount) AS amount").Where("amount <> 0").Pluck("ABS(amount)", &values).Error
+	return values, err
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsLargeTransactions(filter WalletAnalyticsFilter, minAbsAmount float64, topN int) ([]WalletAnalyticsLargeTransactionAgg, error) {
+	var rows []WalletAnalyticsLargeTransactionAgg
+	query := global.DB.Table("wallet_transaction wt").
+		Select(`
+			wt.id,
+			wt.user_id,
+			COALESCE(ec.character_name, '') AS character_name,
+			wt.amount,
+			wt.ref_type,
+			wt.created_at
+		`).
+		Joins(`LEFT JOIN "user" u ON wt.user_id = u.id`).
+		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id")
+	query = applyWalletAnalyticsFilter(query, "wt.user_id", "wt.ref_type", "wt.created_at", filter).
+		Where("ABS(wt.amount) >= ?", minAbsAmount).
+		Order("ABS(wt.amount) DESC, wt.created_at DESC").
+		Limit(topN)
+	err := query.Scan(&rows).Error
+	return rows, err
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsFrequentAdjustments(filter WalletAnalyticsFilter, topN int) ([]WalletAnalyticsFrequentAdjustmentAgg, error) {
+	var rows []WalletAnalyticsFrequentAdjustmentAgg
+	query := global.DB.Table("wallet_log wl").
+		Select(`
+			wl.target_uid,
+			COALESCE(ec.character_name, '') AS character_name,
+			COUNT(*) AS adjust_count,
+			COALESCE(SUM(wl.amount), 0) AS amount_total,
+			MAX(wl.created_at) AS last_adjustment_time
+		`).
+		Joins(`LEFT JOIN "user" u ON wl.target_uid = u.id`).
+		Joins("LEFT JOIN eve_character ec ON u.primary_character_id = ec.character_id").
+		Where("wl.created_at >= ? AND wl.created_at < ?", filter.StartAt, filter.EndAt)
+	query = applyWalletUserKeywordFilter(query, "wl.target_uid", filter.UserKeyword)
+	err := query.Group("wl.target_uid, ec.character_name, DATE(wl.created_at)").
+		Having("COUNT(*) >= 3").
+		Order("adjust_count DESC, amount_total DESC").
+		Limit(topN).
+		Scan(&rows).Error
+	return rows, err
+}
+
+func (r *SysWalletRepository) ListWalletAnalyticsOperatorConcentration(filter WalletAnalyticsFilter, topN int) ([]WalletAnalyticsOperatorAgg, error) {
+	var rows []WalletAnalyticsOperatorAgg
+	query := global.DB.Table("wallet_log wl").
+		Select(`
+			wl.operator_id,
+			CASE
+				WHEN wl.operator_id = 0 THEN ''
+				ELSE COALESCE(NULLIF(operator_u.nickname, ''), operator_ec.character_name, '')
+			END AS operator_name,
+			COUNT(*) AS count,
+			COALESCE(SUM(wl.amount), 0) AS amount_total
+		`).
+		Joins(`LEFT JOIN "user" operator_u ON wl.operator_id = operator_u.id`).
+		Joins("LEFT JOIN eve_character operator_ec ON operator_u.primary_character_id = operator_ec.character_id").
+		Where("wl.created_at >= ? AND wl.created_at < ?", filter.StartAt, filter.EndAt)
+	query = applyWalletUserKeywordFilter(query, "wl.target_uid", filter.UserKeyword)
+	err := query.Group("wl.operator_id, operator_u.nickname, operator_ec.character_name").
+		Order("amount_total DESC, wl.operator_id ASC").
+		Limit(topN).
+		Scan(&rows).Error
+	return rows, err
 }

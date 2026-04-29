@@ -21,6 +21,11 @@
         <ElTabPane :label="$t('walletAdmin.tabs.logs')" name="logs">
           <WalletLogs />
         </ElTabPane>
+
+        <!-- 分析概览 -->
+        <ElTabPane :label="$t('walletAdmin.tabs.analysis')" name="analysis">
+          <WalletAnalysis />
+        </ElTabPane>
       </ElTabs>
     </ElCard>
 
@@ -97,6 +102,7 @@
   import WalletList from './modules/wallet-list.vue'
   import WalletTransactions from './modules/wallet-transactions.vue'
   import WalletLogs from './modules/wallet-logs.vue'
+  import WalletAnalysis from './modules/wallet-analysis.vue'
 
   defineOptions({ name: 'SystemWallet' })
   const { t } = useI18n()

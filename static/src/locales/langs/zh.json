@@ -2329,7 +2329,8 @@
     "tabs": {
       "wallets": "钱包列表",
       "transactions": "流水查询",
-      "logs": "操作日志"
+      "logs": "操作日志",
+      "analysis": "分析概览"
     },
     "adjustTitle": "调整用户钱包",
     "adjustBalance": "手动调整余额",
@@ -2366,7 +2367,8 @@
       "shop_purchase": "商城购买",
       "shop_refund": "商城退款",
       "newbro_captain_reward": "队长帮扶奖励",
-      "mentor_reward": "导师帮扶奖励"
+      "mentor_reward": "导师帮扶奖励",
+      "recruit_link_reward": "招募链接奖励"
     },
     "validation": {
       "targetUserId": "请输入目标用户 ID",
@@ -2393,6 +2395,34 @@
       "targetUser": "目标用户",
       "before": "操作前余额",
       "after": "操作后余额"
+    },
+    "analysis": {
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "refTypes": "流水类型筛选",
+      "userKeyword": "按人物名或昵称筛选",
+      "walletCount": "钱包总数",
+      "activeWalletCount": "活跃钱包数",
+      "totalBalance": "总余额",
+      "incomeTotal": "收入总额",
+      "expenseTotal": "支出总额",
+      "netFlow": "净流入",
+      "dailyTrend": "近 30 天趋势",
+      "incomeByRefType": "收入来源结构",
+      "expenseByRefType": "支出去向结构",
+      "topInflowUsers": "Top 收入用户",
+      "topOutflowUsers": "Top 支出用户",
+      "anomalies": "异常审计面板",
+      "largeTransactions": "大额流水",
+      "frequentAdjustments": "频繁调整",
+      "operatorConcentration": "操作人集中度",
+      "adjustCount": "调整次数",
+      "amountTotal": "调整总额",
+      "lastAdjustmentTime": "最近调整时间",
+      "operatorName": "操作人名称",
+      "ratio": "占比",
+      "amount": "金额",
+      "empty": "当前时间范围没有可分析数据"
     }
   },
   "dashboardConsole": {
