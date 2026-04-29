@@ -32,6 +32,12 @@ test('corporation structures settings includes notice thresholds and submits the
   assert.match(source, /timer_notice_threshold_days:\s*normalizeThresholdDays/)
 })
 
+test('corporation structures settings supports disabling dashboard authorization per corporation', () => {
+  assert.match(source, /corporationStructures\.options\.disabled/)
+  assert.match(source, /:value="0"/)
+  assert.match(source, /character_id:\s*authorizationByCorp\[corp\.corporation_id\]\s*\|\|\s*0/)
+})
+
 test('corporation structures api module exposes all required endpoints', () => {
   assert.match(apiSource, /\/api\/v1\/dashboard\/corporation-structures\/settings/)
   assert.match(apiSource, /\/settings\/authorizations/)

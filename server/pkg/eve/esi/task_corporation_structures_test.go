@@ -15,6 +15,18 @@ import (
 	"gorm.io/gorm"
 )
 
+func TestCorporationStructuresTaskIntervalIsOneDay(t *testing.T) {
+	task := &CorporationStructuresTask{}
+	interval := task.Interval()
+
+	if interval.Active != 24*time.Hour {
+		t.Fatalf("active interval = %s, want %s", interval.Active, 24*time.Hour)
+	}
+	if interval.Inactive != 24*time.Hour {
+		t.Fatalf("inactive interval = %s, want %s", interval.Inactive, 24*time.Hour)
+	}
+}
+
 func TestCorporationStructuresTaskExecutePersistsEnrichedSnapshotFields(t *testing.T) {
 	db := newCorporationStructuresTaskTestDB(t)
 	oldDB := global.DB
