@@ -295,6 +295,18 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	uploadH := handler.NewUploadHandler()
 	login.POST("/upload/image", uploadH.UploadImage)
 
+	// ─── 工单（用户端）───
+	ticketH := handler.NewTicketHandler()
+	ticket := login.Group("/ticket")
+	{
+		ticket.POST("/tickets", ticketH.CreateTicket)
+		ticket.GET("/tickets/me", ticketH.ListMyTickets)
+		ticket.GET("/tickets/:id", ticketH.GetMyTicket)
+		ticket.POST("/tickets/:id/replies", ticketH.AddMyReply)
+		ticket.GET("/tickets/:id/replies", ticketH.ListMyReplies)
+		ticket.GET("/categories", ticketH.ListCategories)
+	}
+
 	// ─── SRP 补损 ───
 	srpH := handler.NewSrpHandler()
 	srp := login.Group("/srp")
@@ -555,6 +567,24 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminFuxiAdmin.POST("", fuxiAdminH.CreateAdmin)
 		adminFuxiAdmin.PUT("/:id", fuxiAdminH.UpdateAdmin)
 		adminFuxiAdmin.DELETE("/:id", fuxiAdminH.DeleteAdmin)
+	}
+
+	// ─── 工单管理（管理员）───
+	adminTicket := admin.Group("/ticket")
+	{
+		adminTicket.GET("/tickets", ticketH.AdminListTickets)
+		adminTicket.GET("/tickets/:id", ticketH.AdminGetTicket)
+		adminTicket.PUT("/tickets/:id/status", ticketH.AdminUpdateStatus)
+		adminTicket.PUT("/tickets/:id/priority", ticketH.AdminUpdatePriority)
+		adminTicket.POST("/tickets/:id/replies", ticketH.AdminAddReply)
+		adminTicket.GET("/tickets/:id/replies", ticketH.AdminListReplies)
+		adminTicket.GET("/tickets/:id/status-history", ticketH.AdminListStatusHistory)
+
+		adminTicket.GET("/categories", ticketH.AdminListCategories)
+		adminTicket.POST("/categories", ticketH.AdminCreateCategory)
+		adminTicket.PUT("/categories/:id", ticketH.AdminUpdateCategory)
+		adminTicket.DELETE("/categories/:id", ticketH.AdminDeleteCategory)
+		adminTicket.GET("/statistics", ticketH.AdminStatistics)
 	}
 }
 

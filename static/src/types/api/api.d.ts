@@ -2586,6 +2586,107 @@ declare namespace Api {
     }
   }
 
+  namespace Ticket {
+    type TicketStatus = 'pending' | 'in_progress' | 'completed'
+    type TicketPriority = 'low' | 'medium' | 'high'
+
+    interface TicketItem {
+      id: number
+      user_id: number
+      category_id: number
+      title: string
+      description: string
+      status: TicketStatus
+      priority: TicketPriority
+      handled_by?: number
+      handled_at?: string
+      closed_at?: string
+      created_at: string
+      updated_at: string
+    }
+
+    interface TicketCategory {
+      id: number
+      name: string
+      name_en: string
+      description: string
+      sort_order: number
+      enabled: boolean
+      created_at: string
+      updated_at: string
+    }
+
+    interface TicketReply {
+      id: number
+      ticket_id: number
+      user_id: number
+      content: string
+      is_internal: boolean
+      created_at: string
+      updated_at: string
+    }
+
+    interface TicketStatusHistory {
+      id: number
+      ticket_id: number
+      from_status: string
+      to_status: TicketStatus
+      changed_by: number
+      changed_at: string
+    }
+
+    type TicketListParams = Partial<Api.Common.CommonSearchParams> & {
+      status?: TicketStatus | ''
+    }
+
+    type AdminTicketListParams = Partial<Api.Common.CommonSearchParams> & {
+      status?: TicketStatus | ''
+      keyword?: string
+      category_id?: number
+      user_id?: number
+    }
+
+    interface CreateTicketParams {
+      category_id: number
+      title: string
+      description: string
+      priority?: TicketPriority
+    }
+
+    interface AddReplyParams {
+      content: string
+    }
+
+    interface AdminAddReplyParams extends AddReplyParams {
+      is_internal?: boolean
+    }
+
+    interface UpdateStatusParams {
+      status: TicketStatus
+    }
+
+    interface UpdatePriorityParams {
+      priority: TicketPriority
+    }
+
+    interface UpsertCategoryParams {
+      name: string
+      name_en: string
+      description?: string
+      sort_order?: number
+      enabled?: boolean
+    }
+
+    interface Statistics {
+      total: number
+      status: Record<TicketStatus, number>
+      category: Record<string, number>
+      recent_7d: number
+      recent_30d: number
+      pendingCount: number
+    }
+  }
+
   /** Webhook 配置 */
   namespace Webhook {
     interface Config {

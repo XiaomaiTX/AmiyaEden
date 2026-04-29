@@ -85,6 +85,47 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'ticket-management',
+      name: 'TicketManagement',
+      component: '/system/ticket-management',
+      meta: {
+        title: 'menus.system.ticketManagement',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
+    },
+    {
+      path: 'ticket-categories',
+      name: 'TicketCategories',
+      component: '/system/ticket-categories',
+      meta: {
+        title: 'menus.system.ticketCategories',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
+    },
+    {
+      path: 'ticket-statistics',
+      name: 'TicketStatistics',
+      component: '/system/ticket-statistics',
+      meta: {
+        title: 'menus.system.ticketStatistics',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
+    },
+    {
+      path: 'ticket-detail/:id',
+      name: 'TicketAdminDetail',
+      component: '/system/ticket-detail',
+      meta: {
+        title: 'menus.ticket.detail',
+        isHide: true,
+        isHideTab: true,
+        roles: ['super_admin', 'admin']
+      }
+    },
+    {
       path: 'user-center',
       name: 'UserCenter',
       component: '/system/user-center',
