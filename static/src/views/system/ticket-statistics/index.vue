@@ -2,16 +2,36 @@
   <div class="ticket-stats-page" v-loading="loading">
     <ElRow :gutter="16">
       <ElCol :xs="24" :sm="12" :md="6">
-        <ElCard><div class="stat-item"><span>{{ t('ticket.stats.total') }}</span><strong>{{ stats?.total ?? 0 }}</strong></div></ElCard>
+        <ElCard
+          ><div class="stat-item"
+            ><span>{{ t('ticket.stats.total') }}</span
+            ><strong>{{ stats?.total ?? 0 }}</strong></div
+          ></ElCard
+        >
       </ElCol>
       <ElCol :xs="24" :sm="12" :md="6">
-        <ElCard><div class="stat-item"><span>{{ t('ticket.status.pending') }}</span><strong>{{ stats?.status.pending ?? 0 }}</strong></div></ElCard>
+        <ElCard
+          ><div class="stat-item"
+            ><span>{{ t('ticket.status.pending') }}</span
+            ><strong>{{ stats?.status.pending ?? 0 }}</strong></div
+          ></ElCard
+        >
       </ElCol>
       <ElCol :xs="24" :sm="12" :md="6">
-        <ElCard><div class="stat-item"><span>{{ t('ticket.status.in_progress') }}</span><strong>{{ stats?.status.in_progress ?? 0 }}</strong></div></ElCard>
+        <ElCard
+          ><div class="stat-item"
+            ><span>{{ t('ticket.status.in_progress') }}</span
+            ><strong>{{ stats?.status.in_progress ?? 0 }}</strong></div
+          ></ElCard
+        >
       </ElCol>
       <ElCol :xs="24" :sm="12" :md="6">
-        <ElCard><div class="stat-item"><span>{{ t('ticket.status.completed') }}</span><strong>{{ stats?.status.completed ?? 0 }}</strong></div></ElCard>
+        <ElCard
+          ><div class="stat-item"
+            ><span>{{ t('ticket.status.completed') }}</span
+            ><strong>{{ stats?.status.completed ?? 0 }}</strong></div
+          ></ElCard
+        >
       </ElCol>
     </ElRow>
     <ElCard>
@@ -71,4 +91,3 @@
     gap: 20px;
   }
 </style>
-

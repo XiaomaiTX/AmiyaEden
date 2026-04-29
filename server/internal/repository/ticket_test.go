@@ -116,3 +116,53 @@ func TestTicketRepositoryCountByStatusIncludesDefaultKeys(t *testing.T) {
 		t.Fatalf("completed count = %d, want 0", byStatus[model.TicketStatusCompleted])
 	}
 }
+
+func TestTicketRepositoryCountBadgeTicketsForAdminCountsPendingAndOwnedInProgress(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+	ticket1, ticket2 := seedTicketRepositoryData(t)
+
+	adminID := uint(7001)
+	assigned := adminID
+	otherAssigned := adminID + 1
+	if err := global.DB.Create(&model.Ticket{
+		UserID:      1003,
+		CategoryID:  ticket1.CategoryID,
+		Title:       "extra pending",
+		Description: "extra pending ticket",
+		Status:      model.TicketStatusPending,
+		Priority:    model.TicketPriorityMedium,
+	}).Error; err != nil {
+		t.Fatalf("create extra pending ticket: %v", err)
+	}
+	if err := global.DB.Create(&model.Ticket{
+		UserID:      1004,
+		CategoryID:  ticket2.CategoryID,
+		Title:       "assigned to current admin",
+		Description: "assigned in progress ticket",
+		Status:      model.TicketStatusInProgress,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &assigned,
+	}).Error; err != nil {
+		t.Fatalf("create assigned ticket: %v", err)
+	}
+	if err := global.DB.Create(&model.Ticket{
+		UserID:      1005,
+		CategoryID:  ticket2.CategoryID,
+		Title:       "assigned to other admin",
+		Description: "should not count",
+		Status:      model.TicketStatusInProgress,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &otherAssigned,
+	}).Error; err != nil {
+		t.Fatalf("create other assigned ticket: %v", err)
+	}
+
+	got, err := repo.CountBadgeTicketsForAdmin(adminID)
+	if err != nil {
+		t.Fatalf("CountBadgeTicketsForAdmin() error: %v", err)
+	}
+	if got != 3 {
+		t.Fatalf("CountBadgeTicketsForAdmin() = %d, want 3", got)
+	}
+}

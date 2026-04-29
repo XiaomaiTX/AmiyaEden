@@ -178,7 +178,15 @@ func (r *TicketRepository) CountCreatedSince(since time.Time) (int64, error) {
 	return count, err
 }
 
+func (r *TicketRepository) CountBadgeTicketsForAdmin(userID uint) (int64, error) {
+	var count int64
+	err := global.DB.Model(&model.Ticket{}).
+		Where("status = ?", model.TicketStatusPending).
+		Or(global.DB.Where("status = ? AND handled_by = ?", model.TicketStatusInProgress, userID)).
+		Count(&count).Error
+	return count, err
+}
+
 func (r *TicketRepository) InTx(fn func(tx *gorm.DB) error) error {
 	return global.DB.Transaction(fn)
 }
-

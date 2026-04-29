@@ -155,6 +155,7 @@ declare namespace Api {
       order_pending?: number
       mentor_pending_applications?: number
       corporation_structures_attention?: number
+      ticket_attention?: number
     }
   }
 

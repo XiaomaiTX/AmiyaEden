@@ -13,7 +13,7 @@ const statsSource = readFileSync(new URL('./ticket-statistics/index.vue', import
 test('ticket management page uses admin list and status/priority update APIs', () => {
   assert.match(
     manageSource,
-    /import \{ adminListTickets, adminUpdateTicketPriority, adminUpdateTicketStatus \} from '@\/api\/ticket'/
+    /import \{[\s\S]*adminListTickets,[\s\S]*adminUpdateTicketPriority,[\s\S]*adminUpdateTicketStatus[\s\S]*\} from '@\/api\/ticket'/
   )
   assert.match(
     manageSource,
@@ -38,7 +38,7 @@ test('ticket admin detail page loads ticket replies history and supports interna
   )
   assert.match(
     detailSource,
-    /await adminAddTicketReply\(ticketId\.value, \{ content: content\.value, is_internal: isInternal\.value \}\)/
+    /await adminAddTicketReply\(ticketId\.value, \{[\s\S]*content: content\.value,[\s\S]*is_internal: isInternal\.value[\s\S]*\}\)/
   )
 })
 

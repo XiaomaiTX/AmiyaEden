@@ -21,7 +21,9 @@
       <ElCheckbox v-model="isInternal">{{ t('ticket.internalNote') }}</ElCheckbox>
       <ElInput v-model="content" type="textarea" :rows="3" />
       <div class="ticket-detail-actions">
-        <ElButton type="primary" :loading="submitting" @click="submitReply">{{ t('ticket.reply') }}</ElButton>
+        <ElButton type="primary" :loading="submitting" @click="submitReply">{{
+          t('ticket.reply')
+        }}</ElButton>
       </div>
     </ElCard>
 
@@ -88,7 +90,10 @@
     }
     submitting.value = true
     try {
-      await adminAddTicketReply(ticketId.value, { content: content.value, is_internal: isInternal.value })
+      await adminAddTicketReply(ticketId.value, {
+        content: content.value,
+        is_internal: isInternal.value
+      })
       content.value = ''
       await loadData()
       ElMessage.success(t('ticket.messages.replyAdded'))
@@ -138,4 +143,3 @@
     margin-top: 12px;
   }
 </style>
-

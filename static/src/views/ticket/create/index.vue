@@ -3,8 +3,17 @@
     <ElCard>
       <ElForm :model="form" label-width="110px">
         <ElFormItem :label="t('ticket.form.category')">
-          <ElSelect v-model="form.category_id" :placeholder="t('ticket.form.category')" style="width: 320px">
-            <ElOption v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
+          <ElSelect
+            v-model="form.category_id"
+            :placeholder="t('ticket.form.category')"
+            style="width: 320px"
+          >
+            <ElOption
+              v-for="item in categories"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="t('ticket.form.title')">
@@ -21,7 +30,9 @@
           <ElInput v-model="form.description" type="textarea" :rows="6" />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" :loading="submitting" @click="submit">{{ t('ticket.submit') }}</ElButton>
+          <ElButton type="primary" :loading="submitting" @click="submit">{{
+            t('ticket.submit')
+          }}</ElButton>
         </ElFormItem>
       </ElForm>
     </ElCard>
@@ -73,4 +84,3 @@
 
   onMounted(loadCategories)
 </script>
-

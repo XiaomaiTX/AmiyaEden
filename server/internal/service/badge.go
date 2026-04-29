@@ -15,6 +15,7 @@ const (
 	BadgeCountOrderPending                   = "order_pending"
 	BadgeCountMentorPendingApplications      = "mentor_pending_applications"
 	BadgeCountCorporationStructuresAttention = "corporation_structures_attention"
+	BadgeCountTicketAttention                = "ticket_attention"
 )
 
 type BadgeCounts map[string]int64
@@ -24,6 +25,7 @@ type BadgeService struct {
 	welfareRepo          *repository.WelfareRepository
 	shopRepo             *repository.ShopRepository
 	mentorRepo           *repository.MentorRelationshipRepository
+	ticketRepo           *repository.TicketRepository
 	corpStructureService *CorporationStructureService
 }
 
@@ -33,6 +35,7 @@ func NewBadgeService() *BadgeService {
 		welfareRepo: repository.NewWelfareRepository(),
 		shopRepo:    repository.NewShopRepository(),
 		mentorRepo:  repository.NewMentorRelationshipRepository(),
+		ticketRepo:  repository.NewTicketRepository(),
 		corpStructureService: &CorporationStructureService{
 			roleRepo:      repository.NewRoleRepository(),
 			charRepo:      repository.NewEveCharacterRepository(),
@@ -162,6 +165,26 @@ func (s *BadgeService) GetBadgeCounts(userID uint, userRoles []string) (BadgeCou
 			}
 			if attentionCount > 0 {
 				counts[BadgeCountCorporationStructuresAttention] = attentionCount
+			}
+		}()
+	}
+
+	// 7. 工单待处理 / 自己处理中
+	if model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			attentionCount, err := s.ticketRepo.CountBadgeTicketsForAdmin(userID)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				if firstErr == nil {
+					firstErr = errors.New("获取工单待处理数量失败")
+				}
+				return
+			}
+			if attentionCount > 0 {
+				counts[BadgeCountTicketAttention] = attentionCount
 			}
 		}()
 	}
