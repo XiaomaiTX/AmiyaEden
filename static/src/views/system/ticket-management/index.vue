@@ -1,5 +1,5 @@
 <template>
-  <div class="ticket-page">
+  <div class="ticket-page art-full-height">
     <div class="ticket-page__toolbar">
       <ElInput
         v-model="filters.keyword"
@@ -17,44 +17,20 @@
         <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
         <ElOption :label="t('ticket.status.completed')" value="completed" />
       </ElSelect>
-      <ElButton type="primary" @click="loadTickets">{{ t('common.search') }}</ElButton>
+      <ElButton type="primary" @click="handleSearch">{{ t('common.search') }}</ElButton>
     </div>
 
-    <ElTable :data="list" v-loading="loading">
-      <ElTableColumn prop="id" label="ID" width="80" />
-      <ElTableColumn prop="user_id" :label="t('ticket.columns.submitter')" width="100" />
-      <ElTableColumn prop="title" :label="t('ticket.columns.title')" min-width="200" />
-      <ElTableColumn :label="t('ticket.columns.status')" width="180">
-        <template #default="{ row }">
-          <ElSelect v-model="row.status" size="small" @change="(val) => updateStatus(row.id, val)">
-            <ElOption :label="t('ticket.status.pending')" value="pending" />
-            <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
-            <ElOption :label="t('ticket.status.completed')" value="completed" />
-          </ElSelect>
-        </template>
-      </ElTableColumn>
-      <ElTableColumn :label="t('ticket.columns.priority')" width="170">
-        <template #default="{ row }">
-          <ElSelect
-            v-model="row.priority"
-            size="small"
-            @change="(val) => updatePriority(row.id, val)"
-          >
-            <ElOption :label="t('ticket.priority.low')" value="low" />
-            <ElOption :label="t('ticket.priority.medium')" value="medium" />
-            <ElOption :label="t('ticket.priority.high')" value="high" />
-          </ElSelect>
-        </template>
-      </ElTableColumn>
-      <ElTableColumn prop="updated_at" :label="t('common.updatedAt')" width="180" />
-      <ElTableColumn :label="t('common.operation')" width="120" fixed="right">
-        <template #default="{ row }">
-          <ElButton link type="primary" @click="openDetail(row.id)">{{
-            t('ticket.viewDetail')
-          }}</ElButton>
-        </template>
-      </ElTableColumn>
-    </ElTable>
+    <ElCard class="art-table-card" shadow="never">
+      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
+      <ArtTable
+        :loading="loading"
+        :data="data"
+        :columns="columns"
+        :pagination="pagination"
+        @pagination:size-change="handleSizeChange"
+        @pagination:current-change="handleCurrentChange"
+      />
+    </ElCard>
   </div>
 </template>
 
@@ -64,7 +40,8 @@
     adminUpdateTicketPriority,
     adminUpdateTicketStatus
   } from '@/api/ticket'
-  import { ElMessage } from 'element-plus'
+  import { useTable } from '@/hooks/core/useTable'
+  import { ElButton, ElMessage, ElOption, ElSelect } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'TicketManagementPage' })
@@ -72,37 +49,103 @@
   const { t } = useI18n()
   const router = useRouter()
 
-  const loading = ref(false)
-  const list = ref<Api.Ticket.TicketItem[]>([])
   const filters = reactive<{ keyword: string; status: Api.Ticket.TicketStatus | '' }>({
     keyword: '',
     status: ''
   })
 
-  const loadTickets = async () => {
-    loading.value = true
-    try {
-      const data = await adminListTickets({
+  const {
+    columns,
+    columnChecks,
+    data,
+    loading,
+    pagination,
+    searchParams,
+    getData,
+    refreshData,
+    refreshUpdate,
+    handleSizeChange,
+    handleCurrentChange
+  } = useTable({
+    core: {
+      apiFn: adminListTickets,
+      apiParams: {
         current: 1,
-        size: 100,
+        size: 20,
         keyword: filters.keyword,
         status: filters.status
-      })
-      list.value = data.list
-    } catch (error: any) {
-      ElMessage.error(error?.message || t('ticket.messages.loadFailed'))
-    } finally {
-      loading.value = false
+      },
+      columnsFactory: () => [
+        { prop: 'id', label: 'ID', width: 80 },
+        { prop: 'user_id', label: t('ticket.columns.submitter'), width: 100 },
+        { prop: 'title', label: t('ticket.columns.title'), minWidth: 200 },
+        {
+          prop: 'status',
+          label: t('ticket.columns.status'),
+          width: 180,
+          formatter: (row) =>
+            h(
+              ElSelect,
+              {
+                modelValue: row.status,
+                size: 'small',
+                onChange: (val: Api.Ticket.TicketStatus) => updateStatus(row.id, val)
+              },
+              () => [
+                h(ElOption, { label: t('ticket.status.pending'), value: 'pending' }),
+                h(ElOption, { label: t('ticket.status.in_progress'), value: 'in_progress' }),
+                h(ElOption, { label: t('ticket.status.completed'), value: 'completed' })
+              ]
+            )
+        },
+        {
+          prop: 'priority',
+          label: t('ticket.columns.priority'),
+          width: 170,
+          formatter: (row) =>
+            h(
+              ElSelect,
+              {
+                modelValue: row.priority,
+                size: 'small',
+                onChange: (val: Api.Ticket.TicketPriority) => updatePriority(row.id, val)
+              },
+              () => [
+                h(ElOption, { label: t('ticket.priority.low'), value: 'low' }),
+                h(ElOption, { label: t('ticket.priority.medium'), value: 'medium' }),
+                h(ElOption, { label: t('ticket.priority.high'), value: 'high' })
+              ]
+            )
+        },
+        { prop: 'updated_at', label: t('common.updatedAt'), width: 180 },
+        {
+          prop: 'operation',
+          label: t('common.operation'),
+          width: 120,
+          fixed: 'right',
+          formatter: (row) =>
+            h(
+              ElButton,
+              {
+                link: true,
+                type: 'primary',
+                onClick: () => openDetail(row.id)
+              },
+              () => t('ticket.viewDetail')
+            )
+        }
+      ]
     }
-  }
+  })
 
   const updateStatus = async (id: number, status: Api.Ticket.TicketStatus) => {
     try {
       await adminUpdateTicketStatus(id, { status })
       ElMessage.success(t('ticket.messages.updated'))
+      await refreshUpdate()
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
-      await loadTickets()
+      await refreshData()
     }
   }
 
@@ -110,16 +153,24 @@
     try {
       await adminUpdateTicketPriority(id, { priority })
       ElMessage.success(t('ticket.messages.updated'))
+      await refreshUpdate()
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
-      await loadTickets()
+      await refreshData()
     }
+  }
+
+  const handleSearch = () => {
+    Object.assign(searchParams, {
+      current: 1,
+      keyword: filters.keyword,
+      status: filters.status
+    })
+    getData()
   }
 
   const openDetail = (id: number) =>
     router.push({ name: 'TicketAdminDetail', params: { id: String(id) } })
-
-  onMounted(loadTickets)
 </script>
 
 <style scoped>

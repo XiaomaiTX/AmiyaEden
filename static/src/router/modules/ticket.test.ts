@@ -31,3 +31,37 @@ test('ticket detail route remains hidden from menus and tabs', () => {
   assert.match(detailBlock, /isHideTab:\s*true/)
   assert.match(detailBlock, /login:\s*true/)
 })
+
+test('ticket route tree contains admin ticket center pages under /ticket', () => {
+  const managementBlock = source.slice(
+    source.indexOf("path: 'management'"),
+    source.indexOf("path: 'categories'")
+  )
+  assert.match(managementBlock, /name:\s*'TicketManagement'/)
+  assert.match(managementBlock, /title:\s*'menus\.ticket\.management'/)
+  assert.match(managementBlock, /roles:\s*\['super_admin', 'admin'\]/)
+
+  const categoriesBlock = source.slice(
+    source.indexOf("path: 'categories'"),
+    source.indexOf("path: 'statistics'")
+  )
+  assert.match(categoriesBlock, /name:\s*'TicketCategories'/)
+  assert.match(categoriesBlock, /title:\s*'menus\.ticket\.categories'/)
+  assert.match(categoriesBlock, /roles:\s*\['super_admin', 'admin'\]/)
+
+  const statisticsBlock = source.slice(
+    source.indexOf("path: 'statistics'"),
+    source.indexOf("path: 'admin-detail/:id'")
+  )
+  assert.match(statisticsBlock, /name:\s*'TicketStatistics'/)
+  assert.match(statisticsBlock, /title:\s*'menus\.ticket\.statistics'/)
+  assert.match(statisticsBlock, /roles:\s*\['super_admin', 'admin'\]/)
+})
+
+test('ticket admin detail route remains hidden from menus and tabs', () => {
+  const detailBlock = source.slice(source.indexOf("path: 'admin-detail/:id'"), source.length)
+  assert.match(detailBlock, /name:\s*'TicketAdminDetail'/)
+  assert.match(detailBlock, /isHide:\s*true/)
+  assert.match(detailBlock, /isHideTab:\s*true/)
+  assert.match(detailBlock, /roles:\s*\['super_admin', 'admin'\]/)
+})
