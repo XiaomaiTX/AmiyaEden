@@ -3,7 +3,9 @@
     <div class="ticket-reply-item__header">
       <span>#{{ reply.id }}</span>
       <span>{{ formatTime(reply.created_at) }}</span>
-      <ElTag v-if="reply.is_internal" type="warning" size="small">{{ t('ticket.internalNote') }}</ElTag>
+      <ElTag v-if="reply.is_internal" type="warning" size="small">{{
+        t('ticket.internalNote')
+      }}</ElTag>
     </div>
     <div class="ticket-reply-item__content">{{ reply.content }}</div>
   </div>
@@ -12,6 +14,7 @@
 <script setup lang="ts">
   import { ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { formatTime } from '@utils/common'
 
   defineProps<{
     reply: Api.Ticket.TicketReply
@@ -42,5 +45,3 @@
     line-height: 1.5;
   }
 </style>
-
-

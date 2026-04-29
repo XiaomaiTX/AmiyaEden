@@ -102,6 +102,49 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 		t.Fatalf("create mentor relationship: %v", err)
 	}
 
+	category := model.TicketCategory{
+		Name:      "账号问题",
+		NameEN:    "Account Issues",
+		Enabled:   true,
+		SortOrder: 0,
+	}
+	if err := db.Create(&category).Error; err != nil {
+		t.Fatalf("create ticket category: %v", err)
+	}
+	if err := db.Create(&model.Ticket{
+		UserID:      user.ID,
+		CategoryID:  category.ID,
+		Title:       "Pending Ticket",
+		Description: "Pending ticket for badge count",
+		Status:      model.TicketStatusPending,
+		Priority:    model.TicketPriorityMedium,
+	}).Error; err != nil {
+		t.Fatalf("create pending ticket: %v", err)
+	}
+	if err := db.Create(&model.Ticket{
+		UserID:      user.ID + 1,
+		CategoryID:  category.ID,
+		Title:       "Owned In Progress",
+		Description: "Assigned ticket for badge count",
+		Status:      model.TicketStatusInProgress,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &user.ID,
+	}).Error; err != nil {
+		t.Fatalf("create in progress ticket: %v", err)
+	}
+	otherHandlerID := user.ID + 500
+	if err := db.Create(&model.Ticket{
+		UserID:      user.ID + 2,
+		CategoryID:  category.ID,
+		Title:       "Other Handler",
+		Description: "Should not count for current admin",
+		Status:      model.TicketStatusInProgress,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &otherHandlerID,
+	}).Error; err != nil {
+		t.Fatalf("create other handler ticket: %v", err)
+	}
+
 	svc := NewBadgeService()
 	tests := []struct {
 		name  string
@@ -138,9 +181,10 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 			name:  "admin sees every non zero count",
 			roles: []string{model.RoleAdmin},
 			want: BadgeCounts{
-				BadgeCountSrpPending:     2,
-				BadgeCountWelfarePending: 1,
-				BadgeCountOrderPending:   1,
+				BadgeCountSrpPending:      2,
+				BadgeCountWelfarePending:  1,
+				BadgeCountOrderPending:    1,
+				BadgeCountTicketAttention: 2,
 			},
 		},
 		{
@@ -388,6 +432,8 @@ func newBadgeServiceTestDB(t *testing.T) *gorm.DB {
 		&model.ShopOrder{},
 		&model.SrpApplication{},
 		&model.CorpStructureInfo{},
+		&model.TicketCategory{},
+		&model.Ticket{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}

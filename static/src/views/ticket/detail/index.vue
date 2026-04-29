@@ -20,7 +20,9 @@
       </div>
       <ElInput v-model="content" type="textarea" :rows="3" />
       <div class="ticket-detail-actions">
-        <ElButton type="primary" :loading="submitting" @click="submitReply">{{ t('ticket.reply') }}</ElButton>
+        <ElButton type="primary" :loading="submitting" @click="submitReply">{{
+          t('ticket.reply')
+        }}</ElButton>
       </div>
     </ElCard>
   </div>
@@ -118,4 +120,3 @@
     margin-top: 12px;
   }
 </style>
-

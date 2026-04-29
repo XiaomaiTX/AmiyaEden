@@ -9,4 +9,3 @@
     label: string
   }>()
 </script>
-

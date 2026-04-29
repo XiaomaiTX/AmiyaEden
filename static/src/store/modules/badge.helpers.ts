@@ -6,7 +6,8 @@ const routeBadgeFieldMap = {
   WelfareApproval: 'welfare_pending',
   SrpManage: 'srp_pending',
   ShopOrderManage: 'order_pending',
-  DashboardCorporationStructures: 'corporation_structures_attention'
+  DashboardCorporationStructures: 'corporation_structures_attention',
+  TicketManagement: 'ticket_attention'
 } as const satisfies Record<string, keyof Api.Badge.BadgeCounts>
 
 function clearTextBadge(route: AppRouteRecord): void {

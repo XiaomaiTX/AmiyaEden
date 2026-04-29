@@ -1,7 +1,12 @@
 <template>
   <div class="ticket-page">
     <div class="ticket-page__toolbar">
-      <ElSelect v-model="filters.status" clearable :placeholder="t('ticket.filters.status')" style="width: 180px">
+      <ElSelect
+        v-model="filters.status"
+        clearable
+        :placeholder="t('ticket.filters.status')"
+        style="width: 180px"
+      >
         <ElOption :label="t('ticket.status.pending')" value="pending" />
         <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
         <ElOption :label="t('ticket.status.completed')" value="completed" />
@@ -26,7 +31,9 @@
       <ElTableColumn prop="updated_at" :label="t('common.updatedAt')" width="180" />
       <ElTableColumn :label="t('common.operation')" width="120" fixed="right">
         <template #default="{ row }">
-          <ElButton link type="primary" @click="goDetail(row.id)">{{ t('ticket.viewDetail') }}</ElButton>
+          <ElButton link type="primary" @click="goDetail(row.id)">{{
+            t('ticket.viewDetail')
+          }}</ElButton>
         </template>
       </ElTableColumn>
     </ElTable>
@@ -81,4 +88,3 @@
     flex-wrap: wrap;
   }
 </style>
-

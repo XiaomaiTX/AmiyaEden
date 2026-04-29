@@ -1,8 +1,18 @@
 <template>
   <div class="ticket-page">
     <div class="ticket-page__toolbar">
-      <ElInput v-model="filters.keyword" :placeholder="t('ticket.filters.keyword')" style="width: 260px" clearable />
-      <ElSelect v-model="filters.status" clearable :placeholder="t('ticket.filters.status')" style="width: 180px">
+      <ElInput
+        v-model="filters.keyword"
+        :placeholder="t('ticket.filters.keyword')"
+        style="width: 260px"
+        clearable
+      />
+      <ElSelect
+        v-model="filters.status"
+        clearable
+        :placeholder="t('ticket.filters.status')"
+        style="width: 180px"
+      >
         <ElOption :label="t('ticket.status.pending')" value="pending" />
         <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
         <ElOption :label="t('ticket.status.completed')" value="completed" />
@@ -25,7 +35,11 @@
       </ElTableColumn>
       <ElTableColumn :label="t('ticket.columns.priority')" width="170">
         <template #default="{ row }">
-          <ElSelect v-model="row.priority" size="small" @change="(val) => updatePriority(row.id, val)">
+          <ElSelect
+            v-model="row.priority"
+            size="small"
+            @change="(val) => updatePriority(row.id, val)"
+          >
             <ElOption :label="t('ticket.priority.low')" value="low" />
             <ElOption :label="t('ticket.priority.medium')" value="medium" />
             <ElOption :label="t('ticket.priority.high')" value="high" />
@@ -35,7 +49,9 @@
       <ElTableColumn prop="updated_at" :label="t('common.updatedAt')" width="180" />
       <ElTableColumn :label="t('common.operation')" width="120" fixed="right">
         <template #default="{ row }">
-          <ElButton link type="primary" @click="openDetail(row.id)">{{ t('ticket.viewDetail') }}</ElButton>
+          <ElButton link type="primary" @click="openDetail(row.id)">{{
+            t('ticket.viewDetail')
+          }}</ElButton>
         </template>
       </ElTableColumn>
     </ElTable>
@@ -43,7 +59,11 @@
 </template>
 
 <script setup lang="ts">
-  import { adminListTickets, adminUpdateTicketPriority, adminUpdateTicketStatus } from '@/api/ticket'
+  import {
+    adminListTickets,
+    adminUpdateTicketPriority,
+    adminUpdateTicketStatus
+  } from '@/api/ticket'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -96,7 +116,8 @@
     }
   }
 
-  const openDetail = (id: number) => router.push({ name: 'TicketAdminDetail', params: { id: String(id) } })
+  const openDetail = (id: number) =>
+    router.push({ name: 'TicketAdminDetail', params: { id: String(id) } })
 
   onMounted(loadTickets)
 </script>

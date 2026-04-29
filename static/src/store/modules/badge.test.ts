@@ -84,6 +84,12 @@ function createMenuList(): AppRouteRecord[] {
           name: 'DashboardCorporationStructures',
           component: '/dashboard/corporation-structures',
           meta: { title: 'menus.dashboard.corporationStructures' }
+        },
+        {
+          path: 'ticket-management',
+          name: 'TicketManagement',
+          component: '/system/ticket-management',
+          meta: { title: 'menus.system.ticketManagement' }
         }
       ]
     }
@@ -99,7 +105,8 @@ test('applyBadgeCountsToMenu maps counts to leaves and sums parent badges', () =
     welfare_pending: 3,
     srp_pending: 5,
     order_pending: 1,
-    corporation_structures_attention: 6
+    corporation_structures_attention: 6,
+    ticket_attention: 7
   })
 
   assert.equal(menuList[0].meta.showTextBadge, '4')
@@ -111,8 +118,9 @@ test('applyBadgeCountsToMenu maps counts to leaves and sums parent badges', () =
   assert.equal(menuList[2].children?.[0].meta.showTextBadge, '5')
   assert.equal(menuList[3].meta.showTextBadge, '1')
   assert.equal(menuList[3].children?.[0].meta.showTextBadge, '1')
-  assert.equal(menuList[4].meta.showTextBadge, '6')
+  assert.equal(menuList[4].meta.showTextBadge, '13')
   assert.equal(menuList[4].children?.[0].meta.showTextBadge, '6')
+  assert.equal(menuList[4].children?.[1].meta.showTextBadge, '7')
 })
 
 test('applyBadgeCountsToMenu clears missing or zero badge counts', () => {
@@ -128,4 +136,5 @@ test('applyBadgeCountsToMenu clears missing or zero badge counts', () => {
   assert.equal(menuList[1].children?.[2].meta.showTextBadge, undefined)
   assert.equal(menuList[4].meta.showTextBadge, undefined)
   assert.equal(menuList[4].children?.[0].meta.showTextBadge, undefined)
+  assert.equal(menuList[4].children?.[1].meta.showTextBadge, undefined)
 })

@@ -42,11 +42,17 @@ func TestBadgeHandlerGetBadgeCountsOmitsUnauthorizedFields(t *testing.T) {
 	if _, exists := response.Data["srp_pending"]; exists {
 		t.Fatalf("expected unauthorized srp_pending to be omitted, got %#v", response.Data)
 	}
+	if _, exists := response.Data["ticket_attention"]; exists {
+		t.Fatalf("expected unauthorized ticket_attention to be omitted, got %#v", response.Data)
+	}
 	if _, exists := response.Data["welfare_pending"]; exists {
 		t.Fatalf("expected unauthorized welfare_pending to be omitted, got %#v", response.Data)
 	}
 	if _, exists := response.Data["order_pending"]; exists {
 		t.Fatalf("expected unauthorized order_pending to be omitted, got %#v", response.Data)
+	}
+	if _, exists := response.Data["ticket_attention"]; exists {
+		t.Fatalf("expected unauthorized ticket_attention to be omitted, got %#v", response.Data)
 	}
 }
 
@@ -68,6 +74,23 @@ func TestBadgeHandlerGetBadgeCountsUsesCachedWelfareEligibleCount(t *testing.T) 
 	}
 	if result.Data["welfare_eligible"] != 1 {
 		t.Fatalf("expected cached welfare eligible count, got %#v", result.Data)
+	}
+}
+
+func TestBadgeHandlerGetBadgeCountsIncludesTicketAttentionForAdmin(t *testing.T) {
+	db := newBadgeHandlerTestDB(t)
+	userID := seedBadgeHandlerTestData(t, db)
+
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	response := performBadgeHandlerRequest(t, userID, []string{model.RoleAdmin})
+	if response.Code != 200 {
+		t.Fatalf("expected success code, got %d", response.Code)
+	}
+	if response.Data["ticket_attention"] != 2 {
+		t.Fatalf("expected ticket_attention badge, got %#v", response.Data)
 	}
 }
 
@@ -241,6 +264,49 @@ func seedBadgeHandlerTestData(t *testing.T, db *gorm.DB) uint {
 		t.Fatalf("create mentor relationship: %v", err)
 	}
 
+	category := model.TicketCategory{
+		Name:      "账号问题",
+		NameEN:    "Account Issues",
+		Enabled:   true,
+		SortOrder: 0,
+	}
+	if err := db.Create(&category).Error; err != nil {
+		t.Fatalf("create ticket category: %v", err)
+	}
+	if err := db.Create(&model.Ticket{
+		UserID:      user.ID,
+		CategoryID:  category.ID,
+		Title:       "Pending Ticket",
+		Description: "Pending ticket for badge count",
+		Status:      model.TicketStatusPending,
+		Priority:    model.TicketPriorityMedium,
+	}).Error; err != nil {
+		t.Fatalf("create pending ticket: %v", err)
+	}
+	if err := db.Create(&model.Ticket{
+		UserID:      user.ID + 1,
+		CategoryID:  category.ID,
+		Title:       "Owned In Progress",
+		Description: "Assigned ticket for badge count",
+		Status:      model.TicketStatusInProgress,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &user.ID,
+	}).Error; err != nil {
+		t.Fatalf("create in progress ticket: %v", err)
+	}
+	otherHandlerID := user.ID + 500
+	if err := db.Create(&model.Ticket{
+		UserID:      user.ID + 2,
+		CategoryID:  category.ID,
+		Title:       "Other Handler",
+		Description: "Should not count for current admin",
+		Status:      model.TicketStatusInProgress,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &otherHandlerID,
+	}).Error; err != nil {
+		t.Fatalf("create other handler ticket: %v", err)
+	}
+
 	return user.ID
 }
 
@@ -254,13 +320,19 @@ func newBadgeHandlerTestDB(t *testing.T) *gorm.DB {
 	}
 	if err := db.AutoMigrate(
 		&model.User{},
+		&model.UserRole{},
 		&model.EveCharacter{},
+		&model.EveCharacterCorpRole{},
+		&model.SystemConfig{},
+		&model.CorpStructureInfo{},
 		&model.MentorMenteeRelationship{},
 		&model.Welfare{},
 		&model.WelfareSkillPlan{},
 		&model.WelfareApplication{},
 		&model.ShopOrder{},
 		&model.SrpApplication{},
+		&model.TicketCategory{},
+		&model.Ticket{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
