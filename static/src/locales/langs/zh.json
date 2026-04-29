@@ -2403,7 +2403,7 @@
       "userKeyword": "按人物名或昵称筛选",
       "walletCount": "钱包总数",
       "activeWalletCount": "活跃钱包数",
-      "totalBalance": "总余额",
+      "totalBalance": "当前存量",
       "incomeTotal": "收入总额",
       "expenseTotal": "支出总额",
       "netFlow": "净流入",

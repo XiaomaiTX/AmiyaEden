@@ -24,7 +24,9 @@
 
         <!-- 分析概览 -->
         <ElTabPane :label="$t('walletAdmin.tabs.analysis')" name="analysis">
-          <WalletAnalysis />
+          <div class="analysis-tab-pane">
+            <WalletAnalysis />
+          </div>
         </ElTabPane>
       </ElTabs>
     </ElCard>
@@ -199,6 +201,13 @@
       display: flex;
       flex-direction: column;
       min-height: 0;
+    }
+
+    .analysis-tab-pane {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
   }
 </style>
