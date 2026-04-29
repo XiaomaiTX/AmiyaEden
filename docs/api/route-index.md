@@ -248,6 +248,19 @@ source_of_truth:
 | POST | `/welfare/my-applications` | 我的福利申请 | Login |
 | POST | `/welfare/upload-evidence` | 上传福利申请凭证 | Login |
 
+## Ticket
+
+### Ticket User Side
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/ticket/tickets` | 提交工单 | Login |
+| GET | `/ticket/tickets/me` | 我的工单列表（分页，支持 `status`） | Login |
+| GET | `/ticket/tickets/:id` | 我的工单详情 | Login |
+| POST | `/ticket/tickets/:id/replies` | 我的工单新增回复 | Login |
+| GET | `/ticket/tickets/:id/replies` | 我的工单回复列表 | Login |
+| GET | `/ticket/categories` | 可用工单分类 | Login |
+
 ## Upload
 
 | Method | Path | 说明 | 权限 |
@@ -391,6 +404,23 @@ source_of_truth:
 | POST | `/system/welfare/applications` | 福利申请列表（审批端） | `RequireRole(admin, welfare)` |
 | POST | `/system/welfare/applications/delete` | 删除单条福利申请记录 | `RequireRole(admin)` |
 | POST | `/system/welfare/review` | 审批仍处于 `requested` 的福利申请（发放/拒绝；若当前福利配置 `pay_by_fuxi_coin > 0`，同步写入 `welfare_payout` 钱包流水；发放成功后尽力发送一封以发放福利官主人物名义发出的双语游戏内邮件，失败不回滚） | `RequireRole(admin, welfare)` |
+
+### Ticket Admin
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/ticket/tickets` | 工单管理列表（分页，支持 `status`、`category_id`、`user_id`、`keyword`） | `RequireRole(admin)` |
+| GET | `/system/ticket/tickets/:id` | 工单详情 | `RequireRole(admin)` |
+| PUT | `/system/ticket/tickets/:id/status` | 更新工单状态 | `RequireRole(admin)` |
+| PUT | `/system/ticket/tickets/:id/priority` | 更新工单优先级 | `RequireRole(admin)` |
+| POST | `/system/ticket/tickets/:id/replies` | 管理员回复（支持内部备注） | `RequireRole(admin)` |
+| GET | `/system/ticket/tickets/:id/replies` | 管理员查看回复（含内部备注） | `RequireRole(admin)` |
+| GET | `/system/ticket/tickets/:id/status-history` | 状态变更历史 | `RequireRole(admin)` |
+| GET | `/system/ticket/categories` | 分类列表（含禁用） | `RequireRole(admin)` |
+| POST | `/system/ticket/categories` | 创建分类 | `RequireRole(admin)` |
+| PUT | `/system/ticket/categories/:id` | 更新分类 | `RequireRole(admin)` |
+| DELETE | `/system/ticket/categories/:id` | 删除分类 | `RequireRole(admin)` |
+| GET | `/system/ticket/statistics` | 工单统计（总量、状态、分类、近 7/30 天） | `RequireRole(admin)` |
 
 ### Hall of Fame Admin
 

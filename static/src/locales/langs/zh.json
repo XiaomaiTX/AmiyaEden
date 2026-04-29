@@ -252,6 +252,12 @@
       "approval": "福利审批",
       "settings": "福利设置"
     },
+    "ticket": {
+      "title": "工单中心",
+      "myTickets": "我的工单",
+      "create": "提交工单",
+      "detail": "工单详情"
+    },
     "shop": {
       "title": "商店",
       "browse": "浏览商品",
@@ -323,6 +329,9 @@
       "menu": "菜单管理",
       "taskManager": "任务管理",
       "wallet": "钱包管理",
+      "ticketManagement": "工单管理",
+      "ticketCategories": "工单分类",
+      "ticketStatistics": "工单统计",
       "alliancePap": "@:console.alliancePap",
       "papExchange": "PAP兑换",
       "npcKills": "刷怪报表",
@@ -623,6 +632,66 @@
         "characterTaskTriggerFailed": "为人物 {characterId} 触发「{name}」失败",
         "refreshTriggerFailed": "全量 ESI 刷新触发失败"
       }
+    }
+  },
+  "ticket": {
+    "createTicket": "提交工单",
+    "viewDetail": "查看详情",
+    "reply": "回复",
+    "replies": "回复记录",
+    "statusHistory": "状态历史",
+    "internalNote": "内部备注",
+    "submit": "提交",
+    "filters": {
+      "status": "状态筛选",
+      "keyword": "关键词"
+    },
+    "columns": {
+      "title": "标题",
+      "status": "状态",
+      "priority": "优先级",
+      "submitter": "提交人",
+      "fromStatus": "原状态",
+      "toStatus": "新状态",
+      "operator": "操作人"
+    },
+    "form": {
+      "category": "分类",
+      "title": "标题",
+      "priority": "优先级",
+      "description": "描述"
+    },
+    "status": {
+      "pending": "待处理",
+      "in_progress": "处理中",
+      "completed": "已完成"
+    },
+    "priority": {
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    },
+    "stats": {
+      "total": "总工单",
+      "recent7d": "近7天新增",
+      "recent30d": "近30天新增"
+    },
+    "category": {
+      "create": "新建分类",
+      "sortOrder": "排序",
+      "enabled": "启用"
+    },
+    "messages": {
+      "required": "请填写必填项",
+      "loadFailed": "加载失败",
+      "created": "创建成功",
+      "createFailed": "创建失败",
+      "updated": "更新成功",
+      "updateFailed": "更新失败",
+      "deleted": "删除成功",
+      "deleteFailed": "删除失败",
+      "replyAdded": "回复已提交",
+      "replyFailed": "回复失败"
     }
   },
   "info": {

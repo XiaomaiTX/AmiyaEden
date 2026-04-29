@@ -154,6 +154,11 @@ func autoMigrate(db *gorm.DB) {
 		&model.EsiRoleMapping{},
 		&model.EsiTitleMapping{},
 		&model.EveCharacterCorpRole{},
+		// 工单系统
+		&model.Ticket{},
+		&model.TicketCategory{},
+		&model.TicketReply{},
+		&model.TicketStatusHistory{},
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
@@ -179,6 +184,34 @@ func autoMigrate(db *gorm.DB) {
 
 	// 迁移旧 User.Role 字段到 user_role 表
 	roleSvc.MigrateExistingUsers()
+
+	ensureDefaultTicketCategories(db)
+}
+
+func ensureDefaultTicketCategories(db *gorm.DB) {
+	defaults := []model.TicketCategory{
+		{Name: "账号问题", NameEN: "Account Issues", SortOrder: 10, Enabled: true},
+		{Name: "舰船装备问题", NameEN: "Ship & Equipment", SortOrder: 20, Enabled: true},
+		{Name: "游戏操作问题", NameEN: "Gameplay Issues", SortOrder: 30, Enabled: true},
+		{Name: "平台功能建议", NameEN: "Platform Feedback", SortOrder: 40, Enabled: true},
+		{Name: "其他问题", NameEN: "Other Issues", SortOrder: 50, Enabled: true},
+	}
+	for i := range defaults {
+		var count int64
+		err := db.Model(&model.TicketCategory{}).
+			Where("name = ? OR name_en = ?", defaults[i].Name, defaults[i].NameEN).
+			Count(&count).Error
+		if err != nil {
+			global.Logger.Warn("检查默认工单分类失败", zap.Error(err), zap.String("name", defaults[i].Name))
+			continue
+		}
+		if count > 0 {
+			continue
+		}
+		if err := db.Create(&defaults[i]).Error; err != nil {
+			global.Logger.Warn("创建默认工单分类失败", zap.Error(err), zap.String("name", defaults[i].Name))
+		}
+	}
 }
 
 func ensureSkillPlanScopes(db *gorm.DB) {

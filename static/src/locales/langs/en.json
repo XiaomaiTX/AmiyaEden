@@ -254,12 +254,21 @@
       "menu": "Menu Manage",
       "taskManager": "Task Manager",
       "wallet": "Wallet Management",
+      "ticketManagement": "Ticket Management",
+      "ticketCategories": "Ticket Categories",
+      "ticketStatistics": "Ticket Statistics",
       "alliancePap": "@:console.alliancePap",
       "papExchange": "PAP Exchange",
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
       "webhook": "Webhook Notifications",
       "basicConfig": "@:setting.basics.title"
+    },
+    "ticket": {
+      "title": "Ticket Center",
+      "myTickets": "My Tickets",
+      "create": "Create Ticket",
+      "detail": "Ticket Detail"
     },
     "welfare": {
       "title": "Corp Welfare",
@@ -2356,6 +2365,66 @@
         "alliance": "Alliance",
         "internal": "Internal"
       }
+    }
+  },
+  "ticket": {
+    "createTicket": "Create Ticket",
+    "viewDetail": "View Detail",
+    "reply": "Reply",
+    "replies": "Replies",
+    "statusHistory": "Status History",
+    "internalNote": "Internal Note",
+    "submit": "Submit",
+    "filters": {
+      "status": "Status",
+      "keyword": "Keyword"
+    },
+    "columns": {
+      "title": "Title",
+      "status": "Status",
+      "priority": "Priority",
+      "submitter": "Submitter",
+      "fromStatus": "From",
+      "toStatus": "To",
+      "operator": "Operator"
+    },
+    "form": {
+      "category": "Category",
+      "title": "Title",
+      "priority": "Priority",
+      "description": "Description"
+    },
+    "status": {
+      "pending": "Pending",
+      "in_progress": "In Progress",
+      "completed": "Completed"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "stats": {
+      "total": "Total Tickets",
+      "recent7d": "Created in 7 Days",
+      "recent30d": "Created in 30 Days"
+    },
+    "category": {
+      "create": "Create Category",
+      "sortOrder": "Sort Order",
+      "enabled": "Enabled"
+    },
+    "messages": {
+      "required": "Please fill required fields",
+      "loadFailed": "Failed to load",
+      "created": "Created successfully",
+      "createFailed": "Failed to create",
+      "updated": "Updated successfully",
+      "updateFailed": "Failed to update",
+      "deleted": "Deleted successfully",
+      "deleteFailed": "Failed to delete",
+      "replyAdded": "Reply submitted",
+      "replyFailed": "Failed to reply"
     }
   },
   "corporationStructures": {
