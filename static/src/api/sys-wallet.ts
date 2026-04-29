@@ -58,3 +58,11 @@ export function adminListWalletLogs(data?: Api.SysWallet.LogSearchParams) {
     data: data ?? { current: 1, size: 200 }
   })
 }
+
+/** 管理员获取钱包分析概览 */
+export function adminGetWalletAnalytics(data: Api.SysWallet.AnalyticsParams) {
+  return request.post<Api.SysWallet.WalletAnalytics>({
+    url: '/api/v1/system/wallet/analytics',
+    data
+  })
+}

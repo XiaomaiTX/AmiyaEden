@@ -2269,7 +2269,8 @@
     "tabs": {
       "wallets": "Wallets",
       "transactions": "Transactions",
-      "logs": "Operation Logs"
+      "logs": "Operation Logs",
+      "analysis": "Analysis"
     },
     "adjustTitle": "Adjust User Wallet",
     "adjustBalance": "Manual Balance Adjustment",
@@ -2306,7 +2307,8 @@
       "shop_purchase": "Shop Purchase",
       "shop_refund": "Shop Refund",
       "newbro_captain_reward": "Captain Support Reward",
-      "mentor_reward": "Mentor Support Reward"
+      "mentor_reward": "Mentor Support Reward",
+      "recruit_link_reward": "Recruit Link Reward"
     },
     "validation": {
       "targetUserId": "Please enter a target user ID",
@@ -2333,6 +2335,34 @@
       "targetUser": "Target User",
       "before": "Balance Before",
       "after": "Balance After"
+    },
+    "analysis": {
+      "startDate": "Start date",
+      "endDate": "End date",
+      "refTypes": "Ref types",
+      "userKeyword": "Filter by character or nickname",
+      "walletCount": "Wallet Count",
+      "activeWalletCount": "Active Wallets",
+      "totalBalance": "Total Balance",
+      "incomeTotal": "Total Income",
+      "expenseTotal": "Total Expense",
+      "netFlow": "Net Flow",
+      "dailyTrend": "30-Day Trend",
+      "incomeByRefType": "Income by Ref Type",
+      "expenseByRefType": "Expense by Ref Type",
+      "topInflowUsers": "Top Inflow Users",
+      "topOutflowUsers": "Top Outflow Users",
+      "anomalies": "Anomaly Panel",
+      "largeTransactions": "Large Transactions",
+      "frequentAdjustments": "Frequent Adjustments",
+      "operatorConcentration": "Operator Concentration",
+      "adjustCount": "Adjust Count",
+      "amountTotal": "Total Amount",
+      "lastAdjustmentTime": "Last Adjustment",
+      "operatorName": "Operator",
+      "ratio": "Ratio",
+      "amount": "Amount",
+      "empty": "No analytics data in the selected range"
     }
   },
   "dashboardConsole": {

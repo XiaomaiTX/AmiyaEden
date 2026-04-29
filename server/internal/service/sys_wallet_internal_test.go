@@ -141,6 +141,60 @@ func TestGetMyTransactionsIncludesOperatorName(t *testing.T) {
 	}
 }
 
+func TestValidateWalletAnalyticsRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		req     WalletAnalyticsRequest
+		wantErr bool
+	}{
+		{
+			name: "valid default top n",
+			req: WalletAnalyticsRequest{
+				StartDate: "2026-01-01",
+				EndDate:   "2026-01-30",
+				TopN:      0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "start after end",
+			req: WalletAnalyticsRequest{
+				StartDate: "2026-02-01",
+				EndDate:   "2026-01-01",
+				TopN:      10,
+			},
+			wantErr: true,
+		},
+		{
+			name: "range over 365 days",
+			req: WalletAnalyticsRequest{
+				StartDate: "2025-01-01",
+				EndDate:   "2026-02-01",
+				TopN:      10,
+			},
+			wantErr: true,
+		},
+		{
+			name: "top n out of range",
+			req: WalletAnalyticsRequest{
+				StartDate: "2026-01-01",
+				EndDate:   "2026-01-02",
+				TopN:      51,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, _, err := validateWalletAnalyticsRequest(&tt.req)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("validateWalletAnalyticsRequest() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func newSysWalletServiceTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 

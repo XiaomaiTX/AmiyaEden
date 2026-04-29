@@ -189,6 +189,22 @@ func (h *SysWalletHandler) AdminListLogs(c *gin.Context) {
 	response.OKWithPage(c, records, total, req.Current, req.Size)
 }
 
+// AdminAnalytics POST /system/wallet/analytics
+func (h *SysWalletHandler) AdminAnalytics(c *gin.Context) {
+	var req service.WalletAnalyticsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.svc.AdminGetAnalytics(&req)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
 // ─────────────────────────────────────────────
 //  兼容旧接口：供 fleet 路由复用
 // ─────────────────────────────────────────────

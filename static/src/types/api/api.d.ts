@@ -919,6 +919,95 @@ declare namespace Api {
       target_uid: number
       action: string
     }>
+
+    type AnalyticsParams = {
+      start_date: string
+      end_date: string
+      ref_types?: string[]
+      user_keyword?: string
+      top_n?: number
+    }
+
+    interface WalletAnalyticsSummary {
+      wallet_count: number
+      active_wallet_count: number
+      total_balance: number
+      income_total: number
+      expense_total: number
+      net_flow: number
+    }
+
+    interface WalletAnalyticsDailySeriesItem {
+      date: string
+      income: number
+      expense: number
+      net_flow: number
+    }
+
+    interface WalletAnalyticsRefTypeBreakdownItem {
+      ref_type: string
+      income: number
+      expense: number
+      count: number
+    }
+
+    interface WalletAnalyticsTopUserItem {
+      user_id: number
+      character_name?: string
+      amount: number
+    }
+
+    interface WalletAnalyticsAdminAdjustOperatorItem {
+      operator_id: number
+      operator_name?: string
+      count: number
+      amount_total: number
+    }
+
+    interface WalletAnalyticsAdminAdjustStats {
+      count: number
+      amount_total: number
+      by_operator: WalletAnalyticsAdminAdjustOperatorItem[]
+    }
+
+    interface WalletAnalyticsLargeTransactionItem {
+      id: number
+      user_id: number
+      character_name?: string
+      amount: number
+      ref_type: string
+      created_at: string
+    }
+
+    interface WalletAnalyticsFrequentAdjustmentItem {
+      target_uid: number
+      character_name?: string
+      adjust_count: number
+      amount_total: number
+      last_adjustment_time: string
+    }
+
+    interface WalletAnalyticsOperatorConcentrationItem {
+      operator_id: number
+      operator_name?: string
+      count: number
+      amount_total: number
+      ratio: number
+    }
+
+    interface WalletAnalytics {
+      summary: WalletAnalyticsSummary
+      daily_series: WalletAnalyticsDailySeriesItem[]
+      ref_type_breakdown: WalletAnalyticsRefTypeBreakdownItem[]
+      top_inflow_users: WalletAnalyticsTopUserItem[]
+      top_outflow_users: WalletAnalyticsTopUserItem[]
+      admin_adjust_stats: WalletAnalyticsAdminAdjustStats
+      anomalies: {
+        large_transactions: WalletAnalyticsLargeTransactionItem[]
+        frequent_adjustments: WalletAnalyticsFrequentAdjustmentItem[]
+        operator_concentration: WalletAnalyticsOperatorConcentrationItem[]
+      }
+    }
   }
 
   /** SRP 补损管理类型 */

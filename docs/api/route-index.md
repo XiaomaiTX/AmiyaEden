@@ -390,6 +390,7 @@ source_of_truth:
 | POST | `/system/wallet/adjust` | 调整余额 | `RequireRole(admin)` |
 | POST | `/system/wallet/transactions` | 钱包流水 | `RequireRole(admin)` |
 | POST | `/system/wallet/logs` | 调整日志 | `RequireRole(admin)` |
+| POST | `/system/wallet/analytics` | 钱包分析概览（时间窗聚合、趋势、结构、异常） | `RequireRole(admin)` |
 
 ### Welfare Admin
 
