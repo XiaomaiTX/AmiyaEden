@@ -45,6 +45,7 @@ type TaskService struct {
 	registry   *taskregistry.Registry
 	repo       *repository.TaskRepository
 	reschedule func(taskName, cronExpr string) error
+	auditSvc   *AuditService
 }
 
 type TaskItem struct {
@@ -72,6 +73,7 @@ func NewTaskService(registry *taskregistry.Registry, repo *repository.TaskReposi
 		registry:   registry,
 		repo:       repo,
 		reschedule: reschedule,
+		auditSvc:   NewAuditService(),
 	}
 }
 
@@ -224,6 +226,20 @@ func (s *TaskService) UpdateSchedule(taskName, cronExpr string, updatedBy uint) 
 		}
 		return err
 	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "task_ops",
+			Action:       "task_schedule_update",
+			ActorUserID:  updatedBy,
+			ResourceType: "task_schedule",
+			ResourceID:   taskName,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"before_cron": previousCron,
+				"after_cron":  normalizedCron,
+			},
+		})
+	}
 
 	return nil
 }
@@ -289,6 +305,28 @@ func (s *TaskService) executeAndLog(ctx context.Context, taskName, trigger strin
 
 	if err := s.repo.UpdateExecution(execution); err != nil {
 		s.logger().Error("failed to update task execution record", zap.String("task_name", taskName), zap.String("trigger", trigger), zap.Error(err))
+	}
+	if trigger == taskTriggerManual && triggeredBy != nil && s.auditSvc != nil {
+		result := model.AuditResultSuccess
+		if runErr != nil {
+			result = model.AuditResultFailed
+		}
+		details := map[string]any{
+			"trigger": trigger,
+			"status":  execution.Status,
+		}
+		if runErr != nil {
+			details["error"] = runErr.Error()
+		}
+		_ = s.auditSvc.RecordEvent(ctx, AuditRecordInput{
+			Category:     "task_ops",
+			Action:       "task_manual_run",
+			ActorUserID:  *triggeredBy,
+			ResourceType: "task",
+			ResourceID:   taskName,
+			Result:       result,
+			Details:      details,
+		})
 	}
 
 	return runErr

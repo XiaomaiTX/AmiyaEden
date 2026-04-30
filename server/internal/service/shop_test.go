@@ -281,6 +281,7 @@ func newShopServiceTestDB(t *testing.T) *gorm.DB {
 		&model.SystemConfig{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
+		&model.AuditEvent{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
@@ -363,6 +364,22 @@ func TestAdminDeliverOrderCreditsConfiguredAdminAward(t *testing.T) {
 	}
 	if txs[0].OperatorID != 0 {
 		t.Fatalf("wallet tx operator_id = %d, want 0", txs[0].OperatorID)
+	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Where("resource_type = ? AND resource_id = ?", "shop_order", fmt.Sprintf("%d", order.ID)).
+		Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	foundDeliver := false
+	for _, event := range auditEvents {
+		if event.Category == "approval" && event.Action == "shop_order_deliver" && event.Result == model.AuditResultSuccess {
+			foundDeliver = true
+			break
+		}
+	}
+	if !foundDeliver {
+		t.Fatalf("expected shop_order_deliver approval audit event, got %+v", auditEvents)
 	}
 }
 

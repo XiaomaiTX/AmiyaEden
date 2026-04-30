@@ -52,6 +52,10 @@ func newAuditEventHandlerRouter() *gin.Engine {
 		h.CreateExportTask(c)
 	})
 	r.GET("/api/v1/system/audit/export/:task_id", h.GetExportTaskStatus)
+	r.POST("/api/v1/system/audit/export/list", func(c *gin.Context) {
+		c.Set("userID", uint(1))
+		h.ListExportTasks(c)
+	})
 	return r
 }
 
@@ -200,5 +204,65 @@ func TestAuditEventHandlerGetExportTaskStatusNotFound(t *testing.T) {
 	resp := decodeAuditEventResp(t, rec)
 	if resp.Code != response.CodeParamError {
 		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeParamError)
+	}
+}
+
+func TestAuditEventHandlerListExportTasks(t *testing.T) {
+	setupAuditEventHandlerTestDB(t)
+	now := time.Now()
+	tasks := []model.AuditExportTask{
+		{
+			TaskID:         "task-1",
+			OperatorUserID: 1,
+			Format:         "csv",
+			FilterJSON:     "{}",
+			Status:         model.AuditExportStatusDone,
+			DownloadURL:    "/uploads/audit-exports/task-1.csv",
+			CreatedAt:      now,
+		},
+		{
+			TaskID:         "task-2",
+			OperatorUserID: 1,
+			Format:         "json",
+			FilterJSON:     "{}",
+			Status:         model.AuditExportStatusFailed,
+			ErrorMessage:   "mock error",
+			CreatedAt:      now.Add(1 * time.Second),
+		},
+		{
+			TaskID:         "task-ignored",
+			OperatorUserID: 2,
+			Format:         "csv",
+			FilterJSON:     "{}",
+			Status:         model.AuditExportStatusPending,
+			CreatedAt:      now.Add(2 * time.Second),
+		},
+	}
+	if err := global.DB.Create(&tasks).Error; err != nil {
+		t.Fatalf("seed export tasks: %v", err)
+	}
+
+	r := newAuditEventHandlerRouter()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/audit/export/list", strings.NewReader(`{"limit":10}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	resp := decodeAuditEventResp(t, rec)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+	var got []map[string]any
+	if err := json.Unmarshal(resp.Data, &got); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("task count = %d, want 2", len(got))
+	}
+	if got[0]["task_id"] != "task-2" || got[1]["task_id"] != "task-1" {
+		t.Fatalf("unexpected order: %+v", got)
 	}
 }

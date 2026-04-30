@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-04-30
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -27,6 +27,7 @@ source_of_truth:
 - [mentor-system.md](current/mentor-system.md)
 - [commerce.md](current/commerce.md)
 - [administration.md](current/administration.md)
+- [audit-log.md](current/audit-log.md)
 - [task-manager.md](current/task-manager.md)
 - [corporation-structures.md](current/corporation-structures.md)
 - [sde.md](current/sde.md)

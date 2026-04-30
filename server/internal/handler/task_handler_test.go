@@ -63,6 +63,11 @@ func newTaskHandlerTestDeps(t *testing.T, reschedule ...func(taskName, cronExpr 
 	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}, &model.User{}); err != nil {
 		t.Fatalf("auto migrate task models: %v", err)
 	}
+	previousDB := global.DB
+	global.DB = db
+	t.Cleanup(func() {
+		global.DB = previousDB
+	})
 
 	registry := taskregistry.New()
 	repo := repository.NewTaskRepositoryWithDB(db)

@@ -8,17 +8,30 @@ source_of_truth:
   - server/internal/repository/audit_event.go
   - server/internal/service/audit_service.go
   - server/internal/handler/audit_event.go
-  - server/internal/middleware/operation_log.go
   - server/internal/model/operation_log.go
   - server/internal/model/sys_wallet.go
   - server/internal/service/sys_wallet.go
   - server/internal/service/role.go
+  - server/internal/service/welfare.go
+  - server/internal/service/srp.go
+  - server/internal/service/shop.go
+  - server/internal/service/task.go
+  - server/internal/service/sys_webhook.go
   - server/internal/repository/sys_wallet.go
   - server/internal/router/router.go
   - static/src/views/system/wallet
+  - static/src/views/system/audit
   - static/src/api/sys-wallet.ts
+  - static/src/api/audit.ts
   - static/src/types/api/api.d.ts
+  - static/src/router/modules/system.ts
+  - docs/features/current/audit-log.md
+  - docs/api/route-index.md
+  - docs/features/current/administration.md
   - docs/features/current/commerce.md
+  - docs/features/current/srp.md
+  - docs/features/current/task-manager.md
+  - docs/features/current/welfare.md
   - docs/architecture/auth-and-permissions.md
 ---
 
@@ -27,18 +40,20 @@ source_of_truth:
 ## 当前状态
 
 - 已实现：
-  - 请求级操作日志：`operation_log`（中间件自动记录请求轨迹）
-  - 伏羲币账本日志：`wallet_transaction`
-  - 管理员钱包调整日志：`wallet_log`
-  - 系统钱包管理页具备日志/流水查询与分析能力（`/system/wallet`）
-  - 统一审计事件模型：`audit_event`（已接入 AutoMigrate 与关键索引）
-  - 权限变更审计：`RoleService.SetUserRoles`（成功/失败均写入）
-  - 伏羲币审计：`AdminAdjust`、`ApplyWalletDeltaByOperatorTx`
-  - 运维在线查询接口：`POST /api/v1/system/audit/events`
+  - 统一审计事实表：`audit_event` + 异步导出任务表：`audit_export_task`
+  - 审计在线查询、导出创建、导出状态查询、导出历史列表
+  - 系统审计管理页（筛选、详情抽屉、导出任务面板）
+  - 已接入审计面的主链路：
+    - `permission`：`RoleService.SetUserRoles`
+    - `fuxi_wallet`：`AdminAdjust`、`ApplyWalletDeltaByOperatorTx`、`CreditUser`、`DebitUser`
+    - `approval`：`WelfareService.AdminReviewApplication`、`SrpService.ReviewApplication`、`ShopService.AdminDeliverOrder`、`ShopService.AdminRejectOrder`
+    - `task_ops`：`TaskService.RunTask`、`TaskService.UpdateSchedule`
+    - `config`：`WebhookService.SetConfigByOperator`
+  - 审计写入、导出与查询的服务/仓储/handler/router/API/类型已串通
 - 未实现：
-  - 跨模块审计覆盖扩展（配置、审批、任务运维等）
-  - 审计导出任务（`POST /system/audit/export`、`GET /system/audit/export/:task_id`）
-  - 审计前端管理页与下载面板
+  - `security` 类事件接入
+  - `system_config` 与自动权限映射变更的统一审计接入
+  - 归档、保留策略、告警指标与运行手册
 
 ## 背景
 
@@ -85,7 +100,7 @@ source_of_truth:
 - 审批与运维动作
   - 关键审批：福利发放/拒绝、SRP 发放、商城订单发放/拒绝
   - 手动任务执行、调度变更（启停/cron 更新）
-  - 关键配置变更（`system_config`）
+  - 关键配置变更（`system_config`、Webhook）
 
 ### 3. 在线审计查询能力（系统内）
 
@@ -201,19 +216,20 @@ source_of_truth:
 - [x] 接入 `ApplyWalletDeltaByOperatorTx` 审计
 - [x] 新增 `POST /system/audit/events` 查询接口
 - [x] 新增审计管理页基础列表（筛选 + 分页 + 详情）
-- [ ] 补齐阶段 1 的后端单测与集成测试（进行中：已补充服务层与 Handler 定向用例）
+- [x] 补齐阶段 1 的后端单测与 Handler 定向用例
 
 ### 阶段 2：运维增强（P1）
 
 - [x] 新增导出任务模型与仓储（状态流转）
-- [x] 新增 `POST /system/audit/export` 与 `GET /system/audit/export/:task_id`
+- [x] 新增 `POST /system/audit/export`、`GET /system/audit/export/:task_id` 与 `POST /system/audit/export/list`
 - [x] 实现导出 worker（CSV/JSON）与轮询状态
 - [x] 前端接入导出按钮、任务面板、下载入口
 - [x] 导出行为写审计事件（谁导出、筛选条件、结果）
-- [ ] 接入审批动作审计（福利/SRP/商城订单）
-- [ ] 接入关键配置变更审计（`system_config`）
-- [ ] 接入手动任务执行与调度变更审计
-- [ ] 补齐阶段 2 回归测试
+- [x] 接入审批动作审计（福利/SRP/商城订单）
+- [x] 接入任务运维审计（手动任务执行与调度变更）
+- [x] 接入 Webhook 配置变更审计
+- [ ] 接入 `system_config` 与自动权限映射变更审计
+- [ ] 补齐阶段 2 跨模块回归测试
 
 ### 阶段 3：长期治理（P2）
 
@@ -223,7 +239,6 @@ source_of_truth:
 - [ ] 增加审计写入/导出/归档监控指标
 - [ ] 增加异常告警规则（高频改权、高频调账等）
 - [ ] 输出运维 Runbook（排障、回放、恢复）
-- [ ] 将落地行为迁移到 `docs/features/current/*` 与 `docs/api/route-index.md`
 
 ### 当前进度（维护规则）
 
@@ -238,47 +253,50 @@ source_of_truth:
     - 新增系统路由 `static/src/router/modules/system.ts -> /system/audit`
     - 新增 `Api.Audit.*` 类型与中英文文案（`api.d.ts` / `zh.json` / `en.json`）
   - 测试进度：
-    - 已新增并通过：`role_audit_test.go`、`sys_wallet_internal_test.go` 审计断言、`audit_event_test.go`
-    - 前端类型检查通过：`pnpm exec vue-tsc --noEmit`
+    - 已新增定向用例：`role_audit_test.go`、`sys_wallet_internal_test.go` 审计断言、`audit_event_test.go`
+    - 前端类型契约已补齐：`Api.Audit.*`、`audit.ts`、`system/audit` 页面
   - 接口变更：
     - 新增 `POST /api/v1/system/audit/events`
 
-- [x] 2026-04-30 导出链路落地
+- [x] 2026-04-30 导出与审批链路落地
   - 已完成项（后端 P1）：
     - 新增 `audit_export_task` 模型并接入 AutoMigrate
     - 新增导出任务仓储与状态流转（`pending/running/done/failed/expired`）
-    - 新增 `POST /api/v1/system/audit/export` 与 `GET /api/v1/system/audit/export/:task_id`
+    - 新增 `POST /api/v1/system/audit/export`、`GET /api/v1/system/audit/export/:task_id` 与 `POST /api/v1/system/audit/export/list`
     - 新增导出执行逻辑（CSV/JSON）与静态下载路径 `/uploads/audit-exports/*`
     - 导出创建与导出完成行为已写入 `audit_event`
+    - `WelfareService.AdminReviewApplication` 已写入 `approval/welfare_application_deliver|reject`
+    - `SrpService.ReviewApplication` 已写入 `approval/srp_application_approve|reject`
+    - `ShopService.AdminDeliverOrder` / `AdminRejectOrder` 已写入 `approval/shop_order_deliver|reject`
+    - `TaskService.RunTask` / `UpdateSchedule` 已写入 `task_ops/task_manual_run|task_schedule_update`
+    - `WebhookService.SetConfigByOperator` 已写入 `config/webhook_config_update`
   - 已完成项（前端 P1）：
     - 审计页新增 CSV/JSON 导出按钮
     - 新增任务状态轮询与状态展示（`pending/running/done/failed/expired`）
     - `done` 状态下载入口已接入
-    - `Api.Audit` 类型与 `static/src/api/audit.ts` 导出 API 已补齐
+    - 导出任务历史面板（多任务列表，含状态与下载入口）已接入
   - 测试进度：
-    - 后端：`go test ./internal/handler -run AuditEvent -count=1` 通过
-    - 前端：`pnpm -C static exec vue-tsc --noEmit` 通过
-  - 待继续项：
-    - 导出任务历史面板（多任务列表）
-    - 审批动作/配置变更/任务调度变更审计接入
-    - 阶段 2 回归测试补齐
+    - `role_audit_test.go`、`sys_wallet_internal_test.go`、`audit_event_test.go`
+    - `task_test.go`、`task_handler_test.go`
+    - `sys_webhook_test.go`、`sys_webhook` handler 级审计回归
+    - `welfare_test.go`、`srp_test.go`、`shop_test.go` 相关审计断言
+  - 状态：
+    - 阶段 2 已覆盖主链路，剩余是 `system_config` / 自动权限映射 / 更细的安全审计面
+
 ### 下一步执行顺序（P1 拆解）
 
-1. 导出数据模型与状态机
-   - 新增 `audit_export_task` 模型（`pending/running/done/failed/expired`）
-   - 新增仓储接口：创建任务、抢占待执行任务、状态流转、按 `task_id` 查询
-2. 导出接口与权限
-   - 新增 `POST /api/v1/system/audit/export`、`GET /api/v1/system/audit/export/:task_id`
-   - 路由挂载在 `/system/audit/*` 管理权限组，与查询接口一致
-3. 导出执行器
-   - 先落地 CSV（主路径）+ JSON（兼容）
-   - 复用 `AuditEventFilter` 查询，限制单任务最大行数，失败写回错误信息
-4. 前端导出面板
-   - 在 `static/src/views/system/audit/index.vue` 增加导出按钮与任务状态轮询
-   - 下载入口仅在 `done` 状态展示，`failed/expired` 给出明确提示
-5. 审计闭环与回归
-   - 导出动作写入 `audit_event`（含操作者、筛选条件摘要、结果）
-   - 补齐导出链路测试：状态机流转、异常分支、权限校验
+1. `system_config` 审计接入
+   - 补齐系统配置的统一审计写入点，先覆盖现有管理端高频配置项
+   - 统一 `category=config` / `security` 的分类边界
+2. 自动权限映射审计接入
+   - 覆盖 `esi_role_mapping`、`esi_title_mapping` 的增删改
+   - 明确 before/after 结构与操作者标识
+3. 安全审计面
+   - 覆盖模拟登录、关键安全态变化、异常访问等事件
+   - 为 `security` 分类预留查询与筛选能力
+4. 归档与治理
+   - 实现在线保留、归档、重试与监控告警
+   - 输出运维 Runbook 与恢复流程
 ## API 契约草案（v1）
 
 ### `POST /api/v1/system/audit/events`
@@ -670,7 +688,7 @@ async function startPollingTask(taskId: string) {
 - 阶段 3（长期治理）：
   - 上线 90 天在线 + 1 年归档
   - 补齐告警规则与异常审计面板
-  - 将已落地行为迁移到 `docs/features/current/*` 与 `docs/api/route-index.md`
+  - 已迁移当前审计能力说明到 `docs/features/current/audit-log.md` 与 `docs/api/route-index.md`
 
 
 

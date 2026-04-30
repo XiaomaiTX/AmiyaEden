@@ -22,3 +22,11 @@ export function getAuditExportTaskStatus(taskId: string) {
     url: `/api/v1/system/audit/export/${taskId}`
   })
 }
+
+/** 查询审计导出任务历史 */
+export function listAuditExportTasks(data?: Api.Audit.AuditExportListParams) {
+  return request.post<Api.Audit.AuditExportTaskStatus[]>({
+    url: '/api/v1/system/audit/export/list',
+    data: data ?? { limit: 20 }
+  })
+}

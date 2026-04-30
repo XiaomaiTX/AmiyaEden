@@ -468,6 +468,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminAudit.POST("/events", auditEventH.AdminList)
 		adminAudit.POST("/export", auditEventH.CreateExportTask)
 		adminAudit.GET("/export/:task_id", auditEventH.GetExportTaskStatus)
+		adminAudit.POST("/export/list", auditEventH.ListExportTasks)
 	}
 
 	// 商店管理（管理员）

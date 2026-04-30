@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-04-30
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -391,6 +391,15 @@ source_of_truth:
 | POST | `/system/wallet/transactions` | 钱包流水 | `RequireRole(admin)` |
 | POST | `/system/wallet/logs` | 调整日志 | `RequireRole(admin)` |
 | POST | `/system/wallet/analytics` | 钱包分析概览（时间窗聚合、趋势、结构、异常） | `RequireRole(admin)` |
+
+### Audit
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/system/audit/events` | 审计事件分页查询 | `RequireRole(admin)` |
+| POST | `/system/audit/export` | 创建审计导出任务 | `RequireRole(admin)` |
+| GET | `/system/audit/export/:task_id` | 查询审计导出任务状态 | `RequireRole(admin)` |
+| POST | `/system/audit/export/list` | 查询当前操作者的审计导出任务历史 | `RequireRole(admin)` |
 
 ### Welfare Admin
 

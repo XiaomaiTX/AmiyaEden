@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -33,7 +34,7 @@ func (h *WebhookHandler) SetConfig(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.SetConfig(&req); err != nil {
+	if err := h.svc.SetConfigByOperator(&req, middleware.GetUserID(c)); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
