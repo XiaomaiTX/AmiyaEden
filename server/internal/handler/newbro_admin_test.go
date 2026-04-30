@@ -29,7 +29,7 @@ func (f *fakeNewbroAdminSettingsService) GetSupportSettings() service.NewbroSupp
 	return f.getSupportResp
 }
 
-func (f *fakeNewbroAdminSettingsService) UpdateSupportSettings(cfg service.NewbroSupportSettings) (service.NewbroSupportSettings, error) {
+func (f *fakeNewbroAdminSettingsService) UpdateSupportSettingsByOperator(cfg service.NewbroSupportSettings, _ uint) (service.NewbroSupportSettings, error) {
 	f.supportUpdateCalls++
 	f.lastSupportUpdate = cfg
 	if f.updateErr != nil {
@@ -42,7 +42,7 @@ func (f *fakeNewbroAdminSettingsService) GetRecruitSettings() service.NewbroRecr
 	return f.getRecruitResp
 }
 
-func (f *fakeNewbroAdminSettingsService) UpdateRecruitSettings(cfg service.NewbroRecruitSettings) (service.NewbroRecruitSettings, error) {
+func (f *fakeNewbroAdminSettingsService) UpdateRecruitSettingsByOperator(cfg service.NewbroRecruitSettings, _ uint) (service.NewbroRecruitSettings, error) {
 	f.recruitUpdateCalls++
 	f.lastRecruitUpdate = cfg
 	if f.updateErr != nil {

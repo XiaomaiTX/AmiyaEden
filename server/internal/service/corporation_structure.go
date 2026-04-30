@@ -89,6 +89,7 @@ type CorporationStructureService struct {
 	sdeRepo       *repository.SdeRepository
 	repo          *repository.CorporationStructureRepository
 	esiClient     *esi.Client
+	auditSvc      *AuditService
 }
 
 func NewCorporationStructureService() *CorporationStructureService {
@@ -100,6 +101,7 @@ func NewCorporationStructureService() *CorporationStructureService {
 		sdeRepo:       repository.NewSdeRepository(),
 		repo:          repository.NewCorporationStructureRepository(),
 		esiClient:     esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix),
+		auditSvc:      NewAuditService(),
 	}
 }
 
@@ -189,6 +191,7 @@ type CorporationStructureAuthorizationUpdate struct {
 	Authorizations           []CorporationStructureAuthorizationBinding `json:"authorizations"`
 	FuelNoticeThresholdDays  *int                                       `json:"fuel_notice_threshold_days"`
 	TimerNoticeThresholdDays *int                                       `json:"timer_notice_threshold_days"`
+	OperatorUserID           uint                                       `json:"-"`
 }
 
 type CorporationStructureRunTaskRequest struct {
@@ -335,7 +338,26 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	if req.TimerNoticeThresholdDays != nil {
 		thresholds.TimerNoticeThresholdDays = *req.TimerNoticeThresholdDays
 	}
-	return s.saveNoticeThresholdSettings(thresholds)
+	if err := s.saveNoticeThresholdSettings(thresholds); err != nil {
+		return err
+	}
+
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(ctx, AuditRecordInput{
+			Category:     "config",
+			Action:       "corp_structure_authorization_update",
+			ActorUserID:  req.OperatorUserID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigDashboardCorpStructuresAuth,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"authorizations_count":        len(req.Authorizations),
+				"fuel_notice_threshold_days":  thresholds.FuelNoticeThresholdDays,
+				"timer_notice_threshold_days": thresholds.TimerNoticeThresholdDays,
+			},
+		})
+	}
+	return nil
 }
 
 func (s *CorporationStructureService) CountAttentionStructures(ctx context.Context) (int64, error) {

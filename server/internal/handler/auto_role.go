@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -45,7 +46,8 @@ func (h *AutoRoleHandler) CreateEsiRoleMapping(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	mapping, err := h.svc.CreateEsiRoleMapping(req.EsiRole, req.RoleCode)
+	operatorID := middleware.GetUserID(c)
+	mapping, err := h.svc.CreateEsiRoleMappingByOperator(req.EsiRole, req.RoleCode, operatorID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -59,7 +61,8 @@ func (h *AutoRoleHandler) DeleteEsiRoleMapping(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteEsiRoleMapping(id); err != nil {
+	operatorID := middleware.GetUserID(c)
+	if err := h.svc.DeleteEsiRoleMappingByOperator(id, operatorID); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -102,7 +105,8 @@ func (h *AutoRoleHandler) CreateEsiTitleMapping(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	mapping, err := h.svc.CreateEsiTitleMapping(req.CorporationID, req.TitleID, req.TitleName, req.RoleCode)
+	operatorID := middleware.GetUserID(c)
+	mapping, err := h.svc.CreateEsiTitleMappingByOperator(req.CorporationID, req.TitleID, req.TitleName, req.RoleCode, operatorID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -116,7 +120,8 @@ func (h *AutoRoleHandler) DeleteEsiTitleMapping(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteEsiTitleMapping(id); err != nil {
+	operatorID := middleware.GetUserID(c)
+	if err := h.svc.DeleteEsiTitleMappingByOperator(id, operatorID); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

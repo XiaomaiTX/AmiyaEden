@@ -5,13 +5,11 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -494,21 +492,12 @@ func TestUpdateFleetConfigWithoutFittingsPreservesExistingFittingIDs(t *testing.
 }
 
 func newFleetConfigServiceTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
-
-	dsn := fmt.Sprintf("file:fleet_config_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	if err := db.AutoMigrate(
+	db := newServiceTestDB(t, "fleet_config_service_test",
 		&model.FleetConfig{},
 		&model.FleetConfigFitting{},
 		&model.FleetConfigFittingItem{},
 		&model.FleetConfigFittingItemReplacement{},
-	); err != nil {
-		t.Fatalf("auto migrate fleet config tables: %v", err)
-	}
+	)
 	if err := db.Exec(`CREATE TABLE "invTypes" ("typeID" integer primary key, "typeName" text not null, "groupID" integer, "marketGroupID" integer, "published" integer)`).Error; err != nil {
 		t.Fatalf("create invTypes table: %v", err)
 	}

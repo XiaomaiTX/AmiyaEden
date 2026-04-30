@@ -25,7 +25,7 @@ func (f *fakeMentorAdminSettingsService) GetSettings() service.MentorSettings {
 	return f.getSettingsResp
 }
 
-func (f *fakeMentorAdminSettingsService) UpdateSettings(cfg service.MentorSettings) (service.MentorSettings, error) {
+func (f *fakeMentorAdminSettingsService) UpdateSettingsByOperator(cfg service.MentorSettings, _ uint) (service.MentorSettings, error) {
 	f.updateCalls++
 	f.lastUpdate = cfg
 	if f.updateErr != nil {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"math"
@@ -16,9 +17,9 @@ type NewbroAdminHandler struct {
 
 type newbroAdminSettingsService interface {
 	GetSupportSettings() service.NewbroSupportSettings
-	UpdateSupportSettings(cfg service.NewbroSupportSettings) (service.NewbroSupportSettings, error)
+	UpdateSupportSettingsByOperator(cfg service.NewbroSupportSettings, operatorID uint) (service.NewbroSupportSettings, error)
 	GetRecruitSettings() service.NewbroRecruitSettings
-	UpdateRecruitSettings(cfg service.NewbroRecruitSettings) (service.NewbroRecruitSettings, error)
+	UpdateRecruitSettingsByOperator(cfg service.NewbroRecruitSettings, operatorID uint) (service.NewbroRecruitSettings, error)
 }
 
 func NewNewbroAdminHandler() *NewbroAdminHandler {
@@ -81,13 +82,13 @@ func (h *NewbroAdminHandler) UpdateSupportSettings(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.settingsSvc.UpdateSupportSettings(service.NewbroSupportSettings{
+	updated, err := h.settingsSvc.UpdateSupportSettingsByOperator(service.NewbroSupportSettings{
 		MaxCharacterSP:          req.MaxCharacterSP,
 		MultiCharacterSP:        req.MultiCharacterSP,
 		MultiCharacterThreshold: req.MultiCharacterThreshold,
 		RefreshIntervalDays:     req.RefreshIntervalDays,
 		BonusRate:               *req.BonusRate,
-	})
+	}, middleware.GetUserID(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -107,11 +108,11 @@ func (h *NewbroAdminHandler) UpdateRecruitSettings(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.settingsSvc.UpdateRecruitSettings(service.NewbroRecruitSettings{
+	updated, err := h.settingsSvc.UpdateRecruitSettingsByOperator(service.NewbroRecruitSettings{
 		RecruitQQURL:        req.RecruitQQURL,
 		RecruitRewardAmount: *req.RecruitRewardAmount,
 		RecruitCooldownDays: req.RecruitCooldownDays,
-	})
+	}, middleware.GetUserID(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

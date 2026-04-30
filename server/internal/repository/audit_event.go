@@ -97,6 +97,27 @@ func (r *AuditEventRepository) ListForExport(filter AuditEventFilter, limit int)
 	return records, err
 }
 
+func (r *AuditEventRepository) ListOlderThan(cutoff time.Time, limit int) ([]model.AuditEvent, error) {
+	if limit <= 0 {
+		limit = 1000
+	}
+	records := make([]model.AuditEvent, 0, limit)
+	err := global.DB.Model(&model.AuditEvent{}).
+		Where("occurred_at < ?", cutoff).
+		Order("occurred_at ASC, id ASC").
+		Limit(limit).
+		Find(&records).Error
+	return records, err
+}
+
+func (r *AuditEventRepository) DeleteByIDs(ids []uint) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	tx := global.DB.Where("id IN ?", ids).Delete(&model.AuditEvent{})
+	return tx.RowsAffected, tx.Error
+}
+
 func (r *AuditEventRepository) CreateExportTask(task *model.AuditExportTask) error {
 	return global.DB.Create(task).Error
 }

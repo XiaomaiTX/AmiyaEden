@@ -3,12 +3,15 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
+	"encoding/json"
 )
 
 // PAPExchangeService PAP 兑换汇率业务逻辑层
 type PAPExchangeService struct {
 	rateRepo   papExchangeRateStore
 	configRepo papExchangeConfigStore
+	auditSvc   *AuditService
 }
 
 type papExchangeRateStore interface {
@@ -26,6 +29,7 @@ func NewPAPExchangeService() *PAPExchangeService {
 	return &PAPExchangeService{
 		rateRepo:   repository.NewPAPTypeRateRepository(),
 		configRepo: repository.NewSysConfigRepository(),
+		auditSvc:   NewAuditService(),
 	}
 }
 
@@ -93,6 +97,55 @@ func (s *PAPExchangeService) UpdateConfig(req *UpdateConfigRequest) (*PAPExchang
 		return nil, err
 	}
 	return s.GetConfig()
+}
+
+func (s *PAPExchangeService) UpdateConfigByOperator(req *UpdateConfigRequest, operatorID uint) (*PAPExchangeConfigResponse, error) {
+	updated, err := s.UpdateConfig(req)
+	if err != nil {
+		return nil, err
+	}
+	if s.auditSvc != nil {
+		details := map[string]any{
+			"operator_id":                     operatorID,
+			"rates":                           req.Rates,
+			"fc_salary":                       req.FCSalary,
+			"fc_salary_monthly_limit":         req.FCSalaryMonthlyLimit,
+			"admin_award":                     req.AdminAward,
+			"multichar_full_reward_count":     req.MulticharFullRewardCount,
+			"multichar_reduced_reward_count":  req.MulticharReducedRewardCount,
+			"multichar_reduced_reward_pct":    req.MulticharReducedRewardPct,
+			"updated_config_snapshot_compact": compactPAPConfigForAudit(updated),
+		}
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "config",
+			Action:       "pap_exchange_config_update",
+			ActorUserID:  operatorID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigPAPFCSalary,
+			Result:       model.AuditResultSuccess,
+			Details:      details,
+		})
+	}
+	return updated, nil
+}
+
+func compactPAPConfigForAudit(cfg *PAPExchangeConfigResponse) string {
+	if cfg == nil {
+		return ""
+	}
+	blob, err := json.Marshal(map[string]any{
+		"fc_salary":                      cfg.FCSalary,
+		"fc_salary_monthly_limit":        cfg.FCSalaryMonthlyLimit,
+		"admin_award":                    cfg.AdminAward,
+		"multichar_full_reward_count":    cfg.MulticharFullRewardCount,
+		"multichar_reduced_reward_count": cfg.MulticharReducedRewardCount,
+		"multichar_reduced_reward_pct":   cfg.MulticharReducedRewardPct,
+		"rate_count":                     len(cfg.Rates),
+	})
+	if err != nil {
+		return ""
+	}
+	return string(blob)
 }
 
 // SetRates 批量更新 PAP 类型兑换汇率

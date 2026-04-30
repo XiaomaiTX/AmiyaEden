@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -20,6 +21,7 @@ type AutoRoleService struct {
 	charRepo     *repository.EveCharacterRepository
 	userRepo     *repository.UserRepository
 	roleSvc      *RoleService
+	auditSvc     *AuditService
 }
 
 func NewAutoRoleService() *AutoRoleService {
@@ -29,6 +31,7 @@ func NewAutoRoleService() *AutoRoleService {
 		charRepo:     repository.NewEveCharacterRepository(),
 		userRepo:     repository.NewUserRepository(),
 		roleSvc:      NewRoleService(),
+		auditSvc:     NewAuditService(),
 	}
 }
 
@@ -68,9 +71,58 @@ func (s *AutoRoleService) CreateEsiRoleMapping(esiRole string, roleCode string) 
 	return mapping, nil
 }
 
+// CreateEsiRoleMappingByOperator 创建 ESI 职权映射，并记录审计事件。
+func (s *AutoRoleService) CreateEsiRoleMappingByOperator(esiRole string, roleCode string, operatorID uint) (*model.EsiRoleMapping, error) {
+	mapping, err := s.CreateEsiRoleMapping(esiRole, roleCode)
+	if err != nil {
+		return nil, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "permission",
+			Action:       "esi_role_mapping_create",
+			ActorUserID:  operatorID,
+			ResourceType: "esi_role_mapping",
+			ResourceID:   strconv.FormatUint(uint64(mapping.ID), 10),
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"esi_role":  mapping.EsiRole,
+				"role_code": mapping.RoleCode,
+			},
+		})
+	}
+	return mapping, nil
+}
+
 // DeleteEsiRoleMapping 删除 ESI 职权映射
 func (s *AutoRoleService) DeleteEsiRoleMapping(id uint) error {
 	return s.autoRoleRepo.DeleteEsiRoleMapping(id)
+}
+
+// DeleteEsiRoleMappingByOperator 删除 ESI 职权映射，并记录审计事件。
+func (s *AutoRoleService) DeleteEsiRoleMappingByOperator(id uint, operatorID uint) error {
+	existing, err := s.autoRoleRepo.GetEsiRoleMappingByID(id)
+	if err != nil {
+		return err
+	}
+	if err := s.autoRoleRepo.DeleteEsiRoleMapping(id); err != nil {
+		return err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "permission",
+			Action:       "esi_role_mapping_delete",
+			ActorUserID:  operatorID,
+			ResourceType: "esi_role_mapping",
+			ResourceID:   strconv.FormatUint(uint64(existing.ID), 10),
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"esi_role":  existing.EsiRole,
+				"role_code": existing.RoleCode,
+			},
+		})
+	}
+	return nil
 }
 
 // GetAllEsiRoles 获取所有 ESI 军团职权名列表（供前端选择）
@@ -177,9 +229,62 @@ func (s *AutoRoleService) CreateEsiTitleMapping(corpID int64, titleID int, title
 	return mapping, nil
 }
 
+// CreateEsiTitleMappingByOperator 创建 ESI 头衔映射，并记录审计事件。
+func (s *AutoRoleService) CreateEsiTitleMappingByOperator(corpID int64, titleID int, titleName string, roleCode string, operatorID uint) (*model.EsiTitleMapping, error) {
+	mapping, err := s.CreateEsiTitleMapping(corpID, titleID, titleName, roleCode)
+	if err != nil {
+		return nil, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "permission",
+			Action:       "esi_title_mapping_create",
+			ActorUserID:  operatorID,
+			ResourceType: "esi_title_mapping",
+			ResourceID:   strconv.FormatUint(uint64(mapping.ID), 10),
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"corporation_id": mapping.CorporationID,
+				"title_id":       mapping.TitleID,
+				"title_name":     mapping.TitleName,
+				"role_code":      mapping.RoleCode,
+			},
+		})
+	}
+	return mapping, nil
+}
+
 // DeleteEsiTitleMapping 删除 ESI 头衔映射
 func (s *AutoRoleService) DeleteEsiTitleMapping(id uint) error {
 	return s.autoRoleRepo.DeleteEsiTitleMapping(id)
+}
+
+// DeleteEsiTitleMappingByOperator 删除 ESI 头衔映射，并记录审计事件。
+func (s *AutoRoleService) DeleteEsiTitleMappingByOperator(id uint, operatorID uint) error {
+	existing, err := s.autoRoleRepo.GetEsiTitleMappingByID(id)
+	if err != nil {
+		return err
+	}
+	if err := s.autoRoleRepo.DeleteEsiTitleMapping(id); err != nil {
+		return err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "permission",
+			Action:       "esi_title_mapping_delete",
+			ActorUserID:  operatorID,
+			ResourceType: "esi_title_mapping",
+			ResourceID:   strconv.FormatUint(uint64(existing.ID), 10),
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"corporation_id": existing.CorporationID,
+				"title_id":       existing.TitleID,
+				"title_name":     existing.TitleName,
+				"role_code":      existing.RoleCode,
+			},
+		})
+	}
+	return nil
 }
 
 // ─── 自动权限同步 ───

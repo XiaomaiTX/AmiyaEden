@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
 )
 
@@ -29,12 +30,14 @@ type welfareSettingsConfigStore interface {
 }
 
 type WelfareSettingsService struct {
-	cfgRepo welfareSettingsConfigStore
+	cfgRepo  welfareSettingsConfigStore
+	auditSvc *AuditService
 }
 
 func NewWelfareSettingsService() *WelfareSettingsService {
 	return &WelfareSettingsService{
-		cfgRepo: repository.NewSysConfigRepository(),
+		cfgRepo:  repository.NewSysConfigRepository(),
+		auditSvc: NewAuditService(),
 	}
 }
 
@@ -66,4 +69,25 @@ func (s *WelfareSettingsService) UpdateSettings(cfg WelfareSettings) (WelfareSet
 	}
 
 	return cfg, nil
+}
+
+func (s *WelfareSettingsService) UpdateSettingsByOperator(cfg WelfareSettings, operatorID uint) (WelfareSettings, error) {
+	updated, err := s.UpdateSettings(cfg)
+	if err != nil {
+		return WelfareSettings{}, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "config",
+			Action:       "welfare_settings_update",
+			ActorUserID:  operatorID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigWelfareAutoApproveFuxiCoinThreshold,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"auto_approve_fuxi_coin_threshold": updated.AutoApproveFuxiCoinThreshold,
+			},
+		})
+	}
+	return updated, nil
 }

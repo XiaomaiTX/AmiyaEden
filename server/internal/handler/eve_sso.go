@@ -2,6 +2,7 @@ package handler
 
 import (
 	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"fmt"
@@ -12,11 +13,15 @@ import (
 
 // EveSSOHandler EVE SSO 登录处理器
 type EveSSOHandler struct {
-	svc *service.EveSSOService
+	svc      *service.EveSSOService
+	auditSvc *service.AuditService
 }
 
 func NewEveSSOHandler() *EveSSOHandler {
-	return &EveSSOHandler{svc: service.NewEveSSOService()}
+	return &EveSSOHandler{
+		svc:      service.NewEveSSOService(),
+		auditSvc: service.NewAuditService(),
+	}
 }
 
 // Login 发起 EVE SSO 登录，重定向到 EVE 授权页面
@@ -36,15 +41,26 @@ func (h *EveSSOHandler) Login(c *gin.Context) {
 	}
 
 	if err := service.ValidateExtraScopes(extraScopes, nil); err != nil {
+		h.recordSecurityEvent(c, "eve_sso_login_scope_rejected", model.AuditResultFailed, map[string]any{
+			"reason":       err.Error(),
+			"scopes_param": scopesParam,
+		})
 		response.Fail(c, response.CodeForbidden, err.Error())
 		return
 	}
 
 	authURL, err := h.svc.GetAuthURL(c.Request.Context(), extraScopes, redirectURL)
 	if err != nil {
+		h.recordSecurityEvent(c, "eve_sso_login_url_failed", model.AuditResultFailed, map[string]any{
+			"error":        err.Error(),
+			"scopes_param": scopesParam,
+		})
 		response.Fail(c, response.CodeBizError, "生成授权 URL 失败: "+err.Error())
 		return
 	}
+	h.recordSecurityEvent(c, "eve_sso_login_start", model.AuditResultSuccess, map[string]any{
+		"scopes_param": scopesParam,
+	})
 
 	response.OK(c, gin.H{"url": authURL})
 }
@@ -72,6 +88,10 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 
 	if errParam != "" {
 		errDesc := c.DefaultQuery("error_description", errParam)
+		h.recordSecurityEvent(c, "eve_sso_callback_denied", model.AuditResultFailed, map[string]any{
+			"error":             errParam,
+			"error_description": errDesc,
+		})
 		redirectError("EVE SSO 授权被拒绝: " + errDesc)
 		return
 	}
@@ -79,9 +99,16 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 	clientIP := c.ClientIP()
 	result, err := h.svc.HandleCallback(c.Request.Context(), code, state, clientIP)
 	if err != nil {
+		h.recordSecurityEvent(c, "eve_sso_callback_failed", model.AuditResultFailed, map[string]any{
+			"error": err.Error(),
+		})
 		redirectError("登录处理失败: " + err.Error())
 		return
 	}
+	h.recordSecurityEvent(c, "eve_sso_callback_success", model.AuditResultSuccess, map[string]any{
+		"user_id":      result.User.ID,
+		"character_id": result.Character.CharacterID,
+	})
 
 	// 如果有前端重定向地址，则带 token 跳转
 	if result.RedirectURL != "" {
@@ -146,15 +173,27 @@ func (h *EveSSOHandler) BindLogin(c *gin.Context) {
 	}
 
 	if err := service.ValidateExtraScopes(extraScopes, middleware.GetUserRoles(c)); err != nil {
+		h.recordSecurityEvent(c, "eve_sso_bind_scope_rejected", model.AuditResultFailed, map[string]any{
+			"reason":       err.Error(),
+			"scopes_param": scopesParam,
+		})
 		response.Fail(c, response.CodeForbidden, err.Error())
 		return
 	}
 
 	authURL, err := h.svc.GetBindAuthURL(c.Request.Context(), userID, extraScopes, redirectURL)
 	if err != nil {
+		h.recordSecurityEvent(c, "eve_sso_bind_url_failed", model.AuditResultFailed, map[string]any{
+			"error":        err.Error(),
+			"scopes_param": scopesParam,
+		})
 		response.Fail(c, response.CodeBizError, "生成授权 URL 失败: "+err.Error())
 		return
 	}
+	h.recordSecurityEvent(c, "eve_sso_bind_start", model.AuditResultSuccess, map[string]any{
+		"user_id":      userID,
+		"scopes_param": scopesParam,
+	})
 
 	response.OK(c, gin.H{"url": authURL})
 }
@@ -243,4 +282,22 @@ func splitAny(s string, seps string) []string {
 		result = append(result, s[start:])
 	}
 	return result
+}
+
+func (h *EveSSOHandler) recordSecurityEvent(c *gin.Context, action string, result string, details map[string]any) {
+	if h.auditSvc == nil {
+		return
+	}
+	_ = h.auditSvc.RecordEvent(c.Request.Context(), service.AuditRecordInput{
+		Category:     "security",
+		Action:       action,
+		ActorUserID:  middleware.GetUserID(c),
+		ResourceType: "eve_sso",
+		ResourceID:   c.FullPath(),
+		Result:       result,
+		RequestID:    c.GetString("request_id"),
+		IP:           c.ClientIP(),
+		UserAgent:    c.Request.UserAgent(),
+		Details:      details,
+	})
 }

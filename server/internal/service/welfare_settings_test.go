@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"errors"
@@ -128,5 +129,31 @@ func TestUpdateWelfareSettingsAcceptsZeroThreshold(t *testing.T) {
 	}
 	if store.setManyCalls != 1 {
 		t.Fatalf("expected one batch write, got %d", store.setManyCalls)
+	}
+}
+
+func TestUpdateWelfareSettingsByOperatorWritesAuditEvent(t *testing.T) {
+	db := newServiceTestDB(t, "welfare_settings_audit", &model.AuditEvent{})
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	store := &fakeWelfareSettingsConfigStore{}
+	svc := &WelfareSettingsService{cfgRepo: store, auditSvc: NewAuditService()}
+
+	_, err := svc.UpdateSettingsByOperator(WelfareSettings{AutoApproveFuxiCoinThreshold: 333}, 66)
+	if err != nil {
+		t.Fatalf("UpdateSettingsByOperator() error = %v", err)
+	}
+
+	var events []model.AuditEvent
+	if err := db.Where("resource_type = ? AND action = ?", "system_config", "welfare_settings_update").Find(&events).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(events) == 0 {
+		t.Fatal("expected welfare_settings_update audit event")
+	}
+	if events[0].Category != "config" || events[0].ActorUserID != 66 || events[0].Result != model.AuditResultSuccess {
+		t.Fatalf("unexpected audit event: %+v", events[0])
 	}
 }

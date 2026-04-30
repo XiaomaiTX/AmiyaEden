@@ -17,6 +17,7 @@ func RegisterAll(reg *taskregistry.Registry) {
 	registerTaskExecutionHistoryCleanupTask(reg)
 	registerMentorRewardTask(reg)
 	registerNewbroRecruitmentTask(reg)
+	registerAuditArchiveTask(reg)
 	// registerCleanupJob(c)
 	// registerReportJob(c)
 }

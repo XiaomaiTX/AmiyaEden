@@ -17,7 +17,7 @@ type MentorAdminHandler struct {
 
 type mentorAdminSettingsService interface {
 	GetSettings() service.MentorSettings
-	UpdateSettings(cfg service.MentorSettings) (service.MentorSettings, error)
+	UpdateSettingsByOperator(cfg service.MentorSettings, operatorID uint) (service.MentorSettings, error)
 }
 
 func NewMentorAdminHandler() *MentorAdminHandler {
@@ -103,10 +103,10 @@ func (h *MentorAdminHandler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.settingsSvc.UpdateSettings(service.MentorSettings{
+	updated, err := h.settingsSvc.UpdateSettingsByOperator(service.MentorSettings{
 		MaxCharacterSP:    req.MaxCharacterSP,
 		MaxAccountAgeDays: req.MaxAccountAgeDays,
-	})
+	}, middleware.GetUserID(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

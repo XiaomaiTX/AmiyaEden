@@ -3,12 +3,9 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"fmt"
 	"strings"
 	"testing"
-	"time"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -27,16 +24,7 @@ func TestImpersonateUserRejectsInvalidPrimaryCharacter(t *testing.T) {
 }
 
 func newUserServiceTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
-
-	dsn := fmt.Sprintf("file:user_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}); err != nil {
-		t.Fatalf("auto migrate: %v", err)
-	}
+	db := newServiceTestDB(t, "user_service_test", &model.User{}, &model.EveCharacter{})
 	return db
 }
 

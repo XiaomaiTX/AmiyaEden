@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"errors"
@@ -316,5 +317,67 @@ func TestUpdateNewbroSettingsReturnsBatchWriteError(t *testing.T) {
 	}
 	if store.setManyCalls != 1 {
 		t.Fatalf("expected one batch write attempt, got %d", store.setManyCalls)
+	}
+}
+
+func TestUpdateNewbroSupportSettingsByOperatorWritesAuditEvent(t *testing.T) {
+	db := newServiceTestDB(t, "newbro_support_settings_audit", &model.AuditEvent{})
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	store := &fakeNewbroSettingsConfigStore{}
+	svc := &NewbroSettingsService{cfgRepo: store, auditSvc: NewAuditService()}
+
+	_, err := svc.UpdateSupportSettingsByOperator(NewbroSupportSettings{
+		MaxCharacterSP:          21_000_000,
+		MultiCharacterSP:        11_000_000,
+		MultiCharacterThreshold: 4,
+		RefreshIntervalDays:     9,
+		BonusRate:               30,
+	}, 68)
+	if err != nil {
+		t.Fatalf("UpdateSupportSettingsByOperator() error = %v", err)
+	}
+
+	var events []model.AuditEvent
+	if err := db.Where("resource_type = ? AND action = ?", "system_config", "newbro_support_settings_update").Find(&events).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(events) == 0 {
+		t.Fatal("expected newbro_support_settings_update audit event")
+	}
+	if events[0].Category != "config" || events[0].ActorUserID != 68 || events[0].Result != model.AuditResultSuccess {
+		t.Fatalf("unexpected audit event: %+v", events[0])
+	}
+}
+
+func TestUpdateNewbroRecruitSettingsByOperatorWritesAuditEvent(t *testing.T) {
+	db := newServiceTestDB(t, "newbro_recruit_settings_audit", &model.AuditEvent{})
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	store := &fakeNewbroSettingsConfigStore{}
+	svc := &NewbroSettingsService{cfgRepo: store, auditSvc: NewAuditService()}
+
+	_, err := svc.UpdateRecruitSettingsByOperator(NewbroRecruitSettings{
+		RecruitQQURL:        "https://example.com/qq",
+		RecruitRewardAmount: 123,
+		RecruitCooldownDays: 90,
+	}, 69)
+	if err != nil {
+		t.Fatalf("UpdateRecruitSettingsByOperator() error = %v", err)
+	}
+
+	var events []model.AuditEvent
+	if err := db.Where("resource_type = ? AND action = ?", "system_config", "newbro_recruit_settings_update").Find(&events).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(events) == 0 {
+		t.Fatal("expected newbro_recruit_settings_update audit event")
+	}
+	if events[0].Category != "config" || events[0].ActorUserID != 69 || events[0].Result != model.AuditResultSuccess {
+		t.Fatalf("unexpected audit event: %+v", events[0])
 	}
 }

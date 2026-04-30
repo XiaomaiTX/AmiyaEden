@@ -35,7 +35,7 @@ type WelfareHandler struct {
 
 type welfareSettingsService interface {
 	GetSettings() service.WelfareSettings
-	UpdateSettings(cfg service.WelfareSettings) (service.WelfareSettings, error)
+	UpdateSettingsByOperator(cfg service.WelfareSettings, operatorID uint) (service.WelfareSettings, error)
 }
 
 func NewWelfareHandler() *WelfareHandler {
@@ -187,9 +187,9 @@ func (h *WelfareHandler) AdminUpdateSettings(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.settingsSvc.UpdateSettings(service.WelfareSettings{
+	updated, err := h.settingsSvc.UpdateSettingsByOperator(service.WelfareSettings{
 		AutoApproveFuxiCoinThreshold: *req.AutoApproveFuxiCoinThreshold,
-	})
+	}, middleware.GetUserID(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

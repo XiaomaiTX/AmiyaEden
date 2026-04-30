@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"strconv"
@@ -224,5 +225,51 @@ func TestPAPExchangeGetConfigResolvesAdminAwardDefaultsAndZero(t *testing.T) {
 				t.Fatalf("admin award = %d, want %d", cfg.AdminAward, tt.want)
 			}
 		})
+	}
+}
+
+func TestPAPExchangeUpdateConfigByOperatorWritesAuditEvent(t *testing.T) {
+	db := newServiceTestDB(t, "pap_exchange_audit", &model.AuditEvent{})
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	rateStore := &fakePAPExchangeRateStore{}
+	configStore := &fakePAPExchangeConfigStore{}
+	svc := &PAPExchangeService{
+		rateRepo:   rateStore,
+		configRepo: configStore,
+		auditSvc:   NewAuditService(),
+	}
+
+	fcSalary := 8.8
+	fcSalaryMonthlyLimit := 2
+	adminAward := 15
+	multicharFull := 4
+	multicharReduced := 1
+	multicharPct := 60
+
+	_, err := svc.UpdateConfigByOperator(&UpdateConfigRequest{
+		Rates:                       []SetRateRequest{{PapType: "stratop", DisplayName: "StratOp", Rate: 2.0}},
+		FCSalary:                    &fcSalary,
+		FCSalaryMonthlyLimit:        &fcSalaryMonthlyLimit,
+		AdminAward:                  &adminAward,
+		MulticharFullRewardCount:    &multicharFull,
+		MulticharReducedRewardCount: &multicharReduced,
+		MulticharReducedRewardPct:   &multicharPct,
+	}, 88)
+	if err != nil {
+		t.Fatalf("UpdateConfigByOperator() error = %v", err)
+	}
+
+	var events []model.AuditEvent
+	if err := db.Where("resource_type = ? AND action = ?", "system_config", "pap_exchange_config_update").Find(&events).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(events) == 0 {
+		t.Fatal("expected pap_exchange_config_update audit event")
+	}
+	if events[0].Category != "config" || events[0].ActorUserID != 88 || events[0].Result != model.AuditResultSuccess {
+		t.Fatalf("unexpected audit event: %+v", events[0])
 	}
 }

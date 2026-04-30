@@ -2,6 +2,7 @@ package handler
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/jobs"
 	"amiya-eden/pkg/response"
@@ -36,6 +37,7 @@ func (h *CorporationStructureHandler) UpdateAuthorizations(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
+	req.OperatorUserID = middleware.GetUserID(c)
 	if err := h.svc.UpdateAuthorizations(c.Request.Context(), req); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
