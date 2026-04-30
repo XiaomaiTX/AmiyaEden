@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"fmt"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,9 +14,17 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+var ticketRepoTestDBSeq uint64
+
 func setupTicketRepositoryTestDB(t *testing.T) {
 	t.Helper()
-	dsn := fmt.Sprintf("file:ticket_repository_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
+	name := strings.NewReplacer("/", "_", "\\", "_", " ", "_", ":", "_").Replace(t.Name())
+	dsn := fmt.Sprintf(
+		"file:ticket_repository_test_%s_%d_%d?mode=memory&cache=shared",
+		name,
+		time.Now().UnixNano(),
+		atomic.AddUint64(&ticketRepoTestDBSeq, 1),
+	)
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)

@@ -44,6 +44,15 @@ func (r *AutoRoleRepository) CreateEsiRoleMapping(mapping *model.EsiRoleMapping)
 	return global.DB.Create(mapping).Error
 }
 
+// GetEsiRoleMappingByID 根据 ID 获取 ESI 职权映射
+func (r *AutoRoleRepository) GetEsiRoleMappingByID(id uint) (*model.EsiRoleMapping, error) {
+	var mapping model.EsiRoleMapping
+	if err := global.DB.First(&mapping, id).Error; err != nil {
+		return nil, err
+	}
+	return &mapping, nil
+}
+
 // DeleteEsiRoleMapping 删除 ESI 职权映射
 func (r *AutoRoleRepository) DeleteEsiRoleMapping(id uint) error {
 	return global.DB.Delete(&model.EsiRoleMapping{}, id).Error
@@ -76,6 +85,15 @@ func (r *AutoRoleRepository) GetEsiTitleMappingsByCorpAndTitles(corpID int64, ti
 // CreateEsiTitleMapping 创建 ESI 头衔映射
 func (r *AutoRoleRepository) CreateEsiTitleMapping(mapping *model.EsiTitleMapping) error {
 	return global.DB.Create(mapping).Error
+}
+
+// GetEsiTitleMappingByID 根据 ID 获取 ESI 头衔映射
+func (r *AutoRoleRepository) GetEsiTitleMappingByID(id uint) (*model.EsiTitleMapping, error) {
+	var mapping model.EsiTitleMapping
+	if err := global.DB.First(&mapping, id).Error; err != nil {
+		return nil, err
+	}
+	return &mapping, nil
 }
 
 // DeleteEsiTitleMapping 删除 ESI 头衔映射

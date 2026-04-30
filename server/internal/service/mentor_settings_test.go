@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"errors"
@@ -135,5 +136,31 @@ func TestUpdateMentorSettingsReturnsBatchWriteError(t *testing.T) {
 	}
 	if store.setManyCalls != 1 {
 		t.Fatalf("expected one batch write attempt, got %d", store.setManyCalls)
+	}
+}
+
+func TestUpdateMentorSettingsByOperatorWritesAuditEvent(t *testing.T) {
+	db := newServiceTestDB(t, "mentor_settings_audit", &model.AuditEvent{})
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	store := &fakeMentorSettingsConfigStore{}
+	svc := &MentorSettingsService{cfgRepo: store, auditSvc: NewAuditService()}
+
+	_, err := svc.UpdateSettingsByOperator(MentorSettings{MaxCharacterSP: 7_000_000, MaxAccountAgeDays: 12}, 67)
+	if err != nil {
+		t.Fatalf("UpdateSettingsByOperator() error = %v", err)
+	}
+
+	var events []model.AuditEvent
+	if err := db.Where("resource_type = ? AND action = ?", "system_config", "mentor_settings_update").Find(&events).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(events) == 0 {
+		t.Fatal("expected mentor_settings_update audit event")
+	}
+	if events[0].Category != "config" || events[0].ActorUserID != 67 || events[0].Result != model.AuditResultSuccess {
+		t.Fatalf("unexpected audit event: %+v", events[0])
 	}
 }

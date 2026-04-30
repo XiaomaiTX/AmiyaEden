@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
 )
 
@@ -30,7 +31,8 @@ func (s MentorSettings) Validate() error {
 }
 
 type MentorSettingsService struct {
-	cfgRepo mentorSettingsConfigStore
+	cfgRepo  mentorSettingsConfigStore
+	auditSvc *AuditService
 }
 
 type mentorSettingsConfigStore interface {
@@ -40,7 +42,7 @@ type mentorSettingsConfigStore interface {
 }
 
 func NewMentorSettingsService() *MentorSettingsService {
-	return &MentorSettingsService{cfgRepo: repository.NewSysConfigRepository()}
+	return &MentorSettingsService{cfgRepo: repository.NewSysConfigRepository(), auditSvc: NewAuditService()}
 }
 
 func (s *MentorSettingsService) GetSettings() MentorSettings {
@@ -66,4 +68,26 @@ func (s *MentorSettingsService) UpdateSettings(cfg MentorSettings) (MentorSettin
 	}
 
 	return cfg, nil
+}
+
+func (s *MentorSettingsService) UpdateSettingsByOperator(cfg MentorSettings, operatorID uint) (MentorSettings, error) {
+	updated, err := s.UpdateSettings(cfg)
+	if err != nil {
+		return MentorSettings{}, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "config",
+			Action:       "mentor_settings_update",
+			ActorUserID:  operatorID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigMenteeMaxCharacterSP,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"max_character_sp":     updated.MaxCharacterSP,
+				"max_account_age_days": updated.MaxAccountAgeDays,
+			},
+		})
+	}
+	return updated, nil
 }

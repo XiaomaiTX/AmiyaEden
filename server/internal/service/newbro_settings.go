@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
 	"time"
 )
@@ -132,7 +133,8 @@ func (s NewbroSettings) RefreshInterval() time.Duration {
 }
 
 type NewbroSettingsService struct {
-	cfgRepo newbroSettingsConfigStore
+	cfgRepo  newbroSettingsConfigStore
+	auditSvc *AuditService
 }
 
 type newbroSettingsConfigStore interface {
@@ -145,7 +147,8 @@ type newbroSettingsConfigStore interface {
 
 func NewNewbroSettingsService() *NewbroSettingsService {
 	return &NewbroSettingsService{
-		cfgRepo: repository.NewSysConfigRepository(),
+		cfgRepo:  repository.NewSysConfigRepository(),
+		auditSvc: NewAuditService(),
 	}
 }
 
@@ -204,6 +207,31 @@ func (s *NewbroSettingsService) UpdateSupportSettings(cfg NewbroSupportSettings)
 	return cfg, nil
 }
 
+func (s *NewbroSettingsService) UpdateSupportSettingsByOperator(cfg NewbroSupportSettings, operatorID uint) (NewbroSupportSettings, error) {
+	updated, err := s.UpdateSupportSettings(cfg)
+	if err != nil {
+		return NewbroSupportSettings{}, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "config",
+			Action:       "newbro_support_settings_update",
+			ActorUserID:  operatorID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigNewbroMaxCharacterSP,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"max_character_sp":          updated.MaxCharacterSP,
+				"multi_character_sp":        updated.MultiCharacterSP,
+				"multi_character_threshold": updated.MultiCharacterThreshold,
+				"refresh_interval_days":     updated.RefreshIntervalDays,
+				"bonus_rate":                updated.BonusRate,
+			},
+		})
+	}
+	return updated, nil
+}
+
 func (s *NewbroSettingsService) UpdateRecruitSettings(cfg NewbroRecruitSettings) (NewbroRecruitSettings, error) {
 	if err := cfg.Validate(); err != nil {
 		return NewbroRecruitSettings{}, err
@@ -220,6 +248,29 @@ func (s *NewbroSettingsService) UpdateRecruitSettings(cfg NewbroRecruitSettings)
 	}
 
 	return cfg, nil
+}
+
+func (s *NewbroSettingsService) UpdateRecruitSettingsByOperator(cfg NewbroRecruitSettings, operatorID uint) (NewbroRecruitSettings, error) {
+	updated, err := s.UpdateRecruitSettings(cfg)
+	if err != nil {
+		return NewbroRecruitSettings{}, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "config",
+			Action:       "newbro_recruit_settings_update",
+			ActorUserID:  operatorID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigNewbroRecruitQQURL,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"recruit_qq_url":        updated.RecruitQQURL,
+				"recruit_reward_amount": updated.RecruitRewardAmount,
+				"recruit_cooldown_days": updated.RecruitCooldownDays,
+			},
+		})
+	}
+	return updated, nil
 }
 
 func (s *NewbroSettingsService) UpdateSettings(cfg NewbroSettings) (NewbroSettings, error) {

@@ -52,6 +52,7 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"mentor_reward":                  {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 3 * * *", hasRun: true},
 		"auto_srp":                       {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeTriggered, cron: "", hasRun: false},
 		"recruit_link_check":             {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 2 * * *", hasRun: true},
+		"audit_archive_daily":            {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 5 * * *", hasRun: true},
 	}
 
 	all := reg.All()

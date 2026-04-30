@@ -10,9 +10,7 @@ import (
 	"amiya-eden/internal/model"
 
 	"go.uber.org/zap"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type fakeRecruitmentEntryUserRepo struct {
@@ -63,13 +61,7 @@ func (f *scriptedRecruitmentEntryUserRepo) GetByIDForUpdateTx(tx *gorm.DB, id ui
 }
 
 func newRecruitmentEntryServiceTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
-	dsn := fmt.Sprintf("file:recruit_entry_svc_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	if err := db.AutoMigrate(
+	db := newServiceTestDB(t, "recruit_entry_svc_test",
 		&model.SystemConfig{},
 		&model.NewbroRecruitment{},
 		&model.NewbroRecruitmentEntry{},
@@ -78,9 +70,7 @@ func newRecruitmentEntryServiceTestDB(t *testing.T) *gorm.DB {
 		&model.EveCharacter{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
-	); err != nil {
-		t.Fatalf("auto migrate: %v", err)
-	}
+	)
 	return db
 }
 

@@ -8,19 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func newFuxiAdminServiceTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
-	dsn := fmt.Sprintf("file:fuxi_admin_svc_%d?mode=memory&cache=shared", time.Now().UnixNano())
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	if err := db.AutoMigrate(
+	db := newServiceTestDB(t, "fuxi_admin_svc",
 		&model.FuxiAdminConfig{},
 		&model.FuxiAdminTier{},
 		&model.FuxiAdmin{},
@@ -29,9 +21,7 @@ func newFuxiAdminServiceTestDB(t *testing.T) *gorm.DB {
 		&model.Fleet{},
 		&model.WelfareApplication{},
 		&model.ShopOrder{},
-	); err != nil {
-		t.Fatalf("auto migrate: %v", err)
-	}
+	)
 	return db
 }
 

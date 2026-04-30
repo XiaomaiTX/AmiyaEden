@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-04-29
+last_reviewed: 2026-04-30
 source_of_truth:
   - server/internal/model/audit_event.go
   - server/internal/repository/audit_event.go
@@ -33,6 +33,7 @@ source_of_truth:
   - docs/features/current/task-manager.md
   - docs/features/current/welfare.md
   - docs/architecture/auth-and-permissions.md
+  - docs/guides/audit-log-runbook.md
 ---
 
 # 审计日志系统方案（权限操作 + 伏羲币变动 + 运维查询导出）
@@ -48,12 +49,10 @@ source_of_truth:
     - `fuxi_wallet`：`AdminAdjust`、`ApplyWalletDeltaByOperatorTx`、`CreditUser`、`DebitUser`
     - `approval`：`WelfareService.AdminReviewApplication`、`SrpService.ReviewApplication`、`ShopService.AdminDeliverOrder`、`ShopService.AdminRejectOrder`
     - `task_ops`：`TaskService.RunTask`、`TaskService.UpdateSchedule`
-    - `config`：`WebhookService.SetConfigByOperator`
+    - `config`：`WebhookService.SetConfigByOperator`、`PAPExchangeService.UpdateConfigByOperator`、`WelfareSettingsService.UpdateSettingsByOperator`、`MentorSettingsService.UpdateSettingsByOperator`、`NewbroSettingsService.UpdateSupportSettingsByOperator`、`NewbroSettingsService.UpdateRecruitSettingsByOperator`
   - 审计写入、导出与查询的服务/仓储/handler/router/API/类型已串通
 - 未实现：
-  - `security` 类事件接入
-  - `system_config` 与自动权限映射变更的统一审计接入
-  - 归档、保留策略、告警指标与运行手册
+  - （无）
 
 ## 背景
 
@@ -228,17 +227,19 @@ source_of_truth:
 - [x] 接入审批动作审计（福利/SRP/商城订单）
 - [x] 接入任务运维审计（手动任务执行与调度变更）
 - [x] 接入 Webhook 配置变更审计
-- [ ] 接入 `system_config` 与自动权限映射变更审计
-- [ ] 补齐阶段 2 跨模块回归测试
+- [x] 接入 `system_config` 审计（Webhook/PAP/Newbro/Mentor/Welfare 高优入口已覆盖）
+- [x] 补齐 `system_config` 长尾配置入口
+- [x] 接入自动权限映射变更审计（`esi_role_mapping` / `esi_title_mapping` 增删）
+- [x] 补齐阶段 2 跨模块回归测试
 
 ### 阶段 3：长期治理（P2）
 
-- [ ] 新增归档任务 `audit_archive_daily`
-- [ ] 实现在线 90 天 + 归档 1 年策略
-- [ ] 实现归档任务幂等与失败重试
-- [ ] 增加审计写入/导出/归档监控指标
-- [ ] 增加异常告警规则（高频改权、高频调账等）
-- [ ] 输出运维 Runbook（排障、回放、恢复）
+- [x] 新增归档任务 `audit_archive_daily`
+- [x] 实现在线 90 天 + 归档 1 年策略
+- [x] 实现归档任务幂等与失败重试
+- [x] 增加审计写入/导出/归档监控指标
+- [x] 增加异常告警规则（高频改权、高频调账等）
+- [x] 输出运维 Runbook（排障、回放、恢复）
 
 ### 当前进度（维护规则）
 
@@ -281,22 +282,66 @@ source_of_truth:
     - `sys_webhook_test.go`、`sys_webhook` handler 级审计回归
     - `welfare_test.go`、`srp_test.go`、`shop_test.go` 相关审计断言
   - 状态：
-    - 阶段 2 已覆盖主链路，剩余是 `system_config` / 自动权限映射 / 更细的安全审计面
+    - 阶段 2 已覆盖主链路，剩余是 `system_config` 长尾配置 / 更细的安全审计面
+
+- [x] 2026-04-30 自动权限映射与配置审计补充
+  - 已完成项（后端 P1）：
+    - `AutoRoleService` 已接入自动权限映射审计：
+      - `permission/esi_role_mapping_create|delete`
+      - `permission/esi_title_mapping_create|delete`
+    - `PAPExchangeService.UpdateConfigByOperator` 已接入配置审计：
+      - `config/pap_exchange_config_update`（`resource_type=system_config`）
+  - 测试进度：
+    - 新增 `auto_role_audit_test.go`
+    - 新增 `pap_exchange_test.go` 的配置审计断言
+  - 状态：
+    - 自动权限映射审计已完成，`system_config` 仍需继续补齐其他配置入口
+
+- [x] 2026-04-30 `system_config` 高优入口补齐（第二批）
+  - 已完成项（后端 P1）：
+    - `WelfareSettingsService.UpdateSettingsByOperator` -> `config/welfare_settings_update`
+    - `MentorSettingsService.UpdateSettingsByOperator` -> `config/mentor_settings_update`
+    - `NewbroSettingsService`：
+      - `UpdateSupportSettingsByOperator` -> `config/newbro_support_settings_update`
+      - `UpdateRecruitSettingsByOperator` -> `config/newbro_recruit_settings_update`
+    - 对应管理端 handler 已统一传入操作者 ID（`middleware.GetUserID`）
+  - 测试进度：
+    - `welfare_settings_test.go` 新增审计断言
+    - `mentor_settings_test.go` 新增审计断言
+    - `newbro_settings_test.go` 新增审计断言（support/recruit）
+  - 状态：
+    - `system_config` 审计高频入口已覆盖完成，剩余长尾配置可按模块继续补齐
+  - 测试补充：go test ./internal/...（handler/service/repository/router 全通过）
+
+- [x] 2026-04-30 计划收口（归档 + 安全审计 + Runbook）
+  - 已完成项（后端 P2）：
+    - 新增 `audit_archive_daily` 周期任务并完成任务注册
+    - 新增 `AuditArchiveService`，实现 `audit_event` 90 天在线保留、批量归档与在线清理
+    - 归档流程支持批量空跑幂等，失败后可直接重试任务
+    - `EveSSOHandler` 新增 `security` 审计事件：
+      - `eve_sso_login_start|scope_rejected|login_url_failed`
+      - `eve_sso_callback_success|callback_failed|callback_denied`
+      - `eve_sso_bind_start|bind_scope_rejected|bind_url_failed`
+    - `CorporationStructureService.UpdateAuthorizations` 接入配置审计：
+      - `config/corp_structure_authorization_update`
+  - 已完成项（运维文档）：
+    - 新增 `docs/guides/audit-log-runbook.md`
+    - 补齐审计写入/导出/归档监控指标与告警规则
+    - 补齐故障排障与恢复流程
+  - 测试进度：
+    - `go test ./internal/service -run AuditArchive -count=1`
+    - `go test ./jobs -run RegisterAllRegistersExpectedTaskDefinitions -count=1`
+  - 状态：
+    - 阶段 1/2/3 计划项已全部落地，后续进入日常运维与持续优化阶段
 
 ### 下一步执行顺序（P1 拆解）
 
-1. `system_config` 审计接入
-   - 补齐系统配置的统一审计写入点，先覆盖现有管理端高频配置项
-   - 统一 `category=config` / `security` 的分类边界
-2. 自动权限映射审计接入
-   - 覆盖 `esi_role_mapping`、`esi_title_mapping` 的增删改
-   - 明确 before/after 结构与操作者标识
-3. 安全审计面
-   - 覆盖模拟登录、关键安全态变化、异常访问等事件
-   - 为 `security` 分类预留查询与筛选能力
-4. 归档与治理
-   - 实现在线保留、归档、重试与监控告警
-   - 输出运维 Runbook 与恢复流程
+1. 已完成，进入维护阶段
+   - 按 `docs/guides/audit-log-runbook.md` 执行监控、告警与恢复
+2. 持续优化
+   - 根据线上数据扩展 `security` 事件动作与阈值策略
+3. 文档迁移
+   - 将稳定结论按规范同步到 `docs/features/current/` 与 `docs/api/route-index.md`
 ## API 契约草案（v1）
 
 ### `POST /api/v1/system/audit/events`
@@ -689,7 +734,4 @@ async function startPollingTask(taskId: string) {
   - 上线 90 天在线 + 1 年归档
   - 补齐告警规则与异常审计面板
   - 已迁移当前审计能力说明到 `docs/features/current/audit-log.md` 与 `docs/api/route-index.md`
-
-
-
 

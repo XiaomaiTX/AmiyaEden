@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -549,14 +548,7 @@ func newCorporationStructureServiceForTest() *CorporationStructureService {
 }
 
 func newCorporationStructureServiceTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
-
-	dsn := fmt.Sprintf("file:corp_structure_service_test_%d?mode=memory&cache=shared", time.Now().UnixNano())
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	if err := db.AutoMigrate(
+	db := newServiceTestDB(t, "corp_structure_service_test",
 		&model.User{},
 		&model.UserRole{},
 		&model.SystemConfig{},
@@ -565,9 +557,7 @@ func newCorporationStructureServiceTestDB(t *testing.T) *gorm.DB {
 		&model.CorpStructureInfo{},
 		&model.MapSolarSystem{},
 		&model.MapRegion{},
-	); err != nil {
-		t.Fatalf("auto migrate: %v", err)
-	}
+	)
 	return db
 }
 
