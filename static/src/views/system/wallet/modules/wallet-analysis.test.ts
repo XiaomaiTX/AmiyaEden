@@ -25,3 +25,9 @@ test('wallet analysis keeps date range picker visible in filter row', () => {
 test('wallet analysis grid items can shrink to prevent chart overflow clipping', () => {
   assert.match(source, /\.grid-two\s*\{[\s\S]*>\s*\*\s*\{[\s\S]*min-width:\s*0/)
 })
+
+test('wallet analysis root no longer owns scrolling to avoid nested-scroll clipping', () => {
+  assert.doesNotMatch(source, /\.wallet-analysis\s*\{[\s\S]*height:\s*100%/)
+  assert.doesNotMatch(source, /\.wallet-analysis\s*\{[\s\S]*overflow-y:\s*auto/)
+  assert.doesNotMatch(source, /\.wallet-analysis\s*\{[\s\S]*overflow-x:\s*hidden/)
+})

@@ -359,9 +359,6 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
     gap: 12px;
   }
 
