@@ -2370,6 +2370,10 @@
     }
   },
   "auditAdmin": {
+    "tabs": {
+      "events": "Audit Events",
+      "exports": "Export Logs"
+    },
     "detailTitle": "Audit Event Detail",
     "filters": {
       "category": "Category",
@@ -2402,6 +2406,8 @@
       "download": "Download"
     },
     "export": {
+      "unavailableTitle": "Export is temporarily unavailable",
+      "unavailableDescription": "The frontend export entry is temporarily disabled. Backend export capability is retained and will be re-enabled later.",
       "statusLabel": "Export Status",
       "historyTitle": "Export Task History",
       "expireAt": "Expires At",
