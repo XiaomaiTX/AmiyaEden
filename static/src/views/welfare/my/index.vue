@@ -69,6 +69,7 @@
             :columns="applicationColumns"
             :empty-text="t('welfareMy.noApplications')"
             :pagination="applicationPagination"
+            visual-variant="ledger"
             @pagination:size-change="handleApplicationSizeChange"
             @pagination:current-change="handleApplicationCurrentChange"
           />
@@ -443,7 +444,7 @@
   } = useTable({
     core: {
       apiFn: getMyApplications,
-      apiParams: { current: 1, size: 10 },
+      apiParams: { current: 1, size: 200 },
       immediate: false
     }
   })

@@ -28,15 +28,11 @@
             :data="pendingData"
             :columns="pendingColumns"
             :pagination="pendingPagination"
-            :pagination-options="{ pageSizes: [50, 100, 200] }"
+            visual-variant="ledger"
             @pagination:size-change="pendingHandleSizeChange"
             @pagination:current-change="pendingHandleCurrentChange"
             @cell-mouse-enter="handleCellMouseEnter"
             @cell-mouse-leave="handleCellMouseLeave"
-          />
-          <ElEmpty
-            v-if="!pendingLoading && pendingData.length === 0"
-            :description="t('welfareApproval.noPending')"
           />
         </ElTabPane>
 
@@ -75,10 +71,6 @@
             @cell-mouse-enter="handleCellMouseEnter"
             @cell-mouse-leave="handleCellMouseLeave"
           />
-          <ElEmpty
-            v-if="!historyLoading && historyData.length === 0"
-            :description="t('welfareApproval.noHistory')"
-          />
         </ElTabPane>
       </ElTabs>
     </ElCard>
@@ -86,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTag, ElButton, ElInput, ElMessage, ElMessageBox, ElEmpty, ElImage } from 'element-plus'
+  import { ElTag, ElButton, ElInput, ElMessage, ElMessageBox, ElImage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
@@ -264,7 +256,7 @@
   } = useTable({
     core: {
       apiFn: adminListApplications,
-      apiParams: { current: 1, size: 50, status: 'requested' },
+      apiParams: { current: 1, size: 200, status: 'requested' },
       columnsFactory: () => [
         ...buildBaseColumns().filter((c) => c.prop !== 'reviewer_name'),
         {
