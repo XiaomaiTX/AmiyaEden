@@ -136,6 +136,10 @@ declare module 'vue' {
     SidebarSubmenu: typeof import('./../../components/core/layouts/art-menus/art-sidebar-menu/widget/SidebarSubmenu.vue')['default']
     ThemeSettings: typeof import('./../../components/core/layouts/art-settings-panel/widget/ThemeSettings.vue')['default']
     ThemeSvg: typeof import('./../../components/core/theme/theme-svg/index.vue')['default']
+    TicketCategoryTag: typeof import('./../../components/ticket/TicketCategoryTag.vue')['default']
+    TicketPriorityBadge: typeof import('./../../components/ticket/TicketPriorityBadge.vue')['default']
+    TicketReplyItem: typeof import('./../../components/ticket/TicketReplyItem.vue')['default']
+    TicketStatusBadge: typeof import('./../../components/ticket/TicketStatusBadge.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

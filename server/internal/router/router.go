@@ -462,6 +462,13 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminWallet.POST("/logs", adminWalletH.AdminListLogs)
 		adminWallet.POST("/analytics", adminWalletH.AdminAnalytics)
 	}
+	auditEventH := handler.NewAuditEventHandler()
+	adminAudit := admin.Group("/audit")
+	{
+		adminAudit.POST("/events", auditEventH.AdminList)
+		adminAudit.POST("/export", auditEventH.CreateExportTask)
+		adminAudit.GET("/export/:task_id", auditEventH.GetExportTaskStatus)
+	}
 
 	// 商店管理（管理员）
 	adminShopH := handler.NewShopHandler()

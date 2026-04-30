@@ -47,6 +47,26 @@ func TestCreditUserStoresSystemOperatorOnWalletTransaction(t *testing.T) {
 	if tx.RefType != "shop" || tx.RefID != "order:1" || tx.Reason != "shop order" {
 		t.Fatalf("unexpected transaction metadata: %+v", tx)
 	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Order("id ASC").Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(auditEvents) != 1 {
+		t.Fatalf("audit event count = %d, want 1", len(auditEvents))
+	}
+	if auditEvents[0].Action != "apply_wallet_delta" {
+		t.Fatalf("audit action = %q, want apply_wallet_delta", auditEvents[0].Action)
+	}
+	if auditEvents[0].Category != "fuxi_wallet" {
+		t.Fatalf("audit category = %q, want fuxi_wallet", auditEvents[0].Category)
+	}
+	if auditEvents[0].TargetUserID != 42 {
+		t.Fatalf("audit target_user_id = %d, want 42", auditEvents[0].TargetUserID)
+	}
+	if auditEvents[0].Result != model.AuditResultSuccess {
+		t.Fatalf("audit result = %q, want %q", auditEvents[0].Result, model.AuditResultSuccess)
+	}
 }
 
 func TestCreditUserTruncatesOverlongWalletReason(t *testing.T) {
@@ -195,6 +215,58 @@ func TestValidateWalletAnalyticsRequest(t *testing.T) {
 	}
 }
 
+func TestAdminAdjustCreatesAuditEvent(t *testing.T) {
+	db := newSysWalletServiceTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	svc := NewSysWalletService()
+	req := &AdminAdjustRequest{
+		TargetUID: 42,
+		Action:    model.WalletActionAdd,
+		Amount:    20,
+		Reason:    "ops adjustment",
+	}
+	if _, err := svc.AdminAdjust(7, req); err != nil {
+		t.Fatalf("AdminAdjust() error = %v", err)
+	}
+
+	var logs []model.WalletLog
+	if err := db.Find(&logs).Error; err != nil {
+		t.Fatalf("load wallet logs: %v", err)
+	}
+	if len(logs) != 1 {
+		t.Fatalf("wallet log count = %d, want 1", len(logs))
+	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Order("id ASC").Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	if len(auditEvents) != 2 {
+		t.Fatalf("audit event count = %d, want 2", len(auditEvents))
+	}
+	if auditEvents[0].Action != "apply_wallet_delta" && auditEvents[1].Action != "apply_wallet_delta" {
+		t.Fatalf("expected apply_wallet_delta audit event, got %+v", auditEvents)
+	}
+	foundAdminAdjust := false
+	for _, event := range auditEvents {
+		if event.Action == "admin_adjust" {
+			foundAdminAdjust = true
+			if event.ActorUserID != 7 {
+				t.Fatalf("admin_adjust actor_user_id = %d, want 7", event.ActorUserID)
+			}
+			if event.TargetUserID != 42 {
+				t.Fatalf("admin_adjust target_user_id = %d, want 42", event.TargetUserID)
+			}
+		}
+	}
+	if !foundAdminAdjust {
+		t.Fatal("expected admin_adjust audit event")
+	}
+}
+
 func newSysWalletServiceTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -203,7 +275,7 @@ func newSysWalletServiceTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.SystemWallet{}, &model.WalletTransaction{}); err != nil {
+	if err := db.AutoMigrate(&model.SystemWallet{}, &model.WalletTransaction{}, &model.WalletLog{}, &model.AuditEvent{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db

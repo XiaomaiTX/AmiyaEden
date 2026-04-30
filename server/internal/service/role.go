@@ -18,6 +18,7 @@ type RoleService struct {
 	repo     *repository.RoleRepository
 	userRepo *repository.UserRepository
 	charRepo *repository.EveCharacterRepository
+	auditSvc *AuditService
 }
 
 func NewRoleService() *RoleService {
@@ -25,6 +26,7 @@ func NewRoleService() *RoleService {
 		repo:     repository.NewRoleRepository(),
 		userRepo: repository.NewUserRepository(),
 		charRepo: repository.NewEveCharacterRepository(),
+		auditSvc: NewAuditService(),
 	}
 }
 
@@ -94,7 +96,7 @@ func (s *RoleService) GetUserRoles(userID uint) ([]model.RoleDefinition, error) 
 	return defs, nil
 }
 
-func (s *RoleService) SetUserRoles(ctx context.Context, _ uint, operatorRoles []string, userID uint, roleCodes []string) error {
+func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operatorRoles []string, userID uint, roleCodes []string) error {
 	currentCodes, err := s.repo.GetUserRoleCodes(userID)
 	if err != nil {
 		return fmt.Errorf("get role codes for user %d: %w", userID, err)
@@ -102,11 +104,42 @@ func (s *RoleService) SetUserRoles(ctx context.Context, _ uint, operatorRoles []
 
 	for _, code := range roleCodes {
 		if !model.IsValidRoleCode(code) {
-			return fmt.Errorf("未知的职权编码: %s", code)
+			err := fmt.Errorf("未知的职权编码: %s", code)
+			_ = s.auditSvc.RecordEvent(ctx, AuditRecordInput{
+				Category:     "permission",
+				Action:       "set_user_roles",
+				ActorUserID:  operatorID,
+				TargetUserID: userID,
+				ResourceType: "user_role",
+				ResourceID:   fmt.Sprintf("%d", userID),
+				Result:       model.AuditResultFailed,
+				Details: map[string]any{
+					"before_roles": currentCodes,
+					"after_roles":  roleCodes,
+					"error":        err.Error(),
+				},
+			})
+			return err
 		}
 	}
 
 	requestedCodes := normalizeAssignedRoleCodes(roleCodes)
+	recordAuditFailed := func(err error) {
+		_ = s.auditSvc.RecordEvent(ctx, AuditRecordInput{
+			Category:     "permission",
+			Action:       "set_user_roles",
+			ActorUserID:  operatorID,
+			TargetUserID: userID,
+			ResourceType: "user_role",
+			ResourceID:   fmt.Sprintf("%d", userID),
+			Result:       model.AuditResultFailed,
+			Details: map[string]any{
+				"before_roles": currentCodes,
+				"after_roles":  requestedCodes,
+				"error":        err.Error(),
+			},
+		})
+	}
 
 	if model.IsSuperAdmin(operatorRoles) {
 		requestedCodes = filterOutRole(requestedCodes, model.RoleSuperAdmin)
@@ -115,24 +148,44 @@ func (s *RoleService) SetUserRoles(ctx context.Context, _ uint, operatorRoles []
 		}
 	} else {
 		if model.ContainsAnyRole(requestedCodes, model.RoleSuperAdmin) {
-			return errors.New("超级管理员职权仅通过配置文件管理，不可手动分配")
+			err := errors.New("超级管理员职权仅通过配置文件管理，不可手动分配")
+			recordAuditFailed(err)
+			return err
 		}
 		if model.ContainsAnyRole(currentCodes, model.RoleSuperAdmin) {
-			return errors.New("超级管理员职权仅通过配置文件管理，不可手动修改")
+			err := errors.New("超级管理员职权仅通过配置文件管理，不可手动修改")
+			recordAuditFailed(err)
+			return err
 		}
 	}
 
 	if err := validateSetUserRolesPermission(operatorRoles, currentCodes, requestedCodes); err != nil {
+		recordAuditFailed(err)
 		return err
 	}
 
 	if err := s.repo.SetUserRoles(userID, requestedCodes); err != nil {
+		recordAuditFailed(err)
 		return err
 	}
 
 	// 同步 User.Role 字段（取最高优先级职权）
 	s.SyncUserPrimaryRole(userID)
 	s.InvalidateUserCache(ctx, userID)
+	afterCodes, _ := s.repo.GetUserRoleCodes(userID)
+	_ = s.auditSvc.RecordEvent(ctx, AuditRecordInput{
+		Category:     "permission",
+		Action:       "set_user_roles",
+		ActorUserID:  operatorID,
+		TargetUserID: userID,
+		ResourceType: "user_role",
+		ResourceID:   fmt.Sprintf("%d", userID),
+		Result:       model.AuditResultSuccess,
+		Details: map[string]any{
+			"before_roles": currentCodes,
+			"after_roles":  afterCodes,
+		},
+	})
 	return nil
 }
 

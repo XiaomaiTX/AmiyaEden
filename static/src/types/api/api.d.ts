@@ -1011,6 +1011,59 @@ declare namespace Api {
   }
 
   /** SRP 补损管理类型 */
+  namespace Audit {
+    type AuditResult = 'success' | 'failed'
+    type AuditExportFormat = 'csv' | 'json'
+    type AuditExportStatus = 'pending' | 'running' | 'done' | 'failed' | 'expired'
+
+    interface AuditEvent {
+      id: number
+      event_id: string
+      occurred_at: string
+      category: string
+      action: string
+      actor_user_id: number
+      target_user_id: number
+      resource_type: string
+      resource_id: string
+      result: AuditResult
+      request_id: string
+      ip: string
+      user_agent: string
+      details_json: string
+      created_at: string
+    }
+
+    type AuditEventSearchParams = Partial<{
+      current: number
+      size: number
+      start_date: string
+      end_date: string
+      category: string
+      action: string
+      actor_user_id: number
+      target_user_id: number
+      result: AuditResult
+      request_id: string
+      resource_id: string
+      keyword: string
+    }>
+
+    interface AuditExportTaskStatus {
+      task_id: string
+      status: AuditExportStatus
+      download_url?: string
+      error_message?: string
+      expire_at?: string
+    }
+
+    interface AuditExportCreateParams {
+      format: AuditExportFormat
+      filter: Omit<AuditEventSearchParams, 'current' | 'size'>
+    }
+  }
+
+  /** SRP 补损管理类型 */
   namespace Srp {
     type PayoutMode = 'manual_transfer' | 'fuxi_coin'
 

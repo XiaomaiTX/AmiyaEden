@@ -261,6 +261,7 @@
       "papExchange": "PAP Exchange",
       "npcKills": "NPC Kill Report",
       "autoRole": "Auto Roles",
+      "audit": "Audit Logs",
       "webhook": "Webhook Notifications",
       "basicConfig": "@:setting.basics.title"
     },
@@ -2366,6 +2367,55 @@
       "ratio": "Ratio",
       "amount": "Amount",
       "empty": "No analytics data in the selected range"
+    }
+  },
+  "auditAdmin": {
+    "detailTitle": "Audit Event Detail",
+    "filters": {
+      "category": "Category",
+      "result": "Result"
+    },
+    "placeholders": {
+      "keyword": "Search by details keyword",
+      "requestId": "Exact request ID"
+    },
+    "columns": {
+      "eventId": "Event ID",
+      "time": "Occurred At",
+      "category": "Category",
+      "action": "Action",
+      "actorUserId": "Actor User ID",
+      "targetUserId": "Target User ID",
+      "result": "Result",
+      "requestId": "Request ID",
+      "resourceId": "Resource ID",
+      "details": "Details"
+    },
+    "results": {
+      "success": "Success",
+      "failed": "Failed"
+    },
+    "actions": {
+      "detail": "Detail",
+      "exportCsv": "Export CSV",
+      "exportJson": "Export JSON",
+      "download": "Download"
+    },
+    "export": {
+      "statusLabel": "Export Status",
+      "expireAt": "Expires At",
+      "status": {
+        "pending": "Pending",
+        "running": "Running",
+        "done": "Done",
+        "failed": "Failed",
+        "expired": "Expired"
+      },
+      "messages": {
+        "created": "Export task created",
+        "done": "Export finished and ready to download",
+        "failed": "Export failed"
+      }
     }
   },
   "dashboardConsole": {
