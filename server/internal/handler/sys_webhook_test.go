@@ -61,7 +61,7 @@ func TestWebhookHandlerSetConfigWritesAuditEvent(t *testing.T) {
 	r.PUT("/api/v1/system/webhook/config", h.SetConfig)
 
 	reqBody := []byte(`{
-		"url":"https://example.test/webhook",
+		"url":"https://discord.com/api/webhooks/1/token",
 		"enabled":true,
 		"type":"discord",
 		"fleet_template":"test",
@@ -94,3 +94,65 @@ func TestWebhookHandlerSetConfigWritesAuditEvent(t *testing.T) {
 	}
 }
 
+func TestWebhookHandlerSetConfigRejectsInvalidURL(t *testing.T) {
+	setupWebhookHandlerTestDB(t)
+
+	gin.SetMode(gin.TestMode)
+	h := NewWebhookHandler()
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("userID", uint(123))
+		c.Next()
+	})
+	r.PUT("/api/v1/system/webhook/config", h.SetConfig)
+
+	reqBody := []byte(`{
+		"url":"https://example.com/webhook",
+		"enabled":true,
+		"type":"discord",
+		"fleet_template":"test",
+		"ob_target_type":"group",
+		"ob_target_id":42,
+		"ob_token":"token"
+	}`)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/system/webhook/config", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	resp := decodeWebhookResp(t, rec)
+	if resp.Code != response.CodeBizError {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeBizError)
+	}
+}
+
+func TestWebhookHandlerTestWebhookRejectsInvalidURL(t *testing.T) {
+	setupWebhookHandlerTestDB(t)
+
+	gin.SetMode(gin.TestMode)
+	h := NewWebhookHandler()
+	r := gin.New()
+	r.POST("/api/v1/system/webhook/test", h.TestWebhook)
+
+	reqBody := []byte(`{
+		"url":"ftp://onebot.example.com",
+		"type":"onebot",
+		"ob_target_type":"group",
+		"ob_target_id":42
+	}`)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/webhook/test", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("http status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	resp := decodeWebhookResp(t, rec)
+	if resp.Code != response.CodeBizError {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeBizError)
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -76,6 +77,10 @@ func (s *WebhookService) GetConfig() (*WebhookConfig, error) {
 
 // SetConfig 保存 Webhook 配置
 func (s *WebhookService) SetConfig(cfg *WebhookConfig) error {
+	if err := validateWebhookRequestTarget(cfg); err != nil {
+		return err
+	}
+
 	items := newSysConfigBatch(7).
 		AddString(model.SysConfigWebhookURL, cfg.URL, "Webhook URL").
 		AddBool(model.SysConfigWebhookEnabled, cfg.Enabled, "Webhook 是否启用").
@@ -167,6 +172,9 @@ func (s *WebhookService) SendTest(cfg *WebhookConfig, content string) error {
 	if cfg.Type == "" {
 		cfg.Type = "discord"
 	}
+	if err := validateWebhookRequestTarget(cfg); err != nil {
+		return err
+	}
 	if content == "" {
 		content = "✅ Webhook 测试消息（来自 AmiyaEden）"
 	}
@@ -174,19 +182,20 @@ func (s *WebhookService) SendTest(cfg *WebhookConfig, content string) error {
 }
 
 func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
+	reqURL, err := buildValidatedWebhookRequestURL(cfg)
+	if err != nil {
+		return err
+	}
+
 	var body []byte
-	var err error
-	var reqURL string
 
 	switch cfg.Type {
 	case "feishu":
-		reqURL = cfg.URL
 		body, err = json.Marshal(map[string]any{
 			"msg_type": "text",
 			"content":  map[string]string{"text": content},
 		})
 	case "dingtalk":
-		reqURL = cfg.URL
 		body, err = json.Marshal(map[string]any{
 			"msgtype": "text",
 			"text":    map[string]string{"content": content},
@@ -206,10 +215,9 @@ func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
 				"message":  content,
 			}
 		}
-		reqURL = strings.TrimRight(cfg.URL, "/") + endpoint
+		reqURL += endpoint
 		body, err = json.Marshal(postBody)
 	default: // discord
-		reqURL = cfg.URL
 		body, err = json.Marshal(map[string]string{"content": content})
 	}
 	if err != nil {
@@ -239,4 +247,89 @@ func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
 		return fmt.Errorf("webhook 返回错误状态码: %d: %s", resp.StatusCode, string(respBody))
 	}
 	return nil
+}
+
+func validateWebhookRequestTarget(cfg *WebhookConfig) error {
+	_, err := buildValidatedWebhookRequestURL(cfg)
+	return err
+}
+
+func buildValidatedWebhookRequestURL(cfg *WebhookConfig) (string, error) {
+	if cfg == nil {
+		return "", fmt.Errorf("webhook 配置错误: 配置不能为空")
+	}
+
+	webhookType := strings.ToLower(strings.TrimSpace(cfg.Type))
+	if webhookType == "" {
+		webhookType = "discord"
+	}
+
+	rawURL := strings.TrimSpace(cfg.URL)
+	if rawURL == "" {
+		return "", fmt.Errorf("webhook 配置错误: URL 不能为空")
+	}
+
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("webhook 配置错误: URL 格式无效")
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("webhook 配置错误: URL 必须包含协议和主机")
+	}
+	if parsed.User != nil {
+		return "", fmt.Errorf("webhook 配置错误: URL 不支持包含用户信息")
+	}
+	if parsed.Fragment != "" {
+		return "", fmt.Errorf("webhook 配置错误: URL 不支持包含片段")
+	}
+
+	scheme := strings.ToLower(parsed.Scheme)
+	host := strings.ToLower(parsed.Hostname())
+	switch webhookType {
+	case "discord":
+		if scheme != "https" {
+			return "", fmt.Errorf("webhook 配置错误: discord 仅支持 https")
+		}
+		if !hostMatchesAllowList(host, []string{"discord.com", "discordapp.com"}) {
+			return "", fmt.Errorf("webhook 配置错误: discord URL 域名不在允许范围内")
+		}
+	case "feishu":
+		if scheme != "https" {
+			return "", fmt.Errorf("webhook 配置错误: feishu 仅支持 https")
+		}
+		if !hostMatchesAllowList(host, []string{"feishu.cn", "larksuite.com"}) {
+			return "", fmt.Errorf("webhook 配置错误: feishu URL 域名不在允许范围内")
+		}
+	case "dingtalk":
+		if scheme != "https" {
+			return "", fmt.Errorf("webhook 配置错误: dingtalk 仅支持 https")
+		}
+		if !hostMatchesAllowList(host, []string{"dingtalk.com", "dingtalkapps.com"}) {
+			return "", fmt.Errorf("webhook 配置错误: dingtalk URL 域名不在允许范围内")
+		}
+	case "onebot":
+		if scheme != "http" && scheme != "https" {
+			return "", fmt.Errorf("webhook 配置错误: onebot 仅支持 http 或 https")
+		}
+		if cfg.OBTargetType != "" && cfg.OBTargetType != "group" && cfg.OBTargetType != "private" {
+			return "", fmt.Errorf("webhook 配置错误: onebot 目标类型仅支持 group 或 private")
+		}
+	default:
+		return "", fmt.Errorf("webhook 配置错误: 不支持的类型 %q", webhookType)
+	}
+
+	return strings.TrimRight(parsed.String(), "/"), nil
+}
+
+func hostMatchesAllowList(host string, allowList []string) bool {
+	for _, allowed := range allowList {
+		allowed = strings.ToLower(strings.TrimSpace(allowed))
+		if allowed == "" {
+			continue
+		}
+		if host == allowed || strings.HasSuffix(host, "."+allowed) {
+			return true
+		}
+	}
+	return false
 }
