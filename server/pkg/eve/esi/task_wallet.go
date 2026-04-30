@@ -8,7 +8,17 @@ import (
 	"fmt"
 	"time"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+)
+
+const (
+	pgMaxBindParameters   = 65535
+	sqliteMaxBindParams   = 999
+	walletBatchSafetyRate = 0.8
+
+	walletJournalBindParamsPerRow     = 14
+	walletTransactionBindParamsPerRow = 11
 )
 
 func init() {
@@ -142,7 +152,9 @@ func (t *WalletTask) Execute(ctx *TaskContext) error {
 		})
 	}
 	if len(waitingEntries) > 0 {
-		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&waitingEntries).Error; err != nil {
+		journalBatchSize := safeBatchSize(tx, walletJournalBindParamsPerRow)
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).
+			CreateInBatches(waitingEntries, journalBatchSize).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("insert wallet journal: %w", err)
 		}
@@ -171,7 +183,9 @@ func (t *WalletTask) Execute(ctx *TaskContext) error {
 		})
 	}
 	if len(waitingTransactions) > 0 {
-		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&waitingTransactions).Error; err != nil {
+		transactionBatchSize := safeBatchSize(tx, walletTransactionBindParamsPerRow)
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).
+			CreateInBatches(waitingTransactions, transactionBatchSize).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("insert wallet transactions: %w", err)
 		}
@@ -227,4 +241,21 @@ func (t *WalletTask) fetchWalletTransactions(ctx context.Context, taskCtx *TaskC
 		}
 		fromID = nextFromID
 	}
+}
+
+func safeBatchSize(dbTx *gorm.DB, bindParamsPerRow int) int {
+	if bindParamsPerRow <= 0 {
+		return 1
+	}
+
+	maxParams := pgMaxBindParameters
+	if dbTx != nil && dbTx.Dialector != nil && dbTx.Dialector.Name() == "sqlite" {
+		maxParams = sqliteMaxBindParams
+	}
+
+	limit := int(float64(maxParams/bindParamsPerRow) * walletBatchSafetyRate)
+	if limit < 1 {
+		return 1
+	}
+	return limit
 }
