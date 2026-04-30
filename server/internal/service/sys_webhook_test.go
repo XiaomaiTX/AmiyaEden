@@ -6,6 +6,7 @@ import (
 	"amiya-eden/internal/repository"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestWebhookSetConfigPersistsSingleBatch(t *testing.T) {
 	svc := &WebhookService{repo: store, http: &http.Client{}}
 
 	err := svc.SetConfig(&WebhookConfig{
-		URL:           "https://example.test/webhook",
+		URL:           "https://discord.com/api/webhooks/1/token",
 		Enabled:       true,
 		Type:          "discord",
 		FleetTemplate: defaultFleetTemplate,
@@ -90,7 +91,7 @@ func TestWebhookSetConfigByOperatorWritesAuditEvent(t *testing.T) {
 	t.Cleanup(func() { global.DB = previous })
 
 	err = svc.SetConfigByOperator(&WebhookConfig{
-		URL:           "https://example.test/webhook",
+		URL:           "https://discord.com/api/webhooks/1/token",
 		Enabled:       true,
 		Type:          "discord",
 		FleetTemplate: defaultFleetTemplate,
@@ -111,5 +112,55 @@ func TestWebhookSetConfigByOperatorWritesAuditEvent(t *testing.T) {
 	}
 	if events[0].Category != "config" || events[0].ActorUserID != 77 || events[0].Result != model.AuditResultSuccess {
 		t.Fatalf("unexpected audit event: %+v", events[0])
+	}
+}
+
+func TestValidateWebhookRequestTargetAcceptsExpectedURLs(t *testing.T) {
+	testCases := []WebhookConfig{
+		{Type: "discord", URL: "https://discord.com/api/webhooks/1/abc"},
+		{Type: "discord", URL: "https://canary.discord.com/api/webhooks/1/abc"},
+		{Type: "feishu", URL: "https://open.feishu.cn/open-apis/bot/v2/hook/abc"},
+		{Type: "feishu", URL: "https://open.larksuite.com/open-apis/bot/v2/hook/abc"},
+		{Type: "dingtalk", URL: "https://oapi.dingtalk.com/robot/send?access_token=abc"},
+		{Type: "dingtalk", URL: "https://api.dingtalkapps.com/robot/send?access_token=abc"},
+		{Type: "onebot", URL: "http://127.0.0.1:3000", OBTargetType: "group"},
+		{Type: "onebot", URL: "https://onebot.example.com", OBTargetType: "private"},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.Type+"_"+tc.URL, func(t *testing.T) {
+			if err := validateWebhookRequestTarget(&tc); err != nil {
+				t.Fatalf("expected URL to pass validation, got %v", err)
+			}
+		})
+	}
+}
+
+func TestValidateWebhookRequestTargetRejectsInvalidURLs(t *testing.T) {
+	testCases := []struct {
+		name string
+		cfg  WebhookConfig
+	}{
+		{name: "invalid_url", cfg: WebhookConfig{Type: "discord", URL: "://bad"}},
+		{name: "missing_host", cfg: WebhookConfig{Type: "discord", URL: "https:///abc"}},
+		{name: "discord_non_allowlisted_host", cfg: WebhookConfig{Type: "discord", URL: "https://example.com/webhook"}},
+		{name: "feishu_non_allowlisted_host", cfg: WebhookConfig{Type: "feishu", URL: "https://example.com/webhook"}},
+		{name: "dingtalk_non_allowlisted_host", cfg: WebhookConfig{Type: "dingtalk", URL: "https://example.com/webhook"}},
+		{name: "onebot_non_http_scheme", cfg: WebhookConfig{Type: "onebot", URL: "ftp://example.com/webhook"}},
+		{name: "onebot_invalid_target_type", cfg: WebhookConfig{Type: "onebot", URL: "https://example.com/webhook", OBTargetType: "channel"}},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateWebhookRequestTarget(&tc.cfg)
+			if err == nil {
+				t.Fatal("expected URL validation error, got nil")
+			}
+			if !strings.Contains(err.Error(), "Webhook 配置错误") {
+				t.Fatalf("expected normalized config error, got %v", err)
+			}
+		})
 	}
 }
