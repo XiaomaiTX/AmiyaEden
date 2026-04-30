@@ -1,8 +1,16 @@
+---
+status: completed
+doc_type: completed
+owner: engineering
+last_reviewed: 2026-04-30
+completed: 2026-04-30
+---
+
 # 前端路由迁移计划（移除后端菜单系统）
 
 **创建日期**: 2026-03-26
 **最后更新**: 2026-03-27
-**状态**: In Progress
+**状态**: Completed
 **预计工期**: 1 天
 **优先级**: High
 

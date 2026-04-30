@@ -1,8 +1,9 @@
 ---
 status: completed
-doc_type: spec
+doc_type: completed
 owner: engineering
-last_reviewed: 2026-04-12
+last_reviewed: 2026-04-30
+completed: 2026-04-30
 ---
 
 # ESI 授权检查页面方案

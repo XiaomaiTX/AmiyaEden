@@ -1,8 +1,9 @@
-﻿---
-status: draft
-doc_type: spec
+---
+status: completed
+doc_type: completed
 owner: engineering
-last_reviewed: 2026-04-28
+last_reviewed: 2026-04-30
+completed: 2026-04-30
 ---
 
 # 工单系统设计方案
