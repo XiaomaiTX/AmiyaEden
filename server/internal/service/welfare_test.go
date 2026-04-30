@@ -819,6 +819,22 @@ func TestApplyForWelfareAtAutoApprovalThresholdStaysRequested(t *testing.T) {
 	if len(txs) != 0 {
 		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
 	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Where("resource_type = ? AND resource_id = ?", "welfare_application", fmt.Sprintf("%d", app.ID)).
+		Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	foundReject := false
+	for _, event := range auditEvents {
+		if event.Category == "approval" && event.Action == "welfare_application_reject" && event.Result == model.AuditResultSuccess {
+			foundReject = true
+			break
+		}
+	}
+	if !foundReject {
+		t.Fatalf("expected welfare_application_reject approval audit event, got %+v", auditEvents)
+	}
 }
 
 func TestApplyForWelfareUsesConfiguredAutoApproveThreshold(t *testing.T) {
@@ -2086,6 +2102,7 @@ func newWelfareServiceTestDB(t *testing.T) *gorm.DB {
 		&model.EveCharacter{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
+		&model.AuditEvent{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}

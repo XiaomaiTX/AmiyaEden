@@ -2466,6 +2466,7 @@
     },
     "export": {
       "statusLabel": "导出状态",
+      "historyTitle": "导出任务历史",
       "expireAt": "过期时间",
       "status": {
         "pending": "排队中",

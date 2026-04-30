@@ -1052,14 +1052,21 @@ declare namespace Api {
     interface AuditExportTaskStatus {
       task_id: string
       status: AuditExportStatus
+      format?: AuditExportFormat
       download_url?: string
       error_message?: string
       expire_at?: string
+      created_at?: string
+      finished_at?: string
     }
 
     interface AuditExportCreateParams {
       format: AuditExportFormat
       filter: Omit<AuditEventSearchParams, 'current' | 'size'>
+    }
+
+    interface AuditExportListParams {
+      limit?: number
     }
   }
 

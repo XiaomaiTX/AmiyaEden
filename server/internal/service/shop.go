@@ -28,6 +28,7 @@ type ShopService struct {
 	charRepo  *repository.EveCharacterRepository
 	ssoSvc    *EveSSOService
 	esiClient *esi.Client
+	auditSvc  *AuditService
 
 	orderDeliveryMailSender shopOrderDeliveryMailSender
 }
@@ -41,6 +42,7 @@ func NewShopService() *ShopService {
 		charRepo:  repository.NewEveCharacterRepository(),
 		ssoSvc:    newConfiguredEveSSOService(),
 		esiClient: newConfiguredESIClient(),
+		auditSvc:  NewAuditService(),
 	}
 	svc.orderDeliveryMailSender = svc.sendOrderDeliveryMail
 	return svc
@@ -423,6 +425,24 @@ func (s *ShopService) AdminDeliverOrder(orderID uint, operatorID uint, operatorR
 		order.ReviewedBy = &operatorID
 		order.ReviewedAt = &now
 		order.ReviewRemark = remark
+		if s.auditSvc != nil {
+			if err := s.auditSvc.RecordEventTx(tx, AuditRecordInput{
+				Category:     "approval",
+				Action:       "shop_order_deliver",
+				ActorUserID:  operatorID,
+				TargetUserID: order.UserID,
+				ResourceType: "shop_order",
+				ResourceID:   fmt.Sprintf("%d", order.ID),
+				Result:       model.AuditResultSuccess,
+				Details: map[string]any{
+					"order_no":      order.OrderNo,
+					"status":        order.Status,
+					"review_remark": remark,
+				},
+			}); err != nil {
+				return fmt.Errorf("写入审计事件失败: %w", err)
+			}
+		}
 		deliveredOrder = order
 		return nil
 	})
@@ -594,6 +614,24 @@ func (s *ShopService) AdminRejectOrder(orderID uint, operatorID uint, remark str
 		order.ReviewedBy = &operatorID
 		order.ReviewedAt = &now
 		order.ReviewRemark = remark
+		if s.auditSvc != nil {
+			if err := s.auditSvc.RecordEventTx(tx, AuditRecordInput{
+				Category:     "approval",
+				Action:       "shop_order_reject",
+				ActorUserID:  operatorID,
+				TargetUserID: order.UserID,
+				ResourceType: "shop_order",
+				ResourceID:   fmt.Sprintf("%d", order.ID),
+				Result:       model.AuditResultSuccess,
+				Details: map[string]any{
+					"order_no":      order.OrderNo,
+					"status":        order.Status,
+					"review_remark": remark,
+				},
+			}); err != nil {
+				return fmt.Errorf("写入审计事件失败: %w", err)
+			}
+		}
 
 		rejectedOrder = order
 		return nil

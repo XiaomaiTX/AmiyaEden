@@ -113,6 +113,21 @@ func (r *AuditEventRepository) GetExportTaskByTaskID(taskID string) (*model.Audi
 	return &task, nil
 }
 
+func (r *AuditEventRepository) ListExportTasksByOperator(operatorUserID uint, limit int) ([]model.AuditExportTask, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 200 {
+		limit = 200
+	}
+	tasks := make([]model.AuditExportTask, 0, limit)
+	err := global.DB.Where("operator_user_id = ?", operatorUserID).
+		Order("created_at DESC, id DESC").
+		Limit(limit).
+		Find(&tasks).Error
+	return tasks, err
+}
+
 func (r *AuditEventRepository) UpdateExportTaskStatus(taskID, fromStatus, toStatus string, updates map[string]any) error {
 	tx := global.DB.Model(&model.AuditExportTask{}).
 		Where("task_id = ? AND status = ?", strings.TrimSpace(taskID), strings.TrimSpace(fromStatus)).

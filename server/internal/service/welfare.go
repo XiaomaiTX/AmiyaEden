@@ -31,6 +31,7 @@ type WelfareService struct {
 	cfgRepo   welfareSettingsConfigStore
 	ssoSvc    *EveSSOService
 	esiClient *esi.Client
+	auditSvc  *AuditService
 
 	deliveryMailSender welfareDeliveryMailSender
 }
@@ -46,6 +47,7 @@ func NewWelfareService() *WelfareService {
 		cfgRepo:   repository.NewSysConfigRepository(),
 		ssoSvc:    newConfiguredEveSSOService(),
 		esiClient: newConfiguredESIClient(),
+		auditSvc:  NewAuditService(),
 	}
 	svc.deliveryMailSender = svc.sendDeliveryMail
 	return svc
@@ -1184,6 +1186,9 @@ func (s *WelfareService) AdminDeleteApplication(id uint) error {
 func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, reviewerRoles []string, req *AdminReviewApplicationRequest) (MailAttemptSummary, error) {
 	var deliveredWelfare *model.Welfare
 	var deliveredApp *model.WelfareApplication
+	var targetUserID uint
+	action := "welfare_application_reject"
+	resourceID := fmt.Sprintf("%d", appID)
 
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		app, err := s.repo.GetApplicationByIDForUpdateTx(tx, appID)
@@ -1195,6 +1200,10 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 		if err != nil {
 			return err
 		}
+		if app.UserID != nil {
+			targetUserID = *app.UserID
+		}
+		resourceID = fmt.Sprintf("%d", app.ID)
 		app.Status = newStatus
 
 		now := time.Now()
@@ -1202,6 +1211,7 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 		app.ReviewedAt = &now
 
 		if newStatus == model.WelfareAppStatusDelivered {
+			action = "welfare_application_deliver"
 			welfare, err := s.repo.GetWelfareByIDTx(tx, app.WelfareID)
 			if err != nil {
 				return errors.New("福利不存在")
@@ -1230,6 +1240,20 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 	})
 	if err != nil {
 		return MailAttemptSummary{}, err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "approval",
+			Action:       action,
+			ActorUserID:  reviewerID,
+			TargetUserID: targetUserID,
+			ResourceType: "welfare_application",
+			ResourceID:   resourceID,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"request_action": strings.TrimSpace(req.Action),
+			},
+		})
 	}
 
 	return s.attemptDeliveryMail(reviewerID, deliveredWelfare, deliveredApp), nil

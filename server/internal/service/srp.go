@@ -35,6 +35,7 @@ type SrpService struct {
 	walletSvc     *SysWalletService
 	esiClient     *esi.Client
 	sysConfigRepo *repository.SysConfigRepository
+	auditSvc      *AuditService
 
 	payoutMailSender srpPayoutMailSender
 }
@@ -51,6 +52,7 @@ func NewSrpService() *SrpService {
 		walletSvc:     NewSysWalletService(),
 		esiClient:     esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix),
 		sysConfigRepo: repository.NewSysConfigRepository(),
+		auditSvc:      NewAuditService(),
 	}
 	svc.payoutMailSender = svc.sendPayoutMails
 	return svc
@@ -548,6 +550,26 @@ func (s *SrpService) ReviewApplication(reviewerID uint, callerRoles []string, ap
 
 	if err := s.repo.UpdateApplication(app); err != nil {
 		return nil, err
+	}
+	action := "srp_application_reject"
+	if req.Action == "approve" {
+		action = "srp_application_approve"
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "approval",
+			Action:       action,
+			ActorUserID:  reviewerID,
+			TargetUserID: app.UserID,
+			ResourceType: "srp_application",
+			ResourceID:   fmt.Sprintf("%d", app.ID),
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"review_note":   app.ReviewNote,
+				"review_status": app.ReviewStatus,
+				"final_amount":  app.FinalAmount,
+			},
+		})
 	}
 	return app, nil
 }

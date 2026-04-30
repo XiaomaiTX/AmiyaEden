@@ -42,6 +42,10 @@ type adminAuditExportRequest struct {
 	Filter adminAuditEventListRequestInner `json:"filter"`
 }
 
+type adminAuditExportListRequest struct {
+	Limit int `json:"limit"`
+}
+
 type adminAuditEventListRequestInner struct {
 	StartDate    string `json:"start_date"`
 	EndDate      string `json:"end_date"`
@@ -169,6 +173,26 @@ func (h *AuditEventHandler) GetExportTaskStatus(c *gin.Context) {
 			response.Fail(c, response.CodeParamError, "task not found")
 			return
 		}
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, out)
+}
+
+func (h *AuditEventHandler) ListExportTasks(c *gin.Context) {
+	var req adminAuditExportListRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		req.Limit = 20
+	}
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Limit > 200 {
+		req.Limit = 200
+	}
+	operatorID := middleware.GetUserID(c)
+	out, err := h.svc.ListExportTaskStatuses(operatorID, req.Limit)
+	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

@@ -134,9 +134,12 @@ type AuditExportTaskCreateInput struct {
 type AuditExportTaskStatus struct {
 	TaskID       string     `json:"task_id"`
 	Status       string     `json:"status"`
+	Format       string     `json:"format,omitempty"`
 	DownloadURL  string     `json:"download_url,omitempty"`
 	ErrorMessage string     `json:"error_message,omitempty"`
 	ExpireAt     *time.Time `json:"expire_at,omitempty"`
+	CreatedAt    *time.Time `json:"created_at,omitempty"`
+	FinishedAt   *time.Time `json:"finished_at,omitempty"`
 }
 
 func (s *AuditService) CreateExportTask(ctx context.Context, in AuditExportTaskCreateInput) (*AuditExportTaskStatus, error) {
@@ -200,11 +203,43 @@ func (s *AuditService) GetExportTaskStatus(taskID string) (*AuditExportTaskStatu
 	status := &AuditExportTaskStatus{
 		TaskID:       task.TaskID,
 		Status:       task.Status,
+		Format:       task.Format,
 		DownloadURL:  task.DownloadURL,
 		ErrorMessage: task.ErrorMessage,
 		ExpireAt:     task.ExpireAt,
+		CreatedAt:    &task.CreatedAt,
+		FinishedAt:   task.FinishedAt,
 	}
 	return status, nil
+}
+
+func (s *AuditService) ListExportTaskStatuses(operatorUserID uint, limit int) ([]AuditExportTaskStatus, error) {
+	tasks, err := s.repo.ListExportTasksByOperator(operatorUserID, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]AuditExportTaskStatus, 0, len(tasks))
+	now := time.Now()
+	for i := range tasks {
+		task := tasks[i]
+		status := task.Status
+		if status == model.AuditExportStatusDone && task.ExpireAt != nil && task.ExpireAt.Before(now) {
+			_ = s.repo.UpdateExportTask(task.TaskID, map[string]any{"status": model.AuditExportStatusExpired})
+			status = model.AuditExportStatusExpired
+		}
+		createdAt := task.CreatedAt
+		out = append(out, AuditExportTaskStatus{
+			TaskID:       task.TaskID,
+			Status:       status,
+			Format:       task.Format,
+			DownloadURL:  task.DownloadURL,
+			ErrorMessage: task.ErrorMessage,
+			ExpireAt:     task.ExpireAt,
+			CreatedAt:    &createdAt,
+			FinishedAt:   task.FinishedAt,
+		})
+	}
+	return out, nil
 }
 
 func (s *AuditService) runExportTaskInBackground(ctx context.Context, taskID string) {

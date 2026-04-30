@@ -33,9 +33,14 @@ func newTaskServiceTestDepsWithDB(t *testing.T) (*taskregistry.Registry, *reposi
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}, &model.User{}); err != nil {
+	if err := db.AutoMigrate(&model.TaskSchedule{}, &model.TaskExecution{}, &model.User{}, &model.AuditEvent{}); err != nil {
 		t.Fatalf("auto migrate task models: %v", err)
 	}
+	previousDB := global.DB
+	global.DB = db
+	t.Cleanup(func() {
+		global.DB = previousDB
+	})
 
 	registry := taskregistry.New()
 	repo := repository.NewTaskRepositoryWithDB(db)
@@ -102,10 +107,29 @@ func TestTaskService_RunTaskSuccess(t *testing.T) {
 	if execs[0].DurationMs == nil {
 		t.Fatal("expected duration_ms to be set")
 	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Where("resource_type = ? AND resource_id = ?", "task", "ok_task").Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	foundManualAudit := false
+	for _, event := range auditEvents {
+		if event.Category == "task_ops" && event.Action == "task_manual_run" && event.Result == model.AuditResultSuccess {
+			foundManualAudit = true
+			break
+		}
+	}
+	if !foundManualAudit {
+		t.Fatalf("expected task_manual_run success audit event, got %+v", auditEvents)
+	}
 }
 
 func TestTaskService_RunTaskFailureFromRunFunc(t *testing.T) {
-	registry, repo, svc := newTaskServiceTestDeps(t)
+	registry, repo, svc, db := newTaskServiceTestDepsWithDB(t)
+	triggeredBy := uint(66)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: triggeredBy}, Nickname: "Fail Trigger"}).Error; err != nil {
+		t.Fatalf("create user fixture: %v", err)
+	}
 	runErr := errors.New("boom")
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "fail_task",
@@ -118,7 +142,7 @@ func TestTaskService_RunTaskFailureFromRunFunc(t *testing.T) {
 		},
 	})
 
-	err := svc.RunTask(context.Background(), "fail_task", nil)
+	err := svc.RunTask(context.Background(), "fail_task", &triggeredBy)
 	if !errors.Is(err, runErr) {
 		t.Fatalf("RunTask error = %v, want %v", err, runErr)
 	}
@@ -135,6 +159,21 @@ func TestTaskService_RunTaskFailureFromRunFunc(t *testing.T) {
 	}
 	if last.Error != runErr.Error() {
 		t.Fatalf("error = %q, want %q", last.Error, runErr.Error())
+	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Where("resource_type = ? AND resource_id = ?", "task", "fail_task").Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	foundFailedAudit := false
+	for _, event := range auditEvents {
+		if event.Category == "task_ops" && event.Action == "task_manual_run" && event.Result == model.AuditResultFailed {
+			foundFailedAudit = true
+			break
+		}
+	}
+	if !foundFailedAudit {
+		t.Fatalf("expected task_manual_run failed audit event, got %+v", auditEvents)
 	}
 }
 
@@ -283,7 +322,7 @@ func TestTaskService_RunTaskFromCronUsesBackgroundTaskManagerContext(t *testing.
 }
 
 func TestTaskService_UpdateScheduleValidRecurringTaskPersistsSchedule(t *testing.T) {
-	registry, repo, svc := newTaskServiceTestDeps(t)
+	registry, repo, svc, db := newTaskServiceTestDepsWithDB(t)
 	registry.Register(taskregistry.TaskDefinition{
 		Name:        "cron_task",
 		Description: "Recurring task",
@@ -325,6 +364,21 @@ func TestTaskService_UpdateScheduleValidRecurringTaskPersistsSchedule(t *testing
 	}
 	if rescheduledTask != "cron_task" || rescheduledCron != "0 */10 * * * *" {
 		t.Fatalf("reschedule args = (%q, %q), want (%q, %q)", rescheduledTask, rescheduledCron, "cron_task", "0 */10 * * * *")
+	}
+
+	var auditEvents []model.AuditEvent
+	if err := db.Where("resource_type = ? AND resource_id = ?", "task_schedule", "cron_task").Find(&auditEvents).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	foundScheduleAudit := false
+	for _, event := range auditEvents {
+		if event.Category == "task_ops" && event.Action == "task_schedule_update" && event.Result == model.AuditResultSuccess {
+			foundScheduleAudit = true
+			break
+		}
+	}
+	if !foundScheduleAudit {
+		t.Fatalf("expected task_schedule_update audit event, got %+v", auditEvents)
 	}
 }
 

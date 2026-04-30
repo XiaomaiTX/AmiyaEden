@@ -1023,6 +1023,7 @@ func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 		&model.WalletTransaction{},
 		&model.SrpApplication{},
 		&model.Fleet{},
+		&model.AuditEvent{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
@@ -1037,6 +1038,58 @@ func newSrpServiceForTests() *SrpService {
 		userRepo:  repository.NewUserRepository(),
 		sdeRepo:   repository.NewSdeRepository(),
 		walletSvc: NewSysWalletService(),
+		auditSvc:  NewAuditService(),
+	}
+}
+
+func TestReviewApplicationWritesApprovalAuditEvent(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	app := &model.SrpApplication{
+		UserID:            42,
+		CharacterID:       90000001,
+		CharacterName:     "Pilot One",
+		KillmailID:        990001,
+		ShipTypeID:        123,
+		ShipName:          "Navy Omen",
+		SolarSystemID:     30000142,
+		SolarSystemName:   "Jita",
+		KillmailTime:      time.Now().Add(-1 * time.Hour),
+		RecommendedAmount: 100,
+		FinalAmount:       100,
+		ReviewStatus:      model.SrpReviewSubmitted,
+		PayoutStatus:      model.SrpPayoutNotPaid,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create srp application: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	if _, err := svc.ReviewApplication(77, []string{model.RoleSRP}, app.ID, &ReviewApplicationRequest{
+		Action:      "approve",
+		FinalAmount: 120,
+		ReviewNote:  "ok",
+	}); err != nil {
+		t.Fatalf("ReviewApplication() error = %v", err)
+	}
+
+	var events []model.AuditEvent
+	if err := db.Where("resource_type = ? AND resource_id = ?", "srp_application", fmt.Sprintf("%d", app.ID)).
+		Find(&events).Error; err != nil {
+		t.Fatalf("load audit events: %v", err)
+	}
+	found := false
+	for _, event := range events {
+		if event.Category == "approval" && event.Action == "srp_application_approve" && event.Result == model.AuditResultSuccess {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected srp_application_approve approval audit event, got %+v", events)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,6 +32,7 @@ type WebhookService struct {
 	repo            webhookConfigStore
 	fleetConfigRepo *repository.FleetConfigRepository
 	http            *http.Client
+	auditSvc        *AuditService
 }
 
 type webhookConfigStore interface {
@@ -44,6 +46,7 @@ func NewWebhookService() *WebhookService {
 		repo:            repository.NewSysConfigRepository(),
 		fleetConfigRepo: repository.NewFleetConfigRepository(),
 		http:            &http.Client{Timeout: 10 * time.Second},
+		auditSvc:        NewAuditService(),
 	}
 }
 
@@ -83,6 +86,30 @@ func (s *WebhookService) SetConfig(cfg *WebhookConfig) error {
 		AddString(model.SysConfigWebhookOBToken, cfg.OBToken, "OneBot Access Token").
 		Items()
 	return s.repo.SetMany(items)
+}
+
+func (s *WebhookService) SetConfigByOperator(cfg *WebhookConfig, operatorID uint) error {
+	if err := s.SetConfig(cfg); err != nil {
+		return err
+	}
+	if s.auditSvc != nil {
+		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+			Category:     "config",
+			Action:       "webhook_config_update",
+			ActorUserID:  operatorID,
+			ResourceType: "system_config",
+			ResourceID:   model.SysConfigWebhookURL,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"enabled":        cfg.Enabled,
+				"type":           cfg.Type,
+				"url":            cfg.URL,
+				"ob_target_type": cfg.OBTargetType,
+				"ob_target_id":   cfg.OBTargetID,
+			},
+		})
+	}
+	return nil
 }
 
 // SendFleetPing 发送舰队行动 Ping（若未启用则静默忽略）
