@@ -41,12 +41,12 @@ func NewAuditArchiveService() *AuditArchiveService {
 	}
 }
 
-func (s *AuditArchiveService) RunDailyArchive(ctx context.Context) (*AuditArchiveSummary, error) {
+func (s *AuditArchiveService) RunDailyArchive(ctx context.Context) (summary *AuditArchiveSummary, err error) {
 	now := s.nowFn()
 	cutoff := now.AddDate(0, 0, -auditArchiveOnlineRetentionDays)
 	filename := fmt.Sprintf("audit-archive-%s.jsonl", now.UTC().Format("20060102-150405"))
 
-	if err := os.MkdirAll(auditArchiveStorageDir, 0o755); err != nil {
+	if err = os.MkdirAll(auditArchiveStorageDir, 0o755); err != nil {
 		return nil, err
 	}
 	filePath := filepath.Join(auditArchiveStorageDir, filename)
@@ -54,9 +54,13 @@ func (s *AuditArchiveService) RunDailyArchive(ctx context.Context) (*AuditArchiv
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
-	summary := &AuditArchiveSummary{
+	summary = &AuditArchiveSummary{
 		CutoffAt: cutoff,
 		FilePath: filePath,
 	}
