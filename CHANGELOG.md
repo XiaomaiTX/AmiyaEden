@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-04-30
+
+### Security
+- 强化 Webhook URL 校验，新增按类型允许列表策略，降低错误配置与潜在风险链接引入风险。
+- 统一工单审计相关的无符号整数安全解析并限制审计分配规模，减少异常输入导致的资源消耗风险。
+
+### Fixed
+- 修复审计与工单路径中的解析与分配边界问题，提升稳定性。
+
+### Changed
+- 调整锁屏密码策略：移除 CryptoJS 加密与 localStorage 持久化，降低前端本地敏感信息暴露面。
+- 重构文件关闭错误捕获与测试 HTTP 写入流程，提升错误可观测性并简化测试行为。
+- 审计页面改为标签布局，并临时关闭导出 UI 入口以避免不完整能力暴露。
+
+### Added
+- 为审计页面新增分栏交互结构，增强操作与查询场景可用性。
 ## [1.1.0] - 2026-04-30
 
 ### Added
