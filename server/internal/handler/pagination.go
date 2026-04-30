@@ -22,8 +22,8 @@ func bindJSON(c *gin.Context, req any) bool {
 // Returns 0 and writes an error response if the param is missing or invalid.
 func requireUintID(c *gin.Context, param string, displayNames ...string) uint {
 	raw := c.Param(param)
-	id, err := strconv.ParseUint(raw, 10, 64)
-	if err != nil || id == 0 || id > math.MaxUint32 {
+	id, err := parseStrictUint(raw)
+	if err != nil {
 		displayName := param
 		if len(displayNames) > 0 && displayNames[0] != "" {
 			displayName = displayNames[0]
@@ -126,4 +126,31 @@ func parseIntQuery(c *gin.Context, key string, defaultValue int) (int, error) {
 	}
 
 	return value, nil
+}
+
+func parseStrictUint(raw string) (uint, error) {
+	parsed, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || parsed == 0 || parsed > math.MaxUint32 {
+		return 0, fmt.Errorf("invalid unsigned integer")
+	}
+	return uint(parsed), nil
+}
+
+func parseRequiredUintQueryParam(field, raw string) (uint, error) {
+	v, err := parseStrictUint(raw)
+	if err != nil {
+		return 0, fmt.Errorf("invalid parameter %s", field)
+	}
+	return v, nil
+}
+
+func parseOptionalUintQueryParam(field, raw string) (*uint, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	v, err := parseRequiredUintQueryParam(field, raw)
+	if err != nil {
+		return nil, err
+	}
+	return &v, nil
 }

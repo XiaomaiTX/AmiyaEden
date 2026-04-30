@@ -1,4 +1,4 @@
-﻿package handler
+package handler
 
 import (
 	"amiya-eden/global"
@@ -7,8 +7,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -78,10 +80,10 @@ func TestTicketHandlerCreateTicketSuccess(t *testing.T) {
 	r := newTicketHandlerTestRouter(777)
 
 	body, _ := json.Marshal(map[string]any{
-		"category_id":  category.ID,
-		"title":        "无法登录",
-		"description":  "登录后立刻掉线",
-		"priority":     model.TicketPriorityHigh,
+		"category_id": category.ID,
+		"title":       "无法登录",
+		"description": "登录后立刻掉线",
+		"priority":    model.TicketPriorityHigh,
 	})
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/ticket/tickets", bytes.NewReader(body))
@@ -138,6 +140,36 @@ func TestTicketHandlerAdminListTicketsRejectsInvalidUserID(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/system/ticket/tickets?user_id=abc", nil)
+	r.ServeHTTP(rec, req)
+
+	resp := decodeTicketHandlerResp(t, rec)
+	if resp.Code != response.CodeParamError {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeParamError)
+	}
+}
+
+func TestTicketHandlerAdminListTicketsRejectsOverflowUserID(t *testing.T) {
+	setupTicketHandlerTestDB(t)
+	r := newTicketHandlerTestRouter(1)
+
+	overflow := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/system/ticket/tickets?user_id="+overflow, nil)
+	r.ServeHTTP(rec, req)
+
+	resp := decodeTicketHandlerResp(t, rec)
+	if resp.Code != response.CodeParamError {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeParamError)
+	}
+}
+
+func TestTicketHandlerAdminListTicketsRejectsOverflowCategoryID(t *testing.T) {
+	setupTicketHandlerTestDB(t)
+	r := newTicketHandlerTestRouter(1)
+
+	overflow := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/system/ticket/tickets?category_id="+overflow, nil)
 	r.ServeHTTP(rec, req)
 
 	resp := decodeTicketHandlerResp(t, rec)

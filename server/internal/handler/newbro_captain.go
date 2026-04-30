@@ -5,8 +5,6 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"fmt"
-	"math"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -91,18 +89,6 @@ func (h *NewbroCaptainHandler) GetAttributions(c *gin.Context) {
 		"page":      page,
 		"page_size": pageSize,
 	})
-}
-
-func parseOptionalUintQueryParam(field, raw string) (*uint, error) {
-	if raw == "" {
-		return nil, nil
-	}
-	parsed, err := strconv.ParseUint(raw, 10, 64)
-	if err != nil || parsed > math.MaxUint32 {
-		return nil, fmt.Errorf("invalid parameter %s", field)
-	}
-	value := uint(parsed)
-	return &value, nil
 }
 
 func (h *NewbroCaptainHandler) GetRewardSettlements(c *gin.Context) {

@@ -3,7 +3,9 @@ package handler
 import (
 	"amiya-eden/pkg/response"
 	"encoding/json"
+	"math"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -148,6 +150,15 @@ func TestRequireUintID(t *testing.T) {
 		}
 	})
 
+	t.Run("overflow", func(t *testing.T) {
+		ctx := newPaginationQueryTestContext("")
+		ctx.Params = gin.Params{{Key: "id", Value: strconv.FormatUint(uint64(math.MaxUint32)+1, 10)}}
+		id := requireUintID(ctx, "id")
+		if id != 0 {
+			t.Fatalf("requireUintID() = %d, want 0 (overflow)", id)
+		}
+	})
+
 	t.Run("zero", func(t *testing.T) {
 		ctx := newPaginationQueryTestContext("")
 		ctx.Params = gin.Params{{Key: "id", Value: "0"}}
@@ -185,6 +196,13 @@ func TestRequireUintID(t *testing.T) {
 			t.Fatalf("response msg = %q, want %q", resp.Msg, "无效的用户ID")
 		}
 	})
+}
+
+func TestParseRequiredUintQueryParamRejectsOverflow(t *testing.T) {
+	raw := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
+	if _, err := parseRequiredUintQueryParam("user_id", raw); err == nil {
+		t.Fatal("expected overflow to return error")
+	}
 }
 
 func TestParseLedgerPaginationQueryUsesDefaultAndClampsOversizedValues(t *testing.T) {
