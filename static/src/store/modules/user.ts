@@ -229,7 +229,9 @@ export const useUserStore = defineStore(
   {
     persist: {
       key: 'user',
-      storage: localStorage
+      storage: localStorage,
+      // 锁屏口令仅用于当前会话，不持久化到 localStorage
+      omit: ['lockPassword', 'isLock']
     }
   }
 )

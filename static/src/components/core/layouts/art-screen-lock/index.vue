@@ -110,15 +110,11 @@
   import { Lock, Unlock } from '@element-plus/icons-vue'
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import CryptoJS from 'crypto-js'
   import { useUserStore } from '@/store/modules/user'
   import { mittBus } from '@/utils/sys'
 
   // 国际化
   const { t } = useI18n()
-
-  // 环境变量
-  const ENCRYPT_KEY = import.meta.env.VITE_LOCK_ENCRYPT_KEY
 
   // Store
   const userStore = useUserStore()
@@ -323,15 +319,8 @@
 
   // 工具函数
   const verifyPassword = (inputPassword: string, storedPassword: string): boolean => {
-    try {
-      const decryptedPassword = CryptoJS.AES.decrypt(storedPassword, ENCRYPT_KEY).toString(
-        CryptoJS.enc.Utf8
-      )
-      return inputPassword === decryptedPassword
-    } catch (error) {
-      console.error('密码解密失败:', error)
-      return false
-    }
+    // 锁屏口令仅用于当前会话，保存在内存中，不做持久化或可逆加密
+    return inputPassword === storedPassword
   }
 
   // 事件处理函数
@@ -353,9 +342,8 @@
 
     await formRef.value.validate((valid, fields) => {
       if (valid) {
-        const encryptedPassword = CryptoJS.AES.encrypt(formData.password, ENCRYPT_KEY).toString()
         userStore.setLockStatus(true)
-        userStore.setLockPassword(encryptedPassword)
+        userStore.setLockPassword(formData.password)
         visible.value = false
         formData.password = ''
       } else {
