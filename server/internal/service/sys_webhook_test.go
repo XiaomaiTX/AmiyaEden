@@ -158,7 +158,7 @@ func TestValidateWebhookRequestTargetRejectsInvalidURLs(t *testing.T) {
 			if err == nil {
 				t.Fatal("expected URL validation error, got nil")
 			}
-			if !strings.Contains(err.Error(), "Webhook 配置错误") {
+			if !strings.Contains(err.Error(), "webhook 配置错误") {
 				t.Fatalf("expected normalized config error, got %v", err)
 			}
 		})
