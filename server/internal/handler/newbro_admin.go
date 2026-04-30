@@ -4,8 +4,6 @@ import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"math"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,12 +42,12 @@ func (h *NewbroAdminHandler) ListCaptains(c *gin.Context) {
 }
 
 func (h *NewbroAdminHandler) GetCaptainDetail(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
-	if err != nil || id > math.MaxUint32 {
+	id, err := parseStrictUint(c.Param("user_id"))
+	if err != nil {
 		response.Fail(c, response.CodeParamError, "invalid user_id")
 		return
 	}
-	result, err := h.reportSvc.GetAdminCaptainDetail(uint(id))
+	result, err := h.reportSvc.GetAdminCaptainDetail(id)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

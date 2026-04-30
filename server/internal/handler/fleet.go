@@ -5,7 +5,6 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"math"
 	"strconv"
 	"strings"
 
@@ -65,9 +64,8 @@ func (h *FleetHandler) ListFleets(c *gin.Context) {
 		Importance: c.Query("importance"),
 	}
 	if fcStr := c.Query("fc_user_id"); fcStr != "" {
-		if id, err := strconv.ParseUint(fcStr, 10, 64); err == nil && id <= math.MaxUint32 {
-			fcID := uint(id)
-			filter.FCUserID = &fcID
+		if id, err := parseOptionalUintQueryParam("fc_user_id", fcStr); err == nil {
+			filter.FCUserID = id
 		}
 	}
 
@@ -344,14 +342,14 @@ func (h *FleetHandler) GetInvites(c *gin.Context) {
 
 // DeactivateInvite 禁用邀请链接
 func (h *FleetHandler) DeactivateInvite(c *gin.Context) {
-	inviteID, err := strconv.ParseUint(c.Param("invite_id"), 10, 64)
-	if err != nil || inviteID > math.MaxUint32 {
+	inviteID, err := parseStrictUint(c.Param("invite_id"))
+	if err != nil {
 		response.Fail(c, response.CodeParamError, "无效的邀请ID")
 		return
 	}
 	userID := middleware.GetUserID(c)
 	userRoles := middleware.GetUserRoles(c)
-	if err := h.svc.DeactivateInvite(uint(inviteID), userID, userRoles); err != nil {
+	if err := h.svc.DeactivateInvite(inviteID, userID, userRoles); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

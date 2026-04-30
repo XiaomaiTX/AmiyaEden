@@ -17,6 +17,17 @@ func NewAuditEventRepository() *AuditEventRepository {
 	return &AuditEventRepository{}
 }
 
+const (
+	defaultAuditListSize        = 20
+	maxAuditListSize            = 1000
+	defaultAuditExportLimit     = 10000
+	maxAuditExportLimit         = 20000
+	defaultAuditArchiveBatch    = 1000
+	maxAuditArchiveBatch        = 5000
+	defaultAuditExportTaskLimit = 20
+	maxAuditExportTaskLimit     = 200
+)
+
 type AuditEventFilter struct {
 	StartDate    *time.Time
 	EndDate      *time.Time
@@ -74,6 +85,7 @@ func (r *AuditEventRepository) Create(event *model.AuditEvent) error {
 }
 
 func (r *AuditEventRepository) List(page, size int, filter AuditEventFilter) ([]model.AuditEvent, error) {
+	size = normalizeAuditListSize(size)
 	offset := (page - 1) * size
 	records := make([]model.AuditEvent, 0, size)
 	db := applyAuditEventFilter(global.DB.Model(&model.AuditEvent{}), filter)
@@ -88,9 +100,7 @@ func (r *AuditEventRepository) Count(filter AuditEventFilter) (int64, error) {
 }
 
 func (r *AuditEventRepository) ListForExport(filter AuditEventFilter, limit int) ([]model.AuditEvent, error) {
-	if limit <= 0 {
-		limit = 10000
-	}
+	limit = normalizeAuditExportLimit(limit)
 	records := make([]model.AuditEvent, 0, limit)
 	db := applyAuditEventFilter(global.DB.Model(&model.AuditEvent{}), filter)
 	err := db.Order("occurred_at DESC, id DESC").Limit(limit).Find(&records).Error
@@ -98,9 +108,7 @@ func (r *AuditEventRepository) ListForExport(filter AuditEventFilter, limit int)
 }
 
 func (r *AuditEventRepository) ListOlderThan(cutoff time.Time, limit int) ([]model.AuditEvent, error) {
-	if limit <= 0 {
-		limit = 1000
-	}
+	limit = normalizeAuditArchiveBatchSize(limit)
 	records := make([]model.AuditEvent, 0, limit)
 	err := global.DB.Model(&model.AuditEvent{}).
 		Where("occurred_at < ?", cutoff).
@@ -135,12 +143,7 @@ func (r *AuditEventRepository) GetExportTaskByTaskID(taskID string) (*model.Audi
 }
 
 func (r *AuditEventRepository) ListExportTasksByOperator(operatorUserID uint, limit int) ([]model.AuditExportTask, error) {
-	if limit <= 0 {
-		limit = 20
-	}
-	if limit > 200 {
-		limit = 200
-	}
+	limit = normalizeAuditExportTaskLimit(limit)
 	tasks := make([]model.AuditExportTask, 0, limit)
 	err := global.DB.Where("operator_user_id = ?", operatorUserID).
 		Order("created_at DESC, id DESC").
@@ -191,4 +194,44 @@ func mergeStatusUpdates(status string, updates map[string]any) map[string]any {
 		merged[k] = v
 	}
 	return merged
+}
+
+func normalizeAuditListSize(size int) int {
+	if size <= 0 {
+		return defaultAuditListSize
+	}
+	if size > maxAuditListSize {
+		return maxAuditListSize
+	}
+	return size
+}
+
+func normalizeAuditExportLimit(limit int) int {
+	if limit <= 0 {
+		return defaultAuditExportLimit
+	}
+	if limit > maxAuditExportLimit {
+		return maxAuditExportLimit
+	}
+	return limit
+}
+
+func normalizeAuditArchiveBatchSize(limit int) int {
+	if limit <= 0 {
+		return defaultAuditArchiveBatch
+	}
+	if limit > maxAuditArchiveBatch {
+		return maxAuditArchiveBatch
+	}
+	return limit
+}
+
+func normalizeAuditExportTaskLimit(limit int) int {
+	if limit <= 0 {
+		return defaultAuditExportTaskLimit
+	}
+	if limit > maxAuditExportTaskLimit {
+		return maxAuditExportTaskLimit
+	}
+	return limit
 }

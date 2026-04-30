@@ -6,7 +6,6 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -118,20 +117,20 @@ func (h *TicketHandler) AdminListTickets(c *gin.Context) {
 		Keyword: c.Query("keyword"),
 	}
 	if raw := c.Query("user_id"); raw != "" {
-		userID, convErr := strconv.ParseUint(raw, 10, 64)
-		if convErr != nil || userID == 0 {
+		userID, convErr := parseRequiredUintQueryParam("user_id", raw)
+		if convErr != nil {
 			response.Fail(c, response.CodeParamError, "无效的 user_id")
 			return
 		}
-		filter.UserID = uint(userID)
+		filter.UserID = userID
 	}
 	if raw := c.Query("category_id"); raw != "" {
-		categoryID, convErr := strconv.ParseUint(raw, 10, 64)
-		if convErr != nil || categoryID == 0 {
+		categoryID, convErr := parseRequiredUintQueryParam("category_id", raw)
+		if convErr != nil {
 			response.Fail(c, response.CodeParamError, "无效的 category_id")
 			return
 		}
-		filter.Category = uint(categoryID)
+		filter.Category = categoryID
 	}
 	list, total, err := h.svc.ListTicketsAdmin(filter, page, pageSize)
 	if err != nil {

@@ -266,3 +266,77 @@ func TestAuditEventHandlerListExportTasks(t *testing.T) {
 		t.Fatalf("unexpected order: %+v", got)
 	}
 }
+
+func TestAuditEventHandlerListExportTasksUsesDefaultLimitWhenNonPositive(t *testing.T) {
+	setupAuditEventHandlerTestDB(t)
+	now := time.Now()
+	tasks := make([]model.AuditExportTask, 0, 30)
+	for i := 0; i < 30; i++ {
+		tasks = append(tasks, model.AuditExportTask{
+			TaskID:         fmt.Sprintf("task-default-%03d", i),
+			OperatorUserID: 1,
+			Format:         "csv",
+			FilterJSON:     "{}",
+			Status:         model.AuditExportStatusDone,
+			CreatedAt:      now.Add(time.Duration(i) * time.Second),
+		})
+	}
+	if err := global.DB.Create(&tasks).Error; err != nil {
+		t.Fatalf("seed export tasks: %v", err)
+	}
+
+	r := newAuditEventHandlerRouter()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/audit/export/list", strings.NewReader(`{"limit":0}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(rec, req)
+
+	resp := decodeAuditEventResp(t, rec)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+	var got []map[string]any
+	if err := json.Unmarshal(resp.Data, &got); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
+	if len(got) != 20 {
+		t.Fatalf("task count = %d, want 20", len(got))
+	}
+}
+
+func TestAuditEventHandlerListExportTasksCapsLimitAt200(t *testing.T) {
+	setupAuditEventHandlerTestDB(t)
+	now := time.Now()
+	tasks := make([]model.AuditExportTask, 0, 210)
+	for i := 0; i < 210; i++ {
+		tasks = append(tasks, model.AuditExportTask{
+			TaskID:         fmt.Sprintf("task-cap-%03d", i),
+			OperatorUserID: 1,
+			Format:         "csv",
+			FilterJSON:     "{}",
+			Status:         model.AuditExportStatusDone,
+			CreatedAt:      now.Add(time.Duration(i) * time.Second),
+		})
+	}
+	if err := global.DB.Create(&tasks).Error; err != nil {
+		t.Fatalf("seed export tasks: %v", err)
+	}
+
+	r := newAuditEventHandlerRouter()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/audit/export/list", strings.NewReader(`{"limit":999}`))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(rec, req)
+
+	resp := decodeAuditEventResp(t, rec)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+	var got []map[string]any
+	if err := json.Unmarshal(resp.Data, &got); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
+	if len(got) != 200 {
+		t.Fatalf("task count = %d, want 200", len(got))
+	}
+}
