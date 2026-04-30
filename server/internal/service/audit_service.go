@@ -335,12 +335,16 @@ func writeAuditRowsJSON(path string, rows []model.AuditEvent) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-func writeAuditRowsCSV(path string, rows []model.AuditEvent) error {
+func writeAuditRowsCSV(path string, rows []model.AuditEvent) (err error) {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil && err == nil {
+			err = closeErr
+		}
+	}()
 
 	w := csv.NewWriter(f)
 	defer w.Flush()

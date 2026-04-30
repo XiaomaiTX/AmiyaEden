@@ -58,13 +58,13 @@ func TestCorporationStructuresTaskExecutePersistsEnrichedSnapshotFields(t *testi
 		switch req.URL.Path {
 		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
 			w.Header().Set("X-Pages", "1")
-			_, _ = w.Write([]byte(fmt.Sprintf(`[
+			_, _ = fmt.Fprintf(w, `[
 {"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"Alpha","services":[]}
-]`, corporationID, structureID, systemID, typeID)))
+]`, corporationID, structureID, systemID, typeID)
 		case "/universe/names":
-			_, _ = w.Write([]byte(fmt.Sprintf(`[{"id":%d,"name":"Test Corp"}]`, corporationID)))
+			_, _ = fmt.Fprintf(w, `[{"id":%d,"name":"Test Corp"}]`, corporationID)
 		case fmt.Sprintf("/universe/structures/%d/", structureID):
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"Alpha","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)))
+			_, _ = fmt.Fprintf(w, `{"name":"Alpha","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)
 		default:
 			t.Fatalf("unexpected request path: %s", req.URL.Path)
 		}
@@ -134,13 +134,13 @@ func TestCorporationStructuresTaskExecuteFallsBackToExistingSnapshotValues(t *te
 		switch req.URL.Path {
 		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
 			w.Header().Set("X-Pages", "1")
-			_, _ = w.Write([]byte(fmt.Sprintf(`[
+			_, _ = fmt.Fprintf(w, `[
 {"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"low_power","name":"Beta","services":[]}
-]`, corporationID, structureID, systemID, typeID)))
+]`, corporationID, structureID, systemID, typeID)
 		case "/universe/names":
 			http.Error(w, `{"error":"boom"}`, http.StatusInternalServerError)
 		case fmt.Sprintf("/universe/structures/%d/", structureID):
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"Beta","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)))
+			_, _ = fmt.Fprintf(w, `{"name":"Beta","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)
 		default:
 			t.Fatalf("unexpected request path: %s", req.URL.Path)
 		}
@@ -198,13 +198,13 @@ func TestCorporationStructuresTaskExecuteUsesPlaceholdersWhenNoSnapshotAndNoLook
 		switch req.URL.Path {
 		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
 			w.Header().Set("X-Pages", "1")
-			_, _ = w.Write([]byte(fmt.Sprintf(`[
+			_, _ = fmt.Fprintf(w, `[
 {"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"Gamma","services":[]}
-]`, corporationID, structureID, systemID, typeID)))
+]`, corporationID, structureID, systemID, typeID)
 		case "/universe/names":
 			http.Error(w, `{"error":"boom"}`, http.StatusInternalServerError)
 		case fmt.Sprintf("/universe/structures/%d/", structureID):
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"Gamma","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)))
+			_, _ = fmt.Fprintf(w, `{"name":"Gamma","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)
 		default:
 			t.Fatalf("unexpected request path: %s", req.URL.Path)
 		}
@@ -271,16 +271,16 @@ func TestCorporationStructuresTaskExecuteDeletesMissingStructures(t *testing.T) 
 		switch req.URL.Path {
 		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
 			w.Header().Set("X-Pages", "1")
-			_, _ = w.Write([]byte(fmt.Sprintf(`[
+			_, _ = fmt.Fprintf(w, `[
 {"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"A","services":[]},
 {"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"low_power","name":"B","services":[]}
-]`, corporationID, existingIDs[0], systemID, typeID, corporationID, existingIDs[1], systemID, typeID)))
+]`, corporationID, existingIDs[0], systemID, typeID, corporationID, existingIDs[1], systemID, typeID)
 		case "/universe/names":
-			_, _ = w.Write([]byte(fmt.Sprintf(`[{"id":%d,"name":"Test Corp"}]`, corporationID)))
+			_, _ = fmt.Fprintf(w, `[{"id":%d,"name":"Test Corp"}]`, corporationID)
 		case fmt.Sprintf("/universe/structures/%d/", existingIDs[0]):
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"A","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)))
+			_, _ = fmt.Fprintf(w, `{"name":"A","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)
 		case fmt.Sprintf("/universe/structures/%d/", existingIDs[1]):
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"B","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":4,"y":5,"z":6}}`, corporationID, systemID, typeID)))
+			_, _ = fmt.Fprintf(w, `{"name":"B","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":4,"y":5,"z":6}}`, corporationID, systemID, typeID)
 		default:
 			t.Fatalf("unexpected request path: %s", req.URL.Path)
 		}
@@ -479,13 +479,13 @@ func TestCorporationStructuresTaskExecuteOnlyDeletesTargetCorporation(t *testing
 		switch req.URL.Path {
 		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
 			w.Header().Set("X-Pages", "1")
-			_, _ = w.Write([]byte(fmt.Sprintf(`[
+			_, _ = fmt.Fprintf(w, `[
 {"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"Target-New","services":[]}
-]`, corporationID, int64(1020000000152), systemID, typeID)))
+]`, corporationID, int64(1020000000152), systemID, typeID)
 		case "/universe/names":
-			_, _ = w.Write([]byte(fmt.Sprintf(`[{"id":%d,"name":"Test Corp"}]`, corporationID)))
+			_, _ = fmt.Fprintf(w, `[{"id":%d,"name":"Test Corp"}]`, corporationID)
 		case fmt.Sprintf("/universe/structures/%d/", int64(1020000000152)):
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"name":"Target-New","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":7,"y":8,"z":9}}`, corporationID, systemID, typeID)))
+			_, _ = fmt.Fprintf(w, `{"name":"Target-New","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":7,"y":8,"z":9}}`, corporationID, systemID, typeID)
 		default:
 			t.Fatalf("unexpected request path: %s", req.URL.Path)
 		}
