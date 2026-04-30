@@ -2433,6 +2433,10 @@
     }
   },
   "auditAdmin": {
+    "tabs": {
+      "events": "审计事件",
+      "exports": "导出日志"
+    },
     "detailTitle": "审计事件详情",
     "filters": {
       "category": "分类",
@@ -2465,6 +2469,8 @@
       "download": "下载文件"
     },
     "export": {
+      "unavailableTitle": "导出功能暂不可用",
+      "unavailableDescription": "审计日志导出入口已临时关闭，后端导出能力仍保留，恢复后将重新开放前端入口。",
       "statusLabel": "导出状态",
       "historyTitle": "导出任务历史",
       "expireAt": "过期时间",
