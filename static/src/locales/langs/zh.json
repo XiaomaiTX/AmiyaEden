@@ -339,6 +339,7 @@
       "papExchange": "PAP兑换",
       "npcKills": "刷怪报表",
       "autoRole": "自动权限",
+      "audit": "审计日志",
       "webhook": "Webhook 通知",
       "basicConfig": "@:setting.basics.title"
     },
@@ -2429,6 +2430,55 @@
       "ratio": "占比",
       "amount": "金额",
       "empty": "当前时间范围没有可分析数据"
+    }
+  },
+  "auditAdmin": {
+    "detailTitle": "审计事件详情",
+    "filters": {
+      "category": "分类",
+      "result": "结果"
+    },
+    "placeholders": {
+      "keyword": "按 details 关键词检索",
+      "requestId": "按请求 ID 精确检索"
+    },
+    "columns": {
+      "eventId": "事件 ID",
+      "time": "发生时间",
+      "category": "分类",
+      "action": "动作",
+      "actorUserId": "操作者 ID",
+      "targetUserId": "目标用户 ID",
+      "result": "结果",
+      "requestId": "请求 ID",
+      "resourceId": "资源 ID",
+      "details": "详情"
+    },
+    "results": {
+      "success": "成功",
+      "failed": "失败"
+    },
+    "actions": {
+      "detail": "详情",
+      "exportCsv": "导出 CSV",
+      "exportJson": "导出 JSON",
+      "download": "下载文件"
+    },
+    "export": {
+      "statusLabel": "导出状态",
+      "expireAt": "过期时间",
+      "status": {
+        "pending": "排队中",
+        "running": "处理中",
+        "done": "已完成",
+        "failed": "失败",
+        "expired": "已过期"
+      },
+      "messages": {
+        "created": "导出任务已创建",
+        "done": "导出已完成，可下载",
+        "failed": "导出失败"
+      }
     }
   },
   "dashboardConsole": {

@@ -52,3 +52,4 @@ server/.gocache/
 # VSCode Personcal Workspace
 AmiyaEden.code-workspace
 .codex
+server/internal/handler/uploads/

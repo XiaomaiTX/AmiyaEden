@@ -53,6 +53,17 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'audit',
+      name: 'SystemAudit',
+      component: '/system/audit',
+      meta: {
+        title: 'menus.system.audit',
+        keepAlive: true,
+        roles: ['super_admin', 'admin'],
+        authList: [{ title: '查看审计明细', authMark: 'view_audit_detail' }]
+      }
+    },
+    {
       path: 'pap-exchange',
       name: 'PAPExchange',
       component: '/system/pap-exchange',

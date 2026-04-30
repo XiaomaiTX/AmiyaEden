@@ -62,6 +62,8 @@ func autoMigrate(db *gorm.DB) {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.OperationLog{},
+		&model.AuditEvent{},
+		&model.AuditExportTask{},
 		&model.EveCharacter{},
 		&model.SdeVersion{},
 		// ESI 数据表
@@ -303,9 +305,19 @@ func badgeCountIndexStatements() []string {
 func ensureCustomIndexes(db *gorm.DB) {
 	allStatements := append(newbroCustomIndexStatements(), userCustomIndexStatements()...)
 	allStatements = append(allStatements, badgeCountIndexStatements()...)
+	allStatements = append(allStatements, auditEventIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
+	}
+}
+
+func auditEventIndexStatements() []string {
+	return []string{
+		`CREATE INDEX IF NOT EXISTS idx_audit_event_occurred_category ON audit_event (occurred_at, category)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_event_actor ON audit_event (actor_user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_event_target ON audit_event (target_user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_event_request_id ON audit_event (request_id)`,
 	}
 }

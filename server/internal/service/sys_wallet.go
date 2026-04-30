@@ -16,7 +16,8 @@ import (
 
 // SysWalletService 伏羲币业务逻辑层
 type SysWalletService struct {
-	repo *repository.SysWalletRepository
+	repo     *repository.SysWalletRepository
+	auditSvc *AuditService
 }
 
 const walletTransactionReasonMaxLength = 256
@@ -50,7 +51,8 @@ func (s *SysWalletService) applyWalletDeltaTx(tx *gorm.DB, userID uint, operator
 
 func NewSysWalletService() *SysWalletService {
 	return &SysWalletService{
-		repo: repository.NewSysWalletRepository(),
+		repo:     repository.NewSysWalletRepository(),
+		auditSvc: NewAuditService(),
 	}
 }
 
@@ -219,6 +221,23 @@ func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest)
 		if err := s.repo.CreateTransactionTx(tx, walletTx); err != nil {
 			return fmt.Errorf("写入流水失败: %w", err)
 		}
+		if err := s.auditSvc.RecordEventTx(tx, AuditRecordInput{
+			Category:     "fuxi_wallet",
+			Action:       "apply_wallet_delta",
+			ActorUserID:  operatorID,
+			TargetUserID: req.TargetUID,
+			ResourceType: "wallet_transaction",
+			ResourceID:   walletTx.RefID,
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"delta":         txAmount,
+				"ref_type":      model.WalletRefAdminAdjust,
+				"reason":        req.Reason,
+				"balance_after": newBalance,
+			},
+		}); err != nil {
+			return fmt.Errorf("写入审计日志失败: %w", err)
+		}
 
 		log := &model.WalletLog{
 			OperatorID: operatorID,
@@ -231,6 +250,24 @@ func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest)
 		}
 		if err := s.repo.CreateLogTx(tx, log); err != nil {
 			return fmt.Errorf("写入操作日志失败: %w", err)
+		}
+		if err := s.auditSvc.RecordEventTx(tx, AuditRecordInput{
+			Category:     "fuxi_wallet",
+			Action:       "admin_adjust",
+			ActorUserID:  operatorID,
+			TargetUserID: req.TargetUID,
+			ResourceType: "system_wallet",
+			ResourceID:   fmt.Sprintf("%d", req.TargetUID),
+			Result:       model.AuditResultSuccess,
+			Details: map[string]any{
+				"adjust_action": req.Action,
+				"amount":        req.Amount,
+				"before":        oldBalance,
+				"after":         newBalance,
+				"reason":        req.Reason,
+			},
+		}); err != nil {
+			return fmt.Errorf("写入审计日志失败: %w", err)
 		}
 
 		wallet.Balance = newBalance
@@ -496,12 +533,7 @@ func (s *SysWalletService) CreditUser(userID uint, amount float64, reason, refTy
 	}
 
 	return global.DB.Transaction(func(tx *gorm.DB) error {
-		wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
-		if err != nil {
-			return fmt.Errorf("获取用户钱包失败: %w", err)
-		}
-		newBalance := wallet.Balance + amount
-		return s.applyWalletDeltaTx(tx, userID, 0, amount, newBalance, reason, refType, refID)
+		return s.ApplyWalletDeltaByOperatorTx(tx, userID, 0, amount, reason, refType, refID)
 	})
 }
 
@@ -519,8 +551,7 @@ func (s *SysWalletService) DebitUser(userID uint, amount float64, reason, refTyp
 		if wallet.Balance < amount {
 			return errors.New("余额不足")
 		}
-		newBalance := wallet.Balance - amount
-		return s.applyWalletDeltaTx(tx, userID, 0, -amount, newBalance, reason, refType, refID)
+		return s.ApplyWalletDeltaByOperatorTx(tx, userID, 0, -amount, reason, refType, refID)
 	})
 }
 
@@ -543,5 +574,25 @@ func (s *SysWalletService) ApplyWalletDeltaByOperatorTx(tx *gorm.DB, userID uint
 	if newBalance < 0 {
 		newBalance = 0
 	}
-	return s.applyWalletDeltaTx(tx, userID, operatorID, delta, newBalance, reason, refType, refID)
+	if err := s.applyWalletDeltaTx(tx, userID, operatorID, delta, newBalance, reason, refType, refID); err != nil {
+		return err
+	}
+	if err := s.auditSvc.RecordEventTx(tx, AuditRecordInput{
+		Category:     "fuxi_wallet",
+		Action:       "apply_wallet_delta",
+		ActorUserID:  operatorID,
+		TargetUserID: userID,
+		ResourceType: "wallet_transaction",
+		ResourceID:   refID,
+		Result:       model.AuditResultSuccess,
+		Details: map[string]any{
+			"delta":         delta,
+			"ref_type":      refType,
+			"reason":        reason,
+			"balance_after": newBalance,
+		},
+	}); err != nil {
+		return fmt.Errorf("写入审计日志失败: %w", err)
+	}
+	return nil
 }
