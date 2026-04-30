@@ -1,8 +1,9 @@
 ---
-status: draft
-doc_type: draft
+status: completed
+doc_type: completed
 owner: engineering
-last_reviewed: 2025-01-13
+last_reviewed: 2026-04-30
+completed: 2026-04-30
 source_of_truth:
   - static/src/views/info/wallet/index.vue
   - static/src/views/info/skill/index.vue
