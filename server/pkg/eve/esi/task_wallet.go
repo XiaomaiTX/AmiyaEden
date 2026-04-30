@@ -249,8 +249,11 @@ func safeBatchSize(dbTx *gorm.DB, bindParamsPerRow int) int {
 	}
 
 	maxParams := pgMaxBindParameters
-	if dbTx != nil && dbTx.Dialector != nil && dbTx.Dialector.Name() == "sqlite" {
-		maxParams = sqliteMaxBindParams
+	if dbTx != nil && dbTx.Config != nil {
+		dialector := dbTx.Dialector
+		if dialector != nil && dialector.Name() == "sqlite" {
+			maxParams = sqliteMaxBindParams
+		}
 	}
 
 	limit := int(float64(maxParams/bindParamsPerRow) * walletBatchSafetyRate)
