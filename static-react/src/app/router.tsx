@@ -21,8 +21,25 @@ import { InfoAssetsPage } from '@/pages/info-assets-page'
 import { InfoContractsPage } from '@/pages/info-contracts-page'
 import { InfoEsiCheckPage } from '@/pages/info-esi-check-page'
 import { TicketCreatePage } from '@/pages/ticket-create-page'
+import { TicketManagementPage } from '@/pages/ticket-management-page'
+import { TicketCategoriesPage } from '@/pages/ticket-categories-page'
+import { TicketStatisticsPage } from '@/pages/ticket-statistics-page'
+import { TicketAdminDetailPage } from '@/pages/ticket-admin-detail-page'
 import { TicketDetailPage } from '@/pages/ticket-detail-page'
 import { TicketMyTicketsPage } from '@/pages/ticket-my-tickets-page'
+import { NewbroSelectCaptainPage } from '@/pages/newbro-select-captain-page'
+import { NewbroSelectMentorPage } from '@/pages/newbro-select-mentor-page'
+import { NewbroCaptainPage } from '@/pages/newbro-captain-page'
+import { NewbroMentorPage } from '@/pages/newbro-mentor-page'
+import { NewbroManagePage } from '@/pages/newbro-manage-page'
+import { NewbroMentorManagePage } from '@/pages/newbro-mentor-manage-page'
+import { NewbroRecruitLinkPage } from '@/pages/newbro-recruit-link-page'
+import { WelfareMyPage } from '@/pages/welfare-my-page'
+import { WelfareApprovalPage } from '@/pages/welfare-approval-page'
+import { WelfareSettingsPage } from '@/pages/welfare-settings-page'
+import { SrpApplyPage } from '@/pages/srp-apply-page'
+import { SrpManagePage } from '@/pages/srp-manage-page'
+import { SrpPricesPage } from '@/pages/srp-prices-page'
 import { LoginPage } from '@/pages/login-page'
 import { MigrationStubPage } from '@/pages/migration-stub-page'
 import { NotFoundPage } from '@/pages/not-found-page'
@@ -64,6 +81,40 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <TicketCreatePage />
     case 'ticket-detail':
       return <TicketDetailPage />
+    case 'ticket-management':
+      return <TicketManagementPage />
+    case 'ticket-categories':
+      return <TicketCategoriesPage />
+    case 'ticket-statistics':
+      return <TicketStatisticsPage />
+    case 'ticket-admin-detail':
+      return <TicketAdminDetailPage />
+    case 'welfare-my':
+      return <WelfareMyPage />
+    case 'welfare-approval':
+      return <WelfareApprovalPage />
+    case 'welfare-settings':
+      return <WelfareSettingsPage />
+    case 'newbro-select-captain':
+      return <NewbroSelectCaptainPage />
+    case 'newbro-select-mentor':
+      return <NewbroSelectMentorPage />
+    case 'newbro-captain':
+      return <NewbroCaptainPage />
+    case 'newbro-mentor':
+      return <NewbroMentorPage />
+    case 'newbro-manage':
+      return <NewbroManagePage />
+    case 'newbro-mentor-manage':
+      return <NewbroMentorManagePage />
+    case 'newbro-recruit-link':
+      return <NewbroRecruitLinkPage />
+    case 'srp-apply':
+      return <SrpApplyPage />
+    case 'srp-manage':
+      return <SrpManagePage />
+    case 'srp-prices':
+      return <SrpPricesPage />
     case 'admin-demo':
       return <AdminDemoPage />
     case 'stub':

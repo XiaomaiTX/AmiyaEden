@@ -43,6 +43,13 @@ export interface TicketListParams extends Partial<CommonSearchParams> {
   status?: TicketStatus | ''
 }
 
+export interface AdminTicketListParams extends Partial<CommonSearchParams> {
+  status?: TicketStatus | ''
+  keyword?: string
+  category_id?: number
+  user_id?: number
+}
+
 export interface CreateTicketParams {
   category_id: number
   title: string
@@ -52,6 +59,44 @@ export interface CreateTicketParams {
 
 export interface AddReplyParams {
   content: string
+}
+
+export interface AdminAddReplyParams extends AddReplyParams {
+  is_internal?: boolean
+}
+
+export interface UpdateStatusParams {
+  status: TicketStatus
+}
+
+export interface UpdatePriorityParams {
+  priority: TicketPriority
+}
+
+export interface UpsertCategoryParams {
+  name: string
+  name_en: string
+  description?: string
+  sort_order?: number
+  enabled?: boolean
+}
+
+export interface TicketStatusHistory {
+  id: number
+  ticket_id: number
+  from_status: string
+  to_status: TicketStatus
+  changed_by: number
+  changed_at: string
+}
+
+export interface Statistics {
+  total: number
+  status: Record<TicketStatus, number>
+  category: Record<string, number>
+  recent_7d: number
+  recent_30d: number
+  pendingCount: number
 }
 
 export type TicketListResponse = PaginatedResponse<TicketItem>
