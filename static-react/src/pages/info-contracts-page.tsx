@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatIskPlain } from '@/lib/isk'
 import { useI18n } from '@/i18n'
+import type { ContractBidItem, ContractItem, ContractItemDetail } from '@/types/api/eve-info'
 
 type ContractDetailState = {
-  items: Api.EveInfo.ContractItemDetail[]
-  bids: Api.EveInfo.ContractBidItem[]
+  items: ContractItemDetail[]
+  bids: ContractBidItem[]
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -76,7 +77,7 @@ export function InfoContractsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [contracts, setContracts] = useState<Api.EveInfo.ContractItem[]>([])
+  const [contracts, setContracts] = useState<ContractItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -84,7 +85,7 @@ export function InfoContractsPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [refreshToken, setRefreshToken] = useState(0)
   const [detailOpen, setDetailOpen] = useState(false)
-  const [selectedContract, setSelectedContract] = useState<Api.EveInfo.ContractItem | null>(null)
+  const [selectedContract, setSelectedContract] = useState<ContractItem | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [detailData, setDetailData] = useState<ContractDetailState | null>(null)

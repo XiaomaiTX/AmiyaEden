@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { useI18n } from '@/i18n'
+import type { EveCharacter, UserInfo } from '@/types/api/auth'
+import type { DirectReferralStatus, DirectReferrerCandidate } from '@/types/api/newbro'
 import { useSessionStore } from '@/stores'
 
 const CORP_KM_SCOPE = 'esi-killmails.read_corporation_killmails.v1'
@@ -29,7 +31,7 @@ export function DashboardCharactersPage() {
 
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [primaryCharacterId, setPrimaryCharacterId] = useState(0)
   const [profileComplete, setProfileComplete] = useState(false)
   const [enforceCharacterESIRestriction, setEnforceCharacterESIRestriction] = useState(true)
@@ -43,14 +45,14 @@ export function DashboardCharactersPage() {
   const [switchingId, setSwitchingId] = useState<number | null>(null)
   const [unbindingId, setUnbindingId] = useState<number | null>(null)
   const [directReferralLoading, setDirectReferralLoading] = useState(false)
-  const [directReferralStatus, setDirectReferralStatus] = useState<Api.Newbro.DirectReferralStatus>({
+  const [directReferralStatus, setDirectReferralStatus] = useState<DirectReferralStatus>({
     show_card: false,
     needs_profile_qq: false,
   })
   const [directReferrerQQ, setDirectReferrerQQ] = useState('')
   const [checkedDirectReferrerQQ, setCheckedDirectReferrerQQ] = useState('')
   const [directReferrerCandidate, setDirectReferrerCandidate] =
-    useState<Api.Newbro.DirectReferrerCandidate | null>(null)
+    useState<DirectReferrerCandidate | null>(null)
   const [directReferralChecking, setDirectReferralChecking] = useState(false)
   const [directReferralConfirming, setDirectReferralConfirming] = useState(false)
 
@@ -102,10 +104,10 @@ export function DashboardCharactersPage() {
     return ''
   }, [profileForm.discordId, profileForm.nickname, profileForm.qq, t])
 
-  const hasCorpKmScope = (character: Api.Auth.EveCharacter) =>
+  const hasCorpKmScope = (character: EveCharacter) =>
     character.scopes?.split(' ').includes(CORP_KM_SCOPE) ?? false
 
-  const applyUserInfo = useCallback((userInfo: Api.Auth.UserInfo) => {
+  const applyUserInfo = useCallback((userInfo: UserInfo) => {
     setSessionSnapshot({
       isLoggedIn: true,
       characterId: userInfo.primaryCharacterId ?? null,
@@ -246,7 +248,7 @@ export function DashboardCharactersPage() {
     }
   }
 
-  const handleSetPrimary = async (character: Api.Auth.EveCharacter) => {
+  const handleSetPrimary = async (character: EveCharacter) => {
     setSwitchingId(character.character_id)
     setNotice(null)
     try {
@@ -260,7 +262,7 @@ export function DashboardCharactersPage() {
     }
   }
 
-  const handleUnbind = async (character: Api.Auth.EveCharacter) => {
+  const handleUnbind = async (character: EveCharacter) => {
     const confirmed = window.confirm(t('characters.unbindConfirm', { name: character.character_name }))
     if (!confirmed) {
       return

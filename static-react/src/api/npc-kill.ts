@@ -1,4 +1,11 @@
 import { requestJson } from '@/api/http-client'
+import type {
+  NpcKillAllRequest,
+  NpcKillCorpRequest,
+  NpcKillCorpResponse,
+  NpcKillRequest,
+  NpcKillResponse,
+} from '@/types/api/npc-kill'
 
 interface ApiResponse<T> {
   code: number
@@ -14,8 +21,8 @@ function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
   return response.data
 }
 
-export async function fetchNpcKills(data: Api.NpcKill.NpcKillRequest) {
-  const response = await requestJson<ApiResponse<Api.NpcKill.NpcKillResponse>>('/api/v1/info/npc-kills', {
+export async function fetchNpcKills(data: NpcKillRequest) {
+  const response = await requestJson<ApiResponse<NpcKillResponse>>('/api/v1/info/npc-kills', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -23,8 +30,8 @@ export async function fetchNpcKills(data: Api.NpcKill.NpcKillRequest) {
   return assertSuccess(response, 'fetch npc kills failed')
 }
 
-export async function fetchNpcKillsAll(data: Api.NpcKill.NpcKillAllRequest) {
-  const response = await requestJson<ApiResponse<Api.NpcKill.NpcKillResponse>>('/api/v1/info/npc-kills/all', {
+export async function fetchNpcKillsAll(data: NpcKillAllRequest) {
+  const response = await requestJson<ApiResponse<NpcKillResponse>>('/api/v1/info/npc-kills/all', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -32,8 +39,8 @@ export async function fetchNpcKillsAll(data: Api.NpcKill.NpcKillAllRequest) {
   return assertSuccess(response, 'fetch npc kills all failed')
 }
 
-export async function fetchCorpNpcKills(data: Api.NpcKill.NpcKillCorpRequest) {
-  const response = await requestJson<ApiResponse<Api.NpcKill.NpcKillCorpResponse>>('/api/v1/system/npc-kills', {
+export async function fetchCorpNpcKills(data: NpcKillCorpRequest) {
+  const response = await requestJson<ApiResponse<NpcKillCorpResponse>>('/api/v1/system/npc-kills', {
     method: 'POST',
     body: JSON.stringify(data),
   })

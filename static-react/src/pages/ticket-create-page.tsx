@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess, notifyWarning } from '@/feedback/service'
 import { useI18n } from '@/i18n'
+import type { CreateTicketParams, TicketCategory, TicketPriority } from '@/types/api/ticket'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-function getCategoryName(category: Api.Ticket.TicketCategory, locale: string) {
+function getCategoryName(category: TicketCategory, locale: string) {
   if (locale === 'en-US' && category.name_en.trim()) {
     return category.name_en
   }
@@ -24,8 +25,8 @@ export function TicketCreatePage() {
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [categories, setCategories] = useState<Api.Ticket.TicketCategory[]>([])
-  const [form, setForm] = useState<Api.Ticket.CreateTicketParams>({
+  const [categories, setCategories] = useState<TicketCategory[]>([])
+  const [form, setForm] = useState<CreateTicketParams>({
     category_id: 0,
     title: '',
     description: '',
@@ -171,7 +172,7 @@ export function TicketCreatePage() {
                 onChange={(event) => {
                   setForm((current) => ({
                     ...current,
-                    priority: event.target.value as Api.Ticket.TicketPriority,
+                    priority: event.target.value as TicketPriority,
                   }))
                 }}
               >

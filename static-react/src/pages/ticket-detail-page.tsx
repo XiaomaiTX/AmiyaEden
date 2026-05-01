@@ -4,6 +4,7 @@ import { addMyTicketReply, getMyTicket, listMyTicketReplies } from '@/api/ticket
 import { Button } from '@/components/ui/button'
 import { notifyError, notifySuccess } from '@/feedback/service'
 import { useI18n } from '@/i18n'
+import type { TicketItem, TicketPriority, TicketReply, TicketStatus } from '@/types/api/ticket'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -18,7 +19,7 @@ function formatTime(value: string | undefined) {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
 }
 
-function statusTone(status: Api.Ticket.TicketStatus) {
+function statusTone(status: TicketStatus) {
   switch (status) {
     case 'pending':
       return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
@@ -31,7 +32,7 @@ function statusTone(status: Api.Ticket.TicketStatus) {
   }
 }
 
-function priorityTone(priority: Api.Ticket.TicketPriority) {
+function priorityTone(priority: TicketPriority) {
   switch (priority) {
     case 'high':
       return 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
@@ -44,11 +45,11 @@ function priorityTone(priority: Api.Ticket.TicketPriority) {
   }
 }
 
-function statusLabel(t: ReturnType<typeof useI18n>['t'], status: Api.Ticket.TicketStatus) {
+function statusLabel(t: ReturnType<typeof useI18n>['t'], status: TicketStatus) {
   return t(`ticketMyTickets.statuses.${status}`)
 }
 
-function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: Api.Ticket.TicketPriority) {
+function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: TicketPriority) {
   return t(`ticketMyTickets.priorities.${priority}`)
 }
 
@@ -59,8 +60,8 @@ export function TicketDetailPage() {
   const invalidId = !Number.isFinite(ticketId) || ticketId <= 0
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [ticket, setTicket] = useState<Api.Ticket.TicketItem | null>(null)
-  const [replies, setReplies] = useState<Api.Ticket.TicketReply[]>([])
+  const [ticket, setTicket] = useState<TicketItem | null>(null)
+  const [replies, setReplies] = useState<TicketReply[]>([])
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
 

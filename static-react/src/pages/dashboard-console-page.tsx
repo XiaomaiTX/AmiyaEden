@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { fetchDashboard } from '@/api/dashboard'
 import { useI18n } from '@/i18n'
+import type { DashboardResult } from '@/types/api/dashboard'
 
 export function DashboardConsolePage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<Api.Dashboard.DashboardResult | null>(null)
+  const [data, setData] = useState<DashboardResult | null>(null)
 
   useEffect(() => {
     let cancelled = false

@@ -11,6 +11,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
+import type {
+  CorporationStructureFilterOptionsResponse,
+  CorporationStructureListRequest,
+  CorporationStructureRow,
+  CorporationStructureServiceInfo,
+  CorporationStructuresSettings,
+  CorporationStructureSystemOption,
+} from '@/types/api/dashboard'
 
 type ActiveTab = 'list' | 'settings'
 type DateTimeRange = [string, string] | null
@@ -19,7 +27,7 @@ const DEFAULT_FILTERS = {
   corporation_id: 0,
   keyword: '',
   state_groups: [] as string[],
-  fuel_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['fuel_bucket'],
+  fuel_bucket: 'all' as CorporationStructureListRequest['fuel_bucket'],
   fuel_min_hours: '',
   fuel_max_hours: '',
   system_ids: [] as number[],
@@ -29,7 +37,7 @@ const DEFAULT_FILTERS = {
   type_ids: [] as number[],
   service_names: [] as string[],
   service_match_mode: 'and' as const,
-  timer_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['timer_bucket'],
+  timer_bucket: 'all' as CorporationStructureListRequest['timer_bucket'],
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -68,12 +76,12 @@ function stateLabel(t: ReturnType<typeof useI18n>['t'], state: string) {
   return translated === key ? state || '--' : translated
 }
 
-function formatServices(t: ReturnType<typeof useI18n>['t'], services: Api.Dashboard.CorporationStructureServiceInfo[]) {
+function formatServices(t: ReturnType<typeof useI18n>['t'], services: CorporationStructureServiceInfo[]) {
   if (!services.length) return t('corporationStructures.noServices')
   return services.map((service) => `${service.name} (${service.state})`).join(' / ')
 }
 
-function formatSystemOption(item: Api.Dashboard.CorporationStructureSystemOption) {
+function formatSystemOption(item: CorporationStructureSystemOption) {
   const regionText = item.region_name ? ` / ${item.region_name}` : ''
   return `${item.system_name}${regionText} (${formatSecurity(item.security)})`
 }
@@ -111,7 +119,7 @@ export function DashboardCorporationStructuresPage() {
   const [runningTaskCorpId, setRunningTaskCorpId] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
-  const [settings, setSettings] = useState<Api.Dashboard.CorporationStructuresSettings>({
+  const [settings, setSettings] = useState<CorporationStructuresSettings>({
     corporations: [],
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7,
@@ -121,16 +129,16 @@ export function DashboardCorporationStructuresPage() {
     timer_notice_threshold_days: 7,
   })
   const [authorizationByCorp, setAuthorizationByCorp] = useState<Record<number, number>>({})
-  const [filterOptions, setFilterOptions] = useState<Api.Dashboard.CorporationStructureFilterOptionsResponse>({
+  const [filterOptions, setFilterOptions] = useState<CorporationStructureFilterOptionsResponse>({
     systems: [],
     types: [],
     services: [],
   })
-  const [tableData, setTableData] = useState<Api.Dashboard.CorporationStructureRow[]>([])
+  const [tableData, setTableData] = useState<CorporationStructureRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [sort, setSort] = useState<{ sort_by?: Api.Dashboard.CorporationStructureListRequest['sort_by']; sort_order?: Api.Dashboard.CorporationStructureListRequest['sort_order'] }>({
+  const [sort, setSort] = useState<{ sort_by?: CorporationStructureListRequest['sort_by']; sort_order?: CorporationStructureListRequest['sort_order'] }>({
     sort_by: 'fuel_remaining_hours',
     sort_order: 'asc',
   })
@@ -140,7 +148,7 @@ export function DashboardCorporationStructuresPage() {
     corporation_id: 0,
     keyword: '',
     state_groups: [] as string[],
-    fuel_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['fuel_bucket'],
+    fuel_bucket: 'all' as CorporationStructureListRequest['fuel_bucket'],
     fuel_min_hours: '',
     fuel_max_hours: '',
     system_ids: [] as number[],
@@ -150,13 +158,13 @@ export function DashboardCorporationStructuresPage() {
     type_ids: [] as number[],
     service_names: [] as string[],
     service_match_mode: 'and' as const,
-    timer_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['timer_bucket'],
+    timer_bucket: 'all' as CorporationStructureListRequest['timer_bucket'],
   })
   const [appliedFilters, setAppliedFilters] = useState(() => ({
     corporation_id: 0,
     keyword: '',
     state_groups: [] as string[],
-    fuel_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['fuel_bucket'],
+    fuel_bucket: 'all' as CorporationStructureListRequest['fuel_bucket'],
     fuel_min_hours: '',
     fuel_max_hours: '',
     system_ids: [] as number[],
@@ -166,7 +174,7 @@ export function DashboardCorporationStructuresPage() {
     type_ids: [] as number[],
     service_names: [] as string[],
     service_match_mode: 'and' as const,
-    timer_bucket: 'all' as Api.Dashboard.CorporationStructureListRequest['timer_bucket'],
+    timer_bucket: 'all' as CorporationStructureListRequest['timer_bucket'],
   }))
 
   const activeTab = normalizeTab(new URLSearchParams(location.search).get('tab'))

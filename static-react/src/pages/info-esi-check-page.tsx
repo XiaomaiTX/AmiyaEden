@@ -3,6 +3,7 @@ import { fetchEveSSOScopes, fetchMyCharacters, getEveBindURL } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useI18n } from '@/i18n'
+import type { EveCharacter, RegisteredScope } from '@/types/api/auth'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -24,8 +25,8 @@ export function InfoEsiCheckPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [scopes, setScopes] = useState<Api.Auth.RegisteredScope[]>([])
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [scopes, setScopes] = useState<RegisteredScope[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number>(0)
   const [reauthLoading, setReauthLoading] = useState(false)
 

@@ -1,4 +1,23 @@
 import { requestJson } from '@/api/http-client'
+import type {
+  AssetsRequest,
+  AssetsResponse,
+  ContractDetailRequest,
+  ContractDetailResponse,
+  ContractsRequest,
+  ContractsResponse,
+  FittingsListResponse,
+  FittingsRequest,
+  ImplantsRequest,
+  ImplantsResponse,
+  RunTaskParams,
+  ShipRequest,
+  ShipResponse,
+  SkillRequest,
+  SkillResponse,
+  WalletRequest,
+  WalletResponse,
+} from '@/types/api/eve-info'
 
 interface ApiResponse<T> {
   code: number
@@ -14,16 +33,16 @@ function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
   return response.data
 }
 
-export async function fetchInfoWallet(data: Api.EveInfo.WalletRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.WalletResponse>>('/api/v1/info/wallet', {
+export async function fetchInfoWallet(data: WalletRequest) {
+  const response = await requestJson<ApiResponse<WalletResponse>>('/api/v1/info/wallet', {
     method: 'POST',
     body: JSON.stringify(data),
   })
   return assertSuccess(response, 'fetch wallet failed')
 }
 
-export async function fetchInfoSkills(data: Api.EveInfo.SkillRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.SkillResponse>>('/api/v1/info/skills', {
+export async function fetchInfoSkills(data: SkillRequest) {
+  const response = await requestJson<ApiResponse<SkillResponse>>('/api/v1/info/skills', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -31,8 +50,8 @@ export async function fetchInfoSkills(data: Api.EveInfo.SkillRequest) {
   return assertSuccess(response, 'fetch skills failed')
 }
 
-export async function fetchInfoShips(data: Api.EveInfo.ShipRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.ShipResponse>>('/api/v1/info/ships', {
+export async function fetchInfoShips(data: ShipRequest) {
+  const response = await requestJson<ApiResponse<ShipResponse>>('/api/v1/info/ships', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -40,8 +59,8 @@ export async function fetchInfoShips(data: Api.EveInfo.ShipRequest) {
   return assertSuccess(response, 'fetch ships failed')
 }
 
-export async function fetchInfoImplants(data: Api.EveInfo.ImplantsRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.ImplantsResponse>>('/api/v1/info/implants', {
+export async function fetchInfoImplants(data: ImplantsRequest) {
+  const response = await requestJson<ApiResponse<ImplantsResponse>>('/api/v1/info/implants', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -49,8 +68,8 @@ export async function fetchInfoImplants(data: Api.EveInfo.ImplantsRequest) {
   return assertSuccess(response, 'fetch implants failed')
 }
 
-export async function fetchInfoFittings(data: Api.EveInfo.FittingsRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.FittingsListResponse>>('/api/v1/info/fittings', {
+export async function fetchInfoFittings(data: FittingsRequest) {
+  const response = await requestJson<ApiResponse<FittingsListResponse>>('/api/v1/info/fittings', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -58,8 +77,8 @@ export async function fetchInfoFittings(data: Api.EveInfo.FittingsRequest) {
   return assertSuccess(response, 'fetch fittings failed')
 }
 
-export async function fetchInfoAssets(data: Api.EveInfo.AssetsRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.AssetsResponse>>('/api/v1/info/assets', {
+export async function fetchInfoAssets(data: AssetsRequest) {
+  const response = await requestJson<ApiResponse<AssetsResponse>>('/api/v1/info/assets', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -67,8 +86,8 @@ export async function fetchInfoAssets(data: Api.EveInfo.AssetsRequest) {
   return assertSuccess(response, 'fetch assets failed')
 }
 
-export async function fetchInfoContracts(data: Api.EveInfo.ContractsRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.ContractsResponse>>('/api/v1/info/contracts', {
+export async function fetchInfoContracts(data: ContractsRequest) {
+  const response = await requestJson<ApiResponse<ContractsResponse>>('/api/v1/info/contracts', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -76,8 +95,8 @@ export async function fetchInfoContracts(data: Api.EveInfo.ContractsRequest) {
   return assertSuccess(response, 'fetch contracts failed')
 }
 
-export async function fetchInfoContractDetail(data: Api.EveInfo.ContractDetailRequest) {
-  const response = await requestJson<ApiResponse<Api.EveInfo.ContractDetailResponse>>(
+export async function fetchInfoContractDetail(data: ContractDetailRequest) {
+  const response = await requestJson<ApiResponse<ContractDetailResponse>>(
     '/api/v1/info/contracts/detail',
     {
       method: 'POST',
@@ -88,7 +107,7 @@ export async function fetchInfoContractDetail(data: Api.EveInfo.ContractDetailRe
   return assertSuccess(response, 'fetch contract detail failed')
 }
 
-export async function runMyCharacterESIRefresh(data: Api.ESIRefresh.RunTaskParams) {
+export async function runMyCharacterESIRefresh(data: RunTaskParams) {
   const response = await requestJson<ApiResponse<{ message: string }>>('/api/v1/info/esi-refresh', {
     method: 'POST',
     body: JSON.stringify(data),

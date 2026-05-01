@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoShips } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import type { EveCharacter } from '@/types/api/auth'
+import type { ShipResponse } from '@/types/api/eve-info'
 
 export function InfoShipsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
   const [selectedGroup, setSelectedGroup] = useState('')
-  const [ships, setShips] = useState<Api.EveInfo.ShipResponse | null>(null)
+  const [ships, setShips] = useState<ShipResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false

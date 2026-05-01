@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoImplants } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import type { EveCharacter } from '@/types/api/auth'
+import type { ImplantsResponse } from '@/types/api/eve-info'
 
 function formatDateTime(value: string | null) {
   if (!value) return '-'
@@ -14,9 +16,9 @@ export function InfoImplantsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
-  const [implants, setImplants] = useState<Api.EveInfo.ImplantsResponse | null>(null)
+  const [implants, setImplants] = useState<ImplantsResponse | null>(null)
   const [isFatigueExpired, setIsFatigueExpired] = useState(true)
 
   useEffect(() => {
