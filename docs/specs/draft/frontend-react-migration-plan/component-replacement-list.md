@@ -70,3 +70,9 @@ source_of_truth:
 - [x] `skill-planning/personal-skill-plans` -> React `PersonalSkillPlansPage` + `SkillPlanManagementPage`（个人技能计划列表、创建、编辑、删除、排序）
 - [x] `operation/join` -> React `OperationJoinPage`（邀请入团、角色选择）
 - [x] `operation/pap` -> React `OperationPapPage`（个人 PAP、联盟 PAP）
+
+## 系统管理（D-2）
+
+- [x] `system/user` -> React `SystemUserPage`（用户列表、角色管理、ESI 限制开关）
+- [x] `system/task-manager` -> React `SystemTaskManagerPage`（任务、ESI 状态、历史）
+- [x] `system/wallet` -> React `SystemWalletPage`（钱包列表、流水、日志、分析）

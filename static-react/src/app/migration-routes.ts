@@ -38,6 +38,10 @@ export type AppPageType =
   | 'personal-skill-plans'
   | 'operation-join'
   | 'operation-pap'
+  | 'operation-fleets'
+  | 'operation-fleet-detail'
+  | 'operation-fleet-configs'
+  | 'operation-corporation-pap'
   | 'shop-browse'
   | 'shop-manage'
   | 'shop-order-manage'
@@ -45,6 +49,9 @@ export type AppPageType =
   | 'srp-apply'
   | 'srp-manage'
   | 'srp-prices'
+  | 'system-user'
+  | 'system-task-manager'
+  | 'system-wallet'
   | 'stub'
   | 'admin-demo'
 
@@ -194,8 +201,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'operation/fleets',
     titleKey: 'nav.operation.fleets',
-    pageType: 'stub',
-    stubTitle: 'Operation Fleets',
+    pageType: 'operation-fleets',
     batch: 'D',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
@@ -204,8 +210,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'operation/fleet-configs',
     titleKey: 'nav.operation.fleetConfigs',
-    pageType: 'stub',
-    stubTitle: 'Operation Fleet Configs',
+    pageType: 'operation-fleet-configs',
     batch: 'D',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
@@ -214,8 +219,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'operation/fleet-detail/:id',
     titleKey: 'nav.operation.fleetDetail',
-    pageType: 'stub',
-    stubTitle: 'Operation Fleet Detail',
+    pageType: 'operation-fleet-detail',
     batch: 'D',
     menuHidden: true,
     meta: { roles: ['super_admin', 'admin', 'fc', 'senior_fc'] },
@@ -223,8 +227,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'operation/corporation-pap',
     titleKey: 'nav.operation.corporationPap',
-    pageType: 'stub',
-    stubTitle: 'Operation Corporation PAP',
+    pageType: 'operation-corporation-pap',
     batch: 'D',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
@@ -505,8 +508,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/user',
     titleKey: 'nav.system.user',
-    pageType: 'stub',
-    stubTitle: 'System User',
+    pageType: 'system-user',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -521,8 +523,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/task-manager',
     titleKey: 'nav.system.taskManager',
-    pageType: 'stub',
-    stubTitle: 'System Task Manager',
+    pageType: 'system-task-manager',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -537,8 +538,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/wallet',
     titleKey: 'nav.system.wallet',
-    pageType: 'stub',
-    stubTitle: 'System Wallet',
+    pageType: 'system-wallet',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',

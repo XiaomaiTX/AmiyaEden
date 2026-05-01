@@ -20,6 +20,13 @@ import { InfoFittingsPage } from '@/pages/info-fittings-page'
 import { InfoAssetsPage } from '@/pages/info-assets-page'
 import { InfoContractsPage } from '@/pages/info-contracts-page'
 import { InfoEsiCheckPage } from '@/pages/info-esi-check-page'
+import { OperationCorporationPapPage } from '@/pages/operation-corporation-pap-page'
+import { OperationFleetConfigsPage } from '@/pages/operation-fleet-configs-page'
+import { OperationFleetDetailPage } from '@/pages/operation-fleet-detail-page'
+import { OperationFleetsPage } from '@/pages/operation-fleets-page'
+import { SystemTaskManagerPage } from '@/pages/system-task-manager-page'
+import { SystemUserPage } from '@/pages/system-user-page'
+import { SystemWalletPage } from '@/pages/system-wallet-page'
 import { TicketCreatePage } from '@/pages/ticket-create-page'
 import { TicketManagementPage } from '@/pages/ticket-management-page'
 import { TicketCategoriesPage } from '@/pages/ticket-categories-page'
@@ -128,6 +135,14 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <OperationJoinPage />
     case 'operation-pap':
       return <OperationPapPage />
+    case 'operation-fleets':
+      return <OperationFleetsPage />
+    case 'operation-fleet-detail':
+      return <OperationFleetDetailPage />
+    case 'operation-fleet-configs':
+      return <OperationFleetConfigsPage />
+    case 'operation-corporation-pap':
+      return <OperationCorporationPapPage />
     case 'shop-browse':
       return <ShopBrowsePage />
     case 'shop-manage':
@@ -136,6 +151,12 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <ShopOrderManagePage />
     case 'shop-wallet':
       return <ShopWalletPage />
+    case 'system-task-manager':
+      return <SystemTaskManagerPage />
+    case 'system-user':
+      return <SystemUserPage />
+    case 'system-wallet':
+      return <SystemWalletPage />
     case 'srp-apply':
       return <SrpApplyPage />
     case 'srp-manage':
