@@ -32,6 +32,11 @@ export async function fetchMyCharacters() {
   return assertSuccess(response, 'fetch characters failed') ?? []
 }
 
+export async function fetchEveSSOScopes() {
+  const response = await requestJson<ApiResponse<Api.Auth.RegisteredScope[]>>('/api/v1/sso/eve/scopes')
+  return assertSuccess(response, 'fetch scopes failed') ?? []
+}
+
 export async function fetchGetUserInfo() {
   const response = await requestJson<ApiResponse<Api.Auth.MeResponse>>('/api/v1/me')
   const data = assertSuccess(response, 'fetch current user failed')

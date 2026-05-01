@@ -11,7 +11,7 @@ export async function fetchDashboard() {
     method: 'POST',
   })
 
-  if (response.code !== 0) {
+  if (response.code !== 0 && response.code !== 200) {
     throw new Error(response.msg || 'dashboard request failed')
   }
 
