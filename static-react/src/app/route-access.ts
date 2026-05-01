@@ -7,6 +7,8 @@ export interface RouteAccessMeta {
   login?: boolean
   roles?: string[]
   authList?: RouteAuthMetaItem[]
+  requiresNewbro?: boolean
+  requiresMentorMenteeEligibility?: boolean
 }
 
 export function hasRouteRolePermission(userRoles: string[], requiredRoles: string[] = []) {

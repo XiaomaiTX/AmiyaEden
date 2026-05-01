@@ -1,17 +1,22 @@
-﻿import { HeaderBar } from '@/layout/header-bar'
+import { AppSidebar } from '@/components/app-sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { HeaderBar } from '@/layout/header-bar'
 import { GlobalHost } from '@/layout/global-host'
 import { PageContent } from '@/layout/page-content'
-import { SidebarMenu } from '@/layout/sidebar-menu'
+import { usePreferenceStore } from '@/stores'
 
 export function AppShell() {
+  const collapsed = usePreferenceStore((state) => state.sidebarCollapsed)
+  const setSidebarCollapsed = usePreferenceStore((state) => state.setSidebarCollapsed)
+
   return (
-    <div className="flex min-h-screen bg-background">
-      <SidebarMenu />
-      <div className="flex min-w-0 flex-1 flex-col">
+    <SidebarProvider open={!collapsed} onOpenChange={(open) => setSidebarCollapsed(!open)}>
+      <AppSidebar />
+      <SidebarInset>
         <HeaderBar />
         <PageContent />
-      </div>
+      </SidebarInset>
       <GlobalHost />
-    </div>
+    </SidebarProvider>
   )
 }

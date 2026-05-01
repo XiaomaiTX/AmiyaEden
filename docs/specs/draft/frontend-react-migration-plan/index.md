@@ -16,7 +16,8 @@ source_of_truth:
 
 ## 草案目标
 
-- 迁移策略：`双栈渐进 + Hash 路由 + 先保真后优化 UI`
+- 迁移策略：`独立 React 重建 + Hash 路由 + 先保真后优化 UI`
+- 替换策略：`完成全部模块迁移与回归后，React 前端直接替换现有 Vue 前端`
 - 目标技术栈：`Vite + React + TypeScript + React Router + shadcn/ui + Tailwind + Zustand`
 - 当前前端现状：`Vue3 + Vue Router + Pinia + Element Plus + vue-i18n`
 
@@ -24,7 +25,7 @@ source_of_truth:
 
 - 迁移总清单：`./todolist.md`
 - 组件替换列表：`./component-replacement-list.md`
-- Vue/React 初期共存迁移清单：`./coexistence-migration-todo.md`
+- 独立 React 替换迁移清单：`./coexistence-migration-todo.md`
 - API 类型契约迁移方案：`./api-contract-migration-plan.md`
 
 ## 使用约定
@@ -32,6 +33,8 @@ source_of_truth:
 - 入口页只维护范围、决策和链接，不维护长清单。
 - 所有可执行项在子文档里维护，避免单文件过长和更新冲突。
 - 子文档状态变更时同步更新 `last_reviewed`。
+- React 迁移的 i18n 必须对齐旧 Vue 前端的实际翻译内容，尤其是人物管理、招新/直推、军团 KM、锁定提示等专有场景；只改调用形式不算完成对齐。
+- 允许在 React 运行时补齐 Vue 既有的 `@:引用` 和变量插值能力，但翻译文本本身要以旧 Vue 语义和措辞为准，不得自行简化成通用描述。
 
 ## 明确声明
 

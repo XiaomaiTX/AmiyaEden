@@ -13,7 +13,7 @@ export function UnauthorizedBridge() {
 
   useEffect(() => {
     return subscribeUnauthorized((event) => {
-      if (location.pathname === '/login') {
+      if (location.pathname === '/auth/login' || location.pathname === '/login') {
         return
       }
 
@@ -22,9 +22,10 @@ export function UnauthorizedBridge() {
 
       const currentPath = `${location.pathname}${location.search}${location.hash}`
       const redirect = event.redirectTo ?? currentPath
-      navigate(`/login?redirect=${encodeURIComponent(redirect)}`, { replace: true })
+      navigate(`/auth/login?redirect=${encodeURIComponent(redirect)}`, { replace: true })
     })
   }, [clearSession, locale, location.hash, location.pathname, location.search, navigate])
 
   return null
 }
+

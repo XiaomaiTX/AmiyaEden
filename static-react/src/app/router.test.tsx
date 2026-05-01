@@ -8,27 +8,43 @@ describe('router auth and route meta access flow', () => {
   beforeEach(() => {
     useSessionStore.setState({
       isLoggedIn: false,
+      accessToken: null,
       characterId: null,
       characterName: null,
       roles: [],
       authList: [],
+      isCurrentlyNewbro: false,
+      isMentorMenteeEligible: false,
       hydratedAt: null,
     })
   })
 
-  test('redirects to login when visiting protected route without session', () => {
+  test('redirects to auth login when visiting protected route without session', () => {
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/'],
     })
 
     render(<RouterProvider router={router} />)
 
-    expect(screen.getByText(/EVE SSO/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
+  })
+
+  test('redirects /login to /auth/login', async () => {
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/login'],
+    })
+
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
+    })
   })
 
   test('renders home page when session is logged in', () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
+      accessToken: 'token-123',
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
@@ -47,6 +63,7 @@ describe('router auth and route meta access flow', () => {
   test('redirects to 403 when role does not match route meta roles', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
+      accessToken: 'token-123',
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['guest'],
@@ -64,9 +81,31 @@ describe('router auth and route meta access flow', () => {
     })
   })
 
+  test('applies batch A role gate on /dashboard/npc-kills', async () => {
+    useSessionStore.getState().setSessionSnapshot({
+      isLoggedIn: true,
+      accessToken: 'token-123',
+      characterId: 1001,
+      characterName: 'Amiya',
+      roles: ['member'],
+      authList: [],
+    })
+
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/dashboard/npc-kills'],
+    })
+
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('403 Forbidden')).toBeInTheDocument()
+    })
+  })
+
   test('consumes route authList meta on admin route', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
+      accessToken: 'token-123',
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
@@ -86,9 +125,10 @@ describe('router auth and route meta access flow', () => {
     expect(useSessionStore.getState().authList).toEqual(['approve_order', 'edit_exchange_rate'])
   })
 
-  test('navigates to login when unauthorized event is dispatched', async () => {
+  test('navigates to auth login when unauthorized event is dispatched', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
+      accessToken: 'token-123',
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
@@ -103,7 +143,7 @@ describe('router auth and route meta access flow', () => {
     dispatchUnauthorized({ reason: 'manual' })
 
     await waitFor(() => {
-      expect(screen.getByText(/EVE SSO/)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
     })
   })
 
@@ -115,6 +155,49 @@ describe('router auth and route meta access flow', () => {
     render(<RouterProvider router={router} />)
 
     expect(screen.getByText('404 Not Found')).toBeInTheDocument()
+  })
+
+  test('renders migration stub for unimplemented route', async () => {
+    useSessionStore.getState().setSessionSnapshot({
+      isLoggedIn: true,
+      accessToken: 'token-123',
+      characterId: 1001,
+      characterName: 'Amiya',
+      roles: ['admin'],
+      authList: [],
+    })
+
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/operation/fleets'],
+    })
+
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Operation Fleets')).toBeInTheDocument()
+    })
+  })
+
+  test('applies requiresNewbro constraint', async () => {
+    useSessionStore.getState().setSessionSnapshot({
+      isLoggedIn: true,
+      accessToken: 'token-123',
+      characterId: 1001,
+      characterName: 'Amiya',
+      roles: ['member'],
+      authList: [],
+      isCurrentlyNewbro: false,
+    })
+
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/newbro/select-captain'],
+    })
+
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('403 Forbidden')).toBeInTheDocument()
+    })
   })
 })
 
