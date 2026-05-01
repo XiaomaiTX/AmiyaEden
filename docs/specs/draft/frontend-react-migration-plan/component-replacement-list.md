@@ -76,3 +76,10 @@ source_of_truth:
 - [x] `system/user` -> React `SystemUserPage`（用户列表、角色管理、ESI 限制开关）
 - [x] `system/task-manager` -> React `SystemTaskManagerPage`（任务、ESI 状态、历史）
 - [x] `system/wallet` -> React `SystemWalletPage`（钱包列表、流水、日志、分析）
+- [x] `system/audit` -> React `SystemAuditPage`（审计日志、筛选、详情、导出占位）
+- [x] `system/pap-exchange` -> React `SystemPAPExchangePage`（PAP 兑换配置、费率、FC 工资）
+- [x] `system/pap` -> React `SystemPAPPage`（联盟 PAP 抓取、导入、结算）
+- [x] `system/auto-role` -> React `SystemAutoRolePage`（ESI 角色映射、头衔映射、同步触发）
+- [x] `system/user-center` -> React `SystemUserCenterPage`（本地资料草稿、头像、密码、退出占位）
+- [x] `system/webhook` -> React `SystemWebhookPage`（Webhook 配置、测试发送）
+- [x] `system/basic-config` -> React `SystemBasicConfigPage`（基础配置、可选军团、SDE 配置）

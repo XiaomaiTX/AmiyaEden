@@ -46,6 +46,13 @@ export type AppPageType =
   | 'shop-manage'
   | 'shop-order-manage'
   | 'shop-wallet'
+  | 'system-audit'
+  | 'system-pap-exchange'
+  | 'system-pap'
+  | 'system-auto-role'
+  | 'system-user-center'
+  | 'system-webhook'
+  | 'system-basic-config'
   | 'srp-apply'
   | 'srp-manage'
   | 'srp-prices'
@@ -553,8 +560,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/audit',
     titleKey: 'nav.system.audit',
-    pageType: 'stub',
-    stubTitle: 'System Audit',
+    pageType: 'system-audit',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -566,8 +572,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/pap-exchange',
     titleKey: 'nav.system.papExchange',
-    pageType: 'stub',
-    stubTitle: 'System PAP Exchange',
+    pageType: 'system-pap-exchange',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -579,8 +584,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/pap',
     titleKey: 'nav.system.pap',
-    pageType: 'stub',
-    stubTitle: 'System PAP',
+    pageType: 'system-pap',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -592,8 +596,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/auto-role',
     titleKey: 'nav.system.autoRole',
-    pageType: 'stub',
-    stubTitle: 'System Auto Role',
+    pageType: 'system-auto-role',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -602,16 +605,14 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/user-center',
     titleKey: 'nav.system.userCenter',
-    pageType: 'stub',
-    stubTitle: 'System User Center',
+    pageType: 'system-user-center',
     batch: 'D',
     menuHidden: true,
   },
   {
     path: 'system/webhook',
     titleKey: 'nav.system.webhook',
-    pageType: 'stub',
-    stubTitle: 'System Webhook',
+    pageType: 'system-webhook',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
@@ -620,8 +621,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'system/basic-config',
     titleKey: 'nav.system.basicConfig',
-    pageType: 'stub',
-    stubTitle: 'System Basic Config',
+    pageType: 'system-basic-config',
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',

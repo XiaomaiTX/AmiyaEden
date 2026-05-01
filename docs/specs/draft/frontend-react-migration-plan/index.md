@@ -39,7 +39,7 @@ source_of_truth:
 - `C-1 shop` 已在 React 侧落地，后续波次继续推进 `skill-planning/*` 与 `operation/*`。
 - `C-2` 已完成 `skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap` 的 React 落地。
 - `D-1` 已完成 `operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap` 的 React 落地。
-- `D-2` 已完成 `system/user`、`system/task-manager`、`system/wallet` 的 React 落地。
+- `D-2` 已完成 `system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config` 的 React 落地。
 
 ## 明确声明
 
