@@ -34,9 +34,18 @@ import { NewbroMentorPage } from '@/pages/newbro-mentor-page'
 import { NewbroManagePage } from '@/pages/newbro-manage-page'
 import { NewbroMentorManagePage } from '@/pages/newbro-mentor-manage-page'
 import { NewbroRecruitLinkPage } from '@/pages/newbro-recruit-link-page'
+import { OperationJoinPage } from '@/pages/operation-join-page'
+import { OperationPapPage } from '@/pages/operation-pap-page'
+import { PersonalSkillPlansPage } from '@/pages/personal-skill-plans-page'
+import { SkillPlanCompletionCheckPage } from '@/pages/skill-plan-completion-check-page'
+import { SkillPlansPage } from '@/pages/skill-plans-page'
 import { WelfareMyPage } from '@/pages/welfare-my-page'
 import { WelfareApprovalPage } from '@/pages/welfare-approval-page'
 import { WelfareSettingsPage } from '@/pages/welfare-settings-page'
+import { ShopBrowsePage } from '@/pages/shop-browse-page'
+import { ShopManagePage } from '@/pages/shop-manage-page'
+import { ShopOrderManagePage } from '@/pages/shop-order-manage-page'
+import { ShopWalletPage } from '@/pages/shop-wallet-page'
 import { SrpApplyPage } from '@/pages/srp-apply-page'
 import { SrpManagePage } from '@/pages/srp-manage-page'
 import { SrpPricesPage } from '@/pages/srp-prices-page'
@@ -109,6 +118,24 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <NewbroMentorManagePage />
     case 'newbro-recruit-link':
       return <NewbroRecruitLinkPage />
+    case 'skill-plan-completion-check':
+      return <SkillPlanCompletionCheckPage />
+    case 'skill-plans':
+      return <SkillPlansPage />
+    case 'personal-skill-plans':
+      return <PersonalSkillPlansPage />
+    case 'operation-join':
+      return <OperationJoinPage />
+    case 'operation-pap':
+      return <OperationPapPage />
+    case 'shop-browse':
+      return <ShopBrowsePage />
+    case 'shop-manage':
+      return <ShopManagePage />
+    case 'shop-order-manage':
+      return <ShopOrderManagePage />
+    case 'shop-wallet':
+      return <ShopWalletPage />
     case 'srp-apply':
       return <SrpApplyPage />
     case 'srp-manage':

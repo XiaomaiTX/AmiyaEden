@@ -33,6 +33,15 @@ export type AppPageType =
   | 'newbro-manage'
   | 'newbro-mentor-manage'
   | 'newbro-recruit-link'
+  | 'skill-plan-completion-check'
+  | 'skill-plans'
+  | 'personal-skill-plans'
+  | 'operation-join'
+  | 'operation-pap'
+  | 'shop-browse'
+  | 'shop-manage'
+  | 'shop-order-manage'
+  | 'shop-wallet'
   | 'srp-apply'
   | 'srp-manage'
   | 'srp-prices'
@@ -224,8 +233,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'operation/pap',
     titleKey: 'nav.operation.pap',
-    pageType: 'stub',
-    stubTitle: 'Operation PAP',
+    pageType: 'operation-pap',
     batch: 'C',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
@@ -234,8 +242,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'operation/join',
     titleKey: 'nav.operation.join',
-    pageType: 'stub',
-    stubTitle: 'Operation Join Fleet',
+    pageType: 'operation-join',
     batch: 'C',
     menuHidden: true,
     meta: { login: true },
@@ -244,8 +251,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'skill-planning/completion-check',
     titleKey: 'nav.skillPlanning.completionCheck',
-    pageType: 'stub',
-    stubTitle: 'Skill Planning Completion Check',
+    pageType: 'skill-plan-completion-check',
     batch: 'C',
     menuGroup: 'nav.group.skillPlanning',
     menuIcon: 'skillPlanning',
@@ -254,8 +260,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'skill-planning/skill-plans',
     titleKey: 'nav.skillPlanning.skillPlans',
-    pageType: 'stub',
-    stubTitle: 'Skill Planning Skill Plans',
+    pageType: 'skill-plans',
     batch: 'C',
     menuGroup: 'nav.group.skillPlanning',
     menuIcon: 'skillPlanning',
@@ -264,8 +269,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'skill-planning/personal-skill-plans',
     titleKey: 'nav.skillPlanning.personalSkillPlans',
-    pageType: 'stub',
-    stubTitle: 'Skill Planning Personal Skill Plans',
+    pageType: 'personal-skill-plans',
     batch: 'C',
     menuGroup: 'nav.group.skillPlanning',
     menuIcon: 'skillPlanning',
@@ -367,8 +371,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'shop/browse',
     titleKey: 'nav.shop.browse',
-    pageType: 'stub',
-    stubTitle: 'Shop Browse',
+    pageType: 'shop-browse',
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
@@ -377,38 +380,29 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'shop/manage',
     titleKey: 'nav.shop.manage',
-    pageType: 'stub',
-    stubTitle: 'Shop Manage',
+    pageType: 'shop-manage',
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
-    meta: {
-      roles: ['super_admin', 'admin'],
-      authList: [
-        { title: '新增商品', authMark: 'add_product' },
-        { title: '编辑商品', authMark: 'edit_product' },
-        { title: '删除商品', authMark: 'delete_product' },
-      ],
-    },
+    meta: { roles: ['super_admin', 'admin'], authList: [
+      { title: '新增商品', authMark: 'add_product' },
+      { title: '编辑商品', authMark: 'edit_product' },
+      { title: '删除商品', authMark: 'delete_product' },
+    ] },
   },
   {
     path: 'shop/order-manage',
     titleKey: 'nav.shop.orderManage',
-    pageType: 'stub',
-    stubTitle: 'Shop Order Manage',
+    pageType: 'shop-order-manage',
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
-    meta: {
-      roles: ['super_admin', 'admin', 'shop_order_manage'],
-      authList: [{ title: '审批订单', authMark: 'approve_order' }],
-    },
+    meta: { roles: ['super_admin', 'admin', 'shop_order_manage'], authList: [{ title: '审批订单', authMark: 'approve_order' }] },
   },
   {
     path: 'shop/wallet',
     titleKey: 'nav.shop.wallet',
-    pageType: 'stub',
-    stubTitle: 'Shop Wallet',
+    pageType: 'shop-wallet',
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
