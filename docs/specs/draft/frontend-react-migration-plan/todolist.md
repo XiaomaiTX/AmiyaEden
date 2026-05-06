@@ -74,8 +74,8 @@ source_of_truth:
 - [x] 批次 D 当前已完成：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
 - [x] 批次 D 当前已完成：`system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config`
 - [ ] 批次 D 回归通过：多角色权限矩阵、长链路事务、跨页面状态一致
-- [ ] 收尾批次（边缘与遗留）完成
-- [ ] 收尾批次包含模块：`auth/*`（仅保留 EVE SSO 所需页面）、`outside/*`、`hall-of-fame/manage`、`hall-of-fame/current-manage`
+- [x] 收尾批次（边缘与遗留）完成
+- [x] 收尾批次包含模块：`auth/*`（仅保留 EVE SSO 所需页面）、`outside/*`、`hall-of-fame/manage`、`hall-of-fame/current-manage`
 - [ ] 收尾批次回归通过：历史入口兼容策略与替换后可访问性验证
 
 ### 页面迁移完成定义（详细 DoD）
@@ -102,7 +102,8 @@ source_of_truth:
 
 ## 暂缓项
 
-- [ ] `hall-of-fame/temple` 本轮取消实现，React 侧仅保留 stub 占位，等待后续重构单独立项
+- [x] `hall-of-fame/temple` 本轮取消实现，React 侧仅保留 stub 占位，等待后续重构单独立项
+- [x] `hall-of-fame/manage`、`hall-of-fame/current-manage` 本轮仅保留 stub 占位，stub 文案标记"本轮不实现"
 
 ## P1 替换发布与回切
  
