@@ -1,4 +1,4 @@
-﻿---
+---
 status: draft
 doc_type: draft
 owner: engineering
@@ -35,6 +35,7 @@ source_of_truth:
 - 子文档状态变更时同步更新 `last_reviewed`。
 - React 迁移的 i18n 必须对齐旧 Vue 前端的实际翻译内容，尤其是人物管理、招新/直推、军团 KM、锁定提示等专有场景；只改调用形式不算完成对齐。
 - 允许在 React 运行时补齐 Vue 既有的 `@:引用` 和变量插值能力，但翻译文本本身要以旧 Vue 语义和措辞为准，不得自行简化成通用描述。
+- `hall-of-fame/temple` 当前取消实现，React 侧仅保留 stub 占位；后续重构另起范围后再恢复迁移。
 
 ## 明确声明
 
