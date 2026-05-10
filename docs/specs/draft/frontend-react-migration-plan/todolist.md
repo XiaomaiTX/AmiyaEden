@@ -35,6 +35,8 @@ source_of_truth:
 ### 模块分批顺序（详细）
 
 - [x] 产出“迁移范围基线清单”：冻结 `static/src/views` 页面清单，标注 owner、优先级、依赖 API、权限码（见 `./migration-scope-baseline.md`）
+- [x] `C-1` 商店首波完成：`shop/browse`、`shop/manage`、`shop/order-manage`、`shop/wallet`
+- [x] `C-2` 技能规划与操作首波完成：`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap`
 - [x] 批次 A 路由骨架已在 React 注册（页面为迁移占位实现，待逐页补业务逻辑）
 - [x] 批次 A 页面进度：`dashboard/console` 已完成 React 真实页迁移（其余页面待迁移）
 - [x] 批次 A 页面进度：`dashboard/characters` 已完成 React 真实页迁移（人物资料、直推、绑定/解绑、主人物切换）
@@ -65,6 +67,7 @@ source_of_truth:
 - [ ] 批次 C（中高耦合业务页）路由与页面迁移完成
 - [ ] 批次 C 包含模块：`shop/*`、`skill-planning/*`、`operation/join`、`operation/pap`
 - [ ] 批次 C 回归通过：复杂筛选、批量操作、导入导出、弹窗编辑一致
+- [x] 批次 C 当前已完成：`shop/*`、`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap`
 - [ ] 批次 D（高耦合核心页）路由与页面迁移完成
 - [ ] 批次 D 包含模块：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`、`system/*`
 - [ ] 批次 D 回归通过：多角色权限矩阵、长链路事务、跨页面状态一致

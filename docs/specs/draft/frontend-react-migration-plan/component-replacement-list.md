@@ -54,3 +54,19 @@ source_of_truth:
 - [ ] 消息与确认框（`ElMessage`/`ElMessageBox`）
 - [ ] 表格与分页能力（对齐现有 `ArtTable` 使用规范）
 - [ ] 日期、上传、富文本、图表、拖拽等高耦合组件
+
+## 商店迁移（C-1）
+
+- [x] `shop/browse` -> React `ShopBrowsePage`（商品卡片、购买弹窗、我的订单）
+- [x] `shop/manage` -> React `ShopManagePage`（筛选、商品 CRUD、分页）
+- [x] `shop/order-manage` -> React `ShopOrderManagePage`（待发放 / 历史订单、审核弹窗）
+- [x] `shop/wallet` -> React `ShopWalletPage`（余额卡片、流水表格、分页）
+- [ ] SDE 搜索与商品图片自动填充仍留在后续波次处理
+
+## 技能规划与操作（C-2）
+
+- [x] `skill-planning/completion-check` -> React `SkillPlanCompletionCheckPage`（人物选择、计划选择、完成度检查）
+- [x] `skill-planning/skill-plans` -> React `SkillPlansPage` + `SkillPlanManagementPage`（军团技能计划列表、创建、编辑、删除、排序）
+- [x] `skill-planning/personal-skill-plans` -> React `PersonalSkillPlansPage` + `SkillPlanManagementPage`（个人技能计划列表、创建、编辑、删除、排序）
+- [x] `operation/join` -> React `OperationJoinPage`（邀请入团、角色选择）
+- [x] `operation/pap` -> React `OperationPapPage`（个人 PAP、联盟 PAP）
