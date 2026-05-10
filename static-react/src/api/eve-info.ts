@@ -6,17 +6,20 @@ interface ApiResponse<T> {
   data: T
 }
 
+function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
+  if (response.code !== 0 && response.code !== 200) {
+    throw new Error(response.msg || fallbackMessage)
+  }
+
+  return response.data
+}
+
 export async function fetchInfoWallet(data: Api.EveInfo.WalletRequest) {
   const response = await requestJson<ApiResponse<Api.EveInfo.WalletResponse>>('/api/v1/info/wallet', {
     method: 'POST',
     body: JSON.stringify(data),
   })
-
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'fetch wallet failed')
-  }
-
-  return response.data
+  return assertSuccess(response, 'fetch wallet failed')
 }
 
 export async function fetchInfoSkills(data: Api.EveInfo.SkillRequest) {
@@ -25,11 +28,7 @@ export async function fetchInfoSkills(data: Api.EveInfo.SkillRequest) {
     body: JSON.stringify(data),
   })
 
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'fetch skills failed')
-  }
-
-  return response.data
+  return assertSuccess(response, 'fetch skills failed')
 }
 
 export async function fetchInfoShips(data: Api.EveInfo.ShipRequest) {
@@ -38,11 +37,7 @@ export async function fetchInfoShips(data: Api.EveInfo.ShipRequest) {
     body: JSON.stringify(data),
   })
 
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'fetch ships failed')
-  }
-
-  return response.data
+  return assertSuccess(response, 'fetch ships failed')
 }
 
 export async function fetchInfoImplants(data: Api.EveInfo.ImplantsRequest) {
@@ -51,11 +46,7 @@ export async function fetchInfoImplants(data: Api.EveInfo.ImplantsRequest) {
     body: JSON.stringify(data),
   })
 
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'fetch implants failed')
-  }
-
-  return response.data
+  return assertSuccess(response, 'fetch implants failed')
 }
 
 export async function fetchInfoFittings(data: Api.EveInfo.FittingsRequest) {
@@ -64,11 +55,7 @@ export async function fetchInfoFittings(data: Api.EveInfo.FittingsRequest) {
     body: JSON.stringify(data),
   })
 
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'fetch fittings failed')
-  }
-
-  return response.data
+  return assertSuccess(response, 'fetch fittings failed')
 }
 
 export async function fetchInfoAssets(data: Api.EveInfo.AssetsRequest) {
@@ -77,11 +64,28 @@ export async function fetchInfoAssets(data: Api.EveInfo.AssetsRequest) {
     body: JSON.stringify(data),
   })
 
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'fetch assets failed')
-  }
+  return assertSuccess(response, 'fetch assets failed')
+}
 
-  return response.data
+export async function fetchInfoContracts(data: Api.EveInfo.ContractsRequest) {
+  const response = await requestJson<ApiResponse<Api.EveInfo.ContractsResponse>>('/api/v1/info/contracts', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+  return assertSuccess(response, 'fetch contracts failed')
+}
+
+export async function fetchInfoContractDetail(data: Api.EveInfo.ContractDetailRequest) {
+  const response = await requestJson<ApiResponse<Api.EveInfo.ContractDetailResponse>>(
+    '/api/v1/info/contracts/detail',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  )
+
+  return assertSuccess(response, 'fetch contract detail failed')
 }
 
 export async function runMyCharacterESIRefresh(data: Api.ESIRefresh.RunTaskParams) {
@@ -90,9 +94,5 @@ export async function runMyCharacterESIRefresh(data: Api.ESIRefresh.RunTaskParam
     body: JSON.stringify(data),
   })
 
-  if (response.code !== 0) {
-    throw new Error(response.msg || 'trigger esi refresh failed')
-  }
-
-  return response.data
+  return assertSuccess(response, 'trigger esi refresh failed')
 }
