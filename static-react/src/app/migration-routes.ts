@@ -59,6 +59,8 @@ export type AppPageType =
   | 'system-user'
   | 'system-task-manager'
   | 'system-wallet'
+  | 'recruit-landing'
+  | 'iframe'
   | 'stub'
   | 'admin-demo'
 
@@ -68,6 +70,7 @@ export interface AppRouteSpec {
   pageType: AppPageType
   batch?: MigrationBatch
   stubTitle?: string
+  stubNote?: string
   menuGroup?: string
   menuIcon?: string
   menuHidden?: boolean
@@ -633,7 +636,8 @@ export const appRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.hallOfFame.temple',
     pageType: 'stub',
     stubTitle: 'Hall Of Fame Temple',
-    batch: 'A',
+    stubNote: '本轮不实现 — Hall of Fame 待后续独立重构立项',
+    batch: 'Tail',
     menuHidden: true,
     meta: { login: true },
   },
@@ -642,15 +646,17 @@ export const appRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.hallOfFame.manage',
     pageType: 'stub',
     stubTitle: 'Hall Of Fame Manage',
+    stubNote: '本轮不实现 — Hall of Fame 待后续独立重构立项',
     batch: 'Tail',
     menuHidden: true,
     meta: { roles: ['super_admin', 'admin'] },
   },
   {
     path: 'hall-of-fame/current-manage',
-    titleKey: 'nav.hallOfFame.currentManage',
+    titleKey: 'nav.hallOfFame.manage',
     pageType: 'stub',
     stubTitle: 'Hall Of Fame Current Manage',
+    stubNote: '本轮不实现 — Hall of Fame 待后续独立重构立项',
     batch: 'Tail',
     menuHidden: true,
     meta: { login: true },
