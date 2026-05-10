@@ -4,6 +4,51 @@ import { appRoutes } from '@/app/router'
 import { dispatchUnauthorized } from '@/auth'
 import { useSessionStore } from '@/stores'
 
+vi.mock('@/api/auth', async () => {
+  const actual = await vi.importActual<typeof import('@/api/auth')>('@/api/auth')
+  return {
+    ...actual,
+    fetchMyCharacters: vi.fn().mockResolvedValue([]),
+  }
+})
+
+vi.mock('@/api/fleet', async () => {
+  const actual = await vi.importActual<typeof import('@/api/fleet')>('@/api/fleet')
+  return {
+    ...actual,
+    fetchFleetList: vi.fn().mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 }),
+    fetchMyPapLogs: vi.fn().mockResolvedValue([]),
+    fetchFleetInvites: vi.fn().mockResolvedValue([]),
+    fetchMembersWithPap: vi.fn().mockResolvedValue({
+      list: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
+    }),
+    fetchCorporationPapSummary: vi.fn().mockResolvedValue({
+      list: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
+      overview: {
+        filtered_pap_total: 0,
+        filtered_strat_op_total: 0,
+        all_pap_total: 0,
+        filtered_user_count: 0,
+        period: 'last_month',
+      },
+    }),
+  }
+})
+
+vi.mock('@/api/fleet-config', async () => {
+  const actual = await vi.importActual<typeof import('@/api/fleet-config')>('@/api/fleet-config')
+  return {
+    ...actual,
+    fetchFleetConfigList: vi.fn().mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 }),
+  }
+})
+
 describe('router auth and route meta access flow', () => {
   beforeEach(() => {
     useSessionStore.setState({
@@ -157,7 +202,7 @@ describe('router auth and route meta access flow', () => {
     expect(screen.getByText('404 Not Found')).toBeInTheDocument()
   })
 
-  test('renders migration stub for unimplemented route', async () => {
+  test('renders operation fleets page', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
       accessToken: 'token-123',
@@ -174,7 +219,7 @@ describe('router auth and route meta access flow', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Operation Fleets')).toBeInTheDocument()
+      expect(screen.getByText('舰队管理')).toBeInTheDocument()
     })
   })
 

@@ -68,8 +68,11 @@ source_of_truth:
 - [ ] 批次 C 包含模块：`shop/*`、`skill-planning/*`、`operation/join`、`operation/pap`
 - [ ] 批次 C 回归通过：复杂筛选、批量操作、导入导出、弹窗编辑一致
 - [x] 批次 C 当前已完成：`shop/*`、`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap`
-- [ ] 批次 D（高耦合核心页）路由与页面迁移完成
-- [ ] 批次 D 包含模块：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`、`system/*`
+- [x] 批次 D（高耦合核心页）路由与页面迁移完成
+- [x] 批次 D 包含模块：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
+- [x] 批次 D 包含模块：`system/*`
+- [x] 批次 D 当前已完成：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
+- [x] 批次 D 当前已完成：`system/user`、`system/task-manager`、`system/wallet`
 - [ ] 批次 D 回归通过：多角色权限矩阵、长链路事务、跨页面状态一致
 - [ ] 收尾批次（边缘与遗留）完成
 - [ ] 收尾批次包含模块：`auth/*`（仅保留 EVE SSO 所需页面）、`outside/*`、`hall-of-fame/manage`、`hall-of-fame/current-manage`
