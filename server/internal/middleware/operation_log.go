@@ -38,7 +38,7 @@ func OperationLog() gin.HandlerFunc {
 		latencyMs := time.Since(start).Milliseconds()
 
 		// 操作人信息（由 JWT 中间件写入 context，无鉴权时为零值）
-		userID, _ := c.Get("user_id")
+		userID, _ := c.Get("userID")
 		username, _ := c.Get("username")
 
 		uid, _ := userID.(uint)

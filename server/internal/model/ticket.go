@@ -26,8 +26,8 @@ type Ticket struct {
 	HandledBy         *uint      `gorm:"index" json:"handled_by,omitempty"`
 	HandledAt         *time.Time `json:"handled_at,omitempty"`
 	ClosedAt          *time.Time `json:"closed_at,omitempty"`
-	UserNickname      string     `gorm:"-" json:"user_nickname,omitempty"`
-	HandledByNickname string     `gorm:"-" json:"handled_by_nickname,omitempty"`
+	UserNickname      string     `gorm:"->;column:user_nickname" json:"user_nickname,omitempty"`
+	HandledByNickname string     `gorm:"->;column:handled_by_nickname" json:"handled_by_nickname,omitempty"`
 }
 
 func (Ticket) TableName() string {
@@ -53,7 +53,7 @@ type TicketReply struct {
 	UserID       uint   `gorm:"not null;index" json:"user_id"`
 	Content      string `gorm:"type:text;not null" json:"content"`
 	IsInternal   bool   `gorm:"not null;default:false" json:"is_internal"`
-	UserNickname string `gorm:"-" json:"user_nickname,omitempty"`
+	UserNickname string `gorm:"->;column:user_nickname" json:"user_nickname,omitempty"`
 }
 
 func (TicketReply) TableName() string {
@@ -67,7 +67,7 @@ type TicketStatusHistory struct {
 	ToStatus          string    `gorm:"size:20;not null" json:"to_status"`
 	ChangedBy         uint      `gorm:"not null" json:"changed_by"`
 	ChangedAt         time.Time `gorm:"autoCreateTime" json:"changed_at"`
-	ChangedByNickname string    `gorm:"-" json:"changed_by_nickname,omitempty"`
+	ChangedByNickname string    `gorm:"->;column:changed_by_nickname" json:"changed_by_nickname,omitempty"`
 }
 
 func (TicketStatusHistory) TableName() string {

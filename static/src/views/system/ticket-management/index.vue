@@ -46,13 +46,11 @@
 </template>
 
 <script setup lang="ts">
-  import {
-    adminListTickets,
-    adminUpdateTicketPriority,
-    adminUpdateTicketStatus
-  } from '@/api/ticket'
+  import { adminListTickets } from '@/api/ticket'
+  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
+  import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
   import { useTable } from '@/hooks/core/useTable'
-  import { ElButton, ElMessage, ElOption, ElSelect } from 'element-plus'
+  import { ElButton, ElOption, ElSelect } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'TicketManagementPage' })
@@ -79,7 +77,6 @@
     searchParams,
     getData,
     refreshData,
-    refreshUpdate,
     handleSizeChange,
     handleCurrentChange
   } = useTable({
@@ -104,41 +101,14 @@
         {
           prop: 'status',
           label: t('ticket.columns.status'),
-          width: 180,
-          formatter: (row) =>
-            h(
-              ElSelect,
-              {
-                modelValue: row.status,
-                size: 'small',
-                onChange: (val: Api.Ticket.TicketStatus) => updateStatus(row.id, val)
-              },
-              () => [
-                h(ElOption, { label: t('ticket.status.pending'), value: 'pending' }),
-                h(ElOption, { label: t('ticket.status.in_progress'), value: 'in_progress' }),
-                h(ElOption, { label: t('ticket.status.completed'), value: 'completed' })
-              ]
-            )
+          width: 120,
+          formatter: (row) => h(TicketStatusBadge, { status: row.status })
         },
         {
           prop: 'priority',
           label: t('ticket.columns.priority'),
-          width: 170,
-          formatter: (row) =>
-            h(
-              ElSelect,
-              {
-                modelValue: row.priority,
-                size: 'small',
-                onChange: (val: Api.Ticket.TicketPriority) => updatePriority(row.id, val)
-              },
-              () => [
-                h(ElOption, { label: t('ticket.priority.unassigned'), value: 'unassigned' }),
-                h(ElOption, { label: t('ticket.priority.low'), value: 'low' }),
-                h(ElOption, { label: t('ticket.priority.medium'), value: 'medium' }),
-                h(ElOption, { label: t('ticket.priority.high'), value: 'high' })
-              ]
-            )
+          width: 120,
+          formatter: (row) => h(TicketPriorityBadge, { priority: row.priority })
         },
         { prop: 'updated_at', label: t('common.updatedAt'), width: 180 },
         {
@@ -160,28 +130,6 @@
       ]
     }
   })
-
-  const updateStatus = async (id: number, status: Api.Ticket.TicketStatus) => {
-    try {
-      await adminUpdateTicketStatus(id, { status })
-      ElMessage.success(t('ticket.messages.updated'))
-      await refreshUpdate()
-    } catch (error: any) {
-      ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
-      await refreshData()
-    }
-  }
-
-  const updatePriority = async (id: number, priority: Api.Ticket.TicketPriority) => {
-    try {
-      await adminUpdateTicketPriority(id, { priority })
-      ElMessage.success(t('ticket.messages.updated'))
-      await refreshUpdate()
-    } catch (error: any) {
-      ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
-      await refreshData()
-    }
-  }
 
   const handleSearch = () => {
     Object.assign(searchParams, {
