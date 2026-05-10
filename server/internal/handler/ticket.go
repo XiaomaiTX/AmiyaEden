@@ -23,13 +23,12 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		CategoryID  uint   `json:"category_id" binding:"required"`
 		Title       string `json:"title" binding:"required"`
 		Description string `json:"description" binding:"required"`
-		Priority    string `json:"priority"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	ticket, err := h.svc.CreateTicket(middleware.GetUserID(c), req.CategoryID, req.Title, req.Description, req.Priority)
+	ticket, err := h.svc.CreateTicket(middleware.GetUserID(c), req.CategoryID, req.Title, req.Description)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -113,8 +112,9 @@ func (h *TicketHandler) AdminListTickets(c *gin.Context) {
 		return
 	}
 	filter := repository.TicketListFilter{
-		Status:  c.Query("status"),
-		Keyword: c.Query("keyword"),
+		Status:   c.Query("status"),
+		Priority: c.Query("priority"),
+		Keyword:  c.Query("keyword"),
 	}
 	if raw := c.Query("user_id"); raw != "" {
 		userID, convErr := parseRequiredUintQueryParam("user_id", raw)

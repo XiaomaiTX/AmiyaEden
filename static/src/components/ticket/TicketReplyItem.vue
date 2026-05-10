@@ -2,6 +2,7 @@
   <div class="ticket-reply-item">
     <div class="ticket-reply-item__header">
       <span>#{{ reply.id }}</span>
+      <span>{{ reply.user_nickname || '-' }}</span>
       <span>{{ formatTime(reply.created_at) }}</span>
       <ElTag v-if="reply.is_internal" type="warning" size="small">{{
         t('ticket.internalNote')

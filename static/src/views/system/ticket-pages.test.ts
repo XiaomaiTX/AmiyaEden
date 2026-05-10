@@ -18,8 +18,10 @@ test('ticket management page uses admin list and status/priority update APIs', (
   assert.match(manageSource, /apiFn:\s*adminListTickets/)
   assert.match(
     manageSource,
-    /apiParams:\s*\{[\s\S]*keyword:\s*filters\.keyword,[\s\S]*status:\s*filters\.status[\s\S]*\}/
+    /apiParams:\s*\{[\s\S]*keyword:\s*filters\.keyword,[\s\S]*status:\s*filters\.status,[\s\S]*priority:\s*filters\.priority[\s\S]*\}/
   )
+  assert.match(manageSource, /prop:\s*'user_nickname'/)
+  assert.match(manageSource, /t\('ticket\.priority\.unassigned'\)/)
   assert.match(manageSource, /await adminUpdateTicketStatus\(id, \{ status \}\)/)
   assert.match(manageSource, /await adminUpdateTicketPriority\(id, \{ priority \}\)/)
   assert.match(
@@ -44,6 +46,8 @@ test('ticket admin detail page loads ticket replies history and supports interna
     detailSource,
     /await adminAddTicketReply\(ticketId\.value, \{[\s\S]*content: content\.value,[\s\S]*is_internal: isInternal\.value[\s\S]*\}\)/
   )
+  assert.match(detailSource, /prop:\s*'changed_by_nickname'/)
+  assert.match(detailSource, /<ArtTable :data="histories" :columns="historyColumns" \/>/)
 })
 
 test('ticket categories page supports list create update delete admin APIs', () => {
