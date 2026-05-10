@@ -353,6 +353,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		{
 			esiTasks.GET("/tasks", esiH.GetTasks)
 			esiTasks.GET("/statuses", esiH.GetStatuses)
+			esiTasks.GET("/monitor", esiH.GetMonitor)
 			esiTasks.POST("/run", esiH.RunTask)
 			esiTasks.POST("/run-task", esiH.RunTaskByName)
 			esiTasks.POST("/run-all", esiH.RunAll)

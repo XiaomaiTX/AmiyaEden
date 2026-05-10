@@ -46,6 +46,57 @@ type TaskStatusItem struct {
 	Error         string     `json:"error,omitempty"`
 }
 
+type MonitorOverview struct {
+	Total    int `json:"total"`
+	Healthy  int `json:"healthy"`
+	Warning  int `json:"warning"`
+	Critical int `json:"critical"`
+	Running  int `json:"running"`
+	Failed   int `json:"failed"`
+	Overdue  int `json:"overdue"`
+}
+
+type MonitorTaskPanelItem struct {
+	TaskName        string  `json:"task_name"`
+	Description     string  `json:"description"`
+	Priority        int     `json:"priority"`
+	Total           int     `json:"total"`
+	Healthy         int     `json:"healthy"`
+	Warning         int     `json:"warning"`
+	Critical        int     `json:"critical"`
+	Running         int     `json:"running"`
+	Failed          int     `json:"failed"`
+	Overdue         int     `json:"overdue"`
+	SuccessRate     float64 `json:"success_rate"`
+	WorstLagSeconds int64   `json:"worst_lag_seconds"`
+}
+
+type MonitorFailureItem struct {
+	TaskName      string     `json:"task_name"`
+	Description   string     `json:"description"`
+	CharacterID   int64      `json:"character_id"`
+	CharacterName string     `json:"character_name,omitempty"`
+	Error         string     `json:"error"`
+	LastRun       *time.Time `json:"last_run,omitempty"`
+}
+
+type MonitorOverdueItem struct {
+	TaskName       string     `json:"task_name"`
+	Description    string     `json:"description"`
+	CharacterID    int64      `json:"character_id"`
+	CharacterName  string     `json:"character_name,omitempty"`
+	NextRun        *time.Time `json:"next_run,omitempty"`
+	OverdueSeconds int64      `json:"overdue_seconds"`
+}
+
+type MonitorResponse struct {
+	GeneratedAt time.Time              `json:"generated_at"`
+	Overview    MonitorOverview        `json:"overview"`
+	TaskPanels  []MonitorTaskPanelItem `json:"task_panels"`
+	FailureTop  []MonitorFailureItem   `json:"failure_top"`
+	OverdueTop  []MonitorOverdueItem   `json:"overdue_top"`
+}
+
 // GetTasks 获取所有已注册的刷新任务定义
 //
 // GET /api/v1/tasks/esi/tasks
@@ -85,22 +136,7 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	}
 
 	all := queue.GetAllStatuses()
-	charRepo := repository.NewEveCharacterRepository()
-	characterNames := make(map[int64]string, len(all))
-	characterIDs := make([]int64, 0, len(all))
-	seenCharacterIDs := make(map[int64]struct{}, len(all))
-	for _, status := range all {
-		if _, exists := seenCharacterIDs[status.CharacterID]; exists {
-			continue
-		}
-		seenCharacterIDs[status.CharacterID] = struct{}{}
-		characterIDs = append(characterIDs, status.CharacterID)
-	}
-	if chars, err := charRepo.ListByCharacterIDs(characterIDs); err == nil {
-		for _, char := range chars {
-			characterNames[char.CharacterID] = char.CharacterName
-		}
-	}
+	characterNames := buildCharacterNameMap(all)
 
 	// 筛选
 	taskNameFilter := c.Query("task_name")
@@ -157,6 +193,169 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	}
 
 	response.OKWithPage(c, filtered[start:end], int64(total), page, pageSize)
+}
+
+const monitorListLimit = 20
+
+// GetMonitor 获取 ESI 队列聚合监控数据。
+//
+// GET /api/v1/tasks/esi/monitor
+func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
+	queue := jobs.GetESIQueue()
+	if queue == nil {
+		response.OK(c, MonitorResponse{
+			GeneratedAt: time.Now().UTC(),
+			Overview:    MonitorOverview{},
+			TaskPanels:  []MonitorTaskPanelItem{},
+			FailureTop:  []MonitorFailureItem{},
+			OverdueTop:  []MonitorOverdueItem{},
+		})
+		return
+	}
+
+	now := time.Now().UTC()
+	statuses := queue.GetAllStatuses()
+	characterNames := buildCharacterNameMap(statuses)
+
+	panelByTask := make(map[string]*MonitorTaskPanelItem)
+	failureTop := make([]MonitorFailureItem, 0, len(statuses))
+	overdueTop := make([]MonitorOverdueItem, 0, len(statuses))
+	overview := MonitorOverview{Total: len(statuses)}
+
+	for _, status := range statuses {
+		if status == nil {
+			continue
+		}
+		panel := ensureTaskPanel(panelByTask, status)
+		panel.Total++
+
+		overdueSeconds := calcOverdueSeconds(status, now)
+		if overdueSeconds > 0 {
+			panel.Overdue++
+			overview.Overdue++
+			overdueTop = append(overdueTop, MonitorOverdueItem{
+				TaskName:       status.TaskName,
+				Description:    status.Description,
+				CharacterID:    status.CharacterID,
+				CharacterName:  characterNames[status.CharacterID],
+				NextRun:        status.NextRun,
+				OverdueSeconds: overdueSeconds,
+			})
+		}
+
+		if strings.TrimSpace(status.Error) != "" {
+			failureTop = append(failureTop, MonitorFailureItem{
+				TaskName:      status.TaskName,
+				Description:   status.Description,
+				CharacterID:   status.CharacterID,
+				CharacterName: characterNames[status.CharacterID],
+				Error:         status.Error,
+				LastRun:       status.LastRun,
+			})
+		}
+
+		if status.Status == "running" {
+			panel.Running++
+			overview.Running++
+		}
+		if status.Status == "failed" {
+			panel.Failed++
+			overview.Failed++
+		}
+		if status.Status == "success" {
+			panel.SuccessRate += 1
+		}
+		if overdueSeconds > panel.WorstLagSeconds {
+			panel.WorstLagSeconds = overdueSeconds
+		}
+
+		expectedIntervalSec := expectedIntervalSeconds(status)
+		severity := classifySeverity(status, overdueSeconds, expectedIntervalSec)
+		switch severity {
+		case "critical":
+			panel.Critical++
+			overview.Critical++
+		case "warning":
+			panel.Warning++
+			overview.Warning++
+		default:
+			panel.Healthy++
+			overview.Healthy++
+		}
+	}
+
+	taskPanels := make([]MonitorTaskPanelItem, 0, len(panelByTask))
+	for _, panel := range panelByTask {
+		if panel.Total > 0 {
+			panel.SuccessRate = panel.SuccessRate / float64(panel.Total)
+		}
+		taskPanels = append(taskPanels, *panel)
+	}
+
+	sort.Slice(taskPanels, func(i, j int) bool {
+		if taskPanels[i].Critical != taskPanels[j].Critical {
+			return taskPanels[i].Critical > taskPanels[j].Critical
+		}
+		if taskPanels[i].Failed != taskPanels[j].Failed {
+			return taskPanels[i].Failed > taskPanels[j].Failed
+		}
+		if taskPanels[i].Overdue != taskPanels[j].Overdue {
+			return taskPanels[i].Overdue > taskPanels[j].Overdue
+		}
+		if taskPanels[i].Priority != taskPanels[j].Priority {
+			return taskPanels[i].Priority < taskPanels[j].Priority
+		}
+		return taskPanels[i].TaskName < taskPanels[j].TaskName
+	})
+
+	sort.Slice(failureTop, func(i, j int) bool {
+		left := failureTop[i].LastRun
+		right := failureTop[j].LastRun
+		if left == nil && right == nil {
+			if failureTop[i].TaskName != failureTop[j].TaskName {
+				return failureTop[i].TaskName < failureTop[j].TaskName
+			}
+			return failureTop[i].CharacterID < failureTop[j].CharacterID
+		}
+		if left == nil {
+			return false
+		}
+		if right == nil {
+			return true
+		}
+		if !left.Equal(*right) {
+			return left.After(*right)
+		}
+		if failureTop[i].TaskName != failureTop[j].TaskName {
+			return failureTop[i].TaskName < failureTop[j].TaskName
+		}
+		return failureTop[i].CharacterID < failureTop[j].CharacterID
+	})
+
+	sort.Slice(overdueTop, func(i, j int) bool {
+		if overdueTop[i].OverdueSeconds != overdueTop[j].OverdueSeconds {
+			return overdueTop[i].OverdueSeconds > overdueTop[j].OverdueSeconds
+		}
+		if overdueTop[i].TaskName != overdueTop[j].TaskName {
+			return overdueTop[i].TaskName < overdueTop[j].TaskName
+		}
+		return overdueTop[i].CharacterID < overdueTop[j].CharacterID
+	})
+
+	if len(failureTop) > monitorListLimit {
+		failureTop = failureTop[:monitorListLimit]
+	}
+	if len(overdueTop) > monitorListLimit {
+		overdueTop = overdueTop[:monitorListLimit]
+	}
+
+	response.OK(c, MonitorResponse{
+		GeneratedAt: now,
+		Overview:    overview,
+		TaskPanels:  taskPanels,
+		FailureTop:  failureTop,
+		OverdueTop:  overdueTop,
+	})
 }
 
 // RunTaskRequest 手动触发单个任务的请求（指定人物）
@@ -298,4 +497,83 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%d Minutes", minutes)
 	}
 	return d.String()
+}
+
+func buildCharacterNameMap(statuses []*esi.TaskStatus) map[int64]string {
+	charRepo := repository.NewEveCharacterRepository()
+	characterNames := make(map[int64]string, len(statuses))
+	characterIDs := make([]int64, 0, len(statuses))
+	seenCharacterIDs := make(map[int64]struct{}, len(statuses))
+	for _, status := range statuses {
+		if status == nil {
+			continue
+		}
+		if _, exists := seenCharacterIDs[status.CharacterID]; exists {
+			continue
+		}
+		seenCharacterIDs[status.CharacterID] = struct{}{}
+		characterIDs = append(characterIDs, status.CharacterID)
+	}
+	if chars, err := charRepo.ListByCharacterIDs(characterIDs); err == nil {
+		for _, char := range chars {
+			characterNames[char.CharacterID] = char.CharacterName
+		}
+	}
+	return characterNames
+}
+
+func ensureTaskPanel(panelByTask map[string]*MonitorTaskPanelItem, status *esi.TaskStatus) *MonitorTaskPanelItem {
+	if panel, ok := panelByTask[status.TaskName]; ok {
+		return panel
+	}
+	panel := &MonitorTaskPanelItem{
+		TaskName:    status.TaskName,
+		Description: status.Description,
+		Priority:    int(status.Priority),
+	}
+	panelByTask[status.TaskName] = panel
+	return panel
+}
+
+func calcOverdueSeconds(status *esi.TaskStatus, now time.Time) int64 {
+	if status.NextRun == nil {
+		return 0
+	}
+	nextRun := status.NextRun.UTC()
+	if !nextRun.Before(now) {
+		return 0
+	}
+	return int64(now.Sub(nextRun).Seconds())
+}
+
+func expectedIntervalSeconds(status *esi.TaskStatus) int64 {
+	if status.NextRun != nil && status.LastRun != nil {
+		interval := status.NextRun.UTC().Sub(status.LastRun.UTC())
+		if interval > 0 {
+			return int64(interval.Seconds())
+		}
+	}
+	if task, ok := esi.GetTask(status.TaskName); ok {
+		active := task.Interval().Active
+		if active > 0 {
+			return int64(active.Seconds())
+		}
+	}
+	return int64(time.Hour.Seconds())
+}
+
+func classifySeverity(status *esi.TaskStatus, overdueSeconds, expectedIntervalSeconds int64) string {
+	if status.Status == "failed" {
+		return "critical"
+	}
+	if overdueSeconds > 0 && overdueSeconds >= expectedIntervalSeconds {
+		return "critical"
+	}
+	if status.Status == "running" || status.Status == "pending" {
+		return "warning"
+	}
+	if overdueSeconds > 0 {
+		return "warning"
+	}
+	return "healthy"
 }

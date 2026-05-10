@@ -15,6 +15,13 @@ export function fetchESIRefreshStatuses(params?: Api.ESIRefresh.TaskStatusSearch
   })
 }
 
+/** 获取 ESI 聚合监控快照 */
+export function fetchESIRefreshMonitor() {
+  return request.get<Api.ESIRefresh.MonitorResponse>({
+    url: '/api/v1/tasks/esi/monitor'
+  })
+}
+
 /** 手动触发指定任务（单人物） */
 export function runESIRefreshTask(params: Api.ESIRefresh.RunTaskParams) {
   return request.post<{ message: string }>({

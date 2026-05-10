@@ -267,6 +267,203 @@ func TestGetStatuses_FiltersByCharacterIDOrName(t *testing.T) {
 	}
 }
 
+func TestGetMonitor_ReturnsEmptySnapshotWhenQueueMissing(t *testing.T) {
+	setupTest(t)
+	defer teardownTest(t)
+
+	getESIQueueWasSet = true
+	jobs.SetTestESIQueue(nil)
+
+	recorder := performGetMonitorRequest(t)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected http status 200, got %d", recorder.Code)
+	}
+
+	var result esiRefreshHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.Code != response.CodeOK {
+		t.Fatalf("expected success code, got code=%d, msg=%s", result.Code, result.Msg)
+	}
+	var payload struct {
+		Overview struct {
+			Total int `json:"total"`
+		} `json:"overview"`
+		TaskPanels []json.RawMessage `json:"task_panels"`
+		FailureTop []json.RawMessage `json:"failure_top"`
+		OverdueTop []json.RawMessage `json:"overdue_top"`
+	}
+	if err := json.Unmarshal(result.Data, &payload); err != nil {
+		t.Fatalf("decode monitor payload: %v", err)
+	}
+	if payload.Overview.Total != 0 {
+		t.Fatalf("expected total=0, got %d", payload.Overview.Total)
+	}
+	if len(payload.TaskPanels) != 0 || len(payload.FailureTop) != 0 || len(payload.OverdueTop) != 0 {
+		t.Fatalf("expected empty monitor lists, got panels=%d failures=%d overdue=%d", len(payload.TaskPanels), len(payload.FailureTop), len(payload.OverdueTop))
+	}
+}
+
+func TestGetMonitor_AggregatesAndSortsByRisk(t *testing.T) {
+	setupTest(t)
+	defer teardownTest(t)
+
+	db := newESIRefreshHandlerTestDB(t)
+	seedUserWithCharacter(t, db, 1, 9001, "Amiya Main")
+	seedUserWithCharacter(t, db, 2, 9002, "Kal'tsit Alt")
+	setupGlobalDependencies(t, db)
+
+	now := time.Now().UTC()
+	oldLastRun := now.Add(-4 * time.Hour)
+	oldNextRun := now.Add(-2 * time.Hour)
+	failedLastRun := now.Add(-30 * time.Minute)
+	successLastRun := now.Add(-20 * time.Minute)
+	successNextRun := now.Add(40 * time.Minute)
+	runningLastRun := now.Add(-10 * time.Minute)
+	runningNextRun := now.Add(50 * time.Minute)
+
+	queue := setupMockESIQueue(t)
+	setQueueStatusesForTest(queue, map[string]*esi.TaskStatus{
+		"character_wallet:9002": {
+			TaskName:    "character_wallet",
+			Description: "Character Wallet",
+			CharacterID: 9002,
+			Priority:    50,
+			LastRun:     &oldLastRun,
+			NextRun:     &oldNextRun,
+			Status:      "success",
+		},
+		"character_skill:9001": {
+			TaskName:    "character_skill",
+			Description: "Character Skill",
+			CharacterID: 9001,
+			Priority:    50,
+			LastRun:     &failedLastRun,
+			NextRun:     &successNextRun,
+			Status:      "failed",
+			Error:       "token expired",
+		},
+		"character_skill:9002": {
+			TaskName:    "character_skill",
+			Description: "Character Skill",
+			CharacterID: 9002,
+			Priority:    50,
+			LastRun:     &successLastRun,
+			NextRun:     &successNextRun,
+			Status:      "success",
+		},
+		"character_online:9001": {
+			TaskName:    "character_online",
+			Description: "Character Online",
+			CharacterID: 9001,
+			Priority:    10,
+			LastRun:     &runningLastRun,
+			NextRun:     &runningNextRun,
+			Status:      "running",
+		},
+	})
+	getESIQueueWasSet = true
+	jobs.SetTestESIQueue(queue)
+
+	recorder := performGetMonitorRequest(t)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected http status 200, got %d", recorder.Code)
+	}
+
+	var result esiRefreshHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if result.Code != response.CodeOK {
+		t.Fatalf("expected success code, got code=%d, msg=%s", result.Code, result.Msg)
+	}
+
+	var payload struct {
+		Overview struct {
+			Total    int `json:"total"`
+			Critical int `json:"critical"`
+			Warning  int `json:"warning"`
+			Healthy  int `json:"healthy"`
+			Failed   int `json:"failed"`
+			Overdue  int `json:"overdue"`
+			Running  int `json:"running"`
+		} `json:"overview"`
+		TaskPanels []struct {
+			TaskName    string  `json:"task_name"`
+			Failed      int     `json:"failed"`
+			Overdue     int     `json:"overdue"`
+			Critical    int     `json:"critical"`
+			SuccessRate float64 `json:"success_rate"`
+		} `json:"task_panels"`
+		FailureTop []struct {
+			TaskName    string `json:"task_name"`
+			CharacterID int64  `json:"character_id"`
+		} `json:"failure_top"`
+		OverdueTop []struct {
+			TaskName       string `json:"task_name"`
+			CharacterID    int64  `json:"character_id"`
+			OverdueSeconds int64  `json:"overdue_seconds"`
+		} `json:"overdue_top"`
+	}
+	if err := json.Unmarshal(result.Data, &payload); err != nil {
+		t.Fatalf("decode monitor payload: %v", err)
+	}
+
+	if payload.Overview.Total != 4 {
+		t.Fatalf("expected total=4, got %d", payload.Overview.Total)
+	}
+	if payload.Overview.Critical != 2 {
+		t.Fatalf("expected critical=2, got %d", payload.Overview.Critical)
+	}
+	if payload.Overview.Warning != 1 {
+		t.Fatalf("expected warning=1, got %d", payload.Overview.Warning)
+	}
+	if payload.Overview.Healthy != 1 {
+		t.Fatalf("expected healthy=1, got %d", payload.Overview.Healthy)
+	}
+	if payload.Overview.Failed != 1 {
+		t.Fatalf("expected failed=1, got %d", payload.Overview.Failed)
+	}
+	if payload.Overview.Overdue != 1 {
+		t.Fatalf("expected overdue=1, got %d", payload.Overview.Overdue)
+	}
+	if payload.Overview.Running != 1 {
+		t.Fatalf("expected running=1, got %d", payload.Overview.Running)
+	}
+
+	if len(payload.TaskPanels) == 0 || payload.TaskPanels[0].TaskName != "character_skill" {
+		t.Fatalf("expected character_skill to rank first by risk, got %+v", payload.TaskPanels)
+	}
+
+	var skillPanelFound bool
+	for _, panel := range payload.TaskPanels {
+		if panel.TaskName != "character_skill" {
+			continue
+		}
+		skillPanelFound = true
+		if panel.Failed != 1 {
+			t.Fatalf("expected character_skill failed=1, got %d", panel.Failed)
+		}
+		if panel.SuccessRate != 0.5 {
+			t.Fatalf("expected character_skill success_rate=0.5, got %f", panel.SuccessRate)
+		}
+	}
+	if !skillPanelFound {
+		t.Fatal("expected character_skill panel to exist")
+	}
+
+	if len(payload.FailureTop) == 0 || payload.FailureTop[0].TaskName != "character_skill" {
+		t.Fatalf("expected failure_top first item to be character_skill, got %+v", payload.FailureTop)
+	}
+	if len(payload.OverdueTop) == 0 || payload.OverdueTop[0].TaskName != "character_wallet" {
+		t.Fatalf("expected overdue_top first item to be character_wallet, got %+v", payload.OverdueTop)
+	}
+	if payload.OverdueTop[0].OverdueSeconds <= 0 {
+		t.Fatalf("expected overdue_seconds > 0, got %d", payload.OverdueTop[0].OverdueSeconds)
+	}
+}
+
 func TestRunTaskByName_RejectsSchedulingWhenBackgroundManagerIsStopping(t *testing.T) {
 	setupTest(t)
 	defer teardownTest(t)
@@ -372,6 +569,19 @@ func performGetStatusesRequest(t *testing.T, target string) *httptest.ResponseRe
 	ctx.Request = httptest.NewRequest(http.MethodGet, target, nil)
 
 	NewESIRefreshHandler().GetStatuses(ctx)
+
+	return recorder
+}
+
+func performGetMonitorRequest(t *testing.T) *httptest.ResponseRecorder {
+	t.Helper()
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/tasks/esi/monitor", nil)
+
+	NewESIRefreshHandler().GetMonitor(ctx)
 
 	return recorder
 }
