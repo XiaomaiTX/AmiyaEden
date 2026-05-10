@@ -1,4 +1,4 @@
-﻿---
+---
 status: draft
 doc_type: draft
 owner: engineering
@@ -36,7 +36,6 @@ source_of_truth:
 | A | `/info/assets` | `/info/assets` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
 | A | `/info/contracts` | `/info/contracts` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
 | A | `/info/esi-check` | `/info/esi-check` | P1 | `eve-info.ts`, `esi-refresh.ts` | `login` | FE-owner(TBD) |
-| A | `/hall-of-fame/temple` | `/hall-of-fame/temple` | P1 | `hall-of-fame.ts` | `login` | FE-owner(TBD) |
 | B | `/ticket/my-tickets` | `/ticket/my-tickets` | P1 | `ticket.ts` | `login` | FE-owner(TBD) |
 | B | `/ticket/create` | `/ticket/create` | P1 | `ticket.ts`, `upload.ts` | `login` | FE-owner(TBD) |
 | B | `/ticket/detail` | `/ticket/detail/:id` | P1 | `ticket.ts` | `login` | FE-owner(TBD) |
@@ -93,18 +92,27 @@ source_of_truth:
 - 2026-05-01：static-react 已完成批次 A 全部路由注册与占位页接入，且对关键角色门禁完成测试回归。
 - 2026-05-01：/dashboard/console 已替换为 React 真实数据页（接入 /api/v1/dashboard，含加载/错误态与测试覆盖）。
 - 2026-05-01：/dashboard/characters 已替换为 React 真实数据页（人物资料、直推、绑定/解绑、主人物切换，含测试覆盖）。
+- 2026-05-01：/dashboard/npc-kills 已替换为 React 真实数据页（日期筛选、总览、成员统计、按系统/趋势展示，含测试覆盖）。
+- 2026-05-01：/dashboard/corporation-structures 已替换为 React 真实数据页（列表/设置双标签、筛选、通知阈值与授权配置，含测试覆盖）。
 
 - 2026-05-01：`/info/wallet` 已替换为 React 真实数据页（角色切换、流水类型筛选、余额与流水展示，含测试覆盖）。
 - 2026-05-01：`/info/skill` 已替换为 React 真实数据页（角色切换、技能筛选、技能队列展示与 ESI 拉取触发，含测试覆盖）。
+- 2026-05-01：`/info/npc-kills` 已替换为 React 真实数据页（全部人物/单人物切换、日期筛选、总览、流水明细展示，含测试覆盖）。
 - 2026-05-01：`/info/ships` 已替换为 React 真实数据页（角色切换、舰船分组筛选、可驾驶状态展示，含测试覆盖）。
 - 2026-05-01：`/info/implants` 已替换为 React 真实数据页（角色切换、疲劳状态、活跃植入体与跳克列表展示，含测试覆盖）。
 - 2026-05-01：`/info/fittings` 已替换为 React 真实数据页（种族/分组/关键字筛选、分组折叠、装配详情展示）。
 - 2026-05-01：`/info/assets` 已替换为 React 真实数据页（位置分组、递归子物品、关键字筛选展示）。
+- 2026-05-01：`/info/contracts` 已替换为 React 真实数据页（合同筛选、列表与详情侧栏展示，含测试覆盖）。
+- 2026-05-01：`/info/esi-check` 已替换为 React 真实数据页（授权总览、人物详情与重授权入口，含测试覆盖）。
+- 2026-05-01：`/ticket/my-tickets` 已替换为 React 真实数据页（我的工单列表与状态筛选，含测试覆盖）。
+- 2026-05-01：`/ticket/create` 已替换为 React 真实数据页（分类加载、工单提交与返回我的工单，含测试覆盖）。
+- 2026-05-01：`/ticket/detail/:id` 已替换为 React 真实数据页（工单详情、回复列表与回复提交，含测试覆盖）。
 
 ## 说明与已知风险
 
 - 本清单冻结的是“路由页面范围”，不含路由内子组件与纯工具文件（`*.helpers.ts`、`*.test.ts`）。
 - `role/*` 页面在 `static/src/views` 存量中不存在且未在 `routeModules` 注册，暂不纳入本次迁移范围。
+- `hall-of-fame/temple` 已取消本轮实现，React 侧仅保留 stub 占位，待后续重构单独立项后再纳入迁移范围。
 - 路由文件中出现的中文乱码标题未在本次清单修复；权限标识以 `authMark` 英文字段为准。
 - 批次执行前必须补齐 owner，并基于当前后端接口再确认 API 依赖是否存在跨模块调用。
 

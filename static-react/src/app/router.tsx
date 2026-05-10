@@ -7,14 +7,22 @@ import { AdminDemoPage } from '@/pages/admin-demo-page'
 import { AuthCallbackPage } from '@/pages/auth-callback-page'
 import { DashboardCharactersPage } from '@/pages/dashboard-characters-page'
 import { DashboardConsolePage } from '@/pages/dashboard-console-page'
+import { DashboardNpcKillsPage } from '@/pages/dashboard-npc-kills-page'
+import { DashboardCorporationStructuresPage } from '@/pages/dashboard-corporation-structures-page'
 import { ForbiddenPage } from '@/pages/forbidden-page'
 import { HomePage } from '@/pages/home-page'
+import { InfoNpcKillsPage } from '@/pages/info-npc-kills-page'
 import { InfoWalletPage } from '@/pages/info-wallet-page'
 import { InfoSkillPage } from '@/pages/info-skill-page'
 import { InfoShipsPage } from '@/pages/info-ships-page'
 import { InfoImplantsPage } from '@/pages/info-implants-page'
 import { InfoFittingsPage } from '@/pages/info-fittings-page'
 import { InfoAssetsPage } from '@/pages/info-assets-page'
+import { InfoContractsPage } from '@/pages/info-contracts-page'
+import { InfoEsiCheckPage } from '@/pages/info-esi-check-page'
+import { TicketCreatePage } from '@/pages/ticket-create-page'
+import { TicketDetailPage } from '@/pages/ticket-detail-page'
+import { TicketMyTicketsPage } from '@/pages/ticket-my-tickets-page'
 import { LoginPage } from '@/pages/login-page'
 import { MigrationStubPage } from '@/pages/migration-stub-page'
 import { NotFoundPage } from '@/pages/not-found-page'
@@ -28,10 +36,16 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <DashboardConsolePage />
     case 'dashboard-characters':
       return <DashboardCharactersPage />
+    case 'dashboard-npc-kills':
+      return <DashboardNpcKillsPage />
+    case 'dashboard-corporation-structures':
+      return <DashboardCorporationStructuresPage />
     case 'info-wallet':
       return <InfoWalletPage />
     case 'info-skill':
       return <InfoSkillPage />
+    case 'info-npc-kills':
+      return <InfoNpcKillsPage />
     case 'info-ships':
       return <InfoShipsPage />
     case 'info-implants':
@@ -40,6 +54,16 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <InfoFittingsPage />
     case 'info-assets':
       return <InfoAssetsPage />
+    case 'info-contracts':
+      return <InfoContractsPage />
+    case 'info-esi-check':
+      return <InfoEsiCheckPage />
+    case 'ticket-my-tickets':
+      return <TicketMyTicketsPage />
+    case 'ticket-create':
+      return <TicketCreatePage />
+    case 'ticket-detail':
+      return <TicketDetailPage />
     case 'admin-demo':
       return <AdminDemoPage />
     case 'stub':

@@ -1,4 +1,4 @@
-﻿---
+---
 status: draft
 doc_type: draft
 owner: engineering
@@ -44,8 +44,16 @@ source_of_truth:
 - [x] 批次 A 页面进度：`info/implants` 已完成 React 真实页迁移（其余页面待迁移）
 - [x] 批次 A 页面进度：`info/fittings` 已完成 React 真实页迁移（其余页面待迁移）
 - [x] 批次 A 页面进度：`info/assets` 已完成 React 真实页迁移（其余页面待迁移）
+- [x] 批次 A 页面进度：`info/contracts` 已完成 React 真实页迁移（合同列表与详情侧栏，含测试覆盖）
+- [x] 批次 A 页面进度：`info/esi-check` 已完成 React 真实页迁移（授权总览与人物详情，含测试覆盖）
+- [x] 批次 A 页面进度：`dashboard/npc-kills` 已完成 React 真实页迁移（军团刷怪报表）
+- [x] 批次 A 页面进度：`dashboard/corporation-structures` 已完成 React 真实页迁移（军团建筑）
+- [x] 批次 A 页面进度：`info/npc-kills` 已完成 React 真实页迁移（刷怪报表、流水明细）
+- [x] 批次 B 页面进度：`ticket/my-tickets` 已完成 React 真实页迁移（我的工单列表）
+- [x] 批次 B 页面进度：`ticket/create` 已完成 React 真实页迁移（提交工单）
+- [x] 批次 B 页面进度：`ticket/detail` 已完成 React 真实页迁移（工单详情与回复）
 - [ ] 批次 A（低耦合只读页）路由与页面迁移完成
-- [ ] 批次 A 包含模块：`dashboard/*`、`info/*`、`hall-of-fame/temple`
+- [ ] 批次 A 包含模块：`dashboard/*`、`info/*`
 - [ ] 批次 A 回归通过：路由可达、查询参数一致、表格筛选与分页行为一致
 - [ ] 批次 B（中耦合流程页）路由与页面迁移完成
 - [ ] 批次 B 包含模块：`ticket/*`、`welfare/*`、`newbro/*`、`srp/*`
@@ -81,6 +89,10 @@ source_of_truth:
 - [ ] 每批次结束时输出“已迁移路由清单 + 未决问题清单 + 下一批依赖项”
 - [ ] 每批次至少完成一次跨角色回归（普通成员/管理员/受限角色）
 - [ ] 每批次完成后更新 `component-replacement-list.md` 与本清单状态
+
+## 暂缓项
+
+- [ ] `hall-of-fame/temple` 本轮取消实现，React 侧仅保留 stub 占位，等待后续重构单独立项
 
 ## P1 替换发布与回切
  
