@@ -44,8 +44,15 @@ import { NewbroRecruitLinkPage } from '@/pages/newbro-recruit-link-page'
 import { OperationJoinPage } from '@/pages/operation-join-page'
 import { OperationPapPage } from '@/pages/operation-pap-page'
 import { PersonalSkillPlansPage } from '@/pages/personal-skill-plans-page'
+import { SystemAuditPage } from '@/pages/system-audit-page'
+import { SystemAutoRolePage } from '@/pages/system-auto-role-page'
+import { SystemBasicConfigPage } from '@/pages/system-basic-config-page'
 import { SkillPlanCompletionCheckPage } from '@/pages/skill-plan-completion-check-page'
 import { SkillPlansPage } from '@/pages/skill-plans-page'
+import { SystemPAPExchangePage } from '@/pages/system-pap-exchange-page'
+import { SystemPAPPage } from '@/pages/system-pap-page'
+import { SystemUserCenterPage } from '@/pages/system-user-center-page'
+import { SystemWebhookPage } from '@/pages/system-webhook-page'
 import { WelfareMyPage } from '@/pages/welfare-my-page'
 import { WelfareApprovalPage } from '@/pages/welfare-approval-page'
 import { WelfareSettingsPage } from '@/pages/welfare-settings-page'
@@ -157,6 +164,20 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <SystemUserPage />
     case 'system-wallet':
       return <SystemWalletPage />
+    case 'system-audit':
+      return <SystemAuditPage />
+    case 'system-pap-exchange':
+      return <SystemPAPExchangePage />
+    case 'system-pap':
+      return <SystemPAPPage />
+    case 'system-auto-role':
+      return <SystemAutoRolePage />
+    case 'system-user-center':
+      return <SystemUserCenterPage />
+    case 'system-webhook':
+      return <SystemWebhookPage />
+    case 'system-basic-config':
+      return <SystemBasicConfigPage />
     case 'srp-apply':
       return <SrpApplyPage />
     case 'srp-manage':
