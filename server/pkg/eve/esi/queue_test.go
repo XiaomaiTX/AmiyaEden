@@ -215,7 +215,7 @@ func TestCorporationKillmailsFreshUsesInactiveInterval(t *testing.T) {
 	}
 }
 
-func TestCharacterKillmailsFreshUsesDailyActiveInterval(t *testing.T) {
+func TestCharacterKillmailsFreshUsesHourlyActiveInterval(t *testing.T) {
 	mini := miniredis.RunT(t)
 	oldRedis := global.Redis
 	global.Redis = redis.NewClient(&redis.Options{Addr: mini.Addr()})
@@ -227,14 +227,14 @@ func TestCharacterKillmailsFreshUsesDailyActiveInterval(t *testing.T) {
 	queue := NewQueue(fakeQueueTokenService{}, &fakeQueueCharacterRepository{})
 	char := model.EveCharacter{CharacterID: 1001}
 
-	queue.setLastRun(&KillmailsTask{}, char, time.Now().Add(-23*time.Hour))
+	queue.setLastRun(&KillmailsTask{}, char, time.Now().Add(-59*time.Minute))
 	if queue.needsRefresh(&KillmailsTask{}, char, true) {
-		t.Fatalf("expected personal killmail refresh to stay fresh within the 24 hour active window")
+		t.Fatalf("expected personal killmail refresh to stay fresh within the 1 hour active window")
 	}
 
-	queue.setLastRun(&KillmailsTask{}, char, time.Now().Add(-25*time.Hour))
+	queue.setLastRun(&KillmailsTask{}, char, time.Now().Add(-61*time.Minute))
 	if !queue.needsRefresh(&KillmailsTask{}, char, true) {
-		t.Fatalf("expected personal killmail refresh to expire after the 24 hour active window")
+		t.Fatalf("expected personal killmail refresh to expire after the 1 hour active window")
 	}
 }
 

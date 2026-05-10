@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-05-10
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -10,6 +10,7 @@ source_of_truth:
   - server/internal/repository/corporation_structure.go
   - server/internal/model/sys_config.go
   - server/internal/service/badge.go
+  - server/pkg/eve/esi/task_corporation_structures.go
   - static/src/router/modules/dashboard.ts
   - static/src/api/corporation-structures.ts
   - static/src/views/dashboard/corporation-structures
@@ -55,7 +56,7 @@ source_of_truth:
 - 只有被系统判定为当前可管理军团的 Director 人物才能写入授权映射
 - `0` 天阈值表示关闭对应提醒；前端设置会把它当作显式关闭处理
 - `run-task` 只触发当前军团的后台 ESI 刷新，不暴露通用 ESI 任务入口
-- ESI 队列中的 `corporation_structures` 子任务刷新间隔为 1 天（active/inactive 均为 24h）
+- ESI 队列中的 `corporation_structures` 子任务刷新间隔为 6 小时（active）/ 1 天（inactive）
 
 ## 关键不变量
 

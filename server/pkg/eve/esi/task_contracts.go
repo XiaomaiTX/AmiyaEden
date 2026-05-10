@@ -14,7 +14,7 @@ import (
 //  GET /characters/{character_id}/contracts
 //  GET /characters/{character_id}/contracts/{contract_id}/bids
 //  GET /characters/{character_id}/contracts/{contract_id}/items
-//  默认刷新间隔: 1 Day / 不活跃: 7 Days
+//  默认刷新间隔: 12 Hours / 不活跃: 7 Days
 // ─────────────────────────────────────────────
 
 func init() {
@@ -30,7 +30,7 @@ func (t *ContractsTask) Priority() Priority  { return PriorityNormal }
 
 func (t *ContractsTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   24 * time.Hour,
+		Active:   12 * time.Hour,
 		Inactive: 7 * 24 * time.Hour,
 	}
 }
