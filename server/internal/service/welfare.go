@@ -986,6 +986,7 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 	autoDeliver := s.shouldAutoDeliverWelfareApplication(welfare)
 	if autoDeliver {
 		markWelfareApplicationDelivered(app, 0)
+		app.EvidenceImage = ""
 	}
 
 	if err := global.DB.Transaction(func(tx *gorm.DB) error {
@@ -1219,6 +1220,7 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 			if err := s.applyDeliveredWelfareEffectsTx(tx, welfare, app, reviewerID); err != nil {
 				return err
 			}
+			app.EvidenceImage = ""
 			if err := applyConfiguredAdminAwardTx(
 				tx,
 				s.cfgRepo,
