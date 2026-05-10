@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchGetUserInfo } from '@/api/auth'
 import { fetchCharacterESIRestrictionConfig, updateCharacterESIRestrictionConfig } from '@/api/sys-config'
@@ -131,15 +131,15 @@ export function SystemUserPage() {
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
-  const loadRoleDefinitions = async () => {
+  const loadRoleDefinitions = useCallback(async () => {
     try {
       setRoleDefinitions(await fetchGetRoleDefinitions())
     } catch {
       setRoleDefinitions([])
     }
-  }
+  }, [])
 
-  const loadRestriction = async () => {
+  const loadRestriction = useCallback(async () => {
     if (!isSuperAdmin) {
       return
     }
@@ -153,9 +153,9 @@ export function SystemUserPage() {
     } finally {
       setRestrictionLoading(false)
     }
-  }
+  }, [isSuperAdmin, t])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -178,14 +178,14 @@ export function SystemUserPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, searchState, t])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadData()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [page, pageSize, refreshSeed, searchState])
+  }, [loadData, refreshSeed])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -193,7 +193,7 @@ export function SystemUserPage() {
       void loadRestriction()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [loadRoleDefinitions, loadRestriction])
 
   const canEditProfile = (user: UserListItem) => isSuperAdmin || !isProtectedRoleSet(user.roles)
   const canEditContacts = (user: UserListItem) => isSuperAdmin && !user.roles.includes('super_admin')

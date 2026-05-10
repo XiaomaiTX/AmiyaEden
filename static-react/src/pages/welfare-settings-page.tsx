@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   adminCreateWelfare,
   adminDeleteWelfare,
@@ -46,7 +46,7 @@ export function WelfareSettingsPage() {
     sort_order: 0,
   })
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -63,11 +63,14 @@ export function WelfareSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
   useEffect(() => {
-    void loadData()
-  }, [t])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData])
 
   const orderedItems = useMemo(() => [...items].sort((left, right) => left.sort_order - right.sort_order), [items])
 

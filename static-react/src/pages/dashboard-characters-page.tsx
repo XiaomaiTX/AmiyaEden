@@ -181,15 +181,21 @@ export function DashboardCharactersPage() {
   }, [applyUserInfo, t])
 
   useEffect(() => {
-    void loadDirectReferralStatus()
+    const timer = window.setTimeout(() => {
+      void loadDirectReferralStatus()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadDirectReferralStatus])
 
   useEffect(() => {
     if (directReferrerQQ.trim() === checkedDirectReferrerQQ) {
       return
     }
-    setDirectReferrerCandidate(null)
-    setCheckedDirectReferrerQQ('')
+    const timer = window.setTimeout(() => {
+      setDirectReferrerCandidate(null)
+      setCheckedDirectReferrerQQ('')
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [checkedDirectReferrerQQ, directReferrerQQ])
 
   const handleRefresh = async () => {

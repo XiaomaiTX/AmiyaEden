@@ -82,7 +82,10 @@ export function NewbroRecruitLinkPage() {
   }, [loadAdminLinks, loadMyLinks, loadSettings, t])
 
   useEffect(() => {
-    void loadAll()
+    const timer = window.setTimeout(() => {
+      void loadAll()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadAll, refreshSeed])
 
   const handleGenerate = async () => {
