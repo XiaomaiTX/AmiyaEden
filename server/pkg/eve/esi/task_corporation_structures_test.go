@@ -15,12 +15,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestCorporationStructuresTaskIntervalIsOneDay(t *testing.T) {
+func TestCorporationStructuresTaskIntervalIsSixHours(t *testing.T) {
 	task := &CorporationStructuresTask{}
 	interval := task.Interval()
 
-	if interval.Active != 24*time.Hour {
-		t.Fatalf("active interval = %s, want %s", interval.Active, 24*time.Hour)
+	if interval.Active != 6*time.Hour {
+		t.Fatalf("active interval = %s, want %s", interval.Active, 6*time.Hour)
 	}
 	if interval.Inactive != 24*time.Hour {
 		t.Fatalf("inactive interval = %s, want %s", interval.Inactive, 24*time.Hour)

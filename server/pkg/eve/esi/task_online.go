@@ -12,7 +12,7 @@ import (
 //  Character Online 在线状态（用于活跃度检测）
 //  GET /characters/{character_id}/online
 //  常驻 scope，用于判断人物是否活跃
-//  默认刷新间隔: 30 Minutes / 不活跃: 2 Hours
+//  默认刷新间隔: 2 Hours / 不活跃: 1 Day
 // ─────────────────────────────────────────────
 
 func init() {
@@ -28,8 +28,8 @@ func (t *OnlineTask) Priority() Priority  { return PriorityHigh }
 
 func (t *OnlineTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   30 * time.Minute,
-		Inactive: 2 * time.Hour,
+		Active:   2 * time.Hour,
+		Inactive: 24 * time.Hour,
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 //  Character Killmails 人物击杀邮件
 //  GET /characters/{character_id}/killmails/recent
 //  GET /killmails/{killmail_id}/{killmail_hash}  (详情)
-//  默认刷新间隔: 24 Hours / 不活跃: 7 Days
+//  默认刷新间隔: 1 Hour / 不活跃: 7 Days
 // ─────────────────────────────────────────────
 
 func init() {
@@ -30,7 +30,7 @@ func (t *KillmailsTask) Priority() Priority  { return PriorityCritical } // 高�
 
 func (t *KillmailsTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   24 * time.Hour,
+		Active:   1 * time.Hour,
 		Inactive: 7 * 24 * time.Hour,
 	}
 }

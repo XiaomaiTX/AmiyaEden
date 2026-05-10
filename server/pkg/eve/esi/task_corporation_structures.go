@@ -21,6 +21,13 @@ const (
 	corporationStructureTaskDetailInterval        = 500 * time.Millisecond
 )
 
+// ─────────────────────────────────────────────
+//  Corporation Structures 军团建筑信息
+//  GET /corporations/{corporation_id}/structures/
+//  GET /universe/structures/{structure_id}/
+//  默认刷新间隔: 6 Hours / 不活跃: 1 Day
+// ─────────────────────────────────────────────
+
 func init() {
 	Register(&CorporationStructuresTask{})
 }
@@ -33,7 +40,7 @@ func (t *CorporationStructuresTask) Priority() Priority  { return PriorityLow }
 
 func (t *CorporationStructuresTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   24 * time.Hour,
+		Active:   6 * time.Hour,
 		Inactive: 24 * time.Hour,
 	}
 }

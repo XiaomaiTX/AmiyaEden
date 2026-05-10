@@ -196,7 +196,7 @@ func TestTaskIntervalsMatchConfiguredCadence(t *testing.T) {
 	}
 
 	clones := (&ClonesTask{}).Interval()
-	if clones.Active != 24*time.Hour || clones.Inactive != 24*time.Hour {
+	if clones.Active != 12*time.Hour || clones.Inactive != 7*24*time.Hour {
 		t.Fatalf("unexpected clone intervals: %+v", clones)
 	}
 

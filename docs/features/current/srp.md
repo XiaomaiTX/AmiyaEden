@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-17
+last_reviewed: 2026-05-10
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/srp.go
@@ -10,6 +10,7 @@ source_of_truth:
   - server/internal/repository/srp.go
   - server/internal/repository/killmail.go
   - server/jobs/auto_srp_schedule.go
+  - server/pkg/eve/esi/task_corp_killmails.go
   - static/src/api/srp.ts
   - static/src/views/srp
 ---
@@ -218,7 +219,7 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 
 管理员可通过人物管理页面授权军团击杀邮件 scope（`esi-killmails.read_corporation_killmails.v1`），该 scope 标记为 `Optional`，不影响普通用户 SSO 登录。要实际拉取军团击杀邮件，该授权人物还需要在已同步的军团职权中具备 `Director`。
 
-- **ESI 任务**：`corporation_killmails` 定期拉取军团范围的击杀邮件（活跃间隔 60 分钟，非活跃 1 天）
+- **ESI 任务**：`corporation_killmails` 定期拉取军团范围的击杀邮件（活跃间隔 1 小时，非活跃 1 天）
 - **效果**：军团 KM 入库后，PAP 后 2 小时执行的一次性自动 SRP 任务可为成员匹配到更多击杀邮件，提高自动 SRP 覆盖率
 - **队列优化**：当某军团已经存在同时具备 `corporation_killmails` scope 与 `Director` 职权、且最近一次军团 KM 刷新仍在有效期内的授权人物时，自动 ESI 队列会跳过该军团成员的 `character_killmails` 自动刷新，避免重复消耗任务与 ESI 额度
 ## 关键不变量

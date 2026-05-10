@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+// ─────────────────────────────────────────────
+//  Character Skill 人物技能信息
+//  GET /characters/{character_id}/skills
+//  GET /characters/{character_id}/skillqueue
+//  默认刷新间隔: 6 Hours / 不活跃: 7 Days
+// ─────────────────────────────────────────────
+
 func init() {
 	Register(&SkillTask{})
 }
@@ -19,7 +26,7 @@ func (t *SkillTask) Priority() Priority  { return PriorityNormal }
 
 func (t *SkillTask) Interval() RefreshInterval {
 	return RefreshInterval{
-		Active:   24 * time.Hour,
+		Active:   6 * time.Hour,
 		Inactive: 7 * 24 * time.Hour,
 	}
 }
