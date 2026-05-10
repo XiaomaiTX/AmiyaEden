@@ -52,11 +52,15 @@ source_of_truth:
 - [x] 批次 B 页面进度：`ticket/my-tickets` 已完成 React 真实页迁移（我的工单列表）
 - [x] 批次 B 页面进度：`ticket/create` 已完成 React 真实页迁移（提交工单）
 - [x] 批次 B 页面进度：`ticket/detail` 已完成 React 真实页迁移（工单详情与回复）
-- [ ] 批次 A（低耦合只读页）路由与页面迁移完成
+- [x] 批次 B 页面进度：`ticket/management`、`ticket/categories`、`ticket/statistics`、`ticket/admin-detail` 已完成 React 真实页迁移
+- [x] 批次 B 页面进度：`welfare/my`、`welfare/approval`、`welfare/settings` 已完成 React 真实页迁移
+- [x] 批次 B 页面进度：`newbro/select-captain`、`newbro/select-mentor`、`newbro/captain`、`newbro/mentor`、`newbro/manage`、`newbro/mentor-manage`、`newbro/recruit-link` 已完成 React 真实页迁移
+- [x] 批次 B 页面进度：`srp/srp-apply`、`srp/srp-manage`、`srp/srp-prices` 已完成 React 真实页迁移
+- [x] 批次 A（低耦合只读页）路由与页面迁移完成
 - [ ] 批次 A 包含模块：`dashboard/*`、`info/*`
 - [ ] 批次 A 回归通过：路由可达、查询参数一致、表格筛选与分页行为一致
-- [ ] 批次 B（中耦合流程页）路由与页面迁移完成
-- [ ] 批次 B 包含模块：`ticket/*`、`welfare/*`、`newbro/*`、`srp/*`
+- [x] 批次 B（中耦合流程页）路由与页面迁移完成
+- [x] 批次 B 包含模块：`ticket/*`、`welfare/*`、`newbro/*`、`srp/*`
 - [ ] 批次 B 回归通过：创建/编辑/审批链路、状态流转、按钮权限一致
 - [ ] 批次 C（中高耦合业务页）路由与页面迁移完成
 - [ ] 批次 C 包含模块：`shop/*`、`skill-planning/*`、`operation/join`、`operation/pap`
