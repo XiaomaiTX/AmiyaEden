@@ -294,18 +294,32 @@ func (r *WelfareRepository) ListApplicationsByWelfareIDs(welfareIDs []uint) ([]m
 
 // WelfareApplicationFilter 福利申请查询筛选
 type WelfareApplicationFilter struct {
-	Status   string   // 单状态精确匹配
-	StatusIn []string // 多状态匹配
-	Keyword  string   // 匹配申请人昵称、人物名或 QQ（不区分大小写）
+	Status               string   // 单状态精确匹配
+	StatusIn             []string // 多状态匹配
+	Keyword              string   // 匹配申请人昵称、人物名或 QQ（不区分大小写）
+	IncludeEvidenceImage bool
 }
 
-// ListApplicationsPaginated 分页查询所有福利申请（管理端）
-func (r *WelfareRepository) ListApplicationsPaginated(page, pageSize int, filter WelfareApplicationFilter) ([]model.WelfareApplication, int64, error) {
-	var list []model.WelfareApplication
-	var total int64
-	offset := (page - 1) * pageSize
-
-	db := global.DB.Model(&model.WelfareApplication{})
+func buildListApplicationsPaginatedQuery(db *gorm.DB, filter WelfareApplicationFilter) *gorm.DB {
+	columns := []string{
+		"welfare_application.id",
+		"welfare_application.created_at",
+		"welfare_application.updated_at",
+		"welfare_application.deleted_at",
+		"welfare_application.welfare_id",
+		"welfare_application.user_id",
+		"welfare_application.character_id",
+		"welfare_application.character_name",
+		"welfare_application.qq",
+		"welfare_application.discord_id",
+		"welfare_application.status",
+		"welfare_application.reviewed_by",
+		"welfare_application.reviewed_at",
+	}
+	if filter.IncludeEvidenceImage {
+		columns = append(columns, "welfare_application.evidence_image")
+	}
+	db = db.Select(columns)
 	if filter.Status != "" {
 		db = db.Where("welfare_application.status = ?", filter.Status)
 	} else if len(filter.StatusIn) > 0 {
@@ -320,6 +334,16 @@ func (r *WelfareRepository) ListApplicationsPaginated(page, pageSize int, filter
 			`LOWER(welfare_application.character_name) LIKE ?`,
 			`LOWER(welfare_application.qq) LIKE ?`)
 	}
+	return db
+}
+
+// ListApplicationsPaginated 分页查询所有福利申请（管理端）
+func (r *WelfareRepository) ListApplicationsPaginated(page, pageSize int, filter WelfareApplicationFilter) ([]model.WelfareApplication, int64, error) {
+	var list []model.WelfareApplication
+	var total int64
+	offset := (page - 1) * pageSize
+
+	db := buildListApplicationsPaginatedQuery(global.DB.Model(&model.WelfareApplication{}), filter)
 
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err

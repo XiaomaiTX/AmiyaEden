@@ -149,99 +149,104 @@
   }
 
   // ─── Shared column builders ───
-  const buildBaseColumns = () => [
-    {
-      prop: 'applicant_nickname',
-      label: t('welfareApproval.applicantNickname'),
-      width: 130,
-      showOverflowTooltip: true,
-      formatter: (row: AppRow) =>
-        h(
-          'span',
-          { class: row.applicant_nickname ? '' : 'text-gray-400' },
-          row.applicant_nickname || '-'
-        )
-    },
-    {
-      prop: 'character_name',
-      label: t('welfareApproval.characterName'),
-      width: 240,
-      formatter: (row: AppRow) =>
-        h('div', { class: 'flex items-center gap-1' }, [
-          h('span', {}, row.character_name),
-          h(ArtCopyButton, { text: row.character_name })
-        ])
-    },
-    {
-      prop: 'contact',
-      label: t('welfareApproval.contact'),
-      width: 140,
-      showOverflowTooltip: true,
-      formatter: (row: AppRow) => {
-        if (row.qq) return `${t('characters.profile.qq')}: ${row.qq}`
-        if (row.discord_id) return `${t('characters.profile.discordId')}: ${row.discord_id}`
-        return '-'
+  const buildBaseColumns = ({ includeEvidenceImage }: { includeEvidenceImage: boolean }) => {
+    const columns = [
+      {
+        prop: 'applicant_nickname',
+        label: t('welfareApproval.applicantNickname'),
+        width: 130,
+        showOverflowTooltip: true,
+        formatter: (row: AppRow) =>
+          h(
+            'span',
+            { class: row.applicant_nickname ? '' : 'text-gray-400' },
+            row.applicant_nickname || '-'
+          )
+      },
+      {
+        prop: 'character_name',
+        label: t('welfareApproval.characterName'),
+        width: 240,
+        formatter: (row: AppRow) =>
+          h('div', { class: 'flex items-center gap-1' }, [
+            h('span', {}, row.character_name),
+            h(ArtCopyButton, { text: row.character_name })
+          ])
+      },
+      {
+        prop: 'contact',
+        label: t('welfareApproval.contact'),
+        width: 140,
+        showOverflowTooltip: true,
+        formatter: (row: AppRow) => {
+          if (row.qq) return `${t('characters.profile.qq')}: ${row.qq}`
+          if (row.discord_id) return `${t('characters.profile.discordId')}: ${row.discord_id}`
+          return '-'
+        }
+      },
+      {
+        prop: 'welfare_name',
+        label: t('welfareApproval.welfareName'),
+        width: 160,
+        showOverflowTooltip: true
+      },
+      {
+        prop: 'reviewer_name',
+        label: t('welfareApproval.reviewerName'),
+        width: 130,
+        showOverflowTooltip: true,
+        formatter: (row: AppRow) =>
+          h(
+            'span',
+            {
+              class:
+                row.reviewer_name ||
+                (row.reviewed_by === 0 && row.status === 'delivered' && row.reviewed_at)
+                  ? ''
+                  : 'text-gray-400'
+            },
+            formatWelfareHistoryReviewerName({
+              reviewerName: row.reviewer_name,
+              reviewedBy: row.reviewed_by,
+              status: row.status,
+              reviewedAt: row.reviewed_at,
+              systemLabel: t('welfareApproval.systemReviewer')
+            })
+          )
+      },
+      {
+        prop: 'created_at',
+        label: t('welfareApproval.requestedAt'),
+        width: 170,
+        formatter: (row: AppRow) => formatTime(row.created_at)
+      },
+      {
+        prop: 'reviewed_at',
+        label: t('welfareApproval.processedAt'),
+        width: 170,
+        formatter: (row: AppRow) => (row.reviewed_at ? formatTime(row.reviewed_at) : '-')
       }
-    },
-    {
-      prop: 'welfare_name',
-      label: t('welfareApproval.welfareName'),
-      width: 160,
-      showOverflowTooltip: true
-    },
-    {
-      prop: 'reviewer_name',
-      label: t('welfareApproval.reviewerName'),
-      width: 130,
-      showOverflowTooltip: true,
-      formatter: (row: AppRow) =>
-        h(
-          'span',
-          {
-            class:
-              row.reviewer_name ||
-              (row.reviewed_by === 0 && row.status === 'delivered' && row.reviewed_at)
-                ? ''
-                : 'text-gray-400'
-          },
-          formatWelfareHistoryReviewerName({
-            reviewerName: row.reviewer_name,
-            reviewedBy: row.reviewed_by,
-            status: row.status,
-            reviewedAt: row.reviewed_at,
-            systemLabel: t('welfareApproval.systemReviewer')
+    ]
+    if (includeEvidenceImage) {
+      columns.push({
+        prop: 'evidence_image',
+        label: t('welfareApproval.evidenceImage'),
+        width: 100,
+        formatter: (row: AppRow) => {
+          if (!row.evidence_image) return h('span', { class: 'text-gray-400' }, '-')
+          return h(ElImage, {
+            src: row.evidence_image,
+            previewSrcList: [row.evidence_image],
+            previewTeleported: true,
+            fit: 'contain',
+            style: 'height:40px;max-width:80px;object-fit:contain;cursor:pointer',
+            class: 'rounded border'
           })
-        )
-    },
-    {
-      prop: 'created_at',
-      label: t('welfareApproval.requestedAt'),
-      width: 170,
-      formatter: (row: AppRow) => formatTime(row.created_at)
-    },
-    {
-      prop: 'reviewed_at',
-      label: t('welfareApproval.processedAt'),
-      width: 170,
-      formatter: (row: AppRow) => (row.reviewed_at ? formatTime(row.reviewed_at) : '-')
-    },
-    {
-      prop: 'evidence_image',
-      label: t('welfareApproval.evidenceImage'),
-      width: 100,
-      formatter: (row: AppRow) => {
-        if (!row.evidence_image) return h('span', { class: 'text-gray-400' }, '-')
-        return h(ElImage, {
-          src: row.evidence_image,
-          previewSrcList: [row.evidence_image],
-          previewTeleported: true,
-          fit: 'contain',
-          style: 'height:40px;max-width:80px;object-fit:contain;cursor:pointer',
-          class: 'rounded border'
-        })
-      }
+        }
+      })
     }
-  ]
+    return columns
+  }
 
   // ─── Pending tab ───
   const {
@@ -258,7 +263,9 @@
       apiFn: adminListApplications,
       apiParams: { current: 1, size: 200, status: 'requested' },
       columnsFactory: () => [
-        ...buildBaseColumns().filter((c) => c.prop !== 'reviewer_name'),
+        ...buildBaseColumns({ includeEvidenceImage: true }).filter(
+          (c) => c.prop !== 'reviewer_name'
+        ),
         {
           prop: 'actions',
           label: '',
@@ -300,7 +307,7 @@
       apiParams: { current: 1, size: 200, status: 'delivered,rejected' },
       immediate: false,
       columnsFactory: () => [
-        ...buildBaseColumns(),
+        ...buildBaseColumns({ includeEvidenceImage: false }),
         {
           prop: 'status',
           label: t('common.status'),
