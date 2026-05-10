@@ -17,8 +17,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
+import { useSidebar } from "@/components/ui/sidebar-context"
 import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react"
 import { useI18n } from "@/i18n"
 import { useSessionStore } from "@/stores"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { applyForWelfare, getEligibleWelfares, getMyApplications, uploadWelfareEvidence } from '@/api/welfare'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -76,7 +76,7 @@ export function WelfareMyPage() {
   const [evidenceUploading, setEvidenceUploading] = useState(false)
   const [applying, setApplying] = useState(false)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -97,11 +97,14 @@ export function WelfareMyPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [appPage, appPageSize, t])
 
   useEffect(() => {
-    void loadData()
-  }, [appPage, appPageSize, t])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData])
 
   const appPageCount = useMemo(() => Math.max(1, Math.ceil(appTotal / appPageSize) || 1), [appPageSize, appTotal])
 

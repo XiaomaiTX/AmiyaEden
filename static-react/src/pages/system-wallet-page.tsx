@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import {
   adminAdjustWallet,
   adminGetWalletAnalytics,
@@ -262,7 +262,7 @@ function WalletListPanel({
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -282,14 +282,14 @@ function WalletListPanel({
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, searchState, t])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadData()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [page, pageSize, refreshSeed, searchState])
+  }, [loadData, refreshSeed])
 
   return (
     <div className="space-y-4">
@@ -405,14 +405,17 @@ function WalletTransactionsPanel({
   const [searchState, setSearchState] = useState({ userId: initialUserId, userKeyword: '', refType: '' })
 
   useEffect(() => {
-    setUserId(initialUserId)
-    setSearchState((current) => ({ ...current, userId: initialUserId }))
-    setPage(1)
+    const timer = window.setTimeout(() => {
+      setUserId(initialUserId)
+      setSearchState((current) => ({ ...current, userId: initialUserId }))
+      setPage(1)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [initialUserId])
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -434,14 +437,14 @@ function WalletTransactionsPanel({
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, searchState, t])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadData()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [page, pageSize, refreshSeed, searchState])
+  }, [loadData, refreshSeed])
 
   return (
     <div className="space-y-4">
@@ -588,7 +591,7 @@ function WalletLogsPanel({
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -610,14 +613,14 @@ function WalletLogsPanel({
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, searchState, t])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadData()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [page, pageSize, refreshSeed, searchState])
+  }, [loadData, refreshSeed])
 
   return (
     <div className="space-y-4">
@@ -769,7 +772,7 @@ function WalletAnalysisPanel({
     'recruit_link_reward',
   ]
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -788,14 +791,14 @@ function WalletAnalysisPanel({
     } finally {
       setLoading(false)
     }
-  }
+  }, [searchState, t])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadData()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [refreshSeed, searchState])
+  }, [loadData, refreshSeed])
 
   const summaryCards = [
     { key: 'wallet_count', label: t('walletAdmin.analysis.walletCount'), value: analytics?.summary.wallet_count ?? 0 },
@@ -978,9 +981,9 @@ function SimpleTableCard<T extends object>({
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/40 text-left">
-              {columns.map(([_, label]) => (
-                <th key={label} className="px-3 py-2">
-                  {label}
+              {columns.map((column) => (
+                <th key={column[1]} className="px-3 py-2">
+                  {column[1]}
                 </th>
               ))}
             </tr>

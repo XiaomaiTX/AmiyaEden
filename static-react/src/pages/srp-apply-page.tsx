@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchKillmailDetail, fetchMyApplications, fetchMyKillmails, submitApplication } from '@/api/srp'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
@@ -25,7 +25,7 @@ export function SrpApplyPage() {
   const [detail, setDetail] = useState<KillmailDetailResponse | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -43,11 +43,14 @@ export function SrpApplyPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
   useEffect(() => {
-    void loadData()
-  }, [t])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData])
 
   const selectedKillmail = useMemo(
     () => killmails.find((killmail) => killmail.killmail_id === selectedKillmailId) ?? null,
@@ -56,8 +59,10 @@ export function SrpApplyPage() {
 
   useEffect(() => {
     if (!selectedKillmailId) {
-      setDetail(null)
-      return
+      const timer = window.setTimeout(() => {
+        setDetail(null)
+      }, 0)
+      return () => window.clearTimeout(timer)
     }
 
     let cancelled = false

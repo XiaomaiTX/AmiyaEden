@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-05-01
+last_reviewed: 2026-05-10
 source_of_truth:
   - static/src
   - docs/ai/repo-rules.md
@@ -27,6 +27,7 @@ source_of_truth:
 - [x] 迁移 i18n 基础能力（`zh/en` 双语与切换，含 `I18nProvider + useI18n`）
 - [x] 迁移全局消息与错误提示能力（替代 `ElMessage/ElMessageBox`，含 toast + confirm）
 - [x] React 前端接入深色模式主题切换（`ThemeProvider + ModeToggle`，遵循 `dark` 类驱动）
+- [x] React 壳层 `SidebarContext` 独立文件化（侧边栏状态、移动端展开状态、cookie 记忆、快捷键切换已从 `sidebar.tsx` 拆分完成）
 
 - [x] React 真实 SSO 登录闭环落地（`/auth/login` + `/auth/callback` + 401 回登 + redirect 回跳）
 
