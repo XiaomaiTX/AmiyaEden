@@ -1,4 +1,13 @@
 import { requestJson } from '@/api/http-client'
+import type {
+  AddReplyParams,
+  CreateTicketParams,
+  TicketCategory,
+  TicketItem,
+  TicketListParams,
+  TicketListResponse,
+  TicketReply,
+} from '@/types/api/ticket'
 
 interface ApiResponse<T> {
   code: number
@@ -13,8 +22,8 @@ function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
   return response.data
 }
 
-export async function createTicket(data: Api.Ticket.CreateTicketParams) {
-  const response = await requestJson<ApiResponse<Api.Ticket.TicketItem>>('/api/v1/ticket/tickets', {
+export async function createTicket(data: CreateTicketParams) {
+  const response = await requestJson<ApiResponse<TicketItem>>('/api/v1/ticket/tickets', {
     method: 'POST',
     body: JSON.stringify(data),
   })
@@ -22,7 +31,7 @@ export async function createTicket(data: Api.Ticket.CreateTicketParams) {
   return assertSuccess(response, 'create ticket failed')
 }
 
-export async function listMyTickets(params: Api.Ticket.TicketListParams) {
+export async function listMyTickets(params: TicketListParams) {
   const searchParams = new URLSearchParams({
     current: String(params.current ?? 1),
     size: String(params.size ?? 20),
@@ -31,39 +40,35 @@ export async function listMyTickets(params: Api.Ticket.TicketListParams) {
     searchParams.set('status', params.status)
   }
 
-  const response = await requestJson<
-    ApiResponse<Api.Common.PaginatedResponse<Api.Ticket.TicketItem>>
-  >(`/api/v1/ticket/tickets/me?${searchParams.toString()}`)
+  const response = await requestJson<ApiResponse<TicketListResponse>>(
+    `/api/v1/ticket/tickets/me?${searchParams.toString()}`
+  )
 
   return assertSuccess(response, 'list my tickets failed')
 }
 
 export async function listTicketCategories() {
-  const response = await requestJson<ApiResponse<Api.Ticket.TicketCategory[]>>(
-    '/api/v1/ticket/categories'
-  )
+  const response = await requestJson<ApiResponse<TicketCategory[]>>('/api/v1/ticket/categories')
 
   return assertSuccess(response, 'list ticket categories failed') ?? []
 }
 
 export async function getMyTicket(id: number) {
-  const response = await requestJson<ApiResponse<Api.Ticket.TicketItem>>(
-    `/api/v1/ticket/tickets/${id}`
-  )
+  const response = await requestJson<ApiResponse<TicketItem>>(`/api/v1/ticket/tickets/${id}`)
 
   return assertSuccess(response, 'get my ticket failed')
 }
 
 export async function listMyTicketReplies(id: number) {
-  const response = await requestJson<ApiResponse<Api.Ticket.TicketReply[]>>(
+  const response = await requestJson<ApiResponse<TicketReply[]>>(
     `/api/v1/ticket/tickets/${id}/replies`
   )
 
   return assertSuccess(response, 'list my ticket replies failed') ?? []
 }
 
-export async function addMyTicketReply(id: number, data: Api.Ticket.AddReplyParams) {
-  const response = await requestJson<ApiResponse<Api.Ticket.TicketReply>>(
+export async function addMyTicketReply(id: number, data: AddReplyParams) {
+  const response = await requestJson<ApiResponse<TicketReply>>(
     `/api/v1/ticket/tickets/${id}/replies`,
     {
       method: 'POST',

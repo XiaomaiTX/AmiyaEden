@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatIskPlain } from '@/lib/isk'
 import { useI18n } from '@/i18n'
+import type { NpcKillCorpRequest, NpcKillCorpResponse } from '@/types/api/npc-kill'
 
 type DateRangeState = {
   startDate: string
@@ -27,7 +28,7 @@ export function DashboardNpcKillsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [reportData, setReportData] = useState<Api.NpcKill.NpcKillCorpResponse | null>(null)
+  const [reportData, setReportData] = useState<NpcKillCorpResponse | null>(null)
   const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
   const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
 
@@ -39,7 +40,7 @@ export function DashboardNpcKillsPage() {
       setError(null)
 
       try {
-        const payload: Api.NpcKill.NpcKillCorpRequest = {}
+        const payload: NpcKillCorpRequest = {}
         if (appliedDateRange.startDate) {
           payload.start_date = appliedDateRange.startDate
         }

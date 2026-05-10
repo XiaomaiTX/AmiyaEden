@@ -2,17 +2,18 @@ import { useMemo, useState } from 'react'
 import { useEffect } from 'react'
 import { fetchInfoFittings } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import type { FittingResponse, FittingsListResponse } from '@/types/api/eve-info'
 
 export function InfoFittingsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<Api.EveInfo.FittingsListResponse | null>(null)
+  const [data, setData] = useState<FittingsListResponse | null>(null)
   const [selectedRace, setSelectedRace] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
   const [keyword, setKeyword] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
-  const [selectedFitting, setSelectedFitting] = useState<Api.EveInfo.FittingResponse | null>(null)
+  const [selectedFitting, setSelectedFitting] = useState<FittingResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -63,7 +64,7 @@ export function InfoFittingsPage() {
   }, [data?.fittings, keyword, selectedGroup, selectedRace])
 
   const grouped = useMemo(() => {
-    const map = new Map<string, Api.EveInfo.FittingResponse[]>()
+    const map = new Map<string, FittingResponse[]>()
     for (const item of filtered) {
       const group = item.group_name || 'Unknown'
       if (!map.has(group)) map.set(group, [])

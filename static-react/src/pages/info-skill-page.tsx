@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoSkills, runMyCharacterESIRefresh } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import type { EveCharacter } from '@/types/api/auth'
+import type { SkillResponse } from '@/types/api/eve-info'
 
 export function InfoSkillPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [esiRefreshing, setEsiRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
   const [reloadVersion, setReloadVersion] = useState(0)
   const [keyword, setKeyword] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
-  const [skillData, setSkillData] = useState<Api.EveInfo.SkillResponse | null>(null)
+  const [skillData, setSkillData] = useState<SkillResponse | null>(null)
 
   useEffect(() => {
     let cancelled = false

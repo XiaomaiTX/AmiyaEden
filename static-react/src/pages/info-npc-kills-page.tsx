@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { formatIskPlain } from '@/lib/isk'
 import { useI18n } from '@/i18n'
+import type { EveCharacter } from '@/types/api/auth'
+import type { NpcKillResponse } from '@/types/api/npc-kill'
 
 type DateRangeState = {
   startDate: string
@@ -30,11 +32,11 @@ export function InfoNpcKillsPage() {
   const [reportLoading, setReportLoading] = useState(true)
   const [characterError, setCharacterError] = useState<string | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState(0)
   const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
   const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
-  const [reportData, setReportData] = useState<Api.NpcKill.NpcKillResponse | null>(null)
+  const [reportData, setReportData] = useState<NpcKillResponse | null>(null)
   const formatRefTypeLabel = (refType: string) =>
     ({
       bounty_prizes: t('npcKill.refTypes.bounty_prizes'),
