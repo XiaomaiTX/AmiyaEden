@@ -19,6 +19,23 @@ export type AppPageType =
   | 'ticket-my-tickets'
   | 'ticket-create'
   | 'ticket-detail'
+  | 'ticket-management'
+  | 'ticket-categories'
+  | 'ticket-statistics'
+  | 'ticket-admin-detail'
+  | 'welfare-my'
+  | 'welfare-approval'
+  | 'welfare-settings'
+  | 'newbro-select-captain'
+  | 'newbro-select-mentor'
+  | 'newbro-captain'
+  | 'newbro-mentor'
+  | 'newbro-manage'
+  | 'newbro-mentor-manage'
+  | 'newbro-recruit-link'
+  | 'srp-apply'
+  | 'srp-manage'
+  | 'srp-prices'
   | 'stub'
   | 'admin-demo'
 
@@ -258,8 +275,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'welfare/my',
     titleKey: 'nav.welfare.my',
-    pageType: 'stub',
-    stubTitle: 'Welfare My',
+    pageType: 'welfare-my',
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
@@ -268,8 +284,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'welfare/approval',
     titleKey: 'nav.welfare.approval',
-    pageType: 'stub',
-    stubTitle: 'Welfare Approval',
+    pageType: 'welfare-approval',
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
@@ -278,8 +293,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'welfare/settings',
     titleKey: 'nav.welfare.settings',
-    pageType: 'stub',
-    stubTitle: 'Welfare Settings',
+    pageType: 'welfare-settings',
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
@@ -289,8 +303,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/select-captain',
     titleKey: 'nav.newbro.selectCaptain',
-    pageType: 'stub',
-    stubTitle: 'Newbro Select Captain',
+    pageType: 'newbro-select-captain',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -299,8 +312,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/select-mentor',
     titleKey: 'nav.newbro.selectMentor',
-    pageType: 'stub',
-    stubTitle: 'Newbro Select Mentor',
+    pageType: 'newbro-select-mentor',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -309,8 +321,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/captain',
     titleKey: 'nav.newbro.captain',
-    pageType: 'stub',
-    stubTitle: 'Newbro Captain',
+    pageType: 'newbro-captain',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -319,8 +330,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/mentor',
     titleKey: 'nav.newbro.mentor',
-    pageType: 'stub',
-    stubTitle: 'Newbro Mentor',
+    pageType: 'newbro-mentor',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -329,8 +339,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/manage',
     titleKey: 'nav.newbro.manage',
-    pageType: 'stub',
-    stubTitle: 'Newbro Manage',
+    pageType: 'newbro-manage',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -339,8 +348,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/mentor-manage',
     titleKey: 'nav.newbro.mentorManage',
-    pageType: 'stub',
-    stubTitle: 'Newbro Mentor Manage',
+    pageType: 'newbro-mentor-manage',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -349,8 +357,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'newbro/recruit-link',
     titleKey: 'nav.newbro.recruitLink',
-    pageType: 'stub',
-    stubTitle: 'Newbro Recruit Link',
+    pageType: 'newbro-recruit-link',
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
@@ -411,8 +418,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'srp/srp-apply',
     titleKey: 'nav.srp.apply',
-    pageType: 'stub',
-    stubTitle: 'SRP Apply',
+    pageType: 'srp-apply',
     batch: 'B',
     menuGroup: 'nav.group.srp',
     menuIcon: 'srp',
@@ -421,8 +427,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'srp/srp-manage',
     titleKey: 'nav.srp.manage',
-    pageType: 'stub',
-    stubTitle: 'SRP Manage',
+    pageType: 'srp-manage',
     batch: 'B',
     menuGroup: 'nav.group.srp',
     menuIcon: 'srp',
@@ -434,8 +439,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'srp/srp-prices',
     titleKey: 'nav.srp.prices',
-    pageType: 'stub',
-    stubTitle: 'SRP Prices',
+    pageType: 'srp-prices',
     batch: 'B',
     menuGroup: 'nav.group.srp',
     menuIcon: 'srp',
@@ -471,8 +475,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'ticket/management',
     titleKey: 'nav.ticket.management',
-    pageType: 'stub',
-    stubTitle: 'Ticket Management',
+    pageType: 'ticket-management',
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
@@ -481,8 +484,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'ticket/categories',
     titleKey: 'nav.ticket.categories',
-    pageType: 'stub',
-    stubTitle: 'Ticket Categories',
+    pageType: 'ticket-categories',
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
@@ -491,8 +493,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'ticket/statistics',
     titleKey: 'nav.ticket.statistics',
-    pageType: 'stub',
-    stubTitle: 'Ticket Statistics',
+    pageType: 'ticket-statistics',
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
@@ -501,8 +502,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
   {
     path: 'ticket/admin-detail/:id',
     titleKey: 'nav.ticket.adminDetail',
-    pageType: 'stub',
-    stubTitle: 'Ticket Admin Detail',
+    pageType: 'ticket-admin-detail',
     batch: 'B',
     menuHidden: true,
     meta: { roles: ['super_admin', 'admin'] },
