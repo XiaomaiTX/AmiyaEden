@@ -13,15 +13,16 @@ export class HttpError extends Error {
 
 export async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const accessToken = useSessionStore.getState().accessToken
-  const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+  const headers = new Headers(init?.headers)
+
+  headers.set('Content-Type', 'application/json')
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
+  }
 
   const response = await fetch(input, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders,
-      ...init?.headers,
-    },
+    headers,
   })
 
   if (response.status === 401) {
