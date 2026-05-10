@@ -14,6 +14,7 @@
   const { t } = useI18n()
 
   const tagType = computed(() => {
+    if (props.priority === 'unassigned') return 'info'
     if (props.priority === 'high') return 'danger'
     if (props.priority === 'medium') return 'warning'
     return 'info'

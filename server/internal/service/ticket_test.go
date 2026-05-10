@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"amiya-eden/global"
@@ -20,7 +20,7 @@ func setupTicketServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 
-	if err := db.AutoMigrate(&model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 
@@ -51,7 +51,7 @@ func TestTicketServiceCreateTicketDefaultsAndHistory(t *testing.T) {
 	category := seedTicketCategory(t)
 
 	svc := NewTicketService()
-	ticket, err := svc.CreateTicket(1001, category.ID, "  登录异常 ", "  无法登录客户端 ", "")
+	ticket, err := svc.CreateTicket(1001, category.ID, "  登录异常 ", "  无法登录客户端 ")
 	if err != nil {
 		t.Fatalf("CreateTicket() error = %v, want nil", err)
 	}
@@ -59,8 +59,8 @@ func TestTicketServiceCreateTicketDefaultsAndHistory(t *testing.T) {
 	if ticket.Title != "登录异常" {
 		t.Fatalf("Title = %q, want %q", ticket.Title, "登录异常")
 	}
-	if ticket.Priority != model.TicketPriorityMedium {
-		t.Fatalf("Priority = %q, want %q", ticket.Priority, model.TicketPriorityMedium)
+	if ticket.Priority != model.TicketPriorityUnassigned {
+		t.Fatalf("Priority = %q, want %q", ticket.Priority, model.TicketPriorityUnassigned)
 	}
 	if ticket.Status != model.TicketStatusPending {
 		t.Fatalf("Status = %q, want %q", ticket.Status, model.TicketStatusPending)
@@ -83,7 +83,7 @@ func TestTicketServiceGetMyTicketPermissionDeniedForOtherUser(t *testing.T) {
 	category := seedTicketCategory(t)
 	svc := NewTicketService()
 
-	ticket, err := svc.CreateTicket(2001, category.ID, "角色卡住", "请求解卡", model.TicketPriorityLow)
+	ticket, err := svc.CreateTicket(2001, category.ID, "角色卡住", "请求解卡")
 	if err != nil {
 		t.Fatalf("CreateTicket() error = %v, want nil", err)
 	}
@@ -102,7 +102,7 @@ func TestTicketServiceReplyVisibilitySeparatesInternalNotes(t *testing.T) {
 	category := seedTicketCategory(t)
 	svc := NewTicketService()
 
-	ticket, err := svc.CreateTicket(3001, category.ID, "合同问题", "合同无法接收", model.TicketPriorityHigh)
+	ticket, err := svc.CreateTicket(3001, category.ID, "合同问题", "合同无法接收")
 	if err != nil {
 		t.Fatalf("CreateTicket() error = %v, want nil", err)
 	}
@@ -139,7 +139,7 @@ func TestTicketServiceUpdateStatusSetsHandledAndClosed(t *testing.T) {
 	category := seedTicketCategory(t)
 	svc := NewTicketService()
 
-	ticket, err := svc.CreateTicket(4001, category.ID, "赏金结算问题", "金额未到账", model.TicketPriorityMedium)
+	ticket, err := svc.CreateTicket(4001, category.ID, "赏金结算问题", "金额未到账")
 	if err != nil {
 		t.Fatalf("CreateTicket() error = %v, want nil", err)
 	}

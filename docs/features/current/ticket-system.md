@@ -30,7 +30,7 @@ source_of_truth:
 - 提供工单分类管理（列表、创建、更新、删除）
 - 提供状态变更历史查询与统计看板（总量、状态分布、分类分布、近 7/30 天）
 - 提供菜单栏工单徽章提醒，数量为待处理工单数加上当前管理员处理中工单数
-- 工单创建时默认状态为 `pending`，优先级缺省为 `medium`
+- 工单创建时默认状态为 `pending`，优先级缺省为 `unassigned`
 - 管理员回复可标记 `is_internal`，成员侧回复列表不会返回内部备注
 - 状态更新到 `in_progress` / `completed` 时自动记录处理人；更新到 `completed` 时记录关闭时间
 - 系统启动时会初始化默认工单分类（若不存在）
@@ -83,7 +83,7 @@ source_of_truth:
 ## 关键不变量
 
 - 工单状态只支持：`pending`、`in_progress`、`completed`
-- 工单优先级只支持：`low`、`medium`、`high`
+- 工单优先级只支持：`unassigned`、`low`、`medium`、`high`
 - 成员侧回复查询必须过滤 `is_internal = true`
 - 状态变更只有在状态值实际变化时才写入 `ticket_status_history`
 - 统计接口返回值至少包含 `total`、`status`、`category`、`recent_7d`、`recent_30d`、`pendingCount`

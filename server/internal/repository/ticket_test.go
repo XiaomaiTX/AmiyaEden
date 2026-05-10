@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import (
 	"amiya-eden/global"
@@ -29,7 +29,7 @@ func setupTicketRepositoryTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	oldDB := global.DB
@@ -39,6 +39,14 @@ func setupTicketRepositoryTestDB(t *testing.T) {
 
 func seedTicketRepositoryData(t *testing.T) (model.Ticket, model.Ticket) {
 	t.Helper()
+	users := []model.User{
+		{BaseModel: model.BaseModel{ID: 1001}, Nickname: "User1001"},
+		{BaseModel: model.BaseModel{ID: 1002}, Nickname: "User1002"},
+	}
+	if err := global.DB.Create(&users).Error; err != nil {
+		t.Fatalf("create users: %v", err)
+	}
+
 	category := model.TicketCategory{Name: "平台反馈", NameEN: "Platform Feedback", Enabled: true}
 	if err := global.DB.Create(&category).Error; err != nil {
 		t.Fatalf("create category: %v", err)
@@ -103,6 +111,42 @@ func TestTicketRepositoryListTicketsAdminSupportsKeywordAndStatus(t *testing.T) 
 	}
 	if list[0].Title != "合同异常" {
 		t.Fatalf("title = %q, want %q", list[0].Title, "合同异常")
+	}
+}
+
+func TestTicketRepositoryListTicketsAdminSupportsPriorityAndHidesCompletedByDefault(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+	t1, _ := seedTicketRepositoryData(t)
+
+	completed := model.Ticket{
+		UserID:      1001,
+		CategoryID:  t1.CategoryID,
+		Title:       "已完结工单",
+		Description: "should be hidden by default",
+		Status:      model.TicketStatusCompleted,
+		Priority:    model.TicketPriorityLow,
+	}
+	if err := global.DB.Create(&completed).Error; err != nil {
+		t.Fatalf("create completed ticket: %v", err)
+	}
+
+	list, _, err := repo.ListTicketsAdmin(TicketListFilter{}, 1, 20)
+	if err != nil {
+		t.Fatalf("ListTicketsAdmin() default error: %v", err)
+	}
+	for _, item := range list {
+		if item.Status == model.TicketStatusCompleted {
+			t.Fatal("completed tickets should be hidden by default")
+		}
+	}
+
+	priorityList, _, err := repo.ListTicketsAdmin(TicketListFilter{Priority: model.TicketPriorityHigh}, 1, 20)
+	if err != nil {
+		t.Fatalf("ListTicketsAdmin(priority) error: %v", err)
+	}
+	if len(priorityList) != 1 || priorityList[0].Priority != model.TicketPriorityHigh {
+		t.Fatalf("priority filter mismatch, got len=%d", len(priorityList))
 	}
 }
 

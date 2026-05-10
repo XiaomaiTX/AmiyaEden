@@ -9,22 +9,25 @@ const (
 )
 
 const (
-	TicketPriorityLow    = "low"
-	TicketPriorityMedium = "medium"
-	TicketPriorityHigh   = "high"
+	TicketPriorityUnassigned = "unassigned"
+	TicketPriorityLow        = "low"
+	TicketPriorityMedium     = "medium"
+	TicketPriorityHigh       = "high"
 )
 
 type Ticket struct {
 	BaseModel
-	UserID      uint       `gorm:"not null;index" json:"user_id"`
-	CategoryID  uint       `gorm:"not null;index" json:"category_id"`
-	Title       string     `gorm:"size:200;not null" json:"title"`
-	Description string     `gorm:"type:text;not null" json:"description"`
-	Status      string     `gorm:"size:20;not null;default:'pending';index" json:"status"`
-	Priority    string     `gorm:"size:20;not null;default:'medium'" json:"priority"`
-	HandledBy   *uint      `gorm:"index" json:"handled_by,omitempty"`
-	HandledAt   *time.Time `json:"handled_at,omitempty"`
-	ClosedAt    *time.Time `json:"closed_at,omitempty"`
+	UserID            uint       `gorm:"not null;index" json:"user_id"`
+	CategoryID        uint       `gorm:"not null;index" json:"category_id"`
+	Title             string     `gorm:"size:200;not null" json:"title"`
+	Description       string     `gorm:"type:text;not null" json:"description"`
+	Status            string     `gorm:"size:20;not null;default:'pending';index" json:"status"`
+	Priority          string     `gorm:"size:20;not null;default:'unassigned'" json:"priority"`
+	HandledBy         *uint      `gorm:"index" json:"handled_by,omitempty"`
+	HandledAt         *time.Time `json:"handled_at,omitempty"`
+	ClosedAt          *time.Time `json:"closed_at,omitempty"`
+	UserNickname      string     `gorm:"-" json:"user_nickname,omitempty"`
+	HandledByNickname string     `gorm:"-" json:"handled_by_nickname,omitempty"`
 }
 
 func (Ticket) TableName() string {
@@ -46,10 +49,11 @@ func (TicketCategory) TableName() string {
 
 type TicketReply struct {
 	BaseModel
-	TicketID   uint   `gorm:"not null;index" json:"ticket_id"`
-	UserID     uint   `gorm:"not null;index" json:"user_id"`
-	Content    string `gorm:"type:text;not null" json:"content"`
-	IsInternal bool   `gorm:"not null;default:false" json:"is_internal"`
+	TicketID     uint   `gorm:"not null;index" json:"ticket_id"`
+	UserID       uint   `gorm:"not null;index" json:"user_id"`
+	Content      string `gorm:"type:text;not null" json:"content"`
+	IsInternal   bool   `gorm:"not null;default:false" json:"is_internal"`
+	UserNickname string `gorm:"-" json:"user_nickname,omitempty"`
 }
 
 func (TicketReply) TableName() string {
@@ -57,15 +61,15 @@ func (TicketReply) TableName() string {
 }
 
 type TicketStatusHistory struct {
-	ID         uint      `gorm:"primarykey" json:"id"`
-	TicketID   uint      `gorm:"not null;index" json:"ticket_id"`
-	FromStatus string    `gorm:"size:20" json:"from_status"`
-	ToStatus   string    `gorm:"size:20;not null" json:"to_status"`
-	ChangedBy  uint      `gorm:"not null" json:"changed_by"`
-	ChangedAt  time.Time `gorm:"autoCreateTime" json:"changed_at"`
+	ID                uint      `gorm:"primarykey" json:"id"`
+	TicketID          uint      `gorm:"not null;index" json:"ticket_id"`
+	FromStatus        string    `gorm:"size:20" json:"from_status"`
+	ToStatus          string    `gorm:"size:20;not null" json:"to_status"`
+	ChangedBy         uint      `gorm:"not null" json:"changed_by"`
+	ChangedAt         time.Time `gorm:"autoCreateTime" json:"changed_at"`
+	ChangedByNickname string    `gorm:"-" json:"changed_by_nickname,omitempty"`
 }
 
 func (TicketStatusHistory) TableName() string {
 	return "ticket_status_history"
 }
-

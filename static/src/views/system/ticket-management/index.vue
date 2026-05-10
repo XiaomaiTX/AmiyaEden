@@ -17,6 +17,17 @@
         <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
         <ElOption :label="t('ticket.status.completed')" value="completed" />
       </ElSelect>
+      <ElSelect
+        v-model="filters.priority"
+        clearable
+        :placeholder="t('ticket.filters.priority')"
+        style="width: 180px"
+      >
+        <ElOption :label="t('ticket.priority.unassigned')" value="unassigned" />
+        <ElOption :label="t('ticket.priority.low')" value="low" />
+        <ElOption :label="t('ticket.priority.medium')" value="medium" />
+        <ElOption :label="t('ticket.priority.high')" value="high" />
+      </ElSelect>
       <ElButton type="primary" @click="handleSearch">{{ t('common.search') }}</ElButton>
     </div>
 
@@ -49,9 +60,14 @@
   const { t } = useI18n()
   const router = useRouter()
 
-  const filters = reactive<{ keyword: string; status: Api.Ticket.TicketStatus | '' }>({
+  const filters = reactive<{
+    keyword: string
+    status: Api.Ticket.TicketStatus | ''
+    priority: Api.Ticket.TicketPriority | ''
+  }>({
     keyword: '',
-    status: ''
+    status: '',
+    priority: ''
   })
 
   const {
@@ -73,11 +89,17 @@
         current: 1,
         size: 20,
         keyword: filters.keyword,
-        status: filters.status
+        status: filters.status,
+        priority: filters.priority
       },
       columnsFactory: () => [
         { prop: 'id', label: 'ID', width: 80 },
-        { prop: 'user_id', label: t('ticket.columns.submitter'), width: 100 },
+        {
+          prop: 'user_nickname',
+          label: t('ticket.columns.submitter'),
+          width: 140,
+          formatter: (row) => row.user_nickname || '-'
+        },
         { prop: 'title', label: t('ticket.columns.title'), minWidth: 200 },
         {
           prop: 'status',
@@ -111,6 +133,7 @@
                 onChange: (val: Api.Ticket.TicketPriority) => updatePriority(row.id, val)
               },
               () => [
+                h(ElOption, { label: t('ticket.priority.unassigned'), value: 'unassigned' }),
                 h(ElOption, { label: t('ticket.priority.low'), value: 'low' }),
                 h(ElOption, { label: t('ticket.priority.medium'), value: 'medium' }),
                 h(ElOption, { label: t('ticket.priority.high'), value: 'high' })
@@ -164,7 +187,8 @@
     Object.assign(searchParams, {
       current: 1,
       keyword: filters.keyword,
-      status: filters.status
+      status: filters.status,
+      priority: filters.priority
     })
     getData()
   }

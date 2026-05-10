@@ -27,14 +27,9 @@
       </div>
     </ElCard>
 
-    <ElCard>
+    <ElCard class="art-table-card" shadow="never">
       <template #header>{{ t('ticket.statusHistory') }}</template>
-      <ElTable :data="histories">
-        <ElTableColumn prop="from_status" :label="t('ticket.columns.fromStatus')" width="160" />
-        <ElTableColumn prop="to_status" :label="t('ticket.columns.toStatus')" width="160" />
-        <ElTableColumn prop="changed_by" :label="t('ticket.columns.operator')" width="120" />
-        <ElTableColumn prop="changed_at" :label="t('common.time')" />
-      </ElTable>
+      <ArtTable :data="histories" :columns="historyColumns" />
     </ElCard>
   </div>
 </template>
@@ -63,6 +58,17 @@
   const ticket = ref<Api.Ticket.TicketItem | null>(null)
   const replies = ref<Api.Ticket.TicketReply[]>([])
   const histories = ref<Api.Ticket.TicketStatusHistory[]>([])
+  const historyColumns = computed(() => [
+    { prop: 'from_status', label: t('ticket.columns.fromStatus'), width: 160 },
+    { prop: 'to_status', label: t('ticket.columns.toStatus'), width: 160 },
+    {
+      prop: 'changed_by_nickname',
+      label: t('ticket.columns.operator'),
+      width: 140,
+      formatter: (row: Api.Ticket.TicketStatusHistory) => row.changed_by_nickname || '-'
+    },
+    { prop: 'changed_at', label: t('common.time') }
+  ])
   const content = ref('')
   const isInternal = ref(false)
 

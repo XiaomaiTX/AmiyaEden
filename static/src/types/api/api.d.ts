@@ -2738,17 +2738,19 @@ declare namespace Api {
 
   namespace Ticket {
     type TicketStatus = 'pending' | 'in_progress' | 'completed'
-    type TicketPriority = 'low' | 'medium' | 'high'
+    type TicketPriority = 'unassigned' | 'low' | 'medium' | 'high'
 
     interface TicketItem {
       id: number
       user_id: number
+      user_nickname?: string
       category_id: number
       title: string
       description: string
       status: TicketStatus
       priority: TicketPriority
       handled_by?: number
+      handled_by_nickname?: string
       handled_at?: string
       closed_at?: string
       created_at: string
@@ -2770,6 +2772,7 @@ declare namespace Api {
       id: number
       ticket_id: number
       user_id: number
+      user_nickname?: string
       content: string
       is_internal: boolean
       created_at: string
@@ -2782,15 +2785,18 @@ declare namespace Api {
       from_status: string
       to_status: TicketStatus
       changed_by: number
+      changed_by_nickname?: string
       changed_at: string
     }
 
     type TicketListParams = Partial<Api.Common.CommonSearchParams> & {
       status?: TicketStatus | ''
+      priority?: TicketPriority | ''
     }
 
     type AdminTicketListParams = Partial<Api.Common.CommonSearchParams> & {
       status?: TicketStatus | ''
+      priority?: TicketPriority | ''
       keyword?: string
       category_id?: number
       user_id?: number
@@ -2800,7 +2806,6 @@ declare namespace Api {
       category_id: number
       title: string
       description: string
-      priority?: TicketPriority
     }
 
     interface AddReplyParams {

@@ -6,7 +6,8 @@ const prioritySource = readFileSync(new URL('./TicketPriorityBadge.vue', import.
 const statusSource = readFileSync(new URL('./TicketStatusBadge.vue', import.meta.url), 'utf8')
 const replySource = readFileSync(new URL('./TicketReplyItem.vue', import.meta.url), 'utf8')
 
-test('TicketPriorityBadge maps high/medium/low priorities to expected tag types', () => {
+test('TicketPriorityBadge maps unassigned/high/medium/low priorities to expected tag types', () => {
+  assert.match(prioritySource, /if \(props\.priority === 'unassigned'\) return 'info'/)
   assert.match(prioritySource, /if \(props\.priority === 'high'\) return 'danger'/)
   assert.match(prioritySource, /if \(props\.priority === 'medium'\) return 'warning'/)
   assert.match(prioritySource, /return 'info'/)

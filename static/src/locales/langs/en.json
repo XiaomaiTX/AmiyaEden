@@ -2467,7 +2467,8 @@
     "submit": "Submit",
     "filters": {
       "status": "Status",
-      "keyword": "Keyword"
+      "keyword": "Keyword",
+      "priority": "Priority"
     },
     "columns": {
       "title": "Title",
@@ -2490,6 +2491,7 @@
       "completed": "Completed"
     },
     "priority": {
+      "unassigned": "Unassigned",
       "low": "Low",
       "medium": "Medium",
       "high": "High"

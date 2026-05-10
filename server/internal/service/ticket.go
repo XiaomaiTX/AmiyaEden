@@ -41,9 +41,11 @@ func normalizeTicketStatus(status string) (string, error) {
 
 func normalizeTicketPriority(priority string) (string, error) {
 	if strings.TrimSpace(priority) == "" {
-		return model.TicketPriorityMedium, nil
+		return model.TicketPriorityUnassigned, nil
 	}
 	switch strings.TrimSpace(priority) {
+	case model.TicketPriorityUnassigned:
+		return model.TicketPriorityUnassigned, nil
 	case model.TicketPriorityLow:
 		return model.TicketPriorityLow, nil
 	case model.TicketPriorityMedium:
@@ -55,7 +57,7 @@ func normalizeTicketPriority(priority string) (string, error) {
 	}
 }
 
-func (s *TicketService) CreateTicket(userID, categoryID uint, title, description, priority string) (*model.Ticket, error) {
+func (s *TicketService) CreateTicket(userID, categoryID uint, title, description string) (*model.Ticket, error) {
 	title = strings.TrimSpace(title)
 	description = strings.TrimSpace(description)
 	if title == "" || description == "" {
@@ -68,7 +70,7 @@ func (s *TicketService) CreateTicket(userID, categoryID uint, title, description
 		}
 		return nil, err
 	}
-	normalizedPriority, err := normalizeTicketPriority(priority)
+	normalizedPriority, err := normalizeTicketPriority("")
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +123,7 @@ func (s *TicketService) ListTicketsAdmin(filter repository.TicketListFilter, pag
 	normalizePageRequest(&page, &pageSize, 20, 100)
 	filter.Keyword = strings.TrimSpace(filter.Keyword)
 	filter.Status = strings.TrimSpace(filter.Status)
+	filter.Priority = strings.TrimSpace(filter.Priority)
 	return s.repo.ListTicketsAdmin(filter, page, pageSize)
 }
 
@@ -300,4 +303,3 @@ func (s *TicketService) GetStatistics() (map[string]any, error) {
 		"pendingCount": byStatus[model.TicketStatusPending],
 	}, nil
 }
-
