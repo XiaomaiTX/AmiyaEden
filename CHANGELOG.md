@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-10
+
+### Added
+- 完成 React 迁移主线的多个批次页面落地，补齐 dashboard、info、ticket、welfare、newbro、SRP、shop、skill-planning、operation 与 system 相关页面、API 层、本地类型、路由注册和测试覆盖。
+- 新增 React 子应用的基础设施，包括路由守卫、权限门禁、主题切换、反馈系统、国际化上下文、共享 HTTP 客户端和版本迁移文档。
+- 补齐系统模块的管理能力与交互页面，包括审计、PAP、自动角色、用户中心、任务管理、钱包管理、Webhook 和基础配置。
+
+### Changed
+- 调整 ticket 流程，新增管理员优先级筛选，将新工单默认优先级改为 `unassigned`，并隐藏创建时的优先级选择。
+- 重构 welfare 历史展示逻辑，已完成申请的历史视图不再展示证明图片，审核与仓储查询同步收敛到新的行为。
+- 升级前端与后端依赖和构建环境，包括 `axios`、`vite`、`pgx`、Go 基础镜像、pnpm 版本和 Docker 构建流程。
+- 同步整理 React 迁移期间的类型体系、i18n 文案、路由结构和相关文档，减少 Vue 与 React 之间的契约漂移。
+
+### Fixed
+- 为 HTTP `content-type` 访问增加类型守卫，避免头部缺失时调用 `includes` 触发运行时异常。
+- 修复 `dbTx.Config` 和 `dbTx.Dialector` 为空时的数据库事务崩溃问题。
+- 将钱包批量写入改为分批处理，避免超过数据库参数上限导致的大批量插入失败。
+- 在 Docker 构建中固定 pnpm 版本并禁用 husky，提升镜像构建稳定性和可复现性。
+
 ## [1.1.1] - 2026-04-30
 
 ### Security
