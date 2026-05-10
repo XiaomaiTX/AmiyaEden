@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteShipPrice, fetchSrpConfig, fetchShipPrices, updateSrpConfig, upsertShipPrice } from '@/api/srp'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,7 +26,7 @@ export function SrpPricesPage() {
     amount: 0,
   })
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -39,11 +39,14 @@ export function SrpPricesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [keyword, t])
 
   useEffect(() => {
-    void loadData()
-  }, [keyword, t])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData])
 
   const orderedPrices = useMemo(() => [...prices].sort((left, right) => left.ship_type_id - right.ship_type_id), [prices])
 
