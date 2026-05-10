@@ -59,13 +59,6 @@ export function adminUpdateTicketStatus(id: number, data: Api.Ticket.UpdateStatu
   })
 }
 
-export function adminUpdateTicketPriority(id: number, data: Api.Ticket.UpdatePriorityParams) {
-  return request.put<Api.Ticket.TicketItem>({
-    url: `/api/v1/system/ticket/tickets/${id}/priority`,
-    data
-  })
-}
-
 export function adminAddTicketReply(id: number, data: Api.Ticket.AdminAddReplyParams) {
   return request.post<Api.Ticket.TicketReply>({
     url: `/api/v1/system/ticket/tickets/${id}/replies`,

@@ -238,6 +238,7 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 		{table: "user", col: "avatar"},
 		{table: "eve_character", col: "portrait_url"},
 		{table: "hall_of_fame_card", col: "avatar"},
+		{table: "ticket", col: "priority"},
 	}
 }
 

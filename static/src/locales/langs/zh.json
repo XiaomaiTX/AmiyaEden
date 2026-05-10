@@ -646,15 +646,22 @@
     "statusHistory": "状态历史",
     "internalNote": "内部备注",
     "submit": "提交",
+    "unknownUser": "未知用户",
     "filters": {
       "status": "状态筛选",
-      "keyword": "关键词"
+      "keyword": "关键词",
+      "category": "分类筛选"
+    },
+    "tabs": {
+      "active": "待处理/处理中",
+      "completed": "已完成"
     },
     "columns": {
       "title": "标题",
+      "content": "内容",
       "status": "状态",
-      "priority": "优先级",
       "submitter": "提交人",
+      "category": "分类",
       "fromStatus": "原状态",
       "toStatus": "新状态",
       "operator": "操作人"
@@ -662,18 +669,12 @@
     "form": {
       "category": "分类",
       "title": "标题",
-      "priority": "优先级",
       "description": "描述"
     },
     "status": {
       "pending": "待处理",
       "in_progress": "处理中",
       "completed": "已完成"
-    },
-    "priority": {
-      "low": "低",
-      "medium": "中",
-      "high": "高"
     },
     "stats": {
       "total": "总工单",

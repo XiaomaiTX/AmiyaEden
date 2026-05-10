@@ -3,6 +3,7 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -192,6 +193,164 @@ func TestWalletTaskExecuteStopsOnDuplicateOnlyTailPage(t *testing.T) {
 	}
 	if !slices.Equal(ids, []int64{300, 200}) {
 		t.Fatalf("wallet transaction ids = %v, want [300 200]", ids)
+	}
+}
+
+func TestWalletTaskExecuteInsertsLargeWalletJournalInBatches(t *testing.T) {
+	db := newWalletTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	journalCount := safeBatchSize(db, walletJournalBindParamsPerRow) + 300
+	journalPayload := make([]WalletJournalEntry, 0, journalCount)
+	for i := 0; i < journalCount; i++ {
+		journalPayload = append(journalPayload, WalletJournalEntry{
+			Amount:        float64(i + 1),
+			Balance:       100000 + float64(i),
+			ContextID:     int64(300000 + i),
+			ContextIDType: "market_transaction_id",
+			Date:          time.Date(2026, time.April, 10, 0, 0, i%60, 0, time.UTC),
+			Description:   fmt.Sprintf("journal %d", i),
+			FirstPartyID:  int64(900000 + i),
+			ID:            int64(800000 + i),
+			Reason:        "batch test",
+			RefType:       "market_transaction",
+			SecondPartyID: int64(910000 + i),
+			Tax:           float64(i) * 0.01,
+			TaxReceiverID: int64(920000 + i),
+		})
+	}
+	journalBytes, err := json.Marshal(journalPayload)
+	if err != nil {
+		t.Fatalf("marshal journal payload: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch req.URL.Path {
+		case "/characters/9001/wallet/":
+			_, _ = w.Write([]byte(`100.5`))
+		case "/characters/9001/wallet/journal":
+			w.Header().Set("X-Pages", "1")
+			_, _ = w.Write(journalBytes)
+		case "/characters/9001/wallet/transactions":
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &WalletTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: 9001,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("execute wallet task: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&model.EVECharacterWalletJournal{}).Count(&count).Error; err != nil {
+		t.Fatalf("count wallet journal: %v", err)
+	}
+	if count != int64(journalCount) {
+		t.Fatalf("wallet journal row count = %d, want %d", count, journalCount)
+	}
+}
+
+func TestWalletTaskExecuteInsertsLargeWalletTransactionsInBatches(t *testing.T) {
+	db := newWalletTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	firstPageCount := safeBatchSize(db, walletTransactionBindParamsPerRow) + 500
+	firstPage := make([]WalletTransaction, 0, firstPageCount)
+	for i := 0; i < firstPageCount; i++ {
+		txID := int64(700000 - i)
+		firstPage = append(firstPage, WalletTransaction{
+			ClientID:      int64(510000 + i),
+			Date:          time.Date(2026, time.April, 10, 0, 0, i%60, 0, time.UTC),
+			IsBuy:         i%2 == 0,
+			IsPersonal:    i%3 == 0,
+			JournalRefID:  int64(520000 + i),
+			LocationID:    int64(530000 + i),
+			Quantity:      i + 1,
+			TransactionID: txID,
+			TypeID:        34 + (i % 5),
+			UnitPrice:     1.5 + float64(i%7),
+		})
+	}
+	firstPageBytes, err := json.Marshal(firstPage)
+	if err != nil {
+		t.Fatalf("marshal first transaction page: %v", err)
+	}
+
+	var secondPage []WalletTransaction
+	for i := 0; i < 20; i++ {
+		secondPage = append(secondPage, WalletTransaction{
+			ClientID:      int64(610000 + i),
+			Date:          time.Date(2026, time.April, 9, 0, 0, i%60, 0, time.UTC),
+			IsBuy:         i%2 == 1,
+			IsPersonal:    i%2 == 0,
+			JournalRefID:  int64(620000 + i),
+			LocationID:    int64(630000 + i),
+			Quantity:      i + 2,
+			TransactionID: int64(700000-firstPageCount) - int64(i+1),
+			TypeID:        40 + (i % 3),
+			UnitPrice:     2.0 + float64(i),
+		})
+	}
+	secondPageBytes, err := json.Marshal(secondPage)
+	if err != nil {
+		t.Fatalf("marshal second transaction page: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch req.URL.Path {
+		case "/characters/9001/wallet/":
+			_, _ = w.Write([]byte(`100.5`))
+		case "/characters/9001/wallet/journal":
+			w.Header().Set("X-Pages", "1")
+			_, _ = w.Write([]byte(`[]`))
+		case "/characters/9001/wallet/transactions":
+			fromID := req.URL.Query().Get("from_id")
+			if fromID == "" {
+				_, _ = w.Write(firstPageBytes)
+				return
+			}
+			if fromID == fmt.Sprintf("%d", firstPage[len(firstPage)-1].TransactionID) {
+				_, _ = w.Write(secondPageBytes)
+				return
+			}
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &WalletTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: 9001,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("execute wallet task: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&model.EVECharacterWalletTransaction{}).Count(&count).Error; err != nil {
+		t.Fatalf("count wallet transactions: %v", err)
+	}
+	want := int64(len(firstPage) + len(secondPage))
+	if count != want {
+		t.Fatalf("wallet transaction row count = %d, want %d", count, want)
 	}
 }
 

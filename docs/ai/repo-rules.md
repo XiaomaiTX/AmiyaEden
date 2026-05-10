@@ -81,6 +81,7 @@ The supported authentication flow is EVE SSO. Legacy auth-related pages may stil
 3. **All user-facing text is localized**
    - No hardcoded UI strings
    - Update both `zh.json` and `en.json`
+   - User-facing UI must display human-readable user identity fields (nickname, character name, or another domain label) instead of using raw numeric user IDs as the primary label; IDs may only be secondary diagnostic context
 
 4. **Type safety over convenience**
    - Do not introduce `any` unless clearly justified

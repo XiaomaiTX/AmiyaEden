@@ -33,7 +33,7 @@ func setupTicketHandlerTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	oldDB := global.DB
@@ -62,6 +62,7 @@ func newTicketHandlerTestRouter(userID uint) *gin.Engine {
 	r.POST("/api/v1/ticket/tickets", h.CreateTicket)
 	r.GET("/api/v1/ticket/tickets/me", h.ListMyTickets)
 	r.GET("/api/v1/system/ticket/tickets", h.AdminListTickets)
+	r.GET("/api/v1/system/ticket/tickets/:id/status-history", h.AdminListStatusHistory)
 	return r
 }
 
@@ -83,7 +84,6 @@ func TestTicketHandlerCreateTicketSuccess(t *testing.T) {
 		"category_id": category.ID,
 		"title":       "无法登录",
 		"description": "登录后立刻掉线",
-		"priority":    model.TicketPriorityHigh,
 	})
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/ticket/tickets", bytes.NewReader(body))
@@ -118,7 +118,7 @@ func TestTicketHandlerListMyTicketsReturnsPage(t *testing.T) {
 	setupTicketHandlerTestDB(t)
 	category := seedTicketHandlerCategory(t)
 
-	ticket := model.Ticket{UserID: 8080, CategoryID: category.ID, Title: "页面测试", Description: "分页返回", Status: model.TicketStatusPending, Priority: model.TicketPriorityMedium}
+	ticket := model.Ticket{UserID: 8080, CategoryID: category.ID, Title: "页面测试", Description: "分页返回", Status: model.TicketStatusPending}
 	if err := global.DB.Create(&ticket).Error; err != nil {
 		t.Fatalf("create ticket: %v", err)
 	}
@@ -175,5 +175,58 @@ func TestTicketHandlerAdminListTicketsRejectsOverflowCategoryID(t *testing.T) {
 	resp := decodeTicketHandlerResp(t, rec)
 	if resp.Code != response.CodeParamError {
 		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeParamError)
+	}
+}
+
+func TestTicketHandlerAdminListStatusHistoryReturnsOperatorNames(t *testing.T) {
+	setupTicketHandlerTestDB(t)
+	category := seedTicketHandlerCategory(t)
+	operatorID := uint(9001)
+	ticket := model.Ticket{UserID: 8080, CategoryID: category.ID, Title: "状态历史", Description: "显示操作人", Status: model.TicketStatusPending}
+	if err := global.DB.Create(&ticket).Error; err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: operatorID},
+		Nickname:           "Operator Nick",
+		PrimaryCharacterID: 991001,
+	}).Error; err != nil {
+		t.Fatalf("create operator user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        operatorID,
+		CharacterID:   991001,
+		CharacterName: "Operator Character",
+	}).Error; err != nil {
+		t.Fatalf("create operator character: %v", err)
+	}
+	if err := global.DB.Create(&model.TicketStatusHistory{
+		TicketID:   ticket.ID,
+		FromStatus: model.TicketStatusPending,
+		ToStatus:   model.TicketStatusInProgress,
+		ChangedBy:  operatorID,
+	}).Error; err != nil {
+		t.Fatalf("create history: %v", err)
+	}
+	r := newTicketHandlerTestRouter(operatorID)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/system/ticket/tickets/%d/status-history", ticket.ID), nil)
+	r.ServeHTTP(rec, req)
+	resp := decodeTicketHandlerResp(t, rec)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+	var history []model.TicketStatusHistoryItem
+	if err := json.Unmarshal(resp.Data, &history); err != nil {
+		t.Fatalf("decode history: %v", err)
+	}
+	if len(history) != 1 {
+		t.Fatalf("history len = %d, want 1", len(history))
+	}
+	if history[0].ChangedByName != "Operator Nick" {
+		t.Fatalf("ChangedByName = %q, want %q", history[0].ChangedByName, "Operator Nick")
+	}
+	if history[0].ChangedByCharacterName != "Operator Character" {
+		t.Fatalf("ChangedByCharacterName = %q, want %q", history[0].ChangedByCharacterName, "Operator Character")
 	}
 }

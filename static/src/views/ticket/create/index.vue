@@ -19,13 +19,6 @@
         <ElFormItem :label="t('ticket.form.title')">
           <ElInput v-model="form.title" maxlength="200" />
         </ElFormItem>
-        <ElFormItem :label="t('ticket.form.priority')">
-          <ElSelect v-model="form.priority" style="width: 180px">
-            <ElOption :label="t('ticket.priority.low')" value="low" />
-            <ElOption :label="t('ticket.priority.medium')" value="medium" />
-            <ElOption :label="t('ticket.priority.high')" value="high" />
-          </ElSelect>
-        </ElFormItem>
         <ElFormItem :label="t('ticket.form.description')">
           <ElInput v-model="form.description" type="textarea" :rows="6" />
         </ElFormItem>
@@ -54,8 +47,7 @@
   const form = reactive<Api.Ticket.CreateTicketParams>({
     category_id: 0,
     title: '',
-    description: '',
-    priority: 'medium'
+    description: ''
   })
 
   const loadCategories = async () => {

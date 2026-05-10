@@ -6,10 +6,13 @@
           <span>#{{ ticket.id }} {{ ticket.title }}</span>
           <div class="ticket-detail-header__right">
             <TicketStatusBadge :status="ticket.status" />
-            <TicketPriorityBadge :priority="ticket.priority" />
           </div>
         </div>
       </template>
+      <div class="ticket-detail-meta">
+        <span>{{ t('ticket.columns.submitter') }}: {{ formatTicketRequester(ticket) }}</span>
+        <span>{{ t('ticket.columns.category') }}: {{ getTicketCategoryLabel(ticket) }}</span>
+      </div>
       <p class="ticket-detail-desc">{{ ticket.description }}</p>
     </ElCard>
 
@@ -32,8 +35,12 @@
       <ElTable :data="histories">
         <ElTableColumn prop="from_status" :label="t('ticket.columns.fromStatus')" width="160" />
         <ElTableColumn prop="to_status" :label="t('ticket.columns.toStatus')" width="160" />
-        <ElTableColumn prop="changed_by" :label="t('ticket.columns.operator')" width="120" />
-        <ElTableColumn prop="changed_at" :label="t('common.time')" />
+        <ElTableColumn :label="t('ticket.columns.operator')" width="180">
+          <template #default="{ row }">{{ formatTicketHistoryOperator(row) }}</template>
+        </ElTableColumn>
+        <ElTableColumn :label="t('common.time')">
+          <template #default="{ row }">{{ formatTime(row.changed_at) }}</template>
+        </ElTableColumn>
       </ElTable>
     </ElCard>
   </div>
@@ -46,15 +53,15 @@
     adminListTicketReplies,
     adminListTicketStatusHistory
   } from '@/api/ticket'
-  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
   import TicketReplyItem from '@/components/ticket/TicketReplyItem.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
+  import { formatTime } from '@utils/common'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'TicketAdminDetailPage' })
 
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const route = useRoute()
   const ticketId = computed(() => Number(route.params.id))
 
@@ -65,6 +72,14 @@
   const histories = ref<Api.Ticket.TicketStatusHistory[]>([])
   const content = ref('')
   const isInternal = ref(false)
+  const getTicketCategoryLabel = (item: Api.Ticket.TicketItem) =>
+    locale.value.startsWith('zh')
+      ? item.category_name || item.category_name_en || String(item.category_id)
+      : item.category_name_en || item.category_name || String(item.category_id)
+  const formatTicketRequester = (item: Api.Ticket.TicketItem) =>
+    item.requester_name || item.requester_character_name || t('ticket.unknownUser')
+  const formatTicketHistoryOperator = (item: Api.Ticket.TicketStatusHistory) =>
+    item.changed_by_name || item.changed_by_character_name || t('ticket.unknownUser')
 
   const loadData = async () => {
     loading.value = true
@@ -130,6 +145,14 @@
     white-space: pre-wrap;
     line-height: 1.6;
     margin: 0;
+  }
+
+  .ticket-detail-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--art-text-gray-600);
+    margin-bottom: 12px;
   }
 
   .ticket-reply-list {

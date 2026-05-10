@@ -19,7 +19,12 @@ test('my tickets page uses member ticket list API with status filter and detail/
   assert.match(myTicketsSource, /<ArtTable/)
   assert.doesNotMatch(myTicketsSource, /<ElTable :data=/)
   assert.match(myTicketsSource, /TicketStatusBadge/)
-  assert.match(myTicketsSource, /TicketPriorityBadge/)
+  assert.doesNotMatch(myTicketsSource, /TicketPriorityBadge|priority/)
+  assert.match(myTicketsSource, /import \{ formatTime \} from '@utils\/common'/)
+  assert.match(
+    myTicketsSource,
+    /formatter: \(row\) => h\('span', \{\}, formatTime\(row\.updated_at\)\)/
+  )
 })
 
 test('ticket create page loads categories and submits through createTicket API', () => {
@@ -29,7 +34,7 @@ test('ticket create page loads categories and submits through createTicket API',
   )
   assert.match(createSource, /categories\.value = await listTicketCategories\(\)/)
   assert.match(createSource, /await createTicket\(form\)/)
-  assert.match(createSource, /priority:\s*'medium'/)
+  assert.doesNotMatch(createSource, /priority|ticket\.priority/)
   assert.match(createSource, /router\.push\(\{ name: 'TicketMyList' \}\)/)
 })
 
@@ -47,4 +52,5 @@ test('ticket detail page loads ticket and replies, then posts member replies', (
     /await addMyTicketReply\(ticketId\.value, \{ content: content\.value \}\)/
   )
   assert.match(detailSource, /TicketReplyItem/)
+  assert.doesNotMatch(detailSource, /TicketPriorityBadge|ticket\.priority/)
 })

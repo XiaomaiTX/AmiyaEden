@@ -8,12 +8,6 @@ const (
 	TicketStatusCompleted  = "completed"
 )
 
-const (
-	TicketPriorityLow    = "low"
-	TicketPriorityMedium = "medium"
-	TicketPriorityHigh   = "high"
-)
-
 type Ticket struct {
 	BaseModel
 	UserID      uint       `gorm:"not null;index" json:"user_id"`
@@ -21,7 +15,6 @@ type Ticket struct {
 	Title       string     `gorm:"size:200;not null" json:"title"`
 	Description string     `gorm:"type:text;not null" json:"description"`
 	Status      string     `gorm:"size:20;not null;default:'pending';index" json:"status"`
-	Priority    string     `gorm:"size:20;not null;default:'medium'" json:"priority"`
 	HandledBy   *uint      `gorm:"index" json:"handled_by,omitempty"`
 	HandledAt   *time.Time `json:"handled_at,omitempty"`
 	ClosedAt    *time.Time `json:"closed_at,omitempty"`
@@ -68,4 +61,3 @@ type TicketStatusHistory struct {
 func (TicketStatusHistory) TableName() string {
 	return "ticket_status_history"
 }
-
