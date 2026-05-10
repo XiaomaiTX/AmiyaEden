@@ -72,7 +72,7 @@ source_of_truth:
 - [x] 批次 D 包含模块：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
 - [x] 批次 D 包含模块：`system/*`
 - [x] 批次 D 当前已完成：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
-- [x] 批次 D 当前已完成：`system/user`、`system/task-manager`、`system/wallet`
+- [x] 批次 D 当前已完成：`system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config`
 - [ ] 批次 D 回归通过：多角色权限矩阵、长链路事务、跨页面状态一致
 - [ ] 收尾批次（边缘与遗留）完成
 - [ ] 收尾批次包含模块：`auth/*`（仅保留 EVE SSO 所需页面）、`outside/*`、`hall-of-fame/manage`、`hall-of-fame/current-manage`

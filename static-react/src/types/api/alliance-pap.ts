@@ -43,10 +43,26 @@ export interface AlliancePAPResult {
   fleets: AlliancePAPFleet[]
 }
 
-export interface AlliancePAPAllResult {
+export interface AlliancePAPImportInfo {
+  primary_character_name: string
+  monthly_pap: number
+  calculated_at: string
+}
+
+export interface AlliancePAPFetchParams {
+  year?: number
+  month?: number
+}
+
+export interface AlliancePAPImportParams {
   year: number
   month: number
-  list: AlliancePAPSummary[]
+  data: AlliancePAPImportInfo
+}
+
+export interface AlliancePAPSettleParams {
+  year: number
+  month: number
 }
 
 export type AlliancePAPSearchParams = Partial<CommonSearchParams> & {
