@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   batchPayoutAsFuxiCoin,
   batchPayoutByUser,
@@ -27,7 +27,7 @@ export function SrpManagePage() {
   const [summary, setSummary] = useState<BatchPayoutSummary[]>([])
   const [actionId, setActionId] = useState<number | null>(null)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -50,11 +50,14 @@ export function SrpManagePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab, filter.keyword, filter.status, t])
 
   useEffect(() => {
-    void loadData()
-  }, [activeTab])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData])
 
   const filteredItems = useMemo(() => {
     if (activeTab === 'pending') {

@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-05-01
+last_reviewed: 2026-05-10
 source_of_truth:
   - static-react/src
   - docs/ai/repo-rules.md
@@ -20,6 +20,7 @@ source_of_truth:
 - React 权威类型定义：`static-react/src/types/api/*`。
 - React API 封装调用：`static-react/src/api/*.ts`。
 - React 子应用当前状态：已切换为本地契约文件，不再读取 Vue 类型文件。
+- Vue 侧 `static/src/types/import/components.d.ts` 的导入声明仍在收缩中，当前属于清理剩余组件映射，不改变 React 侧契约迁移原则。
 
 ## 迁移原则
 

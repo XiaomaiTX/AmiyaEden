@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchESIRefreshStatuses,
   fetchESIRefreshTasks,
@@ -219,7 +219,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
   const [scheduleSaving, setScheduleSaving] = useState(false)
   const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(defaultScheduleForm)
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -230,14 +230,14 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadTasks()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [refreshSeed])
+  }, [loadTasks, refreshSeed])
 
   const openScheduleDialog = (task: TaskItem) => {
     const activeCronExpr = task.cron_expr || task.default_cron
@@ -498,7 +498,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const [runningKeys, setRunningKeys] = useState<string[]>([])
   const [refreshSeed, setRefreshSeed] = useState(0)
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     setLoadingTasks(true)
     try {
       setTasks(await fetchESIRefreshTasks())
@@ -507,9 +507,9 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     } finally {
       setLoadingTasks(false)
     }
-  }
+  }, [])
 
-  const loadStatuses = async () => {
+  const loadStatuses = useCallback(async () => {
     setLoadingStatuses(true)
     setError(null)
     try {
@@ -531,18 +531,21 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     } finally {
       setLoadingStatuses(false)
     }
-  }
+  }, [page, pageSize, character, taskName, status, t])
 
   useEffect(() => {
-    void loadTasks()
-  }, [])
+    const timer = window.setTimeout(() => {
+      void loadTasks()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadTasks])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadStatuses()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [page, pageSize, refreshSeed, taskName, character, status])
+  }, [loadStatuses, refreshSeed])
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
@@ -771,7 +774,7 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     setLoadingTasks(true)
     try {
       setTaskOptions(await fetchTasks())
@@ -780,9 +783,9 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     } finally {
       setLoadingTasks(false)
     }
-  }
+  }, [])
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoadingHistory(true)
     setError(null)
     try {
@@ -803,18 +806,21 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     } finally {
       setLoadingHistory(false)
     }
-  }
+  }, [page, pageSize, taskName, status, t])
 
   useEffect(() => {
-    void loadTasks()
-  }, [])
+    const timer = window.setTimeout(() => {
+      void loadTasks()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadTasks])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadHistory()
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [page, pageSize, taskName, status])
+  }, [loadHistory])
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 

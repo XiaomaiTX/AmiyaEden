@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   adminCreateTicketCategory,
   adminDeleteTicketCategory,
@@ -31,7 +31,7 @@ export function TicketCategoriesPage() {
     enabled: true,
   })
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -43,11 +43,14 @@ export function TicketCategoriesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [t])
 
   useEffect(() => {
-    void loadData()
-  }, [])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData])
 
   const openCreate = () => {
     setEditingId(0)

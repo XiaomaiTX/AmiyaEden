@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { adminDeleteApplication, adminListApplications, adminReviewApplication } from '@/api/welfare'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
@@ -24,12 +24,12 @@ export function WelfareApprovalPage() {
   const [history, setHistory] = useState<AdminApplication[]>([])
   const [actionId, setActionId] = useState<number | null>(null)
 
-  const loadPending = async () => {
+  const loadPending = useCallback(async () => {
     const response = await adminListApplications({ current: 1, size: 200, status: 'requested' })
     setPending(response.list ?? [])
-  }
+  }, [])
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     const response = await adminListApplications({
       current: 1,
       size: 200,
@@ -37,9 +37,9 @@ export function WelfareApprovalPage() {
       keyword: keyword.trim() || undefined,
     })
     setHistory(response.list ?? [])
-  }
+  }, [keyword])
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -51,11 +51,14 @@ export function WelfareApprovalPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [loadHistory, loadPending, t])
 
   useEffect(() => {
-    void loadData()
-  }, [keyword, t])
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadData, keyword])
 
   const review = async (id: number, action: 'deliver' | 'reject') => {
     setActionId(id)

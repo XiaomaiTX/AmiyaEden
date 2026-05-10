@@ -55,7 +55,10 @@ export function NewbroMentorPage() {
   }, [statusFilter, t])
 
   useEffect(() => {
-    void loadData()
+    const timer = window.setTimeout(() => {
+      void loadData()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadData, refreshSeed])
 
   const handleApplicationAction = async (action: 'accept' | 'reject', relationshipId: number) => {
