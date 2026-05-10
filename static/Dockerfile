@@ -3,11 +3,12 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# 安装 pnpm
-RUN npm install -g pnpm
+# Install pnpm (must stay aligned with .github/workflows/*)
+RUN npm install -g pnpm@9
 
 # 缓存依赖层
 COPY package.json pnpm-lock.yaml ./
+ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
 
 # 复制源码
