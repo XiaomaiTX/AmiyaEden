@@ -1,4 +1,5 @@
-﻿import { requestJson } from '@/api/http-client'
+import { requestJson } from '@/api/http-client'
+import type { EveCharacter, MeResponse, RegisteredScope, UserInfo } from '@/types/api/auth'
 
 interface ApiResponse<T> {
   code: number
@@ -28,17 +29,17 @@ export async function getEveSSOLoginURL(scopes?: string[]) {
 }
 
 export async function fetchMyCharacters() {
-  const response = await requestJson<ApiResponse<Api.Auth.EveCharacter[]>>('/api/v1/sso/eve/characters')
+  const response = await requestJson<ApiResponse<EveCharacter[]>>('/api/v1/sso/eve/characters')
   return assertSuccess(response, 'fetch characters failed') ?? []
 }
 
 export async function fetchEveSSOScopes() {
-  const response = await requestJson<ApiResponse<Api.Auth.RegisteredScope[]>>('/api/v1/sso/eve/scopes')
+  const response = await requestJson<ApiResponse<RegisteredScope[]>>('/api/v1/sso/eve/scopes')
   return assertSuccess(response, 'fetch scopes failed') ?? []
 }
 
 export async function fetchGetUserInfo() {
-  const response = await requestJson<ApiResponse<Api.Auth.MeResponse>>('/api/v1/me')
+  const response = await requestJson<ApiResponse<MeResponse>>('/api/v1/me')
   const data = assertSuccess(response, 'fetch current user failed')
 
   const { user, characters, roles: backendRoles } = data
@@ -63,7 +64,7 @@ export async function fetchGetUserInfo() {
       typeof data.is_mentor_mentee_eligible === 'boolean' ? data.is_mentor_mentee_eligible : undefined,
     characters: characters ?? [],
     primaryCharacterId: primaryChar?.character_id ?? user.primary_character_id ?? 0,
-  } satisfies Api.Auth.UserInfo
+  } satisfies UserInfo
 }
 
 export async function getEveBindURL(scopes?: string[]) {

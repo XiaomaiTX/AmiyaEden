@@ -1,4 +1,14 @@
 import { requestJson } from '@/api/http-client'
+import type {
+  CorporationStructureAuthorizationUpdate,
+  CorporationStructureFilterOptionsRequest,
+  CorporationStructureFilterOptionsResponse,
+  CorporationStructureListRequest,
+  CorporationStructureListResponse,
+  CorporationStructureRunTaskRequest,
+  CorporationStructureRunTaskResponse,
+  CorporationStructuresSettings,
+} from '@/types/api/dashboard'
 
 interface ApiResponse<T> {
   code: number
@@ -15,7 +25,7 @@ function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
 }
 
 export async function fetchCorporationStructureSettings() {
-  const response = await requestJson<ApiResponse<Api.Dashboard.CorporationStructuresSettings>>(
+  const response = await requestJson<ApiResponse<CorporationStructuresSettings>>(
     '/api/v1/dashboard/corporation-structures/settings'
   )
 
@@ -23,9 +33,9 @@ export async function fetchCorporationStructureSettings() {
 }
 
 export async function updateCorporationStructureAuthorizations(
-  data: Api.Dashboard.CorporationStructureAuthorizationUpdate
+  data: CorporationStructureAuthorizationUpdate
 ) {
-  const response = await requestJson<ApiResponse<Api.Dashboard.CorporationStructuresSettings>>(
+  const response = await requestJson<ApiResponse<CorporationStructuresSettings>>(
     '/api/v1/dashboard/corporation-structures/settings/authorizations',
     {
       method: 'PUT',
@@ -36,8 +46,8 @@ export async function updateCorporationStructureAuthorizations(
   return assertSuccess(response, 'update corporation structure authorizations failed')
 }
 
-export async function fetchCorporationStructureList(data: Api.Dashboard.CorporationStructureListRequest) {
-  const response = await requestJson<ApiResponse<Api.Dashboard.CorporationStructureListResponse>>(
+export async function fetchCorporationStructureList(data: CorporationStructureListRequest) {
+  const response = await requestJson<ApiResponse<CorporationStructureListResponse>>(
     '/api/v1/dashboard/corporation-structures/list',
     {
       method: 'POST',
@@ -49,10 +59,10 @@ export async function fetchCorporationStructureList(data: Api.Dashboard.Corporat
 }
 
 export async function fetchCorporationStructureFilterOptions(
-  params?: Api.Dashboard.CorporationStructureFilterOptionsRequest
+  params?: CorporationStructureFilterOptionsRequest
 ) {
   const search = params?.corporation_id ? `?corporation_id=${params.corporation_id}` : ''
-  const response = await requestJson<ApiResponse<Api.Dashboard.CorporationStructureFilterOptionsResponse>>(
+  const response = await requestJson<ApiResponse<CorporationStructureFilterOptionsResponse>>(
     `/api/v1/dashboard/corporation-structures/filter-options${search}`
   )
 
@@ -60,9 +70,9 @@ export async function fetchCorporationStructureFilterOptions(
 }
 
 export async function runCorporationStructuresTask(
-  data: Api.Dashboard.CorporationStructureRunTaskRequest
+  data: CorporationStructureRunTaskRequest
 ) {
-  const response = await requestJson<ApiResponse<Api.Dashboard.CorporationStructureRunTaskResponse>>(
+  const response = await requestJson<ApiResponse<CorporationStructureRunTaskResponse>>(
     '/api/v1/dashboard/corporation-structures/run-task',
     {
       method: 'POST',

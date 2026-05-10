@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoWallet } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import type { EveCharacter } from '@/types/api/auth'
+import type { WalletResponse } from '@/types/api/eve-info'
 
 const PAGE_SIZE = 50
 
@@ -9,10 +11,10 @@ export function InfoWalletPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [characters, setCharacters] = useState<Api.Auth.EveCharacter[]>([])
+  const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number | null>(null)
   const [selectedRefType, setSelectedRefType] = useState('')
-  const [wallet, setWallet] = useState<Api.EveInfo.WalletResponse | null>(null)
+  const [wallet, setWallet] = useState<WalletResponse | null>(null)
 
   const refTypeOptions = useMemo(() => wallet?.ref_types ?? [], [wallet?.ref_types])
 

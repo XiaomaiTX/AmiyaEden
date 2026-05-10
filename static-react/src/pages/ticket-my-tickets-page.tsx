@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { listMyTickets } from '@/api/ticket'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
+import type { TicketItem, TicketPriority, TicketStatus } from '@/types/api/ticket'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -13,7 +14,7 @@ function formatTime(value: string) {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
 }
 
-function statusTone(status: Api.Ticket.TicketStatus) {
+function statusTone(status: TicketStatus) {
   switch (status) {
     case 'pending':
       return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
@@ -26,7 +27,7 @@ function statusTone(status: Api.Ticket.TicketStatus) {
   }
 }
 
-function priorityTone(priority: Api.Ticket.TicketPriority) {
+function priorityTone(priority: TicketPriority) {
   switch (priority) {
     case 'high':
       return 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
@@ -39,11 +40,11 @@ function priorityTone(priority: Api.Ticket.TicketPriority) {
   }
 }
 
-function statusLabel(t: ReturnType<typeof useI18n>['t'], status: Api.Ticket.TicketStatus) {
+function statusLabel(t: ReturnType<typeof useI18n>['t'], status: TicketStatus) {
   return t(`ticketMyTickets.statuses.${status}`)
 }
 
-function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: Api.Ticket.TicketPriority) {
+function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: TicketPriority) {
   return t(`ticketMyTickets.priorities.${priority}`)
 }
 
@@ -54,7 +55,7 @@ export function TicketMyTicketsPage() {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
   const [appliedStatusFilter, setAppliedStatusFilter] = useState('')
-  const [tickets, setTickets] = useState<Api.Ticket.TicketItem[]>([])
+  const [tickets, setTickets] = useState<TicketItem[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
@@ -70,7 +71,7 @@ export function TicketMyTicketsPage() {
         const response = await listMyTickets({
           current: page,
           size: pageSize,
-          status: appliedStatusFilter as Api.Ticket.TicketStatus | '',
+          status: appliedStatusFilter as TicketStatus | '',
         })
 
         if (cancelled) {

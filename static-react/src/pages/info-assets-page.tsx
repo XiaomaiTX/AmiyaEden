@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchInfoAssets } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import type { AssetItemNode, AssetLocationNode, AssetsResponse } from '@/types/api/eve-info'
 
 const BLUEPRINT_CATEGORY_ID = 9
 
-function getIconUrl(item: Api.EveInfo.AssetItemNode) {
+function getIconUrl(item: AssetItemNode) {
   if (item.category_id === BLUEPRINT_CATEGORY_ID) {
     const suffix = item.is_blueprint_copy ? 'bpc' : 'bp'
     return `https://images.evetech.net/types/${item.type_id}/${suffix}?size=32`
@@ -12,7 +13,7 @@ function getIconUrl(item: Api.EveInfo.AssetItemNode) {
   return `https://images.evetech.net/types/${item.type_id}/icon?size=32`
 }
 
-function countItems(items: Api.EveInfo.AssetItemNode[]) {
+function countItems(items: AssetItemNode[]) {
   let count = items.length
   for (const item of items) {
     if (item.children?.length) {
@@ -22,7 +23,7 @@ function countItems(items: Api.EveInfo.AssetItemNode[]) {
   return count
 }
 
-function matchSearch(item: Api.EveInfo.AssetItemNode, keyword: string): boolean {
+function matchSearch(item: AssetItemNode, keyword: string): boolean {
   const lower = keyword.toLowerCase()
   if (item.type_name.toLowerCase().includes(lower)) return true
   if (item.group_name.toLowerCase().includes(lower)) return true
@@ -34,7 +35,7 @@ export function InfoAssetsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<Api.EveInfo.AssetsResponse | null>(null)
+  const [data, setData] = useState<AssetsResponse | null>(null)
   const [keyword, setKeyword] = useState('')
   const [collapsedLocations, setCollapsedLocations] = useState<Record<number, boolean>>({})
   const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({})
@@ -75,7 +76,7 @@ export function InfoAssetsPage() {
         const items = location.items.filter((item) => matchSearch(item, lower))
         return items.length > 0 ? { ...location, items } : null
       })
-      .filter((location): location is Api.EveInfo.AssetLocationNode => location !== null)
+      .filter((location): location is AssetLocationNode => location !== null)
   }, [data?.locations, keyword])
 
   const toggleLocation = (locationId: number) => {
