@@ -255,7 +255,7 @@ source_of_truth:
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
 | POST | `/ticket/tickets` | 提交工单 | Login |
-| GET | `/ticket/tickets/me` | 鎴戠殑宸ュ崟鍒楄〃锛堝垎椤碉紝鏀寔 `status`銆乣priority`锛?| Login |
+| GET | `/ticket/tickets/me` | 我的工单列表（分页，支持 `status`） | Login |
 | GET | `/ticket/tickets/:id` | 我的工单详情 | Login |
 | POST | `/ticket/tickets/:id/replies` | 我的工单新增回复 | Login |
 | GET | `/ticket/tickets/:id/replies` | 我的工单回复列表 | Login |
@@ -420,13 +420,12 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/ticket/tickets` | 宸ュ崟绠＄悊鍒楄〃锛堝垎椤碉紝鏀寔 `status`銆乣priority`銆乣category_id`銆乣user_id`銆乣keyword`锛涢粯璁ら殣钘?`completed`锛?| `RequireRole(admin)` |
+| GET | `/system/ticket/tickets` | 工单管理列表（分页，支持 `status`、`category_id`、`user_id`、`keyword`；`status` 可传单个状态或逗号分隔状态；返回提交人和分类展示名称） | `RequireRole(admin)` |
 | GET | `/system/ticket/tickets/:id` | 工单详情 | `RequireRole(admin)` |
 | PUT | `/system/ticket/tickets/:id/status` | 更新工单状态 | `RequireRole(admin)` |
-| PUT | `/system/ticket/tickets/:id/priority` | 更新工单优先级 | `RequireRole(admin)` |
 | POST | `/system/ticket/tickets/:id/replies` | 管理员回复（支持内部备注） | `RequireRole(admin)` |
 | GET | `/system/ticket/tickets/:id/replies` | 管理员查看回复（含内部备注） | `RequireRole(admin)` |
-| GET | `/system/ticket/tickets/:id/status-history` | 状态变更历史 | `RequireRole(admin)` |
+| GET | `/system/ticket/tickets/:id/status-history` | 状态变更历史（返回操作人可读名称） | `RequireRole(admin)` |
 | GET | `/system/ticket/categories` | 分类列表（含禁用） | `RequireRole(admin)` |
 | POST | `/system/ticket/categories` | 创建分类 | `RequireRole(admin)` |
 | PUT | `/system/ticket/categories/:id` | 更新分类 | `RequireRole(admin)` |

@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict'
+import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 
@@ -6,11 +6,10 @@ const myTicketsSource = readFileSync(new URL('./my-tickets/index.vue', import.me
 const createSource = readFileSync(new URL('./create/index.vue', import.meta.url), 'utf8')
 const detailSource = readFileSync(new URL('./detail/index.vue', import.meta.url), 'utf8')
 
-test('my tickets page uses member ticket list API with status and priority filters and detail/create navigation', () => {
+test('my tickets page uses member ticket list API with status filter and detail/create navigation', () => {
   assert.match(myTicketsSource, /import \{ listMyTickets \} from '@\/api\/ticket'/)
   assert.match(myTicketsSource, /apiFn:\s*listMyTickets/)
   assert.match(myTicketsSource, /status:\s*filters\.value\.status/)
-  assert.match(myTicketsSource, /priority:\s*filters\.value\.priority/)
   assert.match(myTicketsSource, /router\.push\(\{ name: 'TicketCreate' \}\)/)
   assert.match(
     myTicketsSource,
@@ -20,7 +19,12 @@ test('my tickets page uses member ticket list API with status and priority filte
   assert.match(myTicketsSource, /<ArtTable/)
   assert.doesNotMatch(myTicketsSource, /<ElTable :data=/)
   assert.match(myTicketsSource, /TicketStatusBadge/)
-  assert.match(myTicketsSource, /TicketPriorityBadge/)
+  assert.doesNotMatch(myTicketsSource, /TicketPriorityBadge|priority/)
+  assert.match(myTicketsSource, /import \{ formatTime \} from '@utils\/common'/)
+  assert.match(
+    myTicketsSource,
+    /formatter: \(row\) => h\('span', \{\}, formatTime\(row\.updated_at\)\)/
+  )
 })
 
 test('ticket create page loads categories and submits through createTicket API', () => {
@@ -30,8 +34,7 @@ test('ticket create page loads categories and submits through createTicket API',
   )
   assert.match(createSource, /categories\.value = await listTicketCategories\(\)/)
   assert.match(createSource, /await createTicket\(form\)/)
-  assert.doesNotMatch(createSource, /ticket\.form\.priority/)
-  assert.doesNotMatch(createSource, /priority:\s*'medium'/)
+  assert.doesNotMatch(createSource, /priority|ticket\.priority/)
   assert.match(createSource, /router\.push\(\{ name: 'TicketMyList' \}\)/)
 })
 
@@ -49,4 +52,5 @@ test('ticket detail page loads ticket and replies, then posts member replies', (
     /await addMyTicketReply\(ticketId\.value, \{ content: content\.value \}\)/
   )
   assert.match(detailSource, /TicketReplyItem/)
+  assert.doesNotMatch(detailSource, /TicketPriorityBadge|ticket\.priority/)
 })

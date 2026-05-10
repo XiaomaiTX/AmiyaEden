@@ -1,6 +1,10 @@
 <template>
   <div class="ticket-page art-full-height">
     <div class="ticket-page__toolbar">
+      <ElTabs v-model="activeTab" @tab-change="handleStatusTabChange">
+        <ElTabPane :label="t('ticket.tabs.active')" name="active" />
+        <ElTabPane :label="t('ticket.tabs.completed')" name="completed" />
+      </ElTabs>
       <ElInput
         v-model="filters.keyword"
         :placeholder="t('ticket.filters.keyword')"
@@ -8,29 +12,20 @@
         clearable
       />
       <ElSelect
-        v-model="filters.status"
+        v-model="filters.category_id"
         clearable
-        :placeholder="t('ticket.filters.status')"
-        style="width: 180px"
+        :placeholder="t('ticket.filters.category')"
+        style="width: 200px"
       >
-        <ElOption :label="t('ticket.status.pending')" value="pending" />
-        <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
-        <ElOption :label="t('ticket.status.completed')" value="completed" />
-      </ElSelect>
-      <ElSelect
-        v-model="filters.priority"
-        clearable
-        :placeholder="t('ticket.filters.priority')"
-        style="width: 180px"
-      >
-        <ElOption :label="t('ticket.priority.unassigned')" value="unassigned" />
-        <ElOption :label="t('ticket.priority.low')" value="low" />
-        <ElOption :label="t('ticket.priority.medium')" value="medium" />
-        <ElOption :label="t('ticket.priority.high')" value="high" />
+        <ElOption
+          v-for="category in categoryOptions"
+          :key="category.id"
+          :label="getCategoryLabel(category)"
+          :value="category.id"
+        />
       </ElSelect>
       <ElButton type="primary" @click="handleSearch">{{ t('common.search') }}</ElButton>
     </div>
-
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
       <ArtTable
@@ -44,30 +39,39 @@
     </ElCard>
   </div>
 </template>
-
 <script setup lang="ts">
-  import { adminListTickets } from '@/api/ticket'
-  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
-  import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
+  import {
+    adminListTicketCategories,
+    adminListTickets,
+    adminUpdateTicketStatus
+  } from '@/api/ticket'
   import { useTable } from '@/hooks/core/useTable'
-  import { ElButton, ElOption, ElSelect } from 'element-plus'
+  import { formatTime } from '@utils/common'
+  import { ElButton, ElMessage, ElOption, ElSelect } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-
   defineOptions({ name: 'TicketManagementPage' })
-
-  const { t } = useI18n()
+  type TicketManagementTab = 'active' | 'completed'
+  type TicketStatusQuery = Api.Ticket.AdminTicketListParams['status']
+  const { t, locale } = useI18n()
   const router = useRouter()
-
-  const filters = reactive<{
-    keyword: string
-    status: Api.Ticket.TicketStatus | ''
-    priority: Api.Ticket.TicketPriority | ''
-  }>({
+  const activeTab = ref<TicketManagementTab>('active')
+  const statusTabs: Record<TicketManagementTab, Api.Ticket.TicketStatus[]> = {
+    active: ['pending', 'in_progress'],
+    completed: ['completed']
+  }
+  const getTabStatusQuery = (tab: TicketManagementTab): TicketStatusQuery =>
+    statusTabs[tab].join(',') as TicketStatusQuery
+  const categoryOptions = ref<Api.Ticket.TicketCategory[]>([])
+  const filters = reactive<{ keyword: string; category_id?: number }>({
     keyword: '',
-    status: '',
-    priority: ''
+    category_id: undefined
   })
-
+  const getCategoryLabel = (category: Api.Ticket.TicketCategory) =>
+    locale.value.startsWith('zh') ? category.name : category.name_en || category.name
+  const getTicketCategoryLabel = (ticket: Api.Ticket.TicketItem) =>
+    locale.value.startsWith('zh')
+      ? ticket.category_name || ticket.category_name_en || String(ticket.category_id)
+      : ticket.category_name_en || ticket.category_name || String(ticket.category_id)
   const {
     columns,
     columnChecks,
@@ -77,6 +81,7 @@
     searchParams,
     getData,
     refreshData,
+    refreshUpdate,
     handleSizeChange,
     handleCurrentChange
   } = useTable({
@@ -86,31 +91,56 @@
         current: 1,
         size: 20,
         keyword: filters.keyword,
-        status: filters.status,
-        priority: filters.priority
+        status: getTabStatusQuery('active'),
+        category_id: filters.category_id
       },
       columnsFactory: () => [
         { prop: 'id', label: 'ID', width: 80 },
         {
-          prop: 'user_nickname',
+          prop: 'requester_name',
           label: t('ticket.columns.submitter'),
-          width: 140,
-          formatter: (row) => row.user_nickname || '-'
+          minWidth: 160,
+          formatter: (row) =>
+            row.requester_name || row.requester_character_name || t('ticket.unknownUser')
+        },
+        {
+          prop: 'category_name',
+          label: t('ticket.columns.category'),
+          minWidth: 140,
+          formatter: (row) => getTicketCategoryLabel(row)
         },
         { prop: 'title', label: t('ticket.columns.title'), minWidth: 200 },
         {
-          prop: 'status',
-          label: t('ticket.columns.status'),
-          width: 120,
-          formatter: (row) => h(TicketStatusBadge, { status: row.status })
+          prop: 'description',
+          label: t('ticket.columns.content'),
+          minWidth: 260,
+          formatter: (row) => h('span', { class: 'ticket-content-preview' }, row.description || '-')
         },
         {
-          prop: 'priority',
-          label: t('ticket.columns.priority'),
-          width: 120,
-          formatter: (row) => h(TicketPriorityBadge, { priority: row.priority })
+          prop: 'status',
+          label: t('ticket.columns.status'),
+          width: 180,
+          formatter: (row) =>
+            h(
+              ElSelect,
+              {
+                modelValue: row.status,
+                size: 'small',
+                onChange: (val: Api.Ticket.TicketStatus) => updateStatus(row.id, val)
+              },
+              () => [
+                h(ElOption, { label: t('ticket.status.pending'), value: 'pending' }),
+                h(ElOption, { label: t('ticket.status.in_progress'), value: 'in_progress' }),
+                h(ElOption, { label: t('ticket.status.completed'), value: 'completed' })
+              ]
+            )
         },
-        { prop: 'updated_at', label: t('common.updatedAt'), width: 180 },
+        {
+          prop: 'updated_at',
+          label: t('common.updatedAt'),
+          width: 180,
+          formatter: (row) => h('span', {}, formatTime(row.updated_at))
+        },
         {
           prop: 'operation',
           label: t('common.operation'),
@@ -130,32 +160,61 @@
       ]
     }
   })
-
+  const updateStatus = async (id: number, status: Api.Ticket.TicketStatus) => {
+    try {
+      await adminUpdateTicketStatus(id, { status })
+      ElMessage.success(t('ticket.messages.updated'))
+      await refreshUpdate()
+    } catch (error: any) {
+      ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
+      await refreshData()
+    }
+  }
   const handleSearch = () => {
     Object.assign(searchParams, {
       current: 1,
       keyword: filters.keyword,
-      status: filters.status,
-      priority: filters.priority
+      status: getTabStatusQuery(activeTab.value),
+      category_id: filters.category_id
     })
     getData()
   }
-
+  const handleStatusTabChange = (name: string | number) => {
+    activeTab.value = name as TicketManagementTab
+    handleSearch()
+  }
+  const loadCategories = async () => {
+    try {
+      categoryOptions.value = await adminListTicketCategories()
+    } catch (error: any) {
+      ElMessage.error(error?.message || t('ticket.messages.loadFailed'))
+    }
+  }
   const openDetail = (id: number) =>
     router.push({ name: 'TicketAdminDetail', params: { id: String(id) } })
+  onMounted(loadCategories)
 </script>
-
 <style scoped>
   .ticket-page {
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
-
   .ticket-page__toolbar {
     display: flex;
     gap: 12px;
     align-items: center;
     flex-wrap: wrap;
+  }
+  .ticket-page__toolbar :deep(.el-tabs__header) {
+    margin: 0;
+  }
+  .ticket-content-preview {
+    display: -webkit-box;
+    overflow: hidden;
+    line-height: 1.4;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 </style>
