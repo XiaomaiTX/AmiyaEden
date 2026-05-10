@@ -293,6 +293,57 @@ declare namespace Api {
 
     /** 任务状态分页响应 */
     type TaskStatusList = Api.Common.PaginatedResponse<TaskStatus>
+
+    interface MonitorOverview {
+      total: number
+      healthy: number
+      warning: number
+      critical: number
+      running: number
+      failed: number
+      overdue: number
+    }
+
+    interface MonitorTaskPanelItem {
+      task_name: string
+      description: string
+      priority: number
+      total: number
+      healthy: number
+      warning: number
+      critical: number
+      running: number
+      failed: number
+      overdue: number
+      success_rate: number
+      worst_lag_seconds: number
+    }
+
+    interface MonitorFailureItem {
+      task_name: string
+      description: string
+      character_id: number
+      character_name?: string
+      error: string
+      last_run?: string | null
+    }
+
+    interface MonitorOverdueItem {
+      task_name: string
+      description: string
+      character_id: number
+      character_name?: string
+      next_run?: string | null
+      overdue_seconds: number
+    }
+
+    interface MonitorResponse {
+      generated_at: string
+      overview: MonitorOverview
+      task_panels: MonitorTaskPanelItem[]
+      failure_top: MonitorFailureItem[]
+      overdue_top: MonitorOverdueItem[]
+    }
   }
 
   /** 任务管理器类型 */

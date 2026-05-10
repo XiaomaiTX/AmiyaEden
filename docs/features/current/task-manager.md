@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-23
+last_reviewed: 2026-05-10
 source_of_truth:
   - server/main.go
   - server/global/global.go
@@ -28,9 +28,10 @@ source_of_truth:
 
 ## 当前能力
 
-- `/system/task-manager` 将后台任务统一展示为「任务」「ESI 状态」与「执行历史」三个 tab
+- `/system/task-manager` 将后台任务统一展示为「任务」「ESI 状态」「ESI 监控」与「执行历史」四个 tab
 - 任务页展示任务名、说明、分类、任务类型、当前生效 cron、默认 cron 与最近一次执行结果
 - ESI 状态页集中展示按人物执行、按任务名执行、全量执行与状态查询入口
+- ESI 监控页提供聚合快照：总览指标、任务健康面板、失败排行、超期排行，支持手动刷新与 30 秒自动刷新
 - 管理员可手动触发支持运行的任务；ESI 相关控制仍保留在同一页面中
 - `super_admin` 可修改周期任务的 cron；修改会立即重载运行时调度，并持久化到 `task_schedules`
 - 通用任务的 cron/manual 执行都会写入 `task_executions`，执行历史页支持按任务名与状态筛选
@@ -70,6 +71,7 @@ source_of_truth:
 - `/api/v1/tasks/:name/schedule`
 - `/api/v1/tasks/esi/*`
 - `/api/v1/info/esi-refresh`
+  - 其中 `/api/v1/tasks/esi/monitor` 返回 ESI 任务聚合监控快照
 
 ## 权限边界
 
@@ -96,6 +98,7 @@ source_of_truth:
 - 同一任务在同一进程内不会并发执行两次；手动触发冲突时返回 `409 Conflict`，cron 触发冲突时跳过本轮执行
 - 调度修改会先更新运行时 cron，再写入 `task_schedules`；若持久化失败，服务会尝试回滚旧调度
 - `/api/v1/tasks/esi/*` 仍然是 ESI 队列的专用管理入口，不等同于通用任务执行历史
+- `/api/v1/tasks/esi/monitor` 是运行态快照接口，不持久化历史趋势，也不替代执行历史查询
 - 服务启动后仍会立即补跑一次 `esi_refresh` 队列，并从舰队状态中恢复尚未到点的自动 SRP 延迟执行
 - 通用任务的异步手动触发与 ESI fan-out 触发必须处于共享后台任务管理器的受跟踪生命周期内；服务进入关停后，这些入口必须返回显式失败，而不是继续接收新任务
 

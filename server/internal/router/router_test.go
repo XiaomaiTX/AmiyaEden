@@ -77,6 +77,9 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 	if !routeExists(routes, http.MethodGet, "/api/v1/tasks/esi/statuses") {
 		t.Fatal("expected route GET /api/v1/tasks/esi/statuses to be registered")
 	}
+	if !routeExists(routes, http.MethodGet, "/api/v1/tasks/esi/monitor") {
+		t.Fatal("expected route GET /api/v1/tasks/esi/monitor to be registered")
+	}
 	if routeExists(routes, http.MethodGet, "/api/v1/esi/refresh/tasks") {
 		t.Fatal("expected legacy GET /api/v1/esi/refresh/tasks route to be removed")
 	}

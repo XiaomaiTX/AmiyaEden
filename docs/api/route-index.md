@@ -306,6 +306,7 @@ source_of_truth:
 | --- | --- | --- | --- |
 | GET | `/tasks/esi/tasks` | ESI 队列任务定义列表 | `RequireRole(admin)` |
 | GET | `/tasks/esi/statuses` | ESI 队列人物状态汇总 | `RequireRole(admin)` |
+| GET | `/tasks/esi/monitor` | ESI 队列聚合监控快照（概览、任务健康、失败排行、超期排行） | `RequireRole(admin)` |
 | POST | `/tasks/esi/run` | 对指定人物执行单个 ESI 任务 | `RequireRole(admin)` |
 | POST | `/tasks/esi/run-task` | 对全部人物执行指定 ESI 任务 | `RequireRole(admin)` |
 | POST | `/tasks/esi/run-all` | 对全部人物执行 ESI 全量刷新 | `RequireRole(admin)` |

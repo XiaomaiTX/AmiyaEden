@@ -473,6 +473,7 @@
     "tabs": {
       "tasks": "Tasks",
       "esiStatuses": "ESI Runtime Status",
+      "esiMonitor": "ESI Monitor",
       "history": "Execution History"
     },
     "columns": {
@@ -595,6 +596,32 @@
       }
     },
     "esi": {
+      "monitor": {
+        "generatedAt": "Generated At",
+        "autoRefresh": "Auto Refresh (30s)",
+        "sections": {
+          "taskPanels": "Task Health Panels",
+          "failureTop": "Failure Top",
+          "overdueTop": "Overdue Top"
+        },
+        "cards": {
+          "total": "Total",
+          "healthy": "Healthy",
+          "warning": "Warning",
+          "critical": "Critical",
+          "running": "Running",
+          "failed": "Failed",
+          "overdue": "Overdue"
+        },
+        "columns": {
+          "successRate": "Success Rate",
+          "worstLag": "Worst Lag (s)",
+          "overdueSeconds": "Overdue (s)"
+        },
+        "messages": {
+          "loadFailed": "Failed to load ESI monitor snapshot"
+        }
+      },
       "sections": {
         "tasks": "ESI Queue Tasks",
         "statuses": "ESI Runtime Status"
