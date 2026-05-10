@@ -1,4 +1,10 @@
 import { requestJson } from '@/api/http-client'
+import type {
+  CheckDirectReferrerParams,
+  ConfirmDirectReferrerParams,
+  DirectReferralStatus,
+  DirectReferrerCandidate,
+} from '@/types/api/newbro'
 
 interface ApiResponse<T> {
   code: number
@@ -14,15 +20,15 @@ function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
 }
 
 export async function fetchDirectReferralStatus() {
-  const response = await requestJson<ApiResponse<Api.Newbro.DirectReferralStatus>>(
+  const response = await requestJson<ApiResponse<DirectReferralStatus>>(
     '/api/v1/newbro/recruit/direct-referral'
   )
 
   return assertSuccess(response, 'fetch direct referral status failed')
 }
 
-export async function checkDirectReferrerQQ(data: Api.Newbro.CheckDirectReferrerParams) {
-  const response = await requestJson<ApiResponse<Api.Newbro.DirectReferrerCandidate>>(
+export async function checkDirectReferrerQQ(data: CheckDirectReferrerParams) {
+  const response = await requestJson<ApiResponse<DirectReferrerCandidate>>(
     '/api/v1/newbro/recruit/direct-referral/check',
     {
       method: 'POST',
@@ -33,8 +39,8 @@ export async function checkDirectReferrerQQ(data: Api.Newbro.CheckDirectReferrer
   return assertSuccess(response, 'check direct referrer failed')
 }
 
-export async function confirmDirectReferrer(data: Api.Newbro.ConfirmDirectReferrerParams) {
-  const response = await requestJson<ApiResponse<Api.Newbro.DirectReferrerCandidate>>(
+export async function confirmDirectReferrer(data: ConfirmDirectReferrerParams) {
+  const response = await requestJson<ApiResponse<DirectReferrerCandidate>>(
     '/api/v1/newbro/recruit/direct-referral/confirm',
     {
       method: 'POST',

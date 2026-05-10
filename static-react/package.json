@@ -7,6 +7,7 @@
         "dev": "vite",
         "build": "tsc -b && vite build",
         "lint": "eslint .",
+        "check:api-contract": "node ./scripts/check-api-contract.mjs",
         "preview": "vite preview",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
