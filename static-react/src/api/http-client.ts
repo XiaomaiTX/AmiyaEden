@@ -1,4 +1,5 @@
 ﻿import { dispatchUnauthorized } from '@/auth'
+import { useSessionStore } from '@/stores'
 
 export class HttpError extends Error {
   status: number
@@ -11,10 +12,14 @@ export class HttpError extends Error {
 }
 
 export async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const accessToken = useSessionStore.getState().accessToken
+  const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+
   const response = await fetch(input, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...init?.headers,
     },
   })

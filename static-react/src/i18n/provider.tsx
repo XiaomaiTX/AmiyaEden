@@ -9,7 +9,8 @@ export function I18nProvider({ children }: PropsWithChildren) {
   const value = useMemo(
     () => ({
       locale,
-      t: (key: string) => resolveLocaleText(locale, key),
+      t: (key: string, vars?: Record<string, string | number>) =>
+        resolveLocaleText(locale, key, vars),
     }),
     [locale]
   )

@@ -3,7 +3,7 @@ import { useFeedbackStore } from '@/feedback/store'
 import { cn } from '@/lib/utils'
 
 const toastTypeClass: Record<string, string> = {
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  success: 'border-success/20 bg-success/10 text-success-foreground',
   error: 'border-rose-200 bg-rose-50 text-rose-800',
   warning: 'border-amber-200 bg-amber-50 text-amber-800',
   info: 'border-sky-200 bg-sky-50 text-sky-800',

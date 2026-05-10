@@ -1,13 +1,19 @@
-﻿import { Menu, UserRound } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
+import { appRouteSpecs } from '@/app/migration-routes'
+import { ModeToggle } from '@/components/mode-toggle'
 import { Button } from '@/components/ui/button'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import { useI18n } from '@/i18n'
-import { shellMenuItems } from '@/layout/menu-config'
 import { usePreferenceStore, useSessionStore } from '@/stores'
 
 function getRouteTitle(pathname: string, t: (key: string) => string) {
-  const found = shellMenuItems.find((item) => item.to === pathname)
-  return found ? t(found.labelKey) : t('shell.unnamedPage')
+  const found = appRouteSpecs.find((item) => {
+    if (!item.path) return pathname === '/'
+    const pattern = `^/${item.path.replace(/:[^/]+/g, '[^/]+')}$`
+    return new RegExp(pattern).test(pathname)
+  })
+  return found ? t(found.titleKey) : t('shell.unnamedPage')
 }
 
 export function HeaderBar() {
@@ -17,26 +23,14 @@ export function HeaderBar() {
 
   const locale = usePreferenceStore((state) => state.locale)
   const setLocale = usePreferenceStore((state) => state.setLocale)
-  const toggleSidebar = usePreferenceStore((state) => state.toggleSidebar)
-
   const isLoggedIn = useSessionStore((state) => state.isLoggedIn)
   const characterName = useSessionStore((state) => state.characterName)
-  const setSessionSnapshot = useSessionStore((state) => state.setSessionSnapshot)
   const clearSession = useSessionStore((state) => state.clearSession)
 
   return (
     <header className="flex min-h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
       <div className="flex items-center gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="hidden md:inline-flex"
-          onClick={toggleSidebar}
-          aria-label="toggle-sidebar"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
+        <SidebarTrigger />
         <div className="flex flex-col">
           <span className="text-xs text-muted-foreground">{t('shell.runtime')}</span>
           <span className="text-sm font-medium">{title}</span>
@@ -44,6 +38,7 @@ export function HeaderBar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <ModeToggle />
         <Button
           type="button"
           variant="outline"
@@ -59,23 +54,7 @@ export function HeaderBar() {
             <UserRound className="mr-1 h-4 w-4" />
             {characterName ?? 'User'}
           </Button>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            onClick={() =>
-              setSessionSnapshot({
-                isLoggedIn: true,
-                characterId: 1001,
-                characterName: 'Amiya',
-                roles: ['admin'],
-                authList: ['route:dashboard:view'],
-              })
-            }
-          >
-            {t('auth.mockLogin')}
-          </Button>
-        )}
+        ) : null}
       </div>
     </header>
   )

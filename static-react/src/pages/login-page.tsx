@@ -1,8 +1,10 @@
-﻿import { useMemo } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+﻿import { useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { getEveSSOLoginURL } from '@/api/auth'
 import { useI18n } from '@/i18n'
-import { useSessionStore } from '@/stores'
+
+const SSO_REDIRECT_STORAGE_KEY = 'auth:sso:redirect'
 
 function useRedirectPath() {
   const location = useLocation()
@@ -11,7 +13,7 @@ function useRedirectPath() {
     const query = new URLSearchParams(location.search)
     const redirect = query.get('redirect')
 
-    if (!redirect || redirect === '/login') {
+    if (!redirect || redirect === '/auth/login' || redirect === '/login') {
       return '/'
     }
 
@@ -21,10 +23,22 @@ function useRedirectPath() {
 
 export function LoginPage() {
   const { t } = useI18n()
-  const navigate = useNavigate()
   const redirectPath = useRedirectPath()
-  const isLoggedIn = useSessionStore((state) => state.isLoggedIn)
-  const setSessionSnapshot = useSessionStore((state) => state.setSessionSnapshot)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleEveLogin = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      sessionStorage.setItem(SSO_REDIRECT_STORAGE_KEY, redirectPath)
+      const loginURL = await getEveSSOLoginURL()
+      window.location.href = loginURL
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t('auth.loginStartFailed'))
+      setLoading(false)
+    }
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
@@ -36,27 +50,14 @@ export function LoginPage() {
         </p>
 
         <div className="mt-4 flex gap-2">
-          <Button
-            type="button"
-            onClick={() => {
-              setSessionSnapshot({
-                isLoggedIn: true,
-                characterId: 1001,
-                characterName: 'Amiya',
-                roles: ['admin'],
-                authList: ['route:dashboard:view'],
-              })
-              navigate(redirectPath, { replace: true })
-            }}
-          >
-            {t('auth.mockLogin')}
+          <Button type="button" onClick={handleEveLogin} disabled={loading}>
+            {loading ? t('auth.loginStarting') : t('auth.loginWithEve')}
           </Button>
         </div>
 
-        {isLoggedIn ? (
-          <p className="mt-3 text-xs text-muted-foreground">{t('auth.alreadyLoggedIn')}</p>
-        ) : null}
+        {error ? <p className="mt-3 text-xs text-destructive">{error}</p> : null}
       </section>
     </main>
   )
 }
+

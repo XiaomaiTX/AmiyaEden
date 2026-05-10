@@ -10,13 +10,16 @@ describe('store boundaries', () => {
   beforeEach(() => {
     localStorage.removeItem(PREFERENCE_STORE_KEY)
     localStorage.removeItem(SESSION_STORE_KEY)
-    usePreferenceStore.setState({ locale: 'zh-CN', sidebarCollapsed: false })
+    usePreferenceStore.setState({ locale: 'zh-CN', sidebarCollapsed: false, theme: 'system' })
     useSessionStore.setState({
       isLoggedIn: false,
+      accessToken: null,
       characterId: null,
       characterName: null,
       roles: [],
       authList: [],
+      isCurrentlyNewbro: false,
+      isMentorMenteeEligible: false,
       hydratedAt: null,
     })
   })
@@ -24,16 +27,19 @@ describe('store boundaries', () => {
   test('preference store updates locale and layout preference', () => {
     usePreferenceStore.getState().setLocale('en-US')
     usePreferenceStore.getState().toggleSidebar()
+    usePreferenceStore.getState().setTheme('dark')
 
     const state = usePreferenceStore.getState()
 
     expect(state.locale).toBe('en-US')
     expect(state.sidebarCollapsed).toBe(true)
+    expect(state.theme).toBe('dark')
   })
 
   test('session store updates and clears auth snapshot', () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
+      accessToken: 'token-123',
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
@@ -51,3 +57,4 @@ describe('store boundaries', () => {
     expect(state.authList).toEqual([])
   })
 })
+
