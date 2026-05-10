@@ -244,5 +244,79 @@ describe('router auth and route meta access flow', () => {
       expect(screen.getByText('403 Forbidden')).toBeInTheDocument()
     })
   })
+
+  describe('tail batch routes', () => {
+    test('renders recruit landing page at /r/:code', () => {
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/r/test-code'],
+      })
+
+      render(<RouterProvider router={router} />)
+
+      expect(screen.getByRole('heading', { name: '加入我们' })).toBeInTheDocument()
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+    })
+
+    test('renders iframe page at /outside/iframe/*', () => {
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/outside/iframe/https://example.com'],
+      })
+
+      render(<RouterProvider router={router} />)
+
+      const iframe = screen.getByTitle('External Content')
+      expect(iframe).toBeInTheDocument()
+      expect(iframe).toHaveAttribute('src', 'https://example.com')
+    })
+
+    test('renders iframe page with no-src message when path is empty', () => {
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/outside/iframe//'],
+      })
+
+      render(<RouterProvider router={router} />)
+
+      expect(screen.getByText('Missing iframe target path.')).toBeInTheDocument()
+    })
+
+    test('renders auth callback page at /auth/callback', () => {
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/auth/callback'],
+      })
+
+      render(<RouterProvider router={router} />)
+
+      expect(screen.getByText('正在验证登录信息...')).toBeInTheDocument()
+    })
+
+    test('renders 404 for unknown route', () => {
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/nonexistent-path'],
+      })
+
+      render(<RouterProvider router={router} />)
+
+      expect(screen.getByText('404 Not Found')).toBeInTheDocument()
+    })
+
+    test('hall of fame routes show stub with out-of-scope note', () => {
+      useSessionStore.getState().setSessionSnapshot({
+        isLoggedIn: true,
+        accessToken: 'token-123',
+        characterId: 1001,
+        characterName: 'Amiya',
+        roles: ['admin'],
+        authList: [],
+      })
+
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/hall-of-fame/manage'],
+      })
+
+      render(<RouterProvider router={router} />)
+
+      expect(screen.getByText('本轮不实现 — Hall of Fame 待后续独立重构立项')).toBeInTheDocument()
+    })
+  })
 })
 

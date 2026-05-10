@@ -64,6 +64,8 @@ import { SrpApplyPage } from '@/pages/srp-apply-page'
 import { SrpManagePage } from '@/pages/srp-manage-page'
 import { SrpPricesPage } from '@/pages/srp-prices-page'
 import { LoginPage } from '@/pages/login-page'
+import { RecruitLandingPage } from '@/pages/recruit-landing-page'
+import { IframePage } from '@/pages/iframe-page'
 import { MigrationStubPage } from '@/pages/migration-stub-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { ServerErrorPage } from '@/pages/server-error-page'
@@ -193,6 +195,7 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
           title={route.stubTitle ?? route.path}
           path={`/${route.path}`}
           batch={route.batch ?? 'Tail'}
+          note={route.stubNote}
         />
       )
   }
@@ -227,6 +230,14 @@ export const appRoutes: RouteObject[] = [
       {
         path: '/auth/callback',
         element: <AuthCallbackPage />,
+      },
+      {
+        path: '/r/:code',
+        element: <RecruitLandingPage />,
+      },
+      {
+        path: '/outside/iframe/*',
+        element: <IframePage />,
       },
       {
         path: '/403',
