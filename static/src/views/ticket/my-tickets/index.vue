@@ -32,8 +32,8 @@
 <script setup lang="ts">
   import { listMyTickets } from '@/api/ticket'
   import { useTable } from '@/hooks/core/useTable'
-  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
+  import { formatTime } from '@utils/common'
   import { ElButton } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -73,12 +73,11 @@
           formatter: (row) => h(TicketStatusBadge, { status: row.status })
         },
         {
-          prop: 'priority',
-          label: t('ticket.columns.priority'),
-          width: 120,
-          formatter: (row) => h(TicketPriorityBadge, { priority: row.priority })
+          prop: 'updated_at',
+          label: t('common.updatedAt'),
+          width: 180,
+          formatter: (row) => h('span', {}, formatTime(row.updated_at))
         },
-        { prop: 'updated_at', label: t('common.updatedAt'), width: 180 },
         {
           prop: 'operation',
           label: t('common.operation'),

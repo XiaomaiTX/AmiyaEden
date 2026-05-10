@@ -14,7 +14,6 @@ var (
 	errTicketNotFound       = errors.New("工单不存在")
 	errTicketNoPermission   = errors.New("无权限访问该工单")
 	errInvalidTicketStatus  = errors.New("无效的工单状态")
-	errInvalidTicketPrio    = errors.New("无效的工单优先级")
 	errTicketCategoryAbsent = errors.New("工单分类不存在")
 )
 
@@ -39,23 +38,7 @@ func normalizeTicketStatus(status string) (string, error) {
 	}
 }
 
-func normalizeTicketPriority(priority string) (string, error) {
-	if strings.TrimSpace(priority) == "" {
-		return model.TicketPriorityMedium, nil
-	}
-	switch strings.TrimSpace(priority) {
-	case model.TicketPriorityLow:
-		return model.TicketPriorityLow, nil
-	case model.TicketPriorityMedium:
-		return model.TicketPriorityMedium, nil
-	case model.TicketPriorityHigh:
-		return model.TicketPriorityHigh, nil
-	default:
-		return "", errInvalidTicketPrio
-	}
-}
-
-func (s *TicketService) CreateTicket(userID, categoryID uint, title, description, priority string) (*model.Ticket, error) {
+func (s *TicketService) CreateTicket(userID, categoryID uint, title, description string) (*model.Ticket, error) {
 	title = strings.TrimSpace(title)
 	description = strings.TrimSpace(description)
 	if title == "" || description == "" {
@@ -68,17 +51,12 @@ func (s *TicketService) CreateTicket(userID, categoryID uint, title, description
 		}
 		return nil, err
 	}
-	normalizedPriority, err := normalizeTicketPriority(priority)
-	if err != nil {
-		return nil, err
-	}
 	ticket := &model.Ticket{
 		UserID:      userID,
 		CategoryID:  categoryID,
 		Title:       title,
 		Description: description,
 		Status:      model.TicketStatusPending,
-		Priority:    normalizedPriority,
 	}
 	if err := s.repo.CreateTicket(ticket); err != nil {
 		return nil, err
@@ -117,10 +95,41 @@ func (s *TicketService) GetAdminTicket(ticketID uint) (*model.Ticket, error) {
 	return ticket, nil
 }
 
-func (s *TicketService) ListTicketsAdmin(filter repository.TicketListFilter, page, pageSize int) ([]model.Ticket, int64, error) {
+func (s *TicketService) GetAdminTicketDetail(ticketID uint) (*model.TicketListItem, error) {
+	ticket, err := s.repo.GetTicketListItemByID(ticketID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errTicketNotFound
+		}
+		return nil, err
+	}
+	return ticket, nil
+}
+
+func (s *TicketService) ListTicketsAdmin(filter repository.TicketListFilter, page, pageSize int) ([]model.TicketListItem, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 100)
 	filter.Keyword = strings.TrimSpace(filter.Keyword)
 	filter.Status = strings.TrimSpace(filter.Status)
+	if filter.Status != "" {
+		rawStatuses := strings.Split(filter.Status, ",")
+		if len(rawStatuses) > 1 {
+			filter.Status = ""
+			filter.Statuses = make([]string, 0, len(rawStatuses))
+			for _, rawStatus := range rawStatuses {
+				normalizedStatus, err := normalizeTicketStatus(rawStatus)
+				if err != nil {
+					return nil, 0, err
+				}
+				filter.Statuses = append(filter.Statuses, normalizedStatus)
+			}
+		} else {
+			normalizedStatus, err := normalizeTicketStatus(filter.Status)
+			if err != nil {
+				return nil, 0, err
+			}
+			filter.Status = normalizedStatus
+		}
+	}
 	return s.repo.ListTicketsAdmin(filter, page, pageSize)
 }
 
@@ -212,23 +221,7 @@ func (s *TicketService) UpdateStatusAsAdmin(adminID, ticketID uint, status strin
 	return ticket, nil
 }
 
-func (s *TicketService) UpdatePriorityAsAdmin(ticketID uint, priority string) (*model.Ticket, error) {
-	normalizedPriority, err := normalizeTicketPriority(priority)
-	if err != nil {
-		return nil, err
-	}
-	ticket, err := s.GetAdminTicket(ticketID)
-	if err != nil {
-		return nil, err
-	}
-	ticket.Priority = normalizedPriority
-	if err := s.repo.UpdateTicket(ticket); err != nil {
-		return nil, err
-	}
-	return ticket, nil
-}
-
-func (s *TicketService) ListStatusHistoryAsAdmin(ticketID uint) ([]model.TicketStatusHistory, error) {
+func (s *TicketService) ListStatusHistoryAsAdmin(ticketID uint) ([]model.TicketStatusHistoryItem, error) {
 	if _, err := s.GetAdminTicket(ticketID); err != nil {
 		return nil, err
 	}
@@ -300,4 +293,3 @@ func (s *TicketService) GetStatistics() (map[string]any, error) {
 		"pendingCount": byStatus[model.TicketStatusPending],
 	}, nil
 }
-

@@ -58,7 +58,7 @@ completed: 2026-04-30
 
 - **工单管理列表**
   - 分页展示所有工单
-  - 显示工单ID、标题、提交人、分类、状态、优先级、创建时间、最后更新时间
+  - 显示工单ID、标题、提交人、分类、状态、创建时间、最后更新时间
   - 支持按状态、分类、提交人筛选
   - 支持搜索标题或描述内容
   - 待处理工单数量徽标
@@ -68,7 +68,6 @@ completed: 2026-04-30
   - 查看完整工单信息
   - 显示提交人信息：昵称、主人物名、QQ、Discord ID
   - 修改工单状态：待处理 → 处理中 → 已完成
-  - 修改工单优先级
   - 管理员回复功能
   - 标记处理人（自动记录当前处理管理员）
   - 工单转分类
@@ -118,11 +117,13 @@ type Ticket struct {
 ```
 
 **状态枚举**：
+
 - `pending`: 待处理
 - `in_progress`: 处理中
 - `completed`: 已完成
 
 **优先级枚举**：
+
 - `low`: 低
 - `medium`: 中
 - `high`: 高
@@ -198,7 +199,6 @@ GET    /api/v1/ticket/categories
 GET    /api/v1/system/ticket/tickets
 GET    /api/v1/ticket/tickets/:id
 PUT    /api/v1/ticket/tickets/:id/status
-PUT    /api/v1/ticket/tickets/:id/priority
 POST   /api/v1/ticket/tickets/:id/replies
 GET    /api/v1/ticket/tickets/:id/replies
 GET    /api/v1/ticket/tickets/:id/status-history
@@ -252,6 +252,7 @@ GET    /api/v1/system/ticket/statistics
 ### 国际化要求
 
 所有用户界面文本需要中英双语支持，更新以下文件：
+
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`
 
@@ -270,7 +271,6 @@ GET    /api/v1/system/ticket/statistics
 #### 通用组件
 
 - `TicketStatusBadge`: 工单状态徽标
-- `TicketPriorityBadge`: 优先级徽标
 - `TicketCategoryTag`: 分类标签
 - `TicketReplyItem`: 回复条目组件
 
@@ -365,7 +365,6 @@ GET    /api/v1/system/ticket/statistics
 9. [x] 设计并接入菜单栏徽章提醒
 10. [ ] 落地转派与归档策略
 
-
 ## 后续落地设计（第 10 项）
 
 ### 9. 菜单栏徽章提醒接入（已完成）
@@ -378,10 +377,12 @@ GET    /api/v1/system/ticket/statistics
 #### 提醒范围
 
 1. 待处理工单
+
 - 统计管理员未处理的工单数量
 - 菜单栏显示该数量徽章
 
 2. 其他状态变化
+
 - 不单独推送消息
 - 只在进入工单管理页面后通过列表和状态字段展示
 
@@ -440,6 +441,3 @@ GET    /api/v1/system/ticket/statistics
 - `static/src/components/ticket/` - 通用组件
 - `static/src/locales/langs/zh.json` - 中文翻译
 - `static/src/locales/langs/en.json` - 英文翻译
-
-
-

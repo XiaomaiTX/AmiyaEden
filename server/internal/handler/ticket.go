@@ -23,13 +23,12 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		CategoryID  uint   `json:"category_id" binding:"required"`
 		Title       string `json:"title" binding:"required"`
 		Description string `json:"description" binding:"required"`
-		Priority    string `json:"priority"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	ticket, err := h.svc.CreateTicket(middleware.GetUserID(c), req.CategoryID, req.Title, req.Description, req.Priority)
+	ticket, err := h.svc.CreateTicket(middleware.GetUserID(c), req.CategoryID, req.Title, req.Description)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -145,7 +144,7 @@ func (h *TicketHandler) AdminGetTicket(c *gin.Context) {
 	if ticketID == 0 {
 		return
 	}
-	ticket, err := h.svc.GetAdminTicket(ticketID)
+	ticket, err := h.svc.GetAdminTicketDetail(ticketID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -166,26 +165,6 @@ func (h *TicketHandler) AdminUpdateStatus(c *gin.Context) {
 		return
 	}
 	ticket, err := h.svc.UpdateStatusAsAdmin(middleware.GetUserID(c), ticketID, req.Status)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, ticket)
-}
-
-func (h *TicketHandler) AdminUpdatePriority(c *gin.Context) {
-	ticketID := requireUintID(c, "id", "工单 ID")
-	if ticketID == 0 {
-		return
-	}
-	var req struct {
-		Priority string `json:"priority" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-	ticket, err := h.svc.UpdatePriorityAsAdmin(ticketID, req.Priority)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

@@ -30,10 +30,7 @@ test('ticket admin APIs keep expected system endpoints and methods', () => {
     source,
     /adminUpdateTicketStatus\(id:\s*number,[\s\S]*?request\.put[\s\S]*?`\/api\/v1\/system\/ticket\/tickets\/\$\{id\}\/status`/
   )
-  assert.match(
-    source,
-    /adminUpdateTicketPriority\(id:\s*number,[\s\S]*?request\.put[\s\S]*?`\/api\/v1\/system\/ticket\/tickets\/\$\{id\}\/priority`/
-  )
+  assert.doesNotMatch(source, /adminUpdateTicketPriority|\/priority|UpdatePriorityParams/)
   assert.match(
     source,
     /adminAddTicketReply\(id:\s*number,[\s\S]*?request\.post[\s\S]*?`\/api\/v1\/system\/ticket\/tickets\/\$\{id\}\/replies`/
