@@ -1,0 +1,19 @@
+import { requestJson } from '@/api/http-client'
+
+interface ApiResponse<T> {
+  code: number
+  msg: string
+  data: T
+}
+
+export async function fetchDashboard() {
+  const response = await requestJson<ApiResponse<Api.Dashboard.DashboardResult>>('/api/v1/dashboard', {
+    method: 'POST',
+  })
+
+  if (response.code !== 0) {
+    throw new Error(response.msg || 'dashboard request failed')
+  }
+
+  return response.data
+}

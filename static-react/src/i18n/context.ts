@@ -20,19 +20,57 @@ function getByPath(source: Record<string, unknown>, path: string): string | unde
   return typeof value === 'string' ? value : undefined
 }
 
-export function resolveLocaleText(locale: I18nLocale, key: string) {
+function resolveReference(locale: I18nLocale, key: string, visited: Set<string>): string | undefined {
+  if (visited.has(key)) {
+    return undefined
+  }
+
+  visited.add(key)
+
   const dictionary = dictionaries[locale] as Record<string, unknown>
-  return getByPath(dictionary, key) ?? key
+  const value = getByPath(dictionary, key)
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (value.startsWith('@:')) {
+    return resolveReference(locale, value.slice(2), visited)
+  }
+
+  return value
 }
+
+function interpolateText(value: string, vars?: Record<string, string | number>) {
+  if (!vars) {
+    return value
+  }
+
+  return value.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const replacement = vars[key]
+    return replacement === undefined ? match : String(replacement)
+  })
+}
+
+export function resolveLocaleText(
+  locale: I18nLocale,
+  key: string,
+  vars?: Record<string, string | number>
+) {
+  const value = resolveReference(locale, key, new Set())
+  return value === undefined ? key : interpolateText(value, vars)
+}
+
+type TranslateFunction = (key: string, vars?: Record<string, string | number>) => string
 
 interface I18nContextValue {
   locale: I18nLocale
-  t: (key: string) => string
+  t: TranslateFunction
 }
 
 export const I18nContext = createContext<I18nContextValue>({
   locale: 'zh-CN',
-  t: (key: string) => resolveLocaleText('zh-CN', key),
+  t: (key: string, vars?: Record<string, string | number>) =>
+    resolveLocaleText('zh-CN', key, vars),
 })
 
 export function useI18n() {
