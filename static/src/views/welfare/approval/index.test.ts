@@ -51,3 +51,16 @@ test('welfare approval history shows a localized system reviewer label for auto-
     /formatWelfareHistoryReviewerName\(\{[\s\S]*systemLabel:\s*t\('welfareApproval\.systemReviewer'\)/
   )
 })
+
+test('welfare approval shows proof images only for pending rows', () => {
+  assert.match(
+    source,
+    /buildBaseColumns\(\{ includeEvidenceImage: true \}\)\.filter\([\s\S]*?\(c\) => c\.prop !== 'reviewer_name'/,
+    'expected pending table to keep the evidence image column'
+  )
+  assert.match(
+    source,
+    /buildBaseColumns\(\{ includeEvidenceImage: false \}\)/,
+    'expected history table to omit the evidence image column'
+  )
+})

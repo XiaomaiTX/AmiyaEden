@@ -765,6 +765,64 @@ func TestApplyForWelfareSmallFuxiCoinClaimsAutoDeliver(t *testing.T) {
 	}
 }
 
+func TestApplyForWelfareAutoDeliveredClaimClearsEvidenceImage(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	user := &model.User{
+		Nickname:           "Pilot",
+		QQ:                 "123456",
+		PrimaryCharacterID: 90000001,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	character := &model.EveCharacter{
+		CharacterID:   user.PrimaryCharacterID,
+		CharacterName: "Pilot One",
+		UserID:        user.ID,
+	}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	payout := 499
+	welfare := &model.Welfare{
+		Name:            "Starter Pack",
+		DistMode:        model.WelfareDistModePerUser,
+		PayByFuxiCoin:   &payout,
+		RequireEvidence: true,
+		Status:          model.WelfareStatusActive,
+		CreatedBy:       1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	svc := NewWelfareService()
+	app, err := svc.ApplyForWelfare(user.ID, &ApplyForWelfareRequest{
+		WelfareID:     welfare.ID,
+		EvidenceImage: "data:image/png;base64,proof",
+	})
+	if err != nil {
+		t.Fatalf("ApplyForWelfare() error = %v", err)
+	}
+	if app.Status != model.WelfareAppStatusDelivered {
+		t.Fatalf("status = %q, want %q", app.Status, model.WelfareAppStatusDelivered)
+	}
+	if app.EvidenceImage != "" {
+		t.Fatalf("returned evidence_image = %q, want empty", app.EvidenceImage)
+	}
+
+	var persisted model.WelfareApplication
+	if err := db.First(&persisted, app.ID).Error; err != nil {
+		t.Fatalf("reload application: %v", err)
+	}
+	if persisted.EvidenceImage != "" {
+		t.Fatalf("persisted evidence_image = %q, want empty", persisted.EvidenceImage)
+	}
+}
+
 func TestApplyForWelfareAtAutoApprovalThresholdStaysRequested(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
@@ -1298,6 +1356,53 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 	}
 	if awardTx.OperatorID != 0 {
 		t.Fatalf("award wallet tx operator_id = %d, want 0", awardTx.OperatorID)
+	}
+}
+
+func TestAdminReviewApplicationDeliverClearsEvidenceImage(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	payout := 25
+	welfare := &model.Welfare{
+		Name:          "Starter Pack",
+		DistMode:      model.WelfareDistModePerUser,
+		PayByFuxiCoin: &payout,
+		Status:        model.WelfareStatusActive,
+		CreatedBy:     1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+
+	userID := uint(42)
+	app := &model.WelfareApplication{
+		WelfareID:     welfare.ID,
+		UserID:        &userID,
+		CharacterID:   90000001,
+		CharacterName: "Pilot One",
+		EvidenceImage: "data:image/png;base64,proof",
+		Status:        model.WelfareAppStatusRequested,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	svc := NewWelfareService()
+	svc.deliveryMailSender = nil
+	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+
+	var updated model.WelfareApplication
+	if err := db.First(&updated, app.ID).Error; err != nil {
+		t.Fatalf("reload application: %v", err)
+	}
+	if updated.Status != model.WelfareAppStatusDelivered {
+		t.Fatalf("status = %q, want %q", updated.Status, model.WelfareAppStatusDelivered)
+	}
+	if updated.EvidenceImage != "" {
+		t.Fatalf("evidence_image = %q, want empty", updated.EvidenceImage)
 	}
 }
 
