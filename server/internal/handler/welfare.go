@@ -274,6 +274,7 @@ func (h *WelfareHandler) AdminListApplications(c *gin.Context) {
 		filter.Status = req.Status
 	}
 	filter.Keyword = req.Keyword
+	filter.IncludeEvidenceImage = filter.Status == model.WelfareAppStatusRequested
 
 	list, total, err := h.svc.AdminListApplications(req.Current, req.Size, filter)
 	if err != nil {

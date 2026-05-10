@@ -125,6 +125,29 @@ func TestListApplicationsPaginatedQualifiesStatusAndOrderColumnsWhenJoined(t *te
 	}
 }
 
+func TestBuildListApplicationsPaginatedQuerySelectsEvidenceOnlyWhenRequested(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	pendingSQL := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildListApplicationsPaginatedQuery(tx.Model(&model.WelfareApplication{}), WelfareApplicationFilter{
+			Status:               model.WelfareAppStatusRequested,
+			IncludeEvidenceImage: true,
+		}).Order("welfare_application.id DESC").Offset(0).Limit(20).Find(&[]model.WelfareApplication{})
+	})
+	if !strings.Contains(pendingSQL, "evidence_image") {
+		t.Fatalf("expected pending welfare query to select evidence_image, got SQL: %s", pendingSQL)
+	}
+
+	historySQL := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildListApplicationsPaginatedQuery(tx.Model(&model.WelfareApplication{}), WelfareApplicationFilter{
+			StatusIn: []string{model.WelfareAppStatusDelivered, model.WelfareAppStatusRejected},
+		}).Order("welfare_application.id DESC").Offset(0).Limit(20).Find(&[]model.WelfareApplication{})
+	})
+	if strings.Contains(historySQL, "evidence_image") {
+		t.Fatalf("expected history welfare query to omit evidence_image, got SQL: %s", historySQL)
+	}
+}
+
 func TestBuildPendingBadgeWelfareApplicationCountQueryUsesRequestedStatus(t *testing.T) {
 	db := newDryRunPostgresDB(t)
 
