@@ -6,31 +6,13 @@
           <span>#{{ ticket.id }} {{ ticket.title }}</span>
           <div class="ticket-detail-header__right">
             <TicketStatusBadge :status="ticket.status" />
-            <TicketPriorityBadge :priority="ticket.priority" />
           </div>
         </div>
-        <div class="ticket-detail-header__controls">
-          <ElSelect v-model="editStatus" style="width: 180px">
-            <ElOption :label="t('ticket.status.pending')" value="pending" />
-            <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
-            <ElOption :label="t('ticket.status.completed')" value="completed" />
-          </ElSelect>
-          <ElSelect v-model="editPriority" style="width: 180px">
-            <ElOption :label="t('ticket.priority.unassigned')" value="unassigned" />
-            <ElOption :label="t('ticket.priority.low')" value="low" />
-            <ElOption :label="t('ticket.priority.medium')" value="medium" />
-            <ElOption :label="t('ticket.priority.high')" value="high" />
-          </ElSelect>
-          <ElButton
-            type="primary"
-            :loading="savingMeta"
-            :disabled="!hasMetaChanges"
-            @click="saveMeta"
-          >
-            {{ t('common.save') }}
-          </ElButton>
-        </div>
       </template>
+      <div class="ticket-detail-meta">
+        <span>{{ t('ticket.columns.submitter') }}: {{ formatTicketRequester(ticket) }}</span>
+        <span>{{ t('ticket.columns.category') }}: {{ getTicketCategoryLabel(ticket) }}</span>
+      </div>
       <p class="ticket-detail-desc">{{ ticket.description }}</p>
     </ElCard>
 
@@ -48,9 +30,18 @@
       </div>
     </ElCard>
 
-    <ElCard class="art-table-card" shadow="never">
+    <ElCard>
       <template #header>{{ t('ticket.statusHistory') }}</template>
-      <ArtTable :data="histories" :columns="historyColumns" />
+      <ElTable :data="histories">
+        <ElTableColumn prop="from_status" :label="t('ticket.columns.fromStatus')" width="160" />
+        <ElTableColumn prop="to_status" :label="t('ticket.columns.toStatus')" width="160" />
+        <ElTableColumn :label="t('ticket.columns.operator')" width="180">
+          <template #default="{ row }">{{ formatTicketHistoryOperator(row) }}</template>
+        </ElTableColumn>
+        <ElTableColumn :label="t('common.time')">
+          <template #default="{ row }">{{ formatTime(row.changed_at) }}</template>
+        </ElTableColumn>
+      </ElTable>
     </ElCard>
   </div>
 </template>
@@ -60,69 +51,35 @@
     adminAddTicketReply,
     adminGetTicket,
     adminListTicketReplies,
-    adminListTicketStatusHistory,
-    adminUpdateTicketPriority,
-    adminUpdateTicketStatus
+    adminListTicketStatusHistory
   } from '@/api/ticket'
-  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
   import TicketReplyItem from '@/components/ticket/TicketReplyItem.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
+  import { formatTime } from '@utils/common'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'TicketAdminDetailPage' })
 
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const route = useRoute()
   const ticketId = computed(() => Number(route.params.id))
 
   const loading = ref(false)
   const submitting = ref(false)
-  const savingMeta = ref(false)
   const ticket = ref<Api.Ticket.TicketItem | null>(null)
   const replies = ref<Api.Ticket.TicketReply[]>([])
   const histories = ref<Api.Ticket.TicketStatusHistory[]>([])
-  const editStatus = ref<Api.Ticket.TicketStatus>('pending')
-  const editPriority = ref<Api.Ticket.TicketPriority>('unassigned')
-  const hasMetaChanges = computed(
-    () =>
-      !!ticket.value &&
-      (editStatus.value !== ticket.value.status || editPriority.value !== ticket.value.priority)
-  )
-
-  const isTicketStatus = (value?: string): value is Api.Ticket.TicketStatus =>
-    value === 'pending' || value === 'in_progress' || value === 'completed'
-
-  const renderHistoryStatus = (status?: string) => {
-    if (!isTicketStatus(status)) {
-      return '-'
-    }
-    return h(TicketStatusBadge, { status })
-  }
-
-  const historyColumns = computed(() => [
-    {
-      prop: 'from_status',
-      label: t('ticket.columns.fromStatus'),
-      width: 160,
-      formatter: (row: Api.Ticket.TicketStatusHistory) => renderHistoryStatus(row.from_status)
-    },
-    {
-      prop: 'to_status',
-      label: t('ticket.columns.toStatus'),
-      width: 160,
-      formatter: (row: Api.Ticket.TicketStatusHistory) => renderHistoryStatus(row.to_status)
-    },
-    {
-      prop: 'changed_by_nickname',
-      label: t('ticket.columns.operator'),
-      width: 140,
-      formatter: (row: Api.Ticket.TicketStatusHistory) => row.changed_by_nickname || '-'
-    },
-    { prop: 'changed_at', label: t('common.time') }
-  ])
   const content = ref('')
   const isInternal = ref(false)
+  const getTicketCategoryLabel = (item: Api.Ticket.TicketItem) =>
+    locale.value.startsWith('zh')
+      ? item.category_name || item.category_name_en || String(item.category_id)
+      : item.category_name_en || item.category_name || String(item.category_id)
+  const formatTicketRequester = (item: Api.Ticket.TicketItem) =>
+    item.requester_name || item.requester_character_name || t('ticket.unknownUser')
+  const formatTicketHistoryOperator = (item: Api.Ticket.TicketStatusHistory) =>
+    item.changed_by_name || item.changed_by_character_name || t('ticket.unknownUser')
 
   const loadData = async () => {
     loading.value = true
@@ -133,35 +90,12 @@
         adminListTicketStatusHistory(ticketId.value)
       ])
       ticket.value = ticketData
-      editStatus.value = ticketData.status
-      editPriority.value = ticketData.priority
       replies.value = replyData
       histories.value = historyData
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.loadFailed'))
     } finally {
       loading.value = false
-    }
-  }
-
-  const saveMeta = async () => {
-    if (!ticket.value || !hasMetaChanges.value) {
-      return
-    }
-    savingMeta.value = true
-    try {
-      if (editStatus.value !== ticket.value.status) {
-        await adminUpdateTicketStatus(ticketId.value, { status: editStatus.value })
-      }
-      if (editPriority.value !== ticket.value.priority) {
-        await adminUpdateTicketPriority(ticketId.value, { priority: editPriority.value })
-      }
-      await loadData()
-      ElMessage.success(t('ticket.messages.updated'))
-    } catch (error: any) {
-      ElMessage.error(error?.message || t('ticket.messages.updateFailed'))
-    } finally {
-      savingMeta.value = false
     }
   }
 
@@ -207,18 +141,18 @@
     gap: 8px;
   }
 
-  .ticket-detail-header__controls {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-top: 12px;
-    flex-wrap: wrap;
-  }
-
   .ticket-detail-desc {
     white-space: pre-wrap;
     line-height: 1.6;
     margin: 0;
+  }
+
+  .ticket-detail-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--art-text-gray-600);
+    margin-bottom: 12px;
   }
 
   .ticket-reply-list {

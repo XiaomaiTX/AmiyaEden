@@ -117,7 +117,6 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 		Title:       "Pending Ticket",
 		Description: "Pending ticket for badge count",
 		Status:      model.TicketStatusPending,
-		Priority:    model.TicketPriorityMedium,
 	}).Error; err != nil {
 		t.Fatalf("create pending ticket: %v", err)
 	}
@@ -127,7 +126,6 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 		Title:       "Owned In Progress",
 		Description: "Assigned ticket for badge count",
 		Status:      model.TicketStatusInProgress,
-		Priority:    model.TicketPriorityMedium,
 		HandledBy:   &user.ID,
 	}).Error; err != nil {
 		t.Fatalf("create in progress ticket: %v", err)
@@ -139,7 +137,6 @@ func TestBadgeServiceGetBadgeCountsReturnsOnlyPermittedNonZeroFields(t *testing.
 		Title:       "Other Handler",
 		Description: "Should not count for current admin",
 		Status:      model.TicketStatusInProgress,
-		Priority:    model.TicketPriorityMedium,
 		HandledBy:   &otherHandlerID,
 	}).Error; err != nil {
 		t.Fatalf("create other handler ticket: %v", err)

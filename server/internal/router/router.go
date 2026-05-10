@@ -585,7 +585,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminTicket.GET("/tickets", ticketH.AdminListTickets)
 		adminTicket.GET("/tickets/:id", ticketH.AdminGetTicket)
 		adminTicket.PUT("/tickets/:id/status", ticketH.AdminUpdateStatus)
-		adminTicket.PUT("/tickets/:id/priority", ticketH.AdminUpdatePriority)
 		adminTicket.POST("/tickets/:id/replies", ticketH.AdminAddReply)
 		adminTicket.GET("/tickets/:id/replies", ticketH.AdminListReplies)
 		adminTicket.GET("/tickets/:id/status-history", ticketH.AdminListStatusHistory)

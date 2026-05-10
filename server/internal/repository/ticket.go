@@ -16,7 +16,7 @@ func NewTicketRepository() *TicketRepository {
 
 type TicketListFilter struct {
 	Status   string
-	Priority string
+	Statuses []string
 	Category uint
 	UserID   uint
 	Keyword  string
@@ -28,9 +28,7 @@ func (r *TicketRepository) CreateTicket(ticket *model.Ticket) error {
 
 func (r *TicketRepository) GetTicketByID(id uint) (*model.Ticket, error) {
 	var ticket model.Ticket
-	if err := r.ticketBaseQuery(global.DB).
-		Where("ticket.id = ?", id).
-		First(&ticket).Error; err != nil {
+	if err := global.DB.First(&ticket, id).Error; err != nil {
 		return nil, err
 	}
 	return &ticket, nil
@@ -40,35 +38,43 @@ func (r *TicketRepository) UpdateTicket(ticket *model.Ticket) error {
 	return global.DB.Save(ticket).Error
 }
 
+func buildTicketListBaseQuery(db *gorm.DB) *gorm.DB {
+	return db.Model(&model.Ticket{}).
+		Joins(`LEFT JOIN ticket_category category ON category.id = ticket.category_id AND category.deleted_at IS NULL`).
+		Joins(`LEFT JOIN "user" requester ON requester.id = ticket.user_id AND requester.deleted_at IS NULL`).
+		Joins(`LEFT JOIN eve_character requester_character ON requester_character.character_id = requester.primary_character_id AND requester_character.deleted_at IS NULL`)
+}
+
+func selectTicketListItems(db *gorm.DB) *gorm.DB {
+	return db.Select(`ticket.*,
+		COALESCE(NULLIF(requester.nickname, ''), requester_character.character_name, '') AS requester_name,
+		COALESCE(requester_character.character_name, '') AS requester_character_name,
+		COALESCE(category.name, '') AS category_name,
+		COALESCE(category.name_en, '') AS category_name_en`)
+}
+
 func (r *TicketRepository) ListTicketsByUser(userID uint, status string, page, pageSize int) ([]model.Ticket, int64, error) {
 	var tickets []model.Ticket
 	var total int64
-	query := global.DB.Model(&model.Ticket{}).Where("ticket.user_id = ?", userID)
+	query := global.DB.Model(&model.Ticket{}).Where("user_id = ?", userID)
 	if status != "" {
-		query = query.Where("ticket.status = ?", status)
+		query = query.Where("status = ?", status)
 	}
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	err := r.ticketBaseQuery(query).
-		Order("ticket.updated_at DESC, ticket.id DESC").
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
-		Find(&tickets).Error
+	err := query.Order("updated_at DESC, id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&tickets).Error
 	return tickets, total, err
 }
 
-func (r *TicketRepository) ListTicketsAdmin(filter TicketListFilter, page, pageSize int) ([]model.Ticket, int64, error) {
-	var tickets []model.Ticket
+func (r *TicketRepository) ListTicketsAdmin(filter TicketListFilter, page, pageSize int) ([]model.TicketListItem, int64, error) {
+	var tickets []model.TicketListItem
 	var total int64
-	query := global.DB.Model(&model.Ticket{})
-	if filter.Status != "" {
+	query := buildTicketListBaseQuery(global.DB)
+	if len(filter.Statuses) > 0 {
+		query = query.Where("ticket.status IN ?", filter.Statuses)
+	} else if filter.Status != "" {
 		query = query.Where("ticket.status = ?", filter.Status)
-	} else {
-		query = query.Where("ticket.status <> ?", model.TicketStatusCompleted)
-	}
-	if filter.Priority != "" {
-		query = query.Where("ticket.priority = ?", filter.Priority)
 	}
 	if filter.Category > 0 {
 		query = query.Where("ticket.category_id = ?", filter.Category)
@@ -77,17 +83,36 @@ func (r *TicketRepository) ListTicketsAdmin(filter TicketListFilter, page, pageS
 		query = query.Where("ticket.user_id = ?", filter.UserID)
 	}
 	if filter.Keyword != "" {
-		query = applyKeywordLikeFilter(query, filter.Keyword, "LOWER(title) LIKE ?", "LOWER(description) LIKE ?")
+		query = applyKeywordLikeFilter(
+			query,
+			filter.Keyword,
+			"LOWER(ticket.title) LIKE ?",
+			"LOWER(ticket.description) LIKE ?",
+			"LOWER(requester.nickname) LIKE ?",
+			"LOWER(requester_character.character_name) LIKE ?",
+			"LOWER(category.name) LIKE ?",
+			"LOWER(category.name_en) LIKE ?",
+		)
 	}
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	err := r.ticketBaseQuery(query).
+	err := selectTicketListItems(query).
 		Order("ticket.updated_at DESC, ticket.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&tickets).Error
 	return tickets, total, err
+}
+
+func (r *TicketRepository) GetTicketListItemByID(id uint) (*model.TicketListItem, error) {
+	var ticket model.TicketListItem
+	if err := selectTicketListItems(buildTicketListBaseQuery(global.DB)).
+		Where("ticket.id = ?", id).
+		First(&ticket).Error; err != nil {
+		return nil, err
+	}
+	return &ticket, nil
 }
 
 func (r *TicketRepository) CreateReply(reply *model.TicketReply) error {
@@ -96,19 +121,11 @@ func (r *TicketRepository) CreateReply(reply *model.TicketReply) error {
 
 func (r *TicketRepository) ListReplies(ticketID uint, includeInternal bool) ([]model.TicketReply, error) {
 	var replies []model.TicketReply
-	query := global.DB.Model(&model.TicketReply{}).Where("ticket_reply.ticket_id = ?", ticketID)
+	query := global.DB.Where("ticket_id = ?", ticketID)
 	if !includeInternal {
-		query = query.Where("ticket_reply.is_internal = ?", false)
+		query = query.Where("is_internal = ?", false)
 	}
-	err := query.
-		Select(`
-			ticket_reply.*,
-			COALESCE(NULLIF(reply_user.nickname, ''), reply_character.character_name, '-') AS user_nickname
-		`).
-		Joins(`LEFT JOIN "user" AS reply_user ON reply_user.id = ticket_reply.user_id`).
-		Joins(`LEFT JOIN eve_character AS reply_character ON reply_character.character_id = reply_user.primary_character_id`).
-		Order("ticket_reply.created_at ASC, ticket_reply.id ASC").
-		Find(&replies).Error
+	err := query.Order("created_at ASC, id ASC").Find(&replies).Error
 	return replies, err
 }
 
@@ -122,31 +139,18 @@ func (r *TicketRepository) AddStatusHistory(ticketID uint, fromStatus, toStatus 
 	return global.DB.Create(h).Error
 }
 
-func (r *TicketRepository) ListStatusHistories(ticketID uint) ([]model.TicketStatusHistory, error) {
-	var list []model.TicketStatusHistory
+func (r *TicketRepository) ListStatusHistories(ticketID uint) ([]model.TicketStatusHistoryItem, error) {
+	var list []model.TicketStatusHistoryItem
 	err := global.DB.Model(&model.TicketStatusHistory{}).
+		Select(`ticket_status_history.*,
+			COALESCE(NULLIF(operator.nickname, ''), operator_character.character_name, '') AS changed_by_name,
+			COALESCE(operator_character.character_name, '') AS changed_by_character_name`).
+		Joins(`LEFT JOIN "user" operator ON operator.id = ticket_status_history.changed_by AND operator.deleted_at IS NULL`).
+		Joins(`LEFT JOIN eve_character operator_character ON operator_character.character_id = operator.primary_character_id AND operator_character.deleted_at IS NULL`).
 		Where("ticket_status_history.ticket_id = ?", ticketID).
-		Select(`
-			ticket_status_history.*,
-			COALESCE(NULLIF(changed_user.nickname, ''), changed_character.character_name, '-') AS changed_by_nickname
-		`).
-		Joins(`LEFT JOIN "user" AS changed_user ON changed_user.id = ticket_status_history.changed_by`).
-		Joins(`LEFT JOIN eve_character AS changed_character ON changed_character.character_id = changed_user.primary_character_id`).
 		Order("ticket_status_history.changed_at ASC, ticket_status_history.id ASC").
 		Find(&list).Error
 	return list, err
-}
-
-func (r *TicketRepository) ticketBaseQuery(db *gorm.DB) *gorm.DB {
-	return db.Select(`
-			ticket.*,
-			COALESCE(NULLIF(ticket_user.nickname, ''), ticket_character.character_name, '-') AS user_nickname,
-			COALESCE(NULLIF(handled_user.nickname, ''), handled_character.character_name, '-') AS handled_by_nickname
-		`).
-		Joins(`LEFT JOIN "user" AS ticket_user ON ticket_user.id = ticket.user_id`).
-		Joins(`LEFT JOIN eve_character AS ticket_character ON ticket_character.character_id = ticket_user.primary_character_id`).
-		Joins(`LEFT JOIN "user" AS handled_user ON handled_user.id = ticket.handled_by`).
-		Joins(`LEFT JOIN eve_character AS handled_character ON handled_character.character_id = handled_user.primary_character_id`)
 }
 
 func (r *TicketRepository) ListCategories(enabledOnly bool) ([]model.TicketCategory, error) {

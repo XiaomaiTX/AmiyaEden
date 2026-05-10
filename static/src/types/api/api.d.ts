@@ -2789,21 +2789,21 @@ declare namespace Api {
 
   namespace Ticket {
     type TicketStatus = 'pending' | 'in_progress' | 'completed'
-    type TicketPriority = 'unassigned' | 'low' | 'medium' | 'high'
 
     interface TicketItem {
       id: number
       user_id: number
-      user_nickname?: string
       category_id: number
       title: string
       description: string
       status: TicketStatus
-      priority: TicketPriority
       handled_by?: number
-      handled_by_nickname?: string
       handled_at?: string
       closed_at?: string
+      requester_name?: string
+      requester_character_name?: string
+      category_name?: string
+      category_name_en?: string
       created_at: string
       updated_at: string
     }
@@ -2836,18 +2836,17 @@ declare namespace Api {
       from_status: string
       to_status: TicketStatus
       changed_by: number
-      changed_by_nickname?: string
+      changed_by_name?: string
+      changed_by_character_name?: string
       changed_at: string
     }
 
     type TicketListParams = Partial<Api.Common.CommonSearchParams> & {
       status?: TicketStatus | ''
-      priority?: TicketPriority | ''
     }
 
     type AdminTicketListParams = Partial<Api.Common.CommonSearchParams> & {
-      status?: TicketStatus | ''
-      priority?: TicketPriority | ''
+      status?: TicketStatus | `${TicketStatus},${TicketStatus}` | ''
       keyword?: string
       category_id?: number
       user_id?: number
@@ -2869,10 +2868,6 @@ declare namespace Api {
 
     interface UpdateStatusParams {
       status: TicketStatus
-    }
-
-    interface UpdatePriorityParams {
-      priority: TicketPriority
     }
 
     interface UpsertCategoryParams {

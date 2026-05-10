@@ -80,11 +80,20 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
+      "list": [
+        "Vertical",
+        "Horizontal",
+        "Mixed",
+        "Dual"
+      ]
     },
     "theme": {
       "title": "Theme Style",
-      "list": ["Light", "Dark", "System"]
+      "list": [
+        "Light",
+        "Dark",
+        "System"
+      ]
     },
     "menu": {
       "title": "Menu Style"
@@ -94,11 +103,17 @@
     },
     "box": {
       "title": "Box Style",
-      "list": ["Border", "Shadow"]
+      "list": [
+        "Border",
+        "Shadow"
+      ]
     },
     "container": {
       "title": "Container Width",
-      "list": ["Full", "Boxed"]
+      "list": [
+        "Full",
+        "Boxed"
+      ]
     },
     "basics": {
       "title": "Basic Config",
@@ -144,8 +159,12 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": ["Notice"],
-    "text": ["No"],
+    "bar": [
+      "Notice"
+    ],
+    "text": [
+      "No"
+    ],
     "viewAll": "View all"
   },
   "worktab": {
@@ -2492,16 +2511,22 @@
     "statusHistory": "Status History",
     "internalNote": "Internal Note",
     "submit": "Submit",
+    "unknownUser": "Unknown user",
     "filters": {
       "status": "Status",
       "keyword": "Keyword",
-      "priority": "Priority"
+      "category": "Category"
+    },
+    "tabs": {
+      "active": "Pending / Processing",
+      "completed": "Completed"
     },
     "columns": {
       "title": "Title",
+      "content": "Content",
       "status": "Status",
-      "priority": "Priority",
       "submitter": "Submitter",
+      "category": "Category",
       "fromStatus": "From",
       "toStatus": "To",
       "operator": "Operator"
@@ -2509,19 +2534,12 @@
     "form": {
       "category": "Category",
       "title": "Title",
-      "priority": "Priority",
       "description": "Description"
     },
     "status": {
       "pending": "Pending",
       "in_progress": "In Progress",
       "completed": "Completed"
-    },
-    "priority": {
-      "unassigned": "Unassigned",
-      "low": "Low",
-      "medium": "Medium",
-      "high": "High"
     },
     "stats": {
       "total": "Total Tickets",

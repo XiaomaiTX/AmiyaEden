@@ -59,9 +59,6 @@ func TestTicketServiceCreateTicketDefaultsAndHistory(t *testing.T) {
 	if ticket.Title != "登录异常" {
 		t.Fatalf("Title = %q, want %q", ticket.Title, "登录异常")
 	}
-	if ticket.Priority != model.TicketPriorityUnassigned {
-		t.Fatalf("Priority = %q, want %q", ticket.Priority, model.TicketPriorityUnassigned)
-	}
 	if ticket.Status != model.TicketStatusPending {
 		t.Fatalf("Status = %q, want %q", ticket.Status, model.TicketStatusPending)
 	}
@@ -144,7 +141,22 @@ func TestTicketServiceUpdateStatusSetsHandledAndClosed(t *testing.T) {
 		t.Fatalf("CreateTicket() error = %v, want nil", err)
 	}
 
-	updated, err := svc.UpdateStatusAsAdmin(9100, ticket.ID, model.TicketStatusInProgress)
+	operatorID := uint(9100)
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: operatorID},
+		Nickname:           "Operator Nick",
+		PrimaryCharacterID: 991001,
+	}).Error; err != nil {
+		t.Fatalf("create operator user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        operatorID,
+		CharacterID:   991001,
+		CharacterName: "Operator Character",
+	}).Error; err != nil {
+		t.Fatalf("create operator character: %v", err)
+	}
+	updated, err := svc.UpdateStatusAsAdmin(operatorID, ticket.ID, model.TicketStatusInProgress)
 	if err != nil {
 		t.Fatalf("UpdateStatusAsAdmin(in_progress) error = %v, want nil", err)
 	}
@@ -158,7 +170,7 @@ func TestTicketServiceUpdateStatusSetsHandledAndClosed(t *testing.T) {
 		t.Fatal("ClosedAt should be nil in in_progress")
 	}
 
-	updated, err = svc.UpdateStatusAsAdmin(9100, ticket.ID, model.TicketStatusCompleted)
+	updated, err = svc.UpdateStatusAsAdmin(operatorID, ticket.ID, model.TicketStatusCompleted)
 	if err != nil {
 		t.Fatalf("UpdateStatusAsAdmin(completed) error = %v, want nil", err)
 	}
@@ -172,5 +184,11 @@ func TestTicketServiceUpdateStatusSetsHandledAndClosed(t *testing.T) {
 	}
 	if len(history) != 3 {
 		t.Fatalf("history count = %d, want 3", len(history))
+	}
+	if history[1].ChangedByName != "Operator Nick" {
+		t.Fatalf("ChangedByName = %q, want %q", history[1].ChangedByName, "Operator Nick")
+	}
+	if history[1].ChangedByCharacterName != "Operator Character" {
+		t.Fatalf("ChangedByCharacterName = %q, want %q", history[1].ChangedByCharacterName, "Operator Character")
 	}
 }

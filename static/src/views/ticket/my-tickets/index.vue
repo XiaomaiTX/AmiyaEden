@@ -11,17 +11,6 @@
         <ElOption :label="t('ticket.status.in_progress')" value="in_progress" />
         <ElOption :label="t('ticket.status.completed')" value="completed" />
       </ElSelect>
-      <ElSelect
-        v-model="filters.priority"
-        clearable
-        :placeholder="t('ticket.filters.priority')"
-        style="width: 180px"
-      >
-        <ElOption :label="t('ticket.priority.unassigned')" value="unassigned" />
-        <ElOption :label="t('ticket.priority.low')" value="low" />
-        <ElOption :label="t('ticket.priority.medium')" value="medium" />
-        <ElOption :label="t('ticket.priority.high')" value="high" />
-      </ElSelect>
       <ElButton type="primary" @click="handleSearch">{{ t('common.search') }}</ElButton>
       <ElButton @click="goCreate">{{ t('ticket.createTicket') }}</ElButton>
     </div>
@@ -43,8 +32,8 @@
 <script setup lang="ts">
   import { listMyTickets } from '@/api/ticket'
   import { useTable } from '@/hooks/core/useTable'
-  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
+  import { formatTime } from '@utils/common'
   import { ElButton } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -53,13 +42,7 @@
   const { t } = useI18n()
   const router = useRouter()
 
-  const filters = ref<{
-    status?: Api.Ticket.TicketStatus | ''
-    priority?: Api.Ticket.TicketPriority | ''
-  }>({
-    status: '',
-    priority: ''
-  })
+  const filters = ref<{ status?: Api.Ticket.TicketStatus | '' }>({ status: '' })
 
   const {
     columns,
@@ -78,8 +61,7 @@
       apiParams: {
         current: 1,
         size: 20,
-        status: filters.value.status,
-        priority: filters.value.priority
+        status: filters.value.status
       },
       columnsFactory: () => [
         { prop: 'id', label: 'ID', width: 80 },
@@ -91,12 +73,11 @@
           formatter: (row) => h(TicketStatusBadge, { status: row.status })
         },
         {
-          prop: 'priority',
-          label: t('ticket.columns.priority'),
-          width: 120,
-          formatter: (row) => h(TicketPriorityBadge, { priority: row.priority })
+          prop: 'updated_at',
+          label: t('common.updatedAt'),
+          width: 180,
+          formatter: (row) => h('span', {}, formatTime(row.updated_at))
         },
-        { prop: 'updated_at', label: t('common.updatedAt'), width: 180 },
         {
           prop: 'operation',
           label: t('common.operation'),
@@ -120,8 +101,7 @@
   const handleSearch = () => {
     Object.assign(searchParams, {
       current: 1,
-      status: filters.value.status,
-      priority: filters.value.priority
+      status: filters.value.status
     })
     getData()
   }
