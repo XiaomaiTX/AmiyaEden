@@ -2465,15 +2465,22 @@
     "statusHistory": "Status History",
     "internalNote": "Internal Note",
     "submit": "Submit",
+    "unknownUser": "Unknown user",
     "filters": {
       "status": "Status",
-      "keyword": "Keyword"
+      "keyword": "Keyword",
+      "category": "Category"
+    },
+    "tabs": {
+      "active": "Pending / Processing",
+      "completed": "Completed"
     },
     "columns": {
       "title": "Title",
+      "content": "Content",
       "status": "Status",
-      "priority": "Priority",
       "submitter": "Submitter",
+      "category": "Category",
       "fromStatus": "From",
       "toStatus": "To",
       "operator": "Operator"
@@ -2481,18 +2488,12 @@
     "form": {
       "category": "Category",
       "title": "Title",
-      "priority": "Priority",
       "description": "Description"
     },
     "status": {
       "pending": "Pending",
       "in_progress": "In Progress",
       "completed": "Completed"
-    },
-    "priority": {
-      "low": "Low",
-      "medium": "Medium",
-      "high": "High"
     },
     "stats": {
       "total": "Total Tickets",

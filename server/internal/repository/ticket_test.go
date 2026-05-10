@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import (
 	"amiya-eden/global"
@@ -29,7 +29,7 @@ func setupTicketRepositoryTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	oldDB := global.DB
@@ -44,8 +44,8 @@ func seedTicketRepositoryData(t *testing.T) (model.Ticket, model.Ticket) {
 		t.Fatalf("create category: %v", err)
 	}
 
-	t1 := model.Ticket{UserID: 1001, CategoryID: category.ID, Title: "登录失败", Description: "无法进入游戏", Status: model.TicketStatusPending, Priority: model.TicketPriorityMedium}
-	t2 := model.Ticket{UserID: 1002, CategoryID: category.ID, Title: "合同异常", Description: "合同描述检索测试", Status: model.TicketStatusInProgress, Priority: model.TicketPriorityHigh}
+	t1 := model.Ticket{UserID: 1001, CategoryID: category.ID, Title: "登录失败", Description: "无法进入游戏", Status: model.TicketStatusPending}
+	t2 := model.Ticket{UserID: 1002, CategoryID: category.ID, Title: "合同异常", Description: "合同描述检索测试", Status: model.TicketStatusInProgress}
 	if err := global.DB.Create(&t1).Error; err != nil {
 		t.Fatalf("create ticket1: %v", err)
 	}
@@ -86,6 +86,43 @@ func TestTicketRepositoryListRepliesRespectsInternalFlag(t *testing.T) {
 	}
 }
 
+func TestTicketRepositoryListStatusHistoriesIncludesOperatorNames(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+	ticket, _ := seedTicketRepositoryData(t)
+	operatorID := uint(9001)
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: operatorID},
+		Nickname:           "Operator Nick",
+		PrimaryCharacterID: 991001,
+	}).Error; err != nil {
+		t.Fatalf("create operator user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        operatorID,
+		CharacterID:   991001,
+		CharacterName: "Operator Character",
+	}).Error; err != nil {
+		t.Fatalf("create operator character: %v", err)
+	}
+	if err := repo.AddStatusHistory(ticket.ID, model.TicketStatusPending, model.TicketStatusInProgress, operatorID); err != nil {
+		t.Fatalf("AddStatusHistory() error: %v", err)
+	}
+	history, err := repo.ListStatusHistories(ticket.ID)
+	if err != nil {
+		t.Fatalf("ListStatusHistories() error: %v", err)
+	}
+	if len(history) != 1 {
+		t.Fatalf("history len = %d, want 1", len(history))
+	}
+	if history[0].ChangedByName != "Operator Nick" {
+		t.Fatalf("ChangedByName = %q, want %q", history[0].ChangedByName, "Operator Nick")
+	}
+	if history[0].ChangedByCharacterName != "Operator Character" {
+		t.Fatalf("ChangedByCharacterName = %q, want %q", history[0].ChangedByCharacterName, "Operator Character")
+	}
+}
+
 func TestTicketRepositoryListTicketsAdminSupportsKeywordAndStatus(t *testing.T) {
 	setupTicketRepositoryTestDB(t)
 	repo := NewTicketRepository()
@@ -103,6 +140,58 @@ func TestTicketRepositoryListTicketsAdminSupportsKeywordAndStatus(t *testing.T) 
 	}
 	if list[0].Title != "合同异常" {
 		t.Fatalf("title = %q, want %q", list[0].Title, "合同异常")
+	}
+}
+
+func TestTicketRepositoryListTicketsAdminSupportsMultipleStatuses(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+	_, _ = seedTicketRepositoryData(t)
+	list, total, err := repo.ListTicketsAdmin(TicketListFilter{Statuses: []string{model.TicketStatusPending, model.TicketStatusInProgress}}, 1, 20)
+	if err != nil {
+		t.Fatalf("ListTicketsAdmin() error: %v", err)
+	}
+	if total != 2 || len(list) != 2 {
+		t.Fatalf("active tickets total/list = %d/%d, want 2/2", total, len(list))
+	}
+}
+
+func TestTicketRepositoryListTicketsAdminIncludesSubmitterAndCategoryNames(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+	ticket, _ := seedTicketRepositoryData(t)
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: ticket.UserID},
+		Nickname:           "Alpha User",
+		PrimaryCharacterID: 990001,
+	}).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        ticket.UserID,
+		CharacterID:   990001,
+		CharacterName: "Alpha Character",
+	}).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+	list, total, err := repo.ListTicketsAdmin(TicketListFilter{Category: ticket.CategoryID}, 1, 20)
+	if err != nil {
+		t.Fatalf("ListTicketsAdmin() error: %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("total = %d, want 2", total)
+	}
+	if len(list) != 2 {
+		t.Fatalf("list len = %d, want 2", len(list))
+	}
+	if list[1].RequesterName != "Alpha User" {
+		t.Fatalf("RequesterName = %q, want %q", list[1].RequesterName, "Alpha User")
+	}
+	if list[1].RequesterCharacterName != "Alpha Character" {
+		t.Fatalf("RequesterCharacterName = %q, want %q", list[1].RequesterCharacterName, "Alpha Character")
+	}
+	if list[1].CategoryName != "平台反馈" || list[1].CategoryNameEN != "Platform Feedback" {
+		t.Fatalf("category names = %q/%q, want 平台反馈/Platform Feedback", list[1].CategoryName, list[1].CategoryNameEN)
 	}
 }
 
@@ -141,7 +230,6 @@ func TestTicketRepositoryCountBadgeTicketsForAdminCountsPendingAndOwnedInProgres
 		Title:       "extra pending",
 		Description: "extra pending ticket",
 		Status:      model.TicketStatusPending,
-		Priority:    model.TicketPriorityMedium,
 	}).Error; err != nil {
 		t.Fatalf("create extra pending ticket: %v", err)
 	}
@@ -151,7 +239,6 @@ func TestTicketRepositoryCountBadgeTicketsForAdminCountsPendingAndOwnedInProgres
 		Title:       "assigned to current admin",
 		Description: "assigned in progress ticket",
 		Status:      model.TicketStatusInProgress,
-		Priority:    model.TicketPriorityMedium,
 		HandledBy:   &assigned,
 	}).Error; err != nil {
 		t.Fatalf("create assigned ticket: %v", err)
@@ -162,7 +249,6 @@ func TestTicketRepositoryCountBadgeTicketsForAdminCountsPendingAndOwnedInProgres
 		Title:       "assigned to other admin",
 		Description: "should not count",
 		Status:      model.TicketStatusInProgress,
-		Priority:    model.TicketPriorityMedium,
 		HandledBy:   &otherAssigned,
 	}).Error; err != nil {
 		t.Fatalf("create other assigned ticket: %v", err)

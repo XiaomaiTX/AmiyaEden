@@ -6,7 +6,6 @@
           <span>#{{ ticket.id }} {{ ticket.title }}</span>
           <div class="ticket-detail-header__right">
             <TicketStatusBadge :status="ticket.status" />
-            <TicketPriorityBadge :priority="ticket.priority" />
           </div>
         </div>
       </template>
@@ -30,7 +29,6 @@
 
 <script setup lang="ts">
   import { addMyTicketReply, getMyTicket, listMyTicketReplies } from '@/api/ticket'
-  import TicketPriorityBadge from '@/components/ticket/TicketPriorityBadge.vue'
   import TicketReplyItem from '@/components/ticket/TicketReplyItem.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
   import { ElMessage } from 'element-plus'
