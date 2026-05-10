@@ -33,7 +33,7 @@ func setupTicketHandlerTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	oldDB := global.DB

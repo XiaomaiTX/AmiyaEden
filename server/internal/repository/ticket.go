@@ -103,9 +103,10 @@ func (r *TicketRepository) ListReplies(ticketID uint, includeInternal bool) ([]m
 	err := query.
 		Select(`
 			ticket_reply.*,
-			COALESCE(NULLIF(reply_user.nickname, ''), '-') AS user_nickname
+			COALESCE(NULLIF(reply_user.nickname, ''), reply_character.character_name, '-') AS user_nickname
 		`).
 		Joins(`LEFT JOIN "user" AS reply_user ON reply_user.id = ticket_reply.user_id`).
+		Joins(`LEFT JOIN eve_character AS reply_character ON reply_character.character_id = reply_user.primary_character_id`).
 		Order("ticket_reply.created_at ASC, ticket_reply.id ASC").
 		Find(&replies).Error
 	return replies, err
@@ -127,9 +128,10 @@ func (r *TicketRepository) ListStatusHistories(ticketID uint) ([]model.TicketSta
 		Where("ticket_status_history.ticket_id = ?", ticketID).
 		Select(`
 			ticket_status_history.*,
-			COALESCE(NULLIF(changed_user.nickname, ''), '-') AS changed_by_nickname
+			COALESCE(NULLIF(changed_user.nickname, ''), changed_character.character_name, '-') AS changed_by_nickname
 		`).
 		Joins(`LEFT JOIN "user" AS changed_user ON changed_user.id = ticket_status_history.changed_by`).
+		Joins(`LEFT JOIN eve_character AS changed_character ON changed_character.character_id = changed_user.primary_character_id`).
 		Order("ticket_status_history.changed_at ASC, ticket_status_history.id ASC").
 		Find(&list).Error
 	return list, err
@@ -138,11 +140,13 @@ func (r *TicketRepository) ListStatusHistories(ticketID uint) ([]model.TicketSta
 func (r *TicketRepository) ticketBaseQuery(db *gorm.DB) *gorm.DB {
 	return db.Select(`
 			ticket.*,
-			COALESCE(NULLIF(ticket_user.nickname, ''), '-') AS user_nickname,
-			COALESCE(NULLIF(handled_user.nickname, ''), '-') AS handled_by_nickname
+			COALESCE(NULLIF(ticket_user.nickname, ''), ticket_character.character_name, '-') AS user_nickname,
+			COALESCE(NULLIF(handled_user.nickname, ''), handled_character.character_name, '-') AS handled_by_nickname
 		`).
 		Joins(`LEFT JOIN "user" AS ticket_user ON ticket_user.id = ticket.user_id`).
-		Joins(`LEFT JOIN "user" AS handled_user ON handled_user.id = ticket.handled_by`)
+		Joins(`LEFT JOIN eve_character AS ticket_character ON ticket_character.character_id = ticket_user.primary_character_id`).
+		Joins(`LEFT JOIN "user" AS handled_user ON handled_user.id = ticket.handled_by`).
+		Joins(`LEFT JOIN eve_character AS handled_character ON handled_character.character_id = handled_user.primary_character_id`)
 }
 
 func (r *TicketRepository) ListCategories(enabledOnly bool) ([]model.TicketCategory, error) {

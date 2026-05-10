@@ -29,7 +29,7 @@ func setupTicketRepositoryTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.Ticket{}, &model.TicketCategory{}, &model.TicketReply{}, &model.TicketStatusHistory{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	oldDB := global.DB
@@ -45,6 +45,23 @@ func seedTicketRepositoryData(t *testing.T) (model.Ticket, model.Ticket) {
 	}
 	if err := global.DB.Create(&users).Error; err != nil {
 		t.Fatalf("create users: %v", err)
+	}
+	chars := []model.EveCharacter{
+		{CharacterID: 9001001, CharacterName: "Char1001", UserID: 1001},
+		{CharacterID: 9001002, CharacterName: "Char1002", UserID: 1002},
+	}
+	if err := global.DB.Create(&chars).Error; err != nil {
+		t.Fatalf("create characters: %v", err)
+	}
+	if err := global.DB.Model(&model.User{}).
+		Where("id = ?", 1001).
+		Update("primary_character_id", chars[0].CharacterID).Error; err != nil {
+		t.Fatalf("set user1001 primary character: %v", err)
+	}
+	if err := global.DB.Model(&model.User{}).
+		Where("id = ?", 1002).
+		Update("primary_character_id", chars[1].CharacterID).Error; err != nil {
+		t.Fatalf("set user1002 primary character: %v", err)
 	}
 
 	category := model.TicketCategory{Name: "平台反馈", NameEN: "Platform Feedback", Enabled: true}
@@ -218,5 +235,93 @@ func TestTicketRepositoryCountBadgeTicketsForAdminCountsPendingAndOwnedInProgres
 	}
 	if got != 3 {
 		t.Fatalf("CountBadgeTicketsForAdmin() = %d, want 3", got)
+	}
+}
+
+func TestTicketRepositoryNicknameFallbackToPrimaryCharacter(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+
+	userWithChar := model.User{BaseModel: model.BaseModel{ID: 2001}, Nickname: ""}
+	userNoChar := model.User{BaseModel: model.BaseModel{ID: 2002}, Nickname: ""}
+	if err := global.DB.Create(&[]model.User{userWithChar, userNoChar}).Error; err != nil {
+		t.Fatalf("create users: %v", err)
+	}
+	char := model.EveCharacter{
+		CharacterID:   9200001,
+		CharacterName: "Fallback Character",
+		UserID:        2001,
+	}
+	if err := global.DB.Create(&char).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+	if err := global.DB.Model(&model.User{}).
+		Where("id = ?", 2001).
+		Update("primary_character_id", char.CharacterID).Error; err != nil {
+		t.Fatalf("set primary character: %v", err)
+	}
+
+	category := model.TicketCategory{Name: "cat", NameEN: "cat", Enabled: true}
+	if err := global.DB.Create(&category).Error; err != nil {
+		t.Fatalf("create category: %v", err)
+	}
+	handledBy := uint(2002)
+	ticket := model.Ticket{
+		UserID:      2001,
+		CategoryID:  category.ID,
+		Title:       "title",
+		Description: "desc",
+		Status:      model.TicketStatusPending,
+		Priority:    model.TicketPriorityMedium,
+		HandledBy:   &handledBy,
+	}
+	if err := global.DB.Create(&ticket).Error; err != nil {
+		t.Fatalf("create ticket: %v", err)
+	}
+	if err := global.DB.Create(&model.TicketReply{
+		TicketID: ticket.ID, UserID: 2001, Content: "reply", IsInternal: false,
+	}).Error; err != nil {
+		t.Fatalf("create reply: %v", err)
+	}
+	if err := global.DB.Create(&model.TicketStatusHistory{
+		TicketID: ticket.ID, ToStatus: model.TicketStatusPending, ChangedBy: 2001,
+	}).Error; err != nil {
+		t.Fatalf("create status history: %v", err)
+	}
+
+	adminList, _, err := repo.ListTicketsAdmin(TicketListFilter{}, 1, 20)
+	if err != nil {
+		t.Fatalf("ListTicketsAdmin() error: %v", err)
+	}
+	if len(adminList) != 1 {
+		t.Fatalf("admin list len = %d, want 1", len(adminList))
+	}
+	if adminList[0].UserNickname != "Fallback Character" {
+		t.Fatalf("user_nickname = %q, want %q", adminList[0].UserNickname, "Fallback Character")
+	}
+	if adminList[0].HandledByNickname != "-" {
+		t.Fatalf("handled_by_nickname = %q, want -", adminList[0].HandledByNickname)
+	}
+
+	replies, err := repo.ListReplies(ticket.ID, true)
+	if err != nil {
+		t.Fatalf("ListReplies() error: %v", err)
+	}
+	if len(replies) != 1 {
+		t.Fatalf("replies len = %d, want 1", len(replies))
+	}
+	if replies[0].UserNickname != "Fallback Character" {
+		t.Fatalf("reply user_nickname = %q, want %q", replies[0].UserNickname, "Fallback Character")
+	}
+
+	history, err := repo.ListStatusHistories(ticket.ID)
+	if err != nil {
+		t.Fatalf("ListStatusHistories() error: %v", err)
+	}
+	if len(history) != 1 {
+		t.Fatalf("history len = %d, want 1", len(history))
+	}
+	if history[0].ChangedByNickname != "Fallback Character" {
+		t.Fatalf("changed_by_nickname = %q, want %q", history[0].ChangedByNickname, "Fallback Character")
 	}
 }

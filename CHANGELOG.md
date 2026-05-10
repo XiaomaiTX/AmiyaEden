@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-05-10
+
+### Changed
+- 工单管理页的状态和优先级改为只读 Badge 展示，与用户工单列表保持一致。
+- 工单管理详情页将状态和优先级编辑集中到页面头部，并通过保存按钮提交。
+- 工单状态历史改为使用本地化 Badge 标签展示状态值，不再直接显示原始值。
+
 ## [1.2.0] - 2026-05-10
 
 ### Added

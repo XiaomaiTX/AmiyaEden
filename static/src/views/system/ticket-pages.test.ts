@@ -10,20 +10,26 @@ const categoriesSource = readFileSync(
 )
 const statsSource = readFileSync(new URL('./ticket-statistics/index.vue', import.meta.url), 'utf8')
 
-test('ticket management page uses admin list and status/priority update APIs', () => {
-  assert.match(
-    manageSource,
-    /import \{[\s\S]*adminListTickets,[\s\S]*adminUpdateTicketPriority,[\s\S]*adminUpdateTicketStatus[\s\S]*\} from '@\/api\/ticket'/
-  )
+test('ticket management page uses admin list API and readonly status/priority badges', () => {
+  assert.match(manageSource, /import \{[\s\S]*adminListTickets[\s\S]*\} from '@\/api\/ticket'/)
   assert.match(manageSource, /apiFn:\s*adminListTickets/)
   assert.match(
     manageSource,
     /apiParams:\s*\{[\s\S]*keyword:\s*filters\.keyword,[\s\S]*status:\s*filters\.status,[\s\S]*priority:\s*filters\.priority[\s\S]*\}/
   )
   assert.match(manageSource, /prop:\s*'user_nickname'/)
-  assert.match(manageSource, /t\('ticket\.priority\.unassigned'\)/)
-  assert.match(manageSource, /await adminUpdateTicketStatus\(id, \{ status \}\)/)
-  assert.match(manageSource, /await adminUpdateTicketPriority\(id, \{ priority \}\)/)
+  assert.match(manageSource, /TicketStatusBadge/)
+  assert.match(manageSource, /TicketPriorityBadge/)
+  assert.match(
+    manageSource,
+    /formatter: \(row\) => h\(TicketStatusBadge, \{ status: row\.status \}\)/
+  )
+  assert.match(
+    manageSource,
+    /formatter: \(row\) => h\(TicketPriorityBadge, \{ priority: row\.priority \}\)/
+  )
+  assert.doesNotMatch(manageSource, /await adminUpdateTicketStatus\(id, \{ status \}\)/)
+  assert.doesNotMatch(manageSource, /await adminUpdateTicketPriority\(id, \{ priority \}\)/)
   assert.match(
     manageSource,
     /router\.push\(\{ name: 'TicketAdminDetail', params: \{ id: String\(id\) \} \}\)/
@@ -33,10 +39,10 @@ test('ticket management page uses admin list and status/priority update APIs', (
   assert.doesNotMatch(manageSource, /<ElTable :data=/)
 })
 
-test('ticket admin detail page loads ticket replies history and supports internal reply submit', () => {
+test('ticket admin detail page supports status/priority edit and status history badges', () => {
   assert.match(
     detailSource,
-    /import \{[\s\S]*adminAddTicketReply,[\s\S]*adminGetTicket,[\s\S]*adminListTicketReplies,[\s\S]*adminListTicketStatusHistory[\s\S]*\} from '@\/api\/ticket'/
+    /import \{[\s\S]*adminAddTicketReply,[\s\S]*adminGetTicket,[\s\S]*adminListTicketReplies,[\s\S]*adminListTicketStatusHistory,[\s\S]*adminUpdateTicketPriority,[\s\S]*adminUpdateTicketStatus[\s\S]*\} from '@\/api\/ticket'/
   )
   assert.match(
     detailSource,
@@ -46,6 +52,17 @@ test('ticket admin detail page loads ticket replies history and supports interna
     detailSource,
     /await adminAddTicketReply\(ticketId\.value, \{[\s\S]*content: content\.value,[\s\S]*is_internal: isInternal\.value[\s\S]*\}\)/
   )
+  assert.match(detailSource, /const hasMetaChanges = computed\(/)
+  assert.match(
+    detailSource,
+    /await adminUpdateTicketStatus\(ticketId\.value, \{ status: editStatus\.value \}\)/
+  )
+  assert.match(
+    detailSource,
+    /await adminUpdateTicketPriority\(ticketId\.value, \{ priority: editPriority\.value \}\)/
+  )
+  assert.match(detailSource, /if \(!isTicketStatus\(status\)\) \{/)
+  assert.match(detailSource, /return h\(TicketStatusBadge, \{ status \}\)/)
   assert.match(detailSource, /prop:\s*'changed_by_nickname'/)
   assert.match(detailSource, /<ArtTable :data="histories" :columns="historyColumns" \/>/)
 })
