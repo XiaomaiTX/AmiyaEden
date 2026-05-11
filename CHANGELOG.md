@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-05-11
+
+### Fixed
+- 为钱包批量写入增加硬上限兜底，避免单次批量参数估算偏差触发数据库参数上限问题。
+- 将军团建筑任务优先级提升为高优先级，减少调度延迟。
+
 ## [1.3.0] - 2026-05-11
 
 ### Added

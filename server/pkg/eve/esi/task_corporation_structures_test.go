@@ -27,6 +27,14 @@ func TestCorporationStructuresTaskIntervalIsSixHours(t *testing.T) {
 	}
 }
 
+func TestCorporationStructuresTaskPriorityIsHigh(t *testing.T) {
+	task := &CorporationStructuresTask{}
+
+	if task.Priority() != PriorityHigh {
+		t.Fatalf("priority = %v, want %v", task.Priority(), PriorityHigh)
+	}
+}
+
 func TestCorporationStructuresTaskExecutePersistsEnrichedSnapshotFields(t *testing.T) {
 	db := newCorporationStructuresTaskTestDB(t)
 	oldDB := global.DB

@@ -36,7 +36,7 @@ type CorporationStructuresTask struct{}
 
 func (t *CorporationStructuresTask) Name() string        { return "corporation_structures" }
 func (t *CorporationStructuresTask) Description() string { return "军团建筑信息" }
-func (t *CorporationStructuresTask) Priority() Priority  { return PriorityLow }
+func (t *CorporationStructuresTask) Priority() Priority  { return PriorityHigh }
 
 func (t *CorporationStructuresTask) Interval() RefreshInterval {
 	return RefreshInterval{
