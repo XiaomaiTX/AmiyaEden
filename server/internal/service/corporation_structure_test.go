@@ -7,6 +7,7 @@ import (
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/eve/esi"
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -446,6 +447,168 @@ func TestCorporationStructureSettingsRejectsNegativeThresholds(t *testing.T) {
 	}
 }
 
+func TestCorporationStructureUpdateAuthorizationsDisableClearsSnapshotOnlyForTargetCorporation(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	seedDirectorCharacterForCorporation(t, db, 9002, 91000002, 1, "Director-9002")
+	if err := db.Model(&model.SystemConfig{}).
+		Where("key = ?", model.SysConfigAllowCorporations).
+		Update("value", "[9001,9002]").Error; err != nil {
+		t.Fatalf("update allow corporations config: %v", err)
+	}
+	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{
+		9001: 91000001,
+		9002: 91000002,
+	}); err != nil {
+		t.Fatalf("seed authorization map: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   101,
+		Name:          "ShouldBeDeleted",
+	}).Error; err != nil {
+		t.Fatalf("seed target corp structure: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9002,
+		StructureID:   201,
+		Name:          "ShouldStay",
+	}).Error; err != nil {
+		t.Fatalf("seed other corp structure: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	err := svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations: []CorporationStructureAuthorizationBinding{
+			{CorporationID: 9001, CharacterID: 0},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateAuthorizations returned error: %v", err)
+	}
+
+	var targetCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9001).
+		Count(&targetCount).Error; err != nil {
+		t.Fatalf("count target corp snapshots: %v", err)
+	}
+	if targetCount != 0 {
+		t.Fatalf("target corp row count = %d, want 0", targetCount)
+	}
+
+	var otherCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9002).
+		Count(&otherCount).Error; err != nil {
+		t.Fatalf("count other corp snapshots: %v", err)
+	}
+	if otherCount != 1 {
+		t.Fatalf("other corp row count = %d, want 1", otherCount)
+	}
+}
+
+func TestCorporationStructureUpdateAuthorizationsThresholdOnlyDoesNotDeleteSnapshots(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   301,
+		Name:          "ShouldStay",
+	}).Error; err != nil {
+		t.Fatalf("seed corp structure: %v", err)
+	}
+	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{
+		9001: 91000001,
+	}); err != nil {
+		t.Fatalf("seed authorization map: %v", err)
+	}
+
+	fuelThreshold := 2
+	timerThreshold := 4
+	svc := newCorporationStructureServiceForTest()
+	err := svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations:           []CorporationStructureAuthorizationBinding{},
+		FuelNoticeThresholdDays:  &fuelThreshold,
+		TimerNoticeThresholdDays: &timerThreshold,
+	})
+	if err != nil {
+		t.Fatalf("UpdateAuthorizations returned error: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9001).
+		Count(&count).Error; err != nil {
+		t.Fatalf("count corp snapshots: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("corp row count = %d, want 1", count)
+	}
+}
+
+func TestCorporationStructureUpdateAuthorizationsSwitchDirectorDoesNotDeleteSnapshots(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	seedDirectorCharacterForCorporation(t, db, 9001, 91000003, 1, "Director-9001-B")
+	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{
+		9001: 91000001,
+	}); err != nil {
+		t.Fatalf("seed authorization map: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   401,
+		Name:          "ShouldStay",
+	}).Error; err != nil {
+		t.Fatalf("seed corp structure: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	err := svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations: []CorporationStructureAuthorizationBinding{
+			{CorporationID: 9001, CharacterID: 91000003},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateAuthorizations returned error: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9001).
+		Count(&count).Error; err != nil {
+		t.Fatalf("count corp snapshots: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("corp row count = %d, want 1", count)
+	}
+}
+
 func TestCorporationStructureCountAttentionStructures(t *testing.T) {
 	db := newCorporationStructureServiceTestDB(t)
 	oldDB := global.DB
@@ -585,4 +748,51 @@ func seedCorporationStructureManageScope(t *testing.T, db *gorm.DB, corpID int64
 	}).Error; err != nil {
 		t.Fatalf("create allow corporations config: %v", err)
 	}
+}
+
+func seedDirectorCharacterForCorporation(
+	t *testing.T,
+	db *gorm.DB,
+	corpID int64,
+	characterID int64,
+	userID uint,
+	characterName string,
+) {
+	t.Helper()
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   characterID,
+		CharacterName: characterName,
+		UserID:        userID,
+		CorporationID: corpID,
+	}).Error; err != nil {
+		t.Fatalf("create director character: %v", err)
+	}
+	if err := db.Create(&model.EveCharacterCorpRole{
+		CharacterID: characterID,
+		CorpRole:    "Director",
+	}).Error; err != nil {
+		t.Fatalf("create director corp role: %v", err)
+	}
+}
+
+func seedCorporationStructureAuthorizationMap(db *gorm.DB, authMap map[int64]int64) error {
+	raw, err := json.Marshal(authMap)
+	if err != nil {
+		return err
+	}
+
+	var existing model.SystemConfig
+	err = db.Where("key = ?", model.SysConfigDashboardCorpStructuresAuth).First(&existing).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return db.Create(&model.SystemConfig{
+				Key:   model.SysConfigDashboardCorpStructuresAuth,
+				Value: string(raw),
+			}).Error
+		}
+		return err
+	}
+
+	existing.Value = string(raw)
+	return db.Save(&existing).Error
 }

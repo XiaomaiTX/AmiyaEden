@@ -316,19 +316,31 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	}
 
 	currentMap := s.loadAuthorizationMap()
+	nextMap := make(map[int64]int64, len(currentMap))
+	for corpID, charID := range currentMap {
+		nextMap[corpID] = charID
+	}
+
 	if err := validateAuthorizationBindings(req.Authorizations, managedCorps, directorSetByCorp); err != nil {
 		return err
 	}
+	disabledCorporationIDs := make([]int64, 0)
 	for _, binding := range req.Authorizations {
 		if binding.CharacterID == 0 {
-			delete(currentMap, binding.CorporationID)
+			if prevCharID, exists := currentMap[binding.CorporationID]; exists && prevCharID > 0 {
+				disabledCorporationIDs = append(disabledCorporationIDs, binding.CorporationID)
+			}
+			delete(nextMap, binding.CorporationID)
 		} else {
-			currentMap[binding.CorporationID] = binding.CharacterID
+			nextMap[binding.CorporationID] = binding.CharacterID
 		}
 	}
 
-	if err := s.saveAuthorizationMap(currentMap); err != nil {
+	if err := s.saveAuthorizationMap(nextMap); err != nil {
 		return err
+	}
+	if err := s.repo.DeleteCorpStructuresByCorporationIDs(disabledCorporationIDs); err != nil {
+		return errors.New("删除军团建筑快照失败")
 	}
 
 	thresholds := s.loadNoticeThresholdSettings()

@@ -69,6 +69,13 @@ func (r *CorporationStructureRepository) UpsertCorpStructures(records []model.Co
 	return global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(&records).Error
 }
 
+func (r *CorporationStructureRepository) DeleteCorpStructuresByCorporationIDs(corporationIDs []int64) error {
+	if len(corporationIDs) == 0 {
+		return nil
+	}
+	return global.DB.Where("corporation_id IN ?", corporationIDs).Delete(&model.CorpStructureInfo{}).Error
+}
+
 func (r *CorporationStructureRepository) UpsertStructures(records []model.EveStructure) error {
 	if len(records) == 0 {
 		return nil
