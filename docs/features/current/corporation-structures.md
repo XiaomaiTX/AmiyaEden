@@ -25,6 +25,9 @@ source_of_truth:
 - 页面使用 `list` / `settings` 两个 tab：列表页查看军团建筑快照，设置页维护授权映射与阈值
 - 列表页支持按军团、关键词、星系、状态组、燃料区间、安全等级、类型、服务、增强计时筛选，并支持分页与排序
 - 设置页可以为每个可管理军团绑定一个已授权的 Director 人物，并设置燃料与计时器提醒阈值
+- 支持管理员将建筑指派给 `fuel_officer`（燃料官），并配置每建筑每月伏羲币工资单价
+- 支持管理员按月份手动批量发放燃料官工资（按当前指派建筑数量结算）
+- `fuel_officer` 可通过专用接口查看自己被指派建筑的燃料剩余与增强计时
 - 设置页支持为军团选择“无（不启用该军团建筑仪表盘）”，等价于 `character_id=0`，该军团不会参与军团建筑 ESI 刷新
 - 刷新按钮会把单个军团的结构刷新任务异步丢进后台任务系统，不阻塞当前请求
 - 导航徽章 `corporation_structures_attention` 会在 `admin` / `super_admin` 的导航中显示需要关注的建筑数量
@@ -44,6 +47,12 @@ source_of_truth:
 - `GET /api/v1/dashboard/corporation-structures/filter-options`
 - `POST /api/v1/dashboard/corporation-structures/list`
 - `POST /api/v1/dashboard/corporation-structures/run-task`
+- `GET /api/v1/dashboard/corporation-structures/assignments`
+- `PUT /api/v1/dashboard/corporation-structures/assignments`
+- `GET /api/v1/dashboard/corporation-structures/fuel-salary-settings`
+- `PUT /api/v1/dashboard/corporation-structures/fuel-salary-settings`
+- `POST /api/v1/dashboard/corporation-structures/fuel-salary-payouts/run`
+- `POST /api/v1/dashboard/corporation-structures/my-assigned-list`
 
 ### 关联展示
 
@@ -53,6 +62,7 @@ source_of_truth:
 
 - 前端路由只对 `admin` / `super_admin` 可见
 - 所有后端接口都要求 `RequireRole(admin)`
+- 燃料官个人列表接口要求 `RequireRole(fuel_officer)`（`super_admin` 同样可通过）
 - 只有被系统判定为当前可管理军团的 Director 人物才能写入授权映射
 - `0` 天阈值表示关闭对应提醒；前端设置会把它当作显式关闭处理
 - `run-task` 只触发当前军团的后台 ESI 刷新，不暴露通用 ESI 任务入口

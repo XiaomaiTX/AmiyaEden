@@ -64,6 +64,12 @@ source_of_truth:
 | GET | `/dashboard/corporation-structures/filter-options` | 获取建筑列表筛选元数据（星系、类型、服务） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/list` | 按多条件筛选读取军团建筑快照分页列表（支持排序） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/run-task` | 使用已授权 Director 角色触发单个军团建筑后台 ESI 任务（异步入队） | `RequireRole(admin)` |
+| GET | `/dashboard/corporation-structures/assignments` | 获取可管理军团建筑与燃料官指派列表，同时返回可选燃料官人物 | `RequireRole(admin)` |
+| PUT | `/dashboard/corporation-structures/assignments` | 批量保存建筑到燃料官人物的指派；`character_id=0` 表示清空该建筑指派 | `RequireRole(admin)` |
+| GET | `/dashboard/corporation-structures/fuel-salary-settings` | 获取燃料官每建筑每月伏羲币单价 | `RequireRole(admin)` |
+| PUT | `/dashboard/corporation-structures/fuel-salary-settings` | 更新燃料官每建筑每月伏羲币单价（`>=0`） | `RequireRole(admin)` |
+| POST | `/dashboard/corporation-structures/fuel-salary-payouts/run` | 按结算月份（`YYYY-MM`）批量发放燃料官工资，公式=`单价 × 当前指派建筑数` | `RequireRole(admin)` |
+| POST | `/dashboard/corporation-structures/my-assigned-list` | 查询当前燃料官被指派建筑列表（支持分页/排序/筛选） | `RequireRole(fuel_officer)` |
 | GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格。`super_admin/admin` 额外返回军团建筑提醒计数 `corporation_structures_attention` | Login |
 | POST | `/notification/list` | 通知列表 | JWT |
 | POST | `/notification/unread-count` | 未读数 | JWT |

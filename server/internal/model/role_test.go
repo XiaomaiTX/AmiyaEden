@@ -98,3 +98,19 @@ func TestSystemRoleDefinitionsIncludeShopOrderManage(t *testing.T) {
 
 	t.Fatal("expected shop_order_manage to be present in system role seeds")
 }
+
+func TestSystemRoleDefinitionsIncludeFuelOfficer(t *testing.T) {
+	for _, role := range SystemRoleDefinitions {
+		if role.Code == RoleFuelOfficer {
+			if role.Name == "" {
+				t.Fatal("expected fuel_officer seed to have a name")
+			}
+			if role.Description == "" {
+				t.Fatal("expected fuel_officer seed to have a description")
+			}
+			return
+		}
+	}
+
+	t.Fatal("expected fuel_officer to be present in system role seeds")
+}

@@ -47,6 +47,16 @@ export const dashboardRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin']
       }
+    },
+    {
+      path: 'fuel-officer-structures',
+      name: 'DashboardFuelOfficerStructures',
+      component: '/dashboard/fuel-officer-structures',
+      meta: {
+        title: 'menus.dashboard.fuelOfficerStructures',
+        keepAlive: true,
+        roles: ['super_admin', 'fuel_officer']
+      }
     }
   ]
 }

@@ -1836,6 +1836,62 @@ declare namespace Api {
       running: boolean
       message: string
     }
+
+    interface FuelOfficerCharacterOption {
+      user_id: number
+      character_id: number
+      character_name: string
+    }
+
+    interface CorporationStructureAssignmentItem {
+      corporation_id: number
+      corporation_name: string
+      structure_id: number
+      structure_name: string
+      assigned_user_id: number
+      assigned_character_id: number
+      assigned_character_name: string
+    }
+
+    interface CorporationStructureAssignmentListResponse {
+      items: CorporationStructureAssignmentItem[]
+      fuel_officers: FuelOfficerCharacterOption[]
+    }
+
+    interface CorporationStructureAssignmentBinding {
+      corporation_id: number
+      structure_id: number
+      character_id: number
+    }
+
+    interface CorporationStructureAssignmentUpdateRequest {
+      assignments: CorporationStructureAssignmentBinding[]
+    }
+
+    interface FuelSalarySettingsResponse {
+      salary_per_structure_monthly: number
+    }
+
+    interface FuelSalarySettingsUpdateRequest {
+      salary_per_structure_monthly: number
+    }
+
+    interface FuelSalaryPayoutRunRequest {
+      settlement_month: string
+    }
+
+    interface FuelSalaryPayoutRunItem {
+      user_id: number
+      assigned_count: number
+      unit_salary: number
+      amount: number
+      wallet_ref_id: string
+    }
+
+    interface FuelSalaryPayoutRunResponse {
+      settlement_month: string
+      items: FuelSalaryPayoutRunItem[]
+    }
   }
 
   /** EVE 人物信息类型 */

@@ -106,3 +106,84 @@ func (h *CorporationStructureHandler) RunTask(c *gin.Context) {
 		Message:       "已触发后台 ESI 刷新任务",
 	})
 }
+
+func (h *CorporationStructureHandler) GetAssignments(c *gin.Context) {
+	var req service.CorporationStructureFilterOptionsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	result, err := h.svc.GetAssignments(c.Request.Context(), req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+func (h *CorporationStructureHandler) UpdateAssignments(c *gin.Context) {
+	var req service.CorporationStructureAssignmentUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	req.OperatorUserID = middleware.GetUserID(c)
+	if err := h.svc.UpdateAssignments(c.Request.Context(), req); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (h *CorporationStructureHandler) GetFuelSalarySettings(c *gin.Context) {
+	result, err := h.svc.GetFuelSalarySettings()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+func (h *CorporationStructureHandler) UpdateFuelSalarySettings(c *gin.Context) {
+	var req service.FuelSalarySettingsUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	req.OperatorUserID = middleware.GetUserID(c)
+	if err := h.svc.UpdateFuelSalarySettings(req); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
+func (h *CorporationStructureHandler) RunFuelSalaryPayout(c *gin.Context) {
+	var req service.FuelSalaryPayoutRunRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	req.OperatorUserID = middleware.GetUserID(c)
+	result, err := h.svc.RunFuelSalaryPayout(c.Request.Context(), req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+func (h *CorporationStructureHandler) ListMyAssignedStructures(c *gin.Context) {
+	var req service.CorporationStructureListRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	userID := middleware.GetUserID(c)
+	result, err := h.svc.ListMyAssignedStructures(c.Request.Context(), userID, req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const (
@@ -203,6 +204,59 @@ type CorporationStructureRunTaskResponse struct {
 	Queued        bool   `json:"queued"`
 	Running       bool   `json:"running"`
 	Message       string `json:"message"`
+}
+
+type CorporationStructureAssignmentItem struct {
+	CorporationID         int64  `json:"corporation_id"`
+	CorporationName       string `json:"corporation_name"`
+	StructureID           int64  `json:"structure_id"`
+	StructureName         string `json:"structure_name"`
+	AssignedUserID        uint   `json:"assigned_user_id"`
+	AssignedCharacterID   int64  `json:"assigned_character_id"`
+	AssignedCharacterName string `json:"assigned_character_name"`
+}
+
+type CorporationStructureAssignmentListResponse struct {
+	Items        []CorporationStructureAssignmentItem    `json:"items"`
+	FuelOfficers []repository.FuelOfficerCharacterOption `json:"fuel_officers"`
+}
+
+type CorporationStructureAssignmentBinding struct {
+	CorporationID int64 `json:"corporation_id"`
+	StructureID   int64 `json:"structure_id"`
+	CharacterID   int64 `json:"character_id"`
+}
+
+type CorporationStructureAssignmentUpdateRequest struct {
+	Assignments    []CorporationStructureAssignmentBinding `json:"assignments"`
+	OperatorUserID uint                                    `json:"-"`
+}
+
+type FuelSalarySettingsResponse struct {
+	SalaryPerStructureMonthly int `json:"salary_per_structure_monthly"`
+}
+
+type FuelSalarySettingsUpdateRequest struct {
+	SalaryPerStructureMonthly int  `json:"salary_per_structure_monthly"`
+	OperatorUserID            uint `json:"-"`
+}
+
+type FuelSalaryPayoutRunRequest struct {
+	SettlementMonth string `json:"settlement_month"`
+	OperatorUserID  uint   `json:"-"`
+}
+
+type FuelSalaryPayoutRunItem struct {
+	UserID        uint   `json:"user_id"`
+	AssignedCount int    `json:"assigned_count"`
+	UnitSalary    int    `json:"unit_salary"`
+	Amount        int    `json:"amount"`
+	WalletRefID   string `json:"wallet_ref_id"`
+}
+
+type FuelSalaryPayoutRunResponse struct {
+	SettlementMonth string                    `json:"settlement_month"`
+	Items           []FuelSalaryPayoutRunItem `json:"items"`
 }
 
 type CorporationStructureFilterOptionsRequest struct {
@@ -559,6 +613,291 @@ func (s *CorporationStructureService) GetFilterOptions(
 		Types:    types,
 		Services: services,
 	}, nil
+}
+
+func (s *CorporationStructureService) GetAssignments(
+	ctx context.Context,
+	req CorporationStructureFilterOptionsRequest,
+) (*CorporationStructureAssignmentListResponse, error) {
+	manageCtx, err := s.buildManageContext(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	targetCorps, err := resolveTargetCorporations(manageCtx.corporationIDs, req.CorporationID)
+	if err != nil {
+		return nil, err
+	}
+
+	structures, err := s.repo.ListCorpStructures(targetCorps)
+	if err != nil {
+		return nil, errors.New("查询建筑指派列表失败")
+	}
+	assignments, err := s.repo.ListAssignmentsByCorporations(targetCorps)
+	if err != nil {
+		return nil, errors.New("查询建筑指派配置失败")
+	}
+	fuelOfficers, err := s.repo.ListFuelOfficerCharactersByCorporations(targetCorps)
+	if err != nil {
+		return nil, errors.New("查询燃料官列表失败")
+	}
+
+	assignByStructure := make(map[int64]model.CorpStructureAssignment, len(assignments))
+	for _, a := range assignments {
+		assignByStructure[a.StructureID] = a
+	}
+	nameByCharacterID := make(map[int64]string, len(fuelOfficers))
+	for _, o := range fuelOfficers {
+		nameByCharacterID[o.CharacterID] = o.CharacterName
+	}
+
+	items := make([]CorporationStructureAssignmentItem, 0, len(structures))
+	for _, st := range structures {
+		item := CorporationStructureAssignmentItem{
+			CorporationID:   st.CorporationID,
+			CorporationName: st.CorporationName,
+			StructureID:     st.StructureID,
+			StructureName:   st.Name,
+		}
+		if item.StructureName == "" {
+			item.StructureName = fmt.Sprintf("Structure-%d", st.StructureID)
+		}
+		if assignment, ok := assignByStructure[st.StructureID]; ok {
+			item.AssignedUserID = assignment.AssignedUserID
+			item.AssignedCharacterID = assignment.AssignedCharacterID
+			item.AssignedCharacterName = nameByCharacterID[assignment.AssignedCharacterID]
+		}
+		items = append(items, item)
+	}
+
+	return &CorporationStructureAssignmentListResponse{
+		Items:        items,
+		FuelOfficers: fuelOfficers,
+	}, nil
+}
+
+func (s *CorporationStructureService) UpdateAssignments(
+	ctx context.Context,
+	req CorporationStructureAssignmentUpdateRequest,
+) error {
+	manageCtx, err := s.buildManageContext(ctx, false)
+	if err != nil {
+		return err
+	}
+	managedCorps := toInt64Set(manageCtx.corporationIDs)
+	structures, err := s.repo.ListCorpStructures(manageCtx.corporationIDs)
+	if err != nil {
+		return errors.New("读取军团建筑失败")
+	}
+	structureByID := make(map[int64]model.CorpStructureInfo, len(structures))
+	for _, st := range structures {
+		structureByID[st.StructureID] = st
+	}
+
+	fuelOfficers, err := s.repo.ListFuelOfficerCharactersByCorporations(manageCtx.corporationIDs)
+	if err != nil {
+		return errors.New("读取燃料官列表失败")
+	}
+	officerByCharacterID := make(map[int64]repository.FuelOfficerCharacterOption, len(fuelOfficers))
+	for _, o := range fuelOfficers {
+		officerByCharacterID[o.CharacterID] = o
+	}
+
+	next := make([]model.CorpStructureAssignment, 0, len(req.Assignments))
+	seenStructures := make(map[int64]struct{}, len(req.Assignments))
+	deleteIDs := make([]int64, 0)
+	for _, item := range req.Assignments {
+		if item.CorporationID <= 0 || item.StructureID <= 0 {
+			return errors.New("corporation_id 和 structure_id 必须为正整数")
+		}
+		if _, ok := managedCorps[item.CorporationID]; !ok {
+			return fmt.Errorf("军团 %d 不在可管理范围内", item.CorporationID)
+		}
+		st, ok := structureByID[item.StructureID]
+		if !ok || st.CorporationID != item.CorporationID {
+			return fmt.Errorf("建筑 %d 不在军团 %d 下", item.StructureID, item.CorporationID)
+		}
+		if _, duplicated := seenStructures[item.StructureID]; duplicated {
+			return fmt.Errorf("建筑 %d 的指派重复", item.StructureID)
+		}
+		seenStructures[item.StructureID] = struct{}{}
+		if item.CharacterID == 0 {
+			deleteIDs = append(deleteIDs, item.StructureID)
+			continue
+		}
+		officer, ok := officerByCharacterID[item.CharacterID]
+		if !ok {
+			return fmt.Errorf("人物 %d 不是可选燃料官", item.CharacterID)
+		}
+		next = append(next, model.CorpStructureAssignment{
+			CorporationID:       item.CorporationID,
+			StructureID:         item.StructureID,
+			AssignedUserID:      officer.UserID,
+			AssignedCharacterID: item.CharacterID,
+		})
+	}
+	if err := s.repo.UpsertAssignments(next); err != nil {
+		return errors.New("保存建筑指派失败")
+	}
+	if err := s.repo.DeleteAssignmentsByStructureIDs(deleteIDs); err != nil {
+		return errors.New("清理建筑指派失败")
+	}
+	return nil
+}
+
+func (s *CorporationStructureService) GetFuelSalarySettings() (*FuelSalarySettingsResponse, error) {
+	value := s.sysConfigRepo.GetInt(
+		model.SysConfigFuelSalaryPerStructureMonthly,
+		model.SysConfigDefaultFuelSalaryPerStructureMonthly,
+	)
+	if value < 0 {
+		value = 0
+	}
+	return &FuelSalarySettingsResponse{SalaryPerStructureMonthly: value}, nil
+}
+
+func (s *CorporationStructureService) UpdateFuelSalarySettings(req FuelSalarySettingsUpdateRequest) error {
+	if req.SalaryPerStructureMonthly < 0 {
+		return errors.New("每建筑月工资不能小于 0")
+	}
+	return s.sysConfigRepo.Set(
+		model.SysConfigFuelSalaryPerStructureMonthly,
+		strconv.Itoa(req.SalaryPerStructureMonthly),
+		"燃料官每建筑每月工资",
+	)
+}
+
+func (s *CorporationStructureService) RunFuelSalaryPayout(
+	ctx context.Context,
+	req FuelSalaryPayoutRunRequest,
+) (*FuelSalaryPayoutRunResponse, error) {
+	if _, err := time.Parse("2006-01", req.SettlementMonth); err != nil {
+		return nil, errors.New("settlement_month 格式必须为 YYYY-MM")
+	}
+	unitSalary := s.sysConfigRepo.GetInt(
+		model.SysConfigFuelSalaryPerStructureMonthly,
+		model.SysConfigDefaultFuelSalaryPerStructureMonthly,
+	)
+	if unitSalary < 0 {
+		unitSalary = 0
+	}
+
+	assignments, err := s.repo.ListAssignmentsByCorporations(s.buildAllManagedCorpsForFuel())
+	if err != nil {
+		return nil, errors.New("查询燃料官指派失败")
+	}
+	countByUserID := make(map[uint]int)
+	for _, a := range assignments {
+		if a.AssignedUserID > 0 {
+			countByUserID[a.AssignedUserID]++
+		}
+	}
+
+	walletSvc := NewSysWalletService()
+	items := make([]FuelSalaryPayoutRunItem, 0, len(countByUserID))
+	for userID, assignedCount := range countByUserID {
+		if assignedCount <= 0 {
+			continue
+		}
+		exists, err := s.repo.ExistsFuelSalaryPayout(req.SettlementMonth, userID)
+		if err != nil {
+			return nil, errors.New("检查工资发放记录失败")
+		}
+		if exists {
+			continue
+		}
+		amount := unitSalary * assignedCount
+		if amount <= 0 {
+			continue
+		}
+		walletRefID := fmt.Sprintf("fuel_salary:%s:%d", req.SettlementMonth, userID)
+		err = global.DB.Transaction(func(tx *gorm.DB) error {
+			if err := walletSvc.ApplyWalletDeltaByOperatorTx(
+				tx,
+				userID,
+				req.OperatorUserID,
+				float64(amount),
+				fmt.Sprintf("燃料官 %s 月工资", req.SettlementMonth),
+				model.WalletRefFuelSalary,
+				walletRefID,
+			); err != nil {
+				return err
+			}
+			return s.repo.CreateFuelSalaryPayoutTx(tx, &model.FuelSalaryPayout{
+				SettlementMonth: req.SettlementMonth,
+				UserID:          userID,
+				AssignedCount:   assignedCount,
+				UnitSalary:      unitSalary,
+				Amount:          amount,
+				WalletRefID:     walletRefID,
+				OperatorUserID:  req.OperatorUserID,
+			})
+		})
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, FuelSalaryPayoutRunItem{
+			UserID:        userID,
+			AssignedCount: assignedCount,
+			UnitSalary:    unitSalary,
+			Amount:        amount,
+			WalletRefID:   walletRefID,
+		})
+	}
+	return &FuelSalaryPayoutRunResponse{
+		SettlementMonth: req.SettlementMonth,
+		Items:           items,
+	}, nil
+}
+
+func (s *CorporationStructureService) ListMyAssignedStructures(
+	ctx context.Context,
+	userID uint,
+	req CorporationStructureListRequest,
+) (*CorporationStructureListResponse, error) {
+	assignments, err := s.repo.ListAssignmentsByUserID(userID)
+	if err != nil {
+		return nil, errors.New("查询我的建筑指派失败")
+	}
+	if len(assignments) == 0 {
+		page, pageSize := normalizePagination(req.Page, req.PageSize)
+		return &CorporationStructureListResponse{Items: []CorporationStructureRow{}, Total: 0, Page: page, PageSize: pageSize}, nil
+	}
+	structureIDs := make(map[int64]struct{}, len(assignments))
+	corpSet := make(map[int64]struct{}, len(assignments))
+	for _, a := range assignments {
+		structureIDs[a.StructureID] = struct{}{}
+		corpSet[a.CorporationID] = struct{}{}
+	}
+	corps := make([]int64, 0, len(corpSet))
+	for c := range corpSet {
+		corps = append(corps, c)
+	}
+	structures, err := s.repo.ListCorpStructures(corps)
+	if err != nil {
+		return nil, errors.New("查询建筑快照失败")
+	}
+	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
+	now := time.Now()
+	rows := make([]CorporationStructureRow, 0, len(structures))
+	for _, st := range structures {
+		if _, ok := structureIDs[st.StructureID]; !ok {
+			continue
+		}
+		rows = append(rows, buildCorporationStructureRow(st, now, systemMeta[st.SystemID]))
+	}
+	filtered := filterCorporationStructureRows(rows, req, now)
+	sortCorporationStructureRows(filtered, req.SortBy, req.SortOrder)
+	pageRows, total, page, pageSize := paginateCorporationStructureRows(filtered, req.Page, req.PageSize)
+	return &CorporationStructureListResponse{Items: pageRows, Total: total, Page: page, PageSize: pageSize}, nil
+}
+
+func (s *CorporationStructureService) buildAllManagedCorpsForFuel() []int64 {
+	ctx := context.Background()
+	manageCtx, err := s.buildManageContext(ctx, false)
+	if err != nil {
+		return []int64{}
+	}
+	return manageCtx.corporationIDs
 }
 
 func (s *CorporationStructureService) buildManageContext(

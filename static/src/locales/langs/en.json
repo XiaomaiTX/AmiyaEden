@@ -257,7 +257,8 @@
       "title": "Dashboard",
       "console": "Console",
       "npcKills": "Corp NPC Kill Report",
-      "corporationStructures": "Corporation Structures"
+      "corporationStructures": "Corporation Structures",
+      "fuelOfficerStructures": "My Fuel Structures"
     },
     "exception": {
       "title": "Exception",
@@ -1125,6 +1126,7 @@
       "captain": "Captain",
       "mentor": "Mentor",
       "welfare": "Welfare Officer",
+      "fuel_officer": "Fuel Officer",
       "user": "Verified User",
       "guest": "Guest"
     },
@@ -2353,6 +2355,7 @@
     "refTypes": {
       "pap_reward": "PAP Reward",
       "pap_fc_salary": "FC Salary",
+      "fuel_salary": "Fuel Officer Salary",
       "admin_adjust": "Admin Adjustment",
       "admin_award": "Admin Delivery Award",
       "manual": "Manual",
@@ -2576,7 +2579,8 @@
     "subtitle": "Review structure snapshots for manageable corporations and configure one Director-authorized character per corporation for data refresh.",
     "tabs": {
       "list": "Structure List",
-      "settings": "Settings"
+      "settings": "Settings",
+      "assignmentSalary": "Assignment & Salary"
     },
     "allCorporations": "All Corporations",
     "noServices": "No active services",
@@ -2664,6 +2668,14 @@
       "refreshQueued": "Background task has been queued. Refresh the list later to see updates.",
       "refreshAlreadyRunning": "A refresh job for this corporation is already running.",
       "selectCorporationFirst": "Select a corporation first"
+    },
+    "salary": {
+      "salaryPerStructure": "Salary Per Structure Per Month (Fuxi Coin)",
+      "assignedFuelOfficer": "Fuel Officer",
+      "payoutMonth": "Settlement Month",
+      "runPayout": "Run Payout",
+      "selectPayoutMonth": "Please select settlement month",
+      "payoutSuccess": "Payout completed for {count} fuel officers"
     },
     "empty": {
       "list": "No structure data available",
