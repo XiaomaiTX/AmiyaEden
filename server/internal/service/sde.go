@@ -45,6 +45,18 @@ type SdeService struct {
 	sysConfig *repository.SysConfigRepository
 }
 
+type SDEStatus struct {
+	CurrentVersion    string `json:"current_version"`
+	LatestVersion     string `json:"latest_version"`
+	HasUpdate         bool   `json:"has_update"`
+	LastCheckAt       int64  `json:"last_check_at"`
+	LastCheckSuccess  bool   `json:"last_check_success"`
+	LastCheckError    string `json:"last_check_error"`
+	LastUpdateAt      int64  `json:"last_update_at"`
+	LastUpdateSuccess bool   `json:"last_update_success"`
+	LastUpdateError   string `json:"last_update_error"`
+}
+
 func NewSdeService() *SdeService {
 	return &SdeService{
 		repo:      repository.NewSdeRepository(),
@@ -72,6 +84,87 @@ func (s *SdeService) GetCurrentVersion() (*model.SdeVersion, error) {
 		return nil, nil
 	}
 	return v, err
+}
+
+func (s *SdeService) GetStatus() (SDEStatus, error) {
+	status, err := s.getStatusSnapshot()
+	if err != nil {
+		return SDEStatus{}, err
+	}
+
+	currentVersion, err := s.getCurrentVersionString()
+	if err != nil {
+		return SDEStatus{}, err
+	}
+	status.CurrentVersion = currentVersion
+	if status.LatestVersion != "" && status.CurrentVersion != "" {
+		status.HasUpdate = status.LatestVersion != status.CurrentVersion
+	}
+	return status, nil
+}
+
+func (s *SdeService) CheckLatestVersion() (SDEStatus, error) {
+	status, err := s.GetStatus()
+	if err != nil {
+		return SDEStatus{}, err
+	}
+
+	release, err := s.fetchLatestRelease()
+	now := time.Now().Unix()
+	status.LastCheckAt = now
+	if err != nil {
+		status.LastCheckSuccess = false
+		status.LastCheckError = err.Error()
+		if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+			global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+		}
+		return status, fmt.Errorf("获取 GitHub Release 失败: %w", err)
+	}
+
+	status.LatestVersion = release.TagName
+	status.LastCheckSuccess = true
+	status.LastCheckError = ""
+	status.HasUpdate = status.CurrentVersion != "" && status.CurrentVersion != status.LatestVersion
+	if status.CurrentVersion == "" && status.LatestVersion != "" {
+		status.HasUpdate = true
+	}
+	if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+		global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+	}
+	return status, nil
+}
+
+func (s *SdeService) TriggerManualUpdateWithStatus() (SDEStatus, error) {
+	status, err := s.GetStatus()
+	if err != nil {
+		return SDEStatus{}, err
+	}
+
+	version, updateErr := s.TriggerManualUpdate()
+	now := time.Now().Unix()
+	status.LastUpdateAt = now
+	status.LatestVersion = version
+	if updateErr != nil {
+		status.LastUpdateSuccess = false
+		status.LastUpdateError = updateErr.Error()
+		status.HasUpdate = status.CurrentVersion != "" && status.CurrentVersion != status.LatestVersion
+		if status.CurrentVersion == "" && status.LatestVersion != "" {
+			status.HasUpdate = true
+		}
+		if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+			global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+		}
+		return status, updateErr
+	}
+
+	status.CurrentVersion = version
+	status.LastUpdateSuccess = true
+	status.LastUpdateError = ""
+	status.HasUpdate = false
+	if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+		global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+	}
+	return status, nil
 }
 
 // ---- SDE 更新 ----
@@ -167,6 +260,40 @@ func (s *SdeService) TriggerManualUpdate() (string, error) {
 
 	global.Logger.Info("[SDE] 手动更新完成", zap.String("version", version))
 	return version, nil
+}
+
+func (s *SdeService) getCurrentVersionString() (string, error) {
+	current, err := s.GetCurrentVersion()
+	if err != nil {
+		return "", err
+	}
+	if current == nil {
+		return "", nil
+	}
+	return current.Version, nil
+}
+
+func (s *SdeService) getStatusSnapshot() (SDEStatus, error) {
+	raw, err := s.sysConfig.Get(model.SysConfigSDEStatus, "")
+	if err != nil {
+		return SDEStatus{}, err
+	}
+	if strings.TrimSpace(raw) == "" {
+		return SDEStatus{}, nil
+	}
+	var status SDEStatus
+	if err := json.Unmarshal([]byte(raw), &status); err != nil {
+		return SDEStatus{}, nil
+	}
+	return status, nil
+}
+
+func (s *SdeService) setStatusSnapshot(status SDEStatus) error {
+	data, err := json.Marshal(status)
+	if err != nil {
+		return err
+	}
+	return s.sysConfig.Set(model.SysConfigSDEStatus, string(data), "SDE 状态快照")
 }
 
 // doImport 找到 PostgreSQL SQL 资源并导入数据库

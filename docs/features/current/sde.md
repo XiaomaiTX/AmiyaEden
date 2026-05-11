@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: backend
-last_reviewed: 2026-03-29
+last_reviewed: 2026-05-11
 source_of_truth:
   - server/internal/handler/sde.go
   - server/internal/handler/sys_config.go
@@ -37,6 +37,9 @@ source_of_truth:
 ### SDE 配置管理（super_admin 权限）
 - `GET /api/v1/system/sde-config`
 - `PUT /api/v1/system/sde-config`
+- `GET /api/v1/system/sde-config/status`
+- `POST /api/v1/system/sde-config/check`
+- `POST /api/v1/system/sde-config/update`
 
 前端封装位于 `static/src/api/sys-config.ts`。
 
@@ -54,6 +57,11 @@ source_of_truth:
   - 若配置了代理但代理不可达，下载器会自动回退为直连
 - **导入目标**：当前业务 PostgreSQL，而非独立的只读 SDE 库
 - **自动任务状态**：`server/jobs/sde.go` 中的启动检查与定时任务注册当前均已禁用
+- **手动运维能力**：
+  - `POST /system/sde-config/check` 仅探测上游最新版本，不触发导入
+  - `POST /system/sde-config/update` 执行手动导入
+  - `GET /system/sde-config/status` 返回状态快照（当前版本、最新版本、最近检查/更新时间与错误）
+  - 状态快照保存在 `system_config`（键：`sde.status`）
 
 ## 权限边界
 
@@ -74,6 +82,7 @@ source_of_truth:
 - **公开访问**：SDE 查询接口无需鉴权，任何前端调用方都可以使用
 - **共享基础能力**：SDE 是共享基础能力，修改返回结构时要检查多个业务模块
 - **版本检查与导入**：当前不通过启动任务或 cron 自动执行；如恢复此能力，需要同步更新运行文档与运维预期
+- **管理端异常提示口径**：检测到 `has_update=true` 时，管理端显式提示“存在可更新版本”
 - **英文名称回退**：英文名称缺失时，type/group/category/market group 查询会回退到 SDE 基础名称列
 - **`POST /api/v1/sde/names`**：返回 `flat` 与 `names` 两套映射
   - `names` 是按 namespace 分组的权威结果

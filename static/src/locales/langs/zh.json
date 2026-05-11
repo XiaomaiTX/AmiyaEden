@@ -438,6 +438,10 @@
       "esiMonitor": "ESI 监控",
       "history": "执行历史"
     },
+    "sdeStatus": {
+      "updateAvailable": "SDE 检测到可更新版本，请前往系统基础配置执行更新",
+      "upToDate": "SDE 当前版本：{current}"
+    },
     "columns": {
       "name": "任务名称",
       "description": "描述",
@@ -2483,7 +2487,17 @@
       "sdeProxy": "代理地址",
       "sdeProxyPlaceholder": "留空不使用代理，如 http://127.0.0.1:7890",
       "sdeDownloadUrl": "下载地址",
-      "sdeDownloadUrlPlaceholder": "SDE 数据下载 API 地址"
+      "sdeDownloadUrlPlaceholder": "SDE 数据下载 API 地址",
+      "sdeCurrentVersion": "当前版本",
+      "sdeLatestVersion": "最新版本",
+      "sdeLastCheckAt": "上次检查",
+      "sdeLastUpdateAt": "上次更新",
+      "sdeLastError": "最近错误",
+      "sdeUpdateAvailable": "检测到可更新版本，请及时执行更新",
+      "sdeCheckVersion": "检查新版本",
+      "sdeRunUpdate": "执行更新",
+      "sdeCheckSuccess": "SDE 版本检查完成",
+      "sdeUpdateSuccess": "SDE 更新完成"
     },
     "newbroSettings": {
       "title": "帮扶设置",

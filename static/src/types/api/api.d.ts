@@ -2935,6 +2935,18 @@ declare namespace Api {
       proxy?: string
       download_url?: string
     }
+
+    interface SDEStatus {
+      current_version: string
+      latest_version: string
+      has_update: boolean
+      last_check_at: number
+      last_check_success: boolean
+      last_check_error: string
+      last_update_at: number
+      last_update_success: boolean
+      last_update_error: string
+    }
   }
 
   // ─── 名人堂 ───

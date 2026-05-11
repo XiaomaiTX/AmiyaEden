@@ -495,6 +495,10 @@
       "esiMonitor": "ESI Monitor",
       "history": "Execution History"
     },
+    "sdeStatus": {
+      "updateAvailable": "A newer SDE version is available. Please update it in System Basic Config.",
+      "upToDate": "SDE current version: {current}"
+    },
     "columns": {
       "name": "Task Name",
       "description": "Description",
@@ -2755,7 +2759,17 @@
       "sdeProxy": "Proxy Address",
       "sdeProxyPlaceholder": "Leave empty to disable proxy, e.g. http://127.0.0.1:7890",
       "sdeDownloadUrl": "Download URL",
-      "sdeDownloadUrlPlaceholder": "SDE data download API URL"
+      "sdeDownloadUrlPlaceholder": "SDE data download API URL",
+      "sdeCurrentVersion": "Current Version",
+      "sdeLatestVersion": "Latest Version",
+      "sdeLastCheckAt": "Last Check",
+      "sdeLastUpdateAt": "Last Update",
+      "sdeLastError": "Recent Error",
+      "sdeUpdateAvailable": "A newer SDE version is available. Please run update.",
+      "sdeCheckVersion": "Check Latest Version",
+      "sdeRunUpdate": "Run Update",
+      "sdeCheckSuccess": "SDE version check completed",
+      "sdeUpdateSuccess": "SDE update completed"
     },
     "newbroSettings": {
       "title": "Newbro Settings",
