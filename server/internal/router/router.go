@@ -88,6 +88,18 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		corpStructures.GET("/filter-options", corpStructureH.GetFilterOptions)
 		corpStructures.POST("/list", corpStructureH.ListStructures)
 		corpStructures.POST("/run-task", corpStructureH.RunTask)
+		corpStructures.GET("/assignments", corpStructureH.GetAssignments)
+		corpStructures.PUT("/assignments", corpStructureH.UpdateAssignments)
+		corpStructures.GET("/fuel-salary-settings", corpStructureH.GetFuelSalarySettings)
+		corpStructures.PUT("/fuel-salary-settings", corpStructureH.UpdateFuelSalarySettings)
+		corpStructures.POST("/fuel-salary-payouts/run", corpStructureH.RunFuelSalaryPayout)
+	}
+	fuelOfficerCorpStructures := dashboard.Group(
+		"/corporation-structures",
+		middleware.RequireRole(model.RoleFuelOfficer),
+	)
+	{
+		fuelOfficerCorpStructures.POST("/my-assigned-list", corpStructureH.ListMyAssignedStructures)
 	}
 	badgeH := handler.NewBadgeHandler()
 	login.GET("/badge-counts", badgeH.GetBadgeCounts)

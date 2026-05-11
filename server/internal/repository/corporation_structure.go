@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -25,6 +26,12 @@ type DirectorCharacterOption struct {
 type StructureServiceSnapshot struct {
 	Name  string `json:"name"`
 	State string `json:"state"`
+}
+
+type FuelOfficerCharacterOption struct {
+	UserID        uint   `json:"user_id"`
+	CharacterID   int64  `json:"character_id"`
+	CharacterName string `json:"character_name"`
 }
 
 func (r *CorporationStructureRepository) ListDirectorCharactersByCorporations(
@@ -74,6 +81,73 @@ func (r *CorporationStructureRepository) DeleteCorpStructuresByCorporationIDs(co
 		return nil
 	}
 	return global.DB.Where("corporation_id IN ?", corporationIDs).Delete(&model.CorpStructureInfo{}).Error
+}
+
+func (r *CorporationStructureRepository) ListFuelOfficerCharactersByCorporations(
+	corporationIDs []int64,
+) ([]FuelOfficerCharacterOption, error) {
+	options := make([]FuelOfficerCharacterOption, 0)
+	if len(corporationIDs) == 0 {
+		return options, nil
+	}
+
+	err := global.DB.Table(`eve_character AS ec`).
+		Select(`ec.user_id, ec.character_id, ec.character_name`).
+		Joins(`JOIN user_role AS ur ON ur.user_id = ec.user_id`).
+		Where(`ur.role_code = ?`, model.RoleFuelOfficer).
+		Where(`ec.corporation_id IN ?`, corporationIDs).
+		Group(`ec.user_id, ec.character_id, ec.character_name`).
+		Order(`ec.character_name ASC`).
+		Scan(&options).Error
+	return options, err
+}
+
+func (r *CorporationStructureRepository) ListAssignmentsByCorporations(
+	corporationIDs []int64,
+) ([]model.CorpStructureAssignment, error) {
+	rows := make([]model.CorpStructureAssignment, 0)
+	if len(corporationIDs) == 0 {
+		return rows, nil
+	}
+	err := global.DB.Where(`corporation_id IN ?`, corporationIDs).
+		Find(&rows).Error
+	return rows, err
+}
+
+func (r *CorporationStructureRepository) ListAssignmentsByUserID(userID uint) ([]model.CorpStructureAssignment, error) {
+	rows := make([]model.CorpStructureAssignment, 0)
+	err := global.DB.Where(`assigned_user_id = ?`, userID).Find(&rows).Error
+	return rows, err
+}
+
+func (r *CorporationStructureRepository) UpsertAssignments(records []model.CorpStructureAssignment) error {
+	if len(records) == 0 {
+		return nil
+	}
+	return global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(&records).Error
+}
+
+func (r *CorporationStructureRepository) DeleteAssignmentsByStructureIDs(structureIDs []int64) error {
+	if len(structureIDs) == 0 {
+		return nil
+	}
+	return global.DB.Where("structure_id IN ?", structureIDs).Delete(&model.CorpStructureAssignment{}).Error
+}
+
+func (r *CorporationStructureRepository) CreateFuelSalaryPayout(tx *model.FuelSalaryPayout) error {
+	return global.DB.Create(tx).Error
+}
+
+func (r *CorporationStructureRepository) CreateFuelSalaryPayoutTx(dbTx *gorm.DB, tx *model.FuelSalaryPayout) error {
+	return dbTx.Create(tx).Error
+}
+
+func (r *CorporationStructureRepository) ExistsFuelSalaryPayout(settlementMonth string, userID uint) (bool, error) {
+	var count int64
+	err := global.DB.Model(&model.FuelSalaryPayout{}).
+		Where("settlement_month = ? AND user_id = ?", settlementMonth, userID).
+		Count(&count).Error
+	return count > 0, err
 }
 
 func (r *CorporationStructureRepository) UpsertStructures(records []model.EveStructure) error {

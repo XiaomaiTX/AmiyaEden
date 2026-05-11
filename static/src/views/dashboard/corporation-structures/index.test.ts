@@ -9,7 +9,7 @@ const apiSource = readFileSync(
 )
 
 test('corporation structures page uses single-page tab query routing', () => {
-  assert.match(source, /type StructureTab = 'list' \| 'settings'/)
+  assert.match(source, /type StructureTab = 'list' \| 'settings' \| 'assignment_salary'/)
   assert.match(source, /const activeTab = ref<StructureTab>\(normalizeTab\(route\.query\.tab\)\)/)
   assert.match(source, /watch\(\s*\(\) => route\.query\.tab,/)
   assert.match(source, /void router\.replace\(\{\s*query:\s*\{\s*\.\.\.route\.query,\s*tab/s)
@@ -18,7 +18,10 @@ test('corporation structures page uses single-page tab query routing', () => {
 test('corporation structures page wires settings and list tabs', () => {
   assert.match(source, /corporationStructures\.tabs\.list/)
   assert.match(source, /corporationStructures\.tabs\.settings/)
+  assert.match(source, /corporationStructures\.tabs\.assignmentSalary/)
   assert.match(source, /saveAuthorizations/)
+  assert.match(source, /saveAssignments/)
+  assert.match(source, /runSalaryPayout/)
   assert.match(source, /handleRunTaskForSelectedCorporation/)
   assert.doesNotMatch(source, /handleRefreshCorporation/)
   assert.doesNotMatch(source, /refreshThisCorporation/)
@@ -75,5 +78,9 @@ test('corporation structures api module exposes all required endpoints', () => {
   assert.match(apiSource, /\/settings\/authorizations/)
   assert.match(apiSource, /\/corporation-structures\/list/)
   assert.match(apiSource, /\/corporation-structures\/run-task/)
+  assert.match(apiSource, /\/corporation-structures\/assignments/)
+  assert.match(apiSource, /\/corporation-structures\/fuel-salary-settings/)
+  assert.match(apiSource, /\/corporation-structures\/fuel-salary-payouts\/run/)
+  assert.match(apiSource, /\/corporation-structures\/my-assigned-list/)
   assert.doesNotMatch(apiSource, /\/corporation-structures\/refresh/)
 })

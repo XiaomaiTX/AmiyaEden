@@ -341,6 +341,74 @@
           />
         </ElCard>
       </ElTabPane>
+      <ElTabPane
+        :label="$t('corporationStructures.tabs.assignmentSalary')"
+        name="assignment_salary"
+      >
+        <ElCard shadow="never" class="art-table-card">
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            <ElButton :loading="assignmentsLoading" @click="loadAssignments">
+              {{ $t('common.refresh') }}
+            </ElButton>
+            <ElButton type="primary" :loading="savingAssignments" @click="saveAssignments">
+              {{ $t('common.save') }}
+            </ElButton>
+          </div>
+
+          <ElFormItem :label="$t('corporationStructures.salary.salaryPerStructure')" class="mb-4">
+            <div class="flex items-center gap-2">
+              <ElInputNumber v-model="salaryPerStructureMonthly" :min="0" :step="1" step-strictly />
+              <ElButton type="primary" :loading="savingSalary" @click="saveFuelSalarySettings">
+                {{ $t('common.save') }}
+              </ElButton>
+            </div>
+          </ElFormItem>
+
+          <ElFormItem :label="$t('corporationStructures.salary.payoutMonth')" class="mb-4">
+            <div class="flex items-center gap-2">
+              <ElDatePicker v-model="payoutMonth" type="month" value-format="YYYY-MM" />
+              <ElButton type="primary" :loading="runningPayout" @click="runSalaryPayout">
+                {{ $t('corporationStructures.salary.runPayout') }}
+              </ElButton>
+            </div>
+          </ElFormItem>
+
+          <ElTable v-loading="assignmentsLoading" :data="assignmentItems" stripe border>
+            <ElTableColumn :label="$t('corporationStructures.table.corporation')" min-width="220">
+              <template #default="{ row }">
+                <div class="font-medium">{{ row.corporation_name }}</div>
+                <div class="text-xs text-g-500">{{ row.corporation_id }}</div>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn
+              :label="$t('corporationStructures.table.name')"
+              prop="structure_name"
+              min-width="240"
+            />
+            <ElTableColumn
+              :label="$t('corporationStructures.salary.assignedFuelOfficer')"
+              min-width="280"
+            >
+              <template #default="{ row }">
+                <ElSelect
+                  v-model="assignmentByStructure[row.structure_id]"
+                  clearable
+                  class="w-full"
+                  @clear="assignmentByStructure[row.structure_id] = 0"
+                >
+                  <ElOption :label="$t('corporationStructures.options.disabled')" :value="0" />
+                  <ElOption
+                    v-for="option in fuelOfficerOptions"
+                    :key="option.character_id"
+                    :label="`${option.character_name} (${option.character_id})`"
+                    :value="option.character_id"
+                  />
+                </ElSelect>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+        </ElCard>
+      </ElTabPane>
     </ElTabs>
   </div>
 </template>
@@ -352,16 +420,21 @@
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@/utils/common'
   import {
+    fetchCorporationStructureAssignments,
     fetchCorporationStructureFilterOptions,
     fetchCorporationStructureList,
     fetchCorporationStructureSettings,
+    fetchFuelSalarySettings,
+    runFuelSalaryPayout,
     runCorporationStructuresTask,
-    updateCorporationStructureAuthorizations
+    updateCorporationStructureAssignments,
+    updateCorporationStructureAuthorizations,
+    updateFuelSalarySettings
   } from '@/api/corporation-structures'
 
   defineOptions({ name: 'DashboardCorporationStructures' })
 
-  type StructureTab = 'list' | 'settings'
+  type StructureTab = 'list' | 'settings' | 'assignment_salary'
   type StructureRow = Api.Dashboard.CorporationStructureRow
   type TableSort = { prop?: string; order?: 'ascending' | 'descending' | null }
   type TagType = '' | 'success' | 'warning' | 'info' | 'primary' | 'danger'
@@ -412,10 +485,21 @@
 
   const normalizeTab = (value: unknown): StructureTab => {
     const queryValue = Array.isArray(value) ? value[0] : value
-    return queryValue === 'settings' ? 'settings' : 'list'
+    if (queryValue === 'settings') return 'settings'
+    if (queryValue === 'assignment_salary') return 'assignment_salary'
+    return 'list'
   }
 
   const activeTab = ref<StructureTab>(normalizeTab(route.query.tab))
+  const assignmentsLoading = ref(false)
+  const savingAssignments = ref(false)
+  const savingSalary = ref(false)
+  const runningPayout = ref(false)
+  const payoutMonth = ref<string>('')
+  const assignmentItems = ref<Api.Dashboard.CorporationStructureAssignmentItem[]>([])
+  const fuelOfficerOptions = ref<Api.Dashboard.FuelOfficerCharacterOption[]>([])
+  const assignmentByStructure = reactive<Record<number, number>>({})
+  const salaryPerStructureMonthly = ref(0)
 
   const normalizeFuelHours = (value: number | undefined) => {
     if (value == null || Number.isNaN(value)) {
@@ -815,6 +899,76 @@
     activeTab.value = normalizeTab(tab)
   }
 
+  const loadAssignments = async () => {
+    assignmentsLoading.value = true
+    try {
+      const response = await fetchCorporationStructureAssignments({
+        corporation_id: filters.corporation_id > 0 ? filters.corporation_id : undefined
+      })
+      assignmentItems.value = response.items
+      fuelOfficerOptions.value = response.fuel_officers
+      Object.keys(assignmentByStructure).forEach((key) => {
+        delete assignmentByStructure[Number(key)]
+      })
+      for (const item of response.items) {
+        assignmentByStructure[item.structure_id] = item.assigned_character_id || 0
+      }
+    } finally {
+      assignmentsLoading.value = false
+    }
+  }
+
+  const saveAssignments = async () => {
+    savingAssignments.value = true
+    try {
+      await updateCorporationStructureAssignments({
+        assignments: assignmentItems.value.map((item) => ({
+          corporation_id: item.corporation_id,
+          structure_id: item.structure_id,
+          character_id: assignmentByStructure[item.structure_id] || 0
+        }))
+      })
+      ElMessage.success(t('common.saveSuccess'))
+      await loadAssignments()
+    } finally {
+      savingAssignments.value = false
+    }
+  }
+
+  const loadFuelSalarySettings = async () => {
+    const settingsRes = await fetchFuelSalarySettings()
+    salaryPerStructureMonthly.value = Math.max(0, settingsRes.salary_per_structure_monthly || 0)
+  }
+
+  const saveFuelSalarySettings = async () => {
+    savingSalary.value = true
+    try {
+      await updateFuelSalarySettings({
+        salary_per_structure_monthly: Math.max(0, Math.floor(salaryPerStructureMonthly.value || 0))
+      })
+      ElMessage.success(t('common.saveSuccess'))
+      await loadFuelSalarySettings()
+    } finally {
+      savingSalary.value = false
+    }
+  }
+
+  const runSalaryPayout = async () => {
+    if (!payoutMonth.value) {
+      ElMessage.warning(t('corporationStructures.salary.selectPayoutMonth'))
+      return
+    }
+    runningPayout.value = true
+    try {
+      const result = await runFuelSalaryPayout({ settlement_month: payoutMonth.value })
+      ElMessage.success(
+        t('corporationStructures.salary.payoutSuccess', { count: result.items.length })
+      )
+    } finally {
+      runningPayout.value = false
+    }
+  }
+
   watch(
     () => route.query.tab,
     (value) => {
@@ -850,6 +1004,8 @@
 
     await loadSettings()
     await loadFilterOptions()
+    await loadAssignments()
+    await loadFuelSalarySettings()
     copyFiltersToSearchParams()
     await getData()
   })

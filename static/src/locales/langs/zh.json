@@ -202,7 +202,8 @@
       "title": "仪表盘",
       "console": "工作台",
       "npcKills": "军团刷怪报表",
-      "corporationStructures": "军团建筑"
+      "corporationStructures": "军团建筑",
+      "fuelOfficerStructures": "我的燃料建筑"
     },
     "exception": {
       "title": "异常页面",
@@ -1046,6 +1047,7 @@
       "captain": "队长",
       "mentor": "导师",
       "welfare": "福利官",
+      "fuel_officer": "燃料官",
       "user": "已认证用户",
       "guest": "访客"
     },
@@ -2200,6 +2202,7 @@
     "refTypes": {
       "pap_reward": "PAP 奖励",
       "pap_fc_salary": "FC 工资",
+      "fuel_salary": "燃料官工资",
       "admin_adjust": "管理员调整",
       "admin_award": "管理发放奖励",
       "manual": "手动操作",
@@ -2337,7 +2340,7 @@
   "corporationStructures": {
     "title": "军团建筑",
     "subtitle": "查看可管理军团的建筑快照，并配置每个军团用于拉取建筑数据的 Director 授权角色。",
-    "tabs": { "list": "建筑列表", "settings": "设置" },
+    "tabs": { "list": "建筑列表", "settings": "设置", "assignmentSalary": "指派与工资" },
     "allCorporations": "全部军团",
     "noServices": "无在线服务",
     "filters": {
@@ -2413,6 +2416,14 @@
       "refreshQueued": "已触发后台任务，请稍后刷新列表查看结果",
       "refreshAlreadyRunning": "该军团建筑刷新任务正在执行，请稍后重试",
       "selectCorporationFirst": "请先选择一个军团"
+    },
+    "salary": {
+      "salaryPerStructure": "每建筑每月工资（伏羲币）",
+      "assignedFuelOfficer": "燃料官",
+      "payoutMonth": "结算月份",
+      "runPayout": "批量发放",
+      "selectPayoutMonth": "请选择结算月份",
+      "payoutSuccess": "发放完成，已处理 {count} 名燃料官"
     },
     "empty": { "list": "暂无建筑数据", "settings": "暂无可管理军团" }
   },

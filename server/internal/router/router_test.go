@@ -374,6 +374,11 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		"/dashboard/corporation-structures/run-task",
 		http.StatusNoContent,
 	)
+	assertRouteStatus(t, adminRouter, http.MethodGet, "/dashboard/corporation-structures/assignments", http.StatusNoContent)
+	assertRouteStatus(t, adminRouter, http.MethodPut, "/dashboard/corporation-structures/assignments", http.StatusNoContent)
+	assertRouteStatus(t, adminRouter, http.MethodGet, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusNoContent)
+	assertRouteStatus(t, adminRouter, http.MethodPut, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusNoContent)
+	assertRouteStatus(t, adminRouter, http.MethodPost, "/dashboard/corporation-structures/fuel-salary-payouts/run", http.StatusNoContent)
 
 	superAdminRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleSuperAdmin})
 	assertRouteStatus(
@@ -411,6 +416,11 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		"/dashboard/corporation-structures/run-task",
 		http.StatusNoContent,
 	)
+	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/dashboard/corporation-structures/assignments", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/dashboard/corporation-structures/assignments", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodPost, "/dashboard/corporation-structures/fuel-salary-payouts/run", http.StatusNoContent)
 
 	userRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleUser})
 	assertRouteStatus(t, userRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusForbidden)
@@ -436,6 +446,11 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		"/dashboard/corporation-structures/run-task",
 		http.StatusForbidden,
 	)
+	assertRouteStatus(t, userRouter, http.MethodGet, "/dashboard/corporation-structures/assignments", http.StatusForbidden)
+	assertRouteStatus(t, userRouter, http.MethodPut, "/dashboard/corporation-structures/assignments", http.StatusForbidden)
+	assertRouteStatus(t, userRouter, http.MethodGet, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusForbidden)
+	assertRouteStatus(t, userRouter, http.MethodPut, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusForbidden)
+	assertRouteStatus(t, userRouter, http.MethodPost, "/dashboard/corporation-structures/fuel-salary-payouts/run", http.StatusForbidden)
 
 	guestRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleGuest})
 	assertRouteStatus(t, guestRouter, http.MethodGet, "/dashboard/corporation-structures/settings", http.StatusForbidden)
@@ -459,6 +474,27 @@ func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 		guestRouter,
 		http.MethodPost,
 		"/dashboard/corporation-structures/run-task",
+		http.StatusForbidden,
+	)
+	assertRouteStatus(t, guestRouter, http.MethodGet, "/dashboard/corporation-structures/assignments", http.StatusForbidden)
+	assertRouteStatus(t, guestRouter, http.MethodPut, "/dashboard/corporation-structures/assignments", http.StatusForbidden)
+	assertRouteStatus(t, guestRouter, http.MethodGet, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusForbidden)
+	assertRouteStatus(t, guestRouter, http.MethodPut, "/dashboard/corporation-structures/fuel-salary-settings", http.StatusForbidden)
+	assertRouteStatus(t, guestRouter, http.MethodPost, "/dashboard/corporation-structures/fuel-salary-payouts/run", http.StatusForbidden)
+
+	fuelOfficerRouter := newDashboardCorporationStructuresPermissionTestRouter([]string{model.RoleFuelOfficer})
+	assertRouteStatus(
+		t,
+		fuelOfficerRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/my-assigned-list",
+		http.StatusNoContent,
+	)
+	assertRouteStatus(
+		t,
+		adminRouter,
+		http.MethodPost,
+		"/dashboard/corporation-structures/my-assigned-list",
 		http.StatusForbidden,
 	)
 }
@@ -732,6 +768,14 @@ func newDashboardCorporationStructuresPermissionTestRouter(roles []string) *gin.
 	corpStructures.GET("/filter-options", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.POST("/list", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	corpStructures.POST("/run-task", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.GET("/assignments", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.PUT("/assignments", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.GET("/fuel-salary-settings", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.PUT("/fuel-salary-settings", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	corpStructures.POST("/fuel-salary-payouts/run", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+	fuelOfficer := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleFuelOfficer))
+	fuelOfficer.POST("/my-assigned-list", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	return r
 }
