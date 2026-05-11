@@ -17,8 +17,19 @@ const (
 	sqliteMaxBindParams   = 999
 	walletBatchSafetyRate = 0.8
 
+	walletJournalHardBatchCap     = 3000
+	walletTransactionHardBatchCap = 2500
+
+	// 这些值用于估算每行记录的绑定参数数量，实际参数个数可能因驱动/SQL 构造细节存在偏差。
 	walletJournalBindParamsPerRow     = 14
 	walletTransactionBindParamsPerRow = 11
+)
+
+type walletBatchKind int
+
+const (
+	walletBatchKindJournal walletBatchKind = iota
+	walletBatchKindTransaction
 )
 
 func init() {
@@ -152,7 +163,7 @@ func (t *WalletTask) Execute(ctx *TaskContext) error {
 		})
 	}
 	if len(waitingEntries) > 0 {
-		journalBatchSize := safeBatchSize(tx, walletJournalBindParamsPerRow)
+		journalBatchSize := safeBatchSize(tx, walletJournalBindParamsPerRow, walletBatchKindJournal)
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).
 			CreateInBatches(waitingEntries, journalBatchSize).Error; err != nil {
 			tx.Rollback()
@@ -183,7 +194,7 @@ func (t *WalletTask) Execute(ctx *TaskContext) error {
 		})
 	}
 	if len(waitingTransactions) > 0 {
-		transactionBatchSize := safeBatchSize(tx, walletTransactionBindParamsPerRow)
+		transactionBatchSize := safeBatchSize(tx, walletTransactionBindParamsPerRow, walletBatchKindTransaction)
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).
 			CreateInBatches(waitingTransactions, transactionBatchSize).Error; err != nil {
 			tx.Rollback()
@@ -243,7 +254,7 @@ func (t *WalletTask) fetchWalletTransactions(ctx context.Context, taskCtx *TaskC
 	}
 }
 
-func safeBatchSize(dbTx *gorm.DB, bindParamsPerRow int) int {
+func safeBatchSize(dbTx *gorm.DB, bindParamsPerRow int, kind walletBatchKind) int {
 	if bindParamsPerRow <= 0 {
 		return 1
 	}
@@ -259,6 +270,18 @@ func safeBatchSize(dbTx *gorm.DB, bindParamsPerRow int) int {
 	limit := int(float64(maxParams/bindParamsPerRow) * walletBatchSafetyRate)
 	if limit < 1 {
 		return 1
+	}
+
+	// 用硬上限兜底，规避参数估算偏差导致单 SQL 参数超过 PostgreSQL 协议上限。
+	hardCap := walletTransactionHardBatchCap
+	if kind == walletBatchKindJournal {
+		hardCap = walletJournalHardBatchCap
+	}
+	if hardCap < 1 {
+		return 1
+	}
+	if limit > hardCap {
+		return hardCap
 	}
 	return limit
 }

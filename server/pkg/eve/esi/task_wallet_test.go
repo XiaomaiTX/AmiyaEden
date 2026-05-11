@@ -202,7 +202,7 @@ func TestWalletTaskExecuteInsertsLargeWalletJournalInBatches(t *testing.T) {
 	global.DB = db
 	t.Cleanup(func() { global.DB = oldDB })
 
-	journalCount := safeBatchSize(db, walletJournalBindParamsPerRow) + 300
+	journalCount := safeBatchSize(db, walletJournalBindParamsPerRow, walletBatchKindJournal) + 300
 	journalPayload := make([]WalletJournalEntry, 0, journalCount)
 	for i := 0; i < journalCount; i++ {
 		journalPayload = append(journalPayload, WalletJournalEntry{
@@ -267,7 +267,7 @@ func TestWalletTaskExecuteInsertsLargeWalletTransactionsInBatches(t *testing.T) 
 	global.DB = db
 	t.Cleanup(func() { global.DB = oldDB })
 
-	firstPageCount := safeBatchSize(db, walletTransactionBindParamsPerRow) + 500
+	firstPageCount := safeBatchSize(db, walletTransactionBindParamsPerRow, walletBatchKindTransaction) + 500
 	firstPage := make([]WalletTransaction, 0, firstPageCount)
 	for i := 0; i < firstPageCount; i++ {
 		txID := int64(700000 - i)
@@ -370,4 +370,61 @@ func newWalletTaskTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db
+}
+
+func TestSafeBatchSize(t *testing.T) {
+	sqliteDB := newWalletTaskTestDB(t)
+
+	tests := []struct {
+		name            string
+		db              *gorm.DB
+		bindParamsPerRow int
+		kind            walletBatchKind
+		want            int
+	}{
+		{
+			name:             "invalid bind params returns 1",
+			db:               nil,
+			bindParamsPerRow: 0,
+			kind:             walletBatchKindTransaction,
+			want:             1,
+		},
+		{
+			name:             "postgres transaction capped by hard limit",
+			db:               nil,
+			bindParamsPerRow: walletTransactionBindParamsPerRow,
+			kind:             walletBatchKindTransaction,
+			want:             walletTransactionHardBatchCap,
+		},
+		{
+			name:             "postgres journal capped by hard limit",
+			db:               nil,
+			bindParamsPerRow: walletJournalBindParamsPerRow,
+			kind:             walletBatchKindJournal,
+			want:             walletJournalHardBatchCap,
+		},
+		{
+			name:             "sqlite transaction uses sqlite bind limit",
+			db:               sqliteDB,
+			bindParamsPerRow: walletTransactionBindParamsPerRow,
+			kind:             walletBatchKindTransaction,
+			want:             72,
+		},
+		{
+			name:             "sqlite journal uses sqlite bind limit",
+			db:               sqliteDB,
+			bindParamsPerRow: walletJournalBindParamsPerRow,
+			kind:             walletBatchKindJournal,
+			want:             56,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := safeBatchSize(tt.db, tt.bindParamsPerRow, tt.kind)
+			if got != tt.want {
+				t.Fatalf("safeBatchSize() = %d, want %d", got, tt.want)
+			}
+		})
+	}
 }
