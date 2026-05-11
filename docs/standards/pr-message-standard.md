@@ -1,3 +1,37 @@
+---
+
+# 📝 PR Message Generation
+
+## Source of Truth
+
+生成 PR 标题和正文时，必须先检查 `preview` 到 `main` 之间的所有 commit。
+
+### 必须收集的信息
+
+- 每个 commit 的标题
+- 每个 commit 的描述正文
+- commit 之间的主题聚合关系
+- 是否存在破坏性变更、迁移、回滚或依赖升级
+
+### 生成规则
+
+- PR 标题应概括 `preview..main` 之间所有 commit 的共同主题，避免只取单个 commit 标题
+- PR 正文应基于这些 commit message 的标题和描述进行归纳，覆盖主要变更、影响范围和风险
+- 如果多个 commit 属于同一功能线，应合并为一个更高层次的叙述，而不是逐条机械罗列
+- 如果 commit message 已明确说明 Added / Changed / Fixed / Breaking Changes，应在 PR 正文中保持对应分类
+- 如果 commit message 中包含迁移、配置、测试或回滚说明，PR 正文中也必须体现
+
+### 不要这样做
+
+- 只看当前工作区 diff 就直接编写 PR 信息
+- 只引用最近一个 commit 的标题
+- 忽略 commit 描述正文，只拼接标题
+- 在没有检查 `preview` 和 `main` 之间完整 commit 历史的情况下输出最终 PR 标题和正文
+
+---
+
+<!-- Template Start -->
+
 # 🧭 Overview
 
 <!-- 一句话说明：做了什么 + 为什么做 -->
