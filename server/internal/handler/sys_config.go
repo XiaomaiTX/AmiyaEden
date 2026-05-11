@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/internal/service"
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
 	"strconv"
@@ -12,12 +13,27 @@ import (
 )
 
 type SysConfigHandler struct {
-	repo *repository.SysConfigRepository
+	repo   *repository.SysConfigRepository
+	sdeSvc sdeSysConfigService
+}
+
+type sdeSysConfigService interface {
+	GetStatus() (service.SDEStatus, error)
+	CheckLatestVersion() (service.SDEStatus, error)
+	TriggerManualUpdateWithStatus() (service.SDEStatus, error)
 }
 
 func NewSysConfigHandler() *SysConfigHandler {
+	return newSysConfigHandlerWithDeps(repository.NewSysConfigRepository(), service.NewSdeService())
+}
+
+func newSysConfigHandlerWithDeps(
+	repo *repository.SysConfigRepository,
+	sdeSvc sdeSysConfigService,
+) *SysConfigHandler {
 	return &SysConfigHandler{
-		repo: repository.NewSysConfigRepository(),
+		repo:   repo,
+		sdeSvc: sdeSvc,
 	}
 }
 
@@ -80,6 +96,33 @@ func (h *SysConfigHandler) UpdateSDEConfig(c *gin.Context) {
 	}
 
 	response.OK(c, nil)
+}
+
+func (h *SysConfigHandler) GetSDEStatus(c *gin.Context) {
+	status, err := h.sdeSvc.GetStatus()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "读取 SDE 状态失败")
+		return
+	}
+	response.OK(c, status)
+}
+
+func (h *SysConfigHandler) CheckSDEVersion(c *gin.Context) {
+	status, err := h.sdeSvc.CheckLatestVersion()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "检查 SDE 版本失败: "+err.Error())
+		return
+	}
+	response.OK(c, status)
+}
+
+func (h *SysConfigHandler) TriggerSDEUpdate(c *gin.Context) {
+	status, err := h.sdeSvc.TriggerManualUpdateWithStatus()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "执行 SDE 更新失败: "+err.Error())
+		return
+	}
+	response.OK(c, status)
 }
 
 type AllowCorporationsResponse struct {

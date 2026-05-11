@@ -338,6 +338,9 @@ source_of_truth:
 | --- | --- | --- | --- |
 | GET | `/system/sde-config` | 获取 SDE 配置 | `RequireRole(super_admin)` |
 | PUT | `/system/sde-config` | 更新 SDE 配置 | `RequireRole(super_admin)` |
+| GET | `/system/sde-config/status` | 获取 SDE 状态快照（当前版本、最新版本、检查/更新结果） | `RequireRole(super_admin)` |
+| POST | `/system/sde-config/check` | 手动检查 SDE 最新版本（不导入） | `RequireRole(super_admin)` |
+| POST | `/system/sde-config/update` | 手动执行 SDE 更新导入 | `RequireRole(super_admin)` |
 
 ### NPC Kills / Alliance PAP
 

@@ -372,6 +372,9 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// SDE 配置管理
 	adminConfig.GET("/sde-config", sysConfigH.GetSDEConfig)
 	adminConfig.PUT("/sde-config", sysConfigH.UpdateSDEConfig)
+	adminConfig.GET("/sde-config/status", sysConfigH.GetSDEStatus)
+	adminConfig.POST("/sde-config/check", sysConfigH.CheckSDEVersion)
+	adminConfig.POST("/sde-config/update", sysConfigH.TriggerSDEUpdate)
 
 	// 允许访问的军团列表
 	adminBasicConfig.GET("/allow-corporations", sysConfigH.GetAllowCorporations)

@@ -50,3 +50,24 @@ export function updateSDEConfig(data: Api.SysConfig.UpdateSDEConfigParams) {
     data
   })
 }
+
+/** 获取 SDE 状态 */
+export function fetchSDEStatus() {
+  return request.get<Api.SysConfig.SDEStatus>({
+    url: '/api/v1/system/sde-config/status'
+  })
+}
+
+/** 检查 SDE 最新版本（不导入） */
+export function checkSDEVersion() {
+  return request.post<Api.SysConfig.SDEStatus>({
+    url: '/api/v1/system/sde-config/check'
+  })
+}
+
+/** 手动执行 SDE 更新 */
+export function triggerSDEUpdate() {
+  return request.post<Api.SysConfig.SDEStatus>({
+    url: '/api/v1/system/sde-config/update'
+  })
+}

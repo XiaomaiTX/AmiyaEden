@@ -18,6 +18,10 @@ const esiMonitorTabSource = readFileSync(
 )
 const historyTabSource = readFileSync(new URL('./modules/HistoryTab.vue', import.meta.url), 'utf8')
 const apiSource = readFileSync(new URL('../../../api/task-manager.ts', import.meta.url), 'utf8')
+const sysConfigApiSource = readFileSync(
+  new URL('../../../api/sys-config.ts', import.meta.url),
+  'utf8'
+)
 const esiApiSource = readFileSync(new URL('../../../api/esi-refresh.ts', import.meta.url), 'utf8')
 const routerSource = readFileSync(
   new URL('../../../router/modules/system.ts', import.meta.url),
@@ -36,6 +40,9 @@ const legacyPageExists = existsSync(new URL('../esi-refresh/index.vue', import.m
 
 test('task manager page uses tabs with extracted task and history modules', () => {
   assert.match(indexSource, /<ElTabs v-model="activeTab"/)
+  assert.match(indexSource, /fetchSDEStatus\(/)
+  assert.match(indexSource, /taskManager\.sdeStatus\.updateAvailable/)
+  assert.match(indexSource, /taskManager\.sdeStatus\.upToDate/)
   assert.match(indexSource, /<TasksTab v-if="activeTab === 'tasks'" \/>/)
   assert.match(indexSource, /<EsiStatusesTab v-if="activeTab === 'esi-statuses'" \/>/)
   assert.match(indexSource, /<EsiMonitorTab v-if="activeTab === 'esi-monitor'" \/>/)
@@ -107,6 +114,7 @@ test('task manager route and API wrappers use unified task endpoints', () => {
   assert.match(apiSource, /url:\s*'\/api\/v1\/tasks\/history'/)
   assert.match(apiSource, /url:\s*`\/api\/v1\/tasks\/\$\{name\}\/run`/)
   assert.match(apiSource, /url:\s*`\/api\/v1\/tasks\/\$\{name\}\/schedule`/)
+  assert.match(sysConfigApiSource, /url:\s*'\/api\/v1\/system\/sde-config\/status'/)
 
   assert.match(esiApiSource, /fetchESIRefreshTasks/)
   assert.match(esiApiSource, /url:\s*'\/api\/v1\/tasks\/esi\/tasks'/)
@@ -132,6 +140,7 @@ test('task manager types and locales exist and the legacy page is removed', () =
   assert.match(zhLocaleSource, /"tabs"\s*:\s*\{[\s\S]*"tasks"\s*:/)
   assert.match(zhLocaleSource, /"esiStatuses"\s*:/)
   assert.match(zhLocaleSource, /"esiMonitor"\s*:/)
+  assert.match(zhLocaleSource, /"sdeStatus"\s*:\s*\{[\s\S]*"updateAvailable"\s*:/)
   assert.match(zhLocaleSource, /"character"\s*:\s*"按人物 ID 或名称筛选"/)
   assert.match(zhLocaleSource, /"scheduleMode"\s*:/)
   assert.match(zhLocaleSource, /"intervalValue"\s*:/)
@@ -141,6 +150,7 @@ test('task manager types and locales exist and the legacy page is removed', () =
   assert.match(enLocaleSource, /"taskManager"\s*:/)
   assert.match(enLocaleSource, /"esiStatuses"\s*:/)
   assert.match(enLocaleSource, /"esiMonitor"\s*:/)
+  assert.match(enLocaleSource, /"sdeStatus"\s*:\s*\{[\s\S]*"updateAvailable"\s*:/)
   assert.match(enLocaleSource, /"character"\s*:\s*"Filter by character ID or name"/)
   assert.match(enLocaleSource, /"scheduleMode"\s*:/)
   assert.match(enLocaleSource, /"intervalValue"\s*:/)

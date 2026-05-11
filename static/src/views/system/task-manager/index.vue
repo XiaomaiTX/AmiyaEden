@@ -1,5 +1,18 @@
 <template>
   <div class="task-manager-page">
+    <ElAlert
+      v-if="sdeStatus.has_update"
+      type="warning"
+      :closable="false"
+      :title="t('taskManager.sdeStatus.updateAvailable')"
+    />
+    <ElAlert
+      v-else
+      type="info"
+      :closable="false"
+      :title="t('taskManager.sdeStatus.upToDate', { current: sdeStatus.current_version || '-' })"
+    />
+
     <ElTabs v-model="activeTab">
       <ElTabPane :label="t('taskManager.tabs.tasks')" name="tasks" />
       <ElTabPane :label="t('taskManager.tabs.esiStatuses')" name="esi-statuses" />
@@ -15,8 +28,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ElTabPane, ElTabs } from 'element-plus'
+  import { ElAlert, ElTabPane, ElTabs } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { fetchSDEStatus } from '@/api/sys-config'
   import EsiMonitorTab from './modules/EsiMonitorTab.vue'
   import EsiStatusesTab from './modules/EsiStatusesTab.vue'
   import HistoryTab from './modules/HistoryTab.vue'
@@ -26,6 +40,30 @@
 
   const { t } = useI18n()
   const activeTab = ref('tasks')
+  const sdeStatus = reactive<Api.SysConfig.SDEStatus>({
+    current_version: '',
+    latest_version: '',
+    has_update: false,
+    last_check_at: 0,
+    last_check_success: false,
+    last_check_error: '',
+    last_update_at: 0,
+    last_update_success: false,
+    last_update_error: ''
+  })
+
+  async function loadSDEStatus() {
+    try {
+      const status = await fetchSDEStatus()
+      Object.assign(sdeStatus, status)
+    } catch {
+      /* empty */
+    }
+  }
+
+  onMounted(() => {
+    void loadSDEStatus()
+  })
 </script>
 
 <style scoped>

@@ -33,6 +33,7 @@ const (
 	SysConfigSDEAPIKey      = "sde.api_key"      // SDE 查询 API Key
 	SysConfigSDEProxy       = "sde.proxy"        // SDE 下载代理
 	SysConfigSDEDownloadURL = "sde.download_url" // SDE 下载地址
+	SysConfigSDEStatus      = "sde.status"       // SDE 状态快照（JSON）
 
 	SysConfigAllowCorporations                               = "app.allow_corporations"                 // 允许访问的公司 ID 列表 (JSON 数组)
 	SysConfigEnforceCharacterESIRestriction                  = "auth.enforce_character_esi_restriction" // 是否强制限制失效人物 ESI 停留在人物页面
