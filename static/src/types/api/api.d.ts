@@ -2849,11 +2849,13 @@ declare namespace Api {
     interface TicketItem {
       id: number
       user_id: number
+      user_nickname?: string
       category_id: number
       title: string
       description: string
       status: TicketStatus
       handled_by?: number
+      handled_by_nickname?: string
       handled_at?: string
       closed_at?: string
       requester_name?: string
@@ -2880,6 +2882,7 @@ declare namespace Api {
       ticket_id: number
       user_id: number
       user_nickname?: string
+      reply_user_nickname?: string
       content: string
       is_internal: boolean
       created_at: string
@@ -2892,6 +2895,7 @@ declare namespace Api {
       from_status: string
       to_status: TicketStatus
       changed_by: number
+      changed_by_nickname?: string
       changed_by_name?: string
       changed_by_character_name?: string
       changed_at: string
@@ -2902,7 +2906,7 @@ declare namespace Api {
     }
 
     type AdminTicketListParams = Partial<Api.Common.CommonSearchParams> & {
-      status?: TicketStatus | `${TicketStatus},${TicketStatus}` | ''
+      status?: TicketStatus | ''
       keyword?: string
       category_id?: number
       user_id?: number

@@ -133,7 +133,7 @@ func (s *TicketService) ListTicketsAdmin(filter repository.TicketListFilter, pag
 	return s.repo.ListTicketsAdmin(filter, page, pageSize)
 }
 
-func (s *TicketService) AddReplyAsUser(userID, ticketID uint, content string) (*model.TicketReply, error) {
+func (s *TicketService) AddReplyAsUser(userID, ticketID uint, content string) (*model.TicketReplyItem, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return nil, errors.New("回复内容不能为空")
@@ -151,10 +151,10 @@ func (s *TicketService) AddReplyAsUser(userID, ticketID uint, content string) (*
 	if err := s.repo.CreateReply(reply); err != nil {
 		return nil, err
 	}
-	return reply, nil
+	return s.repo.GetReplyByID(reply.ID)
 }
 
-func (s *TicketService) AddReplyAsAdmin(adminID, ticketID uint, content string, isInternal bool) (*model.TicketReply, error) {
+func (s *TicketService) AddReplyAsAdmin(adminID, ticketID uint, content string, isInternal bool) (*model.TicketReplyItem, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return nil, errors.New("回复内容不能为空")
@@ -172,17 +172,17 @@ func (s *TicketService) AddReplyAsAdmin(adminID, ticketID uint, content string, 
 	if err := s.repo.CreateReply(reply); err != nil {
 		return nil, err
 	}
-	return reply, nil
+	return s.repo.GetReplyByID(reply.ID)
 }
 
-func (s *TicketService) ListRepliesAsUser(userID, ticketID uint) ([]model.TicketReply, error) {
+func (s *TicketService) ListRepliesAsUser(userID, ticketID uint) ([]model.TicketReplyItem, error) {
 	if _, err := s.GetMyTicket(userID, ticketID); err != nil {
 		return nil, err
 	}
 	return s.repo.ListReplies(ticketID, false)
 }
 
-func (s *TicketService) ListRepliesAsAdmin(ticketID uint) ([]model.TicketReply, error) {
+func (s *TicketService) ListRepliesAsAdmin(ticketID uint) ([]model.TicketReplyItem, error) {
 	if _, err := s.GetAdminTicket(ticketID); err != nil {
 		return nil, err
 	}

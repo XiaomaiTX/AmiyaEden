@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-29
+last_reviewed: 2026-05-11
 source_of_truth:
   - server/internal/model/ticket.go
   - server/internal/repository/ticket.go
@@ -27,13 +27,13 @@ source_of_truth:
 
 - 提供成员侧工单提交、我的工单列表、工单详情与追加回复能力
 - 提供管理员侧工单管理列表、状态更新、回复与内部备注能力
-- 管理员侧工单管理列表按活跃（待处理 / 处理中）与已完成分栏
-- 管理员侧工单管理列表展示提交人名称、工单分类名称、最多两行工单内容预览，并支持分类筛选
+- 管理员侧工单管理列表按待处理、处理中、已完成分栏
+- 管理员侧工单管理列表展示提交人昵称、工单分类名称、最多两行工单内容预览，并支持分类筛选
 - 提供工单分类管理（列表、创建、更新、删除）
-- 提供状态变更历史查询与统计看板（总量、状态分布、分类分布、近 7/30 天）；状态历史必须返回并展示操作人的可读名称
+- 提供状态变更历史查询与统计看板（总量、状态分布、分类分布、近 7/30 天）；状态历史必须返回并展示操作人的昵称与可读名称，且状态历史原状态 / 新状态使用状态徽标展示
 - 提供菜单栏工单徽章提醒，数量为待处理工单数加上当前管理员处理中工单数
 - 工单创建时默认状态为 `pending`
-- 管理员回复可标记 `is_internal`，成员侧回复列表不会返回内部备注
+- 管理员回复可标记 `is_internal`，成员侧回复列表不会返回内部备注；回复与状态历史响应同时携带关联用户昵称
 - 状态更新到 `in_progress` / `completed` 时自动记录处理人；更新到 `completed` 时记录关闭时间
 - 系统启动时会初始化默认工单分类（若不存在）
 
@@ -86,7 +86,7 @@ source_of_truth:
 - 工单状态只支持：`pending`、`in_progress`、`completed`
 - 成员侧回复查询必须过滤 `is_internal = true`
 - 状态变更只有在状态值实际变化时才写入 `ticket_status_history`
-- 状态历史的操作人展示必须优先使用 `changed_by_name` / `changed_by_character_name`，不得只展示 `changed_by` 数字 ID
+- 状态历史的操作人展示必须优先使用 `changed_by_nickname` / `changed_by_name` / `changed_by_character_name`，不得只展示 `changed_by` 数字 ID
 - 统计接口返回值至少包含 `total`、`status`、`category`、`recent_7d`、`recent_30d`、`pendingCount`
 
 ## 当前非目标

@@ -22,7 +22,7 @@ test('ticket management page uses admin list and status update APIs', () => {
   assert.match(manageSource, /apiFn:\s*adminListTickets/)
   assert.match(
     manageSource,
-    /apiParams:\s*\{[\s\S]*keyword:\s*filters\.keyword,[\s\S]*status:\s*getTabStatusQuery\('active'\),[\s\S]*category_id:\s*filters\.category_id[\s\S]*\}/
+    /apiParams:\s*\{[\s\S]*keyword:\s*filters\.keyword,[\s\S]*status:\s*getTabStatusQuery\('pending'\),[\s\S]*category_id:\s*filters\.category_id[\s\S]*\}/
   )
   assert.match(manageSource, /await adminUpdateTicketStatus\(id, \{ status \}\)/)
   assert.match(
@@ -39,22 +39,27 @@ test('ticket management page uses admin list and status update APIs', () => {
   assert.doesNotMatch(manageSource, /<ElTable :data=/)
 })
 
-test('ticket management page shows active/completed tabs and ticket content preview', () => {
+test('ticket management page shows pending/in-progress/completed tabs and ticket content preview', () => {
   assert.match(manageSource, /<ElTabs v-model="activeTab" @tab-change="handleStatusTabChange">/)
-  assert.match(manageSource, /<ElTabPane :label="t\('ticket.tabs.active'\)" name="active" \/>/)
+  assert.match(manageSource, /<ElTabPane :label="t\('ticket.tabs.pending'\)" name="pending" \/>/)
+  assert.match(
+    manageSource,
+    /<ElTabPane :label="t\('ticket.tabs.inProgress'\)" name="in_progress" \/>/
+  )
   assert.match(
     manageSource,
     /<ElTabPane :label="t\('ticket.tabs.completed'\)" name="completed" \/>/
   )
-  assert.match(manageSource, /active:\s*\['pending', 'in_progress'\]/)
-  assert.match(manageSource, /statusTabs\[tab\]\.join\(','\) as TicketStatusQuery/)
+  assert.match(manageSource, /pending:\s*'pending'/)
+  assert.match(manageSource, /in_progress:\s*'in_progress'/)
+  assert.match(manageSource, /completed:\s*'completed'/)
   assert.match(manageSource, /prop: 'description'/)
   assert.match(manageSource, /ticket-content-preview/)
   assert.match(manageSource, /adminListTicketCategories/)
   assert.match(manageSource, /prop: 'requester_name'/)
   assert.match(
     manageSource,
-    /row\.requester_name \|\| row\.requester_character_name \|\| t\('ticket\.unknownUser'\)/
+    /row\.user_nickname \|\|[\s\S]*row\.requester_name \|\|[\s\S]*row\.requester_character_name \|\|[\s\S]*t\('ticket\.unknownUser'\)/
   )
   assert.doesNotMatch(manageSource, /String\(row\.user_id\)/)
   assert.match(manageSource, /prop: 'category_name'/)
@@ -81,6 +86,8 @@ test('ticket admin detail page loads ticket replies history and supports interna
   assert.match(detailSource, /import \{ formatTime \} from '@utils\/common'/)
   assert.match(detailSource, /formatTime\(row\.changed_at\)/)
   assert.match(detailSource, /formatTicketHistoryOperator\(row\)/)
+  assert.match(detailSource, /<TicketStatusBadge[\s\S]*v-if="row\.from_status"[\s\S]*\/>/)
+  assert.match(detailSource, /<TicketStatusBadge[\s\S]*:status="row\.to_status"[\s\S]*\/>/)
   assert.doesNotMatch(detailSource, /prop="changed_by"/)
   assert.doesNotMatch(detailSource, /\{\{\s*row\.changed_by\s*\}\}/)
 })

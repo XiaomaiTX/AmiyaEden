@@ -14,6 +14,7 @@ test('TicketStatusBadge maps pending/in_progress/completed to expected tag types
 
 test('TicketReplyItem keeps internal-note marker and content rendering', () => {
   assert.match(replySource, /v-if="reply\.is_internal"/)
+  assert.match(replySource, /reply\.reply_user_nickname \|\| reply\.user_nickname \|\| '-'/)
   assert.match(replySource, /t\('ticket\.internalNote'\)/)
   assert.match(replySource, /ticket-reply-item__content/)
   assert.match(replySource, /\{\{ reply\.content \}\}/)

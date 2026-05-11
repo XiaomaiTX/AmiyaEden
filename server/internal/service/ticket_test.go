@@ -103,6 +103,34 @@ func TestTicketServiceReplyVisibilitySeparatesInternalNotes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateTicket() error = %v, want nil", err)
 	}
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 3001},
+		Nickname:           "Reporter",
+		PrimaryCharacterID: 993001,
+	}).Error; err != nil {
+		t.Fatalf("create reporter user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        3001,
+		CharacterID:   993001,
+		CharacterName: "Reporter Character",
+	}).Error; err != nil {
+		t.Fatalf("create reporter character: %v", err)
+	}
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 9001},
+		Nickname:           "Responder",
+		PrimaryCharacterID: 999001,
+	}).Error; err != nil {
+		t.Fatalf("create responder user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        9001,
+		CharacterID:   999001,
+		CharacterName: "Responder Character",
+	}).Error; err != nil {
+		t.Fatalf("create responder character: %v", err)
+	}
 
 	if _, err := svc.AddReplyAsUser(3001, ticket.ID, "已补充截图"); err != nil {
 		t.Fatalf("AddReplyAsUser() error = %v, want nil", err)
@@ -121,6 +149,9 @@ func TestTicketServiceReplyVisibilitySeparatesInternalNotes(t *testing.T) {
 	if len(userReplies) != 2 {
 		t.Fatalf("user replies count = %d, want 2", len(userReplies))
 	}
+	if userReplies[0].ReplyUserNickname == "" {
+		t.Fatal("expected user reply nickname to be populated")
+	}
 
 	adminReplies, err := svc.ListRepliesAsAdmin(ticket.ID)
 	if err != nil {
@@ -128,6 +159,9 @@ func TestTicketServiceReplyVisibilitySeparatesInternalNotes(t *testing.T) {
 	}
 	if len(adminReplies) != 3 {
 		t.Fatalf("admin replies count = %d, want 3", len(adminReplies))
+	}
+	if adminReplies[0].UserNickname == "" {
+		t.Fatal("expected admin-visible reply nickname alias to be populated")
 	}
 }
 
@@ -184,6 +218,9 @@ func TestTicketServiceUpdateStatusSetsHandledAndClosed(t *testing.T) {
 	}
 	if len(history) != 3 {
 		t.Fatalf("history count = %d, want 3", len(history))
+	}
+	if history[1].ChangedByNickname != "Operator Nick" {
+		t.Fatalf("ChangedByNickname = %q, want %q", history[1].ChangedByNickname, "Operator Nick")
 	}
 	if history[1].ChangedByName != "Operator Nick" {
 		t.Fatalf("ChangedByName = %q, want %q", history[1].ChangedByName, "Operator Nick")

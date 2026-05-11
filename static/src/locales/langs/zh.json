@@ -578,11 +578,12 @@
     "reply": "回复",
     "replies": "回复记录",
     "statusHistory": "状态历史",
+    "statusHistoryEmpty": "无",
     "internalNote": "内部备注",
     "submit": "提交",
     "unknownUser": "未知用户",
     "filters": { "status": "状态筛选", "keyword": "关键词", "category": "分类筛选" },
-    "tabs": { "active": "待处理/处理中", "completed": "已完成" },
+    "tabs": { "pending": "待处理", "inProgress": "处理中", "completed": "已完成" },
     "columns": {
       "title": "标题",
       "content": "内容",
