@@ -73,6 +73,12 @@ test('corporation structures settings supports disabling dashboard authorization
   assert.match(source, /character_id:\s*authorizationByCorp\[corp\.corporation_id\]\s*\|\|\s*0/)
 })
 
+test('corporation structures list tab shows only valid corporations in selector', () => {
+  assert.match(source, /const validCorporations = computed\(\(\) =>/)
+  assert.match(source, /authorized_character_id \|\| 0\) > 0/)
+  assert.match(source, /v-for="corp in validCorporations"/)
+})
+
 test('corporation structures api module exposes all required endpoints', () => {
   assert.match(apiSource, /\/api\/v1\/dashboard\/corporation-structures\/settings/)
   assert.match(apiSource, /\/settings\/authorizations/)

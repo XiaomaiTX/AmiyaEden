@@ -22,7 +22,7 @@
               >
                 <ElOption :label="$t('corporationStructures.allCorporations')" :value="0" />
                 <ElOption
-                  v-for="corp in settings.corporations"
+                  v-for="corp in validCorporations"
                   :key="corp.corporation_id"
                   :label="`${corp.corporation_name} (${corp.corporation_id})`"
                   :value="corp.corporation_id"
@@ -500,6 +500,9 @@
   const fuelOfficerOptions = ref<Api.Dashboard.FuelOfficerCharacterOption[]>([])
   const assignmentByStructure = reactive<Record<number, number>>({})
   const salaryPerStructureMonthly = ref(0)
+  const validCorporations = computed(() =>
+    settings.value.corporations.filter((corp) => (corp.authorized_character_id || 0) > 0)
+  )
 
   const normalizeFuelHours = (value: number | undefined) => {
     if (value == null || Number.isNaN(value)) {
@@ -707,8 +710,8 @@
       settings.value = await fetchCorporationStructureSettings()
       syncAuthorizationsFromSettings()
 
-      const managedCorpSet = new Set(settings.value.corporations.map((item) => item.corporation_id))
-      if (filters.corporation_id > 0 && !managedCorpSet.has(filters.corporation_id)) {
+      const validCorpSet = new Set(validCorporations.value.map((item) => item.corporation_id))
+      if (filters.corporation_id > 0 && !validCorpSet.has(filters.corporation_id)) {
         filters.corporation_id = 0
       }
     } finally {
