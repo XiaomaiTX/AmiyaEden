@@ -223,6 +223,9 @@ func TestTicketHandlerAdminListStatusHistoryReturnsOperatorNames(t *testing.T) {
 	if len(history) != 1 {
 		t.Fatalf("history len = %d, want 1", len(history))
 	}
+	if history[0].ChangedByNickname != "Operator Nick" {
+		t.Fatalf("ChangedByNickname = %q, want %q", history[0].ChangedByNickname, "Operator Nick")
+	}
 	if history[0].ChangedByName != "Operator Nick" {
 		t.Fatalf("ChangedByName = %q, want %q", history[0].ChangedByName, "Operator Nick")
 	}

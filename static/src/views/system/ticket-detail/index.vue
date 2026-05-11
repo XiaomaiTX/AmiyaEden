@@ -33,8 +33,20 @@
     <ElCard>
       <template #header>{{ t('ticket.statusHistory') }}</template>
       <ElTable :data="histories">
-        <ElTableColumn prop="from_status" :label="t('ticket.columns.fromStatus')" width="160" />
-        <ElTableColumn prop="to_status" :label="t('ticket.columns.toStatus')" width="160" />
+        <ElTableColumn :label="t('ticket.columns.fromStatus')" width="160">
+          <template #default="{ row }">
+            <TicketStatusBadge
+              v-if="row.from_status"
+              :status="row.from_status as Api.Ticket.TicketStatus"
+            />
+            <span v-else>{{ t('ticket.statusHistoryEmpty') }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn :label="t('ticket.columns.toStatus')" width="160">
+          <template #default="{ row }">
+            <TicketStatusBadge :status="row.to_status" />
+          </template>
+        </ElTableColumn>
         <ElTableColumn :label="t('ticket.columns.operator')" width="180">
           <template #default="{ row }">{{ formatTicketHistoryOperator(row) }}</template>
         </ElTableColumn>
@@ -77,9 +89,15 @@
       ? item.category_name || item.category_name_en || String(item.category_id)
       : item.category_name_en || item.category_name || String(item.category_id)
   const formatTicketRequester = (item: Api.Ticket.TicketItem) =>
-    item.requester_name || item.requester_character_name || t('ticket.unknownUser')
+    item.user_nickname ||
+    item.requester_name ||
+    item.requester_character_name ||
+    t('ticket.unknownUser')
   const formatTicketHistoryOperator = (item: Api.Ticket.TicketStatusHistory) =>
-    item.changed_by_name || item.changed_by_character_name || t('ticket.unknownUser')
+    item.changed_by_nickname ||
+    item.changed_by_name ||
+    item.changed_by_character_name ||
+    t('ticket.unknownUser')
 
   const loadData = async () => {
     loading.value = true

@@ -2516,6 +2516,7 @@
     "reply": "Reply",
     "replies": "Replies",
     "statusHistory": "Status History",
+    "statusHistoryEmpty": "N/A",
     "internalNote": "Internal Note",
     "submit": "Submit",
     "unknownUser": "Unknown user",
@@ -2525,7 +2526,8 @@
       "category": "Category"
     },
     "tabs": {
-      "active": "Pending / Processing",
+      "pending": "Pending",
+      "inProgress": "In Progress",
       "completed": "Completed"
     },
     "columns": {
@@ -2534,8 +2536,8 @@
       "status": "Status",
       "submitter": "Submitter",
       "category": "Category",
-      "fromStatus": "From",
-      "toStatus": "To",
+      "fromStatus": "Previous Status",
+      "toStatus": "New Status",
       "operator": "Operator"
     },
     "form": {

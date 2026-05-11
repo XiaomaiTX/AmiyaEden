@@ -42,12 +42,16 @@ func buildTicketListBaseQuery(db *gorm.DB) *gorm.DB {
 	return db.Model(&model.Ticket{}).
 		Joins(`LEFT JOIN ticket_category category ON category.id = ticket.category_id AND category.deleted_at IS NULL`).
 		Joins(`LEFT JOIN "user" requester ON requester.id = ticket.user_id AND requester.deleted_at IS NULL`).
+		Joins(`LEFT JOIN "user" handler_user ON handler_user.id = ticket.handled_by AND handler_user.deleted_at IS NULL`).
+		Joins(`LEFT JOIN eve_character handler_character ON handler_character.character_id = handler_user.primary_character_id AND handler_character.deleted_at IS NULL`).
 		Joins(`LEFT JOIN eve_character requester_character ON requester_character.character_id = requester.primary_character_id AND requester_character.deleted_at IS NULL`)
 }
 
 func selectTicketListItems(db *gorm.DB) *gorm.DB {
 	return db.Select(`ticket.*,
+		COALESCE(NULLIF(requester.nickname, ''), requester_character.character_name, '') AS user_nickname,
 		COALESCE(NULLIF(requester.nickname, ''), requester_character.character_name, '') AS requester_name,
+		COALESCE(NULLIF(handler_user.nickname, ''), handler_character.character_name, '') AS handled_by_nickname,
 		COALESCE(requester_character.character_name, '') AS requester_character_name,
 		COALESCE(category.name, '') AS category_name,
 		COALESCE(category.name_en, '') AS category_name_en`)
@@ -119,14 +123,36 @@ func (r *TicketRepository) CreateReply(reply *model.TicketReply) error {
 	return global.DB.Create(reply).Error
 }
 
-func (r *TicketRepository) ListReplies(ticketID uint, includeInternal bool) ([]model.TicketReply, error) {
-	var replies []model.TicketReply
-	query := global.DB.Where("ticket_id = ?", ticketID)
+func (r *TicketRepository) ListReplies(ticketID uint, includeInternal bool) ([]model.TicketReplyItem, error) {
+	var replies []model.TicketReplyItem
+	query := global.DB.Model(&model.TicketReply{}).
+		Select(`ticket_reply.*,
+			COALESCE(NULLIF(reply_user.nickname, ''), reply_user_character.character_name, '') AS reply_user_nickname,
+			COALESCE(NULLIF(reply_user.nickname, ''), reply_user_character.character_name, '') AS user_nickname`).
+		Joins(`LEFT JOIN "user" reply_user ON reply_user.id = ticket_reply.user_id AND reply_user.deleted_at IS NULL`).
+		Joins(`LEFT JOIN eve_character reply_user_character ON reply_user_character.character_id = reply_user.primary_character_id AND reply_user_character.deleted_at IS NULL`).
+		Where("ticket_reply.ticket_id = ?", ticketID)
 	if !includeInternal {
 		query = query.Where("is_internal = ?", false)
 	}
-	err := query.Order("created_at ASC, id ASC").Find(&replies).Error
+	err := query.Order("ticket_reply.created_at ASC, ticket_reply.id ASC").Find(&replies).Error
 	return replies, err
+}
+
+func (r *TicketRepository) GetReplyByID(replyID uint) (*model.TicketReplyItem, error) {
+	var reply model.TicketReplyItem
+	err := global.DB.Model(&model.TicketReply{}).
+		Select(`ticket_reply.*,
+			COALESCE(NULLIF(reply_user.nickname, ''), reply_user_character.character_name, '') AS reply_user_nickname,
+			COALESCE(NULLIF(reply_user.nickname, ''), reply_user_character.character_name, '') AS user_nickname`).
+		Joins(`LEFT JOIN "user" reply_user ON reply_user.id = ticket_reply.user_id AND reply_user.deleted_at IS NULL`).
+		Joins(`LEFT JOIN eve_character reply_user_character ON reply_user_character.character_id = reply_user.primary_character_id AND reply_user_character.deleted_at IS NULL`).
+		Where("ticket_reply.id = ?", replyID).
+		First(&reply).Error
+	if err != nil {
+		return nil, err
+	}
+	return &reply, nil
 }
 
 func (r *TicketRepository) AddStatusHistory(ticketID uint, fromStatus, toStatus string, changedBy uint) error {
@@ -143,6 +169,7 @@ func (r *TicketRepository) ListStatusHistories(ticketID uint) ([]model.TicketSta
 	var list []model.TicketStatusHistoryItem
 	err := global.DB.Model(&model.TicketStatusHistory{}).
 		Select(`ticket_status_history.*,
+			COALESCE(NULLIF(operator.nickname, ''), operator_character.character_name, '') AS changed_by_nickname,
 			COALESCE(NULLIF(operator.nickname, ''), operator_character.character_name, '') AS changed_by_name,
 			COALESCE(operator_character.character_name, '') AS changed_by_character_name`).
 		Joins(`LEFT JOIN "user" operator ON operator.id = ticket_status_history.changed_by AND operator.deleted_at IS NULL`).

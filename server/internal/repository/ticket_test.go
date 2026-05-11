@@ -60,6 +60,34 @@ func TestTicketRepositoryListRepliesRespectsInternalFlag(t *testing.T) {
 	setupTicketRepositoryTestDB(t)
 	repo := NewTicketRepository()
 	t1, _ := seedTicketRepositoryData(t)
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 1001},
+		Nickname:           "Ticket User",
+		PrimaryCharacterID: 981001,
+	}).Error; err != nil {
+		t.Fatalf("create user #1001: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        1001,
+		CharacterID:   981001,
+		CharacterName: "Ticket Character",
+	}).Error; err != nil {
+		t.Fatalf("create character #1001: %v", err)
+	}
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 9001},
+		Nickname:           "Admin User",
+		PrimaryCharacterID: 989001,
+	}).Error; err != nil {
+		t.Fatalf("create user #9001: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        9001,
+		CharacterID:   989001,
+		CharacterName: "Admin Character",
+	}).Error; err != nil {
+		t.Fatalf("create character #9001: %v", err)
+	}
 
 	replies := []model.TicketReply{
 		{TicketID: t1.ID, UserID: 1001, Content: "用户补充", IsInternal: false},
@@ -75,6 +103,12 @@ func TestTicketRepositoryListRepliesRespectsInternalFlag(t *testing.T) {
 	}
 	if len(userVisible) != 1 {
 		t.Fatalf("user visible replies = %d, want 1", len(userVisible))
+	}
+	if userVisible[0].ReplyUserNickname != "Ticket User" {
+		t.Fatalf("ReplyUserNickname = %q, want %q", userVisible[0].ReplyUserNickname, "Ticket User")
+	}
+	if userVisible[0].UserNickname != "Ticket User" {
+		t.Fatalf("UserNickname = %q, want %q", userVisible[0].UserNickname, "Ticket User")
 	}
 
 	allReplies, err := repo.ListReplies(t1.ID, true)
@@ -114,6 +148,9 @@ func TestTicketRepositoryListStatusHistoriesIncludesOperatorNames(t *testing.T) 
 	}
 	if len(history) != 1 {
 		t.Fatalf("history len = %d, want 1", len(history))
+	}
+	if history[0].ChangedByNickname != "Operator Nick" {
+		t.Fatalf("ChangedByNickname = %q, want %q", history[0].ChangedByNickname, "Operator Nick")
 	}
 	if history[0].ChangedByName != "Operator Nick" {
 		t.Fatalf("ChangedByName = %q, want %q", history[0].ChangedByName, "Operator Nick")
@@ -187,6 +224,9 @@ func TestTicketRepositoryListTicketsAdminIncludesSubmitterAndCategoryNames(t *te
 	if list[1].RequesterName != "Alpha User" {
 		t.Fatalf("RequesterName = %q, want %q", list[1].RequesterName, "Alpha User")
 	}
+	if list[1].UserNickname != "Alpha User" {
+		t.Fatalf("UserNickname = %q, want %q", list[1].UserNickname, "Alpha User")
+	}
 	if list[1].RequesterCharacterName != "Alpha Character" {
 		t.Fatalf("RequesterCharacterName = %q, want %q", list[1].RequesterCharacterName, "Alpha Character")
 	}
@@ -213,6 +253,53 @@ func TestTicketRepositoryCountByStatusIncludesDefaultKeys(t *testing.T) {
 	}
 	if byStatus[model.TicketStatusCompleted] != 0 {
 		t.Fatalf("completed count = %d, want 0", byStatus[model.TicketStatusCompleted])
+	}
+}
+
+func TestTicketRepositoryListTicketsAdminIncludesHandledByNickname(t *testing.T) {
+	setupTicketRepositoryTestDB(t)
+	repo := NewTicketRepository()
+	ticket1, _ := seedTicketRepositoryData(t)
+
+	handlerID := uint(7001)
+	if err := global.DB.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: handlerID},
+		Nickname:           "Handler User",
+		PrimaryCharacterID: 997001,
+	}).Error; err != nil {
+		t.Fatalf("create handler user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{
+		UserID:        handlerID,
+		CharacterID:   997001,
+		CharacterName: "Handler Character",
+	}).Error; err != nil {
+		t.Fatalf("create handler character: %v", err)
+	}
+
+	ticket1.HandledBy = &handlerID
+	ticket1.Status = model.TicketStatusInProgress
+	if err := global.DB.Save(&ticket1).Error; err != nil {
+		t.Fatalf("update ticket handled_by: %v", err)
+	}
+
+	list, total, err := repo.ListTicketsAdmin(TicketListFilter{Status: model.TicketStatusInProgress}, 1, 20)
+	if err != nil {
+		t.Fatalf("ListTicketsAdmin() error: %v", err)
+	}
+	if total != 2 || len(list) != 2 {
+		t.Fatalf("in-progress total/list = %d/%d, want 2/2", total, len(list))
+	}
+
+	var got string
+	for _, item := range list {
+		if item.ID == ticket1.ID {
+			got = item.HandledByNickname
+			break
+		}
+	}
+	if got != "Handler User" {
+		t.Fatalf("HandledByNickname = %q, want %q", got, "Handler User")
 	}
 }
 

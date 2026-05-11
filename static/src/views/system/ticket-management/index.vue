@@ -2,7 +2,8 @@
   <div class="ticket-page art-full-height">
     <div class="ticket-page__toolbar">
       <ElTabs v-model="activeTab" @tab-change="handleStatusTabChange">
-        <ElTabPane :label="t('ticket.tabs.active')" name="active" />
+        <ElTabPane :label="t('ticket.tabs.pending')" name="pending" />
+        <ElTabPane :label="t('ticket.tabs.inProgress')" name="in_progress" />
         <ElTabPane :label="t('ticket.tabs.completed')" name="completed" />
       </ElTabs>
       <ElInput
@@ -50,17 +51,17 @@
   import { ElButton, ElMessage, ElOption, ElSelect } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   defineOptions({ name: 'TicketManagementPage' })
-  type TicketManagementTab = 'active' | 'completed'
+  type TicketManagementTab = 'pending' | 'in_progress' | 'completed'
   type TicketStatusQuery = Api.Ticket.AdminTicketListParams['status']
   const { t, locale } = useI18n()
   const router = useRouter()
-  const activeTab = ref<TicketManagementTab>('active')
-  const statusTabs: Record<TicketManagementTab, Api.Ticket.TicketStatus[]> = {
-    active: ['pending', 'in_progress'],
-    completed: ['completed']
+  const activeTab = ref<TicketManagementTab>('pending')
+  const statusTabs: Record<TicketManagementTab, Api.Ticket.TicketStatus> = {
+    pending: 'pending',
+    in_progress: 'in_progress',
+    completed: 'completed'
   }
-  const getTabStatusQuery = (tab: TicketManagementTab): TicketStatusQuery =>
-    statusTabs[tab].join(',') as TicketStatusQuery
+  const getTabStatusQuery = (tab: TicketManagementTab): TicketStatusQuery => statusTabs[tab]
   const categoryOptions = ref<Api.Ticket.TicketCategory[]>([])
   const filters = reactive<{ keyword: string; category_id?: number }>({
     keyword: '',
@@ -91,7 +92,7 @@
         current: 1,
         size: 20,
         keyword: filters.keyword,
-        status: getTabStatusQuery('active'),
+        status: getTabStatusQuery('pending'),
         category_id: filters.category_id
       },
       columnsFactory: () => [
@@ -101,7 +102,10 @@
           label: t('ticket.columns.submitter'),
           minWidth: 160,
           formatter: (row) =>
-            row.requester_name || row.requester_character_name || t('ticket.unknownUser')
+            row.user_nickname ||
+            row.requester_name ||
+            row.requester_character_name ||
+            t('ticket.unknownUser')
         },
         {
           prop: 'category_name',
