@@ -9,11 +9,10 @@
       </div>
     </div>
     <div v-if="chartData.length > 0" class="mt-2">
-      <ArtBarChart
+      <ArtLineChart
         height="13rem"
         :data="chartValues"
         :xAxisData="chartLabels"
-        barWidth="50%"
         :showAxisLine="false"
       />
     </div>
@@ -25,6 +24,7 @@
 
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
+  import ArtLineChart from '@/components/core/charts/art-line-chart/index.vue'
 
   const { t } = useI18n()
   const props = defineProps<{
