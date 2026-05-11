@@ -378,12 +378,8 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	if err := validateAuthorizationBindings(req.Authorizations, managedCorps, directorSetByCorp); err != nil {
 		return err
 	}
-	disabledCorporationIDs := make([]int64, 0)
 	for _, binding := range req.Authorizations {
 		if binding.CharacterID == 0 {
-			if prevCharID, exists := currentMap[binding.CorporationID]; exists && prevCharID > 0 {
-				disabledCorporationIDs = append(disabledCorporationIDs, binding.CorporationID)
-			}
 			delete(nextMap, binding.CorporationID)
 		} else {
 			nextMap[binding.CorporationID] = binding.CharacterID
@@ -393,7 +389,16 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	if err := s.saveAuthorizationMap(nextMap); err != nil {
 		return err
 	}
-	if err := s.repo.DeleteCorpStructuresByCorporationIDs(disabledCorporationIDs); err != nil {
+
+	validCorporationIDs := make([]int64, 0, len(nextMap))
+	for _, corpID := range manageCtx.corporationIDs {
+		if charID, ok := nextMap[corpID]; ok && charID > 0 {
+			validCorporationIDs = append(validCorporationIDs, corpID)
+		}
+	}
+
+	deletedSnapshotRows, err := s.repo.DeleteCorpStructuresNotInCorporationIDs(validCorporationIDs)
+	if err != nil {
 		return errors.New("删除军团建筑快照失败")
 	}
 
@@ -418,6 +423,8 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 			Result:       model.AuditResultSuccess,
 			Details: map[string]any{
 				"authorizations_count":        len(req.Authorizations),
+				"valid_corporations_count":    len(validCorporationIDs),
+				"deleted_snapshot_rows":       deletedSnapshotRows,
 				"fuel_notice_threshold_days":  thresholds.FuelNoticeThresholdDays,
 				"timer_notice_threshold_days": thresholds.TimerNoticeThresholdDays,
 			},

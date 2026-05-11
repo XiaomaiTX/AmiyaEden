@@ -447,7 +447,7 @@ func TestCorporationStructureSettingsRejectsNegativeThresholds(t *testing.T) {
 	}
 }
 
-func TestCorporationStructureUpdateAuthorizationsDisableClearsSnapshotOnlyForTargetCorporation(t *testing.T) {
+func TestCorporationStructureUpdateAuthorizationsDisableCleansToValidAuthorizedCorps(t *testing.T) {
 	db := newCorporationStructureServiceTestDB(t)
 	oldDB := global.DB
 	global.DB = db
@@ -459,14 +459,17 @@ func TestCorporationStructureUpdateAuthorizationsDisableClearsSnapshotOnlyForTar
 
 	seedCorporationStructureManageScope(t, db, 9001)
 	seedDirectorCharacterForCorporation(t, db, 9002, 91000002, 1, "Director-9002")
+	seedDirectorCharacterForCorporation(t, db, 9004, 91000004, 1, "Director-9004")
 	if err := db.Model(&model.SystemConfig{}).
 		Where("key = ?", model.SysConfigAllowCorporations).
-		Update("value", "[9001,9002]").Error; err != nil {
+		Update("value", "[9001,9002,9004]").Error; err != nil {
 		t.Fatalf("update allow corporations config: %v", err)
 	}
 	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{
 		9001: 91000001,
 		9002: 91000002,
+		9003: 91000003,
+		9004: 91000004,
 	}); err != nil {
 		t.Fatalf("seed authorization map: %v", err)
 	}
@@ -484,11 +487,27 @@ func TestCorporationStructureUpdateAuthorizationsDisableClearsSnapshotOnlyForTar
 	}).Error; err != nil {
 		t.Fatalf("seed other corp structure: %v", err)
 	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9003,
+		StructureID:   301,
+		Name:          "NotInWhitelistShouldDelete",
+	}).Error; err != nil {
+		t.Fatalf("seed non-whitelist structure: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9004,
+		StructureID:   401,
+		Name:          "UnconfiguredShouldDelete",
+	}).Error; err != nil {
+		t.Fatalf("seed unconfigured structure: %v", err)
+	}
 
 	svc := newCorporationStructureServiceForTest()
 	err := svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
 		Authorizations: []CorporationStructureAuthorizationBinding{
 			{CorporationID: 9001, CharacterID: 0},
+			{CorporationID: 9002, CharacterID: 91000002},
+			{CorporationID: 9004, CharacterID: 0},
 		},
 	})
 	if err != nil {
@@ -514,9 +533,29 @@ func TestCorporationStructureUpdateAuthorizationsDisableClearsSnapshotOnlyForTar
 	if otherCount != 1 {
 		t.Fatalf("other corp row count = %d, want 1", otherCount)
 	}
+
+	var nonWhitelistCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9003).
+		Count(&nonWhitelistCount).Error; err != nil {
+		t.Fatalf("count non-whitelist snapshots: %v", err)
+	}
+	if nonWhitelistCount != 0 {
+		t.Fatalf("non-whitelist corp row count = %d, want 0", nonWhitelistCount)
+	}
+
+	var unconfiguredCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9004).
+		Count(&unconfiguredCount).Error; err != nil {
+		t.Fatalf("count unconfigured snapshots: %v", err)
+	}
+	if unconfiguredCount != 0 {
+		t.Fatalf("unconfigured corp row count = %d, want 0", unconfiguredCount)
+	}
 }
 
-func TestCorporationStructureUpdateAuthorizationsThresholdOnlyDoesNotDeleteSnapshots(t *testing.T) {
+func TestCorporationStructureUpdateAuthorizationsThresholdOnlyConvergesSnapshotsToValidAuthorizedCorps(t *testing.T) {
 	db := newCorporationStructureServiceTestDB(t)
 	oldDB := global.DB
 	global.DB = db
@@ -533,6 +572,13 @@ func TestCorporationStructureUpdateAuthorizationsThresholdOnlyDoesNotDeleteSnaps
 		Name:          "ShouldStay",
 	}).Error; err != nil {
 		t.Fatalf("seed corp structure: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9002,
+		StructureID:   302,
+		Name:          "ShouldDelete",
+	}).Error; err != nil {
+		t.Fatalf("seed invalid corp structure: %v", err)
 	}
 	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{
 		9001: 91000001,
@@ -560,6 +606,16 @@ func TestCorporationStructureUpdateAuthorizationsThresholdOnlyDoesNotDeleteSnaps
 	}
 	if count != 1 {
 		t.Fatalf("corp row count = %d, want 1", count)
+	}
+
+	var invalidCount int64
+	if err := db.Model(&model.CorpStructureInfo{}).
+		Where("corporation_id = ?", 9002).
+		Count(&invalidCount).Error; err != nil {
+		t.Fatalf("count invalid corp snapshots: %v", err)
+	}
+	if invalidCount != 0 {
+		t.Fatalf("invalid corp row count = %d, want 0", invalidCount)
 	}
 }
 
@@ -606,6 +662,58 @@ func TestCorporationStructureUpdateAuthorizationsSwitchDirectorDoesNotDeleteSnap
 	}
 	if count != 1 {
 		t.Fatalf("corp row count = %d, want 1", count)
+	}
+}
+
+func TestCorporationStructureUpdateAuthorizationsNoValidDirectorClearsAllSnapshots(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	seedDirectorCharacterForCorporation(t, db, 9002, 91000002, 1, "Director-9002")
+	if err := db.Model(&model.SystemConfig{}).
+		Where("key = ?", model.SysConfigAllowCorporations).
+		Update("value", "[9001,9002]").Error; err != nil {
+		t.Fatalf("update allow corporations config: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   501,
+		Name:          "ShouldDeleteA",
+	}).Error; err != nil {
+		t.Fatalf("seed structure A: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9002,
+		StructureID:   502,
+		Name:          "ShouldDeleteB",
+	}).Error; err != nil {
+		t.Fatalf("seed structure B: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	err := svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations: []CorporationStructureAuthorizationBinding{
+			{CorporationID: 9001, CharacterID: 0},
+			{CorporationID: 9002, CharacterID: 0},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateAuthorizations returned error: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&model.CorpStructureInfo{}).Count(&count).Error; err != nil {
+		t.Fatalf("count all corp snapshots: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("all corp row count = %d, want 0", count)
 	}
 }
 
