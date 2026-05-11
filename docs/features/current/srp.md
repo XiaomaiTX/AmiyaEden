@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-10
+last_reviewed: 2026-05-11
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/srp.go
@@ -239,3 +239,12 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 - `server/internal/router/router.go`
 - `static/src/api/srp.ts`
 - `static/src/views/srp`
+
+## SRP 推荐金额补充规则
+
+- 当申请关联了舰队时，推荐金额计算会先尝试命中该舰队配置中的对应 `ship_type_id`
+- 命中舰队配置时，优先使用舰队配置里的 `srp_amount`
+- 未命中舰队配置，或者舰队配置金额为 0 时，再回退到全局补损价格表
+- 管理端的申请列表和申请详情在读取时会动态刷新 `recommended_amount`
+- 动态刷新仅作用于 `review_status in (submitted, approved)` 且 `payout_status = notpaid` 的记录
+- 刷新后的推荐金额会写回数据库，并用于当前页面展示

@@ -1006,6 +1006,165 @@ func TestGetFleetKillmailsExcludesSubmittedKillmailsAndKeepsNewestEligibleOrder(
 	}
 }
 
+func TestListApplicationsRefreshesRecommendedAmountUsingFleetConfigFirst(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	fleetID := "fleet-manage-dynamic"
+	fleetConfigID := uint(9001)
+	if err := db.Create(&model.Fleet{
+		ID:            fleetID,
+		Title:         "Manage Dynamic Fleet",
+		StartAt:       time.Date(2026, time.March, 1, 12, 0, 0, 0, time.UTC),
+		EndAt:         time.Date(2026, time.March, 1, 15, 0, 0, 0, time.UTC),
+		Importance:    model.FleetImportanceCTA,
+		FCUserID:      7,
+		FCCharacterID: 90000001,
+		FleetConfigID: &fleetConfigID,
+	}).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+	if err := db.Create(&model.FleetConfigFitting{
+		FleetConfigID: fleetConfigID,
+		ShipTypeID:    22436,
+		SrpAmount:     25_000_000,
+	}).Error; err != nil {
+		t.Fatalf("create fitting: %v", err)
+	}
+	if err := db.Create(&model.SrpShipPrice{
+		ShipTypeID: 22436,
+		ShipName:   "Guardian",
+		Amount:     10_000_000,
+		CreatedBy:  1,
+		UpdatedBy:  1,
+	}).Error; err != nil {
+		t.Fatalf("create ship price: %v", err)
+	}
+
+	app := &model.SrpApplication{
+		UserID:            101,
+		CharacterID:       90001001,
+		CharacterName:     "Pilot One",
+		KillmailID:        880001,
+		FleetID:           &fleetID,
+		ShipTypeID:        22436,
+		SolarSystemID:     30000142,
+		KillmailTime:      time.Date(2026, time.March, 2, 1, 0, 0, 0, time.UTC),
+		RecommendedAmount: 10_000_000,
+		FinalAmount:       10_000_000,
+		ReviewStatus:      model.SrpReviewSubmitted,
+		PayoutStatus:      model.SrpPayoutNotPaid,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create app: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	list, total, err := svc.ListApplications(1, 20, repository.SrpApplicationFilter{Tab: repository.SrpTabPending})
+	if err != nil {
+		t.Fatalf("ListApplications() error = %v", err)
+	}
+	if total != 1 || len(list) != 1 {
+		t.Fatalf("unexpected list size total=%d len=%d", total, len(list))
+	}
+	if list[0].RecommendedAmount != 25_000_000 {
+		t.Fatalf("recommended_amount = %v, want 25000000", list[0].RecommendedAmount)
+	}
+
+	var stored model.SrpApplication
+	if err := db.First(&stored, app.ID).Error; err != nil {
+		t.Fatalf("reload app: %v", err)
+	}
+	if stored.RecommendedAmount != 25_000_000 {
+		t.Fatalf("stored recommended_amount = %v, want 25000000", stored.RecommendedAmount)
+	}
+}
+
+func TestGetApplicationRefreshesRecommendedAmountFallsBackToPriceAndSkipsPaid(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	fleetID := "fleet-manage-fallback"
+	fleetConfigID := uint(9002)
+	if err := db.Create(&model.Fleet{
+		ID:            fleetID,
+		Title:         "Manage Fallback Fleet",
+		StartAt:       time.Date(2026, time.March, 1, 12, 0, 0, 0, time.UTC),
+		EndAt:         time.Date(2026, time.March, 1, 15, 0, 0, 0, time.UTC),
+		Importance:    model.FleetImportanceCTA,
+		FCUserID:      7,
+		FCCharacterID: 90000001,
+		FleetConfigID: &fleetConfigID,
+	}).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+	if err := db.Create(&model.SrpShipPrice{
+		ShipTypeID: 22452,
+		ShipName:   "Basilisk",
+		Amount:     12_000_000,
+		CreatedBy:  1,
+		UpdatedBy:  1,
+	}).Error; err != nil {
+		t.Fatalf("create ship price: %v", err)
+	}
+
+	submitted := &model.SrpApplication{
+		UserID:            101,
+		CharacterID:       90001002,
+		CharacterName:     "Pilot Two",
+		KillmailID:        880002,
+		FleetID:           &fleetID,
+		ShipTypeID:        22452,
+		SolarSystemID:     30000142,
+		KillmailTime:      time.Date(2026, time.March, 2, 1, 0, 0, 0, time.UTC),
+		RecommendedAmount: 1,
+		FinalAmount:       1,
+		ReviewStatus:      model.SrpReviewSubmitted,
+		PayoutStatus:      model.SrpPayoutNotPaid,
+	}
+	if err := db.Create(submitted).Error; err != nil {
+		t.Fatalf("create submitted app: %v", err)
+	}
+
+	paid := &model.SrpApplication{
+		UserID:            102,
+		CharacterID:       90001003,
+		CharacterName:     "Pilot Three",
+		ShipTypeID:        22452,
+		KillmailID:        880003,
+		SolarSystemID:     30000142,
+		KillmailTime:      time.Date(2026, time.March, 2, 1, 0, 0, 0, time.UTC),
+		RecommendedAmount: 3_000_000,
+		FinalAmount:       3_000_000,
+		ReviewStatus:      model.SrpReviewApproved,
+		PayoutStatus:      model.SrpPayoutPaid,
+	}
+	if err := db.Create(paid).Error; err != nil {
+		t.Fatalf("create paid app: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	gotSubmitted, err := svc.GetApplication(submitted.ID)
+	if err != nil {
+		t.Fatalf("GetApplication(submitted) error = %v", err)
+	}
+	if gotSubmitted.RecommendedAmount != 12_000_000 {
+		t.Fatalf("submitted recommended_amount = %v, want 12000000", gotSubmitted.RecommendedAmount)
+	}
+
+	gotPaid, err := svc.GetApplication(paid.ID)
+	if err != nil {
+		t.Fatalf("GetApplication(paid) error = %v", err)
+	}
+	if gotPaid.RecommendedAmount != 3_000_000 {
+		t.Fatalf("paid recommended_amount = %v, want unchanged 3000000", gotPaid.RecommendedAmount)
+	}
+}
+
 func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -1021,8 +1180,12 @@ func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 		&model.FleetMember{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
+		&model.SrpShipPrice{},
 		&model.SrpApplication{},
 		&model.Fleet{},
+		&model.FleetConfigFitting{},
+		&model.FleetConfigFittingItem{},
+		&model.FleetConfigFittingItemReplacement{},
 		&model.AuditEvent{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
