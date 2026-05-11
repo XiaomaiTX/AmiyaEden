@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-11
+
+### Added
+- 新增手动 SDE 版本检查与更新流程，支持查看状态、触发更新和排查导入问题。
+
+### Changed
+- 首页改为折线图展示 PAP 趋势，并补齐对应测试。
+- 军团建筑结构管理页提升类型安全并修复 Tab 高度布局稳定性问题。
+
+### Fixed
+- 当军团授权被禁用时，自动清理对应的建筑快照，避免残留旧数据影响展示与统计。
+- 修复 iframe 页面中的潜在客户端跨站脚本问题。
+
 ## [1.3.1] - 2026-05-11
 
 ### Fixed
