@@ -5,15 +5,25 @@ function decodeIframeSrc(splat: string): string {
   const trimmed = splat.replace(/^\/+|\/+$/g, '')
   if (!trimmed) return ''
 
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed
+  let decoded = trimmed
+  try {
+    decoded = decodeURIComponent(trimmed)
+  } catch {
+    return ''
   }
 
-  if (trimmed.startsWith('http%3A%2F%2F') || trimmed.startsWith('https%3A%2F%2F')) {
-    return decodeURIComponent(trimmed)
+  let parsed: URL
+  try {
+    parsed = new URL(decoded)
+  } catch {
+    return ''
   }
 
-  return decodeURIComponent(trimmed)
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return ''
+  }
+
+  return parsed.toString()
 }
 
 export function IframePage() {
