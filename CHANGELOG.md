@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-05-11
+
+### Added
+- 新增军团建筑的燃料官分配与薪资管理。
+- 新增用户昵称支持，并将管理员工单状态视图拆分为独立标签页。
+
+### Changed
+- 优化 SRP 推荐逻辑，始终返回推荐数量，并保持管理视图数值同步。
+
+### Fixed
+- 将建筑选择器的可见范围限制为当前用户有权限访问的军团。
+- 移除未授权的军团建筑快照，避免过期数据影响展示与统计。
+- 按 `structure_id` 对 ESI 军团建筑去重，防止重复记录。
+
+
 ## [1.4.0] - 2026-05-11
 
 ### Added
