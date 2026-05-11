@@ -83,6 +83,20 @@ func (r *CorporationStructureRepository) DeleteCorpStructuresByCorporationIDs(co
 	return global.DB.Where("corporation_id IN ?", corporationIDs).Delete(&model.CorpStructureInfo{}).Error
 }
 
+func (r *CorporationStructureRepository) DeleteCorpStructuresNotInCorporationIDs(corporationIDs []int64) (int64, error) {
+	query := global.DB.Model(&model.CorpStructureInfo{})
+	if len(corporationIDs) > 0 {
+		query = query.Where("corporation_id NOT IN ?", corporationIDs)
+	} else {
+		query = query.Where("1 = 1")
+	}
+	result := query.Delete(&model.CorpStructureInfo{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
+}
+
 func (r *CorporationStructureRepository) ListFuelOfficerCharactersByCorporations(
 	corporationIDs []int64,
 ) ([]FuelOfficerCharacterOption, error) {
