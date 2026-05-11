@@ -281,11 +281,47 @@ func (s *SrpService) enrichApplication(app *model.SrpApplication) *SrpApplicatio
 	if app == nil {
 		return nil
 	}
+	s.refreshRecommendedAmountForManage(app)
 	responses := s.enrichWithFleetInfo([]model.SrpApplication{*app})
 	if len(responses) == 0 {
 		return &SrpApplicationResponse{SrpApplication: *app}
 	}
 	return &responses[0]
+}
+
+func shouldRefreshRecommendedAmountForManage(app *model.SrpApplication) bool {
+	if app == nil {
+		return false
+	}
+	if app.PayoutStatus != model.SrpPayoutNotPaid {
+		return false
+	}
+	return app.ReviewStatus == model.SrpReviewSubmitted || app.ReviewStatus == model.SrpReviewApproved
+}
+
+func (s *SrpService) refreshRecommendedAmountForManage(app *model.SrpApplication) {
+	if !shouldRefreshRecommendedAmountForManage(app) {
+		return
+	}
+	autoSrpSvc := NewAutoSrpService()
+	recommended, _ := autoSrpSvc.RecommendSrpAmount(app.ShipTypeID, app.KillmailID, app.FleetID)
+	if app.RecommendedAmount == recommended {
+		return
+	}
+	app.RecommendedAmount = recommended
+	if err := s.repo.UpdateApplication(app); err != nil {
+		global.Logger.Warn("refresh srp recommended_amount failed",
+			zap.Uint("application_id", app.ID),
+			zap.Float64("recommended_amount", recommended),
+			zap.Error(err),
+		)
+	}
+}
+
+func (s *SrpService) refreshRecommendedAmountsForManage(apps []model.SrpApplication) {
+	for i := range apps {
+		s.refreshRecommendedAmountForManage(&apps[i])
+	}
 }
 
 // enrichWithFleetInfo 为申请列表填充舰队信息
@@ -343,6 +379,7 @@ func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpA
 	if err != nil {
 		return nil, 0, err
 	}
+	s.refreshRecommendedAmountsForManage(apps)
 	return s.enrichWithFleetInfo(apps), total, nil
 }
 

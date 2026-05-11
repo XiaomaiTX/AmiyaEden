@@ -141,7 +141,7 @@ func autoApproveReviewNote() string {
 func (s *AutoSrpService) RecommendSrpAmount(shipTypeID int64, killmailID int64, fleetID *string) (float64, string) {
 	if fleetID != nil && *fleetID != "" {
 		ctx, err := s.buildFleetContext(*fleetID)
-		if err == nil && ctx.fleet.AutoSrpMode != model.FleetAutoSrpDisabled {
+		if err == nil {
 			if fitting, ok := ctx.fittingByShip[shipTypeID]; ok {
 				baseAmount := s.getBaseAmount(fitting, shipTypeID)
 				finalAmount, note, _ := s.validateFitting(
