@@ -350,6 +350,7 @@
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
   import { useTable } from '@/hooks/core/useTable'
+  import { formatTime } from '@/utils/common'
   import {
     fetchCorporationStructureFilterOptions,
     fetchCorporationStructureList,
@@ -363,6 +364,7 @@
   type StructureTab = 'list' | 'settings'
   type StructureRow = Api.Dashboard.CorporationStructureRow
   type TableSort = { prop?: string; order?: 'ascending' | 'descending' | null }
+  type TagType = '' | 'success' | 'warning' | 'info' | 'primary' | 'danger'
 
   const { t } = useI18n()
   const route = useRoute()
@@ -463,7 +465,7 @@
     }
   }
 
-  const stateTagTypeMap: Record<string, any> = {
+  const stateTagTypeMap: Record<string, TagType> = {
     shield_vulnerable: 'success',
     low_power: 'warning',
     abandoned: 'info',
@@ -580,8 +582,7 @@
           label: t('corporationStructures.table.reinforceHour'),
           width: 150,
           sortable: 'custom' as const,
-          formatter: (row: StructureRow) =>
-            row.reinforce_hour > 0 ? String(row.reinforce_hour).padStart(2, '0') : '--'
+          formatter: (row: StructureRow) => formatReinforceHour(row.reinforce_hour)
         },
         {
           prop: 'state_timer_end',
@@ -750,7 +751,9 @@
     if (!services || services.length === 0) {
       return t('corporationStructures.noServices')
     }
-    return services.map((service) => `${service.name} (${service.state})`).join(' / ')
+    return services
+      .map((service) => `${service.name} (${formatServiceStateLabel(service.state)})`)
+      .join(' / ')
   }
 
   const formatSecurity = (security: number) => {
@@ -764,7 +767,7 @@
     if (!updatedAt) {
       return '--'
     }
-    return new Date(updatedAt * 1000).toLocaleString()
+    return formatTime(new Date(updatedAt * 1000).toISOString())
   }
 
   const formatTimeText = (value: string) => {
@@ -775,7 +778,23 @@
     if (Number.isNaN(parsed.getTime())) {
       return value
     }
-    return parsed.toLocaleString()
+    return formatTime(parsed.toISOString())
+  }
+
+  const formatServiceStateLabel = (state: string) => {
+    const key = `corporationStructures.serviceStates.${state}`
+    const translated = t(key)
+    if (translated === key) {
+      return state || '--'
+    }
+    return translated
+  }
+
+  const formatReinforceHour = (hour: number) => {
+    if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
+      return '--'
+    }
+    return String(hour).padStart(2, '0')
   }
 
   const mapStateLabel = (state: string) => {
@@ -835,3 +854,27 @@
     await getData()
   })
 </script>
+
+<style scoped lang="scss">
+  .corporation-structures-page {
+    :deep(.el-tabs) {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    :deep(.el-tabs__content) {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    :deep(.el-tab-pane) {
+      height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+</style>
