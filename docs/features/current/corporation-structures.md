@@ -79,3 +79,8 @@ source_of_truth:
 - `static/src/router/modules/dashboard.ts`
 - `static/src/views/dashboard/corporation-structures/index.vue`
 - `static/src/store/modules/badge.helpers.ts`
+
+
+## 关键不变量（2026-05-11）
+
+- 当军团在设置页被显式禁用（`character_id=0`）并保存设置时，后端必须在同一更新流程里清空该军团在 `corp_structure` 中的所有记录，避免历史快照继续被展示或统计。
