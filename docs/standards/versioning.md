@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-05-11
 source_of_truth:
   - static/package.json
   - docs/standards/versioning.md
@@ -177,6 +177,18 @@ MAJOR.MINOR.PATCH
 ```
 
 ## Version Update Workflow
+
+### 0. 版本核查
+
+在执行任何版本号递增前，必须先检查 `static/package.json` 的 Git 历史，定位上一个版本提交到当前 `HEAD` 之间的所有变更。
+
+检查时至少要确认以下内容：
+
+1. 上一个版本对应的提交点
+2. 该提交点到当前最新提交之间的全部代码、文档和配置变更
+3. 这些变更是否都已纳入版本级别判断与 `CHANGELOG` 记录
+
+不要只根据当前工作区的单个文件变更判断版本号，也不要跳过历史提交检查直接 bump version。
 
 ### 1. 开发阶段
 
