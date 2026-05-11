@@ -243,6 +243,86 @@ func TestCorporationStructuresTaskExecuteUsesPlaceholdersWhenNoSnapshotAndNoLook
 	}
 }
 
+func TestCorporationStructuresTaskExecuteDedupesDuplicateStructureIDKeepingLast(t *testing.T) {
+	db := newCorporationStructuresTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	const (
+		characterID    = int64(90010031)
+		corporationID  = int64(555031)
+		dupStructureID = int64(1020000000311)
+		otherStructID  = int64(1020000000312)
+		systemID       = int64(30000142)
+		typeID         = int64(35832)
+	)
+	seedCorporationStructuresTaskScope(t, db, characterID, corporationID)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch req.URL.Path {
+		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
+			w.Header().Set("X-Pages", "1")
+			_, _ = fmt.Fprintf(w, `[
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"First","fuel_expires":"2026-05-10T00:00:00Z","services":[]},
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"low_power","name":"Last","fuel_expires":"2026-05-20T00:00:00Z","services":[{"name":"clone_bay","state":"online"}]},
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"Other","fuel_expires":"2026-05-30T00:00:00Z","services":[]}
+]`, corporationID, dupStructureID, systemID, typeID, corporationID, dupStructureID, systemID, typeID, corporationID, otherStructID, systemID, typeID)
+		case "/universe/names":
+			_, _ = fmt.Fprintf(w, `[{"id":%d,"name":"Test Corp"}]`, corporationID)
+		case fmt.Sprintf("/universe/structures/%d/", dupStructureID):
+			_, _ = fmt.Fprintf(w, `{"name":"Last","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":1,"y":2,"z":3}}`, corporationID, systemID, typeID)
+		case fmt.Sprintf("/universe/structures/%d/", otherStructID):
+			_, _ = fmt.Fprintf(w, `{"name":"Other","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":4,"y":5,"z":6}}`, corporationID, systemID, typeID)
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorporationStructuresTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("execute task: %v", err)
+	}
+
+	var rows []model.CorpStructureInfo
+	if err := db.Where("corporation_id = ?", corporationID).
+		Order("structure_id ASC").
+		Find(&rows).Error; err != nil {
+		t.Fatalf("load corp snapshots: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("row count = %d, want 2", len(rows))
+	}
+	if rows[0].StructureID != dupStructureID || rows[1].StructureID != otherStructID {
+		t.Fatalf("unexpected structure ids: %+v", rows)
+	}
+
+	var dupRow model.CorpStructureInfo
+	if err := db.Where("corporation_id = ? AND structure_id = ?", corporationID, dupStructureID).
+		First(&dupRow).Error; err != nil {
+		t.Fatalf("load duplicated structure row: %v", err)
+	}
+	if dupRow.Name != "Last" {
+		t.Fatalf("deduped row name = %q, want %q", dupRow.Name, "Last")
+	}
+	if dupRow.State != "low_power" {
+		t.Fatalf("deduped row state = %q, want %q", dupRow.State, "low_power")
+	}
+	if dupRow.FuelExpires != "2026-05-20T00:00:00Z" {
+		t.Fatalf("deduped row fuel_expires = %q, want %q", dupRow.FuelExpires, "2026-05-20T00:00:00Z")
+	}
+}
+
 func TestCorporationStructuresTaskExecuteDeletesMissingStructures(t *testing.T) {
 	db := newCorporationStructuresTaskTestDB(t)
 	oldDB := global.DB

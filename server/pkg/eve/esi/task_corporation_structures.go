@@ -162,10 +162,27 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		return nil
 	}
 
-	structureIDs := make([]int64, 0, len(esiStructures))
-	typeSet := make(map[int]struct{}, len(esiStructures))
-	systemSet := make(map[int64]struct{}, len(esiStructures))
-	for _, structure := range esiStructures {
+	dedupedStructures, duplicatedCount := dedupeCorpStructureESIResponsesByStructureID(esiStructures)
+	if duplicatedCount > 0 {
+		corpStructuresLogger().Warn("[ESI] 军团建筑列表存在重复 structure_id，已按最后一条去重",
+			zap.Int64("corporation_id", corporationID),
+			zap.Int("input_count", len(esiStructures)),
+			zap.Int("deduped_count", len(dedupedStructures)),
+			zap.Int("duplicated_count", duplicatedCount),
+		)
+	} else {
+		corpStructuresLogger().Debug("[ESI] 军团建筑列表去重完成",
+			zap.Int64("corporation_id", corporationID),
+			zap.Int("input_count", len(esiStructures)),
+			zap.Int("deduped_count", len(dedupedStructures)),
+			zap.Int("duplicated_count", 0),
+		)
+	}
+
+	structureIDs := make([]int64, 0, len(dedupedStructures))
+	typeSet := make(map[int]struct{}, len(dedupedStructures))
+	systemSet := make(map[int64]struct{}, len(dedupedStructures))
+	for _, structure := range dedupedStructures {
 		structureIDs = append(structureIDs, structure.StructureID)
 		if structure.TypeID > 0 {
 			typeSet[int(structure.TypeID)] = struct{}{}
@@ -185,8 +202,8 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 	typeNamesByTypeID := resolveTypeNameSnapshots(typeSet, existingByStructureID)
 	systemSnapshotBySystemID := resolveSystemSnapshots(systemSet, existingByStructureID)
 
-	corpRecords := make([]model.CorpStructureInfo, 0, len(esiStructures))
-	for _, structure := range esiStructures {
+	corpRecords := make([]model.CorpStructureInfo, 0, len(dedupedStructures))
+	for _, structure := range dedupedStructures {
 		servicesJSON, _ := json.Marshal(structure.Services)
 		existing := existingByStructureID[structure.StructureID]
 		typeName := chooseSnapshotText(
@@ -233,8 +250,8 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		return err
 	}
 
-	structureDetails := make([]model.EveStructure, 0, len(esiStructures))
-	for i, structure := range esiStructures {
+	structureDetails := make([]model.EveStructure, 0, len(dedupedStructures))
+	for i, structure := range dedupedStructures {
 		if i > 0 {
 			select {
 			case <-time.After(corporationStructureTaskDetailInterval):
@@ -281,6 +298,30 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		zap.Int64("deleted_count", deletedCount),
 	)
 	return nil
+}
+
+func dedupeCorpStructureESIResponsesByStructureID(
+	input []corpStructureESIResponse,
+) ([]corpStructureESIResponse, int) {
+	if len(input) == 0 {
+		return nil, 0
+	}
+
+	lastIndexByStructureID := make(map[int64]int, len(input))
+	deduped := make([]corpStructureESIResponse, 0, len(input))
+	duplicatedCount := 0
+
+	for _, row := range input {
+		if idx, exists := lastIndexByStructureID[row.StructureID]; exists {
+			deduped[idx] = row
+			duplicatedCount++
+			continue
+		}
+		lastIndexByStructureID[row.StructureID] = len(deduped)
+		deduped = append(deduped, row)
+	}
+
+	return deduped, duplicatedCount
 }
 
 func syncCorporationStructureSnapshots(
