@@ -32,6 +32,38 @@ test('corporation structures settings includes notice thresholds and submits the
   assert.match(source, /timer_notice_threshold_days:\s*normalizeThresholdDays/)
 })
 
+test('corporation structures page uses shared timestamp formatter and avoids inline locale formatting', () => {
+  assert.match(source, /import\s+\{\s*formatTime\s*\}\s+from\s+'@\/utils\/common'/)
+  assert.doesNotMatch(source, /toLocaleString\(/)
+  assert.match(source, /formatTime\(new Date\(updatedAt \* 1000\)\.toISOString\(\)\)/)
+})
+
+test('corporation structures page avoids any typing in state tag map', () => {
+  assert.doesNotMatch(source, /Record<string,\s*any>/)
+  assert.match(
+    source,
+    /type TagType = '' \| 'success' \| 'warning' \| 'info' \| 'primary' \| 'danger'/
+  )
+})
+
+test('corporation structures reinforce hour formatter keeps 00 as valid hour', () => {
+  assert.match(source, /const formatReinforceHour = \(hour: number\) =>/)
+  assert.match(source, /hour < 0 \|\| hour > 23/)
+  assert.match(source, /return String\(hour\)\.padStart\(2, '0'\)/)
+})
+
+test('corporation structures full-height tabs define explicit height chain styles', () => {
+  assert.match(source, /<style scoped lang="scss">/)
+  assert.match(
+    source,
+    /:deep\(\.el-tabs__content\)\s*\{\s*flex:\s*1;\s*min-height:\s*0;\s*overflow:\s*hidden;/s
+  )
+  assert.match(
+    source,
+    /:deep\(\.el-tab-pane\)\s*\{\s*height:\s*100%;\s*min-height:\s*0;\s*display:\s*flex;/s
+  )
+})
+
 test('corporation structures settings supports disabling dashboard authorization per corporation', () => {
   assert.match(source, /corporationStructures\.options\.disabled/)
   assert.match(source, /:value="0"/)
