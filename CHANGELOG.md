@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-11
+
+### Added
+- 新增任务管理页的 ESI 监控标签页，用于查看任务健康概览。
+
+### Changed
+- 重设计工单管理页的管理员响应展示，并移除优先级字段。
+- 调整 ESI 刷新间隔策略，平衡数据新鲜度与系统负载。
+
 ## [1.2.1] - 2026-05-10
 
 ### Changed
