@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-12
+
+### Added
+- 统一名人堂与管理目录为 Fuxi Hall，并补齐对应的后端、前端、路由与测试实现。
+- 为军团建筑分配增加元数据展示和高级筛选能力。
+
+### Changed
+- 同步整理 Fuxi Hall 相关文档与本地化文案，替换旧的名人堂与管理员目录表述。
+
+### Fixed
+- 修复 PAP 图表的年份标签展示，并补齐缺失月份的数据填充。
+- 修复军团建筑列表卡片的弹性高度布局问题。
+
 ## [1.5.0] - 2026-05-11
 
 ### Added
