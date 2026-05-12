@@ -9,7 +9,7 @@ import { welfareRoutes } from './welfare'
 import { shopRoutes } from './shop'
 import { infoRoutes } from './info'
 import { newbroRoutes } from './newbro'
-import { hallOfFameRoutes } from './hall-of-fame'
+import { fuxiHallRoutes } from './fuxi-hall'
 import { ticketRoutes } from './ticket'
 
 /**
@@ -24,7 +24,7 @@ export const routeModules: AppRouteRecord[] = [
   newbroRoutes,
   shopRoutes,
   srpRoutes,
-  hallOfFameRoutes,
+  fuxiHallRoutes,
   ticketRoutes,
   systemRoutes,
   exceptionRoutes

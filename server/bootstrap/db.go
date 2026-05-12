@@ -145,13 +145,9 @@ func autoMigrate(db *gorm.DB) {
 		&model.TaskSchedule{},
 		&model.TaskExecution{},
 		&model.SystemConfig{},
-		// 名人堂相关表
-		&model.HallOfFameConfig{},
-		&model.HallOfFameCard{},
-		// 伏羲管理人员名录相关表
-		&model.FuxiAdminConfig{},
-		&model.FuxiAdminTier{},
-		&model.FuxiAdmin{},
+		// 伏羲大厅相关表
+		&model.FuxiHallPage{},
+		&model.FuxiHallCard{},
 		// RBAC 权限相关表
 		&model.UserRole{},
 		// ESI 自动权限映射表
