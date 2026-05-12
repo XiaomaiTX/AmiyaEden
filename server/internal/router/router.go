@@ -548,50 +548,26 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminWebhook.POST("/test", webhookH.TestWebhook)
 	}
 
-	// ─── 名人堂 ───
-	hofH := handler.NewHallOfFameHandler()
+	// ─── 伏羲大厅 ───
+	fuxiHallH := handler.NewFuxiHallHandler()
 
-	// 公开端点（登录用户）
-	hallOfFame := login.Group("/hall-of-fame")
+	// 登录可见展示页
+	loginFuxiHall := login.Group("/fuxi-hall")
 	{
-		hallOfFame.GET("/temple", hofH.GetTemple)
+		loginFuxiHall.GET("/leadership", fuxiHallH.GetLeadership)
+		loginFuxiHall.GET("/contributors", fuxiHallH.GetContributors)
 	}
 
 	// 管理端点（admin group 已要求 RoleAdmin）
-	adminHof := admin.Group("/hall-of-fame")
+	adminFuxiHall := admin.Group("/fuxi-hall")
 	{
-		adminHof.GET("/config", hofH.GetConfig)
-		adminHof.PUT("/config", hofH.UpdateConfig)
-		adminHof.POST("/upload-background", hofH.UploadBackground)
-		adminHof.GET("/cards", hofH.ListCards)
-		adminHof.POST("/cards", hofH.CreateCard)
-		adminHof.PUT("/cards/batch-layout", hofH.BatchUpdateLayout)
-		adminHof.PUT("/cards/:id", hofH.UpdateCard)
-		adminHof.DELETE("/cards/:id", hofH.DeleteCard)
-	}
-
-	// ─── 伏羲管理人员名录 ───
-	fuxiAdminH := handler.NewFuxiAdminHandler()
-
-	// 登录用户端点（无需管理权限）
-	loginFuxiAdmin := login.Group("/fuxi-admins")
-	{
-		loginFuxiAdmin.GET("", fuxiAdminH.GetDirectory)
-	}
-
-	// 管理端点（admin group 已要求 RoleAdmin）
-	adminFuxiAdmin := admin.Group("/fuxi-admins")
-	{
-		adminFuxiAdmin.GET("/manage-directory", fuxiAdminH.GetManageDirectory)
-		adminFuxiAdmin.GET("/config", fuxiAdminH.GetConfig)
-		adminFuxiAdmin.PUT("/config", fuxiAdminH.UpdateConfig)
-		adminFuxiAdmin.GET("/tiers", fuxiAdminH.ListTiers)
-		adminFuxiAdmin.POST("/tiers", fuxiAdminH.CreateTier)
-		adminFuxiAdmin.PUT("/tiers/:id", fuxiAdminH.UpdateTier)
-		adminFuxiAdmin.DELETE("/tiers/:id", fuxiAdminH.DeleteTier)
-		adminFuxiAdmin.POST("", fuxiAdminH.CreateAdmin)
-		adminFuxiAdmin.PUT("/:id", fuxiAdminH.UpdateAdmin)
-		adminFuxiAdmin.DELETE("/:id", fuxiAdminH.DeleteAdmin)
+		adminFuxiHall.GET("/pages/:page_key", fuxiHallH.GetPageConfig)
+		adminFuxiHall.PUT("/pages/:page_key", fuxiHallH.UpdatePageConfig)
+		adminFuxiHall.GET("/cards/:page_key", fuxiHallH.ListCards)
+		adminFuxiHall.POST("/cards", fuxiHallH.CreateCard)
+		adminFuxiHall.PUT("/cards/reorder", fuxiHallH.ReorderCards)
+		adminFuxiHall.PUT("/cards/:id", fuxiHallH.UpdateCard)
+		adminFuxiHall.DELETE("/cards/:id", fuxiHallH.DeleteCard)
 	}
 
 	// ─── 工单管理（管理员）───

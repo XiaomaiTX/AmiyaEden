@@ -1,0 +1,42 @@
+package model
+
+// FuxiHallPageKey 展示页键值
+type FuxiHallPageKey string
+
+const (
+	FuxiHallPageLeadership   FuxiHallPageKey = "leadership"
+	FuxiHallPageContributors FuxiHallPageKey = "contributors"
+)
+
+// FuxiHallPage 伏羲大厅页面配置（按 page_key 固定两页）
+type FuxiHallPage struct {
+	ID              uint   `gorm:"primarykey"                  json:"id"`
+	PageKey         string `gorm:"size:32;uniqueIndex;not null" json:"page_key"`
+	Title           string `gorm:"size:256;not null"           json:"title"`
+	Subtitle        string `gorm:"size:512"                    json:"subtitle"`
+	DescriptionHTML string `gorm:"type:text;not null;default:''" json:"description_html"`
+}
+
+func (FuxiHallPage) TableName() string { return "fuxi_hall_page" }
+
+// FuxiHallCard 伏羲大厅成员卡片
+type FuxiHallCard struct {
+	BaseModel
+	PageKey           string `gorm:"size:32;index;not null"    json:"page_key"`
+	Nickname          string `gorm:"size:256;not null"         json:"nickname"`
+	MainCharacterName string `gorm:"size:512;not null"         json:"main_character_name"`
+	Title             string `gorm:"size:512;not null"         json:"title"`
+	DescriptionHTML   string `gorm:"type:text;not null;default:''" json:"description_html"`
+	AvatarImage       string `gorm:"type:text"                 json:"avatar_image"`
+	CoverImage        string `gorm:"type:text"                 json:"cover_image"`
+	StylePreset       string `gorm:"size:32;not null;default:'classic'" json:"style_preset"`
+	AccentColor       string `gorm:"size:16;not null;default:'#3b82f6'" json:"accent_color"`
+	BadgeTone         string `gorm:"size:32;not null;default:'neutral'" json:"badge_tone"`
+	AvatarShape       string `gorm:"size:32;not null;default:'circle'" json:"avatar_shape"`
+	CoverHeight       int    `gorm:"not null;default:180"      json:"cover_height"`
+	FontScale         int    `gorm:"not null;default:14"       json:"font_scale"`
+	Visible           bool   `gorm:"not null;default:true"     json:"visible"`
+	SortOrder         int    `gorm:"index;not null;default:0"  json:"sort_order"`
+}
+
+func (FuxiHallCard) TableName() string { return "fuxi_hall_card" }

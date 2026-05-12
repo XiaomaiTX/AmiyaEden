@@ -89,6 +89,12 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 	if routeExists(routes, http.MethodPost, "/api/v1/system/newbro/reward/process") {
 		t.Fatal("expected legacy POST /api/v1/system/newbro/reward/process route to be removed")
 	}
+	if routeExists(routes, http.MethodGet, "/api/v1/hall-of-fame/temple") {
+		t.Fatal("expected legacy GET /api/v1/hall-of-fame/temple route to be removed")
+	}
+	if routeExists(routes, http.MethodGet, "/api/v1/fuxi-admins") {
+		t.Fatal("expected legacy GET /api/v1/fuxi-admins route to be removed")
+	}
 }
 
 func routeExists(routes gin.RoutesInfo, method, path string) bool {
@@ -171,25 +177,29 @@ func TestSkillPlanReadAllowsLoggedInUserAndWriteStillRequiresManager(t *testing.
 	assertRouteStatus(t, managerRouter, http.MethodDelete, "/skill-planning/skill-plans/1", http.StatusNoContent)
 }
 
-func TestFuxiAdminDirectoryReadUsesLoggedInRouteGroup(t *testing.T) {
+func TestFuxiHallPublicPagesUseLoggedInRouteGroup(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	router, userToken, guestToken := newFuxiAdminDirectoryRouteTestRouter(t)
+	router, userToken, guestToken := newFuxiHallRouteTestRouter(t)
 
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins", http.StatusUnauthorized)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-admins?token="+userToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+userToken, http.StatusOK)
+
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+userToken, http.StatusOK)
 }
 
-func TestFuxiAdminManageDirectoryRequiresAdminRole(t *testing.T) {
+func TestFuxiHallManageRoutesRequireAdminRole(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	router, userToken, adminToken, guestToken := newFuxiAdminManageDirectoryRouteTestRouter(t)
+	router, userToken, adminToken, guestToken := newFuxiHallManageRouteTestRouter(t)
 
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory", http.StatusUnauthorized)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory?token="+userToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-admins/manage-directory?token="+adminToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+adminToken, http.StatusOK)
 }
 
 func TestSystemWebhookRequiresSuperAdmin(t *testing.T) {
@@ -527,10 +537,10 @@ func newSkillPlanPermissionTestRouter(roles []string) *gin.Engine {
 	return r
 }
 
-func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, string) {
+func newFuxiHallRouteTestRouter(t *testing.T) (*gin.Engine, string, string) {
 	t.Helper()
 
-	db := newFuxiAdminDirectoryRouteTestDB(t)
+	db := newFuxiHallRouteTestDB(t)
 
 	oldConfig := global.Config
 	oldLogger := global.CurrentLogger()
@@ -564,7 +574,7 @@ func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, st
 		t.Fatalf("create user role: %v", err)
 	}
 
-	jwt.Init("fuxi-admin-router-test-secret")
+	jwt.Init("fuxi-hall-router-test-secret")
 	userToken, err := jwt.GenerateToken(1, 1001, model.RoleUser, 1)
 	if err != nil {
 		t.Fatalf("generate token: %v", err)
@@ -579,10 +589,10 @@ func newFuxiAdminDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, st
 	return r, userToken, guestToken
 }
 
-func newFuxiAdminManageDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, string, string, string) {
+func newFuxiHallManageRouteTestRouter(t *testing.T) (*gin.Engine, string, string, string) {
 	t.Helper()
 
-	db := newFuxiAdminDirectoryRouteTestDB(t)
+	db := newFuxiHallRouteTestDB(t)
 
 	oldConfig := global.Config
 	oldLogger := global.CurrentLogger()
@@ -620,7 +630,7 @@ func newFuxiAdminManageDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, stri
 		t.Fatalf("create user roles: %v", err)
 	}
 
-	jwt.Init("fuxi-admin-manage-router-test-secret")
+	jwt.Init("fuxi-hall-manage-router-test-secret")
 	userToken, err := jwt.GenerateToken(1, 1001, model.RoleUser, 1)
 	if err != nil {
 		t.Fatalf("generate user token: %v", err)
@@ -639,16 +649,16 @@ func newFuxiAdminManageDirectoryRouteTestRouter(t *testing.T) (*gin.Engine, stri
 	return r, userToken, adminToken, guestToken
 }
 
-func newFuxiAdminDirectoryRouteTestDB(t *testing.T) *gorm.DB {
+func newFuxiHallRouteTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	dsn := "file:fuxi_admin_router_test_" + time.Now().Format("150405.000000000") + "?mode=memory&cache=shared"
+	dsn := "file:fuxi_hall_router_test_" + time.Now().Format("150405.000000000") + "?mode=memory&cache=shared"
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.UserRole{}, &model.FuxiAdminConfig{}, &model.FuxiAdminTier{}, &model.FuxiAdmin{}); err != nil {
-		t.Fatalf("auto migrate fuxi admin router models: %v", err)
+	if err := db.AutoMigrate(&model.UserRole{}, &model.FuxiHallPage{}, &model.FuxiHallCard{}); err != nil {
+		t.Fatalf("auto migrate fuxi hall router models: %v", err)
 	}
 	return db
 }

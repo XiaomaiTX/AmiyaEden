@@ -3016,219 +3016,74 @@ declare namespace Api {
     }
   }
 
-  // ─── 名人堂 ───
-  namespace HallOfFame {
-    type CardStylePreset =
-      | 'gold'
-      | 'silver'
-      | 'darkred'
-      | 'yellow'
-      | 'bronze'
-      | 'rose'
-      | 'jade'
-      | 'midnight'
-      | 'custom'
+  namespace FuxiHall {
+    type PageKey = 'leadership' | 'contributors'
+    type StylePreset = 'classic' | 'aurora' | 'slate'
+    type BadgeTone = 'neutral' | 'dawn' | 'steel'
+    type AvatarShape = 'circle' | 'rounded' | 'square'
 
-    type CardBorderStyle =
-      | 'none'
-      | 'gilded'
-      | 'imperial'
-      | 'neon-circuit'
-      | 'void-rift'
-      | 'amarr'
-      | 'caldari'
-      | 'minmatar'
-      | 'gallente'
-
-    interface Config {
+    interface PageConfig {
       id: number
-      background_image: string
-      canvas_width: number
-      canvas_height: number
-      created_at: string
-      updated_at: string
+      page_key: PageKey
+      title: string
+      subtitle: string
+      description_html: string
     }
 
     interface Card {
       id: number
-      name: string
+      page_key: PageKey
+      nickname: string
+      main_character_name: string
       title: string
-      description: string
-      character_id: number
-      badge_image: string
-      pos_x: number
-      pos_y: number
-      width: number
-      height: number
-      style_preset: CardStylePreset
-      custom_bg_color: string
-      custom_text_color: string
-      custom_border_color: string
-      border_style: CardBorderStyle
-      title_color: string
-      font_size: number
-      z_index: number
+      description_html: string
+      avatar_image: string
+      cover_image: string
+      style_preset: StylePreset
+      accent_color: string
+      badge_tone: BadgeTone
+      avatar_shape: AvatarShape
+      cover_height: number
+      font_scale: number
       visible: boolean
-      created_at: string
-      updated_at: string
-    }
-
-    interface TempleResponse {
-      config: Config
-      cards: Card[]
-    }
-
-    interface UpdateConfigParams {
-      background_image?: string
-      canvas_width?: number
-      canvas_height?: number
-    }
-
-    interface CreateCardParams {
-      name: string
-      title?: string
-      description?: string
-      character_id?: number
-      badge_image?: string
-      pos_x?: number
-      pos_y?: number
-      width?: number
-      height?: number
-      style_preset?: CardStylePreset
-      custom_bg_color?: string
-      custom_text_color?: string
-      custom_border_color?: string
-      border_style?: CardBorderStyle
-      title_color?: string
-      font_size?: number
-      z_index?: number
-      visible?: boolean
-    }
-
-    interface UpdateCardParams {
-      name?: string
-      title?: string
-      description?: string
-      character_id?: number
-      badge_image?: string
-      style_preset?: CardStylePreset
-      custom_bg_color?: string
-      custom_text_color?: string
-      custom_border_color?: string
-      border_style?: CardBorderStyle
-      title_color?: string
-      font_size?: number
-      visible?: boolean
-    }
-
-    interface CardLayoutUpdate {
-      id: number
-      pos_x: number
-      pos_y: number
-      width: number
-      height: number
-      z_index: number
-    }
-  }
-
-  namespace FuxiAdmin {
-    interface Config {
-      id: number
-      base_font_size: number
-      card_width: number
-      page_background_color: string
-      card_background_color: string
-      card_border_color: string
-      tier_title_color: string
-      name_text_color: string
-      body_text_color: string
-      created_at: string
-      updated_at: string
-    }
-
-    interface Tier {
-      id: number
-      name: string
       sort_order: number
       created_at: string
       updated_at: string
     }
 
-    interface Admin {
-      id: number
-      tier_id: number
+    interface PublicPageResponse {
+      page: PageConfig
+      cards: Card[]
+    }
+
+    interface UpdatePageConfigParams {
+      title?: string
+      subtitle?: string
+      description_html?: string
+    }
+
+    interface CreateCardParams {
+      page_key: PageKey
       nickname: string
-      character_name: string
-      description: string
-      contact_qq: string
-      contact_discord: string
-      character_id: number
-      created_at: string
-      updated_at: string
+      main_character_name: string
+      title: string
+      description_html?: string
+      avatar_image?: string
+      cover_image?: string
+      style_preset?: StylePreset
+      accent_color?: string
+      badge_tone?: BadgeTone
+      avatar_shape?: AvatarShape
+      cover_height?: number
+      font_scale?: number
+      visible?: boolean
     }
 
-    interface TierWithAdmins extends Tier {
-      admins: Admin[]
-    }
+    type UpdateCardParams = Partial<CreateCardParams>
 
-    interface ManageAdmin extends Admin {
-      welfare_delivery_offset: number
-      fleet_led_count: number
-      welfare_delivery_count: number
-    }
-
-    interface ManageTierWithAdmins extends Tier {
-      admins: ManageAdmin[]
-    }
-
-    interface DirectoryResponse {
-      config: Config
-      tiers: TierWithAdmins[]
-    }
-
-    interface ManageDirectoryResponse {
-      config: Config
-      tiers: ManageTierWithAdmins[]
-    }
-
-    interface UpdateConfigParams {
-      base_font_size?: number
-      card_width?: number
-      page_background_color?: string
-      card_background_color?: string
-      card_border_color?: string
-      tier_title_color?: string
-      name_text_color?: string
-      body_text_color?: string
-    }
-
-    interface CreateTierParams {
-      name: string
-    }
-
-    interface UpdateTierParams {
-      name?: string
-    }
-
-    interface CreateAdminParams {
-      tier_id: number
-      nickname: string
-      character_name?: string
-      description?: string
-      contact_qq?: string
-      contact_discord?: string
-      character_id?: number
-    }
-
-    interface UpdateAdminParams {
-      tier_id?: number
-      nickname?: string
-      character_name?: string
-      description?: string
-      contact_qq?: string
-      contact_discord?: string
-      character_id?: number
-      welfare_delivery_offset?: number
+    interface ReorderParams {
+      page_key: PageKey
+      ordered_ids: number[]
     }
   }
 }

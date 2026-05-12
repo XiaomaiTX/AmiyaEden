@@ -42,11 +42,12 @@ source_of_truth:
 | --- | --- | --- | --- |
 | POST | `/recruit/:code/submit` | 提交 QQ 号 | Public |
 
-### Fuxi Admin Directory
+### Fuxi Hall
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/fuxi-admins` | 登录用户目录（配置 + 层级 + 管理员） | Login |
+| GET | `/fuxi-hall/leadership` | 获取管理层展示页（页面配置 + 可见卡片） | Login |
+| GET | `/fuxi-hall/contributors` | 获取重大贡献成员展示页（页面配置 + 可见卡片） | Login |
 
 ## Authenticated Base
 
@@ -173,14 +174,6 @@ source_of_truth:
 | POST | `/shop/product/detail` | 商品详情 | Login |
 | POST | `/shop/buy` | 购买商品 | Login |
 | POST | `/shop/orders` | 我的订单 | Login |
-
-## Hall of Fame
-
-### Temple
-
-| Method | Path | 说明 | 权限 |
-| --- | --- | --- | --- |
-| GET | `/hall-of-fame/temple` | 获取圣殿画布配置与全部可见英雄卡片 | Login |
 
 ## Newbro Support
 
@@ -441,33 +434,19 @@ source_of_truth:
 | DELETE | `/system/ticket/categories/:id` | 删除分类 | `RequireRole(admin)` |
 | GET | `/system/ticket/statistics` | 工单统计（总量、状态、分类、近 7/30 天） | `RequireRole(admin)` |
 
-### Hall of Fame Admin
+### Fuxi Hall Admin
+
+管理端页面基于以下接口实现页面/卡片编辑，并提供未保存草稿的实时预览能力。
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/system/hall-of-fame/config` | 获取名人堂画布配置（单例） | `RequireRole(admin)` |
-| PUT | `/system/hall-of-fame/config` | 更新名人堂画布尺寸与背景图 | `RequireRole(admin)` |
-| POST | `/system/hall-of-fame/upload-background` | 上传名人堂背景图（base64 data URL，最大 5MB，仅支持 jpeg/png/webp） | `RequireRole(admin)` |
-| GET | `/system/hall-of-fame/cards` | 获取全部英雄卡片（含隐藏卡片） | `RequireRole(admin)` |
-| POST | `/system/hall-of-fame/cards` | 创建英雄卡片 | `RequireRole(admin)` |
-| PUT | `/system/hall-of-fame/cards/batch-layout` | 批量保存卡片坐标、尺寸与层级 | `RequireRole(admin)` |
-| PUT | `/system/hall-of-fame/cards/:id` | 更新单张英雄卡片内容、样式或显示状态 | `RequireRole(admin)` |
-| DELETE | `/system/hall-of-fame/cards/:id` | 删除英雄卡片 | `RequireRole(admin)` |
-
-### Fuxi Admin Directory Admin
-
-| Method | Path | 说明 | 权限 |
-| --- | --- | --- | --- |
-| GET | `/system/fuxi-admins/manage-directory` | 获取管理端名录（含带队次数、福利发放次数与历史偏移） | `RequireRole(admin)` |
-| GET | `/system/fuxi-admins/config` | 获取伏羲管理名录配置（单例） | `RequireRole(admin)` |
-| PUT | `/system/fuxi-admins/config` | 更新字体大小配置 | `RequireRole(admin)` |
-| GET | `/system/fuxi-admins/tiers` | 获取层级列表 | `RequireRole(admin)` |
-| POST | `/system/fuxi-admins/tiers` | 创建新层级 | `RequireRole(admin)` |
-| PUT | `/system/fuxi-admins/tiers/:id` | 更新层级名称 | `RequireRole(admin)` |
-| DELETE | `/system/fuxi-admins/tiers/:id` | 删除层级（级联删除管理员） | `RequireRole(admin)` |
-| POST | `/system/fuxi-admins` | 创建管理员；响应包含管理端统计字段 | `RequireRole(admin)` |
-| PUT | `/system/fuxi-admins/:id` | 更新管理员；`welfare_delivery_offset` 仅 `super_admin` 可改，响应包含管理端统计字段 | `RequireRole(admin)` |
-| DELETE | `/system/fuxi-admins/:id` | 删除管理员 | `RequireRole(admin)` |
+| GET | `/system/fuxi-hall/pages/:page_key` | 获取页面配置（`page_key` 仅支持 `leadership | contributors`） | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/pages/:page_key` | 更新页面配置（标题/副标题/富文本说明） | `RequireRole(admin)` |
+| GET | `/system/fuxi-hall/cards/:page_key` | 获取页面卡片（含隐藏卡片） | `RequireRole(admin)` |
+| POST | `/system/fuxi-hall/cards` | 创建卡片 | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/cards/:id` | 更新卡片字段（基础信息/受控样式/显隐） | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/cards/reorder` | 保存页面内手动排序（`ordered_ids`） | `RequireRole(admin)` |
+| DELETE | `/system/fuxi-hall/cards/:id` | 删除卡片 | `RequireRole(admin)` |
 
 ### Newbro Admin
 

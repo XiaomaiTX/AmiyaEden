@@ -1,0 +1,171 @@
+package handler
+
+import (
+	"amiya-eden/internal/model"
+	"amiya-eden/internal/service"
+	"amiya-eden/pkg/response"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+)
+
+type stubFuxiHallService struct {
+	getPublicPage func(string) (*service.FuxiHallPublicPageResponse, error)
+	getPageConfig func(string) (*model.FuxiHallPage, error)
+	updatePage    func(string, *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
+	listCards     func(string, bool) ([]model.FuxiHallCard, error)
+	createCard    func(*service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
+	updateCard    func(uint, *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
+	reorderCards  func(*service.FuxiHallReorderRequest) error
+	deleteCard    func(uint) error
+}
+
+func (s stubFuxiHallService) GetPublicPage(pageKey string) (*service.FuxiHallPublicPageResponse, error) {
+	if s.getPublicPage != nil {
+		return s.getPublicPage(pageKey)
+	}
+	return nil, nil
+}
+
+func (s stubFuxiHallService) GetPageConfig(pageKey string) (*model.FuxiHallPage, error) {
+	if s.getPageConfig != nil {
+		return s.getPageConfig(pageKey)
+	}
+	return nil, nil
+}
+
+func (s stubFuxiHallService) UpdatePageConfig(
+	pageKey string,
+	req *service.FuxiHallUpdatePageRequest,
+) (*model.FuxiHallPage, error) {
+	if s.updatePage != nil {
+		return s.updatePage(pageKey, req)
+	}
+	return nil, nil
+}
+
+func (s stubFuxiHallService) ListCards(pageKey string, visibleOnly bool) ([]model.FuxiHallCard, error) {
+	if s.listCards != nil {
+		return s.listCards(pageKey, visibleOnly)
+	}
+	return nil, nil
+}
+
+func (s stubFuxiHallService) CreateCard(req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
+	if s.createCard != nil {
+		return s.createCard(req)
+	}
+	return nil, nil
+}
+
+func (s stubFuxiHallService) UpdateCard(id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+	if s.updateCard != nil {
+		return s.updateCard(id, req)
+	}
+	return nil, nil
+}
+
+func (s stubFuxiHallService) ReorderCards(req *service.FuxiHallReorderRequest) error {
+	if s.reorderCards != nil {
+		return s.reorderCards(req)
+	}
+	return nil
+}
+
+func (s stubFuxiHallService) DeleteCard(id uint) error {
+	if s.deleteCard != nil {
+		return s.deleteCard(id)
+	}
+	return nil
+}
+
+func TestFuxiHallHandlerGetLeadership(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/fuxi-hall/leadership", nil)
+
+	h := &FuxiHallHandler{svc: stubFuxiHallService{
+		getPublicPage: func(pageKey string) (*service.FuxiHallPublicPageResponse, error) {
+			if pageKey != "leadership" {
+				t.Fatalf("unexpected page key: %s", pageKey)
+			}
+			return &service.FuxiHallPublicPageResponse{
+				Page: model.FuxiHallPage{PageKey: "leadership", Title: "管理层"},
+			}, nil
+		},
+	}}
+
+	h.GetLeadership(ctx)
+	resp := decodeFuxiHallResponse(t, recorder)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+}
+
+func TestFuxiHallHandlerGetPageConfigMasksInternalError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Params = gin.Params{{Key: "page_key", Value: "leadership"}}
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership", nil)
+
+	h := &FuxiHallHandler{svc: stubFuxiHallService{
+		getPageConfig: func(string) (*model.FuxiHallPage, error) {
+			return nil, errors.New("sql: broken pipe")
+		},
+	}}
+
+	h.GetPageConfig(ctx)
+	resp := decodeFuxiHallResponse(t, recorder)
+	if resp.Msg != "获取页面配置失败" {
+		t.Fatalf("response msg = %q, want fallback message", resp.Msg)
+	}
+}
+
+func TestFuxiHallHandlerReorderCardsBindsJSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(
+		http.MethodPut,
+		"/api/v1/system/fuxi-hall/cards/reorder",
+		bytes.NewBufferString(`{"page_key":"leadership","ordered_ids":[1,2,3]}`),
+	)
+	ctx.Request.Header.Set("Content-Type", "application/json")
+
+	called := false
+	h := &FuxiHallHandler{svc: stubFuxiHallService{
+		reorderCards: func(req *service.FuxiHallReorderRequest) error {
+			called = true
+			if req.PageKey != "leadership" || len(req.OrderedIDs) != 3 {
+				t.Fatalf("unexpected reorder payload: %+v", req)
+			}
+			return nil
+		},
+	}}
+
+	h.ReorderCards(ctx)
+
+	resp := decodeFuxiHallResponse(t, recorder)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+	if !called {
+		t.Fatal("expected service.ReorderCards to be called")
+	}
+}
+
+func decodeFuxiHallResponse(t *testing.T, recorder *httptest.ResponseRecorder) response.Response {
+	t.Helper()
+	var resp response.Response
+	if err := json.Unmarshal(recorder.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	return resp
+}
