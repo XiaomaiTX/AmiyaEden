@@ -17,7 +17,7 @@ test('fuxi hall root keeps login gating and manage tab requires admin roles', ()
     source.indexOf('children: [')
   )
   assert.match(rootBlock, /login:\s*true/)
-  assert.match(rootBlock, /isHide:\s*true/)
+  assert.doesNotMatch(rootBlock, /isHide:\s*true/)
 
   const manageBlock = source.slice(source.indexOf("'manage'"), source.indexOf("'manage'") + 300)
   assert.match(manageBlock, /roles:\s*\[\s*'super_admin',\s*'admin'\s*\]/)
