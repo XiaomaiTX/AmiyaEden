@@ -555,6 +555,80 @@ func TestCorporationStructureUpdateAuthorizationsDisableCleansToValidAuthorizedC
 	}
 }
 
+func TestCorporationStructureGetAssignmentsIncludesStructureMetaAndFallbacks(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: 2}, Nickname: "fuel", Role: model.RoleFuelOfficer}).Error; err != nil {
+		t.Fatalf("create fuel officer user: %v", err)
+	}
+	if err := db.Create(&model.UserRole{UserID: 2, RoleCode: model.RoleFuelOfficer}).Error; err != nil {
+		t.Fatalf("create fuel officer role: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   92000001,
+		CharacterName: "FuelOfficer Character",
+		UserID:        2,
+		CorporationID: 9001,
+	}).Error; err != nil {
+		t.Fatalf("create fuel officer character: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   111,
+		Name:          "",
+		TypeID:        35832,
+		TypeName:      "",
+		SystemID:      30000142,
+		SystemName:    "",
+		Security:      0,
+	}).Error; err != nil {
+		t.Fatalf("seed structure snapshot: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureAssignment{
+		CorporationID:       9001,
+		StructureID:         111,
+		AssignedUserID:      2,
+		AssignedCharacterID: 92000001,
+	}).Error; err != nil {
+		t.Fatalf("seed structure assignment: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	resp, err := svc.GetAssignments(context.Background(), CorporationStructureFilterOptionsRequest{
+		CorporationID: 9001,
+	})
+	if err != nil {
+		t.Fatalf("GetAssignments returned error: %v", err)
+	}
+	if len(resp.Items) != 1 {
+		t.Fatalf("expected 1 assignment item, got %d", len(resp.Items))
+	}
+	item := resp.Items[0]
+	if item.StructureName != "Structure-111" {
+		t.Fatalf("expected fallback structure name, got %q", item.StructureName)
+	}
+	if item.TypeName != "Type-35832" {
+		t.Fatalf("expected fallback type name, got %q", item.TypeName)
+	}
+	if item.SystemName != "System-30000142" {
+		t.Fatalf("expected fallback system name, got %q", item.SystemName)
+	}
+	if item.AssignedCharacterID != 92000001 {
+		t.Fatalf("assigned character id = %d, want %d", item.AssignedCharacterID, 92000001)
+	}
+	if item.AssignedCharacterName != "FuelOfficer Character" {
+		t.Fatalf("assigned character name = %q, want FuelOfficer Character", item.AssignedCharacterName)
+	}
+}
+
 func TestCorporationStructureUpdateAuthorizationsThresholdOnlyConvergesSnapshotsToValidAuthorizedCorps(t *testing.T) {
 	db := newCorporationStructureServiceTestDB(t)
 	oldDB := global.DB
@@ -826,6 +900,7 @@ func newCorporationStructureServiceTestDB(t *testing.T) *gorm.DB {
 		&model.EveCharacter{},
 		&model.EveCharacterCorpRole{},
 		&model.CorpStructureInfo{},
+		&model.CorpStructureAssignment{},
 		&model.MapSolarSystem{},
 		&model.MapRegion{},
 	)

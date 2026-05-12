@@ -207,13 +207,20 @@ type CorporationStructureRunTaskResponse struct {
 }
 
 type CorporationStructureAssignmentItem struct {
-	CorporationID         int64  `json:"corporation_id"`
-	CorporationName       string `json:"corporation_name"`
-	StructureID           int64  `json:"structure_id"`
-	StructureName         string `json:"structure_name"`
-	AssignedUserID        uint   `json:"assigned_user_id"`
-	AssignedCharacterID   int64  `json:"assigned_character_id"`
-	AssignedCharacterName string `json:"assigned_character_name"`
+	CorporationID         int64   `json:"corporation_id"`
+	CorporationName       string  `json:"corporation_name"`
+	StructureID           int64   `json:"structure_id"`
+	StructureName         string  `json:"structure_name"`
+	SystemID              int64   `json:"system_id"`
+	SystemName            string  `json:"system_name"`
+	RegionID              int64   `json:"region_id"`
+	RegionName            string  `json:"region_name"`
+	Security              float64 `json:"security"`
+	TypeID                int64   `json:"type_id"`
+	TypeName              string  `json:"type_name"`
+	AssignedUserID        uint    `json:"assigned_user_id"`
+	AssignedCharacterID   int64   `json:"assigned_character_id"`
+	AssignedCharacterName string  `json:"assigned_character_name"`
 }
 
 type CorporationStructureAssignmentListResponse struct {
@@ -657,16 +664,23 @@ func (s *CorporationStructureService) GetAssignments(
 		nameByCharacterID[o.CharacterID] = o.CharacterName
 	}
 
+	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
+	now := time.Now()
 	items := make([]CorporationStructureAssignmentItem, 0, len(structures))
 	for _, st := range structures {
+		row := buildCorporationStructureRow(st, now, systemMeta[st.SystemID])
 		item := CorporationStructureAssignmentItem{
-			CorporationID:   st.CorporationID,
-			CorporationName: st.CorporationName,
-			StructureID:     st.StructureID,
-			StructureName:   st.Name,
-		}
-		if item.StructureName == "" {
-			item.StructureName = fmt.Sprintf("Structure-%d", st.StructureID)
+			CorporationID:   row.CorporationID,
+			CorporationName: row.CorporationName,
+			StructureID:     row.StructureID,
+			StructureName:   row.Name,
+			SystemID:        row.SystemID,
+			SystemName:      row.SystemName,
+			RegionID:        row.RegionID,
+			RegionName:      row.RegionName,
+			Security:        row.Security,
+			TypeID:          row.TypeID,
+			TypeName:        row.TypeName,
 		}
 		if assignment, ok := assignByStructure[st.StructureID]; ok {
 			item.AssignedUserID = assignment.AssignedUserID
