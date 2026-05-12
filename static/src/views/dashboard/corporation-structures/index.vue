@@ -236,7 +236,7 @@
           </div>
         </ElCard>
 
-        <ElCard shadow="never" class="art-table-card">
+        <ElCard shadow="never" class="art-table-card corporation-structures-page__list-card">
           <ArtTableHeader
             v-model:columns="columnChecks"
             :loading="loading"
@@ -1016,6 +1016,12 @@
 
 <style scoped lang="scss">
   .corporation-structures-page {
+    :deep(.el-card__body) {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
     :deep(.el-tabs) {
       display: flex;
       flex: 1;
@@ -1035,5 +1041,25 @@
       display: flex;
       flex-direction: column;
     }
+
+    &__list-card {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
+  .corporation-structures-page__list-card :deep(.el-card__body) {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .corporation-structures-page__list-card :deep(.el-table) {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .corporation-structures-page__list-card :deep(.el-table__inner-wrapper) {
+    height: 100%;
+    min-height: 0;
   }
 </style>
