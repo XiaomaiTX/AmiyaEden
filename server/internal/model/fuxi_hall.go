@@ -24,6 +24,7 @@ type FuxiHallCard struct {
 	BaseModel
 	PageKey           string `gorm:"size:32;index;not null"    json:"page_key"`
 	Nickname          string `gorm:"size:256;not null"         json:"nickname"`
+	MainCharacterID   int64  `gorm:"index"                     json:"main_character_id"`
 	MainCharacterName string `gorm:"size:512;not null"         json:"main_character_name"`
 	Title             string `gorm:"size:512;not null"         json:"title"`
 	DescriptionHTML   string `gorm:"type:text;not null;default:''" json:"description_html"`

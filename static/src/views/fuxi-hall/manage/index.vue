@@ -1,5 +1,5 @@
 <template>
-  <div class="fuxi-hall-manage art-full-height" v-loading="loading">
+  <div class="fuxi-hall-manage" v-loading="loading">
     <ElCard class="fuxi-hall-manage__toolbar art-table-card" shadow="never">
       <div class="fuxi-hall-manage__toolbar-inner">
         <ElSegmented
@@ -57,6 +57,11 @@
             :label="t('fuxiHall.manage.mainCharacterName')"
             min-width="180"
           />
+          <ElTableColumn
+            prop="main_character_id"
+            :label="t('fuxiHall.manage.mainCharacterId')"
+            min-width="140"
+          />
           <ElTableColumn prop="title" :label="t('fuxiHall.manage.title')" min-width="180" />
           <ElTableColumn prop="visible" :label="t('fuxiHall.manage.visible')" width="90">
             <template #default="{ row }">
@@ -111,16 +116,20 @@
                 <img v-if="card.cover_image" :src="card.cover_image" :alt="card.nickname" />
               </div>
               <div class="fuxi-hall-manage__preview-body">
-                <img
-                  v-if="card.avatar_image"
-                  class="fuxi-hall-manage__preview-avatar"
-                  :class="`is-${card.avatar_shape}`"
-                  :src="card.avatar_image"
-                  :alt="card.nickname"
-                />
-                <h4>{{ card.nickname }}</h4>
-                <p>{{ card.main_character_name }}</p>
-                <p>{{ card.title }}</p>
+                <div class="fuxi-hall-manage__preview-meta">
+                  <img
+                    v-if="card.main_character_id > 0"
+                    class="fuxi-hall-manage__preview-avatar"
+                    :class="`is-${card.avatar_shape}`"
+                    :src="buildEveCharacterPortraitUrl(card.main_character_id, 256)"
+                    :alt="card.nickname"
+                  />
+                  <div>
+                    <h4>{{ card.nickname }}</h4>
+                    <p>{{ card.main_character_name }}</p>
+                    <p>{{ card.title }}</p>
+                  </div>
+                </div>
                 <div class="fuxi-hall-manage__preview-description" v-html="card.description_html" />
               </div>
             </article>
@@ -141,6 +150,9 @@
           </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.mainCharacterName')" required>
             <ElInput v-model="cardForm.main_character_name" />
+          </ElFormItem>
+          <ElFormItem :label="t('fuxiHall.manage.mainCharacterId')" required>
+            <ElInputNumber v-model="cardForm.main_character_id" :min="1" />
           </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.title')" required>
             <ElInput v-model="cardForm.title" />
@@ -190,16 +202,6 @@
         </div>
 
         <div class="fuxi-hall-manage__upload-row">
-          <ElFormItem :label="t('fuxiHall.manage.avatarImage')">
-            <ElInput v-model="cardForm.avatar_image" />
-            <ElUpload
-              :show-file-list="false"
-              :auto-upload="false"
-              :on-change="(file) => void uploadCardImage(file, 'avatar')"
-            >
-              <ElButton>{{ t('fuxiHall.manage.uploadAvatar') }}</ElButton>
-            </ElUpload>
-          </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.coverImage')">
             <ElInput v-model="cardForm.cover_image" />
             <ElUpload
@@ -242,6 +244,7 @@
     updateFuxiHallPage
   } from '@/api/fuxi-hall'
   import { uploadImageAsDataUrl } from '@/api/upload'
+  import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   const { t } = useI18n()
 
@@ -264,10 +267,10 @@
   type CardFormState = {
     page_key: Api.FuxiHall.PageKey
     nickname: string
+    main_character_id: number
     main_character_name: string
     title: string
     description_html: string
-    avatar_image: string
     cover_image: string
     style_preset: Api.FuxiHall.StylePreset
     accent_color: string
@@ -287,10 +290,10 @@
   const cardForm = reactive<CardFormState>({
     page_key: 'leadership',
     nickname: '',
+    main_character_id: 0,
     main_character_name: '',
     title: '',
     description_html: '',
-    avatar_image: '',
     cover_image: '',
     style_preset: 'classic',
     accent_color: '#3b82f6',
@@ -344,10 +347,10 @@
       id: editingCardId.value ?? -1,
       page_key: currentPageKey.value,
       nickname: cardForm.nickname.trim(),
+      main_character_id: cardForm.main_character_id,
       main_character_name: cardForm.main_character_name.trim(),
       title: cardForm.title.trim(),
       description_html: cardForm.description_html,
-      avatar_image: cardForm.avatar_image,
       cover_image: cardForm.cover_image,
       style_preset: cardForm.style_preset,
       accent_color: cardForm.accent_color,
@@ -430,10 +433,10 @@
   function resetCardForm() {
     cardForm.page_key = currentPageKey.value
     cardForm.nickname = ''
+    cardForm.main_character_id = 0
     cardForm.main_character_name = ''
     cardForm.title = ''
     cardForm.description_html = ''
-    cardForm.avatar_image = ''
     cardForm.cover_image = ''
     cardForm.style_preset = 'classic'
     cardForm.accent_color = '#3b82f6'
@@ -454,10 +457,10 @@
     editingCardId.value = card.id
     cardForm.page_key = card.page_key
     cardForm.nickname = card.nickname
+    cardForm.main_character_id = card.main_character_id
     cardForm.main_character_name = card.main_character_name
     cardForm.title = card.title
     cardForm.description_html = card.description_html
-    cardForm.avatar_image = card.avatar_image
     cardForm.cover_image = card.cover_image
     cardForm.style_preset = card.style_preset
     cardForm.accent_color = card.accent_color
@@ -472,6 +475,7 @@
   async function submitCard() {
     if (
       !cardForm.nickname.trim() ||
+      cardForm.main_character_id <= 0 ||
       !cardForm.main_character_name.trim() ||
       !cardForm.title.trim()
     ) {
@@ -482,10 +486,10 @@
     const payload: Api.FuxiHall.CreateCardParams = {
       page_key: currentPageKey.value,
       nickname: cardForm.nickname.trim(),
+      main_character_id: cardForm.main_character_id,
       main_character_name: cardForm.main_character_name.trim(),
       title: cardForm.title.trim(),
       description_html: cardForm.description_html || '',
-      avatar_image: cardForm.avatar_image || '',
       cover_image: cardForm.cover_image || '',
       style_preset: cardForm.style_preset,
       accent_color: cardForm.accent_color,
@@ -564,15 +568,13 @@
     }
   }
 
-  async function uploadCardImage(file: UploadFile, target: 'avatar' | 'cover') {
+  async function uploadCardImage(file: UploadFile, target: 'cover') {
     if (!file.raw) {
       return
     }
     try {
       const { url } = await uploadImageAsDataUrl(file.raw)
-      if (target === 'avatar') {
-        cardForm.avatar_image = url
-      } else {
+      if (target === 'cover') {
         cardForm.cover_image = url
       }
       ElMessage.success(t('fuxiHall.manage.uploadSuccess'))
@@ -587,14 +589,8 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    min-height: 100%;
-    min-width: 0;
+    min-height: 0;
     padding: 20px;
-    overflow: auto;
-    background:
-      radial-gradient(circle at top left, rgb(37 99 235 / 10%), transparent 32%),
-      radial-gradient(circle at top right, rgb(14 116 144 / 10%), transparent 30%),
-      var(--el-bg-color-page);
   }
 
   .fuxi-hall-manage__toolbar-inner {
@@ -614,6 +610,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
+    min-height: 0;
   }
 
   .fuxi-hall-manage__order-buttons {
@@ -629,7 +626,7 @@
 
   .fuxi-hall-manage__upload-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
 
@@ -660,13 +657,13 @@
 
   .fuxi-hall-manage__preview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
   }
 
   .fuxi-hall-manage__preview-card {
     border: 1px solid color-mix(in srgb, var(--accent-color), transparent 75%);
-    border-radius: 14px;
+    border-radius: 16px;
     overflow: hidden;
     background: var(--el-bg-color);
   }
@@ -683,16 +680,22 @@
   }
 
   .fuxi-hall-manage__preview-body {
-    padding: 12px;
+    padding: 14px;
     color: var(--el-text-color-regular);
   }
 
+  .fuxi-hall-manage__preview-meta {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
   .fuxi-hall-manage__preview-avatar {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
     object-fit: cover;
     border: 2px solid color-mix(in srgb, var(--accent-color), transparent 62%);
-    margin-bottom: 8px;
     display: block;
   }
 
@@ -715,7 +718,7 @@
   }
 
   .fuxi-hall-manage__preview-body p {
-    margin: 6px 0 0;
+    margin: 4px 0 0;
   }
 
   .fuxi-hall-manage__preview-description {
@@ -736,6 +739,10 @@
   @media (max-width: 768px) {
     .fuxi-hall-manage {
       padding: 14px;
+    }
+
+    .fuxi-hall-manage__preview-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>

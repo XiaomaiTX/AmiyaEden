@@ -168,7 +168,9 @@ func TestAuditEventHandlerCreateAndGetExportTask(t *testing.T) {
 	}
 
 	var gotStatus string
-	for i := 0; i < 20; i++ {
+	var gotErrorMessage string
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
 		getRec := httptest.NewRecorder()
 		getReq := httptest.NewRequest(http.MethodGet, "/api/v1/system/audit/export/"+created.TaskID, nil)
 		r.ServeHTTP(getRec, getReq)
@@ -177,19 +179,26 @@ func TestAuditEventHandlerCreateAndGetExportTask(t *testing.T) {
 			t.Fatalf("get code = %d, want %d", resp.Code, response.CodeOK)
 		}
 		var statusResp struct {
-			Status string `json:"status"`
+			Status       string `json:"status"`
+			ErrorMessage string `json:"error_message"`
 		}
 		if err := json.Unmarshal(resp.Data, &statusResp); err != nil {
 			t.Fatalf("decode get response: %v", err)
 		}
 		gotStatus = statusResp.Status
+		gotErrorMessage = statusResp.ErrorMessage
 		if gotStatus == model.AuditExportStatusDone || gotStatus == model.AuditExportStatusFailed {
 			break
 		}
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 	if gotStatus != model.AuditExportStatusDone {
-		t.Fatalf("final status = %s, want %s", gotStatus, model.AuditExportStatusDone)
+		t.Fatalf(
+			"final status = %s, want %s, error_message=%q",
+			gotStatus,
+			model.AuditExportStatusDone,
+			gotErrorMessage,
+		)
 	}
 }
 

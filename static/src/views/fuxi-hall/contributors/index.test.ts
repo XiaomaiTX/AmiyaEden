@@ -12,6 +12,7 @@ test('contributors view binds contributors endpoint and fallback copy', () => {
 })
 
 test('contributors view keeps responsive card grid layout', () => {
-  assert.match(source, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(280px,\s*1fr\)\)/)
+  assert.match(source, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(300px,\s*1fr\)\)/)
+  assert.match(source, /buildEveCharacterPortraitUrl\(card\.main_character_id,\s*256\)/)
   assert.match(source, /@media\s*\(max-width:\s*768px\)/)
 })

@@ -3034,10 +3034,10 @@ declare namespace Api {
       id: number
       page_key: PageKey
       nickname: string
+      main_character_id: number
       main_character_name: string
       title: string
       description_html: string
-      avatar_image: string
       cover_image: string
       style_preset: StylePreset
       accent_color: string
@@ -3065,10 +3065,10 @@ declare namespace Api {
     interface CreateCardParams {
       page_key: PageKey
       nickname: string
+      main_character_id: number
       main_character_name: string
       title: string
       description_html?: string
-      avatar_image?: string
       cover_image?: string
       style_preset?: StylePreset
       accent_color?: string

@@ -46,7 +46,7 @@ source_of_truth:
 ## 后端规则
 
 - `page_key` 仅允许 `leadership | contributors`
-- 卡片必填：`nickname`、`main_character_name`、`title`
+- 卡片必填：`nickname`、`main_character_id`、`main_character_name`、`title`
 - `description_html` 在服务层白名单清洗后入库与返回
 - `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
 - 样式字段受控：
@@ -67,7 +67,8 @@ source_of_truth:
 
 - 页面标题/副标题/富文本说明编辑
 - 卡片增删改
-- 头像/封面上传（复用 `/api/v1/upload/image`）
+- 头像统一由 `main_character_id` 生成 ESI 人物头像（不支持自定义头像上传）
+- 封面上传（复用 `/api/v1/upload/image`）
 - 受控样式编辑
 - 显隐切换
 - 手动排序（上移/下移）
