@@ -25,6 +25,7 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import ArtLineChart from '@/components/core/charts/art-line-chart/index.vue'
+  import { buildPapTrendSeries } from './pap-chart.utils'
 
   const { t } = useI18n()
   const props = defineProps<{
@@ -32,16 +33,17 @@
     data: Api.Dashboard.PapMonthly[]
   }>()
 
-  /** 按时间正序排列的数据 */
   const chartData = computed(() => {
-    return [...props.data].sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year
-      return a.month - b.month
-    })
+    return buildPapTrendSeries(props.data)
   })
 
   const chartLabels = computed(() => {
-    return chartData.value.map((d) => t('console.papChart.monthLabel', { month: d.month }))
+    return chartData.value.map((d) =>
+      t('console.papChart.monthLabel', {
+        year: d.year,
+        month: String(d.month).padStart(2, '0')
+      })
+    )
   })
 
   const chartValues = computed(() => {
