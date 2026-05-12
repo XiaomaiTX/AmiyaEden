@@ -27,10 +27,10 @@
 
             <div class="fuxi-hall-page__body">
               <img
-                v-if="card.avatar_image"
+                v-if="card.main_character_id > 0"
                 class="fuxi-hall-page__avatar"
                 :class="`is-${card.avatar_shape}`"
-                :src="card.avatar_image"
+                :src="buildEveCharacterPortraitUrl(card.main_character_id, 256)"
                 :alt="card.nickname"
               />
               <h3>{{ card.nickname }}</h3>
@@ -56,6 +56,7 @@
   import { useI18n } from 'vue-i18n'
 
   import { fetchFuxiHallLeadership } from '@/api/fuxi-hall'
+  import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   const { t } = useI18n()
   const loading = ref(false)
@@ -132,8 +133,8 @@
 
   .fuxi-hall-page__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
   }
 
   .fuxi-hall-page__member {
@@ -156,14 +157,17 @@
 
   .fuxi-hall-page__body {
     padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .fuxi-hall-page__avatar {
-    width: 64px;
-    height: 64px;
+    width: 88px;
+    height: 88px;
     object-fit: cover;
     border: 2px solid color-mix(in srgb, var(--accent-color), transparent 64%);
-    margin-bottom: 10px;
+    margin-bottom: 2px;
     display: block;
   }
 
@@ -187,7 +191,7 @@
 
   .fuxi-hall-page__main-name,
   .fuxi-hall-page__title {
-    margin: 8px 0 0;
+    margin: 0;
     color: var(--el-text-color-regular);
   }
 

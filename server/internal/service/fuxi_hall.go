@@ -63,10 +63,10 @@ type FuxiHallUpdatePageRequest struct {
 type FuxiHallCreateCardRequest struct {
 	PageKey           string `json:"page_key"`
 	Nickname          string `json:"nickname"`
+	MainCharacterID   int64  `json:"main_character_id"`
 	MainCharacterName string `json:"main_character_name"`
 	Title             string `json:"title"`
 	DescriptionHTML   string `json:"description_html"`
-	AvatarImage       string `json:"avatar_image"`
 	CoverImage        string `json:"cover_image"`
 	StylePreset       string `json:"style_preset"`
 	AccentColor       string `json:"accent_color"`
@@ -79,10 +79,10 @@ type FuxiHallCreateCardRequest struct {
 
 type FuxiHallUpdateCardRequest struct {
 	Nickname          *string `json:"nickname"`
+	MainCharacterID   *int64  `json:"main_character_id"`
 	MainCharacterName *string `json:"main_character_name"`
 	Title             *string `json:"title"`
 	DescriptionHTML   *string `json:"description_html"`
-	AvatarImage       *string `json:"avatar_image"`
 	CoverImage        *string `json:"cover_image"`
 	StylePreset       *string `json:"style_preset"`
 	AccentColor       *string `json:"accent_color"`
@@ -196,6 +196,9 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 	if mainCharacterName == "" {
 		return nil, NewUserVisibleError("主角色名称不能为空")
 	}
+	if req.MainCharacterID <= 0 {
+		return nil, NewUserVisibleError("主角色 ID 必须大于 0")
+	}
 	title := strings.TrimSpace(req.Title)
 	if title == "" {
 		return nil, NewUserVisibleError("头衔不能为空")
@@ -239,10 +242,10 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 	card := &model.FuxiHallCard{
 		PageKey:           pageKey,
 		Nickname:          nickname,
+		MainCharacterID:   req.MainCharacterID,
 		MainCharacterName: mainCharacterName,
 		Title:             title,
 		DescriptionHTML:   sanitizeRichTextHTML(req.DescriptionHTML),
-		AvatarImage:       strings.TrimSpace(req.AvatarImage),
 		CoverImage:        strings.TrimSpace(req.CoverImage),
 		StylePreset:       stylePreset,
 		AccentColor:       accentColor,
@@ -284,6 +287,12 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 		}
 		updates["main_character_name"] = value
 	}
+	if req.MainCharacterID != nil {
+		if *req.MainCharacterID <= 0 {
+			return nil, NewUserVisibleError("主角色 ID 必须大于 0")
+		}
+		updates["main_character_id"] = *req.MainCharacterID
+	}
 	if req.Title != nil {
 		value := strings.TrimSpace(*req.Title)
 		if value == "" {
@@ -293,9 +302,6 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 	}
 	if req.DescriptionHTML != nil {
 		updates["description_html"] = sanitizeRichTextHTML(*req.DescriptionHTML)
-	}
-	if req.AvatarImage != nil {
-		updates["avatar_image"] = strings.TrimSpace(*req.AvatarImage)
 	}
 	if req.CoverImage != nil {
 		updates["cover_image"] = strings.TrimSpace(*req.CoverImage)

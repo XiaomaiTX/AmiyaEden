@@ -34,6 +34,7 @@ func TestFuxiHallCreateCardValidatesRequiredFields(t *testing.T) {
 	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "",
+		MainCharacterID:   1001,
 		MainCharacterName: "Main",
 		Title:             "Title",
 	})
@@ -49,6 +50,7 @@ func TestFuxiHallCreateCardSanitizesDescriptionHTML(t *testing.T) {
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "Alpha",
+		MainCharacterID:   1001,
 		MainCharacterName: "Main",
 		Title:             "Lead",
 		DescriptionHTML:   `<p>Hello</p><script>alert(1)</script><a href="javascript:evil()">x</a>`,
@@ -68,6 +70,7 @@ func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "Beta",
+		MainCharacterID:   1002,
 		MainCharacterName: "Main",
 		Title:             "Builder",
 	})
@@ -90,6 +93,7 @@ func TestFuxiHallCreateCardValidatesNumericStyleBounds(t *testing.T) {
 	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "Bound",
+		MainCharacterID:   1003,
 		MainCharacterName: "Bound",
 		Title:             "Bound",
 		CoverHeight:       &tooShortCover,
@@ -102,6 +106,7 @@ func TestFuxiHallCreateCardValidatesNumericStyleBounds(t *testing.T) {
 	_, err = svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "Bound",
+		MainCharacterID:   1003,
 		MainCharacterName: "Bound",
 		Title:             "Bound",
 		FontScale:         &tooBigFont,
@@ -118,6 +123,7 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 	cardA, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "A",
+		MainCharacterID:   2001,
 		MainCharacterName: "A",
 		Title:             "A",
 	})
@@ -127,6 +133,7 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 	cardB, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "B",
+		MainCharacterID:   2002,
 		MainCharacterName: "B",
 		Title:             "B",
 	})
@@ -164,6 +171,7 @@ func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "Dup",
+		MainCharacterID:   2003,
 		MainCharacterName: "Dup",
 		Title:             "Dup",
 	})
