@@ -345,7 +345,7 @@
         :label="$t('corporationStructures.tabs.assignmentSalary')"
         name="assignment_salary"
       >
-        <ElCard shadow="never" class="art-table-card">
+        <ElCard shadow="never" class="art-card mb-4">
           <div class="flex flex-wrap items-center gap-3 mb-4">
             <ElButton :loading="assignmentsLoading" @click="loadAssignments">
               {{ $t('common.refresh') }}
@@ -372,41 +372,107 @@
               </ElButton>
             </div>
           </ElFormItem>
+        </ElCard>
+        <ElCard shadow="never" class="art-card mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            <ElFormItem :label="$t('corporationStructures.salary.targetFuelOfficer')" class="mb-0">
+              <ElSelect v-model="assignmentTargetCharacterId" clearable filterable class="w-full">
+                <ElOption
+                  v-for="option in fuelOfficerOptions"
+                  :key="option.character_id"
+                  :label="`${option.character_name} (${option.character_id})`"
+                  :value="option.character_id"
+                />
+              </ElSelect>
+            </ElFormItem>
+            <ElFormItem :label="$t('corporationStructures.salary.assignmentFilter')" class="mb-0">
+              <ElRadioGroup v-model="assignmentFilterMode">
+                <ElRadioButton value="all">{{
+                  $t('corporationStructures.salary.assignmentFilterAll')
+                }}</ElRadioButton>
+                <ElRadioButton value="assigned_to_selected_officer">{{
+                  $t('corporationStructures.salary.assignmentFilterAssignedToTarget')
+                }}</ElRadioButton>
+                <ElRadioButton value="unassigned">{{
+                  $t('corporationStructures.salary.assignmentFilterUnassigned')
+                }}</ElRadioButton>
+              </ElRadioGroup>
+            </ElFormItem>
+            <ElFormItem :label="$t('corporationStructures.filters.systems')" class="mb-0">
+              <ElSelect
+                v-model="assignmentFilterSystemIds"
+                multiple
+                filterable
+                clearable
+                collapse-tags
+                collapse-tags-tooltip
+                class="w-full"
+              >
+                <ElOption
+                  v-for="item in assignmentSystemOptions"
+                  :key="item.system_id"
+                  :label="item.system_name"
+                  :value="item.system_id"
+                />
+              </ElSelect>
+            </ElFormItem>
+            <ElFormItem :label="$t('corporationStructures.salary.regionFilter')" class="mb-0">
+              <ElSelect
+                v-model="assignmentFilterRegionIds"
+                multiple
+                filterable
+                clearable
+                collapse-tags
+                collapse-tags-tooltip
+                class="w-full"
+              >
+                <ElOption
+                  v-for="item in assignmentRegionOptions"
+                  :key="item.region_id"
+                  :label="item.region_name"
+                  :value="item.region_id"
+                />
+              </ElSelect>
+            </ElFormItem>
+            <ElFormItem :label="$t('corporationStructures.filters.types')" class="mb-0">
+              <ElSelect
+                v-model="assignmentFilterTypeIds"
+                multiple
+                filterable
+                clearable
+                collapse-tags
+                collapse-tags-tooltip
+                class="w-full"
+              >
+                <ElOption
+                  v-for="item in assignmentTypeOptions"
+                  :key="item.type_id"
+                  :label="item.type_name"
+                  :value="item.type_id"
+                />
+              </ElSelect>
+            </ElFormItem>
+          </div>
+          <div class="mt-4">
+            <ElButton @click="resetAssignmentFilters">{{ $t('common.reset') }}</ElButton>
+          </div>
+        </ElCard>
 
-          <ElTable v-loading="assignmentsLoading" :data="assignmentItems" stripe border>
-            <ElTableColumn :label="$t('corporationStructures.table.corporation')" min-width="220">
-              <template #default="{ row }">
-                <div class="font-medium">{{ row.corporation_name }}</div>
-                <div class="text-xs text-g-500">{{ row.corporation_id }}</div>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn
-              :label="$t('corporationStructures.table.name')"
-              prop="structure_name"
-              min-width="240"
-            />
-            <ElTableColumn
-              :label="$t('corporationStructures.salary.assignedFuelOfficer')"
-              min-width="280"
-            >
-              <template #default="{ row }">
-                <ElSelect
-                  v-model="assignmentByStructure[row.structure_id]"
-                  clearable
-                  class="w-full"
-                  @clear="assignmentByStructure[row.structure_id] = 0"
-                >
-                  <ElOption :label="$t('corporationStructures.options.disabled')" :value="0" />
-                  <ElOption
-                    v-for="option in fuelOfficerOptions"
-                    :key="option.character_id"
-                    :label="`${option.character_name} (${option.character_id})`"
-                    :value="option.character_id"
-                  />
-                </ElSelect>
-              </template>
-            </ElTableColumn>
-          </ElTable>
+        <ElCard shadow="never" class="art-table-card corporation-structures-page__list-card">
+          <ArtTableHeader
+            v-model:columns="assignmentColumnChecks"
+            :loading="assignmentsLoading"
+            @refresh="loadAssignments"
+          />
+          <ArtTable
+            :loading="assignmentsLoading"
+            :data="pagedAssignmentItems"
+            :columns="assignmentColumnChecks"
+            :pagination="assignmentPagination"
+            :empty-text="$t('corporationStructures.empty.list')"
+            @pagination:size-change="handleAssignmentPaginationSizeChange"
+            @pagination:current-change="handleAssignmentPaginationCurrentChange"
+          />
         </ElCard>
       </ElTabPane>
     </ElTabs>
@@ -414,10 +480,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElTag } from 'element-plus'
+  import { ElCheckbox, ElMessage, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
   import { useTable } from '@/hooks/core/useTable'
+  import type { ColumnOption } from '@/types/component'
   import { formatTime } from '@/utils/common'
   import {
     fetchCorporationStructureAssignments,
@@ -436,6 +503,8 @@
 
   type StructureTab = 'list' | 'settings' | 'assignment_salary'
   type StructureRow = Api.Dashboard.CorporationStructureRow
+  type AssignmentRow = Api.Dashboard.CorporationStructureAssignmentItem
+  type AssignmentFilterMode = 'all' | 'assigned_to_selected_officer' | 'unassigned'
   type TableSort = { prop?: string; order?: 'ascending' | 'descending' | null }
   type TagType = '' | 'success' | 'warning' | 'info' | 'primary' | 'danger'
 
@@ -496,13 +565,158 @@
   const savingSalary = ref(false)
   const runningPayout = ref(false)
   const payoutMonth = ref<string>('')
-  const assignmentItems = ref<Api.Dashboard.CorporationStructureAssignmentItem[]>([])
+  const assignmentItems = ref<AssignmentRow[]>([])
   const fuelOfficerOptions = ref<Api.Dashboard.FuelOfficerCharacterOption[]>([])
   const assignmentByStructure = reactive<Record<number, number>>({})
+  const assignmentTargetCharacterId = ref<number>(0)
+  const assignmentFilterMode = ref<AssignmentFilterMode>('all')
+  const assignmentFilterSystemIds = ref<number[]>([])
+  const assignmentFilterRegionIds = ref<number[]>([])
+  const assignmentFilterTypeIds = ref<number[]>([])
+  const assignmentPagination = reactive({ current: 1, size: 20, total: 0 })
   const salaryPerStructureMonthly = ref(0)
   const validCorporations = computed(() =>
     settings.value.corporations.filter((corp) => (corp.authorized_character_id || 0) > 0)
   )
+  const assignmentSystemOptions = computed(() => {
+    const optionByID = new Map<number, { system_id: number; system_name: string }>()
+    assignmentItems.value.forEach((item) => {
+      if (item.system_id > 0 && !optionByID.has(item.system_id)) {
+        optionByID.set(item.system_id, {
+          system_id: item.system_id,
+          system_name: item.system_name || `System-${item.system_id}`
+        })
+      }
+    })
+    return [...optionByID.values()].sort((a, b) => a.system_name.localeCompare(b.system_name))
+  })
+  const assignmentRegionOptions = computed(() => {
+    const optionByID = new Map<number, { region_id: number; region_name: string }>()
+    assignmentItems.value.forEach((item) => {
+      if (item.region_id > 0 && !optionByID.has(item.region_id)) {
+        optionByID.set(item.region_id, {
+          region_id: item.region_id,
+          region_name: item.region_name || `Region-${item.region_id}`
+        })
+      }
+    })
+    return [...optionByID.values()].sort((a, b) => a.region_name.localeCompare(b.region_name))
+  })
+  const assignmentTypeOptions = computed(() => {
+    const optionByID = new Map<number, { type_id: number; type_name: string }>()
+    assignmentItems.value.forEach((item) => {
+      if (item.type_id > 0 && !optionByID.has(item.type_id)) {
+        optionByID.set(item.type_id, {
+          type_id: item.type_id,
+          type_name: item.type_name || `Type-${item.type_id}`
+        })
+      }
+    })
+    return [...optionByID.values()].sort((a, b) => a.type_name.localeCompare(b.type_name))
+  })
+  const filteredAssignmentItems = computed(() => {
+    return assignmentItems.value.filter((item) => {
+      if (
+        assignmentFilterMode.value === 'assigned_to_selected_officer' &&
+        assignmentTargetCharacterId.value > 0 &&
+        assignmentByStructure[item.structure_id] !== assignmentTargetCharacterId.value
+      ) {
+        return false
+      }
+      if (
+        assignmentFilterMode.value === 'assigned_to_selected_officer' &&
+        assignmentTargetCharacterId.value <= 0
+      ) {
+        return false
+      }
+      if (
+        assignmentFilterMode.value === 'unassigned' &&
+        (assignmentByStructure[item.structure_id] || 0) > 0
+      ) {
+        return false
+      }
+      if (
+        assignmentFilterSystemIds.value.length > 0 &&
+        !assignmentFilterSystemIds.value.includes(item.system_id)
+      ) {
+        return false
+      }
+      if (
+        assignmentFilterRegionIds.value.length > 0 &&
+        !assignmentFilterRegionIds.value.includes(item.region_id)
+      ) {
+        return false
+      }
+      if (
+        assignmentFilterTypeIds.value.length > 0 &&
+        !assignmentFilterTypeIds.value.includes(item.type_id)
+      ) {
+        return false
+      }
+      return true
+    })
+  })
+  const pagedAssignmentItems = computed(() => {
+    assignmentPagination.total = filteredAssignmentItems.value.length
+    const start = (assignmentPagination.current - 1) * assignmentPagination.size
+    return filteredAssignmentItems.value.slice(start, start + assignmentPagination.size)
+  })
+  const assignmentColumns = computed<ColumnOption<AssignmentRow>[]>(() => [
+    {
+      prop: 'assigned_to_target',
+      label: t('corporationStructures.salary.assignedToTarget'),
+      width: 170,
+      formatter: (row: AssignmentRow) =>
+        h(ElCheckbox, {
+          modelValue:
+            assignmentTargetCharacterId.value > 0 &&
+            assignmentByStructure[row.structure_id] === assignmentTargetCharacterId.value,
+          disabled: assignmentTargetCharacterId.value <= 0,
+          onChange: (checked: string | number | boolean) =>
+            toggleAssignmentToTarget(row, Boolean(checked))
+        })
+    },
+    {
+      prop: 'corporation_name',
+      label: t('corporationStructures.table.corporation'),
+      minWidth: 180,
+      showOverflowTooltip: true
+    },
+    {
+      prop: 'structure_name',
+      label: t('corporationStructures.table.name'),
+      minWidth: 220,
+      showOverflowTooltip: true
+    },
+    {
+      prop: 'system_name',
+      label: t('corporationStructures.table.system'),
+      minWidth: 220,
+      formatter: (row: AssignmentRow) =>
+        h('div', { class: 'leading-5' }, [
+          h('div', {}, row.system_name || '--'),
+          h(
+            'div',
+            { class: 'text-xs text-g-500' },
+            `${row.region_name || '--'} / ${formatSecurity(row.security)}`
+          )
+        ])
+    },
+    {
+      prop: 'type_name',
+      label: t('corporationStructures.table.type'),
+      minWidth: 180,
+      showOverflowTooltip: true
+    },
+    {
+      prop: 'assigned_character_name',
+      label: t('corporationStructures.salary.assignedFuelOfficer'),
+      minWidth: 220,
+      formatter: (row: AssignmentRow) =>
+        row.assigned_character_name || t('corporationStructures.salary.unassignedLabel')
+    }
+  ])
+  const assignmentColumnChecks = ref<ColumnOption[]>([])
 
   const normalizeFuelHours = (value: number | undefined) => {
     if (value == null || Number.isNaN(value)) {
@@ -902,6 +1116,51 @@
     activeTab.value = normalizeTab(tab)
   }
 
+  const syncAssignmentColumnChecks = () => {
+    assignmentColumnChecks.value = assignmentColumns.value.map((col) => ({
+      ...col,
+      checked: col.checked ?? true,
+      visible: col.visible ?? true
+    }))
+  }
+
+  const resetAssignmentFilters = () => {
+    assignmentFilterMode.value = 'all'
+    assignmentFilterSystemIds.value = []
+    assignmentFilterRegionIds.value = []
+    assignmentFilterTypeIds.value = []
+    assignmentPagination.current = 1
+  }
+
+  const toggleAssignmentToTarget = (row: AssignmentRow, checked: boolean) => {
+    const target = assignmentTargetCharacterId.value
+    if (target <= 0) {
+      return
+    }
+    if (checked) {
+      assignmentByStructure[row.structure_id] = target
+      row.assigned_character_id = target
+      row.assigned_character_name =
+        fuelOfficerOptions.value.find((item) => item.character_id === target)?.character_name || ''
+      return
+    }
+
+    if (assignmentByStructure[row.structure_id] === target) {
+      assignmentByStructure[row.structure_id] = 0
+      row.assigned_character_id = 0
+      row.assigned_character_name = ''
+    }
+  }
+
+  const handleAssignmentPaginationSizeChange = (size: number) => {
+    assignmentPagination.size = size
+    assignmentPagination.current = 1
+  }
+
+  const handleAssignmentPaginationCurrentChange = (current: number) => {
+    assignmentPagination.current = current
+  }
+
   const loadAssignments = async () => {
     assignmentsLoading.value = true
     try {
@@ -916,6 +1175,19 @@
       for (const item of response.items) {
         assignmentByStructure[item.structure_id] = item.assigned_character_id || 0
       }
+      if (
+        assignmentTargetCharacterId.value > 0 &&
+        !response.fuel_officers.some(
+          (item) => item.character_id === assignmentTargetCharacterId.value
+        )
+      ) {
+        assignmentTargetCharacterId.value = 0
+      }
+      if (assignmentTargetCharacterId.value <= 0 && response.fuel_officers.length > 0) {
+        assignmentTargetCharacterId.value = response.fuel_officers[0].character_id
+      }
+      resetAssignmentFilters()
+      syncAssignmentColumnChecks()
     } finally {
       assignmentsLoading.value = false
     }
@@ -994,6 +1266,29 @@
       }
     })
   })
+
+  watch(
+    () => [
+      assignmentFilterMode.value,
+      assignmentTargetCharacterId.value,
+      assignmentFilterSystemIds.value.join(','),
+      assignmentFilterRegionIds.value.join(','),
+      assignmentFilterTypeIds.value.join(',')
+    ],
+    () => {
+      assignmentPagination.current = 1
+    }
+  )
+
+  watch(
+    () => filteredAssignmentItems.value.length,
+    (total) => {
+      const maxPage = Math.max(1, Math.ceil(total / assignmentPagination.size))
+      if (assignmentPagination.current > maxPage) {
+        assignmentPagination.current = maxPage
+      }
+    }
+  )
 
   onMounted(async () => {
     if (!route.query.tab || normalizeTab(route.query.tab) !== route.query.tab) {

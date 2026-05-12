@@ -1848,6 +1848,13 @@ declare namespace Api {
       corporation_name: string
       structure_id: number
       structure_name: string
+      system_id: number
+      system_name: string
+      region_id: number
+      region_name: string
+      security: number
+      type_id: number
+      type_name: string
       assigned_user_id: number
       assigned_character_id: number
       assigned_character_name: string
