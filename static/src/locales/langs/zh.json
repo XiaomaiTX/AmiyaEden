@@ -128,7 +128,7 @@
     "internalPap": "内部 PAP",
     "papChart": {
       "recentMonths": "近 {count} 个月",
-      "monthLabel": "{month}月",
+      "monthLabel": "{year}年{month}月",
       "empty": "暂无 PAP 数据"
     }
   },
@@ -2320,7 +2320,7 @@
     },
     "papChart": {
       "recentMonths": "近 {count} 个月",
-      "monthLabel": "{month}月",
+      "monthLabel": "{year}年{month}月",
       "empty": "暂无 PAP 数据"
     },
     "srpList": {

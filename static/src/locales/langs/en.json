@@ -183,7 +183,7 @@
     "internalPap": "Internal PAP",
     "papChart": {
       "recentMonths": "Last {count} months",
-      "monthLabel": "M{month}",
+      "monthLabel": "{year}-{month}",
       "empty": "No PAP data"
     }
   },
@@ -2489,7 +2489,7 @@
     },
     "papChart": {
       "recentMonths": "Last {count} months",
-      "monthLabel": "{month}M",
+      "monthLabel": "{year}-{month}",
       "empty": "No PAP data"
     },
     "srpList": {
