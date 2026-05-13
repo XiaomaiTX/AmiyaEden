@@ -48,6 +48,13 @@ test('corporation structures list tab uses drawer based filters', () => {
   assert.match(source, /class="[^"]*corporation-structures-page__filter-drawer-content[^"]*"/)
 })
 
+test('corporation structures list tab shows fuel officer column', () => {
+  assert.match(source, /corporationStructures\.salary\.assignedFuelOfficer/)
+  assert.match(source, /prop:\s*'assigned_character_name'/)
+  assert.match(source, /assigned_user_id\s*>\s*0\s*\?\s*row\.assigned_character_name \|\| '--'/)
+  assert.match(source, /corporationStructures\.salary\.unassignedLabel/)
+})
+
 test('corporation structures settings includes notice thresholds and submits them together', () => {
   assert.match(source, /corporationStructures\.settings\.noticeThresholds/)
   assert.match(source, /noticeThresholds\.fuel_notice_threshold_days/)

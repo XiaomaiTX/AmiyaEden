@@ -112,26 +112,29 @@ type CorporationStructureServiceInfo struct {
 }
 
 type CorporationStructureRow struct {
-	CorporationID      int64                             `json:"corporation_id"`
-	CorporationName    string                            `json:"corporation_name"`
-	StructureID        int64                             `json:"structure_id"`
-	Name               string                            `json:"name"`
-	TypeID             int64                             `json:"type_id"`
-	TypeName           string                            `json:"type_name"`
-	SystemID           int64                             `json:"system_id"`
-	SystemName         string                            `json:"system_name"`
-	RegionID           int64                             `json:"region_id"`
-	RegionName         string                            `json:"region_name"`
-	Security           float64                           `json:"security"`
-	State              string                            `json:"state"`
-	Services           []CorporationStructureServiceInfo `json:"services"`
-	FuelExpires        string                            `json:"fuel_expires"`
-	FuelRemaining      string                            `json:"fuel_remaining"`
-	FuelRemainingHours *int                              `json:"fuel_remaining_hours"`
-	ReinforceHour      int                               `json:"reinforce_hour"`
-	StateTimerStart    string                            `json:"state_timer_start"`
-	StateTimerEnd      string                            `json:"state_timer_end"`
-	UpdatedAt          int64                             `json:"updated_at"`
+	CorporationID         int64                             `json:"corporation_id"`
+	CorporationName       string                            `json:"corporation_name"`
+	AssignedUserID        uint                              `json:"assigned_user_id"`
+	AssignedCharacterID   int64                             `json:"assigned_character_id"`
+	AssignedCharacterName string                            `json:"assigned_character_name"`
+	StructureID           int64                             `json:"structure_id"`
+	Name                  string                            `json:"name"`
+	TypeID                int64                             `json:"type_id"`
+	TypeName              string                            `json:"type_name"`
+	SystemID              int64                             `json:"system_id"`
+	SystemName            string                            `json:"system_name"`
+	RegionID              int64                             `json:"region_id"`
+	RegionName            string                            `json:"region_name"`
+	Security              float64                           `json:"security"`
+	State                 string                            `json:"state"`
+	Services              []CorporationStructureServiceInfo `json:"services"`
+	FuelExpires           string                            `json:"fuel_expires"`
+	FuelRemaining         string                            `json:"fuel_remaining"`
+	FuelRemainingHours    *int                              `json:"fuel_remaining_hours"`
+	ReinforceHour         int                               `json:"reinforce_hour"`
+	StateTimerStart       string                            `json:"state_timer_start"`
+	StateTimerEnd         string                            `json:"state_timer_end"`
+	UpdatedAt             int64                             `json:"updated_at"`
 }
 
 type CorporationStructureListRequest struct {
@@ -516,13 +519,32 @@ func (s *CorporationStructureService) ListStructures(
 		}, nil
 	}
 
+	assignments, err := s.repo.ListAssignmentsByCorporations(targetCorps)
+	if err != nil {
+		return nil, errors.New("查询建筑指派配置失败")
+	}
+	fuelOfficers, err := s.repo.ListFuelOfficerUsersByCorporations(targetCorps)
+	if err != nil {
+		logCorporationStructuresWarn(
+			"[CorporationStructures] 查询燃料官列表失败",
+			err,
+			zap.Int64s("corporation_ids", targetCorps),
+			zap.Int64("filter_corporation_id", req.CorporationID),
+		)
+		return nil, errors.New("查询燃料官列表失败")
+	}
+	assignByStructure := make(map[int64]model.CorpStructureAssignment, len(assignments))
+	for _, a := range assignments {
+		assignByStructure[a.StructureID] = a
+	}
+	nameByUserID := make(map[uint]string, len(fuelOfficers))
+	for _, o := range fuelOfficers {
+		nameByUserID[o.UserID] = o.DisplayName
+	}
+
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
-	items := make([]CorporationStructureRow, 0, len(structures))
-	for _, st := range structures {
-		row := buildCorporationStructureRow(st, now, systemMeta[st.SystemID])
-		items = append(items, row)
-	}
+	items := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
 
 	filtered := filterCorporationStructureRows(items, req, now)
 	sortCorporationStructureRows(filtered, req.SortBy, req.SortOrder)
@@ -905,20 +927,39 @@ func (s *CorporationStructureService) ListMyAssignedStructures(
 	for c := range corpSet {
 		corps = append(corps, c)
 	}
+	assignByStructure := make(map[int64]model.CorpStructureAssignment, len(assignments))
+	for _, a := range assignments {
+		assignByStructure[a.StructureID] = a
+	}
 	structures, err := s.repo.ListCorpStructures(corps)
 	if err != nil {
 		return nil, errors.New("查询建筑快照失败")
 	}
+	fuelOfficers, err := s.repo.ListFuelOfficerUsersByCorporations(corps)
+	if err != nil {
+		logCorporationStructuresWarn(
+			"[CorporationStructures] 查询燃料官列表失败",
+			err,
+			zap.Int64s("corporation_ids", corps),
+			zap.Uint("user_id", userID),
+		)
+		return nil, errors.New("查询燃料官列表失败")
+	}
+	nameByUserID := make(map[uint]string, len(fuelOfficers))
+	for _, o := range fuelOfficers {
+		nameByUserID[o.UserID] = o.DisplayName
+	}
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
-	rows := make([]CorporationStructureRow, 0, len(structures))
-	for _, st := range structures {
-		if _, ok := structureIDs[st.StructureID]; !ok {
+	rows := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
+	filteredRows := make([]CorporationStructureRow, 0, len(rows))
+	for _, row := range rows {
+		if _, ok := structureIDs[row.StructureID]; !ok {
 			continue
 		}
-		rows = append(rows, buildCorporationStructureRow(st, now, systemMeta[st.SystemID]))
+		filteredRows = append(filteredRows, row)
 	}
-	filtered := filterCorporationStructureRows(rows, req, now)
+	filtered := filterCorporationStructureRows(filteredRows, req, now)
 	sortCorporationStructureRows(filtered, req.SortBy, req.SortOrder)
 	pageRows, total, page, pageSize := paginateCorporationStructureRows(filtered, req.Page, req.PageSize)
 	return &CorporationStructureListResponse{Items: pageRows, Total: total, Page: page, PageSize: pageSize}, nil
@@ -1325,6 +1366,38 @@ func buildCorporationStructureRow(
 		row.TypeName = fmt.Sprintf("Type-%d", st.TypeID)
 	}
 	return row
+}
+
+func buildCorporationStructureRows(
+	structures []model.CorpStructureInfo,
+	now time.Time,
+	systemMeta map[int64]corporationStructureSystemMeta,
+	assignByStructure map[int64]model.CorpStructureAssignment,
+	nameByUserID map[uint]string,
+) []CorporationStructureRow {
+	rows := make([]CorporationStructureRow, 0, len(structures))
+	for _, st := range structures {
+		row := buildCorporationStructureRow(st, now, systemMeta[st.SystemID])
+		if assignByStructure != nil {
+			if assignment, ok := assignByStructure[st.StructureID]; ok {
+				applyCorporationStructureAssignment(&row, assignment, nameByUserID)
+			}
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+func applyCorporationStructureAssignment(
+	row *CorporationStructureRow,
+	assignment model.CorpStructureAssignment,
+	nameByUserID map[uint]string,
+) {
+	row.AssignedUserID = assignment.AssignedUserID
+	row.AssignedCharacterID = assignment.AssignedCharacterID
+	if nameByUserID != nil {
+		row.AssignedCharacterName = nameByUserID[assignment.AssignedUserID]
+	}
 }
 
 func fallbackSystemName(systemID int64, snapshotName string, sdeName string) string {

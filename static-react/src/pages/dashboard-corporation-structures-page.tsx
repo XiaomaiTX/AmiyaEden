@@ -752,6 +752,7 @@ export function DashboardCorporationStructuresPage() {
                 <thead>
                   <tr className="border-b bg-muted/40 text-left">
                     <th className="px-3 py-2">{t('corporationStructures.table.corporation')}</th>
+                    <th className="px-3 py-2">{t('corporationStructures.salary.assignedFuelOfficer')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.state')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.system')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.name')}</th>
@@ -767,6 +768,11 @@ export function DashboardCorporationStructuresPage() {
                   {tableData.map((row) => (
                     <tr key={row.structure_id} className="border-b">
                       <td className="px-3 py-2">{row.corporation_name}</td>
+                      <td className="px-3 py-2">
+                        {row.assigned_user_id > 0
+                          ? row.assigned_character_name || '--'
+                          : t('corporationStructures.salary.unassignedLabel')}
+                      </td>
                       <td className="px-3 py-2">{stateLabel(t, row.state)}</td>
                       <td className="px-3 py-2">
                         <div>{row.system_name || '--'}</div>

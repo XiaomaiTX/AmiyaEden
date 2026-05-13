@@ -64,6 +64,9 @@ export interface CorporationStructureFilterOptionsResponse {
 export interface CorporationStructureRow {
   structure_id: number
   corporation_name: string
+  assigned_user_id: number
+  assigned_character_id: number
+  assigned_character_name: string
   state: string
   system_name: string
   region_name: string

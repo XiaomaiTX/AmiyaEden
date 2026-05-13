@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-10
+last_reviewed: 2026-05-13
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -24,6 +24,7 @@ source_of_truth:
 - Dashboard 里的 `corporation-structures` 页面面向 `admin` / `super_admin`
 - 页面使用 `list` / `settings` 两个 tab：列表页查看军团建筑快照，设置页维护授权映射与阈值
 - 列表页支持按军团、关键词、星系、状态组、燃料区间、安全等级、类型、服务、增强计时筛选，并支持分页与排序
+- 列表页会展示每个建筑当前指派的燃料官；未指派时显示“未分配”
 - 设置页可以为每个可管理军团绑定一个已授权的 Director 人物，并设置燃料与计时器提醒阈值
 - 支持管理员将建筑指派给 `fuel_officer`（燃料官）系统用户（按 `user_id` 分配，不按角色分配），并配置每建筑每月伏羲币工资单价
 - 支持管理员按月份手动批量发放燃料官工资（按当前指派建筑数量结算）
