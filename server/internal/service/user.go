@@ -121,6 +121,23 @@ func (s *UserService) DeleteUser(id uint, operatorRoles []string) error {
 	return s.repo.Delete(id)
 }
 
+func (s *UserService) DeleteCurrentUser(userID uint) error {
+	user, err := s.repo.GetByID(userID)
+	if err != nil {
+		return errors.New("用户不存在")
+	}
+
+	targetRoles, err := s.roleRepo.GetUserRoleCodes(userID)
+	if err != nil {
+		return err
+	}
+	if model.ContainsAnyRole(targetRoles, model.RoleSuperAdmin) {
+		return errors.New("超级管理员账号不支持自助注销")
+	}
+
+	return s.repo.Delete(user.ID)
+}
+
 // ImpersonateUser 以指定用户身份生成 JWT（仅超级管理员可用）
 func (s *UserService) ImpersonateUser(id uint) (string, *model.User, error) {
 	user, err := s.repo.GetByID(id)

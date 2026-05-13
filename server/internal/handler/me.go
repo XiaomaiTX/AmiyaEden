@@ -110,3 +110,19 @@ func (h *MeHandler) UpdateMe(c *gin.Context) {
 		"profile_complete": user.ProfileComplete(),
 	})
 }
+
+// DeleteMe 删除当前登录用户账号
+func (h *MeHandler) DeleteMe(c *gin.Context) {
+	userID := c.GetUint("userID")
+	if userID == 0 {
+		response.Fail(c, response.CodeUnauthorized, "未登录")
+		return
+	}
+
+	if err := h.userSvc.DeleteCurrentUser(userID); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+
+	response.OK(c, nil)
+}

@@ -1731,6 +1731,12 @@
     "unbindConfirm": "Are you sure you want to unbind {name}? The authorization data will be removed.",
     "unbindSuccess": "Successfully unbound {name}",
     "unbindFailed": "Failed to unbind character",
+    "deleteAccount": {
+      "action": "Delete Account",
+      "confirm": "Are you sure you want to delete your account? This action cannot be undone.",
+      "success": "Account deleted",
+      "failed": "Failed to delete account"
+    },
     "profile": {
       "title": "Contact Details and Nickname",
       "subTitle": "Set a nickname and at least one contact method. You will stay on this page until it is complete.",

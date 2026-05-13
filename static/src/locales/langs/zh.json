@@ -1609,6 +1609,12 @@
     "unbindConfirm": "确定要解绑人物 {name} 吗？解绑后该人物的授权数据将被清除。",
     "unbindSuccess": "已成功解绑 {name}",
     "unbindFailed": "解绑失败",
+    "deleteAccount": {
+      "action": "注销账号",
+      "confirm": "确定要注销账号吗？该操作不可恢复，账号及其数据将被删除。",
+      "success": "账号已注销",
+      "failed": "注销账号失败"
+    },
     "profile": {
       "title": "联系方式与昵称",
       "subTitle": "请填写昵称，并至少填写一个联系方式。未完成前将始终停留在本页面。",

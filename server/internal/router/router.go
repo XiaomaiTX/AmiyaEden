@@ -76,6 +76,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	meH := handler.NewMeHandler()
 	auth.GET("/me", meH.GetMe)
 	auth.PUT("/me", meH.UpdateMe)
+	auth.DELETE("/me", meH.DeleteMe)
 
 	dashboardH := handler.NewDashboardHandler()
 	auth.POST("/dashboard", dashboardH.GetDashboard)

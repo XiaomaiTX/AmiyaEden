@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,6 +136,85 @@ func TestMeHandlerGetMeFailsClosedWhenCharacterLoadErrors(t *testing.T) {
 	}
 }
 
+func TestMeHandlerDeleteMe(t *testing.T) {
+	t.Run("returns unauthorized when user id missing", func(t *testing.T) {
+		recorder, result := performDeleteMeRequest(t, 0, []string{model.RoleUser})
+		if recorder.Code != http.StatusUnauthorized {
+			t.Fatalf("expected http status 401, got %d", recorder.Code)
+		}
+		if result.Code != response.CodeUnauthorized {
+			t.Fatalf("expected unauthorized code, got %#v", result)
+		}
+	})
+
+	t.Run("deletes current non-super-admin user", func(t *testing.T) {
+		db := newMeHandlerTestDB(t)
+		user := model.User{
+			BaseModel:          model.BaseModel{ID: 7},
+			Nickname:           "Test User",
+			Role:               model.RoleUser,
+			PrimaryCharacterID: 9007,
+		}
+		if err := db.Create(&user).Error; err != nil {
+			t.Fatalf("create user: %v", err)
+		}
+		if err := db.Create(&model.UserRole{UserID: user.ID, RoleCode: model.RoleUser}).Error; err != nil {
+			t.Fatalf("create user role: %v", err)
+		}
+
+		originalDB := global.DB
+		global.DB = db
+		defer func() { global.DB = originalDB }()
+
+		recorder, result := performDeleteMeRequest(t, user.ID, []string{model.RoleUser})
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("expected http status 200, got %d", recorder.Code)
+		}
+		if result.Code != response.CodeOK {
+			t.Fatalf("expected success code, got %#v", result)
+		}
+
+		var count int64
+		if err := db.Model(&model.User{}).Where("id = ?", user.ID).Count(&count).Error; err != nil {
+			t.Fatalf("count user: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("expected user to be deleted, remaining count=%d", count)
+		}
+	})
+
+	t.Run("rejects self-delete for super admin", func(t *testing.T) {
+		db := newMeHandlerTestDB(t)
+		user := model.User{
+			BaseModel:          model.BaseModel{ID: 8},
+			Nickname:           "Super",
+			Role:               model.RoleSuperAdmin,
+			PrimaryCharacterID: 9008,
+		}
+		if err := db.Create(&user).Error; err != nil {
+			t.Fatalf("create user: %v", err)
+		}
+		if err := db.Create(&model.UserRole{UserID: user.ID, RoleCode: model.RoleSuperAdmin}).Error; err != nil {
+			t.Fatalf("create user role: %v", err)
+		}
+
+		originalDB := global.DB
+		global.DB = db
+		defer func() { global.DB = originalDB }()
+
+		recorder, result := performDeleteMeRequest(t, user.ID, []string{model.RoleSuperAdmin})
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("expected http status 200, got %d", recorder.Code)
+		}
+		if result.Code != response.CodeBizError {
+			t.Fatalf("expected biz error code, got %#v", result)
+		}
+		if !strings.Contains(result.Msg, "超级管理员") {
+			t.Fatalf("expected super admin restriction message, got %q", result.Msg)
+		}
+	})
+}
+
 type meHandlerResponse struct {
 	Code int             `json:"code"`
 	Msg  string          `json:"msg"`
@@ -160,6 +240,27 @@ func performGetMeRequest(t *testing.T, userID uint) (*httptest.ResponseRecorder,
 	return recorder, result
 }
 
+func performDeleteMeRequest(t *testing.T, userID uint, roles []string) (*httptest.ResponseRecorder, meHandlerResponse) {
+	t.Helper()
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodDelete, "/api/v1/me", nil)
+	if userID > 0 {
+		ctx.Set("userID", userID)
+	}
+	ctx.Set("roles", roles)
+
+	NewMeHandler().DeleteMe(ctx)
+
+	var result meHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	return recorder, result
+}
+
 func newMeHandlerTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -168,7 +269,7 @@ func newMeHandlerTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.SystemConfig{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.SystemConfig{}, &model.UserRole{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db
@@ -182,7 +283,7 @@ func newMeHandlerUserOnlyTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.SystemConfig{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.SystemConfig{}, &model.UserRole{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db

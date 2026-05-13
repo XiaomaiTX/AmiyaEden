@@ -249,6 +249,15 @@
             >
               {{ $t('characters.unbind') }}
             </ElButton>
+            <ElButton
+              v-else-if="canSelfDeleteAccount"
+              size="small"
+              type="danger"
+              :loading="selfDeleting"
+              @click="handleDeleteAccount"
+            >
+              {{ $t('characters.deleteAccount.action') }}
+            </ElButton>
             <!-- 军团KM监控（管理员可见） -->
             <template v-if="canManageCorpKm">
               <ElTag v-if="hasCorpKmScope(char)" type="success" size="small" effect="light">
@@ -274,6 +283,7 @@
   import { ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
+    deleteMyAccount,
     fetchMyCharacters,
     getEveBindURL,
     hasInvalidCharacterToken as hasInvalidCharacterTokenInList,
@@ -312,6 +322,7 @@
   const profileSaving = ref(false)
   const switchingId = ref<number | null>(null)
   const unbindingId = ref<number | null>(null)
+  const selfDeleting = ref(false)
   const directReferralLoading = ref(false)
   const directReferralChecking = ref(false)
   const directReferralConfirming = ref(false)
@@ -343,6 +354,10 @@
       hasInvalidPrimaryCharacterToken.value ||
       (enforceCharacterESIRestriction.value && hasInvalidCharacterToken.value)
   )
+  const canSelfDeleteAccount = computed(() => {
+    if (characters.value.length !== 1) return false
+    return characters.value[0].character_id === primaryCharacterId.value
+  })
 
   const getTextLength = (value: string) => Array.from(value.trim()).length
 
@@ -597,6 +612,31 @@
       ElMessage.error(t('characters.unbindFailed'))
     } finally {
       unbindingId.value = null
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!canSelfDeleteAccount.value) return
+
+    try {
+      await ElMessageBox.confirm(t('characters.deleteAccount.confirm'), t('common.tips'), {
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning'
+      })
+    } catch {
+      return
+    }
+
+    selfDeleting.value = true
+    try {
+      await deleteMyAccount()
+      ElMessage.success(t('characters.deleteAccount.success'))
+      userStore.logOut()
+    } catch (error) {
+      ElMessage.error((error as Error)?.message || t('characters.deleteAccount.failed'))
+    } finally {
+      selfDeleting.value = false
     }
   }
 

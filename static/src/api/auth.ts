@@ -90,6 +90,12 @@ export function updateMyProfile(data: { nickname?: string; qq?: string; discord_
   })
 }
 
+export function deleteMyAccount() {
+  return request.del({
+    url: '/api/v1/me'
+  })
+}
+
 /**
  * 获取当前登录用户信息（从 /me 接口获取并封装成统一格式）
  * @returns 用户信息
