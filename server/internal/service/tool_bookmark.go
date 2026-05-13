@@ -204,13 +204,19 @@ func (s *ToolBookmarkService) fetchIconFromHTML(baseURL *url.URL) (string, error
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return "", closeErr
+		}
 		return "", errors.New("non-2xx response")
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 256*1024))
+	closeErr := resp.Body.Close()
 	if err != nil {
 		return "", err
+	}
+	if closeErr != nil {
+		return "", closeErr
 	}
 	match := toolBookmarkIconHrefPattern.FindStringSubmatch(string(body))
 	if len(match) < 2 {

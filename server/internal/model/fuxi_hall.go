@@ -29,7 +29,6 @@ type FuxiHallCard struct {
 	Title             string `gorm:"size:512;not null"         json:"title"`
 	DescriptionHTML   string `gorm:"type:text;not null;default:''" json:"description_html"`
 	AvatarImage       string `gorm:"type:text"                 json:"avatar_image"`
-	CoverImage        string `gorm:"type:text"                 json:"cover_image"`
 	AccentColor       string `gorm:"size:16;not null;default:'#3b82f6'" json:"accent_color"`
 	AvatarShape       string `gorm:"size:32;not null;default:'circle'" json:"avatar_shape"`
 	FontScale         int    `gorm:"not null;default:14"       json:"font_scale"`

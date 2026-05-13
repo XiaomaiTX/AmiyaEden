@@ -16,3 +16,9 @@ test('contributors view keeps responsive card grid layout', () => {
   assert.match(source, /buildEveCharacterPortraitUrl\(card\.main_character_id,\s*256\)/)
   assert.match(source, /@media\s*\(max-width:\s*768px\)/)
 })
+
+test('contributors view uses manage-style member card layout without cover section', () => {
+  assert.match(source, /class="fuxi-hall-page__meta"/)
+  assert.doesNotMatch(source, /fuxi-hall-page__cover/)
+  assert.doesNotMatch(source, /card\.cover_image/)
+})

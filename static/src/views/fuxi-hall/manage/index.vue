@@ -110,9 +110,6 @@
               class="fuxi-hall-manage__preview-card"
               :style="{ '--accent-color': card.accent_color }"
             >
-              <div class="fuxi-hall-manage__preview-cover">
-                <img v-if="card.cover_image" :src="card.cover_image" :alt="card.nickname" />
-              </div>
               <div class="fuxi-hall-manage__preview-body">
                 <div class="fuxi-hall-manage__preview-meta">
                   <img
@@ -176,19 +173,6 @@
           </ElFormItem>
         </div>
 
-        <div class="fuxi-hall-manage__upload-row">
-          <ElFormItem :label="t('fuxiHall.manage.coverImage')">
-            <ElInput v-model="cardForm.cover_image" />
-            <ElUpload
-              :show-file-list="false"
-              :auto-upload="false"
-              :on-change="(file) => void uploadCardImage(file, 'cover')"
-            >
-              <ElButton>{{ t('fuxiHall.manage.uploadCover') }}</ElButton>
-            </ElUpload>
-          </ElFormItem>
-        </div>
-
         <ElFormItem :label="t('fuxiHall.manage.cardDescription')">
           <ArtWangEditor v-model="cardForm.description_html" height="240px" />
         </ElFormItem>
@@ -206,7 +190,7 @@
 
 <script setup lang="ts">
   import { computed, onMounted, reactive, ref } from 'vue'
-  import { ElMessage, ElMessageBox, ElTabPane, ElTabs, type UploadFile } from 'element-plus'
+  import { ElMessage, ElMessageBox, ElTabPane, ElTabs } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   import {
@@ -218,7 +202,6 @@
     updateFuxiHallCard,
     updateFuxiHallPage
   } from '@/api/fuxi-hall'
-  import { uploadImageAsDataUrl } from '@/api/upload'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   const { t } = useI18n()
@@ -246,7 +229,6 @@
     main_character_name: string
     title: string
     description_html: string
-    cover_image: string
     accent_color: string
     avatar_shape: Api.FuxiHall.AvatarShape
     font_scale: number
@@ -266,7 +248,6 @@
     main_character_name: '',
     title: '',
     description_html: '',
-    cover_image: '',
     accent_color: '#3b82f6',
     avatar_shape: 'circle',
     font_scale: 14,
@@ -303,7 +284,6 @@
       main_character_name: cardForm.main_character_name.trim(),
       title: cardForm.title.trim(),
       description_html: cardForm.description_html,
-      cover_image: cardForm.cover_image,
       accent_color: cardForm.accent_color,
       avatar_shape: cardForm.avatar_shape,
       font_scale: cardForm.font_scale,
@@ -386,7 +366,6 @@
     cardForm.main_character_name = ''
     cardForm.title = ''
     cardForm.description_html = ''
-    cardForm.cover_image = ''
     cardForm.accent_color = '#3b82f6'
     cardForm.avatar_shape = 'circle'
     cardForm.font_scale = 14
@@ -407,7 +386,6 @@
     cardForm.main_character_name = card.main_character_name
     cardForm.title = card.title
     cardForm.description_html = card.description_html
-    cardForm.cover_image = card.cover_image
     cardForm.accent_color = card.accent_color
     cardForm.avatar_shape = card.avatar_shape
     cardForm.font_scale = card.font_scale
@@ -433,7 +411,6 @@
       main_character_name: cardForm.main_character_name.trim(),
       title: cardForm.title.trim(),
       description_html: cardForm.description_html || '',
-      cover_image: cardForm.cover_image || '',
       accent_color: cardForm.accent_color,
       avatar_shape: cardForm.avatar_shape,
       font_scale: cardForm.font_scale,
@@ -507,21 +484,6 @@
       ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.sortFailed'))
     }
   }
-
-  async function uploadCardImage(file: UploadFile, target: 'cover') {
-    if (!file.raw) {
-      return
-    }
-    try {
-      const { url } = await uploadImageAsDataUrl(file.raw)
-      if (target === 'cover') {
-        cardForm.cover_image = url
-      }
-      ElMessage.success(t('fuxiHall.manage.uploadSuccess'))
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.saveFailed'))
-    }
-  }
 </script>
 
 <style scoped>
@@ -569,12 +531,6 @@
     gap: 0 12px;
   }
 
-  .fuxi-hall-manage__upload-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-
   .fuxi-hall-manage__preview {
     display: flex;
     flex-direction: column;
@@ -611,18 +567,6 @@
     border-radius: 16px;
     overflow: hidden;
     background: var(--el-bg-color);
-  }
-
-  .fuxi-hall-manage__preview-cover {
-    height: 180px;
-    background: color-mix(in srgb, var(--accent-color), var(--el-fill-color-light) 70%);
-  }
-
-  .fuxi-hall-manage__preview-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
   }
 
   .fuxi-hall-manage__preview-body {
