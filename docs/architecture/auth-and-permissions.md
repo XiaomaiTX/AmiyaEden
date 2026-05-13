@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-05-13
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -29,6 +29,8 @@ source_of_truth:
 - 失效人物 ESI 限制开关 `enforce_character_esi_restriction`
 - 当前新人资格快照 `is_currently_newbro`
 - 当前导师学员资格快照 `is_mentor_mentee_eligible`
+
+当前用户还可以通过 `DELETE /api/v1/me` 自助注销账号；该能力与 `/api/v1/me` 同样只允许当前 JWT 对应的用户操作，不提供任意 `user_id` 删除入口。
 
 `guest` 职权当前仍是已认证用户，但不是 `RequireLoginUser` 意义上的产品用户。
 因此需要把 guest onboarding / self-service 能力单独挂在仅需 `JWTAuth()` 的路由上，而不是 `RequireLoginUser()`。
@@ -146,6 +148,7 @@ source_of_truth:
 典型例子：
 
 - `/api/v1/me`
+- `/api/v1/me`（`DELETE` 自助注销）
 - `/api/v1/sso/eve/characters`
 - `/api/v1/sso/eve/bind`
 - `/api/v1/sso/eve/primary/:character_id`
@@ -155,6 +158,7 @@ source_of_truth:
 
 - 完成人物绑定与主人物调整
 - 让 guest 在准入完成前仍能查看自己的基础信息或自助完成资料
+- 允许当前登录用户删除自己的账号，但不能代删其他用户
 
 `/api/v1/info/*` 当前不再属于 JWT-only 自助能力，而是 `RequireLoginUser()` 边界。
 

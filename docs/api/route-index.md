@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-30
+last_reviewed: 2026-05-13
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -58,6 +58,7 @@ source_of_truth:
 | PUT | `/sso/eve/primary/:character_id` | 设为主人物 | JWT |
 | DELETE | `/sso/eve/characters/:character_id` | 解绑人物 | JWT |
 | GET | `/me` | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT |
+| DELETE | `/me` | 注销当前登录用户 / 自助删除账号 | JWT |
 | PUT | `/me` | 更新当前用户昵称 / QQ / Discord ID | JWT |
 | POST | `/dashboard` | Dashboard 聚合数据 | JWT |
 | GET | `/dashboard/corporation-structures/settings` | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射，同时返回全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（天） | `RequireRole(admin)` |

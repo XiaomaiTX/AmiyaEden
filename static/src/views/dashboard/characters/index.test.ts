@@ -59,3 +59,20 @@ test('characters page locales include direct referral copy', () => {
   assert.match(enLocaleSource, /"checkBtn"\s*:/)
   assert.match(enLocaleSource, /"confirmBtn"\s*:/)
 })
+
+test('characters page supports self account deletion when only one character remains', () => {
+  assert.match(source, /const canSelfDeleteAccount = computed\(\(\) =>/)
+  assert.match(source, /deleteMyAccount/)
+  assert.match(source, /characters\.deleteAccount\.action/)
+  assert.match(source, /characters\.deleteAccount\.confirm/)
+  assert.match(source, /handleDeleteAccount/)
+  assert.match(source, /userStore\.logOut\(\)/)
+})
+
+test('characters locales include self-delete copy', () => {
+  assert.match(zhLocaleSource, /"deleteAccount"\s*:\s*\{[\s\S]*"action"\s*:/)
+  assert.match(zhLocaleSource, /"confirm"\s*:/)
+
+  assert.match(enLocaleSource, /"deleteAccount"\s*:\s*\{[\s\S]*"action"\s*:/)
+  assert.match(enLocaleSource, /"confirm"\s*:/)
+})

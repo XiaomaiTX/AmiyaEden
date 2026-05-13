@@ -207,6 +207,43 @@ func TestDeleteUser(t *testing.T) {
 	})
 }
 
+func TestDeleteCurrentUser(t *testing.T) {
+	t.Run("allows normal user self-delete", func(t *testing.T) {
+		db := newUserDeletionTestDB(t)
+		seedUserForDeletion(t, db, model.User{
+			BaseModel: model.BaseModel{ID: 11},
+			Nickname:  "Normal",
+			Role:      model.RoleUser,
+		}, []string{model.RoleUser})
+
+		originalDB := global.DB
+		global.DB = db
+		defer func() { global.DB = originalDB }()
+
+		if err := NewUserService().DeleteCurrentUser(11); err != nil {
+			t.Fatalf("expected self delete to pass, got %v", err)
+		}
+	})
+
+	t.Run("rejects super admin self-delete", func(t *testing.T) {
+		db := newUserDeletionTestDB(t)
+		seedUserForDeletion(t, db, model.User{
+			BaseModel: model.BaseModel{ID: 12},
+			Nickname:  "Super",
+			Role:      model.RoleSuperAdmin,
+		}, []string{model.RoleSuperAdmin})
+
+		originalDB := global.DB
+		global.DB = db
+		defer func() { global.DB = originalDB }()
+
+		err := NewUserService().DeleteCurrentUser(12)
+		if err == nil || !strings.Contains(err.Error(), "超级管理员") {
+			t.Fatalf("expected super admin self-delete to be rejected, got %v", err)
+		}
+	})
+}
+
 func TestUpdateUserByAdmin(t *testing.T) {
 	t.Run("admin cannot update contacts from system user management", func(t *testing.T) {
 		db := newUserDeletionTestDB(t)
