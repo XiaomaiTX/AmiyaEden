@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-05-13
+
+### Changed
+- 将军团建筑高级筛选改为抽屉展示，减少列表页固定占用空间。
+- Fuxi Hall 卡片改为使用 ESI 角色头像。
+- 军团建筑燃料官分配改为基于 `user_id`，并同步更新相关前端类型与测试。
+- 移除 Fuxi Hall 卡片中的废弃样式配置字段，统一卡片样式与操作入口。
+- 燃料官角色徽标改为本地化显示，并统一徽标样式。
+
 ## [1.6.1] - 2026-05-12
 
 ### Fixed

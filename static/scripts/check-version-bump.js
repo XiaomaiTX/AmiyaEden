@@ -20,7 +20,7 @@ const getStagedFiles = () => {
 
 const checkVersionChanged = () => {
   try {
-    const output = execSync('git diff HEAD~1 HEAD -- package.json', { encoding: 'utf-8' })
+    const output = execSync('git diff HEAD~1 HEAD -- static/package.json', { encoding: 'utf-8' })
     return output.includes('"version"')
   } catch {
     return false
@@ -82,7 +82,7 @@ const main = () => {
   if (!versionChanged) {
     console.error('⚠️  检测到源代码变更，但版本号未更新！')
     console.error(`📋 变更类型: ${changeType}`)
-    console.error('📝 请根据版本号规范更新 package.json 中的版本号：')
+    console.error('📝 请根据版本号规范更新 static/package.json 中的版本号：')
     console.error(`   npm version ${changeType.toLowerCase()}`)
     console.error('')
     console.error('📚 版本号规范：docs/standards/versioning.md')

@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-05-11
+last_reviewed: 2026-05-13
 source_of_truth:
   - static/package.json
   - docs/standards/versioning.md
@@ -56,7 +56,7 @@ MAJOR.MINOR.PATCH
 
 **更新流程**：
 1. 创建新分支：`feature/major-upgrade-{version}`
-2. 更新版本号：`package.json` 中的 `version` 字段
+2. 更新版本号：`static/package.json` 中的 `version` 字段
 3. 在 CHANGELOG 中记录所有破坏性变更
 4. 编写迁移指南
 5. 进行完整的回归测试
@@ -80,7 +80,7 @@ MAJOR.MINOR.PATCH
 
 **更新流程**：
 1. 创建新分支：`feature/{feature-name}`
-2. 更新版本号：`package.json` 中的 `version` 字段
+2. 更新版本号：`static/package.json` 中的 `version` 字段
 3. 在 CHANGELOG 中记录新增功能
 4. 进行功能测试和回归测试
 5. 发布新版本并打 Git tag
@@ -105,7 +105,7 @@ MAJOR.MINOR.PATCH
 
 **更新流程**：
 1. 创建新分支：`fix/{bug-description}`
-2. 更新版本号：`package.json` 中的 `version` 字段
+2. 更新版本号：`static/package.json` 中的 `version` 字段
 3. 在 CHANGELOG 中记录修复内容
 4. 进行相关功能测试
 5. 发布新版本并打 Git tag
@@ -180,7 +180,15 @@ MAJOR.MINOR.PATCH
 
 ### 0. 版本核查
 
-在执行任何版本号递增前，必须先检查 `static/package.json` 的 Git 历史，定位上一个版本提交到当前 `HEAD` 之间的所有变更。
+在执行任何版本号递增前，必须先检查 `static/package.json` 的 Git 历史。
+
+上一个版本的位置以 `static/package.json` 的最近一次版本更新提交为准，优先通过该文件的提交记录定位，而不是根据其他文件、当前工作区状态或 tag 反推。
+
+通常使用下面的命令定位上一版本对应的提交：
+
+```bash
+git log --follow -- static/package.json
+```
 
 检查时至少要确认以下内容：
 
@@ -208,15 +216,16 @@ git checkout -b feature/your-feature-name
 ### 2. 更新版本号
 
 ```bash
-# 修改 package.json 中的 version 字段
+# 修改 static/package.json 中的 version 字段
 # 例如：1.0.0 → 1.1.0 (MINOR 更新)
 
 # 提交版本号更新
 git add static/package.json
 git commit -m "chore: bump version to 1.1.0"
 
-# 或使用 npm version 命令自动更新
-npm version minor  # 自动更新 package.json 并创建 commit
+# 或在 static 目录中使用版本命令自动更新
+cd static
+npm version minor  # 自动更新 static/package.json 并创建 commit
 ```
 
 ### 3. 更新 CHANGELOG
@@ -241,15 +250,17 @@ npm version minor  # 自动更新 package.json 并创建 commit
 ### 4. 测试和验证
 
 ```bash
-# 运行测试
-pnpm run test
-
-# 运行 lint
-pnpm run lint
+# 完整前端检查
+cd static
+pnpm lint .
+pnpm exec vue-tsc --noEmit
+pnpm test:unit
 
 # 构建项目
-pnpm run build
+pnpm build
 ```
+
+每次 bump up version 前都必须完成上述完整前端检查和 `pnpm build`。
 
 ### 5. 发布版本
 
@@ -292,6 +303,7 @@ git checkout -b feature/welfare-approval
 # - server/internal/repository/welfare.go
 
 # 3. 更新版本号
+cd static
 npm version minor  # 1.0.0 → 1.1.0
 
 # 4. 更新 CHANGELOG
@@ -316,6 +328,7 @@ git checkout -b fix/table-scroll
 # - static/src/components/core/layouts/art-table-card/index.vue
 
 # 3. 更新版本号
+cd static
 npm version patch  # 1.1.0 → 1.1.1
 
 # 4. 更新 CHANGELOG
@@ -342,6 +355,7 @@ git checkout -b refactor/auth-system
 # - 更新数据库结构
 
 # 3. 更新版本号
+cd static
 npm version major  # 1.1.1 → 2.0.0
 
 # 4. 更新 CHANGELOG
@@ -372,6 +386,7 @@ git checkout -b fix/button-color
 # - static/src/styles/components/button.scss
 
 # 3. 更新版本号
+cd static
 npm version patch  # 1.1.1 → 1.1.2
 
 # 4. 更新 CHANGELOG
