@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-05-13
+
+### Added
+- 新增工具收藏管理与信息页书签页面。
+- 新增用户自助注销账号能力。
+- 军团建筑列表新增已分配燃料官展示。
+
+### Changed
+- 整理 Fuxi Hall 卡片模型与展示结构，移除封面图布局并同步更新相关文档、路由和测试。
+- 同步更新工具收藏、军团建筑和账号注销相关前端类型、本地化文案与服务端接口。
+
+### Fixed
+- 修正部分后端查询在数据库方言下的兼容性问题。
+
 ## [1.6.2] - 2026-05-13
 
 ### Changed
