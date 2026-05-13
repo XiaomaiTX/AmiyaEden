@@ -159,6 +159,8 @@ func autoMigrate(db *gorm.DB) {
 		&model.TicketCategory{},
 		&model.TicketReply{},
 		&model.TicketStatusHistory{},
+		// 常用工具网站书签
+		&model.ToolBookmark{},
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
@@ -308,10 +310,17 @@ func ensureCustomIndexes(db *gorm.DB) {
 	allStatements := append(newbroCustomIndexStatements(), userCustomIndexStatements()...)
 	allStatements = append(allStatements, badgeCountIndexStatements()...)
 	allStatements = append(allStatements, auditEventIndexStatements()...)
+	allStatements = append(allStatements, toolBookmarkIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
+	}
+}
+
+func toolBookmarkIndexStatements() []string {
+	return []string{
+		`CREATE INDEX IF NOT EXISTS idx_tool_bookmark_enabled_sort ON tool_bookmark (is_enabled, sort_order, id) WHERE deleted_at IS NULL`,
 	}
 }
 

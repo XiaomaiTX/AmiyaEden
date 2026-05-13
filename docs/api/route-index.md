@@ -162,6 +162,7 @@ source_of_truth:
 | POST | `/info/fittings/save` | 保存装配 | Login |
 | POST | `/info/npc-kills` | 个人 NPC 刷怪报表 | Login |
 | POST | `/info/npc-kills/all` | 全部 NPC 刷怪报表 | Login |
+| GET | `/info/tool-bookmarks` | 常用工具网站书签列表（仅启用项） | Login |
 
 ## Shop
 
@@ -358,6 +359,15 @@ source_of_truth:
 | --- | --- | --- | --- |
 | GET | `/system/pap-exchange/rates` | 获取 PAP 类型兑换汇率列表 | `RequireRole(admin)` |
 | PUT | `/system/pap-exchange/rates` | 更新 PAP 类型兑换汇率 | `RequireRole(admin)` |
+
+### Tool Bookmarks
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/tool-bookmarks` | 管理端书签列表（含禁用） | `RequireRole(admin)` |
+| POST | `/system/tool-bookmarks` | 创建书签 | `RequireRole(admin)` |
+| PUT | `/system/tool-bookmarks/:id` | 更新书签 | `RequireRole(admin)` |
+| DELETE | `/system/tool-bookmarks/:id` | 删除书签 | `RequireRole(admin)` |
 
 ### Mentor Admin
 

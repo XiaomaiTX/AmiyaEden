@@ -37,6 +37,10 @@ source_of_truth:
   - 人物详情：下拉选择人物，展示 scope 列表含授权状态、用途说明、模块归属
   - Token 失效时标记警告，缺失 scope 提示需重新绑定
   - 数据来源：`GET /api/v1/sso/eve/scopes`（公开）+ `GET /api/v1/sso/eve/characters`（需 JWT）
+- 常用工具网站
+  - 登录用户可查看常用网站书签列表
+  - 管理员可新增、编辑、删除书签
+  - 后端在保存时自动尝试获取站点 logo（优先 HTML icon，回退 favicon）
 
 ## 前端金额展示
 
@@ -56,6 +60,7 @@ source_of_truth:
 - `static/src/views/info/contracts`
 - `static/src/views/info/fittings`
 - `static/src/views/info/esi-check`
+- `static/src/views/info/tool-bookmarks`
 - `static/src/views/info/npc-kills`
 - `static/src/views/dashboard/npc-kills`
 
@@ -73,6 +78,8 @@ source_of_truth:
 - `/api/v1/info/fittings/save`
 - `/api/v1/info/npc-kills`
 - `/api/v1/info/npc-kills/all`
+- `/api/v1/info/tool-bookmarks`
+- `/api/v1/system/tool-bookmarks`
 - `/api/v1/system/npc-kills`
 
 ## 权限边界
