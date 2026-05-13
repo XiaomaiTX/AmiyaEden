@@ -241,6 +241,7 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 		{table: "fuxi_hall_card", col: "style_preset"},
 		{table: "fuxi_hall_card", col: "badge_tone"},
 		{table: "fuxi_hall_card", col: "cover_height"},
+		{table: "fuxi_hall_card", col: "cover_image"},
 		{table: "ticket", col: "priority"},
 	}
 }

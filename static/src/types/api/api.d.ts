@@ -3064,7 +3064,6 @@ declare namespace Api {
       main_character_name: string
       title: string
       description_html: string
-      cover_image: string
       accent_color: string
       avatar_shape: AvatarShape
       font_scale: number
@@ -3092,7 +3091,6 @@ declare namespace Api {
       main_character_name: string
       title: string
       description_html?: string
-      cover_image?: string
       accent_color?: string
       avatar_shape?: AvatarShape
       font_scale?: number

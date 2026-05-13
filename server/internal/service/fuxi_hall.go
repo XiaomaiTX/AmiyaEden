@@ -57,7 +57,6 @@ type FuxiHallCreateCardRequest struct {
 	MainCharacterName string `json:"main_character_name"`
 	Title             string `json:"title"`
 	DescriptionHTML   string `json:"description_html"`
-	CoverImage        string `json:"cover_image"`
 	AccentColor       string `json:"accent_color"`
 	AvatarShape       string `json:"avatar_shape"`
 	FontScale         *int   `json:"font_scale"`
@@ -70,7 +69,6 @@ type FuxiHallUpdateCardRequest struct {
 	MainCharacterName *string `json:"main_character_name"`
 	Title             *string `json:"title"`
 	DescriptionHTML   *string `json:"description_html"`
-	CoverImage        *string `json:"cover_image"`
 	AccentColor       *string `json:"accent_color"`
 	AvatarShape       *string `json:"avatar_shape"`
 	FontScale         *int    `json:"font_scale"`
@@ -218,7 +216,6 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 		MainCharacterName: mainCharacterName,
 		Title:             title,
 		DescriptionHTML:   sanitizeRichTextHTML(req.DescriptionHTML),
-		CoverImage:        strings.TrimSpace(req.CoverImage),
 		AccentColor:       accentColor,
 		AvatarShape:       avatarShape,
 		FontScale:         fontScale,
@@ -271,9 +268,6 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 	}
 	if req.DescriptionHTML != nil {
 		updates["description_html"] = sanitizeRichTextHTML(*req.DescriptionHTML)
-	}
-	if req.CoverImage != nil {
-		updates["cover_image"] = strings.TrimSpace(*req.CoverImage)
 	}
 	if req.AccentColor != nil {
 		value, err := normalizeFuxiHallColor(*req.AccentColor, "", "强调色")

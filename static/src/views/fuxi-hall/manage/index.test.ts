@@ -41,3 +41,10 @@ test('manage view no longer exposes deprecated style preset, badge tone, and cov
   assert.doesNotMatch(source, /badge_tone/)
   assert.doesNotMatch(source, /cover_height/)
 })
+
+test('manage view removes cover-image editing and preview rendering', () => {
+  assert.doesNotMatch(source, /cover_image/)
+  assert.doesNotMatch(source, /fuxiHall\.manage\.coverImage/)
+  assert.doesNotMatch(source, /fuxiHall\.manage\.uploadCover/)
+  assert.doesNotMatch(source, /fuxi-hall-manage__preview-cover/)
+})
