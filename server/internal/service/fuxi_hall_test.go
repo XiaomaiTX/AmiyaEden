@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -37,7 +38,7 @@ func TestFuxiHallCreateCardValidatesRequiredFields(t *testing.T) {
 		Nickname:          "",
 		MainCharacterID:   1001,
 		MainCharacterName: "Main",
-		Title:             "Title",
+		TitleTags:         []string{"Title"},
 	})
 	if err == nil {
 		t.Fatal("expected nickname required error")
@@ -53,7 +54,7 @@ func TestFuxiHallCreateCardSanitizesDescriptionHTML(t *testing.T) {
 		Nickname:          "Alpha",
 		MainCharacterID:   1001,
 		MainCharacterName: "Main",
-		Title:             "Lead",
+		TitleTags:         []string{"Lead"},
 		DescriptionHTML:   `<p>Hello</p><script>alert(1)</script><a href="javascript:evil()">x</a>`,
 	})
 	if err != nil {
@@ -73,7 +74,7 @@ func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 		Nickname:          "Beta",
 		MainCharacterID:   1002,
 		MainCharacterName: "Main",
-		Title:             "Builder",
+		TitleTags:         []string{"Builder"},
 	})
 	if err != nil {
 		t.Fatalf("CreateCard: %v", err)
@@ -95,7 +96,7 @@ func TestFuxiHallCreateCardIgnoresDeprecatedStyleFieldsFromJSON(t *testing.T) {
 		"nickname":"Legacy",
 		"main_character_id":1003,
 		"main_character_name":"Legacy Main",
-		"title":"Legacy Title",
+		"title_tags":["Legacy Title"],
 		"style_preset":"aurora",
 		"badge_tone":"dawn",
 		"cover_height":220
@@ -123,7 +124,7 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 		Nickname:          "A",
 		MainCharacterID:   2001,
 		MainCharacterName: "A",
-		Title:             "A",
+		TitleTags:         []string{"A"},
 	})
 	if err != nil {
 		t.Fatalf("CreateCard A: %v", err)
@@ -133,7 +134,7 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 		Nickname:          "B",
 		MainCharacterID:   2002,
 		MainCharacterName: "B",
-		Title:             "B",
+		TitleTags:         []string{"B"},
 	})
 	if err != nil {
 		t.Fatalf("CreateCard B: %v", err)
@@ -171,7 +172,7 @@ func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 		Nickname:          "Dup",
 		MainCharacterID:   2003,
 		MainCharacterName: "Dup",
-		Title:             "Dup",
+		TitleTags:         []string{"Dup"},
 	})
 	if err != nil {
 		t.Fatalf("CreateCard: %v", err)
@@ -183,5 +184,107 @@ func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected duplicate id validation error")
+	}
+}
+
+func TestFuxiHallCreateCardRequiresTitleTags(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := NewFuxiHallService()
+
+	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "leadership",
+		Nickname:          "NoTags",
+		MainCharacterID:   3001,
+		MainCharacterName: "Main",
+	})
+	if err == nil {
+		t.Fatal("expected title_tags required error")
+	}
+}
+
+func TestFuxiHallCreateCardNormalizesTitleTags(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := NewFuxiHallService()
+
+	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "contributors",
+		Nickname:          "Tags",
+		MainCharacterID:   3002,
+		MainCharacterName: "Main",
+		TitleTags:         []string{"  指挥  ", "", "后勤", "指挥"},
+	})
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if len(card.TitleTags) != 2 || card.TitleTags[0] != "指挥" || card.TitleTags[1] != "后勤" {
+		t.Fatalf("unexpected normalized title tags: %#v", card.TitleTags)
+	}
+}
+
+func TestFuxiHallCreateCardValidatesTitleTagsLimits(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := NewFuxiHallService()
+
+	longTag := strings.Repeat("长", 33)
+	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "contributors",
+		Nickname:          "TooLong",
+		MainCharacterID:   3003,
+		MainCharacterName: "Main",
+		TitleTags:         []string{longTag},
+	})
+	if err == nil {
+		t.Fatal("expected title_tags single item length validation error")
+	}
+
+	tooMany := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"}
+	_, err = svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "contributors",
+		Nickname:          "TooMany",
+		MainCharacterID:   3004,
+		MainCharacterName: "Main",
+		TitleTags:         tooMany,
+	})
+	if err == nil {
+		t.Fatal("expected title_tags total count validation error")
+	}
+}
+
+func TestFuxiHallUpdateCardReplacesTitleTags(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := NewFuxiHallService()
+
+	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "leadership",
+		Nickname:          "Replace",
+		MainCharacterID:   3005,
+		MainCharacterName: "Main",
+		TitleTags:         []string{"旧标签"},
+	})
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+
+	nextTags := []string{"  新标签  ", "新标签", "战略"}
+	updated, err := svc.UpdateCard(card.ID, &FuxiHallUpdateCardRequest{TitleTags: &nextTags})
+	if err != nil {
+		t.Fatalf("UpdateCard: %v", err)
+	}
+	if len(updated.TitleTags) != 2 || updated.TitleTags[0] != "新标签" || updated.TitleTags[1] != "战略" {
+		t.Fatalf("unexpected updated title tags: %#v", updated.TitleTags)
+	}
+}
+
+func TestFuxiHallCardJSONContainsTitleTags(t *testing.T) {
+	card := model.FuxiHallCard{
+		Nickname:  "JSON",
+		TitleTags: []string{"A", "B"},
+	}
+	raw, err := json.Marshal(card)
+	if err != nil {
+		t.Fatalf("marshal card: %v", err)
+	}
+	if !strings.Contains(string(raw), `"title_tags":["A","B"]`) {
+		t.Fatalf("expected title_tags in json, got: %s", string(raw))
 	}
 }

@@ -3062,7 +3062,7 @@ declare namespace Api {
       nickname: string
       main_character_id: number
       main_character_name: string
-      title: string
+      title_tags: string[]
       description_html: string
       accent_color: string
       avatar_shape: AvatarShape
@@ -3089,7 +3089,7 @@ declare namespace Api {
       nickname: string
       main_character_id: number
       main_character_name: string
-      title: string
+      title_tags: string[]
       description_html?: string
       accent_color?: string
       avatar_shape?: AvatarShape
@@ -3097,7 +3097,9 @@ declare namespace Api {
       visible?: boolean
     }
 
-    type UpdateCardParams = Partial<CreateCardParams>
+    type UpdateCardParams = Partial<CreateCardParams> & {
+      title_tags?: string[]
+    }
 
     interface ReorderParams {
       page_key: PageKey

@@ -46,7 +46,7 @@ source_of_truth:
 ## 后端规则
 
 - `page_key` 仅允许 `leadership | contributors`
-- 卡片必填：`nickname`、`main_character_id`、`main_character_name`、`title`
+- 卡片必填：`nickname`、`main_character_id`、`main_character_name`、`title_tags`
 - `description_html` 在服务层白名单清洗后入库与返回
 - `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
 - 样式约束：
@@ -54,6 +54,12 @@ source_of_truth:
   - `avatar_shape` 仅允许预设枚举值
   - `font_scale` 有上下限
   - `style_preset`、`badge_tone`、`cover_height` 已固定，不再通过接口暴露
+
+### 头衔字段
+
+- `title_tags`（JSON 数组列）是唯一头衔字段。
+- 旧 `title` 字段链路已移除，不再出现在接口契约与前端类型中。
+- 历史数据不做自动迁移；新建与编辑提交必须满足 `title_tags` 非空。
 
 ## 前端结构
 
@@ -74,7 +80,7 @@ source_of_truth:
 - 手动排序（上移/下移）
 - 管理态实时预览（未保存草稿即时映射）
 
-公开页卡片排版与管理页实时预览保持一致，统一为头像与昵称/主角色名/头衔同区块展示，不再支持封面。
+公开页卡片排版与管理页实时预览保持一致，统一为头像与昵称/主角色名/主角色 ID（斜体）/头衔标签（badge）同区块展示，不再支持封面。
 
 不包含画布拖拽布局。
 

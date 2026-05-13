@@ -166,6 +166,7 @@ func autoMigrate(db *gorm.DB) {
 	}
 
 	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
+	ensureFuxiHallSchema(db)
 	ensureSkillPlanScopes(db)
 	dropObsoleteSchema(db)
 	ensureCustomIndexes(db)
@@ -216,6 +217,15 @@ func ensureDefaultTicketCategories(db *gorm.DB) {
 	}
 }
 
+func ensureFuxiHallSchema(db *gorm.DB) {
+	migrator := db.Migrator()
+	if !migrator.HasColumn("fuxi_hall_card", "title_tags") {
+		if err := migrator.AddColumn(&model.FuxiHallCard{}, "TitleTags"); err != nil {
+			global.Logger.Warn("补齐 fuxi_hall_card.title_tags 失败", zap.Error(err))
+		}
+	}
+}
+
 func ensureSkillPlanScopes(db *gorm.DB) {
 	if err := db.Exec(
 		`UPDATE skill_plan SET plan_scope = ? WHERE plan_scope IS NULL OR plan_scope = ''`,
@@ -242,6 +252,7 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 		{table: "fuxi_hall_card", col: "badge_tone"},
 		{table: "fuxi_hall_card", col: "cover_height"},
 		{table: "fuxi_hall_card", col: "cover_image"},
+		{table: "fuxi_hall_card", col: "title"},
 		{table: "ticket", col: "priority"},
 	}
 }
