@@ -42,3 +42,8 @@ test('system user page uses one edit dialog instead of separate profile and role
   assert.doesNotMatch(source, /<UserProfileDialog/)
   assert.doesNotMatch(source, /icon: 'ri:shield-user-line'/)
 })
+
+test('system user page localizes fuel officer role badges', () => {
+  assert.match(source, /fuel_officer:\s*\{\s*type:\s*'primary',\s*text:\s*t\('userAdmin\.roles\.fuel_officer'\)\s*\}/)
+  assert.doesNotMatch(source, /fuel_officer:\s*\{\s*type:\s*'info',\s*text:\s*role\s*\}/)
+})
