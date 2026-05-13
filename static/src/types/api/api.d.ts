@@ -3019,8 +3019,6 @@ declare namespace Api {
 
   namespace FuxiHall {
     type PageKey = 'leadership' | 'contributors'
-    type StylePreset = 'classic' | 'aurora' | 'slate'
-    type BadgeTone = 'neutral' | 'dawn' | 'steel'
     type AvatarShape = 'circle' | 'rounded' | 'square'
 
     interface PageConfig {
@@ -3040,11 +3038,8 @@ declare namespace Api {
       title: string
       description_html: string
       cover_image: string
-      style_preset: StylePreset
       accent_color: string
-      badge_tone: BadgeTone
       avatar_shape: AvatarShape
-      cover_height: number
       font_scale: number
       visible: boolean
       sort_order: number
@@ -3071,11 +3066,8 @@ declare namespace Api {
       title: string
       description_html?: string
       cover_image?: string
-      style_preset?: StylePreset
       accent_color?: string
-      badge_tone?: BadgeTone
       avatar_shape?: AvatarShape
-      cover_height?: number
       font_scale?: number
       visible?: boolean
     }

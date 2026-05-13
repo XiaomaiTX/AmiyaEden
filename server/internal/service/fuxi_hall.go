@@ -23,16 +23,6 @@ var (
 		string(model.FuxiHallPageLeadership):   "管理层",
 		string(model.FuxiHallPageContributors): "重大贡献成员",
 	}
-	fuxiHallStylePresets = map[string]struct{}{
-		"classic": {},
-		"aurora":  {},
-		"slate":   {},
-	}
-	fuxiHallBadgeTones = map[string]struct{}{
-		"neutral": {},
-		"dawn":    {},
-		"steel":   {},
-	}
 	fuxiHallAvatarShapes = map[string]struct{}{
 		"circle":  {},
 		"rounded": {},
@@ -68,11 +58,8 @@ type FuxiHallCreateCardRequest struct {
 	Title             string `json:"title"`
 	DescriptionHTML   string `json:"description_html"`
 	CoverImage        string `json:"cover_image"`
-	StylePreset       string `json:"style_preset"`
 	AccentColor       string `json:"accent_color"`
-	BadgeTone         string `json:"badge_tone"`
 	AvatarShape       string `json:"avatar_shape"`
-	CoverHeight       *int   `json:"cover_height"`
 	FontScale         *int   `json:"font_scale"`
 	Visible           *bool  `json:"visible"`
 }
@@ -84,11 +71,8 @@ type FuxiHallUpdateCardRequest struct {
 	Title             *string `json:"title"`
 	DescriptionHTML   *string `json:"description_html"`
 	CoverImage        *string `json:"cover_image"`
-	StylePreset       *string `json:"style_preset"`
 	AccentColor       *string `json:"accent_color"`
-	BadgeTone         *string `json:"badge_tone"`
 	AvatarShape       *string `json:"avatar_shape"`
-	CoverHeight       *int    `json:"cover_height"`
 	FontScale         *int    `json:"font_scale"`
 	Visible           *bool   `json:"visible"`
 }
@@ -204,23 +188,11 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 		return nil, NewUserVisibleError("头衔不能为空")
 	}
 
-	stylePreset, err := normalizeFuxiHallStylePreset(req.StylePreset, true)
-	if err != nil {
-		return nil, err
-	}
 	accentColor, err := normalizeFuxiHallColor(req.AccentColor, "#3b82f6", "强调色")
 	if err != nil {
 		return nil, err
 	}
-	badgeTone, err := normalizeFuxiHallEnum(req.BadgeTone, "neutral", fuxiHallBadgeTones, "徽章风格")
-	if err != nil {
-		return nil, err
-	}
 	avatarShape, err := normalizeFuxiHallEnum(req.AvatarShape, "circle", fuxiHallAvatarShapes, "头像形状")
-	if err != nil {
-		return nil, err
-	}
-	coverHeight, err := normalizeFuxiHallNumber(req.CoverHeight, 180, 96, 320, "封面高度")
 	if err != nil {
 		return nil, err
 	}
@@ -247,11 +219,8 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 		Title:             title,
 		DescriptionHTML:   sanitizeRichTextHTML(req.DescriptionHTML),
 		CoverImage:        strings.TrimSpace(req.CoverImage),
-		StylePreset:       stylePreset,
 		AccentColor:       accentColor,
-		BadgeTone:         badgeTone,
 		AvatarShape:       avatarShape,
-		CoverHeight:       coverHeight,
 		FontScale:         fontScale,
 		Visible:           visible,
 		SortOrder:         maxSortOrder + 1,
@@ -306,13 +275,6 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 	if req.CoverImage != nil {
 		updates["cover_image"] = strings.TrimSpace(*req.CoverImage)
 	}
-	if req.StylePreset != nil {
-		value, err := normalizeFuxiHallStylePreset(*req.StylePreset, false)
-		if err != nil {
-			return nil, err
-		}
-		updates["style_preset"] = value
-	}
 	if req.AccentColor != nil {
 		value, err := normalizeFuxiHallColor(*req.AccentColor, "", "强调色")
 		if err != nil {
@@ -320,26 +282,12 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 		}
 		updates["accent_color"] = value
 	}
-	if req.BadgeTone != nil {
-		value, err := normalizeFuxiHallEnum(*req.BadgeTone, "", fuxiHallBadgeTones, "徽章风格")
-		if err != nil {
-			return nil, err
-		}
-		updates["badge_tone"] = value
-	}
 	if req.AvatarShape != nil {
 		value, err := normalizeFuxiHallEnum(*req.AvatarShape, "", fuxiHallAvatarShapes, "头像形状")
 		if err != nil {
 			return nil, err
 		}
 		updates["avatar_shape"] = value
-	}
-	if req.CoverHeight != nil {
-		value, err := normalizeFuxiHallNumber(req.CoverHeight, 0, 96, 320, "封面高度")
-		if err != nil {
-			return nil, err
-		}
-		updates["cover_height"] = value
 	}
 	if req.FontScale != nil {
 		value, err := normalizeFuxiHallNumber(req.FontScale, 0, 12, 20, "字体大小")
@@ -437,17 +385,6 @@ func (s *FuxiHallService) ensurePage(pageKey string) (*model.FuxiHallPage, error
 		return nil, err
 	}
 	return def, nil
-}
-
-func normalizeFuxiHallStylePreset(input string, useDefault bool) (string, error) {
-	value := strings.TrimSpace(strings.ToLower(input))
-	if value == "" && useDefault {
-		return "classic", nil
-	}
-	if _, exists := fuxiHallStylePresets[value]; !exists {
-		return "", NewUserVisibleError("卡片风格不在允许范围内")
-	}
-	return value, nil
 }
 
 func normalizeFuxiHallColor(input string, defaultColor string, label string) (string, error) {

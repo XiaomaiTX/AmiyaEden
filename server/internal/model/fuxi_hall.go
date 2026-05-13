@@ -30,11 +30,8 @@ type FuxiHallCard struct {
 	DescriptionHTML   string `gorm:"type:text;not null;default:''" json:"description_html"`
 	AvatarImage       string `gorm:"type:text"                 json:"avatar_image"`
 	CoverImage        string `gorm:"type:text"                 json:"cover_image"`
-	StylePreset       string `gorm:"size:32;not null;default:'classic'" json:"style_preset"`
 	AccentColor       string `gorm:"size:16;not null;default:'#3b82f6'" json:"accent_color"`
-	BadgeTone         string `gorm:"size:32;not null;default:'neutral'" json:"badge_tone"`
 	AvatarShape       string `gorm:"size:32;not null;default:'circle'" json:"avatar_shape"`
-	CoverHeight       int    `gorm:"not null;default:180"      json:"cover_height"`
 	FontScale         int    `gorm:"not null;default:14"       json:"font_scale"`
 	Visible           bool   `gorm:"not null;default:true"     json:"visible"`
 	SortOrder         int    `gorm:"index;not null;default:0"  json:"sort_order"`
