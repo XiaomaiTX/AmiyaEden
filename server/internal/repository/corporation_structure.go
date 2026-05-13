@@ -28,8 +28,9 @@ type StructureServiceSnapshot struct {
 	State string `json:"state"`
 }
 
-type FuelOfficerCharacterOption struct {
+type FuelOfficerUserOption struct {
 	UserID        uint   `json:"user_id"`
+	DisplayName   string `json:"display_name"`
 	CharacterID   int64  `json:"character_id"`
 	CharacterName string `json:"character_name"`
 }
@@ -97,21 +98,27 @@ func (r *CorporationStructureRepository) DeleteCorpStructuresNotInCorporationIDs
 	return result.RowsAffected, nil
 }
 
-func (r *CorporationStructureRepository) ListFuelOfficerCharactersByCorporations(
+func (r *CorporationStructureRepository) ListFuelOfficerUsersByCorporations(
 	corporationIDs []int64,
-) ([]FuelOfficerCharacterOption, error) {
-	options := make([]FuelOfficerCharacterOption, 0)
+) ([]FuelOfficerUserOption, error) {
+	options := make([]FuelOfficerUserOption, 0)
 	if len(corporationIDs) == 0 {
 		return options, nil
 	}
 
-	err := global.DB.Table(`eve_character AS ec`).
-		Select(`ec.user_id, ec.character_id, ec.character_name`).
-		Joins(`JOIN user_role AS ur ON ur.user_id = ec.user_id`).
+	err := global.DB.Table(`user AS u`).
+		Select(`
+			u.id AS user_id,
+			COALESCE(NULLIF(TRIM(u.nickname), ''), MIN(ec.character_name), CONCAT('User-', u.id)) AS display_name,
+			MIN(ec.character_id) AS character_id,
+			MIN(ec.character_name) AS character_name
+		`).
+		Joins(`JOIN user_role AS ur ON ur.user_id = u.id`).
+		Joins(`JOIN eve_character AS ec ON ec.user_id = u.id`).
 		Where(`ur.role_code = ?`, model.RoleFuelOfficer).
 		Where(`ec.corporation_id IN ?`, corporationIDs).
-		Group(`ec.user_id, ec.character_id, ec.character_name`).
-		Order(`ec.character_name ASC`).
+		Group(`u.id, u.nickname`).
+		Order(`display_name ASC`).
 		Scan(&options).Error
 	return options, err
 }

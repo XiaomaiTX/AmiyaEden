@@ -224,14 +224,14 @@ type CorporationStructureAssignmentItem struct {
 }
 
 type CorporationStructureAssignmentListResponse struct {
-	Items        []CorporationStructureAssignmentItem    `json:"items"`
-	FuelOfficers []repository.FuelOfficerCharacterOption `json:"fuel_officers"`
+	Items        []CorporationStructureAssignmentItem `json:"items"`
+	FuelOfficers []repository.FuelOfficerUserOption   `json:"fuel_officers"`
 }
 
 type CorporationStructureAssignmentBinding struct {
 	CorporationID int64 `json:"corporation_id"`
 	StructureID   int64 `json:"structure_id"`
-	CharacterID   int64 `json:"character_id"`
+	UserID        uint  `json:"user_id"`
 }
 
 type CorporationStructureAssignmentUpdateRequest struct {
@@ -650,7 +650,7 @@ func (s *CorporationStructureService) GetAssignments(
 	if err != nil {
 		return nil, errors.New("查询建筑指派配置失败")
 	}
-	fuelOfficers, err := s.repo.ListFuelOfficerCharactersByCorporations(targetCorps)
+	fuelOfficers, err := s.repo.ListFuelOfficerUsersByCorporations(targetCorps)
 	if err != nil {
 		return nil, errors.New("查询燃料官列表失败")
 	}
@@ -659,9 +659,9 @@ func (s *CorporationStructureService) GetAssignments(
 	for _, a := range assignments {
 		assignByStructure[a.StructureID] = a
 	}
-	nameByCharacterID := make(map[int64]string, len(fuelOfficers))
+	nameByUserID := make(map[uint]string, len(fuelOfficers))
 	for _, o := range fuelOfficers {
-		nameByCharacterID[o.CharacterID] = o.CharacterName
+		nameByUserID[o.UserID] = o.DisplayName
 	}
 
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
@@ -685,7 +685,7 @@ func (s *CorporationStructureService) GetAssignments(
 		if assignment, ok := assignByStructure[st.StructureID]; ok {
 			item.AssignedUserID = assignment.AssignedUserID
 			item.AssignedCharacterID = assignment.AssignedCharacterID
-			item.AssignedCharacterName = nameByCharacterID[assignment.AssignedCharacterID]
+			item.AssignedCharacterName = nameByUserID[assignment.AssignedUserID]
 		}
 		items = append(items, item)
 	}
@@ -714,13 +714,13 @@ func (s *CorporationStructureService) UpdateAssignments(
 		structureByID[st.StructureID] = st
 	}
 
-	fuelOfficers, err := s.repo.ListFuelOfficerCharactersByCorporations(manageCtx.corporationIDs)
+	fuelOfficers, err := s.repo.ListFuelOfficerUsersByCorporations(manageCtx.corporationIDs)
 	if err != nil {
 		return errors.New("读取燃料官列表失败")
 	}
-	officerByCharacterID := make(map[int64]repository.FuelOfficerCharacterOption, len(fuelOfficers))
+	officerByUserID := make(map[uint]repository.FuelOfficerUserOption, len(fuelOfficers))
 	for _, o := range fuelOfficers {
-		officerByCharacterID[o.CharacterID] = o
+		officerByUserID[o.UserID] = o
 	}
 
 	next := make([]model.CorpStructureAssignment, 0, len(req.Assignments))
@@ -741,19 +741,19 @@ func (s *CorporationStructureService) UpdateAssignments(
 			return fmt.Errorf("建筑 %d 的指派重复", item.StructureID)
 		}
 		seenStructures[item.StructureID] = struct{}{}
-		if item.CharacterID == 0 {
+		if item.UserID == 0 {
 			deleteIDs = append(deleteIDs, item.StructureID)
 			continue
 		}
-		officer, ok := officerByCharacterID[item.CharacterID]
+		officer, ok := officerByUserID[item.UserID]
 		if !ok {
-			return fmt.Errorf("人物 %d 不是可选燃料官", item.CharacterID)
+			return fmt.Errorf("用户 %d 不是可选燃料官", item.UserID)
 		}
 		next = append(next, model.CorpStructureAssignment{
 			CorporationID:       item.CorporationID,
 			StructureID:         item.StructureID,
 			AssignedUserID:      officer.UserID,
-			AssignedCharacterID: item.CharacterID,
+			AssignedCharacterID: officer.CharacterID,
 		})
 	}
 	if err := s.repo.UpsertAssignments(next); err != nil {

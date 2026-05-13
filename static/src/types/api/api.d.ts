@@ -1837,8 +1837,9 @@ declare namespace Api {
       message: string
     }
 
-    interface FuelOfficerCharacterOption {
+    interface FuelOfficerUserOption {
       user_id: number
+      display_name: string
       character_id: number
       character_name: string
     }
@@ -1862,13 +1863,13 @@ declare namespace Api {
 
     interface CorporationStructureAssignmentListResponse {
       items: CorporationStructureAssignmentItem[]
-      fuel_officers: FuelOfficerCharacterOption[]
+      fuel_officers: FuelOfficerUserOption[]
     }
 
     interface CorporationStructureAssignmentBinding {
       corporation_id: number
       structure_id: number
-      character_id: number
+      user_id: number
     }
 
     interface CorporationStructureAssignmentUpdateRequest {
