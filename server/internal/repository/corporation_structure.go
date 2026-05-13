@@ -106,10 +106,16 @@ func (r *CorporationStructureRepository) ListFuelOfficerUsersByCorporations(
 		return options, nil
 	}
 
-	err := global.DB.Table(`user AS u`).
+	err := buildFuelOfficerUsersByCorporationsQuery(global.DB, corporationIDs).
+		Scan(&options).Error
+	return options, err
+}
+
+func buildFuelOfficerUsersByCorporationsQuery(db *gorm.DB, corporationIDs []int64) *gorm.DB {
+	return db.Table(`"user" AS u`).
 		Select(`
 			u.id AS user_id,
-			COALESCE(NULLIF(TRIM(u.nickname), ''), MIN(ec.character_name), CONCAT('User-', u.id)) AS display_name,
+			COALESCE(NULLIF(TRIM(u.nickname), ''), MIN(ec.character_name), 'User-' || u.id) AS display_name,
 			MIN(ec.character_id) AS character_id,
 			MIN(ec.character_name) AS character_name
 		`).
@@ -118,9 +124,7 @@ func (r *CorporationStructureRepository) ListFuelOfficerUsersByCorporations(
 		Where(`ur.role_code = ?`, model.RoleFuelOfficer).
 		Where(`ec.corporation_id IN ?`, corporationIDs).
 		Group(`u.id, u.nickname`).
-		Order(`display_name ASC`).
-		Scan(&options).Error
-	return options, err
+		Order(`display_name ASC`)
 }
 
 func (r *CorporationStructureRepository) ListAssignmentsByCorporations(
