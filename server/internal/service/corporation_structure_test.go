@@ -624,8 +624,101 @@ func TestCorporationStructureGetAssignmentsIncludesStructureMetaAndFallbacks(t *
 	if item.AssignedCharacterID != 92000001 {
 		t.Fatalf("assigned character id = %d, want %d", item.AssignedCharacterID, 92000001)
 	}
-	if item.AssignedCharacterName != "FuelOfficer Character" {
-		t.Fatalf("assigned character name = %q, want FuelOfficer Character", item.AssignedCharacterName)
+	if item.AssignedCharacterName != "fuel" {
+		t.Fatalf("assigned character name = %q, want fuel", item.AssignedCharacterName)
+	}
+	if len(resp.FuelOfficers) != 1 {
+		t.Fatalf("expected 1 fuel officer user option, got %d", len(resp.FuelOfficers))
+	}
+	if resp.FuelOfficers[0].UserID != 2 {
+		t.Fatalf("fuel officer option user_id = %d, want 2", resp.FuelOfficers[0].UserID)
+	}
+	if resp.FuelOfficers[0].DisplayName != "fuel" {
+		t.Fatalf("fuel officer option display_name = %q, want fuel", resp.FuelOfficers[0].DisplayName)
+	}
+}
+
+func TestCorporationStructureUpdateAssignmentsUsesUserID(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: 2}, Nickname: "fuel", Role: model.RoleFuelOfficer}).Error; err != nil {
+		t.Fatalf("create fuel officer user: %v", err)
+	}
+	if err := db.Create(&model.UserRole{UserID: 2, RoleCode: model.RoleFuelOfficer}).Error; err != nil {
+		t.Fatalf("create fuel officer role: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   92000001,
+		CharacterName: "FuelOfficer Character A",
+		UserID:        2,
+		CorporationID: 9001,
+	}).Error; err != nil {
+		t.Fatalf("create fuel officer character A: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   92000002,
+		CharacterName: "FuelOfficer Character B",
+		UserID:        2,
+		CorporationID: 9001,
+	}).Error; err != nil {
+		t.Fatalf("create fuel officer character B: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID: 9001,
+		StructureID:   111,
+		Name:          "Test Structure",
+		TypeID:        35832,
+		TypeName:      "Astrahus",
+		SystemID:      30000142,
+		SystemName:    "Jita",
+		Security:      0.9,
+	}).Error; err != nil {
+		t.Fatalf("seed structure snapshot: %v", err)
+	}
+
+	svc := newCorporationStructureServiceForTest()
+	err := svc.UpdateAssignments(context.Background(), CorporationStructureAssignmentUpdateRequest{
+		Assignments: []CorporationStructureAssignmentBinding{
+			{CorporationID: 9001, StructureID: 111, UserID: 2},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateAssignments returned error: %v", err)
+	}
+
+	var row model.CorpStructureAssignment
+	if err := db.Where("structure_id = ?", 111).First(&row).Error; err != nil {
+		t.Fatalf("load assignment row: %v", err)
+	}
+	if row.AssignedUserID != 2 {
+		t.Fatalf("assigned_user_id = %d, want 2", row.AssignedUserID)
+	}
+	if row.AssignedCharacterID == 0 {
+		t.Fatal("assigned_character_id should keep a representative character id")
+	}
+
+	err = svc.UpdateAssignments(context.Background(), CorporationStructureAssignmentUpdateRequest{
+		Assignments: []CorporationStructureAssignmentBinding{
+			{CorporationID: 9001, StructureID: 111, UserID: 0},
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateAssignments unassign returned error: %v", err)
+	}
+	var count int64
+	if err := db.Model(&model.CorpStructureAssignment{}).Where("structure_id = ?", 111).Count(&count).Error; err != nil {
+		t.Fatalf("count assignment row: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("assignment row count = %d, want 0", count)
 	}
 }
 

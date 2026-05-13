@@ -376,12 +376,12 @@
         <ElCard shadow="never" class="art-card mb-4">
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             <ElFormItem :label="$t('corporationStructures.salary.targetFuelOfficer')" class="mb-0">
-              <ElSelect v-model="assignmentTargetCharacterId" clearable filterable class="w-full">
+              <ElSelect v-model="assignmentTargetUserId" clearable filterable class="w-full">
                 <ElOption
                   v-for="option in fuelOfficerOptions"
-                  :key="option.character_id"
-                  :label="`${option.character_name} (${option.character_id})`"
-                  :value="option.character_id"
+                  :key="option.user_id"
+                  :label="`${option.display_name} (${option.user_id})`"
+                  :value="option.user_id"
                 />
               </ElSelect>
             </ElFormItem>
@@ -566,9 +566,9 @@
   const runningPayout = ref(false)
   const payoutMonth = ref<string>('')
   const assignmentItems = ref<AssignmentRow[]>([])
-  const fuelOfficerOptions = ref<Api.Dashboard.FuelOfficerCharacterOption[]>([])
+  const fuelOfficerOptions = ref<Api.Dashboard.FuelOfficerUserOption[]>([])
   const assignmentByStructure = reactive<Record<number, number>>({})
-  const assignmentTargetCharacterId = ref<number>(0)
+  const assignmentTargetUserId = ref<number>(0)
   const assignmentFilterMode = ref<AssignmentFilterMode>('all')
   const assignmentFilterSystemIds = ref<number[]>([])
   const assignmentFilterRegionIds = ref<number[]>([])
@@ -618,14 +618,14 @@
     return assignmentItems.value.filter((item) => {
       if (
         assignmentFilterMode.value === 'assigned_to_selected_officer' &&
-        assignmentTargetCharacterId.value > 0 &&
-        assignmentByStructure[item.structure_id] !== assignmentTargetCharacterId.value
+        assignmentTargetUserId.value > 0 &&
+        assignmentByStructure[item.structure_id] !== assignmentTargetUserId.value
       ) {
         return false
       }
       if (
         assignmentFilterMode.value === 'assigned_to_selected_officer' &&
-        assignmentTargetCharacterId.value <= 0
+        assignmentTargetUserId.value <= 0
       ) {
         return false
       }
@@ -669,9 +669,9 @@
       formatter: (row: AssignmentRow) =>
         h(ElCheckbox, {
           modelValue:
-            assignmentTargetCharacterId.value > 0 &&
-            assignmentByStructure[row.structure_id] === assignmentTargetCharacterId.value,
-          disabled: assignmentTargetCharacterId.value <= 0,
+            assignmentTargetUserId.value > 0 &&
+            assignmentByStructure[row.structure_id] === assignmentTargetUserId.value,
+          disabled: assignmentTargetUserId.value <= 0,
           onChange: (checked: string | number | boolean) =>
             toggleAssignmentToTarget(row, Boolean(checked))
         })
@@ -1133,21 +1133,21 @@
   }
 
   const toggleAssignmentToTarget = (row: AssignmentRow, checked: boolean) => {
-    const target = assignmentTargetCharacterId.value
+    const target = assignmentTargetUserId.value
     if (target <= 0) {
       return
     }
     if (checked) {
       assignmentByStructure[row.structure_id] = target
-      row.assigned_character_id = target
+      row.assigned_user_id = target
       row.assigned_character_name =
-        fuelOfficerOptions.value.find((item) => item.character_id === target)?.character_name || ''
+        fuelOfficerOptions.value.find((item) => item.user_id === target)?.display_name || ''
       return
     }
 
     if (assignmentByStructure[row.structure_id] === target) {
       assignmentByStructure[row.structure_id] = 0
-      row.assigned_character_id = 0
+      row.assigned_user_id = 0
       row.assigned_character_name = ''
     }
   }
@@ -1173,18 +1173,16 @@
         delete assignmentByStructure[Number(key)]
       })
       for (const item of response.items) {
-        assignmentByStructure[item.structure_id] = item.assigned_character_id || 0
+        assignmentByStructure[item.structure_id] = item.assigned_user_id || 0
       }
       if (
-        assignmentTargetCharacterId.value > 0 &&
-        !response.fuel_officers.some(
-          (item) => item.character_id === assignmentTargetCharacterId.value
-        )
+        assignmentTargetUserId.value > 0 &&
+        !response.fuel_officers.some((item) => item.user_id === assignmentTargetUserId.value)
       ) {
-        assignmentTargetCharacterId.value = 0
+        assignmentTargetUserId.value = 0
       }
-      if (assignmentTargetCharacterId.value <= 0 && response.fuel_officers.length > 0) {
-        assignmentTargetCharacterId.value = response.fuel_officers[0].character_id
+      if (assignmentTargetUserId.value <= 0 && response.fuel_officers.length > 0) {
+        assignmentTargetUserId.value = response.fuel_officers[0].user_id
       }
       resetAssignmentFilters()
       syncAssignmentColumnChecks()
@@ -1200,7 +1198,7 @@
         assignments: assignmentItems.value.map((item) => ({
           corporation_id: item.corporation_id,
           structure_id: item.structure_id,
-          character_id: assignmentByStructure[item.structure_id] || 0
+          user_id: assignmentByStructure[item.structure_id] || 0
         }))
       })
       ElMessage.success(t('common.saveSuccess'))
@@ -1270,7 +1268,7 @@
   watch(
     () => [
       assignmentFilterMode.value,
-      assignmentTargetCharacterId.value,
+      assignmentTargetUserId.value,
       assignmentFilterSystemIds.value.join(','),
       assignmentFilterRegionIds.value.join(','),
       assignmentFilterTypeIds.value.join(',')

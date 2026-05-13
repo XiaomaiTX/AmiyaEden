@@ -21,7 +21,7 @@ test('corporation structures page wires settings and list tabs', () => {
   assert.match(source, /corporationStructures\.tabs\.assignmentSalary/)
   assert.match(source, /saveAuthorizations/)
   assert.match(source, /saveAssignments/)
-  assert.match(source, /assignmentTargetCharacterId/)
+  assert.match(source, /assignmentTargetUserId/)
   assert.match(source, /assignmentFilterMode/)
   assert.match(source, /ArtTableHeader[\s\S]*assignmentColumnChecks/s)
   assert.match(source, /toggleAssignmentToTarget/)
@@ -86,6 +86,15 @@ test('corporation structures settings supports disabling dashboard authorization
   assert.match(source, /corporationStructures\.options\.disabled/)
   assert.match(source, /:value="0"/)
   assert.match(source, /character_id:\s*authorizationByCorp\[corp\.corporation_id\]\s*\|\|\s*0/)
+})
+
+test('corporation structures assignment salary uses user-based fuel officer assignment', () => {
+  assert.match(source, /assignmentTargetUserId/)
+  assert.match(
+    source,
+    /assignmentByStructure\[item\.structure_id\] = item\.assigned_user_id \|\| 0/
+  )
+  assert.match(source, /user_id:\s*assignmentByStructure\[item\.structure_id\]\s*\|\|\s*0/)
 })
 
 test('corporation structures list tab shows only valid corporations in selector', () => {
