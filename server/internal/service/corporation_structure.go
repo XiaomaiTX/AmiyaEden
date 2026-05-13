@@ -652,6 +652,12 @@ func (s *CorporationStructureService) GetAssignments(
 	}
 	fuelOfficers, err := s.repo.ListFuelOfficerUsersByCorporations(targetCorps)
 	if err != nil {
+		logCorporationStructuresWarn(
+			"[CorporationStructures] 查询燃料官列表失败",
+			err,
+			zap.Int64s("corporation_ids", targetCorps),
+			zap.Int64("filter_corporation_id", req.CorporationID),
+		)
 		return nil, errors.New("查询燃料官列表失败")
 	}
 
@@ -716,6 +722,12 @@ func (s *CorporationStructureService) UpdateAssignments(
 
 	fuelOfficers, err := s.repo.ListFuelOfficerUsersByCorporations(manageCtx.corporationIDs)
 	if err != nil {
+		logCorporationStructuresWarn(
+			"[CorporationStructures] 读取燃料官列表失败",
+			err,
+			zap.Int64s("corporation_ids", manageCtx.corporationIDs),
+			zap.Uint("operator_user_id", req.OperatorUserID),
+		)
 		return errors.New("读取燃料官列表失败")
 	}
 	officerByUserID := make(map[uint]repository.FuelOfficerUserOption, len(fuelOfficers))
@@ -1815,8 +1827,9 @@ func compareFloat64(a float64, b float64) int {
 	return 0
 }
 
-func logCorporationStructuresWarn(message string, err error) {
+func logCorporationStructuresWarn(message string, err error, fields ...zap.Field) {
 	if global.Logger != nil {
-		global.Logger.Warn(message, zap.Error(err))
+		fields = append([]zap.Field{zap.Error(err)}, fields...)
+		global.Logger.Warn(message, fields...)
 	}
 }
