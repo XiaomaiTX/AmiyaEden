@@ -214,10 +214,12 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── EVE 人物信息 ───
 	infoH := handler.NewEveInfoHandler()
+	toolBookmarkH := handler.NewToolBookmarkHandler()
 	esiH := handler.NewESIRefreshHandler()
 	taskH := handler.NewTaskHandler(taskSvc)
 	info := login.Group("/info")
 	{
+		info.GET("/tool-bookmarks", toolBookmarkH.ListVisible)
 		info.POST("/wallet", infoH.GetWalletJournal)
 		info.POST("/skills", infoH.GetCharacterSkills)
 		info.POST("/ships", infoH.GetCharacterShips)
@@ -486,6 +488,14 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminAudit.POST("/export", auditEventH.CreateExportTask)
 		adminAudit.GET("/export/:task_id", auditEventH.GetExportTaskStatus)
 		adminAudit.POST("/export/list", auditEventH.ListExportTasks)
+	}
+
+	adminToolBookmark := admin.Group("/tool-bookmarks")
+	{
+		adminToolBookmark.GET("", toolBookmarkH.AdminList)
+		adminToolBookmark.POST("", toolBookmarkH.AdminCreate)
+		adminToolBookmark.PUT("/:id", toolBookmarkH.AdminUpdate)
+		adminToolBookmark.DELETE("/:id", toolBookmarkH.AdminDelete)
 	}
 
 	// 商店管理（管理员）

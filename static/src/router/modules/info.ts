@@ -59,6 +59,12 @@ export const infoRoutes: AppRouteRecord = {
       name: 'EveInfoEsiCheck',
       component: '/info/esi-check',
       meta: { title: 'menus.info.esiCheck', keepAlive: true, login: true }
+    },
+    {
+      path: 'tool-bookmarks',
+      name: 'EveInfoToolBookmarks',
+      component: '/info/tool-bookmarks',
+      meta: { title: 'menus.info.toolBookmarks', keepAlive: true, login: true }
     }
   ]
 }
