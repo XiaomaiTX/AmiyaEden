@@ -13,12 +13,11 @@ test('contributors view binds contributors endpoint and fallback copy', () => {
 
 test('contributors view keeps responsive card grid layout', () => {
   assert.match(source, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(300px,\s*1fr\)\)/)
-  assert.match(source, /buildEveCharacterPortraitUrl\(card\.main_character_id,\s*256\)/)
+  assert.match(source, /FuxiHallMemberCard/)
   assert.match(source, /@media\s*\(max-width:\s*768px\)/)
 })
 
-test('contributors view uses manage-style member card layout without cover section', () => {
-  assert.match(source, /class="fuxi-hall-page__meta"/)
-  assert.doesNotMatch(source, /fuxi-hall-page__cover/)
-  assert.doesNotMatch(source, /card\.cover_image/)
+test('contributors view uses shared member card component and no legacy title field binding', () => {
+  assert.match(source, /components\/FuxiHallMemberCard\.vue/)
+  assert.doesNotMatch(source, /card\.title/)
 })

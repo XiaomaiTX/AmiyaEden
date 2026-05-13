@@ -3,9 +3,11 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 )
@@ -51,28 +53,28 @@ type FuxiHallUpdatePageRequest struct {
 }
 
 type FuxiHallCreateCardRequest struct {
-	PageKey           string `json:"page_key"`
-	Nickname          string `json:"nickname"`
-	MainCharacterID   int64  `json:"main_character_id"`
-	MainCharacterName string `json:"main_character_name"`
-	Title             string `json:"title"`
-	DescriptionHTML   string `json:"description_html"`
-	AccentColor       string `json:"accent_color"`
-	AvatarShape       string `json:"avatar_shape"`
-	FontScale         *int   `json:"font_scale"`
-	Visible           *bool  `json:"visible"`
+	PageKey           string   `json:"page_key"`
+	Nickname          string   `json:"nickname"`
+	MainCharacterID   int64    `json:"main_character_id"`
+	MainCharacterName string   `json:"main_character_name"`
+	TitleTags         []string `json:"title_tags"`
+	DescriptionHTML   string   `json:"description_html"`
+	AccentColor       string   `json:"accent_color"`
+	AvatarShape       string   `json:"avatar_shape"`
+	FontScale         *int     `json:"font_scale"`
+	Visible           *bool    `json:"visible"`
 }
 
 type FuxiHallUpdateCardRequest struct {
-	Nickname          *string `json:"nickname"`
-	MainCharacterID   *int64  `json:"main_character_id"`
-	MainCharacterName *string `json:"main_character_name"`
-	Title             *string `json:"title"`
-	DescriptionHTML   *string `json:"description_html"`
-	AccentColor       *string `json:"accent_color"`
-	AvatarShape       *string `json:"avatar_shape"`
-	FontScale         *int    `json:"font_scale"`
-	Visible           *bool   `json:"visible"`
+	Nickname          *string   `json:"nickname"`
+	MainCharacterID   *int64    `json:"main_character_id"`
+	MainCharacterName *string   `json:"main_character_name"`
+	TitleTags         *[]string `json:"title_tags"`
+	DescriptionHTML   *string   `json:"description_html"`
+	AccentColor       *string   `json:"accent_color"`
+	AvatarShape       *string   `json:"avatar_shape"`
+	FontScale         *int      `json:"font_scale"`
+	Visible           *bool     `json:"visible"`
 }
 
 type FuxiHallReorderRequest struct {
@@ -181,9 +183,12 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 	if req.MainCharacterID <= 0 {
 		return nil, NewUserVisibleError("主角色 ID 必须大于 0")
 	}
-	title := strings.TrimSpace(req.Title)
-	if title == "" {
-		return nil, NewUserVisibleError("头衔不能为空")
+	titleTags, err := normalizeFuxiHallTitleTags(req.TitleTags)
+	if err != nil {
+		return nil, err
+	}
+	if len(titleTags) == 0 {
+		return nil, NewUserVisibleError("头衔标签不能为空")
 	}
 
 	accentColor, err := normalizeFuxiHallColor(req.AccentColor, "#3b82f6", "强调色")
@@ -214,7 +219,7 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 		Nickname:          nickname,
 		MainCharacterID:   req.MainCharacterID,
 		MainCharacterName: mainCharacterName,
-		Title:             title,
+		TitleTags:         titleTags,
 		DescriptionHTML:   sanitizeRichTextHTML(req.DescriptionHTML),
 		AccentColor:       accentColor,
 		AvatarShape:       avatarShape,
@@ -259,12 +264,19 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 		}
 		updates["main_character_id"] = *req.MainCharacterID
 	}
-	if req.Title != nil {
-		value := strings.TrimSpace(*req.Title)
-		if value == "" {
-			return nil, NewUserVisibleError("头衔不能为空")
+	if req.TitleTags != nil {
+		value, err := normalizeFuxiHallTitleTags(*req.TitleTags)
+		if err != nil {
+			return nil, err
 		}
-		updates["title"] = value
+		if len(value) == 0 {
+			return nil, NewUserVisibleError("头衔标签不能为空")
+		}
+		raw, err := json.Marshal(value)
+		if err != nil {
+			return nil, err
+		}
+		updates["title_tags"] = string(raw)
 	}
 	if req.DescriptionHTML != nil {
 		updates["description_html"] = sanitizeRichTextHTML(*req.DescriptionHTML)
@@ -417,4 +429,32 @@ func normalizeFuxiHallNumber(input *int, defaultValue int, minValue int, maxValu
 		return 0, NewUserVisibleError(label + "超出允许范围")
 	}
 	return *input, nil
+}
+
+func normalizeFuxiHallTitleTags(input []string) ([]string, error) {
+	if len(input) == 0 {
+		return []string{}, nil
+	}
+
+	normalized := make([]string, 0, len(input))
+	seen := make(map[string]struct{}, len(input))
+	for _, raw := range input {
+		tag := strings.TrimSpace(raw)
+		if tag == "" {
+			continue
+		}
+		if utf8.RuneCountInString(tag) > 32 {
+			return nil, NewUserVisibleError("头衔标签长度不能超过 32 个字符")
+		}
+		if _, exists := seen[tag]; exists {
+			continue
+		}
+		seen[tag] = struct{}{}
+		normalized = append(normalized, tag)
+		if len(normalized) > 12 {
+			return nil, NewUserVisibleError("头衔标签数量不能超过 12 个")
+		}
+	}
+
+	return normalized, nil
 }

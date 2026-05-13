@@ -15,6 +15,7 @@ test('manage view preview updates from draft card form and visibility', () => {
   assert.match(source, /cardDialogOpen\.value/)
   assert.match(source, /cardForm\.nickname\.trim\(\)/)
   assert.match(source, /cardForm\.main_character_id/)
+  assert.match(source, /cardForm\.title_tags/)
   assert.match(source, /if \(!previewCard\.visible\)/)
 })
 
@@ -33,6 +34,15 @@ test('manage view uses standard tabs, card-list add button, and page-level save 
   assert.match(source, /<ElFormItem>[\s\S]*t\('common\.save'\)/)
 })
 
+test('manage view supports title tag editor and list rendering', () => {
+  assert.match(source, /titleTagInput/)
+  assert.match(source, /addTitleTag/)
+  assert.match(source, /removeTitleTag/)
+  assert.match(source, /fuxiHall\.manage\.titleTagPlaceholder/)
+  assert.match(source, /fuxiHall\.manage\.addTitleTag/)
+  assert.match(source, /row\.title_tags/)
+})
+
 test('manage view no longer exposes deprecated style preset, badge tone, and cover height fields', () => {
   assert.doesNotMatch(source, /fuxiHall\.manage\.stylePreset/)
   assert.doesNotMatch(source, /fuxiHall\.manage\.badgeTone/)
@@ -47,4 +57,9 @@ test('manage view removes cover-image editing and preview rendering', () => {
   assert.doesNotMatch(source, /fuxiHall\.manage\.coverImage/)
   assert.doesNotMatch(source, /fuxiHall\.manage\.uploadCover/)
   assert.doesNotMatch(source, /fuxi-hall-manage__preview-cover/)
+})
+
+test('manage view no longer binds legacy card.title rendering', () => {
+  assert.doesNotMatch(source, /v-model="cardForm\.title"/)
+  assert.doesNotMatch(source, /row\.title\b/)
 })

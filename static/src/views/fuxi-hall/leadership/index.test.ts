@@ -13,12 +13,11 @@ test('leadership view binds leadership endpoint and fallback copy', () => {
 
 test('leadership view renders sanitized rich-text payload fields', () => {
   assert.match(source, /v-html="page\.description_html"/)
-  assert.match(source, /v-html="card\.description_html"/)
-  assert.match(source, /buildEveCharacterPortraitUrl\(card\.main_character_id,\s*256\)/)
+  assert.match(source, /FuxiHallMemberCard/)
+  assert.match(source, /:card="card"/)
 })
 
-test('leadership view uses manage-style member card layout without cover section', () => {
-  assert.match(source, /class="fuxi-hall-page__meta"/)
-  assert.doesNotMatch(source, /fuxi-hall-page__cover/)
-  assert.doesNotMatch(source, /card\.cover_image/)
+test('leadership view uses shared member card component and no legacy title field binding', () => {
+  assert.match(source, /components\/FuxiHallMemberCard\.vue/)
+  assert.doesNotMatch(source, /card\.title/)
 })

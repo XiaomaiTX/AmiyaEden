@@ -15,30 +15,7 @@
         />
 
         <section v-if="cards.length > 0" class="fuxi-hall-page__grid">
-          <article
-            v-for="card in cards"
-            :key="card.id"
-            class="fuxi-hall-page__member"
-            :style="{ '--accent-color': card.accent_color }"
-          >
-            <div class="fuxi-hall-page__body">
-              <div class="fuxi-hall-page__meta">
-                <img
-                  v-if="card.main_character_id > 0"
-                  class="fuxi-hall-page__avatar"
-                  :class="`is-${card.avatar_shape}`"
-                  :src="buildEveCharacterPortraitUrl(card.main_character_id, 256)"
-                  :alt="card.nickname"
-                />
-                <div>
-                  <h3>{{ card.nickname }}</h3>
-                  <p class="fuxi-hall-page__main-name">{{ card.main_character_name }}</p>
-                  <p class="fuxi-hall-page__title">{{ card.title }}</p>
-                </div>
-              </div>
-              <div class="fuxi-hall-page__description" v-html="card.description_html" />
-            </div>
-          </article>
+          <FuxiHallMemberCard v-for="card in cards" :key="card.id" :card="card" />
         </section>
 
         <section v-else-if="!loading" class="fuxi-hall-page__empty">
@@ -56,7 +33,7 @@
   import { useI18n } from 'vue-i18n'
 
   import { fetchFuxiHallLeadership } from '@/api/fuxi-hall'
-  import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
+  import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
 
   const { t } = useI18n()
   const loading = ref(false)
@@ -135,63 +112,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 18px;
-  }
-
-  .fuxi-hall-page__member {
-    border: 1px solid color-mix(in srgb, var(--accent-color), transparent 76%);
-    border-radius: 16px;
-    background: var(--el-bg-color);
-  }
-
-  .fuxi-hall-page__body {
-    padding: 14px;
-    color: var(--el-text-color-regular);
-  }
-
-  .fuxi-hall-page__meta {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .fuxi-hall-page__avatar {
-    width: 72px;
-    height: 72px;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: 2px solid color-mix(in srgb, var(--accent-color), transparent 62%);
-    display: block;
-  }
-
-  .fuxi-hall-page__avatar.is-circle {
-    border-radius: 999px;
-  }
-
-  .fuxi-hall-page__avatar.is-rounded {
-    border-radius: 12px;
-  }
-
-  .fuxi-hall-page__avatar.is-square {
-    border-radius: 8px;
-  }
-
-  .fuxi-hall-page__meta h3 {
-    margin: 0;
-    color: var(--el-text-color-primary);
-    font-size: 17px;
-  }
-
-  .fuxi-hall-page__main-name,
-  .fuxi-hall-page__title {
-    margin: 4px 0 0;
-    color: var(--el-text-color-regular);
-  }
-
-  .fuxi-hall-page__description {
-    margin-top: 8px;
-    color: var(--el-text-color-secondary);
-    line-height: 1.6;
-    overflow-wrap: anywhere;
   }
 
   .fuxi-hall-page__empty {
