@@ -19,6 +19,8 @@ test('corporation structures page wires settings and list tabs', () => {
   assert.match(source, /corporationStructures\.tabs\.list/)
   assert.match(source, /corporationStructures\.tabs\.settings/)
   assert.match(source, /corporationStructures\.tabs\.assignmentSalary/)
+  assert.match(source, /corporationStructures\.actions\.openFilters/)
+  assert.match(source, /corporationStructures\.filters\.title/)
   assert.match(source, /saveAuthorizations/)
   assert.match(source, /saveAssignments/)
   assert.match(source, /assignmentTargetUserId/)
@@ -29,6 +31,21 @@ test('corporation structures page wires settings and list tabs', () => {
   assert.match(source, /handleRunTaskForSelectedCorporation/)
   assert.doesNotMatch(source, /handleRefreshCorporation/)
   assert.doesNotMatch(source, /refreshThisCorporation/)
+})
+
+test('corporation structures list tab uses drawer based filters', () => {
+  assert.match(source, /const filterDrawerVisible = ref\(false\)/)
+  assert.match(source, /const filterDrawerSize = computed\(\(\) =>/)
+  assert.match(source, /const openFilterDrawer = \(\) => \{/)
+  assert.match(source, /const handleSearchFromDrawer = \(\) => \{/)
+  assert.match(
+    source,
+    /<ElDrawer[\s\S]*filterDrawerVisible[\s\S]*corporationStructures\.filters\.title/s
+  )
+  assert.match(source, /handleSearchFromDrawer/)
+  assert.match(source, /class="[^"]*corporation-structures-page__list-toolbar[^"]*"/)
+  assert.match(source, /class="[^"]*corporation-structures-page__filter-drawer[^"]*"/)
+  assert.match(source, /class="[^"]*corporation-structures-page__filter-drawer-content[^"]*"/)
 })
 
 test('corporation structures settings includes notice thresholds and submits them together', () => {
@@ -80,6 +97,8 @@ test('corporation structures full-height tabs define explicit height chain style
     source,
     /\.corporation-structures-page__list-card :deep\(\.el-card__body\)\s*\{[\s\S]*flex:\s*1;[\s\S]*overflow:\s*hidden;/s
   )
+  assert.match(source, /&__filter-drawer\s*\{[\s\S]*el-drawer__body/s)
+  assert.match(source, /&__filter-drawer-content\s*\{[\s\S]*overflow:\s*auto;/s)
 })
 
 test('corporation structures settings supports disabling dashboard authorization per corporation', () => {

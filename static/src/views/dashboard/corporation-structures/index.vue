@@ -9,251 +9,276 @@
 
     <ElTabs v-model="activeTab" @tab-change="handleTabChange">
       <ElTabPane :label="$t('corporationStructures.tabs.list')" name="list">
-        <ElCard shadow="never" class="art-card mb-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            <ElFormItem :label="$t('corporationStructures.filters.corporation')" class="mb-0">
-              <ElSelect
-                v-model="filters.corporation_id"
-                filterable
-                clearable
-                class="w-full"
-                @change="handleCorporationFilterChange"
-                @clear="handleCorporationFilterChange"
+        <div class="corporation-structures-page__list-view">
+          <ElCard shadow="never" class="art-card mb-4 corporation-structures-page__list-toolbar">
+            <div class="flex flex-wrap items-center gap-3">
+              <ElButton type="primary" plain @click="openFilterDrawer">
+                {{ $t('corporationStructures.actions.openFilters') }}
+              </ElButton>
+              <ElButton
+                type="primary"
+                :loading="
+                  runningTaskCorpId === filters.corporation_id && filters.corporation_id > 0
+                "
+                :disabled="filters.corporation_id <= 0"
+                @click="handleRunTaskForSelectedCorporation"
               >
-                <ElOption :label="$t('corporationStructures.allCorporations')" :value="0" />
-                <ElOption
-                  v-for="corp in validCorporations"
-                  :key="corp.corporation_id"
-                  :label="`${corp.corporation_name} (${corp.corporation_id})`"
-                  :value="corp.corporation_id"
-                />
-              </ElSelect>
-            </ElFormItem>
+                {{ $t('corporationStructures.actions.refreshSelected') }}
+              </ElButton>
+            </div>
+          </ElCard>
 
-            <ElFormItem :label="$t('corporationStructures.filters.keyword')" class="mb-0">
-              <ElInput
-                v-model="filters.keyword"
-                clearable
-                :placeholder="$t('corporationStructures.placeholders.keyword')"
-              />
-            </ElFormItem>
-
-            <ElFormItem :label="$t('corporationStructures.filters.systems')" class="mb-0">
-              <ElSelect
-                v-model="filters.system_ids"
-                multiple
-                filterable
-                clearable
-                collapse-tags
-                collapse-tags-tooltip
-                class="w-full"
+          <ElDrawer
+            v-model="filterDrawerVisible"
+            :title="$t('corporationStructures.filters.title')"
+            direction="rtl"
+            :size="filterDrawerSize"
+            class="corporation-structures-page__filter-drawer"
+            destroy-on-close
+          >
+            <div class="corporation-structures-page__filter-drawer-body">
+              <div
+                class="corporation-structures-page__filter-drawer-content grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
               >
-                <ElOption
-                  v-for="item in filterOptions.systems"
-                  :key="item.system_id"
-                  :label="formatSystemOption(item)"
-                  :value="item.system_id"
-                />
-              </ElSelect>
-            </ElFormItem>
+                <ElFormItem :label="$t('corporationStructures.filters.corporation')" class="mb-0">
+                  <ElSelect
+                    v-model="filters.corporation_id"
+                    filterable
+                    clearable
+                    class="w-full"
+                    @change="handleCorporationFilterChange"
+                    @clear="handleCorporationFilterChange"
+                  >
+                    <ElOption :label="$t('corporationStructures.allCorporations')" :value="0" />
+                    <ElOption
+                      v-for="corp in validCorporations"
+                      :key="corp.corporation_id"
+                      :label="`${corp.corporation_name} (${corp.corporation_id})`"
+                      :value="corp.corporation_id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
 
-            <ElFormItem
-              :label="$t('corporationStructures.filters.stateGroups')"
-              class="mb-0 md:col-span-2"
-            >
-              <ElCheckboxGroup v-model="filters.state_groups">
-                <ElCheckboxButton value="online">{{
-                  $t('corporationStructures.stateGroups.online')
-                }}</ElCheckboxButton>
-                <ElCheckboxButton value="low_power">{{
-                  $t('corporationStructures.stateGroups.lowPower')
-                }}</ElCheckboxButton>
-                <ElCheckboxButton value="abandoned">{{
-                  $t('corporationStructures.stateGroups.abandoned')
-                }}</ElCheckboxButton>
-                <ElCheckboxButton value="reinforced">{{
-                  $t('corporationStructures.stateGroups.reinforced')
-                }}</ElCheckboxButton>
-              </ElCheckboxGroup>
-            </ElFormItem>
-
-            <ElFormItem
-              :label="$t('corporationStructures.filters.fuel')"
-              class="mb-0 md:col-span-2 xl:col-span-3"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <ElRadioGroup v-model="filters.fuel_bucket">
-                  <ElRadioButton value="all">{{
-                    $t('corporationStructures.fuelBuckets.all')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="lt_24h">{{
-                    $t('corporationStructures.fuelBuckets.lt24h')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="lt_72h">{{
-                    $t('corporationStructures.fuelBuckets.lt3d')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="lt_168h">{{
-                    $t('corporationStructures.fuelBuckets.lt7d')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="custom">{{
-                    $t('corporationStructures.fuelBuckets.custom')
-                  }}</ElRadioButton>
-                </ElRadioGroup>
-                <template v-if="filters.fuel_bucket === 'custom'">
-                  <ElInputNumber v-model="filters.fuel_min_hours" :min="0" :step="1" />
-                  <span>~</span>
-                  <ElInputNumber v-model="filters.fuel_max_hours" :min="0" :step="1" />
-                </template>
-              </div>
-            </ElFormItem>
-
-            <ElFormItem
-              :label="$t('corporationStructures.filters.security')"
-              class="mb-0 md:col-span-2"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <ElCheckboxGroup v-model="filters.security_bands">
-                  <ElCheckboxButton value="highsec">{{
-                    $t('corporationStructures.securityBands.highsec')
-                  }}</ElCheckboxButton>
-                  <ElCheckboxButton value="lowsec">{{
-                    $t('corporationStructures.securityBands.lowsec')
-                  }}</ElCheckboxButton>
-                  <ElCheckboxButton value="nullsec">{{
-                    $t('corporationStructures.securityBands.nullsec')
-                  }}</ElCheckboxButton>
-                </ElCheckboxGroup>
-                <ElInputNumber
-                  v-model="filters.security_min"
-                  :min="-1"
-                  :max="1"
-                  :step="0.1"
-                  :precision="1"
-                />
-                <span>~</span>
-                <ElInputNumber
-                  v-model="filters.security_max"
-                  :min="-1"
-                  :max="1"
-                  :step="0.1"
-                  :precision="1"
-                />
-              </div>
-            </ElFormItem>
-
-            <ElFormItem :label="$t('corporationStructures.filters.types')" class="mb-0">
-              <ElSelect
-                v-model="filters.type_ids"
-                multiple
-                filterable
-                clearable
-                collapse-tags
-                collapse-tags-tooltip
-                class="w-full"
-              >
-                <ElOption
-                  v-for="item in filterOptions.types"
-                  :key="item.type_id"
-                  :label="item.type_name"
-                  :value="item.type_id"
-                />
-              </ElSelect>
-            </ElFormItem>
-
-            <ElFormItem
-              :label="$t('corporationStructures.filters.services')"
-              class="mb-0 md:col-span-2"
-            >
-              <div class="flex flex-wrap items-center gap-2 w-full">
-                <ElSelect
-                  v-model="filters.service_names"
-                  multiple
-                  filterable
-                  clearable
-                  class="w-full md:w-[360px]"
-                >
-                  <ElOption
-                    v-for="item in filterOptions.services"
-                    :key="item.name"
-                    :label="item.name"
-                    :value="item.name"
+                <ElFormItem :label="$t('corporationStructures.filters.keyword')" class="mb-0">
+                  <ElInput
+                    v-model="filters.keyword"
+                    clearable
+                    :placeholder="$t('corporationStructures.placeholders.keyword')"
                   />
-                </ElSelect>
-                <ElRadioGroup v-model="filters.service_match_mode">
-                  <ElRadioButton value="and">{{
-                    $t('corporationStructures.serviceMatch.and')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="or">{{
-                    $t('corporationStructures.serviceMatch.or')
-                  }}</ElRadioButton>
-                </ElRadioGroup>
+                </ElFormItem>
+
+                <ElFormItem :label="$t('corporationStructures.filters.systems')" class="mb-0">
+                  <ElSelect
+                    v-model="filters.system_ids"
+                    multiple
+                    filterable
+                    clearable
+                    collapse-tags
+                    collapse-tags-tooltip
+                    class="w-full"
+                  >
+                    <ElOption
+                      v-for="item in filterOptions.systems"
+                      :key="item.system_id"
+                      :label="formatSystemOption(item)"
+                      :value="item.system_id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+
+                <ElFormItem
+                  :label="$t('corporationStructures.filters.stateGroups')"
+                  class="mb-0 md:col-span-2"
+                >
+                  <ElCheckboxGroup v-model="filters.state_groups">
+                    <ElCheckboxButton value="online">{{
+                      $t('corporationStructures.stateGroups.online')
+                    }}</ElCheckboxButton>
+                    <ElCheckboxButton value="low_power">{{
+                      $t('corporationStructures.stateGroups.lowPower')
+                    }}</ElCheckboxButton>
+                    <ElCheckboxButton value="abandoned">{{
+                      $t('corporationStructures.stateGroups.abandoned')
+                    }}</ElCheckboxButton>
+                    <ElCheckboxButton value="reinforced">{{
+                      $t('corporationStructures.stateGroups.reinforced')
+                    }}</ElCheckboxButton>
+                  </ElCheckboxGroup>
+                </ElFormItem>
+
+                <ElFormItem
+                  :label="$t('corporationStructures.filters.fuel')"
+                  class="mb-0 md:col-span-2 xl:col-span-3"
+                >
+                  <div class="flex flex-wrap items-center gap-2">
+                    <ElRadioGroup v-model="filters.fuel_bucket">
+                      <ElRadioButton value="all">{{
+                        $t('corporationStructures.fuelBuckets.all')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="lt_24h">{{
+                        $t('corporationStructures.fuelBuckets.lt24h')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="lt_72h">{{
+                        $t('corporationStructures.fuelBuckets.lt3d')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="lt_168h">{{
+                        $t('corporationStructures.fuelBuckets.lt7d')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="custom">{{
+                        $t('corporationStructures.fuelBuckets.custom')
+                      }}</ElRadioButton>
+                    </ElRadioGroup>
+                    <template v-if="filters.fuel_bucket === 'custom'">
+                      <ElInputNumber v-model="filters.fuel_min_hours" :min="0" :step="1" />
+                      <span>~</span>
+                      <ElInputNumber v-model="filters.fuel_max_hours" :min="0" :step="1" />
+                    </template>
+                  </div>
+                </ElFormItem>
+
+                <ElFormItem
+                  :label="$t('corporationStructures.filters.security')"
+                  class="mb-0 md:col-span-2"
+                >
+                  <div class="flex flex-wrap items-center gap-2">
+                    <ElCheckboxGroup v-model="filters.security_bands">
+                      <ElCheckboxButton value="highsec">{{
+                        $t('corporationStructures.securityBands.highsec')
+                      }}</ElCheckboxButton>
+                      <ElCheckboxButton value="lowsec">{{
+                        $t('corporationStructures.securityBands.lowsec')
+                      }}</ElCheckboxButton>
+                      <ElCheckboxButton value="nullsec">{{
+                        $t('corporationStructures.securityBands.nullsec')
+                      }}</ElCheckboxButton>
+                    </ElCheckboxGroup>
+                    <ElInputNumber
+                      v-model="filters.security_min"
+                      :min="-1"
+                      :max="1"
+                      :step="0.1"
+                      :precision="1"
+                    />
+                    <span>~</span>
+                    <ElInputNumber
+                      v-model="filters.security_max"
+                      :min="-1"
+                      :max="1"
+                      :step="0.1"
+                      :precision="1"
+                    />
+                  </div>
+                </ElFormItem>
+
+                <ElFormItem :label="$t('corporationStructures.filters.types')" class="mb-0">
+                  <ElSelect
+                    v-model="filters.type_ids"
+                    multiple
+                    filterable
+                    clearable
+                    collapse-tags
+                    collapse-tags-tooltip
+                    class="w-full"
+                  >
+                    <ElOption
+                      v-for="item in filterOptions.types"
+                      :key="item.type_id"
+                      :label="item.type_name"
+                      :value="item.type_id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+
+                <ElFormItem
+                  :label="$t('corporationStructures.filters.services')"
+                  class="mb-0 md:col-span-2"
+                >
+                  <div class="flex flex-wrap items-center gap-2 w-full">
+                    <ElSelect
+                      v-model="filters.service_names"
+                      multiple
+                      filterable
+                      clearable
+                      class="w-full md:w-[360px]"
+                    >
+                      <ElOption
+                        v-for="item in filterOptions.services"
+                        :key="item.name"
+                        :label="item.name"
+                        :value="item.name"
+                      />
+                    </ElSelect>
+                    <ElRadioGroup v-model="filters.service_match_mode">
+                      <ElRadioButton value="and">{{
+                        $t('corporationStructures.serviceMatch.and')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="or">{{
+                        $t('corporationStructures.serviceMatch.or')
+                      }}</ElRadioButton>
+                    </ElRadioGroup>
+                  </div>
+                </ElFormItem>
+
+                <ElFormItem
+                  :label="$t('corporationStructures.filters.timer')"
+                  class="mb-0 md:col-span-2 xl:col-span-3"
+                >
+                  <div class="flex flex-wrap items-center gap-2">
+                    <ElRadioGroup v-model="filters.timer_bucket">
+                      <ElRadioButton value="all">{{
+                        $t('corporationStructures.timerBuckets.all')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="current_hour">{{
+                        $t('corporationStructures.timerBuckets.currentHour')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="next_2_hours">{{
+                        $t('corporationStructures.timerBuckets.next2Hours')
+                      }}</ElRadioButton>
+                      <ElRadioButton value="custom">{{
+                        $t('corporationStructures.timerBuckets.custom')
+                      }}</ElRadioButton>
+                    </ElRadioGroup>
+                    <ElDatePicker
+                      v-if="filters.timer_bucket === 'custom'"
+                      v-model="timerRange"
+                      type="datetimerange"
+                      class="w-[380px]"
+                      value-format="YYYY-MM-DDTHH:mm:ss"
+                    />
+                  </div>
+                </ElFormItem>
               </div>
-            </ElFormItem>
 
-            <ElFormItem
-              :label="$t('corporationStructures.filters.timer')"
-              class="mb-0 md:col-span-2 xl:col-span-3"
-            >
-              <div class="flex flex-wrap items-center gap-2">
-                <ElRadioGroup v-model="filters.timer_bucket">
-                  <ElRadioButton value="all">{{
-                    $t('corporationStructures.timerBuckets.all')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="current_hour">{{
-                    $t('corporationStructures.timerBuckets.currentHour')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="next_2_hours">{{
-                    $t('corporationStructures.timerBuckets.next2Hours')
-                  }}</ElRadioButton>
-                  <ElRadioButton value="custom">{{
-                    $t('corporationStructures.timerBuckets.custom')
-                  }}</ElRadioButton>
-                </ElRadioGroup>
-                <ElDatePicker
-                  v-if="filters.timer_bucket === 'custom'"
-                  v-model="timerRange"
-                  type="datetimerange"
-                  class="w-[380px]"
-                  value-format="YYYY-MM-DDTHH:mm:ss"
-                />
+              <div
+                class="corporation-structures-page__filter-drawer-actions flex flex-wrap items-center gap-3 mt-4"
+              >
+                <ElButton type="primary" :loading="loading" @click="handleSearchFromDrawer">
+                  {{ $t('common.search') }}
+                </ElButton>
+                <ElButton @click="handleReset">{{ $t('common.reset') }}</ElButton>
               </div>
-            </ElFormItem>
-          </div>
+            </div>
+          </ElDrawer>
 
-          <div class="flex flex-wrap items-center gap-3 mt-4">
-            <ElButton type="primary" :loading="loading" @click="handleSearch">
-              {{ $t('common.search') }}
-            </ElButton>
-            <ElButton @click="handleReset">{{ $t('common.reset') }}</ElButton>
-            <ElButton
-              type="primary"
-              :loading="runningTaskCorpId === filters.corporation_id && filters.corporation_id > 0"
-              :disabled="filters.corporation_id <= 0"
-              @click="handleRunTaskForSelectedCorporation"
-            >
-              {{ $t('corporationStructures.actions.refreshSelected') }}
-            </ElButton>
-          </div>
-        </ElCard>
-
-        <ElCard shadow="never" class="art-table-card corporation-structures-page__list-card">
-          <ArtTableHeader
-            v-model:columns="columnChecks"
-            :loading="loading"
-            @refresh="refreshData"
-          />
-          <ArtTable
-            :loading="loading"
-            :data="data"
-            :columns="columns"
-            :pagination="pagination"
-            :default-sort="{ prop: 'fuel_remaining_hours', order: 'ascending' }"
-            :empty-text="$t('corporationStructures.empty.list')"
-            @sort-change="handleSortChange"
-            @pagination:size-change="handleSizeChange"
-            @pagination:current-change="handleCurrentChange"
-          />
-        </ElCard>
+          <ElCard shadow="never" class="art-table-card corporation-structures-page__list-card">
+            <ArtTableHeader
+              v-model:columns="columnChecks"
+              :loading="loading"
+              @refresh="refreshData"
+            />
+            <ArtTable
+              :loading="loading"
+              :data="data"
+              :columns="columns"
+              :pagination="pagination"
+              :default-sort="{ prop: 'fuel_remaining_hours', order: 'ascending' }"
+              :empty-text="$t('corporationStructures.empty.list')"
+              @sort-change="handleSortChange"
+              @pagination:size-change="handleSizeChange"
+              @pagination:current-change="handleCurrentChange"
+            />
+          </ElCard>
+        </div>
       </ElTabPane>
 
       <ElTabPane :label="$t('corporationStructures.tabs.settings')" name="settings">
@@ -526,6 +551,9 @@
   const runningTaskCorpId = ref<number>(0)
   const authorizationByCorp = reactive<Record<number, number>>({})
   const timerRange = ref<[string, string] | null>(null)
+  const filterDrawerVisible = ref(false)
+  const { width: windowWidth } = useWindowSize()
+  const filterDrawerSize = computed(() => (windowWidth.value < 768 ? '100%' : '560px'))
 
   const filterOptions = ref<Api.Dashboard.CorporationStructureFilterOptionsResponse>({
     systems: [],
@@ -972,6 +1000,11 @@
     getData()
   }
 
+  const handleSearchFromDrawer = () => {
+    handleSearch()
+    filterDrawerVisible.value = false
+  }
+
   const handleReset = () => {
     Object.assign(filters, buildDefaultFilters())
     timerRange.value = null
@@ -1034,6 +1067,10 @@
 
   const handleCorporationFilterChange = async () => {
     await loadFilterOptions()
+  }
+
+  const openFilterDrawer = () => {
+    filterDrawerVisible.value = true
   }
 
   const handleSortChange = (sort: TableSort) => {
@@ -1338,6 +1375,49 @@
     &__list-card {
       flex: 1;
       min-height: 0;
+    }
+
+    &__list-view {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    &__list-toolbar {
+      flex: none;
+    }
+
+    &__filter-drawer {
+      :deep(.el-drawer__body) {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+      }
+    }
+
+    &__filter-drawer-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    &__filter-drawer-content {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    &__filter-drawer-actions {
+      position: sticky;
+      bottom: 0;
+      margin-top: 16px;
+      padding-top: 16px;
+      background: var(--el-bg-color);
+      border-top: 1px solid var(--el-border-color-lighter);
     }
   }
 

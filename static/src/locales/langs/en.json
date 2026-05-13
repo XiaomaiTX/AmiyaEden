@@ -2570,6 +2570,7 @@
       "custom": "Custom Range"
     },
     "actions": {
+      "openFilters": "Open Filters",
       "refreshSelected": "Run Background Task for Selected Corporation"
     },
     "settings": {
@@ -2599,6 +2600,7 @@
       "selectDirector": "Select a Director character",
       "keyword": "Search by structure/system/alias"
     },
+    "title": "Filters",
     "states": {
       "shield_vulnerable": "Online",
       "low_power": "Low Power",
