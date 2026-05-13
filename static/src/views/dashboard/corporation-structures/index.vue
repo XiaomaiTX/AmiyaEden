@@ -850,6 +850,16 @@
           showOverflowTooltip: true
         },
         {
+          prop: 'assigned_character_name',
+          label: t('corporationStructures.salary.assignedFuelOfficer'),
+          minWidth: 220,
+          showOverflowTooltip: true,
+          formatter: (row: StructureRow) =>
+            row.assigned_user_id > 0
+              ? row.assigned_character_name || '--'
+              : t('corporationStructures.salary.unassignedLabel')
+        },
+        {
           prop: 'state',
           label: t('corporationStructures.table.state'),
           width: 180,

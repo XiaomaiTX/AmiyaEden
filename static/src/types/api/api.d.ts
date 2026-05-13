@@ -1710,6 +1710,9 @@ declare namespace Api {
     interface CorporationStructureRow {
       corporation_id: number
       corporation_name: string
+      assigned_user_id: number
+      assigned_character_id: number
+      assigned_character_name: string
       structure_id: number
       name: string
       type_id: number

@@ -110,6 +110,20 @@ func TestCorporationStructureListUsesSnapshotFieldsAndPlaceholders(t *testing.T)
 	})
 
 	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: 2}, Nickname: "fuel", Role: model.RoleFuelOfficer}).Error; err != nil {
+		t.Fatalf("create fuel officer user: %v", err)
+	}
+	if err := db.Create(&model.UserRole{UserID: 2, RoleCode: model.RoleFuelOfficer}).Error; err != nil {
+		t.Fatalf("create fuel officer role: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   92000001,
+		CharacterName: "FuelOfficer Character",
+		UserID:        2,
+		CorporationID: 9001,
+	}).Error; err != nil {
+		t.Fatalf("create fuel officer character: %v", err)
+	}
 	if err := db.Create(&model.CorpStructureInfo{
 		CorporationID:   9001,
 		CorporationName: "Snapshot Corp",
@@ -139,6 +153,14 @@ func TestCorporationStructureListUsesSnapshotFieldsAndPlaceholders(t *testing.T)
 	}).Error; err != nil {
 		t.Fatalf("seed snapshot row #2: %v", err)
 	}
+	if err := db.Create(&model.CorpStructureAssignment{
+		CorporationID:       9001,
+		StructureID:         111,
+		AssignedUserID:      2,
+		AssignedCharacterID: 92000001,
+	}).Error; err != nil {
+		t.Fatalf("seed structure assignment: %v", err)
+	}
 
 	svc := newCorporationStructureServiceForTest()
 	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{CorporationID: 9001})
@@ -167,6 +189,15 @@ func TestCorporationStructureListUsesSnapshotFieldsAndPlaceholders(t *testing.T)
 	if first.Security != 0.9 {
 		t.Fatalf("expected snapshot security 0.9, got %v", first.Security)
 	}
+	if first.AssignedUserID != 2 {
+		t.Fatalf("expected assigned user id 2, got %d", first.AssignedUserID)
+	}
+	if first.AssignedCharacterID != 92000001 {
+		t.Fatalf("expected assigned character id 92000001, got %d", first.AssignedCharacterID)
+	}
+	if first.AssignedCharacterName != "fuel" {
+		t.Fatalf("expected assigned character name fuel, got %q", first.AssignedCharacterName)
+	}
 
 	second := byID[222]
 	if second.CorporationName != "Corporation-9001" {
@@ -177,6 +208,15 @@ func TestCorporationStructureListUsesSnapshotFieldsAndPlaceholders(t *testing.T)
 	}
 	if second.SystemName != "System-30002187" {
 		t.Fatalf("expected fallback system placeholder, got %q", second.SystemName)
+	}
+	if second.AssignedUserID != 0 {
+		t.Fatalf("expected unassigned row to keep empty user id, got %d", second.AssignedUserID)
+	}
+	if second.AssignedCharacterID != 0 {
+		t.Fatalf("expected unassigned row to keep empty character id, got %d", second.AssignedCharacterID)
+	}
+	if second.AssignedCharacterName != "" {
+		t.Fatalf("expected unassigned row to keep empty character name, got %q", second.AssignedCharacterName)
 	}
 }
 
