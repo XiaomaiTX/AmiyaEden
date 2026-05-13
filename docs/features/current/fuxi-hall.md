@@ -49,10 +49,11 @@ source_of_truth:
 - 卡片必填：`nickname`、`main_character_id`、`main_character_name`、`title`
 - `description_html` 在服务层白名单清洗后入库与返回
 - `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
-- 样式字段受控：
-  - 颜色仅十六进制
-  - 枚举字段仅允许预设值
-  - 数值字段有上下限
+- 样式约束：
+  - `accent_color` 仅允许十六进制颜色值
+  - `avatar_shape` 仅允许预设枚举值
+  - `font_scale` 有上下限
+  - `style_preset`、`badge_tone`、`cover_height` 已固定，不再通过接口暴露
 
 ## 前端结构
 
@@ -69,7 +70,7 @@ source_of_truth:
 - 卡片增删改
 - 头像统一由 `main_character_id` 生成 ESI 人物头像（不支持自定义头像上传）
 - 封面上传（复用 `/api/v1/upload/image`）
-- 受控样式编辑
+- 受控样式编辑（强调色/头像形状/字体大小）
 - 显隐切换
 - 手动排序（上移/下移）
 - 管理态实时预览（未保存草稿即时映射）

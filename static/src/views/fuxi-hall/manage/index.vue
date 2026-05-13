@@ -2,19 +2,10 @@
   <div class="fuxi-hall-manage" v-loading="loading">
     <ElCard class="fuxi-hall-manage__toolbar art-table-card" shadow="never">
       <div class="fuxi-hall-manage__toolbar-inner">
-        <ElSegmented
-          v-model="currentPageKey"
-          :options="pageOptions"
-          @change="() => void loadPage()"
-        />
-        <div class="fuxi-hall-manage__actions">
-          <ElButton type="primary" :loading="savingPage" @click="void savePage()">
-            {{ t('fuxiHall.manage.savePage') }}
-          </ElButton>
-          <ElButton type="success" @click="openCreateCard">
-            {{ t('fuxiHall.manage.addCard') }}
-          </ElButton>
-        </div>
+        <ElTabs v-model="currentPageKey" @tab-change="() => void loadPage()">
+          <ElTabPane :label="t('fuxiHall.manage.leadershipTab')" name="leadership" />
+          <ElTabPane :label="t('fuxiHall.manage.contributorsTab')" name="contributors" />
+        </ElTabs>
       </div>
     </ElCard>
 
@@ -34,12 +25,22 @@
           <ElFormItem :label="t('fuxiHall.manage.pageDescription')">
             <ArtWangEditor v-model="pageForm.description_html" height="220px" />
           </ElFormItem>
+          <ElFormItem>
+            <ElButton type="primary" :loading="savingPage" @click="void savePage()">
+              {{ t('common.save') }}
+            </ElButton>
+          </ElFormItem>
         </ElForm>
       </ElCard>
 
       <ElCard class="art-table-card" shadow="never">
         <template #header>
-          <span>{{ t('fuxiHall.manage.cardList') }}</span>
+          <div class="fuxi-hall-manage__card-header">
+            <span>{{ t('fuxiHall.manage.cardList') }}</span>
+            <ElButton type="success" @click="openCreateCard">
+              {{ t('fuxiHall.manage.addCard') }}
+            </ElButton>
+          </div>
         </template>
 
         <ElTable :data="cards" row-key="id">
@@ -109,10 +110,7 @@
               class="fuxi-hall-manage__preview-card"
               :style="{ '--accent-color': card.accent_color }"
             >
-              <div
-                class="fuxi-hall-manage__preview-cover"
-                :style="{ height: `${card.cover_height}px` }"
-              >
+              <div class="fuxi-hall-manage__preview-cover">
                 <img v-if="card.cover_image" :src="card.cover_image" :alt="card.nickname" />
               </div>
               <div class="fuxi-hall-manage__preview-body">
@@ -157,26 +155,6 @@
           <ElFormItem :label="t('fuxiHall.manage.title')" required>
             <ElInput v-model="cardForm.title" />
           </ElFormItem>
-          <ElFormItem :label="t('fuxiHall.manage.stylePreset')">
-            <ElSelect v-model="cardForm.style_preset">
-              <ElOption
-                v-for="option in stylePresetOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </ElSelect>
-          </ElFormItem>
-          <ElFormItem :label="t('fuxiHall.manage.badgeTone')">
-            <ElSelect v-model="cardForm.badge_tone">
-              <ElOption
-                v-for="option in badgeToneOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </ElSelect>
-          </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.avatarShape')">
             <ElSelect v-model="cardForm.avatar_shape">
               <ElOption
@@ -189,9 +167,6 @@
           </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.accentColor')">
             <ElColorPicker v-model="cardForm.accent_color" :show-alpha="false" />
-          </ElFormItem>
-          <ElFormItem :label="t('fuxiHall.manage.coverHeight')">
-            <ElInputNumber v-model="cardForm.cover_height" :min="96" :max="320" />
           </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.fontScale')">
             <ElInputNumber v-model="cardForm.font_scale" :min="12" :max="20" />
@@ -231,7 +206,7 @@
 
 <script setup lang="ts">
   import { computed, onMounted, reactive, ref } from 'vue'
-  import { ElMessage, ElMessageBox, type UploadFile } from 'element-plus'
+  import { ElMessage, ElMessageBox, ElTabPane, ElTabs, type UploadFile } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   import {
@@ -272,11 +247,8 @@
     title: string
     description_html: string
     cover_image: string
-    style_preset: Api.FuxiHall.StylePreset
     accent_color: string
-    badge_tone: Api.FuxiHall.BadgeTone
     avatar_shape: Api.FuxiHall.AvatarShape
-    cover_height: number
     font_scale: number
     visible: boolean
   }
@@ -295,31 +267,11 @@
     title: '',
     description_html: '',
     cover_image: '',
-    style_preset: 'classic',
     accent_color: '#3b82f6',
-    badge_tone: 'neutral',
     avatar_shape: 'circle',
-    cover_height: 180,
     font_scale: 14,
     visible: true
   })
-
-  const pageOptions = computed(() => [
-    { label: t('fuxiHall.manage.leadershipTab'), value: 'leadership' },
-    { label: t('fuxiHall.manage.contributorsTab'), value: 'contributors' }
-  ])
-
-  const stylePresetOptions = computed(() => [
-    { label: t('fuxiHall.manage.stylePresetClassic'), value: 'classic' },
-    { label: t('fuxiHall.manage.stylePresetAurora'), value: 'aurora' },
-    { label: t('fuxiHall.manage.stylePresetSlate'), value: 'slate' }
-  ])
-
-  const badgeToneOptions = computed(() => [
-    { label: t('fuxiHall.manage.badgeToneNeutral'), value: 'neutral' },
-    { label: t('fuxiHall.manage.badgeToneDawn'), value: 'dawn' },
-    { label: t('fuxiHall.manage.badgeToneSteel'), value: 'steel' }
-  ])
 
   const avatarShapeOptions = computed(() => [
     { label: t('fuxiHall.manage.avatarShapeCircle'), value: 'circle' },
@@ -352,11 +304,8 @@
       title: cardForm.title.trim(),
       description_html: cardForm.description_html,
       cover_image: cardForm.cover_image,
-      style_preset: cardForm.style_preset,
       accent_color: cardForm.accent_color,
-      badge_tone: cardForm.badge_tone,
       avatar_shape: cardForm.avatar_shape,
-      cover_height: cardForm.cover_height,
       font_scale: cardForm.font_scale,
       visible: cardForm.visible,
       sort_order: editingCardId.value ? 0 : visibleCards.length + 1,
@@ -438,11 +387,8 @@
     cardForm.title = ''
     cardForm.description_html = ''
     cardForm.cover_image = ''
-    cardForm.style_preset = 'classic'
     cardForm.accent_color = '#3b82f6'
-    cardForm.badge_tone = 'neutral'
     cardForm.avatar_shape = 'circle'
-    cardForm.cover_height = 180
     cardForm.font_scale = 14
     cardForm.visible = true
   }
@@ -462,11 +408,8 @@
     cardForm.title = card.title
     cardForm.description_html = card.description_html
     cardForm.cover_image = card.cover_image
-    cardForm.style_preset = card.style_preset
     cardForm.accent_color = card.accent_color
-    cardForm.badge_tone = card.badge_tone
     cardForm.avatar_shape = card.avatar_shape
-    cardForm.cover_height = card.cover_height
     cardForm.font_scale = card.font_scale
     cardForm.visible = card.visible
     cardDialogOpen.value = true
@@ -491,11 +434,8 @@
       title: cardForm.title.trim(),
       description_html: cardForm.description_html || '',
       cover_image: cardForm.cover_image || '',
-      style_preset: cardForm.style_preset,
       accent_color: cardForm.accent_color,
-      badge_tone: cardForm.badge_tone,
       avatar_shape: cardForm.avatar_shape,
-      cover_height: cardForm.cover_height,
       font_scale: cardForm.font_scale,
       visible: cardForm.visible
     }
@@ -595,15 +535,20 @@
 
   .fuxi-hall-manage__toolbar-inner {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    align-items: flex-end;
     gap: 12px;
     flex-wrap: wrap;
   }
 
-  .fuxi-hall-manage__actions {
+  .fuxi-hall-manage__toolbar-inner :deep(.el-tabs__header) {
+    margin: 0;
+  }
+
+  .fuxi-hall-manage__card-header {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .fuxi-hall-manage__layout {
@@ -669,6 +614,7 @@
   }
 
   .fuxi-hall-manage__preview-cover {
+    height: 180px;
     background: color-mix(in srgb, var(--accent-color), var(--el-fill-color-light) 70%);
   }
 

@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"encoding/json"
 	"testing"
 )
 
@@ -85,34 +86,31 @@ func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 	}
 }
 
-func TestFuxiHallCreateCardValidatesNumericStyleBounds(t *testing.T) {
+func TestFuxiHallCreateCardIgnoresDeprecatedStyleFieldsFromJSON(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
 	svc := NewFuxiHallService()
 
-	tooShortCover := 80
-	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
-		PageKey:           "contributors",
-		Nickname:          "Bound",
-		MainCharacterID:   1003,
-		MainCharacterName: "Bound",
-		Title:             "Bound",
-		CoverHeight:       &tooShortCover,
-	})
-	if err == nil {
-		t.Fatal("expected cover_height bound error")
+	payload := []byte(`{
+		"page_key":"leadership",
+		"nickname":"Legacy",
+		"main_character_id":1003,
+		"main_character_name":"Legacy Main",
+		"title":"Legacy Title",
+		"style_preset":"aurora",
+		"badge_tone":"dawn",
+		"cover_height":220
+	}`)
+	var req FuxiHallCreateCardRequest
+	if err := json.Unmarshal(payload, &req); err != nil {
+		t.Fatalf("json unmarshal failed: %v", err)
 	}
 
-	tooBigFont := 30
-	_, err = svc.CreateCard(&FuxiHallCreateCardRequest{
-		PageKey:           "contributors",
-		Nickname:          "Bound",
-		MainCharacterID:   1003,
-		MainCharacterName: "Bound",
-		Title:             "Bound",
-		FontScale:         &tooBigFont,
-	})
-	if err == nil {
-		t.Fatal("expected font_scale bound error")
+	card, err := svc.CreateCard(&req)
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if card.Nickname != "Legacy" {
+		t.Fatalf("expected card to be created from supported fields, got %q", card.Nickname)
 	}
 }
 

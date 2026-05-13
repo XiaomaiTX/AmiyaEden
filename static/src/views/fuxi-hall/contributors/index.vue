@@ -21,7 +21,7 @@
             class="fuxi-hall-page__member"
             :style="{ '--accent-color': card.accent_color }"
           >
-            <div class="fuxi-hall-page__cover" :style="{ height: `${card.cover_height}px` }">
+            <div class="fuxi-hall-page__cover">
               <img v-if="card.cover_image" :src="card.cover_image" :alt="card.nickname" />
             </div>
 
@@ -145,6 +145,7 @@
   }
 
   .fuxi-hall-page__cover {
+    height: 180px;
     background: color-mix(in srgb, var(--accent-color), var(--el-fill-color-light) 70%);
   }
 

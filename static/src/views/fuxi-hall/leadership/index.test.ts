@@ -14,6 +14,6 @@ test('leadership view binds leadership endpoint and fallback copy', () => {
 test('leadership view renders sanitized rich-text payload fields', () => {
   assert.match(source, /v-html="page\.description_html"/)
   assert.match(source, /v-html="card\.description_html"/)
-  assert.match(source, /cover_height/)
+  assert.match(source, /\.fuxi-hall-page__cover\s*\{[\s\S]*height:\s*180px;/)
   assert.match(source, /buildEveCharacterPortraitUrl\(card\.main_character_id,\s*256\)/)
 })

@@ -23,3 +23,21 @@ test('manage view supports manual reorder and responsive preview grid', () => {
   assert.match(source, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(300px,\s*1fr\)\)/)
   assert.match(source, /@media\s*\(max-width:\s*768px\)/)
 })
+
+test('manage view uses standard tabs, card-list add button, and page-level save button', () => {
+  assert.match(source, /<ElTabs v-model="currentPageKey"/)
+  assert.match(
+    source,
+    /<span>\{\{ t\('fuxiHall\.manage\.cardList'\) \}\}<\/span>[\s\S]*t\('fuxiHall\.manage\.addCard'\)/
+  )
+  assert.match(source, /<ElFormItem>[\s\S]*t\('common\.save'\)/)
+})
+
+test('manage view no longer exposes deprecated style preset, badge tone, and cover height fields', () => {
+  assert.doesNotMatch(source, /fuxiHall\.manage\.stylePreset/)
+  assert.doesNotMatch(source, /fuxiHall\.manage\.badgeTone/)
+  assert.doesNotMatch(source, /fuxiHall\.manage\.coverHeight/)
+  assert.doesNotMatch(source, /style_preset/)
+  assert.doesNotMatch(source, /badge_tone/)
+  assert.doesNotMatch(source, /cover_height/)
+})

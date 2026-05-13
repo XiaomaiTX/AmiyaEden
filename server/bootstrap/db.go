@@ -236,6 +236,9 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 		{table: "user", col: "avatar"},
 		{table: "eve_character", col: "portrait_url"},
 		{table: "hall_of_fame_card", col: "avatar"},
+		{table: "fuxi_hall_card", col: "style_preset"},
+		{table: "fuxi_hall_card", col: "badge_tone"},
+		{table: "fuxi_hall_card", col: "cover_height"},
 		{table: "ticket", col: "priority"},
 	}
 }
