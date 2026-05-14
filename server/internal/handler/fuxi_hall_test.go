@@ -17,12 +17,12 @@ import (
 type stubFuxiHallService struct {
 	getPublicPage func(string) (*service.FuxiHallPublicPageResponse, error)
 	getPageConfig func(string) (*model.FuxiHallPage, error)
-	updatePage    func(string, *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
+	updatePage    func(uint, string, *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
 	listCards     func(string, bool) ([]model.FuxiHallCard, error)
-	createCard    func(*service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
-	updateCard    func(uint, *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
-	reorderCards  func(*service.FuxiHallReorderRequest) error
-	deleteCard    func(uint) error
+	createCard    func(uint, *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
+	updateCard    func(uint, uint, *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
+	reorderCards  func(uint, *service.FuxiHallReorderRequest) error
+	deleteCard    func(uint, uint) error
 }
 
 func (s stubFuxiHallService) GetPublicPage(pageKey string) (*service.FuxiHallPublicPageResponse, error) {
@@ -40,11 +40,12 @@ func (s stubFuxiHallService) GetPageConfig(pageKey string) (*model.FuxiHallPage,
 }
 
 func (s stubFuxiHallService) UpdatePageConfig(
+	operatorID uint,
 	pageKey string,
 	req *service.FuxiHallUpdatePageRequest,
 ) (*model.FuxiHallPage, error) {
 	if s.updatePage != nil {
-		return s.updatePage(pageKey, req)
+		return s.updatePage(operatorID, pageKey, req)
 	}
 	return nil, nil
 }
@@ -56,30 +57,30 @@ func (s stubFuxiHallService) ListCards(pageKey string, visibleOnly bool) ([]mode
 	return nil, nil
 }
 
-func (s stubFuxiHallService) CreateCard(req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
+func (s stubFuxiHallService) CreateCard(operatorID uint, req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
 	if s.createCard != nil {
-		return s.createCard(req)
+		return s.createCard(operatorID, req)
 	}
 	return nil, nil
 }
 
-func (s stubFuxiHallService) UpdateCard(id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+func (s stubFuxiHallService) UpdateCard(operatorID, id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
 	if s.updateCard != nil {
-		return s.updateCard(id, req)
+		return s.updateCard(operatorID, id, req)
 	}
 	return nil, nil
 }
 
-func (s stubFuxiHallService) ReorderCards(req *service.FuxiHallReorderRequest) error {
+func (s stubFuxiHallService) ReorderCards(operatorID uint, req *service.FuxiHallReorderRequest) error {
 	if s.reorderCards != nil {
-		return s.reorderCards(req)
+		return s.reorderCards(operatorID, req)
 	}
 	return nil
 }
 
-func (s stubFuxiHallService) DeleteCard(id uint) error {
+func (s stubFuxiHallService) DeleteCard(operatorID, id uint) error {
 	if s.deleteCard != nil {
-		return s.deleteCard(id)
+		return s.deleteCard(operatorID, id)
 	}
 	return nil
 }
@@ -141,7 +142,7 @@ func TestFuxiHallHandlerReorderCardsBindsJSON(t *testing.T) {
 
 	called := false
 	h := &FuxiHallHandler{svc: stubFuxiHallService{
-		reorderCards: func(req *service.FuxiHallReorderRequest) error {
+		reorderCards: func(_ uint, req *service.FuxiHallReorderRequest) error {
 			called = true
 			if req.PageKey != "leadership" || len(req.OrderedIDs) != 3 {
 				t.Fatalf("unexpected reorder payload: %+v", req)

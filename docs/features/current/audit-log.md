@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-30
+last_reviewed: 2026-05-15
 source_of_truth:
   - server/internal/model/audit_event.go
   - server/internal/repository/audit_event.go
@@ -40,6 +40,27 @@ source_of_truth:
   - `task_ops`：任务手动执行与调度更新
   - `config`：Webhook 配置变更
 - 审计导出本身也会写入审计事件，保留“谁导出了什么”的可追溯性
+
+## 覆盖矩阵（阶段 1 已落地）
+
+| domain | category | action | result | target_file | owner |
+| --- | --- | --- | --- | --- | --- |
+| 用户管理 | `user_admin` | `user_update` | `success/failed` | `server/internal/service/user.go` | engineering |
+| 用户管理 | `user_admin` | `user_delete` | `success/failed` | `server/internal/service/user.go` | engineering |
+| 用户管理 | `user_admin` | `user_identity_switch` | `success/failed` | `server/internal/service/user.go` | engineering |
+| 工单管理 | `ticket_admin` | `ticket_status_update` | `success/failed` | `server/internal/service/ticket.go` | engineering |
+| 工单管理 | `ticket_admin` | `ticket_reply` | `success/failed` | `server/internal/service/ticket.go` | engineering |
+| 工单管理 | `ticket_admin` | `ticket_category_create` | `success/failed` | `server/internal/service/ticket.go` | engineering |
+| 工单管理 | `ticket_admin` | `ticket_category_update` | `success/failed` | `server/internal/service/ticket.go` | engineering |
+| 工单管理 | `ticket_admin` | `ticket_category_delete` | `success/failed` | `server/internal/service/ticket.go` | engineering |
+| 工具书签管理 | `content_admin` | `tool_bookmark_create` | `success/failed` | `server/internal/service/tool_bookmark.go` | engineering |
+| 工具书签管理 | `content_admin` | `tool_bookmark_update` | `success/failed` | `server/internal/service/tool_bookmark.go` | engineering |
+| 工具书签管理 | `content_admin` | `tool_bookmark_delete` | `success/failed` | `server/internal/service/tool_bookmark.go` | engineering |
+| 伏羲堂管理 | `content_admin` | `fuxi_page_update` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
+| 伏羲堂管理 | `content_admin` | `fuxi_card_create` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
+| 伏羲堂管理 | `content_admin` | `fuxi_card_update` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
+| 伏羲堂管理 | `content_admin` | `fuxi_card_delete` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
+| 伏羲堂管理 | `content_admin` | `fuxi_card_sort` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
 
 ## 入口
 

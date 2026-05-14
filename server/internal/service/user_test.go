@@ -182,7 +182,7 @@ func TestDeleteUser(t *testing.T) {
 		global.DB = db
 		defer func() { global.DB = originalDB }()
 
-		err := NewUserService().DeleteUser(1, []string{model.RoleAdmin})
+		err := NewUserService().DeleteUser(1, 100, []string{model.RoleAdmin})
 		if err == nil || !strings.Contains(err.Error(), "超级管理员") {
 			t.Fatalf("expected super admin deletion restriction, got %v", err)
 		}
@@ -201,7 +201,7 @@ func TestDeleteUser(t *testing.T) {
 		global.DB = db
 		defer func() { global.DB = originalDB }()
 
-		if err := NewUserService().DeleteUser(1, []string{model.RoleSuperAdmin}); err != nil {
+		if err := NewUserService().DeleteUser(1, 100, []string{model.RoleSuperAdmin}); err != nil {
 			t.Fatalf("expected super admin delete to pass, got %v", err)
 		}
 	})
@@ -259,7 +259,7 @@ func TestUpdateUserByAdmin(t *testing.T) {
 		defer func() { global.DB = originalDB }()
 
 		qq := "54321"
-		err := NewUserService().UpdateUserByAdmin(1, []string{model.RoleAdmin}, UserPatch{QQ: &qq})
+		err := NewUserService().UpdateUserByAdmin(1, 100, []string{model.RoleAdmin}, UserPatch{QQ: &qq})
 		if err == nil || !strings.Contains(err.Error(), "QQ") {
 			t.Fatalf("expected admin qq edit to be rejected, got %v", err)
 		}
@@ -282,7 +282,7 @@ func TestUpdateUserByAdmin(t *testing.T) {
 		nickname := "Doctor"
 		qq := "54321"
 		discordID := "doctor-1001"
-		err := NewUserService().UpdateUserByAdmin(1, []string{model.RoleSuperAdmin}, UserPatch{
+		err := NewUserService().UpdateUserByAdmin(1, 100, []string{model.RoleSuperAdmin}, UserPatch{
 			Nickname:  &nickname,
 			QQ:        &qq,
 			DiscordID: &discordID,
@@ -320,7 +320,7 @@ func TestUpdateUserByAdmin(t *testing.T) {
 		defer func() { global.DB = originalDB }()
 
 		qq := "54321"
-		err := NewUserService().UpdateUserByAdmin(1, []string{model.RoleSuperAdmin}, UserPatch{QQ: &qq})
+		err := NewUserService().UpdateUserByAdmin(1, 100, []string{model.RoleSuperAdmin}, UserPatch{QQ: &qq})
 		if err == nil || !strings.Contains(err.Error(), "超级管理员") {
 			t.Fatalf("expected super admin contact edit on protected target to be rejected, got %v", err)
 		}

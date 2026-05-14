@@ -3,7 +3,9 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,6 +25,7 @@ type toolBookmarkHTTPClient interface {
 type ToolBookmarkService struct {
 	repo       *repository.ToolBookmarkRepository
 	httpClient toolBookmarkHTTPClient
+	auditSvc   *AuditService
 }
 
 type ToolBookmarkUpsertRequest struct {
@@ -45,6 +48,7 @@ func NewToolBookmarkService() *ToolBookmarkService {
 				return nil
 			},
 		},
+		auditSvc: NewAuditService(),
 	}
 }
 
@@ -73,15 +77,18 @@ func (s *ToolBookmarkService) AdminList() ([]model.ToolBookmark, error) {
 func (s *ToolBookmarkService) AdminCreate(operatorID uint, req ToolBookmarkUpsertRequest) (*model.ToolBookmark, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
+		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": "empty_name"})
 		return nil, NewUserVisibleError("名称不能为空")
 	}
 	normalizedURL, parsedURL, err := normalizeToolBookmarkURL(req.URL)
 	if err != nil {
+		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 
 	maxSortOrder, err := s.repo.MaxSortOrder()
 	if err != nil {
+		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 
@@ -106,19 +113,24 @@ func (s *ToolBookmarkService) AdminCreate(operatorID uint, req ToolBookmarkUpser
 		CreatedBy:   operatorID,
 	}
 	if err := s.repo.Create(row); err != nil {
+		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
+	s.recordBookmarkAudit("tool_bookmark_create", operatorID, row.ID, model.AuditResultSuccess, map[string]any{"name": row.Name, "url": row.URL})
 	return row, nil
 }
 
-func (s *ToolBookmarkService) AdminUpdate(id uint, req ToolBookmarkUpsertRequest) (*model.ToolBookmark, error) {
+func (s *ToolBookmarkService) AdminUpdate(operatorID, id uint, req ToolBookmarkUpsertRequest) (*model.ToolBookmark, error) {
 	row, err := s.repo.GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "bookmark_not_found"})
 			return nil, NewUserVisibleError("书签不存在")
 		}
+		s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
+	before := map[string]any{"name": row.Name, "url": row.URL, "description": row.Description, "is_enabled": row.IsEnabled, "sort_order": row.SortOrder}
 
 	updates := map[string]interface{}{}
 	if strings.TrimSpace(req.Name) != "" {
@@ -136,6 +148,7 @@ func (s *ToolBookmarkService) AdminUpdate(id uint, req ToolBookmarkUpsertRequest
 	if strings.TrimSpace(req.URL) != "" {
 		normalizedURL, parsedURL, normalizeErr := normalizeToolBookmarkURL(req.URL)
 		if normalizeErr != nil {
+			s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": normalizeErr.Error()})
 			return nil, normalizeErr
 		}
 		updates["url"] = normalizedURL
@@ -149,19 +162,48 @@ func (s *ToolBookmarkService) AdminUpdate(id uint, req ToolBookmarkUpsertRequest
 	}
 	if err := s.repo.UpdateFields(id, updates); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "bookmark_not_found"})
 			return nil, NewUserVisibleError("书签不存在")
 		}
+		s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
-	return s.repo.GetByID(id)
+	updated, err := s.repo.GetByID(id)
+	if err != nil {
+		s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return nil, err
+	}
+	s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultSuccess, map[string]any{"before": before, "after": map[string]any{"name": updated.Name, "url": updated.URL, "description": updated.Description, "is_enabled": updated.IsEnabled, "sort_order": updated.SortOrder}})
+	return updated, nil
 }
 
-func (s *ToolBookmarkService) AdminDelete(id uint) error {
+func (s *ToolBookmarkService) AdminDelete(operatorID, id uint) error {
 	err := s.repo.Delete(id)
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		s.recordBookmarkAudit("tool_bookmark_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "bookmark_not_found"})
 		return NewUserVisibleError("书签不存在")
 	}
+	if err != nil {
+		s.recordBookmarkAudit("tool_bookmark_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return err
+	}
+	s.recordBookmarkAudit("tool_bookmark_delete", operatorID, id, model.AuditResultSuccess, map[string]any{"deleted_bookmark_id": id})
 	return err
+}
+
+func (s *ToolBookmarkService) recordBookmarkAudit(action string, actorID, bookmarkID uint, result string, details map[string]any) {
+	if s.auditSvc == nil {
+		return
+	}
+	_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+		Category:     "content_admin",
+		Action:       action,
+		ActorUserID:  actorID,
+		ResourceType: "tool_bookmark",
+		ResourceID:   fmt.Sprintf("%d", bookmarkID),
+		Result:       result,
+		Details:      details,
+	})
 }
 
 func normalizeToolBookmarkURL(raw string) (string, *url.URL, error) {
