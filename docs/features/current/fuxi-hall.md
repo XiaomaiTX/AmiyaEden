@@ -46,7 +46,8 @@ source_of_truth:
 ## 后端规则
 
 - `page_key` 仅允许 `leadership | contributors`
-- 卡片必填：`nickname`、`main_character_id`、`main_character_name`、`title_tags`
+- 卡片必填：`nickname`、`main_character_name`、`title_tags`
+- `main_character_id` 不再由管理端手工输入，服务层会基于 `main_character_name` 调用 ESI Search（`strict=true`）解析并存储
 - `description_html` 在服务层白名单清洗后入库与返回
 - `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
 - 样式约束：
@@ -74,13 +75,13 @@ source_of_truth:
 
 - 页面标题/副标题/富文本说明编辑
 - 卡片增删改
-- 头像统一由 `main_character_id` 生成 ESI 人物头像（不支持自定义头像上传）
+- 头像统一由已存储的 `main_character_id` 生成 ESI 人物头像（不支持自定义头像上传）
 - 受控样式编辑（强调色/头像形状/字体大小）
 - 显隐切换
 - 手动排序（上移/下移）
 - 管理态实时预览（未保存草稿即时映射）
 
-公开页卡片排版与管理页实时预览保持一致，统一为头像与昵称/主角色名/主角色 ID（斜体）/头衔标签（badge）同区块展示，不再支持封面。
+公开页卡片排版与管理页实时预览保持一致，统一为头像与昵称/主角色名/头衔标签（badge）同区块展示，不再支持封面。
 
 不包含画布拖拽布局。
 

@@ -133,9 +133,6 @@
           <ElFormItem :label="t('fuxiHall.manage.mainCharacterName')" required>
             <ElInput v-model="cardForm.main_character_name" />
           </ElFormItem>
-          <ElFormItem :label="t('fuxiHall.manage.mainCharacterId')" required>
-            <ElInputNumber v-model="cardForm.main_character_id" :min="1" />
-          </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.title')" required>
             <div class="fuxi-hall-manage__tag-editor">
               <ElInput
@@ -236,7 +233,6 @@
   type CardFormState = {
     page_key: Api.FuxiHall.PageKey
     nickname: string
-    main_character_id: number
     main_character_name: string
     title_tags: string[]
     description_html: string
@@ -255,7 +251,6 @@
   const cardForm = reactive<CardFormState>({
     page_key: 'leadership',
     nickname: '',
-    main_character_id: 0,
     main_character_name: '',
     title_tags: [],
     description_html: '',
@@ -291,7 +286,7 @@
       id: editingCardId.value ?? -1,
       page_key: currentPageKey.value,
       nickname: cardForm.nickname.trim(),
-      main_character_id: cardForm.main_character_id,
+      main_character_id: 0,
       main_character_name: cardForm.main_character_name.trim(),
       title_tags: [...cardForm.title_tags],
       description_html: cardForm.description_html,
@@ -373,7 +368,6 @@
   function resetCardForm() {
     cardForm.page_key = currentPageKey.value
     cardForm.nickname = ''
-    cardForm.main_character_id = 0
     cardForm.main_character_name = ''
     cardForm.title_tags = []
     cardForm.description_html = ''
@@ -394,7 +388,6 @@
     editingCardId.value = card.id
     cardForm.page_key = card.page_key
     cardForm.nickname = card.nickname
-    cardForm.main_character_id = card.main_character_id
     cardForm.main_character_name = card.main_character_name
     cardForm.title_tags = [...card.title_tags]
     cardForm.description_html = card.description_html
@@ -409,7 +402,6 @@
   async function submitCard() {
     if (
       !cardForm.nickname.trim() ||
-      cardForm.main_character_id <= 0 ||
       !cardForm.main_character_name.trim() ||
       cardForm.title_tags.length === 0
     ) {
@@ -420,7 +412,6 @@
     const payload: Api.FuxiHall.CreateCardParams = {
       page_key: currentPageKey.value,
       nickname: cardForm.nickname.trim(),
-      main_character_id: cardForm.main_character_id,
       main_character_name: cardForm.main_character_name.trim(),
       title_tags: [...cardForm.title_tags],
       description_html: cardForm.description_html || '',

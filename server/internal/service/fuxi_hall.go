@@ -1,10 +1,16 @@
 package service
 
 import (
+	"amiya-eden/config"
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/pkg/eve/esi"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -34,11 +40,15 @@ var (
 
 // FuxiHallService 伏羲大厅业务层
 type FuxiHallService struct {
-	repo *repository.FuxiHallRepository
+	repo               *repository.FuxiHallRepository
+	resolveCharacterID func(ctx context.Context, characterName string) (int64, error)
 }
 
 func NewFuxiHallService() *FuxiHallService {
-	return &FuxiHallService{repo: repository.NewFuxiHallRepository()}
+	return &FuxiHallService{
+		repo:               repository.NewFuxiHallRepository(),
+		resolveCharacterID: resolveCharacterIDByNameFromESI,
+	}
 }
 
 type FuxiHallPublicPageResponse struct {
@@ -55,7 +65,6 @@ type FuxiHallUpdatePageRequest struct {
 type FuxiHallCreateCardRequest struct {
 	PageKey           string   `json:"page_key"`
 	Nickname          string   `json:"nickname"`
-	MainCharacterID   int64    `json:"main_character_id"`
 	MainCharacterName string   `json:"main_character_name"`
 	TitleTags         []string `json:"title_tags"`
 	DescriptionHTML   string   `json:"description_html"`
@@ -67,7 +76,6 @@ type FuxiHallCreateCardRequest struct {
 
 type FuxiHallUpdateCardRequest struct {
 	Nickname          *string   `json:"nickname"`
-	MainCharacterID   *int64    `json:"main_character_id"`
 	MainCharacterName *string   `json:"main_character_name"`
 	TitleTags         *[]string `json:"title_tags"`
 	DescriptionHTML   *string   `json:"description_html"`
@@ -180,8 +188,9 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 	if mainCharacterName == "" {
 		return nil, NewUserVisibleError("主角色名称不能为空")
 	}
-	if req.MainCharacterID <= 0 {
-		return nil, NewUserVisibleError("主角色 ID 必须大于 0")
+	mainCharacterID, err := s.resolveCharacterID(context.Background(), mainCharacterName)
+	if err != nil {
+		return nil, err
 	}
 	titleTags, err := normalizeFuxiHallTitleTags(req.TitleTags)
 	if err != nil {
@@ -217,7 +226,7 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 	card := &model.FuxiHallCard{
 		PageKey:           pageKey,
 		Nickname:          nickname,
-		MainCharacterID:   req.MainCharacterID,
+		MainCharacterID:   mainCharacterID,
 		MainCharacterName: mainCharacterName,
 		TitleTags:         titleTags,
 		DescriptionHTML:   sanitizeRichTextHTML(req.DescriptionHTML),
@@ -256,13 +265,12 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 		if value == "" {
 			return nil, NewUserVisibleError("主角色名称不能为空")
 		}
-		updates["main_character_name"] = value
-	}
-	if req.MainCharacterID != nil {
-		if *req.MainCharacterID <= 0 {
-			return nil, NewUserVisibleError("主角色 ID 必须大于 0")
+		resolvedID, err := s.resolveCharacterID(context.Background(), value)
+		if err != nil {
+			return nil, err
 		}
-		updates["main_character_id"] = *req.MainCharacterID
+		updates["main_character_name"] = value
+		updates["main_character_id"] = resolvedID
 	}
 	if req.TitleTags != nil {
 		value, err := normalizeFuxiHallTitleTags(*req.TitleTags)
@@ -457,4 +465,30 @@ func normalizeFuxiHallTitleTags(input []string) ([]string, error) {
 	}
 
 	return normalized, nil
+}
+
+func resolveCharacterIDByNameFromESI(ctx context.Context, characterName string) (int64, error) {
+	baseURL := config.DefaultESIBaseURL
+	apiPrefix := config.DefaultESIAPIPrefix
+	if global.Config != nil {
+		if value := strings.TrimSpace(global.Config.EveSSO.ESIBaseURL); value != "" {
+			baseURL = strings.TrimRight(value, "/")
+		}
+		if value := strings.TrimSpace(global.Config.EveSSO.ESIAPIPrefix); value != "" {
+			apiPrefix = strings.TrimRight(value, "/")
+		}
+	}
+	client := esi.NewClientWithConfig(baseURL, apiPrefix)
+
+	path := "/search/?categories=character&search=" + url.QueryEscape(characterName) + "&strict=true"
+	var payload struct {
+		Character []int64 `json:"character"`
+	}
+	if err := client.Get(ctx, path, "", &payload); err != nil {
+		return 0, NewUserVisibleError(fmt.Sprintf("ESI 查询失败: %v", err))
+	}
+	if len(payload.Character) == 0 || payload.Character[0] <= 0 {
+		return 0, NewUserVisibleError("未找到精确匹配角色")
+	}
+	return payload.Character[0], nil
 }

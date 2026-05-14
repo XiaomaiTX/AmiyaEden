@@ -3087,7 +3087,6 @@ declare namespace Api {
     interface CreateCardParams {
       page_key: PageKey
       nickname: string
-      main_character_id: number
       main_character_name: string
       title_tags: string[]
       description_html?: string

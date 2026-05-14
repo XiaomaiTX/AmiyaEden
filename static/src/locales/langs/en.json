@@ -414,7 +414,7 @@
       "previewFallbackTitle": "Untitled Page",
       "previewEmpty": "No visible cards for preview",
       "titleRequired": "Page title is required",
-      "requiredFields": "Nickname, main character ID, main character name, and title tags are required",
+      "requiredFields": "Nickname, main character name, and title tags are required",
       "deleteConfirm": "Delete this card?",
       "saveSuccess": "Saved successfully",
       "saveFailed": "Save failed",
