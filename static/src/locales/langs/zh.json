@@ -357,7 +357,7 @@
       "previewFallbackTitle": "未命名页面",
       "previewEmpty": "当前无可见卡片，预览为空",
       "titleRequired": "页面标题不能为空",
-      "requiredFields": "昵称、主角色 ID、主角色名称、头衔标签为必填项",
+      "requiredFields": "昵称、主角色名称、头衔标签为必填项",
       "deleteConfirm": "确定删除这张卡片吗？",
       "saveSuccess": "保存成功",
       "saveFailed": "保存失败",

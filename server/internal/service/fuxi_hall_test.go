@@ -3,7 +3,9 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -20,6 +22,12 @@ func useFuxiHallServiceTestDB(t *testing.T) {
 	t.Cleanup(func() { global.DB = oldDB })
 }
 
+func newFuxiHallServiceWithResolver(resolver func(ctx context.Context, characterName string) (int64, error)) *FuxiHallService {
+	svc := NewFuxiHallService()
+	svc.resolveCharacterID = resolver
+	return svc
+}
+
 func TestFuxiHallRejectsInvalidPageKey(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
 	svc := NewFuxiHallService()
@@ -31,12 +39,11 @@ func TestFuxiHallRejectsInvalidPageKey(t *testing.T) {
 
 func TestFuxiHallCreateCardValidatesRequiredFields(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1001, nil })
 
 	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "",
-		MainCharacterID:   1001,
 		MainCharacterName: "Main",
 		TitleTags:         []string{"Title"},
 	})
@@ -47,12 +54,11 @@ func TestFuxiHallCreateCardValidatesRequiredFields(t *testing.T) {
 
 func TestFuxiHallCreateCardSanitizesDescriptionHTML(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1001, nil })
 
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "Alpha",
-		MainCharacterID:   1001,
 		MainCharacterName: "Main",
 		TitleTags:         []string{"Lead"},
 		DescriptionHTML:   `<p>Hello</p><script>alert(1)</script><a href="javascript:evil()">x</a>`,
@@ -67,12 +73,11 @@ func TestFuxiHallCreateCardSanitizesDescriptionHTML(t *testing.T) {
 
 func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1002, nil })
 
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "Beta",
-		MainCharacterID:   1002,
 		MainCharacterName: "Main",
 		TitleTags:         []string{"Builder"},
 	})
@@ -89,12 +94,11 @@ func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 
 func TestFuxiHallCreateCardIgnoresDeprecatedStyleFieldsFromJSON(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1003, nil })
 
 	payload := []byte(`{
 		"page_key":"leadership",
 		"nickname":"Legacy",
-		"main_character_id":1003,
 		"main_character_name":"Legacy Main",
 		"title_tags":["Legacy Title"],
 		"style_preset":"aurora",
@@ -117,12 +121,20 @@ func TestFuxiHallCreateCardIgnoresDeprecatedStyleFieldsFromJSON(t *testing.T) {
 
 func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(_ context.Context, characterName string) (int64, error) {
+		switch characterName {
+		case "A":
+			return 2001, nil
+		case "B":
+			return 2002, nil
+		default:
+			return 2999, nil
+		}
+	})
 
 	cardA, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "A",
-		MainCharacterID:   2001,
 		MainCharacterName: "A",
 		TitleTags:         []string{"A"},
 	})
@@ -132,7 +144,6 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 	cardB, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "B",
-		MainCharacterID:   2002,
 		MainCharacterName: "B",
 		TitleTags:         []string{"B"},
 	})
@@ -165,12 +176,11 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 
 func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 2003, nil })
 
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "Dup",
-		MainCharacterID:   2003,
 		MainCharacterName: "Dup",
 		TitleTags:         []string{"Dup"},
 	})
@@ -189,12 +199,11 @@ func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 
 func TestFuxiHallCreateCardRequiresTitleTags(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3001, nil })
 
 	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "NoTags",
-		MainCharacterID:   3001,
 		MainCharacterName: "Main",
 	})
 	if err == nil {
@@ -204,12 +213,11 @@ func TestFuxiHallCreateCardRequiresTitleTags(t *testing.T) {
 
 func TestFuxiHallCreateCardNormalizesTitleTags(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3002, nil })
 
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "Tags",
-		MainCharacterID:   3002,
 		MainCharacterName: "Main",
 		TitleTags:         []string{"  指挥  ", "", "后勤", "指挥"},
 	})
@@ -223,13 +231,12 @@ func TestFuxiHallCreateCardNormalizesTitleTags(t *testing.T) {
 
 func TestFuxiHallCreateCardValidatesTitleTagsLimits(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3003, nil })
 
 	longTag := strings.Repeat("长", 33)
 	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "TooLong",
-		MainCharacterID:   3003,
 		MainCharacterName: "Main",
 		TitleTags:         []string{longTag},
 	})
@@ -241,7 +248,6 @@ func TestFuxiHallCreateCardValidatesTitleTagsLimits(t *testing.T) {
 	_, err = svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "contributors",
 		Nickname:          "TooMany",
-		MainCharacterID:   3004,
 		MainCharacterName: "Main",
 		TitleTags:         tooMany,
 	})
@@ -252,12 +258,11 @@ func TestFuxiHallCreateCardValidatesTitleTagsLimits(t *testing.T) {
 
 func TestFuxiHallUpdateCardReplacesTitleTags(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
-	svc := NewFuxiHallService()
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3005, nil })
 
 	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
 		PageKey:           "leadership",
 		Nickname:          "Replace",
-		MainCharacterID:   3005,
 		MainCharacterName: "Main",
 		TitleTags:         []string{"旧标签"},
 	})
@@ -272,6 +277,81 @@ func TestFuxiHallUpdateCardReplacesTitleTags(t *testing.T) {
 	}
 	if len(updated.TitleTags) != 2 || updated.TitleTags[0] != "新标签" || updated.TitleTags[1] != "战略" {
 		t.Fatalf("unexpected updated title tags: %#v", updated.TitleTags)
+	}
+}
+
+func TestFuxiHallCreateCardResolvesMainCharacterIDFromName(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := newFuxiHallServiceWithResolver(func(_ context.Context, characterName string) (int64, error) {
+		if characterName != "XiaomaiTX" {
+			t.Fatalf("unexpected character name: %s", characterName)
+		}
+		return 123456789, nil
+	})
+
+	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "leadership",
+		Nickname:          "Alpha",
+		MainCharacterName: "XiaomaiTX",
+		TitleTags:         []string{"Lead"},
+	})
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if card.MainCharacterID != 123456789 {
+		t.Fatalf("expected resolved main_character_id 123456789, got %d", card.MainCharacterID)
+	}
+}
+
+func TestFuxiHallCreateCardBlocksWhenCharacterResolveFails(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) {
+		return 0, NewUserVisibleError("未找到精确匹配角色")
+	})
+
+	_, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "leadership",
+		Nickname:          "Alpha",
+		MainCharacterName: "NoSuchName",
+		TitleTags:         []string{"Lead"},
+	})
+	if err == nil {
+		t.Fatal("expected create card to fail when resolver fails")
+	}
+}
+
+func TestFuxiHallUpdateCardReResolvesCharacterIDWhenNameChanged(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := newFuxiHallServiceWithResolver(func(_ context.Context, characterName string) (int64, error) {
+		if characterName == "Old Name" {
+			return 4001, nil
+		}
+		if characterName == "New Name" {
+			return 4002, nil
+		}
+		return 0, errors.New("unexpected name")
+	})
+
+	card, err := svc.CreateCard(&FuxiHallCreateCardRequest{
+		PageKey:           "leadership",
+		Nickname:          "Gamma",
+		MainCharacterName: "Old Name",
+		TitleTags:         []string{"Tag"},
+	})
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+	if card.MainCharacterID != 4001 {
+		t.Fatalf("expected initial id 4001, got %d", card.MainCharacterID)
+	}
+
+	newName := "New Name"
+	updated, err := svc.UpdateCard(card.ID, &FuxiHallUpdateCardRequest{MainCharacterName: &newName})
+	if err != nil {
+		t.Fatalf("UpdateCard: %v", err)
+	}
+	if updated.MainCharacterID != 4002 {
+		t.Fatalf("expected updated id 4002, got %d", updated.MainCharacterID)
 	}
 }
 

@@ -454,8 +454,8 @@ source_of_truth:
 | GET | `/system/fuxi-hall/pages/:page_key` | 获取页面配置（`page_key` 仅支持 `leadership | contributors`） | `RequireRole(admin)` |
 | PUT | `/system/fuxi-hall/pages/:page_key` | 更新页面配置（标题/副标题/富文本说明） | `RequireRole(admin)` |
 | GET | `/system/fuxi-hall/cards/:page_key` | 获取页面卡片（含隐藏卡片） | `RequireRole(admin)` |
-| POST | `/system/fuxi-hall/cards` | 创建卡片 | `RequireRole(admin)` |
-| PUT | `/system/fuxi-hall/cards/:id` | 更新卡片字段（基础信息/强调色/头像形状/字体大小/显隐） | `RequireRole(admin)` |
+| POST | `/system/fuxi-hall/cards` | 创建卡片（`main_character_name` 必填，服务端会通过 ESI Search 自动解析并写入 `main_character_id`） | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/cards/:id` | 更新卡片字段（基础信息/强调色/头像形状/字体大小/显隐；若更新 `main_character_name` 会同步重解析并覆盖 `main_character_id`） | `RequireRole(admin)` |
 | PUT | `/system/fuxi-hall/cards/reorder` | 保存页面内手动排序（`ordered_ids`） | `RequireRole(admin)` |
 | DELETE | `/system/fuxi-hall/cards/:id` | 删除卡片 | `RequireRole(admin)` |
 

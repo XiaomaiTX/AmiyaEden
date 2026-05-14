@@ -14,9 +14,13 @@ test('manage view exposes live preview panel driven by editing state', () => {
 test('manage view preview updates from draft card form and visibility', () => {
   assert.match(source, /cardDialogOpen\.value/)
   assert.match(source, /cardForm\.nickname\.trim\(\)/)
-  assert.match(source, /cardForm\.main_character_id/)
   assert.match(source, /cardForm\.title_tags/)
   assert.match(source, /if \(!previewCard\.visible\)/)
+})
+
+test('manage view no longer edits main character id manually', () => {
+  assert.doesNotMatch(source, /v-model="cardForm\.main_character_id"/)
+  assert.doesNotMatch(source, /mainCharacterId/)
 })
 
 test('manage view supports manual reorder and responsive preview grid', () => {
