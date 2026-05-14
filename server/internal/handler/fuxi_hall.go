@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
@@ -11,12 +12,12 @@ import (
 type fuxiHallService interface {
 	GetPublicPage(pageKey string) (*service.FuxiHallPublicPageResponse, error)
 	GetPageConfig(pageKey string) (*model.FuxiHallPage, error)
-	UpdatePageConfig(pageKey string, req *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
+	UpdatePageConfig(operatorID uint, pageKey string, req *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
 	ListCards(pageKey string, visibleOnly bool) ([]model.FuxiHallCard, error)
-	CreateCard(req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
-	UpdateCard(id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
-	ReorderCards(req *service.FuxiHallReorderRequest) error
-	DeleteCard(id uint) error
+	CreateCard(operatorID uint, req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
+	UpdateCard(operatorID, id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
+	ReorderCards(operatorID uint, req *service.FuxiHallReorderRequest) error
+	DeleteCard(operatorID, id uint) error
 }
 
 // FuxiHallHandler 伏羲大厅处理器
@@ -73,7 +74,7 @@ func (h *FuxiHallHandler) UpdatePageConfig(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	page, err := h.svc.UpdatePageConfig(c.Param("page_key"), &req)
+	page, err := h.svc.UpdatePageConfig(middleware.GetUserID(c), c.Param("page_key"), &req)
 	if err != nil {
 		respondFuxiHallError(c, err, "更新页面配置失败")
 		return
@@ -98,7 +99,7 @@ func (h *FuxiHallHandler) CreateCard(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	card, err := h.svc.CreateCard(&req)
+	card, err := h.svc.CreateCard(middleware.GetUserID(c), &req)
 	if err != nil {
 		respondFuxiHallError(c, err, "创建卡片失败")
 		return
@@ -118,7 +119,7 @@ func (h *FuxiHallHandler) UpdateCard(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	card, err := h.svc.UpdateCard(id, &req)
+	card, err := h.svc.UpdateCard(middleware.GetUserID(c), id, &req)
 	if err != nil {
 		respondFuxiHallError(c, err, "更新卡片失败")
 		return
@@ -133,7 +134,7 @@ func (h *FuxiHallHandler) ReorderCards(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.ReorderCards(&req); err != nil {
+	if err := h.svc.ReorderCards(middleware.GetUserID(c), &req); err != nil {
 		respondFuxiHallError(c, err, "更新排序失败")
 		return
 	}
@@ -146,7 +147,7 @@ func (h *FuxiHallHandler) DeleteCard(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteCard(id); err != nil {
+	if err := h.svc.DeleteCard(middleware.GetUserID(c), id); err != nil {
 		respondFuxiHallError(c, err, "删除卡片失败")
 		return
 	}

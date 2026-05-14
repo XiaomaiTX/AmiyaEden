@@ -5,7 +5,9 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/pkg/jwt"
+	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"unicode"
@@ -19,6 +21,7 @@ type UserService struct {
 	roleRepo  *repository.RoleRepository
 	charRepo  *repository.EveCharacterRepository
 	skillRepo *repository.EveSkillRepository
+	auditSvc  *AuditService
 }
 
 const (
@@ -39,6 +42,7 @@ func NewUserService() *UserService {
 		roleRepo:  repository.NewRoleRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
 		skillRepo: repository.NewEveSkillRepository(),
+		auditSvc:  NewAuditService(),
 	}
 }
 
@@ -55,31 +59,42 @@ func (s *UserService) ListUsers(page, pageSize int, filter repository.UserFilter
 	return s.buildUserListItems(users), total, nil
 }
 
-func (s *UserService) UpdateUserByAdmin(id uint, operatorRoles []string, patch UserPatch) error {
+func (s *UserService) UpdateUserByAdmin(id uint, operatorID uint, operatorRoles []string, patch UserPatch) error {
 	current, err := s.repo.GetByID(id)
 	if err != nil {
+		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "user_not_found"})
 		return errors.New("用户不存在")
 	}
 	targetRoles, err := s.roleRepo.GetUserRoleCodes(id)
 	if err != nil {
+		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
 	if err := validateManageUserPermission(operatorRoles, targetRoles); err != nil {
+		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
 	if err := validateAdminContactEditPermission(operatorRoles, targetRoles, patch); err != nil {
+		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
 	next, updates, err := buildUserPatchUpdates(current, patch, false)
 	if err != nil {
+		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
 	if patch.QQ != nil || patch.DiscordID != nil {
 		if err := s.validateUniqueContacts(next); err != nil {
+			s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 			return err
 		}
 	}
-	return s.repo.UpdateFields(id, updates)
+	if err := s.repo.UpdateFields(id, updates); err != nil {
+		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return err
+	}
+	s.recordAdminAudit("user_update", operatorID, id, model.AuditResultSuccess, map[string]any{"updates": updates})
+	return nil
 }
 
 func (s *UserService) UpdateCurrentProfile(id uint, patch UserPatch) (*model.User, error) {
@@ -100,25 +115,35 @@ func (s *UserService) UpdateCurrentProfile(id uint, patch UserPatch) (*model.Use
 	return s.repo.GetByID(id)
 }
 
-func (s *UserService) DeleteUser(id uint, operatorRoles []string) error {
+func (s *UserService) DeleteUser(id uint, operatorID uint, operatorRoles []string) error {
 	user, err := s.repo.GetByID(id)
 	if err != nil {
+		s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "user_not_found"})
 		return errors.New("用户不存在")
 	}
 	targetRoles, err := s.roleRepo.GetUserRoleCodes(id)
 	if err != nil {
+		s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
 	if model.ContainsAnyRole(targetRoles, model.RoleSuperAdmin) {
+		s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "super_admin_forbidden"})
 		return errors.New("超级管理员仅通过配置文件管理，不可删除")
 	}
 	if err := validateManageUserPermission(operatorRoles, targetRoles); err != nil {
+		s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
 	if err := validateDeleteUserPermission(user, operatorRoles); err != nil {
+		s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
-	return s.repo.Delete(id)
+	if err := s.repo.Delete(id); err != nil {
+		s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return err
+	}
+	s.recordAdminAudit("user_delete", operatorID, id, model.AuditResultSuccess, map[string]any{"deleted_user_id": id})
+	return nil
 }
 
 func (s *UserService) DeleteCurrentUser(userID uint) error {
@@ -139,23 +164,44 @@ func (s *UserService) DeleteCurrentUser(userID uint) error {
 }
 
 // ImpersonateUser 以指定用户身份生成 JWT（仅超级管理员可用）
-func (s *UserService) ImpersonateUser(id uint) (string, *model.User, error) {
+func (s *UserService) ImpersonateUser(operatorID, id uint) (string, *model.User, error) {
 	user, err := s.repo.GetByID(id)
 	if err != nil {
+		s.recordAdminAudit("user_identity_switch", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "user_not_found"})
 		return "", nil, errors.New("用户不存在")
 	}
 	characters, err := s.charRepo.ListByUserID(user.ID)
 	if err != nil {
+		s.recordAdminAudit("user_identity_switch", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return "", nil, err
 	}
 	if err := validateImpersonationTargetPrimaryCharacterHealth(*user, characters); err != nil {
+		s.recordAdminAudit("user_identity_switch", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return "", nil, err
 	}
 	token, err := jwt.GenerateToken(user.ID, user.PrimaryCharacterID, user.Role, global.Config.JWT.ExpireDay)
 	if err != nil {
+		s.recordAdminAudit("user_identity_switch", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return "", nil, err
 	}
+	s.recordAdminAudit("user_identity_switch", operatorID, id, model.AuditResultSuccess, map[string]any{"target_primary_character_id": user.PrimaryCharacterID})
 	return token, user, nil
+}
+
+func (s *UserService) recordAdminAudit(action string, operatorID, targetUserID uint, result string, details map[string]any) {
+	if s.auditSvc == nil {
+		return
+	}
+	_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+		Category:     "user_admin",
+		Action:       action,
+		ActorUserID:  operatorID,
+		TargetUserID: targetUserID,
+		ResourceType: "user",
+		ResourceID:   fmt.Sprintf("%d", targetUserID),
+		Result:       result,
+		Details:      details,
+	})
 }
 
 func (s *UserService) validateUniqueContacts(user *model.User) error {

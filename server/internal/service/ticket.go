@@ -3,7 +3,9 @@ package service
 import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -18,11 +20,12 @@ var (
 )
 
 type TicketService struct {
-	repo *repository.TicketRepository
+	repo     *repository.TicketRepository
+	auditSvc *AuditService
 }
 
 func NewTicketService() *TicketService {
-	return &TicketService{repo: repository.NewTicketRepository()}
+	return &TicketService{repo: repository.NewTicketRepository(), auditSvc: NewAuditService()}
 }
 
 func normalizeTicketStatus(status string) (string, error) {
@@ -157,10 +160,12 @@ func (s *TicketService) AddReplyAsUser(userID, ticketID uint, content string) (*
 func (s *TicketService) AddReplyAsAdmin(adminID, ticketID uint, content string, isInternal bool) (*model.TicketReplyItem, error) {
 	content = strings.TrimSpace(content)
 	if content == "" {
+		s.recordTicketAudit("ticket_reply", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": "empty_content"})
 		return nil, errors.New("回复内容不能为空")
 	}
 	ticket, err := s.GetAdminTicket(ticketID)
 	if err != nil {
+		s.recordTicketAudit("ticket_reply", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 	reply := &model.TicketReply{
@@ -170,9 +175,16 @@ func (s *TicketService) AddReplyAsAdmin(adminID, ticketID uint, content string, 
 		IsInternal: isInternal,
 	}
 	if err := s.repo.CreateReply(reply); err != nil {
+		s.recordTicketAudit("ticket_reply", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
-	return s.repo.GetReplyByID(reply.ID)
+	item, err := s.repo.GetReplyByID(reply.ID)
+	if err != nil {
+		s.recordTicketAudit("ticket_reply", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return nil, err
+	}
+	s.recordTicketAudit("ticket_reply", adminID, ticketID, model.AuditResultSuccess, map[string]any{"is_internal": isInternal, "reply_id": item.ID})
+	return item, nil
 }
 
 func (s *TicketService) ListRepliesAsUser(userID, ticketID uint) ([]model.TicketReplyItem, error) {
@@ -192,10 +204,12 @@ func (s *TicketService) ListRepliesAsAdmin(ticketID uint) ([]model.TicketReplyIt
 func (s *TicketService) UpdateStatusAsAdmin(adminID, ticketID uint, status string) (*model.Ticket, error) {
 	normalizedStatus, err := normalizeTicketStatus(status)
 	if err != nil {
+		s.recordTicketAudit("ticket_status_update", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 	ticket, err := s.GetAdminTicket(ticketID)
 	if err != nil {
+		s.recordTicketAudit("ticket_status_update", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 	now := time.Now()
@@ -213,11 +227,13 @@ func (s *TicketService) UpdateStatusAsAdmin(adminID, ticketID uint, status strin
 		ticket.ClosedAt = nil
 	}
 	if err := s.repo.UpdateTicket(ticket); err != nil {
+		s.recordTicketAudit("ticket_status_update", adminID, ticketID, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 	if fromStatus != normalizedStatus {
 		_ = s.repo.AddStatusHistory(ticket.ID, fromStatus, normalizedStatus, adminID)
 	}
+	s.recordTicketAudit("ticket_status_update", adminID, ticketID, model.AuditResultSuccess, map[string]any{"before_status": fromStatus, "after_status": normalizedStatus})
 	return ticket, nil
 }
 
@@ -232,21 +248,30 @@ func (s *TicketService) ListCategories(enabledOnly bool) ([]model.TicketCategory
 	return s.repo.ListCategories(enabledOnly)
 }
 
-func (s *TicketService) CreateCategory(category *model.TicketCategory) error {
+func (s *TicketService) CreateCategory(operatorID uint, category *model.TicketCategory) error {
 	if strings.TrimSpace(category.Name) == "" || strings.TrimSpace(category.NameEN) == "" {
+		s.recordTicketCategoryAudit("ticket_category_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": "empty_name"})
 		return errors.New("分类中英文名称不能为空")
 	}
-	return s.repo.CreateCategory(category)
+	if err := s.repo.CreateCategory(category); err != nil {
+		s.recordTicketCategoryAudit("ticket_category_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return err
+	}
+	s.recordTicketCategoryAudit("ticket_category_create", operatorID, category.ID, model.AuditResultSuccess, map[string]any{"name": category.Name, "name_en": category.NameEN})
+	return nil
 }
 
-func (s *TicketService) UpdateCategory(id uint, req *model.TicketCategory) (*model.TicketCategory, error) {
+func (s *TicketService) UpdateCategory(operatorID, id uint, req *model.TicketCategory) (*model.TicketCategory, error) {
 	category, err := s.repo.GetCategoryByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			s.recordTicketCategoryAudit("ticket_category_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": "category_not_found"})
 			return nil, errTicketCategoryAbsent
 		}
+		s.recordTicketCategoryAudit("ticket_category_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
+	before := map[string]any{"name": category.Name, "name_en": category.NameEN, "description": category.Description, "sort_order": category.SortOrder, "enabled": category.Enabled}
 	if strings.TrimSpace(req.Name) != "" {
 		category.Name = strings.TrimSpace(req.Name)
 	}
@@ -257,13 +282,50 @@ func (s *TicketService) UpdateCategory(id uint, req *model.TicketCategory) (*mod
 	category.SortOrder = req.SortOrder
 	category.Enabled = req.Enabled
 	if err := s.repo.UpdateCategory(category); err != nil {
+		s.recordTicketCategoryAudit("ticket_category_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
+	s.recordTicketCategoryAudit("ticket_category_update", operatorID, id, model.AuditResultSuccess, map[string]any{"before": before, "after": map[string]any{"name": category.Name, "name_en": category.NameEN, "description": category.Description, "sort_order": category.SortOrder, "enabled": category.Enabled}})
 	return category, nil
 }
 
-func (s *TicketService) DeleteCategory(id uint) error {
-	return s.repo.DeleteCategory(id)
+func (s *TicketService) DeleteCategory(operatorID, id uint) error {
+	if err := s.repo.DeleteCategory(id); err != nil {
+		s.recordTicketCategoryAudit("ticket_category_delete", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
+		return err
+	}
+	s.recordTicketCategoryAudit("ticket_category_delete", operatorID, id, model.AuditResultSuccess, map[string]any{"deleted_category_id": id})
+	return nil
+}
+
+func (s *TicketService) recordTicketAudit(action string, actorID, ticketID uint, result string, details map[string]any) {
+	if s.auditSvc == nil {
+		return
+	}
+	_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+		Category:     "ticket_admin",
+		Action:       action,
+		ActorUserID:  actorID,
+		ResourceType: "ticket",
+		ResourceID:   fmt.Sprintf("%d", ticketID),
+		Result:       result,
+		Details:      details,
+	})
+}
+
+func (s *TicketService) recordTicketCategoryAudit(action string, actorID, categoryID uint, result string, details map[string]any) {
+	if s.auditSvc == nil {
+		return
+	}
+	_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+		Category:     "ticket_admin",
+		Action:       action,
+		ActorUserID:  actorID,
+		ResourceType: "ticket_category",
+		ResourceID:   fmt.Sprintf("%d", categoryID),
+		Result:       result,
+		Details:      details,
+	})
 }
 
 func (s *TicketService) GetStatistics() (map[string]any, error) {

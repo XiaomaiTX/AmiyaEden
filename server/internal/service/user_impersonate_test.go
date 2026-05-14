@@ -17,7 +17,7 @@ func TestImpersonateUserRejectsInvalidPrimaryCharacter(t *testing.T) {
 	global.DB = db
 	defer func() { global.DB = originalDB }()
 
-	_, _, err := NewUserService().ImpersonateUser(1)
+	_, _, err := NewUserService().ImpersonateUser(100, 1)
 	if err == nil || !strings.Contains(err.Error(), "无法模拟登录") {
 		t.Fatalf("expected impersonation restriction error, got %v", err)
 	}

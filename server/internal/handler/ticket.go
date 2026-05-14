@@ -234,7 +234,7 @@ func (h *TicketHandler) AdminCreateCategory(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	if err := h.svc.CreateCategory(&req); err != nil {
+	if err := h.svc.CreateCategory(middleware.GetUserID(c), &req); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -251,7 +251,7 @@ func (h *TicketHandler) AdminUpdateCategory(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	result, err := h.svc.UpdateCategory(id, &req)
+	result, err := h.svc.UpdateCategory(middleware.GetUserID(c), id, &req)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -264,7 +264,7 @@ func (h *TicketHandler) AdminDeleteCategory(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	if err := h.svc.DeleteCategory(id); err != nil {
+	if err := h.svc.DeleteCategory(middleware.GetUserID(c), id); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

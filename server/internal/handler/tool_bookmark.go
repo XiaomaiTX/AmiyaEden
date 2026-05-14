@@ -84,7 +84,7 @@ func (h *ToolBookmarkHandler) AdminUpdate(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	row, err := h.svc.AdminUpdate(id, service.ToolBookmarkUpsertRequest{
+	row, err := h.svc.AdminUpdate(middleware.GetUserID(c), id, service.ToolBookmarkUpsertRequest{
 		Name:        req.Name,
 		URL:         req.URL,
 		Description: req.Description,
@@ -107,7 +107,7 @@ func (h *ToolBookmarkHandler) AdminDelete(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	if err := h.svc.AdminDelete(id); err != nil {
+	if err := h.svc.AdminDelete(middleware.GetUserID(c), id); err != nil {
 		if service.IsUserVisibleError(err) {
 			response.Fail(c, response.CodeBizError, err.Error())
 			return

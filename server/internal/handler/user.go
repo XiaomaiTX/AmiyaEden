@@ -81,7 +81,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.UpdateUserByAdmin(id, operatorRoles, service.UserPatch{
+	if err := h.svc.UpdateUserByAdmin(id, middleware.GetUserID(c), operatorRoles, service.UserPatch{
 		Nickname:  req.Nickname,
 		QQ:        req.QQ,
 		DiscordID: req.DiscordID,
@@ -99,7 +99,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.DeleteUser(id, operatorRoles); err != nil {
+	if err := h.svc.DeleteUser(id, middleware.GetUserID(c), operatorRoles); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
@@ -112,7 +112,7 @@ func (h *UserHandler) ImpersonateUser(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	token, user, err := h.svc.ImpersonateUser(id)
+	token, user, err := h.svc.ImpersonateUser(middleware.GetUserID(c), id)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

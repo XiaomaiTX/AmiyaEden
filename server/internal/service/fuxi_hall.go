@@ -42,12 +42,14 @@ var (
 type FuxiHallService struct {
 	repo               *repository.FuxiHallRepository
 	resolveCharacterID func(ctx context.Context, characterName string) (int64, error)
+	auditSvc           *AuditService
 }
 
 func NewFuxiHallService() *FuxiHallService {
 	return &FuxiHallService{
 		repo:               repository.NewFuxiHallRepository(),
 		resolveCharacterID: resolveCharacterIDByNameFromESI,
+		auditSvc:           NewAuditService(),
 	}
 }
 
@@ -120,7 +122,7 @@ func (s *FuxiHallService) GetPageConfig(pageKey string) (*model.FuxiHallPage, er
 	return s.ensurePage(normalizedPageKey)
 }
 
-func (s *FuxiHallService) UpdatePageConfig(pageKey string, req *FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error) {
+func (s *FuxiHallService) UpdatePageConfig(operatorID uint, pageKey string, req *FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error) {
 	normalizedPageKey, err := normalizeFuxiHallPageKey(pageKey)
 	if err != nil {
 		return nil, err
@@ -171,7 +173,7 @@ func (s *FuxiHallService) ListCards(pageKey string, visibleOnly bool) ([]model.F
 	return cards, nil
 }
 
-func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
+func (s *FuxiHallService) CreateCard(operatorID uint, req *FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
 	pageKey, err := normalizeFuxiHallPageKey(req.PageKey)
 	if err != nil {
 		return nil, err
@@ -239,10 +241,11 @@ func (s *FuxiHallService) CreateCard(req *FuxiHallCreateCardRequest) (*model.Fux
 	if err := s.repo.CreateCard(card); err != nil {
 		return nil, err
 	}
+	s.recordFuxiCardAudit("fuxi_card_create", operatorID, card.ID, model.AuditResultSuccess, map[string]any{"page_key": card.PageKey, "nickname": card.Nickname})
 	return card, nil
 }
 
-func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+func (s *FuxiHallService) UpdateCard(operatorID, id uint, req *FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
 	card, err := s.repo.GetCardByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -325,20 +328,26 @@ func (s *FuxiHallService) UpdateCard(id uint, req *FuxiHallUpdateCardRequest) (*
 		return nil, err
 	}
 
-	return s.repo.GetCardByID(id)
+	updated, err := s.repo.GetCardByID(id)
+	if err != nil {
+		return nil, err
+	}
+	s.recordFuxiCardAudit("fuxi_card_update", operatorID, id, model.AuditResultSuccess, map[string]any{"nickname": updated.Nickname})
+	return updated, nil
 }
 
-func (s *FuxiHallService) DeleteCard(id uint) error {
+func (s *FuxiHallService) DeleteCard(operatorID, id uint) error {
 	if err := s.repo.DeleteCard(id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return NewUserVisibleError("卡片不存在")
 		}
 		return err
 	}
+	s.recordFuxiCardAudit("fuxi_card_delete", operatorID, id, model.AuditResultSuccess, map[string]any{"deleted_card_id": id})
 	return nil
 }
 
-func (s *FuxiHallService) ReorderCards(req *FuxiHallReorderRequest) error {
+func (s *FuxiHallService) ReorderCards(operatorID uint, req *FuxiHallReorderRequest) error {
 	pageKey, err := normalizeFuxiHallPageKey(req.PageKey)
 	if err != nil {
 		return err
@@ -369,7 +378,41 @@ func (s *FuxiHallService) ReorderCards(req *FuxiHallReorderRequest) error {
 		return NewUserVisibleError("排序列表包含不存在或不属于当前页面的卡片")
 	}
 
-	return s.repo.ReorderCards(pageKey, req.OrderedIDs)
+	if err := s.repo.ReorderCards(pageKey, req.OrderedIDs); err != nil {
+		return err
+	}
+	s.recordFuxiAudit("fuxi_card_sort", operatorID, pageKey, model.AuditResultSuccess, map[string]any{"ordered_ids": req.OrderedIDs})
+	return nil
+}
+
+func (s *FuxiHallService) recordFuxiAudit(action string, actorID uint, resourceID string, result string, details map[string]any) {
+	if s.auditSvc == nil {
+		return
+	}
+	_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+		Category:     "content_admin",
+		Action:       action,
+		ActorUserID:  actorID,
+		ResourceType: "fuxi_hall_page",
+		ResourceID:   resourceID,
+		Result:       result,
+		Details:      details,
+	})
+}
+
+func (s *FuxiHallService) recordFuxiCardAudit(action string, actorID, cardID uint, result string, details map[string]any) {
+	if s.auditSvc == nil {
+		return
+	}
+	_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+		Category:     "content_admin",
+		Action:       action,
+		ActorUserID:  actorID,
+		ResourceType: "fuxi_hall_card",
+		ResourceID:   fmt.Sprintf("%d", cardID),
+		Result:       result,
+		Details:      details,
+	})
 }
 
 func normalizeFuxiHallPageKey(pageKey string) (string, error) {
