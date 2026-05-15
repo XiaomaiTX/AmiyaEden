@@ -85,7 +85,7 @@
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'operator_id',
-          label: '操作人',
+          label: t('walletAdmin.logs.operator'),
           minWidth: 140,
           formatter: (row: WalletLog) =>
             h(
@@ -98,7 +98,7 @@
         },
         {
           prop: 'target_uid',
-          label: '目标用户',
+          label: t('walletAdmin.logs.targetUser'),
           minWidth: 140,
           formatter: (row: WalletLog) =>
             h(

@@ -19,7 +19,7 @@
           }"
           @click="handleCancel"
         >
-          {{ cancelButton?.text }}
+          {{ cancelButtonText }}
         </div>
         <div
           v-if="button?.show"
@@ -27,7 +27,7 @@
           :style="{ backgroundColor: button?.color, color: button?.textColor }"
           @click="handleClick"
         >
-          {{ button?.text }}
+          {{ buttonText }}
         </div>
       </div>
     </div>
@@ -36,9 +36,12 @@
 
 <script setup lang="ts">
   // 导入默认图标
+  import { computed } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import defaultIcon from '@imgs/3d/icon1.webp'
 
   defineOptions({ name: 'ArtCardBanner' })
+  const { t } = useI18n()
 
   // 定义卡片横幅组件的属性接口
   interface CardBannerProps {
@@ -75,7 +78,7 @@
   }
 
   // 定义组件属性默认值
-  withDefaults(defineProps<CardBannerProps>(), {
+  const props = withDefaults(defineProps<CardBannerProps>(), {
     height: '24rem',
     image: defaultIcon,
     title: '',
@@ -83,14 +86,14 @@
     // 主按钮默认配置
     button: () => ({
       show: true,
-      text: '查看详情',
+      text: '',
       color: 'var(--theme-color)',
       textColor: '#fff'
     }),
     // 取消按钮默认配置
     cancelButton: () => ({
       show: false,
-      text: '取消',
+      text: '',
       color: '#f5f5f5',
       textColor: '#666'
     })
@@ -106,6 +109,9 @@
   const handleClick = () => {
     emit('click')
   }
+
+  const buttonText = computed(() => props.button?.text || t('banner.card.viewDetails'))
+  const cancelButtonText = computed(() => props.cancelButton?.text || t('common.cancel'))
 
   // 取消按钮点击处理函数
   const handleCancel = () => {

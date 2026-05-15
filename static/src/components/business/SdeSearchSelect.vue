@@ -41,11 +41,12 @@
   import { ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { User } from '@element-plus/icons-vue'
-  import { fuzzySearch } from '@/api/sde'
   import { useUserStore } from '@/store/modules/user'
+  import { useSdeSearch } from '@/hooks/core/useSdeSearch'
 
   useI18n()
   const userStore = useUserStore()
+  const { fuzzySearch } = useSdeSearch()
 
   interface Props {
     /** 需要搜索的分类 ID 列表（仅搜索这些分类） */

@@ -24,6 +24,8 @@ type AutoRoleService struct {
 	auditSvc     *AuditService
 }
 
+type CorpTitleInfo = repository.CorpTitleInfo
+
 func NewAutoRoleService() *AutoRoleService {
 	return &AutoRoleService{
 		autoRoleRepo: repository.NewAutoRoleRepository(),
@@ -142,7 +144,7 @@ func (s *AutoRoleService) ListEsiTitleMappings() ([]model.EsiTitleMapping, error
 }
 
 // ListCorpTitles 获取数据库中所有去重的军团头衔（用于前端下拉选择）
-func (s *AutoRoleService) ListCorpTitles(ctx context.Context) ([]repository.CorpTitleInfo, error) {
+func (s *AutoRoleService) ListCorpTitles(ctx context.Context) ([]CorpTitleInfo, error) {
 	titles, err := s.autoRoleRepo.ListDistinctCorpTitles()
 	if err != nil {
 		return nil, fmt.Errorf("list distinct corp titles: %w", err)

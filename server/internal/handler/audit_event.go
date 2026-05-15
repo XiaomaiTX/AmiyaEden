@@ -2,7 +2,6 @@ package handler
 
 import (
 	"amiya-eden/internal/middleware"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"errors"
@@ -71,23 +70,23 @@ func parseAuditDate(raw string, field string) (*time.Time, error) {
 	return &t, nil
 }
 
-func (h *AuditEventHandler) buildFilter(in adminAuditEventListRequestInner) (repository.AuditEventFilter, error) {
+func (h *AuditEventHandler) buildFilter(in adminAuditEventListRequestInner) (service.AuditEventFilter, error) {
 	start, err := parseAuditDate(in.StartDate, "start_date")
 	if err != nil {
-		return repository.AuditEventFilter{}, err
+		return service.AuditEventFilter{}, err
 	}
 	end, err := parseAuditDate(in.EndDate, "end_date")
 	if err != nil {
-		return repository.AuditEventFilter{}, err
+		return service.AuditEventFilter{}, err
 	}
 	if start != nil && end != nil && start.After(*end) {
-		return repository.AuditEventFilter{}, fmt.Errorf("start_date cannot be later than end_date")
+		return service.AuditEventFilter{}, fmt.Errorf("start_date cannot be later than end_date")
 	}
 	if end != nil {
 		next := end.Add(24*time.Hour - time.Nanosecond)
 		end = &next
 	}
-	return repository.AuditEventFilter{
+	return service.AuditEventFilter{
 		StartDate:    start,
 		EndDate:      end,
 		Category:     in.Category,

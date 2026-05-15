@@ -37,6 +37,9 @@ type FleetService struct {
 	esiClient  *esi.Client
 }
 
+type MemberWithPap = repository.MemberWithPap
+type PapLogDetail = repository.PapLogDetail
+
 func NewFleetService() *FleetService {
 	return &FleetService{
 		repo:       repository.NewFleetRepository(),
@@ -216,6 +219,11 @@ type ManualAddFleetMembersResult struct {
 	MissingCharacterNames []string `json:"missing_character_names"`
 }
 
+type FleetFilter struct {
+	Importance string
+	FCUserID   *uint
+}
+
 // UpdateFleet 更新舰队信息
 func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRoles []string, req *UpdateFleetRequest) (*model.Fleet, error) {
 	fleet, err := s.repo.GetByID(fleetID)
@@ -333,9 +341,12 @@ func (s *FleetService) RefreshESIFleetID(fleetID string, userID uint, userRoles 
 }
 
 // ListFleets 分页查询舰队列表
-func (s *FleetService) ListFleets(page, pageSize int, filter repository.FleetFilter) ([]model.FleetListItem, int64, error) {
+func (s *FleetService) ListFleets(page, pageSize int, filter FleetFilter) ([]model.FleetListItem, int64, error) {
 	normalizePageRequest(&page, &pageSize, 10, 100)
-	return s.repo.List(page, pageSize, filter)
+	return s.repo.List(page, pageSize, repository.FleetFilter{
+		Importance: filter.Importance,
+		FCUserID:   filter.FCUserID,
+	})
 }
 
 // GetMyFleets 返回当前用户参与过的舰队列表（按 fleet_member.user_id 过滤）
@@ -769,7 +780,7 @@ func (s *FleetService) getPAPFCSalaryMonthlyLimit() int {
 }
 
 // ListMembersWithPap 分页查询舰队成员（含 PAP 信息）
-func (s *FleetService) ListMembersWithPap(fleetID string, page, pageSize int) ([]repository.MemberWithPap, int64, error) {
+func (s *FleetService) ListMembersWithPap(fleetID string, page, pageSize int) ([]MemberWithPap, int64, error) {
 	normalizePageRequest(&page, &pageSize, 260, 260)
 	return s.repo.ListMembersWithPap(fleetID, page, pageSize)
 }
@@ -821,7 +832,7 @@ func (s *FleetService) GetPapLogs(fleetID string) ([]model.FleetPapLog, error) {
 }
 
 // GetUserPapLogs 获取用户的 PAP 记录（含人物名、FC 名称、舰队信息）
-func (s *FleetService) GetUserPapLogs(userID uint) ([]repository.PapLogDetail, error) {
+func (s *FleetService) GetUserPapLogs(userID uint) ([]PapLogDetail, error) {
 	return s.repo.ListPapLogsDetailByUser(userID)
 }
 

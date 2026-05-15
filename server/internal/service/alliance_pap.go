@@ -32,6 +32,30 @@ func NewAlliancePAPService() *AlliancePAPService {
 	}
 }
 
+func (s *AlliancePAPService) GetMyPAPByUserID(userID uint, year, month int) (*AlliancePAPResult, error) {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil || user.PrimaryCharacterID == 0 {
+		return nil, fmt.Errorf("未设置主人物")
+	}
+	char, err := s.charRepo.GetByCharacterID(user.PrimaryCharacterID)
+	if err != nil {
+		return nil, fmt.Errorf("主人物不存在")
+	}
+	return s.GetMyPAP(char.CharacterName, year, month)
+}
+
+func (s *AlliancePAPService) ImportAlliancePAPByPrimaryCharacter(year, month int, data *PAPImportInfo) error {
+	char, err := s.charRepo.GetByCharacterName(data.PrimaryCharacterName)
+	if err != nil {
+		return fmt.Errorf("主人物不存在")
+	}
+	user, err := s.userRepo.GetByPrimaryCharacterID(char.CharacterID)
+	if err != nil || user.PrimaryCharacterID == 0 {
+		return fmt.Errorf("未设置主人物")
+	}
+	return s.ImportAlliancePAP(year, month, data, char)
+}
+
 // ─── 外部 API 响应结构 ───
 
 type alliancePAPAPIResponse struct {

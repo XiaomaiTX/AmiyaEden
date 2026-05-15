@@ -140,6 +140,7 @@
     updateAllowCorporations
   } from '@/api/sys-config'
   import { SYSTEM_IDENTITY, SYSTEM_IDENTITY_I18N } from '@/constants/system-identity'
+  import { formatTime } from '@/utils/common'
 
   defineOptions({ name: 'BasicConfig' })
 
@@ -242,7 +243,7 @@
     if (!unixSeconds) {
       return '-'
     }
-    return new Date(unixSeconds * 1000).toLocaleString()
+    return formatTime(new Date(unixSeconds * 1000).toISOString())
   }
 
   const handleSaveSDE = async () => {

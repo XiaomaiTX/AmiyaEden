@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"strings"
@@ -157,7 +156,7 @@ func (h *WelfareHandler) AdminListWelfares(c *gin.Context) {
 	}
 	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
-	filter := repository.WelfareFilter{
+	filter := service.WelfareFilter{
 		Status: req.Status,
 		Name:   req.Name,
 	}
@@ -267,7 +266,7 @@ func (h *WelfareHandler) AdminListApplications(c *gin.Context) {
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
-	var filter repository.WelfareApplicationFilter
+	var filter service.WelfareApplicationFilter
 	if strings.Contains(req.Status, ",") {
 		filter.StatusIn = strings.Split(req.Status, ",")
 	} else {

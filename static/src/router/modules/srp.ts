@@ -28,7 +28,7 @@ export const srpRoutes: AppRouteRecord = {
         title: 'menus.srp.srpManage',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
-        authList: [{ title: '审批', authMark: 'approve' }]
+        authList: [{ title: 'authActions.srp.approve', authMark: 'approve' }]
       }
     },
     {

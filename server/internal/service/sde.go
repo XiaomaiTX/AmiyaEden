@@ -39,6 +39,10 @@ var sdeUpdateState = struct {
 	lastSeenVersion string
 }{}
 
+type TypeInfo = repository.TypeInfo
+type SdeNameMap = repository.SdeNameMap
+type FuzzySearchItem = repository.FuzzySearchItem
+
 // SdeService SDE 业务逻辑层
 type SdeService struct {
 	repo      *repository.SdeRepository
@@ -953,16 +957,16 @@ func truncate(s string, n int) string {
 // ---- 数据查询 ----
 
 // GetTypes 批量查询物品信息（含 group + category + market_group 翻译）
-func (s *SdeService) GetTypes(typeIDs []int, published *bool, languageID string) ([]repository.TypeInfo, error) {
+func (s *SdeService) GetTypes(typeIDs []int, published *bool, languageID string) ([]TypeInfo, error) {
 	return s.repo.GetTypes(typeIDs, published, languageID)
 }
 
 // GetNames 批量查询按 namespace 分组的 id -> name 映射（仅查数据库翻译表）
-func (s *SdeService) GetNames(ids map[string][]int, languageID string) (repository.SdeNameMap, error) {
+func (s *SdeService) GetNames(ids map[string][]int, languageID string) (SdeNameMap, error) {
 	return s.repo.GetNames(ids, languageID)
 }
 
 // FuzzySearch 模糊搜索物品/成员名称
-func (s *SdeService) FuzzySearch(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool) ([]repository.FuzzySearchItem, error) {
+func (s *SdeService) FuzzySearch(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool) ([]FuzzySearchItem, error) {
 	return s.repo.FuzzySearch(keyword, languageID, categoryIDs, excludeCategoryIDs, limit, searchMember)
 }

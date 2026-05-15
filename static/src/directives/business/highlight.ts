@@ -43,6 +43,8 @@
 
 import { App, Directive } from 'vue'
 import hljs from 'highlight.js'
+import { ElMessage } from 'element-plus'
+import { $t } from '@/locales'
 
 // 高亮代码
 function highlightCode(block: HTMLElement) {
@@ -70,7 +72,7 @@ function addCopyButton(block: HTMLElement) {
     // 过滤掉行号，只复制代码内容
     const codeContent = block.innerText.replace(/^\d+\s+/gm, '')
     navigator.clipboard.writeText(codeContent).then(() => {
-      ElMessage.success('复制成功')
+      ElMessage.success($t('highlight.copySuccess'))
     })
   }
 
@@ -117,7 +119,7 @@ function processBlock(block: HTMLElement) {
     addCopyButton(block)
     markBlockAsProcessed(block)
   } catch (error) {
-    console.warn('处理代码块时出错:', error)
+    console.warn($t('highlight.processError'), error)
   }
 }
 

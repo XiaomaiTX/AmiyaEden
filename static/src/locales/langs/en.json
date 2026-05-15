@@ -21,6 +21,64 @@
       "logout": "Log out"
     }
   },
+  "userCenter": {
+    "profile": {
+      "bio": "Focused on user experience and visual design",
+      "role": "Interaction Specialist",
+      "location": "Shenzhen, Guangdong",
+      "organization": "ByteDance - Platform UED",
+      "nickname": "Pikachu",
+      "address": "Room 201, Building 101, Xixiang, Bao'an District, Shenzhen",
+      "description": "Art Design Pro is an admin system with strong design and development efficiency."
+    },
+    "sections": {
+      "tags": "Tags",
+      "basicSettings": "Basic Settings",
+      "changePassword": "Change Password"
+    },
+    "fields": {
+      "realName": "Name",
+      "sex": "Gender",
+      "sexPlaceholder": "Select gender",
+      "nickName": "Nickname",
+      "email": "Email",
+      "mobile": "Mobile",
+      "address": "Address",
+      "description": "Profile",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password"
+    },
+    "validation": {
+      "realNameRequired": "Please enter a name",
+      "nickNameRequired": "Please enter a nickname",
+      "length2To50": "Length must be 2 to 50 characters",
+      "emailRequired": "Please enter an email",
+      "mobileRequired": "Please enter a mobile number",
+      "addressRequired": "Please enter an address",
+      "sexRequired": "Please select a gender"
+    },
+    "sex": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "tags": {
+      "design": "Design-focused",
+      "creative": "Creative",
+      "bold": "Bold",
+      "tall": "Tall",
+      "sichuan": "Sichuan",
+      "inclusive": "Inclusive"
+    },
+    "greetings": {
+      "earlyMorning": "Good morning",
+      "morning": "Good morning",
+      "noon": "Good noon",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "lateNight": "It is late. Get some rest."
+    }
+  },
   "common": {
     "tips": "Prompt",
     "cancel": "Cancel",
@@ -43,12 +101,99 @@
     "copy": "Copy",
     "copied": "Copied",
     "copyFailed": "Copy failed",
+    "noData": "No data",
     "millionIsk": "Million ISK",
     "updatedAt": "Updated At",
     "createdAt": "Created At",
     "logOutTips": "Do you want to log out?",
     "search": "Search",
-    "reset": "Reset"
+    "reset": "Reset",
+    "editorPlaceholder": "Enter content...",
+    "imageUploadSuccess": "Image uploaded {emoji}",
+    "imageUploadFailed": "Image upload failed {emoji}"
+  },
+  "excelExport": {
+    "buttonText": "Export Excel",
+    "loadingText": "Exporting...",
+    "indexColumnTitle": "No.",
+    "invalidDataType": "Data must be an array",
+    "noData": "No data to export",
+    "exceedMaxRows": "Row count exceeds the limit ({maxRows} rows)",
+    "booleanTrue": "Yes",
+    "booleanFalse": "No",
+    "exportFailed": "Excel export failed: {message}",
+    "unknownFailed": "Export failed: {message}",
+    "successMessage": "Exported {count} rows",
+    "consoleError": "Excel export error:"
+  },
+  "highlight": {
+    "copySuccess": "Copied",
+    "processError": "Error processing code block:"
+  },
+  "table": {
+    "requestCancelled": "Request cancelled",
+    "fetchFailed": "Failed to load table data",
+    "searchCache": "search data",
+    "resetSearchCache": "reset search",
+    "unknownError": "Unknown error"
+  },
+  "storage": {
+    "invalidLocalData": "Local data looks invalid. Please sign in again to recover."
+  },
+  "color": {
+    "invalidHex": "Invalid hex color value",
+    "invalidRgb": "Invalid RGB color value"
+  },
+  "route": {
+    "menuListFailed": "Failed to load the menu list. Please sign in again."
+  },
+  "chatWindow": {
+    "status": {
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "inputPlaceholder": "Enter a message",
+    "send": "Send",
+    "messages": {
+      "assistantGreeting": "Hello. I am your AI assistant. How can I help?",
+      "userUsageQuestion": "I want to learn how to use the system.",
+      "assistantUsageIntro": "Sure. I will introduce the main system features. You can start from the left menu to access different modules...",
+      "userAnalyticsQuestion": "That sounds useful. Can you explain the analytics section?",
+      "assistantAnalyticsIntro": "Of course. The analytics module helps you monitor key metrics in real time and generate detailed reports...",
+      "userStartQuestion": "Great. How do I get started?",
+      "assistantStartIntro": "You can create a project first, add data sources to it, and the system will analyze them automatically.",
+      "userThanks": "Understood. Thanks for your help.",
+      "assistantClose": "You are welcome. Contact me anytime if you have questions."
+    }
+  },
+  "dragVerify": {
+    "text": "Hold and drag the slider",
+    "successText": "Verified"
+  },
+  "imageCutter": {
+    "chooseImage": "Choose image",
+    "clear": "Clear",
+    "previewAlt": "Preview image",
+    "downloadImage": "Download image",
+    "defaultFileName": "Cover image",
+    "loadFailedLog": "Image load failed:"
+  },
+  "banner": {
+    "basic": {
+      "view": "View",
+      "backgroundAlt": "Background image"
+    },
+    "card": {
+      "viewDetails": "View details"
+    }
+  },
+  "cards": {
+    "dataList": {
+      "showMore": "Show more"
+    },
+    "image": {
+      "readSuffix": "read"
+    }
   },
   "mailAttempt": {
     "sent": "In-game mail accepted.",
@@ -163,7 +308,9 @@
       "Notice"
     ],
     "text": [
-      "No"
+      "No",
+      "Unread",
+      "Loading..."
     ],
     "viewAll": "View all"
   },
@@ -181,6 +328,7 @@
   "console": {
     "alliancePap": "Alliance PAP",
     "internalPap": "Internal PAP",
+    "dashboardLoadFailedLog": "Failed to load dashboard data",
     "papChart": {
       "recentMonths": "Last {count} months",
       "monthLabel": "{year}-{month}",
@@ -224,11 +372,21 @@
     "agreeText": "I agree",
     "privacyPolicy": "Privacy policy",
     "submitBtnText": "Register",
+    "success": "Registration successful",
     "hasAccount": "Already have an account?",
     "toLogin": "To login"
   },
   "lockScreen": {
     "pwdError": "Password error",
+    "userAvatarAlt": "User avatar",
+    "validationFailedLog": "Form validation failed:",
+    "storeUpdateFailedLog": "Failed to update store:",
+    "devTools": {
+      "title": "System locked",
+      "detected": "Developer tools are open",
+      "instructions": "For system security, close developer tools before continuing",
+      "activated": "Security lock activated"
+    },
     "lock": {
       "inputPlaceholder": "Please input lock screen password",
       "btnText": "Lock"
@@ -369,6 +527,28 @@
       "leadership": "Leadership",
       "contributors": "Major Contributors",
       "manage": "Fuxi Hall Management"
+    }
+  },
+  "authActions": {
+    "shop": {
+      "addProduct": "Add Product",
+      "editProduct": "Edit Product",
+      "deleteProduct": "Delete Product",
+      "approveOrder": "Approve Order"
+    },
+    "srp": {
+      "approve": "Approve"
+    },
+    "system": {
+      "deleteUser": "Delete User",
+      "assignRole": "Assign Role",
+      "executeTask": "Execute Task",
+      "updateSchedule": "Update Schedule",
+      "adjustBalance": "Adjust Balance",
+      "viewLog": "View Log",
+      "viewAuditDetail": "View Audit Detail",
+      "editExchangeRate": "Edit Exchange Rate",
+      "manualFetch": "Manual Fetch"
     }
   },
   "fuxiHall": {
@@ -653,11 +833,26 @@
     "noSkillQueue": "No skills in training",
     "noSkillData": "No skill data",
     "skillNotLearned": "Skill book not injected",
+    "esiRefreshButton": "ESI Refresh",
+    "esiRefreshTitle": "ESI Refresh",
+    "esiRefreshConfirmButton": "Refresh",
+    "walletESIRefreshConfirm": "Refresh wallet data for character \"{name}\" from ESI?",
+    "skillESIRefreshConfirm": "Refresh skill data for character \"{name}\" from ESI?",
+    "walletESIRefreshSubmitted": "Wallet ESI refresh task submitted. Refresh later to see the latest data.",
+    "skillESIRefreshSubmitted": "Skill ESI refresh task submitted. Refresh later to see the latest data.",
+    "esiRefreshSubmitFailed": "Failed to submit ESI refresh task",
+    "esiRefreshUnauthorized": "You cannot operate on this character",
+    "esiRefreshCharacterNotFound": "Character not found",
     "totalSPLabel": "Total Skill Points",
     "allSkills": "All Skills",
     "unallocatedSPSuffix": " unallocated skill points.",
     "totalTrainingTime": "Training Time",
     "queuedSPSuffix": " skill points in queue",
+    "trainingComplete": "Complete",
+    "durationDays": "{count}d",
+    "durationHours": "{count}h",
+    "durationMinutes": "{count}m",
+    "durationSeconds": "{count}s",
     "journalIndex": "ID",
     "flyableShips": "Flyable Ships",
     "allRaces": "All Races",
@@ -926,6 +1121,7 @@
     "exampleEvidenceLabel": "Example (provided by admin):",
     "uploadEvidenceBtn": "Choose Image",
     "skillPlanningAlertPrefix": "Go to ",
+    "skillPlanningCheckLink": "Skill Planning - Check Completion",
     "multicharRewardBanner": "Multi-character welfare policy: for per-character welfare with Fuxi Coin payout, the first 3 characters per user receive 100%, characters 4-6 receive 50%, and the rest receive no Fuxi Coin. Exact values depend on admin configuration."
   },
   "welfareApproval": {
@@ -1883,6 +2079,7 @@
         "manualTransfer": "Manual Transfer"
       },
       "exportBtn": "Export Data",
+      "exportSheetName": "SRP Applications",
       "autoApproveBtn": "Auto Approve",
       "batchPayoutBtn": "Batch Payout",
       "approveBtn": "Approve",
@@ -1928,6 +2125,8 @@
       "fuxiPayoutSuccess": "Fuxi Coin SRP issued: {amount} coins",
       "rejectRequired": "A note is required when rejecting",
       "unknownReviewer": "Reviewer",
+      "defaultApproveNote": "SRP manually approved by {{mainChracterName}}. Contact them in QQ group if you have questions.",
+      "defaultRejectNote": "Does not meet the current SRP policy. Contact {{mainChracterName}} in QQ group or by in-game mail if you have questions.",
       "payoutKillId": "KillID",
       "openInfoWindow": "Open Info Window",
       "editBtn": "@:common.edit",
@@ -1957,6 +2156,24 @@
         "payout": "Payout",
         "lastActor": "SRP Officer",
         "action": "Action"
+      },
+      "exportColumns": {
+        "character": "Character",
+        "ship": "Ship",
+        "system": "System",
+        "killId": "KillID",
+        "kmTime": "KM Time",
+        "corporation": "Corporation",
+        "alliance": "Alliance",
+        "fleet": "Fleet",
+        "fc": "FC",
+        "note": "Note",
+        "recommendedAmount": "Recommended Amount",
+        "finalAmount": "Final Amount",
+        "reviewStatus": "Review Status",
+        "reviewNote": "Review Note",
+        "lastActor": "SRP Officer",
+        "payoutStatus": "Payout Status"
       }
     },
     "prices": {
@@ -2698,6 +2915,12 @@
   "webhook": {
     "title": "Webhook Notification Settings",
     "saveSuccess": "Settings saved",
+    "providers": {
+      "discord": "Discord",
+      "feishu": "Feishu",
+      "dingtalk": "DingTalk",
+      "onebot": "OneBot v11 (QQ)"
+    },
     "fields": {
       "enabled": "Enabled",
       "url": "Webhook URL",

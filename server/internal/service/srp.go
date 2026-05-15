@@ -63,6 +63,16 @@ const (
 	SrpPayoutModeFuxiCoin       = "fuxi_coin"
 )
 
+type SrpApplicationFilter struct {
+	Tab          string
+	UserID       *uint
+	CharacterID  *int64
+	FleetID      *string
+	ReviewStatus string
+	PayoutStatus string
+	Keyword      string
+}
+
 // ─────────────────────────────────────────────
 //  KM 解析辅助
 // ─────────────────────────────────────────────
@@ -372,10 +382,18 @@ func (s *SrpService) enrichWithFleetInfo(apps []model.SrpApplication) []SrpAppli
 }
 
 // ListApplications 管理员端分页查询申请列表
-func (s *SrpService) ListApplications(page, pageSize int, filter repository.SrpApplicationFilter) ([]SrpApplicationResponse, int64, error) {
+func (s *SrpService) ListApplications(page, pageSize int, filter SrpApplicationFilter) ([]SrpApplicationResponse, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
 
-	apps, total, err := s.repo.ListApplications(page, pageSize, filter)
+	apps, total, err := s.repo.ListApplications(page, pageSize, repository.SrpApplicationFilter{
+		Tab:          repository.SrpTabType(filter.Tab),
+		UserID:       filter.UserID,
+		CharacterID:  filter.CharacterID,
+		FleetID:      filter.FleetID,
+		ReviewStatus: filter.ReviewStatus,
+		PayoutStatus: filter.PayoutStatus,
+		Keyword:      filter.Keyword,
+	})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -533,6 +551,18 @@ func applyAutoApprovalToApplication(
 // srpAmountLimit 从系统配置读取 SRP 职权单笔上限（ISK），10 分钟 Redis 缓存
 func (s *SrpService) srpAmountLimit() float64 {
 	return s.sysConfigRepo.GetFloat(model.SysConfigSRPAmountLimit, model.SysConfigDefaultSRPAmountLimit)
+}
+
+func (s *SrpService) GetSrpAmountLimit() float64 {
+	return s.srpAmountLimit()
+}
+
+func (s *SrpService) UpdateSrpAmountLimit(amountLimit float64) error {
+	return s.sysConfigRepo.Set(
+		model.SysConfigSRPAmountLimit,
+		fmt.Sprintf("%g", amountLimit),
+		"SRP 职权单笔审批/发放上限（ISK）",
+	)
 }
 
 // srpCallerHasAmountLimit 判断调用者是否受 SRP 单笔上限约束

@@ -10,7 +10,9 @@
               class="h-2 w-2 rounded-full"
               :class="isOnline ? 'bg-success/100' : 'bg-danger/100'"
             ></div>
-            <span class="text-xs text-g-600">{{ isOnline ? '在线' : '离线' }}</span>
+            <span class="text-xs text-g-600">{{
+              isOnline ? $t('chatWindow.status.online') : $t('chatWindow.status.offline')
+            }}</span>
           </div>
         </div>
         <div>
@@ -63,7 +65,7 @@
             v-model="messageText"
             type="textarea"
             :rows="3"
-            placeholder="输入消息"
+            :placeholder="$t('chatWindow.inputPlaceholder')"
             resize="none"
             @keyup.enter.prevent="sendMessage"
           >
@@ -71,7 +73,9 @@
               <div class="flex gap-2 py-2">
                 <ElButton :icon="Paperclip" circle plain />
                 <ElButton :icon="Picture" circle plain />
-                <ElButton type="primary" @click="sendMessage" v-ripple>发送</ElButton>
+                <ElButton type="primary" @click="sendMessage" v-ripple>{{
+                  $t('chatWindow.send')
+                }}</ElButton>
               </div>
             </template>
           </ElInput>
@@ -80,7 +84,9 @@
               <ArtSvgIcon icon="ri:image-line" class="mr-5 c-p text-g-600 text-lg" />
               <ArtSvgIcon icon="ri:emotion-happy-line" class="mr-5 c-p text-g-600 text-lg" />
             </div>
-            <ElButton type="primary" @click="sendMessage" v-ripple class="min-w-20">发送</ElButton>
+            <ElButton type="primary" @click="sendMessage" v-ripple class="min-w-20">{{
+              $t('chatWindow.send')
+            }}</ElButton>
           </div>
         </div>
       </div>
@@ -90,12 +96,14 @@
 
 <script setup lang="ts">
   import { Picture, Paperclip, Close } from '@element-plus/icons-vue'
+  import { useI18n } from 'vue-i18n'
   import { mittBus } from '@/utils/sys'
   import { formatTime } from '@utils/common'
   import meAvatar from '@/assets/images/avatar/avatar5.webp'
   import aiAvatar from '@/assets/images/avatar/avatar10.webp'
 
   defineOptions({ name: 'ArtChatWindow' })
+  const { t } = useI18n()
 
   // 类型定义
   interface ChatMessage {
@@ -135,7 +143,7 @@
     {
       id: 1,
       sender: BOT_NAME,
-      content: '你好！我是你的AI助手，有什么我可以帮你的吗？',
+      content: t('chatWindow.messages.assistantGreeting'),
       time: buildMockTime(0),
       isMe: false,
       avatar: aiAvatar
@@ -143,7 +151,7 @@
     {
       id: 2,
       sender: USER_NAME,
-      content: '我想了解一下系统的使用方法。',
+      content: t('chatWindow.messages.userUsageQuestion'),
       time: buildMockTime(1),
       isMe: true,
       avatar: meAvatar
@@ -151,7 +159,7 @@
     {
       id: 3,
       sender: BOT_NAME,
-      content: '好的，我来为您介绍系统的主要功能。首先，您可以通过左侧菜单访问不同的功能模块...',
+      content: t('chatWindow.messages.assistantUsageIntro'),
       time: buildMockTime(2),
       isMe: false,
       avatar: aiAvatar
@@ -159,7 +167,7 @@
     {
       id: 4,
       sender: USER_NAME,
-      content: '听起来很不错，能具体讲讲数据分析部分吗？',
+      content: t('chatWindow.messages.userAnalyticsQuestion'),
       time: buildMockTime(5),
       isMe: true,
       avatar: meAvatar
@@ -167,7 +175,7 @@
     {
       id: 5,
       sender: BOT_NAME,
-      content: '当然可以。数据分析模块可以帮助您实时监控关键指标，并生成详细的报表...',
+      content: t('chatWindow.messages.assistantAnalyticsIntro'),
       time: buildMockTime(6),
       isMe: false,
       avatar: aiAvatar
@@ -175,7 +183,7 @@
     {
       id: 6,
       sender: USER_NAME,
-      content: '太好了，那我如何开始使用呢？',
+      content: t('chatWindow.messages.userStartQuestion'),
       time: buildMockTime(8),
       isMe: true,
       avatar: meAvatar
@@ -183,7 +191,7 @@
     {
       id: 7,
       sender: BOT_NAME,
-      content: '您可以先创建一个项目，然后在项目中添加相关的数据源，系统会自动进行分析。',
+      content: t('chatWindow.messages.assistantStartIntro'),
       time: buildMockTime(9),
       isMe: false,
       avatar: aiAvatar
@@ -191,7 +199,7 @@
     {
       id: 8,
       sender: USER_NAME,
-      content: '明白了，谢谢你的帮助！',
+      content: t('chatWindow.messages.userThanks'),
       time: buildMockTime(10),
       isMe: true,
       avatar: meAvatar
@@ -199,7 +207,7 @@
     {
       id: 9,
       sender: BOT_NAME,
-      content: '不客气，有任何问题随时联系我。',
+      content: t('chatWindow.messages.assistantClose'),
       time: buildMockTime(11),
       isMe: false,
       avatar: aiAvatar

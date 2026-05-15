@@ -46,7 +46,7 @@
           }"
           @click.stop="emit('buttonClick')"
         >
-          {{ buttonConfig?.text }}
+          {{ buttonText }}
         </div>
       </slot>
 
@@ -60,7 +60,7 @@
         :src="imageConfig.src"
         :style="{ width: imageConfig.width, bottom: imageConfig.bottom, right: imageConfig.right }"
         loading="lazy"
-        alt="背景图片"
+        :alt="$t('banner.basic.backgroundAlt')"
       />
     </div>
   </div>
@@ -68,9 +68,11 @@
 
 <script setup lang="ts">
   import { onMounted, ref, computed } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import { useSettingStore } from '@/store/modules/setting'
   const settingStore = useSettingStore()
   const { isDark } = storeToRefs(settingStore)
+  const { t } = useI18n()
 
   defineOptions({ name: 'ArtBasicBanner' })
 
@@ -89,7 +91,7 @@
     /** 是否启用按钮 */
     show: boolean
     /** 按钮文本 */
-    text: string
+    text?: string
     /** 按钮背景色 */
     color?: string
     /** 按钮文字颜色 */
@@ -151,7 +153,7 @@
     decoration: true,
     buttonConfig: () => ({
       show: true,
-      text: '查看',
+      text: '',
       color: '#fff',
       textColor: '#333',
       radius: '6px'
@@ -170,6 +172,7 @@
   const buttonColor = computed(() => props.buttonConfig?.color ?? '#fff')
   const buttonTextColor = computed(() => props.buttonConfig?.textColor ?? '#333')
   const buttonRadius = computed(() => props.buttonConfig?.radius ?? '6px')
+  const buttonText = computed(() => props.buttonConfig?.text || t('banner.basic.view'))
 
   // 流星数据初始化
   const meteors = ref<Meteor[]>([])

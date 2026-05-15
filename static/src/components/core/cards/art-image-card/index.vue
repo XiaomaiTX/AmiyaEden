@@ -19,7 +19,7 @@
           class="absolute right-3.5 bottom-3.5 py-1 px-2 text-xs bg-g-200 rounded"
           v-if="props.readTime"
         >
-          {{ props.readTime }} 阅读
+          {{ props.readTime }} {{ $t('cards.image.readSuffix') }}
         </div>
       </div>
 

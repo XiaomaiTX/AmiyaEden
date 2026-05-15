@@ -41,7 +41,10 @@
 </template>
 
 <script setup lang="ts">
+  import { useI18n } from 'vue-i18n'
+
   defineOptions({ name: 'ArtDragVerify' })
+  const { t } = useI18n()
 
   // 事件定义
   const emit = defineEmits(['handlerMove', 'update:value', 'passCallback'])
@@ -85,8 +88,6 @@
     value: false,
     width: '100%',
     height: 40,
-    text: '按住滑块拖动',
-    successText: 'success',
     background: '#eee',
     progressBarBg: '#1385FF',
     completedBg: '#57D187',
@@ -225,7 +226,9 @@
 
   // 显示消息计算属性
   const message = computed(() => {
-    return props.value ? props.successText : props.text
+    return props.value
+      ? (props.successText ?? t('dragVerify.successText'))
+      : (props.text ?? t('dragVerify.text'))
   })
 
   /**

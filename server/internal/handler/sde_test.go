@@ -1,14 +1,14 @@
 package handler
 
 import (
-	"amiya-eden/internal/repository"
+	"amiya-eden/internal/service"
 	"testing"
 )
 
 func TestMergeGetNamesNamespacesPreservesNamespacesAndFlatFirstWins(t *testing.T) {
 	result := newGetNamesResponse()
 
-	mergeGetNamesNamespaces(&result, repository.SdeNameMap{
+	mergeGetNamesNamespaces(&result, service.SdeNameMap{
 		"type": {
 			1: "Rifter",
 			2: "Punisher",
