@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -111,7 +110,7 @@ func (h *TicketHandler) AdminListTickets(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, err.Error())
 		return
 	}
-	filter := repository.TicketListFilter{
+	filter := service.TicketListFilter{
 		Status:  c.Query("status"),
 		Keyword: c.Query("keyword"),
 	}

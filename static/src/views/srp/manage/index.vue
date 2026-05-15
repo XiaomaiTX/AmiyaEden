@@ -75,7 +75,7 @@
                 :data="exportManageData"
                 :headers="manageExportHeaders"
                 :filename="`srp-manage_${new Date().toLocaleDateString()}`"
-                sheet-name="补损申请"
+                :sheet-name="$t('srp.manage.exportSheetName')"
                 :button-text="$t('srp.manage.exportBtn')"
                 type="success"
               />
@@ -320,6 +320,8 @@
     ElRadioGroup,
     ElRadioButton
   } from 'element-plus'
+  import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
+  import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
   import ArtExcelExport from '@/components/core/forms/art-excel-export/index.vue'
   import KmPreviewDialog from '@/components/business/KmPreviewDialog.vue'
   import { CopyDocument } from '@element-plus/icons-vue'
@@ -358,7 +360,11 @@
   } = useSrpManage({
     openReviewDialog: (...args) => openReviewDialog(...args),
     handlePayoutAction: (...args) => handlePayoutAction(...args),
-    openKmPreview: (row) => openKmPreview(row)
+    openKmPreview: (row) => openKmPreview(row),
+    components: {
+      ArtButtonTable,
+      ArtCopyButton
+    }
   })
 
   const {

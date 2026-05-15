@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -13,8 +12,7 @@ import (
 type MeHandler struct {
 	userSvc              *service.UserService
 	roleSvc              *service.RoleService
-	charRepo             *repository.EveCharacterRepository
-	sysConfigRepo        *repository.SysConfigRepository
+	cfgSvc               *service.SysConfigService
 	eligibilitySvc       *service.NewbroEligibilityService
 	mentorEligibilitySvc *service.MentorEligibilityService
 }
@@ -23,8 +21,7 @@ func NewMeHandler() *MeHandler {
 	return &MeHandler{
 		userSvc:              service.NewUserService(),
 		roleSvc:              service.NewRoleService(),
-		charRepo:             repository.NewEveCharacterRepository(),
-		sysConfigRepo:        repository.NewSysConfigRepository(),
+		cfgSvc:               service.NewSysConfigService(),
 		eligibilitySvc:       service.NewNewbroEligibilityService(),
 		mentorEligibilitySvc: service.NewMentorEligibilityService(),
 	}
@@ -40,7 +37,7 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 		return
 	}
 
-	characters, err := h.charRepo.ListByUserID(userID)
+	characters, err := h.userSvc.ListUserCharacters(userID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, "加载人物信息失败")
 		return
@@ -63,10 +60,7 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 		value := result.IsEligible
 		isMentorMenteeEligible = &value
 	}
-	enforceCharacterESIRestriction := h.sysConfigRepo.GetBool(
-		model.SysConfigEnforceCharacterESIRestriction,
-		model.SysConfigDefaultEnforceCharacterESIRestriction,
-	)
+	enforceCharacterESIRestriction := h.cfgSvc.GetCharacterESIRestrictionConfig()
 
 	response.OK(c, gin.H{
 		"user":                              user,

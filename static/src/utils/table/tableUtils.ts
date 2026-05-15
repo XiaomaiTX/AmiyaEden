@@ -272,7 +272,8 @@ export const createSmartDebounce = <T extends (...args: any[]) => Promise<any>>(
  */
 export const createErrorHandler = (
   onError?: (error: TableError) => void,
-  enableLog: boolean = false
+  enableLog: boolean = false,
+  unknownMessage: string = 'Unknown error'
 ) => {
   const logger = {
     error: (message: string, ...args: any[]) => {
@@ -283,7 +284,7 @@ export const createErrorHandler = (
   return (err: unknown, context: string): TableError => {
     const tableError: TableError = {
       code: 'UNKNOWN_ERROR',
-      message: '未知错误',
+      message: unknownMessage,
       details: err
     }
 

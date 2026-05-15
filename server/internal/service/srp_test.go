@@ -1062,7 +1062,7 @@ func TestListApplicationsRefreshesRecommendedAmountUsingFleetConfigFirst(t *test
 	}
 
 	svc := newSrpServiceForTests()
-	list, total, err := svc.ListApplications(1, 20, repository.SrpApplicationFilter{Tab: repository.SrpTabPending})
+	list, total, err := svc.ListApplications(1, 20, SrpApplicationFilter{Tab: string(repository.SrpTabPending)})
 	if err != nil {
 		t.Fatalf("ListApplications() error = %v", err)
 	}

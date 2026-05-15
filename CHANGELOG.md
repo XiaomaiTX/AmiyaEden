@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-05-16
+
+### Added
+- 新增用户、工单、工具收藏与 Fuxi Hall 的审计覆盖。
+
+### Changed
+- Fuxi Hall 成员头衔展示改为使用头衔标签，并同步相关契约、页面与文档。
+- 更新 static-react 依赖锁定版本。
+
+### Fixed
+- 将我的福利页技能规划检查链接改为本地化文案。
+- 将注册页、信息页钱包与技能 ESI 刷新提示改为本地化文案。
+- 将富文本编辑器默认占位符与图片上传提示改为本地化文案。
+- 将联盟 PAP SEAT 导入请求移入前端 API 层，避免页面模块直接创建 HTTP 请求。
+- 将基础配置页 SDE 时间展示改为复用共享时间格式化工具。
+- 移除系统用户处理器对 repository 筛选类型的直接依赖。
+- 移除系统钱包处理器对 repository 筛选类型的直接依赖。
+- 移除审计日志处理器对 repository 筛选类型的直接依赖。
+- 将 SRP 配置读写收敛到服务层，处理器不再直接访问系统配置仓储。
+- 移除 SRP 处理器对 repository 申请筛选类型的直接依赖。
+- 移除工单处理器对 repository 筛选类型的直接依赖。
+- 移除舰队、商店与福利处理器对 repository 筛选类型的直接依赖。
+- 将系统配置读写、个人资料人物查询、联盟 PAP 主人物解析与 ESI 刷新人物查询收敛到服务层。
+- 移除 SDE 处理器对 repository 名称映射类型的直接依赖。
+- 将自动权限、舰队与 SDE 服务的公开返回类型改为服务层契约，避免 repository DTO 向处理器层泄漏。
+- 将共享业务组件的通知、SDE 搜索与 KM 详情请求改为经由 hooks 调用，避免组件直接依赖 API 层。
+- 将 SRP 管理 hook 的表格按钮组件依赖上移到页面注入，避免 hooks 直接依赖组件层。
+- 移除通知面板中的硬编码中文回退文案，补齐对应中英文通知本地化文本。
+- 将路由权限动作标题改为本地化键，并补齐对应中英文文案与回归测试。
+- 将系统个人中心页面与 Webhook 服务商选项改为本地化文案，并补齐回归测试。
+- 将系统钱包日志列、SRP 导出列、导出工作表名与默认审批备注改为本地化文案。
+- 将共享表格空状态、Excel 导出默认文案与代码块复制提示改为本地化文案。
+- 将表格加载、存储恢复、颜色校验与动态菜单失败提示改为本地化文案。
+
 ## [1.7.0] - 2026-05-13
 
 ### Added

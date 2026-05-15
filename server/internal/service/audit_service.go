@@ -30,6 +30,19 @@ type AuditRecordInput struct {
 	Details      map[string]any
 }
 
+type AuditEventFilter struct {
+	StartDate    *time.Time
+	EndDate      *time.Time
+	Category     string
+	Action       string
+	ActorUserID  *uint
+	TargetUserID *uint
+	Result       string
+	RequestID    string
+	ResourceID   string
+	Keyword      string
+}
+
 type AuditService struct {
 	repo *repository.AuditEventRepository
 }
@@ -98,15 +111,16 @@ func (s *AuditService) RecordEvent(_ context.Context, in AuditRecordInput) error
 	return nil
 }
 
-func (s *AuditService) AdminListAuditEvents(page, size int, filter repository.AuditEventFilter) ([]model.AuditEvent, int64, error) {
+func (s *AuditService) AdminListAuditEvents(page, size int, filter AuditEventFilter) ([]model.AuditEvent, int64, error) {
 	page = normalizePage(page)
 	size = normalizeLedgerPageSize(size)
 
-	records, err := s.repo.List(page, size, filter)
+	repoFilter := toRepositoryAuditEventFilter(filter)
+	records, err := s.repo.List(page, size, repoFilter)
 	if err != nil {
 		return nil, 0, err
 	}
-	total, err := s.repo.Count(filter)
+	total, err := s.repo.Count(repoFilter)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -125,7 +139,7 @@ func isAuditTableMissingError(err error) bool {
 type AuditExportTaskCreateInput struct {
 	OperatorUserID uint
 	Format         string
-	Filter         repository.AuditEventFilter
+	Filter         AuditEventFilter
 	RequestID      string
 	IP             string
 	UserAgent      string
@@ -148,7 +162,7 @@ func (s *AuditService) CreateExportTask(ctx context.Context, in AuditExportTaskC
 		return nil, fmt.Errorf("unsupported format: %s", in.Format)
 	}
 
-	filterJSON, err := repository.EncodeAuditEventFilter(in.Filter)
+	filterJSON, err := repository.EncodeAuditEventFilter(toRepositoryAuditEventFilter(in.Filter))
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +339,21 @@ func (s *AuditService) generateExportFile(ctx context.Context, taskID string) er
 		},
 	})
 	return nil
+}
+
+func toRepositoryAuditEventFilter(filter AuditEventFilter) repository.AuditEventFilter {
+	return repository.AuditEventFilter{
+		StartDate:    filter.StartDate,
+		EndDate:      filter.EndDate,
+		Category:     filter.Category,
+		Action:       filter.Action,
+		ActorUserID:  filter.ActorUserID,
+		TargetUserID: filter.TargetUserID,
+		Result:       filter.Result,
+		RequestID:    filter.RequestID,
+		ResourceID:   filter.ResourceID,
+		Keyword:      filter.Keyword,
+	}
 }
 
 func writeAuditRowsJSON(path string, rows []model.AuditEvent) error {

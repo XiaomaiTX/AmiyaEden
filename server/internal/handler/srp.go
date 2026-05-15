@@ -2,8 +2,6 @@ package handler
 
 import (
 	"amiya-eden/internal/middleware"
-	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"fmt"
@@ -14,14 +12,12 @@ import (
 
 // SrpHandler 补损 HTTP 处理器
 type SrpHandler struct {
-	svc           *service.SrpService
-	sysConfigRepo *repository.SysConfigRepository
+	svc *service.SrpService
 }
 
 func NewSrpHandler() *SrpHandler {
 	return &SrpHandler{
-		svc:           service.NewSrpService(),
-		sysConfigRepo: repository.NewSysConfigRepository(),
+		svc: service.NewSrpService(),
 	}
 }
 
@@ -84,10 +80,7 @@ type UpdateSrpConfigRequest struct {
 
 // GetSrpConfig GET /srp/config
 func (h *SrpHandler) GetSrpConfig(c *gin.Context) {
-	amountLimit := h.sysConfigRepo.GetFloat(
-		model.SysConfigSRPAmountLimit,
-		model.SysConfigDefaultSRPAmountLimit,
-	)
+	amountLimit := h.svc.GetSrpAmountLimit()
 	response.OK(c, SrpConfigResponse{AmountLimit: amountLimit})
 }
 
@@ -97,11 +90,7 @@ func (h *SrpHandler) UpdateSrpConfig(c *gin.Context) {
 	if !bindJSON(c, &req) {
 		return
 	}
-	if err := h.sysConfigRepo.Set(
-		model.SysConfigSRPAmountLimit,
-		fmt.Sprintf("%g", *req.AmountLimit),
-		"SRP 职权单笔审批/发放上限（ISK）",
-	); err != nil {
+	if err := h.svc.UpdateSrpAmountLimit(*req.AmountLimit); err != nil {
 		response.Fail(c, response.CodeBizError, "更新 SRP 配置失败")
 		return
 	}
@@ -226,8 +215,8 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 		return
 	}
 
-	filter := repository.SrpApplicationFilter{
-		Tab:          repository.SrpTabType(c.Query("tab")),
+	filter := service.SrpApplicationFilter{
+		Tab:          c.Query("tab"),
 		ReviewStatus: c.Query("review_status"),
 		PayoutStatus: c.Query("payout_status"),
 		Keyword:      c.Query("keyword"),

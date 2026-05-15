@@ -35,6 +35,7 @@ import {
   createErrorHandler
 } from '../../utils/table/tableUtils'
 import { tableConfig } from '../../utils/table/tableConfig'
+import { $t } from '@/locales'
 
 // 类型推导工具类型
 type InferApiParams<T> = T extends (params: infer P) => any ? P : never
@@ -242,7 +243,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
   })
 
   // 错误处理函数
-  const handleError = createErrorHandler(onError, enableLog)
+  const handleError = createErrorHandler(onError, enableLog, $t('table.unknownError'))
 
   // 清理缓存，根据不同的业务场景选择性地清理缓存
   const clearCache = (strategy: CacheInvalidationStrategy, context?: string): void => {
@@ -346,7 +347,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
 
       // 检查请求是否被取消
       if (currentController.signal.aborted) {
-        throw new Error('请求已取消')
+        throw new Error($t('table.requestCancelled'))
       }
 
       // 使用响应适配器转换为标准格式
@@ -391,7 +392,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
 
       return standardResponse
     } catch (err) {
-      if (err instanceof Error && err.message === '请求已取消') {
+      if (err instanceof Error && err.message === $t('table.requestCancelled')) {
         // 请求被取消，回到 idle 状态
         loadingState.value = 'idle'
         return { list: [], total: 0, current: 1, size: 10 }
@@ -400,7 +401,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
       // 状态机：请求失败，进入 error 状态
       loadingState.value = 'error'
       data.value = []
-      const tableError = handleError(err, '获取表格数据失败')
+      const tableError = handleError(err, $t('table.fetchFailed'))
       throw tableError
     } finally {
       // 只有当前控制器是活跃的才清空
@@ -426,7 +427,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
     ;(searchParams as Record<string, unknown>)[pageKey] = 1
 
     // 搜索时清空当前搜索条件的缓存，确保获取最新数据
-    clearCache(CacheInvalidationStrategy.CLEAR_CURRENT, '搜索数据')
+    clearCache(CacheInvalidationStrategy.CLEAR_CURRENT, $t('table.searchCache'))
 
     try {
       return await fetchData(params, false) // 搜索时不使用缓存
@@ -467,7 +468,7 @@ function useTableImpl<TApiFn extends (params: any) => Promise<any>>(
     error.value = null
 
     // 清空缓存
-    clearCache(CacheInvalidationStrategy.CLEAR_ALL, '重置搜索')
+    clearCache(CacheInvalidationStrategy.CLEAR_ALL, $t('table.resetSearchCache'))
 
     // 重新获取数据
     await getData()

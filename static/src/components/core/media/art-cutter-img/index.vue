@@ -14,10 +14,10 @@
         class="img-cutter"
       >
         <template #choose>
-          <ElButton type="primary" plain v-ripple>选择图片</ElButton>
+          <ElButton type="primary" plain v-ripple>{{ $t('imageCutter.chooseImage') }}</ElButton>
         </template>
         <template #cancel>
-          <ElButton type="danger" plain v-ripple>清除</ElButton>
+          <ElButton type="danger" plain v-ripple>{{ $t('imageCutter.clear') }}</ElButton>
         </template>
         <template #confirm>
           <!-- <ElButton type="primary" style="margin-left: 10px">确定</ElButton> -->
@@ -35,19 +35,26 @@
           height: `${cutterProps.cutHeight}px`
         }"
       >
-        <img class="preview-img" :src="temImgPath" alt="预览图" v-if="temImgPath" />
+        <img
+          class="preview-img"
+          :src="temImgPath"
+          :alt="$t('imageCutter.previewAlt')"
+          v-if="temImgPath"
+        />
       </div>
-      <ElButton class="download-btn" @click="downloadImg" :disabled="!temImgPath" v-ripple
-        >下载图片</ElButton
-      >
+      <ElButton class="download-btn" @click="downloadImg" :disabled="!temImgPath" v-ripple>
+        {{ $t('imageCutter.downloadImage') }}
+      </ElButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import ImgCutter from 'vue-img-cutter'
+  import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'ArtCutterImg' })
+  const { t } = useI18n()
 
   interface CutterProps {
     // 基础配置
@@ -186,12 +193,12 @@
       try {
         await preloadImage(props.imgUrl)
         imgCutterModal.value?.handleOpen({
-          name: '封面图片',
+          name: t('imageCutter.defaultFileName'),
           src: props.imgUrl
         })
       } catch (error) {
         emit('error', error)
-        console.error('图片加载失败:', error)
+        console.error(t('imageCutter.loadFailedLog'), error)
       }
     }
   }
@@ -243,7 +250,6 @@
 
   // 下载图片
   function downloadImg() {
-    console.log('下载图片')
     const a = document.createElement('a')
     a.href = temImgPath.value
     a.download = 'image.png'

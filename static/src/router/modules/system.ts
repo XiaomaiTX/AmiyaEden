@@ -19,8 +19,8 @@ export const systemRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin'],
         authList: [
-          { title: '删除用户', authMark: 'delete_user' },
-          { title: '分配职权', authMark: 'assign_role' }
+          { title: 'authActions.system.deleteUser', authMark: 'delete_user' },
+          { title: 'authActions.system.assignRole', authMark: 'assign_role' }
         ]
       }
     },
@@ -33,8 +33,8 @@ export const systemRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin'],
         authList: [
-          { title: '执行任务', authMark: 'execute_task' },
-          { title: '修改调度', authMark: 'update_schedule' }
+          { title: 'authActions.system.executeTask', authMark: 'execute_task' },
+          { title: 'authActions.system.updateSchedule', authMark: 'update_schedule' }
         ]
       }
     },
@@ -47,8 +47,8 @@ export const systemRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin'],
         authList: [
-          { title: '调整余额', authMark: 'adjust_balance' },
-          { title: '查看日志', authMark: 'view_log' }
+          { title: 'authActions.system.adjustBalance', authMark: 'adjust_balance' },
+          { title: 'authActions.system.viewLog', authMark: 'view_log' }
         ]
       }
     },
@@ -60,7 +60,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.audit',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        authList: [{ title: '查看审计明细', authMark: 'view_audit_detail' }]
+        authList: [{ title: 'authActions.system.viewAuditDetail', authMark: 'view_audit_detail' }]
       }
     },
     {
@@ -71,7 +71,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.papExchange',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        authList: [{ title: '编辑兑换率', authMark: 'edit_exchange_rate' }]
+        authList: [{ title: 'authActions.system.editExchangeRate', authMark: 'edit_exchange_rate' }]
       }
     },
     {
@@ -82,7 +82,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.alliancePap',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        authList: [{ title: '手动拉取', authMark: 'manual_fetch' }]
+        authList: [{ title: 'authActions.system.manualFetch', authMark: 'manual_fetch' }]
       }
     },
     {

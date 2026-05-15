@@ -353,21 +353,45 @@ type AdminProductUpdateRequest struct {
 	SortOrder   *int     `json:"sort_order"`
 }
 
+type ProductFilter struct {
+	Status *int8
+	Type   string
+	Name   string
+}
+
+type OrderFilter struct {
+	UserID    *uint
+	ProductID *uint
+	Status    string
+	Statuses  []string
+	Keyword   string
+}
+
 // AdminDeleteProduct 删除商品
 func (s *ShopService) AdminDeleteProduct(id uint) error {
 	return s.repo.DeleteProduct(id)
 }
 
 // AdminListProducts 管理员查询商品（包含下架）
-func (s *ShopService) AdminListProducts(page, pageSize int, filter repository.ProductFilter) ([]model.ShopProduct, int64, error) {
+func (s *ShopService) AdminListProducts(page, pageSize int, filter ProductFilter) ([]model.ShopProduct, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 100)
-	return s.repo.ListProducts(page, pageSize, filter)
+	return s.repo.ListProducts(page, pageSize, repository.ProductFilter{
+		Status: filter.Status,
+		Type:   filter.Type,
+		Name:   filter.Name,
+	})
 }
 
 // AdminListOrders 管理员查询订单
-func (s *ShopService) AdminListOrders(page, pageSize int, filter repository.OrderFilter) ([]ShopOrderResponse, int64, error) {
+func (s *ShopService) AdminListOrders(page, pageSize int, filter OrderFilter) ([]ShopOrderResponse, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	orders, total, err := s.repo.ListOrders(page, pageSize, filter)
+	orders, total, err := s.repo.ListOrders(page, pageSize, repository.OrderFilter{
+		UserID:    filter.UserID,
+		ProductID: filter.ProductID,
+		Status:    filter.Status,
+		Statuses:  filter.Statuses,
+		Keyword:   filter.Keyword,
+	})
 	if err != nil {
 		return nil, 0, err
 	}

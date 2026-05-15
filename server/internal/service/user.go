@@ -36,6 +36,13 @@ type UserPatch struct {
 	Status    *int8
 }
 
+type UserFilter struct {
+	Keyword           string
+	Status            *int
+	Role              string
+	AllowCorporations []int64
+}
+
 func NewUserService() *UserService {
 	return &UserService{
 		repo:      repository.NewUserRepository(),
@@ -50,9 +57,34 @@ func (s *UserService) GetUserByID(id uint) (*model.User, error) {
 	return s.repo.GetByID(id)
 }
 
-func (s *UserService) ListUsers(page, pageSize int, filter repository.UserFilter) ([]model.UserListItem, int64, error) {
+func (s *UserService) ListUserCharacters(userID uint) ([]model.EveCharacter, error) {
+	return s.charRepo.ListByUserID(userID)
+}
+
+func (s *UserService) GetCharacterByID(characterID int64) (*model.EveCharacter, error) {
+	return s.charRepo.GetByCharacterID(characterID)
+}
+
+func (s *UserService) ListCharacterNamesByIDs(characterIDs []int64) map[int64]string {
+	characterNames := make(map[int64]string, len(characterIDs))
+	chars, err := s.charRepo.ListByCharacterIDs(characterIDs)
+	if err != nil {
+		return characterNames
+	}
+	for _, char := range chars {
+		characterNames[char.CharacterID] = char.CharacterName
+	}
+	return characterNames
+}
+
+func (s *UserService) ListUsers(page, pageSize int, filter UserFilter) ([]model.UserListItem, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	users, total, err := s.repo.List(page, pageSize, filter)
+	users, total, err := s.repo.List(page, pageSize, repository.UserFilter{
+		Keyword:           filter.Keyword,
+		Status:            filter.Status,
+		Role:              filter.Role,
+		AllowCorporations: filter.AllowCorporations,
+	})
 	if err != nil {
 		return nil, 0, err
 	}

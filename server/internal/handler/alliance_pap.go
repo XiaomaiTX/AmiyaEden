@@ -4,7 +4,6 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
@@ -16,16 +15,12 @@ import (
 
 // AlliancePAPHandler 联盟 PAP HTTP 处理器
 type AlliancePAPHandler struct {
-	svc      *service.AlliancePAPService
-	charRepo *repository.EveCharacterRepository
-	userRepo *repository.UserRepository
+	svc *service.AlliancePAPService
 }
 
 func NewAlliancePAPHandler() *AlliancePAPHandler {
 	return &AlliancePAPHandler{
-		svc:      service.NewAlliancePAPService(),
-		charRepo: repository.NewEveCharacterRepository(),
-		userRepo: repository.NewUserRepository(),
+		svc: service.NewAlliancePAPService(),
 	}
 }
 
@@ -58,19 +53,7 @@ func (h *AlliancePAPHandler) GetMyAlliancePAP(c *gin.Context) {
 	}
 
 	userID := middleware.GetUserID(c)
-	user, err := h.userRepo.GetByID(userID)
-	if err != nil || user.PrimaryCharacterID == 0 {
-		response.Fail(c, response.CodeBizError, "未设置主人物")
-		return
-	}
-
-	char, err := h.charRepo.GetByCharacterID(user.PrimaryCharacterID)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "主人物不存在")
-		return
-	}
-
-	result, err := h.svc.GetMyPAP(char.CharacterName, year, month)
+	result, err := h.svc.GetMyPAPByUserID(userID, year, month)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -154,20 +137,7 @@ func (h *AlliancePAPHandler) ImportAlliancePAP(c *gin.Context) {
 		return
 	}
 
-	char, err := h.charRepo.GetByCharacterName(req.PAPImportInfo.PrimaryCharacterName)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "主人物不存在")
-		return
-	}
-
-	user, err := h.userRepo.GetByPrimaryCharacterID(char.CharacterID)
-	if err != nil || user.PrimaryCharacterID == 0 {
-		response.Fail(c, response.CodeBizError, "未设置主人物")
-		return
-	}
-
-	err = h.svc.ImportAlliancePAP(req.Year, req.Month, &req.PAPImportInfo, char)
-	if err != nil {
+	if err := h.svc.ImportAlliancePAPByPrimaryCharacter(req.Year, req.Month, &req.PAPImportInfo); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

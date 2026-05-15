@@ -22,6 +22,22 @@ type SysWalletService struct {
 
 const walletTransactionReasonMaxLength = 256
 
+type WalletListFilter struct {
+	UserKeyword string
+}
+
+type WalletTransactionFilter struct {
+	UserID      *uint
+	UserKeyword string
+	RefType     string
+}
+
+type WalletLogFilter struct {
+	OperatorID *uint
+	TargetUID  *uint
+	Action     string
+}
+
 func buildWalletTransaction(userID uint, operatorID uint, delta float64, newBalance float64, reason, refType, refID string) *model.WalletTransaction {
 	if reasonRunes := []rune(reason); len(reasonRunes) > walletTransactionReasonMaxLength {
 		reason = string(reasonRunes[:walletTransactionReasonMaxLength])
@@ -281,9 +297,11 @@ func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest)
 }
 
 // AdminListWallets 管理员查询所有钱包（附带主人物名）
-func (s *SysWalletService) AdminListWallets(page, pageSize int, filter repository.WalletListFilter) ([]model.WalletWithCharacter, int64, error) {
+func (s *SysWalletService) AdminListWallets(page, pageSize int, filter WalletListFilter) ([]model.WalletWithCharacter, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	return s.repo.ListWalletsWithCharacter(page, pageSize, filter)
+	return s.repo.ListWalletsWithCharacter(page, pageSize, repository.WalletListFilter{
+		UserKeyword: filter.UserKeyword,
+	})
 }
 
 // AdminGetWallet 管理员查看指定用户钱包
@@ -292,15 +310,23 @@ func (s *SysWalletService) AdminGetWallet(userID uint) (*model.SystemWallet, err
 }
 
 // AdminListTransactions 管理员查询流水（可按用户/类型筛选，附带人物名）
-func (s *SysWalletService) AdminListTransactions(page, pageSize int, filter repository.WalletTransactionFilter) ([]model.TransactionWithCharacter, int64, error) {
+func (s *SysWalletService) AdminListTransactions(page, pageSize int, filter WalletTransactionFilter) ([]model.TransactionWithCharacter, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	return s.repo.ListTransactionsWithCharacter(page, pageSize, filter)
+	return s.repo.ListTransactionsWithCharacter(page, pageSize, repository.WalletTransactionFilter{
+		UserID:      filter.UserID,
+		UserKeyword: filter.UserKeyword,
+		RefType:     filter.RefType,
+	})
 }
 
 // AdminListLogs 管理员查询操作日志（附带人物名）
-func (s *SysWalletService) AdminListLogs(page, pageSize int, filter repository.WalletLogFilter) ([]model.LogWithCharacter, int64, error) {
+func (s *SysWalletService) AdminListLogs(page, pageSize int, filter WalletLogFilter) ([]model.LogWithCharacter, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	return s.repo.ListLogsWithCharacter(page, pageSize, filter)
+	return s.repo.ListLogsWithCharacter(page, pageSize, repository.WalletLogFilter{
+		OperatorID: filter.OperatorID,
+		TargetUID:  filter.TargetUID,
+		Action:     filter.Action,
+	})
 }
 
 func (s *SysWalletService) AdminGetAnalytics(req *WalletAnalyticsRequest) (*WalletAnalyticsResponse, error) {

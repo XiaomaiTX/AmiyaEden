@@ -1,4 +1,4 @@
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTable } from '@/hooks/core/useTable'
 import { useNameResolver } from '@/hooks'
@@ -8,8 +8,6 @@ import { fetchFleetList } from '@/api/fleet'
 import { fetchApplicationList } from '@/api/srp'
 import { formatIskSmart, formatTime } from '@utils/common'
 import { ElTag, ElTooltip, ElLink } from 'element-plus'
-import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
-import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
 
 type SrpApp = Api.Srp.Application
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
@@ -18,8 +16,13 @@ export function useSrpManage(callbacks: {
   openReviewDialog: (row: SrpApp, action: 'approve' | 'reject') => void
   handlePayoutAction: (row: SrpApp) => void
   openKmPreview: (row: SrpApp) => void
+  components: {
+    ArtButtonTable: Component
+    ArtCopyButton: Component
+  }
 }) {
   const { t } = useI18n()
+  const { ArtButtonTable, ArtCopyButton } = callbacks.components
   const { getName, resolve: resolveNames } = useNameResolver()
   const { createEnterSearchHandler } = useEnterSearch()
   const userStore = useUserStore()
@@ -373,24 +376,24 @@ export function useSrpManage(callbacks: {
   }
 
   // ─── Export ───
-  const manageExportHeaders = {
-    character_name: '人物',
-    ship_name: '舰船',
-    solar_system: '星系',
-    killmail_id: 'KillID',
-    killmail_time: 'KM时间',
-    corporation: '军团',
-    alliance: '联盟',
-    fleet_title: '关联舰队',
-    fleet_fc_name: 'FC',
-    note: '备注',
-    recommended_amount: '推荐金额',
-    final_amount: '最终金额',
-    review_status: '审批状态',
-    review_note: '审批备注',
-    last_actor_nickname: '补损官',
-    payout_status: '发放状态'
-  }
+  const manageExportHeaders = computed(() => ({
+    character_name: t('srp.manage.exportColumns.character'),
+    ship_name: t('srp.manage.exportColumns.ship'),
+    solar_system: t('srp.manage.exportColumns.system'),
+    killmail_id: t('srp.manage.exportColumns.killId'),
+    killmail_time: t('srp.manage.exportColumns.kmTime'),
+    corporation: t('srp.manage.exportColumns.corporation'),
+    alliance: t('srp.manage.exportColumns.alliance'),
+    fleet_title: t('srp.manage.exportColumns.fleet'),
+    fleet_fc_name: t('srp.manage.exportColumns.fc'),
+    note: t('srp.manage.exportColumns.note'),
+    recommended_amount: t('srp.manage.exportColumns.recommendedAmount'),
+    final_amount: t('srp.manage.exportColumns.finalAmount'),
+    review_status: t('srp.manage.exportColumns.reviewStatus'),
+    review_note: t('srp.manage.exportColumns.reviewNote'),
+    last_actor_nickname: t('srp.manage.exportColumns.lastActor'),
+    payout_status: t('srp.manage.exportColumns.payoutStatus')
+  }))
 
   const exportManageData = computed(() =>
     data.value.map((app) => ({

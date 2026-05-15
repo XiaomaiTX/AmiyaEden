@@ -24,6 +24,7 @@
   import { useUserStore } from '@/store/modules/user'
   import EmojiText from '@/utils/ui/emojo'
   import { IDomEditor, IToolbarConfig, IEditorConfig } from '@wangeditor/editor'
+  import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'ArtWangEditor' })
 
@@ -52,7 +53,6 @@
   const props = withDefaults(defineProps<Props>(), {
     height: '500px',
     mode: 'default',
-    placeholder: '请输入内容...',
     excludeKeys: () => ['fontFamily']
   })
 
@@ -61,6 +61,7 @@
   // 编辑器实例
   const editorRef = shallowRef<IDomEditor>()
   const userStore = useUserStore()
+  const { t } = useI18n()
 
   // 常量配置
   const DEFAULT_UPLOAD_CONFIG = {
@@ -105,8 +106,8 @@
   })
 
   // 编辑器配置
-  const editorConfig: Partial<IEditorConfig> = {
-    placeholder: props.placeholder,
+  const editorConfig = computed<Partial<IEditorConfig>>(() => ({
+    placeholder: props.placeholder || t('common.editorPlaceholder'),
     MENU_CONF: {
       uploadImage: {
         fieldName: mergedUploadConfig.value.fieldName,
@@ -118,15 +119,15 @@
           Authorization: userStore.accessToken
         },
         onSuccess() {
-          ElMessage.success(`图片上传成功 ${EmojiText[200]}`)
+          ElMessage.success(t('common.imageUploadSuccess', { emoji: EmojiText[200] }))
         },
-        onError(file: File, err: any, res: any) {
+        onError(_file: File, err: unknown, res: unknown) {
           console.error('图片上传失败:', err, res)
-          ElMessage.error(`图片上传失败 ${EmojiText[500]}`)
+          ElMessage.error(t('common.imageUploadFailed', { emoji: EmojiText[500] }))
         }
       }
     }
-  }
+  }))
 
   // 编辑器创建回调
   const onCreateEditor = (editor: IDomEditor) => {

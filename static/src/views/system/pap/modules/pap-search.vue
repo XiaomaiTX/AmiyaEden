@@ -62,15 +62,15 @@
   import { Download } from '@element-plus/icons-vue'
   import { ElButton, type FormInstance, type FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import axios from 'axios'
+  import { fetchSeatPapTracking } from '@/api/alliance-pap'
 
   interface Props {
-    modelValue: Record<string, any>
+    modelValue: Record<string, unknown>
     fetching?: boolean
   }
   interface Emits {
-    (e: 'update:modelValue', value: Record<string, any>): void
-    (e: 'search', params: Record<string, any>): void
+    (e: 'update:modelValue', value: Record<string, unknown>): void
+    (e: 'search', params: Record<string, unknown>): void
     (e: 'reset'): void
     (e: 'fetch'): void
     (e: 'import', rows: Record<string, unknown>[]): void
@@ -160,58 +160,19 @@
     dialogVisible.value = true
   }
 
-  const { VITE_API_URL } = import.meta.env
-
   async function handleImportSEAT() {
     if (!formRef.value) return
     await formRef.value.validate()
 
-    let rows: Record<string, unknown>[] = []
+    const rows: Record<string, unknown>[] = []
 
     submitLoading.value = true
     try {
-      /* 创建Axios实例 */
-      const axiosInstance = axios.create({
-        timeout: 10000,
-        baseURL: VITE_API_URL,
-        // SECURITY WARNING:
-        // The X-Cookie header below intentionally contains real session tokens
-        // (laravel_session and optionally cf_clearance) that are
-        // proxied through our backend/Nginx to the SEAT server.
-        //
-        // These credentials MUST be treated as highly sensitive:
-        //   - Backend/proxy access logs MUST NOT record the X-Cookie header.
-        //   - Any request/response logging or tracing MUST redact or omit
-        //     the values of this header.
-        //   - Only HTTPS should be used for this request.
-        //
-        // Changing this behavior will break SEAT integration; if you need
-        // to modify it, coordinate with security and infrastructure teams.
-        headers: {
-          Accept: 'application/json, text/javascript, */*; q=0.01',
-          'X-Accept-Encoding': 'gzip, deflate, br, zstd',
-          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-          'Cache-Control': 'no-cache',
-          'X-Cookie':
-            `laravel_session=${formDataSEAT.laravelSession}` +
-            (formDataSEAT.cfClearance === '' ? '' : `;cf_clearance=${formDataSEAT.cfClearance}`),
-          Pragma: 'no-cache',
-          Priority: 'u=1, i',
-          'X-Sec-Ch-Ua': `"Not:A-Brand";v="99", "Microsoft Edge";v="145", "Chromium";v="145"`,
-          'X-Sec-Ch-Ua-Mobile': '?0',
-          'X-Sec-Ch-Ua-Platform': `"Windows"`,
-          'X-Sec-Fetch-Dest': 'empty',
-          'X-Sec-Fetch-Mode': 'cors',
-          'X-Sec-Fetch-Site': 'same-origin',
-          'X-User-Agent':
-            formDataSEAT.UA === ''
-              ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
-              : formDataSEAT.UA,
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+      const response = await fetchSeatPapTracking({
+        laravelSession: formDataSEAT.laravelSession,
+        cfClearance: formDataSEAT.cfClearance,
+        userAgent: formDataSEAT.UA
       })
-
-      const response = await axiosInstance.get('/seatproxy/tools/paptracking')
 
       if (response.status == 200 && response.data.data) {
         for (const item of response.data.data) {
@@ -228,8 +189,8 @@
 
       dialogVisible.value = false
       emit('import', rows)
-    } catch (e: any) {
-      ElMessage.error(e?.message ?? t('common.error'))
+    } catch (e: unknown) {
+      ElMessage.error(e instanceof Error ? e.message : t('common.error'))
     } finally {
       submitLoading.value = false
     }

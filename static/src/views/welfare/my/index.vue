@@ -6,7 +6,7 @@
         <p class="break-all">
           {{ t('welfareMy.skillPlanningAlertPrefix') }}
           <RouterLink class="text-theme font-medium" :to="{ name: 'SkillPlanCompletionCheck' }">
-            {{ '技能规划-检查完成度' }}
+            {{ t('welfareMy.skillPlanningCheckLink') }}
           </RouterLink>
         </p>
       </ElAlert>

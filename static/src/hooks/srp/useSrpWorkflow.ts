@@ -57,10 +57,6 @@ export function useSrpWorkflow(deps: {
     )
   })
 
-  const DEFAULT_APPROVE_NOTE = '补损由补损官{{mainChracterName}}手动批准，如有问题请Q群联系'
-  const DEFAULT_REJECT_NOTE =
-    '不符合现有补损条例。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})'
-
   const fillTemplate = (tpl: string) =>
     tpl.replaceAll('{{mainChracterName}}', primaryCharName.value || t('srp.manage.unknownReviewer'))
 
@@ -74,9 +70,9 @@ export function useSrpWorkflow(deps: {
     reviewForm.review_note =
       action === 'approve'
         ? row.review_status === 'submitted'
-          ? fillTemplate(DEFAULT_APPROVE_NOTE)
+          ? fillTemplate(t('srp.manage.defaultApproveNote'))
           : row.review_note || ''
-        : fillTemplate(DEFAULT_REJECT_NOTE)
+        : fillTemplate(t('srp.manage.defaultRejectNote'))
     reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
     reviewDialogVisible.value = true
   }

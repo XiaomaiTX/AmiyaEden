@@ -12,9 +12,9 @@
       <ElIcon class="is-loading">
         <Loading />
       </ElIcon>
-      {{ loadingText }}
+      {{ resolvedLoadingText }}
     </template>
-    <slot>{{ buttonText }}</slot>
+    <slot>{{ resolvedButtonText }}</slot>
   </ElButton>
 </template>
 
@@ -22,6 +22,7 @@
   import ExcelJS from 'exceljs'
   import FileSaver from 'file-saver'
   import { ref, computed, nextTick } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import { Loading } from '@element-plus/icons-vue'
   import type { ButtonType } from 'element-plus'
   import { useThrottleFn } from '@vueuse/core'
@@ -96,10 +97,7 @@
     type: 'primary',
     size: 'default',
     disabled: false,
-    buttonText: '导出 Excel',
-    loadingText: '导出中...',
     autoIndex: false,
-    indexColumnTitle: '序号',
     columns: () => ({}),
     headers: () => ({}),
     maxRows: 100000,
@@ -127,7 +125,13 @@
     }
   }
 
+  const { t, locale } = useI18n()
   const isExporting = ref(false)
+  const resolvedButtonText = computed(() => props.buttonText ?? t('excelExport.buttonText'))
+  const resolvedLoadingText = computed(() => props.loadingText ?? t('excelExport.loadingText'))
+  const resolvedIndexColumnTitle = computed(
+    () => props.indexColumnTitle ?? t('excelExport.indexColumnTitle')
+  )
 
   /** 是否有数据可导出 */
   const hasData = computed(() => Array.isArray(props.data) && props.data.length > 0)
@@ -135,18 +139,22 @@
   /** 验证导出数据 */
   const validateData = (data: ExportData[]): void => {
     if (!Array.isArray(data)) {
-      throw new ExportError('数据必须是数组格式', 'INVALID_DATA_TYPE')
+      throw new ExportError(t('excelExport.invalidDataType'), 'INVALID_DATA_TYPE')
     }
 
     if (data.length === 0) {
-      throw new ExportError('没有可导出的数据', 'NO_DATA')
+      throw new ExportError(t('excelExport.noData'), 'NO_DATA')
     }
 
     if (data.length > props.maxRows) {
-      throw new ExportError(`数据行数超过限制（${props.maxRows}行）`, 'EXCEED_MAX_ROWS', {
-        currentRows: data.length,
-        maxRows: props.maxRows
-      })
+      throw new ExportError(
+        t('excelExport.exceedMaxRows', { maxRows: props.maxRows }),
+        'EXCEED_MAX_ROWS',
+        {
+          currentRows: data.length,
+          maxRows: props.maxRows
+        }
+      )
     }
   }
 
@@ -169,11 +177,11 @@
     }
 
     if (value instanceof Date) {
-      return value.toLocaleDateString('zh-CN')
+      return value.toLocaleDateString(locale.value === 'zh' ? 'zh-CN' : 'en-US')
     }
 
     if (typeof value === 'boolean') {
-      return value ? '是' : '否'
+      return value ? t('excelExport.booleanTrue') : t('excelExport.booleanFalse')
     }
 
     return String(value)
@@ -186,7 +194,7 @@
 
       // 添加序号列
       if (props.autoIndex) {
-        processedItem[props.indexColumnTitle] = String(index + 1)
+        processedItem[resolvedIndexColumnTitle.value] = String(index + 1)
       }
 
       // 处理数据列
@@ -305,7 +313,11 @@
 
       return Promise.resolve()
     } catch (error) {
-      throw new ExportError(`Excel 导出失败: ${(error as Error).message}`, 'EXPORT_FAILED', error)
+      throw new ExportError(
+        t('excelExport.exportFailed', { message: (error as Error).message }),
+        'EXPORT_FAILED',
+        error
+      )
     }
   }
 
@@ -331,7 +343,7 @@
       // 显示成功消息
       if (props.showSuccessMessage) {
         ElMessage.success({
-          message: `成功导出 ${props.data.length} 条数据`,
+          message: t('excelExport.successMessage', { count: props.data.length }),
           duration: 3000
         })
       }
@@ -339,7 +351,11 @@
       const exportError =
         error instanceof ExportError
           ? error
-          : new ExportError(`导出失败: ${(error as Error).message}`, 'UNKNOWN_ERROR', error)
+          : new ExportError(
+              t('excelExport.unknownFailed', { message: (error as Error).message }),
+              'UNKNOWN_ERROR',
+              error
+            )
 
       // 触发错误事件
       emit('export-error', exportError)
@@ -352,7 +368,7 @@
         })
       }
 
-      console.error('Excel 导出错误:', exportError)
+      console.error(t('excelExport.consoleError'), exportError)
     } finally {
       isExporting.value = false
       emit('export-progress', 0)

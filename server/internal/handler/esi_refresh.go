@@ -3,7 +3,7 @@ package handler
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
-	"amiya-eden/internal/repository"
+	"amiya-eden/internal/service"
 	"amiya-eden/jobs"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
@@ -18,10 +18,12 @@ import (
 )
 
 // ESIRefreshHandler ESI 数据刷新队列处理器
-type ESIRefreshHandler struct{}
+type ESIRefreshHandler struct {
+	userSvc *service.UserService
+}
 
 func NewESIRefreshHandler() *ESIRefreshHandler {
-	return &ESIRefreshHandler{}
+	return &ESIRefreshHandler{userSvc: service.NewUserService()}
 }
 
 // TaskInfoItem 任务定义信息（用于前端展示所有可用任务）
@@ -136,7 +138,7 @@ func (h *ESIRefreshHandler) GetStatuses(c *gin.Context) {
 	}
 
 	all := queue.GetAllStatuses()
-	characterNames := buildCharacterNameMap(all)
+	characterNames := h.buildCharacterNameMap(all)
 
 	// 筛选
 	taskNameFilter := c.Query("task_name")
@@ -215,7 +217,7 @@ func (h *ESIRefreshHandler) GetMonitor(c *gin.Context) {
 
 	now := time.Now().UTC()
 	statuses := queue.GetAllStatuses()
-	characterNames := buildCharacterNameMap(statuses)
+	characterNames := h.buildCharacterNameMap(statuses)
 
 	panelByTask := make(map[string]*MonitorTaskPanelItem)
 	failureTop := make([]MonitorFailureItem, 0, len(statuses))
@@ -400,8 +402,7 @@ func (h *ESIRefreshHandler) RunMyCharacterTask(c *gin.Context) {
 		return
 	}
 
-	charRepo := repository.NewEveCharacterRepository()
-	char, err := charRepo.GetByCharacterID(req.CharacterID)
+	char, err := h.userSvc.GetCharacterByID(req.CharacterID)
 	if err != nil {
 		response.Fail(c, response.CodeBizError, "角色不存在")
 		return
@@ -499,9 +500,7 @@ func formatDuration(d time.Duration) string {
 	return d.String()
 }
 
-func buildCharacterNameMap(statuses []*esi.TaskStatus) map[int64]string {
-	charRepo := repository.NewEveCharacterRepository()
-	characterNames := make(map[int64]string, len(statuses))
+func (h *ESIRefreshHandler) buildCharacterNameMap(statuses []*esi.TaskStatus) map[int64]string {
 	characterIDs := make([]int64, 0, len(statuses))
 	seenCharacterIDs := make(map[int64]struct{}, len(statuses))
 	for _, status := range statuses {
@@ -514,12 +513,7 @@ func buildCharacterNameMap(statuses []*esi.TaskStatus) map[int64]string {
 		seenCharacterIDs[status.CharacterID] = struct{}{}
 		characterIDs = append(characterIDs, status.CharacterID)
 	}
-	if chars, err := charRepo.ListByCharacterIDs(characterIDs); err == nil {
-		for _, char := range chars {
-			characterNames[char.CharacterID] = char.CharacterName
-		}
-	}
-	return characterNames
+	return h.userSvc.ListCharacterNamesByIDs(characterIDs)
 }
 
 func ensureTaskPanel(panelByTask map[string]*MonitorTaskPanelItem, status *esi.TaskStatus) *MonitorTaskPanelItem {
