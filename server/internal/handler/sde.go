@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
@@ -94,7 +93,7 @@ func newGetNamesResponse() GetNamesResponse {
 	}
 }
 
-func mergeGetNamesNamespaces(result *GetNamesResponse, names repository.SdeNameMap) {
+func mergeGetNamesNamespaces(result *GetNamesResponse, names service.SdeNameMap) {
 	namespaces := make([]string, 0, len(names))
 	for namespace := range names {
 		namespaces = append(namespaces, namespace)

@@ -31,7 +31,7 @@
             @click="onESIRefreshClick"
           >
             <el-icon class="mr-1"><Download /></el-icon>
-            ESI 拉取
+            {{ $t('info.esiRefreshButton') }}
           </ElButton>
           <span class="text-sm text-gray-500">{{ $t('info.journalTypeFilter') }}</span>
           <ElSelect
@@ -256,11 +256,15 @@
     const charName = char?.character_name || String(selectedCharacterId.value)
 
     try {
-      await ElMessageBox.confirm(`确认从 ESI 拉取角色「${charName}」的钱包数据？`, 'ESI 拉取', {
-        confirmButtonText: '确认拉取',
-        cancelButtonText: '取消',
-        type: 'info'
-      })
+      await ElMessageBox.confirm(
+        t('info.walletESIRefreshConfirm', { name: charName }),
+        t('info.esiRefreshTitle'),
+        {
+          confirmButtonText: t('info.esiRefreshConfirmButton'),
+          cancelButtonText: t('common.cancel'),
+          type: 'info'
+        }
+      )
     } catch {
       return
     }
@@ -271,13 +275,17 @@
         task_name: 'character_wallet',
         character_id: selectedCharacterId.value
       })
-      ElMessage.success('钱包数据 ESI 刷新任务已提交，稍后可点击刷新按钮查看最新数据')
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'ESI 刷新任务提交失败'
-      if (msg.includes('无权') || e?.response?.status === 403) {
-        ElMessage.error('无权操作此角色')
+      ElMessage.success(t('info.walletESIRefreshSubmitted'))
+    } catch (e: unknown) {
+      const error = e as {
+        response?: { data?: { message?: string }; status?: number }
+        message?: string
+      }
+      const msg = error.response?.data?.message || error.message || t('info.esiRefreshSubmitFailed')
+      if (msg.includes('无权') || error.response?.status === 403) {
+        ElMessage.error(t('info.esiRefreshUnauthorized'))
       } else if (msg.includes('角色不存在')) {
-        ElMessage.error('角色未找到')
+        ElMessage.error(t('info.esiRefreshCharacterNotFound'))
       } else {
         ElMessage.error(msg)
       }

@@ -124,7 +124,7 @@
   import { themeAnimation } from '@/utils/ui/animation'
   import { useCommon } from '@/hooks/core/useCommon'
   import { useHeaderBar } from '@/hooks/core/useHeaderBar'
-  import { fetchUnreadCount } from '@/api/notification'
+  import { useNotificationApi } from '@/hooks/core/useNotificationApi'
   import ArtUserMenu from './widget/ArtUserMenu.vue'
 
   defineOptions({ name: 'ArtHeaderBar' })
@@ -132,6 +132,7 @@
   const router = useRouter()
   const { locale } = useI18n()
   const { width } = useWindowSize()
+  const { fetchUnreadCount } = useNotificationApi()
 
   const settingStore = useSettingStore()
   const userStore = useUserStore()

@@ -57,7 +57,7 @@
 
       <template #empty>
         <div v-if="loading"></div>
-        <ElEmpty v-else :description="emptyText" :image-size="120" />
+        <ElEmpty v-else :description="resolvedEmptyText" :image-size="120" />
       </template>
     </ElTable>
 
@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
   import { ref, computed, nextTick, watchEffect } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import type { ElTable, TableProps } from 'element-plus'
   import { storeToRefs } from 'pinia'
   import { ColumnOption } from '@/types'
@@ -103,6 +104,7 @@
   const paginationRef = ref<HTMLElement>()
   const tableHeaderRef = ref<HTMLElement>()
   const tableStore = useTableStore()
+  const { t } = useI18n()
   const { isBorder, isZebra, tableSize, isFullScreen, isHeaderBackground } = storeToRefs(tableStore)
 
   /** 分页配置接口 */
@@ -146,9 +148,9 @@
     border: undefined,
     size: undefined,
     emptyHeight: '100%',
-    emptyText: '暂无数据',
     showTableHeader: true
   })
+  const resolvedEmptyText = computed(() => props.emptyText ?? t('common.noData'))
 
   const LAYOUT = {
     MOBILE: 'prev, pager, next, sizes, jumper, total',

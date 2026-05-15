@@ -35,7 +35,7 @@
             @click="onESIRefreshClick"
           >
             <el-icon class="mr-1"><Download /></el-icon>
-            ESI 拉取
+            {{ $t('info.esiRefreshButton') }}
           </ElButton>
         </div>
       </div>
@@ -235,10 +235,12 @@
   import { fetchInfoSkills, runMyCharacterESIRefresh } from '@/api/eve-info'
   import { useUserStore } from '@/store/modules/user'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
+  import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'EveInfoSkill' })
 
   const userStore = useUserStore()
+  const { t } = useI18n()
 
   // ---- 数据 ----
   const characters = ref<Api.Auth.EveCharacter[]>([])
@@ -261,7 +263,7 @@
     if (!finishDate) return ''
     const now = Math.floor(Date.now() / 1000)
     let remaining = finishDate - now
-    if (remaining <= 0) return '已完成'
+    if (remaining <= 0) return t('info.trainingComplete')
     const days = Math.floor(remaining / 86400)
     remaining %= 86400
     const hours = Math.floor(remaining / 3600)
@@ -269,11 +271,13 @@
     const minutes = Math.floor(remaining / 60)
     const seconds = remaining % 60
     let result = ''
-    if (days > 0) result += `${days}天 `
-    if (hours > 0 || days > 0) result += `${hours}小时`
+    if (days > 0) result += `${t('info.durationDays', { count: days })} `
+    if (hours > 0 || days > 0) result += t('info.durationHours', { count: hours })
     if (days === 0) {
-      if (minutes > 0) result += ` ${minutes}分`
-      if (hours === 0 && minutes < 10) result += ` ${seconds}秒`
+      if (minutes > 0) result += ` ${t('info.durationMinutes', { count: minutes })}`
+      if (hours === 0 && minutes < 10) {
+        result += ` ${t('info.durationSeconds', { count: seconds })}`
+      }
     }
     return result.trim()
   }
@@ -413,11 +417,15 @@
     const charName = char?.character_name || String(selectedCharacterId.value)
 
     try {
-      await ElMessageBox.confirm(`确认从 ESI 拉取角色「${charName}」的技能数据？`, 'ESI 拉取', {
-        confirmButtonText: '确认拉取',
-        cancelButtonText: '取消',
-        type: 'info'
-      })
+      await ElMessageBox.confirm(
+        t('info.skillESIRefreshConfirm', { name: charName }),
+        t('info.esiRefreshTitle'),
+        {
+          confirmButtonText: t('info.esiRefreshConfirmButton'),
+          cancelButtonText: t('common.cancel'),
+          type: 'info'
+        }
+      )
     } catch {
       return
     }
@@ -428,13 +436,17 @@
         task_name: 'character_skill',
         character_id: selectedCharacterId.value
       })
-      ElMessage.success('技能数据 ESI 刷新任务已提交，稍后可点击刷新按钮查看最新数据')
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'ESI 刷新任务提交失败'
-      if (msg.includes('无权') || e?.response?.status === 403) {
-        ElMessage.error('无权操作此角色')
+      ElMessage.success(t('info.skillESIRefreshSubmitted'))
+    } catch (e: unknown) {
+      const error = e as {
+        response?: { data?: { message?: string }; status?: number }
+        message?: string
+      }
+      const msg = error.response?.data?.message || error.message || t('info.esiRefreshSubmitFailed')
+      if (msg.includes('无权') || error.response?.status === 403) {
+        ElMessage.error(t('info.esiRefreshUnauthorized'))
       } else if (msg.includes('角色不存在')) {
-        ElMessage.error('角色未找到')
+        ElMessage.error(t('info.esiRefreshCharacterNotFound'))
       } else {
         ElMessage.error(msg)
       }

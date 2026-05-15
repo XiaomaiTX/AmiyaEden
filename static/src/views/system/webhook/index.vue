@@ -21,10 +21,10 @@
         <!-- 类型 -->
         <ElFormItem :label="$t('webhook.fields.type')">
           <ElSelect v-model="form.type" style="width: 220px">
-            <ElOption label="Discord" value="discord" />
-            <ElOption label="飞书 (Feishu)" value="feishu" />
-            <ElOption label="钉钉 (DingTalk)" value="dingtalk" />
-            <ElOption label="OneBot v11 (QQ)" value="onebot" />
+            <ElOption :label="$t('webhook.providers.discord')" value="discord" />
+            <ElOption :label="$t('webhook.providers.feishu')" value="feishu" />
+            <ElOption :label="$t('webhook.providers.dingtalk')" value="dingtalk" />
+            <ElOption :label="$t('webhook.providers.onebot')" value="onebot" />
           </ElSelect>
         </ElFormItem>
 
@@ -101,10 +101,10 @@
       <ElForm label-width="120px" style="max-width: 680px">
         <ElFormItem :label="$t('webhook.test.type')">
           <ElSelect v-model="testForm.type" style="width: 220px">
-            <ElOption label="Discord" value="discord" />
-            <ElOption label="飞书 (Feishu)" value="feishu" />
-            <ElOption label="钉钉 (DingTalk)" value="dingtalk" />
-            <ElOption label="OneBot v11 (QQ)" value="onebot" />
+            <ElOption :label="$t('webhook.providers.discord')" value="discord" />
+            <ElOption :label="$t('webhook.providers.feishu')" value="feishu" />
+            <ElOption :label="$t('webhook.providers.dingtalk')" value="dingtalk" />
+            <ElOption :label="$t('webhook.providers.onebot')" value="onebot" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="$t('webhook.test.url')">

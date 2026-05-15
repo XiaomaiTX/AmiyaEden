@@ -33,8 +33,12 @@ test('srp batch payout copy text keeps exact ISK values instead of smart-abbrevi
 test('srp manage labels the last actor as the SRP officer after the review note column', () => {
   const reviewNoteColumnIndex = manageHookSource.indexOf("prop: 'review_note'")
   const lastActorColumnIndex = manageHookSource.indexOf("prop: 'last_actor_nickname'")
-  const reviewNoteHeaderIndex = manageHookSource.indexOf("review_note: '审批备注'")
-  const lastActorHeaderIndex = manageHookSource.indexOf("last_actor_nickname: '补损官'")
+  const reviewNoteHeaderIndex = manageHookSource.indexOf(
+    "review_note: t('srp.manage.exportColumns.reviewNote')"
+  )
+  const lastActorHeaderIndex = manageHookSource.indexOf(
+    "last_actor_nickname: t('srp.manage.exportColumns.lastActor')"
+  )
   const reviewNoteExportIndex = manageHookSource.indexOf("review_note: app.review_note || '-'")
   const lastActorExportIndex = manageHookSource.indexOf(
     "last_actor_nickname: app.last_actor_nickname || '-'"
@@ -53,4 +57,6 @@ test('srp manage labels the last actor as the SRP officer after the review note 
   assert.match(manageHookSource, /label:\s*t\('srp\.manage\.columns\.lastActor'\)/)
   assert.equal(zhLocale.srp.manage.columns.lastActor, '补损官')
   assert.equal(enLocale.srp.manage.columns.lastActor, 'SRP Officer')
+  assert.equal(zhLocale.srp.manage.exportColumns.lastActor, '补损官')
+  assert.equal(enLocale.srp.manage.exportColumns.lastActor, 'SRP Officer')
 })

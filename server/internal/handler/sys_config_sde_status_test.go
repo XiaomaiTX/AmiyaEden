@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"encoding/json"
@@ -37,7 +36,7 @@ func TestGetSDEStatus(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/sde-config/status", nil)
 
-	handler := newSysConfigHandlerWithDeps(repository.NewSysConfigRepository(), stubSDEStatusService{
+	handler := newSysConfigHandlerWithDeps(service.NewSysConfigService(), stubSDEStatusService{
 		status: service.SDEStatus{
 			CurrentVersion:   "v1",
 			LatestVersion:    "v2",
@@ -67,7 +66,7 @@ func TestCheckSDEVersionReturnsBizErrorOnFailure(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/system/sde-config/check", nil)
 
-	handler := newSysConfigHandlerWithDeps(repository.NewSysConfigRepository(), stubSDEStatusService{
+	handler := newSysConfigHandlerWithDeps(service.NewSysConfigService(), stubSDEStatusService{
 		checkErr: errors.New("upstream down"),
 	})
 	handler.CheckSDEVersion(ctx)
@@ -87,7 +86,7 @@ func TestTriggerSDEUpdateReturnsBizErrorOnFailure(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/system/sde-config/update", nil)
 
-	handler := newSysConfigHandlerWithDeps(repository.NewSysConfigRepository(), stubSDEStatusService{
+	handler := newSysConfigHandlerWithDeps(service.NewSysConfigService(), stubSDEStatusService{
 		updateErr: errors.New("import failed"),
 	})
 	handler.TriggerSDEUpdate(ctx)

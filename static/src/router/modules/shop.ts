@@ -28,9 +28,9 @@ export const shopRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'admin'],
         authList: [
-          { title: '新增商品', authMark: 'add_product' },
-          { title: '编辑商品', authMark: 'edit_product' },
-          { title: '删除商品', authMark: 'delete_product' }
+          { title: 'authActions.shop.addProduct', authMark: 'add_product' },
+          { title: 'authActions.shop.editProduct', authMark: 'edit_product' },
+          { title: 'authActions.shop.deleteProduct', authMark: 'delete_product' }
         ]
       }
     },
@@ -42,7 +42,7 @@ export const shopRoutes: AppRouteRecord = {
         title: 'menus.shop.orderManage',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'shop_order_manage'],
-        authList: [{ title: '审批订单', authMark: 'approve_order' }]
+        authList: [{ title: 'authActions.shop.approveOrder', authMark: 'approve_order' }]
       }
     },
     {

@@ -49,7 +49,7 @@
     try {
       dashboardData.value = await fetchDashboard()
     } catch (e) {
-      console.error('加载工作台数据失败', e)
+      console.error(t('console.dashboardLoadFailedLog'), e)
     } finally {
       loading.value = false
     }

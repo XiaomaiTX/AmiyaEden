@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -218,7 +217,7 @@ func (h *ShopHandler) AdminListProducts(c *gin.Context) {
 	}
 	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
-	filter := repository.ProductFilter{
+	filter := service.ProductFilter{
 		Status: req.Status,
 		Type:   req.Type,
 		Name:   req.Name,
@@ -251,7 +250,7 @@ func (h *ShopHandler) AdminListOrders(c *gin.Context) {
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
-	filter := repository.OrderFilter{
+	filter := service.OrderFilter{
 		Keyword:  req.Keyword,
 		Statuses: req.Statuses,
 		Status:   req.Status,

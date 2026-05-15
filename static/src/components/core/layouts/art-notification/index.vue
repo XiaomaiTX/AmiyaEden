@@ -23,7 +23,7 @@
       <span class="text-[13px] text-g-700">
         {{ $t('notice.bar[0]') }} ({{ unreadCount }})
         <span v-if="unreadCount > 0" class="ml-1 text-xs text-danger"
-          >{{ unreadCount }} {{ $t('notice.text[1]') || '未读' }}</span
+          >{{ unreadCount }} {{ $t('notice.text[1]') }}</span
         >
       </span>
     </div>
@@ -33,7 +33,7 @@
         <!-- 加载状态 -->
         <div v-if="loading" class="relative top-25 h-full text-g-500 text-center !bg-transparent">
           <ArtSvgIcon icon="ri:loader-4-line" class="text-3xl animate-spin" />
-          <p class="mt-3.5 text-xs !bg-transparent">{{ $t('notice.text[2]') || '加载中...' }}</p>
+          <p class="mt-3.5 text-xs !bg-transparent">{{ $t('notice.text[2]') }}</p>
         </div>
 
         <!-- 通知列表 -->
@@ -76,7 +76,7 @@
 
       <div class="relative box-border w-full px-3.5 flex gap-2">
         <ElButton v-if="hasMore" class="flex-1 mt-3" @click="loadMore" v-ripple>
-          {{ $t('notice.viewAll') || '加载更多' }}
+          {{ $t('notice.viewAll') }}
         </ElButton>
       </div>
     </div>
@@ -87,8 +87,8 @@
 
 <script setup lang="ts">
   import { ref, watch, onMounted } from 'vue'
-  import { fetchNotifications, markAsRead, markAllAsRead } from '@/api/notification'
   import { formatTime } from '@utils/common'
+  import { useNotificationApi } from '@/hooks/core/useNotificationApi'
 
   defineOptions({ name: 'ArtNotification' })
 
@@ -109,6 +109,7 @@
   const show = ref(false)
   const visible = ref(false)
   const loading = ref(false)
+  const { fetchNotifications, markAsRead, markAllAsRead } = useNotificationApi()
 
   // 通知数据
   const notificationList = ref<Api.Notification.NotificationItem[]>([])

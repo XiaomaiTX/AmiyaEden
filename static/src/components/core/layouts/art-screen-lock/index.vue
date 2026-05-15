@@ -8,12 +8,16 @@
     >
       <div class="p-5 text-center select-none">
         <div class="mb-7.5 text-5xl">🔒</div>
-        <h1 class="m-0 mb-5 text-3xl font-semibold text-danger">系统已锁定</h1>
+        <h1 class="m-0 mb-5 text-3xl font-semibold text-danger">
+          {{ $t('lockScreen.devTools.title') }}
+        </h1>
         <p class="max-w-125 m-0 text-lg leading-relaxed text-white">
-          检测到开发者工具已打开<br />
-          为了系统安全，请关闭开发者工具后继续使用
+          {{ $t('lockScreen.devTools.detected') }}<br />
+          {{ $t('lockScreen.devTools.instructions') }}
         </p>
-        <div class="mt-7.5 text-sm text-gray-400">Security Lock Activated</div>
+        <div class="mt-7.5 text-sm text-gray-400">
+          {{ $t('lockScreen.devTools.activated') }}
+        </div>
       </div>
     </div>
 
@@ -21,7 +25,11 @@
     <div v-if="!isLock">
       <ElDialog v-model="visible" :width="370" :show-close="false" @open="handleDialogOpen">
         <div class="flex-c flex-col">
-          <img class="w-16 h-16 rounded-full" src="@imgs/user/avatar.webp" alt="用户头像" />
+          <img
+            class="w-16 h-16 rounded-full"
+            src="@imgs/user/avatar.webp"
+            :alt="$t('lockScreen.userAvatarAlt')"
+          />
           <div class="mt-7.5 mb-3.5 text-base font-medium">{{ userInfo.userName }}</div>
           <ElForm
             ref="formRef"
@@ -59,7 +67,11 @@
     <!-- 解锁界面 -->
     <div v-else class="unlock-content">
       <div class="flex-c flex-col w-80">
-        <img class="w-16 h-16 mt-5 rounded-full" src="@imgs/user/avatar.webp" alt="用户头像" />
+        <img
+          class="w-16 h-16 mt-5 rounded-full"
+          src="@imgs/user/avatar.webp"
+          :alt="$t('lockScreen.userAvatarAlt')"
+        />
         <div class="mt-3 mb-3.5 text-base font-medium">
           {{ userInfo.userName }}
         </div>
@@ -347,7 +359,7 @@
         visible.value = false
         formData.password = ''
       } else {
-        console.error('表单验证失败:', fields)
+        console.error(t('lockScreen.validationFailedLog'), fields)
       }
     })
   }
@@ -367,7 +379,7 @@
             visible.value = false
             showDevToolsWarning.value = false
           } catch (error) {
-            console.error('更新store失败:', error)
+            console.error(t('lockScreen.storeUpdateFailedLog'), error)
           }
         } else {
           // 触发抖动动画
@@ -382,7 +394,7 @@
           unlockForm.password = ''
         }
       } else {
-        console.error('表单验证失败:', fields)
+        console.error(t('lockScreen.validationFailedLog'), fields)
       }
     })
   }

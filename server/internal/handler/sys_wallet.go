@@ -2,7 +2,6 @@ package handler
 
 import (
 	"amiya-eden/internal/middleware"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -73,7 +72,7 @@ func (h *SysWalletHandler) AdminListWallets(c *gin.Context) {
 		req.Size = 20
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
-	filter := repository.WalletListFilter{UserKeyword: req.UserKeyword}
+	filter := service.WalletListFilter{UserKeyword: req.UserKeyword}
 
 	wallets, total, err := h.svc.AdminListWallets(req.Current, req.Size, filter)
 	if err != nil {
@@ -142,7 +141,7 @@ func (h *SysWalletHandler) AdminListTransactions(c *gin.Context) {
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
-	filter := repository.WalletTransactionFilter{
+	filter := service.WalletTransactionFilter{
 		UserID:      req.UserID,
 		UserKeyword: req.UserKeyword,
 		RefType:     req.RefType,
@@ -175,7 +174,7 @@ func (h *SysWalletHandler) AdminListLogs(c *gin.Context) {
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
 
-	filter := repository.WalletLogFilter{
+	filter := service.WalletLogFilter{
 		OperatorID: req.OperatorID,
 		TargetUID:  req.TargetUID,
 		Action:     req.Action,

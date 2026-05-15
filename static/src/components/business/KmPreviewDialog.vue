@@ -70,9 +70,9 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
   import { ElDialog, ElButton, ElEmpty } from 'element-plus'
-  import { fetchKillmailDetail } from '@/api/srp'
   import { formatIskSmart, formatTime } from '@utils/common'
   import { useUserStore } from '@/store/modules/user'
+  import { useKillmailDetail } from '@/hooks/srp/useKillmailDetail'
 
   defineOptions({ name: 'KmPreviewDialog' })
 
@@ -84,6 +84,7 @@
 
   useI18n()
   const userStore = useUserStore()
+  const { fetchKillmailDetail } = useKillmailDetail()
 
   const loading = ref(false)
   const detail = ref<Api.Srp.KillmailDetailResponse | null>(null)

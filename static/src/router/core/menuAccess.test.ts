@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import type { AppRouteRecord } from '../../types/router'
 import { dashboardRoutes } from '../modules/dashboard'
@@ -43,6 +44,58 @@ const newbroRoutes: AppRouteRecord[] = [
     ]
   }
 ]
+
+const zhMessages = JSON.parse(
+  readFileSync(new URL('../../locales/langs/zh.json', import.meta.url), 'utf8')
+) as Record<string, unknown>
+
+const enMessages = JSON.parse(
+  readFileSync(new URL('../../locales/langs/en.json', import.meta.url), 'utf8')
+) as Record<string, unknown>
+
+function getLocaleValue(messages: Record<string, unknown>, key: string) {
+  return key.split('.').reduce<unknown>((value, part) => {
+    if (!value || typeof value !== 'object') return undefined
+    return (value as Record<string, unknown>)[part]
+  }, messages)
+}
+
+function collectAuthListTitles(routes: AppRouteRecord[], parentPath = '') {
+  const titles: Array<{ path: string; title: string }> = []
+
+  for (const route of routes) {
+    const path = `${parentPath}/${route.path}`.replace(/\/+/g, '/')
+    for (const action of route.meta?.authList ?? []) {
+      titles.push({ path, title: action.title })
+    }
+    if (route.children?.length) {
+      titles.push(...collectAuthListTitles(route.children, path))
+    }
+  }
+
+  return titles
+}
+
+test('router permission action titles use locale keys', () => {
+  const titles = collectAuthListTitles([shopRoutes, srpRoutes, systemRoutes])
+
+  assert.deepEqual(
+    titles.filter(({ title }) => /[\u4e00-\u9fff]/u.test(title)),
+    []
+  )
+  assert.deepEqual(
+    titles.filter(({ title }) => !title.startsWith('authActions.')),
+    []
+  )
+  assert.deepEqual(
+    titles.filter(
+      ({ title }) =>
+        typeof getLocaleValue(zhMessages, title) !== 'string' ||
+        typeof getLocaleValue(enMessages, title) !== 'string'
+    ),
+    []
+  )
+})
 
 test('applyMenuAccessFilter hides requiresNewbro routes when status is unknown', () => {
   const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], undefined)

@@ -16,6 +16,64 @@
     "requestConfigError": "请求配置错误"
   },
   "topBar": { "user": { "userCenter": "个人中心", "logout": "退出登录" } },
+  "userCenter": {
+    "profile": {
+      "bio": "专注于用户体验跟视觉设计",
+      "role": "交互专家",
+      "location": "广东省深圳市",
+      "organization": "字节跳动－某某平台部－UED",
+      "nickname": "皮卡丘",
+      "address": "广东省深圳市宝安区西乡街道101栋201",
+      "description": "Art Design Pro 是一款兼具设计美学与高效开发的后台系统."
+    },
+    "sections": {
+      "tags": "标签",
+      "basicSettings": "基本设置",
+      "changePassword": "更改密码"
+    },
+    "fields": {
+      "realName": "姓名",
+      "sex": "性别",
+      "sexPlaceholder": "请选择性别",
+      "nickName": "昵称",
+      "email": "邮箱",
+      "mobile": "手机",
+      "address": "地址",
+      "description": "个人介绍",
+      "currentPassword": "当前密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码"
+    },
+    "validation": {
+      "realNameRequired": "请输入姓名",
+      "nickNameRequired": "请输入昵称",
+      "length2To50": "长度在 2 到 50 个字符",
+      "emailRequired": "请输入邮箱",
+      "mobileRequired": "请输入手机号码",
+      "addressRequired": "请输入地址",
+      "sexRequired": "请选择性别"
+    },
+    "sex": {
+      "male": "男",
+      "female": "女"
+    },
+    "tags": {
+      "design": "专注设计",
+      "creative": "很有想法",
+      "bold": "辣~",
+      "tall": "大长腿",
+      "sichuan": "川妹子",
+      "inclusive": "海纳百川"
+    },
+    "greetings": {
+      "earlyMorning": "早上好",
+      "morning": "上午好",
+      "noon": "中午好",
+      "afternoon": "下午好",
+      "evening": "晚上好",
+      "lateNight": "很晚了，早点睡"
+    }
+  },
   "common": {
     "tips": "提示",
     "cancel": "取消",
@@ -38,12 +96,99 @@
     "copy": "复制",
     "copied": "已复制",
     "copyFailed": "复制失败",
+    "noData": "暂无数据",
     "millionIsk": "百万 ISK",
     "updatedAt": "更新时间",
     "createdAt": "创建时间",
     "logOutTips": "您是否要退出登录?",
     "search": "查询",
-    "reset": "重置"
+    "reset": "重置",
+    "editorPlaceholder": "请输入内容...",
+    "imageUploadSuccess": "图片上传成功 {emoji}",
+    "imageUploadFailed": "图片上传失败 {emoji}"
+  },
+  "excelExport": {
+    "buttonText": "导出 Excel",
+    "loadingText": "导出中...",
+    "indexColumnTitle": "序号",
+    "invalidDataType": "数据必须是数组格式",
+    "noData": "没有可导出的数据",
+    "exceedMaxRows": "数据行数超过限制（{maxRows}行）",
+    "booleanTrue": "是",
+    "booleanFalse": "否",
+    "exportFailed": "Excel 导出失败: {message}",
+    "unknownFailed": "导出失败: {message}",
+    "successMessage": "成功导出 {count} 条数据",
+    "consoleError": "Excel 导出错误:"
+  },
+  "highlight": {
+    "copySuccess": "复制成功",
+    "processError": "处理代码块时出错:"
+  },
+  "table": {
+    "requestCancelled": "请求已取消",
+    "fetchFailed": "获取表格数据失败",
+    "searchCache": "搜索数据",
+    "resetSearchCache": "重置搜索",
+    "unknownError": "未知错误"
+  },
+  "storage": {
+    "invalidLocalData": "系统检测到本地数据异常，请重新登录系统恢复使用！"
+  },
+  "color": {
+    "invalidHex": "输入错误的 hex 颜色值",
+    "invalidRgb": "输入错误的 RGB 颜色值"
+  },
+  "route": {
+    "menuListFailed": "获取菜单列表失败，请重新登录"
+  },
+  "chatWindow": {
+    "status": {
+      "online": "在线",
+      "offline": "离线"
+    },
+    "inputPlaceholder": "输入消息",
+    "send": "发送",
+    "messages": {
+      "assistantGreeting": "你好！我是你的 AI 助手，有什么我可以帮你的吗？",
+      "userUsageQuestion": "我想了解一下系统的使用方法。",
+      "assistantUsageIntro": "好的，我来为您介绍系统的主要功能。首先，您可以通过左侧菜单访问不同的功能模块...",
+      "userAnalyticsQuestion": "听起来很不错，能具体讲讲数据分析部分吗？",
+      "assistantAnalyticsIntro": "当然可以。数据分析模块可以帮助您实时监控关键指标，并生成详细的报表...",
+      "userStartQuestion": "太好了，那我如何开始使用呢？",
+      "assistantStartIntro": "您可以先创建一个项目，然后在项目中添加相关的数据源，系统会自动进行分析。",
+      "userThanks": "明白了，谢谢你的帮助！",
+      "assistantClose": "不客气，有任何问题随时联系我。"
+    }
+  },
+  "dragVerify": {
+    "text": "按住滑块拖动",
+    "successText": "验证通过"
+  },
+  "imageCutter": {
+    "chooseImage": "选择图片",
+    "clear": "清除",
+    "previewAlt": "预览图",
+    "downloadImage": "下载图片",
+    "defaultFileName": "封面图片",
+    "loadFailedLog": "图片加载失败:"
+  },
+  "banner": {
+    "basic": {
+      "view": "查看",
+      "backgroundAlt": "背景图片"
+    },
+    "card": {
+      "viewDetails": "查看详情"
+    }
+  },
+  "cards": {
+    "dataList": {
+      "showMore": "查看更多"
+    },
+    "image": {
+      "readSuffix": "阅读"
+    }
   },
   "mailAttempt": {
     "sent": "游戏内邮件已被 ESI 接受。",
@@ -120,12 +265,13 @@
     "title": "通知",
     "btnRead": "标为已读",
     "bar": ["通知"],
-    "text": ["暂无"],
+    "text": ["暂无", "未读", "加载中..."],
     "viewAll": "查看全部"
   },
   "console": {
     "alliancePap": "联盟 PAP",
     "internalPap": "内部 PAP",
+    "dashboardLoadFailedLog": "加载工作台数据失败",
     "papChart": {
       "recentMonths": "近 {count} 个月",
       "monthLabel": "{year}年{month}月",
@@ -180,11 +326,21 @@
     "agreeText": "我同意",
     "privacyPolicy": "《隐私政策》",
     "submitBtnText": "注册",
+    "success": "注册成功",
     "hasAccount": "已有账号？",
     "toLogin": "去登录"
   },
   "lockScreen": {
     "pwdError": "密码错误",
+    "userAvatarAlt": "用户头像",
+    "validationFailedLog": "表单验证失败:",
+    "storeUpdateFailedLog": "更新 store 失败:",
+    "devTools": {
+      "title": "系统已锁定",
+      "detected": "检测到开发者工具已打开",
+      "instructions": "为了系统安全，请关闭开发者工具后继续使用",
+      "activated": "安全锁定已激活"
+    },
     "lock": { "inputPlaceholder": "请输入锁屏密码", "btnText": "锁定" },
     "unlock": { "inputPlaceholder": "请输入解锁密码", "btnText": "解锁", "backBtnText": "返回登录" }
   },
@@ -312,6 +468,28 @@
       "leadership": "管理层",
       "contributors": "重大贡献成员",
       "manage": "伏羲大厅管理"
+    }
+  },
+  "authActions": {
+    "shop": {
+      "addProduct": "新增商品",
+      "editProduct": "编辑商品",
+      "deleteProduct": "删除商品",
+      "approveOrder": "审批订单"
+    },
+    "srp": {
+      "approve": "审批"
+    },
+    "system": {
+      "deleteUser": "删除用户",
+      "assignRole": "分配职权",
+      "executeTask": "执行任务",
+      "updateSchedule": "修改调度",
+      "adjustBalance": "调整余额",
+      "viewLog": "查看日志",
+      "viewAuditDetail": "查看审计明细",
+      "editExchangeRate": "编辑兑换率",
+      "manualFetch": "手动拉取"
     }
   },
   "fuxiHall": {
@@ -567,6 +745,16 @@
     "journalDescription": "描述",
     "journalReason": "@:common.reason",
     "noJournalData": "暂无钱包流水记录",
+    "esiRefreshButton": "ESI 拉取",
+    "esiRefreshTitle": "ESI 拉取",
+    "esiRefreshConfirmButton": "确认拉取",
+    "walletESIRefreshConfirm": "确认从 ESI 拉取角色「{name}」的钱包数据？",
+    "skillESIRefreshConfirm": "确认从 ESI 拉取角色「{name}」的技能数据？",
+    "walletESIRefreshSubmitted": "钱包数据 ESI 刷新任务已提交，稍后可点击刷新按钮查看最新数据",
+    "skillESIRefreshSubmitted": "技能数据 ESI 刷新任务已提交，稍后可点击刷新按钮查看最新数据",
+    "esiRefreshSubmitFailed": "ESI 刷新任务提交失败",
+    "esiRefreshUnauthorized": "无权操作此角色",
+    "esiRefreshCharacterNotFound": "角色未找到",
     "totalSP": "总技能点",
     "unallocatedSP": "未分配 SP",
     "skillCount": "技能数量",
@@ -588,6 +776,11 @@
     "unallocatedSPSuffix": " 未分配技能点。",
     "totalTrainingTime": "训练时间",
     "queuedSPSuffix": "个技能点排队中",
+    "trainingComplete": "已完成",
+    "durationDays": "{count}天",
+    "durationHours": "{count}小时",
+    "durationMinutes": "{count}分",
+    "durationSeconds": "{count}秒",
     "journalIndex": "ID",
     "flyableShips": "可驾驶舰船",
     "allRaces": "全部种族",
@@ -856,6 +1049,7 @@
     "exampleEvidenceLabel": "示例图片（管理员提供）：",
     "uploadEvidenceBtn": "选择图片",
     "skillPlanningAlertPrefix": "如有技能不达标，可前往",
+    "skillPlanningCheckLink": "技能规划-检查完成度",
     "multicharRewardBanner": "多人物福利发放规则：按人物发放且附带伏羲币的福利，同一用户前 3 个人物获得 100% 伏羲币，第 4-6 个人物获得 50%，其余人物不获得伏羲币。具体数值以管理员配置为准。"
   },
   "welfareApproval": {
@@ -1758,6 +1952,7 @@
       "payoutModeLabel": "发放方式",
       "payoutModes": { "fuxiCoin": "伏羲币补损", "manualTransfer": "手动打钱" },
       "exportBtn": "导出当前数据",
+      "exportSheetName": "补损申请",
       "autoApproveBtn": "自动审批",
       "batchPayoutBtn": "批量发放",
       "approveBtn": "批准",
@@ -1803,6 +1998,8 @@
       "fuxiPayoutSuccess": "伏羲币补损发放成功，已发放 {amount} 伏羲币",
       "rejectRequired": "拒绝时必须填写审批备注",
       "unknownReviewer": "审批人",
+      "defaultApproveNote": "补损由补损官{{mainChracterName}}手动批准，如有问题请Q群联系",
+      "defaultRejectNote": "不符合现有补损条例。如有问题请Q群联系{{mainChracterName}}（或游戏内邮件{{mainChracterName}})",
       "payoutKillId": "KillID",
       "openInfoWindow": "打开人物信息",
       "editBtn": "@:common.edit",
@@ -1832,6 +2029,24 @@
         "payout": "发放",
         "lastActor": "补损官",
         "action": "操作"
+      },
+      "exportColumns": {
+        "character": "人物",
+        "ship": "舰船",
+        "system": "星系",
+        "killId": "KillID",
+        "kmTime": "KM时间",
+        "corporation": "军团",
+        "alliance": "联盟",
+        "fleet": "关联舰队",
+        "fc": "FC",
+        "note": "备注",
+        "recommendedAmount": "推荐金额",
+        "finalAmount": "最终金额",
+        "reviewStatus": "审批状态",
+        "reviewNote": "审批备注",
+        "lastActor": "补损官",
+        "payoutStatus": "发放状态"
       }
     },
     "prices": {
@@ -2423,6 +2638,12 @@
   "webhook": {
     "title": "Webhook 通知设置",
     "saveSuccess": "设置已保存",
+    "providers": {
+      "discord": "Discord",
+      "feishu": "飞书 (Feishu)",
+      "dingtalk": "钉钉 (DingTalk)",
+      "onebot": "OneBot v11 (QQ)"
+    },
     "fields": {
       "enabled": "启用",
       "url": "Webhook URL",

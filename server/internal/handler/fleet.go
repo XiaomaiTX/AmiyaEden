@@ -2,7 +2,6 @@ package handler
 
 import (
 	"amiya-eden/internal/middleware"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"strconv"
@@ -60,7 +59,7 @@ func (h *FleetHandler) ListFleets(c *gin.Context) {
 		return
 	}
 
-	filter := repository.FleetFilter{
+	filter := service.FleetFilter{
 		Importance: c.Query("importance"),
 	}
 	if fcStr := c.Query("fc_user_id"); fcStr != "" {

@@ -3,7 +3,6 @@ package handler
 import (
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
@@ -27,7 +26,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		return
 	}
 
-	filter := repository.UserFilter{
+	filter := service.UserFilter{
 		Keyword: c.Query("keyword"),
 		Role:    c.Query("role"),
 	}

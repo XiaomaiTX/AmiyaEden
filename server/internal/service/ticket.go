@@ -24,6 +24,14 @@ type TicketService struct {
 	auditSvc *AuditService
 }
 
+type TicketListFilter struct {
+	Status   string
+	Statuses []string
+	Category uint
+	UserID   uint
+	Keyword  string
+}
+
 func NewTicketService() *TicketService {
 	return &TicketService{repo: repository.NewTicketRepository(), auditSvc: NewAuditService()}
 }
@@ -109,7 +117,7 @@ func (s *TicketService) GetAdminTicketDetail(ticketID uint) (*model.TicketListIt
 	return ticket, nil
 }
 
-func (s *TicketService) ListTicketsAdmin(filter repository.TicketListFilter, page, pageSize int) ([]model.TicketListItem, int64, error) {
+func (s *TicketService) ListTicketsAdmin(filter TicketListFilter, page, pageSize int) ([]model.TicketListItem, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 100)
 	filter.Keyword = strings.TrimSpace(filter.Keyword)
 	filter.Status = strings.TrimSpace(filter.Status)
@@ -133,7 +141,13 @@ func (s *TicketService) ListTicketsAdmin(filter repository.TicketListFilter, pag
 			filter.Status = normalizedStatus
 		}
 	}
-	return s.repo.ListTicketsAdmin(filter, page, pageSize)
+	return s.repo.ListTicketsAdmin(repository.TicketListFilter{
+		Status:   filter.Status,
+		Statuses: filter.Statuses,
+		Category: filter.Category,
+		UserID:   filter.UserID,
+		Keyword:  filter.Keyword,
+	}, page, pageSize)
 }
 
 func (s *TicketService) AddReplyAsUser(userID, ticketID uint, content string) (*model.TicketReplyItem, error) {

@@ -112,6 +112,11 @@ type AdminUpdateWelfareRequest struct {
 	SortOrder              *int   `json:"sort_order"`
 }
 
+type WelfareFilter struct {
+	Status *int8
+	Name   string
+}
+
 // AdminUpdateWelfare 更新福利
 func (s *WelfareService) AdminUpdateWelfare(id uint, req *AdminUpdateWelfareRequest) (*model.Welfare, error) {
 	w, err := s.repo.GetWelfareByID(id)
@@ -191,9 +196,12 @@ func (s *WelfareService) AdminDeleteWelfare(id uint) error {
 }
 
 // AdminListWelfares 查询福利列表
-func (s *WelfareService) AdminListWelfares(page, pageSize int, filter repository.WelfareFilter) ([]model.Welfare, int64, error) {
+func (s *WelfareService) AdminListWelfares(page, pageSize int, filter WelfareFilter) ([]model.Welfare, int64, error) {
 	normalizePageRequest(&page, &pageSize, 20, 100)
-	return s.repo.ListWelfares(page, pageSize, filter)
+	return s.repo.ListWelfares(page, pageSize, repository.WelfareFilter{
+		Status: filter.Status,
+		Name:   filter.Name,
+	})
 }
 
 // AdminReorderWelfares 按给定 ID 顺序更新 sort_order
@@ -1065,11 +1073,23 @@ type AdminApplicationResp struct {
 	ReviewedAt        *time.Time `json:"reviewed_at"`
 }
 
+type WelfareApplicationFilter struct {
+	Status               string
+	StatusIn             []string
+	Keyword              string
+	IncludeEvidenceImage bool
+}
+
 // AdminListApplications 管理端查询福利申请列表
-func (s *WelfareService) AdminListApplications(page, pageSize int, filter repository.WelfareApplicationFilter) ([]AdminApplicationResp, int64, error) {
+func (s *WelfareService) AdminListApplications(page, pageSize int, filter WelfareApplicationFilter) ([]AdminApplicationResp, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
 
-	apps, total, err := s.repo.ListApplicationsPaginated(page, pageSize, filter)
+	apps, total, err := s.repo.ListApplicationsPaginated(page, pageSize, repository.WelfareApplicationFilter{
+		Status:               filter.Status,
+		StatusIn:             filter.StatusIn,
+		Keyword:              filter.Keyword,
+		IncludeEvidenceImage: filter.IncludeEvidenceImage,
+	})
 	if err != nil {
 		return nil, 0, err
 	}

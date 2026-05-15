@@ -35,6 +35,7 @@
 import { router } from '@/router'
 import { useUserStore } from '@/store/modules/user'
 import { StorageConfig } from '@/utils/storage/storage-config'
+import { $t } from '@/locales'
 
 /**
  * 存储兼容性管理器
@@ -101,7 +102,7 @@ class StorageCompatibilityManager {
       type: 'error',
       offset: 40,
       duration: 5000,
-      message: '系统检测到本地数据异常，请重新登录系统恢复使用！'
+      message: $t('storage.invalidLocalData')
     })
   }
 
