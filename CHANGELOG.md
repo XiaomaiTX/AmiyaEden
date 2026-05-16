@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-05-16
+
+### Changed
+- 将 Fuxi Hall 角色名称解析切换到 ESI `universe/ids/` 接口，并同步更新相关文档。
+- 修正版本核查条件，要求同时检查 `static/package.json` 与 `CHANGELOG.md` 的 Git 历史。
+- 更新 `static/scripts/check-version-bump.js` 的报错提示，补充 `CHANGELOG.md` 历史检查命令。
+- 更新 `docs/standards/versioning.md` 的版本核查流程与说明。
+
 ## [1.8.0] - 2026-05-16
 
 ### Added
-- 新增用户、工单、工具收藏与 Fuxi Hall 的审计覆盖。
+- 新增用户、工单、工具书签与 Fuxi Hall 的审计覆盖。
 
 ### Changed
 - Fuxi Hall 成员头衔展示改为使用头衔标签，并同步相关契约、页面与文档。
@@ -42,13 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.7.0] - 2026-05-13
 
 ### Added
-- 新增工具收藏管理与信息页书签页面。
+- 新增常用工具网站管理与信息页书签页面。
 - 新增用户自助注销账号能力。
 - 军团建筑列表新增已分配燃料官展示。
 
 ### Changed
 - 整理 Fuxi Hall 卡片模型与展示结构，移除封面图布局并同步更新相关文档、路由和测试。
-- 同步更新工具收藏、军团建筑和账号注销相关前端类型、本地化文案与服务端接口。
+- 同步更新常用工具网站、军团建筑和账号注销相关前端类型、本地化文案与服务端接口。
 
 ### Fixed
 - 修正部分后端查询在数据库方言下的兼容性问题。
