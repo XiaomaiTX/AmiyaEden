@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -523,15 +522,17 @@ func resolveCharacterIDByNameFromESI(ctx context.Context, characterName string) 
 	}
 	client := esi.NewClientWithConfig(baseURL, apiPrefix)
 
-	path := "/search/?categories=character&search=" + url.QueryEscape(characterName) + "&strict=true"
+	path := "/universe/ids/"
 	var payload struct {
-		Character []int64 `json:"character"`
+		Characters []struct {
+			ID int64 `json:"id"`
+		} `json:"characters"`
 	}
-	if err := client.Get(ctx, path, "", &payload); err != nil {
+	if err := client.PostJSON(ctx, path, "", []string{characterName}, &payload); err != nil {
 		return 0, NewUserVisibleError(fmt.Sprintf("ESI 查询失败: %v", err))
 	}
-	if len(payload.Character) == 0 || payload.Character[0] <= 0 {
+	if len(payload.Characters) != 1 || payload.Characters[0].ID <= 0 {
 		return 0, NewUserVisibleError("未找到精确匹配角色")
 	}
-	return payload.Character[0], nil
+	return payload.Characters[0].ID, nil
 }
