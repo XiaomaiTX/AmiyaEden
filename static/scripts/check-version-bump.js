@@ -82,7 +82,12 @@ const main = () => {
   if (!versionChanged) {
     console.error('⚠️  检测到源代码变更，但版本号未更新！')
     console.error(`📋 变更类型: ${changeType}`)
-    console.error('📝 请根据版本号规范更新 static/package.json 中的版本号：')
+    console.error(
+      '📝 请先检查 static/package.json 和 CHANGELOG.md 的 Git 历史，再根据版本号规范更新版本：'
+    )
+    console.error('   git log --follow -- static/package.json')
+    console.error('   git log --follow -- CHANGELOG.md')
+    console.error('📝 然后更新 static/package.json 中的 version 字段：')
     console.error(`   npm version ${changeType.toLowerCase()}`)
     console.error('')
     console.error('📚 版本号规范：docs/standards/versioning.md')

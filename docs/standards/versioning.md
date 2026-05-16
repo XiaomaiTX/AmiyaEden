@@ -2,9 +2,10 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-05-13
+last_reviewed: 2026-05-16
 source_of_truth:
   - static/package.json
+  - CHANGELOG.md
   - docs/standards/versioning.md
 ---
 
@@ -180,23 +181,48 @@ MAJOR.MINOR.PATCH
 
 ### 0. 版本核查
 
-在执行任何版本号递增前，必须先检查 `static/package.json` 的 Git 历史。
+在执行任何版本号递增前，必须同时检查 `static/package.json` 和 `CHANGELOG.md` 的 Git 历史。
 
-上一个版本的位置以 `static/package.json` 的最近一次版本更新提交为准，优先通过该文件的提交记录定位，而不是根据其他文件、当前工作区状态或 tag 反推。
+上一个版本的位置要以 `static/package.json` 的最近一次版本更新提交和 `CHANGELOG.md` 的最近一次版本段落共同确认，而不是只看 `static/package.json` 的提交记录、当前工作区状态或 tag。
 
 通常使用下面的命令定位上一版本对应的提交：
 
 ```bash
 git log --follow -- static/package.json
+git log --follow -- CHANGELOG.md
 ```
 
 检查时至少要确认以下内容：
 
-1. 上一个版本对应的提交点
-2. 该提交点到当前最新提交之间的全部代码、文档和配置变更
-3. 这些变更是否都已纳入版本级别判断与 `CHANGELOG` 记录
+1. `static/package.json` 最近一次 version 更新提交
+2. `CHANGELOG.md` 最近一次版本段落提交
+3. 两者之间是否只有依赖更新、文档整理或其他非发布提交
+4. 该版本边界之后的全部代码、文档和配置变更是否都已纳入版本级别判断与 `CHANGELOG` 记录
 
-不要只根据当前工作区的单个文件变更判断版本号，也不要跳过历史提交检查直接 bump version。
+不要只根据当前工作区的单个文件变更判断版本号，也不要跳过历史提交检查直接 bump version。特别是 `static/package.json` 中如果混有依赖更新提交，必须用 `CHANGELOG.md` 的历史交叉确认，不能把这些提交误认为版本边界。
+
+### 0.1 提交范围复核
+
+在确认版本边界后，必须先列出该边界到当前 `HEAD` 之间的全部提交，再开始整理 `CHANGELOG`。
+
+过去出现漏写提交的根因，就是没有先生成完整提交清单，而是直接从当前 diff 或最近一次 changelog 标题整理发布说明，导致 `release-worthy` 提交可能被静默跳过。
+
+建议使用下面的命令生成提交清单：
+
+```bash
+git log --reverse --oneline <上一个版本边界提交>..HEAD
+```
+
+复核时必须为提交清单中的每个提交分配一个明确分类：
+
+- `release-worthy`：直接影响用户可见行为、接口、数据、权限、路由、文案、测试或发布说明的提交，必须进入 `CHANGELOG.md`
+- `docs-only`：仅文档、注释、说明或非功能性排版改动的提交，可以不进入 `CHANGELOG.md`
+- `dependency-only`：仅依赖或锁文件更新，且不改变产品行为的提交，可以不进入 `CHANGELOG.md`
+- `non-release`：与本次发布无关、已被后续提交覆盖或撤销、或仅为流程性维护且不影响发布说明的提交，可以不进入 `CHANGELOG.md`
+
+如果某个提交不写入 `CHANGELOG.md`，必须在发布核对清单、PR 描述或其他发布准备记录中写明该提交的 hash、分类和排除理由，避免“看漏了”和“故意不写”混在一起。
+
+发布内容必须以这份提交范围清单为输入生成，不能只看当前 diff、最近一次 changelog 标题、单个文件的 Git 历史，或者凭记忆补写。
 
 ### 1. 开发阶段
 
@@ -441,6 +467,9 @@ npm version patch  # 1.1.1 → 1.1.2
 - **从小到大**：优先使用 PATCH，其次是 MINOR，最后是 MAJOR
 - **保守递增**：不确定时选择较小的版本号级别
 - **及时更新**：每次发布都必须更新版本号
+- **先清单后写作**：先完成提交范围复核和分类，再写 `CHANGELOG.md`
+- **一条提交一条依据**：每个 `release-worthy` 提交都必须能在发布记录中找到对应说明
+- **排除有理由**：任何未写入 `CHANGELOG.md` 的提交都必须有明确排除理由
 
 ### 2. CHANGELOG 维护
 
@@ -492,7 +521,7 @@ npm version patch  # 1.1.1 → 1.1.2
 
 ### Q: 前端和后端版本号需要保持一致吗？
 
-**A**: 项目使用统一的版本号，所有版本信息都存储在 `static/package.json` 中。前端和后端共享同一个版本号，简化版本管理。
+**A**: 项目使用统一的版本号，版本值记录在 `static/package.json` 中，发布边界再通过 `CHANGELOG.md` 交叉确认。前端和后端共享同一个版本号，简化版本管理。
 
 ## Examples
 
