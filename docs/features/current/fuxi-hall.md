@@ -47,7 +47,7 @@ source_of_truth:
 
 - `page_key` 仅允许 `leadership | contributors`
 - 卡片必填：`nickname`、`main_character_name`、`title_tags`
-- `main_character_id` 不再由管理端手工输入，服务层会基于 `main_character_name` 调用 ESI Search（`strict=true`）解析并存储
+- `main_character_id` 不再由管理端手工输入，服务层会基于 `main_character_name` 调用 ESI `POST /universe/ids/` 解析并存储
 - `description_html` 在服务层白名单清洗后入库与返回
 - `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
 - 样式约束：
