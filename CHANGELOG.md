@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-05-17
+
+### Added
+- 新增军团能力策略层，支持按军团配置页面/功能 capability 和业务规则。
+- 新增 SRP `srp.recommendation_multiplier` 规则示例，并接入推荐金额计算链路。
+- 新增系统基础配置中的军团能力策略编辑区。
+
+### Changed
+- `/api/v1/me` 返回军团能力上下文，供前端路由与菜单收敛访问入口。
+- SRP 与福利相关路由叠加军团 capability 门禁，并同步更新前端路由元数据。
+- 更新相关文档，补齐军团能力策略的 API、特性与草案说明。
+
 ## [1.8.1] - 2026-05-16
 
 ### Changed
