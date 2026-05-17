@@ -2978,8 +2978,11 @@
       "corporationAccessPolicies": "Corporation Access Policies",
       "corporationAccessPoliciesHint": "Configure capabilities and rules by corporation. Unmatched policies use least privilege.",
       "corporationId": "Corporation ID",
+      "selectedCorporation": "Target Corporation",
+      "selectCorporationToConfigure": "Select a corporation to configure",
       "fullAccess": "Full Access",
       "srpRecommendationMultiplier": "SRP Recommendation Multiplier",
+      "saveCurrentCorporationPolicy": "Save Current Corporation Policy",
       "invalidMultiplier": "SRP recommendation multiplier must be between 0 and 1",
       "corpCapabilityGroups": {
         "menus": "Menu Entries",

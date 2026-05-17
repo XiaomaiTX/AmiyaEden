@@ -133,11 +133,31 @@
       <div v-loading="loadingCorpPolicies">
         <div class="form-hint">{{ $t('system.basicConfig.corporationAccessPoliciesHint') }}</div>
 
-        <div v-for="policy in corpPolicyRows" :key="policy.corporation_id" class="corp-policy-row">
+        <ElFormItem
+          :label="$t('system.basicConfig.selectedCorporation')"
+          class="corp-policy-selector"
+        >
+          <ElSelect
+            v-model="selectedCorporationId"
+            :placeholder="$t('system.basicConfig.selectCorporationToConfigure')"
+            style="width: 280px"
+          >
+            <ElOption
+              v-for="corporationID in allowCorpsForm.allow_corporations"
+              :key="corporationID"
+              :label="String(corporationID)"
+              :value="corporationID"
+            />
+          </ElSelect>
+        </ElFormItem>
+
+        <div v-if="selectedPolicy" class="corp-policy-row">
           <div class="corp-policy-header">
-            <span>{{ $t('system.basicConfig.corporationId') }}: {{ policy.corporation_id }}</span>
+            <span>
+              {{ $t('system.basicConfig.corporationId') }}: {{ selectedPolicy.corporation_id }}
+            </span>
             <ElSwitch
-              v-model="policy.full_access"
+              v-model="selectedPolicy.full_access"
               :active-text="$t('system.basicConfig.fullAccess')"
             />
           </div>
@@ -149,7 +169,7 @@
               class="corp-capability-group"
             >
               <div class="corp-capability-group-title">{{ $t(group.labelKey) }}</div>
-              <ElCheckboxGroup v-model="policy.capabilities">
+              <ElCheckboxGroup v-model="selectedPolicy.capabilities">
                 <ElCheckbox
                   v-for="capability in group.capabilities"
                   :key="capability"
@@ -166,7 +186,7 @@
             class="corp-policy-multiplier"
           >
             <ElInputNumber
-              v-model="policy.multiplier"
+              v-model="selectedPolicy.multiplier"
               :precision="2"
               :step="0.1"
               :min="0"
@@ -176,8 +196,13 @@
           </ElFormItem>
         </div>
 
-        <ElButton type="primary" :loading="savingCorpPolicies" @click="handleSaveCorpPolicies">
-          {{ $t('system.basicConfig.save') }}
+        <ElButton
+          type="primary"
+          :loading="savingCorpPolicies"
+          :disabled="!selectedPolicy"
+          @click="handleSaveCorpPolicies"
+        >
+          {{ $t('system.basicConfig.saveCurrentCorporationPolicy') }}
         </ElButton>
       </div>
     </ElCard>
@@ -197,7 +222,9 @@
     ElSwitch,
     ElCheckboxGroup,
     ElCheckbox,
-    ElInputNumber
+    ElInputNumber,
+    ElSelect,
+    ElOption
   } from 'element-plus'
   import {
     fetchSDEConfig,
@@ -306,6 +333,7 @@
 
   const allowCorpsInput = ref('')
   const corpPoliciesVersion = ref(1)
+  const selectedCorporationId = ref<number>()
   const corpPolicyRows = ref<
     Array<{
       corporation_id: number
@@ -314,6 +342,9 @@
       multiplier: number
     }>
   >([])
+  const selectedPolicy = computed(() =>
+    corpPolicyRows.value.find((row) => row.corporation_id === selectedCorporationId.value)
+  )
   const sdeLastError = computed(() => sdeStatus.last_update_error || sdeStatus.last_check_error)
 
   const normalizeAllowCorporations = (corporations: number[]) => {
@@ -500,6 +531,12 @@
           multiplier: clampMultiplier(multiplier) || 1
         }
       })
+      if (
+        !selectedCorporationId.value ||
+        !allowCorpsForm.allow_corporations.includes(selectedCorporationId.value)
+      ) {
+        selectedCorporationId.value = allowCorpsForm.allow_corporations[0]
+      }
     } catch {
       /* empty */
     } finally {
@@ -508,11 +545,13 @@
   }
 
   const handleSaveCorpPolicies = async () => {
-    for (const row of corpPolicyRows.value) {
-      if (Number.isNaN(clampMultiplier(row.multiplier))) {
-        ElMessage.error(t('system.basicConfig.invalidMultiplier'))
-        return
-      }
+    if (!selectedPolicy.value) {
+      return
+    }
+
+    if (Number.isNaN(clampMultiplier(selectedPolicy.value.multiplier))) {
+      ElMessage.error(t('system.basicConfig.invalidMultiplier'))
+      return
     }
 
     savingCorpPolicies.value = true
@@ -597,6 +636,11 @@
     border-radius: 8px;
     padding: 12px;
     margin: 12px 0;
+  }
+
+  .corp-policy-selector {
+    margin-top: 12px;
+    margin-bottom: 12px;
   }
 
   .corp-policy-header {
