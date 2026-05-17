@@ -36,6 +36,7 @@ const (
 	SysConfigSDEStatus      = "sde.status"       // SDE 状态快照（JSON）
 
 	SysConfigAllowCorporations                               = "app.allow_corporations"                 // 允许访问的公司 ID 列表 (JSON 数组)
+	SysConfigCorporationAccessPolicies                       = "app.corporation_access_policies"        // 军团能力策略配置 (JSON)
 	SysConfigEnforceCharacterESIRestriction                  = "auth.enforce_character_esi_restriction" // 是否强制限制失效人物 ESI 停留在人物页面
 	SysConfigDashboardCorpStructuresAuth                     = "dashboard.corporation_structures_authorizations"
 	SysConfigDashboardCorpStructuresFuelNoticeThresholdDays  = "dashboard.corporation_structures_fuel_notice_threshold_days"

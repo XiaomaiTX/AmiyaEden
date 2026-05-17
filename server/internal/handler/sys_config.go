@@ -12,8 +12,9 @@ import (
 )
 
 type SysConfigHandler struct {
-	cfgSvc *service.SysConfigService
-	sdeSvc sdeSysConfigService
+	cfgSvc        *service.SysConfigService
+	corpPolicySvc *service.CorporationPolicyService
+	sdeSvc        sdeSysConfigService
 }
 
 type sdeSysConfigService interface {
@@ -31,8 +32,9 @@ func newSysConfigHandlerWithDeps(
 	sdeSvc sdeSysConfigService,
 ) *SysConfigHandler {
 	return &SysConfigHandler{
-		cfgSvc: cfgSvc,
-		sdeSvc: sdeSvc,
+		cfgSvc:        cfgSvc,
+		corpPolicySvc: service.NewCorporationPolicyService(),
+		sdeSvc:        sdeSvc,
 	}
 }
 
@@ -122,6 +124,18 @@ type UpdateCharacterESIRestrictionConfigRequest struct {
 	EnforceCharacterESIRestriction *bool `json:"enforce_character_esi_restriction"`
 }
 
+type CorporationAccessPoliciesResponse struct {
+	Version     int                         `json:"version"`
+	DefaultMode string                      `json:"default_mode"`
+	Policies    []service.CorporationPolicy `json:"policies"`
+}
+
+type UpdateCorporationAccessPoliciesRequest struct {
+	Version     int                         `json:"version"`
+	DefaultMode string                      `json:"default_mode"`
+	Policies    []service.CorporationPolicy `json:"policies"`
+}
+
 func (h *SysConfigHandler) GetAllowCorporations(c *gin.Context) {
 	response.OK(c, AllowCorporationsResponse{
 		AllowCorporations: h.cfgSvc.GetAllowCorporations(),
@@ -173,5 +187,35 @@ func (h *SysConfigHandler) UpdateCharacterESIRestrictionConfig(c *gin.Context) {
 		return
 	}
 
+	response.OK(c, nil)
+}
+
+func (h *SysConfigHandler) GetCorporationAccessPolicies(c *gin.Context) {
+	policies := h.corpPolicySvc.GetPolicies()
+	response.OK(c, CorporationAccessPoliciesResponse{
+		Version:     policies.Version,
+		DefaultMode: policies.DefaultMode,
+		Policies:    policies.Policies,
+	})
+}
+
+func (h *SysConfigHandler) UpdateCorporationAccessPolicies(c *gin.Context) {
+	var req UpdateCorporationAccessPoliciesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	if err := h.corpPolicySvc.UpdatePolicies(service.CorporationPolicyConfig{
+		Version:     req.Version,
+		DefaultMode: req.DefaultMode,
+		Policies:    req.Policies,
+	}); err != nil {
+		if errors.Is(err, service.ErrInvalidCorporationAccessPolicy) {
+			response.Fail(c, response.CodeParamError, err.Error())
+			return
+		}
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
 	response.OK(c, nil)
 }

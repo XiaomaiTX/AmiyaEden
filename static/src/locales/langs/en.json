@@ -2974,7 +2974,13 @@
       "sdeCheckVersion": "Check Latest Version",
       "sdeRunUpdate": "Run Update",
       "sdeCheckSuccess": "SDE version check completed",
-      "sdeUpdateSuccess": "SDE update completed"
+      "sdeUpdateSuccess": "SDE update completed",
+      "corporationAccessPolicies": "Corporation Access Policies",
+      "corporationAccessPoliciesHint": "Configure capabilities and rules by corporation. Unmatched policies use least privilege.",
+      "corporationId": "Corporation ID",
+      "fullAccess": "Full Access",
+      "srpRecommendationMultiplier": "SRP Recommendation Multiplier",
+      "invalidMultiplier": "SRP recommendation multiplier must be between 0 and 1"
     },
     "newbroSettings": {
       "title": "Newbro Settings",

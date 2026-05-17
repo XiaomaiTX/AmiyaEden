@@ -2697,7 +2697,13 @@
       "sdeCheckVersion": "检查新版本",
       "sdeRunUpdate": "执行更新",
       "sdeCheckSuccess": "SDE 版本检查完成",
-      "sdeUpdateSuccess": "SDE 更新完成"
+      "sdeUpdateSuccess": "SDE 更新完成",
+      "corporationAccessPolicies": "军团能力策略",
+      "corporationAccessPoliciesHint": "按军团配置能力与规则，未命中策略按最小权限处理。",
+      "corporationId": "军团 ID",
+      "fullAccess": "全量放行",
+      "srpRecommendationMultiplier": "SRP 推荐金额乘数",
+      "invalidMultiplier": "SRP 推荐金额乘数必须在 0 到 1 之间"
     },
     "newbroSettings": {
       "title": "帮扶设置",

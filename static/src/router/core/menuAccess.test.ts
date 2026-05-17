@@ -98,7 +98,7 @@ test('router permission action titles use locale keys', () => {
 })
 
 test('applyMenuAccessFilter hides requiresNewbro routes when status is unknown', () => {
-  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], undefined)
+  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], undefined)
 
   assert.deepEqual(filtered, [
     {
@@ -115,14 +115,14 @@ test('applyMenuAccessFilter hides requiresNewbro routes when status is unknown',
 })
 
 test('pruneEmptyMenus removes directories whose children were fully filtered out', () => {
-  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], undefined)
+  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], undefined)
   const pruned = pruneEmptyMenus(filtered)
 
   assert.deepEqual(pruned, [])
 })
 
 test('applyMenuAccessFilter keeps SkillPlans for logged-in ordinary users', () => {
-  const filtered = applyMenuAccessFilter([skillPlanningRoutes], ['user'], undefined)
+  const filtered = applyMenuAccessFilter([skillPlanningRoutes], ['user'], [], undefined)
   const skillPlanning = filtered[0]
 
   assert.equal(
@@ -132,7 +132,7 @@ test('applyMenuAccessFilter keeps SkillPlans for logged-in ordinary users', () =
 })
 
 test('applyMenuAccessFilter hides mentor selection routes when mentor eligibility is unknown', () => {
-  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], true, undefined)
+  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], true, undefined)
 
   assert.equal(
     filtered[0].children?.some((route) => route.name === 'NewbroSelectMentor'),
@@ -174,6 +174,18 @@ test('applyMenuAccessFilter hides AutoRole from admins but keeps it for super ad
 
   assert.equal(
     superAdminSystemMenu.children?.some((route) => route.name === 'AutoRole'),
+    true
+  )
+})
+
+test('applyMenuAccessFilter enforces corp capability gates on SRP routes', () => {
+  const withoutCaps = applyMenuAccessFilter([srpRoutes], ['admin'], [])
+  const withCaps = applyMenuAccessFilter([srpRoutes], ['admin'], ['menu.srp', 'srp.manage'])
+
+  assert.equal(withoutCaps.length, 0)
+  assert.equal(withCaps.length, 1)
+  assert.equal(
+    withCaps[0].children?.some((route) => route.name === 'SrpManage'),
     true
   )
 })
@@ -273,10 +285,11 @@ test('ticket center includes admin pages for admin roles', () => {
 })
 
 test('applyMenuAccessFilter keeps SRP prices for SRP, admin, senior fc, and super admins', () => {
-  const adminSrpMenu = applyMenuAccessFilter([srpRoutes], ['admin'])[0]
-  const seniorFCSrpMenu = applyMenuAccessFilter([srpRoutes], ['senior_fc'])[0]
-  const srpOfficerMenu = applyMenuAccessFilter([srpRoutes], ['srp'])[0]
-  const superAdminSrpMenu = applyMenuAccessFilter([srpRoutes], ['super_admin'])[0]
+  const requiredCaps = ['menu.srp', 'srp.manage']
+  const adminSrpMenu = applyMenuAccessFilter([srpRoutes], ['admin'], requiredCaps)[0]
+  const seniorFCSrpMenu = applyMenuAccessFilter([srpRoutes], ['senior_fc'], requiredCaps)[0]
+  const srpOfficerMenu = applyMenuAccessFilter([srpRoutes], ['srp'], requiredCaps)[0]
+  const superAdminSrpMenu = applyMenuAccessFilter([srpRoutes], ['super_admin'], requiredCaps)[0]
 
   assert.equal(
     adminSrpMenu.children?.some((route) => route.name === 'SrpPrices'),

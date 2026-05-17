@@ -57,7 +57,7 @@ source_of_truth:
 | GET | `/sso/eve/bind` | 获取绑定新人物的 SSO 地址 | JWT |
 | PUT | `/sso/eve/primary/:character_id` | 设为主人物 | JWT |
 | DELETE | `/sso/eve/characters/:character_id` | 解绑人物 | JWT |
-| GET | `/me` | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT |
+| GET | `/me` | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`、`primary_corporation_id`、`corp_capabilities`、`corp_rules`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT |
 | DELETE | `/me` | 注销当前登录用户 / 自助删除账号 | JWT |
 | PUT | `/me` | 更新当前用户昵称 / QQ / Discord ID | JWT |
 | POST | `/dashboard` | Dashboard 聚合数据 | JWT |
@@ -273,24 +273,24 @@ source_of_truth:
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
 | GET | `/srp/prices` | 价格表 | Login |
-| POST | `/srp/prices` | 新增或更新价格 | `RequireRole(admin, senior_fc)` |
-| DELETE | `/srp/prices/:id` | 删除价格 | `RequireRole(admin, senior_fc)` |
-| POST | `/srp/applications` | 提交补损申请 | Login |
-| GET | `/srp/applications/me` | 我的补损申请 | Login |
-| GET | `/srp/killmails/me` | 我的 KM；支持可选查询参数 `character_id`、`limit`、`exclude_submitted` | Login |
-| GET | `/srp/killmails/fleet/:fleet_id` | 指定舰队 KM；支持可选查询参数 `limit`、`exclude_submitted` | Login |
-| POST | `/srp/killmails/detail` | KM 详情 | Login |
-| POST | `/srp/open-info-window` | 打开游戏内信息窗口 | Login |
-| GET | `/srp/config` | 获取 SRP 配置 | `RequireRole(admin)` |
-| PUT | `/srp/config` | 更新 SRP 配置 | `RequireRole(admin)` |
-| GET | `/srp/applications` | 审核列表 | `RequireRole(srp, senior_fc, admin)` |
-| GET | `/srp/applications/:id` | 审核详情 | `RequireRole(srp, senior_fc, admin)` |
-| PUT | `/srp/applications/:id/review` | 审核申请 | `RequireRole(srp, senior_fc, admin)` |
-| PUT | `/srp/applications/auto-approve` | 对指定 `fleet_id` 自动审批符合规则的待审批申请 | `RequireRole(srp, senior_fc, admin)` |
-| GET | `/srp/applications/batch-payout-summary` | 批量发放汇总 | `RequireRole(srp, senior_fc, admin)` |
-| PUT | `/srp/applications/fuxi-payout` | 将全部已批准未发放的申请按 1,000,000 ISK : 1 伏羲币批量发放并结案 | `RequireRole(srp, senior_fc, admin)` |
-| PUT | `/srp/applications/:id/payout` | 发放补损 | `RequireRole(srp, senior_fc, admin)` |
-| PUT | `/srp/applications/users/:user_id/payout` | 按用户批量发放补损 | `RequireRole(srp, senior_fc, admin)` |
+| POST | `/srp/prices` | 新增或更新价格 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin, senior_fc)` |
+| DELETE | `/srp/prices/:id` | 删除价格 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin, senior_fc)` |
+| POST | `/srp/applications` | 提交补损申请 | `RequireCorpCapability(srp.user)` + Login |
+| GET | `/srp/applications/me` | 我的补损申请 | `RequireCorpCapability(srp.user)` + Login |
+| GET | `/srp/killmails/me` | 我的 KM；支持可选查询参数 `character_id`、`limit`、`exclude_submitted` | `RequireCorpCapability(srp.user)` + Login |
+| GET | `/srp/killmails/fleet/:fleet_id` | 指定舰队 KM；支持可选查询参数 `limit`、`exclude_submitted` | `RequireCorpCapability(srp.user)` + Login |
+| POST | `/srp/killmails/detail` | KM 详情 | `RequireCorpCapability(srp.user)` + Login |
+| POST | `/srp/open-info-window` | 打开游戏内信息窗口 | `RequireCorpCapability(srp.user)` + Login |
+| GET | `/srp/config` | 获取 SRP 配置 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)` |
+| PUT | `/srp/config` | 更新 SRP 配置 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)` |
+| GET | `/srp/applications` | 审核列表 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| GET | `/srp/applications/:id` | 审核详情 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| PUT | `/srp/applications/:id/review` | 审核申请 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| PUT | `/srp/applications/auto-approve` | 对指定 `fleet_id` 自动审批符合规则的待审批申请 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| GET | `/srp/applications/batch-payout-summary` | 批量发放汇总 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| PUT | `/srp/applications/fuxi-payout` | 将全部已批准未发放的申请按 1,000,000 ISK : 1 伏羲币批量发放并结案 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| PUT | `/srp/applications/:id/payout` | 发放补损 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| PUT | `/srp/applications/users/:user_id/payout` | 按用户批量发放补损 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 
 ## Tasks
 
@@ -323,6 +323,8 @@ source_of_truth:
 | GET | `/system/basic-config` | 获取固定系统标识（军团 ID / 网站标题） | `RequireRole(super_admin)` |
 | GET | `/system/basic-config/allow-corporations` | 获取允许军团列表 | `RequireRole(super_admin)` |
 | PUT | `/system/basic-config/allow-corporations` | 更新允许军团列表 | `RequireRole(super_admin)` |
+| GET | `/system/basic-config/corporation-access-policies` | 获取军团能力策略配置 | `RequireRole(super_admin)` |
+| PUT | `/system/basic-config/corporation-access-policies` | 更新军团能力策略配置 | `RequireRole(super_admin)` |
 | GET | `/system/basic-config/character-esi-restriction` | 获取任一绑定人物 ESI 失效时是否强制停留人物页的配置 | `RequireRole(super_admin)` |
 | PUT | `/system/basic-config/character-esi-restriction` | 更新任一绑定人物 ESI 失效时是否强制停留人物页的配置 | `RequireRole(super_admin)` |
 

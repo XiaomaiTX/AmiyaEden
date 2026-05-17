@@ -326,34 +326,37 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	srpH := handler.NewSrpHandler()
 	srp := login.Group("/srp")
 	{
+		requireSRPUser := middleware.RequireCorpCapability(model.CorpCapabilitySRPUser)
+		requireSRPManage := middleware.RequireCorpCapability(model.CorpCapabilitySRPManage)
+
 		// 价格表（登录用户可查看，修改仅 admin）
-		srp.GET("/prices", srpH.ListShipPrices)
-		srp.POST("/prices", middleware.RequireRole(srpPriceManageRoles...), srpH.UpsertShipPrice)
-		srp.DELETE("/prices/:id", middleware.RequireRole(srpPriceManageRoles...), srpH.DeleteShipPrice)
+		srp.GET("/prices", requireSRPUser, srpH.ListShipPrices)
+		srp.POST("/prices", requireSRPManage, middleware.RequireRole(srpPriceManageRoles...), srpH.UpsertShipPrice)
+		srp.DELETE("/prices/:id", requireSRPManage, middleware.RequireRole(srpPriceManageRoles...), srpH.DeleteShipPrice)
 
 		// SRP 配置（仅 admin）
-		srp.GET("/config", middleware.RequireRole(model.RoleAdmin), srpH.GetSrpConfig)
-		srp.PUT("/config", middleware.RequireRole(model.RoleAdmin), srpH.UpdateSrpConfig)
+		srp.GET("/config", requireSRPManage, middleware.RequireRole(model.RoleAdmin), srpH.GetSrpConfig)
+		srp.PUT("/config", requireSRPManage, middleware.RequireRole(model.RoleAdmin), srpH.UpdateSrpConfig)
 
 		// 个人申请
-		srp.POST("/applications", srpH.SubmitApplication)
-		srp.GET("/applications/me", srpH.ListMyApplications)
-		srp.GET("/killmails/me", srpH.GetMyKillmails)
-		srp.GET("/killmails/fleet/:fleet_id", srpH.GetFleetKillmails)
-		srp.POST("/killmails/detail", srpH.GetKillmailDetail)
-		srp.POST("/open-info-window", srpH.OpenInfoWindow)
+		srp.POST("/applications", requireSRPUser, srpH.SubmitApplication)
+		srp.GET("/applications/me", requireSRPUser, srpH.ListMyApplications)
+		srp.GET("/killmails/me", requireSRPUser, srpH.GetMyKillmails)
+		srp.GET("/killmails/fleet/:fleet_id", requireSRPUser, srpH.GetFleetKillmails)
+		srp.POST("/killmails/detail", requireSRPUser, srpH.GetKillmailDetail)
+		srp.POST("/open-info-window", requireSRPUser, srpH.OpenInfoWindow)
 
 		// 管理端操作（srp / senior_fc / admin 可查看列表 / 详情 / 审批 / 发放 / 自动审批）
 		reviewSRP := middleware.RequireRole(srpManageRoles...)
 		payoutSRP := middleware.RequireRole(srpPayoutRoles...)
-		srp.GET("/applications", reviewSRP, srpH.ListApplications)
-		srp.GET("/applications/:id", reviewSRP, srpH.GetApplication)
-		srp.PUT("/applications/:id/review", reviewSRP, srpH.ReviewApplication)
-		srp.PUT("/applications/auto-approve", payoutSRP, srpH.RunFleetAutoApproval)
-		srp.GET("/applications/batch-payout-summary", payoutSRP, srpH.ListBatchPayoutSummary)
-		srp.PUT("/applications/fuxi-payout", payoutSRP, srpH.BatchPayoutAsFuxiCoin)
-		srp.PUT("/applications/:id/payout", payoutSRP, srpH.Payout)
-		srp.PUT("/applications/users/:user_id/payout", payoutSRP, srpH.BatchPayoutByUser)
+		srp.GET("/applications", requireSRPManage, reviewSRP, srpH.ListApplications)
+		srp.GET("/applications/:id", requireSRPManage, reviewSRP, srpH.GetApplication)
+		srp.PUT("/applications/:id/review", requireSRPManage, reviewSRP, srpH.ReviewApplication)
+		srp.PUT("/applications/auto-approve", requireSRPManage, payoutSRP, srpH.RunFleetAutoApproval)
+		srp.GET("/applications/batch-payout-summary", requireSRPManage, payoutSRP, srpH.ListBatchPayoutSummary)
+		srp.PUT("/applications/fuxi-payout", requireSRPManage, payoutSRP, srpH.BatchPayoutAsFuxiCoin)
+		srp.PUT("/applications/:id/payout", requireSRPManage, payoutSRP, srpH.Payout)
+		srp.PUT("/applications/users/:user_id/payout", requireSRPManage, payoutSRP, srpH.BatchPayoutByUser)
 	}
 
 	// ─── 任务管理 ───
@@ -394,6 +397,8 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// 允许访问的军团列表
 	adminBasicConfig.GET("/allow-corporations", sysConfigH.GetAllowCorporations)
 	adminBasicConfig.PUT("/allow-corporations", sysConfigH.UpdateAllowCorporations)
+	adminBasicConfig.GET("/corporation-access-policies", sysConfigH.GetCorporationAccessPolicies)
+	adminBasicConfig.PUT("/corporation-access-policies", sysConfigH.UpdateCorporationAccessPolicies)
 	adminBasicConfig.GET("/character-esi-restriction", sysConfigH.GetCharacterESIRestrictionConfig)
 	adminBasicConfig.PUT("/character-esi-restriction", sysConfigH.UpdateCharacterESIRestrictionConfig)
 
@@ -516,10 +521,18 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	// 福利管理（列表：admin + welfare 可读；写操作仅 admin）
-	welfareListGroup := login.Group("/system/welfare", middleware.RequireRole(model.RoleAdmin, model.RoleWelfare))
+	welfareListGroup := login.Group(
+		"/system/welfare",
+		middleware.RequireCorpCapability(model.CorpCapabilityWelfareUser),
+		middleware.RequireRole(model.RoleAdmin, model.RoleWelfare),
+	)
 	welfareListGroup.POST("/list", welfareH.AdminListWelfares)
 
-	welfareApproval := login.Group("/system/welfare", middleware.RequireRole(welfareApprovalRoles...))
+	welfareApproval := login.Group(
+		"/system/welfare",
+		middleware.RequireCorpCapability(model.CorpCapabilityWelfareReview),
+		middleware.RequireRole(welfareApprovalRoles...),
+	)
 	{
 		welfareApproval.POST("/applications", welfareH.AdminListApplications)
 		welfareApproval.POST("/review", welfareH.AdminReviewApplication)
@@ -528,22 +541,22 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	adminWelfare := admin.Group("/welfare")
 	{
 		adminWelfare.GET("/settings", welfareH.AdminGetSettings)
-		adminWelfare.PUT("/settings", welfareH.AdminUpdateSettings)
-		adminWelfare.POST("/add", welfareH.AdminCreateWelfare)
-		adminWelfare.POST("/edit", welfareH.AdminUpdateWelfare)
-		adminWelfare.POST("/delete", welfareH.AdminDeleteWelfare)
+		adminWelfare.PUT("/settings", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminUpdateSettings)
+		adminWelfare.POST("/add", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminCreateWelfare)
+		adminWelfare.POST("/edit", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminUpdateWelfare)
+		adminWelfare.POST("/delete", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminDeleteWelfare)
 		adminWelfare.POST("/applications/delete", welfareH.AdminDeleteApplication)
-		adminWelfare.POST("/import", welfareH.AdminImportRecords)
-		adminWelfare.POST("/reorder", welfareH.AdminReorderWelfares)
+		adminWelfare.POST("/import", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminImportRecords)
+		adminWelfare.POST("/reorder", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminReorderWelfares)
 	}
 
 	// ─── 用户端福利 ───
 	welfareUser := login.Group("/welfare")
 	{
-		welfareUser.POST("/eligible", welfareH.GetEligibleWelfares)
-		welfareUser.POST("/apply", welfareH.ApplyForWelfare)
-		welfareUser.POST("/my-applications", welfareH.ListMyApplications)
-		welfareUser.POST("/upload-evidence", welfareH.UploadEvidence)
+		welfareUser.POST("/eligible", middleware.RequireCorpCapability(model.CorpCapabilityWelfareUser), welfareH.GetEligibleWelfares)
+		welfareUser.POST("/apply", middleware.RequireCorpCapability(model.CorpCapabilityWelfareUser), welfareH.ApplyForWelfare)
+		welfareUser.POST("/my-applications", middleware.RequireCorpCapability(model.CorpCapabilityWelfareUser), welfareH.ListMyApplications)
+		welfareUser.POST("/upload-evidence", middleware.RequireCorpCapability(model.CorpCapabilityWelfareUser), welfareH.UploadEvidence)
 	}
 
 	// 自动权限映射管理（管理员）

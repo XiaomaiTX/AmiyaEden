@@ -201,6 +201,50 @@ func TestConvertSrpAmountToFuxiCoin(t *testing.T) {
 	}
 }
 
+func TestAutoSrpApplyRecommendationMultiplier(t *testing.T) {
+	db := newCorpPolicyTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	policySvc := NewCorporationPolicyService()
+	if err := policySvc.UpdatePolicies(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies: []CorporationPolicy{{
+			CorporationID: 1001,
+			Rules: map[string]any{
+				CorpRuleSRPRecommendationMultiplier: 0.5,
+			},
+		}},
+	}); err != nil {
+		t.Fatalf("update policies: %v", err)
+	}
+
+	autoSvc := NewAutoSrpService()
+	amount := autoSvc.applyRecommendationMultiplier(&model.EveKillmailList{CorporationID: 1001}, 20_000_000)
+	if amount != 10_000_000 {
+		t.Fatalf("multiplied amount = %v, want %v", amount, 10_000_000)
+	}
+
+	if err := policySvc.UpdatePolicies(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies: []CorporationPolicy{{
+			CorporationID: 1001,
+			Rules: map[string]any{
+				CorpRuleSRPRecommendationMultiplier: 2.0,
+			},
+		}},
+	}); err != nil {
+		t.Fatalf("update invalid multiplier policy: %v", err)
+	}
+	unchanged := autoSvc.applyRecommendationMultiplier(&model.EveKillmailList{CorporationID: 1001}, 20_000_000)
+	if unchanged != 20_000_000 {
+		t.Fatalf("invalid multiplier fallback amount = %v, want %v", unchanged, 20_000_000)
+	}
+}
+
 func TestBuildSrpPayoutWalletReason(t *testing.T) {
 	app := &model.SrpApplication{ID: 42, ShipName: "Guardian"}
 

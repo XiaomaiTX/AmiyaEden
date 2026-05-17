@@ -33,11 +33,12 @@ export class MenuProcessor {
   private async processFrontendMenu(): Promise<AppRouteRecord[]> {
     const userStore = useUserStore()
     const roles = userStore.info?.roles ?? []
+    const corpCapabilities = userStore.info?.corpCapabilities ?? []
 
     let menuList = [...asyncRoutes]
 
     // 根据静态路由访问边界过滤菜单
-    menuList = this.filterMenuByAccess(menuList, roles)
+    menuList = this.filterMenuByAccess(menuList, roles, corpCapabilities)
 
     return this.filterEmptyMenus(menuList)
   }
@@ -45,12 +46,22 @@ export class MenuProcessor {
   /**
    * 根据静态路由访问边界过滤菜单
    */
-  private filterMenuByAccess(menu: AppRouteRecord[], roles: string[]): AppRouteRecord[] {
+  private filterMenuByAccess(
+    menu: AppRouteRecord[],
+    roles: string[],
+    corpCapabilities: string[]
+  ): AppRouteRecord[] {
     const userStore = useUserStore()
     const isCurrentlyNewbro = userStore.info?.isCurrentlyNewbro
     const isMentorMenteeEligible = userStore.info?.isMentorMenteeEligible
 
-    return applyMenuAccessFilter(menu, roles, isCurrentlyNewbro, isMentorMenteeEligible)
+    return applyMenuAccessFilter(
+      menu,
+      roles,
+      corpCapabilities,
+      isCurrentlyNewbro,
+      isMentorMenteeEligible
+    )
   }
 
   /**

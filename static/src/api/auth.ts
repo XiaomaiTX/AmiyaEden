@@ -136,6 +136,10 @@ export async function fetchGetUserInfo(): Promise<Api.Auth.UserInfo> {
         ? data.is_mentor_mentee_eligible
         : undefined,
     roles,
+    primaryCorporationId:
+      typeof data.primary_corporation_id === 'number' ? data.primary_corporation_id : 0,
+    corpCapabilities: Array.isArray(data.corp_capabilities) ? data.corp_capabilities : [],
+    corpRules: data.corp_rules ?? {},
     characters: characters ?? [],
     primaryCharacterId
   }
