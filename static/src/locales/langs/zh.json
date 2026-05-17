@@ -2701,8 +2701,11 @@
       "corporationAccessPolicies": "军团能力策略",
       "corporationAccessPoliciesHint": "按军团配置能力与规则，未命中策略按最小权限处理。",
       "corporationId": "军团 ID",
+      "selectedCorporation": "配置军团",
+      "selectCorporationToConfigure": "请选择需要配置的军团",
       "fullAccess": "全量放行",
       "srpRecommendationMultiplier": "SRP 推荐金额乘数",
+      "saveCurrentCorporationPolicy": "保存当前军团策略",
       "invalidMultiplier": "SRP 推荐金额乘数必须在 0 到 1 之间",
       "corpCapabilityGroups": {
         "menus": "菜单入口",
