@@ -242,6 +242,8 @@ func TestSystemBasicConfigRequiresSuperAdmin(t *testing.T) {
 	assertRouteStatus(t, adminRouter, http.MethodPost, "/system/sde-config/update", http.StatusForbidden)
 	assertRouteStatus(t, adminRouter, http.MethodGet, "/system/basic-config/allow-corporations", http.StatusForbidden)
 	assertRouteStatus(t, adminRouter, http.MethodPut, "/system/basic-config/allow-corporations", http.StatusForbidden)
+	assertRouteStatus(t, adminRouter, http.MethodGet, "/system/basic-config/corporation-access-policies", http.StatusForbidden)
+	assertRouteStatus(t, adminRouter, http.MethodPut, "/system/basic-config/corporation-access-policies", http.StatusForbidden)
 	assertRouteStatus(t, adminRouter, http.MethodGet, "/system/basic-config/character-esi-restriction", http.StatusForbidden)
 	assertRouteStatus(t, adminRouter, http.MethodPut, "/system/basic-config/character-esi-restriction", http.StatusForbidden)
 
@@ -254,6 +256,8 @@ func TestSystemBasicConfigRequiresSuperAdmin(t *testing.T) {
 	assertRouteStatus(t, superAdminRouter, http.MethodPost, "/system/sde-config/update", http.StatusNoContent)
 	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/system/basic-config/allow-corporations", http.StatusNoContent)
 	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/system/basic-config/allow-corporations", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/system/basic-config/corporation-access-policies", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/system/basic-config/corporation-access-policies", http.StatusNoContent)
 	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/system/basic-config/character-esi-restriction", http.StatusNoContent)
 	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/system/basic-config/character-esi-restriction", http.StatusNoContent)
 }
@@ -355,6 +359,37 @@ func TestWelfareApprovalRoutesAllowWelfareWhileDeleteStaysAdminOnly(t *testing.T
 		"/system/welfare/applications/delete",
 		http.StatusNoContent,
 	)
+}
+
+func TestSrpRoutesRequireCorporationCapability(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	withoutCapability := newSrpCorpCapabilityTestRouter([]string{model.RoleAdmin}, []string{})
+	assertRouteStatus(t, withoutCapability, http.MethodGet, "/srp/prices", http.StatusForbidden)
+	assertRouteStatus(t, withoutCapability, http.MethodGet, "/srp/applications", http.StatusForbidden)
+
+	withCapability := newSrpCorpCapabilityTestRouter(
+		[]string{model.RoleAdmin},
+		[]string{model.CorpCapabilitySRPUser, model.CorpCapabilitySRPManage},
+	)
+	assertRouteStatus(t, withCapability, http.MethodGet, "/srp/prices", http.StatusNoContent)
+	assertRouteStatus(t, withCapability, http.MethodGet, "/srp/applications", http.StatusNoContent)
+}
+
+func TestWelfareRoutesRequireCorporationCapability(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	withoutCapability := newWelfareCorpCapabilityTestRouter([]string{model.RoleAdmin}, []string{})
+	assertRouteStatus(t, withoutCapability, http.MethodPost, "/welfare/eligible", http.StatusForbidden)
+	assertRouteStatus(t, withoutCapability, http.MethodPost, "/system/welfare/review", http.StatusForbidden)
+
+	withCapability := newWelfareCorpCapabilityTestRouter(
+		[]string{model.RoleAdmin},
+		[]string{model.CorpCapabilityWelfareUser, model.CorpCapabilityWelfareReview, model.CorpCapabilityWelfareConfig},
+	)
+	assertRouteStatus(t, withCapability, http.MethodPost, "/welfare/eligible", http.StatusNoContent)
+	assertRouteStatus(t, withCapability, http.MethodPost, "/system/welfare/review", http.StatusNoContent)
+	assertRouteStatus(t, withCapability, http.MethodPut, "/system/welfare/settings", http.StatusNoContent)
 }
 
 func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
@@ -758,6 +793,8 @@ func newSystemBasicConfigPermissionTestRouter(roles []string) *gin.Engine {
 	basicConfig.GET("", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.GET("/allow-corporations", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.PUT("/allow-corporations", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	basicConfig.GET("/corporation-access-policies", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	basicConfig.PUT("/corporation-access-policies", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.GET("/character-esi-restriction", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.PUT("/character-esi-restriction", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
@@ -787,6 +824,44 @@ func newDashboardCorporationStructuresPermissionTestRouter(roles []string) *gin.
 	fuelOfficer := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleFuelOfficer))
 	fuelOfficer.POST("/my-assigned-list", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
+	return r
+}
+
+func newSrpCorpCapabilityTestRouter(roles []string, capabilities []string) *gin.Engine {
+	r := gin.New()
+	inject := func(c *gin.Context) {
+		c.Set("roles", roles)
+		c.Set("corpCapabilities", capabilities)
+		c.Next()
+	}
+
+	srp := r.Group("/srp", inject, middleware.RequireLoginUser())
+	srp.GET("/prices", middleware.RequireCorpCapability(model.CorpCapabilitySRPUser), func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	srp.GET(
+		"/applications",
+		middleware.RequireCorpCapability(model.CorpCapabilitySRPManage),
+		middleware.RequireRole(srpManageRoles...),
+		func(c *gin.Context) { c.Status(http.StatusNoContent) },
+	)
+	return r
+}
+
+func newWelfareCorpCapabilityTestRouter(roles []string, capabilities []string) *gin.Engine {
+	r := gin.New()
+	inject := func(c *gin.Context) {
+		c.Set("roles", roles)
+		c.Set("corpCapabilities", capabilities)
+		c.Next()
+	}
+
+	welfareUser := r.Group("/welfare", inject, middleware.RequireLoginUser())
+	welfareUser.POST("/eligible", middleware.RequireCorpCapability(model.CorpCapabilityWelfareUser), func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+	welfareApproval := r.Group("/system/welfare", inject, middleware.RequireRole(welfareApprovalRoles...))
+	welfareApproval.POST("/review", middleware.RequireCorpCapability(model.CorpCapabilityWelfareReview), func(c *gin.Context) { c.Status(http.StatusNoContent) })
+
+	adminWelfare := r.Group("/system/welfare", inject, middleware.RequireRole(model.RoleAdmin))
+	adminWelfare.PUT("/settings", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	return r
 }
 

@@ -54,6 +54,8 @@ export interface RouteMeta extends Record<string | number | symbol, unknown> {
   isFirstLevel?: boolean
   /** 职权要求 */
   roles?: string[]
+  /** 军团 capability 要求 */
+  corpCapabilities?: string[]
   /** 任意非 guest 已登录产品用户可访问 */
   login?: boolean
   /** 仅当前仍符合新人资格的用户可访问 */

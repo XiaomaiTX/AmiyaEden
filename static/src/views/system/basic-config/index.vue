@@ -124,12 +124,72 @@
         </ElFormItem>
       </ElForm>
     </ElCard>
+
+    <ElCard shadow="never" style="margin-top: 16px">
+      <template #header>
+        <h2 class="section-title">{{ $t('system.basicConfig.corporationAccessPolicies') }}</h2>
+      </template>
+
+      <div v-loading="loadingCorpPolicies">
+        <div class="form-hint">{{ $t('system.basicConfig.corporationAccessPoliciesHint') }}</div>
+
+        <div v-for="policy in corpPolicyRows" :key="policy.corporation_id" class="corp-policy-row">
+          <div class="corp-policy-header">
+            <span>{{ $t('system.basicConfig.corporationId') }}: {{ policy.corporation_id }}</span>
+            <ElSwitch
+              v-model="policy.full_access"
+              :active-text="$t('system.basicConfig.fullAccess')"
+            />
+          </div>
+
+          <ElCheckboxGroup v-model="policy.capabilities">
+            <ElCheckbox
+              v-for="capability in corpCapabilityOptions"
+              :key="capability"
+              :label="capability"
+            >
+              {{ capability }}
+            </ElCheckbox>
+          </ElCheckboxGroup>
+
+          <ElFormItem
+            :label="$t('system.basicConfig.srpRecommendationMultiplier')"
+            class="corp-policy-multiplier"
+          >
+            <ElInputNumber
+              v-model="policy.multiplier"
+              :precision="2"
+              :step="0.1"
+              :min="0"
+              :max="1"
+              controls-position="right"
+            />
+          </ElFormItem>
+        </div>
+
+        <ElButton type="primary" :loading="savingCorpPolicies" @click="handleSaveCorpPolicies">
+          {{ $t('system.basicConfig.save') }}
+        </ElButton>
+      </div>
+    </ElCard>
   </div>
 </template>
 
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
-  import { ElCard, ElForm, ElFormItem, ElInput, ElButton, ElMessage, ElAlert } from 'element-plus'
+  import {
+    ElCard,
+    ElForm,
+    ElFormItem,
+    ElInput,
+    ElButton,
+    ElMessage,
+    ElAlert,
+    ElSwitch,
+    ElCheckboxGroup,
+    ElCheckbox,
+    ElInputNumber
+  } from 'element-plus'
   import {
     fetchSDEConfig,
     updateSDEConfig,
@@ -137,7 +197,9 @@
     checkSDEVersion,
     triggerSDEUpdate,
     fetchAllowCorporations,
-    updateAllowCorporations
+    updateAllowCorporations,
+    fetchCorporationAccessPolicies,
+    updateCorporationAccessPolicies
   } from '@/api/sys-config'
   import { SYSTEM_IDENTITY, SYSTEM_IDENTITY_I18N } from '@/constants/system-identity'
   import { formatTime } from '@/utils/common'
@@ -151,7 +213,18 @@
   const updatingSDE = ref(false)
   const loadingAllowCorpsConfig = ref(false)
   const savingAllowCorps = ref(false)
+  const loadingCorpPolicies = ref(false)
+  const savingCorpPolicies = ref(false)
   const REQUIRED_ALLOW_CORPORATION_ID = SYSTEM_IDENTITY.corporationId
+  const corpCapabilityOptions: Api.SysConfig.CorporationCapability[] = [
+    'srp.user',
+    'srp.manage',
+    'welfare.user',
+    'welfare.approval',
+    'welfare.settings',
+    'menu.srp',
+    'menu.welfare'
+  ]
 
   const sdeForm = reactive<Api.SysConfig.SDEConfig>({
     api_key: '',
@@ -175,6 +248,15 @@
   })
 
   const allowCorpsInput = ref('')
+  const corpPoliciesVersion = ref(1)
+  const corpPolicyRows = ref<
+    Array<{
+      corporation_id: number
+      full_access: boolean
+      capabilities: Api.SysConfig.CorporationCapability[]
+      multiplier: number
+    }>
+  >([])
   const sdeLastError = computed(() => sdeStatus.last_update_error || sdeStatus.last_check_error)
 
   const normalizeAllowCorporations = (corporations: number[]) => {
@@ -326,8 +408,81 @@
     }
   }
 
+  const clampMultiplier = (value: number) => {
+    if (!Number.isFinite(value)) return 1
+    if (value < 0 || value > 1) return NaN
+    return value
+  }
+
+  const loadCorpPolicies = async () => {
+    loadingCorpPolicies.value = true
+    try {
+      const res = await fetchCorporationAccessPolicies()
+      corpPoliciesVersion.value = res.version || 1
+      const policyMap = new Map(
+        (res.policies || []).map((policy) => [
+          policy.corporation_id,
+          {
+            full_access: !!policy.full_access,
+            capabilities: Array.isArray(policy.capabilities) ? policy.capabilities : [],
+            rules: policy.rules ?? {}
+          }
+        ])
+      )
+      corpPolicyRows.value = allowCorpsForm.allow_corporations.map((corporationID) => {
+        const policy = policyMap.get(corporationID)
+        const rawMultiplier = policy?.rules?.['srp.recommendation_multiplier']
+        const multiplier =
+          typeof rawMultiplier === 'number' && Number.isFinite(rawMultiplier) ? rawMultiplier : 1
+        return {
+          corporation_id: corporationID,
+          full_access: policy?.full_access ?? false,
+          capabilities: (policy?.capabilities ?? []).filter((capability) =>
+            corpCapabilityOptions.includes(capability as Api.SysConfig.CorporationCapability)
+          ) as Api.SysConfig.CorporationCapability[],
+          multiplier: clampMultiplier(multiplier) || 1
+        }
+      })
+    } catch {
+      /* empty */
+    } finally {
+      loadingCorpPolicies.value = false
+    }
+  }
+
+  const handleSaveCorpPolicies = async () => {
+    for (const row of corpPolicyRows.value) {
+      if (Number.isNaN(clampMultiplier(row.multiplier))) {
+        ElMessage.error(t('system.basicConfig.invalidMultiplier'))
+        return
+      }
+    }
+
+    savingCorpPolicies.value = true
+    try {
+      await updateCorporationAccessPolicies({
+        version: corpPoliciesVersion.value,
+        default_mode: 'deny',
+        policies: corpPolicyRows.value.map((row) => ({
+          corporation_id: row.corporation_id,
+          full_access: row.full_access,
+          capabilities: row.capabilities,
+          rules: {
+            'srp.recommendation_multiplier': row.multiplier
+          }
+        }))
+      })
+      ElMessage.success(t('system.basicConfig.saveSuccess'))
+      await loadCorpPolicies()
+    } catch {
+      /* empty */
+    } finally {
+      savingCorpPolicies.value = false
+    }
+  }
+
   onMounted(() => {
-    loadAllowCorpsConfig()
+    loadAllowCorpsConfig().then(loadCorpPolicies)
     loadSDEConfig()
     loadSDEStatus()
   })
@@ -378,5 +533,25 @@
 
   .sde-status-value--error {
     color: var(--el-color-danger);
+  }
+
+  .corp-policy-row {
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+  }
+
+  .corp-policy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+
+  .corp-policy-multiplier {
+    margin-top: 12px;
+    margin-bottom: 0;
   }
 </style>

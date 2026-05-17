@@ -8,21 +8,31 @@ export function hasNonGuestRole(roles: string[]): boolean {
 export function applyMenuAccessFilter(
   menu: AppRouteRecord[],
   roles: string[],
+  corpCapabilities: string[] = [],
   isCurrentlyNewbro?: boolean,
   isMentorMenteeEligible?: boolean
 ): AppRouteRecord[] {
   return menu.reduce((acc: AppRouteRecord[], item) => {
     const itemRoles = item.meta?.roles
+    const itemCorpCapabilities = item.meta?.corpCapabilities
     const requiresLogin = item.meta?.login === true
     const requiresNewbro = item.meta?.requiresNewbro === true
     const requiresMentorMenteeEligibility = item.meta?.requiresMentorMenteeEligibility === true
     const hasRolePermission = !itemRoles || itemRoles.some((role) => roles.includes(role))
+    const hasCorpCapabilityPermission =
+      !itemCorpCapabilities ||
+      itemCorpCapabilities.length === 0 ||
+      itemCorpCapabilities.some((capability) => corpCapabilities.includes(capability))
     const hasLoginPermission = !requiresLogin || hasNonGuestRole(roles)
     const hasNewbroPermission = !requiresNewbro || isCurrentlyNewbro === true
     const hasMentorMenteePermission =
       !requiresMentorMenteeEligibility || isMentorMenteeEligible === true
     const hasPermission =
-      hasRolePermission && hasLoginPermission && hasNewbroPermission && hasMentorMenteePermission
+      hasRolePermission &&
+      hasCorpCapabilityPermission &&
+      hasLoginPermission &&
+      hasNewbroPermission &&
+      hasMentorMenteePermission
 
     if (!hasPermission) {
       return acc
@@ -33,6 +43,7 @@ export function applyMenuAccessFilter(
       filteredItem.children = applyMenuAccessFilter(
         filteredItem.children,
         roles,
+        corpCapabilities,
         isCurrentlyNewbro,
         isMentorMenteeEligible
       )

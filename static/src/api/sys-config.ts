@@ -21,6 +21,21 @@ export function updateAllowCorporations(data: Api.SysConfig.UpdateAllowCorporati
   })
 }
 
+export function fetchCorporationAccessPolicies() {
+  return request.get<Api.SysConfig.CorporationAccessPoliciesConfig>({
+    url: '/api/v1/system/basic-config/corporation-access-policies'
+  })
+}
+
+export function updateCorporationAccessPolicies(
+  data: Api.SysConfig.UpdateCorporationAccessPoliciesParams
+) {
+  return request.put({
+    url: '/api/v1/system/basic-config/corporation-access-policies',
+    data
+  })
+}
+
 export function fetchCharacterESIRestrictionConfig() {
   return request.get<Api.SysConfig.CharacterESIRestrictionConfig>({
     url: '/api/v1/system/basic-config/character-esi-restriction'

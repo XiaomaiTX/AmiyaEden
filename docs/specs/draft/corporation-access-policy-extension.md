@@ -2,7 +2,7 @@
 status: draft
 doc_type: spec
 owner: engineering
-last_reviewed: 2026-05-15
+last_reviewed: 2026-05-17
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -12,9 +12,10 @@ source_of_truth:
   - server/internal/handler/sys_config.go
   - server/internal/model/sys_config.go
   - server/internal/utils/allow_corporations.go
-  - static-react/src/auth/route-access-gate.tsx
-  - static-react/src/layout/menu-config.ts
-  - static-react/src/pages/system-basic-config-page.tsx
+  - static/src/router/core/menuAccess.ts
+  - static/src/router/modules/srp.ts
+  - static/src/router/modules/welfare.ts
+  - static/src/views/system/basic-config/index.vue
 ---
 
 # 军团能力策略扩展草案（基于 allow_corporations）
@@ -141,7 +142,7 @@ source_of_truth:
 - SRP 推荐金额生成路径读取并乘算该比例。
 - 该规则仅示例接入；引擎保持通用，不绑定 SRP 专用结构。
 
-### 5. 前端接入（React）
+### 5. 前端接入（Vue）
 
 `GET /api/v1/me` 新增返回字段：
 
@@ -152,7 +153,7 @@ source_of_truth:
 路由与菜单：
 
 - 路由 `meta` 增加 `corpCapabilities?: string[]`。
-- `RouteAccessGate` 联合判断 `roles` 与 `corpCapabilities`。
+- `menuAccess` 联合判断 `roles/login` 与 `corpCapabilities`。
 - 菜单构建按 `menu.srp`、`menu.welfare` 控制显示。
 
 配置页面：
@@ -162,6 +163,96 @@ source_of_truth:
 - 支持 capability 勾选与规则值编辑。
 - 保存时调用新策略接口。
 
+## 当前完成度（2026-05-17）
+
+### 总体状态
+
+- 一期范围已完成：后端能力执法、SRP 规则示例接入、前端能力门禁与策略配置 UI、相关文档同步。
+- 已转正文档：`docs/features/current/corporation-access-policy.md`。
+
+### ToDo（按状态）
+
+- [x] 新增 `app.corporation_access_policies` 配置 key（`server/internal/model/sys_config.go`）。
+- [x] 新增 capability 常量与合法性校验（`server/internal/model/corporation_capability.go`）。
+- [x] 新增策略服务（配置读取/校验/匹配/缓存失效/用户策略上下文）（`server/internal/service/corporation_policy.go`）。
+- [x] 在 JWT 鉴权链路注入 `primary_corporation_id`、`corp_capabilities`、`corp_rules`、`corp_full_access`（`server/internal/middleware/auth.go`）。
+- [x] 新增 `RequireCorpCapability(capability string)` 中间件（`server/internal/middleware/auth.go`）。
+- [x] 新增策略配置接口：
+  - `GET /api/v1/system/basic-config/corporation-access-policies`
+  - `PUT /api/v1/system/basic-config/corporation-access-policies`
+  （`server/internal/handler/sys_config.go` + `server/internal/router/router.go`）
+- [x] SRP 路由叠加 capability 门禁（`srp.user` / `srp.manage`）（`server/internal/router/router.go`）。
+- [x] 福利路由叠加 capability 门禁（`welfare.user` / `welfare.approval` / `welfare.settings`）（`server/internal/router/router.go`）。
+- [x] `/api/v1/me` 返回扩展 `primary_corporation_id`、`corp_capabilities`、`corp_rules`（`server/internal/handler/me.go`）。
+- [x] 新增后端测试：
+  - 中间件能力判定测试（`server/internal/middleware/auth_corporation_capability_test.go`）
+  - 策略服务测试（`server/internal/service/corporation_policy_test.go`）
+  - 策略接口测试（`server/internal/handler/sys_config_corporation_policy_test.go`）
+  - `/me` 新字段断言（`server/internal/handler/me_test.go`）
+  - 路由 capability 断言（`server/internal/router/router_test.go`）
+- [x] SRP 规则引擎示例接入 `srp.recommendation_multiplier`（`server/internal/service/auto_srp.go` / `srp.go`）。
+- [x] 前端能力门禁与策略配置 UI（`static/` 相关文件）。
+- [x] API 文档更新（`docs/api/route-index.md`）。
+- [x] 草案转正并同步 `docs/features/current/corporation-access-policy.md`。
+
+### 说明
+
+- 当前实现保持“默认 deny”，并对 `default_mode` 做了限制（仅接受 `deny`），符合一期最小权限目标。
+- 一期范围保持在 `static/`（Vue）端，不含 `static-react/`。
+
+### 收口验证记录（2026-05-17）
+
+- 后端特性相关测试通过：
+  - `go test ./internal/middleware ./internal/router ./internal/service -run "CorporationPolicy|RequireCorpCapability|SRP|Corp"`
+  - `go test ./internal/handler -run "CorporationAccessPolicies|MeResponse"`
+- 前端特性相关测试通过：
+  - `pnpm exec tsx --test src/router/core/menuAccess.test.ts src/views/system/basic-config/index.test.ts`
+
+## 代码文件级实施清单
+
+### 后端（Go）
+
+| 文件 | 变更点 | 目标 |
+| --- | --- | --- |
+| `server/internal/model/sys_config.go` | 新增 `app.corporation_access_policies` 配置 key 常量与默认说明 | 配置键统一入口 |
+| `server/internal/model`（新增 capability 常量文件） | 定义一期 capability 枚举：`srp.user`、`srp.manage`、`welfare.user`、`welfare.approval`、`welfare.settings`、`menu.srp`、`menu.welfare` | 禁止自由字符串漂移 |
+| `server/internal/service`（新增 corporation policy 服务文件） | 实现策略读取、校验、匹配、规则读取（含 `srp.recommendation_multiplier`） | 策略核心逻辑集中 |
+| `server/internal/handler/sys_config.go` | 新增策略 GET/PUT handler 与请求校验结构 | 超管配置入口 |
+| `server/internal/middleware/auth.go`（或新增中间件文件） | 新增 `RequireCorpCapability(capability string)`；把主军团、capabilities、rules 写入 context | 后端强制鉴权 |
+| `server/internal/router/router.go` | SRP/福利路由挂 capability 中间件；新增策略配置路由 | 路由执法落地 |
+| `server/internal/handler/me.go` | `/api/v1/me` 增加 `primary_corporation_id`、`corp_capabilities`、`corp_rules` | 前端判定数据源 |
+| `server/internal/service/auto_srp.go` | 推荐金额链路接入 `srp.recommendation_multiplier`（含默认回退） | 规则引擎一期示例落地 |
+
+### 前端（Vue + TS）
+
+| 文件 | 变更点 | 目标 |
+| --- | --- | --- |
+| `static/src/types/api/api.d.ts` | 扩展 `Api.Auth.MeResponse` / `Api.Auth.UserInfo` / `Api.SysConfig` 策略类型 | 类型契约同步 |
+| `static/src/api/auth.ts` | 映射 `/me` 新字段到 `UserInfo` | 登录态能力数据注入 |
+| `static/src/types/router/index.ts` | `RouteMeta` 增加 `corpCapabilities?: string[]` | 路由元数据承载能力要求 |
+| `static/src/router/core/menuAccess.ts` | 菜单过滤增加 capability 判定 | 菜单收敛 |
+| `static/src/router/modules/srp.ts` | 标注 `menu.srp`、`srp.user`、`srp.manage` | SRP 页面能力门禁 |
+| `static/src/router/modules/welfare.ts` | 标注 `menu.welfare`、`welfare.user`、`welfare.approval`、`welfare.settings` | 福利页面能力门禁 |
+| `static/src/api/sys-config.ts` | 新增策略 GET/PUT API 包装 | 配置页接口接入 |
+| `static/src/views/system/basic-config/index.vue` | 新增“军团能力策略”编辑区（能力勾选 + 规则编辑 + 保存） | 超管可视化配置 |
+| `static/src/locales/langs/zh.json` / `static/src/locales/langs/en.json` | 补齐策略配置与校验文案键 | 文案与 i18n 完整 |
+
+### 测试与回归
+
+| 文件 | 变更点 | 目标 |
+| --- | --- | --- |
+| `server/internal/router/router_test.go` | 增加 SRP/福利 capability 路由保护断言（role 通过但 capability 不通过时返回 403） | 防路由执法回退 |
+| `server/internal/handler/me_test.go` | 断言 `/me` 新字段返回 | 合同字段稳定 |
+| `server/internal/service`（新增 policy service 测试文件） | 覆盖策略解析、校验、default deny、super_admin 放行、规则读取默认值 | 核心逻辑回归保护 |
+| `static/src/router/core/menuAccess.test.ts` | 新增 capability 过滤分支测试 | 菜单权限边界稳定 |
+| `static/src/views/system/basic-config/index.test.ts` | 新增策略区块渲染、API 调用、文案键断言 | 配置页可维护性 |
+
+### 文档与契约对齐
+
+| 文件 | 变更点 | 目标 |
+| --- | --- | --- |
+| `docs/api/route-index.md` | 增加策略配置接口与 `/me` 新字段说明 | API 文档一致性 |
+| `docs/features/current/*`（实现转正后） | 补充军团策略能力说明与边界 | 草案转正收口 |
 ## API 草案
 
 - `GET /api/v1/system/basic-config/corporation-access-policies`
@@ -199,7 +290,7 @@ source_of_truth:
 
 前端测试：
 
-- `RouteAccessGate` capability 判定分支。
+- `menuAccess` capability 判定分支。
 - 菜单构建 capability 过滤。
 - 配置页读写 payload 和回显一致性。
 
@@ -221,4 +312,4 @@ source_of_truth:
 
 - 主人物军团信息在 `eve_character.corporation_id` 中可用且及时更新。
 - 军团策略只针对登录后功能访问，不替代 SSO 准入判断。
-- 一期仅 React 端承接策略配置 UI，旧 Vue 端先不扩展该编辑能力。
+- 一期仅 `static/`（Vue）承接策略配置 UI。`static-react/` 本期不改造，不新增策略配置 UI 与 capability 门禁逻辑。

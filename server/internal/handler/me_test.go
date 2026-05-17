@@ -98,6 +98,23 @@ func TestMeHandlerGetMeReturnsCharacterRestrictionToggleWhenPrimaryIsHealthy(t *
 	if payload["enforce_character_esi_restriction"] != false {
 		t.Fatalf("expected enforcement flag false, got %#v", payload["enforce_character_esi_restriction"])
 	}
+	if payload["primary_corporation_id"] != float64(0) {
+		t.Fatalf("expected primary_corporation_id default 0, got %#v", payload["primary_corporation_id"])
+	}
+	corpCapabilities, ok := payload["corp_capabilities"].([]any)
+	if !ok {
+		t.Fatalf("expected corp_capabilities array, got %#v", payload["corp_capabilities"])
+	}
+	if len(corpCapabilities) != 0 {
+		t.Fatalf("expected empty corp_capabilities, got %#v", corpCapabilities)
+	}
+	corpRules, ok := payload["corp_rules"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected corp_rules object, got %#v", payload["corp_rules"])
+	}
+	if len(corpRules) != 0 {
+		t.Fatalf("expected empty corp_rules, got %#v", corpRules)
+	}
 	characters, ok := payload["characters"].([]any)
 	if !ok || len(characters) != 2 {
 		t.Fatalf("expected two characters in payload, got %#v", payload["characters"])

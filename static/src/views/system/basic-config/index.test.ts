@@ -32,6 +32,10 @@ test('sys config API and types include SDE status interfaces', () => {
   assert.match(typeSource, /has_update: boolean/)
   assert.match(typeSource, /last_check_error: string/)
   assert.match(typeSource, /last_update_error: string/)
+  assert.match(apiSource, /export function fetchCorporationAccessPolicies\(/)
+  assert.match(apiSource, /export function updateCorporationAccessPolicies\(/)
+  assert.match(typeSource, /interface CorporationAccessPoliciesConfig \{/)
+  assert.match(typeSource, /interface CorporationAccessPolicy \{/)
 })
 
 test('sde locale strings are present in zh and en', () => {
@@ -41,4 +45,9 @@ test('sde locale strings are present in zh and en', () => {
   assert.match(enLocaleSource, /"sdeCheckVersion"\s*:\s*"Check Latest Version"/)
   assert.match(enLocaleSource, /"sdeRunUpdate"\s*:\s*"Run Update"/)
   assert.match(enLocaleSource, /"sdeUpdateAvailable"\s*:/)
+  assert.match(zhLocaleSource, /"corporationAccessPolicies"\s*:/)
+  assert.match(enLocaleSource, /"corporationAccessPolicies"\s*:/)
+  assert.match(source, /fetchCorporationAccessPolicies\(/)
+  assert.match(source, /updateCorporationAccessPolicies\(/)
+  assert.match(source, /srp\.recommendation_multiplier/)
 })

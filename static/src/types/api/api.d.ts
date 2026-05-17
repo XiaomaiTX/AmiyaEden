@@ -121,6 +121,9 @@ declare namespace Api {
       characters: EveCharacter[]
       /** 用户所有活跃职权编码列表 */
       roles: string[]
+      primary_corporation_id: number
+      corp_capabilities: string[]
+      corp_rules: Record<string, string | number | boolean>
       /** 用户所有权限标识列表 */
       permissions: string[]
       profile_complete: boolean
@@ -132,6 +135,9 @@ declare namespace Api {
     /** 用户信息（路由守卫和权限指令使用） */
     interface UserInfo {
       roles: string[]
+      primaryCorporationId?: number
+      corpCapabilities?: string[]
+      corpRules?: Record<string, string | number | boolean>
       userId: number
       userName: string
       nickname: string
@@ -2998,6 +3004,34 @@ declare namespace Api {
 
   /** 系统配置 */
   namespace SysConfig {
+    type CorporationCapability =
+      | 'srp.user'
+      | 'srp.manage'
+      | 'welfare.user'
+      | 'welfare.approval'
+      | 'welfare.settings'
+      | 'menu.srp'
+      | 'menu.welfare'
+
+    interface CorporationAccessPolicy {
+      corporation_id: number
+      full_access: boolean
+      capabilities: CorporationCapability[]
+      rules: Record<string, string | number | boolean>
+    }
+
+    interface CorporationAccessPoliciesConfig {
+      version: number
+      default_mode: 'deny'
+      policies: CorporationAccessPolicy[]
+    }
+
+    interface UpdateCorporationAccessPoliciesParams {
+      version: number
+      default_mode: 'deny'
+      policies: CorporationAccessPolicy[]
+    }
+
     interface BasicConfig {
       corp_id: number
       site_title: string

@@ -19,6 +19,7 @@ type AutoSrpService struct {
 	charRepo        *repository.EveCharacterRepository
 	sdeRepo         *repository.SdeRepository
 	kmRepo          *repository.KillmailRepository
+	corpPolicySvc   *CorporationPolicyService
 }
 
 type autoSRPFleetContext struct {
@@ -37,6 +38,7 @@ func NewAutoSrpService() *AutoSrpService {
 		charRepo:        repository.NewEveCharacterRepository(),
 		sdeRepo:         repository.NewSdeRepository(),
 		kmRepo:          repository.NewKillmailRepository(),
+		corpPolicySvc:   NewCorporationPolicyService(),
 	}
 }
 
@@ -139,6 +141,7 @@ func autoApproveReviewNote() string {
 // 若舰队满足装配验证前置条件（mode != disabled、有配置、有匹配装配），
 // 则使用配置金额+装配验证；否则回退到全局舰船价格表。
 func (s *AutoSrpService) RecommendSrpAmount(shipTypeID int64, killmailID int64, fleetID *string) (float64, string) {
+	killmail, _ := s.kmRepo.GetKillmailByID(killmailID)
 	if fleetID != nil && *fleetID != "" {
 		ctx, err := s.buildFleetContext(*fleetID)
 		if err == nil {
@@ -150,16 +153,31 @@ func (s *AutoSrpService) RecommendSrpAmount(shipTypeID int64, killmailID int64, 
 					ctx.repByItem,
 					baseAmount,
 				)
-				return finalAmount, note
+				return s.applyRecommendationMultiplier(killmail, finalAmount), note
 			}
 		}
 	}
 
 	// 回退：全局舰船价格表
 	if price, err := s.srpRepo.GetShipPriceByTypeID(shipTypeID); err == nil {
-		return price.Amount, ""
+		return s.applyRecommendationMultiplier(killmail, price.Amount), ""
 	}
 	return 0, ""
+}
+
+func (s *AutoSrpService) applyRecommendationMultiplier(killmail *model.EveKillmailList, amount float64) float64 {
+	if amount <= 0 || killmail == nil || killmail.CorporationID <= 0 {
+		return amount
+	}
+	multiplier := s.corpPolicySvc.GetRuleFloat(
+		killmail.CorporationID,
+		CorpRuleSRPRecommendationMultiplier,
+		1,
+	)
+	if multiplier < 0 || multiplier > 1 {
+		multiplier = 1
+	}
+	return amount * multiplier
 }
 
 func (s *AutoSrpService) evaluateApplicationWithContext(
