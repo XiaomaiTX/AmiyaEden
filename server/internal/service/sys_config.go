@@ -1,12 +1,18 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
+	"amiya-eden/pkg/eve/esi"
+
+	"go.uber.org/zap"
 )
 
 var ErrInvalidAllowCorporations = errors.New("军团 ID 必须为正整数")
@@ -19,6 +25,11 @@ type SDEConfig struct {
 	APIKey      string
 	Proxy       string
 	DownloadURL string
+}
+
+type CorporationDisplay struct {
+	CorporationID   int64  `json:"corporation_id"`
+	CorporationName string `json:"corporation_name"`
 }
 
 func NewSysConfigService() *SysConfigService {
@@ -64,6 +75,29 @@ func (s *SysConfigService) GetAllowCorporations() []int64 {
 	return utils.GetAllowCorporations()
 }
 
+func (s *SysConfigService) GetAllowCorporationDisplays(ctx context.Context) []CorporationDisplay {
+	allowCorporations := s.GetAllowCorporations()
+	if len(allowCorporations) == 0 {
+		return []CorporationDisplay{}
+	}
+
+	nameMap, err := s.resolveCorporationNames(ctx, allowCorporations)
+	if err != nil {
+		if global.Logger != nil {
+			global.Logger.Warn("[SysConfig] resolve allow corporations names failed", zap.Error(err))
+		}
+	}
+
+	displays := make([]CorporationDisplay, 0, len(allowCorporations))
+	for _, corporationID := range allowCorporations {
+		displays = append(displays, CorporationDisplay{
+			CorporationID:   corporationID,
+			CorporationName: nameMap[corporationID],
+		})
+	}
+	return displays
+}
+
 func (s *SysConfigService) UpdateAllowCorporations(allowCorporations []int64) error {
 	if err := utils.ValidateAllowCorporations(allowCorporations); err != nil {
 		return ErrInvalidAllowCorporations
@@ -74,6 +108,39 @@ func (s *SysConfigService) UpdateAllowCorporations(allowCorporations []int64) er
 	}
 	utils.InvalidateAllowCorporationsCache()
 	return nil
+}
+
+type sysConfigESINameEntry struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func (s *SysConfigService) resolveCorporationNames(ctx context.Context, corporationIDs []int64) (map[int64]string, error) {
+	nameMap := make(map[int64]string, len(corporationIDs))
+	if len(corporationIDs) == 0 {
+		return nameMap, nil
+	}
+
+	client := esi.NewClient()
+	if global.Config != nil {
+		client = esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
+	}
+
+	var result []sysConfigESINameEntry
+	if err := client.PostJSON(
+		ctx,
+		"/universe/names?datasource=tranquility",
+		"",
+		corporationIDs,
+		&result,
+	); err != nil {
+		return nameMap, fmt.Errorf("fetch corporation names from ESI: %w", err)
+	}
+
+	for _, entry := range result {
+		nameMap[int64(entry.ID)] = entry.Name
+	}
+	return nameMap, nil
 }
 
 func (s *SysConfigService) GetCharacterESIRestrictionConfig() bool {

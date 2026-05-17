@@ -2957,6 +2957,7 @@
       "allowCorporationsLabel": "Corporation ID List",
       "allowCorporationsPlaceholder": "Enter one corporation ID per line",
       "allowCorporationsHint": "Corporation {corporationId} ({corporationName}) is always enforced in this list and cannot be removed. Other corporation permission signals are controlled by this configuration.",
+      "savedCorporations": "Saved Corporations",
       "invalidCorpId": "Corporation ID must be a positive integer",
       "sdeConfig": "SDE Configuration",
       "sdeApiKey": "API Key",
