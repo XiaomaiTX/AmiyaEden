@@ -2980,7 +2980,35 @@
       "corporationId": "Corporation ID",
       "fullAccess": "Full Access",
       "srpRecommendationMultiplier": "SRP Recommendation Multiplier",
-      "invalidMultiplier": "SRP recommendation multiplier must be between 0 and 1"
+      "invalidMultiplier": "SRP recommendation multiplier must be between 0 and 1",
+      "corpCapabilityGroups": {
+        "menus": "Menu Entries",
+        "srp": "SRP Capabilities",
+        "welfare": "Welfare Capabilities",
+        "management": "Management Capabilities"
+      },
+      "corpCapabilities": {
+        "menuDashboard": "Dashboard Entry",
+        "menuOperation": "Fleet Operations Entry",
+        "menuRole": "Role Center Entry",
+        "menuNewbro": "Newbro Support Entry",
+        "menuFuxiHall": "Fuxi Hall Entry",
+        "menuTicket": "Ticket Center Entry",
+        "menuShop": "Shop Entry",
+        "menuSystem": "System Management Entry",
+        "menuInfo": "Character Info Entry",
+        "menuSkillPlanning": "Skill Planning Entry",
+        "menuSrp": "SRP Entry",
+        "menuWelfare": "Welfare Entry",
+        "srpUser": "Submit and View Personal SRP",
+        "srpManage": "Manage SRP Applications",
+        "welfareUser": "Apply and View Personal Welfare",
+        "welfareApproval": "Review Welfare Applications",
+        "welfareSettings": "Maintain Welfare Settings",
+        "ticketManage": "Manage Tickets",
+        "shopManage": "Manage Shop",
+        "systemManage": "Manage System Settings"
+      }
     },
     "newbroSettings": {
       "title": "Newbro Settings",

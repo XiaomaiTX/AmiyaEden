@@ -7,7 +7,8 @@ export const newbroRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.newbro.title',
     icon: 'ri:user-heart-line',
-    login: true
+    login: true,
+    corpCapabilities: ['menu.newbro']
   },
   children: [
     {

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-03-27
+last_reviewed: 2026-05-17
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
@@ -37,10 +37,18 @@ source_of_truth:
 
 - `meta.login = true` 对应 API / feature 文档中的 `Login`
 - `meta.roles` 只表示显式职权白名单
+- `meta.corpCapabilities` 表示军团能力策略要求；`super_admin` 在 capability 层自动放行
 - `meta.requiresNewbro = true` 表示还要通过当前用户的新人大类资格快照检查
 - 同一路由不要再用 `meta.roles` 伪装“任意非 guest 登录用户”
 - guest 可访问的 onboarding / self-service 页面不要错误标成 `meta.login = true`，因为这会把它们提升为“非 guest 才可访问”
 - `meta.isHide = true` 会同时从菜单树、水平菜单和全局搜索中移除该路由入口，但不等于删除路由本身
+
+军团能力路由约定：
+
+- 顶层业务菜单使用 `menu.*` 能力控制入口可见性。
+- 管理页在菜单能力之外叠加对应管理能力，例如 `ticket.manage`、`shop.manage`、`system.manage`。
+- 前端 capability 只做 UX 收敛；后端必须在对应业务路由上同步使用 `RequireCorpCapability`。
+- 配置页展示 capability 时必须使用 i18n 标签，不直接展示 `srp.user`、`menu.srp` 等原始 key。
 
 ## 按钮权限
 

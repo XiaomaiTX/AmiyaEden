@@ -7,7 +7,8 @@ export const shopRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.shop.title',
     icon: 'ri:shopping-bag-line',
-    login: true
+    login: true,
+    corpCapabilities: ['menu.shop']
   },
   children: [
     {
@@ -27,6 +28,7 @@ export const shopRoutes: AppRouteRecord = {
         title: 'menus.shop.manage',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['shop.manage'],
         authList: [
           { title: 'authActions.shop.addProduct', authMark: 'add_product' },
           { title: 'authActions.shop.editProduct', authMark: 'edit_product' },
@@ -42,6 +44,7 @@ export const shopRoutes: AppRouteRecord = {
         title: 'menus.shop.orderManage',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'shop_order_manage'],
+        corpCapabilities: ['shop.manage'],
         authList: [{ title: 'authActions.shop.approveOrder', authMark: 'approve_order' }]
       }
     },

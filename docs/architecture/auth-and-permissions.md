@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-05-13
+last_reviewed: 2026-05-17
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -29,6 +29,7 @@ source_of_truth:
 - 失效人物 ESI 限制开关 `enforce_character_esi_restriction`
 - 当前新人资格快照 `is_currently_newbro`
 - 当前导师学员资格快照 `is_mentor_mentee_eligible`
+- 主军团与军团能力上下文 `primary_corporation_id`、`corp_capabilities`、`corp_rules`
 
 当前用户还可以通过 `DELETE /api/v1/me` 自助注销账号；该能力与 `/api/v1/me` 同样只允许当前 JWT 对应的用户操作，不提供任意 `user_id` 删除入口。
 
@@ -162,6 +163,15 @@ source_of_truth:
 
 `/api/v1/info/*` 当前不再属于 JWT-only 自助能力，而是 `RequireLoginUser()` 边界。
 
+### RequireCorpCapability
+
+- 判断当前用户主军团策略是否包含指定 capability。
+- `super_admin` 自动通过。
+- 军团策略 `full_access=true` 自动通过。
+- 未配置或未命中策略时按最小权限拒绝。
+- 该检查必须叠加在 `JWTAuth` / `RequireLoginUser` / `RequireRole` 之后使用，不能替代职权授权。
+- 主要业务域后端路由与前端 `meta.corpCapabilities` 必须保持一致，避免“菜单可见但接口 403”或“菜单隐藏但接口可调”。
+
 ## 前端路由模式
 
 前端使用静态路由 + `meta.login` / `meta.roles` 模式。
@@ -170,11 +180,13 @@ source_of_truth:
 
 - `meta.login = true` 表示任意非 `guest` 已登录产品用户可访问
 - `meta.roles` 只用于真实的显式职权白名单
+- `meta.corpCapabilities` 只用于军团能力策略的前端 UX 收敛，不能替代后端 `RequireCorpCapability`
 - `meta.requiresNewbro = true` 表示该页面还要求当前用户的新人资格快照为 true
 - `meta.requiresMentorMenteeEligibility = true` 表示该页面还要求当前用户的导师学员资格快照为 true
 - 不要用 `meta.roles: ['admin', 'fc', 'user']` 之类写法冒充 `Login`
 - `skill-planning/skill-plans` 当前使用 `meta.login = true` 提供只读访问，创建 / 编辑 / 删除 / 排序仍依赖页面内 `canManage` 与后端 `RequireRole(admin, senior_fc)` 双层限制
 - 某些页面可以对更宽的路由角色集合提供只读入口，但把新增 / 导入 / 编辑 / 删除等变更能力继续收敛到页面内 `canManage*` 判断与后端 `RequireRole(...)` 的双层限制
+- `super_admin` 在前端 capability 层自动放行，与后端 `RequireCorpCapability` 保持一致
 
 修改权限时，必须同时考虑：
 
