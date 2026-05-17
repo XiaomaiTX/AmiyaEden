@@ -7,7 +7,8 @@ export const operationRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.operation.title',
     icon: 'ri:ship-line',
-    login: true
+    login: true,
+    corpCapabilities: ['menu.operation']
   },
   children: [
     {

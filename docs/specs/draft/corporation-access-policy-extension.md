@@ -92,7 +92,9 @@ source_of_truth:
 - 未命中策略按 `default_mode` 处理；一期固定使用 `deny`。
 - 配置更新后需要主动失效内存缓存。
 
-### 2. Capability 字典（一期）
+### 2. Capability 字典
+
+一期（已落地）：
 
 - `srp.user`
 - `srp.manage`
@@ -102,10 +104,26 @@ source_of_truth:
 - `menu.srp`
 - `menu.welfare`
 
+二期（计划扩展，粗粒度）：
+
+- `menu.dashboard`
+- `menu.operation`
+- `menu.role`
+- `menu.newbro`
+- `menu.fuxi_hall`
+- `menu.ticket`
+- `menu.shop`
+- `menu.system`
+- `ticket.manage`
+- `shop.manage`
+- `system.manage`
+
 约束：
 
 - capability 为后端常量枚举，不接受自由字符串写入。
 - 前后端共用同一 capability 语义，不做别名映射。
+- 二期优先按菜单域粗粒度命名，必要时再补充 `*.manage` 管理能力。
+- 后续若需更细能力控制，在保持向后兼容的前提下按域内拆分。
 
 ### 3. 后端鉴权
 
@@ -163,6 +181,52 @@ source_of_truth:
 - 支持 capability 勾选与规则值编辑。
 - 保存时调用新策略接口。
 
+### 6. 二期：全业务能力化（粗粒度）
+
+根因复盘：
+
+- 一期仅覆盖 SRP/福利 capability，其他模块当前仍按 `roles/login` 判定可见与可访问。
+- 因此“只配置 `srp.user + menu.srp`”时，用户仍可能看到并访问其他满足角色条件的页面。
+
+扩展策略：
+
+- 将 capability 执法从 SRP/福利扩展到全业务菜单域。
+- 前后端统一执行“角色 + capability”双门禁。
+- 保持 `default_mode=deny`、`super_admin/full_access` 特判逻辑不变。
+
+落地方式：
+
+- 前端：为全业务路由模块补齐 `RouteMeta.corpCapabilities`，菜单与路由过滤统一走 `menuAccess`。
+- 后端：为对应业务路由组补齐 `RequireCorpCapability`，确保直链与接口调用均受控。
+- 配置页：按业务域分组展示 capability，减少配置歧义与漏配。
+- 配置页 i18n：能力项、分组标题、帮助文案、校验提示必须使用 i18n 文案键展示，不直接暴露 capability 原始 key（如 `srp.user`、`menu.srp`）。
+
+### 7. 管理员配置指引（角色层 + 军团层）
+
+权限模型：
+
+- 角色层（RBAC）定义“理论上可做什么”（岗位上限）。
+- 军团层（capability）定义“该军团允许启用什么”（范围收敛）。
+- 最终权限判定为交集：`RoleAllowed AND CorpCapabilityAllowed`。
+
+能力语义约定：
+
+- `menu.*`：控制模块入口是否可见（菜单/路由入口）。
+- `*.user`：控制普通用户功能是否可用（用户侧读写接口）。
+- `*.manage` / `*.approval` / `*.settings`：控制管理动作是否可用（管理侧接口）。
+
+推荐配置：
+
+- SRP 普通成员：`menu.srp + srp.user`（不含 `srp.manage`）。
+- SRP 管理成员：`menu.srp + srp.user + srp.manage`（且角色满足管理角色约束）。
+- 完全禁用某域：不配置对应 `menu.*` 与动作能力。
+
+反模式（需避免）：
+
+- 只给 `*.user` 不给 `menu.*`：功能可调用但入口不可见，易造成“不可见但可调”错觉。
+- 只给 `menu.*` 不给 `*.user/*.manage`：入口可见但功能不可用，易造成“可见但不可调”错觉。
+- 将军团层当作“授权层”使用：军团策略只能收敛范围，不应替代角色授予。
+
 ## 当前完成度（2026-05-17）
 
 ### 总体状态
@@ -194,6 +258,11 @@ source_of_truth:
 - [x] 前端能力门禁与策略配置 UI（`static/` 相关文件）。
 - [x] API 文档更新（`docs/api/route-index.md`）。
 - [x] 草案转正并同步 `docs/features/current/corporation-access-policy.md`。
+- [ ] 二期前端全路由补 `corpCapabilities`（覆盖 SRP/福利以外模块）。
+- [ ] 二期后端各业务路由补 `RequireCorpCapability`（与前端能力域对齐）。
+- [ ] 配置页 capability 分组扩展，并同步 API/特性文档权限说明。
+- [ ] 配置页 capability 展示完成 i18n（能力标签/分组标题/说明/校验文案），禁止显示原始 capability key。
+- [ ] 新增跨域能力回归测试（菜单可见性 + 接口 200/403 一致性）。
 
 ### 说明
 
@@ -293,18 +362,23 @@ source_of_truth:
 - `menuAccess` capability 判定分支。
 - 菜单构建 capability 过滤。
 - 配置页读写 payload 和回显一致性。
+- 配置页 capability i18n 展示（分组、标签、说明、校验）不出现原始 key。
 
 回归测试：
 
 - `allow_corporations` 基线行为不变。
 - 未改造模块不受影响。
 - `super_admin` 全量访问不受策略限制。
+- 关键能力组合回归：`menu.*` 与 `*.user/*.manage` 同时配置时行为一致；缺失任一能力时菜单或接口按预期收敛。
 
 ## 验收标准
 
 - 超管可按军团配置能力矩阵并保存。
 - 不同军团成员在 SRP/福利访问面上产生可观测差异。
+- 仅配置 `menu.srp + srp.user` 的军团成员，不可见且不可访问非 SRP 域页面与接口。
 - 未授权能力在后端被拒绝，前端入口隐藏或 403。
+- 菜单显示结果与接口 403 结果一致，不出现“可见但不可调”或“不可见但可调”错位。
+- 策略配置页所有 capability 相关展示均为可理解的 i18n 文案，不出现 `srp.user`、`menu.srp` 等原始 key。
 - SRP 推荐金额可被军团规则按比例调整。
 - 现有 RBAC 与准入基线行为保持兼容。
 
@@ -313,3 +387,5 @@ source_of_truth:
 - 主人物军团信息在 `eve_character.corporation_id` 中可用且及时更新。
 - 军团策略只针对登录后功能访问，不替代 SSO 准入判断。
 - 一期仅 `static/`（Vue）承接策略配置 UI。`static-react/` 本期不改造，不新增策略配置 UI 与 capability 门禁逻辑。
+- 二期继续仅改造 `static/` 与 `server/`，不包含 `static-react/`。
+- 二期 capability 先按粗粒度落地，细粒度拆分作为后续增量演进。

@@ -2703,7 +2703,35 @@
       "corporationId": "军团 ID",
       "fullAccess": "全量放行",
       "srpRecommendationMultiplier": "SRP 推荐金额乘数",
-      "invalidMultiplier": "SRP 推荐金额乘数必须在 0 到 1 之间"
+      "invalidMultiplier": "SRP 推荐金额乘数必须在 0 到 1 之间",
+      "corpCapabilityGroups": {
+        "menus": "菜单入口",
+        "srp": "补损能力",
+        "welfare": "福利能力",
+        "management": "管理能力"
+      },
+      "corpCapabilities": {
+        "menuDashboard": "仪表盘入口",
+        "menuOperation": "舰队行动入口",
+        "menuRole": "职权中心入口",
+        "menuNewbro": "新人帮扶入口",
+        "menuFuxiHall": "伏羲大厅入口",
+        "menuTicket": "工单中心入口",
+        "menuShop": "商店入口",
+        "menuSystem": "系统管理入口",
+        "menuInfo": "人物信息入口",
+        "menuSkillPlanning": "技能计划入口",
+        "menuSrp": "补损入口",
+        "menuWelfare": "福利入口",
+        "srpUser": "提交和查看个人补损",
+        "srpManage": "管理补损申请",
+        "welfareUser": "申请和查看个人福利",
+        "welfareApproval": "审批福利申请",
+        "welfareSettings": "维护福利设置",
+        "ticketManage": "管理工单",
+        "shopManage": "管理商店",
+        "systemManage": "管理系统设置"
+      }
     },
     "newbroSettings": {
       "title": "帮扶设置",

@@ -142,15 +142,24 @@
             />
           </div>
 
-          <ElCheckboxGroup v-model="policy.capabilities">
-            <ElCheckbox
-              v-for="capability in corpCapabilityOptions"
-              :key="capability"
-              :label="capability"
+          <div class="corp-capability-groups">
+            <div
+              v-for="group in corpCapabilityGroups"
+              :key="group.labelKey"
+              class="corp-capability-group"
             >
-              {{ capability }}
-            </ElCheckbox>
-          </ElCheckboxGroup>
+              <div class="corp-capability-group-title">{{ $t(group.labelKey) }}</div>
+              <ElCheckboxGroup v-model="policy.capabilities">
+                <ElCheckbox
+                  v-for="capability in group.capabilities"
+                  :key="capability"
+                  :label="capability"
+                >
+                  {{ $t(corpCapabilityLabelKeys[capability]) }}
+                </ElCheckbox>
+              </ElCheckboxGroup>
+            </div>
+          </div>
 
           <ElFormItem
             :label="$t('system.basicConfig.srpRecommendationMultiplier')"
@@ -216,15 +225,63 @@
   const loadingCorpPolicies = ref(false)
   const savingCorpPolicies = ref(false)
   const REQUIRED_ALLOW_CORPORATION_ID = SYSTEM_IDENTITY.corporationId
-  const corpCapabilityOptions: Api.SysConfig.CorporationCapability[] = [
-    'srp.user',
-    'srp.manage',
-    'welfare.user',
-    'welfare.approval',
-    'welfare.settings',
-    'menu.srp',
-    'menu.welfare'
+  const corpCapabilityGroups: Array<{
+    labelKey: string
+    capabilities: Api.SysConfig.CorporationCapability[]
+  }> = [
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.menus',
+      capabilities: [
+        'menu.dashboard',
+        'menu.operation',
+        'menu.role',
+        'menu.newbro',
+        'menu.fuxi_hall',
+        'menu.ticket',
+        'menu.shop',
+        'menu.system',
+        'menu.info',
+        'menu.skill_planning',
+        'menu.srp',
+        'menu.welfare'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.srp',
+      capabilities: ['srp.user', 'srp.manage']
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.welfare',
+      capabilities: ['welfare.user', 'welfare.approval', 'welfare.settings']
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.management',
+      capabilities: ['ticket.manage', 'shop.manage', 'system.manage']
+    }
   ]
+  const corpCapabilityOptions = corpCapabilityGroups.flatMap((group) => group.capabilities)
+  const corpCapabilityLabelKeys: Record<Api.SysConfig.CorporationCapability, string> = {
+    'menu.dashboard': 'system.basicConfig.corpCapabilities.menuDashboard',
+    'menu.operation': 'system.basicConfig.corpCapabilities.menuOperation',
+    'menu.role': 'system.basicConfig.corpCapabilities.menuRole',
+    'menu.newbro': 'system.basicConfig.corpCapabilities.menuNewbro',
+    'menu.fuxi_hall': 'system.basicConfig.corpCapabilities.menuFuxiHall',
+    'menu.ticket': 'system.basicConfig.corpCapabilities.menuTicket',
+    'menu.shop': 'system.basicConfig.corpCapabilities.menuShop',
+    'menu.system': 'system.basicConfig.corpCapabilities.menuSystem',
+    'menu.info': 'system.basicConfig.corpCapabilities.menuInfo',
+    'menu.skill_planning': 'system.basicConfig.corpCapabilities.menuSkillPlanning',
+    'menu.srp': 'system.basicConfig.corpCapabilities.menuSrp',
+    'menu.welfare': 'system.basicConfig.corpCapabilities.menuWelfare',
+    'srp.user': 'system.basicConfig.corpCapabilities.srpUser',
+    'srp.manage': 'system.basicConfig.corpCapabilities.srpManage',
+    'welfare.user': 'system.basicConfig.corpCapabilities.welfareUser',
+    'welfare.approval': 'system.basicConfig.corpCapabilities.welfareApproval',
+    'welfare.settings': 'system.basicConfig.corpCapabilities.welfareSettings',
+    'ticket.manage': 'system.basicConfig.corpCapabilities.ticketManage',
+    'shop.manage': 'system.basicConfig.corpCapabilities.shopManage',
+    'system.manage': 'system.basicConfig.corpCapabilities.systemManage'
+  }
 
   const sdeForm = reactive<Api.SysConfig.SDEConfig>({
     api_key: '',
@@ -548,6 +605,22 @@
     align-items: center;
     margin-bottom: 10px;
     font-size: 13px;
+  }
+
+  .corp-capability-groups {
+    display: grid;
+    gap: 10px;
+  }
+
+  .corp-capability-group {
+    border-top: 1px dashed var(--el-border-color);
+    padding-top: 8px;
+  }
+
+  .corp-capability-group-title {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    margin-bottom: 4px;
   }
 
   .corp-policy-multiplier {

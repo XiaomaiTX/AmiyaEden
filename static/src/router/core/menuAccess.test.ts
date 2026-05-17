@@ -122,7 +122,12 @@ test('pruneEmptyMenus removes directories whose children were fully filtered out
 })
 
 test('applyMenuAccessFilter keeps SkillPlans for logged-in ordinary users', () => {
-  const filtered = applyMenuAccessFilter([skillPlanningRoutes], ['user'], [], undefined)
+  const filtered = applyMenuAccessFilter(
+    [skillPlanningRoutes],
+    ['user'],
+    ['menu.skill_planning'],
+    undefined
+  )
   const skillPlanning = filtered[0]
 
   assert.equal(
@@ -161,7 +166,11 @@ test('newbro recruit link route is the last child under Newbro', () => {
 })
 
 test('applyMenuAccessFilter hides AutoRole from admins but keeps it for super admins', () => {
-  const adminFiltered = applyMenuAccessFilter([systemRoutes], ['admin'])
+  const adminFiltered = applyMenuAccessFilter(
+    [systemRoutes],
+    ['admin'],
+    ['menu.system', 'system.manage']
+  )
   const adminSystemMenu = adminFiltered[0]
 
   assert.equal(
@@ -191,7 +200,11 @@ test('applyMenuAccessFilter enforces corp capability gates on SRP routes', () =>
 })
 
 test('applyMenuAccessFilter hides BasicConfig from admins but keeps it for super admins', () => {
-  const adminFiltered = applyMenuAccessFilter([systemRoutes], ['admin'])
+  const adminFiltered = applyMenuAccessFilter(
+    [systemRoutes],
+    ['admin'],
+    ['menu.system', 'system.manage']
+  )
   const adminSystemMenu = adminFiltered[0]
 
   assert.equal(
@@ -209,9 +222,13 @@ test('applyMenuAccessFilter hides BasicConfig from admins but keeps it for super
 })
 
 test('CorpNpcKillReport lives under Dashboard for admins only', () => {
-  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'])[0]
-  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'])[0]
-  const adminSystem = applyMenuAccessFilter([systemRoutes], ['admin'])[0]
+  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'], ['menu.dashboard'])[0]
+  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'], ['menu.dashboard'])[0]
+  const adminSystem = applyMenuAccessFilter(
+    [systemRoutes],
+    ['admin'],
+    ['menu.system', 'system.manage']
+  )[0]
 
   const adminNpcKillsRoute = adminDashboard.children?.find(
     (route) => route.name === 'CorpNpcKillReport'
@@ -230,9 +247,9 @@ test('CorpNpcKillReport lives under Dashboard for admins only', () => {
 })
 
 test('DashboardCorporationStructures lives under Dashboard for admins only', () => {
-  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'])[0]
+  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'], ['menu.dashboard'])[0]
   const superAdminDashboard = applyMenuAccessFilter([dashboardRoutes], ['super_admin'])[0]
-  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'])[0]
+  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'], ['menu.dashboard'])[0]
 
   const adminRoute = adminDashboard.children?.find(
     (route) => route.name === 'DashboardCorporationStructures'
@@ -251,7 +268,11 @@ test('DashboardCorporationStructures lives under Dashboard for admins only', () 
 })
 
 test('system menu no longer includes ticket admin pages', () => {
-  const adminSystem = applyMenuAccessFilter([systemRoutes], ['admin'])[0]
+  const adminSystem = applyMenuAccessFilter(
+    [systemRoutes],
+    ['admin'],
+    ['menu.system', 'system.manage']
+  )[0]
 
   assert.equal(
     adminSystem.children?.some((route) => route.name === 'TicketManagement'),
@@ -268,7 +289,11 @@ test('system menu no longer includes ticket admin pages', () => {
 })
 
 test('ticket center includes admin pages for admin roles', () => {
-  const adminTicket = applyMenuAccessFilter([ticketRoutes], ['admin'])[0]
+  const adminTicket = applyMenuAccessFilter(
+    [ticketRoutes],
+    ['admin'],
+    ['menu.ticket', 'ticket.manage']
+  )[0]
 
   assert.equal(
     adminTicket.children?.some((route) => route.name === 'TicketManagement'),
@@ -310,7 +335,7 @@ test('applyMenuAccessFilter keeps SRP prices for SRP, admin, senior fc, and supe
 })
 
 test('applyMenuAccessFilter hides ShopOrderManage from welfare officers', () => {
-  const welfareShopMenu = applyMenuAccessFilter([shopRoutes], ['welfare'])[0]
+  const welfareShopMenu = applyMenuAccessFilter([shopRoutes], ['welfare'], ['menu.shop'])[0]
 
   assert.equal(
     welfareShopMenu.children?.some((route) => route.name === 'ShopOrderManage'),
@@ -319,10 +344,35 @@ test('applyMenuAccessFilter hides ShopOrderManage from welfare officers', () => 
 })
 
 test('applyMenuAccessFilter keeps ShopOrderManage for shop order officers', () => {
-  const shopOrderShopMenu = applyMenuAccessFilter([shopRoutes], ['shop_order_manage'])[0]
+  const shopOrderShopMenu = applyMenuAccessFilter(
+    [shopRoutes],
+    ['shop_order_manage'],
+    ['menu.shop', 'shop.manage']
+  )[0]
 
   assert.equal(
     shopOrderShopMenu.children?.some((route) => route.name === 'ShopOrderManage'),
     true
+  )
+})
+
+test('applyMenuAccessFilter hides non-SRP domains when only SRP capabilities are granted', () => {
+  const filtered = applyMenuAccessFilter(
+    [
+      dashboardRoutes,
+      skillPlanningRoutes,
+      shopRoutes,
+      systemRoutes,
+      ticketRoutes,
+      srpRoutes,
+      actualNewbroRoutes
+    ],
+    ['admin'],
+    ['menu.srp', 'srp.user']
+  )
+
+  assert.deepEqual(
+    filtered.map((route) => route.name),
+    ['SRP']
   )
 })

@@ -60,6 +60,17 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 福利（用户端 + 管理端共用 handler）
 	welfareH := handler.NewWelfareHandler()
+	requireMenuDashboard := middleware.RequireCorpCapability(model.CorpCapabilityMenuDashboard)
+	requireMenuOperation := middleware.RequireCorpCapability(model.CorpCapabilityMenuOperation)
+	requireMenuNewbro := middleware.RequireCorpCapability(model.CorpCapabilityMenuNewbro)
+	requireMenuFuxiHall := middleware.RequireCorpCapability(model.CorpCapabilityMenuFuxiHall)
+	requireMenuTicket := middleware.RequireCorpCapability(model.CorpCapabilityMenuTicket)
+	requireMenuShop := middleware.RequireCorpCapability(model.CorpCapabilityMenuShop)
+	requireMenuInfo := middleware.RequireCorpCapability(model.CorpCapabilityMenuInfo)
+	requireMenuSkillPlan := middleware.RequireCorpCapability(model.CorpCapabilityMenuSkillPlan)
+	requireTicketManage := middleware.RequireCorpCapability(model.CorpCapabilityTicketManage)
+	requireShopManage := middleware.RequireCorpCapability(model.CorpCapabilityShopManage)
+	requireSystemManage := middleware.RequireCorpCapability(model.CorpCapabilitySystemManage)
 
 	// SSO 人物管理（绑定/解绑/设主人物）
 	// guest 也应可访问，用于完成初次登录后的人物管理与补充授权。
@@ -79,11 +90,11 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	auth.DELETE("/me", meH.DeleteMe)
 
 	dashboardH := handler.NewDashboardHandler()
-	auth.POST("/dashboard", dashboardH.GetDashboard)
+	auth.POST("/dashboard", requireMenuDashboard, dashboardH.GetDashboard)
 	corpStructureH := handler.NewCorporationStructureHandler()
 	dashboard := login.Group("/dashboard")
 	{
-		corpStructures := dashboard.Group("/corporation-structures", middleware.RequireRole(model.RoleAdmin))
+		corpStructures := dashboard.Group("/corporation-structures", requireMenuDashboard, middleware.RequireRole(model.RoleAdmin))
 		corpStructures.GET("/settings", corpStructureH.GetSettings)
 		corpStructures.PUT("/settings/authorizations", corpStructureH.UpdateAuthorizations)
 		corpStructures.GET("/filter-options", corpStructureH.GetFilterOptions)
@@ -97,6 +108,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 	fuelOfficerCorpStructures := dashboard.Group(
 		"/corporation-structures",
+		requireMenuDashboard,
 		middleware.RequireRole(model.RoleFuelOfficer),
 	)
 	{
@@ -120,7 +132,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── 舰队 ───
 	fleetH := handler.NewFleetHandler()
-	operation := login.Group("/operation")
+	operation := login.Group("/operation", requireMenuOperation)
 	fleet := operation.Group("/fleets")
 	{
 		manageFleets := middleware.RequireRole(model.RoleAdmin, model.RoleFC, model.RoleSeniorFC)
@@ -184,7 +196,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── 军团技能计划 ───
 	skillPlanH := handler.NewSkillPlanHandler()
-	skillPlanning := login.Group("/skill-planning")
+	skillPlanning := login.Group("/skill-planning", requireMenuSkillPlan)
 	skillPlan := skillPlanning.Group("/skill-plans")
 	personalSkillPlan := skillPlanning.Group("/personal-skill-plans")
 	{
@@ -217,7 +229,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	toolBookmarkH := handler.NewToolBookmarkHandler()
 	esiH := handler.NewESIRefreshHandler()
 	taskH := handler.NewTaskHandler(taskSvc)
-	info := login.Group("/info")
+	info := login.Group("/info", requireMenuInfo)
 	{
 		info.GET("/tool-bookmarks", toolBookmarkH.ListVisible)
 		info.POST("/wallet", infoH.GetWalletJournal)
@@ -242,7 +254,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── 新人帮扶（用户/队长） ───
 	newbroUserH := handler.NewNewbroUserHandler()
-	newbro := login.Group("/newbro")
+	newbro := login.Group("/newbro", requireMenuNewbro)
 	{
 		newbro.GET("/captains", newbroUserH.ListCaptains)
 		newbro.GET("/affiliation/me", newbroUserH.GetMyAffiliation)
@@ -252,7 +264,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	// ─── 招募链接（用户）───
-	recruitUser := login.Group("/newbro/recruit")
+	recruitUser := login.Group("/newbro/recruit", requireMenuNewbro)
 	{
 		recruitUser.POST("/link", recruitH.GenerateLink)
 		recruitUser.GET("/links", recruitH.GetMyLinks)
@@ -262,7 +274,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	newbroCaptainH := handler.NewNewbroCaptainHandler()
-	newbroCaptain := login.Group("/newbro/captain", middleware.RequireRole(model.RoleCaptain))
+	newbroCaptain := login.Group("/newbro/captain", requireMenuNewbro, middleware.RequireRole(model.RoleCaptain))
 	{
 		newbroCaptain.GET("/overview", newbroCaptainH.GetOverview)
 		newbroCaptain.GET("/players", newbroCaptainH.GetPlayers)
@@ -274,7 +286,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	mentorMenteeH := handler.NewMentorMenteeHandler()
-	mentorMentee := login.Group("/mentor")
+	mentorMentee := login.Group("/mentor", requireMenuNewbro)
 	{
 		mentorMentee.GET("/mentors", mentorMenteeH.ListMentors)
 		mentorMentee.GET("/me", mentorMenteeH.GetMyStatus)
@@ -282,7 +294,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	mentorMentorH := handler.NewMentorMentorHandler()
-	mentorDashboard := login.Group("/mentor/dashboard", middleware.RequireRole(model.RoleMentor))
+	mentorDashboard := login.Group("/mentor/dashboard", requireMenuNewbro, middleware.RequireRole(model.RoleMentor))
 	{
 		mentorDashboard.GET("/applications", mentorMentorH.ListPendingApplications)
 		mentorDashboard.GET("/mentees", mentorMentorH.ListMyMentees)
@@ -293,7 +305,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── 商店（用户端）───
 	shopH := handler.NewShopHandler()
-	shop := login.Group("/shop")
+	shop := login.Group("/shop", requireMenuShop)
 	walletH := handler.NewSysWalletHandler()
 	shopWallet := shop.Group("/wallet")
 	{
@@ -312,7 +324,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── 工单（用户端）───
 	ticketH := handler.NewTicketHandler()
-	ticket := login.Group("/ticket")
+	ticket := login.Group("/ticket", requireMenuTicket)
 	{
 		ticket.POST("/tickets", ticketH.CreateTicket)
 		ticket.GET("/tickets/me", ticketH.ListMyTickets)
@@ -360,7 +372,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	// ─── 任务管理 ───
-	tasks := login.Group("/tasks", middleware.RequireRole(model.RoleAdmin))
+	tasks := login.Group("/tasks", requireSystemManage, middleware.RequireRole(model.RoleAdmin))
 	{
 		tasks.GET("", taskH.GetTasks)
 		tasks.GET("/history", taskH.GetHistory)
@@ -383,7 +395,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 系统基础配置
 	sysConfigH := handler.NewSysConfigHandler()
-	adminConfig := admin.Group("", middleware.RequireRole(systemBasicConfigManageRoles...))
+	adminConfig := admin.Group("", requireSystemManage, middleware.RequireRole(systemBasicConfigManageRoles...))
 	adminBasicConfig := adminConfig.Group("/basic-config")
 	adminBasicConfig.GET("", sysConfigH.GetBasicConfig)
 
@@ -403,11 +415,11 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	adminBasicConfig.PUT("/character-esi-restriction", sysConfigH.UpdateCharacterESIRestrictionConfig)
 
 	// NPC 刷怪报表（管理员 — 公司级）
-	admin.POST("/npc-kills", npcKillH.GetCorpNpcKills)
+	admin.POST("/npc-kills", requireMenuDashboard, npcKillH.GetCorpNpcKills)
 
 	// 联盟 PAP 管理（管理员）
 	alliancePAPAdminH := handler.NewAlliancePAPHandler()
-	alliancePAPAdmin := admin.Group("/pap")
+	alliancePAPAdmin := admin.Group("/pap", requireSystemManage)
 	{
 		alliancePAPAdmin.GET("", alliancePAPAdminH.GetAllAlliancePAP)
 		alliancePAPAdmin.POST("/fetch", alliancePAPAdminH.TriggerFetch)
@@ -418,16 +430,16 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// PAP 兑换汇率管理（管理员）
 	papExchangeH := handler.NewPAPExchangeHandler()
-	admin.GET("/pap-exchange/rates", papExchangeH.GetRates)
-	admin.PUT("/pap-exchange/rates", papExchangeH.SetRates)
+	admin.GET("/pap-exchange/rates", requireSystemManage, papExchangeH.GetRates)
+	admin.PUT("/pap-exchange/rates", requireSystemManage, papExchangeH.SetRates)
 
 	// 职权定义（只读）
 	roleH := handler.NewRoleHandler()
-	admin.GET("/role/definitions", roleH.ListRoleDefinitions)
+	admin.GET("/role/definitions", requireSystemManage, roleH.ListRoleDefinitions)
 
 	// 用户管理
 	userH := handler.NewUserHandler()
-	adminUser := admin.Group("/user")
+	adminUser := admin.Group("/user", requireSystemManage)
 	{
 		adminUser.GET("", userH.ListUsers)
 		adminUser.GET("/:id", userH.GetUser)
@@ -443,7 +455,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	newbroAdminH := handler.NewNewbroAdminHandler()
-	adminNewbro := admin.Group("/newbro")
+	adminNewbro := admin.Group("/newbro", requireMenuNewbro)
 	{
 		adminNewbro.GET("/support-settings", newbroAdminH.GetSupportSettings)
 		adminNewbro.PUT("/support-settings", newbroAdminH.UpdateSupportSettings)
@@ -456,14 +468,14 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	// 帮扶记录只读接口：管理员或队长均可访问
-	newbroRecords := login.Group("/system/newbro", middleware.RequireRole(model.RoleAdmin, model.RoleCaptain))
+	newbroRecords := login.Group("/system/newbro", requireMenuNewbro, middleware.RequireRole(model.RoleAdmin, model.RoleCaptain))
 	{
 		newbroRecords.GET("/affiliations/history", newbroAdminH.ListAffiliationHistory)
 		newbroRecords.GET("/rewards", newbroAdminH.ListRewardSettlements)
 	}
 
 	mentorAdminH := handler.NewMentorAdminHandler()
-	adminMentor := admin.Group("/mentor")
+	adminMentor := admin.Group("/mentor", requireMenuNewbro)
 	{
 		adminMentor.GET("/relationships", mentorAdminH.ListAllRelationships)
 		adminMentor.GET("/reward-distributions", mentorAdminH.ListRewardDistributions)
@@ -477,7 +489,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 伏羲币管理（管理员）
 	adminWalletH := handler.NewSysWalletHandler()
-	adminWallet := admin.Group("/wallet")
+	adminWallet := admin.Group("/wallet", requireSystemManage)
 	{
 		adminWallet.POST("/list", adminWalletH.AdminListWallets)
 		adminWallet.POST("/detail", adminWalletH.AdminGetWallet)
@@ -487,7 +499,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminWallet.POST("/analytics", adminWalletH.AdminAnalytics)
 	}
 	auditEventH := handler.NewAuditEventHandler()
-	adminAudit := admin.Group("/audit")
+	adminAudit := admin.Group("/audit", requireSystemManage)
 	{
 		adminAudit.POST("/events", auditEventH.AdminList)
 		adminAudit.POST("/export", auditEventH.CreateExportTask)
@@ -495,7 +507,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminAudit.POST("/export/list", auditEventH.ListExportTasks)
 	}
 
-	adminToolBookmark := admin.Group("/tool-bookmarks")
+	adminToolBookmark := admin.Group("/tool-bookmarks", requireSystemManage)
 	{
 		adminToolBookmark.GET("", toolBookmarkH.AdminList)
 		adminToolBookmark.POST("", toolBookmarkH.AdminCreate)
@@ -505,7 +517,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 商店管理（管理员）
 	adminShopH := handler.NewShopHandler()
-	adminShopProduct := admin.Group("/shop/product")
+	adminShopProduct := admin.Group("/shop/product", requireShopManage)
 	{
 		adminShopProduct.POST("/list", adminShopH.AdminListProducts)
 		adminShopProduct.POST("/add", adminShopH.AdminCreateProduct)
@@ -513,7 +525,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminShopProduct.POST("/delete", adminShopH.AdminDeleteProduct)
 	}
 	// 商店订单（仅管理员）
-	shopOrder := login.Group("/system/shop/order", middleware.RequireRole(shopOrderManageRoles...))
+	shopOrder := login.Group("/system/shop/order", requireShopManage, middleware.RequireRole(shopOrderManageRoles...))
 	{
 		shopOrder.POST("/list", adminShopH.AdminListOrders)
 		shopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
@@ -545,7 +557,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminWelfare.POST("/add", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminCreateWelfare)
 		adminWelfare.POST("/edit", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminUpdateWelfare)
 		adminWelfare.POST("/delete", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminDeleteWelfare)
-		adminWelfare.POST("/applications/delete", welfareH.AdminDeleteApplication)
+		adminWelfare.POST("/applications/delete", middleware.RequireCorpCapability(model.CorpCapabilityWelfareReview), welfareH.AdminDeleteApplication)
 		adminWelfare.POST("/import", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminImportRecords)
 		adminWelfare.POST("/reorder", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), welfareH.AdminReorderWelfares)
 	}
@@ -561,11 +573,11 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 自动权限映射管理（管理员）
 	autoRoleH := handler.NewAutoRoleHandler()
-	registerAdminAutoRoleRoutes(admin, autoRoleH)
+	registerAdminAutoRoleRoutes(admin.Group("", requireSystemManage), autoRoleH)
 
 	// Webhook 配置（仅 super_admin）
 	webhookH := handler.NewWebhookHandler()
-	adminWebhook := admin.Group("/webhook", middleware.RequireRole(systemWebhookManageRoles...))
+	adminWebhook := admin.Group("/webhook", requireSystemManage, middleware.RequireRole(systemWebhookManageRoles...))
 	{
 		adminWebhook.GET("/config", webhookH.GetConfig)
 		adminWebhook.PUT("/config", webhookH.SetConfig)
@@ -576,14 +588,14 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	fuxiHallH := handler.NewFuxiHallHandler()
 
 	// 登录可见展示页
-	loginFuxiHall := login.Group("/fuxi-hall")
+	loginFuxiHall := login.Group("/fuxi-hall", requireMenuFuxiHall)
 	{
 		loginFuxiHall.GET("/leadership", fuxiHallH.GetLeadership)
 		loginFuxiHall.GET("/contributors", fuxiHallH.GetContributors)
 	}
 
 	// 管理端点（admin group 已要求 RoleAdmin）
-	adminFuxiHall := admin.Group("/fuxi-hall")
+	adminFuxiHall := admin.Group("/fuxi-hall", requireMenuFuxiHall)
 	{
 		adminFuxiHall.GET("/pages/:page_key", fuxiHallH.GetPageConfig)
 		adminFuxiHall.PUT("/pages/:page_key", fuxiHallH.UpdatePageConfig)
@@ -595,7 +607,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	// ─── 工单管理（管理员）───
-	adminTicket := admin.Group("/ticket")
+	adminTicket := admin.Group("/ticket", requireTicketManage)
 	{
 		adminTicket.GET("/tickets", ticketH.AdminListTickets)
 		adminTicket.GET("/tickets/:id", ticketH.AdminGetTicket)

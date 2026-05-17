@@ -180,26 +180,29 @@ func TestSkillPlanReadAllowsLoggedInUserAndWriteStillRequiresManager(t *testing.
 func TestFuxiHallPublicPagesUseLoggedInRouteGroup(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	router, userToken, guestToken := newFuxiHallRouteTestRouter(t)
+	router, userToken, guestToken, superAdminToken := newFuxiHallRouteTestRouter(t)
 
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership", http.StatusUnauthorized)
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+userToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+superAdminToken, http.StatusOK)
 
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors", http.StatusUnauthorized)
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+userToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+superAdminToken, http.StatusOK)
 }
 
 func TestFuxiHallManageRoutesRequireAdminRole(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	router, userToken, adminToken, guestToken := newFuxiHallManageRouteTestRouter(t)
+	router, userToken, adminToken, guestToken, superAdminToken := newFuxiHallManageRouteTestRouter(t)
 
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership", http.StatusUnauthorized)
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+guestToken, http.StatusForbidden)
 	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+userToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+adminToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+adminToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+superAdminToken, http.StatusOK)
 }
 
 func TestSystemWebhookRequiresSuperAdmin(t *testing.T) {
@@ -572,7 +575,7 @@ func newSkillPlanPermissionTestRouter(roles []string) *gin.Engine {
 	return r
 }
 
-func newFuxiHallRouteTestRouter(t *testing.T) (*gin.Engine, string, string) {
+func newFuxiHallRouteTestRouter(t *testing.T) (*gin.Engine, string, string, string) {
 	t.Helper()
 
 	db := newFuxiHallRouteTestDB(t)
@@ -605,7 +608,11 @@ func newFuxiHallRouteTestRouter(t *testing.T) (*gin.Engine, string, string) {
 		global.Redis = oldRedis
 	})
 
-	if err := db.Create(&model.UserRole{UserID: 1, RoleCode: model.RoleUser}).Error; err != nil {
+	roles := []model.UserRole{
+		{UserID: 1, RoleCode: model.RoleUser},
+		{UserID: 3, RoleCode: model.RoleSuperAdmin},
+	}
+	if err := db.Create(&roles).Error; err != nil {
 		t.Fatalf("create user role: %v", err)
 	}
 
@@ -618,13 +625,17 @@ func newFuxiHallRouteTestRouter(t *testing.T) (*gin.Engine, string, string) {
 	if err != nil {
 		t.Fatalf("generate guest token: %v", err)
 	}
+	superAdminToken, err := jwt.GenerateToken(3, 1003, model.RoleSuperAdmin, 1)
+	if err != nil {
+		t.Fatalf("generate super admin token: %v", err)
+	}
 
 	r := gin.New()
 	RegisterRoutes(r, newTaskRouterTestService(t))
-	return r, userToken, guestToken
+	return r, userToken, guestToken, superAdminToken
 }
 
-func newFuxiHallManageRouteTestRouter(t *testing.T) (*gin.Engine, string, string, string) {
+func newFuxiHallManageRouteTestRouter(t *testing.T) (*gin.Engine, string, string, string, string) {
 	t.Helper()
 
 	db := newFuxiHallRouteTestDB(t)
@@ -660,6 +671,7 @@ func newFuxiHallManageRouteTestRouter(t *testing.T) (*gin.Engine, string, string
 	roles := []model.UserRole{
 		{UserID: 1, RoleCode: model.RoleUser},
 		{UserID: 2, RoleCode: model.RoleAdmin},
+		{UserID: 4, RoleCode: model.RoleSuperAdmin},
 	}
 	if err := db.Create(&roles).Error; err != nil {
 		t.Fatalf("create user roles: %v", err)
@@ -678,10 +690,14 @@ func newFuxiHallManageRouteTestRouter(t *testing.T) (*gin.Engine, string, string
 	if err != nil {
 		t.Fatalf("generate guest token: %v", err)
 	}
+	superAdminToken, err := jwt.GenerateToken(4, 1004, model.RoleSuperAdmin, 1)
+	if err != nil {
+		t.Fatalf("generate super admin token: %v", err)
+	}
 
 	r := gin.New()
 	RegisterRoutes(r, newTaskRouterTestService(t))
-	return r, userToken, adminToken, guestToken
+	return r, userToken, adminToken, guestToken, superAdminToken
 }
 
 func newFuxiHallRouteTestDB(t *testing.T) *gorm.DB {

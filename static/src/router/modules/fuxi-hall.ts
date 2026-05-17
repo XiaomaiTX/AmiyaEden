@@ -7,7 +7,8 @@ export const fuxiHallRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.fuxiHall.title',
     icon: 'ri:group-line',
-    login: true
+    login: true,
+    corpCapabilities: ['menu.fuxi_hall']
   },
   children: [
     {

@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-05-13
+last_reviewed: 2026-05-17
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -16,6 +16,25 @@ source_of_truth:
 
 - `JWT`：任意持有有效 JWT 的已认证用户可访问，包含 `guest`
 - `Login`：任意已认证且非 `guest` 的产品用户可访问
+- `RequireCorpCapability(x)`：在 JWT/Login/Role 之外叠加军团能力策略；`super_admin` 与 `full_access=true` 军团在 capability 层自动放行
+
+业务域 capability 覆盖：
+
+| 域 | capability |
+| --- | --- |
+| Dashboard 聚合与军团建筑 | `menu.dashboard` |
+| 舰队行动 | `menu.operation` |
+| 技能计划 | `menu.skill_planning` |
+| 人物信息 | `menu.info` |
+| 新人帮扶 / 导师 / 招新 | `menu.newbro` |
+| 伏羲大厅 | `menu.fuxi_hall` |
+| 工单用户端 | `menu.ticket` |
+| 工单管理端 | `ticket.manage` |
+| 商店用户端 | `menu.shop` |
+| 商店管理端 | `shop.manage` |
+| 系统管理端 | `system.manage` |
+| SRP | `menu.srp` + `srp.user` / `srp.manage` |
+| 福利 | `menu.welfare` + `welfare.user` / `welfare.approval` / `welfare.settings` |
 
 ## Public
 
@@ -272,7 +291,7 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| GET | `/srp/prices` | 价格表 | Login |
+| GET | `/srp/prices` | 价格表 | `RequireCorpCapability(srp.user)` + Login |
 | POST | `/srp/prices` | 新增或更新价格 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin, senior_fc)` |
 | DELETE | `/srp/prices/:id` | 删除价格 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin, senior_fc)` |
 | POST | `/srp/applications` | 提交补损申请 | `RequireCorpCapability(srp.user)` + Login |

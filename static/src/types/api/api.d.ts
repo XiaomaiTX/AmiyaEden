@@ -3012,6 +3012,19 @@ declare namespace Api {
       | 'welfare.settings'
       | 'menu.srp'
       | 'menu.welfare'
+      | 'menu.dashboard'
+      | 'menu.operation'
+      | 'menu.role'
+      | 'menu.newbro'
+      | 'menu.fuxi_hall'
+      | 'menu.ticket'
+      | 'menu.shop'
+      | 'menu.system'
+      | 'menu.info'
+      | 'menu.skill_planning'
+      | 'ticket.manage'
+      | 'shop.manage'
+      | 'system.manage'
 
     interface CorporationAccessPolicy {
       corporation_id: number

@@ -7,7 +7,8 @@ export const skillPlanningRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.skillPlanning.title',
     icon: 'ri:brain-line',
-    login: true
+    login: true,
+    corpCapabilities: ['menu.skill_planning']
   },
   children: [
     {

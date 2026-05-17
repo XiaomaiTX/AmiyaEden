@@ -18,8 +18,10 @@ export function applyMenuAccessFilter(
     const requiresLogin = item.meta?.login === true
     const requiresNewbro = item.meta?.requiresNewbro === true
     const requiresMentorMenteeEligibility = item.meta?.requiresMentorMenteeEligibility === true
+    const isSuperAdmin = roles.includes('super_admin')
     const hasRolePermission = !itemRoles || itemRoles.some((role) => roles.includes(role))
     const hasCorpCapabilityPermission =
+      isSuperAdmin ||
       !itemCorpCapabilities ||
       itemCorpCapabilities.length === 0 ||
       itemCorpCapabilities.some((capability) => corpCapabilities.includes(capability))

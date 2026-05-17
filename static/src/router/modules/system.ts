@@ -7,7 +7,8 @@ export const systemRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.system.title',
     icon: 'ri:user-3-line',
-    roles: ['super_admin', 'admin']
+    roles: ['super_admin', 'admin'],
+    corpCapabilities: ['menu.system']
   },
   children: [
     {
@@ -18,6 +19,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.user',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['system.manage'],
         authList: [
           { title: 'authActions.system.deleteUser', authMark: 'delete_user' },
           { title: 'authActions.system.assignRole', authMark: 'assign_role' }
@@ -32,6 +34,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.taskManager',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['system.manage'],
         authList: [
           { title: 'authActions.system.executeTask', authMark: 'execute_task' },
           { title: 'authActions.system.updateSchedule', authMark: 'update_schedule' }
@@ -46,6 +49,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.wallet',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['system.manage'],
         authList: [
           { title: 'authActions.system.adjustBalance', authMark: 'adjust_balance' },
           { title: 'authActions.system.viewLog', authMark: 'view_log' }
@@ -60,6 +64,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.audit',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['system.manage'],
         authList: [{ title: 'authActions.system.viewAuditDetail', authMark: 'view_audit_detail' }]
       }
     },
@@ -71,6 +76,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.papExchange',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['system.manage'],
         authList: [{ title: 'authActions.system.editExchangeRate', authMark: 'edit_exchange_rate' }]
       }
     },
@@ -82,6 +88,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.alliancePap',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
+        corpCapabilities: ['system.manage'],
         authList: [{ title: 'authActions.system.manualFetch', authMark: 'manual_fetch' }]
       }
     },
@@ -92,7 +99,8 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.autoRole',
         keepAlive: true,
-        roles: ['super_admin']
+        roles: ['super_admin'],
+        corpCapabilities: ['system.manage']
       }
     },
     {
@@ -113,7 +121,8 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.webhook',
         keepAlive: true,
-        roles: ['super_admin']
+        roles: ['super_admin'],
+        corpCapabilities: ['system.manage']
       }
     },
     {
@@ -123,7 +132,8 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.basicConfig',
         keepAlive: true,
-        roles: ['super_admin']
+        roles: ['super_admin'],
+        corpCapabilities: ['system.manage']
       }
     }
   ]
