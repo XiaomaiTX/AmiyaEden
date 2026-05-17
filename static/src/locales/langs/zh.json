@@ -2680,6 +2680,7 @@
       "allowCorporationsLabel": "军团 ID 列表",
       "allowCorporationsPlaceholder": "每行输入一个军团 ID",
       "allowCorporationsHint": "军团 {corporationId}（{corporationName}）会被强制保留在此列表中，无法移除。其他军团权限信号是否生效由此配置决定。",
+      "savedCorporations": "已保存军团",
       "invalidCorpId": "军团 ID 必须为正整数",
       "sdeConfig": "SDE 配置",
       "sdeApiKey": "API Key",

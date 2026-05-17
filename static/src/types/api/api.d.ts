@@ -3052,6 +3052,10 @@ declare namespace Api {
 
     interface AllowCorporationsConfig {
       allow_corporations: number[]
+      corporations: Array<{
+        corporation_id: number
+        corporation_name: string
+      }>
     }
 
     interface UpdateAllowCorporationsParams {

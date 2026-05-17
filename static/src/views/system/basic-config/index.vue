@@ -26,6 +26,21 @@
           <div class="form-hint">
             {{ $t('system.basicConfig.allowCorporationsHint', SYSTEM_IDENTITY_I18N) }}
           </div>
+          <div class="saved-corporations-block">
+            <div class="saved-corporations-title">
+              {{ $t('system.basicConfig.savedCorporations') }}
+            </div>
+            <div class="saved-corporations-tags">
+              <ElTag
+                v-for="corporationID in allowCorpsForm.allow_corporations"
+                :key="corporationID"
+                size="small"
+                type="info"
+              >
+                {{ formatCorporationDisplay(corporationID) }}
+              </ElTag>
+            </div>
+          </div>
         </ElFormItem>
 
         <ElFormItem>
@@ -145,7 +160,7 @@
             <ElOption
               v-for="corporationID in allowCorpsForm.allow_corporations"
               :key="corporationID"
-              :label="String(corporationID)"
+              :label="formatCorporationDisplay(corporationID)"
               :value="corporationID"
             />
           </ElSelect>
@@ -224,7 +239,8 @@
     ElCheckbox,
     ElInputNumber,
     ElSelect,
-    ElOption
+    ElOption,
+    ElTag
   } from 'element-plus'
   import {
     fetchSDEConfig,
@@ -328,7 +344,8 @@
   })
 
   const allowCorpsForm = reactive<Api.SysConfig.AllowCorporationsConfig>({
-    allow_corporations: []
+    allow_corporations: [],
+    corporations: []
   })
 
   const allowCorpsInput = ref('')
@@ -346,6 +363,15 @@
     corpPolicyRows.value.find((row) => row.corporation_id === selectedCorporationId.value)
   )
   const sdeLastError = computed(() => sdeStatus.last_update_error || sdeStatus.last_check_error)
+  const corporationNameMap = computed(() => {
+    const map = new Map<number, string>()
+    for (const corp of allowCorpsForm.corporations || []) {
+      if (corp.corporation_name) {
+        map.set(corp.corporation_id, corp.corporation_name)
+      }
+    }
+    return map
+  })
 
   const normalizeAllowCorporations = (corporations: number[]) => {
     const seen = new Set<number>([REQUIRED_ALLOW_CORPORATION_ID])
@@ -372,6 +398,14 @@
     }
 
     return corporationId
+  }
+
+  const formatCorporationDisplay = (corporationID: number) => {
+    const corporationName = corporationNameMap.value.get(corporationID)
+    if (!corporationName) {
+      return String(corporationID)
+    }
+    return `${corporationName} (${corporationID})`
   }
 
   const loadSDEConfig = async () => {
@@ -464,6 +498,14 @@
       const res = await fetchAllowCorporations()
       const corporations = normalizeAllowCorporations(res.allow_corporations)
       allowCorpsForm.allow_corporations = corporations
+      allowCorpsForm.corporations = Array.isArray(res.corporations)
+        ? res.corporations
+            .filter((corp) => Number.isSafeInteger(corp.corporation_id) && corp.corporation_id > 0)
+            .map((corp) => ({
+              corporation_id: corp.corporation_id,
+              corporation_name: corp.corporation_name || ''
+            }))
+        : []
       allowCorpsInput.value = corporations.join('\n')
     } catch {
       /* empty */
@@ -484,6 +526,7 @@
       await updateAllowCorporations({ allow_corporations: corps })
       allowCorpsForm.allow_corporations = corps
       allowCorpsInput.value = corps.join('\n')
+      await loadAllowCorpsConfig()
       ElMessage.success(t('system.basicConfig.saveSuccess'))
     } catch (error) {
       ElMessage.error(
@@ -595,6 +638,22 @@
     font-size: 12px;
     color: var(--el-text-color-secondary);
     margin-top: 4px;
+  }
+
+  .saved-corporations-block {
+    margin-top: 10px;
+  }
+
+  .saved-corporations-title {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 6px;
+  }
+
+  .saved-corporations-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .sde-status-alert {

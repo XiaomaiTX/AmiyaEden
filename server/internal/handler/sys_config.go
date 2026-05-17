@@ -109,7 +109,8 @@ func (h *SysConfigHandler) TriggerSDEUpdate(c *gin.Context) {
 }
 
 type AllowCorporationsResponse struct {
-	AllowCorporations []int64 `json:"allow_corporations"`
+	AllowCorporations []int64                      `json:"allow_corporations"`
+	Corporations      []service.CorporationDisplay `json:"corporations"`
 }
 
 type UpdateAllowCorporationsRequest struct {
@@ -139,6 +140,7 @@ type UpdateCorporationAccessPoliciesRequest struct {
 func (h *SysConfigHandler) GetAllowCorporations(c *gin.Context) {
 	response.OK(c, AllowCorporationsResponse{
 		AllowCorporations: h.cfgSvc.GetAllowCorporations(),
+		Corporations:      h.cfgSvc.GetAllowCorporationDisplays(c.Request.Context()),
 	})
 }
 
