@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/jwt"
 	"amiya-eden/pkg/response"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -171,6 +172,49 @@ func IsCorpFullAccess(c *gin.Context) bool {
 		return allowed
 	}
 	return false
+}
+
+func GetCorpRuleInt(c *gin.Context, key string, defaultValue int) int {
+	raw, ok := GetCorpRules(c)[key]
+	if !ok {
+		return defaultValue
+	}
+	switch v := raw.(type) {
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	case uint:
+		return int(v)
+	case uint32:
+		return int(v)
+	case uint64:
+		return int(v)
+	case float64:
+		return int(v)
+	case float32:
+		return int(v)
+	case string:
+		parsed, err := strconv.Atoi(v)
+		if err == nil {
+			return parsed
+		}
+	}
+	return defaultValue
+}
+
+func GetCorpRuleBool(c *gin.Context, key string, defaultValue bool) bool {
+	raw, ok := GetCorpRules(c)[key]
+	if !ok {
+		return defaultValue
+	}
+	value, ok := raw.(bool)
+	if !ok {
+		return defaultValue
+	}
+	return value
 }
 
 func extractToken(c *gin.Context) string {

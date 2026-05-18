@@ -2984,13 +2984,17 @@
       "selectCorporationToConfigure": "Select a corporation to configure",
       "fullAccess": "Full Access",
       "srpRecommendationMultiplier": "SRP Recommendation Multiplier",
+      "npcKillsMaxRangeDays": "NPC report max range days",
+      "systemTaskAllowManualRun": "Allow manual task runs",
+      "npcKillsAllowCorpAggregate": "Allow corporation NPC aggregation",
       "saveCurrentCorporationPolicy": "Save Current Corporation Policy",
       "invalidMultiplier": "SRP recommendation multiplier must be between 0 and 1",
       "corpCapabilityGroups": {
         "menus": "Menu Entries",
         "srp": "SRP Capabilities",
         "welfare": "Welfare Capabilities",
-        "management": "Management Capabilities"
+        "management": "Management Capabilities",
+        "functional": "Functional Capabilities"
       },
       "corpCapabilities": {
         "menuDashboard": "Dashboard Entry",

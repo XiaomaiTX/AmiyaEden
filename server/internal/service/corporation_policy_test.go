@@ -127,6 +127,39 @@ func TestCorporationPolicyServiceGetRuleFloat(t *testing.T) {
 	}
 }
 
+func TestCorporationPolicyServiceGetRuleIntAndBool(t *testing.T) {
+	db := newCorpPolicyTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	svc := NewCorporationPolicyService()
+	if err := svc.UpdatePolicies(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies: []CorporationPolicy{{
+			CorporationID: 1001,
+			Rules: map[string]any{
+				CorpRuleNpcKillsMaxRangeDays:       180,
+				CorpRuleSystemTaskAllowManualRun:   false,
+				CorpRuleNpcKillsAllowCorpAggregate: true,
+			},
+		}},
+	}); err != nil {
+		t.Fatalf("update policies: %v", err)
+	}
+
+	if got := svc.GetRuleInt(1001, CorpRuleNpcKillsMaxRangeDays, 365); got != 180 {
+		t.Fatalf("GetRuleInt() = %d, want 180", got)
+	}
+	if got := svc.GetRuleBool(1001, CorpRuleSystemTaskAllowManualRun, true); got {
+		t.Fatal("GetRuleBool() = true, want false")
+	}
+	if got := svc.GetRuleBool(1001, CorpRuleNpcKillsAllowCorpAggregate, false); !got {
+		t.Fatal("GetRuleBool() = false, want true")
+	}
+}
+
 func newCorpPolicyTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	dsn := "file:corp_policy_test_" + time.Now().Format("150405.000000000") + "?mode=memory&cache=shared"

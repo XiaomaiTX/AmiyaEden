@@ -36,7 +36,8 @@ export const dashboardRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.dashboard.npcKills',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin'],
+        corpCapabilities: ['dashboard.npc_kills.corp', 'info.npc_kills.corp']
       }
     },
     {
@@ -46,7 +47,8 @@ export const dashboardRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.dashboard.corporationStructures',
         keepAlive: true,
-        roles: ['super_admin', 'admin']
+        roles: ['super_admin', 'admin'],
+        corpCapabilities: ['dashboard.corp_structures.read']
       }
     },
     {

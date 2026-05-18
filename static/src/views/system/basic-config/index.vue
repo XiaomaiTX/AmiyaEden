@@ -213,6 +213,33 @@
               controls-position="right"
             />
           </ElFormItem>
+
+          <ElFormItem
+            :label="$t('system.basicConfig.npcKillsMaxRangeDays')"
+            class="corp-policy-multiplier"
+          >
+            <ElInputNumber
+              v-model="selectedPolicy.npc_kills_max_range_days"
+              :step="1"
+              :min="0"
+              :max="3650"
+              controls-position="right"
+            />
+          </ElFormItem>
+
+          <ElFormItem
+            :label="$t('system.basicConfig.systemTaskAllowManualRun')"
+            class="corp-policy-multiplier"
+          >
+            <ElSwitch v-model="selectedPolicy.system_task_allow_manual_run" />
+          </ElFormItem>
+
+          <ElFormItem
+            :label="$t('system.basicConfig.npcKillsAllowCorpAggregate')"
+            class="corp-policy-multiplier"
+          >
+            <ElSwitch v-model="selectedPolicy.npc_kills_allow_corp_aggregate" />
+          </ElFormItem>
         </div>
 
         <ElButton
@@ -305,6 +332,56 @@
     {
       labelKey: 'system.basicConfig.corpCapabilityGroups.management',
       capabilities: ['ticket.manage', 'shop.manage', 'system.manage']
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.functional',
+      capabilities: [
+        'info.wallet.read',
+        'info.npc_kills.self',
+        'info.npc_kills.corp',
+        'info.skills.read',
+        'info.assets.read',
+        'info.contracts.read',
+        'info.fittings.manage',
+        'shop.wallet.read',
+        'shop.order.create',
+        'shop.order.read_self',
+        'dashboard.npc_kills.corp',
+        'dashboard.corp_structures.read',
+        'dashboard.corp_structures.manage',
+        'operation.fleet.read_self',
+        'operation.fleet.manage',
+        'operation.fleet.pap.manage',
+        'skill_planning.corp.read',
+        'skill_planning.corp.manage',
+        'skill_planning.personal.read',
+        'skill_planning.personal.manage',
+        'newbro.user.actions',
+        'newbro.captain.actions',
+        'newbro.admin.read',
+        'newbro.admin.manage',
+        'mentor.user.actions',
+        'mentor.mentor.actions',
+        'mentor.admin.manage',
+        'system.task.read',
+        'system.task.run',
+        'system.basic_config.read',
+        'system.basic_config.manage',
+        'system.wallet.read',
+        'system.wallet.adjust',
+        'system.audit.read',
+        'system.audit.export',
+        'system.tool_bookmark.read',
+        'system.tool_bookmark.manage',
+        'ticket.user.create',
+        'ticket.user.reply',
+        'ticket.admin.read',
+        'ticket.admin.manage',
+        'shop.admin.product.manage',
+        'shop.admin.order.manage',
+        'fuxi_hall.public.read',
+        'fuxi_hall.admin.manage'
+      ]
     }
   ]
   const corpCapabilityOptions = corpCapabilityGroups.flatMap((group) => group.capabilities)
@@ -328,7 +405,52 @@
     'welfare.settings': 'system.basicConfig.corpCapabilities.welfareSettings',
     'ticket.manage': 'system.basicConfig.corpCapabilities.ticketManage',
     'shop.manage': 'system.basicConfig.corpCapabilities.shopManage',
-    'system.manage': 'system.basicConfig.corpCapabilities.systemManage'
+    'system.manage': 'system.basicConfig.corpCapabilities.systemManage',
+    'info.wallet.read': 'info.wallet.read',
+    'info.npc_kills.self': 'info.npc_kills.self',
+    'info.npc_kills.corp': 'info.npc_kills.corp',
+    'info.skills.read': 'info.skills.read',
+    'info.assets.read': 'info.assets.read',
+    'info.contracts.read': 'info.contracts.read',
+    'info.fittings.manage': 'info.fittings.manage',
+    'shop.wallet.read': 'shop.wallet.read',
+    'shop.order.create': 'shop.order.create',
+    'shop.order.read_self': 'shop.order.read_self',
+    'dashboard.npc_kills.corp': 'dashboard.npc_kills.corp',
+    'dashboard.corp_structures.read': 'dashboard.corp_structures.read',
+    'dashboard.corp_structures.manage': 'dashboard.corp_structures.manage',
+    'operation.fleet.read_self': 'operation.fleet.read_self',
+    'operation.fleet.manage': 'operation.fleet.manage',
+    'operation.fleet.pap.manage': 'operation.fleet.pap.manage',
+    'skill_planning.corp.read': 'skill_planning.corp.read',
+    'skill_planning.corp.manage': 'skill_planning.corp.manage',
+    'skill_planning.personal.read': 'skill_planning.personal.read',
+    'skill_planning.personal.manage': 'skill_planning.personal.manage',
+    'newbro.user.actions': 'newbro.user.actions',
+    'newbro.captain.actions': 'newbro.captain.actions',
+    'newbro.admin.read': 'newbro.admin.read',
+    'newbro.admin.manage': 'newbro.admin.manage',
+    'mentor.user.actions': 'mentor.user.actions',
+    'mentor.mentor.actions': 'mentor.mentor.actions',
+    'mentor.admin.manage': 'mentor.admin.manage',
+    'system.task.read': 'system.task.read',
+    'system.task.run': 'system.task.run',
+    'system.basic_config.read': 'system.basic_config.read',
+    'system.basic_config.manage': 'system.basic_config.manage',
+    'system.wallet.read': 'system.wallet.read',
+    'system.wallet.adjust': 'system.wallet.adjust',
+    'system.audit.read': 'system.audit.read',
+    'system.audit.export': 'system.audit.export',
+    'system.tool_bookmark.read': 'system.tool_bookmark.read',
+    'system.tool_bookmark.manage': 'system.tool_bookmark.manage',
+    'ticket.user.create': 'ticket.user.create',
+    'ticket.user.reply': 'ticket.user.reply',
+    'ticket.admin.read': 'ticket.admin.read',
+    'ticket.admin.manage': 'ticket.admin.manage',
+    'shop.admin.product.manage': 'shop.admin.product.manage',
+    'shop.admin.order.manage': 'shop.admin.order.manage',
+    'fuxi_hall.public.read': 'fuxi_hall.public.read',
+    'fuxi_hall.admin.manage': 'fuxi_hall.admin.manage'
   }
 
   const sdeForm = reactive<Api.SysConfig.SDEConfig>({
@@ -364,6 +486,9 @@
       full_access: boolean
       capabilities: Api.SysConfig.CorporationCapability[]
       multiplier: number
+      npc_kills_max_range_days: number
+      system_task_allow_manual_run: boolean
+      npc_kills_allow_corp_aggregate: boolean
     }>
   >([])
   const selectedPolicy = computed(() =>
@@ -572,7 +697,15 @@
     ) as Api.SysConfig.CorporationCapability[]
   }
 
-  const normalizePolicyRules = (rules: unknown, multiplierValue: number) => {
+  const normalizePolicyRules = (
+    rules: unknown,
+    policyRow: {
+      multiplier: number
+      npc_kills_max_range_days: number
+      system_task_allow_manual_run: boolean
+      npc_kills_allow_corp_aggregate: boolean
+    }
+  ) => {
     const normalizedRules: Record<string, string | number | boolean> = {}
     if (rules && typeof rules === 'object') {
       for (const [key, value] of Object.entries(rules as Record<string, unknown>)) {
@@ -582,10 +715,13 @@
       }
     }
 
-    const normalizedMultiplier = clampMultiplier(multiplierValue)
+    const normalizedMultiplier = clampMultiplier(policyRow.multiplier)
     normalizedRules['srp.recommendation_multiplier'] = Number.isNaN(normalizedMultiplier)
       ? 1
       : normalizedMultiplier
+    normalizedRules['npc_kills.max_range_days'] = policyRow.npc_kills_max_range_days
+    normalizedRules['system.task.allow_manual_run'] = policyRow.system_task_allow_manual_run
+    normalizedRules['npc_kills.allow_corp_aggregate'] = policyRow.npc_kills_allow_corp_aggregate
     return normalizedRules
   }
 
@@ -609,13 +745,26 @@
         const rawMultiplier = policy?.rules?.['srp.recommendation_multiplier']
         const multiplier =
           typeof rawMultiplier === 'number' && Number.isFinite(rawMultiplier) ? rawMultiplier : 1
+        const rawMaxRangeDays = policy?.rules?.['npc_kills.max_range_days']
+        const npcKillsMaxRangeDays =
+          typeof rawMaxRangeDays === 'number' && Number.isFinite(rawMaxRangeDays)
+            ? rawMaxRangeDays
+            : 365
+        const rawManualRun = policy?.rules?.['system.task.allow_manual_run']
+        const systemTaskAllowManualRun = typeof rawManualRun === 'boolean' ? rawManualRun : true
+        const rawCorpAggregate = policy?.rules?.['npc_kills.allow_corp_aggregate']
+        const npcKillsAllowCorpAggregate =
+          typeof rawCorpAggregate === 'boolean' ? rawCorpAggregate : true
         return {
           corporation_id: corporationID,
           full_access: policy?.full_access ?? false,
           capabilities: (policy?.capabilities ?? []).filter((capability) =>
             corpCapabilityOptions.includes(capability as Api.SysConfig.CorporationCapability)
           ) as Api.SysConfig.CorporationCapability[],
-          multiplier: clampMultiplier(multiplier) || 1
+          multiplier: clampMultiplier(multiplier) || 1,
+          npc_kills_max_range_days: npcKillsMaxRangeDays,
+          system_task_allow_manual_run: systemTaskAllowManualRun,
+          npc_kills_allow_corp_aggregate: npcKillsAllowCorpAggregate
         }
       })
       if (
@@ -653,12 +802,27 @@
         const rawMultiplier = policy.rules?.['srp.recommendation_multiplier']
         const multiplier =
           typeof rawMultiplier === 'number' && Number.isFinite(rawMultiplier) ? rawMultiplier : 1
+        const rawMaxRangeDays = policy.rules?.['npc_kills.max_range_days']
+        const npcKillsMaxRangeDays =
+          typeof rawMaxRangeDays === 'number' && Number.isFinite(rawMaxRangeDays)
+            ? rawMaxRangeDays
+            : 365
+        const rawManualRun = policy.rules?.['system.task.allow_manual_run']
+        const systemTaskAllowManualRun = typeof rawManualRun === 'boolean' ? rawManualRun : true
+        const rawCorpAggregate = policy.rules?.['npc_kills.allow_corp_aggregate']
+        const npcKillsAllowCorpAggregate =
+          typeof rawCorpAggregate === 'boolean' ? rawCorpAggregate : true
 
         mergedPolicyMap.set(policy.corporation_id, {
           corporation_id: policy.corporation_id,
           full_access: !!policy.full_access,
           capabilities: normalizePolicyCapabilities(policy.capabilities),
-          rules: normalizePolicyRules(policy.rules, multiplier)
+          rules: normalizePolicyRules(policy.rules, {
+            multiplier,
+            npc_kills_max_range_days: npcKillsMaxRangeDays,
+            system_task_allow_manual_run: systemTaskAllowManualRun,
+            npc_kills_allow_corp_aggregate: npcKillsAllowCorpAggregate
+          })
         })
       }
 
@@ -666,7 +830,7 @@
         corporation_id: selectedPolicy.value.corporation_id,
         full_access: selectedPolicy.value.full_access,
         capabilities: normalizePolicyCapabilities(selectedPolicy.value.capabilities),
-        rules: normalizePolicyRules(undefined, selectedPolicy.value.multiplier)
+        rules: normalizePolicyRules(undefined, selectedPolicy.value)
       })
 
       await updateCorporationAccessPolicies({

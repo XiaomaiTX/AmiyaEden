@@ -28,7 +28,8 @@ export const ticketRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.ticket.create',
         keepAlive: true,
-        login: true
+        login: true,
+        corpCapabilities: ['ticket.user.create']
       }
     },
     {
@@ -50,7 +51,7 @@ export const ticketRoutes: AppRouteRecord = {
         title: 'menus.ticket.management',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['ticket.manage']
+        corpCapabilities: ['ticket.manage', 'ticket.admin.read']
       }
     },
     {
@@ -61,7 +62,7 @@ export const ticketRoutes: AppRouteRecord = {
         title: 'menus.ticket.categories',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['ticket.manage']
+        corpCapabilities: ['ticket.manage', 'ticket.admin.manage']
       }
     },
     {
@@ -72,7 +73,7 @@ export const ticketRoutes: AppRouteRecord = {
         title: 'menus.ticket.statistics',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['ticket.manage']
+        corpCapabilities: ['ticket.manage', 'ticket.admin.read']
       }
     },
     {
@@ -84,7 +85,7 @@ export const ticketRoutes: AppRouteRecord = {
         isHide: true,
         isHideTab: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['ticket.manage']
+        corpCapabilities: ['ticket.manage', 'ticket.admin.read']
       }
     }
   ]

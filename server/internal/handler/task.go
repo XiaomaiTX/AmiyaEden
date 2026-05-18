@@ -48,6 +48,11 @@ func (h *TaskHandler) GetHistory(c *gin.Context) {
 }
 
 func (h *TaskHandler) RunTask(c *gin.Context) {
+	if !middleware.GetCorpRuleBool(c, service.CorpRuleSystemTaskAllowManualRun, true) {
+		response.Fail(c, response.CodeForbidden, "当前军团策略禁止手动触发任务")
+		return
+	}
+
 	taskName := c.Param("name")
 	triggeredBy := middleware.GetUserID(c)
 
