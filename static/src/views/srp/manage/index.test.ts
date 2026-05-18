@@ -10,6 +10,10 @@ const workflowHookSource = readFileSync(
   new URL('../../../hooks/srp/useSrpWorkflow.ts', import.meta.url),
   'utf8'
 )
+const buttonTableSource = readFileSync(
+  new URL('../../../components/core/forms/art-button-table/index.vue', import.meta.url),
+  'utf8'
+)
 const zhLocale = JSON.parse(
   readFileSync(new URL('../../../locales/langs/zh.json', import.meta.url), 'utf8')
 )
@@ -65,21 +69,35 @@ test('srp submitted actions keep approve and reject explicitly clickable with gu
   assert.match(manageHookSource, /prop:\s*'actions'[\s\S]*width:\s*280/)
   assert.match(
     manageHookSource,
-    /row\.review_status === 'submitted'[\s\S]*event\.stopPropagation\(\)[\s\S]*callbacks\.openReviewDialog\(row,\s*'approve'\)/
+    /row\.review_status === 'submitted'[\s\S]*label:\s*t\('srp\.manage\.approveBtn'\)[\s\S]*onClick:\s*\(\)\s*=>\s*callbacks\.openReviewDialog\(row,\s*'approve'\)/
   )
   assert.match(
     manageHookSource,
-    /row\.review_status === 'submitted'[\s\S]*event\.stopPropagation\(\)[\s\S]*callbacks\.openReviewDialog\(row,\s*'reject'\)/
+    /row\.review_status === 'submitted'[\s\S]*label:\s*t\('srp\.manage\.rejectBtn'\)[\s\S]*onClick:\s*\(\)\s*=>\s*callbacks\.openReviewDialog\(row,\s*'reject'\)/
   )
+  assert.doesNotMatch(manageHookSource, /event\.stopPropagation\(\)/)
   assert.match(manageHookSource, /flex-nowrap whitespace-nowrap/)
 })
 
 test('srp review dialog template fill is resilient and shows an error when dialog initialization fails', () => {
   assert.match(workflowHookSource, /const ensureText = \(value: unknown, fallback = ''\)/)
-  assert.match(workflowHookSource, /fillTemplate = \(tpl: unknown\)/)
+  assert.match(workflowHookSource, /const getReviewerName = \(\)/)
+  assert.match(workflowHookSource, /if \(!row\) \{/)
   assert.match(
+    workflowHookSource,
+    /t\('srp\.manage\.defaultApproveNote',\s*\{\s*mainCharacterName:\s*reviewerName\s*\}\)/
+  )
+  assert.match(
+    workflowHookSource,
+    /t\('srp\.manage\.defaultRejectNote',\s*\{\s*mainCharacterName:\s*reviewerName\s*\}\)/
+  )
+  assert.match(workflowHookSource, /ElMessage\.error\(t\('common\.operationFailed'\)\)/)
+  assert.doesNotMatch(
     workflowHookSource,
     /try \{[\s\S]*reviewDialogVisible\.value = true[\s\S]*\} catch \{/
   )
-  assert.match(workflowHookSource, /ElMessage\.error\(t\('common\.operationFailed'\)\)/)
+})
+
+test('art button table stops click propagation at component boundary', () => {
+  assert.match(buttonTableSource, /@click\.stop\.prevent="handleClick"/)
 })
