@@ -3092,6 +3092,16 @@ declare namespace Api {
       last_update_at: number
       last_update_success: boolean
       last_update_error: string
+      is_updating: boolean
+      update_stage:
+        | 'checking'
+        | 'downloading'
+        | 'extracting'
+        | 'importing'
+        | 'recording'
+        | 'done'
+        | 'failed'
+        | ''
     }
   }
 

@@ -2970,6 +2970,7 @@
       "sdeLatestVersion": "Latest Version",
       "sdeLastCheckAt": "Last Check",
       "sdeLastUpdateAt": "Last Update",
+      "sdeUpdateStage": "Update Stage",
       "sdeLastError": "Recent Error",
       "sdeUpdateAvailable": "A newer SDE version is available. Please run update.",
       "sdeCheckVersion": "Check Latest Version",

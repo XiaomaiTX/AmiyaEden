@@ -87,6 +87,10 @@
             <span class="sde-status-label">{{ $t('system.basicConfig.sdeLastUpdateAt') }}</span>
             <span class="sde-status-value">{{ formatTimestamp(sdeStatus.last_update_at) }}</span>
           </div>
+          <div class="sde-status-item">
+            <span class="sde-status-label">{{ $t('system.basicConfig.sdeUpdateStage') }}</span>
+            <span class="sde-status-value">{{ sdeStatus.update_stage || '-' }}</span>
+          </div>
           <div class="sde-status-item sde-status-item--full" v-if="sdeLastError">
             <span class="sde-status-label">{{ $t('system.basicConfig.sdeLastError') }}</span>
             <span class="sde-status-value sde-status-value--error">{{ sdeLastError }}</span>
@@ -255,6 +259,7 @@
   } from '@/api/sys-config'
   import { SYSTEM_IDENTITY, SYSTEM_IDENTITY_I18N } from '@/constants/system-identity'
   import { formatTime } from '@/utils/common'
+  import { isHttpError } from '@/utils/http/error'
 
   defineOptions({ name: 'BasicConfig' })
 
@@ -340,7 +345,9 @@
     last_check_error: '',
     last_update_at: 0,
     last_update_success: false,
-    last_update_error: ''
+    last_update_error: '',
+    is_updating: false,
+    update_stage: ''
   })
 
   const allowCorpsForm = reactive<Api.SysConfig.AllowCorporationsConfig>({
@@ -432,6 +439,8 @@
     sdeStatus.last_update_at = status.last_update_at
     sdeStatus.last_update_success = status.last_update_success
     sdeStatus.last_update_error = status.last_update_error
+    sdeStatus.is_updating = status.is_updating
+    sdeStatus.update_stage = status.update_stage
   }
 
   const loadSDEStatus = async () => {
@@ -481,13 +490,20 @@
 
   const handleUpdateSDE = async () => {
     updatingSDE.value = true
+    const poller = setInterval(() => {
+      void loadSDEStatus()
+    }, 2000)
     try {
       const status = await triggerSDEUpdate()
       syncSDEStatus(status)
       ElMessage.success(t('system.basicConfig.sdeUpdateSuccess'))
-    } catch {
-      /* empty */
+    } catch (error) {
+      if (isHttpError(error)) {
+        ElMessage.error(error.message)
+      }
     } finally {
+      clearInterval(poller)
+      await loadSDEStatus()
       updatingSDE.value = false
     }
   }

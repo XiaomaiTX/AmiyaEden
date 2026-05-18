@@ -83,6 +83,8 @@ export function checkSDEVersion() {
 /** 手动执行 SDE 更新 */
 export function triggerSDEUpdate() {
   return request.post<Api.SysConfig.SDEStatus>({
-    url: '/api/v1/system/sde-config/update'
+    url: '/api/v1/system/sde-config/update',
+    timeout: 10 * 60 * 1000,
+    showErrorMessage: false
   })
 }
