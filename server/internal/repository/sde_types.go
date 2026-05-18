@@ -30,7 +30,7 @@ func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID stri
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, languageID string, camelCase bool) ([]TypeInfo, error) {
@@ -80,7 +80,7 @@ func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, langu
 		query = query.Where(fmt.Sprintf(`%s IN ?`, typeIDCol), typeIDs)
 	}
 	if published != nil && *published {
-		query = query.Where(fmt.Sprintf(`%s = ?`, publishedCol), 1)
+		query = query.Where(fmt.Sprintf(`%s = ?`, publishedCol), true)
 	}
 
 	if err := query.Scan(&result).Error; err != nil {
@@ -102,7 +102,7 @@ func (r *SdeRepository) GetTypesByCategoryID(categoryID int, languageID string) 
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getTypesByCategoryIDWithLayout(categoryID int, languageID string, camelCase bool) ([]TypeInfo, error) {
@@ -144,7 +144,7 @@ func (r *SdeRepository) getTypesByCategoryIDWithLayout(categoryID int, languageI
 			sdeTranslationCategoryIDs["category"], languageID).
 		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = ? AND %s = %s AND %s = ?`, naming.table("trnTranslations", "mg_name"), naming.col("mg_name", "tcID"), naming.col("mg_name", "keyID"), marketGroupJoinIDCol, naming.col("mg_name", "languageID")),
 			sdeTranslationCategoryIDs["market_group"], languageID).
-		Where(fmt.Sprintf(`%s = ? AND %s = ?`, categoryIDCol, publishedCol), categoryID, 1)
+		Where(fmt.Sprintf(`%s = ? AND %s = ?`, categoryIDCol, publishedCol), categoryID, true)
 
 	if err := query.Scan(&result).Error; err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (r *SdeRepository) GetTypeIDsByNames(names []string) (map[string]int64, err
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getTypeIDsByNamesWithLayout(names []string, camelCase bool) (map[string]int64, error) {
