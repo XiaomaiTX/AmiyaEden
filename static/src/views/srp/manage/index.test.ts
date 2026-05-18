@@ -60,3 +60,26 @@ test('srp manage labels the last actor as the SRP officer after the review note 
   assert.equal(zhLocale.srp.manage.exportColumns.lastActor, '补损官')
   assert.equal(enLocale.srp.manage.exportColumns.lastActor, 'SRP Officer')
 })
+
+test('srp submitted actions keep approve and reject explicitly clickable with guarded click handlers', () => {
+  assert.match(manageHookSource, /prop:\s*'actions'[\s\S]*width:\s*280/)
+  assert.match(
+    manageHookSource,
+    /row\.review_status === 'submitted'[\s\S]*event\.stopPropagation\(\)[\s\S]*callbacks\.openReviewDialog\(row,\s*'approve'\)/
+  )
+  assert.match(
+    manageHookSource,
+    /row\.review_status === 'submitted'[\s\S]*event\.stopPropagation\(\)[\s\S]*callbacks\.openReviewDialog\(row,\s*'reject'\)/
+  )
+  assert.match(manageHookSource, /flex-nowrap whitespace-nowrap/)
+})
+
+test('srp review dialog template fill is resilient and shows an error when dialog initialization fails', () => {
+  assert.match(workflowHookSource, /const ensureText = \(value: unknown, fallback = ''\)/)
+  assert.match(workflowHookSource, /fillTemplate = \(tpl: unknown\)/)
+  assert.match(
+    workflowHookSource,
+    /try \{[\s\S]*reviewDialogVisible\.value = true[\s\S]*\} catch \{/
+  )
+  assert.match(workflowHookSource, /ElMessage\.error\(t\('common\.operationFailed'\)\)/)
+})

@@ -545,6 +545,34 @@
     return value
   }
 
+  const normalizePolicyCapabilities = (
+    capabilities: unknown
+  ): Api.SysConfig.CorporationCapability[] => {
+    if (!Array.isArray(capabilities)) {
+      return []
+    }
+    return capabilities.filter((capability) =>
+      corpCapabilityOptions.includes(capability as Api.SysConfig.CorporationCapability)
+    ) as Api.SysConfig.CorporationCapability[]
+  }
+
+  const normalizePolicyRules = (rules: unknown, multiplierValue: number) => {
+    const normalizedRules: Record<string, string | number | boolean> = {}
+    if (rules && typeof rules === 'object') {
+      for (const [key, value] of Object.entries(rules as Record<string, unknown>)) {
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          normalizedRules[key] = value
+        }
+      }
+    }
+
+    const normalizedMultiplier = clampMultiplier(multiplierValue)
+    normalizedRules['srp.recommendation_multiplier'] = Number.isNaN(normalizedMultiplier)
+      ? 1
+      : normalizedMultiplier
+    return normalizedRules
+  }
+
   const loadCorpPolicies = async () => {
     loadingCorpPolicies.value = true
     try {
@@ -599,17 +627,38 @@
 
     savingCorpPolicies.value = true
     try {
+      const latestPoliciesConfig = await fetchCorporationAccessPolicies()
+      const mergedPolicyMap = new Map<number, Api.SysConfig.CorporationAccessPolicy>()
+
+      for (const policy of latestPoliciesConfig.policies || []) {
+        if (!Number.isSafeInteger(policy.corporation_id) || policy.corporation_id <= 0) {
+          continue
+        }
+        const rawMultiplier = policy.rules?.['srp.recommendation_multiplier']
+        const multiplier =
+          typeof rawMultiplier === 'number' && Number.isFinite(rawMultiplier) ? rawMultiplier : 1
+
+        mergedPolicyMap.set(policy.corporation_id, {
+          corporation_id: policy.corporation_id,
+          full_access: !!policy.full_access,
+          capabilities: normalizePolicyCapabilities(policy.capabilities),
+          rules: normalizePolicyRules(policy.rules, multiplier)
+        })
+      }
+
+      mergedPolicyMap.set(selectedPolicy.value.corporation_id, {
+        corporation_id: selectedPolicy.value.corporation_id,
+        full_access: selectedPolicy.value.full_access,
+        capabilities: normalizePolicyCapabilities(selectedPolicy.value.capabilities),
+        rules: normalizePolicyRules(undefined, selectedPolicy.value.multiplier)
+      })
+
       await updateCorporationAccessPolicies({
-        version: corpPoliciesVersion.value,
+        version: latestPoliciesConfig.version || corpPoliciesVersion.value,
         default_mode: 'deny',
-        policies: corpPolicyRows.value.map((row) => ({
-          corporation_id: row.corporation_id,
-          full_access: row.full_access,
-          capabilities: row.capabilities,
-          rules: {
-            'srp.recommendation_multiplier': row.multiplier
-          }
-        }))
+        policies: Array.from(mergedPolicyMap.values()).sort(
+          (left, right) => left.corporation_id - right.corporation_id
+        )
       })
       ElMessage.success(t('system.basicConfig.saveSuccess'))
       await loadCorpPolicies()
