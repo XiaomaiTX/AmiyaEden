@@ -34,7 +34,7 @@ func (r *SdeRepository) FuzzySearch(keyword string, languageID string, categoryI
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("FuzzySearch", err, fallbackErr)
 }
 
 func (r *SdeRepository) fuzzySearchWithLayout(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool, camelCase bool) ([]FuzzySearchItem, error) {
@@ -118,7 +118,7 @@ func (r *SdeRepository) GetFlags(flagIDs []int) ([]FlagInfo, error) {
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetFlags", err, fallbackErr)
 }
 
 func (r *SdeRepository) getFlagsWithLayout(flagIDs []int, camelCase bool) ([]FlagInfo, error) {

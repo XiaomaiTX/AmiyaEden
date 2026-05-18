@@ -30,7 +30,7 @@ func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID stri
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetTypes", err, fallbackErr)
 }
 
 func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, languageID string, camelCase bool) ([]TypeInfo, error) {
@@ -102,7 +102,7 @@ func (r *SdeRepository) GetTypesByCategoryID(categoryID int, languageID string) 
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetTypesByCategoryID", err, fallbackErr)
 }
 
 func (r *SdeRepository) getTypesByCategoryIDWithLayout(categoryID int, languageID string, camelCase bool) ([]TypeInfo, error) {
@@ -167,7 +167,7 @@ func (r *SdeRepository) GetTypeIDsByNames(names []string) (map[string]int64, err
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetTypeIDsByNames", err, fallbackErr)
 }
 
 func (r *SdeRepository) getTypeIDsByNamesWithLayout(names []string, camelCase bool) (map[string]int64, error) {

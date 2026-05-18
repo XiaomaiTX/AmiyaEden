@@ -22,6 +22,7 @@ type NpcKillService struct {
 	npcKillRepo *repository.NpcKillRepository
 	charRepo    *repository.EveCharacterRepository
 	sdeRepo     *repository.SdeRepository
+	sdeSvc      *SdeService
 	esiClient   *esi.Client
 }
 
@@ -37,6 +38,7 @@ func NewNpcKillService() *NpcKillService {
 		npcKillRepo: repository.NewNpcKillRepository(),
 		charRepo:    repository.NewEveCharacterRepository(),
 		sdeRepo:     repository.NewSdeRepository(),
+		sdeSvc:      NewSdeService(),
 		esiClient:   esi.NewClientWithConfig(esiBaseURL, esiPrefix),
 	}
 }
@@ -478,7 +480,10 @@ func (s *NpcKillService) calcBySystem(journals []model.EVECharacterWalletJournal
 	for id := range solarSystemIDs {
 		ids = append(ids, id)
 	}
-	systemNames, _ := s.npcKillRepo.GetSolarSystemNames(ids)
+	systemNames, err := s.npcKillRepo.GetSolarSystemNames(ids)
+	if err != nil && s.sdeSvc != nil {
+		s.sdeSvc.ReportQueryError("npc_kill", "GetSolarSystemNames", err)
+	}
 
 	result := make([]NpcKillBySystem, 0, len(systemMap))
 	for _, sys := range systemMap {
@@ -545,7 +550,10 @@ func (s *NpcKillService) buildJournalItems(journals []model.EVECharacterWalletJo
 	for id := range solarSystemIDs {
 		ids = append(ids, id)
 	}
-	systemNames, _ := s.npcKillRepo.GetSolarSystemNames(ids)
+	systemNames, err := s.npcKillRepo.GetSolarSystemNames(ids)
+	if err != nil && s.sdeSvc != nil {
+		s.sdeSvc.ReportQueryError("npc_kill", "GetSolarSystemNames", err)
+	}
 
 	items := make([]NpcKillJournalItem, 0, len(journals))
 	for _, j := range journals {

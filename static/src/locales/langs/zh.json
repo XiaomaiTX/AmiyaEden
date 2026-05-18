@@ -2698,6 +2698,7 @@
       "sdeUpdateAvailable": "检测到可更新版本，请及时执行更新",
       "sdeCheckVersion": "检查新版本",
       "sdeRunUpdate": "执行更新",
+      "sdeRunUpdateHint": "即使已是最新版本，也会重新下载并导入最新 SDE。",
       "sdeCheckSuccess": "SDE 版本检查完成",
       "sdeUpdateSuccess": "SDE 更新完成",
       "corporationAccessPolicies": "军团能力策略",
