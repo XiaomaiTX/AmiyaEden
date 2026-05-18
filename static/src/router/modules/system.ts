@@ -19,7 +19,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.user',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage'],
+        corpCapabilities: ['system.manage', 'system.task.read'],
         authList: [
           { title: 'authActions.system.deleteUser', authMark: 'delete_user' },
           { title: 'authActions.system.assignRole', authMark: 'assign_role' }
@@ -34,7 +34,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.taskManager',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage'],
+        corpCapabilities: ['system.manage', 'system.wallet.read'],
         authList: [
           { title: 'authActions.system.executeTask', authMark: 'execute_task' },
           { title: 'authActions.system.updateSchedule', authMark: 'update_schedule' }
@@ -49,7 +49,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.wallet',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage'],
+        corpCapabilities: ['system.manage', 'system.audit.read'],
         authList: [
           { title: 'authActions.system.adjustBalance', authMark: 'adjust_balance' },
           { title: 'authActions.system.viewLog', authMark: 'view_log' }
@@ -100,7 +100,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.autoRole',
         keepAlive: true,
         roles: ['super_admin'],
-        corpCapabilities: ['system.manage']
+        corpCapabilities: ['system.manage', 'system.basic_config.read']
       }
     },
     {

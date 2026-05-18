@@ -17,7 +17,8 @@ export const shopRoutes: AppRouteRecord = {
       component: '/shop/browse',
       meta: {
         title: 'menus.shop.browse',
-        keepAlive: true
+        keepAlive: true,
+        corpCapabilities: ['shop.order.read_self']
       }
     },
     {
@@ -28,7 +29,7 @@ export const shopRoutes: AppRouteRecord = {
         title: 'menus.shop.manage',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['shop.manage'],
+        corpCapabilities: ['shop.manage', 'shop.admin.product.manage'],
         authList: [
           { title: 'authActions.shop.addProduct', authMark: 'add_product' },
           { title: 'authActions.shop.editProduct', authMark: 'edit_product' },
@@ -44,7 +45,7 @@ export const shopRoutes: AppRouteRecord = {
         title: 'menus.shop.orderManage',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'shop_order_manage'],
-        corpCapabilities: ['shop.manage'],
+        corpCapabilities: ['shop.manage', 'shop.admin.order.manage'],
         authList: [{ title: 'authActions.shop.approveOrder', authMark: 'approve_order' }]
       }
     },
@@ -54,7 +55,8 @@ export const shopRoutes: AppRouteRecord = {
       component: '/shop/wallet',
       meta: {
         title: 'menus.shop.wallet',
-        keepAlive: true
+        keepAlive: true,
+        corpCapabilities: ['shop.wallet.read']
       }
     }
   ]

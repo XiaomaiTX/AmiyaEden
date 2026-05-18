@@ -11,8 +11,16 @@ import (
 )
 
 const (
-	corpPolicyDefaultModeDeny           = "deny"
-	CorpRuleSRPRecommendationMultiplier = "srp.recommendation_multiplier"
+	corpPolicyDefaultModeDeny             = "deny"
+	CorpRuleSRPRecommendationMultiplier   = "srp.recommendation_multiplier"
+	CorpRuleWalletDailyQueryLimit         = "wallet.daily_query_limit"
+	CorpRuleWalletAllowExport             = "wallet.allow_export"
+	CorpRuleNpcKillsMaxRangeDays          = "npc_kills.max_range_days"
+	CorpRuleNpcKillsAllowCorpAggregate    = "npc_kills.allow_corp_aggregate"
+	CorpRuleShopMaxOrderAmount            = "shop.max_order_amount"
+	CorpRuleSystemTaskAllowManualRun      = "system.task.allow_manual_run"
+	CorpRuleTicketMaxOpenCount            = "ticket.max_open_count"
+	CorpRuleInfoESIRefreshCooldownSeconds = "info.esi_refresh_cooldown_seconds"
 )
 
 var (
@@ -168,6 +176,30 @@ func (s *CorporationPolicyService) GetRuleFloat(corporationID int64, key string,
 	default:
 		return defaultValue
 	}
+}
+
+func (s *CorporationPolicyService) GetRuleInt(corporationID int64, key string, defaultValue int) int {
+	return int(s.GetRuleFloat(corporationID, key, float64(defaultValue)))
+}
+
+func (s *CorporationPolicyService) GetRuleBool(corporationID int64, key string, defaultValue bool) bool {
+	if corporationID <= 0 || key == "" {
+		return defaultValue
+	}
+	config := s.GetPolicies()
+	policy, matched := matchCorporationPolicy(config, corporationID)
+	if !matched || policy.Rules == nil {
+		return defaultValue
+	}
+	raw, ok := policy.Rules[key]
+	if !ok {
+		return defaultValue
+	}
+	value, ok := raw.(bool)
+	if !ok {
+		return defaultValue
+	}
+	return value
 }
 
 func EvaluateCapability(ctx UserCorpPolicyContext, capability string) bool {

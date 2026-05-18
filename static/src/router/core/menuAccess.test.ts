@@ -222,8 +222,16 @@ test('applyMenuAccessFilter hides BasicConfig from admins but keeps it for super
 })
 
 test('CorpNpcKillReport lives under Dashboard for admins only', () => {
-  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'], ['menu.dashboard'])[0]
-  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'], ['menu.dashboard'])[0]
+  const adminDashboard = applyMenuAccessFilter(
+    [dashboardRoutes],
+    ['admin'],
+    ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp']
+  )[0]
+  const userDashboard = applyMenuAccessFilter(
+    [dashboardRoutes],
+    ['user'],
+    ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp']
+  )[0]
   const adminSystem = applyMenuAccessFilter(
     [systemRoutes],
     ['admin'],
@@ -247,9 +255,17 @@ test('CorpNpcKillReport lives under Dashboard for admins only', () => {
 })
 
 test('DashboardCorporationStructures lives under Dashboard for admins only', () => {
-  const adminDashboard = applyMenuAccessFilter([dashboardRoutes], ['admin'], ['menu.dashboard'])[0]
+  const adminDashboard = applyMenuAccessFilter(
+    [dashboardRoutes],
+    ['admin'],
+    ['menu.dashboard', 'dashboard.corp_structures.read']
+  )[0]
   const superAdminDashboard = applyMenuAccessFilter([dashboardRoutes], ['super_admin'])[0]
-  const userDashboard = applyMenuAccessFilter([dashboardRoutes], ['user'], ['menu.dashboard'])[0]
+  const userDashboard = applyMenuAccessFilter(
+    [dashboardRoutes],
+    ['user'],
+    ['menu.dashboard', 'dashboard.corp_structures.read']
+  )[0]
 
   const adminRoute = adminDashboard.children?.find(
     (route) => route.name === 'DashboardCorporationStructures'

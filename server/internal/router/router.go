@@ -71,6 +71,31 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	requireTicketManage := middleware.RequireCorpCapability(model.CorpCapabilityTicketManage)
 	requireShopManage := middleware.RequireCorpCapability(model.CorpCapabilityShopManage)
 	requireSystemManage := middleware.RequireCorpCapability(model.CorpCapabilitySystemManage)
+	requireInfoWalletRead := middleware.RequireCorpCapability(model.CorpCapabilityInfoWalletRead)
+	requireInfoNpcKillsSelf := middleware.RequireCorpCapability(model.CorpCapabilityInfoNpcKillsSelf)
+	requireInfoNpcKillsCorp := middleware.RequireCorpCapability(model.CorpCapabilityInfoNpcKillsCorp)
+	requireInfoSkillsRead := middleware.RequireCorpCapability(model.CorpCapabilityInfoSkillsRead)
+	requireInfoAssetsRead := middleware.RequireCorpCapability(model.CorpCapabilityInfoAssetsRead)
+	requireInfoContractsRead := middleware.RequireCorpCapability(model.CorpCapabilityInfoContractsRead)
+	requireInfoFittingsManage := middleware.RequireCorpCapability(model.CorpCapabilityInfoFittingsManage)
+	requireShopWalletRead := middleware.RequireCorpCapability(model.CorpCapabilityShopWalletRead)
+	requireShopOrderCreate := middleware.RequireCorpCapability(model.CorpCapabilityShopOrderCreate)
+	requireShopOrderReadSelf := middleware.RequireCorpCapability(model.CorpCapabilityShopOrderReadSelf)
+	requireDashboardNpcKillsCorp := middleware.RequireCorpCapability(model.CorpCapabilityDashboardNpcKillsCorp)
+	requireSystemTaskRead := middleware.RequireCorpCapability(model.CorpCapabilitySystemTaskRead)
+	requireSystemTaskRun := middleware.RequireCorpCapability(model.CorpCapabilitySystemTaskRun)
+	requireSystemWalletRead := middleware.RequireCorpCapability(model.CorpCapabilitySystemWalletRead)
+	requireSystemWalletAdjust := middleware.RequireCorpCapability(model.CorpCapabilitySystemWalletAdjust)
+	requireSystemAuditRead := middleware.RequireCorpCapability(model.CorpCapabilitySystemAuditRead)
+	requireSystemAuditExport := middleware.RequireCorpCapability(model.CorpCapabilitySystemAuditExport)
+	requireSystemBasicConfigRead := middleware.RequireCorpCapability(model.CorpCapabilitySystemBasicConfigRead)
+	requireSystemBasicConfigManage := middleware.RequireCorpCapability(model.CorpCapabilitySystemBasicConfigManage)
+	requireTicketUserCreate := middleware.RequireCorpCapability(model.CorpCapabilityTicketUserCreate)
+	requireTicketUserReply := middleware.RequireCorpCapability(model.CorpCapabilityTicketUserReply)
+	requireTicketAdminRead := middleware.RequireCorpCapability(model.CorpCapabilityTicketAdminRead)
+	requireTicketAdminManage := middleware.RequireCorpCapability(model.CorpCapabilityTicketAdminManage)
+	requireShopAdminProductManage := middleware.RequireCorpCapability(model.CorpCapabilityShopAdminProductManage)
+	requireShopAdminOrderManage := middleware.RequireCorpCapability(model.CorpCapabilityShopAdminOrderManage)
 
 	// SSO 人物管理（绑定/解绑/设主人物）
 	// guest 也应可访问，用于完成初次登录后的人物管理与补充授权。
@@ -232,25 +257,25 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	info := login.Group("/info", requireMenuInfo)
 	{
 		info.GET("/tool-bookmarks", toolBookmarkH.ListVisible)
-		info.POST("/wallet", infoH.GetWalletJournal)
-		info.POST("/skills", infoH.GetCharacterSkills)
+		info.POST("/wallet", requireInfoWalletRead, infoH.GetWalletJournal)
+		info.POST("/skills", requireInfoSkillsRead, infoH.GetCharacterSkills)
 		info.POST("/ships", infoH.GetCharacterShips)
 		info.POST("/implants", infoH.GetCharacterImplants)
-		info.POST("/assets", infoH.GetAssets)
-		info.POST("/contracts", infoH.GetContracts)
-		info.POST("/contracts/detail", infoH.GetContractDetail)
+		info.POST("/assets", requireInfoAssetsRead, infoH.GetAssets)
+		info.POST("/contracts", requireInfoContractsRead, infoH.GetContracts)
+		info.POST("/contracts/detail", requireInfoContractsRead, infoH.GetContractDetail)
 		info.POST("/esi-refresh", esiH.RunMyCharacterTask)
 	}
 
 	// ─── 装配 ───
 	fittingsH := handler.NewFittingsHandler()
-	info.POST("/fittings", fittingsH.GetFittings)
-	info.POST("/fittings/save", fittingsH.SaveFitting)
+	info.POST("/fittings", requireInfoFittingsManage, fittingsH.GetFittings)
+	info.POST("/fittings/save", requireInfoFittingsManage, fittingsH.SaveFitting)
 
 	// ─── NPC 刷怪报表 ───
 	npcKillH := handler.NewNpcKillHandler()
-	info.POST("/npc-kills", npcKillH.GetNpcKills)
-	info.POST("/npc-kills/all", npcKillH.GetAllNpcKills)
+	info.POST("/npc-kills", requireInfoNpcKillsSelf, npcKillH.GetNpcKills)
+	info.POST("/npc-kills/all", requireInfoNpcKillsSelf, npcKillH.GetAllNpcKills)
 
 	// ─── 新人帮扶（用户/队长） ───
 	newbroUserH := handler.NewNewbroUserHandler()
@@ -311,11 +336,11 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	{
 		shop.POST("/products", shopH.ListProducts)
 		shop.POST("/product/detail", shopH.GetProductDetail)
-		shop.POST("/buy", shopH.BuyProduct)
-		shop.POST("/orders", shopH.GetMyOrders)
+		shop.POST("/buy", requireShopOrderCreate, shopH.BuyProduct)
+		shop.POST("/orders", requireShopOrderReadSelf, shopH.GetMyOrders)
 
-		shopWallet.POST("/my", walletH.GetMyWallet)
-		shopWallet.POST("/my/transactions", walletH.GetMyTransactions)
+		shopWallet.POST("/my", requireShopWalletRead, walletH.GetMyWallet)
+		shopWallet.POST("/my/transactions", requireShopWalletRead, walletH.GetMyTransactions)
 	}
 
 	// ─── 文件上传（需要登录）───
@@ -326,10 +351,10 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	ticketH := handler.NewTicketHandler()
 	ticket := login.Group("/ticket", requireMenuTicket)
 	{
-		ticket.POST("/tickets", ticketH.CreateTicket)
+		ticket.POST("/tickets", requireTicketUserCreate, ticketH.CreateTicket)
 		ticket.GET("/tickets/me", ticketH.ListMyTickets)
 		ticket.GET("/tickets/:id", ticketH.GetMyTicket)
-		ticket.POST("/tickets/:id/replies", ticketH.AddMyReply)
+		ticket.POST("/tickets/:id/replies", requireTicketUserReply, ticketH.AddMyReply)
 		ticket.GET("/tickets/:id/replies", ticketH.ListMyReplies)
 		ticket.GET("/categories", ticketH.ListCategories)
 	}
@@ -372,11 +397,11 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 
 	// ─── 任务管理 ───
-	tasks := login.Group("/tasks", requireSystemManage, middleware.RequireRole(model.RoleAdmin))
+	tasks := login.Group("/tasks", requireSystemTaskRead, middleware.RequireRole(model.RoleAdmin))
 	{
 		tasks.GET("", taskH.GetTasks)
 		tasks.GET("/history", taskH.GetHistory)
-		tasks.POST("/:name/run", taskH.RunTask)
+		tasks.POST("/:name/run", requireSystemTaskRun, taskH.RunTask)
 		tasks.PUT("/:name/schedule", middleware.RequireRole(model.RoleSuperAdmin), taskH.UpdateSchedule)
 
 		esiTasks := tasks.Group("/esi")
@@ -384,9 +409,9 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 			esiTasks.GET("/tasks", esiH.GetTasks)
 			esiTasks.GET("/statuses", esiH.GetStatuses)
 			esiTasks.GET("/monitor", esiH.GetMonitor)
-			esiTasks.POST("/run", esiH.RunTask)
-			esiTasks.POST("/run-task", esiH.RunTaskByName)
-			esiTasks.POST("/run-all", esiH.RunAll)
+			esiTasks.POST("/run", requireSystemTaskRun, esiH.RunTask)
+			esiTasks.POST("/run-task", requireSystemTaskRun, esiH.RunTaskByName)
+			esiTasks.POST("/run-all", requireSystemTaskRun, esiH.RunAll)
 		}
 	}
 
@@ -395,7 +420,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 系统基础配置
 	sysConfigH := handler.NewSysConfigHandler()
-	adminConfig := admin.Group("", requireSystemManage, middleware.RequireRole(systemBasicConfigManageRoles...))
+	adminConfig := admin.Group("", requireSystemBasicConfigRead, middleware.RequireRole(systemBasicConfigManageRoles...))
 	adminBasicConfig := adminConfig.Group("/basic-config")
 	adminBasicConfig.GET("", sysConfigH.GetBasicConfig)
 
@@ -408,14 +433,14 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 允许访问的军团列表
 	adminBasicConfig.GET("/allow-corporations", sysConfigH.GetAllowCorporations)
-	adminBasicConfig.PUT("/allow-corporations", sysConfigH.UpdateAllowCorporations)
+	adminBasicConfig.PUT("/allow-corporations", requireSystemBasicConfigManage, sysConfigH.UpdateAllowCorporations)
 	adminBasicConfig.GET("/corporation-access-policies", sysConfigH.GetCorporationAccessPolicies)
-	adminBasicConfig.PUT("/corporation-access-policies", sysConfigH.UpdateCorporationAccessPolicies)
+	adminBasicConfig.PUT("/corporation-access-policies", requireSystemBasicConfigManage, sysConfigH.UpdateCorporationAccessPolicies)
 	adminBasicConfig.GET("/character-esi-restriction", sysConfigH.GetCharacterESIRestrictionConfig)
-	adminBasicConfig.PUT("/character-esi-restriction", sysConfigH.UpdateCharacterESIRestrictionConfig)
+	adminBasicConfig.PUT("/character-esi-restriction", requireSystemBasicConfigManage, sysConfigH.UpdateCharacterESIRestrictionConfig)
 
 	// NPC 刷怪报表（管理员 — 公司级）
-	admin.POST("/npc-kills", requireMenuDashboard, npcKillH.GetCorpNpcKills)
+	admin.POST("/npc-kills", requireMenuDashboard, requireDashboardNpcKillsCorp, requireInfoNpcKillsCorp, npcKillH.GetCorpNpcKills)
 
 	// 联盟 PAP 管理（管理员）
 	alliancePAPAdminH := handler.NewAlliancePAPHandler()
@@ -489,20 +514,20 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 伏羲币管理（管理员）
 	adminWalletH := handler.NewSysWalletHandler()
-	adminWallet := admin.Group("/wallet", requireSystemManage)
+	adminWallet := admin.Group("/wallet", requireSystemWalletRead)
 	{
 		adminWallet.POST("/list", adminWalletH.AdminListWallets)
 		adminWallet.POST("/detail", adminWalletH.AdminGetWallet)
-		adminWallet.POST("/adjust", adminWalletH.AdminAdjust)
+		adminWallet.POST("/adjust", requireSystemWalletAdjust, adminWalletH.AdminAdjust)
 		adminWallet.POST("/transactions", adminWalletH.AdminListTransactions)
 		adminWallet.POST("/logs", adminWalletH.AdminListLogs)
 		adminWallet.POST("/analytics", adminWalletH.AdminAnalytics)
 	}
 	auditEventH := handler.NewAuditEventHandler()
-	adminAudit := admin.Group("/audit", requireSystemManage)
+	adminAudit := admin.Group("/audit", requireSystemAuditRead)
 	{
 		adminAudit.POST("/events", auditEventH.AdminList)
-		adminAudit.POST("/export", auditEventH.CreateExportTask)
+		adminAudit.POST("/export", requireSystemAuditExport, auditEventH.CreateExportTask)
 		adminAudit.GET("/export/:task_id", auditEventH.GetExportTaskStatus)
 		adminAudit.POST("/export/list", auditEventH.ListExportTasks)
 	}
@@ -517,7 +542,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// 商店管理（管理员）
 	adminShopH := handler.NewShopHandler()
-	adminShopProduct := admin.Group("/shop/product", requireShopManage)
+	adminShopProduct := admin.Group("/shop/product", requireShopManage, requireShopAdminProductManage)
 	{
 		adminShopProduct.POST("/list", adminShopH.AdminListProducts)
 		adminShopProduct.POST("/add", adminShopH.AdminCreateProduct)
@@ -525,7 +550,12 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminShopProduct.POST("/delete", adminShopH.AdminDeleteProduct)
 	}
 	// 商店订单（仅管理员）
-	shopOrder := login.Group("/system/shop/order", requireShopManage, middleware.RequireRole(shopOrderManageRoles...))
+	shopOrder := login.Group(
+		"/system/shop/order",
+		requireShopManage,
+		requireShopAdminOrderManage,
+		middleware.RequireRole(shopOrderManageRoles...),
+	)
 	{
 		shopOrder.POST("/list", adminShopH.AdminListOrders)
 		shopOrder.POST("/deliver", adminShopH.AdminDeliverOrder)
@@ -609,18 +639,18 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// ─── 工单管理（管理员）───
 	adminTicket := admin.Group("/ticket", requireTicketManage)
 	{
-		adminTicket.GET("/tickets", ticketH.AdminListTickets)
-		adminTicket.GET("/tickets/:id", ticketH.AdminGetTicket)
-		adminTicket.PUT("/tickets/:id/status", ticketH.AdminUpdateStatus)
-		adminTicket.POST("/tickets/:id/replies", ticketH.AdminAddReply)
+		adminTicket.GET("/tickets", requireTicketAdminRead, ticketH.AdminListTickets)
+		adminTicket.GET("/tickets/:id", requireTicketAdminRead, ticketH.AdminGetTicket)
+		adminTicket.PUT("/tickets/:id/status", requireTicketAdminManage, ticketH.AdminUpdateStatus)
+		adminTicket.POST("/tickets/:id/replies", requireTicketAdminManage, ticketH.AdminAddReply)
 		adminTicket.GET("/tickets/:id/replies", ticketH.AdminListReplies)
 		adminTicket.GET("/tickets/:id/status-history", ticketH.AdminListStatusHistory)
 
-		adminTicket.GET("/categories", ticketH.AdminListCategories)
-		adminTicket.POST("/categories", ticketH.AdminCreateCategory)
-		adminTicket.PUT("/categories/:id", ticketH.AdminUpdateCategory)
-		adminTicket.DELETE("/categories/:id", ticketH.AdminDeleteCategory)
-		adminTicket.GET("/statistics", ticketH.AdminStatistics)
+		adminTicket.GET("/categories", requireTicketAdminRead, ticketH.AdminListCategories)
+		adminTicket.POST("/categories", requireTicketAdminManage, ticketH.AdminCreateCategory)
+		adminTicket.PUT("/categories/:id", requireTicketAdminManage, ticketH.AdminUpdateCategory)
+		adminTicket.DELETE("/categories/:id", requireTicketAdminManage, ticketH.AdminDeleteCategory)
+		adminTicket.GET("/statistics", requireTicketAdminRead, ticketH.AdminStatistics)
 	}
 }
 

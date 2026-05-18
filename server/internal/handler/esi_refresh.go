@@ -370,6 +370,11 @@ type RunTaskRequest struct {
 //
 // POST /api/v1/tasks/esi/run
 func (h *ESIRefreshHandler) RunTask(c *gin.Context) {
+	if !middleware.GetCorpRuleBool(c, service.CorpRuleSystemTaskAllowManualRun, true) {
+		response.Fail(c, response.CodeForbidden, "当前军团策略禁止手动触发任务")
+		return
+	}
+
 	var req RunTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
@@ -435,6 +440,11 @@ type RunTaskByNameRequest struct {
 //
 // POST /api/v1/tasks/esi/run-task
 func (h *ESIRefreshHandler) RunTaskByName(c *gin.Context) {
+	if !middleware.GetCorpRuleBool(c, service.CorpRuleSystemTaskAllowManualRun, true) {
+		response.Fail(c, response.CodeForbidden, "当前军团策略禁止手动触发任务")
+		return
+	}
+
 	var req RunTaskByNameRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
@@ -461,6 +471,11 @@ func (h *ESIRefreshHandler) RunTaskByName(c *gin.Context) {
 //
 // POST /api/v1/tasks/esi/run-all
 func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
+	if !middleware.GetCorpRuleBool(c, service.CorpRuleSystemTaskAllowManualRun, true) {
+		response.Fail(c, response.CodeForbidden, "当前军团策略禁止手动触发任务")
+		return
+	}
+
 	queue := jobs.GetESIQueue()
 	if queue == nil {
 		response.Fail(c, response.CodeBizError, "刷新队列未初始化")

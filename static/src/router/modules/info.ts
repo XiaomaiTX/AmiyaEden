@@ -15,19 +15,34 @@ export const infoRoutes: AppRouteRecord = {
       path: 'wallet',
       name: 'EveInfoWallet',
       component: '/info/wallet',
-      meta: { title: 'menus.info.wallet', keepAlive: true, login: true }
+      meta: {
+        title: 'menus.info.wallet',
+        keepAlive: true,
+        login: true,
+        corpCapabilities: ['info.wallet.read']
+      }
     },
     {
       path: 'skill',
       name: 'EveInfoSkill',
       component: '/info/skill',
-      meta: { title: 'menus.info.skill', keepAlive: true, login: true }
+      meta: {
+        title: 'menus.info.skill',
+        keepAlive: true,
+        login: true,
+        corpCapabilities: ['info.skills.read']
+      }
     },
     {
       path: 'npc-kills',
       name: 'NpcKillReport',
       component: '/info/npc-kills',
-      meta: { title: 'menus.info.npcKills', keepAlive: true, login: true }
+      meta: {
+        title: 'menus.info.npcKills',
+        keepAlive: true,
+        login: true,
+        corpCapabilities: ['info.npc_kills.self']
+      }
     },
     {
       path: 'ships',
@@ -45,19 +60,34 @@ export const infoRoutes: AppRouteRecord = {
       path: 'fittings',
       name: 'EveInfoFittings',
       component: '/info/fittings',
-      meta: { title: 'menus.info.fittings', keepAlive: true, login: true }
+      meta: {
+        title: 'menus.info.fittings',
+        keepAlive: true,
+        login: true,
+        corpCapabilities: ['info.fittings.manage']
+      }
     },
     {
       path: 'assets',
       name: 'EveInfoAssets',
       component: '/info/assets',
-      meta: { title: 'menus.info.assets', keepAlive: true, login: true }
+      meta: {
+        title: 'menus.info.assets',
+        keepAlive: true,
+        login: true,
+        corpCapabilities: ['info.assets.read']
+      }
     },
     {
       path: 'contracts',
       name: 'EveInfoContracts',
       component: '/info/contracts',
-      meta: { title: 'menus.info.contracts', keepAlive: true, login: true }
+      meta: {
+        title: 'menus.info.contracts',
+        keepAlive: true,
+        login: true,
+        corpCapabilities: ['info.contracts.read']
+      }
     },
     {
       path: 'esi-check',
