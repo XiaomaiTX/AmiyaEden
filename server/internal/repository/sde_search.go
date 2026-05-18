@@ -34,7 +34,7 @@ func (r *SdeRepository) FuzzySearch(keyword string, languageID string, categoryI
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) fuzzySearchWithLayout(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool, camelCase bool) ([]FuzzySearchItem, error) {
@@ -75,7 +75,7 @@ func (r *SdeRepository) fuzzySearchWithLayout(keyword string, languageID string,
 			sdeTranslationCategoryIDs["type"], languageID).
 		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = ? AND %s = %s AND %s = ?`, naming.table("trnTranslations", "g_name"), naming.col("g_name", "tcID"), naming.col("g_name", "keyID"), groupGroupIDCol, naming.col("g_name", "languageID")),
 			sdeTranslationCategoryIDs["group"], languageID).
-		Where(fmt.Sprintf(`%s = ?`, publishedCol), 1).
+		Where(fmt.Sprintf(`%s = ?`, publishedCol), true).
 		Where(fmt.Sprintf(`(tr.text ILIKE ? OR %s ILIKE ?)`, typeNameBaseCol), pattern, pattern)
 
 	if len(categoryIDs) > 0 {
@@ -118,7 +118,7 @@ func (r *SdeRepository) GetFlags(flagIDs []int) ([]FlagInfo, error) {
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getFlagsWithLayout(flagIDs []int, camelCase bool) ([]FlagInfo, error) {

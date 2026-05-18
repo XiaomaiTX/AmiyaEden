@@ -101,3 +101,60 @@ func TestGetStatusSnapshotInvalidJSONReturnsDefault(t *testing.T) {
 		t.Fatalf("status = %#v, want zero value", status)
 	}
 }
+
+func TestVerifySDEDataAvailabilitySuccess(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(t, "sde-health")
+	raw, err := db.DB()
+	if err != nil {
+		t.Fatalf("db handle: %v", err)
+	}
+	for _, ddl := range []string{
+		`CREATE TABLE "invTypes" ("typeID" integer, "published" boolean)`,
+		`CREATE TABLE "invGroups" ("groupID" integer)`,
+		`CREATE TABLE "trnTranslations" ("keyID" integer)`,
+		`INSERT INTO "invTypes" ("typeID", "published") VALUES (1, true)`,
+	} {
+		if _, err := raw.Exec(ddl); err != nil {
+			t.Fatalf("exec ddl: %v", err)
+		}
+	}
+
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	svc := NewSdeService()
+	if err := svc.verifySDEDataAvailability(); err != nil {
+		t.Fatalf("verifySDEDataAvailability: %v", err)
+	}
+}
+
+func TestVerifySDEDataAvailabilityFailsWhenCoreTableMissing(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(t, "sde-health-missing")
+	raw, err := db.DB()
+	if err != nil {
+		t.Fatalf("db handle: %v", err)
+	}
+	for _, ddl := range []string{
+		`CREATE TABLE "invTypes" ("typeID" integer, "published" boolean)`,
+		`CREATE TABLE "invGroups" ("groupID" integer)`,
+		`INSERT INTO "invTypes" ("typeID", "published") VALUES (1, true)`,
+	} {
+		if _, err := raw.Exec(ddl); err != nil {
+			t.Fatalf("exec ddl: %v", err)
+		}
+	}
+
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	svc := NewSdeService()
+	if err := svc.verifySDEDataAvailability(); err == nil {
+		t.Fatalf("expected verifySDEDataAvailability to fail when trnTranslations is missing")
+	}
+}

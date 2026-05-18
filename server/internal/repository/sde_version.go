@@ -48,7 +48,7 @@ func (r *SdeRepository) GetNames(ids map[string][]int, languageID string) (SdeNa
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getNamesWithLayout(ids map[string][]int, languageID string, camelCase bool) (SdeNameMap, error) {

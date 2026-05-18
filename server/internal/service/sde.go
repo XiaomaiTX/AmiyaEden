@@ -437,6 +437,9 @@ func (s *SdeService) doImport(release *githubRelease, progress func(stage string
 	if err := importSQL(sqlPath); err != nil {
 		return fmt.Errorf("导入数据库失败: %w", err)
 	}
+	if err := s.verifySDEDataAvailability(); err != nil {
+		return fmt.Errorf("SDE 导入后健康检查失败: %w", err)
+	}
 
 	return nil
 }
@@ -891,16 +894,30 @@ func importSQL(sqlPath string) error {
 		return false
 	}
 
-	execDDL := func(sql string) {
+	isCriticalDDL := func(upper string) bool {
+		for _, kw := range []string{"CREATE ", "DROP ", "ALTER ", "TRUNCATE "} {
+			if strings.HasPrefix(upper, kw) {
+				return true
+			}
+		}
+		return false
+	}
+
+	execDDL := func(sql string) error {
 		commitTx()
+		upper := strings.ToUpper(strings.TrimSpace(sql))
 		if _, execErr := conn.ExecContext(context.Background(), sql); execErr != nil {
 			ddlErrCount++
-			global.Logger.Warn("[SDE] DDL 执行失败，已跳过",
+			if isCriticalDDL(upper) {
+				return fmt.Errorf("关键 DDL 执行失败: %w", execErr)
+			}
+			global.Logger.Warn("[SDE] 非关键 DDL 执行失败，已跳过",
 				zap.String("err", execErr.Error()),
 				zap.String("sql_prefix", truncate(sql, 120)))
-			return
+			return nil
 		}
 		stmtCount++
+		return nil
 	}
 
 	execDML := func(sql string, table string, chunkIndex int, rowOffset int) error {
@@ -939,7 +956,9 @@ func importSQL(sqlPath string) error {
 			continue
 		}
 		if isDDL(upper) {
-			execDDL(trimmed)
+			if err := execDDL(trimmed); err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -970,6 +989,61 @@ func importSQL(sqlPath string) error {
 		zap.Int("成功语句数", stmtCount),
 		zap.Int("DDL失败语句数", ddlErrCount))
 	return nil
+}
+
+func (s *SdeService) verifySDEDataAvailability() error {
+	for _, table := range []string{"invTypes", "invGroups", "trnTranslations"} {
+		if err := ensureSDETableReadable(table); err != nil {
+			return fmt.Errorf("关键表 %s 不可用: %w", table, err)
+		}
+	}
+	if err := ensurePublishedFilterQueryable(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ensureSDETableReadable(camelName string) error {
+	lowerName := strings.ToLower(camelName)
+	queries := []string{
+		fmt.Sprintf(`SELECT 1 FROM "%s" LIMIT 1`, camelName),
+		fmt.Sprintf(`SELECT 1 FROM %s LIMIT 1`, lowerName),
+	}
+
+	var lastErr error
+	for _, query := range queries {
+		var probe int
+		if err := global.DB.Raw(query).Scan(&probe).Error; err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+	}
+	if lastErr == nil {
+		lastErr = errors.New("unknown table read error")
+	}
+	return lastErr
+}
+
+func ensurePublishedFilterQueryable() error {
+	queries := []string{
+		`SELECT 1 FROM "invTypes" WHERE "published" = true LIMIT 1`,
+		`SELECT 1 FROM invtypes WHERE published = true LIMIT 1`,
+	}
+
+	var lastErr error
+	for _, query := range queries {
+		var probe int
+		if err := global.DB.Raw(query).Scan(&probe).Error; err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+	}
+	if lastErr == nil {
+		lastErr = errors.New("published filter check failed")
+	}
+	return fmt.Errorf("published 过滤不可执行: %w", lastErr)
 }
 
 func splitSQLStatements(r *bufio.Reader) ([]string, error) {

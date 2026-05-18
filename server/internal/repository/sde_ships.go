@@ -72,7 +72,7 @@ func (r *SdeRepository) GetShipsByCategoryID(languageID string) ([]ShipInfo, err
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getShipsByCategoryIDWithLayout(languageID string, camelCase bool) ([]ShipInfo, error) {
@@ -109,7 +109,7 @@ func (r *SdeRepository) getShipsByCategoryIDWithLayout(languageID string, camelC
 			sdeTranslationCategoryIDs["group"], languageID).
 		Joins(fmt.Sprintf(`LEFT JOIN %s ON %s = ? AND %s = %s AND %s = ?`, naming.table("trnTranslations", "mg_name"), naming.col("mg_name", "tcID"), naming.col("mg_name", "keyID"), naming.col("mg", "marketGroupID"), naming.col("mg_name", "languageID")),
 			sdeTranslationCategoryIDs["market_group"], languageID).
-		Where(fmt.Sprintf(`%s = ? AND %s = ?`, categoryIDCol, publishedCol), shipCategoryID, 1).
+		Where(fmt.Sprintf(`%s = ? AND %s = ?`, categoryIDCol, publishedCol), shipCategoryID, true).
 		Scan(&result).Error
 	return result, err
 }
@@ -126,7 +126,7 @@ func (r *SdeRepository) GetShipSkillRequirements(shipTypeIDs []int) ([]ShipSkill
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getShipSkillRequirementsWithLayout(shipTypeIDs []int, camelCase bool) ([]ShipSkillReq, error) {
@@ -238,7 +238,7 @@ func (r *SdeRepository) GetAllRaces() ([]RaceInfo, error) {
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getAllRacesWithLayout(camelCase bool) ([]RaceInfo, error) {
@@ -263,7 +263,7 @@ func (r *SdeRepository) GetMarketGroupTree() ([]MarketGroupNode, error) {
 		return fallbackResult, nil
 	}
 
-	return nil, fmt.Errorf("%w; fallback query failed: %v", err, fallbackErr)
+	return nil, wrapSDEFallbackError(err, fallbackErr)
 }
 
 func (r *SdeRepository) getMarketGroupTreeWithLayout(camelCase bool) ([]MarketGroupNode, error) {
