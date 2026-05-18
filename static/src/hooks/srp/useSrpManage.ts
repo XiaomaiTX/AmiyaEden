@@ -252,7 +252,7 @@ export function useSrpManage(callbacks: {
         {
           prop: 'actions',
           label: t('srp.manage.columns.action'),
-          width: 220,
+          width: 280,
           fixed: 'right',
           formatter: (row: SrpApp) => {
             const btns: ReturnType<typeof h>[] = [
@@ -260,16 +260,40 @@ export function useSrpManage(callbacks: {
             ]
             if (row.review_status === 'submitted') {
               btns.push(
-                h(ArtButtonTable, {
-                  label: t('srp.manage.approveBtn'),
-                  elType: 'success',
-                  onClick: () => callbacks.openReviewDialog(row, 'approve')
-                }),
-                h(ArtButtonTable, {
-                  label: t('srp.manage.rejectBtn'),
-                  elType: 'danger',
-                  onClick: () => callbacks.openReviewDialog(row, 'reject')
-                })
+                h(
+                  'div',
+                  {
+                    class: 'shrink-0',
+                    onClick: (event: MouseEvent) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      callbacks.openReviewDialog(row, 'approve')
+                    }
+                  },
+                  [
+                    h(ArtButtonTable, {
+                      label: t('srp.manage.approveBtn'),
+                      elType: 'success'
+                    })
+                  ]
+                ),
+                h(
+                  'div',
+                  {
+                    class: 'shrink-0',
+                    onClick: (event: MouseEvent) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      callbacks.openReviewDialog(row, 'reject')
+                    }
+                  },
+                  [
+                    h(ArtButtonTable, {
+                      label: t('srp.manage.rejectBtn'),
+                      elType: 'danger'
+                    })
+                  ]
+                )
               )
             } else if (row.review_status === 'approved' && row.payout_status === 'notpaid') {
               if (canPayout.value) {
@@ -302,7 +326,11 @@ export function useSrpManage(callbacks: {
                 })
               )
             }
-            return h('div', { class: 'flex items-center gap-1' }, btns)
+            return h(
+              'div',
+              { class: 'flex items-center gap-1 flex-nowrap whitespace-nowrap' },
+              btns
+            )
           }
         }
       ]

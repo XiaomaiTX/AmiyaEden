@@ -65,4 +65,7 @@ test('sde locale strings are present in zh and en', () => {
   assert.match(source, /fetchCorporationAccessPolicies\(/)
   assert.match(source, /updateCorporationAccessPolicies\(/)
   assert.match(source, /srp\.recommendation_multiplier/)
+  assert.match(source, /const latestPoliciesConfig = await fetchCorporationAccessPolicies\(\)/)
+  assert.match(source, /mergedPolicyMap\.set\(selectedPolicy\.value\.corporation_id/)
+  assert.match(source, /policies:\s*Array\.from\(mergedPolicyMap\.values\(\)\)\.sort/)
 })

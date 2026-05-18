@@ -57,24 +57,37 @@ export function useSrpWorkflow(deps: {
     )
   })
 
-  const fillTemplate = (tpl: string) =>
-    tpl.replaceAll('{{mainChracterName}}', primaryCharName.value || t('srp.manage.unknownReviewer'))
+  const ensureText = (value: unknown, fallback = '') => {
+    if (typeof value === 'string') return value
+    if (value == null) return fallback
+    return String(value)
+  }
+
+  const fillTemplate = (tpl: unknown) => {
+    const templateText = ensureText(tpl)
+    const reviewerName = ensureText(primaryCharName.value || t('srp.manage.unknownReviewer'))
+    return templateText.replaceAll('{{mainChracterName}}', reviewerName)
+  }
 
   const updateReviewFinalAmount = (value: number | null | undefined) => {
     reviewForm.final_amount = millionInputToIsk(value)
   }
 
   const openReviewDialog = (row: SrpApp, action: 'approve' | 'reject') => {
-    reviewTarget.value = row
-    reviewAction.value = action
-    reviewForm.review_note =
-      action === 'approve'
-        ? row.review_status === 'submitted'
-          ? fillTemplate(t('srp.manage.defaultApproveNote'))
-          : row.review_note || ''
-        : fillTemplate(t('srp.manage.defaultRejectNote'))
-    reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
-    reviewDialogVisible.value = true
+    try {
+      reviewTarget.value = row
+      reviewAction.value = action
+      reviewForm.review_note =
+        action === 'approve'
+          ? row.review_status === 'submitted'
+            ? fillTemplate(t('srp.manage.defaultApproveNote'))
+            : ensureText(row.review_note)
+          : fillTemplate(t('srp.manage.defaultRejectNote'))
+      reviewForm.final_amount = action === 'approve' ? row.final_amount : 0
+      reviewDialogVisible.value = true
+    } catch {
+      ElMessage.error(t('common.operationFailed'))
+    }
   }
 
   const handleReview = async () => {
