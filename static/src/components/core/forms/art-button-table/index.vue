@@ -6,7 +6,7 @@
       buttonClass
     ]"
     :style="buttonStyle"
-    @click="handleClick"
+    @click.stop.prevent="handleClick"
   >
     <ArtSvgIcon v-if="loading" icon="ri:loader-4-line" class="animate-spin" />
     <ArtSvgIcon v-else-if="iconContent" :icon="iconContent" />

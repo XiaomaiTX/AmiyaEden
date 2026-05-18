@@ -260,40 +260,16 @@ export function useSrpManage(callbacks: {
             ]
             if (row.review_status === 'submitted') {
               btns.push(
-                h(
-                  'div',
-                  {
-                    class: 'shrink-0',
-                    onClick: (event: MouseEvent) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      callbacks.openReviewDialog(row, 'approve')
-                    }
-                  },
-                  [
-                    h(ArtButtonTable, {
-                      label: t('srp.manage.approveBtn'),
-                      elType: 'success'
-                    })
-                  ]
-                ),
-                h(
-                  'div',
-                  {
-                    class: 'shrink-0',
-                    onClick: (event: MouseEvent) => {
-                      event.preventDefault()
-                      event.stopPropagation()
-                      callbacks.openReviewDialog(row, 'reject')
-                    }
-                  },
-                  [
-                    h(ArtButtonTable, {
-                      label: t('srp.manage.rejectBtn'),
-                      elType: 'danger'
-                    })
-                  ]
-                )
+                h(ArtButtonTable, {
+                  label: t('srp.manage.approveBtn'),
+                  elType: 'success',
+                  onClick: () => callbacks.openReviewDialog(row, 'approve')
+                }),
+                h(ArtButtonTable, {
+                  label: t('srp.manage.rejectBtn'),
+                  elType: 'danger',
+                  onClick: () => callbacks.openReviewDialog(row, 'reject')
+                })
               )
             } else if (row.review_status === 'approved' && row.payout_status === 'notpaid') {
               if (canPayout.value) {
