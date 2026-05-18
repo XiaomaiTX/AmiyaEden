@@ -1,5 +1,7 @@
 package model
 
+import "database/sql"
+
 // SdeVersion 记录当前已导入的 SDE 版本信息
 type SdeVersion struct {
 	BaseModel
@@ -100,32 +102,32 @@ func (MapConstellation) TableName() string { return "mapConstellations" }
 
 // MapSolarSystem 映射 SDE 中的 mapSolarSystems 表
 type MapSolarSystem struct {
-	RegionID        int     `gorm:"column:regionID"                      json:"region_id"`
-	ConstellationID int     `gorm:"column:constellationID;index"         json:"constellation_id"`
-	SolarSystemID   int     `gorm:"column:solarSystemID;primaryKey"      json:"solar_system_id"`
-	SolarSystemName string  `gorm:"column:solarSystemName"               json:"solar_system_name"`
-	X               float64 `gorm:"column:x"                             json:"x"`
-	Y               float64 `gorm:"column:y"                             json:"y"`
-	Z               float64 `gorm:"column:z"                             json:"z"`
-	XMin            float64 `gorm:"column:xMin"                          json:"x_min"`
-	XMax            float64 `gorm:"column:xMax"                          json:"x_max"`
-	YMin            float64 `gorm:"column:yMin"                          json:"y_min"`
-	YMax            float64 `gorm:"column:yMax"                          json:"y_max"`
-	ZMin            float64 `gorm:"column:zMin"                          json:"z_min"`
-	ZMax            float64 `gorm:"column:zMax"                          json:"z_max"`
-	Luminosity      float64 `gorm:"column:luminosity"                    json:"luminosity"`
-	Border          int8    `gorm:"column:border"                        json:"border"`
-	Fringe          int8    `gorm:"column:fringe"                        json:"fringe"`
-	Corridor        int8    `gorm:"column:corridor"                      json:"corridor"`
-	Hub             int8    `gorm:"column:hub"                           json:"hub"`
-	International   int8    `gorm:"column:international"                 json:"international"`
-	Regional        int8    `gorm:"column:regional"                      json:"regional"`
-	Constellation   int8    `gorm:"column:constellation"                 json:"constellation"`
-	Security        float64 `gorm:"column:security;index"                json:"security"`
-	FactionID       int     `gorm:"column:factionID"                     json:"faction_id"`
-	Radius          float64 `gorm:"column:radius"                        json:"radius"`
-	SunTypeID       int     `gorm:"column:sunTypeID"                     json:"sun_type_id"`
-	SecurityClass   string  `gorm:"column:securityClass;type:varchar(2)" json:"security_class"`
+	RegionID        int          `gorm:"column:regionID"                      json:"region_id"`
+	ConstellationID int          `gorm:"column:constellationID;index"         json:"constellation_id"`
+	SolarSystemID   int          `gorm:"column:solarSystemID;primaryKey"      json:"solar_system_id"`
+	SolarSystemName string       `gorm:"column:solarSystemName"               json:"solar_system_name"`
+	X               float64      `gorm:"column:x"                             json:"x"`
+	Y               float64      `gorm:"column:y"                             json:"y"`
+	Z               float64      `gorm:"column:z"                             json:"z"`
+	XMin            float64      `gorm:"column:xMin"                          json:"x_min"`
+	XMax            float64      `gorm:"column:xMax"                          json:"x_max"`
+	YMin            float64      `gorm:"column:yMin"                          json:"y_min"`
+	YMax            float64      `gorm:"column:yMax"                          json:"y_max"`
+	ZMin            float64      `gorm:"column:zMin"                          json:"z_min"`
+	ZMax            float64      `gorm:"column:zMax"                          json:"z_max"`
+	Luminosity      float64      `gorm:"column:luminosity"                    json:"luminosity"`
+	Border          sql.NullBool `gorm:"column:border"                   json:"border"`
+	Fringe          sql.NullBool `gorm:"column:fringe"                   json:"fringe"`
+	Corridor        sql.NullBool `gorm:"column:corridor"                 json:"corridor"`
+	Hub             sql.NullBool `gorm:"column:hub"                      json:"hub"`
+	International   sql.NullBool `gorm:"column:international"            json:"international"`
+	Regional        sql.NullBool `gorm:"column:regional"                 json:"regional"`
+	Constellation   sql.NullBool `gorm:"column:constellation"            json:"constellation"`
+	Security        float64      `gorm:"column:security;index"                json:"security"`
+	FactionID       int          `gorm:"column:factionID"                     json:"faction_id"`
+	Radius          float64      `gorm:"column:radius"                        json:"radius"`
+	SunTypeID       int          `gorm:"column:sunTypeID"                     json:"sun_type_id"`
+	SecurityClass   string       `gorm:"column:securityClass;type:varchar(2)" json:"security_class"`
 }
 
 func (MapSolarSystem) TableName() string { return "mapSolarSystems" }

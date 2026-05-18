@@ -132,8 +132,15 @@ func (r *NpcKillRepository) GetSolarSystemNames(solarSystemIDs []int) (map[int]s
 	if len(solarSystemIDs) == 0 {
 		return map[int]string{}, nil
 	}
-	var systems []model.MapSolarSystem
-	err := global.DB.Where(`"solarSystemID" IN ?`, solarSystemIDs).Find(&systems).Error
+	type solarSystemNameRow struct {
+		SolarSystemID   int    `gorm:"column:solarSystemID"`
+		SolarSystemName string `gorm:"column:solarSystemName"`
+	}
+	var systems []solarSystemNameRow
+	err := global.DB.Model(&model.MapSolarSystem{}).
+		Select(`"solarSystemID", "solarSystemName"`).
+		Where(`"solarSystemID" IN ?`, solarSystemIDs).
+		Find(&systems).Error
 	if err != nil {
 		return nil, err
 	}
