@@ -229,7 +229,10 @@
         params.start_date = dateRange.value[0]
         params.end_date = dateRange.value[1]
       }
-      const corpTickerParam = corpTickers.value.map((ticker) => ticker.trim()).filter(Boolean).join(',')
+      const corpTickerParam = corpTickers.value
+        .map((ticker) => ticker.trim())
+        .filter(Boolean)
+        .join(',')
       if (corpTickerParam) {
         params.corp_tickers = corpTickerParam
       }

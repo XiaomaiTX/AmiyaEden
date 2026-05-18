@@ -54,6 +54,9 @@ type SDEStatus struct {
 	CurrentVersion    string `json:"current_version"`
 	LatestVersion     string `json:"latest_version"`
 	HasUpdate         bool   `json:"has_update"`
+	LastQueryError    string `json:"last_query_error"`
+	LastQueryErrorAt  int64  `json:"last_query_error_at"`
+	LastQuerySource   string `json:"last_query_error_source"`
 	LastCheckAt       int64  `json:"last_check_at"`
 	LastCheckSuccess  bool   `json:"last_check_success"`
 	LastCheckError    string `json:"last_check_error"`
@@ -199,6 +202,39 @@ func (s *SdeService) TriggerManualUpdateWithStatus() (SDEStatus, error) {
 		global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
 	}
 	return status, nil
+}
+
+func (s *SdeService) ReportQueryError(source, operation string, err error) {
+	if err == nil {
+		return
+	}
+
+	global.Logger.Warn("[SDE] 查询失败",
+		zap.String("source", source),
+		zap.String("operation", operation),
+		zap.Error(err))
+
+	status, statusErr := s.getStatusSnapshot()
+	if statusErr != nil {
+		global.Logger.Warn("[SDE] 读取状态快照失败，使用默认状态写入查询错误", zap.Error(statusErr))
+		status = SDEStatus{}
+	}
+
+	source = strings.TrimSpace(source)
+	operation = strings.TrimSpace(operation)
+	if source == "" {
+		source = "unknown"
+	}
+	if operation != "" {
+		source = source + "." + operation
+	}
+
+	status.LastQuerySource = source
+	status.LastQueryErrorAt = time.Now().Unix()
+	status.LastQueryError = err.Error()
+	if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+		global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+	}
 }
 
 // ---- SDE 更新 ----

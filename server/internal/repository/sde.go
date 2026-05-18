@@ -1,8 +1,16 @@
 package repository
 
 import (
+	"amiya-eden/internal/model"
+	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
+
+	"amiya-eden/global"
+
+	"go.uber.org/zap"
 )
 
 var sdeTranslationCategoryIDs = map[string]int{
@@ -24,6 +32,18 @@ type SdeNameMap map[string]map[int]string
 type SdeRepository struct{}
 
 func NewSdeRepository() *SdeRepository { return &SdeRepository{} }
+
+const (
+	sdeQueryErrorSource         = "sde_repository"
+	sdeQueryErrorThrottleWindow = 60 * time.Second
+)
+
+var sdeQueryErrorState = struct {
+	mu       sync.Mutex
+	lastSeen map[string]time.Time
+}{
+	lastSeen: make(map[string]time.Time),
+}
 
 type sdeNaming struct {
 	camelCase bool
@@ -64,4 +84,79 @@ func (n sdeNaming) bareCol(name string) string {
 		return fmt.Sprintf(`"%s"`, name)
 	}
 	return strings.ToLower(name)
+}
+
+func reportSDEQueryError(operation string, err error) {
+	if err == nil {
+		return
+	}
+	msg := strings.TrimSpace(err.Error())
+	if msg == "" {
+		return
+	}
+
+	source := sdeQueryErrorSource
+	if op := strings.TrimSpace(operation); op != "" {
+		source = source + "." + op
+	}
+
+	signature := source + "|" + msg
+	now := time.Now()
+	sdeQueryErrorState.mu.Lock()
+	if last, exists := sdeQueryErrorState.lastSeen[signature]; exists && now.Sub(last) < sdeQueryErrorThrottleWindow {
+		sdeQueryErrorState.mu.Unlock()
+		return
+	}
+	sdeQueryErrorState.lastSeen[signature] = now
+	sdeQueryErrorState.mu.Unlock()
+
+	if global.Logger != nil {
+		global.Logger.Warn("[SDE] 仓库查询失败",
+			zap.String("source", source),
+			zap.Error(err))
+	}
+
+	repo := NewSysConfigRepository()
+	raw, getErr := repo.Get(model.SysConfigSDEStatus, "")
+	if getErr != nil {
+		if global.Logger != nil {
+			global.Logger.Warn("[SDE] 读取状态快照失败", zap.Error(getErr))
+		}
+		return
+	}
+
+	status := map[string]interface{}{}
+	if strings.TrimSpace(raw) != "" {
+		if unmarshalErr := json.Unmarshal([]byte(raw), &status); unmarshalErr != nil {
+			if global.Logger != nil {
+				global.Logger.Warn("[SDE] 状态快照解析失败，改用空快照写入查询错误", zap.Error(unmarshalErr))
+			}
+			status = map[string]interface{}{}
+		}
+	}
+
+	status["last_query_error"] = msg
+	status["last_query_error_at"] = now.Unix()
+	status["last_query_error_source"] = source
+
+	data, marshalErr := json.Marshal(status)
+	if marshalErr != nil {
+		if global.Logger != nil {
+			global.Logger.Warn("[SDE] 状态快照序列化失败", zap.Error(marshalErr))
+		}
+		return
+	}
+	if setErr := repo.Set(model.SysConfigSDEStatus, string(data), "SDE 状态快照"); setErr != nil {
+		if global.Logger != nil {
+			global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(setErr))
+		}
+	}
+}
+
+func wrapAndReportSDEFallbackError(operation string, primaryErr, fallbackErr error) error {
+	finalErr := wrapSDEFallbackError(primaryErr, fallbackErr)
+	if finalErr != nil {
+		reportSDEQueryError(operation, finalErr)
+	}
+	return finalErr
 }

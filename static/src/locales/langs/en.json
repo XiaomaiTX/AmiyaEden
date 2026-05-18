@@ -2975,6 +2975,7 @@
       "sdeUpdateAvailable": "A newer SDE version is available. Please run update.",
       "sdeCheckVersion": "Check Latest Version",
       "sdeRunUpdate": "Run Update",
+      "sdeRunUpdateHint": "Re-downloads and reimports the latest SDE even when already up to date.",
       "sdeCheckSuccess": "SDE version check completed",
       "sdeUpdateSuccess": "SDE update completed",
       "corporationAccessPolicies": "Corporation Access Policies",

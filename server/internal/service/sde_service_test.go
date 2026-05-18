@@ -158,3 +158,50 @@ func TestVerifySDEDataAvailabilityFailsWhenCoreTableMissing(t *testing.T) {
 		t.Fatalf("expected verifySDEDataAvailability to fail when trnTranslations is missing")
 	}
 }
+
+func TestReportQueryErrorUpdatesSnapshotWithoutOverwritingCheckAndUpdate(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(t, "sde-query-error", &model.SystemConfig{}, &model.SdeVersion{})
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	seed := SDEStatus{
+		CurrentVersion:    "v1",
+		LatestVersion:     "v2",
+		HasUpdate:         true,
+		LastCheckAt:       10,
+		LastCheckSuccess:  true,
+		LastCheckError:    "check_err",
+		LastUpdateAt:      20,
+		LastUpdateSuccess: false,
+		LastUpdateError:   "update_err",
+	}
+	svc := NewSdeService()
+	if err := svc.setStatusSnapshot(seed); err != nil {
+		t.Fatalf("setStatusSnapshot: %v", err)
+	}
+
+	svc.ReportQueryError("npc_kill", "GetSolarSystemNames", testErr("query failed"))
+
+	got, err := svc.getStatusSnapshot()
+	if err != nil {
+		t.Fatalf("getStatusSnapshot: %v", err)
+	}
+	if got.LastQueryError != "query failed" {
+		t.Fatalf("LastQueryError = %q, want %q", got.LastQueryError, "query failed")
+	}
+	if got.LastQuerySource != "npc_kill.GetSolarSystemNames" {
+		t.Fatalf("LastQuerySource = %q", got.LastQuerySource)
+	}
+	if got.LastQueryErrorAt <= 0 {
+		t.Fatalf("LastQueryErrorAt = %d, want > 0", got.LastQueryErrorAt)
+	}
+	if got.LastCheckAt != seed.LastCheckAt || got.LastCheckError != seed.LastCheckError {
+		t.Fatalf("check snapshot changed unexpectedly: %#v", got)
+	}
+	if got.LastUpdateAt != seed.LastUpdateAt || got.LastUpdateError != seed.LastUpdateError {
+		t.Fatalf("update snapshot changed unexpectedly: %#v", got)
+	}
+}

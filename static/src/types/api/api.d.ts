@@ -3132,6 +3132,9 @@ declare namespace Api {
       current_version: string
       latest_version: string
       has_update: boolean
+      last_query_error?: string
+      last_query_error_at?: number
+      last_query_error_source?: string
       last_check_at: number
       last_check_success: boolean
       last_check_error: string

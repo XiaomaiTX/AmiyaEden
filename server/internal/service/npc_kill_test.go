@@ -1,9 +1,12 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestParseReason(t *testing.T) {
@@ -126,5 +129,69 @@ func TestFilterCharactersByTickerNoMatch(t *testing.T) {
 	}
 	if len(filtered) != 0 {
 		t.Fatalf("expected empty filter result, got %d", len(filtered))
+	}
+}
+
+func TestCalcBySystemReportsSDEQueryErrorWhenSystemLookupFails(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(t, "npc-kill-system-lookup-error", &model.SystemConfig{}, &model.SdeVersion{})
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	svc := NewNpcKillService()
+	result := svc.calcBySystem([]model.EVECharacterWalletJournal{
+		{RefType: "bounty_prizes", ContextID: 30003685, Amount: 1},
+	})
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 system summary, got %d", len(result))
+	}
+	if result[0].SolarSystemName != "Unknown System #30003685" {
+		t.Fatalf("unexpected fallback name: %q", result[0].SolarSystemName)
+	}
+
+	status, err := NewSdeService().GetStatus()
+	if err != nil {
+		t.Fatalf("GetStatus: %v", err)
+	}
+	if status.LastQuerySource != "npc_kill.GetSolarSystemNames" {
+		t.Fatalf("LastQuerySource = %q", status.LastQuerySource)
+	}
+	if status.LastQueryError == "" {
+		t.Fatal("expected LastQueryError to be recorded")
+	}
+}
+
+func TestCalcByNpcReportsSDEQueryErrorWhenTypeLookupFails(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(t, "npc-kill-type-lookup-error", &model.SystemConfig{}, &model.SdeVersion{})
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	svc := NewNpcKillService()
+	result := svc.calcByNpc([]model.EVECharacterWalletJournal{
+		{RefType: "bounty_prizes", Reason: "123: 1", Amount: 1},
+	}, "zh")
+
+	if len(result) != 1 {
+		t.Fatalf("expected 1 npc summary, got %d", len(result))
+	}
+	if result[0].NpcName != "Unknown NPC #123" {
+		t.Fatalf("unexpected fallback name: %q", result[0].NpcName)
+	}
+
+	status, err := NewSdeService().GetStatus()
+	if err != nil {
+		t.Fatalf("GetStatus: %v", err)
+	}
+	if status.LastQuerySource != "sde_repository.GetTypes" {
+		t.Fatalf("LastQuerySource = %q", status.LastQuerySource)
+	}
+	if status.LastQueryError == "" {
+		t.Fatal("expected LastQueryError to be recorded")
 	}
 }

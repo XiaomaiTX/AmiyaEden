@@ -129,14 +129,10 @@
           <ElButton :loading="checkingSDE" @click="handleCheckSDE">
             {{ $t('system.basicConfig.sdeCheckVersion') }}
           </ElButton>
-          <ElButton
-            type="warning"
-            :loading="updatingSDE"
-            :disabled="!sdeStatus.has_update"
-            @click="handleUpdateSDE"
-          >
+          <ElButton type="warning" :loading="updatingSDE" @click="handleUpdateSDE">
             {{ $t('system.basicConfig.sdeRunUpdate') }}
           </ElButton>
+          <span class="form-hint">{{ $t('system.basicConfig.sdeRunUpdateHint') }}</span>
           <ElButton type="primary" :loading="savingSDE" @click="handleSaveSDE">
             {{ $t('system.basicConfig.save') }}
           </ElButton>
@@ -502,6 +498,9 @@
     current_version: '',
     latest_version: '',
     has_update: false,
+    last_query_error: '',
+    last_query_error_at: 0,
+    last_query_error_source: '',
     last_check_at: 0,
     last_check_success: false,
     last_check_error: '',
@@ -534,7 +533,34 @@
   const selectedPolicy = computed(() =>
     corpPolicyRows.value.find((row) => row.corporation_id === selectedCorporationId.value)
   )
-  const sdeLastError = computed(() => sdeStatus.last_update_error || sdeStatus.last_check_error)
+  const sdeLastError = computed(() => {
+    const entries = [
+      {
+        message: sdeStatus.last_query_error || '',
+        at: sdeStatus.last_query_error_at || 0,
+        source: sdeStatus.last_query_error_source || ''
+      },
+      {
+        message: sdeStatus.last_update_error || '',
+        at: sdeStatus.last_update_at || 0,
+        source: ''
+      },
+      {
+        message: sdeStatus.last_check_error || '',
+        at: sdeStatus.last_check_at || 0,
+        source: ''
+      }
+    ].filter((entry) => entry.message)
+
+    if (entries.length === 0) {
+      return ''
+    }
+    const latest = entries.reduce((prev, curr) => (curr.at > prev.at ? curr : prev))
+    if (latest.source) {
+      return `${latest.message} (${latest.source})`
+    }
+    return latest.message
+  })
   const corporationNameMap = computed(() => {
     const map = new Map<number, string>()
     for (const corp of allowCorpsForm.corporations || []) {
@@ -598,6 +624,9 @@
     sdeStatus.current_version = status.current_version
     sdeStatus.latest_version = status.latest_version
     sdeStatus.has_update = status.has_update
+    sdeStatus.last_query_error = status.last_query_error || ''
+    sdeStatus.last_query_error_at = status.last_query_error_at || 0
+    sdeStatus.last_query_error_source = status.last_query_error_source || ''
     sdeStatus.last_check_at = status.last_check_at
     sdeStatus.last_check_success = status.last_check_success
     sdeStatus.last_check_error = status.last_check_error

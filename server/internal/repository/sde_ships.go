@@ -72,7 +72,7 @@ func (r *SdeRepository) GetShipsByCategoryID(languageID string) ([]ShipInfo, err
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetShipsByCategoryID", err, fallbackErr)
 }
 
 func (r *SdeRepository) getShipsByCategoryIDWithLayout(languageID string, camelCase bool) ([]ShipInfo, error) {
@@ -126,7 +126,7 @@ func (r *SdeRepository) GetShipSkillRequirements(shipTypeIDs []int) ([]ShipSkill
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetShipSkillRequirements", err, fallbackErr)
 }
 
 func (r *SdeRepository) getShipSkillRequirementsWithLayout(shipTypeIDs []int, camelCase bool) ([]ShipSkillReq, error) {
@@ -238,7 +238,7 @@ func (r *SdeRepository) GetAllRaces() ([]RaceInfo, error) {
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetAllRaces", err, fallbackErr)
 }
 
 func (r *SdeRepository) getAllRacesWithLayout(camelCase bool) ([]RaceInfo, error) {
@@ -263,7 +263,7 @@ func (r *SdeRepository) GetMarketGroupTree() ([]MarketGroupNode, error) {
 		return fallbackResult, nil
 	}
 
-	return nil, wrapSDEFallbackError(err, fallbackErr)
+	return nil, wrapAndReportSDEFallbackError("GetMarketGroupTree", err, fallbackErr)
 }
 
 func (r *SdeRepository) getMarketGroupTreeWithLayout(camelCase bool) ([]MarketGroupNode, error) {

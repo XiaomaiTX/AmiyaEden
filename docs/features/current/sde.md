@@ -59,9 +59,10 @@ source_of_truth:
 - **自动任务状态**：`server/jobs/sde.go` 中的启动检查与定时任务注册当前均已禁用
 - **手动运维能力**：
   - `POST /system/sde-config/check` 仅探测上游最新版本，不触发导入
-  - `POST /system/sde-config/update` 执行手动导入
+  - `POST /system/sde-config/update` 执行手动导入（即使当前已是最新版本，也允许强制重导入）
   - `GET /system/sde-config/status` 返回状态快照（当前版本、最新版本、最近检查/更新时间与错误）
   - 状态快照保存在 `system_config`（键：`sde.status`）
+  - SDE 查询类错误（如名称/类型查询失败）由 repository 层统一写入状态快照，供基础配置页排障
 
 ## 权限边界
 
@@ -83,6 +84,9 @@ source_of_truth:
 - **共享基础能力**：SDE 是共享基础能力，修改返回结构时要检查多个业务模块
 - **版本检查与导入**：当前不通过启动任务或 cron 自动执行；如恢复此能力，需要同步更新运行文档与运维预期
 - **管理端异常提示口径**：检测到 `has_update=true` 时，管理端显式提示“存在可更新版本”
+- **查询错误可见性**：`last_query_error` / `last_query_error_at` / `last_query_error_source` 会记录最近一次 SDE 查询失败上下文
+  - 典型来源：`sde_repository.GetTypes`、`sde_repository.GetNames`、`npc_kill.GetSolarSystemNames`
+  - repository 层对同一错误签名默认做 60 秒节流，避免高频重复覆盖状态快照
 - **英文名称回退**：英文名称缺失时，type/group/category/market group 查询会回退到 SDE 基础名称列
 - **`POST /api/v1/sde/names`**：返回 `flat` 与 `names` 两套映射
   - `names` 是按 namespace 分组的权威结果
