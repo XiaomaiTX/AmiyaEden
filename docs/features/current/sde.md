@@ -115,3 +115,10 @@ source_of_truth:
 - `static/src/types/api/api.d.ts` - API 类型定义
 - `static/src/locales/langs/zh.json` - 中文国际化
 - `static/src/locales/langs/en.json` - 英文国际化
+
+## PostgreSQL Bool Mapping Constraint
+
+- mapSolarSystems border, fringe, corridor, hub, international, regional, constellation are flag fields and must map to nullable boolean types in Go model MapSolarSystem.
+- Numeric identity fields such as regionID, constellationID, and solarSystemID remain integer types.
+- Query paths that only need system names (for example npc_kill.GetSolarSystemNames) should select only solarSystemID and solarSystemName to avoid unrelated scan failures.
+
