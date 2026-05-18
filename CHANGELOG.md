@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.3] - 2026-05-18
+
+### Changed
+- 继续扩展军团能力策略覆盖范围，将信息、仪表盘、舰队、商城、工单、系统、新人/导师与伏羲大厅等业务域拆分为更细粒度的功能 capability，并同步收敛对应路由门禁。
+- 将系统基础配置中的功能能力标签全部改为 i18n 文案，并按业务域分组展示，便于运维人员快速定位和配置。
+- 为任务手动触发、公司刷怪聚合、钱包/商城/工单/审计/书签等入口补齐对应的能力与规则门禁，增强策略编辑的限制覆盖率。
+
 ## [1.9.2] - 2026-05-18
 
 ### Fixed

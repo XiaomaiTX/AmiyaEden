@@ -334,7 +334,7 @@
       capabilities: ['ticket.manage', 'shop.manage', 'system.manage']
     },
     {
-      labelKey: 'system.basicConfig.corpCapabilityGroups.functional',
+      labelKey: 'system.basicConfig.corpCapabilityGroups.info',
       capabilities: [
         'info.wallet.read',
         'info.npc_kills.self',
@@ -342,27 +342,56 @@
         'info.skills.read',
         'info.assets.read',
         'info.contracts.read',
-        'info.fittings.manage',
-        'shop.wallet.read',
-        'shop.order.create',
-        'shop.order.read_self',
+        'info.fittings.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.dashboard',
+      capabilities: [
         'dashboard.npc_kills.corp',
         'dashboard.corp_structures.read',
-        'dashboard.corp_structures.manage',
+        'dashboard.corp_structures.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.operation',
+      capabilities: [
         'operation.fleet.read_self',
         'operation.fleet.manage',
-        'operation.fleet.pap.manage',
+        'operation.fleet.pap.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.skillPlanning',
+      capabilities: [
         'skill_planning.corp.read',
         'skill_planning.corp.manage',
         'skill_planning.personal.read',
-        'skill_planning.personal.manage',
-        'newbro.user.actions',
-        'newbro.captain.actions',
-        'newbro.admin.read',
-        'newbro.admin.manage',
-        'mentor.user.actions',
-        'mentor.mentor.actions',
-        'mentor.admin.manage',
+        'skill_planning.personal.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.shop',
+      capabilities: [
+        'shop.wallet.read',
+        'shop.order.create',
+        'shop.order.read_self',
+        'shop.admin.product.manage',
+        'shop.admin.order.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.ticket',
+      capabilities: [
+        'ticket.user.create',
+        'ticket.user.reply',
+        'ticket.admin.read',
+        'ticket.admin.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.system',
+      capabilities: [
         'system.task.read',
         'system.task.run',
         'system.basic_config.read',
@@ -372,16 +401,24 @@
         'system.audit.read',
         'system.audit.export',
         'system.tool_bookmark.read',
-        'system.tool_bookmark.manage',
-        'ticket.user.create',
-        'ticket.user.reply',
-        'ticket.admin.read',
-        'ticket.admin.manage',
-        'shop.admin.product.manage',
-        'shop.admin.order.manage',
-        'fuxi_hall.public.read',
-        'fuxi_hall.admin.manage'
+        'system.tool_bookmark.manage'
       ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.newbroMentor',
+      capabilities: [
+        'newbro.user.actions',
+        'newbro.captain.actions',
+        'newbro.admin.read',
+        'newbro.admin.manage',
+        'mentor.user.actions',
+        'mentor.mentor.actions',
+        'mentor.admin.manage'
+      ]
+    },
+    {
+      labelKey: 'system.basicConfig.corpCapabilityGroups.fuxiHall',
+      capabilities: ['fuxi_hall.public.read', 'fuxi_hall.admin.manage']
     }
   ]
   const corpCapabilityOptions = corpCapabilityGroups.flatMap((group) => group.capabilities)
@@ -406,51 +443,54 @@
     'ticket.manage': 'system.basicConfig.corpCapabilities.ticketManage',
     'shop.manage': 'system.basicConfig.corpCapabilities.shopManage',
     'system.manage': 'system.basicConfig.corpCapabilities.systemManage',
-    'info.wallet.read': 'info.wallet.read',
-    'info.npc_kills.self': 'info.npc_kills.self',
-    'info.npc_kills.corp': 'info.npc_kills.corp',
-    'info.skills.read': 'info.skills.read',
-    'info.assets.read': 'info.assets.read',
-    'info.contracts.read': 'info.contracts.read',
-    'info.fittings.manage': 'info.fittings.manage',
-    'shop.wallet.read': 'shop.wallet.read',
-    'shop.order.create': 'shop.order.create',
-    'shop.order.read_self': 'shop.order.read_self',
-    'dashboard.npc_kills.corp': 'dashboard.npc_kills.corp',
-    'dashboard.corp_structures.read': 'dashboard.corp_structures.read',
-    'dashboard.corp_structures.manage': 'dashboard.corp_structures.manage',
-    'operation.fleet.read_self': 'operation.fleet.read_self',
-    'operation.fleet.manage': 'operation.fleet.manage',
-    'operation.fleet.pap.manage': 'operation.fleet.pap.manage',
-    'skill_planning.corp.read': 'skill_planning.corp.read',
-    'skill_planning.corp.manage': 'skill_planning.corp.manage',
-    'skill_planning.personal.read': 'skill_planning.personal.read',
-    'skill_planning.personal.manage': 'skill_planning.personal.manage',
-    'newbro.user.actions': 'newbro.user.actions',
-    'newbro.captain.actions': 'newbro.captain.actions',
-    'newbro.admin.read': 'newbro.admin.read',
-    'newbro.admin.manage': 'newbro.admin.manage',
-    'mentor.user.actions': 'mentor.user.actions',
-    'mentor.mentor.actions': 'mentor.mentor.actions',
-    'mentor.admin.manage': 'mentor.admin.manage',
-    'system.task.read': 'system.task.read',
-    'system.task.run': 'system.task.run',
-    'system.basic_config.read': 'system.basic_config.read',
-    'system.basic_config.manage': 'system.basic_config.manage',
-    'system.wallet.read': 'system.wallet.read',
-    'system.wallet.adjust': 'system.wallet.adjust',
-    'system.audit.read': 'system.audit.read',
-    'system.audit.export': 'system.audit.export',
-    'system.tool_bookmark.read': 'system.tool_bookmark.read',
-    'system.tool_bookmark.manage': 'system.tool_bookmark.manage',
-    'ticket.user.create': 'ticket.user.create',
-    'ticket.user.reply': 'ticket.user.reply',
-    'ticket.admin.read': 'ticket.admin.read',
-    'ticket.admin.manage': 'ticket.admin.manage',
-    'shop.admin.product.manage': 'shop.admin.product.manage',
-    'shop.admin.order.manage': 'shop.admin.order.manage',
-    'fuxi_hall.public.read': 'fuxi_hall.public.read',
-    'fuxi_hall.admin.manage': 'fuxi_hall.admin.manage'
+    'info.wallet.read': 'system.basicConfig.corpCapabilities.infoWalletRead',
+    'info.npc_kills.self': 'system.basicConfig.corpCapabilities.infoNpcKillsSelf',
+    'info.npc_kills.corp': 'system.basicConfig.corpCapabilities.infoNpcKillsCorp',
+    'info.skills.read': 'system.basicConfig.corpCapabilities.infoSkillsRead',
+    'info.assets.read': 'system.basicConfig.corpCapabilities.infoAssetsRead',
+    'info.contracts.read': 'system.basicConfig.corpCapabilities.infoContractsRead',
+    'info.fittings.manage': 'system.basicConfig.corpCapabilities.infoFittingsManage',
+    'shop.wallet.read': 'system.basicConfig.corpCapabilities.shopWalletRead',
+    'shop.order.create': 'system.basicConfig.corpCapabilities.shopOrderCreate',
+    'shop.order.read_self': 'system.basicConfig.corpCapabilities.shopOrderReadSelf',
+    'dashboard.npc_kills.corp': 'system.basicConfig.corpCapabilities.dashboardNpcKillsCorp',
+    'dashboard.corp_structures.read':
+      'system.basicConfig.corpCapabilities.dashboardCorpStructuresRead',
+    'dashboard.corp_structures.manage':
+      'system.basicConfig.corpCapabilities.dashboardCorpStructuresManage',
+    'operation.fleet.read_self': 'system.basicConfig.corpCapabilities.operationFleetReadSelf',
+    'operation.fleet.manage': 'system.basicConfig.corpCapabilities.operationFleetManage',
+    'operation.fleet.pap.manage': 'system.basicConfig.corpCapabilities.operationFleetPapManage',
+    'skill_planning.corp.read': 'system.basicConfig.corpCapabilities.skillPlanningCorpRead',
+    'skill_planning.corp.manage': 'system.basicConfig.corpCapabilities.skillPlanningCorpManage',
+    'skill_planning.personal.read': 'system.basicConfig.corpCapabilities.skillPlanningPersonalRead',
+    'skill_planning.personal.manage':
+      'system.basicConfig.corpCapabilities.skillPlanningPersonalManage',
+    'newbro.user.actions': 'system.basicConfig.corpCapabilities.newbroUserActions',
+    'newbro.captain.actions': 'system.basicConfig.corpCapabilities.newbroCaptainActions',
+    'newbro.admin.read': 'system.basicConfig.corpCapabilities.newbroAdminRead',
+    'newbro.admin.manage': 'system.basicConfig.corpCapabilities.newbroAdminManage',
+    'mentor.user.actions': 'system.basicConfig.corpCapabilities.mentorUserActions',
+    'mentor.mentor.actions': 'system.basicConfig.corpCapabilities.mentorMentorActions',
+    'mentor.admin.manage': 'system.basicConfig.corpCapabilities.mentorAdminManage',
+    'system.task.read': 'system.basicConfig.corpCapabilities.systemTaskRead',
+    'system.task.run': 'system.basicConfig.corpCapabilities.systemTaskRun',
+    'system.basic_config.read': 'system.basicConfig.corpCapabilities.systemBasicConfigRead',
+    'system.basic_config.manage': 'system.basicConfig.corpCapabilities.systemBasicConfigManage',
+    'system.wallet.read': 'system.basicConfig.corpCapabilities.systemWalletRead',
+    'system.wallet.adjust': 'system.basicConfig.corpCapabilities.systemWalletAdjust',
+    'system.audit.read': 'system.basicConfig.corpCapabilities.systemAuditRead',
+    'system.audit.export': 'system.basicConfig.corpCapabilities.systemAuditExport',
+    'system.tool_bookmark.read': 'system.basicConfig.corpCapabilities.systemToolBookmarkRead',
+    'system.tool_bookmark.manage': 'system.basicConfig.corpCapabilities.systemToolBookmarkManage',
+    'ticket.user.create': 'system.basicConfig.corpCapabilities.ticketUserCreate',
+    'ticket.user.reply': 'system.basicConfig.corpCapabilities.ticketUserReply',
+    'ticket.admin.read': 'system.basicConfig.corpCapabilities.ticketAdminRead',
+    'ticket.admin.manage': 'system.basicConfig.corpCapabilities.ticketAdminManage',
+    'shop.admin.product.manage': 'system.basicConfig.corpCapabilities.shopAdminProductManage',
+    'shop.admin.order.manage': 'system.basicConfig.corpCapabilities.shopAdminOrderManage',
+    'fuxi_hall.public.read': 'system.basicConfig.corpCapabilities.fuxiHallPublicRead',
+    'fuxi_hall.admin.manage': 'system.basicConfig.corpCapabilities.fuxiHallAdminManage'
   }
 
   const sdeForm = reactive<Api.SysConfig.SDEConfig>({
