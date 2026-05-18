@@ -83,20 +83,20 @@ func (r *SrpRepository) GetApplicationByID(id uint) (*model.SrpApplication, erro
 	return &app, err
 }
 
+// GetApplicationByKillmailAndCharacter 按 killmail_id + character_id 查询
+func (r *SrpRepository) GetApplicationByKillmailAndCharacter(killmailID int64, characterID int64) (*model.SrpApplication, error) {
+	var app model.SrpApplication
+	err := global.DB.
+		Where("killmail_id = ? AND character_id = ?", killmailID, characterID).
+		First(&app).Error
+	return &app, err
+}
+
 // GetApplicationByIDForUpdate 在事务中按 ID 查询并加锁
 func (r *SrpRepository) GetApplicationByIDForUpdate(tx *gorm.DB, id uint) (*model.SrpApplication, error) {
 	var app model.SrpApplication
 	err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&app, id).Error
 	return &app, err
-}
-
-// ExistsApplicationByKillmail 检查该 killmail 是否已被该人物提交过申请
-func (r *SrpRepository) ExistsApplicationByKillmail(killmailID int64, characterID int64) bool {
-	var count int64
-	global.DB.Model(&model.SrpApplication{}).
-		Where("killmail_id = ? AND character_id = ?", killmailID, characterID).
-		Count(&count)
-	return count > 0
 }
 
 // UpdateApplication 更新申请（审批 / 发放）

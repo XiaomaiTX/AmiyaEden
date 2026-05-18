@@ -108,6 +108,7 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 1. **人物归属**：`character_id` 必须属于当前登录用户
 2. **备注要求**：未关联舰队时，`note` 不能为空
 3. **重复检查**：同一 `killmail_id` + `character_id` 不能重复提交
+   - 例外：若该申请当前为 `review_status = rejected` 且 `payout_status = notpaid`，再次提交会**重开原申请**（复用同一申请 ID），并重置为待审批
 4. **KM 关联**：通过 `EveCharacterKillmail` 表验证人物与 KM 的关联关系，并加载 KM 详情
 5. **受害者确认**：KM 的 `character_id` 必须与申请人物一致
 6. **舰队验证**（关联舰队时）：
@@ -116,12 +117,13 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
   - 人物必须是该舰队的成员
 7. **金额设定**：在提交申请时，系统自动根据上方推荐金额计算方法计算推荐金额和初始最终金额
 8. **创建申请**：初始状态 `review_status = submitted`，`payout_status = notpaid`
+   - 重提重开时会清空审批信息（`review_note`/`reviewed_by`/`reviewed_at`），并按当前规则重算 `recommended_amount` 与 `final_amount`
 
 ### 申请页前端交互
 
 - 申请页下方“我的补损申请”表格默认每页显示 `20` 条记录
 - 申请页 killmail 下拉只展示最近 `50` 条候选 KM
-- 该下拉的“已提交过 SRP，不可再次申请”规则由后端候选列表负责过滤；前端不会再从当前页申请表里推导 disable 集合
+- 该下拉的“已提交过 SRP，不可再次申请”规则由后端候选列表负责过滤；`exclude_submitted=true` 仅排除 `submitted/approved`，不会排除 `rejected`（拒绝后可再次申请）；前端不会再从当前页申请表里推导 disable 集合
 - 原因：申请表是分页后的展示切片，不是候选 killmail 的权威数据源；重复提交约束必须由后端验证并最好由后端候选接口直接过滤
 
 ### 审批

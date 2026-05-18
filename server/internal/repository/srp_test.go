@@ -143,3 +143,19 @@ func TestBuildSrpApplicationListQueryAppliesCharacterAndNicknameKeywordFilter(t 
 		t.Fatalf("expected application character keyword predicate, got SQL: %s", sql)
 	}
 }
+
+func TestGetApplicationByKillmailAndCharacterQueryUsesCompositeKey(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		var app model.SrpApplication
+		return tx.Where("killmail_id = ? AND character_id = ?", int64(880001), int64(90001001)).First(&app)
+	})
+
+	if !strings.Contains(sql, `FROM "srp_application"`) {
+		t.Fatalf("expected srp_application table, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `killmail_id =`) || !strings.Contains(sql, `character_id =`) {
+		t.Fatalf("expected composite killmail+character filter, got SQL: %s", sql)
+	}
+}

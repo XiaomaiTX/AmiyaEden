@@ -160,9 +160,18 @@ func (s *SrpService) SubmitApplication(userID uint, req *SubmitApplicationReques
 		return nil, errors.New("未关联舰队时，备注不能为空")
 	}
 
-	// 3. 检查是否重复提交
-	if s.repo.ExistsApplicationByKillmail(req.KillmailID, req.CharacterID) {
-		return nil, errors.New("该 KM 已提交过补损申请，不能重复提交")
+	// 3. 检查是否重复提交（拒绝且未发放的申请允许重提，重开原单）
+	existingApp, err := s.repo.GetApplicationByKillmailAndCharacter(req.KillmailID, req.CharacterID)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if err == nil {
+		if existingApp.PayoutStatus == model.SrpPayoutPaid {
+			return nil, errors.New("该 KM 已提交过补损申请，不能重复提交")
+		}
+		if existingApp.ReviewStatus == model.SrpReviewSubmitted || existingApp.ReviewStatus == model.SrpReviewApproved {
+			return nil, errors.New("该 KM 已提交过补损申请，不能重复提交")
+		}
 	}
 
 	// 4. 获取 KM 详情（验证人物与 KM 关联）
@@ -204,7 +213,7 @@ func (s *SrpService) SubmitApplication(userID uint, req *SubmitApplicationReques
 	autoSrpSvc := NewAutoSrpService()
 	recommended, _ := autoSrpSvc.RecommendSrpAmount(km.ShipTypeID, req.KillmailID, req.FleetID)
 
-	// 8. 构建申请
+	// 8. 构建申请（重提时重开原单）
 	app := &model.SrpApplication{
 		UserID:            userID,
 		CharacterID:       req.CharacterID,
@@ -223,6 +232,54 @@ func (s *SrpService) SubmitApplication(userID uint, req *SubmitApplicationReques
 		FinalAmount:       recommended,
 		ReviewStatus:      model.SrpReviewSubmitted,
 		PayoutStatus:      model.SrpPayoutNotPaid,
+	}
+
+	if existingApp != nil && existingApp.ID > 0 {
+		if existingApp.ReviewStatus != model.SrpReviewRejected || existingApp.PayoutStatus != model.SrpPayoutNotPaid {
+			return nil, errors.New("该 KM 已提交过补损申请，不能重复提交")
+		}
+		existingApp.UserID = app.UserID
+		existingApp.CharacterID = app.CharacterID
+		existingApp.CharacterName = app.CharacterName
+		existingApp.KillmailID = app.KillmailID
+		existingApp.FleetID = app.FleetID
+		existingApp.Note = app.Note
+		existingApp.ShipTypeID = app.ShipTypeID
+		existingApp.ShipName = app.ShipName
+		existingApp.SolarSystemID = app.SolarSystemID
+		existingApp.SolarSystemName = app.SolarSystemName
+		existingApp.KillmailTime = app.KillmailTime
+		existingApp.CorporationID = app.CorporationID
+		existingApp.AllianceID = app.AllianceID
+		existingApp.RecommendedAmount = app.RecommendedAmount
+		existingApp.FinalAmount = app.FinalAmount
+		existingApp.ReviewStatus = model.SrpReviewSubmitted
+		existingApp.ReviewNote = ""
+		existingApp.ReviewedBy = nil
+		existingApp.ReviewedAt = nil
+		existingApp.PayoutStatus = model.SrpPayoutNotPaid
+		existingApp.PaidBy = nil
+		existingApp.PaidAt = nil
+		if err := s.repo.UpdateApplication(existingApp); err != nil {
+			return nil, err
+		}
+		if s.auditSvc != nil {
+			_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
+				Category:     "approval",
+				Action:       "srp_application_resubmit",
+				ActorUserID:  userID,
+				TargetUserID: existingApp.UserID,
+				ResourceType: "srp_application",
+				ResourceID:   fmt.Sprintf("%d", existingApp.ID),
+				Result:       model.AuditResultSuccess,
+				Details: map[string]any{
+					"review_status": existingApp.ReviewStatus,
+					"killmail_id":   existingApp.KillmailID,
+					"character_id":  existingApp.CharacterID,
+				},
+			})
+		}
+		return existingApp, nil
 	}
 
 	if err := s.repo.CreateApplication(app); err != nil {
