@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-05-18
+
+### Changed
+- 扩展军团能力门控覆盖的业务域，并同步更新相关路由、菜单元数据与文档。
+- 将 SRP 审核按钮处理与 i18n 参数调用收敛为更直接的实现，降低组件层事件处理复杂度。
+- 将军团策略配置改为按选定军团保存，避免批量覆盖其他军团的策略数据。
+- 在军团白名单配置中展示已解析的军团名称，解析失败时回退显示军团 ID。
+
+### Fixed
+- 允许对已拒绝的 SRP 申请重新提交，并复用原记录避免重复创建。
+- 修复 SRP 审核与军团策略保存中的误操作和覆盖问题。
+
 ## [1.9.0] - 2026-05-17
 
 ### Added
