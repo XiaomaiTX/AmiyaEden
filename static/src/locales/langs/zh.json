@@ -2693,6 +2693,7 @@
       "sdeLatestVersion": "最新版本",
       "sdeLastCheckAt": "上次检查",
       "sdeLastUpdateAt": "上次更新",
+      "sdeUpdateStage": "更新阶段",
       "sdeLastError": "最近错误",
       "sdeUpdateAvailable": "检测到可更新版本，请及时执行更新",
       "sdeCheckVersion": "检查新版本",

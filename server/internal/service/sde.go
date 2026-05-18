@@ -31,6 +31,7 @@ const sdeDownloadDir = "tmp/sde"
 const (
 	sdeCheckMinInterval = 30 * time.Minute
 	sdeUserAgent        = "AmiyaEden-SDE-Updater/1.0"
+	maxExtractDepth     = 4
 )
 
 var sdeUpdateState = struct {
@@ -59,7 +60,19 @@ type SDEStatus struct {
 	LastUpdateAt      int64  `json:"last_update_at"`
 	LastUpdateSuccess bool   `json:"last_update_success"`
 	LastUpdateError   string `json:"last_update_error"`
+	IsUpdating        bool   `json:"is_updating"`
+	UpdateStage       string `json:"update_stage"`
 }
+
+const (
+	sdeUpdateStageChecking    = "checking"
+	sdeUpdateStageDownloading = "downloading"
+	sdeUpdateStageExtracting  = "extracting"
+	sdeUpdateStageImporting   = "importing"
+	sdeUpdateStageRecording   = "recording"
+	sdeUpdateStageDone        = "done"
+	sdeUpdateStageFailed      = "failed"
+)
 
 func NewSdeService() *SdeService {
 	return &SdeService{
@@ -144,13 +157,28 @@ func (s *SdeService) TriggerManualUpdateWithStatus() (SDEStatus, error) {
 		return SDEStatus{}, err
 	}
 
-	version, updateErr := s.TriggerManualUpdate()
+	status.IsUpdating = true
+	status.UpdateStage = sdeUpdateStageChecking
+	status.LastUpdateError = ""
+	if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+		global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+	}
+
+	version, updateErr := s.TriggerManualUpdate(func(stage string) {
+		status.UpdateStage = stage
+		status.IsUpdating = stage != sdeUpdateStageDone && stage != sdeUpdateStageFailed
+		if saveErr := s.setStatusSnapshot(status); saveErr != nil {
+			global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
+		}
+	})
 	now := time.Now().Unix()
 	status.LastUpdateAt = now
 	status.LatestVersion = version
 	if updateErr != nil {
 		status.LastUpdateSuccess = false
 		status.LastUpdateError = updateErr.Error()
+		status.IsUpdating = false
+		status.UpdateStage = sdeUpdateStageFailed
 		status.HasUpdate = status.CurrentVersion != "" && status.CurrentVersion != status.LatestVersion
 		if status.CurrentVersion == "" && status.LatestVersion != "" {
 			status.HasUpdate = true
@@ -165,6 +193,8 @@ func (s *SdeService) TriggerManualUpdateWithStatus() (SDEStatus, error) {
 	status.LastUpdateSuccess = true
 	status.LastUpdateError = ""
 	status.HasUpdate = false
+	status.IsUpdating = false
+	status.UpdateStage = sdeUpdateStageDone
 	if saveErr := s.setStatusSnapshot(status); saveErr != nil {
 		global.Logger.Warn("[SDE] 保存状态快照失败", zap.Error(saveErr))
 	}
@@ -182,6 +212,34 @@ type githubRelease struct {
 type githubAsset struct {
 	Name               string `json:"name"`
 	BrowserDownloadURL string `json:"browser_download_url"`
+}
+
+func pickSQLAsset(assets []githubAsset) *githubAsset {
+	var fallback *githubAsset
+	for i := range assets {
+		name := strings.ToLower(assets[i].Name)
+		isPostgres := strings.Contains(name, "postgres") || strings.Contains(name, "pgsql")
+		isSQL := strings.Contains(name, ".sql")
+		if !isPostgres && !isSQL {
+			continue
+		}
+
+		candidate := &assets[i]
+		if candidate.BrowserDownloadURL == "" {
+			continue
+		}
+		if isPostgres {
+			return candidate
+		}
+		if fallback == nil {
+			fallback = candidate
+			continue
+		}
+		if strings.HasSuffix(name, ".bz2") || strings.HasSuffix(name, ".gz") {
+			fallback = candidate
+		}
+	}
+	return fallback
 }
 
 // CheckAndUpdate 检查最新 SDE 版本，若有新版本则自动下载并导入
@@ -218,7 +276,7 @@ func (s *SdeService) CheckAndUpdate() (bool, string, error) {
 	}
 
 	global.Logger.Info("[SDE] 发现新版本，开始更新", zap.String("version", version))
-	if err := s.doImport(release); err != nil {
+	if err := s.doImport(release, nil); err != nil {
 		global.Logger.Error("[SDE] 更新失败", zap.String("version", version), zap.Error(err))
 		return false, version, fmt.Errorf("导入 SDE 失败: %w", err)
 	}
@@ -236,10 +294,13 @@ func (s *SdeService) CheckAndUpdate() (bool, string, error) {
 }
 
 // TriggerManualUpdate 手动触发更新，强制重新导入
-func (s *SdeService) TriggerManualUpdate() (string, error) {
+func (s *SdeService) TriggerManualUpdate(progress func(stage string)) (string, error) {
 	sdeUpdateState.mu.Lock()
 	defer sdeUpdateState.mu.Unlock()
 
+	if progress != nil {
+		progress(sdeUpdateStageChecking)
+	}
 	release, err := s.fetchLatestRelease()
 	if err != nil {
 		return "", fmt.Errorf("获取 GitHub Release 失败: %w", err)
@@ -249,19 +310,30 @@ func (s *SdeService) TriggerManualUpdate() (string, error) {
 	sdeUpdateState.lastSeenVersion = version
 	global.Logger.Info("[SDE] 手动触发更新", zap.String("version", version))
 
-	if err := s.doImport(release); err != nil {
+	if err := s.doImport(release, progress); err != nil {
 		return version, fmt.Errorf("导入 SDE 失败: %w", err)
 	}
 
 	// 如果版本已存在就更新，否则插入
-	exists, _ := s.repo.VersionExists(version)
+	if progress != nil {
+		progress(sdeUpdateStageRecording)
+	}
+	exists, err := s.repo.VersionExists(version)
+	if err != nil {
+		return version, fmt.Errorf("检查版本记录失败: %w", err)
+	}
 	if !exists {
-		_ = s.repo.CreateVersion(&model.SdeVersion{
+		if err := s.repo.CreateVersion(&model.SdeVersion{
 			Version: version,
 			Note:    "manual import",
-		})
+		}); err != nil {
+			return version, fmt.Errorf("记录版本失败: %w", err)
+		}
 	}
 
+	if progress != nil {
+		progress(sdeUpdateStageDone)
+	}
 	global.Logger.Info("[SDE] 手动更新完成", zap.String("version", version))
 	return version, nil
 }
@@ -287,6 +359,7 @@ func (s *SdeService) getStatusSnapshot() (SDEStatus, error) {
 	}
 	var status SDEStatus
 	if err := json.Unmarshal([]byte(raw), &status); err != nil {
+		global.Logger.Warn("[SDE] 状态快照解析失败，已回退默认值", zap.Error(err))
 		return SDEStatus{}, nil
 	}
 	return status, nil
@@ -301,30 +374,8 @@ func (s *SdeService) setStatusSnapshot(status SDEStatus) error {
 }
 
 // doImport 找到 PostgreSQL SQL 资源并导入数据库
-func (s *SdeService) doImport(release *githubRelease) error {
-	// 优先匹配上游专用 PostgreSQL 格式文件（如 sde-postgres.sql.bz2）
-	// 策略：postgres/pgsql 关键字 > 通用 sql 关键字；压缩格式优于纯 .sql
-	var asset *githubAsset
-	for i := range release.Assets {
-		name := strings.ToLower(release.Assets[i].Name)
-		isPostgres := strings.Contains(name, "postgres") || strings.Contains(name, "pgsql")
-		isSql := strings.Contains(name, ".sql")
-		if !isPostgres && !isSql {
-			continue
-		}
-		candidate := &release.Assets[i]
-		// 找到专用 postgres 压缩包则立即采用，终止搜索
-		if isPostgres {
-			asset = candidate
-			break
-		}
-		// 通用 sql 作为后备，优先压缩格式
-		if asset == nil {
-			asset = candidate
-		} else if strings.HasSuffix(name, ".bz2") || strings.HasSuffix(name, ".gz") {
-			asset = candidate
-		}
-	}
+func (s *SdeService) doImport(release *githubRelease, progress func(stage string)) error {
+	asset := pickSQLAsset(release.Assets)
 	if asset == nil {
 		return errors.New("未找到 PostgreSQL SQL 资源文件")
 	}
@@ -336,9 +387,17 @@ func (s *SdeService) doImport(release *githubRelease) error {
 
 	// 下载
 	dlPath := filepath.Join(sdeDownloadDir, asset.Name)
+	if progress != nil {
+		progress(sdeUpdateStageDownloading)
+	}
 	global.Logger.Info("[SDE] 下载中", zap.String("url", asset.BrowserDownloadURL))
 	if err := s.downloadFile(asset.BrowserDownloadURL, dlPath); err != nil {
 		return fmt.Errorf("下载失败: %w", err)
+	}
+	if info, statErr := os.Stat(dlPath); statErr != nil {
+		return fmt.Errorf("读取下载文件信息失败: %w", statErr)
+	} else if info.Size() <= 0 {
+		return errors.New("下载文件为空")
 	}
 	defer func() {
 		if err := os.Remove(dlPath); err != nil {
@@ -347,9 +406,20 @@ func (s *SdeService) doImport(release *githubRelease) error {
 	}()
 
 	// 解压得到 .sql 文件路径
+	if progress != nil {
+		progress(sdeUpdateStageExtracting)
+	}
 	sqlPath, err := extractSQL(dlPath, sdeDownloadDir)
 	if err != nil {
 		return fmt.Errorf("解压失败: %w", err)
+	}
+	if !strings.HasSuffix(strings.ToLower(sqlPath), ".sql") {
+		return fmt.Errorf("解压结果不是 SQL 文件: %s", sqlPath)
+	}
+	if info, statErr := os.Stat(sqlPath); statErr != nil {
+		return fmt.Errorf("读取 SQL 文件信息失败: %w", statErr)
+	} else if info.Size() <= 0 {
+		return errors.New("解压后的 SQL 文件为空")
 	}
 	if sqlPath != dlPath {
 		defer func() {
@@ -360,6 +430,9 @@ func (s *SdeService) doImport(release *githubRelease) error {
 	}
 
 	// 导入到 PostgreSQL
+	if progress != nil {
+		progress(sdeUpdateStageImporting)
+	}
 	global.Logger.Info("[SDE] 导入数据库中", zap.String("file", sqlPath))
 	if err := importSQL(sqlPath); err != nil {
 		return fmt.Errorf("导入数据库失败: %w", err)
@@ -437,6 +510,16 @@ func (s *SdeService) fetchLatestRelease() (*githubRelease, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		return nil, err
 	}
+	release.TagName = strings.TrimSpace(release.TagName)
+	if release.TagName == "" {
+		return nil, errors.New("GitHub Release 缺少 tag_name")
+	}
+	if len(release.Assets) == 0 {
+		return nil, errors.New("GitHub Release 未包含可下载资源")
+	}
+	if pickSQLAsset(release.Assets) == nil {
+		return nil, errors.New("GitHub Release 缺少可识别的 SQL 资源")
+	}
 	return &release, nil
 }
 
@@ -481,6 +564,14 @@ func (s *SdeService) downloadFile(url, destPath string) error {
 // extractSQL 通过魔数检测文件类型并递归解压，最终返回 .sql 文件路径
 // 支持：plain SQL / gzip(.gz/.sql.gz) / zip（内含 .sql 或 .sql.gz）
 func extractSQL(srcPath, destDir string) (string, error) {
+	return extractSQLWithDepth(srcPath, destDir, 0)
+}
+
+func extractSQLWithDepth(srcPath, destDir string, depth int) (string, error) {
+	if depth > maxExtractDepth {
+		return "", fmt.Errorf("压缩递归层级过深（>%d）", maxExtractDepth)
+	}
+
 	magic, err := readMagicBytes(srcPath)
 	if err != nil {
 		return "", fmt.Errorf("读取文件魔数失败: %w", err)
@@ -488,11 +579,11 @@ func extractSQL(srcPath, destDir string) (string, error) {
 
 	switch {
 	case isGzipMagic(magic):
-		return extractGzip(srcPath, destDir)
+		return extractGzip(srcPath, destDir, depth)
 	case isBzip2Magic(magic):
-		return extractBzip2(srcPath, destDir)
+		return extractBzip2(srcPath, destDir, depth)
 	case isZipMagic(magic):
-		return extractZip(srcPath, destDir)
+		return extractZip(srcPath, destDir, depth)
 	default:
 		// 当作纯 SQL 文件处理
 		return srcPath, nil
@@ -553,7 +644,7 @@ func safeJoin(destDir, name string) (string, error) {
 }
 
 // extractGzip 解压 gzip 文件，输出文件名去掉 .gz 后缀
-func extractGzip(srcPath, destDir string) (string, error) {
+func extractGzip(srcPath, destDir string, depth int) (string, error) {
 	f, err := os.Open(srcPath)
 	if err != nil {
 		return "", err
@@ -583,6 +674,9 @@ func extractGzip(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if _, statErr := os.Stat(outPath); statErr == nil {
+		global.Logger.Warn("[SDE] 解压目标文件已存在，将覆盖", zap.String("file", outPath))
+	}
 	out, err := os.Create(outPath)
 	if err != nil {
 		return "", err
@@ -598,11 +692,11 @@ func extractGzip(srcPath, destDir string) (string, error) {
 	}
 
 	// 解压结果可能还是压缩包，递归处理
-	return extractSQL(outPath, destDir)
+	return extractSQLWithDepth(outPath, destDir, depth+1)
 }
 
 // extractBzip2 解压 bzip2 文件，输出文件名去掉 .bz2 后缀
-func extractBzip2(srcPath, destDir string) (string, error) {
+func extractBzip2(srcPath, destDir string, depth int) (string, error) {
 	f, err := os.Open(srcPath)
 	if err != nil {
 		return "", err
@@ -620,6 +714,9 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if _, statErr := os.Stat(outPath); statErr == nil {
+		global.Logger.Warn("[SDE] 解压目标文件已存在，将覆盖", zap.String("file", outPath))
+	}
 	out, err := os.Create(outPath)
 	if err != nil {
 		return "", err
@@ -635,11 +732,11 @@ func extractBzip2(srcPath, destDir string) (string, error) {
 	}
 
 	// 解压结果可能还是压缩包，递归处理
-	return extractSQL(outPath, destDir)
+	return extractSQLWithDepth(outPath, destDir, depth+1)
 }
 
 // extractZip 解压 zip，找到第一个 SQL 相关条目（.sql 或 .sql.gz）并递归解压
-func extractZip(srcPath, destDir string) (string, error) {
+func extractZip(srcPath, destDir string, depth int) (string, error) {
 	r, err := zip.OpenReader(srcPath)
 	if err != nil {
 		return "", err
@@ -665,6 +762,9 @@ func extractZip(srcPath, destDir string) (string, error) {
 			return "", err
 		}
 
+		if _, statErr := os.Stat(outPath); statErr == nil {
+			global.Logger.Warn("[SDE] 解压目标文件已存在，将覆盖", zap.String("file", outPath))
+		}
 		out, err := os.Create(outPath)
 		if err != nil {
 			_ = rc.Close()
@@ -678,7 +778,7 @@ func extractZip(srcPath, destDir string) (string, error) {
 		}
 
 		// 递归：内部文件可能还是 gzip
-		return extractSQL(outPath, destDir)
+		return extractSQLWithDepth(outPath, destDir, depth+1)
 	}
 	return "", errors.New("zip 中未找到 SQL 相关文件")
 }
@@ -739,13 +839,8 @@ func importSQL(sqlPath string) error {
 		}
 	}()
 
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 1024*1024), 64*1024*1024)
-
-	var stmt strings.Builder
+	reader := bufio.NewReaderSize(f, 1024*1024)
 	var stmtCount, ddlErrCount int
-	var insertHeader string
-	var insertRows []string
 
 	// 开启第一个事务
 	tx, err := conn.BeginTx(context.Background(), nil)
@@ -808,10 +903,13 @@ func importSQL(sqlPath string) error {
 		stmtCount++
 	}
 
-	execDML := func(sql string) error {
+	execDML := func(sql string, table string, chunkIndex int, rowOffset int) error {
 		if _, execErr := tx.Exec(sql); execErr != nil {
 			global.Logger.Error("[SDE] DML 执行失败，导入终止",
 				zap.String("err", execErr.Error()),
+				zap.String("table", table),
+				zap.Int("chunk_index", chunkIndex),
+				zap.Int("row_offset", rowOffset),
 				zap.String("sql_prefix", truncate(sql, 160)))
 			rollbackTx()
 			return execErr
@@ -825,125 +923,187 @@ func importSQL(sqlPath string) error {
 		return nil
 	}
 
-	normalizeInsertRow := func(row string, isLast bool) string {
-		trimmed := strings.TrimSpace(row)
-		trimmed = strings.TrimSuffix(trimmed, ",")
-		trimmed = strings.TrimSuffix(trimmed, ";")
-		if isLast {
-			return trimmed + ";"
-		}
-		return trimmed + ","
+	stmts, err := splitSQLStatements(reader)
+	if err != nil {
+		return err
 	}
 
-	flushInsertRows := func(final bool) error {
-		if insertHeader == "" || len(insertRows) == 0 {
-			if final {
-				insertHeader = ""
-				insertRows = nil
-			}
-			return nil
-		}
-
-		for len(insertRows) > 0 {
-			chunkSize := insertChunkSize
-			if len(insertRows) < chunkSize {
-				chunkSize = len(insertRows)
-			}
-
-			rows := make([]string, chunkSize)
-			for i := 0; i < chunkSize; i++ {
-				rows[i] = normalizeInsertRow(insertRows[i], i == chunkSize-1)
-			}
-
-			sql := insertHeader + "\n" + strings.Join(rows, "\n")
-			if err := execDML(sql); err != nil {
-				return err
-			}
-			insertRows = insertRows[chunkSize:]
-		}
-
-		if final {
-			insertHeader = ""
-			insertRows = nil
-		}
-		return nil
-	}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		trimmed := strings.TrimSpace(line)
-
-		// 跳过空行、注释，以及 dump 自带的事务控制语句（由我们自行管理）
-		upperTrimmed := strings.ToUpper(trimmed)
-		if trimmed == "" ||
-			strings.HasPrefix(trimmed, "--") ||
-			strings.HasPrefix(trimmed, "/*") ||
-			upperTrimmed == "BEGIN;" || upperTrimmed == "BEGIN" ||
-			upperTrimmed == "COMMIT;" || upperTrimmed == "COMMIT" ||
-			upperTrimmed == "ROLLBACK;" || upperTrimmed == "ROLLBACK" {
+	for _, sql := range stmts {
+		trimmed := strings.TrimSpace(sql)
+		if trimmed == "" || trimmed == ";" {
 			continue
 		}
 
-		if insertHeader != "" {
-			insertRows = append(insertRows, trimmed)
+		upper := strings.ToUpper(trimmed)
+		if upper == "BEGIN" || upper == "COMMIT" || upper == "ROLLBACK" {
+			continue
+		}
+		if isDDL(upper) {
+			execDDL(trimmed)
+			continue
+		}
 
-			if strings.HasSuffix(trimmed, ";") {
-				if err := flushInsertRows(true); err != nil {
-					return fmt.Errorf("执行批量 INSERT 失败: %w", err)
-				}
-				continue
-			}
-
-			if len(insertRows) >= insertChunkSize {
-				if err := flushInsertRows(false); err != nil {
-					return fmt.Errorf("执行批量 INSERT 失败: %w", err)
-				}
+		header, table, rows, ok := parseInsertValuesStatement(trimmed)
+		if !ok || len(rows) == 0 {
+			if err := execDML(trimmed, "", 0, 0); err != nil {
+				return fmt.Errorf("执行 SQL 失败: %w", err)
 			}
 			continue
 		}
 
-		if upperTrimmed == "INSERT INTO" || (strings.HasPrefix(upperTrimmed, "INSERT INTO ") && strings.HasSuffix(upperTrimmed, " VALUES")) {
-			insertHeader = trimmed
-			insertRows = insertRows[:0]
-			continue
-		}
-
-		stmt.WriteString(line)
-		stmt.WriteByte('\n')
-
-		if strings.HasSuffix(trimmed, ";") {
-			sql := strings.TrimSpace(stmt.String())
-			stmt.Reset()
-			if sql == "" || sql == ";" {
-				continue
+		for offset := 0; offset < len(rows); offset += insertChunkSize {
+			end := offset + insertChunkSize
+			if end > len(rows) {
+				end = len(rows)
 			}
-
-			upper := strings.ToUpper(sql)
-			if isDDL(upper) {
-				execDDL(sql)
-			} else {
-				if err := execDML(sql); err != nil {
-					return fmt.Errorf("执行 SQL 失败: %w", err)
-				}
+			chunk := header + strings.Join(rows[offset:end], ",") + ";"
+			if err := execDML(chunk, table, offset/insertChunkSize+1, offset+1); err != nil {
+				return fmt.Errorf("执行批量 INSERT 失败: %w", err)
 			}
 		}
-	}
-
-	if insertHeader != "" {
-		return errors.New("SQL dump 以未结束的 INSERT 语句结尾")
 	}
 
 	// 提交剩余事务（最后一次不再开启新事务）
 	commitFinalTx()
 
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("读取 SQL 文件失败: %w", err)
-	}
-
 	global.Logger.Info("[SDE] SQL 导入完成",
 		zap.Int("成功语句数", stmtCount),
 		zap.Int("DDL失败语句数", ddlErrCount))
 	return nil
+}
+
+func splitSQLStatements(r *bufio.Reader) ([]string, error) {
+	var out []string
+	var sb strings.Builder
+	inSingleQuote := false
+	for {
+		ch, _, err := r.ReadRune()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("读取 SQL 文件失败: %w", err)
+		}
+
+		sb.WriteRune(ch)
+		if ch == '\'' {
+			if inSingleQuote {
+				next, _, nextErr := r.ReadRune()
+				if nextErr != nil && !errors.Is(nextErr, io.EOF) {
+					return nil, fmt.Errorf("读取 SQL 文件失败: %w", nextErr)
+				}
+				if nextErr == nil {
+					if next == '\'' {
+						sb.WriteRune(next)
+						continue
+					}
+					if unreadErr := r.UnreadRune(); unreadErr != nil {
+						return nil, fmt.Errorf("读取 SQL 文件失败: %w", unreadErr)
+					}
+				}
+				inSingleQuote = false
+				continue
+			}
+			inSingleQuote = true
+			continue
+		}
+
+		if !inSingleQuote && ch == ';' {
+			out = append(out, sb.String())
+			sb.Reset()
+		}
+	}
+
+	if inSingleQuote {
+		return nil, errors.New("SQL dump 包含未闭合的字符串")
+	}
+	if strings.TrimSpace(sb.String()) != "" {
+		out = append(out, sb.String())
+	}
+	return out, nil
+}
+
+func parseInsertValuesStatement(sql string) (string, string, []string, bool) {
+	upper := strings.ToUpper(sql)
+	if !strings.HasPrefix(upper, "INSERT INTO ") {
+		return "", "", nil, false
+	}
+	valuesIdx := strings.Index(upper, " VALUES ")
+	if valuesIdx <= 0 {
+		return "", "", nil, false
+	}
+
+	header := sql[:valuesIdx+8]
+	body := strings.TrimSpace(sql[valuesIdx+8:])
+	body = strings.TrimSuffix(body, ";")
+	table := parseInsertTableName(sql[:valuesIdx])
+
+	rows := make([]string, 0, 64)
+	inSingleQuote := false
+	depth := 0
+	rowStart := -1
+	for i := 0; i < len(body); i++ {
+		ch := body[i]
+		if ch == '\'' {
+			if inSingleQuote {
+				if i+1 < len(body) && body[i+1] == '\'' {
+					i++
+					continue
+				}
+				inSingleQuote = false
+			} else {
+				inSingleQuote = true
+			}
+			continue
+		}
+		if inSingleQuote {
+			continue
+		}
+
+		switch ch {
+		case '(':
+			depth++
+			if depth == 1 {
+				rowStart = i
+			}
+		case ')':
+			if depth == 0 {
+				return "", "", nil, false
+			}
+			depth--
+			if depth == 0 && rowStart >= 0 {
+				rows = append(rows, strings.TrimSpace(body[rowStart:i+1]))
+				rowStart = -1
+			}
+		}
+	}
+	if inSingleQuote || depth != 0 || len(rows) == 0 {
+		return "", "", nil, false
+	}
+	return header, table, rows, true
+}
+
+func parseInsertTableName(prefix string) string {
+	trimmed := strings.TrimSpace(prefix)
+	if len(trimmed) < len("INSERT INTO ") {
+		return ""
+	}
+	rest := strings.TrimSpace(trimmed[len("INSERT INTO "):])
+	if rest == "" {
+		return ""
+	}
+	if rest[0] == '"' {
+		end := strings.Index(rest[1:], "\"")
+		if end >= 0 {
+			return rest[:end+2]
+		}
+	}
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '(' || rest[i] == ' ' || rest[i] == '\t' || rest[i] == '\n' || rest[i] == '\r' {
+			return rest[:i]
+		}
+	}
+	return rest
 }
 
 // truncate 截断字符串，用于日志输出

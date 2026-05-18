@@ -49,7 +49,9 @@
     last_check_error: '',
     last_update_at: 0,
     last_update_success: false,
-    last_update_error: ''
+    last_update_error: '',
+    is_updating: false,
+    update_stage: ''
   })
 
   async function loadSDEStatus() {
