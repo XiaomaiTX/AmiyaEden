@@ -47,7 +47,7 @@ Sansha 血族入侵和 Pochven 三角洲空间的收入均以 `bounty_prizes` �
 
 - `POST /api/v1/info/npc-kills` — 个人单人物报表
 - `POST /api/v1/info/npc-kills/all` — 个人全人物汇总
-- `POST /api/v1/system/npc-kills` — 公司全员报表（admin）
+- `POST /api/v1/system/npc-kills` — 公司全员报表（admin，支持可选 `corp_tickers` 逗号分隔筛选）
 
 ## 权限边界
 
@@ -122,7 +122,7 @@ Request and response structures are defined in handler code and `static/src/type
 
 ### 管理员页面
 
-1. 日期范围选择
+1. 日期范围选择 + 军团 ticker 多选筛选（默认 `FUXI`、`FMA.1`）
 2. 5 卡片总览（同上）
 3. 成员列表（按实际收入降序，展示每人悬赏 / ESS / 税 / 实际收入 / 记录数）
 4. 双列布局：按星系统计 + 时间趋势

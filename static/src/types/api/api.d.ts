@@ -2284,6 +2284,7 @@ declare namespace Api {
       language?: string
       page?: number
       page_size?: number
+      corp_tickers?: string
     }
 
     /** 总览统计 */

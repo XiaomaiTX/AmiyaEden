@@ -12,6 +12,25 @@
           value-format="YYYY-MM-DD"
           style="width: 280px"
         />
+        <ElSelect
+          v-model="corpTickers"
+          style="width: 300px"
+          multiple
+          filterable
+          allow-create
+          default-first-option
+          collapse-tags
+          collapse-tags-tooltip
+          :reserve-keyword="false"
+          :placeholder="$t('fleet.corporationPap.filters.corpTickers')"
+        >
+          <ElOption
+            v-for="ticker in corpTickerOptions"
+            :key="ticker"
+            :label="ticker"
+            :value="ticker"
+          />
+        </ElSelect>
 
         <ElButton type="primary" :loading="loading" @click="handleSearch">
           {{ $t('npcKill.search') }}
@@ -179,16 +198,27 @@
 </template>
 
 <script setup lang="ts">
-  import { ElDatePicker } from 'element-plus'
+  import { ElDatePicker, ElOption, ElSelect } from 'element-plus'
   import { fetchCorpNpcKills } from '@/api/npc-kill'
   import { formatIskPlain } from '@/utils/common'
 
   defineOptions({ name: 'CorpNpcKillReport' })
 
+  const defaultTickers = ['FUXI', 'FMA.1']
+
   // ─── 状态 ───
   const dateRange = ref<[string, string] | null>(null)
+  const corpTickers = ref<string[]>([...defaultTickers])
   const reportData = ref<Api.NpcKill.NpcKillCorpResponse | null>(null)
   const loading = ref(false)
+  const corpTickerOptions = computed(() =>
+    Array.from(
+      new Set([
+        ...defaultTickers,
+        ...corpTickers.value.map((ticker) => ticker.trim()).filter(Boolean)
+      ])
+    )
+  )
 
   // ─── 加载数据 ───
   const loadData = async () => {
@@ -198,6 +228,10 @@
       if (dateRange.value) {
         params.start_date = dateRange.value[0]
         params.end_date = dateRange.value[1]
+      }
+      const corpTickerParam = corpTickers.value.map((ticker) => ticker.trim()).filter(Boolean).join(',')
+      if (corpTickerParam) {
+        params.corp_tickers = corpTickerParam
       }
       reportData.value = (await fetchCorpNpcKills(params)) ?? null
     } catch {
@@ -213,6 +247,7 @@
 
   const handleReset = () => {
     dateRange.value = null
+    corpTickers.value = [...defaultTickers]
     loadData()
   }
 

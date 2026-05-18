@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"fmt"
 	"math"
 	"sort"
@@ -10,6 +11,10 @@ import (
 
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/pkg/eve/esi"
+	"context"
+
+	"go.uber.org/zap"
 )
 
 // NpcKillService NPC 刷怪报表业务逻辑层
@@ -17,13 +22,22 @@ type NpcKillService struct {
 	npcKillRepo *repository.NpcKillRepository
 	charRepo    *repository.EveCharacterRepository
 	sdeRepo     *repository.SdeRepository
+	esiClient   *esi.Client
 }
 
 func NewNpcKillService() *NpcKillService {
+	esiBaseURL := ""
+	esiPrefix := ""
+	if global.Config != nil {
+		esiBaseURL = global.Config.EveSSO.ESIBaseURL
+		esiPrefix = global.Config.EveSSO.ESIAPIPrefix
+	}
+
 	return &NpcKillService{
 		npcKillRepo: repository.NewNpcKillRepository(),
 		charRepo:    repository.NewEveCharacterRepository(),
 		sdeRepo:     repository.NewSdeRepository(),
+		esiClient:   esi.NewClientWithConfig(esiBaseURL, esiPrefix),
 	}
 }
 
@@ -52,11 +66,12 @@ type NpcKillAllRequest struct {
 
 // NpcKillCorpRequest 刷怪报表请求（公司/管理员）
 type NpcKillCorpRequest struct {
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-	Language  string `json:"language"`
-	Page      int    `json:"page" binding:"min=0"`
-	PageSize  int    `json:"page_size" binding:"min=0"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	Language    string `json:"language"`
+	Page        int    `json:"page" binding:"min=0"`
+	PageSize    int    `json:"page_size" binding:"min=0"`
+	CorpTickers string `json:"corp_tickers"`
 }
 
 // NpcKillSummary 总览数据
@@ -262,16 +277,21 @@ func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*N
 // GetCorpNpcKills 获取公司所有成员的刷怪报表（管理员）
 func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpResponse, error) {
 	startDate, endDate := parseDateRange(req.StartDate, req.EndDate)
+	allowedTickerSet := normalizeTickerSet(req.CorpTickers)
 
 	// 获取所有已绑定的人物
 	allChars, err := s.charRepo.ListAllWithToken()
 	if err != nil {
 		return nil, fmt.Errorf("获取人物列表失败: %w", err)
 	}
+	filteredChars, err := s.filterCharactersByTicker(allChars, allowedTickerSet)
+	if err != nil {
+		return nil, fmt.Errorf("按军团 ticker 筛选人物失败: %w", err)
+	}
 
-	charIDs := make([]int64, 0, len(allChars))
-	charNameMap := make(map[int64]string, len(allChars))
-	for _, c := range allChars {
+	charIDs := make([]int64, 0, len(filteredChars))
+	charNameMap := make(map[int64]string, len(filteredChars))
+	for _, c := range filteredChars {
 		charIDs = append(charIDs, c.CharacterID)
 		charNameMap[c.CharacterID] = c.CharacterName
 	}
@@ -609,4 +629,89 @@ func parseDateRange(startStr, endStr string) (*time.Time, *time.Time) {
 	}
 
 	return start, end
+}
+
+func normalizeTickerSet(raw string) map[string]struct{} {
+	result := make(map[string]struct{})
+	for _, token := range strings.Split(raw, ",") {
+		normalized := strings.ToUpper(strings.TrimSpace(token))
+		if normalized == "" {
+			continue
+		}
+		result[normalized] = struct{}{}
+	}
+	return result
+}
+
+func (s *NpcKillService) filterCharactersByTicker(chars []model.EveCharacter, allowedTickerSet map[string]struct{}) ([]model.EveCharacter, error) {
+	if len(allowedTickerSet) == 0 || len(chars) == 0 {
+		return chars, nil
+	}
+
+	corpIDs := make([]int64, 0, len(chars))
+	seenCorp := make(map[int64]struct{})
+	for _, char := range chars {
+		if char.CorporationID <= 0 {
+			continue
+		}
+		if _, ok := seenCorp[char.CorporationID]; ok {
+			continue
+		}
+		seenCorp[char.CorporationID] = struct{}{}
+		corpIDs = append(corpIDs, char.CorporationID)
+	}
+
+	tickerByCorpID, err := s.resolveCorporationTickers(corpIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]model.EveCharacter, 0, len(chars))
+	for _, char := range chars {
+		ticker := strings.ToUpper(strings.TrimSpace(tickerByCorpID[char.CorporationID]))
+		if _, ok := allowedTickerSet[ticker]; ok {
+			filtered = append(filtered, char)
+		}
+	}
+	return filtered, nil
+}
+
+func (s *NpcKillService) resolveCorporationTickers(corporationIDs []int64) (map[int64]string, error) {
+	tickerByCorpID := make(map[int64]string)
+	seen := make(map[int64]struct{})
+
+	for _, corpID := range corporationIDs {
+		if corpID <= 0 {
+			continue
+		}
+		if _, ok := seen[corpID]; ok {
+			continue
+		}
+		seen[corpID] = struct{}{}
+
+		if ticker, ok := getCachedCorpTicker(corpID); ok {
+			if ticker != "" {
+				tickerByCorpID[corpID] = ticker
+			}
+			continue
+		}
+
+		var corpInfo struct {
+			Ticker string `json:"ticker"`
+		}
+		if err := s.esiGetPublic(context.Background(), fmt.Sprintf("/corporations/%d/", corpID), &corpInfo); err != nil {
+			if global.Logger != nil {
+				global.Logger.Warn("解析军团 ticker 失败", zap.Int64("corporation_id", corpID), zap.Error(err))
+			}
+			continue
+		}
+		tickerByCorpID[corpID] = corpInfo.Ticker
+		setCachedCorpTicker(corpID, corpInfo.Ticker)
+	}
+
+	return tickerByCorpID, nil
+}
+
+func (s *NpcKillService) esiGetPublic(ctx context.Context, path string, out interface{}) error {
+	return s.esiClient.Get(ctx, path, "", out)
 }

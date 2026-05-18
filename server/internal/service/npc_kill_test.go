@@ -67,3 +67,64 @@ func TestCalcSummaryIncludesEssTransfers(t *testing.T) {
 		t.Fatalf("expected 2 bounty records, got %d", summary.TotalRecords)
 	}
 }
+
+func TestNormalizeTickerSet(t *testing.T) {
+	set := normalizeTickerSet(" fuxi, FMA.1, ,fuxi,  test ")
+	if len(set) != 3 {
+		t.Fatalf("expected 3 unique tickers, got %d", len(set))
+	}
+	if _, ok := set["FUXI"]; !ok {
+		t.Fatalf("expected FUXI to exist")
+	}
+	if _, ok := set["FMA.1"]; !ok {
+		t.Fatalf("expected FMA.1 to exist")
+	}
+	if _, ok := set["TEST"]; !ok {
+		t.Fatalf("expected TEST to exist")
+	}
+}
+
+func TestFilterCharactersByTicker(t *testing.T) {
+	resetCorporationTickerCache()
+	setCachedCorpTicker(1001, "FUXI")
+	setCachedCorpTicker(1002, "FMA.1")
+	setCachedCorpTicker(1003, "TEST")
+
+	svc := NewNpcKillService()
+	chars := []model.EveCharacter{
+		{CharacterID: 11, CorporationID: 1001},
+		{CharacterID: 22, CorporationID: 1002},
+		{CharacterID: 33, CorporationID: 1003},
+	}
+
+	filtered, err := svc.filterCharactersByTicker(chars, normalizeTickerSet("fuxi, fma.1"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 characters after filter, got %d", len(filtered))
+	}
+	if filtered[0].CharacterID != 11 || filtered[1].CharacterID != 22 {
+		t.Fatalf("unexpected filtered order/content: %+v", filtered)
+	}
+}
+
+func TestFilterCharactersByTickerNoMatch(t *testing.T) {
+	resetCorporationTickerCache()
+	setCachedCorpTicker(2001, "AAA")
+	setCachedCorpTicker(2002, "BBB")
+
+	svc := NewNpcKillService()
+	chars := []model.EveCharacter{
+		{CharacterID: 101, CorporationID: 2001},
+		{CharacterID: 102, CorporationID: 2002},
+	}
+
+	filtered, err := svc.filterCharactersByTicker(chars, normalizeTickerSet("fuxi"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filtered) != 0 {
+		t.Fatalf("expected empty filter result, got %d", len(filtered))
+	}
+}
