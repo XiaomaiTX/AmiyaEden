@@ -55,7 +55,8 @@ func buildVictimKillmailListQuery(db *gorm.DB, filter VictimKillmailListFilter) 
 			FROM srp_application
 			WHERE srp_application.user_id = ?
 			  AND srp_application.killmail_id = eve_killmail_list.kill_mail_id
-		)`, *filter.ExcludeSubmittedByUserID)
+			  AND srp_application.review_status IN (?, ?)
+		)`, *filter.ExcludeSubmittedByUserID, model.SrpReviewSubmitted, model.SrpReviewApproved)
 	}
 	if filter.Limit > 0 {
 		query = query.Limit(filter.Limit)

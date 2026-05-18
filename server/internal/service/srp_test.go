@@ -870,6 +870,174 @@ func TestPayoutAsFuxiCoinStoresPayerAsWalletOperator(t *testing.T) {
 	}
 }
 
+func TestSubmitApplicationResubmitsRejectedApplicationAndClearsReviewFields(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	now := time.Now().UTC()
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   90001001,
+		CharacterName: "Pilot One",
+		UserID:        42,
+	}).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+	if err := db.Create(&model.EveKillmailList{
+		KillmailID:    880111,
+		KillmailHash:  "hash-880111",
+		KillmailTime:  now.Add(-1 * time.Hour),
+		CharacterID:   90001001,
+		ShipTypeID:    22436,
+		SolarSystemID: 30000142,
+	}).Error; err != nil {
+		t.Fatalf("create killmail: %v", err)
+	}
+	if err := db.Create(&model.EveCharacterKillmail{
+		CharacterID: 90001001,
+		KillmailID:  880111,
+		Victim:      true,
+	}).Error; err != nil {
+		t.Fatalf("create character killmail link: %v", err)
+	}
+	if err := db.Create(&model.SrpShipPrice{
+		ShipTypeID: 22436,
+		ShipName:   "Guardian",
+		Amount:     12_000_000,
+		CreatedBy:  1,
+		UpdatedBy:  1,
+	}).Error; err != nil {
+		t.Fatalf("create srp ship price: %v", err)
+	}
+
+	reviewerID := uint(99)
+	reviewedAt := now.Add(-30 * time.Minute)
+	app := &model.SrpApplication{
+		UserID:            42,
+		CharacterID:       90001001,
+		CharacterName:     "Pilot One",
+		KillmailID:        880111,
+		ShipTypeID:        22436,
+		SolarSystemID:     30000142,
+		KillmailTime:      now.Add(-1 * time.Hour),
+		Note:              "old note",
+		RecommendedAmount: 1,
+		FinalAmount:       2,
+		ReviewStatus:      model.SrpReviewRejected,
+		PayoutStatus:      model.SrpPayoutNotPaid,
+		ReviewNote:        "old reject",
+		ReviewedBy:        &reviewerID,
+		ReviewedAt:        &reviewedAt,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create srp application: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	resubmitted, err := svc.SubmitApplication(42, &SubmitApplicationRequest{
+		CharacterID: 90001001,
+		KillmailID:  880111,
+		Note:        "new note",
+	})
+	if err != nil {
+		t.Fatalf("SubmitApplication() error = %v", err)
+	}
+	if resubmitted.ID != app.ID {
+		t.Fatalf("resubmitted id = %d, want %d", resubmitted.ID, app.ID)
+	}
+	if resubmitted.ReviewStatus != model.SrpReviewSubmitted {
+		t.Fatalf("review_status = %q, want %q", resubmitted.ReviewStatus, model.SrpReviewSubmitted)
+	}
+	if resubmitted.ReviewNote != "" {
+		t.Fatalf("review_note = %q, want empty", resubmitted.ReviewNote)
+	}
+	if resubmitted.ReviewedBy != nil || resubmitted.ReviewedAt != nil {
+		t.Fatalf("review fields not cleared: reviewed_by=%v reviewed_at=%v", resubmitted.ReviewedBy, resubmitted.ReviewedAt)
+	}
+	if resubmitted.Note != "new note" {
+		t.Fatalf("note = %q, want %q", resubmitted.Note, "new note")
+	}
+	if resubmitted.RecommendedAmount != 12_000_000 || resubmitted.FinalAmount != 12_000_000 {
+		t.Fatalf("amounts = (%v,%v), want (12000000,12000000)", resubmitted.RecommendedAmount, resubmitted.FinalAmount)
+	}
+}
+
+func TestSubmitApplicationRejectsResubmitWhenExistingApplicationIsNotRejected(t *testing.T) {
+	tests := []struct {
+		name         string
+		reviewStatus string
+		payoutStatus string
+	}{
+		{name: "submitted", reviewStatus: model.SrpReviewSubmitted, payoutStatus: model.SrpPayoutNotPaid},
+		{name: "approved", reviewStatus: model.SrpReviewApproved, payoutStatus: model.SrpPayoutNotPaid},
+		{name: "paid", reviewStatus: model.SrpReviewApproved, payoutStatus: model.SrpPayoutPaid},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newSrpServiceTestDB(t)
+			oldDB := global.DB
+			global.DB = db
+			t.Cleanup(func() { global.DB = oldDB })
+
+			now := time.Now().UTC()
+			if err := db.Create(&model.EveCharacter{
+				CharacterID:   90001001,
+				CharacterName: "Pilot One",
+				UserID:        42,
+			}).Error; err != nil {
+				t.Fatalf("create character: %v", err)
+			}
+			if err := db.Create(&model.EveKillmailList{
+				KillmailID:    880112,
+				KillmailHash:  "hash-880112",
+				KillmailTime:  now.Add(-1 * time.Hour),
+				CharacterID:   90001001,
+				ShipTypeID:    22436,
+				SolarSystemID: 30000142,
+			}).Error; err != nil {
+				t.Fatalf("create killmail: %v", err)
+			}
+			if err := db.Create(&model.EveCharacterKillmail{
+				CharacterID: 90001001,
+				KillmailID:  880112,
+				Victim:      true,
+			}).Error; err != nil {
+				t.Fatalf("create character killmail link: %v", err)
+			}
+			if err := db.Create(&model.SrpApplication{
+				UserID:            42,
+				CharacterID:       90001001,
+				CharacterName:     "Pilot One",
+				KillmailID:        880112,
+				ShipTypeID:        22436,
+				SolarSystemID:     30000142,
+				KillmailTime:      now.Add(-1 * time.Hour),
+				ReviewStatus:      tt.reviewStatus,
+				PayoutStatus:      tt.payoutStatus,
+				RecommendedAmount: 1,
+				FinalAmount:       1,
+			}).Error; err != nil {
+				t.Fatalf("create srp application: %v", err)
+			}
+
+			svc := newSrpServiceForTests()
+			_, err := svc.SubmitApplication(42, &SubmitApplicationRequest{
+				CharacterID: 90001001,
+				KillmailID:  880112,
+				Note:        "resubmit",
+			})
+			if err == nil {
+				t.Fatal("expected duplicate submit error, got nil")
+			}
+			if !strings.Contains(err.Error(), "该 KM 已提交过补损申请") {
+				t.Fatalf("error = %v, want duplicate submit message", err)
+			}
+		})
+	}
+}
+
 func TestGetMyKillmailsExcludesSubmittedKillmailsBeforeApplyingLimit(t *testing.T) {
 	db := newSrpServiceTestDB(t)
 	oldDB := global.DB
@@ -946,6 +1114,86 @@ func TestGetMyKillmailsExcludesSubmittedKillmailsBeforeApplyingLimit(t *testing.
 	}
 	if list[0].VictimName != "Pilot One" || list[1].VictimName != "Pilot One" {
 		t.Fatalf("victim names = [%q %q], want Pilot One for both", list[0].VictimName, list[1].VictimName)
+	}
+}
+
+func TestGetMyKillmailsExcludeSubmittedKeepsRejectedKillmailsVisible(t *testing.T) {
+	db := newSrpServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	now := time.Now().UTC()
+
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   90001001,
+		CharacterName: "Pilot One",
+		UserID:        42,
+	}).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	killmails := []model.EveKillmailList{
+		{
+			KillmailID:    880013,
+			KillmailHash:  "hash-13",
+			KillmailTime:  now.Add(-1 * time.Hour),
+			CharacterID:   90001001,
+			ShipTypeID:    22436,
+			SolarSystemID: 30000142,
+		},
+		{
+			KillmailID:    880012,
+			KillmailHash:  "hash-12",
+			KillmailTime:  now.Add(-2 * time.Hour),
+			CharacterID:   90001001,
+			ShipTypeID:    22452,
+			SolarSystemID: 30000143,
+		},
+	}
+	if err := db.Create(&killmails).Error; err != nil {
+		t.Fatalf("create killmails: %v", err)
+	}
+
+	if err := db.Create(&model.SrpApplication{
+		UserID:        42,
+		CharacterID:   90001001,
+		CharacterName: "Pilot One",
+		KillmailID:    880013,
+		ShipTypeID:    22436,
+		KillmailTime:  now.Add(-1 * time.Hour),
+		ReviewStatus:  model.SrpReviewRejected,
+		PayoutStatus:  model.SrpPayoutNotPaid,
+	}).Error; err != nil {
+		t.Fatalf("create rejected srp application: %v", err)
+	}
+
+	if err := db.Create(&model.SrpApplication{
+		UserID:        42,
+		CharacterID:   90001001,
+		CharacterName: "Pilot One",
+		KillmailID:    880012,
+		ShipTypeID:    22452,
+		KillmailTime:  now.Add(-2 * time.Hour),
+		ReviewStatus:  model.SrpReviewSubmitted,
+		PayoutStatus:  model.SrpPayoutNotPaid,
+	}).Error; err != nil {
+		t.Fatalf("create submitted srp application: %v", err)
+	}
+
+	svc := newSrpServiceForTests()
+	list, err := svc.GetMyKillmails(42, 0, KillmailListOptions{
+		Limit:            10,
+		ExcludeSubmitted: true,
+	})
+	if err != nil {
+		t.Fatalf("GetMyKillmails() error = %v", err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("len(list) = %d, want 1", len(list))
+	}
+	if list[0].KillmailID != 880013 {
+		t.Fatalf("killmail id = %d, want rejected killmail 880013", list[0].KillmailID)
 	}
 }
 
@@ -1220,6 +1468,7 @@ func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.EveCharacter{},
+		&model.EveCharacterKillmail{},
 		&model.EveKillmailList{},
 		&model.FleetMember{},
 		&model.SystemWallet{},
@@ -1242,6 +1491,7 @@ func newSrpServiceForTests() *SrpService {
 		repo:      repository.NewSrpRepository(),
 		fleetRepo: repository.NewFleetRepository(),
 		charRepo:  repository.NewEveCharacterRepository(),
+		kmRepo:    repository.NewKillmailRepository(),
 		userRepo:  repository.NewUserRepository(),
 		sdeRepo:   repository.NewSdeRepository(),
 		walletSvc: NewSysWalletService(),

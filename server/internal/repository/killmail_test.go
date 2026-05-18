@@ -67,6 +67,9 @@ func TestBuildVictimKillmailListQueryAppliesTimeRangeAndExcludeSubmitted(t *test
 	if !strings.Contains(sql, `NOT EXISTS`) {
 		t.Fatalf("expected NOT EXISTS clause for submitted exclusion, got SQL: %s", sql)
 	}
+	if !strings.Contains(sql, `review_status IN (`) {
+		t.Fatalf("expected review_status guard for resubmittable killmails, got SQL: %s", sql)
+	}
 }
 
 func TestListKillmailItemsQueryFiltersByKillmailID(t *testing.T) {
