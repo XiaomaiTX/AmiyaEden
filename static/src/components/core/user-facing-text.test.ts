@@ -21,17 +21,25 @@ const templateTextPattern = />[^<]*[\u4e00-\u9fff][^<]*</g
 const scriptStringPattern = /['"][^'"\n]*[\u4e00-\u9fff][^'"\n]*['"]/g
 
 function stripComments(source: string) {
-  return source
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/.*$/gm, '')
+  let previous: string
+  let current = source
+
+  do {
+    previous = current
+    current = current
+      .replace(/[<>]/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+  } while (current !== previous)
+
+  return current
 }
 
 test('core shared UI keeps Chinese user-facing text in locale files', () => {
   const matches = files.flatMap((file) => {
     const source = stripComments(readFileSync(file, 'utf8'))
     const template = source.match(/<template>([\s\S]*?)<\/template>/)?.[1] ?? ''
-    const script = source.match(/<script[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? source
+    const script = source.match(/<script\b[^>]*>([\s\S]*?)<\/script(?:\s+[^>]*)?>/i)?.[1] ?? source
 
     return [
       ...(template.match(templateAttributePattern) ?? []),
