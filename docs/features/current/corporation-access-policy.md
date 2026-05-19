@@ -30,7 +30,7 @@ source_of_truth:
 ## 配置结构
 
 - `version: number`
-- `default_mode: "deny"`（一期固定 deny）
+- `default_mode: "allow" | "deny"`（默认 `allow`）
 - `policies: CorporationPolicy[]`
 
 `CorporationPolicy`：
@@ -44,7 +44,7 @@ source_of_truth:
 
 - `super_admin` 永远放行 capability 检查。
 - `full_access=true` 的军团跳过 capability 检查。
-- 未命中策略按 `deny` 处理。
+- 未命中策略按 `default_mode` 处理（默认 `allow`）。
 - capability 字典：
   - `menu.dashboard`
   - `menu.operation`

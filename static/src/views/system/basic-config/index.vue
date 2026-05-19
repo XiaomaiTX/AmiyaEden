@@ -844,7 +844,7 @@
 
       await updateCorporationAccessPolicies({
         version: latestPoliciesConfig.version || corpPoliciesVersion.value,
-        default_mode: 'deny',
+        default_mode: 'allow',
         policies: Array.from(mergedPolicyMap.values()).sort(
           (left, right) => left.corporation_id - right.corporation_id
         )
