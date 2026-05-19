@@ -140,23 +140,22 @@ func TestCorporationPolicyServiceGetRuleIntAndBool(t *testing.T) {
 		Policies: []CorporationPolicy{{
 			CorporationID: 1001,
 			Rules: map[string]any{
-				CorpRuleNpcKillsMaxRangeDays:       180,
-				CorpRuleSystemTaskAllowManualRun:   false,
-				CorpRuleNpcKillsAllowCorpAggregate: true,
+				"custom.int":  180,
+				"custom.bool": false,
 			},
 		}},
 	}); err != nil {
 		t.Fatalf("update policies: %v", err)
 	}
 
-	if got := svc.GetRuleInt(1001, CorpRuleNpcKillsMaxRangeDays, 365); got != 180 {
+	if got := svc.GetRuleInt(1001, "custom.int", 365); got != 180 {
 		t.Fatalf("GetRuleInt() = %d, want 180", got)
 	}
-	if got := svc.GetRuleBool(1001, CorpRuleSystemTaskAllowManualRun, true); got {
+	if got := svc.GetRuleBool(1001, "custom.bool", true); got {
 		t.Fatal("GetRuleBool() = true, want false")
 	}
-	if got := svc.GetRuleBool(1001, CorpRuleNpcKillsAllowCorpAggregate, false); !got {
-		t.Fatal("GetRuleBool() = false, want true")
+	if got := svc.GetRuleBool(1001, "missing.bool", true); !got {
+		t.Fatal("GetRuleBool() fallback = false, want true")
 	}
 }
 

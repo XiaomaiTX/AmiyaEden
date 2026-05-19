@@ -15,10 +15,7 @@ const (
 	CorpRuleSRPRecommendationMultiplier   = "srp.recommendation_multiplier"
 	CorpRuleWalletDailyQueryLimit         = "wallet.daily_query_limit"
 	CorpRuleWalletAllowExport             = "wallet.allow_export"
-	CorpRuleNpcKillsMaxRangeDays          = "npc_kills.max_range_days"
-	CorpRuleNpcKillsAllowCorpAggregate    = "npc_kills.allow_corp_aggregate"
 	CorpRuleShopMaxOrderAmount            = "shop.max_order_amount"
-	CorpRuleSystemTaskAllowManualRun      = "system.task.allow_manual_run"
 	CorpRuleTicketMaxOpenCount            = "ticket.max_open_count"
 	CorpRuleInfoESIRefreshCooldownSeconds = "info.esi_refresh_cooldown_seconds"
 )
