@@ -3031,6 +3031,7 @@
         "infoContractsRead": "View Contract Information",
         "infoFittingsManage": "Manage Fittings",
         "shopWalletRead": "View Shop Wallet",
+        "walletUserEnabled": "Enable Fuxi Wallet",
         "shopOrderCreate": "Create Shop Orders",
         "shopOrderReadSelf": "View Own Shop Orders",
         "dashboardNpcKillsCorp": "Dashboard Corp NPC Report",

@@ -14,6 +14,7 @@ import (
 type SysConfigHandler struct {
 	cfgSvc        *service.SysConfigService
 	corpPolicySvc *service.CorporationPolicyService
+	walletSvc     *service.SysWalletService
 	sdeSvc        sdeSysConfigService
 }
 
@@ -34,6 +35,7 @@ func newSysConfigHandlerWithDeps(
 	return &SysConfigHandler{
 		cfgSvc:        cfgSvc,
 		corpPolicySvc: service.NewCorporationPolicyService(),
+		walletSvc:     service.NewSysWalletService(),
 		sdeSvc:        sdeSvc,
 	}
 }
@@ -216,6 +218,10 @@ func (h *SysConfigHandler) UpdateCorporationAccessPolicies(c *gin.Context) {
 			response.Fail(c, response.CodeParamError, err.Error())
 			return
 		}
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	if err := h.walletSvc.ForceZeroBalancesForUsersWithoutWalletCapability(); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

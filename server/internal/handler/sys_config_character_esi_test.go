@@ -74,7 +74,7 @@ func newSysConfigHandlerTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.SystemConfig{}); err != nil {
+	if err := db.AutoMigrate(&model.SystemConfig{}, &model.SystemWallet{}, &model.User{}, &model.EveCharacter{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db

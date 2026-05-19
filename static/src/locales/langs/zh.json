@@ -2754,6 +2754,7 @@
         "infoContractsRead": "查看合同信息",
         "infoFittingsManage": "管理装配信息",
         "shopWalletRead": "查看商城钱包",
+        "walletUserEnabled": "启用伏羲币钱包",
         "shopOrderCreate": "提交商城订单",
         "shopOrderReadSelf": "查看个人商城订单",
         "dashboardNpcKillsCorp": "仪表盘公司刷怪报表",

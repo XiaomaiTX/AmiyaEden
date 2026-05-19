@@ -687,18 +687,16 @@ func TestBatchPayoutByUserIgnoresPayoutMailErrors(t *testing.T) {
 	global.DB = db
 	t.Cleanup(func() { global.DB = oldDB })
 
-	if err := db.Create(&model.User{
-		BaseModel:          model.BaseModel{ID: 201},
-		Nickname:           "Pilot A",
-		PrimaryCharacterID: 90002001,
+	seedWalletCapabilityEnabledUserForTests(t, db, 201, 90002001, 1001)
+	if err := db.Model(&model.User{}).Where("id = ?", 201).Updates(map[string]any{
+		"nickname": "Pilot A",
 	}).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
-	if err := db.Create(&model.EveCharacter{
-		CharacterID:   90002001,
-		CharacterName: "Pilot A Main",
-		UserID:        201,
-		TokenExpiry:   time.Now().Add(time.Hour),
+	if err := db.Model(&model.EveCharacter{}).Where("character_id = ?", 90002001).Updates(map[string]any{
+		"character_name": "Pilot A Main",
+		"user_id":        uint(201),
+		"token_expiry":   time.Now().Add(time.Hour),
 	}).Error; err != nil {
 		t.Fatalf("create character: %v", err)
 	}
@@ -1466,6 +1464,7 @@ func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	if err := db.AutoMigrate(
+		&model.SystemConfig{},
 		&model.User{},
 		&model.EveCharacter{},
 		&model.EveCharacterKillmail{},
@@ -1483,6 +1482,12 @@ func newSrpServiceTestDB(t *testing.T) *gorm.DB {
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
+	seedWalletCapabilityEnabledUserForTests(t, db, 42, 90000042, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 77, 90000077, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 101, 90000101, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 201, 91002001, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 202, 91002002, 1001)
+	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 	return db
 }
 

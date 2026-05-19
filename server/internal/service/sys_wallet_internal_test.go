@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -275,10 +276,56 @@ func newSysWalletServiceTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.SystemWallet{}, &model.WalletTransaction{}, &model.WalletLog{}, &model.AuditEvent{}); err != nil {
+	if err := db.AutoMigrate(
+		&model.SystemWallet{},
+		&model.WalletTransaction{},
+		&model.WalletLog{},
+		&model.AuditEvent{},
+		&model.SystemConfig{},
+		&model.User{},
+		&model.EveCharacter{},
+	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
+	seedWalletCapabilityEnabledUser(t, db, 42, 900042, 1001)
+	seedWalletCapabilityEnabledUser(t, db, 7, 900007, 1001)
+	setWalletCapabilityPolicy(t, db, 1001, true)
 	return db
+}
+
+func TestWalletDisabledUserAlwaysZeroAndRejectsMutations(t *testing.T) {
+	db := newSysWalletServiceTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	seedWalletCapabilityEnabledUser(t, db, 84, 900084, 2002)
+	setWalletCapabilityPolicy(t, db, 2002, false)
+	if err := db.Create(&model.SystemWallet{UserID: 84, Balance: 123.45}).Error; err != nil {
+		t.Fatalf("seed disabled wallet: %v", err)
+	}
+
+	svc := NewSysWalletService()
+	wallet, err := svc.GetMyWallet(84)
+	if err != nil {
+		t.Fatalf("GetMyWallet() error = %v", err)
+	}
+	if wallet.Balance != 0 {
+		t.Fatalf("wallet balance = %f, want 0", wallet.Balance)
+	}
+	if err := svc.CreditUser(84, 10, "blocked", "test", "ref:1"); err == nil {
+		t.Fatal("CreditUser() expected error, got nil")
+	}
+	if err := svc.DebitUser(84, 1, "blocked", "test", "ref:2"); err == nil {
+		t.Fatal("DebitUser() expected error, got nil")
+	}
+	var persisted model.SystemWallet
+	if err := db.Where("user_id = ?", 84).First(&persisted).Error; err != nil {
+		t.Fatalf("load persisted wallet: %v", err)
+	}
+	if persisted.Balance != 0 {
+		t.Fatalf("persisted balance = %f, want 0", persisted.Balance)
+	}
 }
 
 func newSysWalletTransactionListTestDB(t *testing.T) *gorm.DB {
@@ -289,8 +336,63 @@ func newSysWalletTransactionListTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.WalletTransaction{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.WalletTransaction{}, &model.SystemConfig{}); err != nil {
 		t.Fatalf("auto migrate transaction list db: %v", err)
 	}
+	seedWalletCapabilityEnabledUser(t, db, 42, 900042, 1001)
+	setWalletCapabilityPolicy(t, db, 1001, true)
 	return db
+}
+
+func seedWalletCapabilityEnabledUser(t *testing.T, db *gorm.DB, userID uint, characterID int64, corporationID int64) {
+	t.Helper()
+	if err := db.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: userID},
+		Nickname:           fmt.Sprintf("user_%d", userID),
+		PrimaryCharacterID: characterID,
+		Role:               model.RoleUser,
+	}).Error; err != nil {
+		t.Fatalf("seed user: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   characterID,
+		CharacterName: fmt.Sprintf("char_%d", characterID),
+		UserID:        userID,
+		CorporationID: corporationID,
+	}).Error; err != nil {
+		t.Fatalf("seed character: %v", err)
+	}
+}
+
+func setWalletCapabilityPolicy(t *testing.T, db *gorm.DB, corporationID int64, enabled bool) {
+	t.Helper()
+	capabilities := []string{}
+	if enabled {
+		capabilities = append(capabilities, model.CorpCapabilityWalletUserEnabled)
+	}
+	raw, err := json.Marshal(map[string]any{
+		"version":      1,
+		"default_mode": "deny",
+		"policies": []map[string]any{
+			{
+				"corporation_id": corporationID,
+				"full_access":    false,
+				"capabilities":   capabilities,
+				"rules":          map[string]any{},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal policy: %v", err)
+	}
+	if err := db.Where("key = ?", model.SysConfigCorporationAccessPolicies).
+		Assign(model.SystemConfig{
+			Key:   model.SysConfigCorporationAccessPolicies,
+			Value: string(raw),
+			Desc:  "test policy",
+		}).
+		FirstOrCreate(&model.SystemConfig{}).Error; err != nil {
+		t.Fatalf("upsert policy: %v", err)
+	}
+	clearCorpPolicyCache()
 }

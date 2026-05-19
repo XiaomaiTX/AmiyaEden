@@ -87,6 +87,29 @@ func TestUpdateCorporationAccessPoliciesPersistsConfig(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	gin.SetMode(gin.TestMode)
 	ctx, _ := gin.CreateTestContext(recorder)
+
+	if err := db.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 42},
+		PrimaryCharacterID: 900042,
+		Role:               model.RoleUser,
+	}).Error; err != nil {
+		t.Fatalf("seed user: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   900042,
+		CharacterName: "wallet user",
+		UserID:        42,
+		CorporationID: 1001,
+	}).Error; err != nil {
+		t.Fatalf("seed character: %v", err)
+	}
+	if err := db.Create(&model.SystemWallet{
+		UserID:  42,
+		Balance: 88.8,
+	}).Error; err != nil {
+		t.Fatalf("seed wallet: %v", err)
+	}
+
 	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/v1/system/basic-config/corporation-access-policies", bytes.NewBufferString(`{
 		"version":2,
 		"default_mode":"deny",
@@ -110,5 +133,13 @@ func TestUpdateCorporationAccessPoliciesPersistsConfig(t *testing.T) {
 	}
 	if stored.Value == "" {
 		t.Fatal("expected stored policy value to be non-empty")
+	}
+
+	var wallet model.SystemWallet
+	if err := db.Where("user_id = ?", 42).First(&wallet).Error; err != nil {
+		t.Fatalf("query wallet: %v", err)
+	}
+	if wallet.Balance != 0 {
+		t.Fatalf("wallet balance = %f, want 0", wallet.Balance)
 	}
 }

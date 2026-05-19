@@ -25,6 +25,7 @@ source_of_truth:
 - 后端在 JWT 链路注入 `primary_corporation_id`、`corp_capabilities`、`corp_rules`，并通过 `RequireCorpCapability` 强制鉴权。
 - `/api/v1/me` 返回军团能力上下文，前端路由与菜单按 capability 严格收敛。
 - 业务规则示例：`srp.recommendation_multiplier`（0~1，默认回退 1）。
+- 钱包能力示例：`wallet.user.enabled`；未启用时该军团成员伏羲币钱包余额恒为 0，且拒绝余额变动写入。
 
 ## 配置结构
 

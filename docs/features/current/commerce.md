@@ -125,6 +125,7 @@ source_of_truth:
 - 商店、兑换码虽然都在 `Shop` 目录下，但用户态与管理态接口是分开的
 - 商店商品图片上传当前通过 `/upload/image` 返回 base64 data URL，不写入项目文件夹；大小上限 2MB，仅支持 jpeg/png/webp
 - 钱包在下单时立即扣款；拒绝订单时通过 `CreditUser` 退款，流水类型为 `shop_refund`
+- 若用户军团未启用 `wallet.user.enabled` 能力，伏羲币钱包余额恒为 `0`，并拒绝所有余额变动（包括扣款、退款、奖励、调账等）。
 - 管理员执行订单人工发放成功且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `shop_order_manage` 职权的执行人不会写入
 - `requested -> delivered` 成功后，服务会异步尽力向下单用户主人物发送一封双语发放通知邮件，发件人为执行发放的官员主人物；邮件失败只记录告警、不回滚订单发放，也不阻塞管理端继续处理下一单
 - 订单发放接口仍复用通用邮件结果结构，但异步路径下成功响应不等待即时邮件结果；具体字段以代码契约为准

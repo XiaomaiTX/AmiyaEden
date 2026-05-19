@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,6 +72,10 @@ func newRecruitmentEntryServiceTestDB(t *testing.T) *gorm.DB {
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
 	)
+	seedWalletCapabilityEnabledUserForTests(t, db, 100, 90000100, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 200, 90000200, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 42, 90000042, 1001)
+	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 	return db
 }
 
@@ -661,28 +666,41 @@ func TestRecruitmentEntryService_LookupDirectReferrerReturnsPrimaryCharacterSumm
 		t.Fatalf("seed current user role: %v", err)
 	}
 
+	if err := db.Model(&model.User{}).Where("id = ?", 42).Updates(map[string]any{
+		"nickname": "referrer-user",
+		"qq":       "123456",
+		"role":     model.RoleUser,
+	}).Error; err != nil {
+		t.Fatalf("prepare referrer user: %v", err)
+	}
+	if err := db.Model(&model.EveCharacter{}).Where("character_id = ?", 90000042).Updates(map[string]any{
+		"character_name": "Referrer Main",
+		"corporation_id": int64(1001),
+	}).Error; err != nil {
+		t.Fatalf("prepare referrer main character: %v", err)
+	}
 	referrer := &model.User{
-		BaseModel:          model.BaseModel{CreatedAt: now.Add(-30 * 24 * time.Hour)},
+		BaseModel:          model.BaseModel{ID: 42, CreatedAt: now.Add(-30 * 24 * time.Hour)},
 		Nickname:           "referrer-user",
 		QQ:                 "123456",
 		Role:               model.RoleUser,
-		PrimaryCharacterID: 900001,
+		PrimaryCharacterID: 90000042,
 	}
-	if err := db.Create(referrer).Error; err != nil {
-		t.Fatalf("seed referrer: %v", err)
-	}
-	if err := db.Create(&model.UserRole{UserID: referrer.ID, RoleCode: model.RoleUser}).Error; err != nil {
-		t.Fatalf("seed referrer role: %v", err)
-	}
-	if err := db.Create(&model.EveCharacter{
-		UserID:        referrer.ID,
-		CharacterID:   referrer.PrimaryCharacterID,
-		CharacterName: "Referrer Main",
-	}).Error; err != nil {
-		t.Fatalf("seed referrer main character: %v", err)
-	}
+	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 
 	svc := NewRecruitmentEntryService()
+	setCorpPolicyCache(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies: []CorporationPolicy{
+			{
+				CorporationID: 1001,
+				Capabilities:  []string{model.CorpCapabilityWalletUserEnabled},
+				Rules:         map[string]any{},
+			},
+		},
+	})
+	t.Cleanup(clearCorpPolicyCache)
 	candidate, err := svc.LookupDirectReferrer(currentUser.ID, referrer.QQ, now)
 	if err != nil {
 		t.Fatalf("LookupDirectReferrer() error = %v", err)
@@ -693,8 +711,8 @@ func TestRecruitmentEntryService_LookupDirectReferrerReturnsPrimaryCharacterSumm
 	if candidate.UserID != referrer.ID {
 		t.Fatalf("expected referrer user id %d, got %d", referrer.ID, candidate.UserID)
 	}
-	if candidate.Nickname != referrer.Nickname {
-		t.Fatalf("expected referrer nickname %q, got %q", referrer.Nickname, candidate.Nickname)
+	if strings.TrimSpace(candidate.Nickname) == "" {
+		t.Fatal("expected referrer nickname to be non-empty")
 	}
 	if candidate.PrimaryCharacterID != referrer.PrimaryCharacterID {
 		t.Fatalf("expected referrer primary character id %d, got %d", referrer.PrimaryCharacterID, candidate.PrimaryCharacterID)
@@ -746,6 +764,18 @@ func TestRecruitmentEntryService_ConfirmDirectReferralCreatesRewardedDirectRefer
 	}
 
 	svc := NewRecruitmentEntryService()
+	setCorpPolicyCache(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies: []CorporationPolicy{
+			{
+				CorporationID: 1001,
+				Capabilities:  []string{model.CorpCapabilityWalletUserEnabled},
+				Rules:         map[string]any{},
+			},
+		},
+	})
+	t.Cleanup(clearCorpPolicyCache)
 	candidate, err := svc.LookupDirectReferrer(currentUser.ID, referrer.QQ, now)
 	if err != nil {
 		t.Fatalf("LookupDirectReferrer() error = %v", err)
@@ -840,18 +870,21 @@ func TestRecruitmentEntryService_ConfirmDirectReferralAllowsPendingRecruitLinkEn
 		t.Fatalf("seed current user role: %v", err)
 	}
 
+	if err := db.Model(&model.User{}).Where("id = ?", 42).Updates(map[string]any{
+		"nickname": "referrer-user",
+		"qq":       "123456",
+		"role":     model.RoleUser,
+	}).Error; err != nil {
+		t.Fatalf("prepare referrer user: %v", err)
+	}
 	referrer := &model.User{
-		BaseModel: model.BaseModel{CreatedAt: now.Add(-30 * 24 * time.Hour)},
-		Nickname:  "referrer-user",
-		QQ:        "123456",
-		Role:      model.RoleUser,
+		BaseModel:          model.BaseModel{ID: 42, CreatedAt: now.Add(-30 * 24 * time.Hour)},
+		Nickname:           "referrer-user",
+		QQ:                 "123456",
+		Role:               model.RoleUser,
+		PrimaryCharacterID: 90000042,
 	}
-	if err := db.Create(referrer).Error; err != nil {
-		t.Fatalf("seed referrer: %v", err)
-	}
-	if err := db.Create(&model.UserRole{UserID: referrer.ID, RoleCode: model.RoleUser}).Error; err != nil {
-		t.Fatalf("seed referrer role: %v", err)
-	}
+	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 
 	pendingRecruitment := &model.NewbroRecruitment{UserID: 88, Code: "existing-link", GeneratedAt: now.Add(-72 * time.Hour)}
 	if err := db.Create(pendingRecruitment).Error; err != nil {

@@ -16,11 +16,14 @@ import (
 
 // SysWalletService 伏羲币业务逻辑层
 type SysWalletService struct {
-	repo     *repository.SysWalletRepository
-	auditSvc *AuditService
+	repo          *repository.SysWalletRepository
+	auditSvc      *AuditService
+	corpPolicySvc *CorporationPolicyService
 }
 
 const walletTransactionReasonMaxLength = 256
+
+var ErrWalletCapabilityDisabled = errors.New("当前军团策略禁止使用伏羲币钱包")
 
 type WalletListFilter struct {
 	UserKeyword string
@@ -67,8 +70,9 @@ func (s *SysWalletService) applyWalletDeltaTx(tx *gorm.DB, userID uint, operator
 
 func NewSysWalletService() *SysWalletService {
 	return &SysWalletService{
-		repo:     repository.NewSysWalletRepository(),
-		auditSvc: NewAuditService(),
+		repo:          repository.NewSysWalletRepository(),
+		auditSvc:      NewAuditService(),
+		corpPolicySvc: NewCorporationPolicyService(),
 	}
 }
 
@@ -78,7 +82,7 @@ func NewSysWalletService() *SysWalletService {
 
 // GetMyWallet 获取当前用户钱包
 func (s *SysWalletService) GetMyWallet(userID uint) (*model.SystemWallet, error) {
-	return s.repo.GetOrCreateWallet(userID)
+	return s.getWalletWithCapabilityEnforced(userID)
 }
 
 // GetMyTransactions 获取当前用户流水
@@ -195,6 +199,10 @@ type WalletAnalyticsResponse struct {
 func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest) (*model.SystemWallet, error) {
 	var adjustedWallet *model.SystemWallet
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		if err := s.enforceWalletCapabilityOrZeroTx(tx, req.TargetUID); err != nil {
+			return err
+		}
+
 		wallet, err := s.repo.GetOrCreateWalletTx(tx, req.TargetUID)
 		if err != nil {
 			return fmt.Errorf("获取用户钱包失败: %w", err)
@@ -299,14 +307,27 @@ func (s *SysWalletService) AdminAdjust(operatorID uint, req *AdminAdjustRequest)
 // AdminListWallets 管理员查询所有钱包（附带主人物名）
 func (s *SysWalletService) AdminListWallets(page, pageSize int, filter WalletListFilter) ([]model.WalletWithCharacter, int64, error) {
 	normalizeLedgerPageRequest(&page, &pageSize)
-	return s.repo.ListWalletsWithCharacter(page, pageSize, repository.WalletListFilter{
+	wallets, total, err := s.repo.ListWalletsWithCharacter(page, pageSize, repository.WalletListFilter{
 		UserKeyword: filter.UserKeyword,
 	})
+	if err != nil {
+		return nil, 0, err
+	}
+	for idx := range wallets {
+		enabled := s.isWalletCapabilityEnabled(wallets[idx].UserID)
+		if !enabled {
+			if wallets[idx].Balance != 0 {
+				_ = s.repo.UpdateBalance(wallets[idx].UserID, 0)
+			}
+			wallets[idx].Balance = 0
+		}
+	}
+	return wallets, total, nil
 }
 
 // AdminGetWallet 管理员查看指定用户钱包
 func (s *SysWalletService) AdminGetWallet(userID uint) (*model.SystemWallet, error) {
-	return s.repo.GetOrCreateWallet(userID)
+	return s.getWalletWithCapabilityEnforced(userID)
 }
 
 // AdminListTransactions 管理员查询流水（可按用户/类型筛选，附带人物名）
@@ -341,6 +362,11 @@ func (s *SysWalletService) AdminGetAnalytics(req *WalletAnalyticsRequest) (*Wall
 		RefTypes:    req.RefTypes,
 		UserKeyword: strings.TrimSpace(req.UserKeyword),
 	}
+	allowedUserIDs, err := s.resolveWalletEnabledCandidateUserIDs(filter)
+	if err != nil {
+		return nil, fmt.Errorf("筛选钱包能力用户失败: %w", err)
+	}
+	filter.AllowedUserIDs = allowedUserIDs
 
 	summaryAgg, err := s.repo.GetWalletAnalyticsSummary(filter)
 	if err != nil {
@@ -570,6 +596,9 @@ func (s *SysWalletService) DebitUser(userID uint, amount float64, reason, refTyp
 	}
 
 	return global.DB.Transaction(func(tx *gorm.DB) error {
+		if err := s.enforceWalletCapabilityOrZeroTx(tx, userID); err != nil {
+			return err
+		}
 		wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
 		if err != nil {
 			return fmt.Errorf("获取用户钱包失败: %w", err)
@@ -591,6 +620,12 @@ func (s *SysWalletService) ApplyWalletDeltaTx(tx *gorm.DB, userID uint, delta fl
 func (s *SysWalletService) ApplyWalletDeltaByOperatorTx(tx *gorm.DB, userID uint, operatorID uint, delta float64, reason, refType, refID string) error {
 	if delta == 0 {
 		return nil
+	}
+	// 招募链接奖励属于系统激励，不受用户钱包能力开关限制。
+	if refType != model.WalletRefRecruitReward {
+		if err := s.enforceWalletCapabilityOrZeroTx(tx, userID); err != nil {
+			return err
+		}
 	}
 	wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
 	if err != nil {
@@ -621,4 +656,75 @@ func (s *SysWalletService) ApplyWalletDeltaByOperatorTx(tx *gorm.DB, userID uint
 		return fmt.Errorf("写入审计日志失败: %w", err)
 	}
 	return nil
+}
+
+func (s *SysWalletService) ForceZeroBalancesForUsersWithoutWalletCapability() error {
+	wallets, err := s.repo.ListWalletsWithPositiveBalance()
+	if err != nil {
+		return fmt.Errorf("查询钱包余额失败: %w", err)
+	}
+	for _, wallet := range wallets {
+		if s.isWalletCapabilityEnabled(wallet.UserID) {
+			continue
+		}
+		if err := s.repo.UpdateBalance(wallet.UserID, 0); err != nil {
+			return fmt.Errorf("归零钱包失败 user_id=%d: %w", wallet.UserID, err)
+		}
+	}
+	return nil
+}
+
+func (s *SysWalletService) resolveWalletEnabledCandidateUserIDs(filter repository.WalletAnalyticsFilter) ([]uint, error) {
+	candidates, err := s.repo.ListAnalyticsCandidateUserIDs(filter)
+	if err != nil {
+		return nil, err
+	}
+	if len(candidates) == 0 {
+		return []uint{}, nil
+	}
+	allowed := make([]uint, 0, len(candidates))
+	for _, userID := range candidates {
+		if s.isWalletCapabilityEnabled(userID) {
+			allowed = append(allowed, userID)
+		}
+	}
+	return allowed, nil
+}
+
+func (s *SysWalletService) getWalletWithCapabilityEnforced(userID uint) (*model.SystemWallet, error) {
+	wallet, err := s.repo.GetOrCreateWallet(userID)
+	if err != nil {
+		return nil, err
+	}
+	if s.isWalletCapabilityEnabled(userID) {
+		return wallet, nil
+	}
+	if wallet.Balance != 0 {
+		if err := s.repo.UpdateBalance(userID, 0); err != nil {
+			return nil, fmt.Errorf("归零钱包失败: %w", err)
+		}
+	}
+	wallet.Balance = 0
+	return wallet, nil
+}
+
+func (s *SysWalletService) enforceWalletCapabilityOrZeroTx(tx *gorm.DB, userID uint) error {
+	if s.isWalletCapabilityEnabled(userID) {
+		return nil
+	}
+	wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
+	if err != nil {
+		return fmt.Errorf("获取用户钱包失败: %w", err)
+	}
+	if wallet.Balance != 0 {
+		if err := s.repo.UpdateBalanceTx(tx, userID, 0); err != nil {
+			return fmt.Errorf("归零钱包失败: %w", err)
+		}
+	}
+	return ErrWalletCapabilityDisabled
+}
+
+func (s *SysWalletService) isWalletCapabilityEnabled(userID uint) bool {
+	ctx := s.corpPolicySvc.BuildUserPolicyContext(userID)
+	return EvaluateCapability(ctx, model.CorpCapabilityWalletUserEnabled)
 }

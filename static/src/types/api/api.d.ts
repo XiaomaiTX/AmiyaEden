@@ -3034,6 +3034,7 @@ declare namespace Api {
       | 'info.contracts.read'
       | 'info.fittings.manage'
       | 'shop.wallet.read'
+      | 'wallet.user.enabled'
       | 'shop.order.create'
       | 'shop.order.read_self'
       | 'dashboard.npc_kills.corp'

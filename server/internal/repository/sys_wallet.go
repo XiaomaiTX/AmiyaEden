@@ -155,10 +155,11 @@ type WalletListFilter struct {
 }
 
 type WalletAnalyticsFilter struct {
-	StartAt     time.Time
-	EndAt       time.Time
-	RefTypes    []string
-	UserKeyword string
+	StartAt        time.Time
+	EndAt          time.Time
+	RefTypes       []string
+	UserKeyword    string
+	AllowedUserIDs []uint
 }
 
 type WalletAnalyticsSummaryAgg struct {
@@ -249,10 +250,27 @@ func applyWalletTransactionUserFilter(db *gorm.DB, userIDColumn string, refTypeC
 func applyWalletAnalyticsFilter(db *gorm.DB, userIDColumn string, refTypeColumn string, createdAtColumn string, filter WalletAnalyticsFilter) *gorm.DB {
 	db = db.Where(createdAtColumn+" >= ? AND "+createdAtColumn+" < ?", filter.StartAt, filter.EndAt)
 	db = applyWalletUserKeywordFilter(db, userIDColumn, filter.UserKeyword)
+	if filter.AllowedUserIDs != nil {
+		if len(filter.AllowedUserIDs) == 0 {
+			return db.Where("1 = 0")
+		}
+		db = db.Where(userIDColumn+" IN ?", filter.AllowedUserIDs)
+	}
 	if len(filter.RefTypes) > 0 {
 		db = db.Where(refTypeColumn+" IN ?", filter.RefTypes)
 	}
 	return db
+}
+
+func (r *SysWalletRepository) ListWalletsWithPositiveBalance() ([]model.SystemWallet, error) {
+	var wallets []model.SystemWallet
+	err := global.DB.
+		Where("balance > 0").
+		Find(&wallets).Error
+	if err != nil {
+		return nil, err
+	}
+	return wallets, nil
 }
 
 // ListTransactions 分页查询钱包流水
@@ -665,4 +683,19 @@ func (r *SysWalletRepository) ListWalletAnalyticsOperatorConcentration(filter Wa
 		Limit(topN).
 		Scan(&rows).Error
 	return rows, err
+}
+
+func (r *SysWalletRepository) ListAnalyticsCandidateUserIDs(filter WalletAnalyticsFilter) ([]uint, error) {
+	var userIDs []uint
+	query := global.DB.Model(&model.WalletTransaction{}).Select("DISTINCT user_id")
+	query = applyWalletAnalyticsFilter(query, "user_id", "ref_type", "created_at", WalletAnalyticsFilter{
+		StartAt:     filter.StartAt,
+		EndAt:       filter.EndAt,
+		RefTypes:    filter.RefTypes,
+		UserKeyword: filter.UserKeyword,
+	})
+	if err := query.Order("user_id ASC").Pluck("user_id", &userIDs).Error; err != nil {
+		return nil, err
+	}
+	return userIDs, nil
 }
