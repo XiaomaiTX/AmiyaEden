@@ -168,7 +168,7 @@ source_of_truth:
 - 判断当前用户主军团策略是否包含指定 capability。
 - `super_admin` 自动通过。
 - 军团策略 `full_access=true` 自动通过。
-- 未配置或未命中策略时按最小权限拒绝。
+- 未命中策略时按 `default_mode` 处理（默认 `allow`，可配置为 `deny`）。
 - 该检查必须叠加在 `JWTAuth` / `RequireLoginUser` / `RequireRole` 之后使用，不能替代职权授权。
 - 主要业务域后端路由与前端 `meta.corpCapabilities` 必须保持一致，避免“菜单可见但接口 403”或“菜单隐藏但接口可调”。
 

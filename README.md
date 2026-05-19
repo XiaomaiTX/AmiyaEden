@@ -182,10 +182,10 @@ pnpm dev
 cd server && golangci-lint run ./...
 cd server && go test ./...
 cd server && go build ./...
-cd static && pnpm lint .
-cd static && pnpm build
 cd static && pnpm exec vue-tsc --noEmit
 cd static && pnpm test:unit
+cd static && pnpm lint . --fix
+cd static && pnpm build
 ```
 
 ## 文档入口

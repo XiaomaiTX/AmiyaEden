@@ -3082,13 +3082,13 @@ declare namespace Api {
 
     interface CorporationAccessPoliciesConfig {
       version: number
-      default_mode: 'deny'
+      default_mode: 'deny' | 'allow'
       policies: CorporationAccessPolicy[]
     }
 
     interface UpdateCorporationAccessPoliciesParams {
       version: number
-      default_mode: 'deny'
+      default_mode: 'deny' | 'allow'
       policies: CorporationAccessPolicy[]
     }
 

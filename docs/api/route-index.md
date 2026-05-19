@@ -342,8 +342,8 @@ source_of_truth:
 | GET | `/system/basic-config` | 获取固定系统标识（军团 ID / 网站标题） | `RequireRole(super_admin)` |
 | GET | `/system/basic-config/allow-corporations` | 获取允许军团列表；返回 `allow_corporations` 及军团展示信息 `corporations[{corporation_id, corporation_name}]` | `RequireRole(super_admin)` |
 | PUT | `/system/basic-config/allow-corporations` | 更新允许军团列表 | `RequireRole(super_admin)` |
-| GET | `/system/basic-config/corporation-access-policies` | 获取军团能力策略配置 | `RequireRole(super_admin)` |
-| PUT | `/system/basic-config/corporation-access-policies` | 更新军团能力策略配置 | `RequireRole(super_admin)` |
+| GET | `/system/basic-config/corporation-access-policies` | 获取军团能力策略配置（`default_mode` 默认 `allow`） | `RequireRole(super_admin)` |
+| PUT | `/system/basic-config/corporation-access-policies` | 更新军团能力策略配置（`default_mode` 允许 `allow` / `deny`） | `RequireRole(super_admin)` |
 | GET | `/system/basic-config/character-esi-restriction` | 获取任一绑定人物 ESI 失效时是否强制停留人物页的配置 | `RequireRole(super_admin)` |
 | PUT | `/system/basic-config/character-esi-restriction` | 更新任一绑定人物 ESI 失效时是否强制停留人物页的配置 | `RequireRole(super_admin)` |
 

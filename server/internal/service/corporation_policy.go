@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	corpPolicyDefaultModeAllow            = "allow"
 	corpPolicyDefaultModeDeny             = "deny"
 	CorpRuleSRPRecommendationMultiplier   = "srp.recommendation_multiplier"
 	CorpRuleWalletDailyQueryLimit         = "wallet.daily_query_limit"
@@ -122,6 +123,9 @@ func (s *CorporationPolicyService) BuildUserPolicyContext(userID uint) UserCorpP
 	config := s.GetPolicies()
 	policy, matched := matchCorporationPolicy(config, ctx.PrimaryCorporationID)
 	if !matched {
+		if config.DefaultMode == corpPolicyDefaultModeAllow {
+			ctx.FullAccess = true
+		}
 		return ctx
 	}
 	ctx.FullAccess = policy.FullAccess
@@ -221,11 +225,10 @@ func normalizeCorpPolicyConfig(raw CorporationPolicyConfig) (CorporationPolicyCo
 		cfg.Version = 1
 	}
 	if cfg.DefaultMode == "" {
-		cfg.DefaultMode = corpPolicyDefaultModeDeny
+		cfg.DefaultMode = corpPolicyDefaultModeAllow
 	}
-	// 当前版本固定最小权限，不开放 allow。
-	if cfg.DefaultMode != corpPolicyDefaultModeDeny {
-		return CorporationPolicyConfig{}, fmt.Errorf("%w: default_mode 仅允许 deny", ErrInvalidCorporationAccessPolicy)
+	if cfg.DefaultMode != corpPolicyDefaultModeDeny && cfg.DefaultMode != corpPolicyDefaultModeAllow {
+		return CorporationPolicyConfig{}, fmt.Errorf("%w: default_mode 仅允许 allow 或 deny", ErrInvalidCorporationAccessPolicy)
 	}
 	normalizedPolicies := make([]CorporationPolicy, 0, len(cfg.Policies))
 	seenCorpID := make(map[int64]struct{}, len(cfg.Policies))
@@ -302,7 +305,7 @@ func (s *CorporationPolicyService) loadPolicies() CorporationPolicyConfig {
 func defaultCorpPolicyConfig() CorporationPolicyConfig {
 	return CorporationPolicyConfig{
 		Version:     1,
-		DefaultMode: corpPolicyDefaultModeDeny,
+		DefaultMode: corpPolicyDefaultModeAllow,
 		Policies:    []CorporationPolicy{},
 	}
 }

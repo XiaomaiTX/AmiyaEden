@@ -97,6 +97,83 @@ func TestCorporationPolicyServiceCacheInvalidation(t *testing.T) {
 	}
 }
 
+func TestCorporationPolicyServiceDefaultModeAllowGrantsUnmatchedCorporation(t *testing.T) {
+	db := newCorpPolicyTestDB(t)
+	seedCorpPolicyUser(t, db, 1, 9001, 1001)
+
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	svc := NewCorporationPolicyService()
+	if err := svc.UpdatePolicies(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "allow",
+		Policies:    []CorporationPolicy{},
+	}); err != nil {
+		t.Fatalf("update policies: %v", err)
+	}
+
+	if !svc.UserHasCapability(1, []string{model.RoleUser}, model.CorpCapabilityMenuDashboard) {
+		t.Fatal("expected unmatched corporation to be allowed when default_mode=allow")
+	}
+}
+
+func TestCorporationPolicyServiceDefaultModeDenyRejectsUnmatchedCorporation(t *testing.T) {
+	db := newCorpPolicyTestDB(t)
+	seedCorpPolicyUser(t, db, 1, 9001, 1001)
+
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	svc := NewCorporationPolicyService()
+	if err := svc.UpdatePolicies(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies:    []CorporationPolicy{},
+	}); err != nil {
+		t.Fatalf("update policies: %v", err)
+	}
+
+	if svc.UserHasCapability(1, []string{model.RoleUser}, model.CorpCapabilityMenuDashboard) {
+		t.Fatal("expected unmatched corporation to be denied when default_mode=deny")
+	}
+}
+
+func TestCorporationPolicyServiceNormalizeDefaultMode(t *testing.T) {
+	cfg, err := normalizeCorpPolicyConfig(CorporationPolicyConfig{
+		Version: 1,
+	})
+	if err != nil {
+		t.Fatalf("normalize empty mode: %v", err)
+	}
+	if cfg.DefaultMode != "allow" {
+		t.Fatalf("default_mode = %q, want allow", cfg.DefaultMode)
+	}
+
+	if _, err := normalizeCorpPolicyConfig(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+	}); err != nil {
+		t.Fatalf("normalize deny mode: %v", err)
+	}
+
+	if _, err := normalizeCorpPolicyConfig(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "allow",
+	}); err != nil {
+		t.Fatalf("normalize allow mode: %v", err)
+	}
+
+	if _, err := normalizeCorpPolicyConfig(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "invalid",
+	}); err == nil {
+		t.Fatal("expected invalid default_mode error")
+	}
+}
+
 func TestCorporationPolicyServiceGetRuleFloat(t *testing.T) {
 	db := newCorpPolicyTestDB(t)
 	originalDB := global.DB
