@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
+import { parseFragment } from 'parse5'
 
 const pages = [
   new URL('./user-center/index.vue', import.meta.url),
@@ -9,8 +10,10 @@ const pages = [
 ]
 
 function findHardcodedChinese(source: string) {
-  const template = stripComments(source.match(/<template>([\s\S]*?)<\/template>/)?.[1] ?? '')
-  const script = stripComments(source.match(/<script[^>]*>([\s\S]*?)<\/script>/)?.[1] ?? '')
+  const template = stripComments(source.match(/<template>([\s\S]*?)<\/template>/i)?.[1] ?? '')
+  const script = stripComments(
+    source.match(/<script[^>]*>([\s\S]*?)<\/script(?:\s[^>]*)?>/i)?.[1] ?? ''
+  )
 
   return [
     ...(template.match(/(?:label|placeholder|title)="[^"]*[\u4e00-\u9fff][^"]*"/g) ?? []),
@@ -19,11 +22,33 @@ function findHardcodedChinese(source: string) {
   ]
 }
 
+type ParseNode = {
+  nodeName?: string
+  value?: string
+  childNodes?: ParseNode[]
+}
+
+function collectText(node: ParseNode): string {
+  if (node.nodeName === '#comment') return ''
+  if (node.nodeName === '#text') return node.value ?? ''
+  return (node.childNodes ?? []).map(collectText).join('')
+}
+
+function extractTextWithoutHtmlComments(source: string) {
+  const fragment = parseFragment(source) as ParseNode
+  return (fragment.childNodes ?? []).map(collectText).join('')
+}
+
 function stripComments(source: string) {
-  return source
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/.*$/gm, '')
+  let current = extractTextWithoutHtmlComments(source)
+  let previous: string
+
+  do {
+    previous = current
+    current = current.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+  } while (current !== previous)
+
+  return current
 }
 
 test('system user-facing pages keep Chinese text in locale files', () => {

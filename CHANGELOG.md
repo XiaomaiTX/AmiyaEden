@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.5] - 2026-05-19
+
+### Fixed
+- 改进硬编码中文检测测试中的 HTML 注释清理与 script 标签检测：将 `stripComments` 从正则实现升级为基于 `parse5` 的解析，可靠移除注释节点（含嵌套注释与 CDATA 等边界场景），并将 script 提取正则改为大小写不敏感且支持带空格属性的标签。
+- 在 `static/package.json` 新增 `parse5` 依赖，确保 template/script 内容提取与注释忽略逻辑稳定一致。
+
 ## [1.9.4] - 2026-05-19
 
 ### Added
