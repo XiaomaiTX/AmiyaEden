@@ -2708,9 +2708,6 @@
       "selectCorporationToConfigure": "请选择需要配置的军团",
       "fullAccess": "全量放行",
       "srpRecommendationMultiplier": "SRP 推荐金额乘数",
-      "npcKillsMaxRangeDays": "刷怪报表最大查询天数",
-      "systemTaskAllowManualRun": "允许手动触发任务",
-      "npcKillsAllowCorpAggregate": "允许公司级刷怪聚合",
       "saveCurrentCorporationPolicy": "保存当前军团策略",
       "invalidMultiplier": "SRP 推荐金额乘数必须在 0 到 1 之间",
       "corpCapabilityGroups": {

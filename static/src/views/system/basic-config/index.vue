@@ -210,32 +210,6 @@
             />
           </ElFormItem>
 
-          <ElFormItem
-            :label="$t('system.basicConfig.npcKillsMaxRangeDays')"
-            class="corp-policy-multiplier"
-          >
-            <ElInputNumber
-              v-model="selectedPolicy.npc_kills_max_range_days"
-              :step="1"
-              :min="0"
-              :max="3650"
-              controls-position="right"
-            />
-          </ElFormItem>
-
-          <ElFormItem
-            :label="$t('system.basicConfig.systemTaskAllowManualRun')"
-            class="corp-policy-multiplier"
-          >
-            <ElSwitch v-model="selectedPolicy.system_task_allow_manual_run" />
-          </ElFormItem>
-
-          <ElFormItem
-            :label="$t('system.basicConfig.npcKillsAllowCorpAggregate')"
-            class="corp-policy-multiplier"
-          >
-            <ElSwitch v-model="selectedPolicy.npc_kills_allow_corp_aggregate" />
-          </ElFormItem>
         </div>
 
         <ElButton
@@ -525,9 +499,6 @@
       full_access: boolean
       capabilities: Api.SysConfig.CorporationCapability[]
       multiplier: number
-      npc_kills_max_range_days: number
-      system_task_allow_manual_run: boolean
-      npc_kills_allow_corp_aggregate: boolean
     }>
   >([])
   const selectedPolicy = computed(() =>
@@ -770,9 +741,6 @@
     rules: unknown,
     policyRow: {
       multiplier: number
-      npc_kills_max_range_days: number
-      system_task_allow_manual_run: boolean
-      npc_kills_allow_corp_aggregate: boolean
     }
   ) => {
     const normalizedRules: Record<string, string | number | boolean> = {}
@@ -788,9 +756,6 @@
     normalizedRules['srp.recommendation_multiplier'] = Number.isNaN(normalizedMultiplier)
       ? 1
       : normalizedMultiplier
-    normalizedRules['npc_kills.max_range_days'] = policyRow.npc_kills_max_range_days
-    normalizedRules['system.task.allow_manual_run'] = policyRow.system_task_allow_manual_run
-    normalizedRules['npc_kills.allow_corp_aggregate'] = policyRow.npc_kills_allow_corp_aggregate
     return normalizedRules
   }
 
@@ -814,26 +779,13 @@
         const rawMultiplier = policy?.rules?.['srp.recommendation_multiplier']
         const multiplier =
           typeof rawMultiplier === 'number' && Number.isFinite(rawMultiplier) ? rawMultiplier : 1
-        const rawMaxRangeDays = policy?.rules?.['npc_kills.max_range_days']
-        const npcKillsMaxRangeDays =
-          typeof rawMaxRangeDays === 'number' && Number.isFinite(rawMaxRangeDays)
-            ? rawMaxRangeDays
-            : 365
-        const rawManualRun = policy?.rules?.['system.task.allow_manual_run']
-        const systemTaskAllowManualRun = typeof rawManualRun === 'boolean' ? rawManualRun : true
-        const rawCorpAggregate = policy?.rules?.['npc_kills.allow_corp_aggregate']
-        const npcKillsAllowCorpAggregate =
-          typeof rawCorpAggregate === 'boolean' ? rawCorpAggregate : true
         return {
           corporation_id: corporationID,
           full_access: policy?.full_access ?? false,
           capabilities: (policy?.capabilities ?? []).filter((capability) =>
             corpCapabilityOptions.includes(capability as Api.SysConfig.CorporationCapability)
           ) as Api.SysConfig.CorporationCapability[],
-          multiplier: clampMultiplier(multiplier) || 1,
-          npc_kills_max_range_days: npcKillsMaxRangeDays,
-          system_task_allow_manual_run: systemTaskAllowManualRun,
-          npc_kills_allow_corp_aggregate: npcKillsAllowCorpAggregate
+          multiplier: clampMultiplier(multiplier) || 1
         }
       })
       if (
@@ -871,26 +823,13 @@
         const rawMultiplier = policy.rules?.['srp.recommendation_multiplier']
         const multiplier =
           typeof rawMultiplier === 'number' && Number.isFinite(rawMultiplier) ? rawMultiplier : 1
-        const rawMaxRangeDays = policy.rules?.['npc_kills.max_range_days']
-        const npcKillsMaxRangeDays =
-          typeof rawMaxRangeDays === 'number' && Number.isFinite(rawMaxRangeDays)
-            ? rawMaxRangeDays
-            : 365
-        const rawManualRun = policy.rules?.['system.task.allow_manual_run']
-        const systemTaskAllowManualRun = typeof rawManualRun === 'boolean' ? rawManualRun : true
-        const rawCorpAggregate = policy.rules?.['npc_kills.allow_corp_aggregate']
-        const npcKillsAllowCorpAggregate =
-          typeof rawCorpAggregate === 'boolean' ? rawCorpAggregate : true
 
         mergedPolicyMap.set(policy.corporation_id, {
           corporation_id: policy.corporation_id,
           full_access: !!policy.full_access,
           capabilities: normalizePolicyCapabilities(policy.capabilities),
           rules: normalizePolicyRules(policy.rules, {
-            multiplier,
-            npc_kills_max_range_days: npcKillsMaxRangeDays,
-            system_task_allow_manual_run: systemTaskAllowManualRun,
-            npc_kills_allow_corp_aggregate: npcKillsAllowCorpAggregate
+            multiplier
           })
         })
       }
