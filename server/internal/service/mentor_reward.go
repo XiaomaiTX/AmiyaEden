@@ -310,13 +310,17 @@ func (s *MentorRewardService) ProcessRewards(now time.Time) (*MentorRewardProces
 	for _, relationship := range relationships {
 		metrics, err := s.getMenteeMetrics(relationship.MenteeUserID)
 		if err != nil {
-			global.Logger.Error("导师奖励处理：获取学员指标失败", zap.Uint("mentee_user_id", relationship.MenteeUserID), zap.Error(err))
+			if global.Logger != nil {
+				global.Logger.Error("导师奖励处理：获取学员指标失败", zap.Uint("mentee_user_id", relationship.MenteeUserID), zap.Error(err))
+			}
 			continue
 		}
 
 		outcome, err := s.processActiveRelationshipSnapshot(relationship, stages, metrics, now)
 		if err != nil {
-			global.Logger.Error("导师奖励处理：处理关系失败", zap.Uint("relationship_id", relationship.ID), zap.Error(err))
+			if global.Logger != nil {
+				global.Logger.Error("导师奖励处理：处理关系失败", zap.Uint("relationship_id", relationship.ID), zap.Error(err))
+			}
 			continue
 		}
 		if !outcome.Processed {

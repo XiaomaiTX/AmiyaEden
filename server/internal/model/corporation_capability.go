@@ -30,6 +30,7 @@ const (
 	CorpCapabilityInfoContractsRead           = "info.contracts.read"
 	CorpCapabilityInfoFittingsManage          = "info.fittings.manage"
 	CorpCapabilityShopWalletRead              = "shop.wallet.read"
+	CorpCapabilityWalletUserEnabled           = "wallet.user.enabled"
 	CorpCapabilityShopOrderCreate             = "shop.order.create"
 	CorpCapabilityShopOrderReadSelf           = "shop.order.read_self"
 	CorpCapabilityDashboardNpcKillsCorp       = "dashboard.npc_kills.corp"
@@ -98,6 +99,7 @@ var validCorpCapabilities = map[string]struct{}{
 	CorpCapabilityInfoContractsRead:           {},
 	CorpCapabilityInfoFittingsManage:          {},
 	CorpCapabilityShopWalletRead:              {},
+	CorpCapabilityWalletUserEnabled:           {},
 	CorpCapabilityShopOrderCreate:             {},
 	CorpCapabilityShopOrderReadSelf:           {},
 	CorpCapabilityDashboardNpcKillsCorp:       {},

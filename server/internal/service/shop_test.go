@@ -279,12 +279,17 @@ func newShopServiceTestDB(t *testing.T) *gorm.DB {
 		&model.ShopProduct{},
 		&model.ShopOrder{},
 		&model.SystemConfig{},
+		&model.User{},
+		&model.EveCharacter{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
 		&model.AuditEvent{},
 	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
+	seedWalletCapabilityEnabledUserForTests(t, db, 42, 90000042, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 77, 90000077, 1001)
+	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 	return db
 }
 

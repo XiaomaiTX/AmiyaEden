@@ -699,6 +699,7 @@ func TestApplyForWelfareSmallFuxiCoinClaimsAutoDeliver(t *testing.T) {
 		CharacterID:   user.PrimaryCharacterID,
 		CharacterName: "Pilot One",
 		UserID:        user.ID,
+		CorporationID: 1001,
 	}
 	if err := db.Create(character).Error; err != nil {
 		t.Fatalf("create character: %v", err)
@@ -781,6 +782,7 @@ func TestApplyForWelfareAutoDeliveredClaimClearsEvidenceImage(t *testing.T) {
 		CharacterID:   user.PrimaryCharacterID,
 		CharacterName: "Pilot One",
 		UserID:        user.ID,
+		CorporationID: 1001,
 	}
 	if err := db.Create(character).Error; err != nil {
 		t.Fatalf("create character: %v", err)
@@ -2194,6 +2196,9 @@ func newWelfareServiceTestDB(t *testing.T) *gorm.DB {
 		&model.WalletTransaction{},
 		&model.AuditEvent{},
 	)
+	seedWalletCapabilityEnabledUserForTests(t, db, 42, 90000042, 1001)
+	seedWalletCapabilityEnabledUserForTests(t, db, 77, 90000077, 1001)
+	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 	return db
 }
 

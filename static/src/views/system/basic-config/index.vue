@@ -209,7 +209,6 @@
               controls-position="right"
             />
           </ElFormItem>
-
         </div>
 
         <ElButton
@@ -344,6 +343,7 @@
       labelKey: 'system.basicConfig.corpCapabilityGroups.shop',
       capabilities: [
         'shop.wallet.read',
+        'wallet.user.enabled',
         'shop.order.create',
         'shop.order.read_self',
         'shop.admin.product.manage',
@@ -421,6 +421,7 @@
     'info.contracts.read': 'system.basicConfig.corpCapabilities.infoContractsRead',
     'info.fittings.manage': 'system.basicConfig.corpCapabilities.infoFittingsManage',
     'shop.wallet.read': 'system.basicConfig.corpCapabilities.shopWalletRead',
+    'wallet.user.enabled': 'system.basicConfig.corpCapabilities.walletUserEnabled',
     'shop.order.create': 'system.basicConfig.corpCapabilities.shopOrderCreate',
     'shop.order.read_self': 'system.basicConfig.corpCapabilities.shopOrderReadSelf',
     'dashboard.npc_kills.corp': 'system.basicConfig.corpCapabilities.dashboardNpcKillsCorp',

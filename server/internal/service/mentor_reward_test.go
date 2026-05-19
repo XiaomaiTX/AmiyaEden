@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -417,12 +418,14 @@ func newMentorRewardTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	if err := db.AutoMigrate(
+		&model.SystemConfig{},
 		&model.User{},
 		&model.EveCharacter{},
 		&model.EveCharacterSkill{},
 		&model.FleetPapLog{},
 		&model.SystemWallet{},
 		&model.WalletTransaction{},
+		&model.AuditEvent{},
 		&model.MentorMenteeRelationship{},
 		&model.MentorRewardStage{},
 		&model.MentorRewardDistribution{},
@@ -445,6 +448,8 @@ func useMentorRewardTestDB(t *testing.T, db *gorm.DB) {
 func seedMentorRewardTestFixture(t *testing.T, db *gorm.DB, now time.Time) mentorRewardTestFixture {
 	t.Helper()
 
+	const mentorCorporationID int64 = 1001
+
 	mentor := model.User{
 		Nickname: "Mentor",
 		BaseModel: model.BaseModel{
@@ -455,6 +460,19 @@ func seedMentorRewardTestFixture(t *testing.T, db *gorm.DB, now time.Time) mento
 	if err := db.Create(&mentor).Error; err != nil {
 		t.Fatalf("create mentor: %v", err)
 	}
+	mentorPrimaryCharacterID := int64(910000 + mentor.ID)
+	if err := db.Model(&model.User{}).Where("id = ?", mentor.ID).Update("primary_character_id", mentorPrimaryCharacterID).Error; err != nil {
+		t.Fatalf("set mentor primary character id: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   mentorPrimaryCharacterID,
+		CharacterName: "Mentor Prime",
+		UserID:        mentor.ID,
+		CorporationID: mentorCorporationID,
+	}).Error; err != nil {
+		t.Fatalf("create mentor character: %v", err)
+	}
+	setMentorRewardWalletCapabilityPolicy(t, db, mentorCorporationID)
 
 	lastLoginAt := now.Add(-2 * time.Hour)
 	mentee := model.User{
@@ -512,9 +530,40 @@ func seedMentorRewardMentorPrimaryCharacter(t *testing.T, db *gorm.DB, userID ui
 		CharacterID:   characterID,
 		CharacterName: characterName,
 		UserID:        userID,
+		CorporationID: 1001,
 	}).Error; err != nil {
 		t.Fatalf("create mentor primary character: %v", err)
 	}
+}
+
+func setMentorRewardWalletCapabilityPolicy(t *testing.T, db *gorm.DB, corporationID int64) {
+	t.Helper()
+
+	raw, err := json.Marshal(map[string]any{
+		"version":      1,
+		"default_mode": "deny",
+		"policies": []map[string]any{
+			{
+				"corporation_id": corporationID,
+				"full_access":    false,
+				"capabilities":   []string{model.CorpCapabilityWalletUserEnabled},
+				"rules":          map[string]any{},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal policy: %v", err)
+	}
+	if err := db.Where("key = ?", model.SysConfigCorporationAccessPolicies).
+		Assign(model.SystemConfig{
+			Key:   model.SysConfigCorporationAccessPolicies,
+			Value: string(raw),
+			Desc:  "mentor reward test policy",
+		}).
+		FirstOrCreate(&model.SystemConfig{}).Error; err != nil {
+		t.Fatalf("upsert policy: %v", err)
+	}
+	clearCorpPolicyCache()
 }
 
 func countMentorRewardDistributions(t *testing.T, db *gorm.DB, relationshipID uint) int64 {
