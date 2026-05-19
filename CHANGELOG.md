@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] - 2026-05-19
+
+### Added
+- NPC 击杀管理报表新增按军团 ticker 过滤能力，便于按军团维度筛选统计结果。
+- SDE 流程新增强制重导入能力，并记录查询失败信息以便排查。
+
+### Changed
+- 调整军团策略默认访问模式为 allow，降低初始策略配置门槛。
+- 为伏羲钱包使用链路补充基于军团 capability 的门禁控制。
+- 清理已废弃的策略规则与配置界面实现，收敛当前策略模型。
+
+### Fixed
+- 修复 mapSolarSystem 布尔标记字段映射，改为可空类型并收敛查询列，避免数据映射异常。
+
 ## [1.9.3] - 2026-05-18
 
 ### Changed
