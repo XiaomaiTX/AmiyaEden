@@ -2350,8 +2350,9 @@ declare namespace Api {
 
     /** 公司成员刷怪统计 */
     interface CorpMemberSummary {
-      character_id: number
-      character_name: string
+      user_id: number
+      display_name: string
+      character_count: number
       total_bounty: number
       total_ess: number
       total_incursion: number
