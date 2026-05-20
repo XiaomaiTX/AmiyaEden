@@ -124,7 +124,7 @@ Request and response structures are defined in handler code and `static/src/type
 
 1. 日期范围选择 + 军团 ticker 多选筛选（默认 `FUXI`、`FMA.1`）
 2. 5 卡片总览（同上）
-3. 成员列表（按实际收入降序，展示每人悬赏 / ESS / 税 / 实际收入 / 记录数）
+3. 成员列表（按实际收入降序，按系统用户聚合，展示昵称、角色数、悬赏 / ESS / 税 / 实际收入 / 记录数）
 4. 双列布局：按星系统计 + 时间趋势
 5. 无流水明细（管理视角不展示个人流水）
 
@@ -132,6 +132,8 @@ Request and response structures are defined in handler code and `static/src/type
 
 - `bounty_prizes` 和 `ess_escrow_transfer` 是唯一参与计算的 ref_type，其余钱包类型不纳入
 - 税金（`tax` 字段）为负数，参与实际收入计算时相当于扣减
+- 公司成员排行按系统用户聚合，不再按单角色聚合
+- 公司成员显示名优先 `user.nickname`，为空时回退为该用户本次统计内角色名字典序首个名称
 - 星系统计和趋势仅基于 `bounty_prizes`，ESS 转账不带星系上下文
 - 估算时长不是精确值，仅供参考，基于 30% 阈值过滤低效记录
 - 个人接口强制校验人物归属，不可跨用户查询

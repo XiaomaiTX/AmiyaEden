@@ -195,3 +195,78 @@ func TestCalcByNpcReportsSDEQueryErrorWhenTypeLookupFails(t *testing.T) {
 		t.Fatal("expected LastQueryError to be recorded")
 	}
 }
+
+func TestBuildCorpMemberSummariesByUser(t *testing.T) {
+	journals := []model.EVECharacterWalletJournal{
+		{CharacterID: 1001, RefType: "bounty_prizes", Amount: 100, Tax: -10},
+		{CharacterID: 1002, RefType: "bounty_prizes", Amount: 50, Tax: -5},
+		{CharacterID: 1002, RefType: "ess_escrow_transfer", Amount: 20, Tax: 0},
+		{CharacterID: 2001, RefType: "bounty_prizes", Amount: 90, Tax: -9},
+		{CharacterID: 2001, RefType: "agent_mission_reward", Amount: 10, Tax: 0},
+	}
+	charUserMap := map[int64]uint{
+		1001: 1,
+		1002: 1,
+		2001: 2,
+	}
+	charNameMap := map[int64]string{
+		1001: "Zulu Pilot",
+		1002: "Alpha Pilot",
+		2001: "Bravo Pilot",
+	}
+	userNicknameMap := map[uint]string{
+		1: "  Commander One  ",
+		2: "",
+	}
+
+	got := buildCorpMemberSummaries(journals, charUserMap, charNameMap, userNicknameMap)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 users, got %d", len(got))
+	}
+
+	var user1 *NpcKillCorpMemberSummary
+	var user2 *NpcKillCorpMemberSummary
+	for i := range got {
+		switch got[i].UserID {
+		case 1:
+			user1 = &got[i]
+		case 2:
+			user2 = &got[i]
+		}
+	}
+	if user1 == nil || user2 == nil {
+		t.Fatalf("expected both user summaries, got %+v", got)
+	}
+
+	if user1.DisplayName != "Commander One" {
+		t.Fatalf("user1 display name = %q, want %q", user1.DisplayName, "Commander One")
+	}
+	if user1.CharacterCount != 2 {
+		t.Fatalf("user1 character_count = %d, want 2", user1.CharacterCount)
+	}
+	if user1.TotalBounty != 150 {
+		t.Fatalf("user1 total_bounty = %v, want 150", user1.TotalBounty)
+	}
+	if user1.TotalESS != 20 {
+		t.Fatalf("user1 total_ess = %v, want 20", user1.TotalESS)
+	}
+	if user1.RecordCount != 2 {
+		t.Fatalf("user1 record_count = %d, want 2", user1.RecordCount)
+	}
+	if user1.ActualIncome != 155 {
+		t.Fatalf("user1 actual_income = %v, want 155", user1.ActualIncome)
+	}
+
+	if user2.DisplayName != "Bravo Pilot" {
+		t.Fatalf("user2 display name = %q, want %q", user2.DisplayName, "Bravo Pilot")
+	}
+	if user2.CharacterCount != 1 {
+		t.Fatalf("user2 character_count = %d, want 1", user2.CharacterCount)
+	}
+	if user2.TotalMission != 10 {
+		t.Fatalf("user2 total_mission = %v, want 10", user2.TotalMission)
+	}
+	if user2.ActualIncome != 91 {
+		t.Fatalf("user2 actual_income = %v, want 91", user2.ActualIncome)
+	}
+}

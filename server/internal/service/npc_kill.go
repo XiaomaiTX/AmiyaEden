@@ -21,6 +21,7 @@ import (
 type NpcKillService struct {
 	npcKillRepo *repository.NpcKillRepository
 	charRepo    *repository.EveCharacterRepository
+	userRepo    *repository.UserRepository
 	sdeRepo     *repository.SdeRepository
 	sdeSvc      *SdeService
 	esiClient   *esi.Client
@@ -37,6 +38,7 @@ func NewNpcKillService() *NpcKillService {
 	return &NpcKillService{
 		npcKillRepo: repository.NewNpcKillRepository(),
 		charRepo:    repository.NewEveCharacterRepository(),
+		userRepo:    repository.NewUserRepository(),
 		sdeRepo:     repository.NewSdeRepository(),
 		sdeSvc:      NewSdeService(),
 		esiClient:   esi.NewClientWithConfig(esiBaseURL, esiPrefix),
@@ -139,8 +141,9 @@ type NpcKillResponse struct {
 
 // NpcKillCorpMemberSummary 公司成员刷怪统计
 type NpcKillCorpMemberSummary struct {
-	CharacterID    int64   `json:"character_id"`
-	CharacterName  string  `json:"character_name"`
+	UserID         uint    `json:"user_id"`
+	DisplayName    string  `json:"display_name"`
+	CharacterCount int     `json:"character_count"`
 	TotalBounty    float64 `json:"total_bounty"`
 	TotalESS       float64 `json:"total_ess"`
 	TotalIncursion float64 `json:"total_incursion"`
@@ -292,10 +295,14 @@ func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpR
 	}
 
 	charIDs := make([]int64, 0, len(filteredChars))
+	charUserMap := make(map[int64]uint, len(filteredChars))
 	charNameMap := make(map[int64]string, len(filteredChars))
+	userIDSet := make(map[uint]struct{}, len(filteredChars))
 	for _, c := range filteredChars {
 		charIDs = append(charIDs, c.CharacterID)
+		charUserMap[c.CharacterID] = c.UserID
 		charNameMap[c.CharacterID] = c.CharacterName
+		userIDSet[c.UserID] = struct{}{}
 	}
 
 	// 获取所有记录
@@ -309,35 +316,21 @@ func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpR
 	// 总览
 	resp.Summary = s.calcSummary(allJournals)
 
-	// 按成员统计
-	memberMap := make(map[int64]*NpcKillCorpMemberSummary)
-	for _, j := range allJournals {
-		m, ok := memberMap[j.CharacterID]
-		if !ok {
-			m = &NpcKillCorpMemberSummary{
-				CharacterID:   j.CharacterID,
-				CharacterName: charNameMap[j.CharacterID],
-			}
-			memberMap[j.CharacterID] = m
-		}
-		switch j.RefType {
-		case "bounty_prizes":
-			m.TotalBounty += j.Amount
-			m.RecordCount++
-		case "ess_escrow_transfer":
-			m.TotalESS += j.Amount
-		case "incursion_payout":
-			m.TotalIncursion += j.Amount
-		case "agent_mission_reward":
-			m.TotalMission += j.Amount
-		}
-		m.TotalTax += j.Tax
+	userIDs := make([]uint, 0, len(userIDSet))
+	for userID := range userIDSet {
+		userIDs = append(userIDs, userID)
 	}
-	members := make([]NpcKillCorpMemberSummary, 0, len(memberMap))
-	for _, m := range memberMap {
-		m.ActualIncome = m.TotalBounty + m.TotalESS + m.TotalIncursion + m.TotalMission + m.TotalTax
-		members = append(members, *m)
+	users, err := s.userRepo.ListByIDs(userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("获取用户信息失败: %w", err)
 	}
+	userNicknameMap := make(map[uint]string, len(users))
+	for _, u := range users {
+		userNicknameMap[u.ID] = strings.TrimSpace(u.Nickname)
+	}
+
+	// 按系统用户统计
+	members := buildCorpMemberSummaries(allJournals, charUserMap, charNameMap, userNicknameMap)
 	// 按实际收入排序（降序）
 	sort.Slice(members, func(i, j int) bool {
 		return members[i].ActualIncome > members[j].ActualIncome
@@ -396,6 +389,83 @@ func (s *NpcKillService) calcSummary(journals []model.EVECharacterWalletJournal)
 	}
 
 	return summary
+}
+
+func buildCorpMemberSummaries(
+	journals []model.EVECharacterWalletJournal,
+	charUserMap map[int64]uint,
+	charNameMap map[int64]string,
+	userNicknameMap map[uint]string,
+) []NpcKillCorpMemberSummary {
+	memberMap := make(map[uint]*NpcKillCorpMemberSummary)
+	userCharacters := make(map[uint]map[int64]struct{})
+	userCharacterNames := make(map[uint]map[string]struct{})
+
+	for _, j := range journals {
+		userID, ok := charUserMap[j.CharacterID]
+		if !ok {
+			continue
+		}
+		m, exists := memberMap[userID]
+		if !exists {
+			m = &NpcKillCorpMemberSummary{UserID: userID}
+			memberMap[userID] = m
+		}
+
+		if _, ok := userCharacters[userID]; !ok {
+			userCharacters[userID] = make(map[int64]struct{})
+		}
+		userCharacters[userID][j.CharacterID] = struct{}{}
+
+		switch j.RefType {
+		case "bounty_prizes":
+			m.TotalBounty += j.Amount
+			m.RecordCount++
+		case "ess_escrow_transfer":
+			m.TotalESS += j.Amount
+		case "incursion_payout":
+			m.TotalIncursion += j.Amount
+		case "agent_mission_reward":
+			m.TotalMission += j.Amount
+		}
+		m.TotalTax += j.Tax
+	}
+
+	// collect stable fallback names from participated characters
+	for characterID, userID := range charUserMap {
+		if _, exists := userCharacters[userID][characterID]; !exists {
+			continue
+		}
+		if _, ok := userCharacterNames[userID]; !ok {
+			userCharacterNames[userID] = make(map[string]struct{})
+		}
+		name := strings.TrimSpace(charNameMap[characterID])
+		if name != "" {
+			userCharacterNames[userID][name] = struct{}{}
+		}
+	}
+
+	members := make([]NpcKillCorpMemberSummary, 0, len(memberMap))
+	for userID, m := range memberMap {
+		m.ActualIncome = m.TotalBounty + m.TotalESS + m.TotalIncursion + m.TotalMission + m.TotalTax
+		m.CharacterCount = len(userCharacters[userID])
+		m.DisplayName = strings.TrimSpace(userNicknameMap[userID])
+		if m.DisplayName == "" {
+			names := make([]string, 0, len(userCharacterNames[userID]))
+			for n := range userCharacterNames[userID] {
+				names = append(names, n)
+			}
+			sort.Strings(names)
+			if len(names) > 0 {
+				m.DisplayName = names[0]
+			} else {
+				m.DisplayName = fmt.Sprintf("User-%d", userID)
+			}
+		}
+		members = append(members, *m)
+	}
+
+	return members
 }
 
 // calcByNpc 按 NPC 分类统计

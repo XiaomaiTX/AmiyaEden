@@ -83,10 +83,17 @@
       >
         <ElTableColumn type="index" width="55" label="#" align="center" />
         <ElTableColumn
-          prop="character_name"
-          :label="$t('npcKill.characterName')"
+          prop="display_name"
+          :label="$t('npcKill.userDisplayName')"
           min-width="140"
           show-overflow-tooltip
+        />
+        <ElTableColumn
+          prop="character_count"
+          :label="$t('npcKill.characterCount')"
+          width="100"
+          align="right"
+          sortable
         />
         <ElTableColumn
           prop="total_bounty"
