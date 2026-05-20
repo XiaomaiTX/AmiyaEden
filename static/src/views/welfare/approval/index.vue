@@ -1,6 +1,6 @@
 <!-- 福利审批页面 -->
 <template>
-  <div class="welfare-approval-page art-full-height">
+  <div class="welfare-approval-page">
     <ElTooltip
       v-model:visible="tooltipVisible"
       virtual-triggering
@@ -447,13 +447,11 @@
     :deep(.el-tabs__content) {
       flex: 1;
       min-height: 0;
-      overflow: hidden;
     }
 
     :deep(.el-tab-pane) {
       display: flex;
       flex-direction: column;
-      height: 100%;
       min-height: 0;
     }
   }

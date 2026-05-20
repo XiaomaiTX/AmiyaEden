@@ -1,6 +1,6 @@
 <!-- 军团 PAP 记录页面（本系统 PAP + 联盟 PAP） -->
 <template>
-  <div class="pap-page art-full-height">
+  <div class="pap-page">
     <ElTabs v-model="activeTab" class="pap-tabs" type="border-card">
       <ElTabPane :label="$t('fleet.pap.myTitle')" name="corporation">
         <ElCard class="pap-card" shadow="never">

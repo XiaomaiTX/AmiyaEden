@@ -1,5 +1,5 @@
 <template>
-  <div class="corporation-structures-page art-full-height">
+  <div class="corporation-structures-page">
     <ElCard shadow="never" class="art-card mb-4">
       <div class="flex flex-col gap-1">
         <h2 class="text-lg font-medium">{{ $t('corporationStructures.title') }}</h2>
@@ -1356,48 +1356,6 @@
 
 <style scoped lang="scss">
   .corporation-structures-page {
-    :deep(.el-card__body) {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    :deep(.el-tabs) {
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    :deep(.el-tabs__content) {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    :deep(.el-tab-pane) {
-      height: 100%;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-    }
-
-    &__list-card {
-      flex: 1;
-      min-height: 0;
-    }
-
-    &__list-view {
-      display: flex;
-      flex: 1;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    &__list-toolbar {
-      flex: none;
-    }
-
     &__filter-drawer {
       :deep(.el-drawer__body) {
         display: flex;
@@ -1429,20 +1387,5 @@
       background: var(--el-bg-color);
       border-top: 1px solid var(--el-border-color-lighter);
     }
-  }
-
-  .corporation-structures-page__list-card :deep(.el-card__body) {
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .corporation-structures-page__list-card :deep(.el-table) {
-    flex: 1;
-    min-height: 0;
-  }
-
-  .corporation-structures-page__list-card :deep(.el-table__inner-wrapper) {
-    height: 100%;
-    min-height: 0;
   }
 </style>

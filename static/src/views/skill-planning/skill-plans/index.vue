@@ -1,5 +1,5 @@
 <template>
-  <div class="skill-plan-page art-full-height">
+  <div class="skill-plan-page">
     <div class="skill-plan-layout">
       <ElCard class="skill-plan-list-card" shadow="never">
         <div class="skill-plan-list-toolbar">
@@ -396,26 +396,18 @@
 
 <style scoped lang="scss">
   .skill-plan-page {
-    height: 100%;
-    min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
   }
 
   .skill-plan-layout {
-    flex: 1 1 auto;
-    min-height: 0;
     display: flex;
     align-items: flex-start;
     gap: 16px;
-    overflow: hidden;
   }
 
   .skill-plan-list-card,
   .skill-plan-detail-card {
-    height: 100%;
-    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;

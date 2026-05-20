@@ -1,6 +1,6 @@
 <!-- 我的福利页面 -->
 <template>
-  <div class="welfare-my-page art-full-height">
+  <div class="welfare-my-page">
     <ElCard class="art-table-card" shadow="never">
       <ElAlert type="success" :closable="false" class="mb-4" show-icon>
         <p class="break-all">
@@ -540,13 +540,11 @@
     :deep(.el-tabs__content) {
       flex: 1;
       min-height: 0;
-      overflow: hidden;
     }
 
     :deep(.el-tab-pane) {
       display: flex;
       flex-direction: column;
-      height: 100%;
       min-height: 0;
     }
   }

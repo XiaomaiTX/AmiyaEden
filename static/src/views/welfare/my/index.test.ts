@@ -10,13 +10,6 @@ test('welfare my tables use ArtTable emptyText instead of standalone ElEmpty blo
   assert.doesNotMatch(source, /<ElEmpty/)
 })
 
-test('welfare my page keeps the tab content full-height so tables can scroll instead of clipping', () => {
-  assert.match(source, /:deep\(\.el-card__body\)\s*\{[\s\S]*display:\s*flex/)
-  assert.match(source, /:deep\(\.el-tabs\)\s*\{[\s\S]*flex:\s*1/)
-  assert.match(source, /:deep\(\.el-tabs__content\)\s*\{[\s\S]*overflow:\s*hidden/)
-  assert.match(source, /:deep\(\.el-tab-pane\)\s*\{[\s\S]*height:\s*100%/)
-})
-
 test('welfare my apply tab provides role and welfare-name filters with all option', () => {
   assert.match(source, /v-model="roleFilter"/)
   assert.match(source, /t\('welfareMy\.filterAll'\)/)

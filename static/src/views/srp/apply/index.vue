@@ -1,6 +1,6 @@
 <!-- SRP 补损申请页面 -->
 <template>
-  <div class="srp-apply-page art-full-height">
+  <div class="srp-apply-page">
     <!-- 申请补损 -->
     <ElCard class="apply-card" shadow="never">
       <template #header>

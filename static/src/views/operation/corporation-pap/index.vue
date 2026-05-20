@@ -1,6 +1,6 @@
 <!-- 分析页例外：该页仍是统计卡片 + 自定义筛选混排，但表格本身复用共享 ArtTable ledger 呈现。 -->
 <template>
-  <div class="corporation-pap-page art-full-height">
+  <div class="corporation-pap-page">
     <ElCard class="art-search-card" shadow="never">
       <div class="filter-toolbar">
         <div class="filter-toolbar__main">

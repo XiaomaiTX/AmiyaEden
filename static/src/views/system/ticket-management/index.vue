@@ -1,5 +1,5 @@
 <template>
-  <div class="ticket-page art-full-height">
+  <div class="ticket-page">
     <div class="ticket-page__toolbar">
       <ElTabs v-model="activeTab" @tab-change="handleStatusTabChange">
         <ElTabPane :label="t('ticket.tabs.pending')" name="pending" />
