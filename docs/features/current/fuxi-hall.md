@@ -48,8 +48,13 @@ source_of_truth:
 - `page_key` 仅允许 `leadership | contributors`
 - 卡片必填：`nickname`、`main_character_name`、`title_tags`
 - `main_character_id` 不再由管理端手工输入，服务层会基于 `main_character_name` 调用 ESI `POST /universe/ids/` 解析并存储
+- `welfare_delivery_offset` 仅存储于卡片表，默认 `0`，仅 `super_admin` 可在编辑已有卡片时修改，且不得为负数
 - `description_html` 在服务层白名单清洗后入库与返回
 - `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
+- 管理端统计字段（仅 `leadership` 页）：
+  - `fleet_led_count`：按 `fleet.fc_user_id` 聚合
+  - `welfare_delivery_count`：`welfare delivered reviewer + shop delivered reviewer + welfare_delivery_offset`
+  - 无用户映射时统计值按 `0`
 - 样式约束：
   - `accent_color` 仅允许十六进制颜色值
   - `avatar_shape` 仅允许预设枚举值
@@ -77,6 +82,8 @@ source_of_truth:
 - 卡片增删改
 - 头像统一由已存储的 `main_character_id` 生成 ESI 人物头像（不支持自定义头像上传）
 - 受控样式编辑（强调色/头像形状/字体大小）
+- 管理角色可查看每位成员的 `带队次数` 与 `福利发放次数`，且各字段仅在对应值大于 `0` 时展示
+- `福利发放次数偏移` 仅在编辑已有卡片时可见，且只有 `super_admin` 可编辑
 - 显隐切换
 - 手动排序（上移/下移）
 - 管理态实时预览（未保存草稿即时映射）

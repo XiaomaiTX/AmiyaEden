@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 func useFuxiHallServiceTestDB(t *testing.T) {
@@ -16,6 +17,11 @@ func useFuxiHallServiceTestDB(t *testing.T) {
 	db := newServiceTestDB(t, "fuxi_hall_svc",
 		&model.FuxiHallPage{},
 		&model.FuxiHallCard{},
+		&model.User{},
+		&model.EveCharacter{},
+		&model.Fleet{},
+		&model.WelfareApplication{},
+		&model.ShopOrder{},
 	)
 	oldDB := global.DB
 	global.DB = db
@@ -86,7 +92,7 @@ func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 	}
 
 	badColor := "rgba(1,2,3,0.5)"
-	_, err = svc.UpdateCard(1, card.ID, &FuxiHallUpdateCardRequest{AccentColor: &badColor})
+	_, err = svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{AccentColor: &badColor})
 	if err == nil {
 		t.Fatal("expected invalid color error")
 	}
@@ -271,7 +277,7 @@ func TestFuxiHallUpdateCardReplacesTitleTags(t *testing.T) {
 	}
 
 	nextTags := []string{"  新标签  ", "新标签", "战略"}
-	updated, err := svc.UpdateCard(1, card.ID, &FuxiHallUpdateCardRequest{TitleTags: &nextTags})
+	updated, err := svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{TitleTags: &nextTags})
 	if err != nil {
 		t.Fatalf("UpdateCard: %v", err)
 	}
@@ -346,7 +352,7 @@ func TestFuxiHallUpdateCardReResolvesCharacterIDWhenNameChanged(t *testing.T) {
 	}
 
 	newName := "New Name"
-	updated, err := svc.UpdateCard(1, card.ID, &FuxiHallUpdateCardRequest{MainCharacterName: &newName})
+	updated, err := svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{MainCharacterName: &newName})
 	if err != nil {
 		t.Fatalf("UpdateCard: %v", err)
 	}
@@ -366,5 +372,148 @@ func TestFuxiHallCardJSONContainsTitleTags(t *testing.T) {
 	}
 	if !strings.Contains(string(raw), `"title_tags":["A","B"]`) {
 		t.Fatalf("expected title_tags in json, got: %s", string(raw))
+	}
+}
+
+func TestFuxiHallListManageCardsInjectsLeadershipStatsOnly(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := NewFuxiHallService()
+
+	user := model.User{PrimaryCharacterID: 9001}
+	if err := global.DB.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := global.DB.Create(&model.EveCharacter{CharacterID: 9001, UserID: user.ID, CharacterName: "Leader"}).Error; err != nil {
+		t.Fatalf("create eve character: %v", err)
+	}
+	now := time.Now()
+	if err := global.DB.Create(&model.Fleet{
+		ID:              "fleet-1",
+		Title:           "Fleet",
+		StartAt:         now,
+		EndAt:           now.Add(time.Hour),
+		Importance:      model.FleetImportanceOther,
+		FCUserID:        user.ID,
+		FCCharacterID:   9001,
+		FCCharacterName: "Leader",
+		AutoSrpMode:     model.FleetAutoSrpDisabled,
+	}).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+	if err := global.DB.Create(&model.WelfareApplication{
+		WelfareID:     1,
+		CharacterID:   9001,
+		CharacterName: "Leader",
+		Status:        model.WelfareAppStatusDelivered,
+		ReviewedBy:    user.ID,
+	}).Error; err != nil {
+		t.Fatalf("create welfare application: %v", err)
+	}
+	reviewerID := user.ID
+	if err := global.DB.Create(&model.ShopOrder{
+		OrderNo:           "SO-001",
+		UserID:            user.ID,
+		ProductID:         1,
+		ProductName:       "Product",
+		ProductType:       model.ProductTypeNormal,
+		Quantity:          1,
+		UnitPrice:         1,
+		TotalPrice:        1,
+		Status:            model.OrderStatusDelivered,
+		MainCharacterName: "Leader",
+		ReviewedBy:        &reviewerID,
+	}).Error; err != nil {
+		t.Fatalf("create shop order: %v", err)
+	}
+
+	if err := global.DB.Create(&model.FuxiHallCard{
+		PageKey:               "leadership",
+		Nickname:              "Leader",
+		MainCharacterID:       9001,
+		MainCharacterName:     "Leader",
+		TitleTags:             []string{"Admin"},
+		AccentColor:           "#3b82f6",
+		AvatarShape:           "circle",
+		FontScale:             14,
+		Visible:               true,
+		SortOrder:             1,
+		WelfareDeliveryOffset: 2,
+	}).Error; err != nil {
+		t.Fatalf("create leadership card: %v", err)
+	}
+	if err := global.DB.Create(&model.FuxiHallCard{
+		PageKey:           "contributors",
+		Nickname:          "Contributor",
+		MainCharacterID:   9001,
+		MainCharacterName: "Leader",
+		TitleTags:         []string{"Contributor"},
+		AccentColor:       "#3b82f6",
+		AvatarShape:       "circle",
+		FontScale:         14,
+		Visible:           true,
+		SortOrder:         1,
+	}).Error; err != nil {
+		t.Fatalf("create contributors card: %v", err)
+	}
+
+	leadershipCards, err := svc.ListManageCards("leadership")
+	if err != nil {
+		t.Fatalf("ListManageCards leadership: %v", err)
+	}
+	if len(leadershipCards) != 1 {
+		t.Fatalf("expected 1 leadership card, got %d", len(leadershipCards))
+	}
+	if leadershipCards[0].FleetLedCount != 1 {
+		t.Fatalf("fleet led count = %d, want 1", leadershipCards[0].FleetLedCount)
+	}
+	if leadershipCards[0].WelfareDeliveryCount != 4 {
+		t.Fatalf("welfare delivery count = %d, want 4", leadershipCards[0].WelfareDeliveryCount)
+	}
+
+	contributorCards, err := svc.ListManageCards("contributors")
+	if err != nil {
+		t.Fatalf("ListManageCards contributors: %v", err)
+	}
+	if len(contributorCards) != 1 {
+		t.Fatalf("expected 1 contributor card, got %d", len(contributorCards))
+	}
+	if contributorCards[0].FleetLedCount != 0 || contributorCards[0].WelfareDeliveryCount != 0 {
+		t.Fatalf("contributors stats should not be injected, got fleet=%d welfare=%d",
+			contributorCards[0].FleetLedCount, contributorCards[0].WelfareDeliveryCount)
+	}
+}
+
+func TestFuxiHallUpdateCardWelfareOffsetPermission(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 9010, nil })
+
+	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
+		PageKey:           "leadership",
+		Nickname:          "Offset",
+		MainCharacterName: "Main",
+		TitleTags:         []string{"Admin"},
+	})
+	if err != nil {
+		t.Fatalf("CreateCard: %v", err)
+	}
+
+	offset := 3
+	if _, err := svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{
+		WelfareDeliveryOffset: &offset,
+	}); err == nil {
+		t.Fatal("expected admin offset update to be rejected")
+	}
+
+	if _, err := svc.UpdateCard(1, card.ID, []string{model.RoleSuperAdmin}, &FuxiHallUpdateCardRequest{
+		WelfareDeliveryOffset: &offset,
+	}); err != nil {
+		t.Fatalf("super admin update offset: %v", err)
+	}
+
+	negative := -1
+	if _, err := svc.UpdateCard(1, card.ID, []string{model.RoleSuperAdmin}, &FuxiHallUpdateCardRequest{
+		WelfareDeliveryOffset: &negative,
+	}); err == nil {
+		t.Fatal("expected negative offset to be rejected")
 	}
 }

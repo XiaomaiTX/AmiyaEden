@@ -67,3 +67,23 @@ test('manage view no longer binds legacy card.title rendering', () => {
   assert.doesNotMatch(source, /v-model="cardForm\.title"/)
   assert.doesNotMatch(source, /row\.title\b/)
 })
+
+test('manage view shows stats only when values are greater than zero', () => {
+  assert.match(source, /row\.fleet_led_count/)
+  assert.match(source, /row\.welfare_delivery_count/)
+  assert.match(source, /\(row\.fleet_led_count \?\? 0\) > 0/)
+  assert.match(source, /\(row\.welfare_delivery_count \?\? 0\) > 0/)
+})
+
+test('manage view exposes welfare delivery offset only for super admin in edit mode', () => {
+  assert.match(source, /v-if="editingCardId && isSuperAdmin"/)
+  assert.match(source, /welfare_delivery_offset/)
+  assert.match(source, /roles\.includes\('super_admin'\)/)
+})
+
+test('manage view only sends welfare delivery offset in update payload for super admin', () => {
+  assert.match(source, /if \(editingCardId\.value\)/)
+  assert.match(source, /const updatePayload: Api\.FuxiHall\.UpdateCardParams = \{ \.\.\.payload \}/)
+  assert.match(source, /if \(isSuperAdmin\.value\)/)
+  assert.match(source, /updatePayload\.welfare_delivery_offset = cardForm\.welfare_delivery_offset/)
+})
