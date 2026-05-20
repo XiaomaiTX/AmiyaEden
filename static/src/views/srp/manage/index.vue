@@ -1,6 +1,6 @@
 <!-- SRP 补损审批管理页面 -->
 <template>
-  <div class="srp-manage-page art-full-height">
+  <div class="srp-manage-page">
     <ElCard class="art-table-card srp-manage-card" shadow="never">
       <div class="srp-manage-content">
         <ElTabs v-model="activeTab" @tab-change="handleTabChange">

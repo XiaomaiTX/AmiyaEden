@@ -1,6 +1,6 @@
 <!-- 用户管理页面 -->
 <template>
-  <div class="user-page art-full-height">
+  <div class="user-page">
     <!-- 搜索栏 -->
     <UserSearch v-model="searchForm" @search="handleSearch" @reset="resetSearchParams"></UserSearch>
 

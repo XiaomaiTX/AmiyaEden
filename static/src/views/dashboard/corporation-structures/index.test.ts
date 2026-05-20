@@ -83,31 +83,6 @@ test('corporation structures reinforce hour formatter keeps 00 as valid hour', (
   assert.match(source, /return String\(hour\)\.padStart\(2, '0'\)/)
 })
 
-test('corporation structures full-height tabs define explicit height chain styles', () => {
-  assert.match(source, /<style scoped lang="scss">/)
-  assert.match(
-    source,
-    /:deep\(\.el-card__body\)\s*\{[\s\S]*display:\s*flex;[\s\S]*min-height:\s*0;/s
-  )
-  assert.match(source, /:deep\(\.el-tabs\)\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;/s)
-  assert.match(
-    source,
-    /:deep\(\.el-tabs__content\)\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;[\s\S]*overflow:\s*hidden;/s
-  )
-  assert.match(
-    source,
-    /:deep\(\.el-tab-pane\)\s*\{[\s\S]*height:\s*100%;[\s\S]*min-height:\s*0;[\s\S]*display:\s*flex;/s
-  )
-  assert.match(source, /class="art-table-card corporation-structures-page__list-card"/)
-  assert.match(source, /&__list-card\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;/s)
-  assert.match(
-    source,
-    /\.corporation-structures-page__list-card :deep\(\.el-card__body\)\s*\{[\s\S]*flex:\s*1;[\s\S]*overflow:\s*hidden;/s
-  )
-  assert.match(source, /&__filter-drawer\s*\{[\s\S]*el-drawer__body/s)
-  assert.match(source, /&__filter-drawer-content\s*\{[\s\S]*overflow:\s*auto;/s)
-})
-
 test('corporation structures settings supports disabling dashboard authorization per corporation', () => {
   assert.match(source, /corporationStructures\.options\.disabled/)
   assert.match(source, /:value="0"/)

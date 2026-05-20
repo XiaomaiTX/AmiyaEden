@@ -1,6 +1,6 @@
 <!-- 福利设置页面 -->
 <template>
-  <div class="welfare-settings-page art-full-height">
+  <div class="welfare-settings-page">
     <ElCard class="art-table-card" shadow="never">
       <ElTabs v-model="activeTab" @tab-change="handleSettingsTabChange">
         <ElTabPane :label="t('welfareSettings.welfareListTab')" name="welfares">
@@ -795,13 +795,11 @@
     :deep(.el-tabs__content) {
       flex: 1;
       min-height: 0;
-      overflow: hidden;
     }
 
     :deep(.el-tab-pane) {
       display: flex;
       flex-direction: column;
-      height: 100%;
       min-height: 0;
     }
   }
