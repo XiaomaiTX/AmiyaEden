@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -114,6 +115,10 @@ type CreateFleetRequest struct {
 
 // CreateFleet 创建舰队
 func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model.Fleet, error) {
+	if err := validatePapCountHalfStep(req.PapCount); err != nil {
+		return nil, err
+	}
+
 	// 验证人物属于当前用户
 	char, err := s.charRepo.GetByCharacterID(req.CharacterID)
 	if err != nil {
@@ -259,6 +264,9 @@ func (s *FleetService) UpdateFleet(fleetID string, userID uint, userRoles []stri
 		fleet.Importance = *req.Importance
 	}
 	if req.PapCount != nil {
+		if err := validatePapCountHalfStep(*req.PapCount); err != nil {
+			return nil, err
+		}
 		fleet.PapCount = *req.PapCount
 	}
 	if req.CharacterID != nil {
@@ -497,8 +505,8 @@ func (s *FleetService) IssuePap(fleetID string, userID uint, userRoles []string)
 	if !s.canManageFleet(fleet, userID, userRoles) {
 		return errors.New("权限不足")
 	}
-	if fleet.PapCount <= 0 {
-		return errors.New("PAP 数量必须大于 0")
+	if err := validatePapCountHalfStep(fleet.PapCount); err != nil {
+		return err
 	}
 
 	// 1. 先尝试 ESI 同步成员（失败不阻断发放）
@@ -752,6 +760,17 @@ func calculateFCSalaryAmount(fcInMembers bool, existingSalaryAmount float64, mon
 		return 0
 	}
 	return currentSalary
+}
+
+func validatePapCountHalfStep(v float64) error {
+	if v <= 0 {
+		return errors.New("PAP 数量必须大于 0 且按 0.5 粒度")
+	}
+	halfSteps := v * 2
+	if math.Abs(halfSteps-math.Round(halfSteps)) > 1e-9 {
+		return errors.New("PAP 数量必须大于 0 且按 0.5 粒度")
+	}
+	return nil
 }
 
 // papImportanceToWalletRate 将舰队重要性映射到对应的 PAP 兑换汇率（伏羲币 / 1 PAP）

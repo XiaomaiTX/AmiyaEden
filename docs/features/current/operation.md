@@ -72,6 +72,7 @@ source_of_truth:
 - 军团 PAP 页面属于多块统计 + 表格混排的分析页，当前明确允许不走 `useTable` / `ArtTable` 默认模板
 - 发放 PAP 时的伏羲币换算不再是固定 1:1，而是按舰队 `importance`（`cta` / `strat_op` / `other`）查询 `pap_type_rate` 表中对应汇率；若成员是舰队 FC，则优先发放固定 `FC工资`，并受 `FC工资上限次数` 约束，汇率配置入口在「系统管理 → PAP兑换」，详见 `docs/features/current/pap-exchange.md`
 - 发放 PAP 时的伏羲币奖励受多人物奖励限制：同一用户在同一舰队中的多个人物按配置递减奖励，详见 `docs/features/current/pap-exchange.md`
+- 舰队 `pap_count` 统一要求大于 `0` 且按 `0.5` 粒度；创建、编辑、发放都会执行该校验。历史不符合粒度的舰队不会被自动修正，需先编辑到合法值后才能发放。
 - 联盟 PAP 月度归档为纯归档操作，当前不进行钱包兑换（该能力预留为未来特性）
 
 ## 主要代码文件

@@ -373,3 +373,108 @@ func TestFleetServiceBuildCorporationPapFilter(t *testing.T) {
 		}
 	})
 }
+
+func TestValidatePapCountHalfStep(t *testing.T) {
+	t.Run("accepts valid values", func(t *testing.T) {
+		valid := []float64{0.5, 1, 1.5}
+		for _, v := range valid {
+			if err := validatePapCountHalfStep(v); err != nil {
+				t.Fatalf("validatePapCountHalfStep(%v) unexpected error: %v", v, err)
+			}
+		}
+	})
+
+	t.Run("rejects invalid values", func(t *testing.T) {
+		invalid := []float64{0, -1, 0.3, 1.2}
+		for _, v := range invalid {
+			if err := validatePapCountHalfStep(v); err == nil {
+				t.Fatalf("validatePapCountHalfStep(%v) expected error", v)
+			}
+		}
+	})
+}
+
+func TestCreateFleetRejectsInvalidPapCount(t *testing.T) {
+	svc := &FleetService{}
+	_, err := svc.CreateFleet(1, &CreateFleetRequest{
+		Title:       "bad pap",
+		StartAt:     time.Now().UTC().Format(time.RFC3339),
+		EndAt:       time.Now().UTC().Add(time.Hour).Format(time.RFC3339),
+		Importance:  model.FleetImportanceCTA,
+		PapCount:    1.2,
+		CharacterID: 1001,
+	})
+	if err == nil {
+		t.Fatal("expected create fleet to reject invalid pap_count")
+	}
+	if err.Error() != "PAP 数量必须大于 0 且按 0.5 粒度" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestUpdateFleetRejectsInvalidPapCount(t *testing.T) {
+	db := newFleetServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	fleet := &model.Fleet{
+		ID:              "fleet-update-pap",
+		Title:           "fleet",
+		StartAt:         time.Now().UTC().Add(-time.Hour),
+		EndAt:           time.Now().UTC(),
+		Importance:      model.FleetImportanceCTA,
+		PapCount:        1,
+		FCUserID:        42,
+		FCCharacterID:   9001,
+		FCCharacterName: "FC",
+		AutoSrpMode:     model.FleetAutoSrpDisabled,
+	}
+	if err := db.Create(fleet).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+
+	svc := &FleetService{repo: repository.NewFleetRepository()}
+	badPap := 1.2
+	_, err := svc.UpdateFleet("fleet-update-pap", 42, []string{model.RoleFC}, &UpdateFleetRequest{
+		PapCount: &badPap,
+	})
+	if err == nil {
+		t.Fatal("expected update fleet to reject invalid pap_count")
+	}
+	if err.Error() != "PAP 数量必须大于 0 且按 0.5 粒度" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestIssuePapRejectsInvalidPapCount(t *testing.T) {
+	db := newFleetServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	fleet := &model.Fleet{
+		ID:              "fleet-issue-pap",
+		Title:           "fleet",
+		StartAt:         time.Now().UTC().Add(-time.Hour),
+		EndAt:           time.Now().UTC(),
+		Importance:      model.FleetImportanceCTA,
+		PapCount:        1.2,
+		FCUserID:        42,
+		FCCharacterID:   9001,
+		FCCharacterName: "FC",
+		AutoSrpMode:     model.FleetAutoSrpDisabled,
+	}
+	if err := db.Create(fleet).Error; err != nil {
+		t.Fatalf("create fleet: %v", err)
+	}
+
+	svc := &FleetService{repo: repository.NewFleetRepository()}
+	err := svc.IssuePap("fleet-issue-pap", 42, []string{model.RoleFC})
+	if err == nil {
+		t.Fatal("expected issue pap to reject invalid pap_count")
+	}
+	if err.Error() != "PAP 数量必须大于 0 且按 0.5 粒度" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

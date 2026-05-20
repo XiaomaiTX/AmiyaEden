@@ -50,7 +50,14 @@
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.papCount')" prop="pap_count">
-          <ElInputNumber v-model="formData.pap_count" :min="0" :max="100" style="width: 100%" />
+          <ElInputNumber
+            v-model="formData.pap_count"
+            :min="0"
+            :max="100"
+            :step="0.5"
+            step-strictly
+            style="width: 100%"
+          />
         </ElFormItem>
         <ElFormItem :label="$t('fleet.fields.fc')" prop="character_id">
           <ElSelect
@@ -197,6 +204,12 @@
   function defaultTimeRange(): [string, string] {
     const now = Date.now()
     return [fmtLocalISO(new Date(now - 5_400_000)), fmtLocalISO(new Date(now + 5_400_000))]
+  }
+
+  const isHalfStepPap = (value: number) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return false
+    if (value <= 0) return false
+    return Math.abs(value * 2 - Math.round(value * 2)) < 1e-9
   }
 
   // ─── 表格 ───
@@ -351,7 +364,19 @@
   const formRules: FormRules = {
     title: [{ required: true, message: t('fleet.fields.titlePlaceholder'), trigger: 'blur' }],
     importance: [{ required: true, message: t('fleet.fields.importance'), trigger: 'change' }],
-    pap_count: [{ required: true, message: t('fleet.fields.papCount'), trigger: 'blur' }],
+    pap_count: [
+      { required: true, message: t('fleet.fields.papCount'), trigger: 'blur' },
+      {
+        validator: (_rule, value, callback) => {
+          if (isHalfStepPap(value)) {
+            callback()
+            return
+          }
+          callback(new Error('PAP 数量必须大于 0 且按 0.5 粒度'))
+        },
+        trigger: ['blur', 'change']
+      }
+    ],
     character_id: [{ required: true, message: t('fleet.fields.fcPlaceholder'), trigger: 'change' }],
     time_range: [{ required: true, message: t('fleet.fields.timeRange'), trigger: 'change' }]
   }

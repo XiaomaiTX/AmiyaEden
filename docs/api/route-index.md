@@ -103,18 +103,18 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/operation/fleets` | 创建舰队 | `RequireRole(admin, fc, senior_fc)` |
+| POST | `/operation/fleets` | 创建舰队；`pap_count` 必须大于 `0` 且按 `0.5` 粒度 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets` | 舰队列表 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/me` | 我的舰队 | Login |
 | GET | `/operation/fleets/:id` | 舰队详情 | `RequireRole(admin, fc, senior_fc)` |
-| PUT | `/operation/fleets/:id` | 更新舰队 | `RequireRole(admin, fc, senior_fc)` |
+| PUT | `/operation/fleets/:id` | 更新舰队；若提交 `pap_count`，其值必须大于 `0` 且按 `0.5` 粒度 | `RequireRole(admin, fc, senior_fc)` |
 | DELETE | `/operation/fleets/:id` | 删除舰队 | `RequireRole(admin)` |
 | POST | `/operation/fleets/:id/refresh-esi` | 刷新舰队 ESI 数据 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/:id/members` | 舰队成员 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/:id/members-pap` | 舰队成员与 PAP | `RequireRole(admin, fc, senior_fc)` |
 | POST | `/operation/fleets/:id/members/manual` | 手动添加成员 | `RequireRole(admin, fc, senior_fc)` |
 | POST | `/operation/fleets/:id/members/sync` | 同步 ESI 成员 | `RequireRole(admin, fc, senior_fc)` |
-| POST | `/operation/fleets/:id/pap` | 发放 PAP | `RequireRole(admin, fc, senior_fc)` |
+| POST | `/operation/fleets/:id/pap` | 发放 PAP；仅允许对 `pap_count` 为 `0.5` 粒度且大于 `0` 的舰队执行发放 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/:id/pap` | PAP 日志 | `RequireRole(admin, fc, senior_fc)` |
 | GET | `/operation/fleets/pap/me` | 我的 PAP 日志 | Login |
 | GET | `/operation/fleets/pap/corporation` | 军团 PAP 汇总 | Login |
