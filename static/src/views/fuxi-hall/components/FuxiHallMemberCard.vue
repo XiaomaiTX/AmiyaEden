@@ -27,18 +27,34 @@
         </div>
       </div>
       <div class="fuxi-hall-member-card__description" v-html="card.description_html" />
+      <div
+        v-if="
+          showStats && ((card.fleet_led_count ?? 0) > 0 || (card.welfare_delivery_count ?? 0) > 0)
+        "
+        class="fuxi-hall-member-card__stats"
+      >
+        <p v-if="(card.fleet_led_count ?? 0) > 0">
+          {{ t('fuxiHall.public.fleetLedCount') }}：{{ card.fleet_led_count }}
+        </p>
+        <p v-if="(card.welfare_delivery_count ?? 0) > 0"
+          >{{ t('fuxiHall.public.welfareDeliveryCount') }}：{{ card.welfare_delivery_count }}</p
+        >
+      </div>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
   import { computed } from 'vue'
+  import { useI18n } from 'vue-i18n'
 
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   const props = defineProps<{
     card: Api.FuxiHall.Card
+    showStats?: boolean
   }>()
+  const { t } = useI18n()
 
   const cardStyle = computed(() => ({
     '--accent-color': props.card.accent_color,
@@ -117,5 +133,16 @@
     color: var(--el-text-color-secondary);
     line-height: 1.6;
     overflow-wrap: anywhere;
+  }
+
+  .fuxi-hall-member-card__stats {
+    margin-top: 10px;
+    color: var(--el-text-color-regular);
+    font-size: calc(var(--member-font-size) - 1px);
+    line-height: 1.5;
+  }
+
+  .fuxi-hall-member-card__stats p {
+    margin: 0;
   }
 </style>

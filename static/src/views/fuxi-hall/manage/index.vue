@@ -53,6 +53,21 @@
             </template>
           </ElTableColumn>
           <ElTableColumn prop="nickname" :label="t('fuxiHall.manage.nickname')" min-width="140" />
+          <ElTableColumn :label="t('fuxiHall.manage.stats')" min-width="180">
+            <template #default="{ row }">
+              <div
+                v-if="(row.fleet_led_count ?? 0) > 0 || (row.welfare_delivery_count ?? 0) > 0"
+                class="fuxi-hall-manage__stats"
+              >
+                <div v-if="(row.fleet_led_count ?? 0) > 0">
+                  {{ t('fuxiHall.manage.fleetLedCount') }}: {{ row.fleet_led_count }}
+                </div>
+                <div v-if="(row.welfare_delivery_count ?? 0) > 0">
+                  {{ t('fuxiHall.manage.welfareDeliveryCount') }}: {{ row.welfare_delivery_count }}
+                </div>
+              </div>
+            </template>
+          </ElTableColumn>
           <ElTableColumn
             prop="main_character_name"
             :label="t('fuxiHall.manage.mainCharacterName')"
@@ -114,7 +129,12 @@
           />
 
           <section v-if="previewCards.length > 0" class="fuxi-hall-manage__preview-grid">
-            <FuxiHallMemberCard v-for="card in previewCards" :key="card.id" :card="card" />
+            <FuxiHallMemberCard
+              v-for="card in previewCards"
+              :key="card.id"
+              :card="card"
+              :show-stats="true"
+            />
           </section>
 
           <section v-else class="fuxi-hall-manage__preview-empty">
@@ -178,6 +198,12 @@
           <ElFormItem :label="t('fuxiHall.manage.visible')">
             <ElSwitch v-model="cardForm.visible" />
           </ElFormItem>
+          <ElFormItem
+            v-if="editingCardId && isSuperAdmin"
+            :label="t('fuxiHall.manage.welfareDeliveryOffset')"
+          >
+            <ElInputNumber v-model="cardForm.welfare_delivery_offset" :min="0" />
+          </ElFormItem>
         </div>
 
         <ElFormItem :label="t('fuxiHall.manage.cardDescription')">
@@ -209,9 +235,11 @@
     updateFuxiHallCard,
     updateFuxiHallPage
   } from '@/api/fuxi-hall'
+  import { useUserStore } from '@/store/modules/user'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
 
   const { t } = useI18n()
+  const userStore = useUserStore()
 
   const loading = ref(false)
   const savingPage = ref(false)
@@ -240,6 +268,7 @@
     avatar_shape: Api.FuxiHall.AvatarShape
     font_scale: number
     visible: boolean
+    welfare_delivery_offset: number
   }
 
   const pageForm = reactive<PageFormState>({
@@ -257,7 +286,12 @@
     accent_color: '#3b82f6',
     avatar_shape: 'circle',
     font_scale: 14,
-    visible: true
+    visible: true,
+    welfare_delivery_offset: 0
+  })
+  const isSuperAdmin = computed(() => {
+    const roles = userStore.getUserInfo?.roles ?? []
+    return roles.includes('super_admin')
   })
 
   const avatarShapeOptions = computed(() => [
@@ -294,6 +328,9 @@
       avatar_shape: cardForm.avatar_shape,
       font_scale: cardForm.font_scale,
       visible: cardForm.visible,
+      fleet_led_count: 0,
+      welfare_delivery_count: 0,
+      welfare_delivery_offset: cardForm.welfare_delivery_offset,
       sort_order: editingCardId.value ? 0 : visibleCards.length + 1,
       created_at: '',
       updated_at: ''
@@ -375,6 +412,7 @@
     cardForm.avatar_shape = 'circle'
     cardForm.font_scale = 14
     cardForm.visible = true
+    cardForm.welfare_delivery_offset = 0
     titleTagInput.value = ''
   }
 
@@ -395,6 +433,7 @@
     cardForm.avatar_shape = card.avatar_shape
     cardForm.font_scale = card.font_scale
     cardForm.visible = card.visible
+    cardForm.welfare_delivery_offset = card.welfare_delivery_offset ?? 0
     titleTagInput.value = ''
     cardDialogOpen.value = true
   }
@@ -424,7 +463,11 @@
     savingCard.value = true
     try {
       if (editingCardId.value) {
-        await updateFuxiHallCard(editingCardId.value, payload)
+        const updatePayload: Api.FuxiHall.UpdateCardParams = { ...payload }
+        if (isSuperAdmin.value) {
+          updatePayload.welfare_delivery_offset = cardForm.welfare_delivery_offset
+        }
+        await updateFuxiHallCard(editingCardId.value, updatePayload)
       } else {
         await createFuxiHallCard(payload)
       }
@@ -572,6 +615,15 @@
     display: flex;
     gap: 8px;
     align-items: center;
+  }
+
+  .fuxi-hall-manage__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--el-text-color-regular);
+    font-size: 13px;
+    line-height: 1.4;
   }
 
   .fuxi-hall-manage__preview {

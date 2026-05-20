@@ -40,6 +40,11 @@ var (
 // FuxiHallService 伏羲大厅业务层
 type FuxiHallService struct {
 	repo               *repository.FuxiHallRepository
+	userRepo           *repository.UserRepository
+	eveCharacterRepo   *repository.EveCharacterRepository
+	fleetRepo          *repository.FleetRepository
+	welfareRepo        *repository.WelfareRepository
+	shopRepo           *repository.ShopRepository
 	resolveCharacterID func(ctx context.Context, characterName string) (int64, error)
 	auditSvc           *AuditService
 }
@@ -47,6 +52,11 @@ type FuxiHallService struct {
 func NewFuxiHallService() *FuxiHallService {
 	return &FuxiHallService{
 		repo:               repository.NewFuxiHallRepository(),
+		userRepo:           repository.NewUserRepository(),
+		eveCharacterRepo:   repository.NewEveCharacterRepository(),
+		fleetRepo:          repository.NewFleetRepository(),
+		welfareRepo:        repository.NewWelfareRepository(),
+		shopRepo:           repository.NewShopRepository(),
 		resolveCharacterID: resolveCharacterIDByNameFromESI,
 		auditSvc:           NewAuditService(),
 	}
@@ -76,14 +86,22 @@ type FuxiHallCreateCardRequest struct {
 }
 
 type FuxiHallUpdateCardRequest struct {
-	Nickname          *string   `json:"nickname"`
-	MainCharacterName *string   `json:"main_character_name"`
-	TitleTags         *[]string `json:"title_tags"`
-	DescriptionHTML   *string   `json:"description_html"`
-	AccentColor       *string   `json:"accent_color"`
-	AvatarShape       *string   `json:"avatar_shape"`
-	FontScale         *int      `json:"font_scale"`
-	Visible           *bool     `json:"visible"`
+	Nickname              *string   `json:"nickname"`
+	MainCharacterName     *string   `json:"main_character_name"`
+	TitleTags             *[]string `json:"title_tags"`
+	DescriptionHTML       *string   `json:"description_html"`
+	AccentColor           *string   `json:"accent_color"`
+	AvatarShape           *string   `json:"avatar_shape"`
+	FontScale             *int      `json:"font_scale"`
+	Visible               *bool     `json:"visible"`
+	WelfareDeliveryOffset *int      `json:"welfare_delivery_offset"`
+}
+
+type FuxiHallManageCard struct {
+	model.FuxiHallCard
+	FleetLedCount         int64 `json:"fleet_led_count"`
+	WelfareDeliveryCount  int64 `json:"welfare_delivery_count"`
+	WelfareDeliveryOffset int   `json:"welfare_delivery_offset"`
 }
 
 type FuxiHallReorderRequest struct {
@@ -172,6 +190,61 @@ func (s *FuxiHallService) ListCards(pageKey string, visibleOnly bool) ([]model.F
 	return cards, nil
 }
 
+func (s *FuxiHallService) ListManageCards(pageKey string) ([]FuxiHallManageCard, error) {
+	normalizedPageKey, err := normalizeFuxiHallPageKey(pageKey)
+	if err != nil {
+		return nil, err
+	}
+	cards, err := s.ListCards(pageKey, false)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]FuxiHallManageCard, len(cards))
+	for i := range cards {
+		result[i] = FuxiHallManageCard{
+			FuxiHallCard:          cards[i],
+			WelfareDeliveryOffset: cards[i].WelfareDeliveryOffset,
+		}
+	}
+	if normalizedPageKey != string(model.FuxiHallPageLeadership) || len(cards) == 0 {
+		return result, nil
+	}
+
+	characterIDs := collectFuxiHallCharacterIDs(cards)
+	if len(characterIDs) == 0 {
+		return result, nil
+	}
+	characterToUser, err := s.resolveFuxiHallUsers(characterIDs)
+	if err != nil {
+		return nil, err
+	}
+	userIDs := collectFuxiHallUserIDs(characterToUser)
+	if len(userIDs) == 0 {
+		return result, nil
+	}
+
+	fleetCounts, err := s.fleetRepo.CountByCreatorUserIDs(userIDs)
+	if err != nil {
+		return nil, err
+	}
+	welfareCounts, err := s.welfareRepo.CountDeliveredByReviewers(userIDs)
+	if err != nil {
+		return nil, err
+	}
+	shopCounts, err := s.shopRepo.CountDeliveredByReviewers(userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range result {
+		userID := characterToUser[result[i].MainCharacterID]
+		result[i].FleetLedCount = fleetCounts[userID]
+		result[i].WelfareDeliveryCount = welfareCounts[userID] + shopCounts[userID] + int64(result[i].WelfareDeliveryOffset)
+	}
+
+	return result, nil
+}
+
 func (s *FuxiHallService) CreateCard(operatorID uint, req *FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
 	pageKey, err := normalizeFuxiHallPageKey(req.PageKey)
 	if err != nil {
@@ -244,7 +317,7 @@ func (s *FuxiHallService) CreateCard(operatorID uint, req *FuxiHallCreateCardReq
 	return card, nil
 }
 
-func (s *FuxiHallService) UpdateCard(operatorID, id uint, req *FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+func (s *FuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string, req *FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
 	card, err := s.repo.GetCardByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -315,6 +388,15 @@ func (s *FuxiHallService) UpdateCard(operatorID, id uint, req *FuxiHallUpdateCar
 	if req.Visible != nil {
 		updates["visible"] = *req.Visible
 	}
+	if req.WelfareDeliveryOffset != nil {
+		if !model.IsSuperAdmin(operatorRoles) {
+			return nil, NewUserVisibleError("仅超级管理员可以修改福利发放次数偏移")
+		}
+		if *req.WelfareDeliveryOffset < 0 {
+			return nil, NewUserVisibleError("福利发放次数偏移不能为负数")
+		}
+		updates["welfare_delivery_offset"] = *req.WelfareDeliveryOffset
+	}
 
 	if len(updates) == 0 {
 		return card, nil
@@ -333,6 +415,66 @@ func (s *FuxiHallService) UpdateCard(operatorID, id uint, req *FuxiHallUpdateCar
 	}
 	s.recordFuxiCardAudit("fuxi_card_update", operatorID, id, model.AuditResultSuccess, map[string]any{"nickname": updated.Nickname})
 	return updated, nil
+}
+
+func collectFuxiHallCharacterIDs(cards []model.FuxiHallCard) []int64 {
+	characterIDs := make([]int64, 0, len(cards))
+	seen := make(map[int64]struct{}, len(cards))
+	for _, card := range cards {
+		if card.MainCharacterID == 0 {
+			continue
+		}
+		if _, exists := seen[card.MainCharacterID]; exists {
+			continue
+		}
+		seen[card.MainCharacterID] = struct{}{}
+		characterIDs = append(characterIDs, card.MainCharacterID)
+	}
+	return characterIDs
+}
+
+func collectFuxiHallUserIDs(characterToUser map[int64]uint) []uint {
+	userIDs := make([]uint, 0, len(characterToUser))
+	seen := make(map[uint]struct{}, len(characterToUser))
+	for _, userID := range characterToUser {
+		if userID == 0 {
+			continue
+		}
+		if _, exists := seen[userID]; exists {
+			continue
+		}
+		seen[userID] = struct{}{}
+		userIDs = append(userIDs, userID)
+	}
+	return userIDs
+}
+
+func (s *FuxiHallService) resolveFuxiHallUsers(characterIDs []int64) (map[int64]uint, error) {
+	characterToUser, err := s.eveCharacterRepo.ListUserIDsByCharacterIDs(characterIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	missing := make([]int64, 0, len(characterIDs))
+	for _, characterID := range characterIDs {
+		if _, exists := characterToUser[characterID]; exists {
+			continue
+		}
+		missing = append(missing, characterID)
+	}
+	if len(missing) == 0 {
+		return characterToUser, nil
+	}
+
+	primaryMap, err := s.userRepo.ListByPrimaryCharacterIDs(missing)
+	if err != nil {
+		return nil, err
+	}
+	for characterID, userID := range primaryMap {
+		characterToUser[characterID] = userID
+	}
+
+	return characterToUser, nil
 }
 
 func (s *FuxiHallService) DeleteCard(operatorID, id uint) error {

@@ -224,6 +224,11 @@ func ensureFuxiHallSchema(db *gorm.DB) {
 			global.Logger.Warn("补齐 fuxi_hall_card.title_tags 失败", zap.Error(err))
 		}
 	}
+	if !migrator.HasColumn("fuxi_hall_card", "welfare_delivery_offset") {
+		if err := migrator.AddColumn(&model.FuxiHallCard{}, "WelfareDeliveryOffset"); err != nil {
+			global.Logger.Warn("补齐 fuxi_hall_card.welfare_delivery_offset 失败", zap.Error(err))
+		}
+	}
 }
 
 func ensureSkillPlanScopes(db *gorm.DB) {

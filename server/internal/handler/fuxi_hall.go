@@ -14,8 +14,9 @@ type fuxiHallService interface {
 	GetPageConfig(pageKey string) (*model.FuxiHallPage, error)
 	UpdatePageConfig(operatorID uint, pageKey string, req *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
 	ListCards(pageKey string, visibleOnly bool) ([]model.FuxiHallCard, error)
+	ListManageCards(pageKey string) ([]service.FuxiHallManageCard, error)
 	CreateCard(operatorID uint, req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
-	UpdateCard(operatorID, id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
+	UpdateCard(operatorID, id uint, operatorRoles []string, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
 	ReorderCards(operatorID uint, req *service.FuxiHallReorderRequest) error
 	DeleteCard(operatorID, id uint) error
 }
@@ -84,7 +85,7 @@ func (h *FuxiHallHandler) UpdatePageConfig(c *gin.Context) {
 
 // ListCards GET /api/v1/system/fuxi-hall/cards/:page_key
 func (h *FuxiHallHandler) ListCards(c *gin.Context) {
-	cards, err := h.svc.ListCards(c.Param("page_key"), false)
+	cards, err := h.svc.ListManageCards(c.Param("page_key"))
 	if err != nil {
 		respondFuxiHallError(c, err, "获取卡片列表失败")
 		return
@@ -119,7 +120,7 @@ func (h *FuxiHallHandler) UpdateCard(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
-	card, err := h.svc.UpdateCard(middleware.GetUserID(c), id, &req)
+	card, err := h.svc.UpdateCard(middleware.GetUserID(c), id, middleware.GetUserRoles(c), &req)
 	if err != nil {
 		respondFuxiHallError(c, err, "更新卡片失败")
 		return

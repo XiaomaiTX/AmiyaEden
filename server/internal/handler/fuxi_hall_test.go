@@ -15,14 +15,15 @@ import (
 )
 
 type stubFuxiHallService struct {
-	getPublicPage func(string) (*service.FuxiHallPublicPageResponse, error)
-	getPageConfig func(string) (*model.FuxiHallPage, error)
-	updatePage    func(uint, string, *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
-	listCards     func(string, bool) ([]model.FuxiHallCard, error)
-	createCard    func(uint, *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
-	updateCard    func(uint, uint, *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
-	reorderCards  func(uint, *service.FuxiHallReorderRequest) error
-	deleteCard    func(uint, uint) error
+	getPublicPage   func(string) (*service.FuxiHallPublicPageResponse, error)
+	getPageConfig   func(string) (*model.FuxiHallPage, error)
+	updatePage      func(uint, string, *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
+	listCards       func(string, bool) ([]model.FuxiHallCard, error)
+	listManageCards func(string) ([]service.FuxiHallManageCard, error)
+	createCard      func(uint, *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error)
+	updateCard      func(uint, uint, []string, *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
+	reorderCards    func(uint, *service.FuxiHallReorderRequest) error
+	deleteCard      func(uint, uint) error
 }
 
 func (s stubFuxiHallService) GetPublicPage(pageKey string) (*service.FuxiHallPublicPageResponse, error) {
@@ -57,6 +58,13 @@ func (s stubFuxiHallService) ListCards(pageKey string, visibleOnly bool) ([]mode
 	return nil, nil
 }
 
+func (s stubFuxiHallService) ListManageCards(pageKey string) ([]service.FuxiHallManageCard, error) {
+	if s.listManageCards != nil {
+		return s.listManageCards(pageKey)
+	}
+	return nil, nil
+}
+
 func (s stubFuxiHallService) CreateCard(operatorID uint, req *service.FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
 	if s.createCard != nil {
 		return s.createCard(operatorID, req)
@@ -64,9 +72,9 @@ func (s stubFuxiHallService) CreateCard(operatorID uint, req *service.FuxiHallCr
 	return nil, nil
 }
 
-func (s stubFuxiHallService) UpdateCard(operatorID, id uint, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+func (s stubFuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
 	if s.updateCard != nil {
-		return s.updateCard(operatorID, id, req)
+		return s.updateCard(operatorID, id, operatorRoles, req)
 	}
 	return nil, nil
 }
@@ -159,6 +167,34 @@ func TestFuxiHallHandlerReorderCardsBindsJSON(t *testing.T) {
 	}
 	if !called {
 		t.Fatal("expected service.ReorderCards to be called")
+	}
+}
+
+func TestFuxiHallHandlerListCardsUsesManageCardsEndpoint(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Params = gin.Params{{Key: "page_key", Value: "leadership"}}
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/cards/leadership", nil)
+
+	called := false
+	h := &FuxiHallHandler{svc: stubFuxiHallService{
+		listManageCards: func(pageKey string) ([]service.FuxiHallManageCard, error) {
+			called = true
+			if pageKey != "leadership" {
+				t.Fatalf("unexpected page key: %s", pageKey)
+			}
+			return []service.FuxiHallManageCard{}, nil
+		},
+	}}
+
+	h.ListCards(ctx)
+	resp := decodeFuxiHallResponse(t, recorder)
+	if resp.Code != response.CodeOK {
+		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
+	}
+	if !called {
+		t.Fatal("expected ListManageCards to be called")
 	}
 }
 

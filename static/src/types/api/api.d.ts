@@ -3180,6 +3180,9 @@ declare namespace Api {
       font_scale: number
       visible: boolean
       sort_order: number
+      fleet_led_count?: number
+      welfare_delivery_count?: number
+      welfare_delivery_offset?: number
       created_at: string
       updated_at: string
     }
@@ -3209,6 +3212,7 @@ declare namespace Api {
 
     type UpdateCardParams = Partial<CreateCardParams> & {
       title_tags?: string[]
+      welfare_delivery_offset?: number
     }
 
     interface ReorderParams {
