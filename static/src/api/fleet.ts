@@ -2,7 +2,7 @@ import request from '@/utils/http'
 
 // ─── 舰队 CRUD ───
 
-/** 创建舰队 */
+/** 创建舰队（pap_count 必须大于 0 且按 0.5 粒度） */
 export function createFleet(data: Api.Fleet.CreateFleetParams) {
   return request.post<Api.Fleet.FleetItem>({
     url: '/api/v1/operation/fleets',
@@ -32,7 +32,7 @@ export function fetchFleetDetail(id: string) {
   })
 }
 
-/** 更新舰队 */
+/** 更新舰队（若传 pap_count，则必须大于 0 且按 0.5 粒度） */
 export function updateFleet(id: string, data: Api.Fleet.UpdateFleetParams) {
   return request.put<Api.Fleet.FleetItem>({
     url: `/api/v1/operation/fleets/${id}`,
@@ -91,7 +91,7 @@ export function addFleetMembersByCharacterNames(
 
 // ─── PAP ───
 
-/** 发放 PAP */
+/** 发放 PAP（要求该舰队 pap_count 已满足 0.5 粒度且大于 0） */
 export function issuePap(fleetId: string) {
   return request.post({
     url: `/api/v1/operation/fleets/${fleetId}/pap`

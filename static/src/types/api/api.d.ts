@@ -411,7 +411,7 @@ declare namespace Api {
       start_at: string
       end_at: string
       importance: 'strat_op' | 'cta' | 'other'
-      pap_count: number
+      pap_count: number // 必须大于 0，且为 0.5 粒度
       fc_user_id: number
       fc_character_id: number
       fc_character_name: string
@@ -440,7 +440,7 @@ declare namespace Api {
       start_at: string
       end_at: string
       importance: 'strat_op' | 'cta' | 'other'
-      pap_count: number
+      pap_count: number // 必须大于 0，且为 0.5 粒度
       character_id: number
       fleet_config_id?: number | null
       send_ping?: boolean
@@ -454,7 +454,7 @@ declare namespace Api {
       start_at?: string
       end_at?: string
       importance?: string
-      pap_count?: number
+      pap_count?: number // 必须大于 0，且为 0.5 粒度
       character_id?: number
       esi_fleet_id?: number
       fleet_config_id?: number | null
