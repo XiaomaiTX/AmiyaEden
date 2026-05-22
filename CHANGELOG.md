@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-05-22
+
+### Added
+
+- Fuxi Hall 新增管理贡献统计与福利抵扣能力，扩展角色表现数据视图。
+- 舰队流程新增 PAP 计数校验，避免无效计数进入业务链路。
+- NPC 击杀统计新增按用户聚合成员数据并展示昵称，提升报表可读性。
+
+### Changed
+
+- 将人物页面提升为顶层路由，优化导航层级与访问路径。
+- 移除页面强制全高布局，收敛页面容器行为以提升布局适配性。
+
 ## [1.9.5] - 2026-05-19
 
 ### Fixed
