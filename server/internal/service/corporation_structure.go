@@ -91,6 +91,7 @@ type CorporationStructureService struct {
 	repo          *repository.CorporationStructureRepository
 	esiClient     *esi.Client
 	auditSvc      *AuditService
+	nameResolver  *EntityNameResolver
 }
 
 func NewCorporationStructureService() *CorporationStructureService {
@@ -103,6 +104,7 @@ func NewCorporationStructureService() *CorporationStructureService {
 		repo:          repository.NewCorporationStructureRepository(),
 		esiClient:     esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix),
 		auditSvc:      NewAuditService(),
+		nameResolver:  NewEntityNameResolver(),
 	}
 }
 
@@ -1083,19 +1085,15 @@ func (s *CorporationStructureService) resolveCorporationNames(
 		return names
 	}
 
-	type esiNameEntry struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
+	if s.nameResolver == nil {
+		s.nameResolver = NewEntityNameResolver()
 	}
-	var entries []esiNameEntry
-	if err := s.esiClient.PostJSON(ctx, "/universe/names?datasource=tranquility", "", corporationIDs, &entries); err != nil {
-		logCorporationStructuresWarn("[CorporationStructures] 解析军团名称失败", err)
-		return names
+	resolved := s.nameResolver.Resolve(ctx, corporationIDs)
+	for id, name := range resolved.Names {
+		names[id] = name
 	}
-	for _, entry := range entries {
-		if entry.Name != "" {
-			names[entry.ID] = entry.Name
-		}
+	if len(resolved.Miss) > 0 {
+		logCorporationStructuresWarn("[CorporationStructures] 部分军团名称解析失败", fmt.Errorf("misses=%d", len(resolved.Miss)))
 	}
 	return names
 }
