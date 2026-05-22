@@ -143,7 +143,14 @@ test('applyMenuAccessFilter keeps top-level Characters for logged-in users witho
   assert.equal(filtered.length, 1)
   assert.equal(filtered[0].name, 'Characters')
   assert.equal(filtered[0].path, '/characters')
-  assert.equal(filtered[0].meta?.login, true)
+})
+
+test('applyMenuAccessFilter keeps top-level Characters for guest users', () => {
+  const filtered = applyMenuAccessFilter([charactersRoutes], ['guest'], [])
+
+  assert.equal(filtered.length, 1)
+  assert.equal(filtered[0].name, 'Characters')
+  assert.equal(filtered[0].path, '/characters')
 })
 
 test('applyMenuAccessFilter hides mentor selection routes when mentor eligibility is unknown', () => {

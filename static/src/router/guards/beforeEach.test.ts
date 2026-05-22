@@ -22,6 +22,13 @@ test('dynamic route initialization fetches badge counts after storing the menu l
   assert.match(source, /menuStore\.setMenuList\(menuList\)[\s\S]*loadBadgeCounts\(badgeStore\)/)
 })
 
+test('dynamic route initialization always navigates when permission is granted', () => {
+  assert.match(
+    source,
+    /const redirected = applyCharactersGateTransition\([\s\S]*if \(!redirected\) \{[\s\S]*next\(\{/
+  )
+})
+
 test('invalid non-primary character still requires redirect to characters page', () => {
   assert.equal(
     shouldRedirectToCharactersPage(
