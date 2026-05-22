@@ -7,7 +7,6 @@ export const charactersRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.characters.title',
     icon: 'ri:user-3-line',
-    keepAlive: true,
-    login: true
+    keepAlive: true
   }
 }

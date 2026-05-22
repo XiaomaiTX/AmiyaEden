@@ -390,7 +390,7 @@ async function handleDynamicRoutes(
         })
       }
     } else {
-      applyCharactersGateTransition(
+      const redirected = applyCharactersGateTransition(
         { ...warningTransition, redirectPath: validatedPath },
         () => {
           // 有权限，正常导航
@@ -403,6 +403,16 @@ async function handleDynamicRoutes(
         },
         notifyCharactersGateRedirect
       )
+
+      if (!redirected) {
+        closeLoading()
+        next({
+          path: validatedPath,
+          query: validatedPath === to.path ? to.query : undefined,
+          hash: validatedPath === to.path ? to.hash : undefined,
+          replace: true
+        })
+      }
     }
   } catch (error) {
     console.error('[RouteGuard] 动态路由注册失败:', error)

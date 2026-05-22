@@ -300,6 +300,8 @@
     fetchDirectReferralStatus
   } from '@/api/newbro'
   import { useUserStore } from '@/store/modules/user'
+  import { isHttpError } from '@/utils/http/error'
+  import { ApiStatus } from '@/utils/http/status'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   defineOptions({ name: 'Characters' })
@@ -479,6 +481,9 @@
       directReferrerCandidate.value = null
       directReferrerQQ.value = ''
       checkedDirectReferrerQQ.value = ''
+      if (isHttpError(error) && error.code === ApiStatus.forbidden) {
+        return
+      }
       ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
     } finally {
       directReferralLoading.value = false
