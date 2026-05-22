@@ -1,23 +1,27 @@
 package handler
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/service"
-	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
 	"context"
-	"fmt"
 	"sort"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // SdeHandler SDE HTTP 处理器
 type SdeHandler struct {
-	svc *service.SdeService
+	svc                *service.SdeService
+	entityNameResolver *service.EntityNameResolver
 }
 
 func NewSdeHandler() *SdeHandler {
-	return &SdeHandler{svc: service.NewSdeService()}
+	return &SdeHandler{
+		svc:                service.NewSdeService(),
+		entityNameResolver: service.NewEntityNameResolver(),
+	}
 }
 
 // GetVersion godoc
@@ -79,6 +83,11 @@ type GetNamesRequest struct {
 type GetNamesResponse struct {
 	Flat  map[int]string            `json:"flat"`
 	Names map[string]map[int]string `json:"names"`
+	Miss  *GetNamesMisses           `json:"misses,omitempty"`
+}
+
+type GetNamesMisses struct {
+	ESI []int `json:"esi,omitempty"`
 }
 
 type getNamesESIEntry struct {
@@ -118,6 +127,21 @@ func mergeGetNamesESI(result *GetNamesResponse, entries []getNamesESIEntry) {
 		result.Names["esi"][entry.ID] = entry.Name
 		if _, exists := result.Flat[entry.ID]; !exists {
 			result.Flat[entry.ID] = entry.Name
+		}
+	}
+}
+
+func mergeGetNamesESIMisses(result *GetNamesResponse, misses []int64) {
+	if len(misses) == 0 {
+		return
+	}
+	if result.Miss == nil {
+		result.Miss = &GetNamesMisses{}
+	}
+	result.Miss.ESI = make([]int, 0, len(misses))
+	for _, id := range misses {
+		if id > 0 {
+			result.Miss.ESI = append(result.Miss.ESI, int(id))
 		}
 	}
 }
@@ -167,19 +191,21 @@ func (h *SdeHandler) GetNames(c *gin.Context) {
 			}
 		}
 		if len(validESI) > 0 {
-			var esiResult []getNamesESIEntry
-			client := esi.NewClient()
-			if err := client.PostJSON(
-				context.Background(),
-				"/universe/names?datasource=tranquility",
-				"",
-				validESI,
-				&esiResult,
-			); err != nil {
-				response.Fail(c, response.CodeBizError, fmt.Sprintf("ESI 查询失败: %v", err))
-				return
+			resolved := h.entityNameResolver.Resolve(context.Background(), validESI)
+			if len(resolved.Names) == 0 && len(resolved.Miss) == len(validESI) {
+				global.Logger.Warn("[SDE] ESI name resolve returned zero hit",
+					zap.Int("requested", len(validESI)),
+				)
+			}
+			esiResult := make([]getNamesESIEntry, 0, len(resolved.Names))
+			for id, name := range resolved.Names {
+				esiResult = append(esiResult, getNamesESIEntry{
+					ID:   int(id),
+					Name: name,
+				})
 			}
 			mergeGetNamesESI(&result, esiResult)
+			mergeGetNamesESIMisses(&result, resolved.Miss)
 		}
 	}
 

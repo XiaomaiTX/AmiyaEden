@@ -2234,6 +2234,9 @@ declare namespace Api {
     interface ResolveNamesResponse {
       flat: Record<number, string>
       names: Record<string, Record<number, string>>
+      misses?: {
+        esi?: number[]
+      }
     }
 
     /** 模糊搜索请求 */

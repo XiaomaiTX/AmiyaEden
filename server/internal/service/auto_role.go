@@ -5,7 +5,6 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
-	"amiya-eden/pkg/eve/esi"
 	"context"
 	"errors"
 	"fmt"
@@ -22,6 +21,7 @@ type AutoRoleService struct {
 	userRepo     *repository.UserRepository
 	roleSvc      *RoleService
 	auditSvc     *AuditService
+	nameResolver *EntityNameResolver
 }
 
 type CorpTitleInfo = repository.CorpTitleInfo
@@ -34,6 +34,7 @@ func NewAutoRoleService() *AutoRoleService {
 		userRepo:     repository.NewUserRepository(),
 		roleSvc:      NewRoleService(),
 		auditSvc:     NewAuditService(),
+		nameResolver: NewEntityNameResolver(),
 	}
 }
 
@@ -166,11 +167,6 @@ func (s *AutoRoleService) ListCorpTitles(ctx context.Context) ([]CorpTitleInfo, 
 	return titles, nil
 }
 
-type esiNameEntry struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
 func (s *AutoRoleService) fetchCorporationNames(ctx context.Context, titles []repository.CorpTitleInfo) (map[int64]string, error) {
 	corpIDSet := make(map[int64]struct{})
 	for _, t := range titles {
@@ -187,23 +183,17 @@ func (s *AutoRoleService) fetchCorporationNames(ctx context.Context, titles []re
 		corpIDs = append(corpIDs, id)
 	}
 
-	client := esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
-	var esiResults []esiNameEntry
-	if err := client.PostJSON(
-		ctx,
-		"/universe/names?datasource=tranquility",
-		"",
-		corpIDs,
-		&esiResults,
-	); err != nil {
-		return nil, fmt.Errorf("fetch corporation names from ESI: %w", err)
+	if s.nameResolver == nil {
+		s.nameResolver = NewEntityNameResolver()
 	}
-
-	nameMap := make(map[int64]string, len(esiResults))
-	for _, entry := range esiResults {
-		nameMap[int64(entry.ID)] = entry.Name
+	resolved := s.nameResolver.Resolve(ctx, corpIDs)
+	nameMap := make(map[int64]string, len(resolved.Names))
+	for id, name := range resolved.Names {
+		nameMap[id] = name
 	}
-
+	if len(resolved.Miss) > 0 {
+		return nameMap, fmt.Errorf("resolve corporation names: %d misses", len(resolved.Miss))
+	}
 	return nameMap, nil
 }
 

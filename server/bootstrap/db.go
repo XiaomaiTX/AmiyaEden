@@ -65,6 +65,7 @@ func autoMigrate(db *gorm.DB) {
 		&model.AuditEvent{},
 		&model.AuditExportTask{},
 		&model.EveCharacter{},
+		&model.EveEntityNameCache{},
 		&model.SdeVersion{},
 		// ESI 数据表
 		&model.EveCharacterAsset{},

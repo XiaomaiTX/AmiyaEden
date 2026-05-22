@@ -3,14 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
-	"amiya-eden/pkg/eve/esi"
 
 	"go.uber.org/zap"
 )
@@ -18,7 +16,8 @@ import (
 var ErrInvalidAllowCorporations = errors.New("军团 ID 必须为正整数")
 
 type SysConfigService struct {
-	repo *repository.SysConfigRepository
+	repo               *repository.SysConfigRepository
+	entityNameResolver *EntityNameResolver
 }
 
 type SDEConfig struct {
@@ -37,7 +36,10 @@ func NewSysConfigService() *SysConfigService {
 }
 
 func NewSysConfigServiceWithRepository(repo *repository.SysConfigRepository) *SysConfigService {
-	return &SysConfigService{repo: repo}
+	return &SysConfigService{
+		repo:               repo,
+		entityNameResolver: NewEntityNameResolver(),
+	}
 }
 
 func (s *SysConfigService) GetSDEConfig() SDEConfig {
@@ -110,35 +112,21 @@ func (s *SysConfigService) UpdateAllowCorporations(allowCorporations []int64) er
 	return nil
 }
 
-type sysConfigESINameEntry struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
 func (s *SysConfigService) resolveCorporationNames(ctx context.Context, corporationIDs []int64) (map[int64]string, error) {
 	nameMap := make(map[int64]string, len(corporationIDs))
 	if len(corporationIDs) == 0 {
 		return nameMap, nil
 	}
 
-	client := esi.NewClient()
-	if global.Config != nil {
-		client = esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
+	if s.entityNameResolver == nil {
+		s.entityNameResolver = NewEntityNameResolver()
 	}
-
-	var result []sysConfigESINameEntry
-	if err := client.PostJSON(
-		ctx,
-		"/universe/names?datasource=tranquility",
-		"",
-		corporationIDs,
-		&result,
-	); err != nil {
-		return nameMap, fmt.Errorf("fetch corporation names from ESI: %w", err)
+	resolved := s.entityNameResolver.Resolve(ctx, corporationIDs)
+	for id, name := range resolved.Names {
+		nameMap[id] = name
 	}
-
-	for _, entry := range result {
-		nameMap[int64(entry.ID)] = entry.Name
+	if len(resolved.Miss) > 0 {
+		return nameMap, errors.New("some corporation names are unresolved")
 	}
 	return nameMap, nil
 }
