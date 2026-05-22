@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-05-22
+
+### Fixed
+
+- 放开人物页面访客访问并修复路由守卫跳转流程，避免未登录状态下出现访问阻断。
+- 新增带缓存的实体名称解析器并统一 ESI 名称查询链路，修复多处名称解析不一致问题。
+
 ## [1.10.0] - 2026-05-22
 
 ### Added
