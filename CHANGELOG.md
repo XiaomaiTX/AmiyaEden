@@ -8,26 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.9.5] - 2026-05-19
 
 ### Fixed
+
 - 改进硬编码中文检测测试中的 HTML 注释清理与 script 标签检测：将 `stripComments` 从正则实现升级为基于 `parse5` 的解析，可靠移除注释节点（含嵌套注释与 CDATA 等边界场景），并将 script 提取正则改为大小写不敏感且支持带空格属性的标签。
 - 在 `static/package.json` 新增 `parse5` 依赖，确保 template/script 内容提取与注释忽略逻辑稳定一致。
 
 ## [1.9.4] - 2026-05-19
 
 ### Added
+
 - NPC 击杀管理报表新增按军团 ticker 过滤能力，便于按军团维度筛选统计结果。
 - SDE 流程新增强制重导入能力，并记录查询失败信息以便排查。
 
 ### Changed
+
 - 调整军团策略默认访问模式为 allow，降低初始策略配置门槛。
 - 为伏羲钱包使用链路补充基于军团 capability 的门禁控制。
 - 清理已废弃的策略规则与配置界面实现，收敛当前策略模型。
 
 ### Fixed
+
 - 修复 mapSolarSystem 布尔标记字段映射，改为可空类型并收敛查询列，避免数据映射异常。
 
 ## [1.9.3] - 2026-05-18
 
 ### Changed
+
 - 继续扩展军团能力策略覆盖范围，将信息、仪表盘、舰队、商城、工单、系统、新人/导师与伏羲大厅等业务域拆分为更细粒度的功能 capability，并同步收敛对应路由门禁。
 - 将系统基础配置中的功能能力标签全部改为 i18n 文案，并按业务域分组展示，便于运维人员快速定位和配置。
 - 为任务手动触发、公司刷怪聚合、钱包/商城/工单/审计/书签等入口补齐对应的能力与规则门禁，增强策略编辑的限制覆盖率。
@@ -35,29 +40,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.9.2] - 2026-05-18
 
 ### Fixed
+
 - 修复 SDE 手动更新导入中多行翻译文本导致的 SQL 断裂问题。
 - 加固 SDE 资源检查、下载、解压和状态管理流程，避免更新过程误报网络错误和状态不一致。
 
 ## [1.9.1] - 2026-05-18
 
 ### Changed
+
 - 扩展军团能力门控覆盖的业务域，并同步更新相关路由、菜单元数据与文档。
 - 将 SRP 审核按钮处理与 i18n 参数调用收敛为更直接的实现，降低组件层事件处理复杂度。
 - 将军团策略配置改为按选定军团保存，避免批量覆盖其他军团的策略数据。
 - 在军团白名单配置中展示已解析的军团名称，解析失败时回退显示军团 ID。
 
 ### Fixed
+
 - 允许对已拒绝的 SRP 申请重新提交，并复用原记录避免重复创建。
 - 修复 SRP 审核与军团策略保存中的误操作和覆盖问题。
 
 ## [1.9.0] - 2026-05-17
 
 ### Added
+
 - 新增军团能力策略层，支持按军团配置页面/功能 capability 和业务规则。
 - 新增 SRP `srp.recommendation_multiplier` 规则示例，并接入推荐金额计算链路。
 - 新增系统基础配置中的军团能力策略编辑区。
 
 ### Changed
+
 - `/api/v1/me` 返回军团能力上下文，供前端路由与菜单收敛访问入口。
 - SRP 与福利相关路由叠加军团 capability 门禁，并同步更新前端路由元数据。
 - 更新相关文档，补齐军团能力策略的 API、特性与草案说明。
@@ -65,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.8.1] - 2026-05-16
 
 ### Changed
+
 - 将 Fuxi Hall 角色名称解析切换到 ESI `universe/ids/` 接口，并同步更新相关文档。
 - 修正版本核查条件，要求同时检查 `static/package.json` 与 `CHANGELOG.md` 的 Git 历史。
 - 更新 `static/scripts/check-version-bump.js` 的报错提示，补充 `CHANGELOG.md` 历史检查命令。
@@ -73,13 +84,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.8.0] - 2026-05-16
 
 ### Added
+
 - 新增用户、工单、工具书签与 Fuxi Hall 的审计覆盖。
 
 ### Changed
+
 - Fuxi Hall 成员头衔展示改为使用头衔标签，并同步相关契约、页面与文档。
 - 更新 static-react 依赖锁定版本。
 
 ### Fixed
+
 - 将我的福利页技能规划检查链接改为本地化文案。
 - 将注册页、信息页钱包与技能 ESI 刷新提示改为本地化文案。
 - 将富文本编辑器默认占位符与图片上传提示改为本地化文案。
@@ -107,20 +121,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.7.0] - 2026-05-13
 
 ### Added
+
 - 新增常用工具网站管理与信息页书签页面。
 - 新增用户自助注销账号能力。
 - 军团建筑列表新增已分配燃料官展示。
 
 ### Changed
+
 - 整理 Fuxi Hall 卡片模型与展示结构，移除封面图布局并同步更新相关文档、路由和测试。
 - 同步更新常用工具网站、军团建筑和账号注销相关前端类型、本地化文案与服务端接口。
 
 ### Fixed
+
 - 修正部分后端查询在数据库方言下的兼容性问题。
 
 ## [1.6.2] - 2026-05-13
 
 ### Changed
+
 - 将军团建筑高级筛选改为抽屉展示，减少列表页固定占用空间。
 - Fuxi Hall 卡片改为使用 ESI 角色头像。
 - 军团建筑燃料官分配改为基于 `user_id`，并同步更新相关前端类型与测试。
@@ -130,67 +148,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.6.1] - 2026-05-12
 
 ### Fixed
+
 - 取消 Fuxi Hall 根路由隐藏，恢复前端菜单入口展示。
 
 ## [1.6.0] - 2026-05-12
 
 ### Added
+
 - 统一名人堂与管理目录为 Fuxi Hall，并补齐对应的后端、前端、路由与测试实现。
 - 为军团建筑分配增加元数据展示和高级筛选能力。
 
 ### Changed
+
 - 同步整理 Fuxi Hall 相关文档与本地化文案，替换旧的名人堂与管理员目录表述。
 
 ### Fixed
+
 - 修复 PAP 图表的年份标签展示，并补齐缺失月份的数据填充。
 - 修复军团建筑列表卡片的弹性高度布局问题。
 
 ## [1.5.0] - 2026-05-11
 
 ### Added
+
 - 新增军团建筑的燃料官分配与薪资管理。
 - 新增用户昵称支持，并将管理员工单状态视图拆分为独立标签页。
 
 ### Changed
+
 - 优化 SRP 推荐逻辑，始终返回推荐数量，并保持管理视图数值同步。
 
 ### Fixed
+
 - 将建筑选择器的可见范围限制为当前用户有权限访问的军团。
 - 移除未授权的军团建筑快照，避免过期数据影响展示与统计。
 - 按 `structure_id` 对 ESI 军团建筑去重，防止重复记录。
 
-
 ## [1.4.0] - 2026-05-11
 
 ### Added
+
 - 新增手动 SDE 版本检查与更新流程，支持查看状态、触发更新和排查导入问题。
 
 ### Changed
+
 - 首页改为折线图展示 PAP 趋势，并补齐对应测试。
 - 军团建筑结构管理页提升类型安全并修复 Tab 高度布局稳定性问题。
 
 ### Fixed
+
 - 当军团授权被禁用时，自动清理对应的建筑快照，避免残留旧数据影响展示与统计。
 - 修复 iframe 页面中的潜在客户端跨站脚本问题。
 
 ## [1.3.1] - 2026-05-11
 
 ### Fixed
+
 - 为钱包批量写入增加硬上限兜底，避免单次批量参数估算偏差触发数据库参数上限问题。
 - 将军团建筑任务优先级提升为高优先级，减少调度延迟。
 
 ## [1.3.0] - 2026-05-11
 
 ### Added
+
 - 新增任务管理页的 ESI 监控标签页，用于查看任务健康概览。
 
 ### Changed
+
 - 重设计工单管理页的管理员响应展示，并移除优先级字段。
 - 调整 ESI 刷新间隔策略，平衡数据新鲜度与系统负载。
 
 ## [1.2.1] - 2026-05-10
 
 ### Changed
+
 - 工单管理页的状态和优先级改为只读 Badge 展示，与用户工单列表保持一致。
 - 工单管理详情页将状态和优先级编辑集中到页面头部，并通过保存按钮提交。
 - 工单状态历史改为使用本地化 Badge 标签展示状态值，不再直接显示原始值。
@@ -198,17 +229,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-05-10
 
 ### Added
+
 - 完成 React 迁移主线的多个批次页面落地，补齐 dashboard、info、ticket、welfare、newbro、SRP、shop、skill-planning、operation 与 system 相关页面、API 层、本地类型、路由注册和测试覆盖。
 - 新增 React 子应用的基础设施，包括路由守卫、权限门禁、主题切换、反馈系统、国际化上下文、共享 HTTP 客户端和版本迁移文档。
 - 补齐系统模块的管理能力与交互页面，包括审计、PAP、自动角色、用户中心、任务管理、钱包管理、Webhook 和基础配置。
 
 ### Changed
+
 - 调整 ticket 流程，新增管理员优先级筛选，将新工单默认优先级改为 `unassigned`，并隐藏创建时的优先级选择。
 - 重构 welfare 历史展示逻辑，已完成申请的历史视图不再展示证明图片，审核与仓储查询同步收敛到新的行为。
 - 升级前端与后端依赖和构建环境，包括 `axios`、`vite`、`pgx`、Go 基础镜像、pnpm 版本和 Docker 构建流程。
 - 同步整理 React 迁移期间的类型体系、i18n 文案、路由结构和相关文档，减少 Vue 与 React 之间的契约漂移。
 
 ### Fixed
+
 - 为 HTTP `content-type` 访问增加类型守卫，避免头部缺失时调用 `includes` 触发运行时异常。
 - 修复 `dbTx.Config` 和 `dbTx.Dialector` 为空时的数据库事务崩溃问题。
 - 将钱包批量写入改为分批处理，避免超过数据库参数上限导致的大批量插入失败。
@@ -217,22 +251,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.1] - 2026-04-30
 
 ### Security
+
 - 强化 Webhook URL 校验，新增按类型允许列表策略，降低错误配置与潜在风险链接引入风险。
 - 统一工单审计相关的无符号整数安全解析并限制审计分配规模，减少异常输入导致的资源消耗风险。
 
 ### Fixed
+
 - 修复审计与工单路径中的解析与分配边界问题，提升稳定性。
 
 ### Changed
+
 - 调整锁屏密码策略：移除 CryptoJS 加密与 localStorage 持久化，降低前端本地敏感信息暴露面。
 - 重构文件关闭错误捕获与测试 HTTP 写入流程，提升错误可观测性并简化测试行为。
 - 审计页面改为标签布局，并临时关闭导出 UI 入口以避免不完整能力暴露。
 
 ### Added
+
 - 为审计页面新增分栏交互结构，增强操作与查询场景可用性。
+
 ## [1.1.0] - 2026-04-30
 
 ### Added
+
 - 版本管理系统、版本展示和版本递增检查。
 - 名人堂完整功能链路，包括圣殿页、管理画布和装饰边框样式。
 - 统一任务管理器，覆盖调度器、ESI 控制、历史页签和定时任务整合。
@@ -245,6 +285,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 新兵支持与导师管理增强，包括只读记录页和奖励阶段管理。
 
 ### Changed
+
 - 福利、工单、钱包、名人堂等页面统一对齐到共享表格与布局规范。
 - 管理端路由、菜单和权限展示进一步整理，部分管理员页面迁移到更清晰的业务路由下。
 - 顶栏角色名称、用户表单、版本展示和若干本地化文案同步优化。
@@ -252,12 +293,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 任务、钱包、审计、SDE 和建筑相关的接口、文档与页面说明持续收敛到当前实现。
 
 ### Fixed
+
 - 修复钱包交易分页在重复尾页上的推进判断问题，并补齐重复数据去重处理。
 - 修复钱包分析图表、图例和滚动区域的裁切与溢出问题。
 - 修复福利审批与我的页面的冗余空状态处理，并统一 ledger 表格行为。
 - 修复若干 lint、测试和布局回归，包括 cron 断言、角色标签显示和表单交互细节。
 
 ### Removed
+
 - 移除已废弃的独立 ESI 刷新页面和部分旧的手动触发路由。
 - 从接口契约中移除派生头像 / portrait URL 字段，改为由前端本地推导。
 - 清理已完成或已替代的设计文档与实现说明，保持文档树聚焦于活跃内容。
@@ -267,6 +310,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### 核心系统
+
 - **EVE SSO 认证系统**
   - 完整的 EVE Online SSO 登录集成
   - 多人物绑定管理
@@ -289,6 +333,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 用户状态管理
 
 #### 运营模块
+
 - **舰队管理系统**
   - 舰队创建与管理
   - 舰队详情查看
@@ -318,6 +363,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 福利发放记录
 
 #### 商业系统
+
 - **伏羲币系统**
   - 伏羲币钱包管理
   - 伏羲币交易记录
@@ -331,6 +377,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 交易记录查询
 
 #### 信息与报表
+
 - **EVE 信息查询**
   - 人物信息查询
   - 军团信息查询
@@ -343,6 +390,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 区域数据展示
 
 #### 新兵支持
+
 - **新兵管理系统**
   - 新兵状态跟踪
   - 舰长归属管理
@@ -355,6 +403,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 培训记录跟踪
 
 #### 系统管理
+
 - **配置管理**
   - 系统配置管理界面
   - 允许军团配置（`allow_corporations`）
@@ -372,6 +421,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 日志查询与导出
 
 #### ESI 集成
+
 - **ESI 刷新队列**
   - 优先级队列管理
   - 按任务类型分配优先级
@@ -389,6 +439,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 钱包查询
 
 #### 前端功能
+
 - **用户界面**
   - 响应式布局设计
   - 主题切换支持（明/暗主题）
@@ -416,6 +467,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - iframe 路由管理
 
 #### 开发工具
+
 - **版本管理**
   - 语义化版本控制（SemVer）
   - 版本号规范文档
@@ -445,23 +497,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 调试指南
 
 ### Changed
+
 - 统一前后端版本号管理（基于 `package.json`）
 - 优化权限边界定义（JWT 与 Login 权限分离）
 - 改进版本号发布流程（自动版本检查）
 
 ### Security
+
 - JWT 令牌安全机制
 - EVE SSO OAuth2 流程
 - 权限边界严格校验
 - 软删除机制（防止数据物理删除）
 
 ### Performance
+
 - Redis 缓存集成
 - 数据库查询优化
 - ESI 刷新队列优化
 - 前端路由懒加载
 
 ### Testing
+
 - 单元测试框架集成
 - 回归测试计划
 - 测试覆盖率要求
