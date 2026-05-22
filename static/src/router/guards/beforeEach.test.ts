@@ -42,7 +42,7 @@ test('invalid non-primary character still requires redirect to characters page',
 test('characters page is allowed even when there are invalid tokens', () => {
   assert.equal(
     shouldRedirectToCharactersPage(
-      { isLogin: true, path: '/dashboard/characters' },
+      { isLogin: true, path: '/characters' },
       {
         enforceCharacterESIRestriction: true,
         profileComplete: true,

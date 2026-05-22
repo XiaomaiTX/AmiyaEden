@@ -4,7 +4,7 @@ import {
   isUserProfileComplete
 } from '@/api/auth-helpers'
 
-export const PROFILE_SETUP_PATH = '/dashboard/characters'
+export const PROFILE_SETUP_PATH = '/characters'
 
 export type CharactersGateReason =
   | 'profile_incomplete'

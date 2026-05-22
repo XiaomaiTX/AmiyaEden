@@ -1,4 +1,5 @@
 import { AppRouteRecord } from '@/types/router'
+import { charactersRoutes } from './characters'
 import { dashboardRoutes } from './dashboard'
 import { systemRoutes } from './system'
 import { operationRoutes } from './operation'
@@ -16,6 +17,7 @@ import { ticketRoutes } from './ticket'
  * 导出所有模块化路由
  */
 export const routeModules: AppRouteRecord[] = [
+  charactersRoutes,
   dashboardRoutes,
   operationRoutes,
   skillPlanningRoutes,

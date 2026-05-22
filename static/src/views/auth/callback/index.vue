@@ -84,9 +84,7 @@
 
       // 3. 短暂停留后跳转
       const isProfileComplete = isUserProfileComplete(userInfo)
-      const redirect = isProfileComplete
-        ? (route.query.redirect as string) || '/'
-        : '/dashboard/characters'
+      const redirect = isProfileComplete ? (route.query.redirect as string) || '/' : '/characters'
       setTimeout(() => {
         router.replace(redirect)
       }, 1200)

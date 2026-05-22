@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import type { AppRouteRecord } from '../../types/router'
+import { charactersRoutes } from '../modules/characters'
 import { dashboardRoutes } from '../modules/dashboard'
 import { newbroRoutes as actualNewbroRoutes } from '../modules/newbro'
 import { skillPlanningRoutes } from '../modules/skill-planning'
@@ -136,6 +137,15 @@ test('applyMenuAccessFilter keeps SkillPlans for logged-in ordinary users', () =
   )
 })
 
+test('applyMenuAccessFilter keeps top-level Characters for logged-in users without dashboard capability', () => {
+  const filtered = applyMenuAccessFilter([charactersRoutes], ['user'], [])
+
+  assert.equal(filtered.length, 1)
+  assert.equal(filtered[0].name, 'Characters')
+  assert.equal(filtered[0].path, '/characters')
+  assert.equal(filtered[0].meta?.login, true)
+})
+
 test('applyMenuAccessFilter hides mentor selection routes when mentor eligibility is unknown', () => {
   const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], true, undefined)
 
@@ -250,6 +260,13 @@ test('CorpNpcKillReport lives under Dashboard for admins only', () => {
   )
   assert.equal(
     adminSystem.children?.some((route) => route.name === 'CorpNpcKillReport'),
+    false
+  )
+})
+
+test('Dashboard route tree no longer contains Characters child', () => {
+  assert.equal(
+    dashboardRoutes.children?.some((route) => route.name === 'Characters'),
     false
   )
 })
