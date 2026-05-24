@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func TestBuildApprovedUnpaidBatchPayoutApplicationsQueryUsesUserScopedLocking(t *testing.T) {
@@ -195,26 +196,27 @@ func TestBuildSrpApplicationListQueryAppliesUnmatchedRecommendedFilter(t *testin
 }
 
 func TestBuildSrpApplicationOrderClauseUsesWhitelistAndDefault(t *testing.T) {
-	if got := buildSrpApplicationOrderClause(SrpApplicationFilter{
+	assertOrder := func(got clause.OrderByColumn, wantColumn string, wantDesc bool) {
+		t.Helper()
+		if got.Column.Name != wantColumn || got.Desc != wantDesc {
+			t.Fatalf("expected order %s desc=%t, got column=%s desc=%t", wantColumn, wantDesc, got.Column.Name, got.Desc)
+		}
+	}
+
+	assertOrder(buildSrpApplicationOrderClause(SrpApplicationFilter{
 		SortBy:    "final_amount",
 		SortOrder: "asc",
-	}); got != "final_amount ASC" {
-		t.Fatalf("expected final_amount ASC, got %q", got)
-	}
+	}), "final_amount", false)
 
-	if got := buildSrpApplicationOrderClause(SrpApplicationFilter{
+	assertOrder(buildSrpApplicationOrderClause(SrpApplicationFilter{
 		SortBy:    "created_at;drop table srp_application",
 		SortOrder: "asc",
-	}); got != "created_at DESC" {
-		t.Fatalf("expected fallback default order, got %q", got)
-	}
+	}), "created_at", false)
 
-	if got := buildSrpApplicationOrderClause(SrpApplicationFilter{
+	assertOrder(buildSrpApplicationOrderClause(SrpApplicationFilter{
 		SortBy:    "ship_type_id",
 		SortOrder: "invalid",
-	}); got != "ship_type_id DESC" {
-		t.Fatalf("expected DESC fallback for invalid order, got %q", got)
-	}
+	}), "ship_type_id", true)
 }
 
 func TestGetApplicationByKillmailAndCharacterQueryUsesCompositeKey(t *testing.T) {
