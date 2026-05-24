@@ -159,3 +159,27 @@ func TestGetApplicationByKillmailAndCharacterQueryUsesCompositeKey(t *testing.T)
 		t.Fatalf("expected composite killmail+character filter, got SQL: %s", sql)
 	}
 }
+
+func TestBuildSrpFleetOptionsQueryUsesApplicationAggregation(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildSrpFleetOptionsQuery(tx).Find(&[]SrpFleetOptionRow{})
+	})
+
+	if !strings.Contains(sql, `FROM srp_application AS app`) {
+		t.Fatalf("expected srp_application source, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `LEFT JOIN fleet AS f ON f.id = app.fleet_id`) {
+		t.Fatalf("expected fleet left join for metadata enrichment, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `app.fleet_id IS NOT NULL`) || !strings.Contains(sql, `app.fleet_id <> ''`) {
+		t.Fatalf("expected non-empty fleet_id filter, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `GROUP BY app.fleet_id, f.title, f.fc_character_name`) {
+		t.Fatalf("expected fleet-based grouping, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `ORDER BY MAX(app.created_at) DESC`) {
+		t.Fatalf("expected recent-application ordering, got SQL: %s", sql)
+	}
+}

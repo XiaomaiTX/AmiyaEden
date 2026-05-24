@@ -370,6 +370,7 @@ func TestSrpRoutesRequireCorporationCapability(t *testing.T) {
 	withoutCapability := newSrpCorpCapabilityTestRouter([]string{model.RoleAdmin}, []string{})
 	assertRouteStatus(t, withoutCapability, http.MethodGet, "/srp/prices", http.StatusForbidden)
 	assertRouteStatus(t, withoutCapability, http.MethodGet, "/srp/applications", http.StatusForbidden)
+	assertRouteStatus(t, withoutCapability, http.MethodGet, "/srp/applications/fleet-options", http.StatusForbidden)
 
 	withCapability := newSrpCorpCapabilityTestRouter(
 		[]string{model.RoleAdmin},
@@ -377,6 +378,7 @@ func TestSrpRoutesRequireCorporationCapability(t *testing.T) {
 	)
 	assertRouteStatus(t, withCapability, http.MethodGet, "/srp/prices", http.StatusNoContent)
 	assertRouteStatus(t, withCapability, http.MethodGet, "/srp/applications", http.StatusNoContent)
+	assertRouteStatus(t, withCapability, http.MethodGet, "/srp/applications/fleet-options", http.StatusNoContent)
 }
 
 func TestWelfareRoutesRequireCorporationCapability(t *testing.T) {
@@ -855,6 +857,12 @@ func newSrpCorpCapabilityTestRouter(roles []string, capabilities []string) *gin.
 	srp.GET("/prices", middleware.RequireCorpCapability(model.CorpCapabilitySRPUser), func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	srp.GET(
 		"/applications",
+		middleware.RequireCorpCapability(model.CorpCapabilitySRPManage),
+		middleware.RequireRole(srpManageRoles...),
+		func(c *gin.Context) { c.Status(http.StatusNoContent) },
+	)
+	srp.GET(
+		"/applications/fleet-options",
 		middleware.RequireCorpCapability(model.CorpCapabilitySRPManage),
 		middleware.RequireRole(srpManageRoles...),
 		func(c *gin.Context) { c.Status(http.StatusNoContent) },

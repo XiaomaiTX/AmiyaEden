@@ -160,6 +160,13 @@ type SrpBatchPayoutSummaryRow struct {
 	ApplicationCount int64   `json:"application_count"`
 }
 
+type SrpFleetOptionRow struct {
+	FleetID       string    `json:"fleet_id"`
+	FleetTitle    string    `json:"fleet_title"`
+	FleetFCName   string    `json:"fleet_fc_name"`
+	LastAppliedAt time.Time `json:"last_applied_at"`
+}
+
 func buildSrpApplicationListQuery(db *gorm.DB, filter SrpApplicationFilter) *gorm.DB {
 	query := db.Model(&model.SrpApplication{})
 
@@ -193,6 +200,20 @@ func buildSrpApplicationListQuery(db *gorm.DB, filter SrpApplicationFilter) *gor
 		"LOWER(character_name) LIKE ?")
 
 	return query
+}
+
+func buildSrpFleetOptionsQuery(db *gorm.DB) *gorm.DB {
+	return db.Table("srp_application AS app").
+		Select(`
+			app.fleet_id,
+			COALESCE(f.title, '') AS fleet_title,
+			COALESCE(f.fc_character_name, '') AS fleet_fc_name,
+			MAX(app.created_at) AS last_applied_at
+		`).
+		Joins("LEFT JOIN fleet AS f ON f.id = app.fleet_id AND f.deleted_at IS NULL").
+		Where("app.fleet_id IS NOT NULL AND app.fleet_id <> ''").
+		Group("app.fleet_id, f.title, f.fc_character_name").
+		Order("MAX(app.created_at) DESC, app.fleet_id ASC")
 }
 
 // ListApplications 分页查询申请列表
@@ -230,6 +251,12 @@ func (r *SrpRepository) ListBatchPayoutSummary() ([]SrpBatchPayoutSummaryRow, er
 		Order("total_amount DESC, user_id ASC").
 		Scan(&list).Error
 	return list, err
+}
+
+func (r *SrpRepository) ListFleetOptions() ([]SrpFleetOptionRow, error) {
+	var rows []SrpFleetOptionRow
+	err := buildSrpFleetOptionsQuery(global.DB).Scan(&rows).Error
+	return rows, err
 }
 
 func buildApprovedUnpaidBatchPayoutApplicationsQuery(db *gorm.DB, userID uint) *gorm.DB {

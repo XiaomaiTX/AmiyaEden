@@ -303,6 +303,7 @@ source_of_truth:
 | GET | `/srp/config` | 获取 SRP 配置 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)` |
 | PUT | `/srp/config` | 更新 SRP 配置 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)` |
 | GET | `/srp/applications` | 审核列表 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| GET | `/srp/applications/fleet-options` | 审核页舰队筛选项（按 SRP 申请聚合） | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 | GET | `/srp/applications/:id` | 审核详情 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 | PUT | `/srp/applications/:id/review` | 审核申请 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 | PUT | `/srp/applications/auto-approve` | 对指定 `fleet_id` 自动审批符合规则的待审批申请 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |

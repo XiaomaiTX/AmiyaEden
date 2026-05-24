@@ -1196,6 +1196,13 @@ declare namespace Api {
     /** 申请列表分页响应 */
     type ApplicationList = Api.Common.PaginatedResponse<Application>
 
+    /** 审核页舰队筛选项（按 SRP 申请聚合） */
+    interface FleetOption {
+      fleet_id: string
+      fleet_title?: string
+      fleet_fc_name?: string
+    }
+
     /** 提交补损申请请求 */
     interface SubmitApplicationParams {
       character_id: number

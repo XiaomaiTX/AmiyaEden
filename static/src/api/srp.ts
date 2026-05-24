@@ -94,6 +94,13 @@ export function fetchApplicationList(params?: Api.Srp.ApplicationSearchParams) {
   })
 }
 
+/** 获取 SRP 审核页舰队筛选项（按申请聚合） */
+export function fetchSrpFleetOptions() {
+  return request.get<Api.Srp.FleetOption[]>({
+    url: '/api/v1/srp/applications/fleet-options'
+  })
+}
+
 /** 获取单条申请详情 */
 export function fetchApplicationDetail(id: number) {
   return request.get<Api.Srp.Application>({

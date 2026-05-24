@@ -387,6 +387,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		reviewSRP := middleware.RequireRole(srpManageRoles...)
 		payoutSRP := middleware.RequireRole(srpPayoutRoles...)
 		srp.GET("/applications", requireSRPManage, reviewSRP, srpH.ListApplications)
+		srp.GET("/applications/fleet-options", requireSRPManage, reviewSRP, srpH.ListFleetOptions)
 		srp.GET("/applications/:id", requireSRPManage, reviewSRP, srpH.GetApplication)
 		srp.PUT("/applications/:id/review", requireSRPManage, reviewSRP, srpH.ReviewApplication)
 		srp.PUT("/applications/auto-approve", requireSRPManage, payoutSRP, srpH.RunFleetAutoApproval)
