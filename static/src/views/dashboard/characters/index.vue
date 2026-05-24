@@ -221,7 +221,14 @@
               {{ char.character_name }}
               <span v-if="char.token_invalid">{{ t('characters.tokenInvalid') }}</span>
             </h3>
-            <p class="mt-0.5 text-xs text-g-500">ID: {{ char.character_id }}</p>
+            <p class="mt-0.5 text-xs text-g-500">
+              {{
+                $t('characters.characterMeta', {
+                  name: char.character_name,
+                  id: char.character_id
+                })
+              }}
+            </p>
             <p class="mt-0.5 text-xs text-g-400 truncate" :title="char.scopes">
               {{ scopeSummary(char) }}
             </p>

@@ -21,7 +21,13 @@ func newRecruitmentLinkServiceTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.SystemConfig{}, &model.NewbroRecruitment{}); err != nil {
+	if err := db.AutoMigrate(
+		&model.User{},
+		&model.SystemConfig{},
+		&model.EveCharacter{},
+		&model.NewbroRecruitment{},
+		&model.NewbroRecruitmentEntry{},
+	); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db
@@ -128,5 +134,108 @@ func TestRecruitmentLinkService_GenerateLinkRejectsCooldownWindow(t *testing.T) 
 	}
 	if rec != nil {
 		t.Fatalf("expected no recruitment record on cooldown, got %+v", rec)
+	}
+}
+
+func TestRecruitmentLinkService_ListAllLinksIncludesCharacterNames(t *testing.T) {
+	db := newRecruitmentLinkServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	recruiter := &model.User{Nickname: "RecruiterNick", QQ: "11111", Role: model.RoleUser, PrimaryCharacterID: 1001}
+	matchedWithCharacter := &model.User{Nickname: "MatchedNick", QQ: "22222", Role: model.RoleUser, PrimaryCharacterID: 2002}
+	matchedWithoutCharacter := &model.User{Nickname: "FallbackNick", QQ: "33333", Role: model.RoleUser, PrimaryCharacterID: 3003}
+	if err := db.Create(recruiter).Error; err != nil {
+		t.Fatalf("seed recruiter: %v", err)
+	}
+	if err := db.Create(matchedWithCharacter).Error; err != nil {
+		t.Fatalf("seed matched user with character: %v", err)
+	}
+	if err := db.Create(matchedWithoutCharacter).Error; err != nil {
+		t.Fatalf("seed matched user without character: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{UserID: recruiter.ID, CharacterID: 1001, CharacterName: "RecruiterMain"}).Error; err != nil {
+		t.Fatalf("seed recruiter character: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{UserID: matchedWithCharacter.ID, CharacterID: 2002, CharacterName: "MatchedMain"}).Error; err != nil {
+		t.Fatalf("seed matched character: %v", err)
+	}
+
+	recruitment := &model.NewbroRecruitment{
+		UserID:      recruiter.ID,
+		Code:        "abc",
+		Source:      model.RecruitmentSourceLink,
+		GeneratedAt: time.Date(2026, 4, 12, 12, 0, 0, 0, time.UTC),
+	}
+	if err := db.Create(recruitment).Error; err != nil {
+		t.Fatalf("seed recruitment: %v", err)
+	}
+
+	rewardedAt := time.Date(2026, 4, 13, 9, 0, 0, 0, time.UTC)
+	entries := []model.NewbroRecruitmentEntry{
+		{
+			RecruitmentID: recruitment.ID,
+			QQ:            "qq-1",
+			EnteredAt:     time.Date(2026, 4, 12, 15, 0, 0, 0, time.UTC),
+			Source:        model.RecruitEntrySourceLink,
+			Status:        model.RecruitEntryStatusValid,
+			MatchedUserID: matchedWithCharacter.ID,
+			RewardedAt:    &rewardedAt,
+		},
+		{
+			RecruitmentID: recruitment.ID,
+			QQ:            "qq-2",
+			EnteredAt:     time.Date(2026, 4, 12, 16, 0, 0, 0, time.UTC),
+			Source:        model.RecruitEntrySourceLink,
+			Status:        model.RecruitEntryStatusValid,
+			MatchedUserID: matchedWithoutCharacter.ID,
+			RewardedAt:    &rewardedAt,
+		},
+		{
+			RecruitmentID: recruitment.ID,
+			QQ:            "qq-3",
+			EnteredAt:     time.Date(2026, 4, 12, 17, 0, 0, 0, time.UTC),
+			Source:        model.RecruitEntrySourceLink,
+			Status:        model.RecruitEntryStatusOngoing,
+		},
+	}
+	if err := db.Create(&entries).Error; err != nil {
+		t.Fatalf("seed entries: %v", err)
+	}
+
+	svc := NewRecruitmentLinkService()
+	rows, total, err := svc.ListAllLinks(1, 20)
+	if err != nil {
+		t.Fatalf("ListAllLinks() error = %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("expected total=1, got %d", total)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(rows))
+	}
+
+	row := rows[0]
+	if row.UserCharacterName != "RecruiterMain" {
+		t.Fatalf("expected recruiter main character name, got %q", row.UserCharacterName)
+	}
+	if len(row.Entries) != 3 {
+		t.Fatalf("expected 3 entries, got %d", len(row.Entries))
+	}
+
+	entryByQQ := make(map[string]RecruitEntryRow, len(row.Entries))
+	for _, entry := range row.Entries {
+		entryByQQ[entry.QQ] = entry
+	}
+
+	if entryByQQ["qq-1"].MatchedCharacterName != "MatchedMain" {
+		t.Fatalf("expected matched character name from character table, got %q", entryByQQ["qq-1"].MatchedCharacterName)
+	}
+	if entryByQQ["qq-2"].MatchedCharacterName != "FallbackNick" {
+		t.Fatalf("expected matched character name fallback to nickname, got %q", entryByQQ["qq-2"].MatchedCharacterName)
+	}
+	if entryByQQ["qq-3"].MatchedCharacterName != "" {
+		t.Fatalf("expected non-valid entry matched character name to be empty, got %q", entryByQQ["qq-3"].MatchedCharacterName)
 	}
 }

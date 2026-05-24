@@ -408,8 +408,9 @@
     { prop: 'captain_character_name', label: t('newbro.common.captain'), minWidth: 180 },
     {
       prop: 'captain_user_id',
-      label: t('newbro.manage.historyCaptainUserId'),
-      width: 140
+      label: t('newbro.manage.historyCaptain'),
+      minWidth: 200,
+      formatter: (row) => `${row.captain_character_name} (${row.captain_user_id})`
     },
     {
       prop: 'captain_nickname',
@@ -425,8 +426,9 @@
     { prop: 'player_character_name', label: t('newbro.manage.newbroColumn'), minWidth: 180 },
     {
       prop: 'player_character_id',
-      label: t('newbro.manage.historyPlayerCharacterId'),
-      width: 150
+      label: t('newbro.manage.historyPlayerCharacter'),
+      minWidth: 220,
+      formatter: (row) => `${row.player_character_name} (${row.player_character_id})`
     },
     {
       prop: 'player_nickname',

@@ -86,7 +86,26 @@ test('newbro manage page uses shared readonly record APIs for captain access', (
 test('newbro manage labels use 队长管理 naming', () => {
   assert.match(zhLocaleSource, /"manage"\s*:\s*"队长管理"/)
   assert.match(zhLocaleSource, /"settingsTab"\s*:\s*"帮扶设置"/)
+  assert.match(zhLocaleSource, /"historyCaptain"\s*:\s*"队长（用户ID）"/)
+  assert.match(zhLocaleSource, /"historyPlayerCharacter"\s*:\s*"新人（人物ID）"/)
 
   assert.match(enLocaleSource, /"manage"\s*:\s*"Captain Management"/)
   assert.match(enLocaleSource, /"settingsTab"\s*:\s*"Support Settings"/)
+  assert.match(enLocaleSource, /"historyCaptain"\s*:\s*"Captain \(User ID\)"/)
+  assert.match(enLocaleSource, /"historyPlayerCharacter"\s*:\s*"Newbro \(Character ID\)"/)
+})
+
+test('newbro manage history table shows names with IDs instead of raw ID columns', () => {
+  assert.match(managePageSource, /historyCaptain/)
+  assert.match(managePageSource, /historyPlayerCharacter/)
+  assert.match(
+    managePageSource,
+    /formatter:\s*\(row\)\s*=>\s*`\$\{row\.captain_character_name\}\s\(\$\{row\.captain_user_id\}\)`/
+  )
+  assert.match(
+    managePageSource,
+    /formatter:\s*\(row\)\s*=>\s*`\$\{row\.player_character_name\}\s\(\$\{row\.player_character_id\}\)`/
+  )
+  assert.doesNotMatch(managePageSource, /historyCaptainUserId/)
+  assert.doesNotMatch(managePageSource, /historyPlayerCharacterId/)
 })

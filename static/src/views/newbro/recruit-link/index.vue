@@ -137,6 +137,65 @@
             :description="t('newbro.recruitLink.empty')"
           />
         </ElCard>
+
+        <ElDialog
+          v-model="successRecruitDialogVisible"
+          :title="
+            t('newbro.recruitLink.successfulRecruitsTitle', {
+              name: selectedRecruiterName || '-'
+            })
+          "
+          width="760px"
+        >
+          <ElTable :data="selectedSuccessfulEntries" stripe>
+            <ElTableColumn
+              prop="matched_character_name"
+              :label="t('newbro.recruitLink.colMatchedCharacter')"
+              min-width="180"
+            >
+              <template #default="{ row }">
+                {{ row.matched_character_name || '-' }}
+              </template>
+            </ElTableColumn>
+            <ElTableColumn prop="qq" :label="t('newbro.recruitLink.colQQ')" min-width="140" />
+            <ElTableColumn prop="source" :label="t('newbro.recruitLink.colSource')" width="140">
+              <template #default="{ row }">
+                {{ t(`newbro.recruitLink.source.${row.source}`) }}
+              </template>
+            </ElTableColumn>
+            <ElTableColumn
+              prop="entered_at"
+              :label="t('newbro.recruitLink.colEnteredAt')"
+              min-width="180"
+            >
+              <template #default="{ row }">
+                {{ formatDateTime(row.entered_at) }}
+              </template>
+            </ElTableColumn>
+            <ElTableColumn
+              prop="rewarded_at"
+              :label="t('newbro.recruitLink.colRewardedAt')"
+              min-width="180"
+            >
+              <template #default="{ row }">
+                {{ row.rewarded_at ? formatDateTime(row.rewarded_at) : '-' }}
+              </template>
+            </ElTableColumn>
+            <ElTableColumn prop="status" :label="t('newbro.recruitLink.colStatus')" width="120">
+              <template #default="{ row }">
+                <ElTag :type="statusTagType(row.status)" effect="plain" size="small">
+                  {{ t(`newbro.recruitLink.status.${row.status}`) }}
+                </ElTag>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+
+          <ElEmpty
+            v-if="selectedSuccessfulEntries.length === 0"
+            :description="t('newbro.recruitLink.noSuccessfulRecruits')"
+            class="mt-4"
+          />
+        </ElDialog>
       </ElTabPane>
 
       <ElTabPane v-if="isAdmin" :label="t('newbro.recruitLink.settingsTab')" name="settings" lazy>
@@ -150,7 +209,16 @@
   import type { ColumnOption } from '@/types/component'
   import { computed, h, onMounted, ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
-  import { ElButton, ElCard, ElEmpty, ElMessage, ElTable, ElTableColumn, ElTag } from 'element-plus'
+  import {
+    ElButton,
+    ElCard,
+    ElDialog,
+    ElEmpty,
+    ElMessage,
+    ElTable,
+    ElTableColumn,
+    ElTag
+  } from 'element-plus'
   import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
   import { fetchAdminRecruitLinks, fetchMyRecruitLinks, generateRecruitLink } from '@/api/newbro'
   import { useTable } from '@/hooks/core/useTable'
@@ -170,6 +238,9 @@
   const myLinksLoading = ref(false)
   const myLinks = ref<Api.Newbro.RecruitLink[]>([])
   const adminLoaded = ref(false)
+  const successRecruitDialogVisible = ref(false)
+  const selectedRecruiterName = ref('')
+  const selectedSuccessfulEntries = ref<Api.Newbro.RecruitEntry[]>([])
 
   const roles = computed(() => userStore.getUserInfo?.roles ?? [])
   const isAdmin = computed(() =>
@@ -191,11 +262,29 @@
     }
   }
 
+  const openSuccessfulRecruitDialog = (row: Api.Newbro.AdminRecruitLink) => {
+    selectedRecruiterName.value = row.user_character_name
+    selectedSuccessfulEntries.value = row.entries.filter(
+      (entry) => entry.status === 'valid' && entry.matched_user_id > 0
+    )
+    successRecruitDialogVisible.value = true
+  }
+
   const adminColumns = computed<ColumnOption<Api.Newbro.AdminRecruitLink>[]>(() => [
     {
-      prop: 'user_id',
-      label: t('newbro.recruitLink.colUserId'),
-      width: 100
+      prop: 'user_character_name',
+      label: t('newbro.recruitLink.colUserCharacter'),
+      minWidth: 180,
+      formatter: (row) =>
+        h(
+          ElButton,
+          {
+            link: true,
+            type: 'primary',
+            onClick: () => openSuccessfulRecruitDialog(row)
+          },
+          () => row.user_character_name
+        )
     },
     {
       prop: 'source',
@@ -256,7 +345,8 @@
                 effect: 'plain',
                 size: 'small'
               },
-              () => `${entry.qq} · ${t(`newbro.recruitLink.status.${entry.status}`)}`
+              () =>
+                `${entry.matched_character_name || entry.qq} · ${t(`newbro.recruitLink.status.${entry.status}`)}`
             )
           )
         )
