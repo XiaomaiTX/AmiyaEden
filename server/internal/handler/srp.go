@@ -220,6 +220,8 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 		ReviewStatus: c.Query("review_status"),
 		PayoutStatus: c.Query("payout_status"),
 		Keyword:      c.Query("keyword"),
+		SortBy:       c.Query("sort_by"),
+		SortOrder:    c.Query("sort_order"),
 	}
 	if fleetID := c.Query("fleet_id"); fleetID != "" {
 		filter.FleetID = &fleetID
@@ -227,6 +229,26 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 	if charIDStr := c.Query("character_id"); charIDStr != "" {
 		if cid, err := strconv.ParseInt(charIDStr, 10, 64); err == nil {
 			filter.CharacterID = &cid
+		}
+	}
+	if corporationIDStr := c.Query("corporation_id"); corporationIDStr != "" {
+		if corporationID, err := strconv.ParseInt(corporationIDStr, 10, 64); err == nil {
+			filter.CorporationID = &corporationID
+		}
+	}
+	if shipTypeIDStr := c.Query("ship_type_id"); shipTypeIDStr != "" {
+		if shipTypeID, err := strconv.ParseInt(shipTypeIDStr, 10, 64); err == nil {
+			filter.ShipTypeID = &shipTypeID
+		}
+	}
+	if solarSystemIDStr := c.Query("solar_system_id"); solarSystemIDStr != "" {
+		if solarSystemID, err := strconv.ParseInt(solarSystemIDStr, 10, 64); err == nil {
+			filter.SolarSystemID = &solarSystemID
+		}
+	}
+	if hasRecommendedMatchStr := c.Query("has_recommended_match"); hasRecommendedMatchStr != "" {
+		if hasRecommendedMatch, err := strconv.ParseBool(hasRecommendedMatchStr); err == nil {
+			filter.HasRecommendedMatch = &hasRecommendedMatch
 		}
 	}
 

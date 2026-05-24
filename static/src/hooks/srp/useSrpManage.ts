@@ -1,4 +1,4 @@
-import { ref, reactive, computed, watch, onMounted, type Component } from 'vue'
+import { ref, reactive, computed, watch, onMounted, h, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTable } from '@/hooks/core/useTable'
 import { useNameResolver } from '@/hooks'
@@ -46,6 +46,12 @@ export function useSrpManage(callbacks: {
   const activeTab = ref('pending')
   const payoutMode = ref<Api.Srp.PayoutMode>('fuxi_coin')
   const filter = reactive({ review_status: '', fleet_id: '', keyword: '' })
+  const advancedFilter = reactive({
+    corporation_id: undefined as number | undefined,
+    ship_type_id: undefined as number | undefined,
+    solar_system_id: undefined as number | undefined,
+    has_recommended_match: undefined as boolean | undefined
+  })
 
   // ─── Formatters ───
   const reviewStatusType = (s: string): TagType =>
@@ -82,7 +88,13 @@ export function useSrpManage(callbacks: {
   } = useTable({
     core: {
       apiFn: fetchApplicationList,
-      apiParams: { current: 1, size: 200, tab: 'pending' },
+      apiParams: {
+        current: 1,
+        size: 200,
+        tab: 'pending',
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      },
       columnsFactory: () => [
         { type: 'index', width: 40, label: '#' },
         {
@@ -120,6 +132,7 @@ export function useSrpManage(callbacks: {
           prop: 'character_name',
           label: t('srp.manage.columns.character'),
           width: 140,
+          sortable: 'custom',
           formatter: (row: SrpApp) =>
             h('div', { class: 'flex items-center gap-1 min-w-0' }, [
               h('span', { class: 'truncate' }, row.character_name || '-'),
@@ -130,6 +143,7 @@ export function useSrpManage(callbacks: {
           prop: 'ship_type_id',
           label: t('srp.manage.columns.ship'),
           width: 150,
+          sortable: 'custom',
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', {}, getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'))
@@ -138,12 +152,14 @@ export function useSrpManage(callbacks: {
           prop: 'recommended_amount',
           label: t('srp.manage.columns.recommendedAmount'),
           width: 90,
+          sortable: 'custom',
           formatter: (row: SrpApp) => h('span', {}, formatIskSmart(row.recommended_amount))
         },
         {
           prop: 'final_amount',
           label: t('srp.manage.columns.finalAmount'),
           width: 90,
+          sortable: 'custom',
           formatter: (row: SrpApp) =>
             h('span', { class: 'font-semibold text-blue-600' }, formatIskSmart(row.final_amount))
         },
@@ -168,6 +184,7 @@ export function useSrpManage(callbacks: {
           prop: 'solar_system_id',
           label: t('srp.manage.columns.system'),
           width: 128,
+          sortable: 'custom',
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h('span', {}, getName(row.solar_system_id, String(row.solar_system_id), 'solar_system'))
@@ -191,12 +208,14 @@ export function useSrpManage(callbacks: {
           prop: 'killmail_time',
           label: t('srp.manage.columns.kmTime'),
           width: 160,
+          sortable: 'custom',
           formatter: (row: SrpApp) => h('span', {}, formatTime(row.killmail_time))
         },
         {
           prop: 'corporation_id',
           label: t('srp.manage.columns.corporation'),
           width: 150,
+          sortable: 'custom',
           showOverflowTooltip: true,
           formatter: (row: SrpApp) =>
             h(
@@ -344,7 +363,11 @@ export function useSrpManage(callbacks: {
       tab: activeTab.value,
       review_status: filter.review_status || undefined,
       fleet_id: filter.fleet_id || undefined,
-      keyword: filter.keyword.trim() || undefined
+      keyword: filter.keyword.trim() || undefined,
+      corporation_id: advancedFilter.corporation_id,
+      ship_type_id: advancedFilter.ship_type_id,
+      solar_system_id: advancedFilter.solar_system_id,
+      has_recommended_match: advancedFilter.has_recommended_match
     })
     getData()
   }
@@ -355,12 +378,22 @@ export function useSrpManage(callbacks: {
     filter.review_status = ''
     filter.fleet_id = ''
     filter.keyword = ''
+    advancedFilter.corporation_id = undefined
+    advancedFilter.ship_type_id = undefined
+    advancedFilter.solar_system_id = undefined
+    advancedFilter.has_recommended_match = undefined
     Object.assign(searchParams, {
       current: 1,
       tab: activeTab.value,
       review_status: undefined,
       fleet_id: undefined,
-      keyword: undefined
+      keyword: undefined,
+      corporation_id: undefined,
+      ship_type_id: undefined,
+      solar_system_id: undefined,
+      has_recommended_match: undefined,
+      sort_by: 'created_at',
+      sort_order: 'desc'
     })
     getData()
   }
@@ -369,15 +402,73 @@ export function useSrpManage(callbacks: {
     filter.review_status = ''
     filter.fleet_id = ''
     filter.keyword = ''
+    advancedFilter.corporation_id = undefined
+    advancedFilter.ship_type_id = undefined
+    advancedFilter.solar_system_id = undefined
+    advancedFilter.has_recommended_match = undefined
     Object.assign(searchParams, {
       current: 1,
       tab: activeTab.value,
       review_status: undefined,
       fleet_id: undefined,
-      keyword: undefined
+      keyword: undefined,
+      corporation_id: undefined,
+      ship_type_id: undefined,
+      solar_system_id: undefined,
+      has_recommended_match: undefined,
+      sort_by: 'created_at',
+      sort_order: 'desc'
     })
     getData()
   }
+
+  const handleSortChange = (sort: { prop?: string; order?: 'ascending' | 'descending' | null }) => {
+    if (!sort?.prop || !sort.order) {
+      searchParams.sort_by = 'created_at'
+      searchParams.sort_order = 'desc'
+    } else {
+      searchParams.sort_by = sort.prop as NonNullable<Api.Srp.ApplicationSearchParams['sort_by']>
+      searchParams.sort_order = sort.order === 'descending' ? 'desc' : 'asc'
+    }
+    searchParams.current = 1
+    getData()
+  }
+
+  const corporationOptions = computed(() => {
+    const ids = Array.from(
+      new Set(
+        data.value.map((app) => app.corporation_id).filter((id) => Number.isFinite(id) && id > 0)
+      )
+    ).sort((a, b) => a - b)
+    return ids.map((id) => ({
+      value: id,
+      label: getName(id, `ID: ${id}`, 'esi')
+    }))
+  })
+
+  const shipTypeOptions = computed(() => {
+    const ids = Array.from(
+      new Set(
+        data.value.map((app) => app.ship_type_id).filter((id) => Number.isFinite(id) && id > 0)
+      )
+    ).sort((a, b) => a - b)
+    return ids.map((id) => ({
+      value: id,
+      label: getName(id, `TypeID: ${id}`, 'type')
+    }))
+  })
+
+  const solarSystemOptions = computed(() => {
+    const ids = Array.from(
+      new Set(
+        data.value.map((app) => app.solar_system_id).filter((id) => Number.isFinite(id) && id > 0)
+      )
+    ).sort((a, b) => a - b)
+    return ids.map((id) => ({
+      value: id,
+      label: getName(id, String(id), 'solar_system')
+    }))
+  })
 
   // ─── Export ───
   const manageExportHeaders = computed(() => ({
@@ -447,10 +538,15 @@ export function useSrpManage(callbacks: {
     activeTab,
     payoutMode,
     filter,
+    advancedFilter,
     handleSearch,
     handleKeywordSearchKeyup,
     resetFilter,
     handleTabChange,
+    handleSortChange,
+    corporationOptions,
+    shipTypeOptions,
+    solarSystemOptions,
     // table
     columns,
     columnChecks,

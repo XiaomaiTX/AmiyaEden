@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -144,13 +145,19 @@ const (
 
 // SrpApplicationFilter 申请列表筛选条件
 type SrpApplicationFilter struct {
-	Tab          SrpTabType
-	UserID       *uint
-	CharacterID  *int64
-	FleetID      *string
-	ReviewStatus string
-	PayoutStatus string
-	Keyword      string
+	Tab                 SrpTabType
+	UserID              *uint
+	CharacterID         *int64
+	FleetID             *string
+	CorporationID       *int64
+	ShipTypeID          *int64
+	SolarSystemID       *int64
+	HasRecommendedMatch *bool
+	ReviewStatus        string
+	PayoutStatus        string
+	Keyword             string
+	SortBy              string
+	SortOrder           string
 }
 
 // SrpBatchPayoutSummaryRow 按用户聚合的待批量发放汇总
@@ -187,6 +194,22 @@ func buildSrpApplicationListQuery(db *gorm.DB, filter SrpApplicationFilter) *gor
 	if filter.FleetID != nil {
 		query = query.Where("fleet_id = ?", *filter.FleetID)
 	}
+	if filter.CorporationID != nil {
+		query = query.Where("corporation_id = ?", *filter.CorporationID)
+	}
+	if filter.ShipTypeID != nil {
+		query = query.Where("ship_type_id = ?", *filter.ShipTypeID)
+	}
+	if filter.SolarSystemID != nil {
+		query = query.Where("solar_system_id = ?", *filter.SolarSystemID)
+	}
+	if filter.HasRecommendedMatch != nil {
+		if *filter.HasRecommendedMatch {
+			query = query.Where("recommended_amount > 0")
+		} else {
+			query = query.Where("recommended_amount <= 0")
+		}
+	}
 	if filter.ReviewStatus != "" {
 		query = query.Where("review_status = ?", filter.ReviewStatus)
 	}
@@ -200,6 +223,29 @@ func buildSrpApplicationListQuery(db *gorm.DB, filter SrpApplicationFilter) *gor
 		"LOWER(character_name) LIKE ?")
 
 	return query
+}
+
+var srpApplicationSortableColumns = map[string]string{
+	"created_at":         "created_at",
+	"recommended_amount": "recommended_amount",
+	"final_amount":       "final_amount",
+	"killmail_time":      "killmail_time",
+	"character_name":     "character_name",
+	"corporation_id":     "corporation_id",
+	"ship_type_id":       "ship_type_id",
+	"solar_system_id":    "solar_system_id",
+}
+
+func buildSrpApplicationOrderClause(filter SrpApplicationFilter) string {
+	sortColumn, ok := srpApplicationSortableColumns[strings.ToLower(strings.TrimSpace(filter.SortBy))]
+	if !ok || sortColumn == "" {
+		return "created_at DESC"
+	}
+	sortOrder := strings.ToUpper(strings.TrimSpace(filter.SortOrder))
+	if sortOrder != "ASC" && sortOrder != "DESC" {
+		sortOrder = "DESC"
+	}
+	return sortColumn + " " + sortOrder
 }
 
 func buildSrpFleetOptionsQuery(db *gorm.DB) *gorm.DB {
@@ -227,7 +273,8 @@ func (r *SrpRepository) ListApplications(page, pageSize int, filter SrpApplicati
 		return nil, 0, err
 	}
 	offset := (page - 1) * pageSize
-	err := db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&list).Error
+	orderClause := buildSrpApplicationOrderClause(filter)
+	err := db.Order(orderClause).Offset(offset).Limit(pageSize).Find(&list).Error
 	return list, total, err
 }
 

@@ -175,6 +175,8 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 
 - 申请列表支持按 tab 分组：`pending`（待处理：submitted/approved + notpaid）和 `history`（发放记录：paid 或 rejected）
 - `history` tab 额外支持按申请人物名或当前用户昵称搜索
+- 审批列表支持按 `corporation_id`、`ship_type_id`、`solar_system_id`、`has_recommended_match` 过滤，其中 `has_recommended_match=true` 表示 `recommended_amount > 0`
+- 审批列表支持后端分页排序，当前白名单字段：`created_at`、`recommended_amount`、`final_amount`、`killmail_time`、`character_name`、`corporation_id`、`ship_type_id`、`solar_system_id`
 - 列表结果附带舰队标题、FC 名称、用户昵称与补损官等关联信息
 - 批量发放汇总按用户聚合，展示主人物名、昵称、总金额、申请数量
 - 待处理 tab 的发放方式单选默认选中「伏羲币补损」；切到「手动打钱」后，顶部“批量发放”和行内“发放”恢复旧的人工打款面板流程

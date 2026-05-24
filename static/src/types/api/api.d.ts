@@ -1215,10 +1215,24 @@ declare namespace Api {
     type ApplicationSearchParams = Partial<{
       fleet_id: string
       character_id: number
+      corporation_id: number
+      ship_type_id: number
+      solar_system_id: number
+      has_recommended_match: boolean
       review_status: string
       payout_status: string
       tab: string
       keyword: string
+      sort_by:
+        | 'created_at'
+        | 'recommended_amount'
+        | 'final_amount'
+        | 'killmail_time'
+        | 'character_name'
+        | 'corporation_id'
+        | 'ship_type_id'
+        | 'solar_system_id'
+      sort_order: 'asc' | 'desc'
     }> &
       Partial<Api.Common.CommonSearchParams>
 

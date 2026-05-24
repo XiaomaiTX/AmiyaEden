@@ -20,8 +20,8 @@ type SrpApp = Api.Srp.Application
 type BatchPayoutSummary = Api.Srp.BatchPayoutSummary
 
 export function useSrpWorkflow(deps: {
-  fleetMap: ComputedRef<Map<string, Api.Fleet.FleetItem>>
-  formatFleetLabel: (f: Api.Fleet.FleetItem) => string
+  fleetMap: ComputedRef<Map<string, Api.Srp.FleetOption>>
+  formatFleetLabel: (f: Api.Srp.FleetOption) => string
   formatISK: (v: number) => string
   filter: { review_status: string; fleet_id: string; keyword: string }
   payoutMode: Ref<Api.Srp.PayoutMode>
@@ -42,7 +42,7 @@ export function useSrpWorkflow(deps: {
   const reviewTargetFleetLabel = computed(() => {
     const rt = reviewTarget.value
     if (!rt?.fleet_id) return ''
-    const fleet = deps.fleetMap.value.get(rt.fleet_id as any)
+    const fleet = deps.fleetMap.value.get(rt.fleet_id)
     if (fleet) return deps.formatFleetLabel(fleet)
     return rt.fleet_fc_name
       ? `${rt.fleet_fc_name}: ${rt.fleet_title || rt.fleet_id}`
