@@ -4,8 +4,7 @@ import { useTable } from '@/hooks/core/useTable'
 import { useNameResolver } from '@/hooks'
 import { useEnterSearch } from '@/hooks/core/useEnterSearch'
 import { useUserStore } from '@/store/modules/user'
-import { fetchFleetList } from '@/api/fleet'
-import { fetchApplicationList } from '@/api/srp'
+import { fetchApplicationList, fetchSrpFleetOptions } from '@/api/srp'
 import { formatIskSmart, formatTime } from '@utils/common'
 import { ElTag, ElTooltip, ElLink } from 'element-plus'
 
@@ -33,12 +32,11 @@ export function useSrpManage(callbacks: {
   })
 
   // ─── Fleets ───
-  const fleets = ref<Api.Fleet.FleetItem[]>([])
-  const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.id, f])))
+  const fleets = ref<Api.Srp.FleetOption[]>([])
+  const fleetMap = computed(() => new Map(fleets.value.map((f) => [f.fleet_id, f])))
   const loadFleets = async () => {
     try {
-      const res = await fetchFleetList({ size: 200 } as any)
-      fleets.value = res?.list ?? []
+      fleets.value = (await fetchSrpFleetOptions()) ?? []
     } catch {
       fleets.value = []
     }
@@ -64,8 +62,10 @@ export function useSrpManage(callbacks: {
 
   const payoutStatusType = (s: string): TagType => (s === 'paid' ? 'success' : 'warning')
 
-  const formatFleetLabel = (f: Api.Fleet.FleetItem) =>
-    `${f.fc_character_name}: ${f.title} (${f.pap_count}PAP) @ ${formatTime(f.start_at)} ~ ${formatTime(f.end_at)}`
+  const formatFleetLabel = (f: Api.Srp.FleetOption) =>
+    f.fleet_fc_name
+      ? `${f.fleet_fc_name}: ${f.fleet_title || f.fleet_id}`
+      : f.fleet_title || f.fleet_id
 
   // ─── Table ───
   const {

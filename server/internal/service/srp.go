@@ -311,6 +311,12 @@ type SrpBatchPayoutSummaryResponse struct {
 	ApplicationCount  int64   `json:"application_count"`
 }
 
+type SrpFleetOptionResponse struct {
+	FleetID     string `json:"fleet_id"`
+	FleetTitle  string `json:"fleet_title,omitempty"`
+	FleetFCName string `json:"fleet_fc_name,omitempty"`
+}
+
 func resolveSrpLastActorNickname(app model.SrpApplication, userMap map[uint]model.User) string {
 	if app.PaidBy != nil {
 		if user, ok := userMap[*app.PaidBy]; ok {
@@ -542,6 +548,22 @@ func (s *SrpService) ListBatchPayoutSummary() ([]SrpBatchPayoutSummaryResponse, 
 		return nil, err
 	}
 	return s.enrichBatchPayoutSummaryRows(rows)
+}
+
+func (s *SrpService) ListFleetOptions() ([]SrpFleetOptionResponse, error) {
+	rows, err := s.repo.ListFleetOptions()
+	if err != nil {
+		return nil, err
+	}
+	options := make([]SrpFleetOptionResponse, 0, len(rows))
+	for _, row := range rows {
+		options = append(options, SrpFleetOptionResponse{
+			FleetID:     row.FleetID,
+			FleetTitle:  row.FleetTitle,
+			FleetFCName: row.FleetFCName,
+		})
+	}
+	return options, nil
 }
 
 // ─────────────────────────────────────────────

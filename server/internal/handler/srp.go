@@ -238,6 +238,16 @@ func (h *SrpHandler) ListApplications(c *gin.Context) {
 	response.OKWithPage(c, list, total, page, pageSize)
 }
 
+// ListFleetOptions GET /srp/applications/fleet-options
+func (h *SrpHandler) ListFleetOptions(c *gin.Context) {
+	list, err := h.svc.ListFleetOptions()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, list)
+}
+
 // ListBatchPayoutSummary GET /srp/applications/batch-payout-summary
 func (h *SrpHandler) ListBatchPayoutSummary(c *gin.Context) {
 	list, err := h.svc.ListBatchPayoutSummary()
