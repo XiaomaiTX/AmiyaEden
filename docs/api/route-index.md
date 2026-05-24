@@ -302,7 +302,7 @@ source_of_truth:
 | POST | `/srp/open-info-window` | 打开游戏内信息窗口 | `RequireCorpCapability(srp.user)` + Login |
 | GET | `/srp/config` | 获取 SRP 配置 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)` |
 | PUT | `/srp/config` | 更新 SRP 配置 | `RequireCorpCapability(srp.manage)` + `RequireRole(admin)` |
-| GET | `/srp/applications` | 审核列表 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
+| GET | `/srp/applications` | 审核列表（支持 `tab/review_status/payout_status/fleet_id/character_id/keyword/corporation_id/ship_type_id/solar_system_id/has_recommended_match` 过滤与 `sort_by/sort_order` 排序） | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 | GET | `/srp/applications/fleet-options` | 审核页舰队筛选项（按 SRP 申请聚合） | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 | GET | `/srp/applications/:id` | 审核详情 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |
 | PUT | `/srp/applications/:id/review` | 审核申请 | `RequireCorpCapability(srp.manage)` + `RequireRole(srp, senior_fc, admin)` |

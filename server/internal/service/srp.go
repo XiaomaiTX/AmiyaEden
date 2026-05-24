@@ -64,13 +64,19 @@ const (
 )
 
 type SrpApplicationFilter struct {
-	Tab          string
-	UserID       *uint
-	CharacterID  *int64
-	FleetID      *string
-	ReviewStatus string
-	PayoutStatus string
-	Keyword      string
+	Tab                 string
+	UserID              *uint
+	CharacterID         *int64
+	FleetID             *string
+	CorporationID       *int64
+	ShipTypeID          *int64
+	SolarSystemID       *int64
+	HasRecommendedMatch *bool
+	ReviewStatus        string
+	PayoutStatus        string
+	Keyword             string
+	SortBy              string
+	SortOrder           string
 }
 
 // ─────────────────────────────────────────────
@@ -449,13 +455,19 @@ func (s *SrpService) ListApplications(page, pageSize int, filter SrpApplicationF
 	normalizeLedgerPageRequest(&page, &pageSize)
 
 	apps, total, err := s.repo.ListApplications(page, pageSize, repository.SrpApplicationFilter{
-		Tab:          repository.SrpTabType(filter.Tab),
-		UserID:       filter.UserID,
-		CharacterID:  filter.CharacterID,
-		FleetID:      filter.FleetID,
-		ReviewStatus: filter.ReviewStatus,
-		PayoutStatus: filter.PayoutStatus,
-		Keyword:      filter.Keyword,
+		Tab:                 repository.SrpTabType(filter.Tab),
+		UserID:              filter.UserID,
+		CharacterID:         filter.CharacterID,
+		FleetID:             filter.FleetID,
+		CorporationID:       filter.CorporationID,
+		ShipTypeID:          filter.ShipTypeID,
+		SolarSystemID:       filter.SolarSystemID,
+		HasRecommendedMatch: filter.HasRecommendedMatch,
+		ReviewStatus:        filter.ReviewStatus,
+		PayoutStatus:        filter.PayoutStatus,
+		Keyword:             filter.Keyword,
+		SortBy:              filter.SortBy,
+		SortOrder:           filter.SortOrder,
 	})
 	if err != nil {
 		return nil, 0, err

@@ -33,7 +33,12 @@
             style="width: 220px"
             @change="handleSearch"
           >
-            <ElOption v-for="f in fleets" :key="f.id" :label="formatFleetLabel(f)" :value="f.id" />
+            <ElOption
+              v-for="f in fleets"
+              :key="f.fleet_id"
+              :label="formatFleetLabel(f)"
+              :value="f.fleet_id"
+            />
           </ElSelect>
           <ElInput
             v-if="activeTab === 'history'"
@@ -44,6 +49,61 @@
             @clear="handleSearch"
             @keyup="handleKeywordSearchKeyup"
           />
+          <ElSelect
+            v-model="advancedFilter.corporation_id"
+            :placeholder="$t('srp.manage.corporationFilter')"
+            clearable
+            filterable
+            style="width: 180px"
+            @change="handleSearch"
+          >
+            <ElOption
+              v-for="option in corporationOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </ElSelect>
+          <ElSelect
+            v-model="advancedFilter.ship_type_id"
+            :placeholder="$t('srp.manage.shipTypeFilter')"
+            clearable
+            filterable
+            style="width: 180px"
+            @change="handleSearch"
+          >
+            <ElOption
+              v-for="option in shipTypeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </ElSelect>
+          <ElSelect
+            v-model="advancedFilter.solar_system_id"
+            :placeholder="$t('srp.manage.solarSystemFilter')"
+            clearable
+            filterable
+            style="width: 180px"
+            @change="handleSearch"
+          >
+            <ElOption
+              v-for="option in solarSystemOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </ElSelect>
+          <ElSelect
+            v-model="advancedFilter.has_recommended_match"
+            :placeholder="$t('srp.manage.recommendedMatchFilter')"
+            clearable
+            style="width: 180px"
+            @change="handleSearch"
+          >
+            <ElOption :label="$t('srp.manage.recommendedMatched')" :value="true" />
+            <ElOption :label="$t('srp.manage.recommendedUnmatched')" :value="false" />
+          </ElSelect>
           <ElButton type="primary" @click="handleSearch">{{ $t('srp.manage.searchBtn') }}</ElButton>
           <ElButton @click="resetFilter">{{ $t('srp.manage.resetBtn') }}</ElButton>
           <div v-if="activeTab === 'pending' && canPayout" class="flex items-center gap-2">
@@ -92,6 +152,7 @@
             visual-variant="ledger"
             @pagination:size-change="handleSizeChange"
             @pagination:current-change="handleCurrentChange"
+            @sort-change="handleSortChange"
           />
         </div>
       </div>
@@ -339,10 +400,15 @@
     activeTab,
     payoutMode,
     filter,
+    advancedFilter,
     handleSearch,
     handleKeywordSearchKeyup,
     resetFilter,
     handleTabChange,
+    handleSortChange,
+    corporationOptions,
+    shipTypeOptions,
+    solarSystemOptions,
     columns,
     columnChecks,
     data,

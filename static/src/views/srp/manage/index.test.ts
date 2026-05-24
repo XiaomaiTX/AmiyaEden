@@ -79,6 +79,45 @@ test('srp submitted actions keep approve and reject explicitly clickable with gu
   assert.match(manageHookSource, /flex-nowrap whitespace-nowrap/)
 })
 
+test('srp manage exposes extended filters for corporation ship system and recommendation match', () => {
+  assert.match(
+    manageHookSource,
+    /advancedFilter = reactive\(\{[\s\S]*corporation_id[\s\S]*ship_type_id/
+  )
+  assert.match(manageHookSource, /solar_system_id[\s\S]*has_recommended_match/)
+  assert.match(
+    manageHookSource,
+    /corporation_id:\s*advancedFilter\.corporation_id[\s\S]*ship_type_id:\s*advancedFilter\.ship_type_id/
+  )
+  assert.match(
+    manageHookSource,
+    /solar_system_id:\s*advancedFilter\.solar_system_id[\s\S]*has_recommended_match:\s*advancedFilter\.has_recommended_match/
+  )
+  assert.equal(zhLocale.srp.manage.corporationFilter, '按军团筛选')
+  assert.equal(enLocale.srp.manage.corporationFilter, 'Filter by corporation')
+  assert.equal(zhLocale.srp.manage.recommendedMatched, '已有匹配')
+  assert.equal(enLocale.srp.manage.recommendedUnmatched, 'Unmatched')
+})
+
+test('srp manage sends backend sort params and falls back to created_at desc when clearing sort', () => {
+  assert.match(
+    manageHookSource,
+    /apiParams:\s*\{[\s\S]*sort_by:\s*'created_at'[\s\S]*sort_order:\s*'desc'[\s\S]*\}/
+  )
+  assert.match(
+    manageHookSource,
+    /const handleSortChange = \(sort:[\s\S]*\) => \{[\s\S]*if \(!sort\?\.prop \|\| !sort\.order\) \{[\s\S]*searchParams\.sort_by = 'created_at'[\s\S]*searchParams\.sort_order = 'desc'/
+  )
+  assert.match(
+    manageHookSource,
+    /searchParams\.sort_by = sort\.prop as NonNullable<Api\.Srp\.ApplicationSearchParams\['sort_by'\]>/
+  )
+  assert.match(
+    manageHookSource,
+    /searchParams\.sort_order = sort\.order === 'descending' \? 'desc' : 'asc'/
+  )
+})
+
 test('srp review dialog template fill is resilient and shows an error when dialog initialization fails', () => {
   assert.match(workflowHookSource, /const ensureText = \(value: unknown, fallback = ''\)/)
   assert.match(workflowHookSource, /const getReviewerName = \(\)/)

@@ -144,6 +144,79 @@ func TestBuildSrpApplicationListQueryAppliesCharacterAndNicknameKeywordFilter(t 
 	}
 }
 
+func TestBuildSrpApplicationListQueryAppliesExtendedFilters(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+	fleetID := "fleet-1"
+	corporationID := int64(1234)
+	shipTypeID := int64(587)
+	solarSystemID := int64(30000142)
+	hasRecommendedMatch := true
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildSrpApplicationListQuery(tx, SrpApplicationFilter{
+			FleetID:             &fleetID,
+			CorporationID:       &corporationID,
+			ShipTypeID:          &shipTypeID,
+			SolarSystemID:       &solarSystemID,
+			HasRecommendedMatch: &hasRecommendedMatch,
+		}).Find(&[]model.SrpApplication{})
+	})
+
+	if !strings.Contains(sql, `fleet_id =`) {
+		t.Fatalf("expected fleet filter, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `corporation_id =`) {
+		t.Fatalf("expected corporation filter, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `ship_type_id =`) {
+		t.Fatalf("expected ship type filter, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `solar_system_id =`) {
+		t.Fatalf("expected solar system filter, got SQL: %s", sql)
+	}
+	if !strings.Contains(sql, `recommended_amount > 0`) {
+		t.Fatalf("expected has recommended match predicate, got SQL: %s", sql)
+	}
+}
+
+func TestBuildSrpApplicationListQueryAppliesUnmatchedRecommendedFilter(t *testing.T) {
+	db := newDryRunPostgresDB(t)
+	hasRecommendedMatch := false
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return buildSrpApplicationListQuery(tx, SrpApplicationFilter{
+			HasRecommendedMatch: &hasRecommendedMatch,
+		}).Find(&[]model.SrpApplication{})
+	})
+
+	if !strings.Contains(sql, `recommended_amount <= 0`) {
+		t.Fatalf("expected unmatched recommended predicate, got SQL: %s", sql)
+	}
+}
+
+func TestBuildSrpApplicationOrderClauseUsesWhitelistAndDefault(t *testing.T) {
+	if got := buildSrpApplicationOrderClause(SrpApplicationFilter{
+		SortBy:    "final_amount",
+		SortOrder: "asc",
+	}); got != "final_amount ASC" {
+		t.Fatalf("expected final_amount ASC, got %q", got)
+	}
+
+	if got := buildSrpApplicationOrderClause(SrpApplicationFilter{
+		SortBy:    "created_at;drop table srp_application",
+		SortOrder: "asc",
+	}); got != "created_at DESC" {
+		t.Fatalf("expected fallback default order, got %q", got)
+	}
+
+	if got := buildSrpApplicationOrderClause(SrpApplicationFilter{
+		SortBy:    "ship_type_id",
+		SortOrder: "invalid",
+	}); got != "ship_type_id DESC" {
+		t.Fatalf("expected DESC fallback for invalid order, got %q", got)
+	}
+}
+
 func TestGetApplicationByKillmailAndCharacterQueryUsesCompositeKey(t *testing.T) {
 	db := newDryRunPostgresDB(t)
 
