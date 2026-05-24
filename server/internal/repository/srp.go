@@ -236,16 +236,24 @@ var srpApplicationSortableColumns = map[string]string{
 	"solar_system_id":    "solar_system_id",
 }
 
-func buildSrpApplicationOrderClause(filter SrpApplicationFilter) string {
+func buildSrpApplicationOrderClause(filter SrpApplicationFilter) clause.OrderByColumn {
 	sortColumn, ok := srpApplicationSortableColumns[strings.ToLower(strings.TrimSpace(filter.SortBy))]
 	if !ok || sortColumn == "" {
-		return "created_at DESC"
+		sortColumn = "created_at"
 	}
+
 	sortOrder := strings.ToUpper(strings.TrimSpace(filter.SortOrder))
-	if sortOrder != "ASC" && sortOrder != "DESC" {
-		sortOrder = "DESC"
+	desc := true
+	if sortOrder == "ASC" {
+		desc = false
+	} else if sortOrder != "DESC" {
+		desc = true
 	}
-	return sortColumn + " " + sortOrder
+
+	return clause.OrderByColumn{
+		Column: clause.Column{Name: sortColumn},
+		Desc:   desc,
+	}
 }
 
 func buildSrpFleetOptionsQuery(db *gorm.DB) *gorm.DB {
