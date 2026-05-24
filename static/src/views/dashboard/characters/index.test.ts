@@ -58,6 +58,13 @@ test('characters page locales include direct referral copy', () => {
   assert.match(enLocaleSource, /"directReferral"\s*:\s*\{[\s\S]*"title"\s*:/)
   assert.match(enLocaleSource, /"checkBtn"\s*:/)
   assert.match(enLocaleSource, /"confirmBtn"\s*:/)
+  assert.match(zhLocaleSource, /"characterMeta"\s*:/)
+  assert.match(enLocaleSource, /"characterMeta"\s*:/)
+})
+
+test('characters page uses localized character metadata instead of raw ID label', () => {
+  assert.match(source, /characters\.characterMeta/)
+  assert.doesNotMatch(source, />ID: \{\{ char\.character_id \}\}</)
 })
 
 test('characters page supports self account deletion when only one character remains', () => {

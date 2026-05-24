@@ -2631,6 +2631,7 @@ declare namespace Api {
       source: 'link' | 'direct_referral'
       status: 'ongoing' | 'valid' | 'stalled'
       matched_user_id: number
+      matched_character_name?: string
       rewarded_at: string | null
     }
 
@@ -2644,6 +2645,7 @@ declare namespace Api {
 
     interface AdminRecruitLink extends RecruitLink {
       user_id: number
+      user_character_name: string
     }
 
     interface GenerateLinkResponse {

@@ -60,7 +60,12 @@
                     {{ t('newbro.select.endAffiliationButton') }}
                   </ElButton>
                   <ElTag type="info" effect="light">
-                    #{{ state.current_affiliation.captain_user_id }}
+                    {{
+                      t('newbro.select.currentCaptainTag', {
+                        name: state.current_affiliation.captain_character_name,
+                        id: state.current_affiliation.captain_user_id
+                      })
+                    }}
                   </ElTag>
                 </div>
               </div>
