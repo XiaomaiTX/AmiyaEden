@@ -6,10 +6,11 @@
           v-model="dateRange"
           class="filter-date-range"
           type="daterange"
+          clearable
           value-format="YYYY-MM-DD"
           format="YYYY-MM-DD"
-          :start-placeholder="$t('walletAdmin.analysis.startDate')"
-          :end-placeholder="$t('walletAdmin.analysis.endDate')"
+          :start-placeholder="$t('walletAdmin.analysis.startDateAllHint')"
+          :end-placeholder="$t('walletAdmin.analysis.endDateAllHint')"
           :teleported="true"
         />
         <ElSelect
@@ -171,10 +172,7 @@
   defineOptions({ name: 'WalletAnalysis' })
   const { t } = useI18n()
 
-  const today = new Date()
-  const end = today.toISOString().slice(0, 10)
-  const startDate = new Date(today.getTime() - 29 * 24 * 3600 * 1000).toISOString().slice(0, 10)
-  const dateRange = ref<[string, string]>([startDate, end])
+  const dateRange = ref<[string, string] | null>(null)
   const refTypes = ref<string[]>([])
   const userKeyword = ref('')
   const loading = ref(false)
@@ -334,15 +332,19 @@
   ])
 
   const loadData = async () => {
-    if (!dateRange.value?.[0] || !dateRange.value?.[1]) return
     loading.value = true
     try {
-      analytics.value = await adminGetWalletAnalytics({
-        start_date: dateRange.value[0],
-        end_date: dateRange.value[1],
+      const payload: Api.SysWallet.AnalyticsParams = {
         ref_types: refTypes.value.length ? refTypes.value : undefined,
         user_keyword: userKeyword.value.trim() || undefined,
         top_n: 10
+      }
+      if (dateRange.value?.[0] && dateRange.value?.[1]) {
+        payload.start_date = dateRange.value[0]
+        payload.end_date = dateRange.value[1]
+      }
+      analytics.value = await adminGetWalletAnalytics({
+        ...payload
       })
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('walletAdmin.messages.actionFailed'))

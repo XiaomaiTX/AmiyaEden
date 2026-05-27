@@ -978,8 +978,8 @@ declare namespace Api {
     }>
 
     type AnalyticsParams = {
-      start_date: string
-      end_date: string
+      start_date?: string
+      end_date?: string
       ref_types?: string[]
       user_keyword?: string
       top_n?: number

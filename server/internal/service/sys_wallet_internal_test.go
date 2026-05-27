@@ -169,11 +169,18 @@ func TestValidateWalletAnalyticsRequest(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "valid default top n",
+			name: "valid default top n with date range",
 			req: WalletAnalyticsRequest{
 				StartDate: "2026-01-01",
 				EndDate:   "2026-01-30",
 				TopN:      0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid full history when dates empty",
+			req: WalletAnalyticsRequest{
+				TopN: 10,
 			},
 			wantErr: false,
 		},
@@ -204,15 +211,65 @@ func TestValidateWalletAnalyticsRequest(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "only start date is invalid",
+			req: WalletAnalyticsRequest{
+				StartDate: "2026-01-01",
+				TopN:      10,
+			},
+			wantErr: true,
+		},
+		{
+			name: "only end date is invalid",
+			req: WalletAnalyticsRequest{
+				EndDate: "2026-01-01",
+				TopN:    10,
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, _, err := validateWalletAnalyticsRequest(&tt.req)
+			_, _, _, _, err := validateWalletAnalyticsRequest(&tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("validateWalletAnalyticsRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestValidateWalletAnalyticsRequestUseTimeRangeFlag(t *testing.T) {
+	start, end, topN, useTimeRange, err := validateWalletAnalyticsRequest(&WalletAnalyticsRequest{
+		StartDate: "2026-01-01",
+		EndDate:   "2026-01-01",
+		TopN:      0,
+	})
+	if err != nil {
+		t.Fatalf("validateWalletAnalyticsRequest() unexpected error: %v", err)
+	}
+	if !useTimeRange {
+		t.Fatal("expected useTimeRange=true when start/end are provided")
+	}
+	if topN != 10 {
+		t.Fatalf("topN = %d, want 10", topN)
+	}
+	if start.IsZero() || end.IsZero() {
+		t.Fatalf("expected non-zero start/end, got start=%v end=%v", start, end)
+	}
+
+	start, end, topN, useTimeRange, err = validateWalletAnalyticsRequest(&WalletAnalyticsRequest{TopN: 5})
+	if err != nil {
+		t.Fatalf("validateWalletAnalyticsRequest() unexpected error for full history: %v", err)
+	}
+	if useTimeRange {
+		t.Fatal("expected useTimeRange=false when dates are empty")
+	}
+	if topN != 5 {
+		t.Fatalf("topN = %d, want 5", topN)
+	}
+	if !start.IsZero() || !end.IsZero() {
+		t.Fatalf("expected zero start/end for full history, got start=%v end=%v", start, end)
 	}
 }
 
