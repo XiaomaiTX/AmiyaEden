@@ -19,7 +19,17 @@ test('wallet analysis summary still uses totalBalance i18n key', () => {
 
 test('wallet analysis keeps date range picker visible in filter row', () => {
   assert.match(source, /<ElDatePicker[\s\S]*class="filter-date-range"/)
+  assert.match(source, /clearable/)
+  assert.match(source, /startDateAllHint/)
+  assert.match(source, /endDateAllHint/)
   assert.match(source, /\.filter-date-range\s*\{[\s\S]*min-width:\s*280px/)
+})
+
+test('wallet analysis defaults to full history request without date range', () => {
+  assert.match(source, /const dateRange = ref<\[string, string\] \| null>\(null\)/)
+  assert.match(source, /if \(dateRange\.value\?\.\[0\] && dateRange\.value\?\.\[1\]\) \{/)
+  assert.match(source, /payload\.start_date = dateRange\.value\[0\]/)
+  assert.match(source, /payload\.end_date = dateRange\.value\[1\]/)
 })
 
 test('wallet analysis grid items can shrink to prevent chart overflow clipping', () => {

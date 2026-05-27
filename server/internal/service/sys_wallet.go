@@ -105,8 +105,8 @@ type AdminAdjustRequest struct {
 }
 
 type WalletAnalyticsRequest struct {
-	StartDate   string   `json:"start_date" binding:"required"`
-	EndDate     string   `json:"end_date" binding:"required"`
+	StartDate   string   `json:"start_date"`
+	EndDate     string   `json:"end_date"`
 	RefTypes    []string `json:"ref_types"`
 	UserKeyword string   `json:"user_keyword"`
 	TopN        int      `json:"top_n"`
@@ -351,16 +351,17 @@ func (s *SysWalletService) AdminListLogs(page, pageSize int, filter WalletLogFil
 }
 
 func (s *SysWalletService) AdminGetAnalytics(req *WalletAnalyticsRequest) (*WalletAnalyticsResponse, error) {
-	start, end, topN, err := validateWalletAnalyticsRequest(req)
+	start, end, topN, useTimeRange, err := validateWalletAnalyticsRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
 	filter := repository.WalletAnalyticsFilter{
-		StartAt:     start,
-		EndAt:       end,
-		RefTypes:    req.RefTypes,
-		UserKeyword: strings.TrimSpace(req.UserKeyword),
+		UseTimeRange: useTimeRange,
+		StartAt:      start,
+		EndAt:        end,
+		RefTypes:     req.RefTypes,
+		UserKeyword:  strings.TrimSpace(req.UserKeyword),
 	}
 	allowedUserIDs, err := s.resolveWalletEnabledCandidateUserIDs(filter)
 	if err != nil {
@@ -527,29 +528,43 @@ func (s *SysWalletService) AdminGetAnalytics(req *WalletAnalyticsRequest) (*Wall
 	return resp, nil
 }
 
-func validateWalletAnalyticsRequest(req *WalletAnalyticsRequest) (time.Time, time.Time, int, error) {
-	start, err := time.Parse("2006-01-02", strings.TrimSpace(req.StartDate))
-	if err != nil {
-		return time.Time{}, time.Time{}, 0, errors.New("start_date 格式错误，需为 YYYY-MM-DD")
-	}
-	end, err := time.Parse("2006-01-02", strings.TrimSpace(req.EndDate))
-	if err != nil {
-		return time.Time{}, time.Time{}, 0, errors.New("end_date 格式错误，需为 YYYY-MM-DD")
-	}
-	if start.After(end) {
-		return time.Time{}, time.Time{}, 0, errors.New("start_date 不能晚于 end_date")
-	}
-	if end.Sub(start) > 365*24*time.Hour {
-		return time.Time{}, time.Time{}, 0, errors.New("时间范围不能超过 365 天")
+func validateWalletAnalyticsRequest(req *WalletAnalyticsRequest) (time.Time, time.Time, int, bool, error) {
+	startRaw := strings.TrimSpace(req.StartDate)
+	endRaw := strings.TrimSpace(req.EndDate)
+	useTimeRange := startRaw != "" || endRaw != ""
+	start := time.Time{}
+	end := time.Time{}
+	if useTimeRange {
+		if startRaw == "" || endRaw == "" {
+			return time.Time{}, time.Time{}, 0, false, errors.New("start_date 和 end_date 需同时传入，或同时留空")
+		}
+		var err error
+		start, err = time.Parse("2006-01-02", startRaw)
+		if err != nil {
+			return time.Time{}, time.Time{}, 0, false, errors.New("start_date 格式错误，需为 YYYY-MM-DD")
+		}
+		end, err = time.Parse("2006-01-02", endRaw)
+		if err != nil {
+			return time.Time{}, time.Time{}, 0, false, errors.New("end_date 格式错误，需为 YYYY-MM-DD")
+		}
+		if start.After(end) {
+			return time.Time{}, time.Time{}, 0, false, errors.New("start_date 不能晚于 end_date")
+		}
+		if end.Sub(start) > 365*24*time.Hour {
+			return time.Time{}, time.Time{}, 0, false, errors.New("时间范围不能超过 365 天")
+		}
 	}
 	topN := req.TopN
 	if topN == 0 {
 		topN = 10
 	}
 	if topN < 1 || topN > 50 {
-		return time.Time{}, time.Time{}, 0, errors.New("top_n 必须在 1-50 之间")
+		return time.Time{}, time.Time{}, 0, false, errors.New("top_n 必须在 1-50 之间")
 	}
-	return start, end.Add(24 * time.Hour), topN, nil
+	if useTimeRange {
+		return start, end.Add(24 * time.Hour), topN, true, nil
+	}
+	return time.Time{}, time.Time{}, topN, false, nil
 }
 
 func calcPercentile(values []float64, p float64) float64 {
