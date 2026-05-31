@@ -20,6 +20,7 @@
     :columns="columns"
     :pagination="pagination"
     visual-variant="ledger"
+    @sort-change="handleSortChange"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -57,20 +58,27 @@
   } = useTable({
     core: {
       apiFn: adminListWallets,
-      apiParams: { current: 1, size: 200 },
+      apiParams: { current: 1, size: 200, sort_by: 'updated_at', sort_order: 'desc' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
-        { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100 },
+        {
+          prop: 'user_id',
+          label: t('walletAdmin.transactions.userId'),
+          width: 100,
+          sortable: 'custom'
+        },
         {
           prop: 'character_name',
           label: t('walletAdmin.transactions.characterName'),
           minWidth: 160,
+          sortable: 'custom',
           formatter: (row: Wallet) => h('span', {}, row.character_name || '-')
         },
         {
           prop: 'balance',
           label: t('walletAdmin.wallets.balance'),
           minWidth: 180,
+          sortable: 'custom',
           formatter: (row: Wallet) =>
             h(
               'span',
@@ -82,6 +90,7 @@
           prop: 'updated_at',
           label: t('common.updatedAt'),
           minWidth: 200,
+          sortable: 'custom',
           formatter: (row: Wallet) => h('span', {}, formatTime(row.updated_at))
         },
         {
@@ -116,6 +125,23 @@
     Object.assign(searchParams, {
       current: 1,
       user_keyword: userKeywordFilter.value.trim() || undefined
+    })
+    getData()
+  }
+
+  const handleSortChange = (sort: { prop?: string; order?: 'ascending' | 'descending' | null }) => {
+    if (!sort.prop || !sort.order) {
+      Object.assign(searchParams, {
+        sort_by: 'updated_at',
+        sort_order: 'desc'
+      })
+      getData()
+      return
+    }
+
+    Object.assign(searchParams, {
+      sort_by: sort.prop,
+      sort_order: sort.order === 'descending' ? 'desc' : 'asc'
     })
     getData()
   }

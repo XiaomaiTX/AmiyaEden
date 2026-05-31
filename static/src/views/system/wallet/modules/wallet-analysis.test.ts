@@ -41,3 +41,16 @@ test('wallet analysis root no longer owns scrolling to avoid nested-scroll clipp
   assert.doesNotMatch(source, /\.wallet-analysis\s*\{[\s\S]*overflow-y:\s*auto/)
   assert.doesNotMatch(source, /\.wallet-analysis\s*\{[\s\S]*overflow-x:\s*hidden/)
 })
+
+test('wallet analysis tables support local sorting with independent sort state', () => {
+  assert.match(source, /const localSortState = reactive/)
+  assert.match(source, /const sortList = <T extends Record<string, any>>/)
+  assert.match(source, /const sortedTopInflowUsers = computed/)
+  assert.match(source, /const sortedTopOutflowUsers = computed/)
+  assert.match(source, /const sortedLargeTransactions = computed/)
+  assert.match(source, /const sortedFrequentAdjustments = computed/)
+  assert.match(source, /const sortedOperatorConcentration = computed/)
+  assert.match(source, /handleLocalSortChange\('topInflow', sort\)/)
+  assert.match(source, /handleLocalSortChange\('topOutflow', sort\)/)
+  assert.match(source, /handleLocalSortChange\('largeTransactions', sort\)/)
+})

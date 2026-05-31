@@ -12,3 +12,11 @@ test('wallet admin localizes mentor_reward and admin_award ref types in the filt
   assert.match(source, /value="admin_award"/)
   assert.match(source, /admin_award:\s*\{/)
 })
+
+test('wallet transactions supports custom sorting with default created_at desc fallback', () => {
+  assert.match(source, /@sort-change="handleSortChange"/)
+  assert.match(source, /sortable:\s*'custom'/)
+  assert.match(source, /sort_by:\s*'created_at'/)
+  assert.match(source, /sort_order:\s*'desc'/)
+  assert.match(source, /if \(!sort\.prop \|\| !sort\.order\)/)
+})

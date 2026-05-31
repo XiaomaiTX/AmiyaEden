@@ -39,3 +39,18 @@ test('wallet log amount column resolves through the shared common locale key', (
   assert.equal(zhLocale.common.amount, '金额')
   assert.equal(enLocale.common.amount, 'Amount')
 })
+
+test('wallet list and logs enable server-side sort params and default sort fallback', () => {
+  assert.match(walletListSource, /@sort-change="handleSortChange"/)
+  assert.match(walletListSource, /sortable:\s*'custom'/)
+  assert.match(walletListSource, /sort_by:\s*'updated_at'/)
+  assert.match(walletListSource, /sort_order:\s*'desc'/)
+  assert.match(walletListSource, /if \(!sort\.prop \|\| !sort\.order\)/)
+  assert.match(walletListSource, /sort_by:\s*'updated_at'/)
+  assert.match(walletLogsSource, /@sort-change="handleSortChange"/)
+  assert.match(walletLogsSource, /sort_by:\s*'created_at'/)
+  assert.match(walletLogsSource, /sort_order:\s*'desc'/)
+  assert.match(typeSource, /type WalletSearchParams = Partial<\{[\s\S]*sort_by:[\s\S]*sort_order:/)
+  assert.match(typeSource, /type LogSearchParams = Partial<\{[\s\S]*sort_by:[\s\S]*sort_order:/)
+  assert.match(docSource, /system\/wallet\/list.*sort_by.*sort_order/)
+})

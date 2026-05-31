@@ -148,10 +148,14 @@ type WalletTransactionFilter struct {
 	UserID      *uint
 	UserKeyword string
 	RefType     string
+	SortBy      string
+	SortOrder   string
 }
 
 type WalletListFilter struct {
 	UserKeyword string
+	SortBy      string
+	SortOrder   string
 }
 
 type WalletAnalyticsFilter struct {
@@ -287,7 +291,15 @@ func (r *SysWalletRepository) ListTransactions(page, pageSize int, filter Wallet
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&txs).Error; err != nil {
+	sortClause := buildSortClause(filter.SortBy, filter.SortOrder, map[string]string{
+		"created_at":    "created_at",
+		"amount":        "amount",
+		"balance_after": "balance_after",
+		"user_id":       "user_id",
+		"operator_id":   "operator_id",
+		"ref_type":      "ref_type",
+	}, "created_at DESC")
+	if err := db.Order(sortClause).Offset(offset).Limit(pageSize).Find(&txs).Error; err != nil {
 		return nil, 0, err
 	}
 	return txs, total, nil
@@ -317,7 +329,15 @@ func (r *SysWalletRepository) ListTransactionsWithCharacter(page, pageSize int, 
 		Joins(`LEFT JOIN "user" operator_u ON wt.operator_id = operator_u.id`).
 		Joins("LEFT JOIN eve_character operator_ec ON operator_u.primary_character_id = operator_ec.character_id")
 	queryDB = applyWalletTransactionUserFilter(queryDB, "wt.user_id", "wt.ref_type", filter)
-	if err := queryDB.Order("wt.created_at DESC").Offset(offset).Limit(pageSize).Scan(&results).Error; err != nil {
+	sortClause := buildSortClause(filter.SortBy, filter.SortOrder, map[string]string{
+		"created_at":    "wt.created_at",
+		"amount":        "wt.amount",
+		"balance_after": "wt.balance_after",
+		"user_id":       "wt.user_id",
+		"operator_id":   "wt.operator_id",
+		"ref_type":      "wt.ref_type",
+	}, "wt.created_at DESC")
+	if err := queryDB.Order(sortClause).Offset(offset).Limit(pageSize).Scan(&results).Error; err != nil {
 		return nil, 0, err
 	}
 	return results, total, nil
@@ -342,6 +362,23 @@ type WalletLogFilter struct {
 	OperatorID *uint
 	TargetUID  *uint
 	Action     string
+	SortBy     string
+	SortOrder  string
+}
+
+func normalizeSortOrder(order string) string {
+	if strings.EqualFold(order, "asc") {
+		return "ASC"
+	}
+	return "DESC"
+}
+
+func buildSortClause(sortBy string, sortOrder string, whitelist map[string]string, defaultClause string) string {
+	column, ok := whitelist[sortBy]
+	if !ok {
+		return defaultClause
+	}
+	return column + " " + normalizeSortOrder(sortOrder)
 }
 
 // ListLogs 分页查询操作日志
@@ -364,7 +401,16 @@ func (r *SysWalletRepository) ListLogs(page, pageSize int, filter WalletLogFilte
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := db.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&logs).Error; err != nil {
+	sortClause := buildSortClause(filter.SortBy, filter.SortOrder, map[string]string{
+		"created_at":  "created_at",
+		"amount":      "amount",
+		"before":      "before",
+		"after":       "after",
+		"operator_id": "operator_id",
+		"target_uid":  "target_uid",
+		"action":      "action",
+	}, "created_at DESC")
+	if err := db.Order(sortClause).Offset(offset).Limit(pageSize).Find(&logs).Error; err != nil {
 		return nil, 0, err
 	}
 	return logs, total, nil
@@ -407,7 +453,16 @@ func (r *SysWalletRepository) ListLogsWithCharacter(page, pageSize int, filter W
 	if filter.Action != "" {
 		queryDB = queryDB.Where("wl.action = ?", filter.Action)
 	}
-	if err := queryDB.Order("wl.created_at DESC").Offset(offset).Limit(pageSize).Scan(&results).Error; err != nil {
+	sortClause := buildSortClause(filter.SortBy, filter.SortOrder, map[string]string{
+		"created_at":  "wl.created_at",
+		"amount":      "wl.amount",
+		"before":      "wl.before",
+		"after":       "wl.after",
+		"operator_id": "wl.operator_id",
+		"target_uid":  "wl.target_uid",
+		"action":      "wl.action",
+	}, "wl.created_at DESC")
+	if err := queryDB.Order(sortClause).Offset(offset).Limit(pageSize).Scan(&results).Error; err != nil {
 		return nil, 0, err
 	}
 	return results, total, nil
@@ -454,8 +509,14 @@ func (r *SysWalletRepository) ListWalletsWithCharacter(page, pageSize int, filte
 		return nil, 0, err
 	}
 
+	sortClause := buildSortClause(filter.SortBy, filter.SortOrder, map[string]string{
+		"updated_at":     "sw.updated_at",
+		"balance":        "sw.balance",
+		"user_id":        "sw.user_id",
+		"character_name": "ec.character_name",
+	}, "sw.updated_at DESC")
 	err := buildWalletListWithCharacterQuery(global.DB, filter).
-		Order("sw.updated_at DESC").
+		Order(sortClause).
 		Offset(offset).Limit(pageSize).
 		Scan(&results).Error
 	if err != nil {

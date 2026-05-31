@@ -42,6 +42,7 @@
     :columns="columns"
     :pagination="pagination"
     visual-variant="ledger"
+    @sort-change="handleSortChange"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -101,10 +102,15 @@
   } = useTable({
     core: {
       apiFn: adminListTransactions,
-      apiParams: { current: 1, size: 200 },
+      apiParams: { current: 1, size: 200, sort_by: 'created_at', sort_order: 'desc' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
-        { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 90 },
+        {
+          prop: 'user_id',
+          label: t('walletAdmin.transactions.userId'),
+          width: 90,
+          sortable: 'custom'
+        },
         {
           prop: 'character_name',
           label: t('walletAdmin.transactions.characterName'),
@@ -112,8 +118,10 @@
           formatter: (row: WalletTransaction) => h('span', {}, row.character_name || '-')
         },
         {
+          prop: 'amount',
           label: t('walletAdmin.transactions.amount'),
           width: 140,
+          sortable: 'custom',
           formatter: (row: WalletTransaction) =>
             h(
               'span',
@@ -127,6 +135,7 @@
           prop: 'balance_after',
           label: t('walletAdmin.transactions.balanceAfter'),
           width: 140,
+          sortable: 'custom',
           formatter: (row: WalletTransaction) =>
             h('span', {}, formatFuxiCoinAmount(row.balance_after))
         },
@@ -140,6 +149,7 @@
           prop: 'ref_type',
           label: t('common.type'),
           width: 120,
+          sortable: 'custom',
           formatter: (row: WalletTransaction) =>
             h(ElTag, { size: 'small', type: getRefTypeTag(row.ref_type) }, () =>
               getRefTypeLabel(row.ref_type)
@@ -149,6 +159,7 @@
           prop: 'operator_id',
           label: t('walletAdmin.transactions.operator'),
           minWidth: 120,
+          sortable: 'custom',
           formatter: (row: WalletTransaction) =>
             h(
               'span',
@@ -162,6 +173,7 @@
           prop: 'created_at',
           label: t('common.time'),
           width: 200,
+          sortable: 'custom',
           formatter: (row: WalletTransaction) => h('span', {}, formatTime(row.created_at))
         }
       ]
@@ -181,6 +193,23 @@
     filterForm.user_id = userId
     filterForm.user_keyword = ''
     handleSearch()
+  }
+
+  const handleSortChange = (sort: { prop?: string; order?: 'ascending' | 'descending' | null }) => {
+    if (!sort.prop || !sort.order) {
+      Object.assign(searchParams, {
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      })
+      getData()
+      return
+    }
+
+    Object.assign(searchParams, {
+      sort_by: sort.prop,
+      sort_order: sort.order === 'descending' ? 'desc' : 'asc'
+    })
+    getData()
   }
 
   defineExpose({ filterByUser })

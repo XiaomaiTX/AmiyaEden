@@ -121,7 +121,10 @@ source_of_truth:
 - 用户侧 `/shop/wallet` 交易流水，以及管理端钱包列表、钱包流水、钱包操作日志，都按 ledger 视图处理
 - 管理端钱包列表支持按当前用户昵称或任意已绑定人物名搜索
 - 管理端钱包流水的用户筛选按 `/system/user` 一致语义执行，支持昵称或任意已绑定人物名搜索
+- 管理端 `/system/wallet/list`、`/system/wallet/transactions`、`/system/wallet/logs` 支持 `sort_by` + `sort_order(asc|desc)` 服务端排序；非法字段或非法排序方向回退到默认排序
+- 管理端钱包列表默认 `updated_at DESC`；钱包流水和操作日志默认 `created_at DESC`
 - 管理端 `/system/wallet/analytics` 支持 `start_date`、`end_date`、`ref_types`、`user_keyword`、`top_n`；`start_date/end_date` 可同时留空表示全量模式，若传入则需同时传入且时间窗最大 365 天，默认 `top_n=10`。响应包含 `summary`、`daily_series`、`ref_type_breakdown`、`top_inflow_users`、`top_outflow_users`、`admin_adjust_stats`、`anomalies`。其中 `summary.total_balance` 为实时总存量（全量启用钱包用户余额总和），`summary.active_wallet_count` 为实时活跃钱包数（余额 `>0`）。
+- 分析 tab 内嵌 Top/异常子表在前端做本地排序，不额外改变 analytics 接口契约
 - 商店、兑换码虽然都在 `Shop` 目录下，但用户态与管理态接口是分开的
 - 商店商品图片上传当前通过 `/upload/image` 返回 base64 data URL，不写入项目文件夹；大小上限 2MB，仅支持 jpeg/png/webp
 - 钱包在下单时立即扣款；拒绝订单时通过 `CreditUser` 退款，流水类型为 `shop_refund`
