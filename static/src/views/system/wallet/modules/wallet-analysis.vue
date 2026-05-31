@@ -90,12 +90,12 @@
             <span class="font-medium">{{ $t('walletAdmin.analysis.topInflowUsers') }}</span>
           </template>
           <ArtTable
-            :data="analytics?.top_inflow_users ?? []"
+            :data="sortedTopInflowUsers"
             :columns="topUserColumns"
             visual-variant="ledger"
-            :show-table-header="false"
             :height="320"
             :empty-text="$t('walletAdmin.analysis.empty')"
+            @sort-change="(sort) => handleLocalSortChange('topInflow', sort)"
           />
         </ElCard>
 
@@ -104,12 +104,12 @@
             <span class="font-medium">{{ $t('walletAdmin.analysis.topOutflowUsers') }}</span>
           </template>
           <ArtTable
-            :data="analytics?.top_outflow_users ?? []"
+            :data="sortedTopOutflowUsers"
             :columns="topUserColumns"
             visual-variant="ledger"
-            :show-table-header="false"
             :height="320"
             :empty-text="$t('walletAdmin.analysis.empty')"
+            @sort-change="(sort) => handleLocalSortChange('topOutflow', sort)"
           />
         </ElCard>
       </div>
@@ -121,23 +121,23 @@
         <ElCollapse>
           <ElCollapseItem :title="$t('walletAdmin.analysis.largeTransactions')" name="large">
             <ArtTable
-              :data="analytics?.anomalies.large_transactions ?? []"
+              :data="sortedLargeTransactions"
               :columns="largeTransactionColumns"
               visual-variant="ledger"
-              :show-table-header="false"
               :height="280"
               :empty-text="$t('walletAdmin.analysis.empty')"
+              @sort-change="(sort) => handleLocalSortChange('largeTransactions', sort)"
             />
           </ElCollapseItem>
 
           <ElCollapseItem :title="$t('walletAdmin.analysis.frequentAdjustments')" name="frequent">
             <ArtTable
-              :data="analytics?.anomalies.frequent_adjustments ?? []"
+              :data="sortedFrequentAdjustments"
               :columns="frequentAdjustmentColumns"
               visual-variant="ledger"
-              :show-table-header="false"
               :height="280"
               :empty-text="$t('walletAdmin.analysis.empty')"
+              @sort-change="(sort) => handleLocalSortChange('frequentAdjustments', sort)"
             />
           </ElCollapseItem>
 
@@ -146,12 +146,12 @@
             name="concentration"
           >
             <ArtTable
-              :data="analytics?.anomalies.operator_concentration ?? []"
+              :data="sortedOperatorConcentration"
               :columns="operatorConcentrationColumns"
               visual-variant="ledger"
-              :show-table-header="false"
               :height="280"
               :empty-text="$t('walletAdmin.analysis.empty')"
+              @sort-change="(sort) => handleLocalSortChange('operatorConcentration', sort)"
             />
           </ElCollapseItem>
         </ElCollapse>
@@ -177,6 +177,20 @@
   const userKeyword = ref('')
   const loading = ref(false)
   const analytics = ref<Api.SysWallet.WalletAnalytics | null>(null)
+  type LocalSort = { prop: string; order: 'ascending' | 'descending' }
+  const localSortState = reactive<{
+    topInflow: LocalSort
+    topOutflow: LocalSort
+    largeTransactions: LocalSort
+    frequentAdjustments: LocalSort
+    operatorConcentration: LocalSort
+  }>({
+    topInflow: { prop: 'amount', order: 'descending' },
+    topOutflow: { prop: 'amount', order: 'descending' },
+    largeTransactions: { prop: 'amount', order: 'descending' },
+    frequentAdjustments: { prop: 'adjust_count', order: 'descending' },
+    operatorConcentration: { prop: 'amount_total', order: 'descending' }
+  })
 
   const refTypeOptions = computed(() =>
     [
@@ -271,65 +285,135 @@
   })
 
   const topUserColumns = computed<ColumnOption[]>(() => [
-    { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100 },
+    {
+      prop: 'user_id',
+      label: t('walletAdmin.transactions.userId'),
+      width: 100,
+      sortable: true
+    },
     { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 160 },
     {
+      prop: 'amount',
       label: t('walletAdmin.analysis.amount'),
       minWidth: 140,
       align: 'right',
+      sortable: true,
       formatter: (row: { amount: number }) => h('span', {}, formatFuxiCoinAmount(row.amount))
     }
   ])
 
   const largeTransactionColumns = computed<ColumnOption[]>(() => [
-    { prop: 'id', label: 'ID', width: 90 },
-    { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100 },
+    { prop: 'id', label: 'ID', width: 90, sortable: true },
+    { prop: 'user_id', label: t('walletAdmin.transactions.userId'), width: 100, sortable: true },
     { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 140 },
-    { prop: 'ref_type', label: t('common.type'), minWidth: 120 },
+    { prop: 'ref_type', label: t('common.type'), minWidth: 120, sortable: true },
     {
+      prop: 'amount',
       label: t('walletAdmin.analysis.amount'),
       minWidth: 140,
       align: 'right',
+      sortable: true,
       formatter: (row: { amount: number }) => h('span', {}, formatFuxiCoinAmount(row.amount))
     },
-    { prop: 'created_at', label: t('common.time'), minWidth: 180 }
+    { prop: 'created_at', label: t('common.time'), minWidth: 180, sortable: true }
   ])
 
   const frequentAdjustmentColumns = computed<ColumnOption[]>(() => [
-    { prop: 'target_uid', label: t('walletAdmin.logs.targetUser'), width: 120 },
+    { prop: 'target_uid', label: t('walletAdmin.logs.targetUser'), width: 120, sortable: true },
     { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 140 },
-    { prop: 'adjust_count', label: t('walletAdmin.analysis.adjustCount'), width: 120 },
+    { prop: 'adjust_count', label: t('walletAdmin.analysis.adjustCount'), width: 120, sortable: true },
     {
+      prop: 'amount_total',
       label: t('walletAdmin.analysis.amountTotal'),
       minWidth: 140,
       align: 'right',
+      sortable: true,
       formatter: (row: { amount_total: number }) =>
         h('span', {}, formatFuxiCoinAmount(row.amount_total))
     },
     {
       prop: 'last_adjustment_time',
       label: t('walletAdmin.analysis.lastAdjustmentTime'),
-      minWidth: 180
+      minWidth: 180,
+      sortable: true
     }
   ])
 
   const operatorConcentrationColumns = computed<ColumnOption[]>(() => [
-    { prop: 'operator_id', label: t('walletAdmin.logs.operator'), width: 120 },
+    { prop: 'operator_id', label: t('walletAdmin.logs.operator'), width: 120, sortable: true },
     { prop: 'operator_name', label: t('walletAdmin.analysis.operatorName'), minWidth: 140 },
-    { prop: 'count', label: t('walletAdmin.analysis.adjustCount'), width: 120 },
+    { prop: 'count', label: t('walletAdmin.analysis.adjustCount'), width: 120, sortable: true },
     {
+      prop: 'amount_total',
       label: t('walletAdmin.analysis.amountTotal'),
       minWidth: 140,
       align: 'right',
+      sortable: true,
       formatter: (row: { amount_total: number }) =>
         h('span', {}, formatFuxiCoinAmount(row.amount_total))
     },
     {
+      prop: 'ratio',
       label: t('walletAdmin.analysis.ratio'),
       width: 120,
+      sortable: true,
       formatter: (row: { ratio: number }) => h('span', {}, `${(row.ratio * 100).toFixed(2)}%`)
     }
   ])
+
+  const sortList = <T extends Record<string, any>>(list: T[], sort: LocalSort): T[] => {
+    const orderFactor = sort.order === 'ascending' ? 1 : -1
+    return [...list].sort((a, b) => {
+      const av = a[sort.prop]
+      const bv = b[sort.prop]
+      if (typeof av === 'number' && typeof bv === 'number') {
+        return (av - bv) * orderFactor
+      }
+      const as = av == null ? '' : String(av)
+      const bs = bv == null ? '' : String(bv)
+      return as.localeCompare(bs) * orderFactor
+    })
+  }
+
+  const sortedTopInflowUsers = computed(() =>
+    sortList(analytics.value?.top_inflow_users ?? [], localSortState.topInflow)
+  )
+  const sortedTopOutflowUsers = computed(() =>
+    sortList(analytics.value?.top_outflow_users ?? [], localSortState.topOutflow)
+  )
+  const sortedLargeTransactions = computed(() =>
+    sortList(analytics.value?.anomalies.large_transactions ?? [], localSortState.largeTransactions)
+  )
+  const sortedFrequentAdjustments = computed(() =>
+    sortList(
+      analytics.value?.anomalies.frequent_adjustments ?? [],
+      localSortState.frequentAdjustments
+    )
+  )
+  const sortedOperatorConcentration = computed(() =>
+    sortList(
+      analytics.value?.anomalies.operator_concentration ?? [],
+      localSortState.operatorConcentration
+    )
+  )
+
+  const handleLocalSortChange = (
+    key: keyof typeof localSortState,
+    sort: { prop?: string; order?: 'ascending' | 'descending' | null }
+  ) => {
+    if (!sort.prop || !sort.order) {
+      const defaults: Record<keyof typeof localSortState, LocalSort> = {
+        topInflow: { prop: 'amount', order: 'descending' },
+        topOutflow: { prop: 'amount', order: 'descending' },
+        largeTransactions: { prop: 'amount', order: 'descending' },
+        frequentAdjustments: { prop: 'adjust_count', order: 'descending' },
+        operatorConcentration: { prop: 'amount_total', order: 'descending' }
+      }
+      localSortState[key] = defaults[key]
+      return
+    }
+    localSortState[key] = { prop: sort.prop, order: sort.order }
+  }
 
   const loadData = async () => {
     loading.value = true

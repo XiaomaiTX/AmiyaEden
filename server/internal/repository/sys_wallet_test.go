@@ -141,3 +141,43 @@ func TestBuildWalletListWithCharacterQueryAppliesUserKeywordAcrossNicknameAndAny
 		t.Fatalf("expected wallet list keyword search across nickname and any character name, got SQL: %s", sql)
 	}
 }
+
+func TestBuildSortClauseUsesWhitelistAndFallsBackToDefault(t *testing.T) {
+	whitelist := map[string]string{
+		"updated_at": "sw.updated_at",
+		"balance":    "sw.balance",
+	}
+
+	if got := buildSortClause("updated_at", "asc", whitelist, "sw.updated_at DESC"); got != "sw.updated_at ASC" {
+		t.Fatalf("buildSortClause() asc = %q, want %q", got, "sw.updated_at ASC")
+	}
+	if got := buildSortClause("balance", "desc", whitelist, "sw.updated_at DESC"); got != "sw.balance DESC" {
+		t.Fatalf("buildSortClause() desc = %q, want %q", got, "sw.balance DESC")
+	}
+	if got := buildSortClause("balance", "invalid", whitelist, "sw.updated_at DESC"); got != "sw.balance DESC" {
+		t.Fatalf("buildSortClause() invalid order = %q, want %q", got, "sw.balance DESC")
+	}
+	if got := buildSortClause("not_allowed", "asc", whitelist, "sw.updated_at DESC"); got != "sw.updated_at DESC" {
+		t.Fatalf("buildSortClause() invalid field = %q, want %q", got, "sw.updated_at DESC")
+	}
+}
+
+func TestListWalletAndLedgerSortWhitelistBuildsExpectedOrderClause(t *testing.T) {
+	if got := buildSortClause("character_name", "asc", map[string]string{
+		"character_name": "ec.character_name",
+	}, "sw.updated_at DESC"); got != "ec.character_name ASC" {
+		t.Fatalf("wallet list character_name sort = %q, want %q", got, "ec.character_name ASC")
+	}
+
+	if got := buildSortClause("amount", "asc", map[string]string{
+		"amount": "wt.amount",
+	}, "wt.created_at DESC"); got != "wt.amount ASC" {
+		t.Fatalf("wallet transaction amount sort = %q, want %q", got, "wt.amount ASC")
+	}
+
+	if got := buildSortClause("target_uid", "asc", map[string]string{
+		"target_uid": "wl.target_uid",
+	}, "wl.created_at DESC"); got != "wl.target_uid ASC" {
+		t.Fatalf("wallet log target_uid sort = %q, want %q", got, "wl.target_uid ASC")
+	}
+}

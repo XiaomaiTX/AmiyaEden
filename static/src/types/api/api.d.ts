@@ -957,6 +957,8 @@ declare namespace Api {
       current: number
       size: number
       user_keyword: string
+      sort_by: 'updated_at' | 'balance' | 'user_id' | 'character_name'
+      sort_order: 'asc' | 'desc'
     }>
 
     /** 流水查询参数 */
@@ -966,6 +968,8 @@ declare namespace Api {
       user_id: number
       user_keyword: string
       ref_type: string
+      sort_by: 'created_at' | 'amount' | 'balance_after' | 'user_id' | 'operator_id' | 'ref_type'
+      sort_order: 'asc' | 'desc'
     }>
 
     /** 操作日志查询参数 */
@@ -975,6 +979,8 @@ declare namespace Api {
       operator_id: number
       target_uid: number
       action: string
+      sort_by: 'created_at' | 'amount' | 'before' | 'after' | 'operator_id' | 'target_uid' | 'action'
+      sort_order: 'asc' | 'desc'
     }>
 
     type AnalyticsParams = {

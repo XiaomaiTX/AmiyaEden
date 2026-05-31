@@ -27,18 +27,24 @@ var ErrWalletCapabilityDisabled = errors.New("当前军团策略禁止使用伏�
 
 type WalletListFilter struct {
 	UserKeyword string
+	SortBy      string
+	SortOrder   string
 }
 
 type WalletTransactionFilter struct {
 	UserID      *uint
 	UserKeyword string
 	RefType     string
+	SortBy      string
+	SortOrder   string
 }
 
 type WalletLogFilter struct {
 	OperatorID *uint
 	TargetUID  *uint
 	Action     string
+	SortBy     string
+	SortOrder  string
 }
 
 func buildWalletTransaction(userID uint, operatorID uint, delta float64, newBalance float64, reason, refType, refID string) *model.WalletTransaction {
@@ -309,6 +315,8 @@ func (s *SysWalletService) AdminListWallets(page, pageSize int, filter WalletLis
 	normalizeLedgerPageRequest(&page, &pageSize)
 	wallets, total, err := s.repo.ListWalletsWithCharacter(page, pageSize, repository.WalletListFilter{
 		UserKeyword: filter.UserKeyword,
+		SortBy:      filter.SortBy,
+		SortOrder:   filter.SortOrder,
 	})
 	if err != nil {
 		return nil, 0, err
@@ -337,6 +345,8 @@ func (s *SysWalletService) AdminListTransactions(page, pageSize int, filter Wall
 		UserID:      filter.UserID,
 		UserKeyword: filter.UserKeyword,
 		RefType:     filter.RefType,
+		SortBy:      filter.SortBy,
+		SortOrder:   filter.SortOrder,
 	})
 }
 
@@ -347,6 +357,8 @@ func (s *SysWalletService) AdminListLogs(page, pageSize int, filter WalletLogFil
 		OperatorID: filter.OperatorID,
 		TargetUID:  filter.TargetUID,
 		Action:     filter.Action,
+		SortBy:     filter.SortBy,
+		SortOrder:  filter.SortOrder,
 	})
 }
 

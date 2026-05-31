@@ -39,6 +39,7 @@
     :columns="columns"
     :pagination="pagination"
     visual-variant="ledger"
+    @sort-change="handleSortChange"
     @pagination:size-change="handleSizeChange"
     @pagination:current-change="handleCurrentChange"
   />
@@ -80,13 +81,14 @@
   } = useTable({
     core: {
       apiFn: adminListWalletLogs,
-      apiParams: { current: 1, size: 200 },
+      apiParams: { current: 1, size: 200, sort_by: 'created_at', sort_order: 'desc' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },
         {
           prop: 'operator_id',
           label: t('walletAdmin.logs.operator'),
           minWidth: 140,
+          sortable: 'custom',
           formatter: (row: WalletLog) =>
             h(
               'span',
@@ -100,6 +102,7 @@
           prop: 'target_uid',
           label: t('walletAdmin.logs.targetUser'),
           minWidth: 140,
+          sortable: 'custom',
           formatter: (row: WalletLog) =>
             h(
               'span',
@@ -113,6 +116,7 @@
           prop: 'action',
           label: t('common.operation'),
           width: 100,
+          sortable: 'custom',
           formatter: (row: WalletLog) =>
             h(ElTag, { size: 'small', type: getActionTag(row.action) }, () =>
               getActionLabel(row.action)
@@ -122,18 +126,21 @@
           prop: 'amount',
           label: t('common.amount'),
           width: 140,
+          sortable: 'custom',
           formatter: (row: WalletLog) => h('span', {}, formatFuxiCoinAmount(row.amount))
         },
         {
           prop: 'before',
           label: t('walletAdmin.logs.before'),
           width: 140,
+          sortable: 'custom',
           formatter: (row: WalletLog) => h('span', {}, formatFuxiCoinAmount(row.before))
         },
         {
           prop: 'after',
           label: t('walletAdmin.logs.after'),
           width: 140,
+          sortable: 'custom',
           formatter: (row: WalletLog) => h('span', {}, formatFuxiCoinAmount(row.after))
         },
         {
@@ -146,6 +153,7 @@
           prop: 'created_at',
           label: t('common.time'),
           width: 200,
+          sortable: 'custom',
           formatter: (row: WalletLog) => h('span', {}, formatTime(row.created_at))
         }
       ]
@@ -157,6 +165,23 @@
       target_uid: filterForm.target_uid ? Number(filterForm.target_uid) : undefined,
       operator_id: filterForm.operator_id ? Number(filterForm.operator_id) : undefined,
       action: filterForm.action || undefined
+    })
+    getData()
+  }
+
+  const handleSortChange = (sort: { prop?: string; order?: 'ascending' | 'descending' | null }) => {
+    if (!sort.prop || !sort.order) {
+      Object.assign(searchParams, {
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      })
+      getData()
+      return
+    }
+
+    Object.assign(searchParams, {
+      sort_by: sort.prop,
+      sort_order: sort.order === 'descending' ? 'desc' : 'asc'
     })
     getData()
   }

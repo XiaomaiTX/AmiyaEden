@@ -38,6 +38,8 @@ type walletListRequest struct {
 	Current     int    `json:"current"`
 	Size        int    `json:"size"`
 	UserKeyword string `json:"user_keyword"`
+	SortBy      string `json:"sort_by"`
+	SortOrder   string `json:"sort_order"`
 }
 
 // GetMyTransactions POST /shop/wallet/my/transactions
@@ -72,7 +74,11 @@ func (h *SysWalletHandler) AdminListWallets(c *gin.Context) {
 		req.Size = 20
 	}
 	req.Current, req.Size = normalizeLedgerPagination(req.Current, req.Size)
-	filter := service.WalletListFilter{UserKeyword: req.UserKeyword}
+	filter := service.WalletListFilter{
+		UserKeyword: req.UserKeyword,
+		SortBy:      req.SortBy,
+		SortOrder:   req.SortOrder,
+	}
 
 	wallets, total, err := h.svc.AdminListWallets(req.Current, req.Size, filter)
 	if err != nil {
@@ -129,6 +135,8 @@ type adminTransactionListRequest struct {
 	UserID      *uint  `json:"user_id"`
 	UserKeyword string `json:"user_keyword"`
 	RefType     string `json:"ref_type"`
+	SortBy      string `json:"sort_by"`
+	SortOrder   string `json:"sort_order"`
 }
 
 // AdminListTransactions POST /system/wallet/transactions
@@ -145,6 +153,8 @@ func (h *SysWalletHandler) AdminListTransactions(c *gin.Context) {
 		UserID:      req.UserID,
 		UserKeyword: req.UserKeyword,
 		RefType:     req.RefType,
+		SortBy:      req.SortBy,
+		SortOrder:   req.SortOrder,
 	}
 
 	records, total, err := h.svc.AdminListTransactions(req.Current, req.Size, filter)
@@ -162,6 +172,8 @@ type adminLogListRequest struct {
 	OperatorID *uint  `json:"operator_id"`
 	TargetUID  *uint  `json:"target_uid"`
 	Action     string `json:"action"`
+	SortBy     string `json:"sort_by"`
+	SortOrder  string `json:"sort_order"`
 }
 
 // AdminListLogs POST /system/wallet/logs
@@ -178,6 +190,8 @@ func (h *SysWalletHandler) AdminListLogs(c *gin.Context) {
 		OperatorID: req.OperatorID,
 		TargetUID:  req.TargetUID,
 		Action:     req.Action,
+		SortBy:     req.SortBy,
+		SortOrder:  req.SortOrder,
 	}
 
 	records, total, err := h.svc.AdminListLogs(req.Current, req.Size, filter)
