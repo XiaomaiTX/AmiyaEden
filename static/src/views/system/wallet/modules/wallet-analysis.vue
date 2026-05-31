@@ -95,7 +95,7 @@
             visual-variant="ledger"
             :height="320"
             :empty-text="$t('walletAdmin.analysis.empty')"
-            @sort-change="(sort) => handleLocalSortChange('topInflow', sort)"
+            @sort-change="handleTopInflowSortChange"
           />
         </ElCard>
 
@@ -109,7 +109,7 @@
             visual-variant="ledger"
             :height="320"
             :empty-text="$t('walletAdmin.analysis.empty')"
-            @sort-change="(sort) => handleLocalSortChange('topOutflow', sort)"
+            @sort-change="handleTopOutflowSortChange"
           />
         </ElCard>
       </div>
@@ -126,7 +126,7 @@
               visual-variant="ledger"
               :height="280"
               :empty-text="$t('walletAdmin.analysis.empty')"
-              @sort-change="(sort) => handleLocalSortChange('largeTransactions', sort)"
+              @sort-change="handleLargeTransactionsSortChange"
             />
           </ElCollapseItem>
 
@@ -137,7 +137,7 @@
               visual-variant="ledger"
               :height="280"
               :empty-text="$t('walletAdmin.analysis.empty')"
-              @sort-change="(sort) => handleLocalSortChange('frequentAdjustments', sort)"
+              @sort-change="handleFrequentAdjustmentsSortChange"
             />
           </ElCollapseItem>
 
@@ -151,7 +151,7 @@
               visual-variant="ledger"
               :height="280"
               :empty-text="$t('walletAdmin.analysis.empty')"
-              @sort-change="(sort) => handleLocalSortChange('operatorConcentration', sort)"
+              @sort-change="handleOperatorConcentrationSortChange"
             />
           </ElCollapseItem>
         </ElCollapse>
@@ -321,7 +321,12 @@
   const frequentAdjustmentColumns = computed<ColumnOption[]>(() => [
     { prop: 'target_uid', label: t('walletAdmin.logs.targetUser'), width: 120, sortable: true },
     { prop: 'character_name', label: t('walletAdmin.transactions.characterName'), minWidth: 140 },
-    { prop: 'adjust_count', label: t('walletAdmin.analysis.adjustCount'), width: 120, sortable: true },
+    {
+      prop: 'adjust_count',
+      label: t('walletAdmin.analysis.adjustCount'),
+      width: 120,
+      sortable: true
+    },
     {
       prop: 'amount_total',
       label: t('walletAdmin.analysis.amountTotal'),
@@ -414,6 +419,26 @@
     }
     localSortState[key] = { prop: sort.prop, order: sort.order }
   }
+  const handleTopInflowSortChange = (sort: {
+    prop?: string
+    order?: 'ascending' | 'descending' | null
+  }) => handleLocalSortChange('topInflow', sort)
+  const handleTopOutflowSortChange = (sort: {
+    prop?: string
+    order?: 'ascending' | 'descending' | null
+  }) => handleLocalSortChange('topOutflow', sort)
+  const handleLargeTransactionsSortChange = (sort: {
+    prop?: string
+    order?: 'ascending' | 'descending' | null
+  }) => handleLocalSortChange('largeTransactions', sort)
+  const handleFrequentAdjustmentsSortChange = (sort: {
+    prop?: string
+    order?: 'ascending' | 'descending' | null
+  }) => handleLocalSortChange('frequentAdjustments', sort)
+  const handleOperatorConcentrationSortChange = (sort: {
+    prop?: string
+    order?: 'ascending' | 'descending' | null
+  }) => handleLocalSortChange('operatorConcentration', sort)
 
   const loadData = async () => {
     loading.value = true

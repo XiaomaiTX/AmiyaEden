@@ -62,6 +62,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { fetchTasks, runTask, updateTaskSchedule } from '@/api/task-manager'
   import EsiControls from './EsiControls.vue'
+  import { resolveTaskLoadErrorMessage } from './task-load-error'
   import { getTaskDisplayDescription, getTaskDisplayName } from '../task-labels'
   import { isHttpError } from '@/utils/http/error'
   import { ApiStatus } from '@/utils/http/status'
@@ -300,8 +301,9 @@
     loading.value = true
     try {
       tasks.value = (await fetchTasks()) ?? []
-    } catch {
+    } catch (error) {
       tasks.value = []
+      ElMessage.error(resolveTaskLoadErrorMessage(error))
     } finally {
       loading.value = false
     }
