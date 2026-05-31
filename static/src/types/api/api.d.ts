@@ -979,7 +979,14 @@ declare namespace Api {
       operator_id: number
       target_uid: number
       action: string
-      sort_by: 'created_at' | 'amount' | 'before' | 'after' | 'operator_id' | 'target_uid' | 'action'
+      sort_by:
+        | 'created_at'
+        | 'amount'
+        | 'before'
+        | 'after'
+        | 'operator_id'
+        | 'target_uid'
+        | 'action'
       sort_order: 'asc' | 'desc'
     }>
 

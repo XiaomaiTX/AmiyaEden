@@ -16,6 +16,10 @@ const esiMonitorTabSource = readFileSync(
   new URL('./modules/EsiMonitorTab.vue', import.meta.url),
   'utf8'
 )
+const taskLoadErrorSource = readFileSync(
+  new URL('./modules/task-load-error.ts', import.meta.url),
+  'utf8'
+)
 const historyTabSource = readFileSync(new URL('./modules/HistoryTab.vue', import.meta.url), 'utf8')
 const apiSource = readFileSync(new URL('../../../api/task-manager.ts', import.meta.url), 'utf8')
 const sysConfigApiSource = readFileSync(
@@ -51,6 +55,7 @@ test('task manager page uses tabs with extracted task and history modules', () =
   assert.doesNotMatch(indexSource, /art-full-height/)
 
   assert.match(tasksTabSource, /fetchTasks\(/)
+  assert.match(tasksTabSource, /resolveTaskLoadErrorMessage/)
   assert.match(tasksTabSource, /runTask\(/)
   assert.match(tasksTabSource, /<ElDialog/)
   assert.match(tasksTabSource, /destroy-on-close/)
@@ -68,6 +73,10 @@ test('task manager page uses tabs with extracted task and history modules', () =
   assert.match(tasksTabSource, /taskManager\.mode\.cron/)
   assert.match(tasksTabSource, /taskManager\.mode\.every/)
   assert.match(tasksTabSource, /taskManager\.intervalUnits\./)
+  assert.match(taskLoadErrorSource, /HttpError\.message/)
+  assert.match(taskLoadErrorSource, /response\?\.data/)
+  assert.match(taskLoadErrorSource, /error instanceof Error/)
+  assert.match(taskLoadErrorSource, /\$t\('httpMsg\.networkError'\)/)
 
   assert.match(esiControlsSource, /fetchESIRefreshTasks\(/)
   assert.match(esiControlsSource, /runESIRefreshTaskByName\(/)
