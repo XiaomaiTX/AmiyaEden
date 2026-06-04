@@ -416,7 +416,8 @@
       "console": "Console",
       "npcKills": "Corp NPC Kill Report",
       "corporationStructures": "Corporation Structures",
-      "fuelOfficerStructures": "My Fuel Structures"
+      "fuelOfficerStructures": "My Fuel Structures",
+      "galaxyRegistry": "Galaxy Registry"
     },
     "exception": {
       "title": "Exception",
@@ -2889,6 +2890,81 @@
     "empty": {
       "list": "No structure data available",
       "settings": "No manageable corporations"
+    }
+  },
+  "galaxyRegistry": {
+    "title": "Galaxy Registry",
+    "subtitle": "See which systems are currently occupied, let captains register production, and let admins manage system validation.",
+    "summary": {
+      "idle": "Idle Systems",
+      "busy": "Busy Systems",
+      "overdue": "Overdue Entries"
+    },
+    "systems": { "title": "System Status" },
+    "myEntries": { "title": "My Entries" },
+    "columns": {
+      "system": "System",
+      "regionConstellation": "Region / Constellation",
+      "security": "Security",
+      "note": "Note",
+      "minBounty": "Minimum Valid Bounty",
+      "status": "Status",
+      "captain": "Current Captain",
+      "expectedEndAt": "Expected End",
+      "actualStartAt": "Actual Start",
+      "actualEndAt": "Actual End",
+      "validationStatus": "Validation",
+      "validatedBounty": "Matched Bounty",
+      "violationReason": "Violation Reason",
+      "enabled": "Enabled"
+    },
+    "actions": {
+      "createEntry": "Register",
+      "endEntry": "End Entry"
+    },
+    "systemStatus": {
+      "idle": "Idle",
+      "busy": "Busy",
+      "overdue": "Overdue",
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "entryStatus": {
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "validationStatus": {
+      "pending": "Pending",
+      "valid": "Valid",
+      "violation": "Violation"
+    },
+    "violationReasons": {
+      "no_bounty_in_window": "No bounty journal in the time window",
+      "bounty_below_threshold": "Bounty stayed below the threshold"
+    },
+    "admin": {
+      "systemsTab": "System Config",
+      "entriesTab": "Entries",
+      "analyticsTab": "Analytics",
+      "searchPlaceholder": "Search system, region, or constellation",
+      "entryKeywordPlaceholder": "Search system or captain",
+      "addSystem": "Add",
+      "forceEnd": "Force End",
+      "topSystems": "Most Registered Systems",
+      "registerCount": "Entries",
+      "rangeSeparator": "to",
+      "rangeStart": "Start date",
+      "rangeEnd": "End date"
+    },
+    "messages": {
+      "expectedEndAtRequired": "Expected end time is required",
+      "entryCreated": "Entry created",
+      "entryEnded": "Entry ended",
+      "entryForceEnded": "Entry force-ended",
+      "systemCreated": "System config created",
+      "systemSaved": "System config saved",
+      "systemDeleted": "System config deleted",
+      "deleteConfirm": "Delete this system config?"
     }
   },
   "shopBrowse": {

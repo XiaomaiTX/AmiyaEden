@@ -53,6 +53,7 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"auto_srp":                       {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeTriggered, cron: "", hasRun: false},
 		"recruit_link_check":             {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 2 * * *", hasRun: true},
 		"audit_archive_daily":            {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 5 * * *", hasRun: true},
+		"galaxy_registry_validation":     {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 1h", hasRun: true},
 	}
 
 	all := reg.All()

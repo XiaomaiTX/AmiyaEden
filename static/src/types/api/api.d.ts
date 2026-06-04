@@ -1943,6 +1943,168 @@ declare namespace Api {
       settlement_month: string
       items: FuelSalaryPayoutRunItem[]
     }
+
+    interface GalaxyRegistrySystemSummary {
+      idle_count: number
+      busy_count: number
+      overdue_count: number
+    }
+
+    type GalaxyRegistrySystemStatus = 'idle' | 'busy' | 'overdue'
+    type GalaxyRegistryEntryStatus = 'active' | 'completed'
+    type GalaxyRegistryValidationStatus = 'pending' | 'valid' | 'violation'
+
+    interface GalaxyRegistrySystemActiveEntry {
+      entry_id: number
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      expected_end_at: string
+      actual_start_at: string
+      is_overdue: boolean
+      is_mine: boolean
+    }
+
+    interface GalaxyRegistrySystemItem {
+      system_config_id: number
+      solar_system_id: number
+      solar_system_name: string
+      region_id: number
+      region_name: string
+      constellation_id: number
+      constellation_name: string
+      security: number
+      note: string
+      min_bounty_amount: number
+      is_enabled: boolean
+      status: GalaxyRegistrySystemStatus
+      active_entry: GalaxyRegistrySystemActiveEntry | null
+    }
+
+    interface GalaxyRegistrySystemsResponse {
+      summary: GalaxyRegistrySystemSummary
+      items: GalaxyRegistrySystemItem[]
+    }
+
+    interface GalaxyRegistryCreateEntryRequest {
+      system_config_id: number
+      expected_end_at: string
+    }
+
+    interface GalaxyRegistryEntryItem {
+      id: number
+      system_config_id: number
+      solar_system_id: number
+      solar_system_name: string
+      captain_user_id: number
+      captain_character_id: number
+      captain_character_name: string
+      captain_nickname: string
+      status: GalaxyRegistryEntryStatus
+      validation_status: GalaxyRegistryValidationStatus
+      expected_end_at: string
+      actual_start_at: string
+      actual_end_at: string | null
+      ended_by_user_id: number
+      force_ended_by_admin: boolean
+      frozen_min_bounty_amount: number
+      validated_at: string | null
+      validated_bounty_amount: number
+      validated_bounty_count: number
+      violation_reason: string
+      created_at: string
+      updated_at: string
+    }
+
+    type GalaxyRegistryEntryListParams = Partial<Api.Common.CommonSearchParams> & {
+      system_config_id?: number
+      keyword?: string
+      status?: GalaxyRegistryEntryStatus | ''
+      validation_status?: GalaxyRegistryValidationStatus | ''
+      start_date?: string
+      end_date?: string
+    }
+
+    interface GalaxyRegistrySdeSystemSearchParams {
+      keyword: string
+      limit?: number
+    }
+
+    interface GalaxyRegistrySdeSystem {
+      solar_system_id: number
+      solar_system_name: string
+      region_id: number
+      region_name: string
+      constellation_id: number
+      constellation_name: string
+      security: number
+    }
+
+    interface GalaxyRegistryAdminSystem {
+      id: number
+      solar_system_id: number
+      solar_system_name: string
+      region_id: number
+      region_name: string
+      constellation_id: number
+      constellation_name: string
+      security: number
+      note: string
+      min_bounty_amount: number
+      is_enabled: boolean
+      created_at: string
+      updated_at: string
+    }
+
+    interface GalaxyRegistryAdminCreateSystemRequest {
+      solar_system_id: number
+      note?: string
+      min_bounty_amount?: number
+      is_enabled?: boolean
+    }
+
+    interface GalaxyRegistryAdminUpdateSystemRequest {
+      note?: string
+      min_bounty_amount?: number
+      is_enabled?: boolean
+    }
+
+    interface GalaxyRegistryCurrentSnapshot {
+      idle_count: number
+      busy_count: number
+      overdue_count: number
+    }
+
+    interface GalaxyRegistryPeriodSummary {
+      entry_count: number
+      valid_count: number
+      violation_count: number
+      pending_count: number
+      valid_rate: number
+    }
+
+    interface GalaxyRegistryTopSystemStat {
+      system_config_id: number
+      solar_system_id: number
+      solar_system_name: string
+      register_count: number
+    }
+
+    interface GalaxyRegistryAnalyticsParams {
+      start_date?: string
+      end_date?: string
+    }
+
+    interface GalaxyRegistryAdminAnalytics {
+      range_start: string
+      range_end: string
+      current_snapshot: GalaxyRegistryCurrentSnapshot
+      recent_7d: GalaxyRegistryPeriodSummary
+      recent_30d: GalaxyRegistryPeriodSummary
+      top_systems: GalaxyRegistryTopSystemStat[]
+      recent_violations: GalaxyRegistryEntryItem[]
+    }
   }
 
   /** EVE 人物信息类型 */

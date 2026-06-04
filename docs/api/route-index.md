@@ -91,6 +91,18 @@ source_of_truth:
 | PUT | `/dashboard/corporation-structures/fuel-salary-settings` | 更新燃料官每建筑每月伏羲币单价（`>=0`） | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/fuel-salary-payouts/run` | 按结算月份（`YYYY-MM`）批量发放燃料官工资，公式=`单价 × 当前指派建筑数` | `RequireRole(admin)` |
 | POST | `/dashboard/corporation-structures/my-assigned-list` | 查询当前燃料官被指派建筑列表（支持分页/排序/筛选） | `RequireRole(fuel_officer)` |
+| GET | `/dashboard/galaxy-registry/systems` | 获取星系配置与当前占用状态汇总；返回 `idle/busy/overdue` 统计与当前 active 队长信息 | `Login` |
+| POST | `/dashboard/galaxy-registry/entries` | 创建当前队长的星系生产登记；要求目标星系启用且当前无 active 记录 | `RequireRole(captain)` |
+| POST | `/dashboard/galaxy-registry/entries/:id/end` | 结束当前队长自己的 active 登记，并把记录置为 `pending` 待后台校验 | `RequireRole(captain)` |
+| GET | `/dashboard/galaxy-registry/my-entries` | 查看当前队长自己的登记记录（分页，支持 `status`、`validation_status`、`start_date`、`end_date`） | `RequireRole(captain)` |
+| GET | `/dashboard/galaxy-registry/admin/sde-systems` | 搜索可登记星系的 SDE 元信息 | `RequireRole(admin)` |
+| GET | `/dashboard/galaxy-registry/admin/systems` | 获取全部星系登记配置 | `RequireRole(admin)` |
+| POST | `/dashboard/galaxy-registry/admin/systems` | 新增可登记星系配置；星系基础元信息仅从 SDE 回填 | `RequireRole(admin)` |
+| PUT | `/dashboard/galaxy-registry/admin/systems/:id` | 更新星系备注、最低有效赏金阈值和启用状态 | `RequireRole(admin)` |
+| DELETE | `/dashboard/galaxy-registry/admin/systems/:id` | 删除星系配置；若仍存在 active 登记则拒绝 | `RequireRole(admin)` |
+| GET | `/dashboard/galaxy-registry/admin/entries` | 获取全量登记记录（分页，支持 `system_config_id`、`keyword`、`status`、`validation_status`、`start_date`、`end_date`） | `RequireRole(admin)` |
+| POST | `/dashboard/galaxy-registry/admin/entries/:id/force-end` | 强制结束 active 登记 | `RequireRole(admin)` |
+| GET | `/dashboard/galaxy-registry/admin/analytics` | 获取当前快照、近 7/30 天统计、Top 星系和最近违规记录；支持可选 `start_date` / `end_date` | `RequireRole(admin)` |
 | GET | `/badge-counts` | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格。`super_admin/admin` 额外返回军团建筑提醒计数 `corporation_structures_attention` | Login |
 | POST | `/notification/list` | 通知列表 | JWT |
 | POST | `/notification/unread-count` | 未读数 | JWT |

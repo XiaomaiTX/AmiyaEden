@@ -115,6 +115,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	auth.DELETE("/me", meH.DeleteMe)
 
 	dashboardH := handler.NewDashboardHandler()
+	galaxyRegistryH := handler.NewGalaxyRegistryHandler()
 	auth.POST("/dashboard", requireMenuDashboard, dashboardH.GetDashboard)
 	corpStructureH := handler.NewCorporationStructureHandler()
 	dashboard := login.Group("/dashboard")
@@ -130,6 +131,25 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		corpStructures.GET("/fuel-salary-settings", corpStructureH.GetFuelSalarySettings)
 		corpStructures.PUT("/fuel-salary-settings", corpStructureH.UpdateFuelSalarySettings)
 		corpStructures.POST("/fuel-salary-payouts/run", corpStructureH.RunFuelSalaryPayout)
+	}
+	galaxyRegistry := dashboard.Group("/galaxy-registry", requireMenuDashboard)
+	{
+		galaxyRegistry.GET("/systems", galaxyRegistryH.ListSystems)
+
+		galaxyRegistryCaptain := galaxyRegistry.Group("", middleware.RequireRole(model.RoleCaptain))
+		galaxyRegistryCaptain.POST("/entries", galaxyRegistryH.CreateEntry)
+		galaxyRegistryCaptain.POST("/entries/:id/end", galaxyRegistryH.EndMyEntry)
+		galaxyRegistryCaptain.GET("/my-entries", galaxyRegistryH.ListMyEntries)
+
+		galaxyRegistryAdmin := galaxyRegistry.Group("/admin", middleware.RequireRole(model.RoleAdmin))
+		galaxyRegistryAdmin.GET("/sde-systems", galaxyRegistryH.SearchAdminSdeSystems)
+		galaxyRegistryAdmin.GET("/systems", galaxyRegistryH.ListAdminSystems)
+		galaxyRegistryAdmin.POST("/systems", galaxyRegistryH.CreateAdminSystem)
+		galaxyRegistryAdmin.PUT("/systems/:id", galaxyRegistryH.UpdateAdminSystem)
+		galaxyRegistryAdmin.DELETE("/systems/:id", galaxyRegistryH.DeleteAdminSystem)
+		galaxyRegistryAdmin.GET("/entries", galaxyRegistryH.ListAdminEntries)
+		galaxyRegistryAdmin.POST("/entries/:id/force-end", galaxyRegistryH.ForceEndAdminEntry)
+		galaxyRegistryAdmin.GET("/analytics", galaxyRegistryH.GetAdminAnalytics)
 	}
 	fuelOfficerCorpStructures := dashboard.Group(
 		"/corporation-structures",

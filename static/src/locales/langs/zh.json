@@ -359,7 +359,8 @@
       "console": "工作台",
       "npcKills": "军团刷怪报表",
       "corporationStructures": "军团建筑",
-      "fuelOfficerStructures": "我的燃料建筑"
+      "fuelOfficerStructures": "我的燃料建筑",
+      "galaxyRegistry": "星系登记"
     },
     "exception": {
       "title": "异常页面",
@@ -2631,6 +2632,81 @@
       "payoutSuccess": "发放完成，已处理 {count} 名燃料官"
     },
     "empty": { "list": "暂无建筑数据", "settings": "暂无可管理军团" }
+  },
+  "galaxyRegistry": {
+    "title": "星系登记",
+    "subtitle": "查看当前哪些星系正在生产，队长可登记，管理员可维护星系配置和查看校验结果。",
+    "summary": {
+      "idle": "当前空闲星系",
+      "busy": "当前生产中星系",
+      "overdue": "当前超时登记"
+    },
+    "systems": { "title": "星系状态列表" },
+    "myEntries": { "title": "我的登记记录" },
+    "columns": {
+      "system": "星系",
+      "regionConstellation": "星域 / 星座",
+      "security": "安全等级",
+      "note": "备注",
+      "minBounty": "最低有效赏金",
+      "status": "状态",
+      "captain": "当前队长",
+      "expectedEndAt": "预计结束",
+      "actualStartAt": "实际开始",
+      "actualEndAt": "实际结束",
+      "validationStatus": "校验状态",
+      "validatedBounty": "命中奖金",
+      "violationReason": "违规原因",
+      "enabled": "启用"
+    },
+    "actions": {
+      "createEntry": "登记生产",
+      "endEntry": "结束登记"
+    },
+    "systemStatus": {
+      "idle": "空闲",
+      "busy": "生产中",
+      "overdue": "超时",
+      "active": "进行中",
+      "completed": "已结束"
+    },
+    "entryStatus": {
+      "active": "进行中",
+      "completed": "已结束"
+    },
+    "validationStatus": {
+      "pending": "待校验",
+      "valid": "有效",
+      "violation": "违规"
+    },
+    "violationReasons": {
+      "no_bounty_in_window": "时间窗内无赏金流水",
+      "bounty_below_threshold": "赏金未达到阈值"
+    },
+    "admin": {
+      "systemsTab": "星系配置",
+      "entriesTab": "登记记录",
+      "analyticsTab": "分析面板",
+      "searchPlaceholder": "搜索星系名 / 星域 / 星座",
+      "entryKeywordPlaceholder": "搜索星系或队长角色",
+      "addSystem": "添加",
+      "forceEnd": "强制结束",
+      "topSystems": "最近最常登记的星系",
+      "registerCount": "登记次数",
+      "rangeSeparator": "至",
+      "rangeStart": "开始日期",
+      "rangeEnd": "结束日期"
+    },
+    "messages": {
+      "expectedEndAtRequired": "请填写预计结束时间",
+      "entryCreated": "登记已创建",
+      "entryEnded": "登记已结束",
+      "entryForceEnded": "登记已强制结束",
+      "systemCreated": "星系配置已创建",
+      "systemSaved": "星系配置已保存",
+      "systemDeleted": "星系配置已删除",
+      "deleteConfirm": "确定删除该星系配置吗？"
+    }
   },
   "shopBrowse": { "purchaseSuccess": "购买成功", "purchaseFailed": "购买失败" },
   "authCallback": {
