@@ -162,6 +162,8 @@ func autoMigrate(db *gorm.DB) {
 		&model.TicketStatusHistory{},
 		// 常用工具网站书签
 		&model.ToolBookmark{},
+		&model.GalaxyRegistrySystem{},
+		&model.GalaxyRegistryEntry{},
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
@@ -324,11 +326,19 @@ func badgeCountIndexStatements() []string {
 	}
 }
 
+func galaxyRegistryIndexStatements() []string {
+	return []string{
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_galaxy_registry_entry_one_active_per_system ON galaxy_registry_entry (system_config_id) WHERE status = 'active' AND deleted_at IS NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_galaxy_registry_entry_validation_lookup ON galaxy_registry_entry (validation_status, actual_end_at) WHERE deleted_at IS NULL`,
+	}
+}
+
 func ensureCustomIndexes(db *gorm.DB) {
 	allStatements := append(newbroCustomIndexStatements(), userCustomIndexStatements()...)
 	allStatements = append(allStatements, badgeCountIndexStatements()...)
 	allStatements = append(allStatements, auditEventIndexStatements()...)
 	allStatements = append(allStatements, toolBookmarkIndexStatements()...)
+	allStatements = append(allStatements, galaxyRegistryIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))

@@ -51,6 +51,16 @@ export const dashboardRoutes: AppRouteRecord = {
         keepAlive: true,
         roles: ['super_admin', 'fuel_officer']
       }
+    },
+    {
+      path: 'galaxy-registry',
+      name: 'DashboardGalaxyRegistry',
+      component: '/dashboard/galaxy-registry',
+      meta: {
+        title: 'menus.dashboard.galaxyRegistry',
+        keepAlive: true,
+        roles: ['super_admin', 'admin', 'captain']
+      }
     }
   ]
 }
