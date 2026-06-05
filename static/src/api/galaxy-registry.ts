@@ -19,6 +19,16 @@ export function endGalaxyRegistryEntry(id: number) {
   })
 }
 
+export function updateGalaxyRegistryEntryExpectedEndAt(
+  id: number,
+  data: Api.Dashboard.GalaxyRegistryUpdateExpectedEndAtRequest
+) {
+  return request.put<Api.Dashboard.GalaxyRegistryEntryItem>({
+    url: `/api/v1/dashboard/galaxy-registry/entries/${id}/expected-end-at`,
+    data
+  })
+}
+
 export function fetchMyGalaxyRegistryEntries(params?: Api.Dashboard.GalaxyRegistryEntryListParams) {
   return request.get<Api.Common.PaginatedResponse<Api.Dashboard.GalaxyRegistryEntryItem>>({
     url: '/api/v1/dashboard/galaxy-registry/my-entries',
@@ -78,6 +88,16 @@ export function fetchAdminGalaxyRegistryEntries(
 export function forceEndAdminGalaxyRegistryEntry(id: number) {
   return request.post<Api.Dashboard.GalaxyRegistryEntryItem>({
     url: `/api/v1/dashboard/galaxy-registry/admin/entries/${id}/force-end`
+  })
+}
+
+export function updateAdminGalaxyRegistryEntryValidation(
+  id: number,
+  data: Api.Dashboard.GalaxyRegistryAdminUpdateValidationRequest
+) {
+  return request.put<Api.Dashboard.GalaxyRegistryEntryItem>({
+    url: `/api/v1/dashboard/galaxy-registry/admin/entries/${id}/validation`,
+    data
   })
 }
 

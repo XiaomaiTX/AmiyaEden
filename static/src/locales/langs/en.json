@@ -225,20 +225,11 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": [
-        "Vertical",
-        "Horizontal",
-        "Mixed",
-        "Dual"
-      ]
+      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
     },
     "theme": {
       "title": "Theme Style",
-      "list": [
-        "Light",
-        "Dark",
-        "System"
-      ]
+      "list": ["Light", "Dark", "System"]
     },
     "menu": {
       "title": "Menu Style"
@@ -248,17 +239,11 @@
     },
     "box": {
       "title": "Box Style",
-      "list": [
-        "Border",
-        "Shadow"
-      ]
+      "list": ["Border", "Shadow"]
     },
     "container": {
       "title": "Container Width",
-      "list": [
-        "Full",
-        "Boxed"
-      ]
+      "list": ["Full", "Boxed"]
     },
     "basics": {
       "title": "Basic Config",
@@ -304,14 +289,8 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": [
-      "Notice"
-    ],
-    "text": [
-      "No",
-      "Unread",
-      "Loading..."
-    ],
+    "bar": ["Notice"],
+    "text": ["No", "Unread", "Loading..."],
     "viewAll": "View all"
   },
   "worktab": {
@@ -575,9 +554,9 @@
       "pageDescription": "Page Description (Rich Text)",
       "cardList": "Card List",
       "order": "Order",
-        "nickname": "Nickname",
-        "mainCharacterId": "Main Character ID",
-        "mainCharacterName": "Main Character Name",
+      "nickname": "Nickname",
+      "mainCharacterId": "Main Character ID",
+      "mainCharacterName": "Main Character Name",
       "stats": "Stats",
       "fleetLedCount": "Fleet Leads",
       "welfareDeliveryCount": "Welfare Deliveries",
@@ -1008,13 +987,13 @@
     "journalRefType": "@:common.type",
     "journalSystem": "System",
     "journalReason": "@:common.reason",
-      "characterName": "Character",
-      "userDisplayName": "User Nickname",
-      "allCharacters": "All Characters",
+    "characterName": "Character",
+    "userDisplayName": "User Nickname",
+    "allCharacters": "All Characters",
     "noData": "No NPC kill data",
-      "members": "Member Stats",
-      "characterCount": "Characters",
-      "recordCount": "Records",
+    "members": "Member Stats",
+    "characterCount": "Characters",
+    "recordCount": "Records",
     "bountyPrizes": "Bounty",
     "refTypes": {
       "bounty_prizes": "Bounty",
@@ -2894,14 +2873,24 @@
   },
   "galaxyRegistry": {
     "title": "Galaxy Registry",
-    "subtitle": "See which systems are currently occupied, let captains register production, and let admins manage system validation.",
+    "subtitle": "Track current system occupancy, captain production registrations, and admin-side validation in one page.",
+    "tabs": {
+      "current": "Current Status",
+      "captain": "Captain Entries & Search",
+      "admin": "Admin Entries & Search"
+    },
     "summary": {
       "idle": "Idle Systems",
       "busy": "Busy Systems",
       "overdue": "Overdue Entries"
     },
-    "systems": { "title": "System Status" },
-    "myEntries": { "title": "My Entries" },
+    "current": {
+      "title": "Current System Status"
+    },
+    "captain": {
+      "activeTitle": "My Active Production",
+      "noActiveEntry": "No active production entry"
+    },
     "columns": {
       "system": "System",
       "regionConstellation": "Region / Constellation",
@@ -2916,11 +2905,13 @@
       "validationStatus": "Validation",
       "validatedBounty": "Matched Bounty",
       "violationReason": "Violation Reason",
-      "enabled": "Enabled"
+      "enabled": "Enabled",
+      "pending": "Pending Changes"
     },
     "actions": {
       "createEntry": "Register",
-      "endEntry": "End Entry"
+      "endEntry": "End Production",
+      "editExpectedEnd": "Edit Expected End"
     },
     "systemStatus": {
       "idle": "Idle",
@@ -2943,15 +2934,24 @@
       "bounty_below_threshold": "Bounty stayed below the threshold"
     },
     "admin": {
-      "systemsTab": "System Config",
-      "entriesTab": "Entries",
-      "analyticsTab": "Analytics",
+      "addSystemsTitle": "Add Systems From SDE",
+      "systemConfigTitle": "System Configurations",
+      "analyticsTitle": "Analytics",
+      "saveAllSystems": "Save All",
+      "pendingChanges": "{count} unsaved changes",
       "searchPlaceholder": "Search system, region, or constellation",
       "entryKeywordPlaceholder": "Search system or captain",
-      "addSystem": "Add",
+      "addSystem": "Add to Draft",
+      "newSystem": "New",
+      "modifiedSystem": "Modified",
       "forceEnd": "Force End",
+      "overrideValidation": "Override Validation",
+      "validationDialogTitle": "Update Validation Result",
       "topSystems": "Most Registered Systems",
       "registerCount": "Entries",
+      "recent7d": "Valid Entries (7d)",
+      "recent30d": "Valid Entries (30d)",
+      "violations": "Violations (30d)",
       "rangeSeparator": "to",
       "rangeStart": "Start date",
       "rangeEnd": "End date"
@@ -2959,10 +2959,12 @@
     "messages": {
       "expectedEndAtRequired": "Expected end time is required",
       "entryCreated": "Entry created",
-      "entryEnded": "Entry ended",
+      "entryEnded": "Entry ended and validated",
       "entryForceEnded": "Entry force-ended",
+      "expectedEndUpdated": "Expected end time updated",
+      "validationUpdated": "Validation result updated",
       "systemCreated": "System config created",
-      "systemSaved": "System config saved",
+      "systemSaved": "System configs saved",
       "systemDeleted": "System config deleted",
       "deleteConfirm": "Delete this system config?"
     }

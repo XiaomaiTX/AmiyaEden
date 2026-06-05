@@ -139,6 +139,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		galaxyRegistryCaptain := galaxyRegistry.Group("", middleware.RequireRole(model.RoleCaptain))
 		galaxyRegistryCaptain.POST("/entries", galaxyRegistryH.CreateEntry)
 		galaxyRegistryCaptain.POST("/entries/:id/end", galaxyRegistryH.EndMyEntry)
+		galaxyRegistryCaptain.PUT("/entries/:id/expected-end-at", galaxyRegistryH.UpdateMyExpectedEndAt)
 		galaxyRegistryCaptain.GET("/my-entries", galaxyRegistryH.ListMyEntries)
 
 		galaxyRegistryAdmin := galaxyRegistry.Group("/admin", middleware.RequireRole(model.RoleAdmin))
@@ -149,6 +150,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		galaxyRegistryAdmin.DELETE("/systems/:id", galaxyRegistryH.DeleteAdminSystem)
 		galaxyRegistryAdmin.GET("/entries", galaxyRegistryH.ListAdminEntries)
 		galaxyRegistryAdmin.POST("/entries/:id/force-end", galaxyRegistryH.ForceEndAdminEntry)
+		galaxyRegistryAdmin.PUT("/entries/:id/validation", galaxyRegistryH.UpdateAdminEntryValidation)
 		galaxyRegistryAdmin.GET("/analytics", galaxyRegistryH.GetAdminAnalytics)
 	}
 	fuelOfficerCorpStructures := dashboard.Group(

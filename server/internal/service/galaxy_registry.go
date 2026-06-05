@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/pkg/eve/esi"
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,13 +18,25 @@ type GalaxyRegistryService struct {
 	repo     *repository.GalaxyRegistryRepository
 	charRepo *repository.EveCharacterRepository
 	userRepo *repository.UserRepository
+	ssoSvc   *EveSSOService
+	wallet   interface {
+		Execute(ctx *esi.TaskContext) error
+	}
+	esiClient *esi.Client
 }
 
 func NewGalaxyRegistryService() *GalaxyRegistryService {
+	cfg := configuredEveSSOConfig()
 	return &GalaxyRegistryService{
 		repo:     repository.NewGalaxyRegistryRepository(),
 		charRepo: repository.NewEveCharacterRepository(),
 		userRepo: repository.NewUserRepository(),
+		ssoSvc:   NewEveSSOService(),
+		wallet:   &esi.WalletTask{},
+		esiClient: esi.NewClientWithConfig(
+			cfg.ESIBaseURL,
+			cfg.ESIAPIPrefix,
+		),
 	}
 }
 
@@ -68,6 +82,10 @@ type GalaxyRegistrySystemsResponse struct {
 type GalaxyRegistryCreateEntryRequest struct {
 	SystemConfigID uint
 	ExpectedEndAt  time.Time
+}
+
+type GalaxyRegistryUpdateExpectedEndAtRequest struct {
+	ExpectedEndAt time.Time
 }
 
 type GalaxyRegistryEntryItem struct {
@@ -299,14 +317,22 @@ func (s *GalaxyRegistryService) StartEntry(userID uint, req GalaxyRegistryCreate
 }
 
 func (s *GalaxyRegistryService) EndMyEntry(userID uint, entryID uint) (*GalaxyRegistryEntryItem, error) {
-	return s.endEntry(userID, entryID, false)
+	return s.EndMyEntryWithContext(context.Background(), userID, entryID)
 }
 
 func (s *GalaxyRegistryService) ForceEndEntry(operatorID uint, entryID uint) (*GalaxyRegistryEntryItem, error) {
-	return s.endEntry(operatorID, entryID, true)
+	return s.ForceEndEntryWithContext(context.Background(), operatorID, entryID)
 }
 
-func (s *GalaxyRegistryService) endEntry(operatorID uint, entryID uint, force bool) (*GalaxyRegistryEntryItem, error) {
+func (s *GalaxyRegistryService) EndMyEntryWithContext(ctx context.Context, userID uint, entryID uint) (*GalaxyRegistryEntryItem, error) {
+	return s.endEntry(ctx, userID, entryID, false)
+}
+
+func (s *GalaxyRegistryService) ForceEndEntryWithContext(ctx context.Context, operatorID uint, entryID uint) (*GalaxyRegistryEntryItem, error) {
+	return s.endEntry(ctx, operatorID, entryID, true)
+}
+
+func (s *GalaxyRegistryService) endEntry(ctx context.Context, operatorID uint, entryID uint, force bool) (*GalaxyRegistryEntryItem, error) {
 	now := time.Now()
 	var updated *model.GalaxyRegistryEntry
 	err := withTx(func(tx *gorm.DB) error {
@@ -345,6 +371,10 @@ func (s *GalaxyRegistryService) endEntry(operatorID uint, entryID uint, force bo
 		return nil, err
 	}
 
+	if err := s.finalizeEntryValidation(ctx, updated); err != nil {
+		return nil, err
+	}
+
 	user, err := s.userRepo.GetByID(updated.CaptainUserID)
 	if err != nil {
 		return nil, err
@@ -356,8 +386,110 @@ func (s *GalaxyRegistryService) ListMyEntries(userID uint, filter GalaxyRegistry
 	return s.listEntries(&userID, filter, page, pageSize)
 }
 
+func (s *GalaxyRegistryService) UpdateMyExpectedEndAt(
+	userID uint,
+	entryID uint,
+	req GalaxyRegistryUpdateExpectedEndAtRequest,
+) (*GalaxyRegistryEntryItem, error) {
+	if req.ExpectedEndAt.IsZero() {
+		return nil, NewUserVisibleError("预计结束时间不能为空")
+	}
+
+	var updated *model.GalaxyRegistryEntry
+	err := withTx(func(tx *gorm.DB) error {
+		row, txErr := s.repo.GetEntryByIDForUpdateTx(tx, entryID)
+		if txErr != nil {
+			return txErr
+		}
+		if row.CaptainUserID != userID {
+			return NewUserVisibleError("只能修改自己的登记")
+		}
+		if row.Status != model.GalaxyRegistryEntryStatusActive {
+			return NewUserVisibleError("只能修改进行中的登记")
+		}
+		if !req.ExpectedEndAt.After(row.ActualStartAt) {
+			return NewUserVisibleError("预计结束时间必须晚于实际开始时间")
+		}
+		if txErr = tx.Model(&model.GalaxyRegistryEntry{}).
+			Where("id = ?", entryID).
+			Update("expected_end_at", req.ExpectedEndAt).Error; txErr != nil {
+			return txErr
+		}
+		row.ExpectedEndAt = req.ExpectedEndAt
+		updated = row
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, NewUserVisibleError("登记不存在")
+		}
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetByID(updated.CaptainUserID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildEntryItem(updated, user)
+}
+
 func (s *GalaxyRegistryService) ListAdminEntries(filter GalaxyRegistryEntryListFilter, page int, pageSize int) ([]GalaxyRegistryEntryItem, int64, error) {
 	return s.listEntries(nil, filter, page, pageSize)
+}
+
+func (s *GalaxyRegistryService) OverrideEntryValidation(
+	entryID uint,
+	validationStatus string,
+	violationReason *string,
+) (*GalaxyRegistryEntryItem, error) {
+	switch validationStatus {
+	case model.GalaxyRegistryValidationValid, model.GalaxyRegistryValidationViolation:
+	default:
+		return nil, NewUserVisibleError("无效的校验状态")
+	}
+
+	var updated *model.GalaxyRegistryEntry
+	err := withTx(func(tx *gorm.DB) error {
+		row, txErr := s.repo.GetEntryByIDForUpdateTx(tx, entryID)
+		if txErr != nil {
+			return txErr
+		}
+		if row.Status != model.GalaxyRegistryEntryStatusCompleted {
+			return NewUserVisibleError("鍙兘淇敼宸茬粨鏉熺櫥璁扮殑鏍￠獙缁撴灉")
+		}
+
+		reason := ""
+		if validationStatus == model.GalaxyRegistryValidationViolation && violationReason != nil {
+			reason = strings.TrimSpace(*violationReason)
+		}
+		now := time.Now()
+		if txErr = tx.Model(&model.GalaxyRegistryEntry{}).
+			Where("id = ?", entryID).
+			Updates(map[string]any{
+				"validation_status": validationStatus,
+				"validated_at":      now,
+				"violation_reason":  reason,
+			}).Error; txErr != nil {
+			return txErr
+		}
+		row.ValidationStatus = validationStatus
+		row.ValidatedAt = &now
+		row.ViolationReason = reason
+		updated = row
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, NewUserVisibleError("登记不存在")
+		}
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetByID(updated.CaptainUserID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildEntryItem(updated, user)
 }
 
 func (s *GalaxyRegistryService) listEntries(ownerUserID *uint, filter GalaxyRegistryEntryListFilter, page int, pageSize int) ([]GalaxyRegistryEntryItem, int64, error) {
@@ -613,37 +745,97 @@ func (s *GalaxyRegistryService) ValidateCompletedEntries(limit int) (int, error)
 	}
 	validated := 0
 	for _, row := range rows {
-		characters, charErr := s.charRepo.ListByUserID(row.CaptainUserID)
-		if charErr != nil {
-			return validated, charErr
+		entry, loadErr := s.repo.GetEntryByID(row.ID)
+		if loadErr != nil {
+			return validated, loadErr
 		}
-		characterIDs := make([]int64, 0, len(characters))
-		for _, character := range characters {
-			characterIDs = append(characterIDs, character.CharacterID)
+		status, amount, count, reason, evaluatedAt, evalErr := s.evaluateEntryValidation(entry)
+		if evalErr != nil {
+			return validated, evalErr
 		}
-		amount, count, sumErr := s.repo.SumBountyJournalInWindow(characterIDs, row.SolarSystemID, row.ActualStartAt, row.ActualEndAt)
-		if sumErr != nil {
-			return validated, sumErr
-		}
-		now := time.Now()
-		status := model.GalaxyRegistryValidationPending
-		reason := ""
-		if amount >= row.FrozenMinBountyAmount {
-			status = model.GalaxyRegistryValidationValid
-		} else if now.After(row.ActualEndAt.Add(24 * time.Hour)) {
-			status = model.GalaxyRegistryValidationViolation
-			if count == 0 {
-				reason = model.GalaxyRegistryViolationNoBountyInWindow
-			} else {
-				reason = model.GalaxyRegistryViolationBountyBelowThreshold
-			}
-		}
-		if err = s.repo.UpdateEntryValidationResult(row.ID, status, amount, int(count), now, reason); err != nil {
+		if err = s.repo.UpdateEntryValidationResult(row.ID, status, amount, count, evaluatedAt, reason); err != nil {
 			return validated, err
 		}
 		validated++
 	}
 	return validated, nil
+}
+
+func (s *GalaxyRegistryService) finalizeEntryValidation(ctx context.Context, row *model.GalaxyRegistryEntry) error {
+	characters, err := s.charRepo.ListByUserID(row.CaptainUserID)
+	if err != nil {
+		return err
+	}
+	if err := s.refreshWalletJournals(ctx, characters); err != nil {
+		return NewUserVisibleError("登记已结束，但拉取钱包 ESI 失败，暂未完成校验")
+	}
+
+	status, amount, count, reason, evaluatedAt, err := s.evaluateEntryValidation(row)
+	if err != nil {
+		return err
+	}
+	if err := s.repo.UpdateEntryValidationResult(row.ID, status, amount, count, evaluatedAt, reason); err != nil {
+		return err
+	}
+	row.ValidationStatus = status
+	row.ValidatedBountyAmount = amount
+	row.ValidatedBountyCount = count
+	row.ValidatedAt = &evaluatedAt
+	row.ViolationReason = reason
+	return nil
+}
+
+func (s *GalaxyRegistryService) refreshWalletJournals(ctx context.Context, characters []model.EveCharacter) error {
+	for i := range characters {
+		token, err := s.ssoSvc.GetValidToken(ctx, characters[i].CharacterID)
+		if err != nil {
+			return fmt.Errorf("get valid token for character %d: %w", characters[i].CharacterID, err)
+		}
+		if err := s.wallet.Execute(&esi.TaskContext{
+			Context:     ctx,
+			CharacterID: characters[i].CharacterID,
+			AccessToken: token,
+			Client:      s.esiClient,
+			IsActive:    true,
+		}); err != nil {
+			return fmt.Errorf("refresh wallet for character %d: %w", characters[i].CharacterID, err)
+		}
+	}
+	return nil
+}
+
+func (s *GalaxyRegistryService) evaluateEntryValidation(
+	row *model.GalaxyRegistryEntry,
+) (string, float64, int, string, time.Time, error) {
+	characters, err := s.charRepo.ListByUserID(row.CaptainUserID)
+	if err != nil {
+		return "", 0, 0, "", time.Time{}, err
+	}
+	characterIDs := make([]int64, 0, len(characters))
+	for _, character := range characters {
+		characterIDs = append(characterIDs, character.CharacterID)
+	}
+
+	endAt := time.Now()
+	if row.ActualEndAt != nil {
+		endAt = *row.ActualEndAt
+	}
+	amount, count, err := s.repo.SumBountyJournalInWindow(characterIDs, row.SolarSystemID, row.ActualStartAt, endAt)
+	if err != nil {
+		return "", 0, 0, "", time.Time{}, err
+	}
+
+	status := model.GalaxyRegistryValidationViolation
+	reason := ""
+	if amount >= row.FrozenMinBountyAmount {
+		status = model.GalaxyRegistryValidationValid
+	} else if count == 0 {
+		reason = model.GalaxyRegistryViolationNoBountyInWindow
+	} else {
+		reason = model.GalaxyRegistryViolationBountyBelowThreshold
+	}
+
+	return status, amount, int(count), reason, time.Now(), nil
 }
 
 func (s *GalaxyRegistryService) buildEntryItem(row *model.GalaxyRegistryEntry, user *model.User) (*GalaxyRegistryEntryItem, error) {

@@ -24,6 +24,10 @@ type galaxyRegistryCreateEntryRequest struct {
 	ExpectedEndAt  string `json:"expected_end_at" binding:"required"`
 }
 
+type galaxyRegistryUpdateExpectedEndAtRequest struct {
+	ExpectedEndAt string `json:"expected_end_at" binding:"required"`
+}
+
 type galaxyRegistryAdminCreateSystemRequest struct {
 	SolarSystemID   int64    `json:"solar_system_id" binding:"required"`
 	Note            string   `json:"note"`
@@ -35,6 +39,11 @@ type galaxyRegistryAdminUpdateSystemRequest struct {
 	Note            *string  `json:"note"`
 	MinBountyAmount *float64 `json:"min_bounty_amount"`
 	IsEnabled       *bool    `json:"is_enabled"`
+}
+
+type galaxyRegistryAdminUpdateValidationRequest struct {
+	ValidationStatus string  `json:"validation_status" binding:"required"`
+	ViolationReason  *string `json:"violation_reason"`
 }
 
 func (h *GalaxyRegistryHandler) ListSystems(c *gin.Context) {
@@ -76,7 +85,7 @@ func (h *GalaxyRegistryHandler) EndMyEntry(c *gin.Context) {
 	if entryID == 0 {
 		return
 	}
-	row, err := h.svc.EndMyEntry(middleware.GetUserID(c), entryID)
+	row, err := h.svc.EndMyEntryWithContext(c.Request.Context(), middleware.GetUserID(c), entryID)
 	if err != nil {
 		if service.IsUserVisibleError(err) {
 			response.Fail(c, response.CodeBizError, err.Error())
@@ -88,8 +97,38 @@ func (h *GalaxyRegistryHandler) EndMyEntry(c *gin.Context) {
 	response.OK(c, row)
 }
 
+func (h *GalaxyRegistryHandler) UpdateMyExpectedEndAt(c *gin.Context) {
+	entryID := requireUintID(c, "id", "登记 ID")
+	if entryID == 0 {
+		return
+	}
+	var req galaxyRegistryUpdateExpectedEndAtRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	expectedEndAt, err := parseGalaxyRegistryTime(req.ExpectedEndAt, false)
+	if err != nil {
+		response.Fail(c, response.CodeParamError, "无效的 expected_end_at")
+		return
+	}
+	row, err := h.svc.UpdateMyExpectedEndAt(
+		middleware.GetUserID(c),
+		entryID,
+		service.GalaxyRegistryUpdateExpectedEndAtRequest{ExpectedEndAt: expectedEndAt},
+	)
+	if err != nil {
+		if service.IsUserVisibleError(err) {
+			response.Fail(c, response.CodeBizError, err.Error())
+			return
+		}
+		response.Fail(c, response.CodeBizError, "更新预计结束时间失败")
+		return
+	}
+	response.OK(c, row)
+}
+
 func (h *GalaxyRegistryHandler) ListMyEntries(c *gin.Context) {
-	page, pageSize, err := parsePaginationQuery(c, 20, 100)
+	page, pageSize, err := parseLedgerPaginationQuery(c, 200)
 	if err != nil {
 		response.Fail(c, response.CodeParamError, err.Error())
 		return
@@ -193,7 +232,7 @@ func (h *GalaxyRegistryHandler) DeleteAdminSystem(c *gin.Context) {
 }
 
 func (h *GalaxyRegistryHandler) ListAdminEntries(c *gin.Context) {
-	page, pageSize, err := parsePaginationQuery(c, 20, 100)
+	page, pageSize, err := parseLedgerPaginationQuery(c, 200)
 	if err != nil {
 		response.Fail(c, response.CodeParamError, err.Error())
 		return
@@ -224,13 +263,34 @@ func (h *GalaxyRegistryHandler) ForceEndAdminEntry(c *gin.Context) {
 	if id == 0 {
 		return
 	}
-	row, err := h.svc.ForceEndEntry(middleware.GetUserID(c), id)
+	row, err := h.svc.ForceEndEntryWithContext(c.Request.Context(), middleware.GetUserID(c), id)
 	if err != nil {
 		if service.IsUserVisibleError(err) {
 			response.Fail(c, response.CodeBizError, err.Error())
 			return
 		}
 		response.Fail(c, response.CodeBizError, "强制结束登记失败")
+		return
+	}
+	response.OK(c, row)
+}
+
+func (h *GalaxyRegistryHandler) UpdateAdminEntryValidation(c *gin.Context) {
+	id := requireUintID(c, "id", "登记 ID")
+	if id == 0 {
+		return
+	}
+	var req galaxyRegistryAdminUpdateValidationRequest
+	if !bindJSON(c, &req) {
+		return
+	}
+	row, err := h.svc.OverrideEntryValidation(id, strings.TrimSpace(req.ValidationStatus), req.ViolationReason)
+	if err != nil {
+		if service.IsUserVisibleError(err) {
+			response.Fail(c, response.CodeBizError, err.Error())
+			return
+		}
+		response.Fail(c, response.CodeBizError, "更新校验结果失败")
 		return
 	}
 	response.OK(c, row)

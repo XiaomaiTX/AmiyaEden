@@ -1992,6 +1992,10 @@ declare namespace Api {
       expected_end_at: string
     }
 
+    interface GalaxyRegistryUpdateExpectedEndAtRequest {
+      expected_end_at: string
+    }
+
     interface GalaxyRegistryEntryItem {
       id: number
       system_config_id: number
@@ -2068,6 +2072,11 @@ declare namespace Api {
       note?: string
       min_bounty_amount?: number
       is_enabled?: boolean
+    }
+
+    interface GalaxyRegistryAdminUpdateValidationRequest {
+      validation_status: Extract<GalaxyRegistryValidationStatus, 'valid' | 'violation'>
+      violation_reason?: string
     }
 
     interface GalaxyRegistryCurrentSnapshot {
