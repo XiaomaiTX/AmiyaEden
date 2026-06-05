@@ -19,7 +19,6 @@ export interface NpcKillSummary {
   total_tax: number
   actual_income: number
   total_records: number
-  estimated_hours: number
 }
 
 export interface NpcKillMemberItem {

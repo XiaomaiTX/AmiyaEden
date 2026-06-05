@@ -128,7 +128,7 @@ export function DashboardNpcKillsPage() {
 
       {reportData ? (
         <>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
               label={t('npcKill.totalBounty')}
               value={formatIskPlain(reportData.summary.total_bounty)}
@@ -147,11 +147,6 @@ export function DashboardNpcKillsPage() {
             <SummaryCard
               label={t('npcKill.totalRecords')}
               value={String(reportData.summary.total_records)}
-              tone="text-foreground"
-            />
-            <SummaryCard
-              label={t('npcKill.estimatedHours')}
-              value={String(reportData.summary.estimated_hours)}
               tone="text-foreground"
             />
           </div>

@@ -3,7 +3,6 @@ package service
 import (
 	"amiya-eden/global"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -87,7 +86,6 @@ type NpcKillSummary struct {
 	TotalTax       float64 `json:"total_tax"`       // 总交税金额
 	ActualIncome   float64 `json:"actual_income"`   // 实际获得 = bounty + ess + incursion + mission + tax
 	TotalRecords   int     `json:"total_records"`   // 总记录数（bounty_prizes 条数）
-	EstimatedHours float64 `json:"estimated_hours"` // 大致时长（有效记录 * 20min / 60）
 }
 
 // NpcKillByNpc 按 NPC 分类统计
@@ -354,15 +352,11 @@ func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpR
 func (s *NpcKillService) calcSummary(journals []model.EVECharacterWalletJournal) NpcKillSummary {
 	var summary NpcKillSummary
 
-	// 用于计算平均值以过滤低效记录
-	var bountyAmounts []float64
-
 	for _, j := range journals {
 		switch j.RefType {
 		case "bounty_prizes":
 			summary.TotalBounty += j.Amount
 			summary.TotalRecords++
-			bountyAmounts = append(bountyAmounts, j.Amount)
 		case "ess_escrow_transfer":
 			summary.TotalESS += j.Amount
 		case "incursion_payout":
@@ -374,19 +368,6 @@ func (s *NpcKillService) calcSummary(journals []model.EVECharacterWalletJournal)
 	}
 
 	summary.ActualIncome = summary.TotalBounty + summary.TotalESS + summary.TotalIncursion + summary.TotalMission + summary.TotalTax
-
-	// 计算大致时长：每条 bounty_prizes 记录 ≈ 20min，但明显低于平均金额的不算
-	if len(bountyAmounts) > 0 {
-		avg := summary.TotalBounty / float64(len(bountyAmounts))
-		threshold := avg * 0.3 // 低于平均值 30% 的不计入时长
-		effectiveCount := 0
-		for _, a := range bountyAmounts {
-			if a >= threshold {
-				effectiveCount++
-			}
-		}
-		summary.EstimatedHours = math.Round(float64(effectiveCount)*20.0/60.0*100) / 100
-	}
 
 	return summary
 }

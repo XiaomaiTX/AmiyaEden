@@ -30,7 +30,6 @@ describe('dashboard npc kills page', () => {
               total_tax: 12345,
               actual_income: 1222222.89,
               total_records: 3,
-              estimated_hours: 5,
             },
             members: [
               {

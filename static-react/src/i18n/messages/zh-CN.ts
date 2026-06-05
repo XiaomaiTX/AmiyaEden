@@ -1969,7 +1969,6 @@
     totalTax: '税金',
     actualIncome: '实际收入',
     totalRecords: '记录数',
-    estimatedHours: '预估时长',
     byNpc: '按 NPC 分类',
     npcName: 'NPC 名称',
     npcCount: '数量',
