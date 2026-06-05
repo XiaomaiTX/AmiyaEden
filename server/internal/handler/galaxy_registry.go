@@ -296,6 +296,23 @@ func (h *GalaxyRegistryHandler) UpdateAdminEntryValidation(c *gin.Context) {
 	response.OK(c, row)
 }
 
+func (h *GalaxyRegistryHandler) RevalidateAdminEntry(c *gin.Context) {
+	id := requireUintID(c, "id", "登记 ID")
+	if id == 0 {
+		return
+	}
+	row, err := h.svc.RevalidateEntryWithContext(c.Request.Context(), id)
+	if err != nil {
+		if service.IsUserVisibleError(err) {
+			response.Fail(c, response.CodeBizError, err.Error())
+			return
+		}
+		response.Fail(c, response.CodeBizError, "重新校验登记失败")
+		return
+	}
+	response.OK(c, row)
+}
+
 func (h *GalaxyRegistryHandler) GetAdminAnalytics(c *gin.Context) {
 	startDate, err := parseGalaxyRegistryOptionalDateParam(c.Query("start_date"), false)
 	if err != nil {

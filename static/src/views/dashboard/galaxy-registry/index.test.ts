@@ -23,4 +23,7 @@ test('galaxy registry page supports expected-end editing and admin save-all flow
   assert.match(source, /galaxyRegistry\.admin\.saveAllSystems/)
   assert.match(source, /handleSaveAllSystems/)
   assert.match(source, /updateAdminGalaxyRegistryEntryValidation/)
+  assert.match(source, /revalidateAdminGalaxyRegistryEntry/)
+  assert.match(source, /galaxyRegistry\.admin\.revalidate/)
+  assert.match(source, /handleRevalidateEntry/)
 })

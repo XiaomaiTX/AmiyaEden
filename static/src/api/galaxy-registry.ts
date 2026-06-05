@@ -91,6 +91,12 @@ export function forceEndAdminGalaxyRegistryEntry(id: number) {
   })
 }
 
+export function revalidateAdminGalaxyRegistryEntry(id: number) {
+  return request.post<Api.Dashboard.GalaxyRegistryEntryItem>({
+    url: `/api/v1/dashboard/galaxy-registry/admin/entries/${id}/revalidate`
+  })
+}
+
 export function updateAdminGalaxyRegistryEntryValidation(
   id: number,
   data: Api.Dashboard.GalaxyRegistryAdminUpdateValidationRequest

@@ -150,6 +150,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		galaxyRegistryAdmin.DELETE("/systems/:id", galaxyRegistryH.DeleteAdminSystem)
 		galaxyRegistryAdmin.GET("/entries", galaxyRegistryH.ListAdminEntries)
 		galaxyRegistryAdmin.POST("/entries/:id/force-end", galaxyRegistryH.ForceEndAdminEntry)
+		galaxyRegistryAdmin.POST("/entries/:id/revalidate", galaxyRegistryH.RevalidateAdminEntry)
 		galaxyRegistryAdmin.PUT("/entries/:id/validation", galaxyRegistryH.UpdateAdminEntryValidation)
 		galaxyRegistryAdmin.GET("/analytics", galaxyRegistryH.GetAdminAnalytics)
 	}
