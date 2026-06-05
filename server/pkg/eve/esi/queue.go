@@ -424,7 +424,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 	if !force && !q.needsRefresh(task, char, isActive) {
 		lastRun, err := q.getLastRun(task, char)
 		if err == nil {
-			interval := task.Interval()
+			interval := ResolveInterval(task.Name())
 			nextDur := interval.Active
 			if !isActive {
 				nextDur = interval.Inactive
@@ -509,7 +509,7 @@ func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.Ev
 
 	// 成功：记录上次执行时间
 	now := time.Now()
-	interval := task.Interval()
+	interval := ResolveInterval(task.Name())
 	nextDur := interval.Active
 	if !isActive {
 		nextDur = interval.Inactive
@@ -558,7 +558,7 @@ func (q *Queue) needsRefresh(task RefreshTask, char model.EveCharacter, isActive
 		return true // 没有记录则需要刷新
 	}
 
-	interval := task.Interval()
+	interval := ResolveInterval(task.Name())
 	dur := interval.Active
 	if !isActive {
 		dur = interval.Inactive
@@ -804,7 +804,7 @@ func (q *Queue) getFreshLegacyCorpLastRun(providerCharacterIDs []int64, isActive
 		return time.Time{}, false
 	}
 
-	interval := (&CorpKillmailsTask{}).Interval()
+	interval := ResolveInterval((&CorpKillmailsTask{}).Name())
 	dur := interval.Active
 	if !isActive {
 		dur = interval.Inactive

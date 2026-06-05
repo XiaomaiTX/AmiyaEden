@@ -34,6 +34,7 @@ source_of_truth:
 - ESI 监控页提供聚合快照：总览指标、任务健康面板、失败排行、超期排行，支持手动刷新与 30 秒自动刷新
 - 管理员可手动触发支持运行的任务；ESI 相关控制仍保留在同一页面中
 - `super_admin` 可修改周期任务的 cron；修改会立即重载运行时调度，并持久化到 `task_schedules`
+- `super_admin` 可配置每个 ESI 子任务的 active/inactive 刷新间隔（分钟粒度）；覆盖值持久化到 `system_config`（key `esi.task_intervals`），运行时通过内存缓存生效，无需重启
 - 通用任务的 cron/manual 执行都会写入 `task_executions`，执行历史页支持按任务名与状态筛选
 - 执行历史页会分别展示触发者昵称与触发者 ID；cron 触发的记录没有人工触发者信息
 - 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、队长归因同步、队长奖励处理、导师奖励与自动 SRP
@@ -69,6 +70,7 @@ source_of_truth:
 - `/api/v1/tasks/history`
 - `/api/v1/tasks/:name/run`
 - `/api/v1/tasks/:name/schedule`
+- `/api/v1/tasks/esi/tasks/:name/interval`
 - `/api/v1/tasks/esi/*`
 - `/api/v1/info/esi-refresh`
   - 其中 `/api/v1/tasks/esi/monitor` 返回 ESI 任务聚合监控快照
@@ -78,6 +80,7 @@ source_of_truth:
 - `/system/task-manager` 页面仅 `super_admin`、`admin` 可见
 - `/api/v1/tasks`、`/api/v1/tasks/history`、`/api/v1/tasks/:name/run` 与 `/api/v1/tasks/esi/*` 要求 `admin`
 - `/api/v1/tasks/:name/schedule` 额外要求 `super_admin`
+- `/api/v1/tasks/esi/tasks/:name/interval` 额外要求 `super_admin`
 - `/api/v1/info/esi-refresh` 要求 `Login`，并在服务端校验目标人物归属，用户只能刷新自己的角色
 - 前端路由声明了 `execute_task` 与 `update_schedule` 按钮权限，但真正的权限边界以后端路由为准
 - 没有 `RunFunc` 的任务只用于可视化与历史记录展示，不会暴露手动执行入口

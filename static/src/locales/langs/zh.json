@@ -689,6 +689,13 @@
         "characterTaskTriggered": "已为人物 {characterId} 触发「{name}」",
         "characterTaskTriggerFailed": "为人物 {characterId} 触发「{name}」失败",
         "refreshTriggerFailed": "全量 ESI 刷新触发失败"
+      },
+      "actions": {
+        "editInterval": "编辑间隔"
+      },
+      "fields": {
+        "activeMinutes": "活跃间隔（分钟）",
+        "inactiveMinutes": "非活跃间隔（分钟）"
       }
     }
   },

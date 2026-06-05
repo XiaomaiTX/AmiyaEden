@@ -61,6 +61,8 @@ const (
 
 	SysConfigSRPAmountLimit = "srp.amount_limit" // SRP 职权单笔审批/发放上限（ISK）
 
+	SysConfigESITaskIntervals = "esi.task_intervals" // ESI 子任务刷新间隔覆盖（JSON）
+
 	SysConfigDefaultSDEAPIKey      = "modify_your_api_key"
 	SysConfigDefaultSDEProxy       = ""
 	SysConfigDefaultSDEDownloadURL = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"

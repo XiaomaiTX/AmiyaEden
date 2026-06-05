@@ -262,6 +262,8 @@ declare namespace Api {
       priority: number
       active_interval: string
       inactive_interval: string
+      active_interval_minutes: number
+      inactive_interval_minutes: number
       required_scopes: string[]
     }
 
@@ -287,6 +289,12 @@ declare namespace Api {
     /** 手动触发任务请求参数（所有人物） */
     interface RunTaskByNameParams {
       task_name: string
+    }
+
+    /** 更新 ESI 子任务刷新间隔请求参数 */
+    interface UpdateIntervalParams {
+      active_minutes: number
+      inactive_minutes: number
     }
 
     /** 任务状态搜索参数（分页 + 筛选） */
