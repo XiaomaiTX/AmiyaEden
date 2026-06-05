@@ -45,7 +45,7 @@
     </ElCard>
 
     <!-- 总览卡片 -->
-    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 my-4">
+    <div v-if="reportData" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 my-4">
       <ElCard shadow="never" class="text-center">
         <p class="text-sm text-gray-500">{{ $t('npcKill.totalBounty') }}</p>
         <p class="text-xl font-bold text-green-600 mt-1">{{
@@ -67,10 +67,6 @@
       <ElCard shadow="never" class="text-center">
         <p class="text-sm text-gray-500">{{ $t('npcKill.totalRecords') }}</p>
         <p class="text-xl font-bold mt-1">{{ reportData.summary.total_records }}</p>
-      </ElCard>
-      <ElCard shadow="never" class="text-center">
-        <p class="text-sm text-gray-500">{{ $t('npcKill.estimatedHours') }}</p>
-        <p class="text-xl font-bold mt-1">{{ reportData.summary.estimated_hours }}</p>
       </ElCard>
     </div>
 

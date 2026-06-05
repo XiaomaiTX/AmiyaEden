@@ -30,7 +30,7 @@ Sansha 血族入侵和 Pochven 三角洲空间的收入均以 `bounty_prizes` �
 - 个人单人物 NPC 刷怪报表
 - 个人名下所有人物汇总报表
 - 公司全员刷怪报表（管理员）
-- 总览数据：总悬赏、ESS、税金、实际收入、记录数、估算有效时长
+- 总览数据：总悬赏、ESS、税金、实际收入、记录数
 - 按 NPC 分类统计（悬赏流水 reason 字段解析）
 - 按星系分类统计
 - 按天趋势统计
@@ -74,11 +74,6 @@ Request and response structures are defined in handler code and `static/src/type
 | `total_tax` | 所有条目 `tax` 之和（通常为负数） |
 | `actual_income` | `total_bounty + total_ess + total_tax` |
 | `total_records` | `bounty_prizes` 条目数 |
-| `estimated_hours` | 见下方说明 |
-
-**估算有效时长**：仅统计 `bounty_prizes` 条目中金额 ≥ 平均值 30% 的「有效记录」，每条有效记录视为约 20 分钟，结果取两位小数。低金额记录（如挂机、偶发）不计入时长，避免虚高。
-
-公式：`estimated_hours = round(valid_count × 20 / 60, 2)`
 
 ### 按 NPC 统计（calcByNpc）
 
@@ -115,7 +110,7 @@ Request and response structures are defined in handler code and `static/src/type
 ### 个人页面
 
 1. 人物选择器（下拉，含头像）+ 「所有人物」选项 + 日期范围选择
-2. 5 卡片总览：总悬赏 / 总税金 / 实际收入 / 记录数 / 估算时长
+2. 4 卡片总览：总悬赏 / 总税金 / 实际收入 / 记录数
 3. 双列布局：按 NPC 统计表 + 按星系统计表
 4. 时间趋势表（有数据时显示）
 5. 分页流水明细表（ref_type 以 tag 展示，金额带颜色）
@@ -123,7 +118,7 @@ Request and response structures are defined in handler code and `static/src/type
 ### 管理员页面
 
 1. 日期范围选择 + 军团 ticker 多选筛选（默认 `FUXI`、`FMA.1`）
-2. 5 卡片总览（同上）
+2. 4 卡片总览（同上）
 3. 成员列表（按实际收入降序，按系统用户聚合，展示昵称、角色数、悬赏 / ESS / 税 / 实际收入 / 记录数）
 4. 双列布局：按星系统计 + 时间趋势
 5. 无流水明细（管理视角不展示个人流水）
@@ -135,7 +130,6 @@ Request and response structures are defined in handler code and `static/src/type
 - 公司成员排行按系统用户聚合，不再按单角色聚合
 - 公司成员显示名优先 `user.nickname`，为空时回退为该用户本次统计内角色名字典序首个名称
 - 星系统计和趋势仅基于 `bounty_prizes`，ESS 转账不带星系上下文
-- 估算时长不是精确值，仅供参考，基于 30% 阈值过滤低效记录
 - 个人接口强制校验人物归属，不可跨用户查询
 - 公司接口只涵盖当前已绑定有效 token 的人物
 

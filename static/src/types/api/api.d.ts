@@ -2504,7 +2504,6 @@ declare namespace Api {
       total_tax: number
       actual_income: number
       total_records: number
-      estimated_hours: number
     }
 
     /** 按 NPC 分类统计 */

@@ -1982,7 +1982,6 @@
     totalTax: 'Tax',
     actualIncome: 'Actual Income',
     totalRecords: 'Records',
-    estimatedHours: 'Estimated Hours',
     byNpc: 'By NPC',
     npcName: 'NPC Name',
     npcCount: 'Count',

@@ -44,7 +44,6 @@ describe('info npc kills page', () => {
                 total_tax: 1234,
                 actual_income: 653087,
                 total_records: 2,
-                estimated_hours: 4,
               },
               by_npc: [
                 {
