@@ -516,9 +516,9 @@
       "pageDescription": "页面说明（富文本）",
       "cardList": "卡片列表",
       "order": "排序",
-        "nickname": "昵称",
-        "mainCharacterId": "主角色 ID",
-        "mainCharacterName": "主角色名称",
+      "nickname": "昵称",
+      "mainCharacterId": "主角色 ID",
+      "mainCharacterName": "主角色名称",
       "stats": "统计",
       "fleetLedCount": "带队次数",
       "welfareDeliveryCount": "福利发放次数",
@@ -936,13 +936,13 @@
     "journalRefType": "@:common.type",
     "journalSystem": "星系",
     "journalReason": "@:common.reason",
-      "characterName": "人物名称",
-      "userDisplayName": "用户昵称",
-      "allCharacters": "全部人物",
+    "characterName": "人物名称",
+    "userDisplayName": "用户昵称",
+    "allCharacters": "全部人物",
     "noData": "暂无刷怪数据",
-      "members": "成员统计",
-      "characterCount": "角色数",
-      "recordCount": "记录数",
+    "members": "成员统计",
+    "characterCount": "角色数",
+    "recordCount": "记录数",
     "bountyPrizes": "赏金",
     "refTypes": {
       "bounty_prizes": "赏金",
@@ -2635,14 +2635,24 @@
   },
   "galaxyRegistry": {
     "title": "星系登记",
-    "subtitle": "查看当前哪些星系正在生产，队长可登记，管理员可维护星系配置和查看校验结果。",
+    "subtitle": "在一个页面内查看当前星系占用、队长生产登记与管理员校验结果。",
+    "tabs": {
+      "current": "当前状态",
+      "captain": "队长登记与查询",
+      "admin": "管理员登记与查询"
+    },
     "summary": {
       "idle": "当前空闲星系",
       "busy": "当前生产中星系",
       "overdue": "当前超时登记"
     },
-    "systems": { "title": "星系状态列表" },
-    "myEntries": { "title": "我的登记记录" },
+    "current": {
+      "title": "当前星系状态"
+    },
+    "captain": {
+      "activeTitle": "我的进行中生产",
+      "noActiveEntry": "暂无进行中的生产登记"
+    },
     "columns": {
       "system": "星系",
       "regionConstellation": "星域 / 星座",
@@ -2657,11 +2667,13 @@
       "validationStatus": "校验状态",
       "validatedBounty": "命中奖金",
       "violationReason": "违规原因",
-      "enabled": "启用"
+      "enabled": "启用",
+      "pending": "待保存变更"
     },
     "actions": {
       "createEntry": "登记生产",
-      "endEntry": "结束登记"
+      "endEntry": "结束生产",
+      "editExpectedEnd": "修改预计结束"
     },
     "systemStatus": {
       "idle": "空闲",
@@ -2684,15 +2696,24 @@
       "bounty_below_threshold": "赏金未达到阈值"
     },
     "admin": {
-      "systemsTab": "星系配置",
-      "entriesTab": "登记记录",
-      "analyticsTab": "分析面板",
+      "addSystemsTitle": "从 SDE 添加星系",
+      "systemConfigTitle": "星系配置",
+      "analyticsTitle": "统计面板",
+      "saveAllSystems": "保存全部",
+      "pendingChanges": "还有 {count} 项未保存变更",
       "searchPlaceholder": "搜索星系名 / 星域 / 星座",
       "entryKeywordPlaceholder": "搜索星系或队长角色",
-      "addSystem": "添加",
+      "addSystem": "加入草稿",
+      "newSystem": "新增",
+      "modifiedSystem": "已修改",
       "forceEnd": "强制结束",
+      "overrideValidation": "修改校验结果",
+      "validationDialogTitle": "更新校验结果",
       "topSystems": "最近最常登记的星系",
       "registerCount": "登记次数",
+      "recent7d": "近 7 天有效登记",
+      "recent30d": "近 30 天有效登记",
+      "violations": "近 30 天违规数",
       "rangeSeparator": "至",
       "rangeStart": "开始日期",
       "rangeEnd": "结束日期"
@@ -2700,8 +2721,10 @@
     "messages": {
       "expectedEndAtRequired": "请填写预计结束时间",
       "entryCreated": "登记已创建",
-      "entryEnded": "登记已结束",
+      "entryEnded": "登记已结束并完成校验",
       "entryForceEnded": "登记已强制结束",
+      "expectedEndUpdated": "预计结束时间已更新",
+      "validationUpdated": "校验结果已更新",
       "systemCreated": "星系配置已创建",
       "systemSaved": "星系配置已保存",
       "systemDeleted": "星系配置已删除",
