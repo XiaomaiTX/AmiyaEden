@@ -3,11 +3,13 @@ package handler
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/jobs"
 	"amiya-eden/pkg/eve/esi"
 	"amiya-eden/pkg/response"
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -28,12 +30,14 @@ func NewESIRefreshHandler() *ESIRefreshHandler {
 
 // TaskInfoItem 任务定义信息（用于前端展示所有可用任务）
 type TaskInfoItem struct {
-	Name             string   `json:"name"`
-	Description      string   `json:"description"`
-	Priority         int      `json:"priority"`
-	ActiveInterval   string   `json:"active_interval"`
-	InactiveInterval string   `json:"inactive_interval"`
-	RequiredScopes   []string `json:"required_scopes"`
+	Name                  string   `json:"name"`
+	Description           string   `json:"description"`
+	Priority              int      `json:"priority"`
+	ActiveInterval        string   `json:"active_interval"`
+	InactiveInterval      string   `json:"inactive_interval"`
+	ActiveIntervalMinutes int      `json:"active_interval_minutes"`
+	InactiveIntervalMinutes int    `json:"inactive_interval_minutes"`
+	RequiredScopes        []string `json:"required_scopes"`
 }
 
 type TaskStatusItem struct {
@@ -110,13 +114,16 @@ func (h *ESIRefreshHandler) GetTasks(c *gin.Context) {
 		for _, scope := range task.RequiredScopes() {
 			scopes = append(scopes, scope.Scope)
 		}
+		interval := esi.ResolveInterval(task.Name())
 		items = append(items, TaskInfoItem{
-			Name:             task.Name(),
-			Description:      task.Description(),
-			Priority:         int(task.Priority()),
-			ActiveInterval:   formatDuration(task.Interval().Active),
-			InactiveInterval: formatDuration(task.Interval().Inactive),
-			RequiredScopes:   scopes,
+			Name:                    task.Name(),
+			Description:             task.Description(),
+			Priority:                int(task.Priority()),
+			ActiveInterval:          formatDuration(interval.Active),
+			InactiveInterval:        formatDuration(interval.Inactive),
+			ActiveIntervalMinutes:   int(interval.Active.Minutes()),
+			InactiveIntervalMinutes: int(interval.Inactive.Minutes()),
+			RequiredScopes:          scopes,
 		})
 	}
 
@@ -474,6 +481,90 @@ func (h *ESIRefreshHandler) RunAll(c *gin.Context) {
 	response.OK(c, gin.H{"message": "全量刷新已触发"})
 }
 
+// UpdateIntervalRequest 更新 ESI 子任务刷新间隔的请求体
+type UpdateIntervalRequest struct {
+	ActiveMinutes   int `json:"active_minutes" binding:"required"`
+	InactiveMinutes int `json:"inactive_minutes" binding:"required"`
+}
+
+// UpdateInterval 更新指定 ESI 子任务的刷新间隔覆盖
+//
+// PUT /api/v1/tasks/esi/tasks/:name/interval
+func (h *ESIRefreshHandler) UpdateInterval(c *gin.Context) {
+	taskName := c.Param("name")
+
+	if _, ok := esi.GetTask(taskName); !ok {
+		response.Fail(c, response.CodeParamError, "任务不存在: "+taskName)
+		return
+	}
+
+	var req UpdateIntervalRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	if req.ActiveMinutes <= 0 || req.InactiveMinutes <= 0 {
+		response.Fail(c, response.CodeParamError, "间隔分钟数必须为正整数")
+		return
+	}
+
+	// 读取当前覆盖配置
+	var raw string
+	if err := global.DB.Model(&model.SystemConfig{}).
+		Where("key = ?", model.SysConfigESITaskIntervals).
+		Pluck("value", &raw).Error; err != nil {
+		response.Fail(c, response.CodeBizError, "读取配置失败: "+err.Error())
+		return
+	}
+
+	overrides := make(map[string]esi.RefreshIntervalMinutes)
+	if strings.TrimSpace(raw) != "" {
+		if err := json.Unmarshal([]byte(raw), &overrides); err != nil {
+			overrides = make(map[string]esi.RefreshIntervalMinutes)
+		}
+	}
+
+	overrides[taskName] = esi.RefreshIntervalMinutes{
+		ActiveMinutes:   req.ActiveMinutes,
+		InactiveMinutes: req.InactiveMinutes,
+	}
+
+	rawBytes, err := json.Marshal(overrides)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "序列化配置失败: "+err.Error())
+		return
+	}
+	rawJSON := string(rawBytes)
+
+	// upsert: 先尝试 update，若无行则 insert
+	res := global.DB.Model(&model.SystemConfig{}).
+		Where("key = ?", model.SysConfigESITaskIntervals).
+		Update("value", rawJSON)
+	if res.Error != nil {
+		response.Fail(c, response.CodeBizError, "保存配置失败: "+res.Error.Error())
+		return
+	}
+	if res.RowsAffected == 0 {
+		if err := global.DB.Create(&model.SystemConfig{
+			Key:   model.SysConfigESITaskIntervals,
+			Value: rawJSON,
+			Desc:  "ESI 子任务刷新间隔覆盖",
+		}).Error; err != nil {
+			response.Fail(c, response.CodeBizError, "创建配置失败: "+err.Error())
+			return
+		}
+	}
+
+	// 同步内存缓存
+	if err := esi.LoadIntervalOverrides(); err != nil {
+		response.Fail(c, response.CodeBizError, "同步缓存失败: "+err.Error())
+		return
+	}
+
+	response.OK(c, gin.H{"message": "间隔已更新"})
+}
+
 // formatDuration 格式化 time.Duration 为可读字符串。
 func formatDuration(d time.Duration) string {
 	if d >= 24*time.Hour {
@@ -547,11 +638,10 @@ func expectedIntervalSeconds(status *esi.TaskStatus) int64 {
 			return int64(interval.Seconds())
 		}
 	}
-	if task, ok := esi.GetTask(status.TaskName); ok {
-		active := task.Interval().Active
-		if active > 0 {
-			return int64(active.Seconds())
-		}
+	interval := esi.ResolveInterval(status.TaskName)
+	active := interval.Active
+	if active > 0 {
+		return int64(active.Seconds())
 	}
 	return int64(time.Hour.Seconds())
 }

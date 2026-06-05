@@ -49,6 +49,11 @@ func SetTestESIQueue(queue *esi.Queue) {
 func registerESIRefreshTask(reg *taskregistry.Registry) {
 	esiQueue = newESIQueueForJobs()
 
+	// 加载 ESI 任务间隔覆盖配置
+	if err := esi.LoadIntervalOverrides(); err != nil && global.Logger != nil {
+		global.Logger.Warn("加载 ESI 间隔覆盖失败", zap.Error(err))
+	}
+
 	rollSvc := service.NewRoleService()
 	autoRoleSvc := service.NewAutoRoleService()
 

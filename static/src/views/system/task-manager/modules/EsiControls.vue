@@ -18,23 +18,81 @@
 
       <ArtTable :loading="tasksLoading" :data="tasks" :columns="taskColumns" />
     </ElCard>
+
+    <ElDialog
+      v-model="intervalDialogVisible"
+      :title="t('taskManager.esi.actions.editInterval')"
+      width="420px"
+      destroy-on-close
+      @closed="resetIntervalForm"
+    >
+      <ElForm label-width="140px">
+        <ElFormItem :label="t('taskManager.columns.name')">
+          <span>{{ intervalForm.taskName }}</span>
+        </ElFormItem>
+        <ElFormItem :label="t('taskManager.esi.fields.activeMinutes')">
+          <ElInputNumber
+            v-model="intervalForm.activeMinutes"
+            :min="1"
+            :step="1"
+            controls-position="right"
+          />
+          <span class="ml-2 text-gray-400">{{ t('taskManager.intervalUnits.m') }}</span>
+        </ElFormItem>
+        <ElFormItem :label="t('taskManager.esi.fields.inactiveMinutes')">
+          <ElInputNumber
+            v-model="intervalForm.inactiveMinutes"
+            :min="1"
+            :step="1"
+            controls-position="right"
+          />
+          <span class="ml-2 text-gray-400">{{ t('taskManager.intervalUnits.m') }}</span>
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="intervalDialogVisible = false">
+          {{ t('common.cancel') }}
+        </ElButton>
+        <ElButton type="primary" :loading="intervalSaving" @click="handleSaveInterval">
+          {{ t('common.confirm') }}
+        </ElButton>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ElButton, ElCard, ElMessage, ElMessageBox, ElTag } from 'element-plus'
+  import {
+    ElButton,
+    ElCard,
+    ElDialog,
+    ElForm,
+    ElFormItem,
+    ElInputNumber,
+    ElMessage,
+    ElMessageBox,
+    ElTag
+  } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import { h } from 'vue'
+  import { h, ref, computed, reactive } from 'vue'
   import {
     fetchESIRefreshTasks,
     runESIRefreshAll,
-    runESIRefreshTaskByName
+    runESIRefreshTaskByName,
+    updateESITaskInterval
   } from '@/api/esi-refresh'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
+  import { useUserStore } from '@/store/modules/user'
 
   type TaskInfo = Api.ESIRefresh.TaskInfo
 
   const { t } = useI18n()
+  const userStore = useUserStore()
+
+  const canEditInterval = computed(() => {
+    const roles = userStore.info?.roles ?? []
+    return roles.includes('super_admin')
+  })
 
   const priorityType = (priority: number) => {
     const map = {
@@ -62,6 +120,44 @@
   const tasks = ref<TaskInfo[]>([])
   const tasksLoading = ref(false)
   const runAllLoading = ref(false)
+
+  const intervalDialogVisible = ref(false)
+  const intervalSaving = ref(false)
+  const intervalForm = reactive({
+    taskName: '',
+    activeMinutes: 360,
+    inactiveMinutes: 1440
+  })
+
+  function openIntervalDialog(row: TaskInfo) {
+    intervalForm.taskName = row.name
+    intervalForm.activeMinutes = row.active_interval_minutes
+    intervalForm.inactiveMinutes = row.inactive_interval_minutes
+    intervalDialogVisible.value = true
+  }
+
+  function resetIntervalForm() {
+    intervalForm.taskName = ''
+    intervalForm.activeMinutes = 360
+    intervalForm.inactiveMinutes = 1440
+  }
+
+  async function handleSaveInterval() {
+    intervalSaving.value = true
+    try {
+      await updateESITaskInterval(intervalForm.taskName, {
+        active_minutes: intervalForm.activeMinutes,
+        inactive_minutes: intervalForm.inactiveMinutes
+      })
+      ElMessage.success(t('taskManager.messages.scheduleUpdated'))
+      intervalDialogVisible.value = false
+      await loadTasks()
+    } catch {
+      ElMessage.error(t('taskManager.messages.scheduleUpdateFailed'))
+    } finally {
+      intervalSaving.value = false
+    }
+  }
 
   const { columns: taskColumns, columnChecks: taskColumnChecks } = useTableColumns<TaskInfo>(() => [
     { type: 'index', width: 60, label: '#' },
@@ -109,19 +205,37 @@
     {
       prop: 'actions',
       label: t('common.operation'),
-      width: 100,
+      width: 200,
       fixed: 'right',
-      formatter: (row: TaskInfo) =>
-        h(
-          ElButton,
-          {
-            size: 'small',
-            type: 'primary',
-            loading: runningByName.value.has(row.name),
-            onClick: () => handleRunTaskByName(row)
-          },
-          () => t('taskManager.actions.run')
-        )
+      formatter: (row: TaskInfo) => {
+        const children = [
+          h(
+            ElButton,
+            {
+              size: 'small',
+              type: 'primary',
+              loading: runningByName.value.has(row.name),
+              onClick: () => handleRunTaskByName(row)
+            },
+            () => t('taskManager.actions.run')
+          )
+        ]
+        if (canEditInterval.value) {
+          children.push(
+            h(
+              ElButton,
+              {
+                size: 'small',
+                type: 'warning',
+                style: { marginLeft: '6px' },
+                onClick: () => openIntervalDialog(row)
+              },
+              () => t('taskManager.esi.actions.editInterval')
+            )
+          )
+        }
+        return h('div', { class: 'flex items-center' }, children)
+      }
     }
   ])
 

@@ -787,6 +787,13 @@
         "characterTaskTriggered": "Triggered \"{name}\" for character {characterId}",
         "characterTaskTriggerFailed": "Failed to trigger \"{name}\" for character {characterId}",
         "refreshTriggerFailed": "Failed to trigger full ESI refresh"
+      },
+      "actions": {
+        "editInterval": "Edit Interval"
+      },
+      "fields": {
+        "activeMinutes": "Active Interval (min)",
+        "inactiveMinutes": "Inactive Interval (min)"
       }
     }
   },

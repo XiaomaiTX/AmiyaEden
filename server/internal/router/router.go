@@ -436,6 +436,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 			esiTasks.POST("/run", requireSystemTaskRun, esiH.RunTask)
 			esiTasks.POST("/run-task", requireSystemTaskRun, esiH.RunTaskByName)
 			esiTasks.POST("/run-all", requireSystemTaskRun, esiH.RunAll)
+			esiTasks.PUT("/tasks/:name/interval", middleware.RequireRole(model.RoleSuperAdmin), esiH.UpdateInterval)
 		}
 	}
 

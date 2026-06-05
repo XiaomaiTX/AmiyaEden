@@ -44,3 +44,14 @@ export function runESIRefreshAll() {
     url: '/api/v1/tasks/esi/run-all'
   })
 }
+
+/** 更新 ESI 子任务刷新间隔 */
+export function updateESITaskInterval(
+  taskName: string,
+  params: Api.ESIRefresh.UpdateIntervalParams
+) {
+  return request.put<{ message: string }>({
+    url: `/api/v1/tasks/esi/tasks/${taskName}/interval`,
+    data: params
+  })
+}
