@@ -599,6 +599,7 @@
     fetchGalaxyRegistrySystems,
     fetchMyGalaxyRegistryEntries,
     forceEndAdminGalaxyRegistryEntry,
+    revalidateAdminGalaxyRegistryEntry,
     searchGalaxyRegistrySdeSystems,
     updateAdminGalaxyRegistryEntryValidation,
     updateAdminGalaxyRegistrySystem,
@@ -686,6 +687,7 @@
   const updatingValidation = ref(false)
   const savingAllSystems = ref(false)
   const forceEndingEntryId = ref(0)
+  const revalidatingEntryId = ref(0)
 
   const adaptPage = <T,>(response: Api.Common.PaginatedResponse<T>) => ({
     list: response.list || [],
@@ -867,7 +869,7 @@
           },
           {
             label: t('common.operation'),
-            width: 220,
+            width: 320,
             fixed: 'right',
             formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
               const actions = []
@@ -887,6 +889,16 @@
               }
               if (row.status === 'completed') {
                 actions.push(
+                  h(
+                    ElButton,
+                    {
+                      size: 'small',
+                      type: 'primary',
+                      loading: revalidatingEntryId.value === row.id,
+                      onClick: () => handleRevalidateEntry(row)
+                    },
+                    () => t('galaxyRegistry.admin.revalidate')
+                  ),
                   h(
                     ElButton,
                     {
@@ -1163,6 +1175,17 @@
       await refreshAdminViews()
     } finally {
       forceEndingEntryId.value = 0
+    }
+  }
+
+  const handleRevalidateEntry = async (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+    revalidatingEntryId.value = row.id
+    try {
+      await revalidateAdminGalaxyRegistryEntry(row.id)
+      ElMessage.success(t('galaxyRegistry.messages.entryRevalidated'))
+      await refreshAdminViews()
+    } finally {
+      revalidatingEntryId.value = 0
     }
   }
 

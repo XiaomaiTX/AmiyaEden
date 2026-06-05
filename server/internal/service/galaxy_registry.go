@@ -455,7 +455,7 @@ func (s *GalaxyRegistryService) OverrideEntryValidation(
 			return txErr
 		}
 		if row.Status != model.GalaxyRegistryEntryStatusCompleted {
-			return NewUserVisibleError("鍙兘淇敼宸茬粨鏉熺櫥璁扮殑鏍￠獙缁撴灉")
+			return NewUserVisibleError("只能修改已结束登记的校验结果")
 		}
 
 		reason := ""
@@ -490,6 +490,32 @@ func (s *GalaxyRegistryService) OverrideEntryValidation(
 		return nil, err
 	}
 	return s.buildEntryItem(updated, user)
+}
+
+func (s *GalaxyRegistryService) RevalidateEntryWithContext(
+	ctx context.Context,
+	entryID uint,
+) (*GalaxyRegistryEntryItem, error) {
+	row, err := s.repo.GetEntryByID(entryID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, NewUserVisibleError("登记不存在")
+		}
+		return nil, err
+	}
+	if row.Status != model.GalaxyRegistryEntryStatusCompleted {
+		return nil, NewUserVisibleError("只能重新校验已结束的登记")
+	}
+
+	if err := s.finalizeEntryValidation(ctx, row); err != nil {
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetByID(row.CaptainUserID)
+	if err != nil {
+		return nil, err
+	}
+	return s.buildEntryItem(row, user)
 }
 
 func (s *GalaxyRegistryService) listEntries(ownerUserID *uint, filter GalaxyRegistryEntryListFilter, page int, pageSize int) ([]GalaxyRegistryEntryItem, int64, error) {
