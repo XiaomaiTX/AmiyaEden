@@ -2327,12 +2327,12 @@ declare namespace Api {
       }[]
     }
 
-    /** 资产查询请求 */
+    /** 资产查询请求（旧全量树接口） */
     interface AssetsRequest {
       language?: string
     }
 
-    /** 资产物品节点 */
+    /** 资产物品节点（旧全量树接口，含递归 children） */
     interface AssetItemNode {
       item_id: number
       type_id: number
@@ -2349,7 +2349,7 @@ declare namespace Api {
       children?: AssetItemNode[]
     }
 
-    /** 资产位置节点 */
+    /** 资产位置节点（旧全量树接口） */
     interface AssetLocationNode {
       location_id: number
       location_type: string
@@ -2357,10 +2357,82 @@ declare namespace Api {
       items: AssetItemNode[]
     }
 
-    /** 资产列表响应 */
+    /** 资产列表响应（旧全量树接口） */
     interface AssetsResponse {
       total_items: number
       locations: AssetLocationNode[]
+    }
+
+    /** 资产位置摘要请求 */
+    interface AssetLocationsRequest {
+      language?: string
+      page?: number
+      page_size?: number
+      keyword?: string
+    }
+
+    /** 资产位置摘要 */
+    interface AssetLocationSummary {
+      location_id: number
+      location_type: string
+      location_name: string
+      top_level_count: number
+      root_item_count: number
+      character_count: number
+    }
+
+    /** 资产位置摘要列表响应 */
+    interface AssetLocationsResponse {
+      total_locations: number
+      total_items: number
+      locations: AssetLocationSummary[]
+    }
+
+    /** 位置根物品请求 */
+    interface AssetLocationItemsRequest {
+      language?: string
+      location_id: number
+      page?: number
+      page_size?: number
+      keyword?: string
+    }
+
+    /** 扁平物品节点（不含递归 children） */
+    interface AssetListItemNode {
+      item_id: number
+      type_id: number
+      type_name: string
+      group_name: string
+      category_id: number
+      quantity: number
+      location_flag: string
+      is_singleton: boolean
+      is_blueprint_copy?: boolean
+      asset_name?: string
+      character_id: number
+      character_name: string
+      has_children: boolean
+      child_count: number
+    }
+
+    /** 位置根物品列表响应 */
+    interface AssetLocationItemsResponse {
+      location_id: number
+      location_name: string
+      total_root_items: number
+      items: AssetListItemNode[]
+    }
+
+    /** 子物品请求 */
+    interface AssetChildrenRequest {
+      language?: string
+      parent_item_id: number
+    }
+
+    /** 子物品列表响应 */
+    interface AssetChildrenResponse {
+      parent_item_id: number
+      items: AssetListItemNode[]
     }
 
     /** 合同请求（含分页与过滤） */

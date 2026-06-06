@@ -30,9 +30,33 @@ export function saveInfoFitting(data: Api.EveInfo.SaveFittingRequest) {
   return request.post<Api.EveInfo.FittingResponse>({ url: '/api/v1/info/fittings/save', data })
 }
 
-/** 获取用户所有人物的资产列表 */
+/** 获取用户所有人物的资产列表（旧全量树接口） */
 export function fetchInfoAssets(data: Api.EveInfo.AssetsRequest) {
   return request.post<Api.EveInfo.AssetsResponse>({ url: '/api/v1/info/assets', data })
+}
+
+/** 获取用户资产位置摘要（分页） */
+export function fetchInfoAssetLocations(data: Api.EveInfo.AssetLocationsRequest) {
+  return request.post<Api.EveInfo.AssetLocationsResponse>({
+    url: '/api/v1/info/assets/locations',
+    data
+  })
+}
+
+/** 获取指定位置的根物品列表（分页） */
+export function fetchInfoAssetLocationItems(data: Api.EveInfo.AssetLocationItemsRequest) {
+  return request.post<Api.EveInfo.AssetLocationItemsResponse>({
+    url: '/api/v1/info/assets/location-items',
+    data
+  })
+}
+
+/** 获取指定父物品的直接子物品列表 */
+export function fetchInfoAssetChildren(data: Api.EveInfo.AssetChildrenRequest) {
+  return request.post<Api.EveInfo.AssetChildrenResponse>({
+    url: '/api/v1/info/assets/children',
+    data
+  })
 }
 
 /** 获取用户所有人物的合同列表（分页） */

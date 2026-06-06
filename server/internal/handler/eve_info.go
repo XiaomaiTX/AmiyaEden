@@ -120,6 +120,63 @@ func (h *EveInfoHandler) GetAssets(c *gin.Context) {
 	response.OK(c, result)
 }
 
+// GetAssetLocations POST /info/assets/locations
+// 分页获取当前用户资产位置摘要
+func (h *EveInfoHandler) GetAssetLocations(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.AssetLocationsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.assetSvc.GetUserAssetLocations(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// GetAssetLocationItems POST /info/assets/location-items
+// 分页获取指定位置的根物品列表
+func (h *EveInfoHandler) GetAssetLocationItems(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.AssetLocationItemsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.assetSvc.GetUserAssetLocationItems(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+// GetAssetChildren POST /info/assets/children
+// 获取指定父物品的直接子物品列表
+func (h *EveInfoHandler) GetAssetChildren(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.AssetChildrenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.assetSvc.GetUserAssetChildren(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
 // GetContracts POST /info/contracts
 // 分页获取当前用户所有人物的合同
 func (h *EveInfoHandler) GetContracts(c *gin.Context) {

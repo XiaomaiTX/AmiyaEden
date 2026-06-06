@@ -339,6 +339,7 @@ func ensureCustomIndexes(db *gorm.DB) {
 	allStatements = append(allStatements, auditEventIndexStatements()...)
 	allStatements = append(allStatements, toolBookmarkIndexStatements()...)
 	allStatements = append(allStatements, galaxyRegistryIndexStatements()...)
+	allStatements = append(allStatements, assetIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
@@ -358,5 +359,14 @@ func auditEventIndexStatements() []string {
 		`CREATE INDEX IF NOT EXISTS idx_audit_event_actor ON audit_event (actor_user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_event_target ON audit_event (target_user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_event_request_id ON audit_event (request_id)`,
+	}
+}
+
+func assetIndexStatements() []string {
+	return []string{
+		`CREATE INDEX IF NOT EXISTS idx_eve_character_asset_char_loc ON eve_character_asset (character_id, location_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_eve_character_asset_char_type_loc ON eve_character_asset (character_id, location_type, location_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_eve_character_asset_char_item ON eve_character_asset (character_id, item_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_eve_character_asset_location ON eve_character_asset (location_id)`,
 	}
 }

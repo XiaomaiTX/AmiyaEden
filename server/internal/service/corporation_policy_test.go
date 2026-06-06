@@ -4,9 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"testing"
-	"time"
 
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -238,15 +236,7 @@ func TestCorporationPolicyServiceGetRuleIntAndBool(t *testing.T) {
 
 func newCorpPolicyTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	dsn := "file:corp_policy_test_" + time.Now().Format("150405.000000000") + "?mode=memory&cache=shared"
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	if err := db.AutoMigrate(&model.SystemConfig{}, &model.User{}, &model.EveCharacter{}); err != nil {
-		t.Fatalf("auto migrate: %v", err)
-	}
-	return db
+	return newServiceTestDB(t, "corp_policy_test", &model.SystemConfig{}, &model.User{}, &model.EveCharacter{})
 }
 
 func seedCorpPolicyUser(t *testing.T, db *gorm.DB, userID uint, characterID int64, corporationID int64) {

@@ -99,6 +99,8 @@ export interface AssetsRequest {
   language: string
 }
 
+// ─── 旧全量树类型 ───
+
 export interface AssetItemNode {
   item_id: number
   type_id: number
@@ -120,6 +122,72 @@ export interface AssetLocationNode {
 
 export interface AssetsResponse {
   locations: AssetLocationNode[]
+}
+
+// ─── 新分页接口类型 ───
+
+export interface AssetLocationsRequest {
+  language?: string
+  page?: number
+  page_size?: number
+  keyword?: string
+}
+
+export interface AssetLocationSummary {
+  location_id: number
+  location_type: string
+  location_name: string
+  top_level_count: number
+  root_item_count: number
+  character_count: number
+}
+
+export interface AssetLocationsResponse {
+  total_locations: number
+  total_items: number
+  locations: AssetLocationSummary[]
+}
+
+export interface AssetLocationItemsRequest {
+  language?: string
+  location_id: number
+  page?: number
+  page_size?: number
+  keyword?: string
+}
+
+export interface AssetListItemNode {
+  item_id: number
+  type_id: number
+  type_name: string
+  group_name: string
+  category_id: number
+  quantity: number
+  location_flag: string
+  is_singleton: boolean
+  is_blueprint_copy?: boolean
+  asset_name?: string
+  character_id: number
+  character_name: string
+  has_children: boolean
+  child_count: number
+}
+
+export interface AssetLocationItemsResponse {
+  location_id: number
+  location_name: string
+  total_root_items: number
+  items: AssetListItemNode[]
+}
+
+export interface AssetChildrenRequest {
+  language?: string
+  parent_item_id: number
+}
+
+export interface AssetChildrenResponse {
+  parent_item_id: number
+  items: AssetListItemNode[]
 }
 
 export interface ContractsRequest extends Partial<CommonSearchParams> {
