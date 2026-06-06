@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-06-06
+
+### Added
+
+- 钱包分析支持全历史分析与实时摘要。
+- 钱包管理列表与分析表格新增排序能力。
+- 任务管理器支持展示后端错误消息，便于排查任务加载失败原因。
+- 新增 Galaxy Registry 生产系统追踪仪表盘。
+- Galaxy Registry 新增即时校验与注册管理控件。
+- Galaxy Registry 管理面板新增已完成条目重校验功能。
+- ESI 子任务新增可配置刷新间隔覆写。
+- 资产页面新增分页懒加载与显式错误状态。
+
+### Changed
+
+- 移除 NPC 击杀统计中误导性的预估小时指标。
+
+### Fixed
+
+- Galaxy Registry 钱包刷新时跳过过期令牌，避免刷新任务异常中断。
+
 ## [1.11.1] - 2026-05-24
 
 ### Fixed
