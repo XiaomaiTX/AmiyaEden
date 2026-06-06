@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm/clause"
 )
 
 // ─────────────────────────────────────────────
@@ -457,9 +456,6 @@ func (s *AssetService) GetUserAssetLocations(userID uint, req *AssetLocationsReq
 	for i, e := range paged {
 		locations[i] = e.AssetLocationSummary
 	}
-	if locations == nil {
-		locations = []AssetLocationSummary{}
-	}
 
 	return &AssetLocationsResponse{
 		TotalLocations: totalLocations,
@@ -662,36 +658,6 @@ func (s *AssetService) batchGetTypeInfo(typeIDs []int, lang string) map[int]repo
 //  位置解析
 // ─────────────────────────────────────────────
 
-// Deprecated: resolveLocationName 同步解析位置名称（可能触发 ESI）。
-// 读接口必须使用 resolveLocationNameLocal，禁止在请求链路内请求 ESI。
-func (s *AssetService) resolveLocationName(chars []model.EveCharacter, locationID int64, locationType string) string {
-	if locationID == 0 {
-		return ""
-	}
-
-	switch locationType {
-	case "station":
-		return s.resolveStationName(locationID)
-	case "solar_system":
-		names, err := s.sdeRepo.GetNames(map[string][]int{
-			"solar_system": {int(locationID)},
-		}, "zh")
-		if err == nil {
-			if solarNames, ok := names["solar_system"]; ok {
-				if name, ok := solarNames[int(locationID)]; ok {
-					return name
-				}
-			}
-		}
-		return fmt.Sprintf("System-%d", locationID)
-	case "structure", "other":
-		// 玩家建筑（structure: 资产直接在建筑内; other: 太空中的建筑）
-		return s.resolveStructureName(chars, locationID)
-	default:
-		return s.resolveStructureName(chars, locationID)
-	}
-}
-
 // resolveLocationNameLocal 纯本地解析位置名称，不触发 ESI 请求。
 // 缓存缺失时返回占位名，不阻塞查询。
 func (s *AssetService) resolveLocationNameLocal(locationID int64, locationType string) string {
@@ -850,59 +816,7 @@ func (s *AssetService) resolveStructureNameLocal(structureID int64) string {
 	return fmt.Sprintf("Structure-%d", structureID)
 }
 
-// Deprecated: resolveStationName 可能触发 ESI 请求，读接口禁止调用。
-// 读接口使用 resolveStationNameLocal。
-func (s *AssetService) resolveStationName(stationID int64) string {
-	// 先查缓存表
-	station, err := s.assetRepo.GetStationByID(stationID)
-	if err == nil && station.StationName != "" {
-		return station.StationName
-	}
 
-	// 从 SDE staStations 表查
-	var name string
-	if err := global.DB.Table(`"staStations"`).
-		Select(`"stationName"`).
-		Where(`"stationID" = ?`, stationID).
-		Scan(&name).Error; err == nil && name != "" {
-		// 缓存到 eve_stations 表
-		if err := s.assetRepo.UpsertStation(&model.EveStation{
-			StationID:   stationID,
-			StationName: name,
-			UpdateAt:    time.Now().Unix(),
-		}); err != nil {
-			global.Logger.Warn("[Asset] 缓存空间站信息失败", zap.Int64("station_id", stationID), zap.Error(err))
-		}
-		return name
-	}
-
-	// 从 ESI 获取
-	return s.fetchAndCacheStation(stationID)
-}
-
-// Deprecated: resolveStructureName 遍历角色 token 请求 ESI 获取建筑名。
-// 读接口使用 resolveStructureNameLocal。异步补全使用 EnsureAssetLocationsCached。
-func (s *AssetService) resolveStructureName(chars []model.EveCharacter, structureID int64) string {
-	// 先查本地缓存
-	structure, err := s.assetRepo.GetStructureByID(structureID)
-	if err == nil && structure.StructureName != "" {
-		return structure.StructureName
-	}
-
-	// 尝试用任一人物的 token 从 ESI 获取
-	for _, c := range chars {
-		accessToken, err := s.ssoSvc.GetValidToken(context.Background(), c.CharacterID)
-		if err != nil {
-			continue
-		}
-		name := s.fetchAndCacheStructure(structureID, accessToken)
-		if name != "" && name != fmt.Sprintf("Structure-%d", structureID) {
-			return name
-		}
-	}
-
-	return fmt.Sprintf("Structure-%d", structureID)
-}
 
 // Deprecated: fetchAndCacheStation 同步请求 ESI /universe/stations/。
 // 异步补全使用 EnsureAssetLocationsCached。
@@ -946,51 +860,6 @@ func (s *AssetService) fetchAndCacheStation(stationID int64) string {
 	return detail.Name
 }
 
-// Deprecated: fetchAndCacheStructure 同步请求 ESI /universe/structures/。
-// 异步补全使用 EnsureAssetLocationsCached。
-func (s *AssetService) fetchAndCacheStructure(structureID int64, accessToken string) string {
-	type structureDetail struct {
-		Name     string `json:"name"`
-		OwnerID  int64  `json:"owner_id"`
-		Position struct {
-			X float64 `json:"x"`
-			Y float64 `json:"y"`
-			Z float64 `json:"z"`
-		} `json:"position"`
-		SolarSystemID int64 `json:"solar_system_id"`
-		TypeID        int64 `json:"type_id"`
-	}
-
-	var detail structureDetail
-	path := fmt.Sprintf("/universe/structures/%d/", structureID)
-	if err := s.esiGet(context.Background(), path, accessToken, &detail); err != nil {
-		global.Logger.Warn("[Asset] 获取建筑详情失败",
-			zap.Int64("structure_id", structureID),
-			zap.Error(err),
-		)
-		return fmt.Sprintf("Structure-%d", structureID)
-	}
-
-	record := &model.EveStructure{
-		StructureID:   structureID,
-		StructureName: detail.Name,
-		OwnerID:       detail.OwnerID,
-		TypeID:        detail.TypeID,
-		SolarSystemID: detail.SolarSystemID,
-		X:             detail.Position.X,
-		Y:             detail.Position.Y,
-		Z:             detail.Position.Z,
-		UpdateAt:      time.Now().Unix(),
-	}
-	if err := global.DB.Clauses(clause.OnConflict{UpdateAll: true}).Create(record).Error; err != nil {
-		global.Logger.Warn("[Asset] 缓存建筑信息失败",
-			zap.Int64("structure_id", structureID),
-			zap.Error(err),
-		)
-	}
-
-	return detail.Name
-}
 
 // ─────────────────────────────────────────────
 //  异步位置名缓存补全
@@ -1034,32 +903,6 @@ func (s *AssetService) EnsureAssetLocationsCached(characterIDs []int64) {
 // ─────────────────────────────────────────────
 //  ESI HTTP 辅助
 // ─────────────────────────────────────────────
-
-func (s *AssetService) esiGet(ctx context.Context, path, accessToken string, out interface{}) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := s.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			global.Logger.Warn("[Asset] 关闭响应体失败", zap.Error(err))
-		}
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("ESI GET %s 返回 %d: %s", path, resp.StatusCode, string(body))
-	}
-
-	return json.NewDecoder(resp.Body).Decode(out)
-}
 
 func (s *AssetService) esiGetPublic(ctx context.Context, path string, out interface{}) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, global.Config.EveSSO.ESIBaseURL+path, nil)
