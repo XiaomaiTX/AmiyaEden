@@ -11,14 +11,19 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
+
+type galaxyRegistryTokenProvider interface {
+	GetValidToken(ctx context.Context, characterID int64) (string, error)
+}
 
 type GalaxyRegistryService struct {
 	repo     *repository.GalaxyRegistryRepository
 	charRepo *repository.EveCharacterRepository
 	userRepo *repository.UserRepository
-	ssoSvc   *EveSSOService
+	ssoSvc   galaxyRegistryTokenProvider
 	wallet   interface {
 		Execute(ctx *esi.TaskContext) error
 	}
@@ -146,6 +151,29 @@ type GalaxyRegistryPeriodSummary struct {
 	ViolationCount int64   `json:"violation_count"`
 	PendingCount   int64   `json:"pending_count"`
 	ValidRate      float64 `json:"valid_rate"`
+}
+
+type galaxyRegistryWalletRefreshItem struct {
+	CharacterID int64
+	Refreshed   bool
+	Skipped     bool
+	Reason      string
+}
+
+type galaxyRegistryWalletRefreshResult struct {
+	Items          []galaxyRegistryWalletRefreshItem
+	RefreshedCount int
+	SkippedCount   int
+}
+
+func isGalaxyRegistrySkippableTokenError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "该人物的 token 已失效") ||
+		strings.Contains(msg, "invalid_token") ||
+		strings.Contains(msg, "invalid_grant")
 }
 
 func chooseCaptainDisplayCharacter(user *model.User, characters []model.EveCharacter) *model.EveCharacter {
@@ -792,7 +820,11 @@ func (s *GalaxyRegistryService) finalizeEntryValidation(ctx context.Context, row
 	if err != nil {
 		return err
 	}
-	if err := s.refreshWalletJournals(ctx, characters); err != nil {
+	refreshResult, err := s.refreshWalletJournals(ctx, characters)
+	if err != nil {
+		return NewUserVisibleError("登记已结束，但拉取钱包 ESI 失败，暂未完成校验")
+	}
+	if refreshResult.RefreshedCount == 0 {
 		return NewUserVisibleError("登记已结束，但拉取钱包 ESI 失败，暂未完成校验")
 	}
 
@@ -811,12 +843,33 @@ func (s *GalaxyRegistryService) finalizeEntryValidation(ctx context.Context, row
 	return nil
 }
 
-func (s *GalaxyRegistryService) refreshWalletJournals(ctx context.Context, characters []model.EveCharacter) error {
+func (s *GalaxyRegistryService) refreshWalletJournals(
+	ctx context.Context,
+	characters []model.EveCharacter,
+) (*galaxyRegistryWalletRefreshResult, error) {
+	result := &galaxyRegistryWalletRefreshResult{
+		Items: make([]galaxyRegistryWalletRefreshItem, 0, len(characters)),
+	}
 	for i := range characters {
+		item := galaxyRegistryWalletRefreshItem{CharacterID: characters[i].CharacterID}
+
 		token, err := s.ssoSvc.GetValidToken(ctx, characters[i].CharacterID)
 		if err != nil {
-			return fmt.Errorf("get valid token for character %d: %w", characters[i].CharacterID, err)
+			if isGalaxyRegistrySkippableTokenError(err) {
+				item.Skipped = true
+				item.Reason = err.Error()
+				result.Items = append(result.Items, item)
+				result.SkippedCount++
+				global.Logger.Warn("GalaxyRegistry: 角色 token 失效，跳过钱包刷新",
+					zap.Int64("character_id", characters[i].CharacterID),
+					zap.String("phase", "get_valid_token"),
+					zap.Error(err),
+				)
+				continue
+			}
+			return nil, fmt.Errorf("get valid token for character %d: %w", characters[i].CharacterID, err)
 		}
+
 		if err := s.wallet.Execute(&esi.TaskContext{
 			Context:     ctx,
 			CharacterID: characters[i].CharacterID,
@@ -824,10 +877,26 @@ func (s *GalaxyRegistryService) refreshWalletJournals(ctx context.Context, chara
 			Client:      s.esiClient,
 			IsActive:    true,
 		}); err != nil {
-			return fmt.Errorf("refresh wallet for character %d: %w", characters[i].CharacterID, err)
+			if isGalaxyRegistrySkippableTokenError(err) {
+				item.Skipped = true
+				item.Reason = err.Error()
+				result.Items = append(result.Items, item)
+				result.SkippedCount++
+				global.Logger.Warn("GalaxyRegistry: 角色 token 失效，跳过钱包刷新",
+					zap.Int64("character_id", characters[i].CharacterID),
+					zap.String("phase", "refresh_wallet"),
+					zap.Error(err),
+				)
+				continue
+			}
+			return nil, fmt.Errorf("refresh wallet for character %d: %w", characters[i].CharacterID, err)
 		}
+
+		item.Refreshed = true
+		result.Items = append(result.Items, item)
+		result.RefreshedCount++
 	}
-	return nil
+	return result, nil
 }
 
 func (s *GalaxyRegistryService) evaluateEntryValidation(
