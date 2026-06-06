@@ -78,6 +78,7 @@ type AssetName struct {
 }
 
 func (t *AssetsTask) Execute(ctx *TaskContext) error {
+	startTime := time.Now()
 	bgCtx := ctx.ContextOrBackground()
 
 	// 1. 获取资产列表（自动分页）
@@ -87,14 +88,7 @@ func (t *AssetsTask) Execute(ctx *TaskContext) error {
 		return fmt.Errorf("fetch assets: %w", err)
 	}
 
-	global.Logger.Debug("[ESI] 人物资产刷新完成",
-		zap.Int64("character_id", ctx.CharacterID),
-		zap.Int("asset_count", len(assets)),
-	)
-
 	// 2. 收集需要查询名称的 item_id
-	//    条件: is_singleton==true 且 categoryID 属于可命名类别
-	//    需要先获取所有 typeID 对应的 categoryID
 	typeIDs := make(map[int]struct{})
 	for _, a := range assets {
 		typeIDs[a.TypeID] = struct{}{}
@@ -142,11 +136,6 @@ func (t *AssetsTask) Execute(ctx *TaskContext) error {
 		}
 	}
 
-	global.Logger.Debug("[ESI] 资产名称查询完成",
-		zap.Int64("character_id", ctx.CharacterID),
-		zap.Int("named_items", len(nameMap)),
-	)
-
 	// 4. 入库：先删除该人物旧数据，再批量插入
 	tx := global.DB.Begin()
 	if err := tx.Where("character_id = ?", ctx.CharacterID).Delete(&model.EveCharacterAsset{}).Error; err != nil {
@@ -173,7 +162,6 @@ func (t *AssetsTask) Execute(ctx *TaskContext) error {
 			}
 			records = append(records, rec)
 		}
-		// 分批插入（每批 500）
 		const batch = 500
 		for i := 0; i < len(records); i += batch {
 			end := i + batch
@@ -191,9 +179,13 @@ func (t *AssetsTask) Execute(ctx *TaskContext) error {
 		return fmt.Errorf("commit assets: %w", err)
 	}
 
-	global.Logger.Debug("[ESI] 人物资产入库完成",
+	duration := time.Since(startTime).Milliseconds()
+	global.Logger.Info("[ESI] 资产同步完成",
 		zap.Int64("character_id", ctx.CharacterID),
-		zap.Int("count", len(assets)),
+		zap.Int("asset_count", len(assets)),
+		zap.Int("nameable_item_count", len(nameableItemIDs)),
+		zap.Int("named_item_count", len(nameMap)),
+		zap.Int64("duration_ms", duration),
 	)
 
 	return nil

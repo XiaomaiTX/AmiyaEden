@@ -4,15 +4,19 @@
     <ElCard shadow="never" class="mb-2">
       <div class="flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center gap-4">
-          <ElButton :loading="loading" size="small" @click="loadData">
+          <ElButton :loading="loading" size="small" @click="loadLocations">
             <el-icon class="mr-1"><Refresh /></el-icon>
             {{ $t('common.refresh') }}
           </ElButton>
         </div>
-        <div v-if="assetsData" class="flex items-center gap-4 text-sm text-gray-500">
+        <div v-if="locationsData" class="flex items-center gap-4 text-sm text-gray-500">
           <span>
             {{ $t('info.assetCount') }}:
-            <strong class="text-blue-500">{{ assetsData.total_items }}</strong>
+            <strong class="text-blue-500">{{ locationsData.total_items }}</strong>
+          </span>
+          <span>
+            {{ $t('info.locationName') }}:
+            <strong class="text-blue-500">{{ locationsData.total_locations }}</strong>
           </span>
         </div>
       </div>
@@ -29,106 +33,209 @@
           style="width: 280px"
           size="small"
           :prefix-icon="Search"
+          @change="onSearchChange"
         />
       </div>
 
+      <!-- 错误提示 -->
+      <div v-if="errorMessage" class="asset-error">
+        <ElAlert :title="errorMessage" type="error" show-icon :closable="false" />
+        <ElButton size="small" type="primary" class="mt-4" @click="loadLocations">
+          {{ $t('common.retry') }}
+        </ElButton>
+      </div>
+
+      <!-- 空位置列表 -->
+      <ElEmpty
+        v-else-if="!loading && locationsData && locationsData.locations.length === 0"
+        :description="$t('info.assetNoLocationData')"
+        :image-size="60"
+      />
+
       <!-- 按位置分组 -->
-      <div v-if="filteredLocations.length > 0" class="assets-groups">
-        <div v-for="loc in filteredLocations" :key="loc.location_id" class="location-section">
+      <div v-else-if="locationsData && locationsData.locations.length > 0" class="assets-groups">
+        <div v-for="loc in locationsData.locations" :key="loc.location_id" class="location-section">
           <!-- 位置标题 -->
-          <div class="location-header" @click="toggleLocation(loc.location_id)">
-            <span class="mg-arrow" :class="{ expanded: !collapsedLocations.has(loc.location_id) }"
+          <div class="location-header" @click="toggleLocation(loc)">
+            <span class="mg-arrow" :class="{ expanded: expandedLocations.has(loc.location_id) }"
               >▶</span
             >
             <span class="mg-title">{{ loc.location_name }}</span>
-            <span class="mg-count">{{ countItems(loc.items) }}</span>
+            <span class="mg-count">{{ loc.top_level_count }}</span>
+            <span class="mg-char-count">{{ loc.character_count }} {{ $t('info.owner') }}</span>
           </div>
 
-          <!-- 物品列表 -->
-          <div v-if="!collapsedLocations.has(loc.location_id)" class="asset-items">
-            <template v-for="item in loc.items" :key="item.item_id">
-              <div
-                class="asset-item"
-                @click="item.children?.length ? toggleItem(item.item_id) : undefined"
-              >
-                <span
-                  v-if="item.children?.length"
-                  class="mg-arrow child-toggle"
-                  :class="{ expanded: expandedItems.has(item.item_id) }"
-                  >▶</span
+          <!-- 位置物品列表 -->
+          <div v-if="expandedLocations.has(loc.location_id)" class="asset-items">
+            <div v-if="locationErrors[loc.location_id]" class="section-error">
+              <ElAlert
+                :title="locationErrors[loc.location_id]"
+                type="warning"
+                show-icon
+                :closable="false"
+                class="mb-2"
+              />
+            </div>
+
+            <div v-loading="locationLoadingMap[loc.location_id]" class="min-h-40">
+              <template v-for="item in locationItemsMap[loc.location_id]" :key="item.item_id">
+                <div
+                  class="asset-item"
+                  :class="{ clickable: item.has_children }"
+                  @click="item.has_children ? toggleChildren(item) : undefined"
                 >
-                <img
-                  :src="getItemIcon(item)"
-                  :alt="item.type_name"
-                  class="asset-icon"
-                  loading="lazy"
-                />
-                <div class="asset-info">
-                  <span class="asset-type-name">{{ item.type_name }}</span>
-                  <span v-if="item.asset_name" class="asset-name-tag">{{ item.asset_name }}</span>
-                </div>
-                <span class="asset-group">{{ item.group_name }}</span>
-                <span class="asset-qty">
-                  {{ item.quantity > 1 ? `x${item.quantity}` : '' }}
-                </span>
-                <span class="asset-owner">{{ item.character_name }}</span>
-              </div>
-              <!-- 子物品 -->
-              <div
-                v-if="item.children?.length && expandedItems.has(item.item_id)"
-                class="child-items"
-              >
-                <div v-for="child in item.children" :key="child.item_id" class="asset-item child">
+                  <span
+                    v-if="item.has_children"
+                    class="mg-arrow child-toggle"
+                    :class="{ expanded: expandedItems.has(item.item_id) }"
+                    >▶</span
+                  >
+                  <span v-else class="mg-arrow-placeholder"></span>
                   <img
-                    :src="getItemIcon(child)"
-                    :alt="child.type_name"
+                    :src="getItemIcon(item)"
+                    :alt="item.type_name"
                     class="asset-icon"
                     loading="lazy"
                   />
                   <div class="asset-info">
-                    <span class="asset-type-name">{{ child.type_name }}</span>
-                    <span v-if="child.asset_name" class="asset-name-tag">{{
-                      child.asset_name
+                    <span class="asset-type-name">{{ item.type_name }}</span>
+                    <span v-if="item.asset_name" class="asset-name-tag">{{ item.asset_name }}</span>
+                    <span v-if="item.child_count > 0" class="child-count-badge">{{
+                      item.child_count
                     }}</span>
                   </div>
-                  <span class="asset-group">{{ child.group_name }}</span>
+                  <span class="asset-group">{{ item.group_name }}</span>
                   <span class="asset-qty">
-                    {{ child.quantity > 1 ? `x${child.quantity}` : '' }}
+                    {{ item.quantity > 1 ? `x${item.quantity}` : '' }}
                   </span>
-                  <span class="asset-owner">{{ child.character_name }}</span>
+                  <span class="asset-owner">{{ item.character_name }}</span>
                 </div>
-              </div>
-            </template>
+                <!-- 子物品 -->
+                <div
+                  v-if="item.has_children && expandedItems.has(item.item_id)"
+                  class="child-items"
+                >
+                  <div v-if="childrenErrors[item.item_id]" class="section-error">
+                    <ElAlert
+                      :title="childrenErrors[item.item_id]"
+                      type="warning"
+                      show-icon
+                      :closable="false"
+                      class="mb-2"
+                    />
+                  </div>
+                  <div v-loading="childrenLoadingMap[item.item_id]" class="min-h-30">
+                    <div
+                      v-for="child in childrenMap[item.item_id]"
+                      :key="child.item_id"
+                      class="asset-item child"
+                    >
+                      <img
+                        :src="getItemIcon(child)"
+                        :alt="child.type_name"
+                        class="asset-icon"
+                        loading="lazy"
+                      />
+                      <div class="asset-info">
+                        <span class="asset-type-name">{{ child.type_name }}</span>
+                        <span v-if="child.asset_name" class="asset-name-tag">{{
+                          child.asset_name
+                        }}</span>
+                        <span v-if="child.child_count > 0" class="child-count-badge">{{
+                          child.child_count
+                        }}</span>
+                      </div>
+                      <span class="asset-group">{{ child.group_name }}</span>
+                      <span class="asset-qty">
+                        {{ child.quantity > 1 ? `x${child.quantity}` : '' }}
+                      </span>
+                      <span class="asset-owner">{{ child.character_name }}</span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- 位置物品分页 -->
+            <div
+              v-if="
+                locationPaginationMap[loc.location_id]?.total >
+                locationPaginationMap[loc.location_id]?.pageSize
+              "
+              class="pagination-row"
+            >
+              <ElPagination
+                small
+                layout="prev, pager, next"
+                :total="locationPaginationMap[loc.location_id].total"
+                :page-size="locationPaginationMap[loc.location_id].pageSize"
+                :current-page="locationPaginationMap[loc.location_id].page"
+                @current-change="(p) => loadLocationItems(loc, p)"
+              />
+            </div>
+
+            <ElEmpty
+              v-if="
+                !locationLoadingMap[loc.location_id] &&
+                !locationErrors[loc.location_id] &&
+                (locationItemsMap[loc.location_id]?.length ?? 0) === 0
+              "
+              :description="$t('info.assetNoItemsInLocation')"
+              :image-size="40"
+            />
           </div>
         </div>
       </div>
-
-      <ElEmpty v-else-if="!loading" :description="$t('info.noAssetData')" :image-size="60" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { Refresh, Search } from '@element-plus/icons-vue'
-  import { ElCard, ElButton, ElEmpty, ElInput } from 'element-plus'
-  import { fetchInfoAssets } from '@/api/eve-info'
+  import { ElCard, ElButton, ElEmpty, ElInput, ElAlert, ElPagination } from 'element-plus'
+  import {
+    fetchInfoAssetLocations,
+    fetchInfoAssetLocationItems,
+    fetchInfoAssetChildren
+  } from '@/api/eve-info'
   import { useUserStore } from '@/store/modules/user'
 
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
   defineOptions({ name: 'EveInfoAssets' })
 
   const userStore = useUserStore()
 
-  const assetsData = ref<Api.EveInfo.AssetsResponse | null>(null)
   const loading = ref(false)
+  const errorMessage = ref('')
   const searchKeyword = ref('')
-  const collapsedLocations = ref(new Set<number>())
+
+  // 位置摘要列表
+  const locationsData = ref<Api.EveInfo.AssetLocationsResponse | null>(null)
+  const expandedLocations = ref(new Set<number>())
+
+  // 每个位置的物品缓存
+  const locationItemsMap = reactive<Record<number, Api.EveInfo.AssetListItemNode[]>>({})
+  const locationLoadingMap = reactive<Record<number, boolean>>({})
+  const locationErrors = reactive<Record<number, string>>({})
+  const locationPaginationMap = reactive<
+    Record<number, { page: number; pageSize: number; total: number }>
+  >({})
+
+  // 子物品缓存
   const expandedItems = ref(new Set<number>())
+  const childrenMap = reactive<Record<number, Api.EveInfo.AssetListItemNode[]>>({})
+  const childrenLoadingMap = reactive<Record<number, boolean>>({})
+  const childrenErrors = reactive<Record<number, string>>({})
 
   /** 蓝图拷贝 categoryID=9 */
   const CATEGORY_BLUEPRINT = 9
 
-  /** 获取物品图标 URL */
-  const getItemIcon = (item: Api.EveInfo.AssetItemNode) => {
+  const getItemIcon = (item: {
+    category_id: number
+    type_id: number
+    is_blueprint_copy?: boolean
+  }) => {
     if (item.category_id === CATEGORY_BLUEPRINT) {
       const suffix = item.is_blueprint_copy ? 'bpc' : 'bp'
       return `https://images.evetech.net/types/${item.type_id}/${suffix}?size=32`
@@ -136,79 +243,108 @@
     return `https://images.evetech.net/types/${item.type_id}/icon?size=32`
   }
 
-  /** 递归统计物品数（含子物品） */
-  const countItems = (items: Api.EveInfo.AssetItemNode[]) => {
-    let count = items.length
-    for (const item of items) {
-      if (item.children) count += item.children.length
-    }
-    return count
+  const onSearchChange = () => {
+    loadLocations()
   }
 
-  /** 递归匹配搜索 */
-  const matchSearch = (item: Api.EveInfo.AssetItemNode, kw: string): boolean => {
-    if (item.type_name?.toLowerCase().includes(kw)) return true
-    if (item.group_name?.toLowerCase().includes(kw)) return true
-    if (item.asset_name?.toLowerCase().includes(kw)) return true
-    if (item.children?.some((c) => matchSearch(c, kw))) return true
-    return false
-  }
-
-  /** 搜索过滤后的位置列表 */
-  const filteredLocations = computed(() => {
-    if (!assetsData.value?.locations) return []
-    const kw = searchKeyword.value.toLowerCase().trim()
-    if (!kw) return assetsData.value.locations
-
-    const result: Api.EveInfo.AssetLocationNode[] = []
-    for (const loc of assetsData.value.locations) {
-      // 位置名匹配则显示全部
-      if (loc.location_name?.toLowerCase().includes(kw)) {
-        result.push(loc)
-        continue
-      }
-      // 按物品筛选
-      const matchedItems = loc.items.filter((item) => matchSearch(item, kw))
-      if (matchedItems.length > 0) {
-        result.push({ ...loc, items: matchedItems })
-      }
-    }
-    return result
-  })
-
-  const toggleLocation = (id: number) => {
-    if (collapsedLocations.value.has(id)) {
-      collapsedLocations.value.delete(id)
-    } else {
-      collapsedLocations.value.add(id)
-    }
-    collapsedLocations.value = new Set(collapsedLocations.value)
-  }
-
-  const toggleItem = (id: number) => {
-    if (expandedItems.value.has(id)) {
-      expandedItems.value.delete(id)
-    } else {
-      expandedItems.value.add(id)
-    }
-    expandedItems.value = new Set(expandedItems.value)
-  }
-
-  const loadData = async () => {
+  /** 加载位置摘要 */
+  const loadLocations = async () => {
     loading.value = true
+    errorMessage.value = ''
     try {
-      assetsData.value = await fetchInfoAssets({
-        language: userStore.language
+      locationsData.value = await fetchInfoAssetLocations({
+        language: userStore.language,
+        page: 1,
+        page_size: 20,
+        keyword: searchKeyword.value || undefined
       })
-    } catch {
-      assetsData.value = null
+      // 清除所有展开缓存
+      expandedLocations.value = new Set()
+      Object.keys(locationItemsMap).forEach((k) => delete locationItemsMap[Number(k)])
+      Object.keys(locationLoadingMap).forEach((k) => delete locationLoadingMap[Number(k)])
+      Object.keys(locationErrors).forEach((k) => delete locationErrors[Number(k)])
+      Object.keys(locationPaginationMap).forEach((k) => delete locationPaginationMap[Number(k)])
+      // 清除子物品缓存
+      expandedItems.value = new Set()
+      Object.keys(childrenMap).forEach((k) => delete childrenMap[Number(k)])
+      Object.keys(childrenLoadingMap).forEach((k) => delete childrenLoadingMap[Number(k)])
+      Object.keys(childrenErrors).forEach((k) => delete childrenErrors[Number(k)])
+    } catch (err: any) {
+      locationsData.value = null
+      errorMessage.value = err?.message || t('info.assetLoadFailed')
     } finally {
       loading.value = false
     }
   }
 
+  /** 展开/折叠位置 → 加载根物品 */
+  const toggleLocation = async (loc: Api.EveInfo.AssetLocationSummary) => {
+    if (expandedLocations.value.has(loc.location_id)) {
+      expandedLocations.value.delete(loc.location_id)
+      expandedLocations.value = new Set(expandedLocations.value)
+      return
+    }
+    expandedLocations.value.add(loc.location_id)
+    expandedLocations.value = new Set(expandedLocations.value)
+
+    if (!locationItemsMap[loc.location_id]) {
+      await loadLocationItems(loc, 1)
+    }
+  }
+
+  /** 加载指定位置的根物品 */
+  const loadLocationItems = async (loc: Api.EveInfo.AssetLocationSummary, page: number) => {
+    locationLoadingMap[loc.location_id] = true
+    locationErrors[loc.location_id] = ''
+    try {
+      const result = await fetchInfoAssetLocationItems({
+        language: userStore.language,
+        location_id: loc.location_id,
+        page,
+        page_size: 50
+      })
+      locationItemsMap[loc.location_id] = result.items
+      locationPaginationMap[loc.location_id] = {
+        page,
+        pageSize: 50,
+        total: result.total_root_items
+      }
+    } catch (err: any) {
+      locationErrors[loc.location_id] = err?.message || t('info.assetLocationLoadFailed')
+    } finally {
+      locationLoadingMap[loc.location_id] = false
+    }
+  }
+
+  /** 展开/折叠容器 → 加载子物品 */
+  const toggleChildren = async (item: Api.EveInfo.AssetListItemNode) => {
+    if (expandedItems.value.has(item.item_id)) {
+      expandedItems.value.delete(item.item_id)
+      expandedItems.value = new Set(expandedItems.value)
+      return
+    }
+    expandedItems.value.add(item.item_id)
+    expandedItems.value = new Set(expandedItems.value)
+
+    if (!childrenMap[item.item_id]) {
+      childrenLoadingMap[item.item_id] = true
+      childrenErrors[item.item_id] = ''
+      try {
+        const result = await fetchInfoAssetChildren({
+          language: userStore.language,
+          parent_item_id: item.item_id
+        })
+        childrenMap[item.item_id] = result.items
+      } catch (err: any) {
+        childrenErrors[item.item_id] = err?.message || t('info.assetChildrenLoadFailed')
+      } finally {
+        childrenLoadingMap[item.item_id] = false
+      }
+    }
+  }
+
   onMounted(() => {
-    loadData()
+    loadLocations()
   })
 </script>
 
@@ -223,6 +359,12 @@
     border-radius: 6px;
     padding: 16px;
     overflow: hidden;
+  }
+
+  /* ===== 错误 ===== */
+  .asset-error {
+    padding: 20px 0;
+    text-align: center;
   }
 
   /* ===== 筛选栏 ===== */
@@ -291,6 +433,11 @@
     transform: rotate(90deg);
   }
 
+  .mg-arrow-placeholder {
+    width: 10px;
+    flex-shrink: 0;
+  }
+
   .mg-title {
     flex: 1;
   }
@@ -301,9 +448,33 @@
     font-weight: 400;
   }
 
+  .mg-char-count {
+    font-size: 11px;
+    color: var(--el-text-color-disabled);
+    font-weight: 400;
+    margin-left: 8px;
+  }
+
+  .pagination-row {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .section-error {
+    padding: 4px 12px;
+  }
+
   /* ===== 物品列表 ===== */
   .asset-items {
     padding: 4px 0;
+  }
+
+  .min-h-40 {
+    min-height: 40px;
+  }
+  .min-h-30 {
+    min-height: 30px;
   }
 
   .asset-item {
@@ -313,7 +484,10 @@
     padding: 5px 12px;
     border-radius: 4px;
     transition: background 0.15s;
-    cursor: default;
+  }
+
+  .asset-item.clickable {
+    cursor: pointer;
   }
 
   .asset-item:hover {
@@ -351,6 +525,15 @@
     padding: 0 5px;
     border-radius: 3px;
     white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .child-count-badge {
+    font-size: 10px;
+    color: var(--el-text-color-secondary);
+    background: var(--el-fill-color);
+    padding: 0 4px;
+    border-radius: 3px;
     flex-shrink: 0;
   }
 

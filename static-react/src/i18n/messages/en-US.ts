@@ -2164,10 +2164,12 @@
   },
   infoAssets: {
     title: 'Assets',
-    search: 'Search assets',
+    search: 'Search locations',
     loading: 'Loading assets data...',
     empty: 'No assets data',
-    loadFailed: 'Failed to load assets data.',
+    locationsFailed: 'Failed to load location list.',
+    locationItemsFailed: 'Failed to load location items.',
+    childrenFailed: 'Failed to load child items.',
   },
   infoContracts: {
     title: 'Contracts',

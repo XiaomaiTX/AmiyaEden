@@ -1,5 +1,11 @@
 import { requestJson } from '@/api/http-client'
 import type {
+  AssetChildrenRequest,
+  AssetChildrenResponse,
+  AssetLocationItemsRequest,
+  AssetLocationItemsResponse,
+  AssetLocationsRequest,
+  AssetLocationsResponse,
   AssetsRequest,
   AssetsResponse,
   ContractDetailRequest,
@@ -84,6 +90,33 @@ export async function fetchInfoAssets(data: AssetsRequest) {
   })
 
   return assertSuccess(response, 'fetch assets failed')
+}
+
+export async function fetchInfoAssetLocations(data: AssetLocationsRequest) {
+  const response = await requestJson<ApiResponse<AssetLocationsResponse>>('/api/v1/info/assets/locations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+  return assertSuccess(response, 'fetch asset locations failed')
+}
+
+export async function fetchInfoAssetLocationItems(data: AssetLocationItemsRequest) {
+  const response = await requestJson<ApiResponse<AssetLocationItemsResponse>>('/api/v1/info/assets/location-items', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+  return assertSuccess(response, 'fetch asset location items failed')
+}
+
+export async function fetchInfoAssetChildren(data: AssetChildrenRequest) {
+  const response = await requestJson<ApiResponse<AssetChildrenResponse>>('/api/v1/info/assets/children', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+  return assertSuccess(response, 'fetch asset children failed')
 }
 
 export async function fetchInfoContracts(data: ContractsRequest) {

@@ -2150,10 +2150,12 @@
   },
   infoAssets: {
     title: '人物资产',
-    search: '搜索资产',
+    search: '搜索位置',
     loading: '正在加载资产数据...',
     empty: '暂无资产数据',
-    loadFailed: '加载资产数据失败。',
+    locationsFailed: '加载位置列表失败。',
+    locationItemsFailed: '加载位置物品失败。',
+    childrenFailed: '加载子物品失败。',
   },
   infoContracts: {
     title: '人物合同',

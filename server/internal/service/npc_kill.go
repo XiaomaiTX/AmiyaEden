@@ -475,6 +475,9 @@ func (s *NpcKillService) calcByNpc(journals []model.EVECharacterWalletJournal, l
 
 	npcNameMap := make(map[int]string)
 	typeInfos, err := s.sdeRepo.GetTypes(npcIDs, nil, lang)
+	if err != nil && s.sdeSvc != nil {
+		s.sdeSvc.ReportQueryError("sde_repository", "GetTypes", err)
+	}
 	if err == nil {
 		for _, t := range typeInfos {
 			npcNameMap[t.TypeID] = t.TypeName
