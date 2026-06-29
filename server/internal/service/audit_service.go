@@ -1,8 +1,10 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"amiya-eden/pkg/background"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -195,7 +197,10 @@ func (s *AuditService) CreateExportTask(ctx context.Context, in AuditExportTaskC
 		},
 	})
 
-	go s.runExportTaskInBackground(context.Background(), taskID)
+	_ = background.RunOrSchedule(ctx, global.BackgroundTaskManager(), "audit_export_"+taskID, func(runCtx context.Context) error {
+		s.runExportTaskInBackground(runCtx, taskID)
+		return nil
+	})
 
 	return &AuditExportTaskStatus{TaskID: taskID, Status: model.AuditExportStatusPending}, nil
 }
