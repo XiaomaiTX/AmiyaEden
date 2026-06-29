@@ -1990,11 +1990,21 @@
     journalReason: '原因',
     members: '成员统计',
     recordCount: '记录数',
+    userDisplayName: '用户昵称',
+    characterCount: '角色数',
+    filters: {
+      refTypes: '收入类型',
+      solarSystemIds: '星系 ID',
+      userIds: '用户 ID',
+      characterIds: '人物 ID',
+      minAmount: '最小金额',
+      maxAmount: '最大金额',
+    },
     refTypes: {
       bounty_prizes: '赏金',
       ess_escrow_transfer: 'ESS 托管转账',
-      shop_purchase: '商城购买',
-      shop_refund: '商城退款',
+      incursion_payout: '入侵奖励',
+      agent_mission_reward: '任务奖励',
     },
   },
   corporationStructures: {

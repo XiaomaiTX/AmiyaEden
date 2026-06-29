@@ -36,6 +36,71 @@
           {{ $t('npcKill.search') }}
         </ElButton>
         <ElButton @click="handleReset">{{ $t('npcKill.reset') }}</ElButton>
+        <ElSelect
+          v-model="selectedRefTypes"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          :placeholder="$t('npcKill.filters.refTypes')"
+          style="width: 260px"
+        >
+          <ElOption
+            v-for="option in refTypeOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </ElSelect>
+        <ElSelect
+          v-model="solarSystemIdInputs"
+          multiple
+          filterable
+          allow-create
+          default-first-option
+          collapse-tags
+          collapse-tags-tooltip
+          :reserve-keyword="false"
+          :placeholder="$t('npcKill.filters.solarSystemIds')"
+          style="width: 260px"
+        />
+        <ElSelect
+          v-model="userIdInputs"
+          multiple
+          filterable
+          allow-create
+          default-first-option
+          collapse-tags
+          collapse-tags-tooltip
+          :reserve-keyword="false"
+          :placeholder="$t('npcKill.filters.userIds')"
+          style="width: 220px"
+        />
+        <ElSelect
+          v-model="characterIdInputs"
+          multiple
+          filterable
+          allow-create
+          default-first-option
+          collapse-tags
+          collapse-tags-tooltip
+          :reserve-keyword="false"
+          :placeholder="$t('npcKill.filters.characterIds')"
+          style="width: 220px"
+        />
+        <ElInputNumber
+          v-model="minAmount"
+          :placeholder="$t('npcKill.filters.minAmount')"
+          :min="0"
+          :controls="false"
+          style="width: 180px"
+        />
+        <ElInputNumber
+          v-model="maxAmount"
+          :placeholder="$t('npcKill.filters.maxAmount')"
+          :min="0"
+          :controls="false"
+          style="width: 180px"
+        />
       </div>
     </ElCard>
 
@@ -201,17 +266,25 @@
 </template>
 
 <script setup lang="ts">
-  import { ElDatePicker, ElOption, ElSelect } from 'element-plus'
+  import { ElDatePicker, ElOption, ElSelect, ElInputNumber } from 'element-plus'
   import { fetchCorpNpcKills } from '@/api/npc-kill'
   import { formatIskPlain } from '@/utils/common'
+  import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'CorpNpcKillReport' })
 
+  const { t } = useI18n()
   const defaultTickers = ['FUXI', 'FMA.1']
 
   // ─── 状态 ───
   const dateRange = ref<[string, string] | null>(null)
   const corpTickers = ref<string[]>([...defaultTickers])
+  const selectedRefTypes = ref<string[]>([])
+  const solarSystemIdInputs = ref<string[]>([])
+  const userIdInputs = ref<string[]>([])
+  const characterIdInputs = ref<string[]>([])
+  const minAmount = ref<number | undefined>()
+  const maxAmount = ref<number | undefined>()
   const reportData = ref<Api.NpcKill.NpcKillCorpResponse | null>(null)
   const loading = ref(false)
   const corpTickerOptions = computed(() =>
@@ -222,6 +295,17 @@
       ])
     )
   )
+  const REF_TYPE_CONFIG: Record<string, string> = {
+    bounty_prizes: 'npcKill.refTypes.bounty_prizes',
+    ess_escrow_transfer: 'npcKill.refTypes.ess_escrow_transfer',
+    incursion_payout: 'npcKill.refTypes.incursion_payout',
+    agent_mission_reward: 'npcKill.refTypes.agent_mission_reward'
+  }
+  const refTypeOptions = computed(() =>
+    Object.keys(REF_TYPE_CONFIG).map((value) => ({ value, label: t(REF_TYPE_CONFIG[value]) }))
+  )
+  const parseNumericInputs = (values: string[]) =>
+    values.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)
 
   // ─── 加载数据 ───
   const loadData = async () => {
@@ -239,6 +323,23 @@
       if (corpTickerParam) {
         params.corp_tickers = corpTickerParam
       }
+      const solarSystemIds = parseNumericInputs(solarSystemIdInputs.value)
+      const userIds = parseNumericInputs(userIdInputs.value)
+      const characterIds = parseNumericInputs(characterIdInputs.value)
+      if (selectedRefTypes.value.length > 0) {
+        params.ref_types = [...selectedRefTypes.value]
+      }
+      if (solarSystemIds.length > 0) {
+        params.solar_system_ids = solarSystemIds
+      }
+      if (userIds.length > 0) {
+        params.user_ids = userIds
+      }
+      if (characterIds.length > 0) {
+        params.character_ids = characterIds
+      }
+      params.min_amount = minAmount.value
+      params.max_amount = maxAmount.value
       reportData.value = (await fetchCorpNpcKills(params)) ?? null
     } catch {
       reportData.value = null
@@ -254,6 +355,12 @@
   const handleReset = () => {
     dateRange.value = null
     corpTickers.value = [...defaultTickers]
+    selectedRefTypes.value = []
+    solarSystemIdInputs.value = []
+    userIdInputs.value = []
+    characterIdInputs.value = []
+    minAmount.value = undefined
+    maxAmount.value = undefined
     loadData()
   }
 

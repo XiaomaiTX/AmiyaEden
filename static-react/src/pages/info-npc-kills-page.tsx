@@ -13,6 +13,13 @@ type DateRangeState = {
   endDate: string
 }
 
+type FilterState = {
+  refTypes: string[]
+  solarSystemIds: string
+  minAmount: string
+  maxAmount: string
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
 }
@@ -36,12 +43,48 @@ export function InfoNpcKillsPage() {
   const [selectedCharacterId, setSelectedCharacterId] = useState(0)
   const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
   const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
+  const [draftFilters, setDraftFilters] = useState<FilterState>({
+    refTypes: [],
+    solarSystemIds: '',
+    minAmount: '',
+    maxAmount: '',
+  })
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+    refTypes: [],
+    solarSystemIds: '',
+    minAmount: '',
+    maxAmount: '',
+  })
   const [reportData, setReportData] = useState<NpcKillResponse | null>(null)
+  const refTypeOptions = [
+    'bounty_prizes',
+    'ess_escrow_transfer',
+    'incursion_payout',
+    'agent_mission_reward',
+  ]
   const formatRefTypeLabel = (refType: string) =>
     ({
       bounty_prizes: t('npcKill.refTypes.bounty_prizes'),
       ess_escrow_transfer: t('npcKill.refTypes.ess_escrow_transfer'),
+      incursion_payout: t('npcKill.refTypes.incursion_payout'),
+      agent_mission_reward: t('npcKill.refTypes.agent_mission_reward'),
     }[refType] ?? refType)
+  const parseIdList = (value: string) =>
+    value
+      .split(',')
+      .map((item) => Number(item.trim()))
+      .filter((item) => Number.isInteger(item) && item > 0)
+  const buildFilterPayload = (filters: FilterState) => {
+    const solarSystemIds = parseIdList(filters.solarSystemIds)
+    const minAmount = filters.minAmount === '' ? undefined : Number(filters.minAmount)
+    const maxAmount = filters.maxAmount === '' ? undefined : Number(filters.maxAmount)
+    return {
+      ref_types: filters.refTypes.length > 0 ? filters.refTypes : undefined,
+      solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
+      min_amount: Number.isFinite(minAmount) ? minAmount : undefined,
+      max_amount: Number.isFinite(maxAmount) ? maxAmount : undefined,
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -83,6 +126,7 @@ export function InfoNpcKillsPage() {
         const payload = {
           start_date: appliedDateRange.startDate || undefined,
           end_date: appliedDateRange.endDate || undefined,
+          ...buildFilterPayload(appliedFilters),
         }
 
         const data =
@@ -112,18 +156,22 @@ export function InfoNpcKillsPage() {
     return () => {
       cancelled = true
     }
-  }, [appliedDateRange, selectedCharacterId, t])
+  }, [appliedDateRange, appliedFilters, selectedCharacterId, t])
 
   const loading = characterLoading || reportLoading
 
   const handleSearch = () => {
     setAppliedDateRange({ ...draftDateRange })
+    setAppliedFilters({ ...draftFilters })
   }
 
   const handleReset = () => {
     const emptyRange = { startDate: '', endDate: '' }
+    const emptyFilters = { refTypes: [], solarSystemIds: '', minAmount: '', maxAmount: '' }
     setDraftDateRange(emptyRange)
     setAppliedDateRange(emptyRange)
+    setDraftFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
   }
 
   return (
@@ -180,6 +228,60 @@ export function InfoNpcKillsPage() {
             <Button type="button" variant="outline" onClick={handleReset}>
               {t('npcKill.reset')}
             </Button>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.refTypes')}</span>
+              <select
+                multiple
+                className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={draftFilters.refTypes}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    refTypes: Array.from(event.target.selectedOptions, (option) => option.value),
+                  }))
+                }
+              >
+                {refTypeOptions.map((refType) => (
+                  <option key={refType} value={refType}>
+                    {formatRefTypeLabel(refType)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.solarSystemIds')}</span>
+              <Input
+                value={draftFilters.solarSystemIds}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, solarSystemIds: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.minAmount')}</span>
+              <Input
+                type="number"
+                min="0"
+                value={draftFilters.minAmount}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, minAmount: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.maxAmount')}</span>
+              <Input
+                type="number"
+                min="0"
+                value={draftFilters.maxAmount}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, maxAmount: event.target.value }))
+                }
+              />
+            </label>
           </div>
         </div>
       </div>

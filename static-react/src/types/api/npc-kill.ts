@@ -2,29 +2,55 @@ export interface NpcKillRequest {
   character_id: number
   start_date?: string
   end_date?: string
+  ref_types?: string[]
+  solar_system_ids?: number[]
+  character_ids?: number[]
+  user_ids?: number[]
+  min_amount?: number
+  max_amount?: number
 }
 
 export interface NpcKillAllRequest {
   start_date?: string
   end_date?: string
+  ref_types?: string[]
+  solar_system_ids?: number[]
+  character_ids?: number[]
+  user_ids?: number[]
+  min_amount?: number
+  max_amount?: number
 }
 
 export interface NpcKillCorpRequest {
   start_date?: string
   end_date?: string
+  corp_tickers?: string
+  ref_types?: string[]
+  solar_system_ids?: number[]
+  character_ids?: number[]
+  user_ids?: number[]
+  min_amount?: number
+  max_amount?: number
 }
 
 export interface NpcKillSummary {
   total_bounty: number
+  total_ess: number
+  total_incursion: number
+  total_mission: number
   total_tax: number
   actual_income: number
   total_records: number
 }
 
 export interface NpcKillMemberItem {
-  character_id: number
-  character_name: string
+  user_id: number
+  display_name: string
+  character_count: number
   total_bounty: number
+  total_ess: number
+  total_incursion: number
+  total_mission: number
   total_tax: number
   actual_income: number
   record_count: number
