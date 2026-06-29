@@ -533,6 +533,13 @@ source_of_truth:
 
 - 在该函数中请求 ESI。
 
+> 顶层 `item` 类型位置的特殊处理：资产数据中 `location_type=item` 且
+> `location_id` 不在任何资产行 `item_id` 列的位置是顶层位置，可能是玩家建筑
+> （Upwell Structure 等大型 ID）。解析这类位置时优先查 `eve_structures` 缓存，命中建筑名
+> 则返回建筑名并把展示用 `location_type` 规范为 `structure`，未命中再走容器
+> 位置逻辑（`asset_name` → SDE `type_name` → `Item-<id>`）。建筑缓存读取
+> 不按 `update_at` 做新鲜度过滤，资产页应优先展示已有建筑名，即使缓存较旧。
+
 ### 3.5 缺失位置名补全改成异步入口
 
 建议新增后台补全能力：

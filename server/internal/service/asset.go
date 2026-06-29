@@ -392,15 +392,20 @@ func (s *AssetService) GetUserAssetLocations(userID uint, req *AssetLocationsReq
 			itemIDs = append(itemIDs, row.LocationID)
 		}
 	}
-	itemNameMap := s.resolveItemLocationNamesLocal(charIDs, itemIDs, req.Language)
+	// 顶层 item 位置可能是玩家建筑：优先查 eve_structures，命中后位置类型规约为 structure
+	itemNameMap, itemResolvedAsStructure := s.resolveTopLevelItemLocationNamesLocal(charIDs, itemIDs, req.Language)
 
 	enrichedList := make([]enriched, len(allSummaries))
 	for i, row := range allSummaries {
 		var name string
+		locType := row.LocationType
 		if row.LocationType == "item" {
 			name = itemNameMap[row.LocationID]
 			if name == "" {
 				name = fmt.Sprintf("Item-%d", row.LocationID)
+			}
+			if _, isStructure := itemResolvedAsStructure[row.LocationID]; isStructure {
+				locType = "structure"
 			}
 		} else {
 			name = s.resolveLocationNameLocal(row.LocationID, row.LocationType)
@@ -408,7 +413,7 @@ func (s *AssetService) GetUserAssetLocations(userID uint, req *AssetLocationsReq
 		enrichedList[i] = enriched{
 			AssetLocationSummary: AssetLocationSummary{
 				LocationID:     row.LocationID,
-				LocationType:   row.LocationType,
+				LocationType:   locType,
 				LocationName:   name,
 				TopLevelCount:  row.TopLevelCount,
 				RootItemCount:  row.RootItemCount,
@@ -541,7 +546,8 @@ func (s *AssetService) GetUserAssetLocationItems(userID uint, req *AssetLocation
 	var locationName string
 	switch locationType {
 	case "item":
-		locationName = s.resolveItemLocationNameLocal(charIDs, req.LocationID, req.Language)
+		// 顶层 item 位置可能是玩家建筑：优先查 eve_structures，命中后展示建筑名
+		locationName, _ = s.resolveTopLevelItemLocationNameLocal(charIDs, req.LocationID, req.Language)
 	default:
 		locationName = s.resolveLocationNameLocal(req.LocationID, locationType)
 	}
@@ -711,6 +717,71 @@ func (s *AssetService) resolveItemLocationNameLocal(charIDs []int64, itemID int6
 	}
 
 	return fmt.Sprintf("Item-%d", itemID)
+}
+
+// resolveTopLevelItemLocationNameLocal 解析顶层 item 类型位置的位置名。
+//
+// 资产数据里 location_type=item 且 location_id 不出现在任何资产行的 item_id
+// 列时，该位置是顶层位置而非容器。它可能是玩家建筑（Citadel 等大型 ID），
+// 也可能是孤立物品。解析顺序固定为：
+//  1. 先查 eve_structures 建筑缓存，命中则返回建筑名，并把位置类型规约为 structure
+//  2. 未命中再走容器/嵌套资产逻辑：asset_name → SDE type_name → Item-<id>
+//
+// 返回解析出的名称；当命中建筑缓存时 ok=true，调用方据此把响应里的
+// location_type 规范为 "structure"。
+func (s *AssetService) resolveTopLevelItemLocationNameLocal(charIDs []int64, locationID int64, language string) (name string, ok bool) {
+	structure, err := s.assetRepo.GetStructureByID(locationID)
+	if err == nil && structure != nil && structure.StructureName != "" {
+		return structure.StructureName, true
+	}
+	return s.resolveItemLocationNameLocal(charIDs, locationID, language), false
+}
+
+// resolveTopLevelItemLocationNamesLocal 批量解析顶层 item 类型位置的位置名。
+//
+// 与单条版本 resolveTopLevelItemLocationNameLocal 的解析顺序一致：
+//  1. 批量查 eve_structures 建筑缓存，命中的位置返回建筑名并标记为结构
+//  2. 剩余未命中的位置走 resolveItemLocationNamesLocal 的容器/嵌套资产逻辑
+//
+// structures 返回所有命中建筑缓存、应把 location_type 规范为 "structure" 的 location_id。
+func (s *AssetService) resolveTopLevelItemLocationNamesLocal(
+	charIDs []int64,
+	locationIDs []int64,
+	language string,
+) (names map[int64]string, structures map[int64]struct{}) {
+	names = make(map[int64]string, len(locationIDs))
+	structures = make(map[int64]struct{})
+	if len(locationIDs) == 0 {
+		return names, structures
+	}
+
+	// 1. 批量查建筑缓存
+	cached, err := s.assetRepo.GetStructuresByIDs(locationIDs)
+	if err == nil {
+		for i := range cached {
+			st := &cached[i]
+			if st.StructureName == "" {
+				continue
+			}
+			names[st.StructureID] = st.StructureName
+			structures[st.StructureID] = struct{}{}
+		}
+	}
+
+	// 2. 剩余未命中的位置走容器/嵌套资产逻辑
+	remaining := make([]int64, 0, len(locationIDs))
+	for _, id := range locationIDs {
+		if _, ok := names[id]; !ok {
+			remaining = append(remaining, id)
+		}
+	}
+	if len(remaining) > 0 {
+		for id, n := range s.resolveItemLocationNamesLocal(charIDs, remaining, language) {
+			names[id] = n
+		}
+	}
+
+	return names, structures
 }
 
 // resolveItemLocationNamesLocal 批量解析 item 类型的位置名。

@@ -301,12 +301,33 @@ func (r *AssetRepository) GetAssetsByCharacterIDs(characterIDs []int64) ([]model
 //  位置名缓存查询
 // ─────────────────────────────────────────────
 
-// GetStructureByID 根据建筑 ID 获取建筑信息（15天内更新的）
+// GetStructureByID 根据建筑 ID 获取建筑信息。
+//
+// 资产页需要展示已有建筑名，即使缓存较旧也要返回，因此读取时不按
+// update_at 做新鲜度过滤；需要“新鲜缓存”语义的调用方请用 GetFreshStructureByID。
 func (r *AssetRepository) GetStructureByID(structureID int64) (*model.EveStructure, error) {
+	var s model.EveStructure
+	err := global.DB.Where("structure_id = ?", structureID).First(&s).Error
+	return &s, err
+}
+
+// GetFreshStructureByID 根据建筑 ID 获取近 15 天内更新过的建筑信息。
+// 仅供需要“新鲜缓存”语义的场景使用；资产展示请用 GetStructureByID。
+func (r *AssetRepository) GetFreshStructureByID(structureID int64) (*model.EveStructure, error) {
 	var s model.EveStructure
 	fifteenDaysAgo := time.Now().Add(-15 * 24 * time.Hour).Unix()
 	err := global.DB.Where("structure_id = ? AND update_at > ?", structureID, fifteenDaysAgo).First(&s).Error
 	return &s, err
+}
+
+// GetStructuresByIDs 批量根据建筑 ID 获取建筑信息（不按 update_at 过滤，资产展示用）。
+func (r *AssetRepository) GetStructuresByIDs(structureIDs []int64) ([]model.EveStructure, error) {
+	if len(structureIDs) == 0 {
+		return nil, nil
+	}
+	var structures []model.EveStructure
+	err := global.DB.Where("structure_id IN ?", structureIDs).Find(&structures).Error
+	return structures, err
 }
 
 // GetStationByID 根据空间站 ID 获取空间站信息
