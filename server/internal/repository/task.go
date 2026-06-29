@@ -144,16 +144,23 @@ func (r *TaskRepository) GetLastExecutions(taskNames []string) (map[string]*mode
 		return map[string]*model.TaskExecution{}, nil
 	}
 
+	rankedExecutions := r.dbOrGlobal().
+		Table("task_executions AS te").
+		Select(`
+			te.*,
+			ROW_NUMBER() OVER (
+				PARTITION BY te.task_name
+				ORDER BY te.started_at DESC, te.id DESC
+			) AS row_num
+		`).
+		Where("te.task_name IN ?", taskNames)
+
 	var executions []model.TaskExecution
 	err := r.dbOrGlobal().
-		Table("task_executions AS te").
-		Select("te.*").
-		Joins(
-			`LEFT JOIN task_executions AS newer ON newer.task_name = te.task_name AND (newer.started_at > te.started_at OR (newer.started_at = te.started_at AND newer.id > te.id))`,
-		).
-		Where("te.task_name IN ?", taskNames).
-		Where("newer.id IS NULL").
-		Order("te.task_name ASC").
+		Table("(?) AS ranked", rankedExecutions).
+		Select("ranked.*").
+		Where("ranked.row_num = 1").
+		Order("ranked.task_name ASC").
 		Find(&executions).Error
 	if err != nil {
 		return nil, err
