@@ -79,7 +79,7 @@ func TestNpcKillRepositoryListJournalsAppliesFilters(t *testing.T) {
 	base := time.Date(2026, 6, 24, 12, 0, 0, 0, time.UTC)
 	rows := []model.EVECharacterWalletJournal{
 		{ID: 1, CharacterID: 1001, RefType: "bounty_prizes", ContextID: 30000142, Date: base, Amount: 100, Tax: -10},
-		{ID: 2, CharacterID: 1001, RefType: "incursion_payout", ContextID: 0, Date: base.Add(time.Minute), Amount: 40000000, Tax: 0},
+		{ID: 2, CharacterID: 1001, RefType: "corporate_reward_payout", ContextID: 0, Date: base.Add(time.Minute), Amount: 40000000, Tax: 0},
 		{ID: 3, CharacterID: 1002, RefType: "bounty_prizes", ContextID: 30000143, Date: base.Add(2 * time.Minute), Amount: 200, Tax: -20},
 		{ID: 4, CharacterID: 1001, RefType: "agent_mission_reward", ContextID: 0, Date: base.Add(3 * time.Minute), Amount: 50, Tax: 0},
 	}
@@ -90,7 +90,7 @@ func TestNpcKillRepositoryListJournalsAppliesFilters(t *testing.T) {
 	repo := NewNpcKillRepository()
 	got, err := repo.ListJournals(NpcKillJournalQuery{
 		CharacterIDs: []int64{1001, 1002},
-		RefTypes:     []string{"incursion_payout"},
+		RefTypes:     []string{"corporate_reward_payout"},
 		MinAmount:    floatPtr(1000000),
 		MaxAmount:    floatPtr(50000000),
 	})

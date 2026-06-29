@@ -16,7 +16,7 @@ func NewNpcKillRepository() *NpcKillRepository {
 }
 
 // npcIncomeRefTypes 包含所有 NPC 来源收入的 ref_type
-var npcIncomeRefTypes = []string{"bounty_prizes", "ess_escrow_transfer", "incursion_payout", "agent_mission_reward"}
+var npcIncomeRefTypes = []string{"bounty_prizes", "ess_escrow_transfer", "corporate_reward_payout", "agent_mission_reward"}
 
 // NpcKillJournalQuery NPC 收入流水查询条件
 type NpcKillJournalQuery struct {

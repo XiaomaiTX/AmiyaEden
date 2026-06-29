@@ -44,7 +44,7 @@ func TestParseDateRange(t *testing.T) {
 	}
 }
 
-func TestCalcSummaryIncludesEssTransfersAndIncursionPayouts(t *testing.T) {
+func TestCalcSummaryIncludesEssTransfersAndCorporateRewardPayouts(t *testing.T) {
 	svc := NewNpcKillService()
 	base := time.Date(2026, 3, 27, 12, 0, 0, 0, time.UTC)
 
@@ -52,7 +52,7 @@ func TestCalcSummaryIncludesEssTransfersAndIncursionPayouts(t *testing.T) {
 		{ID: 1, RefType: "bounty_prizes", Amount: 100, Tax: -10, Date: base},
 		{ID: 2, RefType: "ess_escrow_transfer", Amount: 50, Tax: 0, Date: base.Add(time.Minute)},
 		{ID: 3, RefType: "bounty_prizes", Amount: 80, Tax: -8, Date: base.Add(2 * time.Minute)},
-		{ID: 4, RefType: "incursion_payout", Amount: 40, Tax: 0, Date: base.Add(3 * time.Minute)},
+		{ID: 4, RefType: "corporate_reward_payout", Amount: 40, Tax: 0, Date: base.Add(3 * time.Minute)},
 	})
 
 	if summary.TotalBounty != 220 {
@@ -71,7 +71,7 @@ func TestCalcSummaryIncludesEssTransfersAndIncursionPayouts(t *testing.T) {
 		t.Fatalf("expected actual income 252 without double-counting incursion, got %v", summary.ActualIncome)
 	}
 	if summary.TotalRecords != 3 {
-		t.Fatalf("expected 3 bounty records including incursion, got %d", summary.TotalRecords)
+		t.Fatalf("expected 3 bounty records including corporate reward payout, got %d", summary.TotalRecords)
 	}
 }
 
@@ -206,7 +206,7 @@ func TestBuildCorpMemberSummariesByUser(t *testing.T) {
 		{CharacterID: 1002, RefType: "bounty_prizes", Amount: 50, Tax: -5},
 		{CharacterID: 1002, RefType: "ess_escrow_transfer", Amount: 20, Tax: 0},
 		{CharacterID: 2001, RefType: "bounty_prizes", Amount: 90, Tax: -9},
-		{CharacterID: 2001, RefType: "incursion_payout", Amount: 40, Tax: 0},
+		{CharacterID: 2001, RefType: "corporate_reward_payout", Amount: 40, Tax: 0},
 		{CharacterID: 2001, RefType: "agent_mission_reward", Amount: 10, Tax: 0},
 	}
 	charUserMap := map[int64]uint{
@@ -286,8 +286,8 @@ func TestBuildCorpMemberSummariesByUser(t *testing.T) {
 }
 
 func TestNpcKillFilterHelpers(t *testing.T) {
-	refTypes := normalizeNpcIncomeRefTypes([]string{"bounty_prizes", "bad", "incursion_payout", "bounty_prizes"})
-	if len(refTypes) != 2 || refTypes[0] != "bounty_prizes" || refTypes[1] != "incursion_payout" {
+	refTypes := normalizeNpcIncomeRefTypes([]string{"bounty_prizes", "bad", "corporate_reward_payout", "bounty_prizes"})
+	if len(refTypes) != 2 || refTypes[0] != "bounty_prizes" || refTypes[1] != "corporate_reward_payout" {
 		t.Fatalf("unexpected normalized ref types: %+v", refTypes)
 	}
 
@@ -299,5 +299,146 @@ func TestNpcKillFilterHelpers(t *testing.T) {
 	charIDs := filterAllowedCharacterIDs([]int64{1, 2, 3}, []int64{3, 9, 1})
 	if len(charIDs) != 2 || charIDs[0] != 1 || charIDs[1] != 3 {
 		t.Fatalf("unexpected filtered character IDs: %+v", charIDs)
+	}
+}
+
+func TestCalcTrendAndJournalsIncludeCorporateRewardPayoutButNotNpcSystemStats(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(t, "npc-kill-corporate-reward", &model.SystemConfig{}, &model.SdeVersion{}, &model.MapSolarSystem{})
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	svc := NewNpcKillService()
+	base := time.Date(2026, 3, 27, 12, 0, 0, 0, time.UTC)
+	journals := []model.EVECharacterWalletJournal{
+		{ID: 1, CharacterID: 1001, RefType: "bounty_prizes", ContextID: 30000142, Reason: "123: 2", Amount: 100, Tax: -10, Date: base},
+		{ID: 2, CharacterID: 1001, RefType: "corporate_reward_payout", ContextID: 0, Reason: "", Amount: 40, Tax: 0, Date: base.Add(time.Minute)},
+	}
+
+	byNpc := svc.calcByNpc(journals, "zh")
+	if len(byNpc) != 1 || byNpc[0].NpcID != 123 || byNpc[0].Count != 2 {
+		t.Fatalf("expected only bounty_prizes to affect npc stats, got %+v", byNpc)
+	}
+
+	bySystem := svc.calcBySystem(journals)
+	if len(bySystem) != 1 || bySystem[0].SolarSystemID != 30000142 || bySystem[0].Count != 1 || bySystem[0].Amount != 100 {
+		t.Fatalf("expected only bounty_prizes to affect system stats, got %+v", bySystem)
+	}
+
+	trend := svc.calcTrend(journals)
+	if len(trend) != 1 {
+		t.Fatalf("expected trend to aggregate bounty_prizes and corporate_reward_payout on the same day, got %+v", trend)
+	}
+	if trend[0].Amount != 140 || trend[0].Count != 2 {
+		t.Fatalf("unexpected trend amounts: %+v", trend)
+	}
+
+	items := svc.buildJournalItems(journals, map[int64]string{1001: "Pilot One"})
+	if len(items) != 2 {
+		t.Fatalf("expected 2 journal items, got %+v", items)
+	}
+	if items[1].RefType != "corporate_reward_payout" {
+		t.Fatalf("expected second journal to be corporate_reward_payout, got %+v", items[1])
+	}
+	if items[1].SolarSystemName != "" || items[1].SolarSystemID != 0 {
+		t.Fatalf("expected corporate_reward_payout journal to omit solar system details, got %+v", items[1])
+	}
+}
+
+func TestGetAllNpcKillsAppliesCharacterAndRefTypeFilters(t *testing.T) {
+	global.SetLogger(zap.NewNop())
+
+	db := newServiceTestDB(
+		t,
+		"npc-kill-get-all",
+		&model.User{},
+		&model.EveCharacter{},
+		&model.EVECharacterWalletJournal{},
+		&model.MapSolarSystem{},
+		&model.SystemConfig{},
+		&model.SdeVersion{},
+	)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: 1}, Nickname: "Commander One", Role: "user"}).Error; err != nil {
+		t.Fatalf("seed user1: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{CharacterID: 1001, CharacterName: "Alpha Pilot", UserID: 1, CorporationID: 3001}).Error; err != nil {
+		t.Fatalf("seed char1001: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{CharacterID: 1002, CharacterName: "Beta Pilot", UserID: 1, CorporationID: 3001}).Error; err != nil {
+		t.Fatalf("seed char1002: %v", err)
+	}
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: 2}, Nickname: "Commander Two", Role: "user"}).Error; err != nil {
+		t.Fatalf("seed user2: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{CharacterID: 2001, CharacterName: "Gamma Pilot", UserID: 2, CorporationID: 3002}).Error; err != nil {
+		t.Fatalf("seed char2001: %v", err)
+	}
+	if err := db.Create(&model.MapSolarSystem{SolarSystemID: 30000143, SolarSystemName: "Beta System"}).Error; err != nil {
+		t.Fatalf("seed solar system: %v", err)
+	}
+
+	base := time.Date(2026, 3, 27, 12, 0, 0, 0, time.UTC)
+	journals := []model.EVECharacterWalletJournal{
+		{ID: 1, CharacterID: 1001, RefType: "bounty_prizes", ContextID: 30000142, Reason: "123: 1", Amount: 100, Tax: -10, Date: base},
+		{ID: 2, CharacterID: 1002, RefType: "bounty_prizes", ContextID: 30000143, Reason: "456: 2", Amount: 60, Tax: -6, Date: base.Add(time.Minute)},
+		{ID: 3, CharacterID: 1002, RefType: "corporate_reward_payout", ContextID: 0, Reason: "", Amount: 40, Tax: 0, Date: base.Add(2 * time.Minute)},
+		{ID: 4, CharacterID: 2001, RefType: "bounty_prizes", ContextID: 30000142, Reason: "999: 9", Amount: 999, Tax: -99, Date: base.Add(3 * time.Minute)},
+	}
+	if err := db.Create(&journals).Error; err != nil {
+		t.Fatalf("seed journals: %v", err)
+	}
+
+	svc := NewNpcKillService()
+	resp, err := svc.GetAllNpcKills(1, &NpcKillAllRequest{
+		StartDate:    "2026-03-27",
+		EndDate:      "2026-03-27",
+		Language:     "zh",
+		CharacterIDs: []int64{1002, 9999},
+		UserIDs:      []uint{1},
+		RefTypes:     []string{"bounty_prizes", "corporate_reward_payout"},
+	})
+	if err != nil {
+		t.Fatalf("GetAllNpcKills returned error: %v", err)
+	}
+
+	if resp.Summary.TotalBounty != 100 {
+		t.Fatalf("summary total_bounty = %v, want 100", resp.Summary.TotalBounty)
+	}
+	if resp.Summary.TotalIncursion != 40 {
+		t.Fatalf("summary total_incursion = %v, want 40", resp.Summary.TotalIncursion)
+	}
+	if resp.Summary.TotalTax != -6 {
+		t.Fatalf("summary total_tax = %v, want -6", resp.Summary.TotalTax)
+	}
+	if resp.Summary.ActualIncome != 94 {
+		t.Fatalf("summary actual_income = %v, want 94", resp.Summary.ActualIncome)
+	}
+	if resp.Summary.TotalRecords != 2 {
+		t.Fatalf("summary total_records = %d, want 2", resp.Summary.TotalRecords)
+	}
+
+	if len(resp.ByNpc) != 1 || resp.ByNpc[0].NpcID != 456 || resp.ByNpc[0].Count != 2 {
+		t.Fatalf("unexpected by_npc result: %+v", resp.ByNpc)
+	}
+	if len(resp.BySystem) != 1 || resp.BySystem[0].SolarSystemID != 30000143 || resp.BySystem[0].Count != 1 || resp.BySystem[0].Amount != 60 {
+		t.Fatalf("unexpected by_system result: %+v", resp.BySystem)
+	}
+	if len(resp.Trend) != 1 || resp.Trend[0].Amount != 100 || resp.Trend[0].Count != 2 {
+		t.Fatalf("unexpected trend result: %+v", resp.Trend)
+	}
+	if len(resp.Journals) != 2 {
+		t.Fatalf("expected 2 journals after filters, got %+v", resp.Journals)
+	}
+	if resp.Journals[0].CharacterName != "Beta Pilot" || resp.Journals[1].CharacterName != "Beta Pilot" {
+		t.Fatalf("expected filtered journals to include selected character name, got %+v", resp.Journals)
+	}
+	if resp.Journals[0].RefType != "corporate_reward_payout" || resp.Journals[1].RefType != "bounty_prizes" {
+		t.Fatalf("expected corporate_reward_payout to survive filters alongside bounty_prizes, got %+v", resp.Journals)
 	}
 }

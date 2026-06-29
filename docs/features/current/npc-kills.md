@@ -21,11 +21,11 @@ NPC 刷怪报表展示人物通过 PvE 活动获得的 NPC 来源收入，涵盖
 | 收入来源 | wallet journal ref_type | 说明 |
 | --- | --- | --- |
 | 标准刷怪悬赏 | `bounty_prizes` | 星域/星系 NPC 悬赏奖励，含可从 `reason` 解析 NPC 明细的 PvE 收入 |
-| 萨沙入侵奖励 | `incursion_payout` | 入侵活动军团奖励支付，按刷怪赏金口径并入总赏金和记录数 |
+| 萨沙入侵奖励 | `corporate_reward_payout` | 入侵活动军团奖励支付，按刷怪赏金口径并入总赏金和记录数 |
 | ESS 分账 | `ess_escrow_transfer` | 零空 ESS（紧急安全容器）到期结算转账 |
 | 任务奖励 | `agent_mission_reward` | 任务奖励，单独计入实际收入 |
 
-`bounty_prizes` 可通过流水 `reason` 字段中的 NPC ID 区分活动类型，体现在「按 NPC 统计」分组中。`incursion_payout` 不提供 NPC 击杀明细，因此只进入总览、趋势、成员排行和流水明细。
+`bounty_prizes` 可通过流水 `reason` 字段中的 NPC ID 区分活动类型，体现在「按 NPC 统计」分组中。`corporate_reward_payout` 不提供 NPC 击杀明细，因此只进入总览、趋势、成员排行和流水明细。当前仓库没有单独建模 `corporate_reward_tax` 流水，税额继续沿用 journal 的 `tax` 字段累计，不额外拆分重复口径。
 
 ## 当前能力
 
@@ -72,15 +72,15 @@ Request and response structures are defined in handler code and `static/src/type
 
 | 字段 | 计算方式 |
 | --- | --- |
-| `total_bounty` | 所有 `bounty_prizes` 与 `incursion_payout` 条目 `amount` 之和 |
+| `total_bounty` | 所有 `bounty_prizes` 与 `corporate_reward_payout` 条目 `amount` 之和 |
 | `total_ess` | 所有 `ess_escrow_transfer` 条目 `amount` 之和 |
-| `total_incursion` | 所有 `incursion_payout` 条目 `amount` 之和，仅作为明细字段保留 |
+| `total_incursion` | 所有 `corporate_reward_payout` 条目 `amount` 之和，仅作为明细字段保留 |
 | `total_mission` | 所有 `agent_mission_reward` 条目 `amount` 之和 |
 | `total_tax` | 所有条目 `tax` 之和（通常为负数） |
 | `actual_income` | `total_bounty + total_ess + total_mission + total_tax` |
-| `total_records` | `bounty_prizes` 与 `incursion_payout` 条目数 |
+| `total_records` | `bounty_prizes` 与 `corporate_reward_payout` 条目数 |
 
-`incursion_payout` 已并入 `total_bounty`，因此 `actual_income` 不再额外加 `total_incursion`，避免重复计算。
+`corporate_reward_payout` 已并入 `total_bounty`，因此 `actual_income` 不再额外加 `total_incursion`，避免重复计算。
 
 ### 按 NPC 统计（calcByNpc）
 
@@ -99,7 +99,7 @@ Request and response structures are defined in handler code and `static/src/type
 
 ### 趋势（calcTrend）
 
-统计 `bounty_prizes`、`incursion_payout` 与 `agent_mission_reward` 条目，按 `YYYY-MM-DD` 聚合每天的总金额和记录数，按日期升序排列。`ess_escrow_transfer` 不参与趋势。
+统计 `bounty_prizes`、`corporate_reward_payout` 与 `agent_mission_reward` 条目，按 `YYYY-MM-DD` 聚合每天的总金额和记录数，按日期升序排列。`ess_escrow_transfer` 不参与趋势。
 
 ### 多维度筛选
 
@@ -107,8 +107,8 @@ Request and response structures are defined in handler code and `static/src/type
 
 | 字段 | 说明 |
 | --- | --- |
-| `ref_types` | 收入类型白名单，可选 `bounty_prizes`、`ess_escrow_transfer`、`incursion_payout`、`agent_mission_reward` |
-| `solar_system_ids` | 星系 ID 列表，仅匹配 `bounty_prizes.context_id`，因此会排除无星系上下文的入侵、ESS 和任务奖励 |
+| `ref_types` | 收入类型白名单，可选 `bounty_prizes`、`ess_escrow_transfer`、`corporate_reward_payout`、`agent_mission_reward` |
+| `solar_system_ids` | 星系 ID 列表，仅匹配 `bounty_prizes.context_id`，因此会排除无星系上下文的 `corporate_reward_payout`、ESS 和任务奖励 |
 | `character_ids` | 人物 ID 列表；个人全人物接口会限制在当前用户人物内，公司接口会限制在军团 ticker 过滤后的已绑定人物内 |
 | `user_ids` | 用户 ID 列表；个人接口只允许当前用户，公司接口限制在可见人物对应用户内 |
 | `min_amount` / `max_amount` | 按流水 `amount` 做闭区间过滤 |
@@ -119,7 +119,7 @@ Request and response structures are defined in handler code and `static/src/type
 
 | 字段 | 说明 |
 | --- | --- |
-| `ref_type` | `bounty_prizes`、`incursion_payout`、`ess_escrow_transfer` 或 `agent_mission_reward` |
+| `ref_type` | `bounty_prizes`、`corporate_reward_payout`、`ess_escrow_transfer` 或 `agent_mission_reward` |
 | `amount` | 本次收入金额（正数） |
 | `tax` | 扣税金额（通常为负数） |
 | `solar_system_name` | 仅 `bounty_prizes` 有值（来自 context_id） |
@@ -130,7 +130,7 @@ Request and response structures are defined in handler code and `static/src/type
 
 ### 个人页面
 
-1. 人物选择器（下拉，含头像）+ 「所有人物」选项 + 日期范围选择 + 收入类型 / 星系 ID / 金额范围筛选
+1. 人物选择器（下拉，含头像）+ 「所有人物」选项 + 日期范围选择 + 收入类型 / 星系 ID / 人物 ID / 用户 ID / 金额范围筛选
 2. 4 卡片总览：总悬赏 / 总税金 / 实际收入 / 记录数
 3. 双列布局：按 NPC 统计表 + 按星系统计表
 4. 时间趋势表（有数据时显示）
@@ -146,13 +146,14 @@ Request and response structures are defined in handler code and `static/src/type
 
 ## 关键不变量
 
-- `bounty_prizes`、`incursion_payout`、`ess_escrow_transfer` 和 `agent_mission_reward` 是唯一参与计算的 ref_type，其余钱包类型不纳入
-- `incursion_payout` 并入 `total_bounty` 和记录数，但 `total_incursion` 不重复计入 `actual_income`
+- `bounty_prizes`、`corporate_reward_payout`、`ess_escrow_transfer` 和 `agent_mission_reward` 是唯一参与计算的 ref_type，其余钱包类型不纳入
+- `corporate_reward_payout` 并入 `total_bounty` 和记录数，但 `total_incursion` 不重复计入 `actual_income`
 - 税金（`tax` 字段）为负数，参与实际收入计算时相当于扣减
+- 当前仓库未单独拆分 `corporate_reward_tax` 流水；如果后续接入该 ref_type，需要重新评估是否按独立税项口径入账，避免和 `tax` 字段重复
 - 公司成员排行按系统用户聚合，不再按单角色聚合
 - 公司成员显示名优先 `user.nickname`，为空时回退为该用户本次统计内角色名字典序首个名称
-- 星系统计仅基于 `bounty_prizes`，ESS、入侵和任务奖励不带可靠星系上下文
-- 趋势统计包含 `bounty_prizes`、`incursion_payout` 和 `agent_mission_reward`
+- 星系统计仅基于 `bounty_prizes`，`corporate_reward_payout`、ESS 和任务奖励不带可靠星系上下文
+- 趋势统计包含 `bounty_prizes`、`corporate_reward_payout` 和 `agent_mission_reward`
 - 个人接口强制校验人物归属，不可跨用户查询
 - 公司接口只涵盖当前已绑定有效 token 的人物
 

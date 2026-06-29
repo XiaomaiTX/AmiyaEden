@@ -20,6 +20,30 @@ type FilterState = {
   maxAmount: string
 }
 
+function parseIdList(value: string) {
+  return value
+    .split(',')
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isInteger(item) && item > 0)
+}
+
+function buildNpcKillFilterPayload(filters: FilterState) {
+  const solarSystemIds = parseIdList(filters.solarSystemIds)
+  const userIds = parseIdList(filters.userIds)
+  const characterIds = parseIdList(filters.characterIds)
+  const minAmount = filters.minAmount === '' ? undefined : Number(filters.minAmount)
+  const maxAmount = filters.maxAmount === '' ? undefined : Number(filters.maxAmount)
+
+  return {
+    ref_types: filters.refTypes.length > 0 ? filters.refTypes : undefined,
+    solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
+    user_ids: userIds.length > 0 ? userIds : undefined,
+    character_ids: characterIds.length > 0 ? characterIds : undefined,
+    min_amount: Number.isFinite(minAmount) ? minAmount : undefined,
+    max_amount: Number.isFinite(maxAmount) ? maxAmount : undefined,
+  }
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
 }
@@ -38,8 +62,14 @@ export function DashboardNpcKillsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reportData, setReportData] = useState<NpcKillCorpResponse | null>(null)
-  const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
+  const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({
+    startDate: '',
+    endDate: '',
+  })
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({
+    startDate: '',
+    endDate: '',
+  })
   const [draftFilters, setDraftFilters] = useState<FilterState>({
     refTypes: [],
     solarSystemIds: '',
@@ -59,36 +89,16 @@ export function DashboardNpcKillsPage() {
   const refTypeOptions = [
     'bounty_prizes',
     'ess_escrow_transfer',
-    'incursion_payout',
+    'corporate_reward_payout',
     'agent_mission_reward',
   ]
   const formatRefTypeLabel = (refType: string) =>
     ({
       bounty_prizes: t('npcKill.refTypes.bounty_prizes'),
       ess_escrow_transfer: t('npcKill.refTypes.ess_escrow_transfer'),
-      incursion_payout: t('npcKill.refTypes.incursion_payout'),
+      corporate_reward_payout: t('npcKill.refTypes.corporate_reward_payout'),
       agent_mission_reward: t('npcKill.refTypes.agent_mission_reward'),
-    }[refType] ?? refType)
-  const parseIdList = (value: string) =>
-    value
-      .split(',')
-      .map((item) => Number(item.trim()))
-      .filter((item) => Number.isInteger(item) && item > 0)
-  const buildFilterPayload = (filters: FilterState) => {
-    const solarSystemIds = parseIdList(filters.solarSystemIds)
-    const userIds = parseIdList(filters.userIds)
-    const characterIds = parseIdList(filters.characterIds)
-    const minAmount = filters.minAmount === '' ? undefined : Number(filters.minAmount)
-    const maxAmount = filters.maxAmount === '' ? undefined : Number(filters.maxAmount)
-    return {
-      ref_types: filters.refTypes.length > 0 ? filters.refTypes : undefined,
-      solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
-      user_ids: userIds.length > 0 ? userIds : undefined,
-      character_ids: characterIds.length > 0 ? characterIds : undefined,
-      min_amount: Number.isFinite(minAmount) ? minAmount : undefined,
-      max_amount: Number.isFinite(maxAmount) ? maxAmount : undefined,
-    }
-  }
+    })[refType] ?? refType
 
   useEffect(() => {
     let cancelled = false
@@ -105,7 +115,7 @@ export function DashboardNpcKillsPage() {
         if (appliedDateRange.endDate) {
           payload.end_date = appliedDateRange.endDate
         }
-        Object.assign(payload, buildFilterPayload(appliedFilters))
+        Object.assign(payload, buildNpcKillFilterPayload(appliedFilters))
 
         const data = await fetchCorpNpcKills(payload)
         if (!cancelled) {
@@ -212,7 +222,9 @@ export function DashboardNpcKillsPage() {
               </select>
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.solarSystemIds')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.solarSystemIds')}
+              </span>
               <Input
                 value={draftFilters.solarSystemIds}
                 onChange={(event) =>
@@ -230,7 +242,9 @@ export function DashboardNpcKillsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.characterIds')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.characterIds')}
+              </span>
               <Input
                 value={draftFilters.characterIds}
                 onChange={(event) =>
@@ -239,7 +253,9 @@ export function DashboardNpcKillsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.minAmount')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.minAmount')}
+              </span>
               <Input
                 type="number"
                 min="0"
@@ -250,7 +266,9 @@ export function DashboardNpcKillsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.maxAmount')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.maxAmount')}
+              </span>
               <Input
                 type="number"
                 min="0"
@@ -266,7 +284,9 @@ export function DashboardNpcKillsPage() {
 
       {loading ? <p className="text-sm text-muted-foreground">{t('npcKill.loading')}</p> : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {!loading && !error && !reportData ? <p className="text-sm text-muted-foreground">{t('npcKill.noData')}</p> : null}
+      {!loading && !error && !reportData ? (
+        <p className="text-sm text-muted-foreground">{t('npcKill.noData')}</p>
+      ) : null}
 
       {reportData ? (
         <>
@@ -315,9 +335,15 @@ export function DashboardNpcKillsPage() {
                         <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
                         <td className="px-3 py-2">{member.display_name}</td>
                         <td className="px-3 py-2 text-right">{member.character_count}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(member.total_bounty)}</td>
-                        <td className="px-3 py-2 text-right text-destructive">{formatIskPlain(member.total_tax)}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(member.actual_income)}</td>
+                        <td className="px-3 py-2 text-right text-emerald-600">
+                          {formatIskPlain(member.total_bounty)}
+                        </td>
+                        <td className="px-3 py-2 text-right text-destructive">
+                          {formatIskPlain(member.total_tax)}
+                        </td>
+                        <td className="px-3 py-2 text-right text-emerald-600">
+                          {formatIskPlain(member.actual_income)}
+                        </td>
                         <td className="px-3 py-2 text-right">{member.record_count}</td>
                       </tr>
                     ))}
@@ -344,7 +370,9 @@ export function DashboardNpcKillsPage() {
                         <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
                         <td className="px-3 py-2">{system.solar_system_name}</td>
                         <td className="px-3 py-2 text-right">{system.count}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(system.amount)}</td>
+                        <td className="px-3 py-2 text-right text-emerald-600">
+                          {formatIskPlain(system.amount)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -368,7 +396,9 @@ export function DashboardNpcKillsPage() {
                   {reportData.trend.map((item) => (
                     <tr key={item.date} className="border-b">
                       <td className="px-3 py-2">{item.date}</td>
-                      <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(item.amount)}</td>
+                      <td className="px-3 py-2 text-right text-emerald-600">
+                        {formatIskPlain(item.amount)}
+                      </td>
                       <td className="px-3 py-2 text-right">{item.count}</td>
                     </tr>
                   ))}

@@ -69,6 +69,30 @@
             :placeholder="$t('npcKill.filters.solarSystemIds')"
             style="width: 260px"
           />
+          <ElSelect
+            v-model="userIdInputs"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            collapse-tags
+            collapse-tags-tooltip
+            :reserve-keyword="false"
+            :placeholder="$t('npcKill.filters.userIds')"
+            style="width: 220px"
+          />
+          <ElSelect
+            v-model="characterIdInputs"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            collapse-tags
+            collapse-tags-tooltip
+            :reserve-keyword="false"
+            :placeholder="$t('npcKill.filters.characterIds')"
+            style="width: 220px"
+          />
           <ElInputNumber
             v-model="minAmount"
             :placeholder="$t('npcKill.filters.minAmount')"
@@ -243,6 +267,8 @@
   const dateRange = ref<[string, string] | null>(null)
   const selectedRefTypes = ref<string[]>([])
   const solarSystemIdInputs = ref<string[]>([])
+  const userIdInputs = ref<string[]>([])
+  const characterIdInputs = ref<string[]>([])
   const minAmount = ref<number | undefined>()
   const maxAmount = ref<number | undefined>()
   const reportData = ref<Api.NpcKill.NpcKillResponse | null>(null)
@@ -251,7 +277,10 @@
   const REF_TYPE_CONFIG: Record<string, { type: string; text: string }> = {
     bounty_prizes: { type: 'success', text: t('npcKill.refTypes.bounty_prizes') },
     ess_escrow_transfer: { type: 'warning', text: t('npcKill.refTypes.ess_escrow_transfer') },
-    incursion_payout: { type: 'primary', text: t('npcKill.refTypes.incursion_payout') },
+    corporate_reward_payout: {
+      type: 'primary',
+      text: t('npcKill.refTypes.corporate_reward_payout')
+    },
     agent_mission_reward: { type: 'info', text: t('npcKill.refTypes.agent_mission_reward') }
   }
   const refTypeOptions = computed(() =>
@@ -259,15 +288,19 @@
   )
   const parseNumericInputs = (values: string[]) =>
     values.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)
-  const buildFilterPayload = () => ({
-    ref_types: selectedRefTypes.value.length > 0 ? [...selectedRefTypes.value] : undefined,
-    solar_system_ids:
-      parseNumericInputs(solarSystemIdInputs.value).length > 0
-        ? parseNumericInputs(solarSystemIdInputs.value)
-        : undefined,
-    min_amount: minAmount.value,
-    max_amount: maxAmount.value
-  })
+  const buildFilterPayload = () => {
+    const solarSystemIds = parseNumericInputs(solarSystemIdInputs.value)
+    const userIds = parseNumericInputs(userIdInputs.value)
+    const characterIds = parseNumericInputs(characterIdInputs.value)
+    return {
+      ref_types: selectedRefTypes.value.length > 0 ? [...selectedRefTypes.value] : undefined,
+      solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
+      user_ids: userIds.length > 0 ? userIds : undefined,
+      character_ids: characterIds.length > 0 ? characterIds : undefined,
+      min_amount: minAmount.value,
+      max_amount: maxAmount.value
+    }
+  }
 
   // ─── API 适配器 ───
   const fetchNpcKillList = async (params: {
@@ -416,6 +449,8 @@
     dateRange.value = null
     selectedRefTypes.value = []
     solarSystemIdInputs.value = []
+    userIdInputs.value = []
+    characterIdInputs.value = []
     minAmount.value = undefined
     maxAmount.value = undefined
     searchParams.start_date = undefined

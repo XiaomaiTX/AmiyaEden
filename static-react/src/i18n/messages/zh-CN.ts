@@ -708,7 +708,8 @@
       urlPlaceholder: '请输入 Webhook URL',
       template: '消息模板',
       templatePlaceholder: '请输入舰队消息模板',
-      templateHint: '可用变量：{title}、{fc_name}、{importance}、{pap_count}、{start_at}、{end_at}、{description}',
+      templateHint:
+        '可用变量：{title}、{fc_name}、{importance}、{pap_count}、{start_at}、{end_at}、{description}',
       obTargetType: 'OneBot 目标类型',
       obGroup: '群聊',
       obPrivate: '私聊',
@@ -779,7 +780,8 @@
       shipPlaceholder: '请输入舰船类型 ID',
       shipHint: '可选。选中的舰船图标会显示在技能计划列表中。',
       skillsText: '技能文本',
-      skillsTextPlaceholder: '每行一个技能，格式示例：\nGraviton Physics 5\nDoomsday Rapid Firing 5',
+      skillsTextPlaceholder:
+        '每行一个技能，格式示例：\nGraviton Physics 5\nDoomsday Rapid Firing 5',
       skillsTextGuide: '支持格式：技能名 + 空格 + 等级。',
       skillsTextHint: '等级可使用 1-5；重复技能会自动保留最高等级。',
       skill: '技能',
@@ -2003,7 +2005,7 @@
     refTypes: {
       bounty_prizes: '赏金',
       ess_escrow_transfer: 'ESS 托管转账',
-      incursion_payout: '入侵奖励',
+      corporate_reward_payout: '入侵奖励',
       agent_mission_reward: '任务奖励',
     },
   },

@@ -588,7 +588,8 @@
     detailTitle: 'Event Details',
     export: {
       unavailableTitle: 'Export Unavailable',
-      unavailableDescription: 'Backend export support stays in place, but the front end does not expose trigger or download controls yet.',
+      unavailableDescription:
+        'Backend export support stays in place, but the front end does not expose trigger or download controls yet.',
     },
     messages: {
       loading: 'Loading audit events...',
@@ -708,7 +709,8 @@
       urlPlaceholder: 'Enter the webhook URL',
       template: 'Message Template',
       templatePlaceholder: 'Enter the fleet message template',
-      templateHint: 'Available variables: {title}, {fc_name}, {importance}, {pap_count}, {start_at}, {end_at}, {description}',
+      templateHint:
+        'Available variables: {title}, {fc_name}, {importance}, {pap_count}, {start_at}, {end_at}, {description}',
       obTargetType: 'OneBot Target Type',
       obGroup: 'Group',
       obPrivate: 'Private',
@@ -746,7 +748,8 @@
   },
   skillPlan: {
     title: 'Corp Skill Plans',
-    subtitle: 'Maintain corp and personal skill plans, with detail, create, edit, delete, and ordering.',
+    subtitle:
+      'Maintain corp and personal skill plans, with detail, create, edit, delete, and ordering.',
     personalTitle: 'My Skill Plans',
     personalSubtitle: 'Maintain your personal skill plans.',
     create: 'Create Plan',
@@ -779,7 +782,8 @@
       shipPlaceholder: 'Enter ship type ID',
       shipHint: 'Optional. The selected ship icon will be shown in the plan list.',
       skillsText: 'Skill Text',
-      skillsTextPlaceholder: 'One skill per line, for example:\nGraviton Physics 5\nDoomsday Rapid Firing 5',
+      skillsTextPlaceholder:
+        'One skill per line, for example:\nGraviton Physics 5\nDoomsday Rapid Firing 5',
       skillsTextGuide: 'Supported format: skill name + space + level.',
       skillsTextHint: 'Levels may use 1-5. Duplicate skills keep the highest level automatically.',
       skill: 'Skill',
@@ -799,7 +803,8 @@
   },
   skillPlanCheck: {
     title: 'Check Completion',
-    subtitle: "Compare the selected characters' skills against the saved corp plans and review completion at a glance.",
+    subtitle:
+      "Compare the selected characters' skills against the saved corp plans and review completion at a glance.",
     selectCharacters: 'Select Characters',
     selectedCharacters: 'Selected Characters',
     noCharactersSelected: 'No characters selected yet',
@@ -1139,7 +1144,8 @@
   shopAdmin: {
     tabs: {
       orders: 'Order Management',
-      ordersSubtitle: 'When delivering orders, copy the order number into the contract note or transfer reason.',
+      ordersSubtitle:
+        'When delivering orders, copy the order number into the contract note or transfer reason.',
       orderHistory: 'Order History',
     },
     orders: {
@@ -2016,7 +2022,7 @@
     refTypes: {
       bounty_prizes: 'Bounty Prizes',
       ess_escrow_transfer: 'ESS Escrow Transfer',
-      incursion_payout: 'Incursion Payout',
+      corporate_reward_payout: 'Incursion Payout',
       agent_mission_reward: 'Mission Reward',
     },
   },
@@ -2311,7 +2317,8 @@
     submitBtn: 'Submit',
     submitError: 'Submission failed, please try again later',
     successTitle: 'Submitted Successfully',
-    successSubtitle: 'Thank you for your participation! Click the button below to join the QQ group',
+    successSubtitle:
+      'Thank you for your participation! Click the button below to join the QQ group',
     goToQQ: 'Join QQ Group',
   },
   feedback: {
