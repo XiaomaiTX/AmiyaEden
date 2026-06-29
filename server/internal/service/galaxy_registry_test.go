@@ -3,7 +3,6 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
-	"amiya-eden/pkg/eve/esi"
 	"context"
 	"errors"
 	"testing"
@@ -13,26 +12,17 @@ import (
 	"gorm.io/gorm"
 )
 
-type fakeGalaxyRegistryWalletExecutor struct {
-	execute func(ctx *esi.TaskContext) error
+type fakeGalaxyRegistryWalletTaskRunner struct {
+	runTask func(ctx context.Context, taskName string, characterID int64) error
+	calls   []int64
 }
 
-func (f fakeGalaxyRegistryWalletExecutor) Execute(ctx *esi.TaskContext) error {
-	if f.execute != nil {
-		return f.execute(ctx)
+func (f *fakeGalaxyRegistryWalletTaskRunner) RunTask(ctx context.Context, taskName string, characterID int64) error {
+	f.calls = append(f.calls, characterID)
+	if f.runTask != nil {
+		return f.runTask(ctx, taskName, characterID)
 	}
 	return nil
-}
-
-type fakeGalaxyRegistryTokenProvider struct {
-	getValidToken func(ctx context.Context, characterID int64) (string, error)
-}
-
-func (f fakeGalaxyRegistryTokenProvider) GetValidToken(ctx context.Context, characterID int64) (string, error) {
-	if f.getValidToken != nil {
-		return f.getValidToken(ctx, characterID)
-	}
-	return "fake-token", nil
 }
 
 func newGalaxyRegistryServiceTestDB(t *testing.T) *gorm.DB {
@@ -88,7 +78,52 @@ func TestGalaxyRegistryStartEntryRejectsUsersWithoutCharacters(t *testing.T) {
 	}
 }
 
-func TestGalaxyRegistryEndEntryValidatesImmediately(t *testing.T) {
+func TestGalaxyRegistryStartEntryRejectsExpectedEndOverMaxDuration(t *testing.T) {
+	db := newGalaxyRegistryServiceTestDB(t)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	if err := db.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 11},
+		Nickname:           "captain-eleven",
+		PrimaryCharacterID: 90000011,
+		Role:               model.RoleCaptain,
+	}).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   90000011,
+		CharacterName: "Captain Eleven",
+		UserID:        11,
+	}).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+	if err := db.Create(&model.GalaxyRegistrySystem{
+		SolarSystemID:     30000142,
+		SolarSystemName:   "Jita",
+		RegionID:          10000002,
+		RegionName:        "The Forge",
+		ConstellationID:   20000020,
+		ConstellationName: "Kimotoro",
+		Security:          0.9,
+		MinBountyAmount:   model.GalaxyRegistryDefaultMinBountyAmount,
+		IsEnabled:         true,
+	}).Error; err != nil {
+		t.Fatalf("create system: %v", err)
+	}
+
+	svc := NewGalaxyRegistryService()
+	_, err := svc.StartEntry(11, GalaxyRegistryCreateEntryRequest{
+		SystemConfigID: 1,
+		ExpectedEndAt:  time.Now().Add(GalaxyRegistryMaxEntryDuration + time.Minute),
+	})
+	if err == nil || !IsUserVisibleError(err) || err.Error() != "单次登记最长不能超过 2 小时" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestGalaxyRegistryEndEntryLeavesPendingThenSettlementMarksValid(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
 	global.DB = db
@@ -126,7 +161,6 @@ func TestGalaxyRegistryEndEntryValidatesImmediately(t *testing.T) {
 	}
 
 	svc := NewGalaxyRegistryService()
-	svc.wallet = fakeGalaxyRegistryWalletExecutor{}
 	entry, err := svc.StartEntry(2, GalaxyRegistryCreateEntryRequest{
 		SystemConfigID: 1,
 		ExpectedEndAt:  time.Now().Add(90 * time.Minute),
@@ -178,15 +212,31 @@ func TestGalaxyRegistryEndEntryValidatesImmediately(t *testing.T) {
 	if ended.ActualEndAt == nil {
 		t.Fatal("actual_end_at should be set")
 	}
-	if ended.ValidationStatus != model.GalaxyRegistryValidationValid {
-		t.Fatalf("validation_status = %q, want %q", ended.ValidationStatus, model.GalaxyRegistryValidationValid)
+	if ended.ValidationStatus != model.GalaxyRegistryValidationPending {
+		t.Fatalf("validation_status after end = %q, want %q", ended.ValidationStatus, model.GalaxyRegistryValidationPending)
 	}
-	if ended.ValidatedBountyAmount != 15000000 {
-		t.Fatalf("validated_bounty_amount = %v, want 15000000", ended.ValidatedBountyAmount)
+
+	runner := &fakeGalaxyRegistryWalletTaskRunner{}
+	settled, err := svc.SettlePendingEntriesWithWalletRefresh(t.Context(), runner, 10)
+	if err != nil {
+		t.Fatalf("SettlePendingEntriesWithWalletRefresh() error = %v", err)
+	}
+	if settled != 1 {
+		t.Fatalf("settled count = %d, want 1", settled)
+	}
+	reloaded, err := svc.repo.GetEntryByID(entry.ID)
+	if err != nil {
+		t.Fatalf("reload entry: %v", err)
+	}
+	if reloaded.ValidationStatus != model.GalaxyRegistryValidationValid {
+		t.Fatalf("validation_status = %q, want %q", reloaded.ValidationStatus, model.GalaxyRegistryValidationValid)
+	}
+	if reloaded.ValidatedBountyAmount != 15000000 {
+		t.Fatalf("validated_bounty_amount = %v, want 15000000", reloaded.ValidatedBountyAmount)
 	}
 }
 
-func TestGalaxyRegistryEndEntryMarksViolationImmediately(t *testing.T) {
+func TestGalaxyRegistrySettlementMarksViolation(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
 	global.DB = db
@@ -224,7 +274,6 @@ func TestGalaxyRegistryEndEntryMarksViolationImmediately(t *testing.T) {
 	}
 
 	svc := NewGalaxyRegistryService()
-	svc.wallet = fakeGalaxyRegistryWalletExecutor{}
 	entry, err := svc.StartEntry(12, GalaxyRegistryCreateEntryRequest{
 		SystemConfigID: 1,
 		ExpectedEndAt:  time.Now().Add(90 * time.Minute),
@@ -249,15 +298,28 @@ func TestGalaxyRegistryEndEntryMarksViolationImmediately(t *testing.T) {
 		t.Fatalf("create journal: %v", err)
 	}
 
-	ended, err := svc.EndMyEntry(12, entry.ID)
+	_, err = svc.EndMyEntry(12, entry.ID)
 	if err != nil {
 		t.Fatalf("EndMyEntry() error = %v", err)
 	}
-	if ended.ValidationStatus != model.GalaxyRegistryValidationViolation {
-		t.Fatalf("validation_status = %q, want %q", ended.ValidationStatus, model.GalaxyRegistryValidationViolation)
+
+	runner := &fakeGalaxyRegistryWalletTaskRunner{}
+	settled, err := svc.SettlePendingEntriesWithWalletRefresh(t.Context(), runner, 10)
+	if err != nil {
+		t.Fatalf("SettlePendingEntriesWithWalletRefresh() error = %v", err)
 	}
-	if ended.ViolationReason != model.GalaxyRegistryViolationBountyBelowThreshold {
-		t.Fatalf("violation_reason = %q, want %q", ended.ViolationReason, model.GalaxyRegistryViolationBountyBelowThreshold)
+	if settled != 1 {
+		t.Fatalf("settled count = %d, want 1", settled)
+	}
+	reloaded, err := svc.repo.GetEntryByID(entry.ID)
+	if err != nil {
+		t.Fatalf("reload entry: %v", err)
+	}
+	if reloaded.ValidationStatus != model.GalaxyRegistryValidationViolation {
+		t.Fatalf("validation_status = %q, want %q", reloaded.ValidationStatus, model.GalaxyRegistryValidationViolation)
+	}
+	if reloaded.ViolationReason != model.GalaxyRegistryViolationBountyBelowThreshold {
+		t.Fatalf("violation_reason = %q, want %q", reloaded.ViolationReason, model.GalaxyRegistryViolationBountyBelowThreshold)
 	}
 }
 
@@ -438,6 +500,39 @@ func TestGalaxyRegistryUpdateMyExpectedEndAt(t *testing.T) {
 	}
 }
 
+func TestGalaxyRegistryUpdateMyExpectedEndAtRejectsOverMaxDuration(t *testing.T) {
+	db := newGalaxyRegistryServiceTestDB(t)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	startAt := time.Now().Add(-30 * time.Minute)
+	entry := &model.GalaxyRegistryEntry{
+		SystemConfigID:        1,
+		SolarSystemID:         30000142,
+		SolarSystemName:       "Jita",
+		CaptainUserID:         22,
+		CaptainCharacterID:    92000022,
+		CaptainCharacterName:  "Captain 22",
+		Status:                model.GalaxyRegistryEntryStatusActive,
+		ValidationStatus:      model.GalaxyRegistryValidationPending,
+		ExpectedEndAt:         startAt.Add(time.Hour),
+		ActualStartAt:         startAt,
+		FrozenMinBountyAmount: 10000000,
+	}
+	if err := db.Create(entry).Error; err != nil {
+		t.Fatalf("create entry: %v", err)
+	}
+
+	svc := NewGalaxyRegistryService()
+	_, err := svc.UpdateMyExpectedEndAt(22, entry.ID, GalaxyRegistryUpdateExpectedEndAtRequest{
+		ExpectedEndAt: startAt.Add(GalaxyRegistryMaxEntryDuration + time.Minute),
+	})
+	if err == nil || !IsUserVisibleError(err) || err.Error() != "单次登记最长不能超过 2 小时" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestGalaxyRegistryOverrideEntryValidation(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
@@ -487,7 +582,7 @@ func TestGalaxyRegistryOverrideEntryValidation(t *testing.T) {
 	}
 }
 
-func TestGalaxyRegistryRevalidateEntryWithContext(t *testing.T) {
+func TestGalaxyRegistryRevalidateEntryWithContextResetsPendingThenSettlementMarksValid(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
 	global.DB = db
@@ -545,19 +640,37 @@ func TestGalaxyRegistryRevalidateEntryWithContext(t *testing.T) {
 	}
 
 	svc := NewGalaxyRegistryService()
-	svc.wallet = fakeGalaxyRegistryWalletExecutor{}
 	row, err := svc.RevalidateEntryWithContext(t.Context(), entry.ID)
 	if err != nil {
 		t.Fatalf("RevalidateEntryWithContext() error = %v", err)
 	}
-	if row.ValidationStatus != model.GalaxyRegistryValidationValid {
-		t.Fatalf("validation_status = %q, want %q", row.ValidationStatus, model.GalaxyRegistryValidationValid)
+	if row.ValidationStatus != model.GalaxyRegistryValidationPending {
+		t.Fatalf("validation_status after reset = %q, want %q", row.ValidationStatus, model.GalaxyRegistryValidationPending)
 	}
-	if row.ValidatedBountyAmount != 15000000 {
-		t.Fatalf("validated_bounty_amount = %v, want 15000000", row.ValidatedBountyAmount)
+	if row.ValidatedBountyAmount != 0 {
+		t.Fatalf("validated_bounty_amount after reset = %v, want 0", row.ValidatedBountyAmount)
 	}
-	if row.ViolationReason != "" {
-		t.Fatalf("violation_reason = %q, want empty", row.ViolationReason)
+
+	runner := &fakeGalaxyRegistryWalletTaskRunner{}
+	settled, err := svc.SettlePendingEntriesWithWalletRefresh(t.Context(), runner, 10)
+	if err != nil {
+		t.Fatalf("SettlePendingEntriesWithWalletRefresh() error = %v", err)
+	}
+	if settled != 1 {
+		t.Fatalf("settled count = %d, want 1", settled)
+	}
+	reloaded, err := svc.repo.GetEntryByID(entry.ID)
+	if err != nil {
+		t.Fatalf("reload entry: %v", err)
+	}
+	if reloaded.ValidationStatus != model.GalaxyRegistryValidationValid {
+		t.Fatalf("validation_status = %q, want %q", reloaded.ValidationStatus, model.GalaxyRegistryValidationValid)
+	}
+	if reloaded.ValidatedBountyAmount != 15000000 {
+		t.Fatalf("validated_bounty_amount = %v, want 15000000", reloaded.ValidatedBountyAmount)
+	}
+	if reloaded.ViolationReason != "" {
+		t.Fatalf("violation_reason = %q, want empty", reloaded.ViolationReason)
 	}
 }
 
@@ -636,7 +749,67 @@ func TestGalaxyRegistryDeleteAdminSystemRejectsActiveEntries(t *testing.T) {
 	}
 }
 
-func TestGalaxyRegistryEndEntrySkipsInvalidTokenCharacters(t *testing.T) {
+func TestGalaxyRegistryAutoEndOverdueEntriesUsesMaxDurationEndAt(t *testing.T) {
+	db := newGalaxyRegistryServiceTestDB(t)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	startAt := time.Now().Add(-3 * time.Hour)
+	if err := db.Create(&model.User{
+		BaseModel: model.BaseModel{ID: 61},
+		Nickname:  "captain-sixty-one",
+		Role:      model.RoleCaptain,
+	}).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	entry := &model.GalaxyRegistryEntry{
+		SystemConfigID:        1,
+		SolarSystemID:         30000142,
+		SolarSystemName:       "Jita",
+		CaptainUserID:         61,
+		CaptainCharacterID:    96000061,
+		CaptainCharacterName:  "Captain 61",
+		Status:                model.GalaxyRegistryEntryStatusActive,
+		ValidationStatus:      model.GalaxyRegistryValidationPending,
+		ExpectedEndAt:         startAt.Add(GalaxyRegistryMaxEntryDuration),
+		ActualStartAt:         startAt,
+		FrozenMinBountyAmount: 10000000,
+	}
+	if err := db.Create(entry).Error; err != nil {
+		t.Fatalf("create entry: %v", err)
+	}
+
+	svc := NewGalaxyRegistryService()
+	ended, err := svc.AutoEndOverdueEntries(10)
+	if err != nil {
+		t.Fatalf("AutoEndOverdueEntries() error = %v", err)
+	}
+	if ended != 1 {
+		t.Fatalf("ended count = %d, want 1", ended)
+	}
+	reloaded, err := svc.repo.GetEntryByID(entry.ID)
+	if err != nil {
+		t.Fatalf("reload entry: %v", err)
+	}
+	if reloaded.Status != model.GalaxyRegistryEntryStatusCompleted {
+		t.Fatalf("status = %q, want %q", reloaded.Status, model.GalaxyRegistryEntryStatusCompleted)
+	}
+	if reloaded.ActualEndAt == nil {
+		t.Fatal("actual_end_at should be set")
+	}
+	if !reloaded.ActualEndAt.Equal(startAt.Add(GalaxyRegistryMaxEntryDuration)) {
+		t.Fatalf("actual_end_at = %s, want %s", reloaded.ActualEndAt, startAt.Add(GalaxyRegistryMaxEntryDuration))
+	}
+	if reloaded.EndedByUserID != 0 {
+		t.Fatalf("ended_by_user_id = %d, want 0", reloaded.EndedByUserID)
+	}
+	if reloaded.ForceEndedByAdmin {
+		t.Fatal("force_ended_by_admin should be false for system auto-end")
+	}
+}
+
+func TestGalaxyRegistrySettlementContinuesWhenOneWalletRefreshFails(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
 	global.DB = db
@@ -685,16 +858,6 @@ func TestGalaxyRegistryEndEntrySkipsInvalidTokenCharacters(t *testing.T) {
 	}
 
 	svc := NewGalaxyRegistryService()
-	svc.wallet = fakeGalaxyRegistryWalletExecutor{}
-	svc.ssoSvc = fakeGalaxyRegistryTokenProvider{
-		getValidToken: func(_ context.Context, characterID int64) (string, error) {
-			if characterID == 90000101 {
-				return "", errors.New("该人物的 token 已失效，请重新授权")
-			}
-			return "token-ok", nil
-		},
-	}
-
 	entry, err := svc.StartEntry(101, GalaxyRegistryCreateEntryRequest{
 		SystemConfigID: 1,
 		ExpectedEndAt:  time.Now().Add(90 * time.Minute),
@@ -726,111 +889,38 @@ func TestGalaxyRegistryEndEntrySkipsInvalidTokenCharacters(t *testing.T) {
 	if ended.Status != model.GalaxyRegistryEntryStatusCompleted {
 		t.Fatalf("status = %q, want %q", ended.Status, model.GalaxyRegistryEntryStatusCompleted)
 	}
-	if ended.ValidationStatus != model.GalaxyRegistryValidationValid {
-		t.Fatalf("validation_status = %q, want %q", ended.ValidationStatus, model.GalaxyRegistryValidationValid)
-	}
-	if ended.ValidatedBountyAmount != 15000000 {
-		t.Fatalf("validated_bounty_amount = %v, want 15000000", ended.ValidatedBountyAmount)
-	}
-}
-
-func TestGalaxyRegistryRevalidateEntrySkipsInvalidTokenCharacters(t *testing.T) {
-	db := newGalaxyRegistryServiceTestDB(t)
-	previous := global.DB
-	global.DB = db
-	global.Logger = zap.NewNop()
-	t.Cleanup(func() { global.DB = previous; global.Logger = nil })
-
-	if err := db.Create(&model.User{
-		BaseModel:          model.BaseModel{ID: 102},
-		Nickname:           "captain-reval-skip",
-		PrimaryCharacterID: 90000103,
-		Role:               model.RoleCaptain,
-	}).Error; err != nil {
-		t.Fatalf("create user: %v", err)
-	}
-	if err := db.Create(&model.EveCharacter{
-		CharacterID:   90000103,
-		CharacterName: "Char Invalid Token",
-		UserID:        102,
-		AccessToken:   "expired",
-		TokenExpiry:   time.Now().Add(-1 * time.Hour),
-		TokenInvalid:  true,
-	}).Error; err != nil {
-		t.Fatalf("create character A: %v", err)
-	}
-	if err := db.Create(&model.EveCharacter{
-		CharacterID:   90000104,
-		CharacterName: "Char Valid Token",
-		UserID:        102,
-		AccessToken:   "valid-token",
-		TokenExpiry:   time.Now().Add(2 * time.Hour),
-	}).Error; err != nil {
-		t.Fatalf("create character B: %v", err)
+	if ended.ValidationStatus != model.GalaxyRegistryValidationPending {
+		t.Fatalf("validation_status after end = %q, want %q", ended.ValidationStatus, model.GalaxyRegistryValidationPending)
 	}
 
-	endAt := time.Now().Add(-10 * time.Minute)
-	entry := &model.GalaxyRegistryEntry{
-		SystemConfigID:        1,
-		SolarSystemID:         30002187,
-		SolarSystemName:       "MJ-5F9",
-		CaptainUserID:         102,
-		CaptainCharacterID:    90000104,
-		CaptainCharacterName:  "Char Valid Token",
-		Status:                model.GalaxyRegistryEntryStatusCompleted,
-		ValidationStatus:      model.GalaxyRegistryValidationViolation,
-		ExpectedEndAt:         endAt.Add(-1 * time.Hour),
-		ActualStartAt:         endAt.Add(-2 * time.Hour),
-		ActualEndAt:           &endAt,
-		FrozenMinBountyAmount: 10000000,
-		ViolationReason:       model.GalaxyRegistryViolationNoBountyInWindow,
-	}
-	if err := db.Create(entry).Error; err != nil {
-		t.Fatalf("create entry: %v", err)
-	}
-	if err := db.Create(&model.EVECharacterWalletJournal{
-		ID:            9201,
-		CharacterID:   90000104,
-		Amount:        15000000,
-		Balance:       15000000,
-		ContextID:     30002187,
-		ContextIDType: "solar_system_id",
-		Date:          endAt.Add(-30 * time.Minute),
-		Description:   "valid bounty from char B",
-		FirstPartyID:  1,
-		RefType:       "bounty_prizes",
-		SecondPartyID: 2,
-	}).Error; err != nil {
-		t.Fatalf("create journal: %v", err)
-	}
-
-	svc := NewGalaxyRegistryService()
-	svc.wallet = fakeGalaxyRegistryWalletExecutor{}
-	svc.ssoSvc = fakeGalaxyRegistryTokenProvider{
-		getValidToken: func(_ context.Context, characterID int64) (string, error) {
-			if characterID == 90000103 {
-				return "", errors.New("该人物的 token 已失效，请重新授权")
+	runner := &fakeGalaxyRegistryWalletTaskRunner{
+		runTask: func(_ context.Context, _ string, characterID int64) error {
+			if characterID == 90000101 {
+				return errors.New("invalid_token")
 			}
-			return "token-ok", nil
+			return nil
 		},
 	}
-
-	row, err := svc.RevalidateEntryWithContext(t.Context(), entry.ID)
+	settled, err := svc.SettlePendingEntriesWithWalletRefresh(t.Context(), runner, 10)
 	if err != nil {
-		t.Fatalf("RevalidateEntryWithContext() error = %v", err)
+		t.Fatalf("SettlePendingEntriesWithWalletRefresh() error = %v", err)
 	}
-	if row.ValidationStatus != model.GalaxyRegistryValidationValid {
-		t.Fatalf("validation_status = %q, want %q", row.ValidationStatus, model.GalaxyRegistryValidationValid)
+	if settled != 1 {
+		t.Fatalf("settled count = %d, want 1", settled)
 	}
-	if row.ValidatedBountyAmount != 15000000 {
-		t.Fatalf("validated_bounty_amount = %v, want 15000000", row.ValidatedBountyAmount)
+	reloaded, err := svc.repo.GetEntryByID(entry.ID)
+	if err != nil {
+		t.Fatalf("reload entry: %v", err)
 	}
-	if row.ViolationReason != "" {
-		t.Fatalf("violation_reason = %q, want empty", row.ViolationReason)
+	if reloaded.ValidationStatus != model.GalaxyRegistryValidationValid {
+		t.Fatalf("validation_status = %q, want %q", reloaded.ValidationStatus, model.GalaxyRegistryValidationValid)
+	}
+	if reloaded.ValidatedBountyAmount != 15000000 {
+		t.Fatalf("validated_bounty_amount = %v, want 15000000", reloaded.ValidatedBountyAmount)
 	}
 }
 
-func TestGalaxyRegistryEndEntryFailsWhenAllTokensInvalid(t *testing.T) {
+func TestGalaxyRegistrySettlementKeepsPendingWhenAllWalletRefreshesFail(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
 	global.DB = db
@@ -880,13 +970,6 @@ func TestGalaxyRegistryEndEntryFailsWhenAllTokensInvalid(t *testing.T) {
 	}
 
 	svc := NewGalaxyRegistryService()
-	svc.wallet = fakeGalaxyRegistryWalletExecutor{}
-	svc.ssoSvc = fakeGalaxyRegistryTokenProvider{
-		getValidToken: func(_ context.Context, characterID int64) (string, error) {
-			return "", errors.New("该人物的 token 已失效，请重新授权")
-		},
-	}
-
 	entry, err := svc.StartEntry(103, GalaxyRegistryCreateEntryRequest{
 		SystemConfigID: 1,
 		ExpectedEndAt:  time.Now().Add(90 * time.Minute),
@@ -896,87 +979,21 @@ func TestGalaxyRegistryEndEntryFailsWhenAllTokensInvalid(t *testing.T) {
 	}
 
 	_, err = svc.EndMyEntry(103, entry.ID)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !IsUserVisibleError(err) || err.Error() != "登记已结束，但拉取钱包 ESI 失败，暂未完成校验" {
-		t.Fatalf("unexpected error: %v", err)
+	if err != nil {
+		t.Fatalf("EndMyEntry() error = %v", err)
 	}
 
-	reloaded, reloadErr := svc.repo.GetEntryByID(entry.ID)
-	if reloadErr != nil {
-		t.Fatalf("reload entry: %v", reloadErr)
-	}
-	if reloaded.Status != model.GalaxyRegistryEntryStatusCompleted {
-		t.Fatalf("status = %q, want %q", reloaded.Status, model.GalaxyRegistryEntryStatusCompleted)
-	}
-	if reloaded.ValidationStatus != model.GalaxyRegistryValidationPending {
-		t.Fatalf("validation_status = %q, want %q", reloaded.ValidationStatus, model.GalaxyRegistryValidationPending)
-	}
-	if reloaded.ValidatedAt != nil {
-		t.Fatal("validated_at should be nil")
-	}
-}
-
-func TestGalaxyRegistryEndEntryDoesNotSwallowNonTokenErrors(t *testing.T) {
-	db := newGalaxyRegistryServiceTestDB(t)
-	previous := global.DB
-	global.DB = db
-	global.Logger = zap.NewNop()
-	t.Cleanup(func() { global.DB = previous; global.Logger = nil })
-
-	if err := db.Create(&model.User{
-		BaseModel:          model.BaseModel{ID: 104},
-		Nickname:           "captain-non-token-err",
-		PrimaryCharacterID: 90000107,
-		Role:               model.RoleCaptain,
-	}).Error; err != nil {
-		t.Fatalf("create user: %v", err)
-	}
-	if err := db.Create(&model.EveCharacter{
-		CharacterID:   90000107,
-		CharacterName: "Char DB Timeout",
-		UserID:        104,
-		AccessToken:   "valid-token",
-		TokenExpiry:   time.Now().Add(2 * time.Hour),
-	}).Error; err != nil {
-		t.Fatalf("create character: %v", err)
-	}
-	if err := db.Create(&model.GalaxyRegistrySystem{
-		SolarSystemID:     30002187,
-		SolarSystemName:   "MJ-5F9",
-		RegionID:          10000060,
-		RegionName:        "Delve",
-		ConstellationID:   20000690,
-		ConstellationName: "8WA-Z6",
-		Security:          -0.1,
-		MinBountyAmount:   12000000,
-		IsEnabled:         true,
-	}).Error; err != nil {
-		t.Fatalf("create system: %v", err)
-	}
-
-	svc := NewGalaxyRegistryService()
-	svc.ssoSvc = fakeGalaxyRegistryTokenProvider{
-		getValidToken: func(_ context.Context, characterID int64) (string, error) {
-			return "", errors.New("database timeout")
+	runner := &fakeGalaxyRegistryWalletTaskRunner{
+		runTask: func(_ context.Context, _ string, _ int64) error {
+			return errors.New("database timeout")
 		},
 	}
-
-	entry, err := svc.StartEntry(104, GalaxyRegistryCreateEntryRequest{
-		SystemConfigID: 1,
-		ExpectedEndAt:  time.Now().Add(90 * time.Minute),
-	})
+	settled, err := svc.SettlePendingEntriesWithWalletRefresh(t.Context(), runner, 10)
 	if err != nil {
-		t.Fatalf("StartEntry() error = %v", err)
+		t.Fatalf("SettlePendingEntriesWithWalletRefresh() error = %v", err)
 	}
-
-	_, err = svc.EndMyEntry(104, entry.ID)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if !IsUserVisibleError(err) || err.Error() != "登记已结束，但拉取钱包 ESI 失败，暂未完成校验" {
-		t.Fatalf("unexpected error: %v", err)
+	if settled != 0 {
+		t.Fatalf("settled count = %d, want 0", settled)
 	}
 
 	reloaded, reloadErr := svc.repo.GetEntryByID(entry.ID)

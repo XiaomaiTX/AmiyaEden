@@ -154,6 +154,17 @@ func (r *GalaxyRegistryRepository) UpdateEntryValidationResult(
 	return r.UpdateEntry(id, updates)
 }
 
+func (r *GalaxyRegistryRepository) ResetEntryValidationPending(id uint) error {
+	updates := map[string]any{
+		"validation_status":       model.GalaxyRegistryValidationPending,
+		"validated_bounty_amount": 0,
+		"validated_bounty_count":  0,
+		"validated_at":            nil,
+		"violation_reason":        "",
+	}
+	return r.UpdateEntry(id, updates)
+}
+
 func (r *GalaxyRegistryRepository) GetEntryByID(id uint) (*model.GalaxyRegistryEntry, error) {
 	var row model.GalaxyRegistryEntry
 	if err := global.DB.First(&row, id).Error; err != nil {
@@ -217,6 +228,18 @@ func (r *GalaxyRegistryRepository) ListActiveEntriesBySystemConfigIDs(systemConf
 		Where("system_config_id IN ? AND status = ?", systemConfigIDs, model.GalaxyRegistryEntryStatusActive).
 		Order("actual_start_at ASC").
 		Find(&rows).Error
+	return rows, err
+}
+
+func (r *GalaxyRegistryRepository) ListActiveEntriesStartedBefore(before time.Time, limit int) ([]model.GalaxyRegistryEntry, error) {
+	rows := make([]model.GalaxyRegistryEntry, 0)
+	query := global.DB.Model(&model.GalaxyRegistryEntry{}).
+		Where("status = ? AND actual_start_at <= ?", model.GalaxyRegistryEntryStatusActive, before).
+		Order("actual_start_at ASC, id ASC")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	err := query.Find(&rows).Error
 	return rows, err
 }
 
