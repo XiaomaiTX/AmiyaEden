@@ -322,6 +322,123 @@ func TestGetUserAssetLocations_TotalItemsStableWithSearch(t *testing.T) {
 	}
 }
 
+func TestGetUserAssetLocations_TopLevelItemShowsStructureName(t *testing.T) {
+	setupAssetTestDB(t)
+	svc := newAssetService()
+
+	// 玩家建筑：eve_structures 缓存中存在同 ID 名称
+	structureID := int64(1052703947117)
+	global.DB.Create(&model.EveStructure{
+		StructureID:   structureID,
+		StructureName: "Amiya's Fortizar",
+		TypeID:        35832,
+		UpdateAt:      9999999999,
+	})
+	// 顶层资产：location_type=item, location_id 指向建筑，且无对应 item_id 行
+	// （建筑不会作为资产 item 出现，因此该位置是顶层位置而非容器）
+	global.DB.Create(&model.EveCharacterAsset{
+		ItemID:       1,
+		CharacterID:  1001,
+		LocationID:   structureID,
+		LocationType: "item",
+		TypeID:       34,
+		Quantity:     100,
+	})
+
+	result, err := svc.GetUserAssetLocations(1, &AssetLocationsRequest{
+		Page: 1, PageSize: 20,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Locations) != 1 {
+		t.Fatalf("expected 1 location, got %d", len(result.Locations))
+	}
+	if result.Locations[0].LocationName != "Amiya's Fortizar" {
+		t.Fatalf("expected structure name, got %q", result.Locations[0].LocationName)
+	}
+	if result.Locations[0].LocationName == fmt.Sprintf("Item-%d", structureID) {
+		t.Fatalf("should not fall back to Item-<id> when structure is cached")
+	}
+	// 命中建筑缓存时 location_type 规范为 structure
+	if result.Locations[0].LocationType != "structure" {
+		t.Fatalf("expected location_type=structure, got %q", result.Locations[0].LocationType)
+	}
+}
+
+func TestGetUserAssetLocations_TopLevelItemShowsStructureNameWithStaleCache(t *testing.T) {
+	setupAssetTestDB(t)
+	svc := newAssetService()
+
+	// 建筑缓存 update_at 为旧时间戳，资产页仍应显示建筑名
+	structureID := int64(1052703947118)
+	global.DB.Create(&model.EveStructure{
+		StructureID:   structureID,
+		StructureName: "Stale Astrahus",
+		TypeID:        35825,
+		UpdateAt:      1, // 远早于 15 天阈值
+	})
+	global.DB.Create(&model.EveCharacterAsset{
+		ItemID:       1,
+		CharacterID:  1001,
+		LocationID:   structureID,
+		LocationType: "item",
+		TypeID:       34,
+		Quantity:     100,
+	})
+
+	result, err := svc.GetUserAssetLocations(1, &AssetLocationsRequest{
+		Page: 1, PageSize: 20,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result.Locations) != 1 {
+		t.Fatalf("expected 1 location, got %d", len(result.Locations))
+	}
+	if result.Locations[0].LocationName != "Stale Astrahus" {
+		t.Fatalf("expected structure name from stale cache, got %q", result.Locations[0].LocationName)
+	}
+}
+
+func TestGetUserAssetLocationItems_TopLevelItemShowsStructureName(t *testing.T) {
+	setupAssetTestDB(t)
+	svc := newAssetService()
+
+	// 玩家建筑缓存
+	structureID := int64(1052703947117)
+	global.DB.Create(&model.EveStructure{
+		StructureID:   structureID,
+		StructureName: "Amiya's Fortizar",
+		TypeID:        35832,
+		UpdateAt:      9999999999,
+	})
+	// 顶层资产：展开该位置时标题应显示建筑名
+	global.DB.Create(&model.EveCharacterAsset{
+		ItemID:       1,
+		CharacterID:  1001,
+		LocationID:   structureID,
+		LocationType: "item",
+		TypeID:       34,
+		Quantity:     100,
+	})
+
+	result, err := svc.GetUserAssetLocationItems(1, &AssetLocationItemsRequest{
+		LocationID: structureID,
+		Page:       1,
+		PageSize:   50,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.LocationName != "Amiya's Fortizar" {
+		t.Fatalf("expected structure name as location title, got %q", result.LocationName)
+	}
+	if result.LocationName == fmt.Sprintf("Item-%d", structureID) {
+		t.Fatalf("should not fall back to Item-<id> when structure is cached")
+	}
+}
+
 func TestResolveItemLocationNamesLocal_BatchPriority(t *testing.T) {
 	setupAssetTestDB(t)
 	svc := newAssetService()
