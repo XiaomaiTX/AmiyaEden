@@ -16,8 +16,34 @@ type DateRangeState = {
 type FilterState = {
   refTypes: string[]
   solarSystemIds: string
+  characterIds: string
+  userIds: string
   minAmount: string
   maxAmount: string
+}
+
+function parseIdList(value: string) {
+  return value
+    .split(',')
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isInteger(item) && item > 0)
+}
+
+function buildNpcKillFilterPayload(filters: FilterState) {
+  const solarSystemIds = parseIdList(filters.solarSystemIds)
+  const characterIds = parseIdList(filters.characterIds)
+  const userIds = parseIdList(filters.userIds)
+  const minAmount = filters.minAmount === '' ? undefined : Number(filters.minAmount)
+  const maxAmount = filters.maxAmount === '' ? undefined : Number(filters.maxAmount)
+
+  return {
+    ref_types: filters.refTypes.length > 0 ? filters.refTypes : undefined,
+    solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
+    character_ids: characterIds.length > 0 ? characterIds : undefined,
+    user_ids: userIds.length > 0 ? userIds : undefined,
+    min_amount: Number.isFinite(minAmount) ? minAmount : undefined,
+    max_amount: Number.isFinite(maxAmount) ? maxAmount : undefined,
+  }
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -41,17 +67,27 @@ export function InfoNpcKillsPage() {
   const [reportError, setReportError] = useState<string | null>(null)
   const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState(0)
-  const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
+  const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({
+    startDate: '',
+    endDate: '',
+  })
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({
+    startDate: '',
+    endDate: '',
+  })
   const [draftFilters, setDraftFilters] = useState<FilterState>({
     refTypes: [],
     solarSystemIds: '',
+    characterIds: '',
+    userIds: '',
     minAmount: '',
     maxAmount: '',
   })
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({
     refTypes: [],
     solarSystemIds: '',
+    characterIds: '',
+    userIds: '',
     minAmount: '',
     maxAmount: '',
   })
@@ -59,32 +95,16 @@ export function InfoNpcKillsPage() {
   const refTypeOptions = [
     'bounty_prizes',
     'ess_escrow_transfer',
-    'incursion_payout',
+    'corporate_reward_payout',
     'agent_mission_reward',
   ]
   const formatRefTypeLabel = (refType: string) =>
     ({
       bounty_prizes: t('npcKill.refTypes.bounty_prizes'),
       ess_escrow_transfer: t('npcKill.refTypes.ess_escrow_transfer'),
-      incursion_payout: t('npcKill.refTypes.incursion_payout'),
+      corporate_reward_payout: t('npcKill.refTypes.corporate_reward_payout'),
       agent_mission_reward: t('npcKill.refTypes.agent_mission_reward'),
-    }[refType] ?? refType)
-  const parseIdList = (value: string) =>
-    value
-      .split(',')
-      .map((item) => Number(item.trim()))
-      .filter((item) => Number.isInteger(item) && item > 0)
-  const buildFilterPayload = (filters: FilterState) => {
-    const solarSystemIds = parseIdList(filters.solarSystemIds)
-    const minAmount = filters.minAmount === '' ? undefined : Number(filters.minAmount)
-    const maxAmount = filters.maxAmount === '' ? undefined : Number(filters.maxAmount)
-    return {
-      ref_types: filters.refTypes.length > 0 ? filters.refTypes : undefined,
-      solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
-      min_amount: Number.isFinite(minAmount) ? minAmount : undefined,
-      max_amount: Number.isFinite(maxAmount) ? maxAmount : undefined,
-    }
-  }
+    })[refType] ?? refType
 
   useEffect(() => {
     let cancelled = false
@@ -126,7 +146,7 @@ export function InfoNpcKillsPage() {
         const payload = {
           start_date: appliedDateRange.startDate || undefined,
           end_date: appliedDateRange.endDate || undefined,
-          ...buildFilterPayload(appliedFilters),
+          ...buildNpcKillFilterPayload(appliedFilters),
         }
 
         const data =
@@ -167,7 +187,14 @@ export function InfoNpcKillsPage() {
 
   const handleReset = () => {
     const emptyRange = { startDate: '', endDate: '' }
-    const emptyFilters = { refTypes: [], solarSystemIds: '', minAmount: '', maxAmount: '' }
+    const emptyFilters = {
+      refTypes: [],
+      solarSystemIds: '',
+      characterIds: '',
+      userIds: '',
+      minAmount: '',
+      maxAmount: '',
+    }
     setDraftDateRange(emptyRange)
     setAppliedDateRange(emptyRange)
     setDraftFilters(emptyFilters)
@@ -252,7 +279,9 @@ export function InfoNpcKillsPage() {
               </select>
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.solarSystemIds')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.solarSystemIds')}
+              </span>
               <Input
                 value={draftFilters.solarSystemIds}
                 onChange={(event) =>
@@ -261,7 +290,29 @@ export function InfoNpcKillsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.minAmount')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.characterIds')}
+              </span>
+              <Input
+                value={draftFilters.characterIds}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, characterIds: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.userIds')}</span>
+              <Input
+                value={draftFilters.userIds}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, userIds: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.minAmount')}
+              </span>
               <Input
                 type="number"
                 min="0"
@@ -272,7 +323,9 @@ export function InfoNpcKillsPage() {
               />
             </label>
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('npcKill.filters.maxAmount')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('npcKill.filters.maxAmount')}
+              </span>
               <Input
                 type="number"
                 min="0"
@@ -289,7 +342,9 @@ export function InfoNpcKillsPage() {
       {loading ? <p className="text-sm text-muted-foreground">{t('npcKill.loading')}</p> : null}
       {characterError ? <p className="text-sm text-destructive">{characterError}</p> : null}
       {reportError ? <p className="text-sm text-destructive">{reportError}</p> : null}
-      {!loading && !reportError && !reportData ? <p className="text-sm text-muted-foreground">{t('npcKill.noData')}</p> : null}
+      {!loading && !reportError && !reportData ? (
+        <p className="text-sm text-muted-foreground">{t('npcKill.noData')}</p>
+      ) : null}
 
       {reportData ? (
         <>
@@ -359,7 +414,9 @@ export function InfoNpcKillsPage() {
                         <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
                         <td className="px-3 py-2">{system.solar_system_name}</td>
                         <td className="px-3 py-2 text-right">{system.count}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(system.amount)}</td>
+                        <td className="px-3 py-2 text-right text-emerald-600">
+                          {formatIskPlain(system.amount)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -382,7 +439,9 @@ export function InfoNpcKillsPage() {
                     {reportData.trend.map((item) => (
                       <tr key={item.date} className="border-b">
                         <td className="px-3 py-2">{item.date}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(item.amount)}</td>
+                        <td className="px-3 py-2 text-right text-emerald-600">
+                          {formatIskPlain(item.amount)}
+                        </td>
                         <td className="px-3 py-2 text-right">{item.count}</td>
                       </tr>
                     ))}
@@ -417,7 +476,9 @@ export function InfoNpcKillsPage() {
                         </span>
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <span className={journal.amount >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                        <span
+                          className={journal.amount >= 0 ? 'text-emerald-600' : 'text-destructive'}
+                        >
                           {journal.amount >= 0 ? '+' : ''}
                           {formatIskPlain(journal.amount)}
                         </span>

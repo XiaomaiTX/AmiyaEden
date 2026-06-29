@@ -37,12 +37,12 @@ describe('info npc kills page', () => {
             msg: 'ok',
             data: {
               summary: {
-                total_bounty: 654321,
+                total_bounty: 40000500,
                 total_ess: 0,
-                total_incursion: 0,
+                total_incursion: 40000000,
                 total_mission: 0,
-                total_tax: 1234,
-                actual_income: 653087,
+                total_tax: 50,
+                actual_income: 40000450,
                 total_records: 2,
               },
               by_npc: [
@@ -88,7 +88,7 @@ describe('info npc kills page', () => {
                   amount: 40000000,
                   tax: 0,
                   date: '2026-05-01 12:42:00',
-                  ref_type: 'incursion_payout',
+                  ref_type: 'corporate_reward_payout',
                   solar_system_id: 0,
                   solar_system_name: '',
                   reason: '',

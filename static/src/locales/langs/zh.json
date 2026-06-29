@@ -958,7 +958,7 @@
     "refTypes": {
       "bounty_prizes": "赏金",
       "ess_escrow_transfer": "ESS 托管",
-      "incursion_payout": "入侵奖励",
+      "corporate_reward_payout": "入侵奖励",
       "agent_mission_reward": "任务奖励"
     },
     "filters": {

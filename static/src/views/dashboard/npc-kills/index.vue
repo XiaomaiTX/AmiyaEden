@@ -298,7 +298,7 @@
   const REF_TYPE_CONFIG: Record<string, string> = {
     bounty_prizes: 'npcKill.refTypes.bounty_prizes',
     ess_escrow_transfer: 'npcKill.refTypes.ess_escrow_transfer',
-    incursion_payout: 'npcKill.refTypes.incursion_payout',
+    corporate_reward_payout: 'npcKill.refTypes.corporate_reward_payout',
     agent_mission_reward: 'npcKill.refTypes.agent_mission_reward'
   }
   const refTypeOptions = computed(() =>

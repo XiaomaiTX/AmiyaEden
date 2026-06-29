@@ -1009,7 +1009,7 @@
     "refTypes": {
       "bounty_prizes": "Bounty",
       "ess_escrow_transfer": "ESS Escrow",
-      "incursion_payout": "Incursion Payout",
+      "corporate_reward_payout": "Incursion Payout",
       "agent_mission_reward": "Mission Reward"
     },
     "filters": {

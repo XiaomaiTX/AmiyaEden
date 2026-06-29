@@ -99,11 +99,11 @@ type NpcKillCorpRequest struct {
 type NpcKillSummary struct {
 	TotalBounty    float64 `json:"total_bounty"`    // 总刷怪赏金（bounty_prizes amount 合计）
 	TotalESS       float64 `json:"total_ess"`       // 总 ESS 金额（ess_escrow_transfer amount 合计）
-	TotalIncursion float64 `json:"total_incursion"` // 总入侵收入（incursion_payout amount 合计）
+	TotalIncursion float64 `json:"total_incursion"` // 总入侵收入（corporate_reward_payout amount 合计）
 	TotalMission   float64 `json:"total_mission"`   // 总任务奖励（agent_mission_reward amount 合计）
 	TotalTax       float64 `json:"total_tax"`       // 总交税金额
-	ActualIncome   float64 `json:"actual_income"`   // 实际获得 = bounty + ess + incursion + mission + tax
-	TotalRecords   int     `json:"total_records"`   // 总记录数（bounty_prizes 条数）
+	ActualIncome   float64 `json:"actual_income"`   // 实际获得 = bounty + ess + mission + tax
+	TotalRecords   int     `json:"total_records"`   // 总记录数（bounty_prizes + corporate_reward_payout 条数）
 }
 
 // NpcKillByNpc 按 NPC 分类统计
@@ -184,7 +184,8 @@ type NpcKillCorpResponse struct {
 // GetNpcKills 获取个人刷怪报表
 func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKillResponse, error) {
 	// 校验人物归属
-	if err := requireOwnedCharacter(s.charRepo, userID, req.CharacterID); err != nil {
+	ownedCharacter, err := findOwnedCharacter(s.charRepo, userID, req.CharacterID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -194,8 +195,18 @@ func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKill
 	}
 
 	startDate, endDate := parseDateRange(req.StartDate, req.EndDate)
+	charIDs := filterAllowedCharacterIDs([]int64{req.CharacterID}, req.CharacterIDs)
+	if len(req.UserIDs) > 0 {
+		if _, ok := uintSet(req.UserIDs)[userID]; !ok {
+			charIDs = nil
+		}
+	}
+	charNameMap := map[int64]string{}
+	if ownedName := strings.TrimSpace(ownedCharacter.CharacterName); ownedName != "" {
+		charNameMap[ownedCharacter.CharacterID] = ownedName
+	}
 	query := repository.NpcKillJournalQuery{
-		CharacterIDs:   []int64{req.CharacterID},
+		CharacterIDs:   charIDs,
 		RefTypes:       normalizeNpcIncomeRefTypes(req.RefTypes),
 		SolarSystemIDs: normalizePositiveInts(req.SolarSystemIDs),
 		StartDate:      startDate,
@@ -245,7 +256,7 @@ func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKill
 	resp.Trend = s.calcTrend(allJournals)
 
 	// 流水明细
-	resp.Journals = s.buildJournalItems(journals, nil)
+	resp.Journals = s.buildJournalItems(journals, charNameMap)
 
 	return resp, nil
 }
@@ -435,7 +446,7 @@ func (s *NpcKillService) calcSummary(journals []model.EVECharacterWalletJournal)
 		case "bounty_prizes":
 			summary.TotalBounty += j.Amount
 			summary.TotalRecords++
-		case "incursion_payout":
+		case "corporate_reward_payout":
 			summary.TotalBounty += j.Amount
 			summary.TotalIncursion += j.Amount
 			summary.TotalRecords++
@@ -482,7 +493,7 @@ func buildCorpMemberSummaries(
 		case "bounty_prizes":
 			m.TotalBounty += j.Amount
 			m.RecordCount++
-		case "incursion_payout":
+		case "corporate_reward_payout":
 			m.TotalBounty += j.Amount
 			m.TotalIncursion += j.Amount
 			m.RecordCount++
@@ -645,7 +656,7 @@ func (s *NpcKillService) calcTrend(journals []model.EVECharacterWalletJournal) [
 
 	for _, j := range journals {
 		switch j.RefType {
-		case "bounty_prizes", "incursion_payout", "agent_mission_reward":
+		case "bounty_prizes", "corporate_reward_payout", "agent_mission_reward":
 			// 这些类型计入趋势；ess_escrow_transfer 不含时间颗粒度的星系上下文，不单独趋势
 		default:
 			continue
@@ -792,10 +803,10 @@ func normalizeNpcIncomeRefTypes(raw []string) []string {
 		return nil
 	}
 	allowed := map[string]struct{}{
-		"bounty_prizes":        {},
-		"ess_escrow_transfer":  {},
-		"incursion_payout":     {},
-		"agent_mission_reward": {},
+		"bounty_prizes":           {},
+		"ess_escrow_transfer":     {},
+		"corporate_reward_payout": {},
+		"agent_mission_reward":    {},
 	}
 	result := make([]string, 0, len(raw))
 	seen := make(map[string]struct{}, len(raw))
