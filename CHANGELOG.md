@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-06-30
+
+### Added
+
+- 资产页面新增顶层结构名称解析与展示，提升大型资产地点的可读性。
+- NPC 击杀报表新增萨沙入侵与任务奖励统计，并统一用户与角色筛选条件。
+- 星系登记结算改为异步 ESI 后台处理，降低前台结算阻塞风险。
+- 星系登记系统中单次最长登记时间为2h，到时需要重新登记。
+
+### Changed
+
+- 调整 NPC 击杀中的入侵奖励类型命名与相关展示文案。
+- 移除资产同步 ESI 解析路径，收敛到新的异步处理链路。
+
 ## [1.12.0] - 2026-06-06
 
 ### Added
