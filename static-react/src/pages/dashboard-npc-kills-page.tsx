@@ -11,6 +11,15 @@ type DateRangeState = {
   endDate: string
 }
 
+type FilterState = {
+  refTypes: string[]
+  solarSystemIds: string
+  userIds: string
+  characterIds: string
+  minAmount: string
+  maxAmount: string
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
 }
@@ -31,6 +40,55 @@ export function DashboardNpcKillsPage() {
   const [reportData, setReportData] = useState<NpcKillCorpResponse | null>(null)
   const [draftDateRange, setDraftDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
   const [appliedDateRange, setAppliedDateRange] = useState<DateRangeState>({ startDate: '', endDate: '' })
+  const [draftFilters, setDraftFilters] = useState<FilterState>({
+    refTypes: [],
+    solarSystemIds: '',
+    userIds: '',
+    characterIds: '',
+    minAmount: '',
+    maxAmount: '',
+  })
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({
+    refTypes: [],
+    solarSystemIds: '',
+    userIds: '',
+    characterIds: '',
+    minAmount: '',
+    maxAmount: '',
+  })
+  const refTypeOptions = [
+    'bounty_prizes',
+    'ess_escrow_transfer',
+    'incursion_payout',
+    'agent_mission_reward',
+  ]
+  const formatRefTypeLabel = (refType: string) =>
+    ({
+      bounty_prizes: t('npcKill.refTypes.bounty_prizes'),
+      ess_escrow_transfer: t('npcKill.refTypes.ess_escrow_transfer'),
+      incursion_payout: t('npcKill.refTypes.incursion_payout'),
+      agent_mission_reward: t('npcKill.refTypes.agent_mission_reward'),
+    }[refType] ?? refType)
+  const parseIdList = (value: string) =>
+    value
+      .split(',')
+      .map((item) => Number(item.trim()))
+      .filter((item) => Number.isInteger(item) && item > 0)
+  const buildFilterPayload = (filters: FilterState) => {
+    const solarSystemIds = parseIdList(filters.solarSystemIds)
+    const userIds = parseIdList(filters.userIds)
+    const characterIds = parseIdList(filters.characterIds)
+    const minAmount = filters.minAmount === '' ? undefined : Number(filters.minAmount)
+    const maxAmount = filters.maxAmount === '' ? undefined : Number(filters.maxAmount)
+    return {
+      ref_types: filters.refTypes.length > 0 ? filters.refTypes : undefined,
+      solar_system_ids: solarSystemIds.length > 0 ? solarSystemIds : undefined,
+      user_ids: userIds.length > 0 ? userIds : undefined,
+      character_ids: characterIds.length > 0 ? characterIds : undefined,
+      min_amount: Number.isFinite(minAmount) ? minAmount : undefined,
+      max_amount: Number.isFinite(maxAmount) ? maxAmount : undefined,
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -47,6 +105,7 @@ export function DashboardNpcKillsPage() {
         if (appliedDateRange.endDate) {
           payload.end_date = appliedDateRange.endDate
         }
+        Object.assign(payload, buildFilterPayload(appliedFilters))
 
         const data = await fetchCorpNpcKills(payload)
         if (!cancelled) {
@@ -68,16 +127,27 @@ export function DashboardNpcKillsPage() {
     return () => {
       cancelled = true
     }
-  }, [appliedDateRange, t])
+  }, [appliedDateRange, appliedFilters, t])
 
   const handleSearch = () => {
     setAppliedDateRange({ ...draftDateRange })
+    setAppliedFilters({ ...draftFilters })
   }
 
   const handleReset = () => {
     const emptyRange = { startDate: '', endDate: '' }
+    const emptyFilters = {
+      refTypes: [],
+      solarSystemIds: '',
+      userIds: '',
+      characterIds: '',
+      minAmount: '',
+      maxAmount: '',
+    }
     setDraftDateRange(emptyRange)
     setAppliedDateRange(emptyRange)
+    setDraftFilters(emptyFilters)
+    setAppliedFilters(emptyFilters)
   }
 
   return (
@@ -119,6 +189,78 @@ export function DashboardNpcKillsPage() {
               {t('npcKill.reset')}
             </Button>
           </div>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.refTypes')}</span>
+              <select
+                multiple
+                className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={draftFilters.refTypes}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    refTypes: Array.from(event.target.selectedOptions, (option) => option.value),
+                  }))
+                }
+              >
+                {refTypeOptions.map((refType) => (
+                  <option key={refType} value={refType}>
+                    {formatRefTypeLabel(refType)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.solarSystemIds')}</span>
+              <Input
+                value={draftFilters.solarSystemIds}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, solarSystemIds: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.userIds')}</span>
+              <Input
+                value={draftFilters.userIds}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, userIds: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.characterIds')}</span>
+              <Input
+                value={draftFilters.characterIds}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, characterIds: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.minAmount')}</span>
+              <Input
+                type="number"
+                min="0"
+                value={draftFilters.minAmount}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, minAmount: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('npcKill.filters.maxAmount')}</span>
+              <Input
+                type="number"
+                min="0"
+                value={draftFilters.maxAmount}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({ ...current, maxAmount: event.target.value }))
+                }
+              />
+            </label>
+          </div>
         </div>
       </div>
 
@@ -159,7 +301,8 @@ export function DashboardNpcKillsPage() {
                   <thead>
                     <tr className="border-b bg-muted/40 text-left">
                       <th className="px-3 py-2">#</th>
-                      <th className="px-3 py-2">{t('npcKill.characterName')}</th>
+                      <th className="px-3 py-2">{t('npcKill.userDisplayName')}</th>
+                      <th className="px-3 py-2 text-right">{t('npcKill.characterCount')}</th>
                       <th className="px-3 py-2 text-right">{t('npcKill.totalBounty')}</th>
                       <th className="px-3 py-2 text-right">{t('npcKill.totalTax')}</th>
                       <th className="px-3 py-2 text-right">{t('npcKill.actualIncome')}</th>
@@ -168,9 +311,10 @@ export function DashboardNpcKillsPage() {
                   </thead>
                   <tbody>
                     {reportData.members.map((member, index) => (
-                      <tr key={member.character_id} className="border-b">
+                      <tr key={member.user_id} className="border-b">
                         <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
-                        <td className="px-3 py-2">{member.character_name}</td>
+                        <td className="px-3 py-2">{member.display_name}</td>
+                        <td className="px-3 py-2 text-right">{member.character_count}</td>
                         <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(member.total_bounty)}</td>
                         <td className="px-3 py-2 text-right text-destructive">{formatIskPlain(member.total_tax)}</td>
                         <td className="px-3 py-2 text-right text-emerald-600">{formatIskPlain(member.actual_income)}</td>

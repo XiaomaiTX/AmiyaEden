@@ -81,8 +81,20 @@ describe('info npc kills page', () => {
                   solar_system_name: 'Jita',
                   reason: 'Mission clear',
                 },
+                {
+                  id: 2,
+                  character_id: 1001,
+                  character_name: 'Amiya',
+                  amount: 40000000,
+                  tax: 0,
+                  date: '2026-05-01 12:42:00',
+                  ref_type: 'incursion_payout',
+                  solar_system_id: 0,
+                  solar_system_name: '',
+                  reason: '',
+                },
               ],
-              total: 1,
+              total: 2,
               page: 1,
               page_size: 20,
             },
@@ -97,11 +109,12 @@ describe('info npc kills page', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Amiya')).toBeInTheDocument()
+      expect(screen.getByText('Pirate Drone')).toBeInTheDocument()
     })
 
     expect(screen.getByText('Pirate Drone')).toBeInTheDocument()
-    expect(screen.getByText('Jita')).toBeInTheDocument()
+    expect(screen.getAllByText('Jita').length).toBeGreaterThan(0)
     expect(screen.getByText('Mission clear')).toBeInTheDocument()
+    expect(screen.getAllByText('入侵奖励').length).toBeGreaterThan(0)
   })
 })

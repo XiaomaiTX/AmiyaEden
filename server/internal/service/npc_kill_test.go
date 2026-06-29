@@ -44,7 +44,7 @@ func TestParseDateRange(t *testing.T) {
 	}
 }
 
-func TestCalcSummaryIncludesEssTransfers(t *testing.T) {
+func TestCalcSummaryIncludesEssTransfersAndIncursionPayouts(t *testing.T) {
 	svc := NewNpcKillService()
 	base := time.Date(2026, 3, 27, 12, 0, 0, 0, time.UTC)
 
@@ -52,22 +52,26 @@ func TestCalcSummaryIncludesEssTransfers(t *testing.T) {
 		{ID: 1, RefType: "bounty_prizes", Amount: 100, Tax: -10, Date: base},
 		{ID: 2, RefType: "ess_escrow_transfer", Amount: 50, Tax: 0, Date: base.Add(time.Minute)},
 		{ID: 3, RefType: "bounty_prizes", Amount: 80, Tax: -8, Date: base.Add(2 * time.Minute)},
+		{ID: 4, RefType: "incursion_payout", Amount: 40, Tax: 0, Date: base.Add(3 * time.Minute)},
 	})
 
-	if summary.TotalBounty != 180 {
-		t.Fatalf("expected bounty total 180, got %v", summary.TotalBounty)
+	if summary.TotalBounty != 220 {
+		t.Fatalf("expected bounty total 220 with incursion contribution, got %v", summary.TotalBounty)
 	}
 	if summary.TotalESS != 50 {
 		t.Fatalf("expected ESS total 50, got %v", summary.TotalESS)
 	}
+	if summary.TotalIncursion != 40 {
+		t.Fatalf("expected incursion total 40, got %v", summary.TotalIncursion)
+	}
 	if summary.TotalTax != -18 {
 		t.Fatalf("expected tax total -18, got %v", summary.TotalTax)
 	}
-	if summary.ActualIncome != 212 {
-		t.Fatalf("expected actual income 212 with ESS contribution, got %v", summary.ActualIncome)
+	if summary.ActualIncome != 252 {
+		t.Fatalf("expected actual income 252 without double-counting incursion, got %v", summary.ActualIncome)
 	}
-	if summary.TotalRecords != 2 {
-		t.Fatalf("expected 2 bounty records, got %d", summary.TotalRecords)
+	if summary.TotalRecords != 3 {
+		t.Fatalf("expected 3 bounty records including incursion, got %d", summary.TotalRecords)
 	}
 }
 
@@ -202,6 +206,7 @@ func TestBuildCorpMemberSummariesByUser(t *testing.T) {
 		{CharacterID: 1002, RefType: "bounty_prizes", Amount: 50, Tax: -5},
 		{CharacterID: 1002, RefType: "ess_escrow_transfer", Amount: 20, Tax: 0},
 		{CharacterID: 2001, RefType: "bounty_prizes", Amount: 90, Tax: -9},
+		{CharacterID: 2001, RefType: "incursion_payout", Amount: 40, Tax: 0},
 		{CharacterID: 2001, RefType: "agent_mission_reward", Amount: 10, Tax: 0},
 	}
 	charUserMap := map[int64]uint{
@@ -266,7 +271,33 @@ func TestBuildCorpMemberSummariesByUser(t *testing.T) {
 	if user2.TotalMission != 10 {
 		t.Fatalf("user2 total_mission = %v, want 10", user2.TotalMission)
 	}
-	if user2.ActualIncome != 91 {
-		t.Fatalf("user2 actual_income = %v, want 91", user2.ActualIncome)
+	if user2.TotalBounty != 130 {
+		t.Fatalf("user2 total_bounty = %v, want 130", user2.TotalBounty)
+	}
+	if user2.TotalIncursion != 40 {
+		t.Fatalf("user2 total_incursion = %v, want 40", user2.TotalIncursion)
+	}
+	if user2.RecordCount != 2 {
+		t.Fatalf("user2 record_count = %d, want 2", user2.RecordCount)
+	}
+	if user2.ActualIncome != 131 {
+		t.Fatalf("user2 actual_income = %v, want 131", user2.ActualIncome)
+	}
+}
+
+func TestNpcKillFilterHelpers(t *testing.T) {
+	refTypes := normalizeNpcIncomeRefTypes([]string{"bounty_prizes", "bad", "incursion_payout", "bounty_prizes"})
+	if len(refTypes) != 2 || refTypes[0] != "bounty_prizes" || refTypes[1] != "incursion_payout" {
+		t.Fatalf("unexpected normalized ref types: %+v", refTypes)
+	}
+
+	emptyIntersection := normalizeNpcIncomeRefTypes([]string{"bad"})
+	if len(emptyIntersection) != 1 || emptyIntersection[0] == "bad" {
+		t.Fatalf("expected unsupported ref type sentinel, got %+v", emptyIntersection)
+	}
+
+	charIDs := filterAllowedCharacterIDs([]int64{1, 2, 3}, []int64{3, 9, 1})
+	if len(charIDs) != 2 || charIDs[0] != 1 || charIDs[1] != 3 {
+		t.Fatalf("unexpected filtered character IDs: %+v", charIDs)
 	}
 }

@@ -33,15 +33,16 @@ describe('dashboard npc kills page', () => {
             },
             members: [
               {
-                character_id: 1001,
-                character_name: 'Amiya',
-                total_bounty: 1000,
+                user_id: 31,
+                display_name: 'Amiya Commander',
+                character_count: 2,
+                total_bounty: 40001000,
                 total_ess: 0,
-                total_incursion: 0,
+                total_incursion: 40000000,
                 total_mission: 0,
                 total_tax: 100,
-                actual_income: 900,
-                record_count: 2,
+                actual_income: 40000900,
+                record_count: 3,
               },
             ],
             by_system: [
@@ -74,7 +75,7 @@ describe('dashboard npc kills page', () => {
       expect(screen.getByText('1,234,567.89')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('Amiya')).toBeInTheDocument()
+    expect(screen.getByText('Amiya Commander')).toBeInTheDocument()
     expect(screen.getByText('Jita')).toBeInTheDocument()
   })
 })

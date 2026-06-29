@@ -50,31 +50,49 @@ func NewNpcKillService() *NpcKillService {
 
 // NpcKillRequest 刷怪报表请求（个人 - 单人物）
 type NpcKillRequest struct {
-	CharacterID int64  `json:"character_id" binding:"required"`
-	StartDate   string `json:"start_date"`           // 格式: 2006-01-02
-	EndDate     string `json:"end_date"`             // 格式: 2006-01-02
-	Language    string `json:"language"`             // 默认 zh
-	Page        int    `json:"page" binding:"min=0"` // 0 表示不分页，返回全部
-	PageSize    int    `json:"page_size" binding:"min=0"`
+	CharacterID    int64    `json:"character_id" binding:"required"`
+	StartDate      string   `json:"start_date"`           // 格式: 2006-01-02
+	EndDate        string   `json:"end_date"`             // 格式: 2006-01-02
+	Language       string   `json:"language"`             // 默认 zh
+	Page           int      `json:"page" binding:"min=0"` // 0 表示不分页，返回全部
+	PageSize       int      `json:"page_size" binding:"min=0"`
+	RefTypes       []string `json:"ref_types"`
+	SolarSystemIDs []int    `json:"solar_system_ids"`
+	CharacterIDs   []int64  `json:"character_ids"`
+	UserIDs        []uint   `json:"user_ids"`
+	MinAmount      *float64 `json:"min_amount"`
+	MaxAmount      *float64 `json:"max_amount"`
 }
 
 // NpcKillAllRequest 刷怪报表请求（个人 - 名下所有人物汇总）
 type NpcKillAllRequest struct {
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-	Language  string `json:"language"`
-	Page      int    `json:"page" binding:"min=0"`
-	PageSize  int    `json:"page_size" binding:"min=0"`
+	StartDate      string   `json:"start_date"`
+	EndDate        string   `json:"end_date"`
+	Language       string   `json:"language"`
+	Page           int      `json:"page" binding:"min=0"`
+	PageSize       int      `json:"page_size" binding:"min=0"`
+	RefTypes       []string `json:"ref_types"`
+	SolarSystemIDs []int    `json:"solar_system_ids"`
+	CharacterIDs   []int64  `json:"character_ids"`
+	UserIDs        []uint   `json:"user_ids"`
+	MinAmount      *float64 `json:"min_amount"`
+	MaxAmount      *float64 `json:"max_amount"`
 }
 
 // NpcKillCorpRequest 刷怪报表请求（公司/管理员）
 type NpcKillCorpRequest struct {
-	StartDate   string `json:"start_date"`
-	EndDate     string `json:"end_date"`
-	Language    string `json:"language"`
-	Page        int    `json:"page" binding:"min=0"`
-	PageSize    int    `json:"page_size" binding:"min=0"`
-	CorpTickers string `json:"corp_tickers"`
+	StartDate      string   `json:"start_date"`
+	EndDate        string   `json:"end_date"`
+	Language       string   `json:"language"`
+	Page           int      `json:"page" binding:"min=0"`
+	PageSize       int      `json:"page_size" binding:"min=0"`
+	CorpTickers    string   `json:"corp_tickers"`
+	RefTypes       []string `json:"ref_types"`
+	SolarSystemIDs []int    `json:"solar_system_ids"`
+	CharacterIDs   []int64  `json:"character_ids"`
+	UserIDs        []uint   `json:"user_ids"`
+	MinAmount      *float64 `json:"min_amount"`
+	MaxAmount      *float64 `json:"max_amount"`
 }
 
 // NpcKillSummary 总览数据
@@ -176,9 +194,18 @@ func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKill
 	}
 
 	startDate, endDate := parseDateRange(req.StartDate, req.EndDate)
+	query := repository.NpcKillJournalQuery{
+		CharacterIDs:   []int64{req.CharacterID},
+		RefTypes:       normalizeNpcIncomeRefTypes(req.RefTypes),
+		SolarSystemIDs: normalizePositiveInts(req.SolarSystemIDs),
+		StartDate:      startDate,
+		EndDate:        endDate,
+		MinAmount:      req.MinAmount,
+		MaxAmount:      req.MaxAmount,
+	}
 
 	// 获取所有记录（用于统计）
-	allJournals, err := s.npcKillRepo.GetBountyJournals(req.CharacterID, startDate, endDate)
+	allJournals, err := s.npcKillRepo.ListJournals(query)
 	if err != nil {
 		return nil, fmt.Errorf("获取刷怪数据失败: %w", err)
 	}
@@ -187,7 +214,9 @@ func (s *NpcKillService) GetNpcKills(userID uint, req *NpcKillRequest) (*NpcKill
 	var journals []model.EVECharacterWalletJournal
 	var total int64
 	if req.Page > 0 && req.PageSize > 0 {
-		journals, total, err = s.npcKillRepo.GetBountyJournalsPaged(req.CharacterID, startDate, endDate, req.Page, req.PageSize)
+		query.Page = req.Page
+		query.PageSize = req.PageSize
+		journals, total, err = s.npcKillRepo.ListJournalsPaged(query)
 		if err != nil {
 			return nil, fmt.Errorf("获取刷怪流水失败: %w", err)
 		}
@@ -242,9 +271,25 @@ func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*N
 		charIDs = append(charIDs, c.CharacterID)
 		charNameMap[c.CharacterID] = c.CharacterName
 	}
+	charIDs = filterAllowedCharacterIDs(charIDs, req.CharacterIDs)
+	if len(req.UserIDs) > 0 {
+		if _, ok := uintSet(req.UserIDs)[userID]; !ok {
+			charIDs = nil
+		}
+	}
+	charNameMap = filterCharacterNameMap(charNameMap, charIDs)
+	query := repository.NpcKillJournalQuery{
+		CharacterIDs:   charIDs,
+		RefTypes:       normalizeNpcIncomeRefTypes(req.RefTypes),
+		SolarSystemIDs: normalizePositiveInts(req.SolarSystemIDs),
+		StartDate:      startDate,
+		EndDate:        endDate,
+		MinAmount:      req.MinAmount,
+		MaxAmount:      req.MaxAmount,
+	}
 
 	// 获取所有记录（用于统计）
-	allJournals, err := s.npcKillRepo.GetBountyJournalsByCharacterIDs(charIDs, startDate, endDate)
+	allJournals, err := s.npcKillRepo.ListJournals(query)
 	if err != nil {
 		return nil, fmt.Errorf("获取刷怪数据失败: %w", err)
 	}
@@ -253,7 +298,9 @@ func (s *NpcKillService) GetAllNpcKills(userID uint, req *NpcKillAllRequest) (*N
 	var journals []model.EVECharacterWalletJournal
 	var total int64
 	if req.Page > 0 && req.PageSize > 0 {
-		journals, total, err = s.npcKillRepo.GetBountyJournalsByCharacterIDsPaged(charIDs, startDate, endDate, req.Page, req.PageSize)
+		query.Page = req.Page
+		query.PageSize = req.PageSize
+		journals, total, err = s.npcKillRepo.ListJournalsPaged(query)
 		if err != nil {
 			return nil, fmt.Errorf("获取刷怪流水失败: %w", err)
 		}
@@ -302,9 +349,40 @@ func (s *NpcKillService) GetCorpNpcKills(req *NpcKillCorpRequest) (*NpcKillCorpR
 		charNameMap[c.CharacterID] = c.CharacterName
 		userIDSet[c.UserID] = struct{}{}
 	}
+	charIDs = filterAllowedCharacterIDs(charIDs, req.CharacterIDs)
+	allowedUserIDs := uintSet(req.UserIDs)
+	filteredCharUserMap := make(map[int64]uint, len(charIDs))
+	for _, characterID := range charIDs {
+		userID, ok := charUserMap[characterID]
+		if !ok {
+			continue
+		}
+		if len(allowedUserIDs) > 0 {
+			if _, ok := allowedUserIDs[userID]; !ok {
+				continue
+			}
+		}
+		filteredCharUserMap[characterID] = userID
+	}
+	charIDs = mapKeysInt64(filteredCharUserMap)
+	charUserMap = filteredCharUserMap
+	charNameMap = filterCharacterNameMap(charNameMap, charIDs)
+	userIDSet = make(map[uint]struct{}, len(charUserMap))
+	for _, userID := range charUserMap {
+		userIDSet[userID] = struct{}{}
+	}
+	query := repository.NpcKillJournalQuery{
+		CharacterIDs:   charIDs,
+		RefTypes:       normalizeNpcIncomeRefTypes(req.RefTypes),
+		SolarSystemIDs: normalizePositiveInts(req.SolarSystemIDs),
+		StartDate:      startDate,
+		EndDate:        endDate,
+		MinAmount:      req.MinAmount,
+		MaxAmount:      req.MaxAmount,
+	}
 
 	// 获取所有记录
-	allJournals, err := s.npcKillRepo.GetBountyJournalsByCharacterIDs(charIDs, startDate, endDate)
+	allJournals, err := s.npcKillRepo.ListJournals(query)
 	if err != nil {
 		return nil, fmt.Errorf("获取刷怪数据失败: %w", err)
 	}
@@ -357,17 +435,19 @@ func (s *NpcKillService) calcSummary(journals []model.EVECharacterWalletJournal)
 		case "bounty_prizes":
 			summary.TotalBounty += j.Amount
 			summary.TotalRecords++
+		case "incursion_payout":
+			summary.TotalBounty += j.Amount
+			summary.TotalIncursion += j.Amount
+			summary.TotalRecords++
 		case "ess_escrow_transfer":
 			summary.TotalESS += j.Amount
-		case "incursion_payout":
-			summary.TotalIncursion += j.Amount
 		case "agent_mission_reward":
 			summary.TotalMission += j.Amount
 		}
 		summary.TotalTax += j.Tax
 	}
 
-	summary.ActualIncome = summary.TotalBounty + summary.TotalESS + summary.TotalIncursion + summary.TotalMission + summary.TotalTax
+	summary.ActualIncome = summary.TotalBounty + summary.TotalESS + summary.TotalMission + summary.TotalTax
 
 	return summary
 }
@@ -402,10 +482,12 @@ func buildCorpMemberSummaries(
 		case "bounty_prizes":
 			m.TotalBounty += j.Amount
 			m.RecordCount++
+		case "incursion_payout":
+			m.TotalBounty += j.Amount
+			m.TotalIncursion += j.Amount
+			m.RecordCount++
 		case "ess_escrow_transfer":
 			m.TotalESS += j.Amount
-		case "incursion_payout":
-			m.TotalIncursion += j.Amount
 		case "agent_mission_reward":
 			m.TotalMission += j.Amount
 		}
@@ -428,7 +510,7 @@ func buildCorpMemberSummaries(
 
 	members := make([]NpcKillCorpMemberSummary, 0, len(memberMap))
 	for userID, m := range memberMap {
-		m.ActualIncome = m.TotalBounty + m.TotalESS + m.TotalIncursion + m.TotalMission + m.TotalTax
+		m.ActualIncome = m.TotalBounty + m.TotalESS + m.TotalMission + m.TotalTax
 		m.CharacterCount = len(userCharacters[userID])
 		m.DisplayName = strings.TrimSpace(userNicknameMap[userID])
 		if m.DisplayName == "" {
@@ -702,6 +784,111 @@ func normalizeTickerSet(raw string) map[string]struct{} {
 		}
 		result[normalized] = struct{}{}
 	}
+	return result
+}
+
+func normalizeNpcIncomeRefTypes(raw []string) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	allowed := map[string]struct{}{
+		"bounty_prizes":        {},
+		"ess_escrow_transfer":  {},
+		"incursion_payout":     {},
+		"agent_mission_reward": {},
+	}
+	result := make([]string, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for _, item := range raw {
+		normalized := strings.TrimSpace(item)
+		if normalized == "" {
+			continue
+		}
+		if _, ok := allowed[normalized]; !ok {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	if len(result) == 0 {
+		return []string{"__no_supported_npc_income_ref_type__"}
+	}
+	return result
+}
+
+func normalizePositiveInts(raw []int) []int {
+	result := make([]int, 0, len(raw))
+	seen := make(map[int]struct{}, len(raw))
+	for _, value := range raw {
+		if value <= 0 {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func filterAllowedCharacterIDs(allowed []int64, requested []int64) []int64 {
+	if len(allowed) == 0 {
+		return nil
+	}
+	if len(requested) == 0 {
+		return allowed
+	}
+	requestedSet := make(map[int64]struct{}, len(requested))
+	for _, characterID := range requested {
+		if characterID > 0 {
+			requestedSet[characterID] = struct{}{}
+		}
+	}
+	result := make([]int64, 0, len(allowed))
+	for _, characterID := range allowed {
+		if _, ok := requestedSet[characterID]; ok {
+			result = append(result, characterID)
+		}
+	}
+	return result
+}
+
+func uintSet(values []uint) map[uint]struct{} {
+	result := make(map[uint]struct{}, len(values))
+	for _, value := range values {
+		if value == 0 {
+			continue
+		}
+		result[value] = struct{}{}
+	}
+	return result
+}
+
+func filterCharacterNameMap(names map[int64]string, characterIDs []int64) map[int64]string {
+	if len(names) == 0 || len(characterIDs) == 0 {
+		return map[int64]string{}
+	}
+	result := make(map[int64]string, len(characterIDs))
+	for _, characterID := range characterIDs {
+		if name, ok := names[characterID]; ok {
+			result[characterID] = name
+		}
+	}
+	return result
+}
+
+func mapKeysInt64(values map[int64]uint) []int64 {
+	result := make([]int64, 0, len(values))
+	for key := range values {
+		result = append(result, key)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
 	return result
 }
 

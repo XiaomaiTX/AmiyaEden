@@ -41,6 +41,49 @@
           <ElButton type="primary" @click="handleSearch">{{ $t('npcKill.search') }}</ElButton>
           <ElButton @click="handleReset">{{ $t('npcKill.reset') }}</ElButton>
         </div>
+        <div class="flex items-center gap-4 flex-wrap w-full">
+          <ElSelect
+            v-model="selectedRefTypes"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            :placeholder="$t('npcKill.filters.refTypes')"
+            style="width: 260px"
+          >
+            <ElOption
+              v-for="option in refTypeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </ElSelect>
+          <ElSelect
+            v-model="solarSystemIdInputs"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            collapse-tags
+            collapse-tags-tooltip
+            :reserve-keyword="false"
+            :placeholder="$t('npcKill.filters.solarSystemIds')"
+            style="width: 260px"
+          />
+          <ElInputNumber
+            v-model="minAmount"
+            :placeholder="$t('npcKill.filters.minAmount')"
+            :min="0"
+            :controls="false"
+            style="width: 180px"
+          />
+          <ElInputNumber
+            v-model="maxAmount"
+            :placeholder="$t('npcKill.filters.maxAmount')"
+            :min="0"
+            :controls="false"
+            style="width: 180px"
+          />
+        </div>
       </div>
     </ElCard>
 
@@ -181,7 +224,7 @@
 
 <script setup lang="ts">
   import { useTable } from '@/hooks/core/useTable'
-  import { ElTag, ElAvatar, ElSelect, ElOption, ElDatePicker } from 'element-plus'
+  import { ElTag, ElAvatar, ElSelect, ElOption, ElDatePicker, ElInputNumber } from 'element-plus'
   import { fetchMyCharacters } from '@/api/auth'
   import { fetchNpcKills, fetchNpcKillsAll } from '@/api/npc-kill'
   import { formatIskPlain } from '@/utils/common'
@@ -198,13 +241,33 @@
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterId = ref<number>(0) // 0 表示全部人物
   const dateRange = ref<[string, string] | null>(null)
+  const selectedRefTypes = ref<string[]>([])
+  const solarSystemIdInputs = ref<string[]>([])
+  const minAmount = ref<number | undefined>()
+  const maxAmount = ref<number | undefined>()
   const reportData = ref<Api.NpcKill.NpcKillResponse | null>(null)
 
   // ─── REF_TYPE 配置 ───
   const REF_TYPE_CONFIG: Record<string, { type: string; text: string }> = {
     bounty_prizes: { type: 'success', text: t('npcKill.refTypes.bounty_prizes') },
-    ess_escrow_transfer: { type: 'warning', text: t('npcKill.refTypes.ess_escrow_transfer') }
+    ess_escrow_transfer: { type: 'warning', text: t('npcKill.refTypes.ess_escrow_transfer') },
+    incursion_payout: { type: 'primary', text: t('npcKill.refTypes.incursion_payout') },
+    agent_mission_reward: { type: 'info', text: t('npcKill.refTypes.agent_mission_reward') }
   }
+  const refTypeOptions = computed(() =>
+    Object.keys(REF_TYPE_CONFIG).map((value) => ({ value, label: REF_TYPE_CONFIG[value].text }))
+  )
+  const parseNumericInputs = (values: string[]) =>
+    values.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)
+  const buildFilterPayload = () => ({
+    ref_types: selectedRefTypes.value.length > 0 ? [...selectedRefTypes.value] : undefined,
+    solar_system_ids:
+      parseNumericInputs(solarSystemIdInputs.value).length > 0
+        ? parseNumericInputs(solarSystemIdInputs.value)
+        : undefined,
+    min_amount: minAmount.value,
+    max_amount: maxAmount.value
+  })
 
   // ─── API 适配器 ───
   const fetchNpcKillList = async (params: {
@@ -215,6 +278,7 @@
     size: number
   }): Promise<Api.Common.PaginatedResponse<JournalItem>> => {
     const charId = params.character_id ?? 0
+    const filters = buildFilterPayload()
     let res: Api.NpcKill.NpcKillResponse | undefined
     if (charId === 0) {
       // 全部人物汇总
@@ -222,7 +286,8 @@
         start_date: params.start_date,
         end_date: params.end_date,
         page: params.current,
-        page_size: params.size
+        page_size: params.size,
+        ...filters
       })
     } else {
       res = await fetchNpcKills({
@@ -230,7 +295,8 @@
         start_date: params.start_date,
         end_date: params.end_date,
         page: params.current,
-        page_size: params.size
+        page_size: params.size,
+        ...filters
       })
     }
     reportData.value = res ?? null
@@ -348,6 +414,10 @@
 
   const handleReset = () => {
     dateRange.value = null
+    selectedRefTypes.value = []
+    solarSystemIdInputs.value = []
+    minAmount.value = undefined
+    maxAmount.value = undefined
     searchParams.start_date = undefined
     searchParams.end_date = undefined
     getData()

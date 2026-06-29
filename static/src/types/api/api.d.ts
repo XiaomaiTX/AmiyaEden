@@ -2554,6 +2554,12 @@ declare namespace Api {
       language?: string
       page?: number
       page_size?: number
+      ref_types?: string[]
+      solar_system_ids?: number[]
+      character_ids?: number[]
+      user_ids?: number[]
+      min_amount?: number
+      max_amount?: number
     }
 
     /** 个人刷怪报表请求（所有人物汇总） */
@@ -2563,6 +2569,12 @@ declare namespace Api {
       language?: string
       page?: number
       page_size?: number
+      ref_types?: string[]
+      solar_system_ids?: number[]
+      character_ids?: number[]
+      user_ids?: number[]
+      min_amount?: number
+      max_amount?: number
     }
 
     /** 公司刷怪报表请求（管理员） */
@@ -2573,6 +2585,12 @@ declare namespace Api {
       page?: number
       page_size?: number
       corp_tickers?: string
+      ref_types?: string[]
+      solar_system_ids?: number[]
+      character_ids?: number[]
+      user_ids?: number[]
+      min_amount?: number
+      max_amount?: number
     }
 
     /** 总览统计 */

@@ -2003,11 +2003,21 @@
     journalReason: 'Reason',
     members: 'Members',
     recordCount: 'Records',
+    userDisplayName: 'User Nickname',
+    characterCount: 'Characters',
+    filters: {
+      refTypes: 'Income Types',
+      solarSystemIds: 'Solar System IDs',
+      userIds: 'User IDs',
+      characterIds: 'Character IDs',
+      minAmount: 'Min Amount',
+      maxAmount: 'Max Amount',
+    },
     refTypes: {
       bounty_prizes: 'Bounty Prizes',
       ess_escrow_transfer: 'ESS Escrow Transfer',
-      shop_purchase: 'Shop Purchase',
-      shop_refund: 'Shop Refund',
+      incursion_payout: 'Incursion Payout',
+      agent_mission_reward: 'Mission Reward',
     },
   },
   corporationStructures: {
