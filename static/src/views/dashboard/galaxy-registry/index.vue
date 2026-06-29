@@ -493,6 +493,7 @@
             v-model="createForm.expected_end_at"
             type="datetime"
             value-format="YYYY-MM-DD HH:mm:ss"
+            :disabled-date="isCreateExpectedEndDateDisabled"
             class="w-full"
           />
         </ElFormItem>
@@ -519,6 +520,7 @@
             v-model="expectedEndDialog.expected_end_at"
             type="datetime"
             value-format="YYYY-MM-DD HH:mm:ss"
+            :disabled-date="isExpectedEndUpdateDateDisabled"
             class="w-full"
           />
         </ElFormItem>
@@ -665,7 +667,8 @@
   const expectedEndDialog = reactive({
     entry_id: 0,
     system_name: '',
-    expected_end_at: ''
+    expected_end_at: '',
+    actual_start_at: ''
   })
 
   const validationDialogVisible = ref(false)
@@ -1021,6 +1024,63 @@
     await Promise.all(tasks)
   }
 
+  const maxRegistryDurationMs = 2 * 60 * 60 * 1000
+
+  const parseDateTimeValue = (value?: string | null) => {
+    if (!value) return null
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T')
+    const parsed = new Date(normalized)
+    return Number.isNaN(parsed.getTime()) ? null : parsed
+  }
+
+  const dateOnlyTime = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+
+  const isCreateExpectedEndDateDisabled = (date: Date) => {
+    const now = new Date()
+    const max = new Date(now.getTime() + maxRegistryDurationMs)
+    return dateOnlyTime(date) < dateOnlyTime(now) || dateOnlyTime(date) > dateOnlyTime(max)
+  }
+
+  const isExpectedEndUpdateDateDisabled = (date: Date) => {
+    const startAt = parseDateTimeValue(expectedEndDialog.actual_start_at)
+    if (!startAt) return false
+    const max = new Date(startAt.getTime() + maxRegistryDurationMs)
+    return dateOnlyTime(date) < dateOnlyTime(startAt) || dateOnlyTime(date) > dateOnlyTime(max)
+  }
+
+  const validateCreateExpectedEndAt = () => {
+    const expectedEndAt = parseDateTimeValue(createForm.expected_end_at)
+    if (!expectedEndAt) {
+      ElMessage.warning(t('galaxyRegistry.messages.expectedEndAtRequired'))
+      return false
+    }
+    const now = new Date()
+    if (expectedEndAt <= now || expectedEndAt > new Date(now.getTime() + maxRegistryDurationMs)) {
+      ElMessage.warning(t('galaxyRegistry.messages.expectedEndAtMaxDuration'))
+      return false
+    }
+    return true
+  }
+
+  const validateExpectedEndUpdate = () => {
+    const expectedEndAt = parseDateTimeValue(expectedEndDialog.expected_end_at)
+    const actualStartAt = parseDateTimeValue(expectedEndDialog.actual_start_at)
+    if (!expectedEndAt) {
+      ElMessage.warning(t('galaxyRegistry.messages.expectedEndAtRequired'))
+      return false
+    }
+    if (
+      actualStartAt &&
+      (expectedEndAt <= actualStartAt ||
+        expectedEndAt > new Date(actualStartAt.getTime() + maxRegistryDurationMs))
+    ) {
+      ElMessage.warning(t('galaxyRegistry.messages.expectedEndAtMaxDuration'))
+      return false
+    }
+    return true
+  }
+
   const openCreateDialog = (row: Api.Dashboard.GalaxyRegistrySystemItem) => {
     selectedSystem.value = row
     createForm.system_config_id = row.system_config_id
@@ -1029,10 +1089,11 @@
   }
 
   const handleSubmitCreateEntry = async () => {
-    if (!createForm.system_config_id || !createForm.expected_end_at) {
+    if (!createForm.system_config_id) {
       ElMessage.warning(t('galaxyRegistry.messages.expectedEndAtRequired'))
       return
     }
+    if (!validateCreateExpectedEndAt()) return
     creatingEntry.value = true
     try {
       await createGalaxyRegistryEntry(createForm)
@@ -1064,6 +1125,7 @@
     expectedEndDialog.entry_id = row.active_entry.entry_id
     expectedEndDialog.system_name = row.solar_system_name
     expectedEndDialog.expected_end_at = row.active_entry.expected_end_at
+    expectedEndDialog.actual_start_at = row.active_entry.actual_start_at
     expectedEndDialogVisible.value = true
   }
 
@@ -1071,14 +1133,16 @@
     expectedEndDialog.entry_id = row.id
     expectedEndDialog.system_name = row.solar_system_name
     expectedEndDialog.expected_end_at = row.expected_end_at
+    expectedEndDialog.actual_start_at = row.actual_start_at
     expectedEndDialogVisible.value = true
   }
 
   const handleSubmitExpectedEndUpdate = async () => {
-    if (!expectedEndDialog.entry_id || !expectedEndDialog.expected_end_at) {
+    if (!expectedEndDialog.entry_id) {
       ElMessage.warning(t('galaxyRegistry.messages.expectedEndAtRequired'))
       return
     }
+    if (!validateExpectedEndUpdate()) return
     updatingExpectedEnd.value = true
     try {
       await updateGalaxyRegistryEntryExpectedEndAt(expectedEndDialog.entry_id, {
