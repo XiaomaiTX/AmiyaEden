@@ -2753,6 +2753,18 @@
       "deleteConfirm": "确定删除该星系配置吗？"
     }
   },
+  "browserNotifications": {
+    "permission": {
+      "title": "开启浏览器通知",
+      "message": "检测到你有进行中的星系登记。开启浏览器系统通知后，登记满 2 小时仍未结束时会提醒你。",
+      "confirm": "开启通知",
+      "cancel": "暂不开启"
+    },
+    "galaxyRegistryTimeout": {
+      "title": "星系登记已超时",
+      "body": "{system} 的生产登记已达到 2 小时，请及时结束登记。"
+    }
+  },
   "shopBrowse": { "purchaseSuccess": "购买成功", "purchaseFailed": "购买失败" },
   "authCallback": {
     "missingToken": "未收到登录令牌，请重试",

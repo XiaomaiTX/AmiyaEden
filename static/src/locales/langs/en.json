@@ -2991,6 +2991,18 @@
       "deleteConfirm": "Delete this system config?"
     }
   },
+  "browserNotifications": {
+    "permission": {
+      "title": "Enable Browser Notifications",
+      "message": "You have an active galaxy registry entry. Enable browser system notifications to be reminded when an entry reaches 2 hours without being ended.",
+      "confirm": "Enable",
+      "cancel": "Not now"
+    },
+    "galaxyRegistryTimeout": {
+      "title": "Galaxy Registry Entry Overdue",
+      "body": "The production entry in {system} has reached 2 hours. Please end the entry when possible."
+    }
+  },
   "shopBrowse": {
     "purchaseSuccess": "Purchase successful",
     "purchaseFailed": "Purchase failed"
