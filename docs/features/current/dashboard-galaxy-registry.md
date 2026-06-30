@@ -13,6 +13,7 @@ source_of_truth:
   - static/src/router/modules/dashboard.ts
   - static/src/api/galaxy-registry.ts
   - static/src/views/dashboard/galaxy-registry/index.vue
+  - static/src/hooks/galaxy-registry/useGalaxyRegistryTimeoutNotification.ts
 ---
 
 # Dashboard 星系登记
@@ -25,6 +26,8 @@ source_of_truth:
 - 每个星系同一时间只允许一条 active 登记
 - 队长点击结束生产时，服务层只结束登记并释放星系，校验保持 `pending`
 - 满 2 小时仍未结束的 active 登记会由后台任务自动结束，`actual_end_at` 固定写为 `actual_start_at + 2h`
+- 用户打开 AmiyaEden 主布局页面时，前端会监控本人 active 登记；登记达到 2 小时仍未结束时，若浏览器通知权限已授权，则发送一次浏览器系统通知
+- 若浏览器通知权限仍为默认状态，前端会在检测到本人 active 登记时弹出一次站内确认，引导用户授权；用户取消后，同一浏览器 profile 不再反复提示
 - 登记结算由后台任务统一处理：先通过 ESI 队列刷新队长当前绑定角色的 `character_wallet`，再读取本地钱包流水写回最终校验结果
 - 部分角色钱包刷新失败时，后台任务会继续用其余成功刷新的角色尝试结算
 - 若全部绑定角色钱包刷新失败，则登记保持 `pending`，等待下次后台任务或管理员重新提交结算
@@ -83,6 +86,7 @@ source_of_truth:
 - 管理员重新触发校验会先重置为 `pending`，后台结算完成后覆盖原有 `validation_status`、`validated_*`、`validated_at`、`violation_reason`
 - 结束登记后的校验时间窗仍然只看 `actual_start_at ~ actual_end_at`，不会使用 `expected_end_at`
 - active 登记超过 2 小时后会被后台任务结束；任务未执行前的超时状态仍是 UI 层派生状态
+- 浏览器系统通知只在站点已打开时工作，不提供浏览器关闭后的 Push 推送；每个 `entry_id` 在同一浏览器 profile 中只通知一次
 
 ## 主要代码文件
 
@@ -95,3 +99,5 @@ source_of_truth:
 - `static/src/api/galaxy-registry.ts`
 - `static/src/router/modules/dashboard.ts`
 - `static/src/views/dashboard/galaxy-registry/index.vue`
+- `static/src/hooks/galaxy-registry/useGalaxyRegistryTimeoutNotification.ts`
+- `static/src/hooks/galaxy-registry/galaxyRegistryTimeoutNotification.ts`

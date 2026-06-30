@@ -22,6 +22,14 @@ import { defineAsyncComponent } from 'vue'
  */
 export const globalComponentsConfig: GlobalComponentConfig[] = [
   {
+    name: '浏览器系统通知',
+    key: 'browser-notifications',
+    component: defineAsyncComponent(
+      () => import('@/components/core/layouts/art-browser-notifications/index.vue')
+    ),
+    enabled: true
+  },
+  {
     name: '设置面板',
     key: 'settings-panel',
     component: defineAsyncComponent(
