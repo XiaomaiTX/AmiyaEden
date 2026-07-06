@@ -280,10 +280,27 @@ func (s *GalaxyRegistryService) StartEntry(userID uint, req GalaxyRegistryCreate
 		if !system.IsEnabled {
 			return NewUserVisibleError("该星系未启用登记")
 		}
-		if _, txErr = s.repo.FindActiveEntryBySystemConfigIDForUpdateTx(tx, req.SystemConfigID); txErr == nil {
-			return NewUserVisibleError("该星系当前已有生产登记")
-		} else if !errors.Is(txErr, gorm.ErrRecordNotFound) {
-			return txErr
+		// An active entry blocks new registrations, unless it has timed out —
+		// in which case another captain may take over the slot. The old entry
+		// is closed (completed) within this same transaction so the partial
+		// unique index on (system_config_id) WHERE status='active' stays
+		// satisfied. A captain cannot overwrite their own timed-out entry;
+		// they must end it explicitly instead.
+		existing, activeErr := s.repo.FindActiveEntryBySystemConfigIDForUpdateTx(tx, req.SystemConfigID)
+		if activeErr == nil {
+			isOverdue := existing.ExpectedEndAt.Before(now) ||
+				existing.ActualStartAt.Add(GalaxyRegistryMaxEntryDuration).Before(now)
+			if !isOverdue {
+				return NewUserVisibleError("该星系当前已有生产登记")
+			}
+			if existing.CaptainUserID == userID {
+				return NewUserVisibleError("请先结束自己的超时登记")
+			}
+			if _, endErr := s.endEntryInTx(tx, existing, now, userID, false); endErr != nil {
+				return endErr
+			}
+		} else if !errors.Is(activeErr, gorm.ErrRecordNotFound) {
+			return activeErr
 		}
 
 		row := &model.GalaxyRegistryEntry{
@@ -352,30 +369,11 @@ func (s *GalaxyRegistryService) endEntryAt(
 		if !force && !systemAuto && row.CaptainUserID != operatorID {
 			return NewUserVisibleError("只能结束自己的登记")
 		}
-		updates := map[string]any{
-			"status":                  model.GalaxyRegistryEntryStatusCompleted,
-			"actual_end_at":           endAt,
-			"ended_by_user_id":        operatorID,
-			"force_ended_by_admin":    force,
-			"validation_status":       model.GalaxyRegistryValidationPending,
-			"validated_at":            nil,
-			"validated_bounty_amount": 0,
-			"validated_bounty_count":  0,
-			"violation_reason":        "",
+		ended, endErr := s.endEntryInTx(tx, row, endAt, operatorID, force)
+		if endErr != nil {
+			return endErr
 		}
-		if txErr = tx.Model(&model.GalaxyRegistryEntry{}).Where("id = ?", entryID).Updates(updates).Error; txErr != nil {
-			return txErr
-		}
-		row.Status = model.GalaxyRegistryEntryStatusCompleted
-		row.ActualEndAt = &endAt
-		row.EndedByUserID = operatorID
-		row.ForceEndedByAdmin = force
-		row.ValidationStatus = model.GalaxyRegistryValidationPending
-		row.ValidatedAt = nil
-		row.ValidatedBountyAmount = 0
-		row.ValidatedBountyCount = 0
-		row.ViolationReason = ""
-		updated = row
+		updated = ended
 		return nil
 	})
 	if err != nil {
@@ -390,6 +388,42 @@ func (s *GalaxyRegistryService) endEntryAt(
 		return nil, err
 	}
 	return s.buildEntryItem(updated, user)
+}
+
+// endEntryInTx marks an active entry completed within an existing transaction.
+// The caller is responsible for ensuring the row is active and the operator is
+// authorized. It updates the in-memory row in place and returns it.
+func (s *GalaxyRegistryService) endEntryInTx(
+	tx *gorm.DB,
+	row *model.GalaxyRegistryEntry,
+	endAt time.Time,
+	operatorID uint,
+	force bool,
+) (*model.GalaxyRegistryEntry, error) {
+	updates := map[string]any{
+		"status":                  model.GalaxyRegistryEntryStatusCompleted,
+		"actual_end_at":           endAt,
+		"ended_by_user_id":        operatorID,
+		"force_ended_by_admin":    force,
+		"validation_status":       model.GalaxyRegistryValidationPending,
+		"validated_at":            nil,
+		"validated_bounty_amount": 0,
+		"validated_bounty_count":  0,
+		"violation_reason":        "",
+	}
+	if err := tx.Model(&model.GalaxyRegistryEntry{}).Where("id = ?", row.ID).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	row.Status = model.GalaxyRegistryEntryStatusCompleted
+	row.ActualEndAt = &endAt
+	row.EndedByUserID = operatorID
+	row.ForceEndedByAdmin = force
+	row.ValidationStatus = model.GalaxyRegistryValidationPending
+	row.ValidatedAt = nil
+	row.ValidatedBountyAmount = 0
+	row.ValidatedBountyCount = 0
+	row.ViolationReason = ""
+	return row, nil
 }
 
 func (s *GalaxyRegistryService) ListMyEntries(userID uint, filter GalaxyRegistryEntryListFilter, page int, pageSize int) ([]GalaxyRegistryEntryItem, int64, error) {

@@ -13,5 +13,5 @@ test('dashboard routes include galaxy registry under dashboard menu', () => {
   assert.match(block, /name:\s*'DashboardGalaxyRegistry'/)
   assert.match(block, /component:\s*'\/dashboard\/galaxy-registry'/)
   assert.match(block, /title:\s*'menus\.dashboard\.galaxyRegistry'/)
-  assert.match(block, /roles:\s*\['super_admin', 'admin', 'captain'\]/)
+  assert.match(block, /roles:\s*\['super_admin', 'admin', 'captain', 'user'\]/)
 })

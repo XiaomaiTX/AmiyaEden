@@ -589,7 +589,7 @@
   import { useI18n } from 'vue-i18n'
   import { useTable } from '@/hooks/core/useTable'
   import { useUserStore } from '@/store/modules/user'
-  import { formatTime } from '@/utils/common/time'
+  import { formatTime, toLocalOffsetISO } from '@/utils/common/time'
   import {
     createAdminGalaxyRegistrySystem,
     createGalaxyRegistryEntry,
@@ -623,10 +623,7 @@
 
   const roles = computed(() => userStore.info.roles || [])
   const canCaptainTab = computed(
-    () =>
-      roles.value.includes('captain') ||
-      roles.value.includes('admin') ||
-      roles.value.includes('super_admin')
+    () => roles.value.includes('captain') || roles.value.includes('super_admin')
   )
   const canAdminTab = computed(
     () => roles.value.includes('admin') || roles.value.includes('super_admin')
@@ -1094,9 +1091,28 @@
       return
     }
     if (!validateCreateExpectedEndAt()) return
+    // 若目标星系已有超时登记，覆盖前需要用户确认。
+    if (selectedSystem.value?.status === 'overdue') {
+      try {
+        await ElMessageBox.confirm(
+          t('galaxyRegistry.messages.confirmOverwrite.content'),
+          t('galaxyRegistry.messages.confirmOverwrite.title'),
+          {
+            confirmButtonText: t('common.confirm'),
+            cancelButtonText: t('common.cancel'),
+            type: 'warning'
+          }
+        )
+      } catch {
+        return
+      }
+    }
     creatingEntry.value = true
     try {
-      await createGalaxyRegistryEntry(createForm)
+      await createGalaxyRegistryEntry({
+        system_config_id: createForm.system_config_id,
+        expected_end_at: toLocalOffsetISO(createForm.expected_end_at)
+      })
       ElMessage.success(t('galaxyRegistry.messages.entryCreated'))
       createDialogVisible.value = false
       await refreshCaptainViews()
@@ -1146,7 +1162,7 @@
     updatingExpectedEnd.value = true
     try {
       await updateGalaxyRegistryEntryExpectedEndAt(expectedEndDialog.entry_id, {
-        expected_end_at: expectedEndDialog.expected_end_at
+        expected_end_at: toLocalOffsetISO(expectedEndDialog.expected_end_at)
       })
       ElMessage.success(t('galaxyRegistry.messages.expectedEndUpdated'))
       expectedEndDialogVisible.value = false
@@ -1282,7 +1298,9 @@
   }
 
   const canCreateEntry = (row: Api.Dashboard.GalaxyRegistrySystemItem) =>
-    canCaptainTab.value && row.is_enabled && row.status === 'idle'
+    canCaptainTab.value &&
+    row.is_enabled &&
+    (row.status === 'idle' || (row.status === 'overdue' && !row.active_entry?.is_mine))
   const canEndEntry = (row: Api.Dashboard.GalaxyRegistrySystemItem) =>
     canCaptainTab.value && !!row.active_entry?.is_mine
   const canEditExpectedEnd = (row: Api.Dashboard.GalaxyRegistrySystemItem) =>

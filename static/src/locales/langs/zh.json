@@ -2750,7 +2750,11 @@
       "systemCreated": "星系配置已创建",
       "systemSaved": "星系配置已保存",
       "systemDeleted": "星系配置已删除",
-      "deleteConfirm": "确定删除该星系配置吗？"
+      "deleteConfirm": "确定删除该星系配置吗？",
+      "confirmOverwrite": {
+        "title": "覆盖超时登记",
+        "content": "该星系当前登记已超时，确认覆盖并开始你的登记吗？"
+      }
     }
   },
   "browserNotifications": {
