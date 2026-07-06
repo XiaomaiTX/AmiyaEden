@@ -2988,7 +2988,11 @@
       "systemCreated": "System config created",
       "systemSaved": "System configs saved",
       "systemDeleted": "System config deleted",
-      "deleteConfirm": "Delete this system config?"
+      "deleteConfirm": "Delete this system config?",
+      "confirmOverwrite": {
+        "title": "Overwrite Timed-Out Entry",
+        "content": "The current entry for this system has timed out. Confirm to overwrite it and start your own entry?"
+      }
     }
   },
   "browserNotifications": {

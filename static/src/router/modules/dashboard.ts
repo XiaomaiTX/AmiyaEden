@@ -59,7 +59,7 @@ export const dashboardRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.dashboard.galaxyRegistry',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'captain']
+        roles: ['super_admin', 'admin', 'captain', 'user']
       }
     }
   ]

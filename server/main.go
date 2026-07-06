@@ -26,6 +26,16 @@ func main() {
 		return global.Logger
 	}))
 
+	// 固定进程时区为 Asia/Shanghai，确保 time.Now() / time.Local / time.ParseInLocation
+	// 与数据库 DSN 的 TimeZone=Asia/Shanghai 保持一致，避免静默依赖容器 TZ 环境变量。
+	// 必须在解析任何用户提交的时间（如星系登记 expected_end_at）之前完成。
+	if loc, err := time.LoadLocation("Asia/Shanghai"); err != nil {
+		global.Logger.Warn("加载时区 Asia/Shanghai 失败，沿用系统默认时区", zap.Error(err))
+	} else {
+		time.Local = loc
+		global.Logger.Info("进程时区已固定为 Asia/Shanghai")
+	}
+
 	// 初始化 JWT 密钥
 	jwt.Init(global.Config.JWT.Secret)
 

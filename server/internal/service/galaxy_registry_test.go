@@ -809,6 +809,193 @@ func TestGalaxyRegistryAutoEndOverdueEntriesUsesMaxDurationEndAt(t *testing.T) {
 	}
 }
 
+// newGalaxyRegistryOverwriteTestDB seeds an enabled system and a first captain
+// (with a bound character) that holds the active entry described by startAt /
+// expectedEndAt. The second captain is also created with a bound character.
+func newGalaxyRegistryOverwriteTestDB(t *testing.T, startAt, expectedEndAt time.Time) (*gorm.DB, *model.GalaxyRegistryEntry) {
+	t.Helper()
+	db := newGalaxyRegistryServiceTestDB(t)
+
+	system := &model.GalaxyRegistrySystem{
+		SolarSystemID:     30002187,
+		SolarSystemName:   "Amamake",
+		RegionID:          10000054,
+		RegionName:        "Heimatar",
+		ConstellationID:   20000605,
+		ConstellationName: "Hed-Belt",
+		Security:          -0.4,
+		MinBountyAmount:   model.GalaxyRegistryDefaultMinBountyAmount,
+		IsEnabled:         true,
+	}
+	if err := db.Create(system).Error; err != nil {
+		t.Fatalf("create system: %v", err)
+	}
+	if err := db.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 70},
+		Nickname:           "captain-seventy",
+		PrimaryCharacterID: 96000070,
+		Role:               model.RoleCaptain,
+	}).Error; err != nil {
+		t.Fatalf("create first captain: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   96000070,
+		CharacterName: "Captain Seventy",
+		UserID:        70,
+	}).Error; err != nil {
+		t.Fatalf("create first character: %v", err)
+	}
+	if err := db.Create(&model.User{
+		BaseModel:          model.BaseModel{ID: 71},
+		Nickname:           "captain-seventy-one",
+		PrimaryCharacterID: 96000071,
+		Role:               model.RoleCaptain,
+	}).Error; err != nil {
+		t.Fatalf("create second captain: %v", err)
+	}
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   96000071,
+		CharacterName: "Captain Seventy-One",
+		UserID:        71,
+	}).Error; err != nil {
+		t.Fatalf("create second character: %v", err)
+	}
+	existing := &model.GalaxyRegistryEntry{
+		SystemConfigID:        system.ID,
+		SolarSystemID:         system.SolarSystemID,
+		SolarSystemName:       system.SolarSystemName,
+		CaptainUserID:         70,
+		CaptainCharacterID:    96000070,
+		CaptainCharacterName:  "Captain Seventy",
+		Status:                model.GalaxyRegistryEntryStatusActive,
+		ValidationStatus:      model.GalaxyRegistryValidationPending,
+		ExpectedEndAt:         expectedEndAt,
+		ActualStartAt:         startAt,
+		FrozenMinBountyAmount: system.MinBountyAmount,
+	}
+	if err := db.Create(existing).Error; err != nil {
+		t.Fatalf("create existing entry: %v", err)
+	}
+	return db, existing
+}
+
+func TestGalaxyRegistryStartEntryOverwritesOverdueEntryByExpectedEnd(t *testing.T) {
+	now := time.Now()
+	startAt := now.Add(-90 * time.Minute)
+	expectedEndAt := now.Add(-30 * time.Minute) // expected end already passed
+	db, existing := newGalaxyRegistryOverwriteTestDB(t, startAt, expectedEndAt)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	svc := NewGalaxyRegistryService()
+	newEntry, err := svc.StartEntry(71, GalaxyRegistryCreateEntryRequest{
+		SystemConfigID: existing.SystemConfigID,
+		ExpectedEndAt:  now.Add(30 * time.Minute),
+	})
+	if err != nil {
+		t.Fatalf("StartEntry() overwrite error = %v", err)
+	}
+	if newEntry.CaptainUserID != 71 {
+		t.Fatalf("new entry captain = %d, want 71", newEntry.CaptainUserID)
+	}
+	if newEntry.Status != model.GalaxyRegistryEntryStatusActive {
+		t.Fatalf("new entry status = %q, want active", newEntry.Status)
+	}
+
+	// The old entry must be completed and credited to the overwriting captain.
+	reloaded, err := svc.repo.GetEntryByID(existing.ID)
+	if err != nil {
+		t.Fatalf("reload old entry: %v", err)
+	}
+	if reloaded.Status != model.GalaxyRegistryEntryStatusCompleted {
+		t.Fatalf("old entry status = %q, want completed", reloaded.Status)
+	}
+	if reloaded.ActualEndAt == nil {
+		t.Fatal("old entry actual_end_at should be set")
+	}
+	if reloaded.EndedByUserID != 71 {
+		t.Fatalf("old entry ended_by_user_id = %d, want 71", reloaded.EndedByUserID)
+	}
+}
+
+func TestGalaxyRegistryStartEntryOverwritesOverdueEntryByHardCap(t *testing.T) {
+	// expected_end_at is still in the future, but actual_start_at + 2h passed.
+	now := time.Now()
+	startAt := now.Add(-(GalaxyRegistryMaxEntryDuration + time.Minute))
+	expectedEndAt := now.Add(30 * time.Minute)
+	db, existing := newGalaxyRegistryOverwriteTestDB(t, startAt, expectedEndAt)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	svc := NewGalaxyRegistryService()
+	newEntry, err := svc.StartEntry(71, GalaxyRegistryCreateEntryRequest{
+		SystemConfigID: existing.SystemConfigID,
+		ExpectedEndAt:  now.Add(30 * time.Minute),
+	})
+	if err != nil {
+		t.Fatalf("StartEntry() overwrite error = %v", err)
+	}
+	if newEntry.CaptainUserID != 71 {
+		t.Fatalf("new entry captain = %d, want 71", newEntry.CaptainUserID)
+	}
+	reloaded, err := svc.repo.GetEntryByID(existing.ID)
+	if err != nil {
+		t.Fatalf("reload old entry: %v", err)
+	}
+	if reloaded.Status != model.GalaxyRegistryEntryStatusCompleted {
+		t.Fatalf("old entry status = %q, want completed", reloaded.Status)
+	}
+}
+
+func TestGalaxyRegistryStartEntryRejectsOverwritingOwnOverdueEntry(t *testing.T) {
+	now := time.Now()
+	startAt := now.Add(-90 * time.Minute)
+	expectedEndAt := now.Add(-30 * time.Minute)
+	db, existing := newGalaxyRegistryOverwriteTestDB(t, startAt, expectedEndAt)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	svc := NewGalaxyRegistryService()
+	_, err := svc.StartEntry(70, GalaxyRegistryCreateEntryRequest{ // same captain as existing
+		SystemConfigID: existing.SystemConfigID,
+		ExpectedEndAt:  now.Add(30 * time.Minute),
+	})
+	if err == nil || !IsUserVisibleError(err) || err.Error() != "请先结束自己的超时登记" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// The original entry must remain active (nothing changed).
+	reloaded, err := svc.repo.GetEntryByID(existing.ID)
+	if err != nil {
+		t.Fatalf("reload old entry: %v", err)
+	}
+	if reloaded.Status != model.GalaxyRegistryEntryStatusActive {
+		t.Fatalf("old entry status = %q, want still active", reloaded.Status)
+	}
+}
+
+func TestGalaxyRegistryStartEntryStillRejectsNonOverdueActiveEntry(t *testing.T) {
+	now := time.Now()
+	startAt := now.Add(-10 * time.Minute)
+	expectedEndAt := now.Add(80 * time.Minute)
+	db, existing := newGalaxyRegistryOverwriteTestDB(t, startAt, expectedEndAt)
+	previous := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = previous })
+
+	svc := NewGalaxyRegistryService()
+	_, err := svc.StartEntry(71, GalaxyRegistryCreateEntryRequest{
+		SystemConfigID: existing.SystemConfigID,
+		ExpectedEndAt:  now.Add(30 * time.Minute),
+	})
+	if err == nil || !IsUserVisibleError(err) || err.Error() != "该星系当前已有生产登记" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestGalaxyRegistrySettlementContinuesWhenOneWalletRefreshFails(t *testing.T) {
 	db := newGalaxyRegistryServiceTestDB(t)
 	previous := global.DB
