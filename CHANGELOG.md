@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-07-06
+
+### Added
+
+- 星系登记系统向 `user` 角色开放访问，登录后可查看当前状态（登记、管理与分析子页仍仅限队长与管理员）。
+- 星系登记超时后，其他队长可覆盖该登记：超时判定为预计结束时间已过或登记满 2 小时（任一满足），覆盖时旧登记在同一事务内结束，新登记即时生效。
+- 星系登记达到 2 小时仍未结束时，前端会发送一次浏览器系统通知提醒队长（需授权通知权限）。
+
+### Fixed
+
+- 修复星系登记预计结束时间的时区问题：前端提交时携带浏览器时区偏移，服务进程启动时固定 `Asia/Shanghai` 时区，避免浏览器与服务器时区不一致导致超时判断错位。
+
 ## [1.13.2] - 2026-06-30
 
 ### Fixed
