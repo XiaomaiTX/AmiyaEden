@@ -1,19 +1,21 @@
 ---
-status: draft
-doc_type: draft
+status: completed
+doc_type: completed
 owner: engineering
-last_reviewed: 2026-05-10
+last_reviewed: 2026-07-07
+completed: 2026-07-07
 source_of_truth:
+  - docs/features/current/task-manager.md
   - server/internal/handler/esi_refresh.go
   - server/pkg/eve/esi/queue.go
+  - static/src/views/system/task-manager/modules/EsiMonitorTab.vue
   - static/src/views/system/task-manager/modules/EsiStatusesTab.vue
   - static/src/views/system/task-manager/index.vue
-  - docs/features/current/task-manager.md
 ---
 
-# System Task Manager ESI 监控页草案
+# System Task Manager ESI 监控页方案（已落地）
 
-> 本文是新增能力草案，不改变当前实现行为；且不修改 `docs/specs/draft/esi-refresh-intervals.md`。
+> 本方案已落地实现，当前行为以 `docs/features/current/task-manager.md` 为准。本文件保留为历史设计记录，不涉及 `docs/specs/draft/esi-refresh-intervals.md` 的改动。
 
 ## 背景与目标
 

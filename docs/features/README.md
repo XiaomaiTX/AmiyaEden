@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-04-30
+last_reviewed: 2026-07-07
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -18,19 +18,26 @@ source_of_truth:
 ## 当前模块
 
 - [auth-and-characters.md](current/auth-and-characters.md)
-- [operation.md](current/operation.md)
-- [skill-planning.md](current/skill-planning.md)
-- [info-and-reporting.md](current/info-and-reporting.md)
-- [srp.md](current/srp.md)
-- [welfare.md](current/welfare.md)
-- [newbro-support.md](current/newbro-support.md)
-- [mentor-system.md](current/mentor-system.md)
-- [commerce.md](current/commerce.md)
 - [administration.md](current/administration.md)
 - [audit-log.md](current/audit-log.md)
-- [task-manager.md](current/task-manager.md)
+- [badge-counts.md](current/badge-counts.md)
+- [commerce.md](current/commerce.md)
+- [corporation-access-policy.md](current/corporation-access-policy.md)
 - [corporation-structures.md](current/corporation-structures.md)
+- [dashboard-galaxy-registry.md](current/dashboard-galaxy-registry.md)
+- [fuxi-hall.md](current/fuxi-hall.md)
+- [info-and-reporting.md](current/info-and-reporting.md)
+- [mentor-system.md](current/mentor-system.md)
+- [newbro-support.md](current/newbro-support.md)
+- [npc-kills.md](current/npc-kills.md)
+- [operation.md](current/operation.md)
+- [pap-exchange.md](current/pap-exchange.md)
+- [skill-planning.md](current/skill-planning.md)
 - [sde.md](current/sde.md)
+- [srp.md](current/srp.md)
+- [task-manager.md](current/task-manager.md)
+- [ticket-system.md](current/ticket-system.md)
+- [welfare.md](current/welfare.md)
 
 ## Feature Doc 最少要回答的问题
 
