@@ -1,202 +1,90 @@
 # AmiyaEden
 
-面向 EVE Online 联盟 / 军团的一体化运营平台。
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.14.0-brightgreen.svg)](CHANGELOG.md)
+[![CI](https://github.com/XiaomaiTX/AmiyaEden/actions/workflows/verify-ci.yaml/badge.svg)](https://github.com/XiaomaiTX/AmiyaEden/actions/workflows/verify-ci.yaml)
 
-本文件是仓库的 onboarding / product-facing 入口。若与工程规则、当前架构边界或接口裁决相关的说明发生冲突，以 [AGENTS.md](AGENTS.md) 与 [docs/](docs/README.md) 为准。
+> 面向 EVE Online 联盟 / 军团的一体化运营平台。
 
-当前仓库的活跃实现包含：
+## 简介
 
-- EVE SSO 登录与多人物绑定
-- RBAC 职权 / 菜单 / 按钮权限
-- 动态菜单与动态路由
-- 舰队行动、PAP、舰队配置
-- 技能规划、军团技能计划与完成度检查
-- ESI 人物信息查询（钱包、技能、舰船、植入体、资产、合同、装配）
-- SRP 补损申请、审核、价格表
-- 伏羲币、商店
-- 联盟 PAP、自动权限映射、Webhook 配置
-- ESI 刷新队列与 SDE 查询接口
-- 统一审计日志、导出任务与审计查询
+AmiyaEden 把联盟 / 军团的日常运营收敛到一个平台：用 EVE SSO 登录、绑定多人物后，在一个系统里完成舰队行动组织、参与度（PAP）统计、补损（SRP）发放、技能规划、新人培养、内部经济（伏羲币 / 商店）与系统管理。
 
-## 当前状态
+## 理念
 
-- 后端：Go + Gin + GORM + PostgreSQL + Redis
-- 前端：Vue 3 + TypeScript + Vite + Pinia + Vue Router
-- 认证：EVE SSO + JWT
-- 菜单模式：支持前端静态模式与后端菜单模式，当前仓库完整实现两种路径
-- 登录流程：当前产品登录流以 EVE SSO 为主；仓库中仍有模板化的 `register` 页面源码，但它不属于当前路由中的受支持流程，`forget-password` 页面已移除
+- **以 ESI / SSO 为数据底座**：人物信息、钱包、技能、舰船、资产、合同直接来自 EVE 官方接口，平台只做组织与呈现。
+- **按军团 / 职权分层授权**：在 RBAC 职权之上叠加军团能力策略（capability）层，支持同职权在不同军团的能力差异化访问，权限一律后端强制鉴权。
+- **运营闭环**：从舰队行动 → PAP → 补损 / 福利审批 → 伏羲币结算，串成一条可追溯的链路，并通过统一审计日志留痕。
+- **文档与代码同源**：仓库维护一套带信任顺序的规范化文档树，避免文档与实现脱节。
+
+## 核心功能
+
+| 领域 | 能力 |
+| --- | --- |
+| 登录与身份 | EVE SSO 登录、多人物绑定与主人物切换 |
+| 运营与行动 | 舰队行动、PAP 发放与查询、联盟 PAP、舰队配置（装配 / EFT）、星系登记 |
+| 个人与军团信息 | ESI 钱包 / 技能 / 舰船 / 植入体 / 资产 / 合同 / 装配查询、NPC 击杀与收入报告、ESI 授权检查 |
+| 申请与审批 | SRP 补损、福利申请、工单系统 |
+| 经济与商店 | 伏羲币、伏羲大厅、商店与订单、统一钱包分析 |
+| 成员与培养 | 新人引导、导师系统、徽章 |
+| 系统管理 | RBAC + 自动职权映射、军团能力策略、军团建筑（燃料 / 计时）、审计日志与导出、任务管理、Webhook、通知 |
+
+> 各模块的当前行为、入口与权限边界见 [docs/features/](docs/features/README.md)。
+
+## 技术栈
+
+- **后端**：Go + Gin + GORM + PostgreSQL + Redis（定时任务由 cron 驱动，鉴权为 EVE SSO + JWT）
+- **前端（生产）**：Vue 3 + TypeScript + Vite + Pinia + Vue Router + Element Plus + Tailwind CSS
+- **前端（进行中重写）**：`static-react/` —— 基于 React 19 + Vite + shadcn/ui 的重写，尚未纳入 CI / 发布
 
 ## 仓库结构
 
 ```text
 AmiyaEden/
-├── server/                 # Go 后端
+├── server/                 # Go 后端（handler / service / repository / model 分层）
 │   ├── bootstrap/          # 配置 / 日志 / DB / Redis / 路由 / Cron 初始化
-│   ├── config/             # config.yaml 与配置结构
-│   ├── internal/
-│   │   ├── handler/        # HTTP 处理层
-│   │   ├── middleware/     # JWT、响应包装、日志、CORS 等
-│   │   ├── model/          # GORM 模型与菜单种子
-│   │   ├── repository/     # 数据访问层
-│   │   ├── router/         # API 路由注册
-│   │   └── service/        # 业务逻辑层
+│   ├── internal/           # handler / middleware / model / repository / router / service
 │   ├── jobs/               # 定时任务
 │   └── pkg/                # JWT、EVE SSO / ESI、响应工具等
-├── static/                 # Vue 前端
-│   ├── src/api/            # API 调用层
-│   ├── src/components/     # 共享组件
-│   ├── src/hooks/          # 共享逻辑
-│   ├── src/locales/        # 国际化
-│   ├── src/router/         # 路由核心、守卫、模块定义
-│   ├── src/store/          # Pinia store
-│   ├── src/types/          # TS 类型定义
-│   └── src/views/          # 页面视图
-├── docs/                   # canonical 文档树（standards / architecture / api / features / drafts）
-├── AGENTS.md               # 仓库工程约束（最高优先级）
+├── static/                 # 生产前端（Vue 3）
+├── static-react/           # 进行中的 React 19 重写
+├── docs/                   # 规范化文档树（standards / architecture / api / features / specs / guides）
+├── scripts/                # 辅助脚本
+├── CHANGELOG.md            # 版本变更记录
+├── AGENTS.md               # 工程约束入口（委托给 docs/ai/repo-rules.md）
 └── docker-compose.example.yml
 ```
 
-## 运行依赖
-
-- Go `>= 1.24.5`
-- Air（Go 热重载工具）
-- golangci-lint `v2.11.4`（与 CI 保持一致）
-- Node.js `24`（与 CI 保持一致，见 `.nvmrc`）
-- pnpm `10.32.1`（与 CI 保持一致）
-- PostgreSQL
-- Redis
-
-如果本机还没有 `air`，可以直接使用 Go 安装：
-
-```bash
-go install github.com/air-verse/air@latest
-export PATH="$PATH:$(go env GOPATH)/bin"
-air -v
-```
-
-如果本机还没有 `golangci-lint`，可以直接使用 Go 安装：
-
-```bash
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.11.4
-golangci-lint --version
-```
-
-## 本地启动
-
-### 1. 后端配置
-
-复制后端配置模板：
+## 快速开始
 
 ```bash
 cp server/config/config.example.yaml server/config/config.yaml
-```
-
-最少需要确认这些配置：
-
-- `server.port`
-- `database.*`
-- `redis.*`
-- `jwt.secret`
-- `eve_sso.client_id`
-- `eve_sso.client_secret`
-- `eve_sso.callback_url`
-- `sde.api_key`
-
-### 2. 准备基础设施
-
-仓库提供了容器部署示例：
-
-```bash
 docker compose -f docker-compose.example.yml up -d postgres redis
+cd static && pnpm install && cd ..
+make dev      # 同时启动后端（Air 热重载）与前端（Vite dev server）
 ```
 
-如果你使用本机数据库 / Redis，也可以直接修改 `server/config/config.yaml` 指向对应实例。
-
-### 3. 启动后端
-
-```bash
-make dev
-```
-
-`make dev` 会同时启动前端和后端。
-
-后端通过 Air 热重载工具运行，源码变更后会自动重新编译并启动服务；前端会在 `static/` 下运行 `pnpm dev`。
-
-按 `Ctrl-C` 会同时停止前端和后端。
-
-启动时会执行：
-
-- 配置加载
-- 日志初始化
-- PostgreSQL 连接
-- Redis 连接
-- GORM AutoMigrate
-- 系统职权 / 菜单种子初始化
-- 定时任务注册
-
-### 4. 启动前端
-
-当前仓库没有提交前端 `.env.example`，但已经提交了可直接作为起点的默认环境文件：
-
-- `static/.env.development`
-- `static/.env.development.local`
-- `static/.env.production`
-
-本地开发通常不需要从空白开始创建全部 Vite 变量；大多数情况下只需确认或覆盖以下常用项：
-
-```bash
-VITE_VERSION=dev
-VITE_PORT=5173
-VITE_BASE_URL=/
-VITE_API_URL=http://localhost:8080
-VITE_API_PROXY_URL=http://localhost:8080
-VITE_ACCESS_MODE=backend
-VITE_WITH_CREDENTIALS=false
-VITE_LOCK_ENCRYPT_KEY=change_me
-VITE_OPEN_ROUTE_INFO=false
-```
-
-默认本地联调场景下：
-
-- `VITE_API_PROXY_URL` 已指向 `http://localhost:8080`
-- `VITE_API_URL` 在开发环境下可保持为 `/`
-
-然后启动前端：
-
-```bash
-cd static
-pnpm install
-pnpm dev
-```
-
-## 认证说明
-
-- 后端 SSO 回调默认路径：`/api/v1/sso/eve/callback`
-- 前端登录页当前使用 `/auth/login`
-- 前端回调页当前使用 `/auth/callback`
-- 活跃登录方式是 EVE SSO；不要把未接入的用户名 / 密码模板页当作当前产品能力
-
-## 常用校验命令
-
-```bash
-cd server && golangci-lint run ./...
-cd server && go test ./...
-cd server && go build ./...
-cd static && pnpm exec vue-tsc --noEmit
-cd static && pnpm test:unit
-cd static && pnpm lint . --fix
-cd static && pnpm build
-```
+依赖要求、首次初始化、环境变量与排错见 [docs/guides/local-development.md](docs/guides/local-development.md)。
+校验与测试命令见 [docs/standards/testing-and-verification.md](docs/standards/testing-and-verification.md)。
 
 ## 文档入口
 
-- 文档索引与信任顺序：[docs/README.md](docs/README.md)
-- 仓库工程规范：[AGENTS.md](AGENTS.md)
-- 测试与验证标准：[docs/standards/testing-and-verification.md](docs/standards/testing-and-verification.md)
-- 当前架构：[docs/architecture/overview.md](docs/architecture/overview.md)
-- API 路由索引：[docs/api/route-index.md](docs/api/route-index.md)
-- Feature 状态说明：[docs/features/README.md](docs/features/README.md)
+- [文档索引与信任顺序](docs/README.md)
+- [工程约束（最高优先级）](AGENTS.md)
+- [架构总览](docs/architecture/overview.md)
+- [模块导航](docs/architecture/module-map.md)
+- [功能状态](docs/features/README.md)
+- [API 路由索引](docs/api/route-index.md)
+- [版本变更记录](CHANGELOG.md)
+
+## 项目状态
+
+- **License**：[GPL-3.0](LICENSE)。`static/` 衍生自上游 MIT 模板 [Art Design Pro](https://github.com/Daymychen/art-design-pro)，其自身许可证为 MIT。
+- **前端实现状态**：`static/`（Vue 3）是当前生产实现，由 CI 验证、由 Docker 镜像发布；`static-react/` 是进行中的重写，尚未纳入 CI / 发布流程。
+- **部署**：提供 `docker-compose.example.yml` 多服务示例；`main` 分支推送会构建并发布后端 / 前端镜像。
+- **反馈**：通过 [Issue](https://github.com/XiaomaiTX/AmiyaEden/issues/new/choose) 报告问题或提议功能。
+- **提交规范**：使用 [Conventional Commits](https://www.conventionalcommits.org/)（由 Commitlint + Commitizen 约束）；PR 信息规范见 [docs/standards/pr-message-standard.md](docs/standards/pr-message-standard.md)。
 
 ## 许可证
 
-[LICENSE](LICENSE)
+详见 [LICENSE](LICENSE)。

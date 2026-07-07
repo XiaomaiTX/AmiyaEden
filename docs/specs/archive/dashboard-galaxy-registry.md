@@ -1,23 +1,16 @@
 ---
-status: draft
-doc_type: draft
+status: completed
+doc_type: completed
 owner: engineering
-last_reviewed: 2026-06-04
+last_reviewed: 2026-07-07
+completed: 2026-07-07
 source_of_truth:
-  - server/internal/router/router.go
-  - server/internal/repository/npc_kill.go
-  - server/internal/model/esi/wallet.go
-  - server/internal/repository/eve_wallet.go
-  - server/internal/repository/eve_character.go
-  - static/src/router/modules/dashboard.ts
-  - static/src/api/dashboard.ts
-  - static/src/api/sde.ts
-  - docs/features/current/corporation-structures.md
+  - docs/features/current/dashboard-galaxy-registry.md
 ---
 
-# Dashboard 星系登记草案
+# Dashboard 星系登记设计方案（已落地）
 
-> 本文是新增能力草案，不代表当前已实现行为。该草案仅覆盖旧 Vue 前端 `static/`，不覆盖 `static-react/`。
+> 本方案已落地实现，当前行为以 `docs/features/current/dashboard-galaxy-registry.md` 为准。本文件保留为历史设计记录，覆盖范围仅限旧 Vue 前端 `static/`，不覆盖 `static-react/`。
 
 ## 当前状态
 

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-15
+last_reviewed: 2026-07-07
 source_of_truth:
   - server/internal/model/audit_event.go
   - server/internal/repository/audit_event.go
@@ -33,34 +33,21 @@ source_of_truth:
 - 审计事件详情抽屉，展示事件主字段与 `details_json`
 - 阶段一止损：前端已临时隐藏导出触发、导出任务列表与下载入口；导出日志 tab 显示“暂不可用”
 - 后端导出接口与任务机制仍保留（未移除）
-- 当前已接入的审计链路：
-  - `permission`：用户职权分配
-  - `fuxi_wallet`：伏羲币调账与统一钱包差量入口
-  - `approval`：福利、SRP、商城订单审批
-  - `task_ops`：任务手动执行与调度更新
-  - `config`：Webhook 配置变更
 - 审计导出本身也会写入审计事件，保留“谁导出了什么”的可追溯性
 
-## 覆盖矩阵（阶段 1 已落地）
+## 审计接入现状
 
-| domain | category | action | result | target_file | owner |
-| --- | --- | --- | --- | --- | --- |
-| 用户管理 | `user_admin` | `user_update` | `success/failed` | `server/internal/service/user.go` | engineering |
-| 用户管理 | `user_admin` | `user_delete` | `success/failed` | `server/internal/service/user.go` | engineering |
-| 用户管理 | `user_admin` | `user_identity_switch` | `success/failed` | `server/internal/service/user.go` | engineering |
-| 工单管理 | `ticket_admin` | `ticket_status_update` | `success/failed` | `server/internal/service/ticket.go` | engineering |
-| 工单管理 | `ticket_admin` | `ticket_reply` | `success/failed` | `server/internal/service/ticket.go` | engineering |
-| 工单管理 | `ticket_admin` | `ticket_category_create` | `success/failed` | `server/internal/service/ticket.go` | engineering |
-| 工单管理 | `ticket_admin` | `ticket_category_update` | `success/failed` | `server/internal/service/ticket.go` | engineering |
-| 工单管理 | `ticket_admin` | `ticket_category_delete` | `success/failed` | `server/internal/service/ticket.go` | engineering |
-| 工具书签管理 | `content_admin` | `tool_bookmark_create` | `success/failed` | `server/internal/service/tool_bookmark.go` | engineering |
-| 工具书签管理 | `content_admin` | `tool_bookmark_update` | `success/failed` | `server/internal/service/tool_bookmark.go` | engineering |
-| 工具书签管理 | `content_admin` | `tool_bookmark_delete` | `success/failed` | `server/internal/service/tool_bookmark.go` | engineering |
-| 伏羲堂管理 | `content_admin` | `fuxi_page_update` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
-| 伏羲堂管理 | `content_admin` | `fuxi_card_create` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
-| 伏羲堂管理 | `content_admin` | `fuxi_card_update` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
-| 伏羲堂管理 | `content_admin` | `fuxi_card_delete` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
-| 伏羲堂管理 | `content_admin` | `fuxi_card_sort` | `success/failed` | `server/internal/service/fuxi_hall.go` | engineering |
+判定口径：以后端 `service` 层是否调用 `AuditService.RecordEvent` / `RecordEventTx` 作为「已接入审计」标准。
+
+当前已接入审计的链路（基于代码扫描）：
+
+- `permission`：用户职权分配、ESI 自动职权映射
+- `fuxi_wallet`：伏羲币调账与统一钱包差量入口
+- `approval`：福利、SRP、商城订单审批
+- `task_ops`：任务手动执行、任务调度更新
+- `config`：Webhook 配置变更
+
+> 注：用户管理、工单管理、工具书签、伏羲堂内容等写操作 **尚未接入审计**。完整的缺口清单与补齐计划见 `docs/specs/draft/audit-coverage-gap-remediation.md`（该草案经代码核验为准确现状）。
 
 ## 入口
 

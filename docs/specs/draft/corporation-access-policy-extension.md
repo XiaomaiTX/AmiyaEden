@@ -2,7 +2,7 @@
 status: draft
 doc_type: spec
 owner: engineering
-last_reviewed: 2026-05-17
+last_reviewed: 2026-07-07
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -19,6 +19,8 @@ source_of_truth:
 ---
 
 # 军团能力策略扩展草案（基于 allow_corporations）
+
+> ⚠️ 实现差异说明（2026-07-07）：本草案原设计为 **默认 `deny`**（最小权限）。**实际落地为默认 `allow`** —— 代码 `server/internal/service/corporation_policy.go`（`DefaultMode = corpPolicyDefaultModeAllow`）与 `docs/features/current/corporation-access-policy.md` 均使用 `default_mode: "allow"`。下文出现的「默认 deny / 一期固定使用 deny」是历史设计意图，保留作决策记录；**以 feature doc 与代码为准**。
 
 ## 背景
 
