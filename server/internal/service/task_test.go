@@ -321,6 +321,83 @@ func TestTaskService_RunTaskFromCronUsesBackgroundTaskManagerContext(t *testing.
 	}
 }
 
+// TestTaskService_StartupOneShotViaBackgroundManager 验证首次同步经
+// 「后台任务管理器派发 RunTask」的路径：锁、执行历史、关停取消均生效。
+// 这正是 bootstrap.triggerStartupOneShotTasks 触发 structure_fuel_rate_sync 的方式。
+func TestTaskService_StartupOneShotViaBackgroundManager(t *testing.T) {
+	registry, repo, svc := newTaskServiceTestDeps(t)
+
+	// 装一个可观察 ctx 与执行时机的任务（模拟 structure_fuel_rate_sync）
+	started := make(chan struct{}, 1)
+	seenCtx := make(chan context.Context, 1)
+	registry.Register(taskregistry.TaskDefinition{
+		Name:        "startup_one_shot_task",
+		Description: "Simulates fuel-rate first sync",
+		Category:    taskregistry.TaskCategorySystem,
+		Type:        taskregistry.TaskTypeRecurring,
+		DefaultCron: "@every 240h",
+		RunFunc: func(ctx context.Context) error {
+			started <- struct{}{}
+			seenCtx <- ctx
+			// 阻塞直到测试放行或 ctx 取消
+			<-ctx.Done()
+			return ctx.Err()
+		},
+	})
+
+	// 接管后台任务管理器
+	oldManager := global.BackgroundTaskManager()
+	mgr := background.New(context.Background(), func() *zap.Logger { return global.Logger })
+	global.SetBackgroundTaskManager(mgr)
+	t.Cleanup(func() { global.SetBackgroundTaskManager(oldManager) })
+
+	// 经后台任务管理器派发 RunTask（bootstrap 的同款调用）
+	if err := background.RunOrSchedule(global.BackgroundContext(), mgr, "startup_one_shot", func(ctx context.Context) error {
+		return svc.RunTask(ctx, "startup_one_shot_task", nil)
+	}); err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatalf("RunOrSchedule RunTask: %v", err)
+	}
+
+	// 等待任务启动
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("任务未在后台启动")
+	}
+
+	// 并发锁：此时再次 RunTask 应被拒绝
+	if err := svc.RunTask(context.Background(), "startup_one_shot_task", nil); !errors.Is(err, ErrTaskAlreadyRunning) {
+		t.Fatalf("并发 RunTask 应返回 ErrTaskAlreadyRunning，实际 %v", err)
+	}
+
+	// 关停后台管理器 → 任务的 ctx 应被取消
+	if err := mgr.Shutdown(2 * time.Second); err != nil {
+		t.Fatalf("Shutdown: %v", err)
+	}
+
+	// 验证传入的 ctx 就是后台管理器的（可取消）
+	select {
+	case ctx := <-seenCtx:
+		if ctx == nil {
+			t.Fatal("传入任务的 ctx 为 nil")
+		}
+		if err := ctx.Err(); err == nil {
+			t.Fatal("关停后任务 ctx 应已取消")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("未捕获任务 ctx")
+	}
+
+	// 执行历史应已写入（无论成功/失败，至少一条记录）
+	_, total, err := repo.ListExecutions("startup_one_shot_task", "", 1, 10)
+	if err != nil {
+		t.Fatalf("ListExecutions: %v", err)
+	}
+	if total < 1 {
+		t.Fatalf("期望至少 1 条执行历史，实际 %d", total)
+	}
+}
+
 func TestTaskService_UpdateScheduleValidRecurringTaskPersistsSchedule(t *testing.T) {
 	registry, repo, svc, db := newTaskServiceTestDepsWithDB(t)
 	registry.Register(taskregistry.TaskDefinition{

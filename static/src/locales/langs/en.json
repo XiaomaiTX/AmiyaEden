@@ -2840,6 +2840,8 @@
       "type": "Structure Type",
       "services": "Services",
       "fuelRemaining": "Fuel Remaining",
+      "fuelPerHour": "Est. Fuel Blocks / Hour",
+      "fuelToMonthEnd": "Fuel Blocks Needed to Month-End",
       "reinforceHour": "Reinforce Hour",
       "timerEnd": "Timer End",
       "updatedAt": "Updated At",

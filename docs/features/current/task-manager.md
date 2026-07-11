@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-10
+last_reviewed: 2026-07-11
 source_of_truth:
   - server/main.go
   - server/global/global.go
@@ -18,6 +18,7 @@ source_of_truth:
   - server/jobs/jobs.go
   - server/jobs/esi_refresh.go
   - server/jobs/auto_srp_schedule.go
+  - server/jobs/structure_fuel_rate_sync.go
   - static/src/router/modules/system.ts
   - static/src/api/task-manager.ts
   - static/src/api/esi-refresh.ts
@@ -37,7 +38,7 @@ source_of_truth:
 - `super_admin` 可配置每个 ESI 子任务的 active/inactive 刷新间隔（分钟粒度）；覆盖值持久化到 `system_config`（key `esi.task_intervals`），运行时通过内存缓存生效，无需重启
 - 通用任务的 cron/manual 执行都会写入 `task_executions`，执行历史页支持按任务名与状态筛选
 - 执行历史页会分别展示触发者昵称与触发者 ID；cron 触发的记录没有人工触发者信息
-- 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、星系登记结算、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、队长归因同步、队长奖励处理、导师奖励与自动 SRP
+- 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、星系登记结算、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、队长归因同步、队长奖励处理、导师奖励、自动 SRP 与建筑服务燃料率同步
 - `auto_srp` 属于事件驱动任务：会显示在任务页中，但没有手动触发入口，也不支持 cron 编辑
 - 服务启动时会注册任务定义、恢复 `task_schedules` 覆盖、恢复待执行的自动 SRP 延迟调度，并启动周期任务调度器
 - `/api/v1/tasks/:name/run` 与 ESI 管理页里会 fan-out 的后台触发入口会把执行交给共享后台任务管理器；服务进入关停后，这些入口会拒绝新任务而不是继续创建裸 goroutine
@@ -56,6 +57,7 @@ source_of_truth:
 | `captain_attribution_sync` | `operation` | `recurring` | 是 | 同步队长赏金归因，默认 `@every 13h` |
 | `captain_reward_processing` | `operation` | `recurring` | 是 | 处理队长归因奖励，默认 `@every 100h` |
 | `mentor_reward` | `operation` | `recurring` | 是 | 结算导师奖励 |
+| `structure_fuel_rate_sync` | `system` | `recurring` | 是 | 从 ESI 同步建筑服务模块每小时燃料消耗率，默认 `@every 240h`（10 天） |
 | `auto_srp` | `operation` | `triggered` | 否 | 跟踪 PAP 事件驱动的自动 SRP 处理 |
 
 ## 入口
@@ -104,6 +106,7 @@ source_of_truth:
 - `/api/v1/tasks/esi/*` 仍然是 ESI 队列的专用管理入口，不等同于通用任务执行历史
 - `/api/v1/tasks/esi/monitor` 是运行态快照接口，不持久化历史趋势，也不替代执行历史查询
 - 服务启动后仍会立即补跑一次 `esi_refresh` 队列，并从舰队状态中恢复尚未到点的自动 SRP 延迟执行
+- 服务启动后若 `structure_service_fuel_rate` 表为空，会经共享后台任务管理器触发一次 `structure_fuel_rate_sync`（与 cron/手动触发走同一任务生命周期：锁、执行历史、关停取消），避免新部署要等 10 天才有数据
 - 通用任务的异步手动触发与 ESI fan-out 触发必须处于共享后台任务管理器的受跟踪生命周期内；服务进入关停后，这些入口必须返回显式失败，而不是继续接收新任务
 
 ## 主要代码文件
@@ -121,6 +124,7 @@ source_of_truth:
 - `server/jobs/jobs.go`
 - `server/jobs/esi_refresh.go`
 - `server/jobs/auto_srp_schedule.go`
+- `server/jobs/structure_fuel_rate_sync.go`
 - `static/src/api/task-manager.ts`
 - `static/src/api/esi-refresh.ts`
 - `static/src/views/system/task-manager`

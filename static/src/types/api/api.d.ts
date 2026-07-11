@@ -1775,6 +1775,8 @@ declare namespace Api {
       fuel_expires: string
       fuel_remaining: string
       fuel_remaining_hours: number | null
+      fuel_per_hour: number | null
+      fuel_to_month_end: number | null
       reinforce_hour: number
       state_timer_start: string
       state_timer_end: string

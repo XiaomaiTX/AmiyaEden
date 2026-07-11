@@ -43,6 +43,20 @@
       minWidth: 140
     },
     {
+      prop: 'fuel_per_hour',
+      label: t('corporationStructures.table.fuelPerHour'),
+      minWidth: 140,
+      formatter: (row: Api.Dashboard.CorporationStructureRow) =>
+        row.fuel_per_hour != null ? row.fuel_per_hour : '-'
+    },
+    {
+      prop: 'fuel_to_month_end',
+      label: t('corporationStructures.table.fuelToMonthEnd'),
+      minWidth: 160,
+      formatter: (row: Api.Dashboard.CorporationStructureRow) =>
+        row.fuel_to_month_end != null ? row.fuel_to_month_end : '-'
+    },
+    {
       prop: 'state_timer_end',
       label: t('corporationStructures.table.timerEnd'),
       minWidth: 180

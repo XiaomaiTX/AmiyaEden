@@ -6,6 +6,8 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
 	"amiya-eden/jobs"
+	"amiya-eden/pkg/background"
+	"context"
 	"sync"
 
 	"github.com/robfig/cron/v3"
@@ -86,7 +88,25 @@ func InitCron() *service.TaskService {
 	global.Cron = c
 	cronZapLogger().Info("定时任务调度器已启动")
 
+	// 启动时触发需要首次补跑的任务（经任务生命周期：锁 + 执行历史 + 关停取消）。
+	triggerStartupOneShotTasks(taskSvc)
+
 	return taskSvc
+}
+
+// triggerStartupOneShotTasks 在任务系统就绪后触发需要首次执行的任务。
+// 仅当对应数据为空时触发，避免每次启动都跑。通过后台任务管理器派发，
+// 确保进程关停时能取消并等待。
+func triggerStartupOneShotTasks(taskSvc *service.TaskService) {
+	// 燃料率映射表为空时，首次同步 structure_fuel_rate_sync。
+	if jobs.StructureFuelRateSyncNeedsFirstRun() {
+		taskName := jobs.StructureFuelRateSyncTaskName
+		if err := background.RunOrSchedule(global.BackgroundContext(), global.EnsureBackgroundTaskManager(), "structure_fuel_rate_sync_initial", func(ctx context.Context) error {
+			return taskSvc.RunTask(ctx, taskName, nil)
+		}); err != nil {
+			cronZapLogger().Warn("[Cron] 触发燃料率首次同步失败", zap.String("task", taskName), zap.Error(err))
+		}
+	}
 }
 
 // cronLogger 适配 zap 到 cron.Logger 接口

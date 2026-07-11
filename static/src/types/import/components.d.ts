@@ -13,6 +13,7 @@ declare module 'vue' {
     ArtBarChartCard: typeof import('./../../components/core/cards/art-bar-chart-card/index.vue')['default']
     ArtBasicBanner: typeof import('./../../components/core/banners/art-basic-banner/index.vue')['default']
     ArtBreadcrumb: typeof import('./../../components/core/layouts/art-breadcrumb/index.vue')['default']
+    ArtBrowserNotifications: typeof import('./../../components/core/layouts/art-browser-notifications/index.vue')['default']
     ArtButtonMore: typeof import('./../../components/core/forms/art-button-more/index.vue')['default']
     ArtButtonTable: typeof import('./../../components/core/forms/art-button-table/index.vue')['default']
     ArtCardBanner: typeof import('./../../components/core/banners/art-card-banner/index.vue')['default']
