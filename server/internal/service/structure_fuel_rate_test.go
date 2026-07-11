@@ -352,6 +352,59 @@ func TestLoadRateMapWithRepo_Overlay(t *testing.T) {
 	}
 }
 
+// TestUpsertBatch_ReinsertUpdatesByServiceName 验证对已存在的 service_name
+// 再次 UpsertBatch 会走 UPDATE 而非 INSERT（不抛 23505 unique constraint）。
+// 这是二次同步（10 天后再次跑 structure_fuel_rate_sync）的路径。
+func TestUpsertBatch_ReinsertUpdatesByServiceName(t *testing.T) {
+	db := newStructureFuelRateTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+
+	repo := repository.NewStructureServiceFuelRateRepository()
+
+	// 第一次写入（模拟首次同步）
+	first := []model.StructureServiceFuelRate{
+		{ServiceName: "market", TypeID: 35892, TypeName: "Standup Market Hub I", FuelPerHour: 40},
+		{ServiceName: "manufacturing", TypeID: 35878, TypeName: "Standup Manufacturing Plant I", FuelPerHour: 12},
+	}
+	if err := repo.UpsertBatch(first); err != nil {
+		t.Fatalf("第一次 upsert: %v", err)
+	}
+	count, _ := repo.Count()
+	if count != 2 {
+		t.Fatalf("第一次后应有 2 条，实际 %d", count)
+	}
+
+	// 第二次写入相同 service_name 但 fuel_per_hour 不同（模拟二次同步，ESI 覆盖）
+	second := []model.StructureServiceFuelRate{
+		{ServiceName: "market", TypeID: 35892, TypeName: "Standup Market Hub I (ESI)", FuelPerHour: 99},
+		{ServiceName: "manufacturing", TypeID: 35878, TypeName: "Standup Manufacturing Plant I", FuelPerHour: 12},
+	}
+	if err := repo.UpsertBatch(second); err != nil {
+		t.Fatalf("第二次 upsert 不应报 unique constraint（23505）: %v", err)
+	}
+
+	// 仍应是 2 条（更新而非新增）
+	count, _ = repo.Count()
+	if count != 2 {
+		t.Fatalf("第二次后仍应 2 条（UPDATE 而非 INSERT），实际 %d", count)
+	}
+
+	// market 的 fuel_per_hour 应被更新为 99
+	rows, _ := repo.ListAll()
+	byName := make(map[string]model.StructureServiceFuelRate, len(rows))
+	for _, r := range rows {
+		byName[r.ServiceName] = r
+	}
+	if byName["market"].FuelPerHour != 99 {
+		t.Errorf("market fuel_per_hour 应更新为 99，实际 %v", byName["market"].FuelPerHour)
+	}
+	if byName["market"].TypeName != "Standup Market Hub I (ESI)" {
+		t.Errorf("market type_name 应更新，实际 %v", byName["market"].TypeName)
+	}
+}
+
 // ─────────────────────────────────────────────
 //  SyncFuelRates —— 假 ESI 注入
 // ─────────────────────────────────────────────
