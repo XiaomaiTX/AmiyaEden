@@ -253,6 +253,104 @@ declare namespace Api {
     }
   }
 
+  namespace QQGovernance {
+    interface Policy {
+      id: number
+      group_id: number
+      enabled: boolean
+      allowed_corporation_ids: number[]
+      allowed_role_codes: string[]
+      auto_reject_unmatched: boolean
+      member_violation_policy: 'review_only' | 'auto_kick_after_confirmed_mismatch'
+      scan_interval_minutes: number
+      mismatch_confirmations: number
+      mismatch_observation_hours: number
+      card_template: string
+      updated_by: number
+      updated_at: string
+    }
+    interface PageResult<T> {
+      list: T[]
+      total: number
+      page: number
+      page_size: number
+    }
+    interface MemberState {
+      id: number
+      group_id: number
+      qq: number
+      user_id: number
+      status: string
+      target_card: string
+      version: number
+      mismatch_count: number
+      unknown_count: number
+      last_checked_at: string
+    }
+    interface Review {
+      id: number
+      group_id: number
+      qq: number
+      source: string
+      decision: string
+      reason: string
+      user_id: number
+      nickname: string
+      primary_character_name: string
+      primary_corporation_name: string
+      created_at: string
+    }
+    interface ActionTask {
+      id: number
+      action_type: string
+      group_id: number
+      qq: number
+      target_version: number
+      status: string
+      priority: number
+      retry_count: number
+      run_after: string
+      last_error: string
+      source: string
+      created_at: string
+      completed_at?: string | null
+    }
+    interface Alert {
+      id: number
+      kind: string
+      group_id: number
+      qq: number
+      task_id: number
+      status: string
+      message: string
+      acknowledged_by: number
+      created_at: string
+    }
+    interface Metrics {
+      window_minutes: number
+      created: number
+      succeeded: number
+      failed: number
+      dead: number
+      failure_rate: number
+      connected: boolean
+      risk_level: number
+    }
+    interface Connection {
+      connected: boolean
+      risk_level: number
+    }
+    type PageParams = Partial<{
+      page: number
+      page_size: number
+      group_id: number
+      qq: number
+      status: string
+      decision: string
+      action_type: string
+    }>
+  }
+
   /** ESI 刷新队列类型 */
   namespace ESIRefresh {
     /** 任务定义信息 */

@@ -388,6 +388,22 @@ ESI 头衔到系统职权的映射表。
 - `ref_id` 当前按 `welfare_application:<application_id>` 生成，用于追踪该次福利发放
 - 导入历史福利记录不会补写 `welfare_payout` 钱包流水
 
+## QQ 群治理持久状态
+
+首期 QQ 群治理使用下列独立表：
+
+- `qq_group_governance_policy`：每群启停、军团/职权白名单、拒绝策略和名片模板。
+- `qq_governance_event`：OneBot 最小事件摘要和唯一事件键；不保存原始 payload。
+- `qq_group_member_state`：群成员当前状态、目标名片和单调递增版本。
+- `qq_governance_review`：资格判断原因和最小身份快照。
+- `qq_governance_action_task`：持久动作队列、稳定幂等键、租约、重试和终态。
+- `qq_governance_action_log`：脱敏动作摘要与每次执行结果。
+- `qq_governance_reconcile_cursor`：每群稳定 QQ 分片的巡检游标与下次执行时间。
+- `qq_governance_risk_control_state`：单机器人熔断等级、恢复时间与半开探测额度。
+- `qq_governance_alert`：仅在治理页展示的持久告警及其确认/恢复状态。
+
+关键不变量：事件、成员状态、审查和动作入队由同一事务提交；动作 worker 在执行前比较 `target_version` 与成员当前版本，过期任务必须取消，不能继续写入 QQ 平台。
+
 ### `system_config`
 
 `system_config` 仍然是当前应用的全局键值配置表。

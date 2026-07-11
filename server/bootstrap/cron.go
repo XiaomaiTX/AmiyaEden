@@ -87,6 +87,7 @@ func InitCron() *service.TaskService {
 	c.Start()
 	global.Cron = c
 	cronZapLogger().Info("定时任务调度器已启动")
+	service.DefaultQQGovernanceService().StartWorker()
 
 	// 启动时触发需要首次补跑的任务（经任务生命周期：锁 + 执行历史 + 关停取消）。
 	triggerStartupOneShotTasks(taskSvc)

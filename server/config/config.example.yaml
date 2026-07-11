@@ -51,3 +51,11 @@ app:
 alliance_pap:
   base_url: "http://jp.newdoublex.space:25220"  # 联盟 PAP API 地址
   api_key: ""                                    # 联盟 PAP API Key
+
+# QQ 群治理专用 OneBot V11 反向 WebSocket 配置。必须使用独立机器人账号与随机令牌，
+# 并将 allowed_cidrs 限制为 NapCat 所在受控网络；留空时连接会被拒绝。
+onebot:
+  enabled: false
+  access_token: "change_me_onebot_reverse_ws_token"
+  bot_qq: 0
+  allowed_cidrs: ["127.0.0.1/32"]

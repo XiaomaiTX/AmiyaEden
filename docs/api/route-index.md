@@ -38,6 +38,25 @@ source_of_truth:
 
 ## Public
 
+### Internal OneBot
+
+| Method | Path                      | 说明                                      | 权限 |
+| ------ | ------------------------- | ----------------------------------------- | ---- |
+| GET    | `/internal/onebot/v11/ws` | NapCat OneBot V11 反向 WebSocket 协议入口 | 专用令牌 + 机器人 QQ + 受控网段 |
+
+### QQ 群治理管理
+
+以下接口均位于 `/api/v1/system/qq-governance`，要求 JWT、`system.manage` capability 与 `super_admin`。
+
+| Method | Path | 说明 |
+| ------ | ---- | ---- |
+| GET/POST | `/policies` | 查询或新建群治理规则 |
+| PUT/DELETE | `/policies/:group_id` | 更新或删除单群规则 |
+| GET | `/members`、`/reviews`、`/tasks`、`/alerts` | 分页查询运行态、审查、动作和治理页告警 |
+| POST | `/tasks/:id/retry`、`/alerts/:id/acknowledge` | 重试死信、确认告警 |
+| GET | `/metrics`、`/connection` | 获取治理页指标与 OneBot 连接/风险状态 |
+| POST | `/groups/:group_id/reconcile`、`/actions`、`/risk-control/reset` | 立即巡检、人工动作与解除熔断 |
+
 ### EVE SSO
 
 | Method | Path                | 说明                | 权限   |

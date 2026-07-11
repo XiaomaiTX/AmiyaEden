@@ -55,6 +55,8 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"audit_archive_daily":            {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 5 * * *", hasRun: true},
 		"galaxy_registry_validation":     {category: taskregistry.TaskCategoryESI, taskType: taskregistry.TaskTypeRecurring, cron: "@every 5m", hasRun: true},
 		"structure_fuel_rate_sync":       {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 240h", hasRun: true},
+		QQGovernanceReconcileTaskName:    {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 */15 * * * *", hasRun: true},
+		QQGovernanceMaintenanceTaskName:  {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 20 3 * * *", hasRun: true},
 	}
 
 	all := reg.All()

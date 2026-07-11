@@ -165,6 +165,16 @@ func autoMigrate(db *gorm.DB) {
 		&model.ToolBookmark{},
 		&model.GalaxyRegistrySystem{},
 		&model.GalaxyRegistryEntry{},
+		// QQ 群治理 / OneBot 持久状态
+		&model.QQGroupGovernancePolicy{},
+		&model.QQGovernanceEvent{},
+		&model.QQGroupMemberState{},
+		&model.QQGovernanceReview{},
+		&model.QQGovernanceActionTask{},
+		&model.QQGovernanceActionLog{},
+		&model.QQGovernanceReconcileCursor{},
+		&model.QQGovernanceRiskControlState{},
+		&model.QQGovernanceAlert{},
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
@@ -340,11 +350,21 @@ func ensureCustomIndexes(db *gorm.DB) {
 	allStatements = append(allStatements, auditEventIndexStatements()...)
 	allStatements = append(allStatements, toolBookmarkIndexStatements()...)
 	allStatements = append(allStatements, galaxyRegistryIndexStatements()...)
+	allStatements = append(allStatements, qqGovernanceIndexStatements()...)
 	allStatements = append(allStatements, assetIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
+	}
+}
+
+func qqGovernanceIndexStatements() []string {
+	return []string{
+		`CREATE INDEX IF NOT EXISTS idx_qq_governance_action_task_ready ON qq_governance_action_task (priority, run_after, id) WHERE status IN ('pending', 'retry_wait') AND deleted_at IS NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_qq_governance_review_member_created ON qq_governance_review (group_id, qq, created_at DESC) WHERE deleted_at IS NULL`,
+		`CREATE INDEX IF NOT EXISTS idx_qq_governance_action_log_type_created ON qq_governance_action_log (action_type, created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_qq_governance_alert_status_created ON qq_governance_alert (status, created_at DESC) WHERE deleted_at IS NULL`,
 	}
 }
 

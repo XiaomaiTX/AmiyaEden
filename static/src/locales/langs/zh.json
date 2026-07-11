@@ -462,6 +462,7 @@
       "autoRole": "自动权限",
       "audit": "审计日志",
       "webhook": "Webhook 通知",
+      "qqGovernance": "QQ 群治理",
       "basicConfig": "@:setting.basics.title"
     },
     "fuxiHall": {
@@ -3024,5 +3025,15 @@
         "rewardAmount": "请输入大于 0 的整数奖励数量"
       }
     }
+  },
+  "qqGovernance": {
+    "title": "QQ 群治理",
+    "description": "管理群准入、成员巡检、自动动作和运行风险。",
+    "tabs": { "policies": "群规则", "members": "成员与审查", "tasks": "动作任务", "alerts": "治理告警", "runtime": "连接与指标" },
+    "actions": { "addPolicy": "新增群规则", "edit": "编辑", "delete": "删除", "save": "保存规则", "reconcile": "立即巡检", "retry": "重试死信", "ack": "确认告警", "resetRisk": "解除熔断", "approve": "批准", "reject": "拒绝", "card": "同步名片", "kick": "清退" },
+    "fields": { "groupId": "群号", "enabled": "启用", "corporations": "允许军团", "roles": "允许职权", "autoReject": "自动拒绝不匹配申请", "violationPolicy": "成员违规策略", "scanInterval": "扫描间隔（分钟）", "confirmations": "确认次数", "observation": "观察期（小时）", "cardTemplate": "群名片模板", "status": "状态", "qq": "QQ", "decision": "判断", "reason": "原因", "actionType": "动作类型", "retryCount": "重试次数", "error": "错误", "message": "消息", "risk": "风险等级", "connection": "机器人连接", "failureRate": "失败率", "dead": "死信任务" },
+    "values": { "reviewOnly": "仅审查", "autoKick": "确认后自动清退", "connected": "已连接", "disconnected": "未连接", "normal": "正常" },
+    "placeholders": { "corporations": "输入军团 ID 后回车", "roles": "选择允许职权", "cardTemplate": "例如 {nickname}-{primary_character_name}" },
+    "messages": { "saveSuccess": "群规则已保存", "deleteConfirm": "确定删除该群规则吗？", "actionSuccess": "治理动作已创建", "reconcileSuccess": "巡检任务已创建", "riskReset": "熔断状态已解除" }
   }
 }
