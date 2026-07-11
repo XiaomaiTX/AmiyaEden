@@ -92,20 +92,74 @@ type CorporationStructureService struct {
 	esiClient     *esi.Client
 	auditSvc      *AuditService
 	nameResolver  *EntityNameResolver
+	fuelRateRepo  *repository.StructureServiceFuelRateRepository
+	groupResolver StructureTypeGroupResolver
 }
 
 func NewCorporationStructureService() *CorporationStructureService {
 	cfg := global.Config.EveSSO
+	sdeRepo := repository.NewSdeRepository()
 	return &CorporationStructureService{
 		roleRepo:      repository.NewRoleRepository(),
 		charRepo:      repository.NewEveCharacterRepository(),
 		sysConfigRepo: repository.NewSysConfigRepository(),
-		sdeRepo:       repository.NewSdeRepository(),
+		sdeRepo:       sdeRepo,
 		repo:          repository.NewCorporationStructureRepository(),
 		esiClient:     esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix),
 		auditSvc:      NewAuditService(),
 		nameResolver:  NewEntityNameResolver(),
+		fuelRateRepo:  repository.NewStructureServiceFuelRateRepository(),
+		groupResolver: sdeRepo,
 	}
+}
+
+// loadServiceFuelRateMap 加载服务燃料率映射（一次性，供批量构建行复用）。
+// DB 中的记录覆盖默认回退表：DB 有则以 DB 为准，DB 缺失的服务沿用默认值。
+func (s *CorporationStructureService) loadServiceFuelRateMap() map[string]float64 {
+	return loadRateMapWithRepo(s.fuelRateRepo)
+}
+
+// loadStructureGroupIDMap 批量解析建筑 typeID → groupID（供燃料折扣判定）。
+// 缺失的 typeID 不在结果中（按无折扣计算并记录告警）。
+func (s *CorporationStructureService) loadStructureGroupIDMap(structures []model.CorpStructureInfo) map[int64]int {
+	if len(structures) == 0 {
+		return map[int64]int{}
+	}
+	typeIDSet := make(map[int]struct{}, len(structures))
+	for _, st := range structures {
+		if st.TypeID > 0 {
+			typeIDSet[int(st.TypeID)] = struct{}{}
+		}
+	}
+	if len(typeIDSet) == 0 {
+		return map[int64]int{}
+	}
+	typeIDs := make([]int, 0, len(typeIDSet))
+	for id := range typeIDSet {
+		typeIDs = append(typeIDs, id)
+	}
+	groupMap, err := resolveGroupIDMap(s.groupResolver, typeIDs)
+	if err != nil {
+		logCorporationStructuresWarn(
+			"[CorporationStructures] 解析建筑 groupID 失败，燃料折扣按无折扣计算",
+			err,
+		)
+		return map[int64]int{}
+	}
+	missing := 0
+	for _, id := range typeIDs {
+		if _, ok := groupMap[int64(id)]; !ok {
+			missing++
+		}
+	}
+	if missing > 0 {
+		logCorporationStructuresWarn(
+			"[CorporationStructures] 部分 typeID 缺失 SDE 分组，对应建筑燃料按无折扣计算",
+			nil,
+			zap.Int("missing_count", missing),
+		)
+	}
+	return groupMap
 }
 
 type CorporationStructureServiceInfo struct {
@@ -133,6 +187,8 @@ type CorporationStructureRow struct {
 	FuelExpires           string                            `json:"fuel_expires"`
 	FuelRemaining         string                            `json:"fuel_remaining"`
 	FuelRemainingHours    *int                              `json:"fuel_remaining_hours"`
+	FuelPerHour           *float64                          `json:"fuel_per_hour"`     // 预计每小时消耗燃料块
+	FuelToMonthEnd        *int                              `json:"fuel_to_month_end"` // 预计到月底需补燃料块
 	ReinforceHour         int                               `json:"reinforce_hour"`
 	StateTimerStart       string                            `json:"state_timer_start"`
 	StateTimerEnd         string                            `json:"state_timer_end"`
@@ -547,6 +603,7 @@ func (s *CorporationStructureService) ListStructures(
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
 	items := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
+	applyFuelEstimates(items, now, s.loadServiceFuelRateMap(), s.loadStructureGroupIDMap(structures))
 
 	filtered := filterCorporationStructureRows(items, req, now)
 	sortCorporationStructureRows(filtered, req.SortBy, req.SortOrder)
@@ -954,6 +1011,7 @@ func (s *CorporationStructureService) ListMyAssignedStructures(
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
 	rows := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
+	applyFuelEstimates(rows, now, s.loadServiceFuelRateMap(), s.loadStructureGroupIDMap(structures))
 	filteredRows := make([]CorporationStructureRow, 0, len(rows))
 	for _, row := range rows {
 		if _, ok := structureIDs[row.StructureID]; !ok {
@@ -1384,6 +1442,31 @@ func buildCorporationStructureRows(
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+// applyFuelEstimates 填充每行的燃料消耗估算（每小时块数 + 到耗尽月月底需补充量）。
+// 仅在需要展示这两列的列表（建筑列表 / 燃料官列表）调用；指派管理列表不调用。
+//
+//   - rateMap: service name(lower) → 原始每小时块数（DB 覆盖默认表）
+//   - groupMap: 建筑 typeID → groupID（来自 SDE，决定折扣系数；缺失按无折扣）
+func applyFuelEstimates(
+	rows []CorporationStructureRow,
+	now time.Time,
+	rateMap map[string]float64,
+	groupMap map[int64]int,
+) {
+	if len(rateMap) == 0 {
+		return
+	}
+	for i := range rows {
+		row := &rows[i]
+		groupID := groupMap[row.TypeID]
+		fuelPerHour := EstimateFuelPerHour(groupID, row.TypeID, row.Services, rateMap)
+		if fuelPerHour > 0 {
+			row.FuelPerHour = &fuelPerHour
+			row.FuelToMonthEnd = EstimateFuelToMonthEnd(row.FuelExpires, fuelPerHour, now)
+		}
+	}
 }
 
 func applyCorporationStructureAssignment(

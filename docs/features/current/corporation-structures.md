@@ -2,15 +2,19 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-13
+last_reviewed: 2026-07-11
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
   - server/internal/service/corporation_structure.go
+  - server/internal/service/structure_fuel_rate.go
   - server/internal/repository/corporation_structure.go
+  - server/internal/repository/structure_service_fuel_rate.go
+  - server/internal/model/structure_service_fuel_rate.go
   - server/internal/model/sys_config.go
   - server/internal/service/badge.go
   - server/pkg/eve/esi/task_corporation_structures.go
+  - server/jobs/structure_fuel_rate_sync.go
   - static/src/router/modules/dashboard.ts
   - static/src/api/corporation-structures.ts
   - static/src/views/dashboard/corporation-structures
@@ -33,6 +37,19 @@ source_of_truth:
 - 刷新按钮会把单个军团的结构刷新任务异步丢进后台任务系统，不阻塞当前请求
 - 导航徽章 `corporation_structures_attention` 会在 `admin` / `super_admin` 的导航中显示需要关注的建筑数量
 - 同步过程会清理 ESI 不再返回的旧结构；当 ESI 返回空列表时，会清空对应军团的结构记录，避免陈旧快照残留
+- 列表页与燃料官个人页额外展示两个燃料消耗估算列：
+  - **预计每小时消耗（燃料块）**：基于建筑在线服务模块与建筑分组折扣系数估算的每小时燃料块消耗
+  - **到月底需补充（燃料块）**：基于 `fuel_expires` 估算到「耗尽所在自然月（EVE UTC）月底」还需补充的燃料块数
+- 服务模块燃料率（每小时燃料块）由独立定时任务 `structure_fuel_rate_sync` 每 10 天从 ESI `/universe/types/{id}/` 的 dogma 属性 2109 同步到 `structure_service_fuel_rate` 表；ESI 拉取失败时沿用硬编码默认值，DB 记录覆盖默认表（DB 缺失的服务继续用默认值）
+- 折扣系数按建筑分组（`invTypes.groupID`）判定：堡垒（1657）市场/克隆 −25%、工业综合体（1404）制造/研究/发明 −25%、精炼厂（1406）再处理/反应 Athanor −20%/其余 −25%；分组缺失或未知时按无折扣计算
+- 燃料估算仅在建筑列表与燃料官列表加载；指派管理列表不做估算（不查询燃料率与 SDE 分组）
+
+## 燃料消耗估算
+
+- 数据来源：`structure_service_fuel_rate` 表（service name → 每小时燃料块），由 `structure_fuel_rate_sync` 任务同步
+- service name 为 ESI 军团建筑快照 `services[].name` 的 snake_case 通用标识符（如 `market`、`industry`、`clone_bay`），非模块 typeName
+- 计算模型：每小时消耗 = Σ(在线服务的有效率)，有效率 = 服务率 × 建筑分组系数；建筑本身无基础消耗
+- 月底补料：目标 = `fuel_expires` 所在自然月月底（EVE UTC）；blocks = ceil((月底 − fuel_expires) × 每小时消耗)；`fuel_expires` 为空/已过期/rate≤0 时该字段为 `null`
 
 ## 入口
 
@@ -82,10 +99,14 @@ source_of_truth:
 
 - `server/internal/handler/corporation_structure.go`
 - `server/internal/service/corporation_structure.go`
+- `server/internal/service/structure_fuel_rate.go`
 - `server/internal/repository/corporation_structure.go`
+- `server/internal/repository/structure_service_fuel_rate.go`
+- `server/internal/model/structure_service_fuel_rate.go`
 - `server/internal/model/sys_config.go`
 - `server/internal/service/badge.go`
 - `server/internal/router/router.go`
+- `server/jobs/structure_fuel_rate_sync.go`
 - `static/src/api/corporation-structures.ts`
 - `static/src/router/modules/dashboard.ts`
 - `static/src/views/dashboard/corporation-structures/index.vue`
