@@ -53,3 +53,5 @@ server/.gocache/
 AmiyaEden.code-workspace
 .codex
 server/internal/handler/uploads/
+
+.zcode/

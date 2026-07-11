@@ -23,6 +23,10 @@ var (
 
 // RegisterRoutes 注册所有业务路由
 func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
+	// QQ 群治理使用独立的 OneBot 反向 WebSocket 私有入口，不复用通用 Webhook。
+	qqGovernanceOneBotH := handler.NewQQGovernanceOneBotHandler()
+	r.GET("/internal/onebot/v11/ws", qqGovernanceOneBotH.ReverseWebSocket)
+
 	// ─── 上传文件静态目录 ───
 	r.Static("/uploads", "./uploads")
 
@@ -285,9 +289,9 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		info.POST("/ships", infoH.GetCharacterShips)
 		info.POST("/implants", infoH.GetCharacterImplants)
 		info.POST("/assets", requireInfoAssetsRead, infoH.GetAssets)
-			info.POST("/assets/locations", requireInfoAssetsRead, infoH.GetAssetLocations)
-			info.POST("/assets/location-items", requireInfoAssetsRead, infoH.GetAssetLocationItems)
-			info.POST("/assets/children", requireInfoAssetsRead, infoH.GetAssetChildren)
+		info.POST("/assets/locations", requireInfoAssetsRead, infoH.GetAssetLocations)
+		info.POST("/assets/location-items", requireInfoAssetsRead, infoH.GetAssetLocationItems)
+		info.POST("/assets/children", requireInfoAssetsRead, infoH.GetAssetChildren)
 		info.POST("/contracts", requireInfoContractsRead, infoH.GetContracts)
 		info.POST("/contracts/detail", requireInfoContractsRead, infoH.GetContractDetail)
 		info.POST("/esi-refresh", esiH.RunMyCharacterTask)
@@ -640,6 +644,27 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminWebhook.GET("/config", webhookH.GetConfig)
 		adminWebhook.PUT("/config", webhookH.SetConfig)
 		adminWebhook.POST("/test", webhookH.TestWebhook)
+	}
+
+	// QQ 群治理（仅超级管理员；治理运行态与规则不对外暴露）。
+	qqGovernanceAdminH := handler.NewQQGovernanceAdminHandler()
+	adminQQGovernance := admin.Group("/qq-governance", requireSystemManage, middleware.RequireRole(model.RoleSuperAdmin))
+	{
+		adminQQGovernance.GET("/policies", qqGovernanceAdminH.ListPolicies)
+		adminQQGovernance.POST("/policies", qqGovernanceAdminH.SavePolicy)
+		adminQQGovernance.PUT("/policies/:group_id", qqGovernanceAdminH.SavePolicy)
+		adminQQGovernance.DELETE("/policies/:group_id", qqGovernanceAdminH.DeletePolicy)
+		adminQQGovernance.GET("/members", qqGovernanceAdminH.ListMembers)
+		adminQQGovernance.GET("/reviews", qqGovernanceAdminH.ListReviews)
+		adminQQGovernance.GET("/tasks", qqGovernanceAdminH.ListTasks)
+		adminQQGovernance.POST("/tasks/:id/retry", qqGovernanceAdminH.RetryTask)
+		adminQQGovernance.GET("/alerts", qqGovernanceAdminH.ListAlerts)
+		adminQQGovernance.POST("/alerts/:id/acknowledge", qqGovernanceAdminH.AcknowledgeAlert)
+		adminQQGovernance.GET("/metrics", qqGovernanceAdminH.Metrics)
+		adminQQGovernance.GET("/connection", qqGovernanceAdminH.Connection)
+		adminQQGovernance.POST("/groups/:group_id/reconcile", qqGovernanceAdminH.TriggerReconcile)
+		adminQQGovernance.POST("/actions", qqGovernanceAdminH.ManualAction)
+		adminQQGovernance.POST("/risk-control/reset", qqGovernanceAdminH.ResetRisk)
 	}
 
 	// ─── 伏羲大厅 ───

@@ -421,6 +421,7 @@
       "autoRole": "Auto Roles",
       "audit": "Audit Logs",
       "webhook": "Webhook Notifications",
+      "qqGovernance": "QQ Group Governance",
       "basicConfig": "@:setting.basics.title"
     },
     "ticket": {
@@ -3280,5 +3281,15 @@
         "rewardAmount": "Enter an integer reward amount greater than 0"
       }
     }
+  },
+  "qqGovernance": {
+    "title": "QQ Group Governance",
+    "description": "Manage group eligibility, member reconciliation, automated actions, and runtime risk.",
+    "tabs": { "policies": "Policies", "members": "Members & Reviews", "tasks": "Action Tasks", "alerts": "Governance Alerts", "runtime": "Connection & Metrics" },
+    "actions": { "addPolicy": "Add Policy", "edit": "Edit", "delete": "Delete", "save": "Save Policy", "reconcile": "Reconcile Now", "retry": "Retry Dead Task", "ack": "Acknowledge", "resetRisk": "Reset Circuit", "approve": "Approve", "reject": "Reject", "card": "Sync Card", "kick": "Kick" },
+    "fields": { "groupId": "Group ID", "enabled": "Enabled", "corporations": "Allowed Corporations", "roles": "Allowed Roles", "autoReject": "Auto reject unmatched requests", "violationPolicy": "Violation Policy", "scanInterval": "Scan Interval (minutes)", "confirmations": "Confirmations", "observation": "Observation (hours)", "cardTemplate": "Group Card Template", "status": "Status", "qq": "QQ", "decision": "Decision", "reason": "Reason", "actionType": "Action", "retryCount": "Retries", "error": "Error", "message": "Message", "risk": "Risk Level", "connection": "Bot Connection", "failureRate": "Failure Rate", "dead": "Dead Tasks" },
+    "values": { "reviewOnly": "Review only", "autoKick": "Auto kick after confirmation", "connected": "Connected", "disconnected": "Disconnected", "normal": "Normal" },
+    "placeholders": { "corporations": "Enter a corporation ID and press Enter", "roles": "Select allowed roles", "cardTemplate": "e.g. {nickname}-{primary_character_name}" },
+    "messages": { "saveSuccess": "Policy saved", "deleteConfirm": "Delete this group policy?", "actionSuccess": "Governance action created", "reconcileSuccess": "Reconciliation task created", "riskReset": "Circuit breaker reset" }
   }
 }

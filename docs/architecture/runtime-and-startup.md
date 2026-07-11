@@ -54,6 +54,7 @@ SDE 检查更新当前行为：
 - 通过 cron 或 `/api/v1/tasks/:name/run` 触发的通用任务会写入 `task_executions`
 - `auto_srp` 会在启动时恢复未到点的延迟执行 timer，但它本身不是 cron 周期任务
 - ESI 刷新队列在服务启动后仍会立即补跑一次，避免新启动实例长时间等待下一个周期
+- QQ 群治理动作 worker 随 cron 初始化启动，并由共享后台任务管理器参与关停；其待执行动作、租约和重试状态始终保存在 PostgreSQL，不依赖进程内 timer
 
 ## 设计决策
 
@@ -65,7 +66,13 @@ SDE 检查更新当前行为：
   - `background.Manager` 必须先于任何会提交受跟踪后台任务的代码初始化，并通过 `global` 暴露给任务、handler 与服务层复用。
   - 收到关停信号后，进程会先停止 cron 接受新的周期触发，再在同一个超时预算内依次等待 HTTP 请求排空、已启动的 cron 作业结束，以及 `background.Manager` 里的受跟踪任务收尾。
   - 进入关停后，`background.Manager` 必须拒绝新任务，并向已跟踪任务广播取消；任务代码如果接收了上下文，就应把取消继续向下游传播。
-  - 只有那些在 manager 已进入关停时仍必须完成同步语义的调用点，才允许通过 `background.RunOrSchedule` 明确回退为调用方上下文内联执行；不能静默丢弃任务。
+- 只有那些在 manager 已进入关停时仍必须完成同步语义的调用点，才允许通过 `background.RunOrSchedule` 明确回退为调用方上下文内联执行；不能静默丢弃任务。
+
+### QQ 群治理 OneBot 反向连接只接受私有、单机器人接入
+
+- 决策：QQ 群治理独立使用 `/internal/onebot/v11/ws` 的 OneBot V11 反向 WebSocket，不复用通用 `webhook.onebot` 配置或其任意 URL 发送能力。
+- 理由：群治理会接收事件并发起审批、拒绝和名片写操作，需要把机器人身份、来源网络、动作 echo 和持久动作队列作为单独的安全边界。
+- 必须保留的不变量：连接必须同时验证专用 Bearer Token、`X-Self-ID` 与配置的唯一机器人 QQ、以及 `onebot.allowed_cidrs`；配置不完整、来源不受控或 Redis 不可用时，不得执行任何自动 QQ 写操作。
 
 ## 关键入口文件
 

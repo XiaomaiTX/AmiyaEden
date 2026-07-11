@@ -20,6 +20,7 @@ type Config struct {
 	SDE         SDEConfig         `mapstructure:"sde"`
 	App         AppConfig         `mapstructure:"app"`
 	AlliancePAP AlliancePAPConfig `mapstructure:"alliance_pap"`
+	OneBot      OneBotConfig      `mapstructure:"onebot"`
 }
 
 // ServerConfig HTTP 服务配置
@@ -125,4 +126,13 @@ func normalizePrefix(raw, fallback string) string {
 type AlliancePAPConfig struct {
 	BaseURL string `mapstructure:"base_url"` // 联盟 PAP API 基础地址
 	APIKey  string `mapstructure:"api_key"`  // 联盟 PAP API Key
+}
+
+// OneBotConfig 是 QQ 群治理专用的反向 WebSocket 私有配置。
+// 它与通用 webhook.onebot 配置完全独立，不能互相替代。
+type OneBotConfig struct {
+	Enabled      bool     `mapstructure:"enabled"`
+	AccessToken  string   `mapstructure:"access_token"`
+	BotQQ        int64    `mapstructure:"bot_qq"`
+	AllowedCIDRs []string `mapstructure:"allowed_cidrs"`
 }
