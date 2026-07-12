@@ -2843,6 +2843,7 @@
       "fuelRemaining": "Fuel Remaining",
       "fuelPerHour": "Est. Fuel Blocks / Hour",
       "fuelToMonthEnd": "Fuel Blocks Needed to Month-End",
+      "fuelEstimateIncomplete": "Service not configured",
       "reinforceHour": "Reinforce Hour",
       "timerEnd": "Timer End",
       "updatedAt": "Updated At",

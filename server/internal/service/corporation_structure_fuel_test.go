@@ -66,15 +66,17 @@ func TestCorporationStructureListFuelEstimates(t *testing.T) {
 
 	seedCorporationStructureManageScope(t, db, 9001)
 
-	// 持久化一条燃料率（market 覆盖为 50，验证 DB 覆盖默认）
+	// 持久化一条燃料率（Market 覆盖为 50，验证 DB 覆盖默认）。
+	// DB 记录用 ESI 展示名（首字母大写），验证 normalizeServiceName 在加载时归一化。
 	fuelRepo := repository.NewStructureServiceFuelRateRepository()
 	if err := fuelRepo.UpsertBatch([]model.StructureServiceFuelRate{
-		{ServiceName: "market", TypeID: 35892, TypeName: "Standup Market Hub I", FuelPerHour: 50},
+		{ServiceName: "Market", TypeID: 35892, TypeName: "Standup Market Hub I", FuelPerHour: 50},
 	}); err != nil {
 		t.Fatalf("seed fuel rate: %v", err)
 	}
 
-	// Fortizar(35833, group 1657 堡垒) 装市场(覆盖为50)+克隆(默认10)，系数 0.75 → (50+10)*0.75=45
+	// Fortizar(35833, group 1657 堡垒) 装 Market(覆盖50)+Clone Bay(默认10)，系数 0.75 → (50+10)*0.75=45
+	// 服务名使用 ESI 原始展示名（含空格/大小写），验证查表前归一化。
 	if err := db.Create(&model.CorpStructureInfo{
 		CorporationID:   9001,
 		CorporationName: "Test Corp",
@@ -86,7 +88,7 @@ func TestCorporationStructureListFuelEstimates(t *testing.T) {
 		SystemName:      "Jita",
 		Security:        0.9,
 		State:           "shield_vulnerable",
-		Services:        `[{"name":"market","state":"online"},{"name":"clone_bay","state":"online"}]`,
+		Services:        `[{"name":"Market","state":"online"},{"name":"Clone Bay","state":"online"}]`,
 		FuelExpires:     farFutureInCurrentMonth(time.Now()),
 		UpdateAt:        time.Now().Unix(),
 	}).Error; err != nil {
@@ -127,13 +129,16 @@ func TestCorporationStructureListFuelEstimates(t *testing.T) {
 		byID[item.StructureID] = item
 	}
 
-	// Fortizar：(50+10)*0.75 = 45
+	// Fortizar：(50+10)*0.75 = 45（Market+Clone Bay 归一化后均命中）
 	fort := byID[111]
 	if fort.FuelPerHour == nil {
 		t.Fatal("Fortizar FuelPerHour 不应为 nil")
 	}
 	if *fort.FuelPerHour != 45 {
 		t.Errorf("Fortizar FuelPerHour 期望 45（DB覆盖50+默认10，×0.75），实际 %v", *fort.FuelPerHour)
+	}
+	if fort.FuelEstimateIncomplete {
+		t.Errorf("Fortizar FuelEstimateIncomplete 应为 false（所有在线服务已配置），实际 true；未知服务=%v", fort.FuelUnknownServices)
 	}
 	if fort.FuelToMonthEnd == nil {
 		t.Fatal("Fortizar FuelToMonthEnd 不应为 nil（有未来 fuel_expires）")
@@ -205,6 +210,78 @@ func TestCorporationStructureListFuelEstimates_MissingGroup(t *testing.T) {
 	// 市场默认 40，无折扣（分组缺失）→ 40
 	if *row.FuelPerHour != 40 {
 		t.Errorf("缺失分组应无折扣 market=40，实际 %v", *row.FuelPerHour)
+	}
+}
+
+// ─────────────────────────────────────────────
+//  存在未配置在线服务 → 不完整估算（不返回部分数值）
+// ─────────────────────────────────────────────
+
+func TestCorporationStructureListFuelEstimates_Incomplete(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	if err := db.AutoMigrate(&model.StructureServiceFuelRate{}); err != nil {
+		t.Fatalf("migrate fuel rate: %v", err)
+	}
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+
+	// Fortizar 同时挂 Market（已配置）和一个 ESI 未映射的在线服务。
+	// 由于存在未配置在线服务 → 不完整估算，不返回部分燃料合计。
+	if err := db.Create(&model.CorpStructureInfo{
+		CorporationID:   9001,
+		CorporationName: "Test Corp",
+		StructureID:     777,
+		Name:            "Fortizar Partial",
+		TypeID:          35833,
+		TypeName:        "Fortizar",
+		SystemID:        30000142,
+		SystemName:      "Jita",
+		Security:        0.9,
+		State:           "shield_vulnerable",
+		Services:        `[{"name":"Market","state":"online"},{"name":"Future Module","state":"online"}]`,
+		FuelExpires:     farFutureInCurrentMonth(time.Now()),
+		UpdateAt:        time.Now().Unix(),
+	}).Error; err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	resolver := &fakeGroupResolver{groupByTypeID: map[int]int{35833: structureGroupCitadel}}
+	svc := newCorpStructureServiceForFuelTest(resolver)
+
+	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{CorporationID: 9001})
+	if err != nil {
+		t.Fatalf("ListStructures: %v", err)
+	}
+	if len(resp.Items) != 1 {
+		t.Fatalf("期望 1 项，实际 %d", len(resp.Items))
+	}
+	row := resp.Items[0]
+	// 不完整估算 → 燃料字段保持 nil，避免低估
+	if row.FuelPerHour != nil {
+		t.Errorf("不完整估算 FuelPerHour 应为 nil，实际 %v", *row.FuelPerHour)
+	}
+	if row.FuelToMonthEnd != nil {
+		t.Errorf("不完整估算 FuelToMonthEnd 应为 nil，实际 %v", *row.FuelToMonthEnd)
+	}
+	if !row.FuelEstimateIncomplete {
+		t.Error("FuelEstimateIncomplete 应为 true")
+	}
+	// 未映射服务原始名应出现在列表中
+	found := false
+	for _, name := range row.FuelUnknownServices {
+		if name == "Future Module" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("FuelUnknownServices 应含原始名 'Future Module'，实际 %v", row.FuelUnknownServices)
 	}
 }
 
@@ -290,7 +367,7 @@ func TestCorporationStructureMyAssignedListFuelEstimates(t *testing.T) {
 		t.Fatalf("create fuel officer role: %v", err)
 	}
 
-	// 建筑 + 指派给燃料官
+	// 建筑 + 指派给燃料官。服务名使用 ESI 原始展示名（验证归一化查表）。
 	if err := db.Create(&model.CorpStructureInfo{
 		CorporationID:   9001,
 		CorporationName: "Test Corp",
@@ -302,7 +379,7 @@ func TestCorporationStructureMyAssignedListFuelEstimates(t *testing.T) {
 		SystemName:      "Jita",
 		Security:        0.9,
 		State:           "shield_vulnerable",
-		Services:        `[{"name":"manufacturing","state":"online"}]`,
+		Services:        `[{"name":"Manufacturing","state":"online"}]`,
 		FuelExpires:     farFutureInCurrentMonth(time.Now()),
 		UpdateAt:        time.Now().Unix(),
 	}).Error; err != nil {

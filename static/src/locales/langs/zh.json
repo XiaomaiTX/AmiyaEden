@@ -2611,6 +2611,7 @@
       "fuelRemaining": "燃料剩余",
       "fuelPerHour": "预计每小时消耗（燃料块）",
       "fuelToMonthEnd": "到月底需补充（燃料块）",
+      "fuelEstimateIncomplete": "服务未配置",
       "reinforceHour": "增强时间",
       "timerEnd": "结束时间",
       "updatedAt": "更新时间",

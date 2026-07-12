@@ -1875,6 +1875,8 @@ declare namespace Api {
       fuel_remaining_hours: number | null
       fuel_per_hour: number | null
       fuel_to_month_end: number | null
+      fuel_estimate_incomplete: boolean
+      fuel_unknown_services: string[]
       reinforce_hour: number
       state_timer_start: string
       state_timer_end: string
