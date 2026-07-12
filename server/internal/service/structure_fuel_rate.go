@@ -44,6 +44,37 @@ const (
 	fuelFactorRefineryOther      = 0.75 // 精炼厂（Tatara 等）：再处理/反应
 )
 
+// normalizeServiceName 把 ESI 建筑快照 services[].name 的展示字符串
+// 归一化为燃料率映射表使用的 snake_case 键：去首尾空白、转小写、
+// 把连续空格 / 连字符 / 下划线折叠为单个下划线。
+//
+// 这样 ESI 返回的 "Market" / "Clone Bay" / "Moon Drilling" 会稳定归一为
+// 默认表与 DB 中已有的 market / clone_bay / moon_drilling 键。
+// 既有 snake_case（如 "clone_bay"）与连字符（如 "moon-drilling"）同样兼容。
+func normalizeServiceName(name string) string {
+	s := strings.TrimSpace(name)
+	if s == "" {
+		return ""
+	}
+	s = strings.ToLower(s)
+	var b strings.Builder
+	b.Grow(len(s))
+	inSep := false
+	for _, r := range s {
+		switch r {
+		case ' ', '\t', '-', '_':
+			inSep = true
+		default:
+			if inSep {
+				b.WriteByte('_')
+				inSep = false
+			}
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // 服务类别：用于判断该服务是否可享受某类建筑的折扣。
 type structureServiceCategory int
 
@@ -185,8 +216,9 @@ func NewStructureFuelRateService() *StructureFuelRateService {
 	}
 }
 
-// LoadRateMap 加载全量映射，返回 service name(lower) → 每小时块数。
+// LoadRateMap 加载全量映射，返回 service name(归一化) → 每小时块数。
 // 数据库中的记录会「覆盖」默认回退表：DB 有则以 DB 为准，DB 缺失的服务沿用默认值。
+// 服务名会经 normalizeServiceName 归一化为 snake_case 键，兼容 ESI 展示名（如 "Clone Bay"）。
 // 注意：返回的是「原始」服务率（未乘结构系数），系数由调用方按建筑分组计算。
 func (s *StructureFuelRateService) LoadRateMap() map[string]float64 {
 	rateMap := defaultRateMap()
@@ -196,7 +228,7 @@ func (s *StructureFuelRateService) LoadRateMap() map[string]float64 {
 		return rateMap
 	}
 	for _, row := range rows {
-		name := strings.ToLower(strings.TrimSpace(row.ServiceName))
+		name := normalizeServiceName(row.ServiceName)
 		if name == "" {
 			continue
 		}
@@ -217,7 +249,7 @@ func loadRateMapWithRepo(repo *repository.StructureServiceFuelRateRepository) ma
 		return rateMap
 	}
 	for _, row := range rows {
-		name := strings.ToLower(strings.TrimSpace(row.ServiceName))
+		name := normalizeServiceName(row.ServiceName)
 		if name == "" {
 			continue
 		}
@@ -348,23 +380,41 @@ func logStructureFuelRateWarn(msg string, err error, fields ...zap.Field) {
 //  燃料消耗估算（纯函数，便于测试）
 // ─────────────────────────────────────────────
 
+// FuelEstimate 是 EstimateFuelPerHour 的返回值。
+//
+//   - FuelPerHour: 已识别在线服务的每小时燃料块合计（未乘 / 已乘结构系数后的结果）。
+//     仅当 UnknownServices 为空时该值才完整可信；调用方应据此决定是否对外返回数值。
+//   - UnknownServices: 归一化后仍无法在 rate map 命中的在线服务「原始名」列表
+//     （保留 ESI 可读文本，便于前端展示）。非空表示估算不完整。
+type FuelEstimate struct {
+	FuelPerHour     float64
+	UnknownServices []string
+}
+
 // EstimateFuelPerHour 估算建筑每小时燃料块消耗。
 //   - structureGroupID: 建筑分组（来自 SDE invTypes.groupID，决定系数）
 //   - structureTypeID: 建筑 typeID（精炼厂内区分 Athanor）
 //   - services: 建筑 services 快照（name + state）
-//   - rateMap: service name(lower) → 原始每小时块数（DB 覆盖默认表）
+//   - rateMap: service name(归一化) → 原始每小时块数（DB 覆盖默认表）
 //
-// 仅累加 state == "online" 的服务；未知 service name 忽略；全部未知返回 0。
+// 仅累加 state == "online" 的服务。服务名经 normalizeServiceName 归一化后查表，
+// 兼容 ESI 展示名（如 "Market" / "Clone Bay" / "Moon Drilling"）。
+//
+// 返回 FuelEstimate：能命中 rate map 的服务计入 FuelPerHour；
+// 无法命中的在线服务原始名收集到 UnknownServices（不再静默丢弃）。
+// 调用方应在 UnknownServices 非空时拒绝对外返回部分数值，避免低估。
+//
 // 缺失分组（0）或未知分组的服务按无折扣（系数 1.0）计算。
-// 结果四舍五入到两位小数。
+// FuelPerHour 四舍五入到两位小数。
 func EstimateFuelPerHour(
 	structureGroupID int,
 	structureTypeID int64,
 	services []CorporationStructureServiceInfo,
 	rateMap map[string]float64,
-) float64 {
+) FuelEstimate {
+	var est FuelEstimate
 	if len(services) == 0 || len(rateMap) == 0 {
-		return 0
+		return est
 	}
 	defaults := defaultServiceFuelRates()
 	total := 0.0
@@ -372,12 +422,13 @@ func EstimateFuelPerHour(
 		if !strings.EqualFold(svc.State, "online") {
 			continue
 		}
-		name := strings.ToLower(strings.TrimSpace(svc.Name))
+		name := normalizeServiceName(svc.Name)
 		if name == "" {
 			continue
 		}
 		rate, ok := rateMap[name]
 		if !ok || rate <= 0 {
+			est.UnknownServices = append(est.UnknownServices, svc.Name)
 			continue
 		}
 		// 类别取自默认表（用于系数）；若默认表无则视为 Other（系数 1.0）
@@ -387,7 +438,8 @@ func EstimateFuelPerHour(
 		}
 		total += rate * serviceFuelFactor(structureGroupID, structureTypeID, cat)
 	}
-	return math.Round(total*100) / 100
+	est.FuelPerHour = math.Round(total*100) / 100
+	return est
 }
 
 // EstimateFuelToMonthEnd 估算「到耗尽月月底还需补充的燃料块数」。

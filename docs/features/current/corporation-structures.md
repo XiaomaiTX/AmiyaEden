@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -47,9 +47,10 @@ source_of_truth:
 ## 燃料消耗估算
 
 - 数据来源：`structure_service_fuel_rate` 表（service name → 每小时燃料块），由 `structure_fuel_rate_sync` 任务同步
-- service name 为 ESI 军团建筑快照 `services[].name` 的 snake_case 通用标识符（如 `market`、`industry`、`clone_bay`），非模块 typeName
+- service name 为 ESI 军团建筑快照 `services[].name` 的原始展示字符串（如 `Market`、`Clone Bay`、`Moon Drilling`，含空格/大小写）；燃料计算内部经 `normalizeServiceName` 归一化为 snake_case 键（`market`、`clone_bay`、`moon_drilling`）后查表，非模块 typeName
 - 计算模型：每小时消耗 = Σ(在线服务的有效率)，有效率 = 服务率 × 建筑分组系数；建筑本身无基础消耗
 - 月底补料：目标 = `fuel_expires` 所在自然月月底（EVE UTC）；blocks = ceil((月底 − fuel_expires) × 每小时消耗)；`fuel_expires` 为空/已过期/rate≤0 时该字段为 `null`
+- 不完整估算：当存在「归一化后仍无法在燃料率表命中」的在线服务时，`fuel_estimate_incomplete=true` 并在 `fuel_unknown_services` 列出未映射服务原始名，`fuel_per_hour` / `fuel_to_month_end` 返回 `null`（不返回部分数值，避免低估）；前端列表展示本地化「服务未配置」而非 `--`
 
 ## 入口
 

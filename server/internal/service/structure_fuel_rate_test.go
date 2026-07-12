@@ -7,12 +7,43 @@ import (
 	"context"
 	"errors"
 	"math"
+	"reflect"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+// ─────────────────────────────────────────────
+//  normalizeServiceName — ESI 展示名归一化
+// ─────────────────────────────────────────────
+
+func TestNormalizeServiceName(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"Market", "market"},
+		{"Clone Bay", "clone_bay"},
+		{"Moon Drilling", "moon_drilling"},
+		{"clone_bay", "clone_bay"},
+		{"moon_drilling", "moon_drilling"},
+		{"moon-drilling", "moon_drilling"},
+		{"Capital Shipyard", "capital_shipyard"},
+		{"  Capital   Ship-Yard ", "capital_ship_yard"},
+		{"Cynosural  Generator", "cynosural_generator"}, // 连续空格折叠为单个下划线
+		{"  ", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			if got := normalizeServiceName(tt.in); got != tt.want {
+				t.Errorf("normalizeServiceName(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
 
 // ─────────────────────────────────────────────
 //  EstimateFuelPerHour — 分组折扣
@@ -22,12 +53,14 @@ func TestEstimateFuelPerHour(t *testing.T) {
 	rateMap := defaultRateMap()
 
 	tests := []struct {
-		name        string
-		groupID     int
-		structureID int64
-		services    []CorporationStructureServiceInfo
-		want        float64
-		wantExact   bool
+		name         string
+		groupID      int
+		structureID  int64
+		services     []CorporationStructureServiceInfo
+		want         float64
+		wantExact    bool
+		wantUnknown  []string
+		wantUnknownN int // 当不关心具体内容、只关心数量时用 -1 表示「断言非空」
 	}{
 		{
 			name:     "空服务返回 0",
@@ -130,15 +163,16 @@ func TestEstimateFuelPerHour(t *testing.T) {
 			wantExact: true,
 		},
 		{
-			name:        "未知 service name 忽略",
+			name:        "未配置在线服务产生不完整估算，已知部分仍累加且 UnknownServices 含原始名",
 			groupID:     structureGroupCitadel,
 			structureID: 35833,
 			services: []CorporationStructureServiceInfo{
 				{Name: "unknown_service", State: "online"},
 				{Name: "market", State: "online"},
 			},
-			want:      30, // 40 * 0.75
-			wantExact: true,
+			want:        30, // 已知 market 部分仍累加：40 * 0.75（调用方据 UnknownServices 决定是否对外展示）
+			wantExact:   true,
+			wantUnknown: []string{"unknown_service"},
 		},
 		{
 			name:        "跳桥等无折扣服务系数 1.0（无论分组）",
@@ -160,19 +194,52 @@ func TestEstimateFuelPerHour(t *testing.T) {
 			want:      9, // 12 * 0.75
 			wantExact: true,
 		},
+		// ── 规范化修复回归（ESI 展示名含空格/大小写）──
+		{
+			name:        "ESI 展示名 Market+Clone Bay 在堡垒归一化后命中 = 37.5",
+			groupID:     structureGroupCitadel,
+			structureID: 35833,
+			services: []CorporationStructureServiceInfo{
+				{Name: "Market", State: "online"},
+				{Name: "Clone Bay", State: "online"},
+			},
+			want:      37.5, // (40+10)*0.75
+			wantExact: true,
+		},
+		{
+			name:        "ESI 展示名 Moon Drilling 归一化后命中 = 5",
+			groupID:     structureGroupCitadel,
+			structureID: 35833,
+			services: []CorporationStructureServiceInfo{
+				{Name: "Moon Drilling", State: "online"},
+			},
+			want:      5, // 5 * 1.0（无折扣类别）
+			wantExact: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := EstimateFuelPerHour(tt.groupID, tt.structureID, tt.services, rateMap)
+			if tt.wantUnknown != nil {
+				if !reflect.DeepEqual(got.UnknownServices, tt.wantUnknown) {
+					t.Errorf("UnknownServices 期望 %v，实际 %v", tt.wantUnknown, got.UnknownServices)
+				}
+			} else if tt.wantUnknownN < 0 {
+				if len(got.UnknownServices) == 0 {
+					t.Errorf("期望 UnknownServices 非空，实际为空")
+				}
+			} else if len(got.UnknownServices) != 0 {
+				t.Errorf("期望 UnknownServices 为空，实际 %v", got.UnknownServices)
+			}
 			if !tt.wantExact {
-				if got != 0 {
-					t.Errorf("期望 0，实际 %v", got)
+				if got.FuelPerHour != 0 {
+					t.Errorf("期望 FuelPerHour 0，实际 %v", got.FuelPerHour)
 				}
 				return
 			}
-			if math.Abs(got-tt.want) > 0.01 {
-				t.Errorf("期望 %v，实际 %v", tt.want, got)
+			if math.Abs(got.FuelPerHour-tt.want) > 0.01 {
+				t.Errorf("期望 %v，实际 %v", tt.want, got.FuelPerHour)
 			}
 		})
 	}
@@ -182,8 +249,12 @@ func TestEstimateFuelPerHour_EmptyRateMap(t *testing.T) {
 	got := EstimateFuelPerHour(structureGroupCitadel, 35833, []CorporationStructureServiceInfo{
 		{Name: "market", State: "online"},
 	}, map[string]float64{})
-	if got != 0 {
-		t.Errorf("空 rateMap 应返回 0，实际 %v", got)
+	if got.FuelPerHour != 0 {
+		t.Errorf("空 rateMap 应返回 FuelPerHour 0，实际 %v", got.FuelPerHour)
+	}
+	// 空 rateMap 不视为「不完整估算」（直接短路，不收集未知服务）
+	if len(got.UnknownServices) != 0 {
+		t.Errorf("空 rateMap 应 UnknownServices 为空，实际 %v", got.UnknownServices)
 	}
 }
 

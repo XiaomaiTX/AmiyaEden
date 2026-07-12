@@ -187,8 +187,10 @@ type CorporationStructureRow struct {
 	FuelExpires           string                            `json:"fuel_expires"`
 	FuelRemaining         string                            `json:"fuel_remaining"`
 	FuelRemainingHours    *int                              `json:"fuel_remaining_hours"`
-	FuelPerHour           *float64                          `json:"fuel_per_hour"`     // 预计每小时消耗燃料块
-	FuelToMonthEnd        *int                              `json:"fuel_to_month_end"` // 预计到月底需补燃料块
+	FuelPerHour           *float64                          `json:"fuel_per_hour"`              // 预计每小时消耗燃料块
+	FuelToMonthEnd        *int                              `json:"fuel_to_month_end"`          // 预计到月底需补燃料块
+	FuelEstimateIncomplete bool                              `json:"fuel_estimate_incomplete"`   // 存在未配置在线服务时为 true，fuel_per_hour 暂不可用
+	FuelUnknownServices    []string                          `json:"fuel_unknown_services"`      // 未映射服务原始名列表
 	ReinforceHour         int                               `json:"reinforce_hour"`
 	StateTimerStart       string                            `json:"state_timer_start"`
 	StateTimerEnd         string                            `json:"state_timer_end"`
@@ -1447,8 +1449,12 @@ func buildCorporationStructureRows(
 // applyFuelEstimates 填充每行的燃料消耗估算（每小时块数 + 到耗尽月月底需补充量）。
 // 仅在需要展示这两列的列表（建筑列表 / 燃料官列表）调用；指派管理列表不调用。
 //
-//   - rateMap: service name(lower) → 原始每小时块数（DB 覆盖默认表）
+//   - rateMap: service name(归一化) → 原始每小时块数（DB 覆盖默认表）
 //   - groupMap: 建筑 typeID → groupID（来自 SDE，决定折扣系数；缺失按无折扣）
+//
+// 存在未配置（无法在 rate map 命中）的在线服务时，判定为「不完整估算」：
+// 不返回部分燃料合计（fuel_per_hour / fuel_to_month_end 保持 nil），改为标记
+// fuel_estimate_incomplete=true 并在 fuel_unknown_services 中列出未映射服务原始名。
 func applyFuelEstimates(
 	rows []CorporationStructureRow,
 	now time.Time,
@@ -1461,8 +1467,14 @@ func applyFuelEstimates(
 	for i := range rows {
 		row := &rows[i]
 		groupID := groupMap[row.TypeID]
-		fuelPerHour := EstimateFuelPerHour(groupID, row.TypeID, row.Services, rateMap)
-		if fuelPerHour > 0 {
+		est := EstimateFuelPerHour(groupID, row.TypeID, row.Services, rateMap)
+		if len(est.UnknownServices) > 0 {
+			row.FuelEstimateIncomplete = true
+			row.FuelUnknownServices = est.UnknownServices
+			continue
+		}
+		if est.FuelPerHour > 0 {
+			fuelPerHour := est.FuelPerHour
 			row.FuelPerHour = &fuelPerHour
 			row.FuelToMonthEnd = EstimateFuelToMonthEnd(row.FuelExpires, fuelPerHour, now)
 		}
