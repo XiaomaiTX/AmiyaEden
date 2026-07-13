@@ -1,7 +1,6 @@
 package service
 
 import (
-	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"errors"
 	"fmt"
@@ -15,10 +14,11 @@ func (s *QQGovernanceService) riskWait(task *model.QQGovernanceActionTask) (time
 	if task.Source != "automatic" && task.Source != "cron" && task.Source != "reconcile" {
 		return 0, nil
 	}
-	if global.Config == nil || global.Config.OneBot.BotQQ <= 0 {
+	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
+	if botQQ <= 0 {
 		return 0, nil
 	}
-	state, err := s.repo.GetRiskState(global.Config.OneBot.BotQQ)
+	state, err := s.repo.GetRiskState(botQQ)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, nil
 	}
@@ -46,7 +46,8 @@ func (s *QQGovernanceService) riskWait(task *model.QQGovernanceActionTask) (time
 }
 
 func (s *QQGovernanceService) recordRiskOutcome(task *model.QQGovernanceActionTask, success bool, cause error) {
-	if global.Config == nil || global.Config.OneBot.BotQQ <= 0 {
+	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
+	if botQQ <= 0 {
 		return
 	}
 	now := s.now()
@@ -69,9 +70,9 @@ func (s *QQGovernanceService) recordRiskOutcome(task *model.QQGovernanceActionTa
 	if !success && failed >= 10 {
 		level = model.QQGovernanceRiskLevelThree
 	}
-	state, err := s.repo.GetRiskState(global.Config.OneBot.BotQQ)
+	state, err := s.repo.GetRiskState(botQQ)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		state = &model.QQGovernanceRiskControlState{BotQQ: global.Config.OneBot.BotQQ}
+		state = &model.QQGovernanceRiskControlState{BotQQ: botQQ}
 	} else if err != nil {
 		return
 	}
@@ -102,11 +103,12 @@ func (s *QQGovernanceService) recordRiskOutcome(task *model.QQGovernanceActionTa
 }
 
 func (s *QQGovernanceService) ResetRiskControl(operator uint) error {
-	if global.Config == nil || global.Config.OneBot.BotQQ <= 0 {
+	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
+	if botQQ <= 0 {
 		return errors.New("OneBot 机器人配置不可用")
 	}
 	now := s.now()
-	state, err := s.repo.GetRiskState(global.Config.OneBot.BotQQ)
+	state, err := s.repo.GetRiskState(botQQ)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil
 	}

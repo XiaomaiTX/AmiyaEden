@@ -462,6 +462,10 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	adminConfig.GET("/sde-config/status", sysConfigH.GetSDEStatus)
 	adminConfig.POST("/sde-config/check", sysConfigH.CheckSDEVersion)
 	adminConfig.POST("/sde-config/update", sysConfigH.TriggerSDEUpdate)
+	adminConfig.GET("/alliance-pap-config", sysConfigH.GetAlliancePAPConfig)
+	adminConfig.PUT("/alliance-pap-config", sysConfigH.UpdateAlliancePAPConfig)
+	adminConfig.GET("/onebot-config", sysConfigH.GetOneBotConfig)
+	adminConfig.PUT("/onebot-config", sysConfigH.UpdateOneBotConfig)
 
 	// 允许访问的军团列表
 	adminBasicConfig.GET("/allow-corporations", sysConfigH.GetAllowCorporations)

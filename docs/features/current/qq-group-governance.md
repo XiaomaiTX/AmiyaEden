@@ -4,7 +4,7 @@ doc_type: feature
 owner: engineering
 last_reviewed: 2026-07-11
 source_of_truth:
-  - server/config/config.go
+  - server/internal/service/sys_config.go
   - server/internal/handler/qq_governance_onebot.go
   - server/internal/service/qq_governance.go
   - server/internal/service/qq_governance_worker.go
@@ -29,6 +29,6 @@ source_of_truth:
 
 ## 配置与边界
 
-`onebot` 配置与现有通用 `webhook.onebot` 完全独立。生产环境必须使用随机令牌、唯一机器人 QQ，并仅配置 NapCat 所在受控网段。
+`onebot` 配置保存在 `system_config`，仅超级管理员可在系统基础配置页面维护；它与现有通用 `webhook.onebot` 完全独立。生产环境必须使用随机令牌、唯一机器人 QQ，并仅配置 NapCat 所在受控网段。
 
 事件保留 90 天，审查与动作日志各保留 180 天。NapCat 镜像、容器和生产网络不由本仓库管理；多机器人和多实例连接选主仍未实现。

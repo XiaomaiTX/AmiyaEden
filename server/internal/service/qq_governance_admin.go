@@ -190,8 +190,8 @@ func (s *QQGovernanceService) Metrics() (QQGovernanceMetrics, error) {
 	if counts.Succeeded+counts.Failed > 0 {
 		result.FailureRate = float64(counts.Failed) / float64(counts.Succeeded+counts.Failed)
 	}
-	if global.Config != nil && global.Config.OneBot.BotQQ > 0 {
-		if risk, err := s.repo.GetRiskState(global.Config.OneBot.BotQQ); err == nil {
+	if botQQ := NewSysConfigService().GetOneBotConfig().BotQQ; botQQ > 0 {
+		if risk, err := s.repo.GetRiskState(botQQ); err == nil {
 			result.RiskLevel = risk.Level
 		}
 	}

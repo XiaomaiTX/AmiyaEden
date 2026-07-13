@@ -102,7 +102,7 @@ const alliancePAPTimeLayout = "2006-01-02 15:04:05"
 
 // FetchAndStore 拉取指定主人物某月的联盟 PAP 数据并入库
 func (s *AlliancePAPService) FetchAndStore(mainChar string, year, month int) error {
-	cfg := global.Config.AlliancePAP
+	cfg := NewSysConfigService().GetAlliancePAPConfig()
 	if cfg.BaseURL == "" || cfg.APIKey == "" {
 		return fmt.Errorf("alliance_pap 配置不完整（base_url 或 api_key 为空）")
 	}

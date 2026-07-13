@@ -16,6 +16,7 @@ type SysConfigHandler struct {
 	corpPolicySvc *service.CorporationPolicyService
 	walletSvc     *service.SysWalletService
 	sdeSvc        sdeSysConfigService
+	auditSvc      *service.AuditService
 }
 
 type sdeSysConfigService interface {
@@ -37,6 +38,7 @@ func newSysConfigHandlerWithDeps(
 		corpPolicySvc: service.NewCorporationPolicyService(),
 		walletSvc:     service.NewSysWalletService(),
 		sdeSvc:        sdeSvc,
+		auditSvc:      service.NewAuditService(),
 	}
 }
 
@@ -79,8 +81,88 @@ func (h *SysConfigHandler) UpdateSDEConfig(c *gin.Context) {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
+	h.recordConfigAudit(c, "sde_config_update", model.SysConfigSDEAPIKey, map[string]any{
+		"proxy_updated": req.Proxy != nil, "download_url_updated": req.DownloadURL != nil, "api_key_updated": req.APIKey != nil,
+	})
 
 	response.OK(c, nil)
+}
+
+type AlliancePAPConfigResponse struct {
+	BaseURL string `json:"base_url"`
+	APIKey  string `json:"api_key"`
+}
+
+type UpdateAlliancePAPConfigRequest struct {
+	BaseURL *string `json:"base_url"`
+	APIKey  *string `json:"api_key"`
+}
+
+func (h *SysConfigHandler) GetAlliancePAPConfig(c *gin.Context) {
+	cfg := h.cfgSvc.GetAlliancePAPConfig()
+	response.OK(c, AlliancePAPConfigResponse{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey})
+}
+
+func (h *SysConfigHandler) UpdateAlliancePAPConfig(c *gin.Context) {
+	var req UpdateAlliancePAPConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	if err := h.cfgSvc.UpdateAlliancePAPConfig(req.BaseURL, req.APIKey); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	h.recordConfigAudit(c, "alliance_pap_config_update", model.SysConfigAlliancePAPBaseURL, map[string]any{
+		"base_url_updated": req.BaseURL != nil, "api_key_updated": req.APIKey != nil,
+	})
+	response.OK(c, nil)
+}
+
+type OneBotConfigResponse struct {
+	Enabled      bool     `json:"enabled"`
+	AccessToken  string   `json:"access_token"`
+	BotQQ        int64    `json:"bot_qq"`
+	AllowedCIDRs []string `json:"allowed_cidrs"`
+}
+
+type UpdateOneBotConfigRequest struct {
+	Enabled      *bool     `json:"enabled"`
+	AccessToken  *string   `json:"access_token"`
+	BotQQ        *int64    `json:"bot_qq"`
+	AllowedCIDRs *[]string `json:"allowed_cidrs"`
+}
+
+func (h *SysConfigHandler) GetOneBotConfig(c *gin.Context) {
+	cfg := h.cfgSvc.GetOneBotConfig()
+	response.OK(c, OneBotConfigResponse{Enabled: cfg.Enabled, AccessToken: cfg.AccessToken, BotQQ: cfg.BotQQ, AllowedCIDRs: cfg.AllowedCIDRs})
+}
+
+func (h *SysConfigHandler) UpdateOneBotConfig(c *gin.Context) {
+	var req UpdateOneBotConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	if err := h.cfgSvc.UpdateOneBotConfig(req.Enabled, req.AccessToken, req.BotQQ, req.AllowedCIDRs); err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
+	h.recordConfigAudit(c, "onebot_config_update", model.SysConfigOneBotEnabled, map[string]any{
+		"enabled_updated": req.Enabled != nil, "bot_qq_updated": req.BotQQ != nil,
+		"allowed_cidrs_updated": req.AllowedCIDRs != nil, "access_token_updated": req.AccessToken != nil,
+	})
+	response.OK(c, nil)
+}
+
+func (h *SysConfigHandler) recordConfigAudit(c *gin.Context, action, resourceID string, details map[string]any) {
+	if h.auditSvc == nil {
+		return
+	}
+	_ = h.auditSvc.RecordEvent(c.Request.Context(), service.AuditRecordInput{
+		Category: "config", Action: action, ActorUserID: middleware.GetUserID(c), ResourceType: "system_config",
+		ResourceID: resourceID, Result: model.AuditResultSuccess, Details: details,
+	})
 }
 
 func (h *SysConfigHandler) GetSDEStatus(c *gin.Context) {

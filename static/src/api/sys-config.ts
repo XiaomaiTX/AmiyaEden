@@ -66,6 +66,22 @@ export function updateSDEConfig(data: Api.SysConfig.UpdateSDEConfigParams) {
   })
 }
 
+export function fetchAlliancePAPConfig() {
+  return request.get<Api.SysConfig.AlliancePAPConfig>({ url: '/api/v1/system/alliance-pap-config' })
+}
+
+export function updateAlliancePAPConfig(data: Api.SysConfig.UpdateAlliancePAPConfigParams) {
+  return request.put({ url: '/api/v1/system/alliance-pap-config', data })
+}
+
+export function fetchOneBotConfig() {
+  return request.get<Api.SysConfig.OneBotConfig>({ url: '/api/v1/system/onebot-config' })
+}
+
+export function updateOneBotConfig(data: Api.SysConfig.UpdateOneBotConfigParams) {
+  return request.put({ url: '/api/v1/system/onebot-config', data })
+}
+
 /** 获取 SDE 状态 */
 export function fetchSDEStatus() {
   return request.get<Api.SysConfig.SDEStatus>({

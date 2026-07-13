@@ -67,7 +67,7 @@ func TestSDEConfigDefaultValues(t *testing.T) {
 		actual   string
 		expected string
 	}{
-		{name: "APIKey", actual: model.SysConfigDefaultSDEAPIKey, expected: "modify_your_api_key"},
+		{name: "APIKey", actual: model.SysConfigDefaultSDEAPIKey, expected: "change_me_sde_api_key"},
 		{name: "Proxy", actual: model.SysConfigDefaultSDEProxy, expected: ""},
 		{name: "DownloadURL", actual: model.SysConfigDefaultSDEDownloadURL, expected: "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"},
 	}

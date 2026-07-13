@@ -11,16 +11,13 @@ const (
 
 // Config 全局配置根结构
 type Config struct {
-	Server      ServerConfig      `mapstructure:"server"`
-	Database    DatabaseConfig    `mapstructure:"database"`
-	Log         LogConfig         `mapstructure:"log"`
-	JWT         JWTConfig         `mapstructure:"jwt"`
-	Redis       RedisConfig       `mapstructure:"redis"`
-	EveSSO      EveSSOConfig      `mapstructure:"eve_sso"`
-	SDE         SDEConfig         `mapstructure:"sde"`
-	App         AppConfig         `mapstructure:"app"`
-	AlliancePAP AlliancePAPConfig `mapstructure:"alliance_pap"`
-	OneBot      OneBotConfig      `mapstructure:"onebot"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Database DatabaseConfig `mapstructure:"database"`
+	Log      LogConfig      `mapstructure:"log"`
+	JWT      JWTConfig      `mapstructure:"jwt"`
+	Redis    RedisConfig    `mapstructure:"redis"`
+	EveSSO   EveSSOConfig   `mapstructure:"eve_sso"`
+	App      AppConfig      `mapstructure:"app"`
 }
 
 // ServerConfig HTTP 服务配置
@@ -77,13 +74,6 @@ type EveSSOConfig struct {
 	SSOTokenURL     string `mapstructure:"sso_token_url"`
 }
 
-// SDEConfig SDE 模块配置
-type SDEConfig struct {
-	APIKey      string `mapstructure:"api_key"`      // 用于保护数据查询接口的 API Key
-	Proxy       string `mapstructure:"proxy"`        // 下载 SDE 时使用的 HTTP/SOCKS5 代理，留空则不使用
-	DownloadURL string `mapstructure:"download_url"` // SDE GitHub Release API 地址
-}
-
 // AppConfig 全局应用配置实例
 type AppConfig struct {
 	SuperAdmins []int64 `mapstructure:"super_admins"`
@@ -120,19 +110,4 @@ func normalizePrefix(raw, fallback string) string {
 		v = "/" + v
 	}
 	return v
-}
-
-// AlliancePAPConfig 联盟 PAP 外部 API 配置
-type AlliancePAPConfig struct {
-	BaseURL string `mapstructure:"base_url"` // 联盟 PAP API 基础地址
-	APIKey  string `mapstructure:"api_key"`  // 联盟 PAP API Key
-}
-
-// OneBotConfig 是 QQ 群治理专用的反向 WebSocket 私有配置。
-// 它与通用 webhook.onebot 配置完全独立，不能互相替代。
-type OneBotConfig struct {
-	Enabled      bool     `mapstructure:"enabled"`
-	AccessToken  string   `mapstructure:"access_token"`
-	BotQQ        int64    `mapstructure:"bot_qq"`
-	AllowedCIDRs []string `mapstructure:"allowed_cidrs"`
 }
