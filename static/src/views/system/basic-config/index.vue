@@ -53,6 +53,67 @@
 
     <ElCard shadow="never" style="margin-top: 16px">
       <template #header>
+        <h2 class="section-title">{{ $t('system.basicConfig.alliancePapConfig') }}</h2>
+      </template>
+      <ElForm
+        :model="alliancePAPForm"
+        label-width="120px"
+        style="max-width: 680px"
+        v-loading="loadingAlliancePAP"
+      >
+        <ElFormItem :label="$t('system.basicConfig.alliancePapBaseUrl')">
+          <ElInput v-model="alliancePAPForm.base_url" clearable style="width: 500px" />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.alliancePapApiKey')">
+          <ElInput v-model="alliancePAPForm.api_key" clearable show-password style="width: 400px" />
+        </ElFormItem>
+        <ElFormItem>
+          <ElButton type="primary" :loading="savingAlliancePAP" @click="handleSaveAlliancePAP">
+            {{ $t('system.basicConfig.save') }}
+          </ElButton>
+        </ElFormItem>
+      </ElForm>
+    </ElCard>
+
+    <ElCard shadow="never" style="margin-top: 16px">
+      <template #header>
+        <h2 class="section-title">{{ $t('system.basicConfig.oneBotConfig') }}</h2>
+      </template>
+      <ElForm
+        :model="oneBotForm"
+        label-width="120px"
+        style="max-width: 680px"
+        v-loading="loadingOneBot"
+      >
+        <ElFormItem :label="$t('system.basicConfig.oneBotEnabled')">
+          <ElSwitch v-model="oneBotForm.enabled" />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.oneBotAccessToken')">
+          <ElInput v-model="oneBotForm.access_token" clearable show-password style="width: 400px" />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.oneBotBotQQ')">
+          <ElInputNumber v-model="oneBotForm.bot_qq" :min="0" :precision="0" style="width: 220px" />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.oneBotAllowedCIDRs')">
+          <ElInput
+            v-model="oneBotCIDRsInput"
+            type="textarea"
+            :rows="4"
+            clearable
+            style="width: 400px"
+          />
+          <div class="form-hint">{{ $t('system.basicConfig.oneBotAllowedCIDRsHint') }}</div>
+        </ElFormItem>
+        <ElFormItem>
+          <ElButton type="primary" :loading="savingOneBot" @click="handleSaveOneBot">
+            {{ $t('system.basicConfig.save') }}
+          </ElButton>
+        </ElFormItem>
+      </ElForm>
+    </ElCard>
+
+    <ElCard shadow="never" style="margin-top: 16px">
+      <template #header>
         <h2 class="section-title">{{ $t('system.basicConfig.sdeConfig') }}</h2>
       </template>
 
@@ -248,6 +309,10 @@
     fetchSDEStatus,
     checkSDEVersion,
     triggerSDEUpdate,
+    fetchAlliancePAPConfig,
+    updateAlliancePAPConfig,
+    fetchOneBotConfig,
+    updateOneBotConfig,
     fetchAllowCorporations,
     updateAllowCorporations,
     fetchCorporationAccessPolicies,
@@ -264,6 +329,10 @@
   const savingSDE = ref(false)
   const checkingSDE = ref(false)
   const updatingSDE = ref(false)
+  const loadingAlliancePAP = ref(false)
+  const savingAlliancePAP = ref(false)
+  const loadingOneBot = ref(false)
+  const savingOneBot = ref(false)
   const loadingAllowCorpsConfig = ref(false)
   const savingAllowCorps = ref(false)
   const loadingCorpPolicies = ref(false)
@@ -469,6 +538,14 @@
     proxy: '',
     download_url: ''
   })
+  const alliancePAPForm = reactive<Api.SysConfig.AlliancePAPConfig>({ base_url: '', api_key: '' })
+  const oneBotForm = reactive<Api.SysConfig.OneBotConfig>({
+    enabled: false,
+    access_token: '',
+    bot_qq: 0,
+    allowed_cidrs: []
+  })
+  const oneBotCIDRsInput = ref('')
   const sdeStatus = reactive<Api.SysConfig.SDEStatus>({
     current_version: '',
     latest_version: '',
@@ -674,6 +751,53 @@
     }
   }
 
+  const loadAlliancePAPConfig = async () => {
+    loadingAlliancePAP.value = true
+    try {
+      const config = await fetchAlliancePAPConfig()
+      alliancePAPForm.base_url = config.base_url
+      alliancePAPForm.api_key = config.api_key
+    } finally {
+      loadingAlliancePAP.value = false
+    }
+  }
+
+  const handleSaveAlliancePAP = async () => {
+    savingAlliancePAP.value = true
+    try {
+      await updateAlliancePAPConfig({ ...alliancePAPForm })
+      ElMessage.success(t('system.basicConfig.saveSuccess'))
+    } finally {
+      savingAlliancePAP.value = false
+    }
+  }
+
+  const loadOneBotConfig = async () => {
+    loadingOneBot.value = true
+    try {
+      const config = await fetchOneBotConfig()
+      Object.assign(oneBotForm, config)
+      oneBotCIDRsInput.value = config.allowed_cidrs.join('\n')
+    } finally {
+      loadingOneBot.value = false
+    }
+  }
+
+  const handleSaveOneBot = async () => {
+    savingOneBot.value = true
+    try {
+      const allowedCIDRs = oneBotCIDRsInput.value
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean)
+      await updateOneBotConfig({ ...oneBotForm, allowed_cidrs: allowedCIDRs })
+      oneBotForm.allowed_cidrs = allowedCIDRs
+      ElMessage.success(t('system.basicConfig.saveSuccess'))
+    } finally {
+      savingOneBot.value = false
+    }
+  }
+
   const loadAllowCorpsConfig = async () => {
     loadingAllowCorpsConfig.value = true
     try {
@@ -862,6 +986,8 @@
     loadAllowCorpsConfig().then(loadCorpPolicies)
     loadSDEConfig()
     loadSDEStatus()
+    loadAlliancePAPConfig()
+    loadOneBotConfig()
   })
 </script>
 

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"amiya-eden/global"
+	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +16,7 @@ func APIKeyAuth() gin.HandlerFunc {
 			key = c.Query("api_key")
 		}
 
-		expected := global.Config.SDE.APIKey
+		expected := service.NewSysConfigService().GetSDEConfig().APIKey
 		if expected == "" || key != expected {
 			response.Fail(c, response.CodeUnauthorized, "无效的 API Key")
 			c.Abort()

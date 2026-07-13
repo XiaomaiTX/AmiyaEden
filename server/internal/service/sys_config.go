@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net"
 	"strconv"
 
 	"amiya-eden/global"
@@ -24,6 +26,19 @@ type SDEConfig struct {
 	APIKey      string
 	Proxy       string
 	DownloadURL string
+}
+
+type AlliancePAPConfig struct {
+	BaseURL string
+	APIKey  string
+}
+
+// OneBotRuntimeConfig 是 QQ 群治理反向 WebSocket 的动态运行时配置。
+type OneBotRuntimeConfig struct {
+	Enabled      bool
+	AccessToken  string
+	BotQQ        int64
+	AllowedCIDRs []string
 }
 
 type CorporationDisplay struct {
@@ -55,20 +70,83 @@ func (s *SysConfigService) GetSDEConfig() SDEConfig {
 }
 
 func (s *SysConfigService) UpdateSDEConfig(apiKey, proxy, downloadURL *string) error {
+	items := newSysConfigBatch(3)
 	if apiKey != nil {
-		if err := s.repo.Set(model.SysConfigSDEAPIKey, *apiKey, "SDE 查询 API Key"); err != nil {
-			return errors.New("更新 API Key 失败")
-		}
+		items.AddString(model.SysConfigSDEAPIKey, *apiKey, "SDE 查询 API Key")
 	}
 	if proxy != nil {
-		if err := s.repo.Set(model.SysConfigSDEProxy, *proxy, "SDE 下载代理"); err != nil {
-			return errors.New("更新代理配置失败")
-		}
+		items.AddString(model.SysConfigSDEProxy, *proxy, "SDE 下载代理")
 	}
 	if downloadURL != nil {
-		if err := s.repo.Set(model.SysConfigSDEDownloadURL, *downloadURL, "SDE 下载地址"); err != nil {
-			return errors.New("更新下载地址失败")
+		items.AddString(model.SysConfigSDEDownloadURL, *downloadURL, "SDE 下载地址")
+	}
+	if err := s.repo.SetMany(items.Items()); err != nil {
+		return errors.New("更新 SDE 配置失败")
+	}
+	return nil
+}
+
+func (s *SysConfigService) GetAlliancePAPConfig() AlliancePAPConfig {
+	return AlliancePAPConfig{
+		BaseURL: s.repo.GetString(model.SysConfigAlliancePAPBaseURL, model.SysConfigDefaultAlliancePAPBaseURL),
+		APIKey:  s.repo.GetString(model.SysConfigAlliancePAPAPIKey, model.SysConfigDefaultAlliancePAPAPIKey),
+	}
+}
+
+func (s *SysConfigService) UpdateAlliancePAPConfig(baseURL, apiKey *string) error {
+	items := newSysConfigBatch(2)
+	if baseURL != nil {
+		items.AddString(model.SysConfigAlliancePAPBaseURL, *baseURL, "联盟 PAP API 地址")
+	}
+	if apiKey != nil {
+		items.AddString(model.SysConfigAlliancePAPAPIKey, *apiKey, "联盟 PAP API Key")
+	}
+	if err := s.repo.SetMany(items.Items()); err != nil {
+		return errors.New("更新联盟 PAP 配置失败")
+	}
+	return nil
+}
+
+func (s *SysConfigService) GetOneBotConfig() OneBotRuntimeConfig {
+	defaultCIDRs := []string{"127.0.0.1/32"}
+	raw := s.repo.GetString(model.SysConfigOneBotAllowedCIDRs, "")
+	cidrs := defaultCIDRs
+	if raw != "" && json.Unmarshal([]byte(raw), &cidrs) != nil {
+		cidrs = defaultCIDRs
+	}
+	return OneBotRuntimeConfig{
+		Enabled:      s.repo.GetBool(model.SysConfigOneBotEnabled, model.SysConfigDefaultOneBotEnabled),
+		AccessToken:  s.repo.GetString(model.SysConfigOneBotAccessToken, model.SysConfigDefaultOneBotAccessToken),
+		BotQQ:        s.repo.GetInt64(model.SysConfigOneBotBotQQ, model.SysConfigDefaultOneBotBotQQ),
+		AllowedCIDRs: cidrs,
+	}
+}
+
+func (s *SysConfigService) UpdateOneBotConfig(enabled *bool, accessToken *string, botQQ *int64, allowedCIDRs *[]string) error {
+	items := newSysConfigBatch(4)
+	if enabled != nil {
+		items.AddBool(model.SysConfigOneBotEnabled, *enabled, "是否启用 QQ 群治理 OneBot")
+	}
+	if accessToken != nil {
+		items.AddString(model.SysConfigOneBotAccessToken, *accessToken, "QQ 群治理 OneBot Access Token")
+	}
+	if botQQ != nil {
+		items.AddInt64(model.SysConfigOneBotBotQQ, *botQQ, "QQ 群治理 OneBot 机器人 QQ")
+	}
+	if allowedCIDRs != nil {
+		for _, cidr := range *allowedCIDRs {
+			if _, _, err := net.ParseCIDR(cidr); err != nil {
+				return errors.New("OneBot 受控网段格式无效")
+			}
 		}
+		raw, err := json.Marshal(*allowedCIDRs)
+		if err != nil {
+			return errors.New("编码 OneBot 受控网段失败")
+		}
+		items.AddString(model.SysConfigOneBotAllowedCIDRs, string(raw), "QQ 群治理 OneBot 受控网段")
+	}
+	if err := s.repo.SetMany(items.Items()); err != nil {
+		return errors.New("更新 OneBot 配置失败")
 	}
 	return nil
 }

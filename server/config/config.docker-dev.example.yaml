@@ -35,14 +35,5 @@ eve_sso:
   client_secret: "YOUR_EVE_SSO_CLIENT_SECRET"
   callback_url: "http://localhost:65432/callback/"
 
-sde:
-  api_key: "dev_sde_key"
-  proxy: ""
-  download_url: "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
-
 app:
   allow_corporations: []
-
-alliance_pap:
-  base_url: ""
-  api_key: ""

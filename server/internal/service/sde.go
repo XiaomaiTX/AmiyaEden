@@ -86,12 +86,12 @@ func NewSdeService() *SdeService {
 
 // 获取配置的辅助方法
 func (s *SdeService) getProxy() string {
-	proxy, _ := s.sysConfig.Get(model.SysConfigSDEProxy, global.Config.SDE.Proxy)
+	proxy, _ := s.sysConfig.Get(model.SysConfigSDEProxy, model.SysConfigDefaultSDEProxy)
 	return proxy
 }
 
 func (s *SdeService) getDownloadURL() string {
-	url, _ := s.sysConfig.Get(model.SysConfigSDEDownloadURL, global.Config.SDE.DownloadURL)
+	url, _ := s.sysConfig.Get(model.SysConfigSDEDownloadURL, model.SysConfigDefaultSDEDownloadURL)
 	return url
 }
 

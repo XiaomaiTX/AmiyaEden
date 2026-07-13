@@ -15,7 +15,7 @@ func TestSdeConfigDefaults(t *testing.T) {
 		{
 			name:     "默认 API Key",
 			actual:   model.SysConfigDefaultSDEAPIKey,
-			expected: "modify_your_api_key",
+			expected: "change_me_sde_api_key",
 		},
 		{
 			name:     "默认代理为空",

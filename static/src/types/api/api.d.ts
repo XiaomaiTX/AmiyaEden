@@ -3539,6 +3539,30 @@ declare namespace Api {
       download_url?: string
     }
 
+    interface AlliancePAPConfig {
+      base_url: string
+      api_key: string
+    }
+
+    interface UpdateAlliancePAPConfigParams {
+      base_url?: string
+      api_key?: string
+    }
+
+    interface OneBotConfig {
+      enabled: boolean
+      access_token: string
+      bot_qq: number
+      allowed_cidrs: string[]
+    }
+
+    interface UpdateOneBotConfigParams {
+      enabled?: boolean
+      access_token?: string
+      bot_qq?: number
+      allowed_cidrs?: string[]
+    }
+
     interface SDEStatus {
       current_version: string
       latest_version: string

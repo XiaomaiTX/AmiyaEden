@@ -69,7 +69,6 @@ cp server/config/config.example.yaml server/config/config.yaml
 - `eve_sso.sso_authorize_url`
 - `eve_sso.sso_token_url`
 - `eve_sso.eve_images_base_url`
-- `sde.api_key`
 
 ### 2. 启动依赖服务
 

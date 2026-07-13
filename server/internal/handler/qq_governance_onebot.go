@@ -40,10 +40,10 @@ func (h *QQGovernanceOneBotHandler) ReverseWebSocket(c *gin.Context) {
 }
 
 func validateOneBotReverseRequest(r *http.Request) error {
-	if r == nil || global.Config == nil {
+	if r == nil {
 		return errors.New("OneBot 配置不可用")
 	}
-	cfg := global.Config.OneBot
+	cfg := service.NewSysConfigService().GetOneBotConfig()
 	if !cfg.Enabled || cfg.BotQQ <= 0 || strings.TrimSpace(cfg.AccessToken) == "" {
 		return errors.New("OneBot 反向连接未启用或配置不完整")
 	}

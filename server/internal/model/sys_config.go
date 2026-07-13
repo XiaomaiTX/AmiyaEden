@@ -30,10 +30,16 @@ const (
 	SysConfigWebhookOBTargetID   = "webhook.ob_target_id"   // 目标群号或用户 QQ
 	SysConfigWebhookOBToken      = "webhook.ob_token"       // access token（可空）
 
-	SysConfigSDEAPIKey      = "sde.api_key"      // SDE 查询 API Key
-	SysConfigSDEProxy       = "sde.proxy"        // SDE 下载代理
-	SysConfigSDEDownloadURL = "sde.download_url" // SDE 下载地址
-	SysConfigSDEStatus      = "sde.status"       // SDE 状态快照（JSON）
+	SysConfigSDEAPIKey          = "sde.api_key"      // SDE 查询 API Key
+	SysConfigSDEProxy           = "sde.proxy"        // SDE 下载代理
+	SysConfigSDEDownloadURL     = "sde.download_url" // SDE 下载地址
+	SysConfigSDEStatus          = "sde.status"       // SDE 状态快照（JSON）
+	SysConfigAlliancePAPBaseURL = "alliance_pap.base_url"
+	SysConfigAlliancePAPAPIKey  = "alliance_pap.api_key"
+	SysConfigOneBotEnabled      = "onebot.enabled"
+	SysConfigOneBotAccessToken  = "onebot.access_token"
+	SysConfigOneBotBotQQ        = "onebot.bot_qq"
+	SysConfigOneBotAllowedCIDRs = "onebot.allowed_cidrs"
 
 	SysConfigAllowCorporations                               = "app.allow_corporations"                 // 允许访问的公司 ID 列表 (JSON 数组)
 	SysConfigCorporationAccessPolicies                       = "app.corporation_access_policies"        // 军团能力策略配置 (JSON)
@@ -63,9 +69,14 @@ const (
 
 	SysConfigESITaskIntervals = "esi.task_intervals" // ESI 子任务刷新间隔覆盖（JSON）
 
-	SysConfigDefaultSDEAPIKey      = "modify_your_api_key"
-	SysConfigDefaultSDEProxy       = ""
-	SysConfigDefaultSDEDownloadURL = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
+	SysConfigDefaultSDEAPIKey                = "change_me_sde_api_key"
+	SysConfigDefaultSDEProxy                 = ""
+	SysConfigDefaultSDEDownloadURL           = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
+	SysConfigDefaultAlliancePAPBaseURL       = "http://jp.newdoublex.space:25220"
+	SysConfigDefaultAlliancePAPAPIKey        = ""
+	SysConfigDefaultOneBotEnabled            = false
+	SysConfigDefaultOneBotAccessToken        = "change_me_onebot_reverse_ws_token"
+	SysConfigDefaultOneBotBotQQ        int64 = 0
 
 	SysConfigDefaultNewbroMaxCharacterSP                            int64   = 20_000_000
 	SysConfigDefaultNewbroMultiCharacterSP                          int64   = 10_000_000

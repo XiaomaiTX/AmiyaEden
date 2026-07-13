@@ -47,9 +47,7 @@ source_of_truth:
 
 - SDE 版本记录保存在 `sde_versions`
 - 当前不会在启动时或 cron 中自动检查并导入 SDE
-- **配置来源**：
-  - 优先从 `system_config` 表读取（键：`sde.api_key`、`sde.proxy`、`sde.download_url`）
-  - 回退到 `config.yaml` 中的 `sde.*` 配置作为默认值
+- **配置来源**：`system_config` 表（键：`sde.api_key`、`sde.proxy`、`sde.download_url`）；缺失时写入系统内置默认值。
 - **API Key 用途**：
   - `sde.api_key` 是用于访问上游 GitHub SDE 下载时的标识符
   - 不是用于保护当前应用的 SDE 查询接口
@@ -78,7 +76,7 @@ source_of_truth:
 
 ## 关键不变量
 
-- **配置优先级**：数据库配置 > config.yaml 默认值
+- **配置来源**：只使用数据库与系统内置默认值，不读取 `config.yaml`
 - **配置缓存**：使用 SysConfigRepository 的 Redis 缓存机制
 - **公开访问**：SDE 查询接口无需鉴权，任何前端调用方都可以使用
 - **共享基础能力**：SDE 是共享基础能力，修改返回结构时要检查多个业务模块

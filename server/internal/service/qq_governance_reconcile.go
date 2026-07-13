@@ -1,7 +1,6 @@
 package service
 
 import (
-	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"context"
 	"encoding/json"
@@ -81,8 +80,9 @@ func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.
 	if shardCount < 1 {
 		shardCount = 1
 	}
+	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
 	for _, member := range members {
-		if global.Config != nil && member.UserID == global.Config.OneBot.BotQQ {
+		if botQQ > 0 && member.UserID == botQQ {
 			continue
 		}
 		if member.UserID > 0 && int(member.UserID%int64(shardCount)) == payload.Shard {
