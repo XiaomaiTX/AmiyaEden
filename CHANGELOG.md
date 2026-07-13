@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-07-13
+
+### Added
+
+- 新增 QQ 群治理与 OneBot V11 集成，支持群组配置、成员治理、风险识别与后台管理。
+- 新增公司建筑燃料消耗估算与燃料费率同步功能，并在建筑相关页面展示估算结果。
+
+### Fixed
+
+- 修复燃料费率重复同步时可能触发唯一约束冲突的问题。
+- 规范化建筑服务名称，并完善燃料估算数据不完整时的处理与展示。
+
 ## [1.14.0] - 2026-07-06
 
 ### Added
