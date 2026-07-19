@@ -481,10 +481,11 @@
   const savePolicy = async () => {
     saving.value = true
     try {
+      const allowedCorporationIDs = policyForm.allowed_corporation_ids.map((value) => Number(value))
       if (editingGroupId.value) {
         await updateQQGovernancePolicy(editingGroupId.value, {
           enabled: policyForm.enabled,
-          allowed_corporation_ids: policyForm.allowed_corporation_ids,
+          allowed_corporation_ids: allowedCorporationIDs,
           allowed_role_codes: policyForm.allowed_role_codes,
           auto_reject_unmatched: policyForm.auto_reject_unmatched,
           member_violation_policy: policyForm.member_violation_policy,
@@ -493,7 +494,12 @@
           mismatch_observation_hours: policyForm.mismatch_observation_hours,
           card_template: policyForm.card_template
         })
-      } else await saveQQGovernancePolicy(policyForm)
+      } else {
+        await saveQQGovernancePolicy({
+          ...policyForm,
+          allowed_corporation_ids: allowedCorporationIDs
+        })
+      }
       ElMessage.success(t('qqGovernance.messages.saveSuccess'))
       policyDialog.value = false
       await loadPolicies()

@@ -33,9 +33,21 @@ func NewQQGovernanceOneBotHandler() *QQGovernanceOneBotHandler {
 }
 func (h *QQGovernanceOneBotHandler) ReverseWebSocket(c *gin.Context) {
 	if err := validateOneBotReverseRequest(c.Request); err != nil {
+		oneBotLogger().Warn("OneBot reverse WebSocket rejected",
+			zap.String("remote_addr", c.Request.RemoteAddr),
+			zap.String("self_id", strings.TrimSpace(c.GetHeader("X-Self-ID"))),
+			zap.Bool("has_authorization", strings.TrimSpace(c.GetHeader("Authorization")) != ""),
+			zap.String("request_id", c.GetString("request-id")),
+			zap.Error(err),
+		)
 		c.String(http.StatusForbidden, "OneBot reverse WebSocket rejected")
 		return
 	}
+	oneBotLogger().Info("OneBot reverse WebSocket accepted",
+		zap.String("remote_addr", c.Request.RemoteAddr),
+		zap.String("self_id", strings.TrimSpace(c.GetHeader("X-Self-ID"))),
+		zap.String("request_id", c.GetString("request-id")),
+	)
 	websocket.Handler(func(ws *websocket.Conn) { h.manager.Serve(ws, c.Request.Context()) }).ServeHTTP(c.Writer, c.Request)
 }
 
@@ -113,8 +125,10 @@ func (m *qqGovernanceOneBotConnectionManager) Serve(conn *websocket.Conn, ctx co
 	m.current = connection
 	m.mu.Unlock()
 	if old != nil {
+		m.logger().Warn("OneBot reverse WebSocket replaced an existing connection")
 		_ = old.conn.Close()
 	}
+	m.logger().Info("OneBot reverse WebSocket connected")
 	defer func() {
 		m.mu.Lock()
 		if m.current == connection {
@@ -122,10 +136,12 @@ func (m *qqGovernanceOneBotConnectionManager) Serve(conn *websocket.Conn, ctx co
 		}
 		m.mu.Unlock()
 		_ = conn.Close()
+		m.logger().Info("OneBot reverse WebSocket disconnected")
 	}()
 	for {
 		var raw string
 		if err := websocket.Message.Receive(conn, &raw); err != nil {
+			m.logger().Info("OneBot reverse WebSocket receive stopped", zap.Error(err))
 			return
 		}
 		m.handleMessage(ctx, []byte(raw))
@@ -135,7 +151,8 @@ func (m *qqGovernanceOneBotConnectionManager) handleMessage(ctx context.Context,
 	var envelope struct {
 		Echo json.RawMessage `json:"echo"`
 	}
-	if json.Unmarshal(raw, &envelope) != nil {
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		m.logger().Debug("Ignoring invalid OneBot message", zap.Error(err))
 		return
 	}
 	if len(envelope.Echo) > 0 && string(envelope.Echo) != "null" {
@@ -210,6 +227,10 @@ func retryableOneBotResponse(response oneBotActionResponse) bool {
 	return true
 }
 func (m *qqGovernanceOneBotConnectionManager) logger() *zap.Logger {
+	return oneBotLogger()
+}
+
+func oneBotLogger() *zap.Logger {
 	if l := global.CurrentLogger(); l != nil {
 		return l
 	}
