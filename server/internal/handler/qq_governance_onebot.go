@@ -48,7 +48,14 @@ func (h *QQGovernanceOneBotHandler) ReverseWebSocket(c *gin.Context) {
 		zap.String("self_id", strings.TrimSpace(c.GetHeader("X-Self-ID"))),
 		zap.String("request_id", c.GetString("request-id")),
 	)
-	websocket.Handler(func(ws *websocket.Conn) { h.manager.Serve(ws, c.Request.Context()) }).ServeHTTP(c.Writer, c.Request)
+	websocket.Server{
+		// NapCat is a non-browser OneBot client and normally does not send Origin.
+		// Authentication and source-network checks above remain the access control.
+		Handshake: func(*websocket.Config, *http.Request) error { return nil },
+		Handler: websocket.Handler(func(ws *websocket.Conn) {
+			h.manager.Serve(ws, c.Request.Context())
+		}),
+	}.ServeHTTP(c.Writer, c.Request)
 }
 
 func validateOneBotReverseRequest(r *http.Request) error {
