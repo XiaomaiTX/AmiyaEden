@@ -40,6 +40,9 @@ const (
 	SysConfigOneBotAccessToken  = "onebot.access_token"
 	SysConfigOneBotBotQQ        = "onebot.bot_qq"
 	SysConfigOneBotAllowedCIDRs = "onebot.allowed_cidrs"
+	SysConfigQQGovernanceScanIntervalMinutes      = "qq_governance.scan_interval_minutes"
+	SysConfigQQGovernanceMismatchConfirmations    = "qq_governance.mismatch_confirmations"
+	SysConfigQQGovernanceMismatchObservationHours = "qq_governance.mismatch_observation_hours"
 
 	SysConfigAllowCorporations                               = "app.allow_corporations"                 // 允许访问的公司 ID 列表 (JSON 数组)
 	SysConfigCorporationAccessPolicies                       = "app.corporation_access_policies"        // 军团能力策略配置 (JSON)
@@ -77,6 +80,9 @@ const (
 	SysConfigDefaultOneBotEnabled            = false
 	SysConfigDefaultOneBotAccessToken        = "change_me_onebot_reverse_ws_token"
 	SysConfigDefaultOneBotBotQQ        int64 = 0
+	SysConfigDefaultQQGovernanceScanIntervalMinutes      = 15
+	SysConfigDefaultQQGovernanceMismatchConfirmations    = 2
+	SysConfigDefaultQQGovernanceMismatchObservationHours = 2
 
 	SysConfigDefaultNewbroMaxCharacterSP                            int64   = 20_000_000
 	SysConfigDefaultNewbroMultiCharacterSP                          int64   = 10_000_000

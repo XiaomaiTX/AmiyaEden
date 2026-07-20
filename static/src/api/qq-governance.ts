@@ -55,6 +55,21 @@ export function fetchQQGovernanceMetrics() {
 export function fetchQQGovernanceConnection() {
   return request.get<Api.QQGovernance.Connection>({ url: `${base}/connection` })
 }
+export function fetchQQGovernanceGroups() {
+  return request.get<Api.QQGovernance.GroupStatus[]>({ url: `${base}/groups` })
+}
+export function searchQQGovernanceCorporations(query: string) {
+  return request.get<Api.QQGovernance.CorporationOption[]>({
+    url: `${base}/corporations`,
+    params: { query }
+  })
+}
+export function fetchQQGovernanceSettings() {
+  return request.get<Api.QQGovernance.Settings>({ url: `${base}/settings` })
+}
+export function updateQQGovernanceSettings(data: Api.QQGovernance.Settings) {
+  return request.put<Api.QQGovernance.Settings>({ url: `${base}/settings`, data })
+}
 export function triggerQQGovernanceReconcile(groupId: number) {
   return request.post({ url: `${base}/groups/${groupId}/reconcile` })
 }

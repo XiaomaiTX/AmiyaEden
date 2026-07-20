@@ -134,6 +134,47 @@ func (r *QQGovernanceRepository) SaveMemberStateTx(tx *gorm.DB, state *model.QQG
 	}
 	return tx.Save(state).Error
 }
+func (r *QQGovernanceRepository) GetRuntimeSnapshot(groupID int64) (*model.QQGroupRuntimeSnapshot, error) {
+	var snapshot model.QQGroupRuntimeSnapshot
+	if err := r.dbOrGlobal().Where("group_id = ?", groupID).First(&snapshot).Error; err != nil {
+		return nil, err
+	}
+	return &snapshot, nil
+}
+func (r *QQGovernanceRepository) SaveRuntimeSnapshot(snapshot *model.QQGroupRuntimeSnapshot) error {
+	if snapshot == nil {
+		return errors.New("qq governance runtime snapshot is required")
+	}
+	return r.dbOrGlobal().Save(snapshot).Error
+}
+
+func (r *QQGovernanceRepository) ListRuntimeSnapshots(groupIDs []int64) ([]model.QQGroupRuntimeSnapshot, error) {
+	if len(groupIDs) == 0 {
+		return []model.QQGroupRuntimeSnapshot{}, nil
+	}
+	var snapshots []model.QQGroupRuntimeSnapshot
+	err := r.dbOrGlobal().Where("group_id IN ?", groupIDs).Find(&snapshots).Error
+	return snapshots, err
+}
+
+type QQGovernanceMemberStateCount struct {
+	GroupID int64
+	Status  string
+	Count   int64
+}
+
+func (r *QQGovernanceRepository) CountMemberStatesByGroup(groupIDs []int64) ([]QQGovernanceMemberStateCount, error) {
+	if len(groupIDs) == 0 {
+		return []QQGovernanceMemberStateCount{}, nil
+	}
+	var rows []QQGovernanceMemberStateCount
+	err := r.dbOrGlobal().Model(&model.QQGroupMemberState{}).
+		Select("group_id, status, COUNT(*) AS count").
+		Where("group_id IN ?", groupIDs).
+		Group("group_id, status").
+		Scan(&rows).Error
+	return rows, err
+}
 func (r *QQGovernanceRepository) CreateReviewTx(tx *gorm.DB, review *model.QQGovernanceReview) error {
 	if review == nil {
 		return errors.New("qq governance review is required")

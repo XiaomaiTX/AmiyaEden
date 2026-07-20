@@ -55,6 +55,9 @@ source_of_truth:
 | GET | `/members`、`/reviews`、`/tasks`、`/alerts` | 分页查询运行态、审查、动作和治理页告警 |
 | POST | `/tasks/:id/retry`、`/alerts/:id/acknowledge` | 重试死信、确认告警 |
 | GET | `/metrics`、`/connection` | 获取治理页指标与 OneBot 连接/风险状态 |
+| GET/PUT | `/settings` | 读取或更新所有受治理 QQ 群共用的扫描、确认和观察期设置 |
+| GET | `/groups` | 查询各已配置群的名称、成员快照、治理状态统计与同步状态 |
+| GET | `/corporations?query=名称` | 通过 ESI 搜索军团名称并返回可写入规则的军团 ID |
 | POST | `/groups/:group_id/reconcile`、`/actions`、`/risk-control/reset` | 立即巡检、人工动作与解除熔断 |
 
 ### EVE SSO

@@ -116,6 +116,37 @@ func (h *QQGovernanceAdminHandler) Metrics(c *gin.Context) {
 	}
 	response.OK(c, data)
 }
+func (h *QQGovernanceAdminHandler) ListGroups(c *gin.Context) {
+	rows, err := h.svc.ListGroupStatuses()
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, rows)
+}
+func (h *QQGovernanceAdminHandler) SearchCorporations(c *gin.Context) {
+	rows, err := h.svc.SearchCorporations(c.Request.Context(), c.Query("query"))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, "搜索军团失败")
+		return
+	}
+	response.OK(c, rows)
+}
+func (h *QQGovernanceAdminHandler) GetSettings(c *gin.Context) {
+	response.OK(c, h.svc.GovernanceSettings())
+}
+func (h *QQGovernanceAdminHandler) UpdateSettings(c *gin.Context) {
+	var req service.QQGovernanceSettings
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	if err := h.svc.UpdateGovernanceSettings(req, middleware.GetUserID(c)); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, h.svc.GovernanceSettings())
+}
 func (h *QQGovernanceAdminHandler) TriggerReconcile(c *gin.Context) {
 	group, ok := parseQQGovernanceInt64(c, "group_id")
 	if !ok {

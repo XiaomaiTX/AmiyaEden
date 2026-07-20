@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
+	"net/url"
+	"sort"
 	"strconv"
+	"strings"
 
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
+	"amiya-eden/pkg/eve/esi"
 
 	"go.uber.org/zap"
 )
@@ -39,6 +43,13 @@ type OneBotRuntimeConfig struct {
 	AccessToken  string
 	BotQQ        int64
 	AllowedCIDRs []string
+}
+
+// QQGovernanceSettings 是所有受治理 QQ 群共用的巡检与清退确认参数。
+type QQGovernanceSettings struct {
+	ScanIntervalMinutes      int `json:"scan_interval_minutes"`
+	MismatchConfirmations    int `json:"mismatch_confirmations"`
+	MismatchObservationHours int `json:"mismatch_observation_hours"`
 }
 
 type CorporationDisplay struct {
@@ -151,6 +162,41 @@ func (s *SysConfigService) UpdateOneBotConfig(enabled *bool, accessToken *string
 	return nil
 }
 
+func (s *SysConfigService) GetQQGovernanceSettings() QQGovernanceSettings {
+	return QQGovernanceSettings{
+		ScanIntervalMinutes: s.repo.GetInt(model.SysConfigQQGovernanceScanIntervalMinutes, model.SysConfigDefaultQQGovernanceScanIntervalMinutes),
+		MismatchConfirmations: s.repo.GetInt(model.SysConfigQQGovernanceMismatchConfirmations, model.SysConfigDefaultQQGovernanceMismatchConfirmations),
+		MismatchObservationHours: s.repo.GetInt(model.SysConfigQQGovernanceMismatchObservationHours, model.SysConfigDefaultQQGovernanceMismatchObservationHours),
+	}
+}
+
+func (s *SysConfigService) UpdateQQGovernanceSettings(input QQGovernanceSettings) error {
+	if err := validateQQGovernanceSettings(input); err != nil {
+		return err
+	}
+	items := newSysConfigBatch(3)
+	items.AddInt(model.SysConfigQQGovernanceScanIntervalMinutes, input.ScanIntervalMinutes, "QQ 群治理全局扫描间隔（分钟）")
+	items.AddInt(model.SysConfigQQGovernanceMismatchConfirmations, input.MismatchConfirmations, "QQ 群治理全局连续不匹配次数")
+	items.AddInt(model.SysConfigQQGovernanceMismatchObservationHours, input.MismatchObservationHours, "QQ 群治理全局观察期（小时）")
+	if err := s.repo.SetMany(items.Items()); err != nil {
+		return errors.New("更新 QQ 群治理全局设置失败")
+	}
+	return nil
+}
+
+func validateQQGovernanceSettings(input QQGovernanceSettings) error {
+	if input.ScanIntervalMinutes < 15 || input.ScanIntervalMinutes > 360 || input.ScanIntervalMinutes%15 != 0 {
+		return errors.New("扫描间隔必须为 15 到 360 分钟且为 15 的倍数")
+	}
+	if input.MismatchConfirmations < 2 || input.MismatchConfirmations > 3 {
+		return errors.New("连续不匹配次数必须为 2 到 3")
+	}
+	if input.MismatchObservationHours < 1 || input.MismatchObservationHours > 6 {
+		return errors.New("观察期必须为 1 到 6 小时")
+	}
+	return nil
+}
+
 func (s *SysConfigService) GetAllowCorporations() []int64 {
 	return utils.GetAllowCorporations()
 }
@@ -176,6 +222,37 @@ func (s *SysConfigService) GetAllowCorporationDisplays(ctx context.Context) []Co
 		})
 	}
 	return displays
+}
+
+// SearchCorporations resolves corporation names through ESI so governance rules
+// persist stable corporation IDs instead of a free-form name.
+func (s *SysConfigService) SearchCorporations(ctx context.Context, query string) ([]CorporationDisplay, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []CorporationDisplay{}, nil
+	}
+	client := esi.NewClient()
+	if global.Config != nil {
+		client = esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
+	}
+	var result struct {
+		CorporationIDs []int64 `json:"corporation"`
+	}
+	path := "/search/?categories=corporation&strict=false&search=" + url.QueryEscape(query)
+	if err := client.Get(ctx, path, "", &result); err != nil {
+		return nil, err
+	}
+	resolved := s.entityNameResolver.Resolve(ctx, result.CorporationIDs)
+	items := make([]CorporationDisplay, 0, len(result.CorporationIDs))
+	for _, corporationID := range result.CorporationIDs {
+		if name := resolved.Names[corporationID]; name != "" {
+			items = append(items, CorporationDisplay{CorporationID: corporationID, CorporationName: name})
+		}
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return strings.ToLower(items[i].CorporationName) < strings.ToLower(items[j].CorporationName)
+	})
+	return items, nil
 }
 
 func (s *SysConfigService) UpdateAllowCorporations(allowCorporations []int64) error {
