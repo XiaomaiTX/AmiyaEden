@@ -151,7 +151,14 @@ func truncateQQGovernanceError(err error) string {
 }
 
 func (s *QQGovernanceService) logQQGovernanceAction(task *model.QQGovernanceActionTask, result, errMessage string) error {
-	return s.repo.CreateActionLog(&model.QQGovernanceActionLog{TaskID: task.ID, ActionType: task.ActionType, RequestSummary: fmt.Sprintf("action=%s group_id=%d qq=%d version=%d", task.ActionType, task.GroupID, task.QQ, task.TargetVersion), Result: result, ErrorMessage: errMessage})
+	return s.repo.CreateActionLog(&model.QQGovernanceActionLog{
+		TaskID:         task.ID,
+		ActionType:     task.ActionType,
+		RequestSummary: fmt.Sprintf("action=%s group_id=%d qq=%d version=%d", task.ActionType, task.GroupID, task.QQ, task.TargetVersion),
+		Result:         result,
+		ErrorMessage:   errMessage,
+		Attempt:        task.RetryCount + 1,
+	})
 }
 func paramsForQQGovernanceAction(task *model.QQGovernanceActionTask) (map[string]any, error) {
 	var payload qqGovernanceActionPayload

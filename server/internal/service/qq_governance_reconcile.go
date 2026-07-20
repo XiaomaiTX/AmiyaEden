@@ -21,6 +21,11 @@ const (
 type oneBotGroupMember struct {
 	UserID int64 `json:"user_id"`
 }
+type oneBotGroupInfo struct {
+	GroupName       string `json:"group_name"`
+	MemberCount     int    `json:"member_count"`
+	MaxMemberCount  int    `json:"max_member_count"`
+}
 
 // EnqueueScheduledReconciliations 由 cron 或手动入口调用，只创建可恢复的扫描任务。
 func (s *QQGovernanceService) EnqueueScheduledReconciliations(ctx context.Context, groupID int64) error {
@@ -29,12 +34,13 @@ func (s *QQGovernanceService) EnqueueScheduledReconciliations(ctx context.Contex
 		return err
 	}
 	now := s.now()
+	settings := s.GovernanceSettings()
 	for _, policy := range policies {
 		if groupID > 0 && policy.GroupID != groupID {
 			continue
 		}
 		payload, _ := json.Marshal(qqGovernanceActionPayload{Shard: 0})
-		bucket := now.Unix() / int64(policy.ScanIntervalMinutes*60)
+		bucket := now.Unix() / int64(settings.ScanIntervalMinutes*60)
 		_, err := s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{
 			ActionType: model.QQGovernanceActionScan, IdempotencyKey: fmt.Sprintf("scan:%d:0:%d", policy.GroupID, bucket), GroupID: policy.GroupID,
 			PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 60, RunAfter: now, Source: "cron",
@@ -61,6 +67,7 @@ func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.
 	if task.ActionType == model.QQGovernanceActionRecheck {
 		return s.reconcileOneMember(ctx, task, policy, task.QQ)
 	}
+	settings := s.GovernanceSettings()
 	executor := s.actionExecutor()
 	if executor == nil || !executor.OneBotConnected() {
 		return s.failTask(task, &OneBotActionError{Message: "OneBot 机器人未连接", Retryable: true}, true)
@@ -74,6 +81,28 @@ func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.
 	var members []oneBotGroupMember
 	if err := json.Unmarshal(raw, &members); err != nil {
 		return s.failTask(task, fmt.Errorf("解析群成员列表失败: %w", err), true)
+	}
+	if payload.Shard == 0 {
+		var info oneBotGroupInfo
+		infoRaw, infoErr := executor.CallOneBot(callCtx, "get_group_info", map[string]any{"group_id": task.GroupID, "no_cache": true})
+		if infoErr == nil {
+			_ = json.Unmarshal(infoRaw, &info)
+		}
+		now := s.now()
+		snapshot, snapshotErr := s.repo.GetRuntimeSnapshot(task.GroupID)
+		if errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
+			snapshot = &model.QQGroupRuntimeSnapshot{GroupID: task.GroupID}
+		}
+		if snapshotErr == nil || errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
+			snapshot.LastSyncAttemptAt = now
+			if infoErr == nil {
+				snapshot.GroupName, snapshot.MemberCount, snapshot.MaxMemberCount = info.GroupName, len(members), info.MaxMemberCount
+				snapshot.LastSyncedAt, snapshot.LastSyncError = &now, ""
+			} else {
+				snapshot.LastSyncError = truncateQQGovernanceError(infoErr)
+			}
+			_ = s.repo.SaveRuntimeSnapshot(snapshot)
+		}
 	}
 	filtered := make([]int64, 0, len(members))
 	shardCount := int(math.Ceil(float64(len(members)) / qqGovernanceMaxMembersPerShard))
@@ -116,7 +145,7 @@ func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.
 	} else {
 		cursor.LastQQ = filtered[end-1]
 	}
-	cursor.NextRunAt = now.Add(15 * time.Minute)
+	cursor.NextRunAt = now.Add(time.Duration(settings.ScanIntervalMinutes) * time.Minute)
 	if err := s.repo.SaveCursor(cursor); err != nil {
 		return s.failTask(task, err, true)
 	}
@@ -175,7 +204,8 @@ func (s *QQGovernanceService) reconcileMember(_ context.Context, policy *model.Q
 				state.FirstMismatchAt = &now
 			}
 			state.Status = model.QQGovernanceMemberInvalidCand
-			if policy.MemberViolationPolicy == model.QQGovernanceViolationAutoKick && state.MismatchCount >= policy.MismatchConfirmations && now.Sub(*state.FirstMismatchAt) >= time.Duration(policy.MismatchObservationHours)*time.Hour {
+			settings := s.GovernanceSettings()
+			if policy.MemberViolationPolicy == model.QQGovernanceViolationAutoKick && state.MismatchCount >= settings.MismatchConfirmations && now.Sub(*state.FirstMismatchAt) >= time.Duration(settings.MismatchObservationHours)*time.Hour {
 				state.Status = model.QQGovernanceMemberInvalidConf
 			}
 		default:

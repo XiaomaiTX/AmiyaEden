@@ -21,9 +21,6 @@ type QQGovernancePolicyInput struct {
 	AllowedRoleCodes         []string `json:"allowed_role_codes"`
 	AutoRejectUnmatched      bool     `json:"auto_reject_unmatched"`
 	MemberViolationPolicy    string   `json:"member_violation_policy"`
-	ScanIntervalMinutes      int      `json:"scan_interval_minutes"`
-	MismatchConfirmations    int      `json:"mismatch_confirmations"`
-	MismatchObservationHours int      `json:"mismatch_observation_hours"`
 	CardTemplate             string   `json:"card_template"`
 }
 
@@ -35,9 +32,6 @@ type QQGovernancePolicyView struct {
 	AllowedRoleCodes         []string  `json:"allowed_role_codes"`
 	AutoRejectUnmatched      bool      `json:"auto_reject_unmatched"`
 	MemberViolationPolicy    string    `json:"member_violation_policy"`
-	ScanIntervalMinutes      int       `json:"scan_interval_minutes"`
-	MismatchConfirmations    int       `json:"mismatch_confirmations"`
-	MismatchObservationHours int       `json:"mismatch_observation_hours"`
 	CardTemplate             string    `json:"card_template"`
 	UpdatedBy                uint      `json:"updated_by"`
 	UpdatedAt                time.Time `json:"updated_at"`
@@ -57,6 +51,19 @@ type QQGovernanceMetrics struct {
 	FailureRate   float64 `json:"failure_rate"`
 	Connected     bool    `json:"connected"`
 	RiskLevel     int     `json:"risk_level"`
+}
+type QQGovernanceGroupStatus struct {
+	GroupID               int64      `json:"group_id"`
+	GroupName             string     `json:"group_name"`
+	Enabled               bool       `json:"enabled"`
+	MemberCount           int        `json:"member_count"`
+	MaxMemberCount        int        `json:"max_member_count"`
+	ValidCount            int64      `json:"valid_count"`
+	ReviewCount           int64      `json:"review_count"`
+	InvalidCandidateCount int64      `json:"invalid_candidate_count"`
+	InvalidConfirmedCount int64      `json:"invalid_confirmed_count"`
+	LastSyncedAt          *time.Time `json:"last_synced_at"`
+	SnapshotState         string     `json:"snapshot_state"`
 }
 
 func (s *QQGovernanceService) ListPolicies() ([]QQGovernancePolicyView, error) {
@@ -83,15 +90,6 @@ func (s *QQGovernanceService) SavePolicy(input QQGovernancePolicyInput, operator
 	}
 	if input.MemberViolationPolicy != model.QQGovernanceViolationReview && input.MemberViolationPolicy != model.QQGovernanceViolationAutoKick {
 		return nil, errors.New("成员违规策略无效")
-	}
-	if input.ScanIntervalMinutes < 15 || input.ScanIntervalMinutes > 360 || input.ScanIntervalMinutes%15 != 0 {
-		return nil, errors.New("扫描间隔必须为 15 到 360 分钟且为 15 的倍数")
-	}
-	if input.MismatchConfirmations < 2 || input.MismatchConfirmations > 3 {
-		return nil, errors.New("连续不匹配次数必须为 2 到 3")
-	}
-	if input.MismatchObservationHours < 1 || input.MismatchObservationHours > 6 {
-		return nil, errors.New("观察期必须为 1 到 6 小时")
 	}
 	corpJSON, err := json.Marshal(input.AllowedCorporationIDs)
 	if err != nil {
@@ -121,9 +119,6 @@ func (s *QQGovernanceService) SavePolicy(input QQGovernancePolicyInput, operator
 	policy.AllowedRoleCodesJSON = string(roleJSON)
 	policy.AutoRejectUnmatched = input.AutoRejectUnmatched
 	policy.MemberViolationPolicy = input.MemberViolationPolicy
-	policy.ScanIntervalMinutes = input.ScanIntervalMinutes
-	policy.MismatchConfirmations = input.MismatchConfirmations
-	policy.MismatchObservationHours = input.MismatchObservationHours
 	policy.CardTemplate = strings.TrimSpace(input.CardTemplate)
 	policy.UpdatedBy = operator
 	if err := s.repo.SavePolicy(policy); err != nil {
@@ -149,7 +144,73 @@ func qqGovernancePolicyView(row model.QQGroupGovernancePolicy) (QQGovernancePoli
 	if err := json.Unmarshal([]byte(row.AllowedRoleCodesJSON), &roles); err != nil {
 		return QQGovernancePolicyView{}, err
 	}
-	return QQGovernancePolicyView{ID: row.ID, GroupID: row.GroupID, Enabled: row.Enabled, AllowedCorporationIDs: corps, AllowedRoleCodes: roles, AutoRejectUnmatched: row.AutoRejectUnmatched, MemberViolationPolicy: row.MemberViolationPolicy, ScanIntervalMinutes: row.ScanIntervalMinutes, MismatchConfirmations: row.MismatchConfirmations, MismatchObservationHours: row.MismatchObservationHours, CardTemplate: row.CardTemplate, UpdatedBy: row.UpdatedBy, UpdatedAt: row.UpdatedAt}, nil
+	return QQGovernancePolicyView{ID: row.ID, GroupID: row.GroupID, Enabled: row.Enabled, AllowedCorporationIDs: corps, AllowedRoleCodes: roles, AutoRejectUnmatched: row.AutoRejectUnmatched, MemberViolationPolicy: row.MemberViolationPolicy, CardTemplate: row.CardTemplate, UpdatedBy: row.UpdatedBy, UpdatedAt: row.UpdatedAt}, nil
+}
+func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, error) {
+	policies, err := s.repo.ListPolicies(nil)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := make([]int64, 0, len(policies))
+	for _, policy := range policies {
+		groupIDs = append(groupIDs, policy.GroupID)
+	}
+	snapshots, err := s.repo.ListRuntimeSnapshots(groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	stateCounts, err := s.repo.CountMemberStatesByGroup(groupIDs)
+	if err != nil {
+		return nil, err
+	}
+	snapshotByGroup := make(map[int64]model.QQGroupRuntimeSnapshot, len(snapshots))
+	for _, snapshot := range snapshots {
+		snapshotByGroup[snapshot.GroupID] = snapshot
+	}
+	countsByGroup := make(map[int64]map[string]int64, len(groupIDs))
+	for _, count := range stateCounts {
+		if countsByGroup[count.GroupID] == nil {
+			countsByGroup[count.GroupID] = make(map[string]int64)
+		}
+		countsByGroup[count.GroupID][count.Status] = count.Count
+	}
+	settings, now := s.GovernanceSettings(), s.now()
+	result := make([]QQGovernanceGroupStatus, 0, len(policies))
+	for _, policy := range policies {
+		item := QQGovernanceGroupStatus{GroupID: policy.GroupID, Enabled: policy.Enabled, SnapshotState: "never_synced"}
+		if snapshot, ok := snapshotByGroup[policy.GroupID]; ok {
+			item.GroupName, item.MemberCount, item.MaxMemberCount, item.LastSyncedAt = snapshot.GroupName, snapshot.MemberCount, snapshot.MaxMemberCount, snapshot.LastSyncedAt
+			if snapshot.LastSyncedAt != nil {
+				item.SnapshotState = "fresh"
+				if now.Sub(*snapshot.LastSyncedAt) > time.Duration(settings.ScanIntervalMinutes*2)*time.Minute {
+					item.SnapshotState = "stale"
+				}
+			}
+		}
+		counts := countsByGroup[policy.GroupID]
+		item.ValidCount = counts[model.QQGovernanceMemberValid]
+		item.ReviewCount = counts[model.QQGovernanceMemberReview]
+		item.InvalidCandidateCount = counts[model.QQGovernanceMemberInvalidCand]
+		item.InvalidConfirmedCount = counts[model.QQGovernanceMemberInvalidConf]
+		result = append(result, item)
+	}
+	return result, nil
+}
+
+func (s *QQGovernanceService) GovernanceSettings() QQGovernanceSettings {
+	return NewSysConfigService().GetQQGovernanceSettings()
+}
+
+func (s *QQGovernanceService) UpdateGovernanceSettings(input QQGovernanceSettings, operator uint) error {
+	if err := NewSysConfigService().UpdateQQGovernanceSettings(input); err != nil {
+		return err
+	}
+	s.audit("qq_governance_settings_update", operator, "system_config", model.SysConfigQQGovernanceScanIntervalMinutes, nil)
+	return nil
+}
+
+func (s *QQGovernanceService) SearchCorporations(ctx context.Context, query string) ([]CorporationDisplay, error) {
+	return NewSysConfigService().SearchCorporations(ctx, query)
 }
 func (s *QQGovernanceService) ListMemberStates(filter repository.QQGovernanceMemberFilter) (QQGovernancePageResult[model.QQGroupMemberState], error) {
 	rows, total, err := s.repo.ListMemberStates(filter)

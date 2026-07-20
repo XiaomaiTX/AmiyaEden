@@ -262,9 +262,6 @@ declare namespace Api {
       allowed_role_codes: string[]
       auto_reject_unmatched: boolean
       member_violation_policy: 'review_only' | 'auto_kick_after_confirmed_mismatch'
-      scan_interval_minutes: number
-      mismatch_confirmations: number
-      mismatch_observation_hours: number
       card_template: string
       updated_by: number
       updated_at: string
@@ -339,6 +336,28 @@ declare namespace Api {
     interface Connection {
       connected: boolean
       risk_level: number
+    }
+    interface Settings {
+      scan_interval_minutes: number
+      mismatch_confirmations: number
+      mismatch_observation_hours: number
+    }
+    interface GroupStatus {
+      group_id: number
+      group_name: string
+      enabled: boolean
+      member_count: number
+      max_member_count: number
+      valid_count: number
+      review_count: number
+      invalid_candidate_count: number
+      invalid_confirmed_count: number
+      last_synced_at: string | null
+      snapshot_state: 'fresh' | 'stale' | 'never_synced'
+    }
+    interface CorporationOption {
+      corporation_id: number
+      corporation_name: string
     }
     type PageParams = Partial<{
       page: number

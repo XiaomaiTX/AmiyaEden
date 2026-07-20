@@ -46,9 +46,6 @@ type QQGroupGovernancePolicy struct {
 	AllowedRoleCodesJSON      string `gorm:"type:text;not null;default:'[]'" json:"allowed_role_codes_json"`
 	AutoRejectUnmatched       bool   `gorm:"not null;default:false" json:"auto_reject_unmatched"`
 	MemberViolationPolicy     string `gorm:"size:64;not null;default:'review_only'" json:"member_violation_policy"`
-	ScanIntervalMinutes       int    `gorm:"not null;default:15" json:"scan_interval_minutes"`
-	MismatchConfirmations     int    `gorm:"not null;default:2" json:"mismatch_confirmations"`
-	MismatchObservationHours  int    `gorm:"not null;default:2" json:"mismatch_observation_hours"`
 	CardTemplate              string `gorm:"size:256;not null;default:''" json:"card_template"`
 	UpdatedBy                 uint   `gorm:"not null;default:0" json:"updated_by"`
 }
@@ -84,6 +81,20 @@ type QQGroupMemberState struct {
 }
 
 func (QQGroupMemberState) TableName() string { return "qq_group_member_state" }
+
+// QQGroupRuntimeSnapshot 保存最近一次成功读取到的群状态，供管理页在断连时展示。
+type QQGroupRuntimeSnapshot struct {
+	BaseModel
+	GroupID           int64      `gorm:"not null;uniqueIndex" json:"group_id"`
+	GroupName         string     `gorm:"size:256;not null;default:''" json:"group_name"`
+	MemberCount       int        `gorm:"not null;default:0" json:"member_count"`
+	MaxMemberCount    int        `gorm:"not null;default:0" json:"max_member_count"`
+	LastSyncAttemptAt time.Time  `gorm:"not null" json:"last_sync_attempt_at"`
+	LastSyncedAt      *time.Time `json:"last_synced_at"`
+	LastSyncError     string     `gorm:"type:text;not null;default:''" json:"last_sync_error"`
+}
+
+func (QQGroupRuntimeSnapshot) TableName() string { return "qq_group_runtime_snapshot" }
 
 // QQGovernanceReview 记录每次资格判断和最小必要身份快照。
 type QQGovernanceReview struct {
@@ -135,6 +146,7 @@ type QQGovernanceActionLog struct {
 	RequestSummary string `gorm:"type:text;not null" json:"request_summary"`
 	Result         string `gorm:"size:32;not null;index" json:"result"`
 	ErrorMessage   string `gorm:"type:text;not null;default:''" json:"error_message"`
+	Attempt        int    `gorm:"not null;default:1" json:"attempt"`
 }
 
 func (QQGovernanceActionLog) TableName() string { return "qq_governance_action_log" }

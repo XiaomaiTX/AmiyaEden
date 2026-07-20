@@ -169,6 +169,7 @@ func autoMigrate(db *gorm.DB) {
 		&model.QQGroupGovernancePolicy{},
 		&model.QQGovernanceEvent{},
 		&model.QQGroupMemberState{},
+		&model.QQGroupRuntimeSnapshot{},
 		&model.QQGovernanceReview{},
 		&model.QQGovernanceActionTask{},
 		&model.QQGovernanceActionLog{},
@@ -273,6 +274,9 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 		{table: "fuxi_hall_card", col: "cover_image"},
 		{table: "fuxi_hall_card", col: "title"},
 		{table: "ticket", col: "priority"},
+		{table: "qq_group_governance_policy", col: "scan_interval_minutes"},
+		{table: "qq_group_governance_policy", col: "mismatch_confirmations"},
+		{table: "qq_group_governance_policy", col: "mismatch_observation_hours"},
 	}
 }
 
