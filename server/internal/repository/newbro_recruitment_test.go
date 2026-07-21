@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -127,4 +127,3 @@ func TestNewbroRecruitmentRepository_CreateEntryRejectsDuplicateRecruitmentQQ(t 
 		t.Fatal("expected duplicate recruitment QQ entry to fail")
 	}
 }
-

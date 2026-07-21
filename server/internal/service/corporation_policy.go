@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -73,6 +75,15 @@ func (s *CorporationPolicyService) GetPolicies() CorporationPolicyConfig {
 	return cfg
 }
 
+func (s *CorporationPolicyService) GetPoliciesTx(tx *gorm.DB) CorporationPolicyConfig {
+	if cfg := getCorpPolicyCache(); cfg != nil {
+		return *cfg
+	}
+	cfg := s.loadPoliciesTx(tx)
+	setCorpPolicyCache(cfg)
+	return cfg
+}
+
 func (s *CorporationPolicyService) UpdatePolicies(raw CorporationPolicyConfig) error {
 	normalized, err := normalizeCorpPolicyConfig(raw)
 	if err != nil {
@@ -121,6 +132,45 @@ func (s *CorporationPolicyService) BuildUserPolicyContext(userID uint) UserCorpP
 	}
 
 	config := s.GetPolicies()
+	policy, matched := matchCorporationPolicy(config, ctx.PrimaryCorporationID)
+	if !matched {
+		if config.DefaultMode == corpPolicyDefaultModeAllow {
+			ctx.FullAccess = true
+		}
+		return ctx
+	}
+	ctx.FullAccess = policy.FullAccess
+	ctx.Capabilities = slices.Clone(policy.Capabilities)
+	if policy.Rules != nil {
+		ctx.Rules = cloneAnyMap(policy.Rules)
+	}
+	return ctx
+}
+
+func (s *CorporationPolicyService) BuildUserPolicyContextTx(tx *gorm.DB, userID uint) UserCorpPolicyContext {
+	ctx := UserCorpPolicyContext{
+		PrimaryCorporationID: 0,
+		Capabilities:         []string{},
+		Rules:                map[string]any{},
+		FullAccess:           false,
+	}
+	if tx == nil || userID == 0 {
+		return ctx
+	}
+	user, err := s.userRepo.GetByIDTx(tx, userID)
+	if err != nil || user == nil || user.PrimaryCharacterID == 0 {
+		return ctx
+	}
+	primaryCharacter, err := s.charRepo.GetByCharacterIDTx(tx, user.PrimaryCharacterID)
+	if err != nil || primaryCharacter == nil {
+		return ctx
+	}
+	ctx.PrimaryCorporationID = primaryCharacter.CorporationID
+	if ctx.PrimaryCorporationID <= 0 {
+		return ctx
+	}
+
+	config := s.GetPoliciesTx(tx)
 	policy, matched := matchCorporationPolicy(config, ctx.PrimaryCorporationID)
 	if !matched {
 		if config.DefaultMode == corpPolicyDefaultModeAllow {
@@ -288,6 +338,22 @@ func normalizeCorpPolicyConfig(raw CorporationPolicyConfig) (CorporationPolicyCo
 
 func (s *CorporationPolicyService) loadPolicies() CorporationPolicyConfig {
 	raw, err := s.cfgRepo.Get(model.SysConfigCorporationAccessPolicies, "")
+	if err != nil || raw == "" {
+		return defaultCorpPolicyConfig()
+	}
+	var parsed CorporationPolicyConfig
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return defaultCorpPolicyConfig()
+	}
+	normalized, err := normalizeCorpPolicyConfig(parsed)
+	if err != nil {
+		return defaultCorpPolicyConfig()
+	}
+	return normalized
+}
+
+func (s *CorporationPolicyService) loadPoliciesTx(tx *gorm.DB) CorporationPolicyConfig {
+	raw, err := s.cfgRepo.GetTx(tx, model.SysConfigCorporationAccessPolicies, "")
 	if err != nil || raw == "" {
 		return defaultCorpPolicyConfig()
 	}

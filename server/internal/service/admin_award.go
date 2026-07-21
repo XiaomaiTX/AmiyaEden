@@ -11,6 +11,10 @@ type adminAwardConfigReader interface {
 	GetInt(key string, defaultVal int) int
 }
 
+type adminAwardConfigReaderTx interface {
+	GetIntTx(tx *gorm.DB, key string, defaultVal int) int
+}
+
 func isAdminAwardEligible(roleCodes []string) bool {
 	return model.IsSuperAdmin(roleCodes) || model.ContainsRole(roleCodes, model.RoleAdmin)
 }
@@ -21,6 +25,13 @@ func configuredAdminAward(cfg adminAwardConfigReader) int {
 	}
 
 	return cfg.GetInt(model.SysConfigPAPAdminAward, model.SysConfigDefaultPAPAdminAward)
+}
+
+func configuredAdminAwardTx(tx *gorm.DB, cfg adminAwardConfigReader) int {
+	if txCfg, ok := cfg.(adminAwardConfigReaderTx); ok {
+		return txCfg.GetIntTx(tx, model.SysConfigPAPAdminAward, model.SysConfigDefaultPAPAdminAward)
+	}
+	return configuredAdminAward(cfg)
 }
 
 func applyConfiguredAdminAwardTx(
@@ -35,7 +46,7 @@ func applyConfiguredAdminAwardTx(
 		return nil
 	}
 
-	award := configuredAdminAward(cfg)
+	award := configuredAdminAwardTx(tx, cfg)
 	if award <= 0 {
 		return nil
 	}

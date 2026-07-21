@@ -736,7 +736,7 @@ func (s *SysWalletService) getWalletWithCapabilityEnforced(userID uint) (*model.
 }
 
 func (s *SysWalletService) enforceWalletCapabilityOrZeroTx(tx *gorm.DB, userID uint) error {
-	if s.isWalletCapabilityEnabled(userID) {
+	if s.isWalletCapabilityEnabledTx(tx, userID) {
 		return nil
 	}
 	wallet, err := s.repo.GetOrCreateWalletTx(tx, userID)
@@ -753,5 +753,10 @@ func (s *SysWalletService) enforceWalletCapabilityOrZeroTx(tx *gorm.DB, userID u
 
 func (s *SysWalletService) isWalletCapabilityEnabled(userID uint) bool {
 	ctx := s.corpPolicySvc.BuildUserPolicyContext(userID)
+	return EvaluateCapability(ctx, model.CorpCapabilityWalletUserEnabled)
+}
+
+func (s *SysWalletService) isWalletCapabilityEnabledTx(tx *gorm.DB, userID uint) bool {
+	ctx := s.corpPolicySvc.BuildUserPolicyContextTx(tx, userID)
 	return EvaluateCapability(ctx, model.CorpCapabilityWalletUserEnabled)
 }
