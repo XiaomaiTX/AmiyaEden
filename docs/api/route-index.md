@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-06-04
+last_reviewed: 2026-07-21
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -50,14 +50,14 @@ source_of_truth:
 
 | Method | Path | 说明 |
 | ------ | ---- | ---- |
-| GET/POST | `/policies` | 查询或新建群治理规则 |
+| GET/POST | `/policies` | 查询或新建群治理规则；GET 与 POST/PUT 响应均附带只读的 `allowed_corporations[{corporation_id, corporation_name}]`，数据库仍只持久化稳定的军团 ID |
 | PUT/DELETE | `/policies/:group_id` | 更新或删除单群规则 |
 | GET | `/members`、`/reviews`、`/tasks`、`/alerts` | 分页查询运行态、审查、动作和治理页告警 |
 | POST | `/tasks/:id/retry`、`/alerts/:id/acknowledge` | 重试死信、确认告警 |
 | GET | `/metrics`、`/connection` | 获取治理页指标与 OneBot 连接/风险状态 |
 | GET/PUT | `/settings` | 读取或更新所有受治理 QQ 群共用的扫描、确认和观察期设置 |
 | GET | `/groups` | 查询各已配置群的名称、成员快照、治理状态统计与同步状态 |
-| GET | `/corporations?query=名称` | 通过 ESI 搜索军团名称并返回可写入规则的军团 ID |
+| GET | `/corporations?query=军团名称` | 通过 ESI 公开接口 `POST /universe/ids/` 对输入军团名称进行精确解析，返回可写入规则的军团 ID 与名称 |
 | POST | `/groups/:group_id/reconcile`、`/actions`、`/risk-control/reset` | 立即巡检、人工动作与解除熔断 |
 
 ### EVE SSO

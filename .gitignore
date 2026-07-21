@@ -55,3 +55,4 @@ AmiyaEden.code-workspace
 server/internal/handler/uploads/
 
 .zcode/
+static/pnpm-workspace.yaml

@@ -259,6 +259,7 @@ declare namespace Api {
       group_id: number
       enabled: boolean
       allowed_corporation_ids: number[]
+      allowed_corporations: CorporationOption[]
       allowed_role_codes: string[]
       auto_reject_unmatched: boolean
       member_violation_policy: 'review_only' | 'auto_kick_after_confirmed_mismatch'

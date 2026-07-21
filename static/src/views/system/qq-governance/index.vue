@@ -38,9 +38,7 @@
               ></ElTableColumn
             >
             <ElTableColumn :label="t('qqGovernance.fields.corporations')" min-width="220"
-              ><template #default="{ row }">{{
-                row.allowed_corporation_ids.join(', ') || '-'
-              }}</template></ElTableColumn
+              ><template #default="{ row }">{{ formatCorporations(row) }}</template></ElTableColumn
             >
             <ElTableColumn
               prop="card_template"
@@ -345,7 +343,7 @@
             ><ElOption
               v-for="corp in corporationOptions"
               :key="corp.corporation_id"
-              :label="`${corp.corporation_name || corp.corporation_id} (${corp.corporation_id})`"
+              :label="formatCorporationLabel(corp)"
               :value="corp.corporation_id" /></ElSelect></ElFormItem
         ><ElFormItem :label="t('qqGovernance.fields.roles')"
           ><ElSelect v-model="policyForm.allowed_role_codes" multiple class="!w-full"
@@ -564,6 +562,26 @@
       searchingCorporations.value = false
     }
   }
+  function formatCorporationLabel(corp: Api.QQGovernance.CorporationOption) {
+    const name = corp.corporation_name || String(corp.corporation_id)
+    return `${name} (${corp.corporation_id})`
+  }
+  function formatCorporations(row: Api.QQGovernance.Policy) {
+    const list = row.allowed_corporations?.length
+      ? row.allowed_corporations
+      : row.allowed_corporation_ids.map((id) => ({
+          corporation_id: id,
+          corporation_name: ''
+        }))
+    if (!list.length) return '-'
+    return list
+      .map((corp) =>
+        corp.corporation_name
+          ? `${corp.corporation_name} (${corp.corporation_id})`
+          : String(corp.corporation_id)
+      )
+      .join(', ')
+  }
   async function refreshActive() {
     if (activeTab.value === 'rules') await Promise.all([loadRules(), loadGroups()])
     else if (activeTab.value === 'groups') await loadGroups()
@@ -575,7 +593,7 @@
   function openPolicyDialog(policy?: Api.QQGovernance.Policy) {
     editingGroupId.value = policy?.group_id || 0
     resetPolicyForm()
-    if (policy)
+    if (policy) {
       Object.assign(policyForm, {
         group_id: String(policy.group_id),
         enabled: policy.enabled,
@@ -585,6 +603,20 @@
         member_violation_policy: policy.member_violation_policy,
         card_template: policy.card_template
       })
+      // Seed options with the rule's saved corporations so already-selected IDs
+      // still show the "name (id)" label without requiring a fresh search.
+      corporationOptions.value = policy.allowed_corporations?.length
+        ? policy.allowed_corporations.map((corp: Api.QQGovernance.CorporationOption) => ({
+            corporation_id: corp.corporation_id,
+            corporation_name: corp.corporation_name
+          }))
+        : policy.allowed_corporation_ids.map((id: number) => ({
+            corporation_id: id,
+            corporation_name: ''
+          }))
+    } else {
+      corporationOptions.value = []
+    }
     policyDialog.value = true
   }
   async function savePolicy() {

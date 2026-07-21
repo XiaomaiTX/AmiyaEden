@@ -25,16 +25,24 @@ type QQGovernancePolicyInput struct {
 }
 
 type QQGovernancePolicyView struct {
-	ID                       uint      `json:"id"`
-	GroupID                  int64     `json:"group_id"`
-	Enabled                  bool      `json:"enabled"`
-	AllowedCorporationIDs    []int64   `json:"allowed_corporation_ids"`
-	AllowedRoleCodes         []string  `json:"allowed_role_codes"`
-	AutoRejectUnmatched      bool      `json:"auto_reject_unmatched"`
-	MemberViolationPolicy    string    `json:"member_violation_policy"`
-	CardTemplate             string    `json:"card_template"`
-	UpdatedBy                uint      `json:"updated_by"`
-	UpdatedAt                time.Time `json:"updated_at"`
+	ID                    uint                       `json:"id"`
+	GroupID               int64                      `json:"group_id"`
+	Enabled               bool                       `json:"enabled"`
+	AllowedCorporationIDs []int64                    `json:"allowed_corporation_ids"`
+	AllowedCorporations   []QQGovernanceCorporation `json:"allowed_corporations"`
+	AllowedRoleCodes      []string                   `json:"allowed_role_codes"`
+	AutoRejectUnmatched   bool                       `json:"auto_reject_unmatched"`
+	MemberViolationPolicy string                     `json:"member_violation_policy"`
+	CardTemplate          string                     `json:"card_template"`
+	UpdatedBy             uint                       `json:"updated_by"`
+	UpdatedAt             time.Time                  `json:"updated_at"`
+}
+
+// QQGovernanceCorporation pairs a stable corporation ID with its display name,
+// for read-only display in the admin UI.
+type QQGovernanceCorporation struct {
+	CorporationID   int64  `json:"corporation_id"`
+	CorporationName string `json:"corporation_name"`
 }
 type QQGovernancePageResult[T any] struct {
 	List     []T   `json:"list"`
@@ -66,14 +74,18 @@ type QQGovernanceGroupStatus struct {
 	SnapshotState         string     `json:"snapshot_state"`
 }
 
-func (s *QQGovernanceService) ListPolicies() ([]QQGovernancePolicyView, error) {
+func (s *QQGovernanceService) ListPolicies(ctx context.Context) ([]QQGovernancePolicyView, error) {
 	rows, err := s.repo.ListPolicies(nil)
+	if err != nil {
+		return nil, err
+	}
+	nameByID, err := s.collectPolicyCorporationNames(ctx, rows)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]QQGovernancePolicyView, 0, len(rows))
 	for _, row := range rows {
-		view, err := qqGovernancePolicyView(row)
+		view, err := qqGovernancePolicyView(row, nameByID)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +93,7 @@ func (s *QQGovernanceService) ListPolicies() ([]QQGovernancePolicyView, error) {
 	}
 	return result, nil
 }
-func (s *QQGovernanceService) SavePolicy(input QQGovernancePolicyInput, operator uint) (*QQGovernancePolicyView, error) {
+func (s *QQGovernanceService) SavePolicy(ctx context.Context, input QQGovernancePolicyInput, operator uint) (*QQGovernancePolicyView, error) {
 	if input.GroupID <= 0 {
 		return nil, errors.New("群号必须为正整数")
 	}
@@ -125,7 +137,11 @@ func (s *QQGovernanceService) SavePolicy(input QQGovernancePolicyInput, operator
 		return nil, err
 	}
 	s.audit("qq_governance_policy_save", operator, "qq_group_governance_policy", fmt.Sprintf("%d", input.GroupID), map[string]any{"enabled": input.Enabled, "member_violation_policy": input.MemberViolationPolicy})
-	view, err := qqGovernancePolicyView(*policy)
+	nameByID, err := s.collectPolicyCorporationNames(ctx, []model.QQGroupGovernancePolicy{*policy})
+	if err != nil {
+		return nil, err
+	}
+	view, err := qqGovernancePolicyView(*policy, nameByID)
 	return &view, err
 }
 func (s *QQGovernanceService) DeletePolicy(groupID int64, operator uint) error {
@@ -135,7 +151,7 @@ func (s *QQGovernanceService) DeletePolicy(groupID int64, operator uint) error {
 	s.audit("qq_governance_policy_delete", operator, "qq_group_governance_policy", fmt.Sprintf("%d", groupID), nil)
 	return nil
 }
-func qqGovernancePolicyView(row model.QQGroupGovernancePolicy) (QQGovernancePolicyView, error) {
+func qqGovernancePolicyView(row model.QQGroupGovernancePolicy, nameByID map[int64]string) (QQGovernancePolicyView, error) {
 	var corps []int64
 	var roles []string
 	if err := json.Unmarshal([]byte(row.AllowedCorporationIDsJSON), &corps); err != nil {
@@ -144,7 +160,54 @@ func qqGovernancePolicyView(row model.QQGroupGovernancePolicy) (QQGovernancePoli
 	if err := json.Unmarshal([]byte(row.AllowedRoleCodesJSON), &roles); err != nil {
 		return QQGovernancePolicyView{}, err
 	}
-	return QQGovernancePolicyView{ID: row.ID, GroupID: row.GroupID, Enabled: row.Enabled, AllowedCorporationIDs: corps, AllowedRoleCodes: roles, AutoRejectUnmatched: row.AutoRejectUnmatched, MemberViolationPolicy: row.MemberViolationPolicy, CardTemplate: row.CardTemplate, UpdatedBy: row.UpdatedBy, UpdatedAt: row.UpdatedAt}, nil
+	displays := make([]QQGovernanceCorporation, 0, len(corps))
+	for _, corporationID := range corps {
+		displays = append(displays, QQGovernanceCorporation{
+			CorporationID:   corporationID,
+			CorporationName: nameByID[corporationID],
+		})
+	}
+	return QQGovernancePolicyView{
+		ID:                    row.ID,
+		GroupID:               row.GroupID,
+		Enabled:               row.Enabled,
+		AllowedCorporationIDs: corps,
+		AllowedCorporations:   displays,
+		AllowedRoleCodes:      roles,
+		AutoRejectUnmatched:   row.AutoRejectUnmatched,
+		MemberViolationPolicy: row.MemberViolationPolicy,
+		CardTemplate:          row.CardTemplate,
+		UpdatedBy:             row.UpdatedBy,
+		UpdatedAt:             row.UpdatedAt,
+	}, nil
+}
+
+// collectPolicyCorporationNames resolves every allowed corporation ID across
+// the given policy rows into a single id→name map. Resolution failures never
+// block the policy listing — unresolved entries simply yield an empty name
+// and the UI falls back to showing the ID.
+func (s *QQGovernanceService) collectPolicyCorporationNames(ctx context.Context, rows []model.QQGroupGovernancePolicy) (map[int64]string, error) {
+	seen := make(map[int64]struct{})
+	for _, row := range rows {
+		var corps []int64
+		if err := json.Unmarshal([]byte(row.AllowedCorporationIDsJSON), &corps); err != nil {
+			return nil, err
+		}
+		for _, id := range corps {
+			if id > 0 {
+				seen[id] = struct{}{}
+			}
+		}
+	}
+	if len(seen) == 0 {
+		return map[int64]string{}, nil
+	}
+	ids := make([]int64, 0, len(seen))
+	for id := range seen {
+		ids = append(ids, id)
+	}
+	resolved := NewSysConfigService().resolveCorporationNamesAllowMissing(ctx, ids)
+	return resolved, nil
 }
 func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, error) {
 	policies, err := s.repo.ListPolicies(nil)

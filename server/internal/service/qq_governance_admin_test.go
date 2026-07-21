@@ -1,15 +1,20 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
+	"context"
 	"testing"
 )
 
 func TestQQGovernanceServiceSavePolicy(t *testing.T) {
-	db := newServiceTestDB(t, "qq_governance_policy", &model.QQGroupGovernancePolicy{})
+	db := newServiceTestDB(t, "qq_governance_policy", &model.QQGroupGovernancePolicy{}, &model.EveEntityNameCache{})
+	origDB := global.DB
+	global.DB = db
+	defer func() { global.DB = origDB }()
 	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
-	policy, err := svc.SavePolicy(QQGovernancePolicyInput{GroupID: 100, Enabled: true, AllowedCorporationIDs: []int64{200}, AllowedRoleCodes: []string{model.RoleAdmin}, MemberViolationPolicy: model.QQGovernanceViolationAutoKick, CardTemplate: "{nickname}"}, 1)
+	policy, err := svc.SavePolicy(context.Background(), QQGovernancePolicyInput{GroupID: 100, Enabled: true, AllowedCorporationIDs: []int64{200}, AllowedRoleCodes: []string{model.RoleAdmin}, MemberViolationPolicy: model.QQGovernanceViolationAutoKick, CardTemplate: "{nickname}"}, 1)
 	if err != nil {
 		t.Fatalf("save valid policy: %v", err)
 	}
