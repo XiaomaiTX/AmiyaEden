@@ -6,13 +6,16 @@ export function fetchQQGovernancePolicies() {
   return request.get<Api.QQGovernance.Policy[]>({ url: `${base}/policies` })
 }
 export function saveQQGovernancePolicy(
-  data: Omit<Api.QQGovernance.Policy, 'id' | 'updated_by' | 'updated_at'>
+  data: Omit<Api.QQGovernance.Policy, 'id' | 'allowed_corporations' | 'updated_by' | 'updated_at'>
 ) {
   return request.post<Api.QQGovernance.Policy>({ url: `${base}/policies`, data })
 }
 export function updateQQGovernancePolicy(
   groupId: number,
-  data: Omit<Api.QQGovernance.Policy, 'id' | 'group_id' | 'updated_by' | 'updated_at'>
+  data: Omit<
+    Api.QQGovernance.Policy,
+    'id' | 'group_id' | 'allowed_corporations' | 'updated_by' | 'updated_at'
+  >
 ) {
   return request.put<Api.QQGovernance.Policy>({ url: `${base}/policies/${groupId}`, data })
 }

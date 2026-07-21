@@ -256,3 +256,39 @@ func normalizeEntityType(category string) string {
 		return model.EntityNameTypeUnknown
 	}
 }
+
+// PrimeCorporationNames upserts corporation id→name pairs that were resolved
+// from another authoritative ESI source (e.g. POST /universe/ids/), so later
+// Resolve calls can hit the cache instead of re-querying ESI.
+func (r *EntityNameResolver) PrimeCorporationNames(items []CorporationDisplay) {
+	if r == nil || len(items) == 0 {
+		return
+	}
+	toUpsert := make([]model.EveEntityNameCache, 0, len(items))
+	now := time.Now()
+	for _, item := range items {
+		if item.CorporationID <= 0 || item.CorporationName == "" {
+			continue
+		}
+		toUpsert = append(toUpsert, model.EveEntityNameCache{
+			EntityID:       item.CorporationID,
+			EntityType:     model.EntityNameTypeCorporation,
+			Name:           item.CorporationName,
+			Source:         model.EntityNameSourceESI,
+			LastResolvedAt: now,
+			ExpiresAt:      now.Add(entityNameCacheTTL),
+		})
+	}
+	if len(toUpsert) == 0 {
+		return
+	}
+	repo := r.repo
+	if repo == nil {
+		repo = repository.NewEntityNameCacheRepository()
+	}
+	if err := repo.Upsert(toUpsert); err != nil {
+		if global.Logger != nil {
+			global.Logger.Warn("[EntityNameResolver] prime cache failed", zap.Error(err))
+		}
+	}
+}

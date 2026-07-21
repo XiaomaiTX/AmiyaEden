@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -224,8 +223,10 @@ func (s *SysConfigService) GetAllowCorporationDisplays(ctx context.Context) []Co
 	return displays
 }
 
-// SearchCorporations resolves corporation names through ESI so governance rules
-// persist stable corporation IDs instead of a free-form name.
+// SearchCorporations resolves a corporation through ESI's public
+// POST /universe/ids/ endpoint using an exact name match, so governance rules
+// persist stable corporation IDs instead of a free-form name. The endpoint is
+// unauthenticated and only resolves exact names.
 func (s *SysConfigService) SearchCorporations(ctx context.Context, query string) ([]CorporationDisplay, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
@@ -235,23 +236,28 @@ func (s *SysConfigService) SearchCorporations(ctx context.Context, query string)
 	if global.Config != nil {
 		client = esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix)
 	}
-	var result struct {
-		CorporationIDs []int64 `json:"corporation"`
+	var payload struct {
+		Corporations []struct {
+			ID   int64  `json:"id"`
+			Name string `json:"name"`
+		} `json:"corporations"`
 	}
-	path := "/search/?categories=corporation&strict=false&search=" + url.QueryEscape(query)
-	if err := client.Get(ctx, path, "", &result); err != nil {
+	if err := client.PostJSON(ctx, "/universe/ids/?datasource=tranquility", "", []string{query}, &payload); err != nil {
 		return nil, err
 	}
-	resolved := s.entityNameResolver.Resolve(ctx, result.CorporationIDs)
-	items := make([]CorporationDisplay, 0, len(result.CorporationIDs))
-	for _, corporationID := range result.CorporationIDs {
-		if name := resolved.Names[corporationID]; name != "" {
-			items = append(items, CorporationDisplay{CorporationID: corporationID, CorporationName: name})
+	items := make([]CorporationDisplay, 0, len(payload.Corporations))
+	for _, corp := range payload.Corporations {
+		if corp.ID <= 0 || strings.TrimSpace(corp.Name) == "" {
+			continue
 		}
+		items = append(items, CorporationDisplay{CorporationID: corp.ID, CorporationName: strings.TrimSpace(corp.Name)})
 	}
 	sort.Slice(items, func(i, j int) bool {
 		return strings.ToLower(items[i].CorporationName) < strings.ToLower(items[j].CorporationName)
 	})
+	if s.entityNameResolver != nil {
+		s.entityNameResolver.PrimeCorporationNames(items)
+	}
 	return items, nil
 }
 
@@ -284,6 +290,20 @@ func (s *SysConfigService) resolveCorporationNames(ctx context.Context, corporat
 		return nameMap, errors.New("some corporation names are unresolved")
 	}
 	return nameMap, nil
+}
+
+// resolveCorporationNamesAllowMissing resolves as many corporation names as the
+// cache + ESI can provide and silently treats unresolved IDs as empty names.
+// Used on read paths where partial resolution must not break the listing.
+func (s *SysConfigService) resolveCorporationNamesAllowMissing(ctx context.Context, corporationIDs []int64) map[int64]string {
+	if len(corporationIDs) == 0 {
+		return map[int64]string{}
+	}
+	if s.entityNameResolver == nil {
+		s.entityNameResolver = NewEntityNameResolver()
+	}
+	resolved := s.entityNameResolver.Resolve(ctx, corporationIDs)
+	return resolved.Names
 }
 
 func (s *SysConfigService) GetCharacterESIRestrictionConfig() bool {

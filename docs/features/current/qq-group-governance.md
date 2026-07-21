@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-21
 source_of_truth:
   - server/internal/service/sys_config.go
   - server/internal/handler/qq_governance_onebot.go
@@ -26,7 +26,7 @@ source_of_truth:
 - 超级管理员可在 `/system/qq-governance` 管理群规则、查看成员/审查/动作/告警与指标，重试死信、执行人工动作、立即巡检和解除熔断。
 - 周期巡检使用全局设置的扫描间隔创建持久扫描任务；成员以稳定 QQ 分片、每批最多 50 人处理。所有受治理群共用连续不匹配确认次数与观察期，明确不匹配满足这两项全局条件后才会创建清退任务。
 - 管理页按规则、群状态、运行监控和 OneBot/全局设置四个页面组织。群状态只展示已配置治理规则的群，快照由巡检时的 OneBot 群信息读取更新，以便断连时仍可显示最近一次同步结果。
-- 规则编辑中的允许军团必须从 ESI 名称搜索结果选择，持久化稳定的军团 ID；群号使用纯数字输入，不提供增减步进控件。
+- 规则编辑中的允许军团必须从 ESI 名称解析结果选择，持久化稳定的军团 ID；群号使用纯数字输入，不提供增减步进控件。军团搜索走 ESI 公开接口 `POST /universe/ids/`，只对输入的完整军团名称进行精确匹配，因此无需 SSO Token。规则列表、搜索候选和编辑弹窗的已选项都统一展示为 `军团名 (军团ID)`，规则响应额外返回只读的 `allowed_corporations`，数据库仍只持久化稳定的军团 ID。
 - `UNKNOWN` 会延迟复查，连续三次创建治理页告警；动作失败率会触发三级熔断，自动写操作在熔断期间按级别暂停。
 
 ## 配置与边界

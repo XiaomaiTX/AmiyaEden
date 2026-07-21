@@ -16,7 +16,7 @@ func NewQQGovernanceAdminHandler() *QQGovernanceAdminHandler {
 	return &QQGovernanceAdminHandler{svc: service.DefaultQQGovernanceService()}
 }
 func (h *QQGovernanceAdminHandler) ListPolicies(c *gin.Context) {
-	rows, err := h.svc.ListPolicies()
+	rows, err := h.svc.ListPolicies(c.Request.Context())
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -36,7 +36,7 @@ func (h *QQGovernanceAdminHandler) SavePolicy(c *gin.Context) {
 		}
 		req.GroupID = group
 	}
-	item, err := h.svc.SavePolicy(req, middleware.GetUserID(c))
+	item, err := h.svc.SavePolicy(c.Request.Context(), req, middleware.GetUserID(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
