@@ -87,6 +87,31 @@ func (r *SysConfigRepository) Get(key, defaultVal string) (string, error) {
 	return cfg.Value, nil
 }
 
+// GetTx reads and, when necessary, persists a setting through an existing
+// transaction. Callers must use this inside the transaction that owns the
+// surrounding write so a second database connection is not opened.
+func (r *SysConfigRepository) GetTx(tx *gorm.DB, key, defaultVal string) (string, error) {
+	if tx == nil {
+		return r.Get(key, defaultVal)
+	}
+
+	var cfg model.SystemConfig
+	err := tx.Where("key = ?", key).First(&cfg).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if saveErr := buildSysConfigBatchUpsertQuery(tx, []SysConfigUpsertItem{{
+				Key:   key,
+				Value: defaultVal,
+			}}).Error; saveErr != nil {
+				return defaultVal, saveErr
+			}
+			return defaultVal, nil
+		}
+		return defaultVal, err
+	}
+	return cfg.Value, nil
+}
+
 // Set 设置配置值并使缓存失效
 func (r *SysConfigRepository) Set(key, value, desc string) error {
 	return r.SetMany([]SysConfigUpsertItem{{
@@ -154,6 +179,25 @@ func (r *SysConfigRepository) GetInt64(key string, defaultVal int64) int64 {
 // GetInt 获取 int 配置；解析失败或不存在时返回 defaultVal
 func (r *SysConfigRepository) GetInt(key string, defaultVal int) int {
 	raw, err := r.Get(key, strconv.Itoa(defaultVal))
+	if err != nil {
+		return defaultVal
+	}
+	v, err := strconv.Atoi(raw)
+	if err != nil {
+		return defaultVal
+	}
+	return v
+}
+
+// GetIntTx reads an integer setting through the supplied transaction. It is
+// used by services that already hold a write transaction so the fallback
+// value is not persisted through a second connection.
+func (r *SysConfigRepository) GetIntTx(tx *gorm.DB, key string, defaultVal int) int {
+	if tx == nil {
+		return r.GetInt(key, defaultVal)
+	}
+
+	raw, err := r.GetTx(tx, key, strconv.Itoa(defaultVal))
 	if err != nil {
 		return defaultVal
 	}

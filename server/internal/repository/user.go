@@ -27,6 +27,12 @@ func (r *UserRepository) GetByID(id uint) (*model.User, error) {
 	return &user, err
 }
 
+func (r *UserRepository) GetByIDTx(tx *gorm.DB, id uint) (*model.User, error) {
+	var user model.User
+	err := tx.First(&user, id).Error
+	return &user, err
+}
+
 func buildGetByIDForUpdateQuery(db *gorm.DB, id uint) *gorm.DB {
 	return db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&model.User{}, id)
 }

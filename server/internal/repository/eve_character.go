@@ -4,6 +4,8 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // EveCharacterRepository EVE 人物数据访问层
@@ -27,6 +29,12 @@ func (r *EveCharacterRepository) Save(char *model.EveCharacter) error {
 func (r *EveCharacterRepository) GetByCharacterID(characterID int64) (*model.EveCharacter, error) {
 	var char model.EveCharacter
 	err := global.DB.Where("character_id = ?", characterID).First(&char).Error
+	return &char, err
+}
+
+func (r *EveCharacterRepository) GetByCharacterIDTx(tx *gorm.DB, characterID int64) (*model.EveCharacter, error) {
+	var char model.EveCharacter
+	err := tx.Where("character_id = ?", characterID).First(&char).Error
 	return &char, err
 }
 
