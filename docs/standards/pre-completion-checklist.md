@@ -9,105 +9,105 @@ source_of_truth:
   - docs/standards/documentation-governance.md
 ---
 
-# Pre-Completion Checklist
+# 预完成核对清单
 
-## Scope
+## 适用范围
 
-Use this checklist before marking work complete. Skip only items that do not apply.
+在把工作标记为完成之前，使用本清单核对。仅可跳过与当前改动无关的条目。
 
-## Core Rules
+## 核心规则
 
-- This file is the completion gate.
-- `docs/standards/testing-and-verification.md` is the canonical source for commands, coverage rules, and allowed exceptions.
-- If a required check or test is skipped, state the reason explicitly.
-- No speculative backward-compatibility alias, hidden redirect, fallback payload, deprecated route, duplicate endpoint/contract, or shadow page may be introduced unless an explicit migration requirement says otherwise.
-- Durable backend or architecture decisions that are not obvious from code must be documented in the nearest canonical doc per `docs/standards/documentation-governance.md`.
+- 本文件是完成门槛。
+- `docs/standards/testing-and-verification.md` 是命令、覆盖规则与允许例外的唯一权威来源。
+- 如跳过某项必要的检查或测试，必须明确写明原因。
+- 除非存在显式迁移要求，不得引入任何推测性的向后兼容别名、隐藏重定向、兜底载荷、废弃路由、重复端点/契约或影子页面。
+- 难以从代码直接看出的持久后端或架构决策，必须按 `docs/standards/documentation-governance.md` 写入最近的权威文档。
 
-## Checklist by Change Type
+## 按变更类型核对
 
-### Backend-Only Change
-
-- [ ] `cd server && golangci-lint run ./...`
-- [ ] `cd server && go build ./...`
-- [ ] `cd server && go test ./...`
-- [ ] Scope stayed focused; no unrelated refactor was introduced
-- [ ] No speculative backward-compatibility alias, fallback, or duplicate contract was introduced without an explicit migration requirement
-- [ ] No layer violations were introduced
-- [ ] If this is a bug fix, a regression test was added or updated
-- [ ] If an API contract changed, frontend API wrappers and types were updated
-- [ ] If a route was added or changed, `docs/api/route-index.md` was updated
-- [ ] If behavior changed, the relevant feature doc was updated
-- [ ] If a non-obvious durable backend design decision changed, the nearest canonical doc captures the decision, rationale, invariants, and primary code files
-
-### Frontend-Only Change
-
-- [ ] `cd static && pnpm lint .`
-- [ ] `cd static && pnpm exec vue-tsc --noEmit`
-- [ ] If a pure helper or hook changed, `cd static && pnpm test:unit`
-- [ ] Scope stayed focused; no unrelated refactor was introduced
-- [ ] No speculative backward-compatibility alias, fallback, hidden redirect, or shadow page was introduced without an explicit migration requirement
-- [ ] No direct HTTP calls were added to views
-- [ ] All new user-facing strings were added to both `zh.json` and `en.json`
-- [ ] If behavior changed, the relevant feature doc was updated
-- [ ] Event handlers bound with `@click` / `@change` etc. have typed signatures that match their template call sites; vue-tsc catches mismatches only when handler types are explicit
-
-### Cross-Contract Change
+### 仅后端变更
 
 - [ ] `cd server && golangci-lint run ./...`
 - [ ] `cd server && go build ./...`
 - [ ] `cd server && go test ./...`
+- [ ] 范围保持聚焦，未引入无关重构
+- [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底或重复契约
+- [ ] 未引入层级违反
+- [ ] 若为缺陷修复，已新增或更新回归测试
+- [ ] 若 API 契约发生变化，已更新前端 API wrapper 与类型
+- [ ] 若新增或修改路由，已更新 `docs/api/route-index.md`
+- [ ] 若行为发生变化，已更新相关 feature 文档
+- [ ] 若存在难以从代码看出的持久后端设计决策，最近的权威文档已记录决策、理由、不变量与主要代码文件
+
+### 仅前端变更
+
 - [ ] `cd static && pnpm lint .`
 - [ ] `cd static && pnpm exec vue-tsc --noEmit`
-- [ ] If relevant, `cd static && pnpm test:unit`
-- [ ] Scope stayed focused; no unrelated refactor was introduced
-- [ ] No speculative backward-compatibility alias, fallback, hidden redirect, or duplicate contract was introduced without an explicit migration requirement
-- [ ] Frontend API wrapper was updated
-- [ ] Shared TypeScript types were updated
-- [ ] Backend response fields and frontend type fields match
-- [ ] `docs/api/route-index.md` was updated if the route surface or permission boundary changed
-- [ ] The relevant feature doc was updated if behavior changed
-- [ ] If a non-obvious durable backend or contract design decision changed, the nearest canonical doc captures the decision, rationale, invariants, and primary code files
+- [ ] 若改动了纯 helper 或 hook，执行 `cd static && pnpm test:unit`
+- [ ] 范围保持聚焦，未引入无关重构
+- [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底、隐藏重定向或影子页面
+- [ ] 未在 view 中直接发起 HTTP 调用
+- [ ] 所有新增用户可见文案已同时写入 `zh.json` 和 `en.json`
+- [ ] 若行为发生变化，已更新相关 feature 文档
+- [ ] 通过 `@click` / `@change` 等绑定的事件处理器具有与模板调用点匹配的类型签名；vue-tsc 仅在处理器类型显式时才能捕获不匹配
 
-### Permission or Role Change
+### 跨契约变更
 
-- [ ] All applicable items from Cross-Contract Change were completed
-- [ ] Backend route protection was updated where required
-- [ ] Frontend route metadata was updated where required
-- [ ] Button permission usage such as `v-auth` was aligned
-- [ ] `docs/architecture/routing-and-menus.md` was updated if the routing or page-access model changed
-- [ ] `docs/architecture/auth-and-permissions.md` was updated if the permission model or behavior changed
-- [ ] Badge-count field visibility in `docs/features/current/badge-counts.md` still matches the updated role boundaries; update if not
+- [ ] `cd server && golangci-lint run ./...`
+- [ ] `cd server && go build ./...`
+- [ ] `cd server && go test ./...`
+- [ ] `cd static && pnpm lint .`
+- [ ] `cd static && pnpm exec vue-tsc --noEmit`
+- [ ] 如相关，执行 `cd static && pnpm test:unit`
+- [ ] 范围保持聚焦，未引入无关重构
+- [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底、隐藏重定向或重复契约
+- [ ] 已更新前端 API wrapper
+- [ ] 已更新共享 TypeScript 类型
+- [ ] 后端响应字段与前端类型字段一致
+- [ ] 若路由面或权限边界发生变化，已更新 `docs/api/route-index.md`
+- [ ] 若行为发生变化，已更新相关 feature 文档
+- [ ] 若存在难以从代码看出的持久后端或契约设计决策，最近的权威文档已记录决策、理由、不变量与主要代码文件
 
-### Documentation-Only Change
+### 权限或角色变更
 
-- [ ] Scope stayed focused; no unrelated refactor was introduced
-- [ ] Front matter was updated where required
-- [ ] No stale references or broken cross-links were introduced
-- [ ] Index documents were updated if required
-- [ ] Current code was checked when the document describes current implementation
+- [ ] 已完成"跨契约变更"的所有适用项
+- [ ] 已按需更新后端路由保护
+- [ ] 已按需更新前端路由元信息
+- [ ] 已对齐 `v-auth` 等按钮权限用法
+- [ ] 若路由或页面访问模型发生变化，已更新 `docs/architecture/routing-and-menus.md`
+- [ ] 若权限模型或行为发生变化，已更新 `docs/architecture/auth-and-permissions.md`
+- [ ] `docs/features/current/badge-counts.md` 中的角标字段可见性仍与更新后的角色边界一致；若不一致需同步更新
 
-### New Feature or Module
+### 仅文档变更
 
-- [ ] All applicable items from Cross-Contract Change were completed
-- [ ] A feature doc was created under `docs/features/current/` if the feature has durable behavior
-- [ ] Any relevant feature index was updated
-- [ ] Localization was completed in both `zh.json` and `en.json`
-- [ ] Frontend routes and page access metadata were added if required
-- [ ] Backend and frontend routes were registered if required
-- [ ] The change follows the existing module structure pattern
-- [ ] Non-obvious durable backend design decisions are captured in the feature, API, architecture, or standard doc that owns the subject
-- [ ] At least one regression test covers key behavior, unless explicitly justified otherwise
+- [ ] 范围保持聚焦，未引入无关重构
+- [ ] 已按需更新 front matter
+- [ ] 未引入失效引用或断链
+- [ ] 已按需更新索引文档
+- [ ] 当文档描述当前实现时，已核对当前代码
 
-## Test Selection Reference
+### 新功能或新模块
 
-See `docs/guides/testing-guide.md` for practical placement and selection guidance.
+- [ ] 已完成"跨契约变更"的所有适用项
+- [ ] 若新功能具有持久行为，已在 `docs/features/current/` 下创建 feature 文档
+- [ ] 已按需更新相关 feature 索引
+- [ ] 已在 `zh.json` 和 `en.json` 中完成本地化
+- [ ] 已按需新增前端路由与页面访问元信息
+- [ ] 已按需注册后端与前端路由
+- [ ] 改动遵循现有模块结构模式
+- [ ] 难以从代码看出的持久后端设计决策已记录在拥有该主题的 feature、API、architecture 或 standard 文档中
+- [ ] 除非另有明确说明，至少有一条回归测试覆盖关键行为
 
-## If a Test Is Skipped
+## 测试选型参考
 
-When a normally expected test is skipped:
+实践层面的测试放置与选型指导见 `docs/guides/testing-guide.md`。
 
-1. state which test was skipped
-2. state why it was skipped
-3. state where the test should be added later, if applicable
+## 当某项测试被跳过时
 
-Never skip a normally expected test without documenting the reason.
+当某项通常预期的测试被跳过时：
+
+1. 写明被跳过的测试
+2. 写明跳过的原因
+3. 如适用，写明后续应在何处补测试
+
+不得在未记录原因的情况下跳过通常预期的测试。
