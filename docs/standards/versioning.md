@@ -9,13 +9,13 @@ source_of_truth:
   - docs/standards/versioning.md
 ---
 
-# Versioning Standard
+# 版本号规范
 
-## Scope
+## 适用范围
 
 本规范适用于 AmiyaEden 项目的所有版本号管理，包括前端和后端的版本号递增、发布和记录。
 
-## Version Format
+## 版本号格式
 
 项目使用 **Semantic Versioning (SemVer)** 格式：`MAJOR.MINOR.PATCH`
 
@@ -38,7 +38,7 @@ MAJOR.MINOR.PATCH
 | **MINOR** | b | 功能更新：新增功能、模块或重要的功能改进 | `1.0.0` → `1.1.0` |
 | **PATCH** | c | 修复小 bug、小视觉问题或安全推送 | `1.0.0` → `1.0.1` |
 
-## Version Increment Rules
+## 版本号递增规则
 
 ### MAJOR (a) 版本更新
 
@@ -111,7 +111,7 @@ MAJOR.MINOR.PATCH
 4. 进行相关功能测试
 5. 发布新版本并打 Git tag
 
-## Code Changes and Version Updates
+## 代码变更与版本号更新
 
 ### 强制更新版本号的场景
 
@@ -177,7 +177,7 @@ MAJOR.MINOR.PATCH
        └─ 否 → 不需要更新版本号
 ```
 
-## Version Update Workflow
+## 版本号更新工作流
 
 ### 0. 版本核查
 
@@ -311,7 +311,7 @@ git push origin v1.1.0
 docker build -t amiya-eden:latest .
 ```
 
-## Common Scenarios
+## 常见场景
 
 ### 场景 1：新增一个功能模块
 
@@ -425,7 +425,7 @@ npm version patch  # 1.1.1 → 1.1.2
 
 **版本号更新**：PATCH (c)
 
-## Version Display
+## 版本号显示
 
 项目使用统一的版本号显示：
 
@@ -440,14 +440,14 @@ npm version patch  # 1.1.1 → 1.1.2
 - 前端版本号在构建前通过 `static/scripts/sync-version.js` 自动同步到环境变量
 - 构建时通过 Vite 的 `define` 功能注入到应用中
 
-## Related Files
+## 相关文件
 
-### Version Files
+### 版本文件
 
 - `static/package.json` - 统一版本号
 - `CHANGELOG.md` - 变更日志（建议创建）
 
-### Build Files
+### 构建文件
 
 - `static/scripts/sync-version.js` - 版本同步脚本
 - `static/package.json` - 构建前钩子配置
@@ -455,12 +455,12 @@ npm version patch  # 1.1.1 → 1.1.2
 - `static/.env.production` - 生产环境变量
 - `static/vite.config.ts` - Vite 配置（环境变量注入）
 
-### Documentation Files
+### 文档文件
 
 - `docs/standards/versioning.md` - 本文档
 - `docs/specs/archive/version-display-implementation.md` - 版本显示功能实施方案
 
-## Best Practices
+## 最佳实践
 
 ### 1. 版本号递增原则
 
@@ -501,7 +501,7 @@ npm version patch  # 1.1.1 → 1.1.2
 - [ ] CHANGELOG 提交
 - [ ] 版本显示正常工作
 
-## FAQ
+## 常见问题
 
 ### Q: 小改动也需要更新版本号吗？
 
@@ -523,15 +523,15 @@ npm version patch  # 1.1.1 → 1.1.2
 
 **A**: 项目使用统一的版本号，版本值记录在 `static/package.json` 中，发布边界再通过 `CHANGELOG.md` 交叉确认。前端和后端共享同一个版本号，简化版本管理。
 
-## Examples
+## 示例
 
-### Valid Version Sequences
+### 合法的版本号序列
 
 ```
 1.0.0 → 1.0.1 → 1.0.2 → 1.1.0 → 1.1.1 → 1.2.0 → 2.0.0
 ```
 
-### Invalid Version Sequences
+### 非法的版本号序列
 
 ```
 1.0.0 → 2.0.0  (跳过了 MINOR 版本)
@@ -539,7 +539,7 @@ npm version patch  # 1.1.1 → 1.1.2
 1.0.0 → 1.0.0  (版本号未更新)
 ```
 
-## References
+## 参考
 
 - [Semantic Versioning 2.0.0](https://semver.org/)
 - [Keep a Changelog](https://keepachangelog.com/)

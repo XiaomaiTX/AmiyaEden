@@ -8,23 +8,23 @@ source_of_truth:
   - static/src/utils/common/index.ts
 ---
 
-# Timestamp Formatting Standard
+# 时间戳格式规范
 
-## Scope
+## 适用范围
 
-Applies to all user-facing timestamp and date-time displays in the frontend UI.
+适用于前端 UI 中所有面向用户的时间戳与日期时间展示。
 
-## Core Rules
+## 核心规则
 
-- Reuse the shared helper from `static/src/utils/common/time.ts` instead of defining local variants in views or components.
+- 复用 `static/src/utils/common/time.ts` 中的共享 helper，不要在 view 或 component 中定义本地变体。
 
-## Allowed Exceptions
+## 允许的例外
 
-- Product-specific relative-time displays may use a separate helper only when the UI spec explicitly calls for it.
-- Date-only presentation is allowed only when the underlying field is truly a calendar date and not a timestamp, and the module doc or feature spec says so.
+- 产品特定的相对时间展示，仅当 UI 规格明确要求时，才允许使用独立 helper。
+- 仅在底层字段确实是日历日期（而非时间戳）、且模块文档或功能规格写明这一点时，才允许仅展示日期。
 
-## Checklist
+## 核对清单
 
-- [ ] All user-facing timestamp fields use `formatTime`
-- [ ] No inline `new Date(...).toLocaleString()` remains in UI timestamp renderers
-- [ ] Any exception is documented in the relevant feature or architecture doc
+- [ ] 所有面向用户的时间戳字段都使用 `formatTime`
+- [ ] UI 时间戳渲染处没有残留的内联 `new Date(...).toLocaleString()`
+- [ ] 任何例外都已在对应的 feature 或 architecture 文档中写明

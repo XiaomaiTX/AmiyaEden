@@ -8,115 +8,115 @@ source_of_truth:
   - static/src/components/core
 ---
 
-# Frontend Table Page Standard
+# 前端表格页规范
 
-## Use This By Default
+## 默认采用
 
-- Use `useTable` for paginated page-level tables.
-- Use `ArtTable` for the table block.
-- Keep API calls in `static/src/api`.
-- Localize all user-visible text.
-- Keep page components thin; extract page-sized search areas, dialogs, or repeated column setup into `modules/` when helpful.
+- 分页的页面级表格使用 `useTable`。
+- 表格区块使用 `ArtTable`。
+- API 调用保持在 `static/src/api`。
+- 所有用户可见文案必须本地化。
+- 保持页面组件轻量；如有帮助，可把页面级搜索区、对话框或重复的列配置抽到 `modules/`。
 
-## Ledger Rule
+## 账本规则
 
-Treat a table as ledger-style when rows grow unbounded over time: logs, histories, transactions, records, approvals.
+当行数会随时间无界增长时（日志、历史、流水、记录、审批），按账本风格处理该表格。
 
-For ledger tables:
+账本表格：
 
-- set default request size to `200`
-- use `ArtTable` with `visual-variant="ledger"`
-- do not repeat ledger page sizes or pager layout locally unless intentionally overriding the shared preset
+- 默认请求规模设为 `200`
+- 使用 `ArtTable` 并设置 `visual-variant="ledger"`
+- 除非有意覆盖共享预设，不要在本地重复声明账本分页大小或分页器布局
 
-For bounded management/config tables:
+有界的管理/配置表格：
 
-- use normal `ArtTable` defaults
-- smaller page sizes are fine
+- 使用 `ArtTable` 默认值
+- 较小的分页大小也可
 
-## Actionable Selectors And Paginated Data
+## 可操作选择器与分页数据
 
-- Do not derive mutation eligibility, duplicate prevention, or selectable-candidate state from the current page of a paginated table.
-- A paginated history table is a presentation slice, not an authoritative dataset for a form, dropdown, or action button elsewhere on the page.
-- If a selector or action depends on whether a record was already submitted, claimed, reviewed, or otherwise consumed, ask the backend for eligible candidates or backend-computed eligibility flags.
-- Frontend disabling is UX only. If the backend still rejects a choice, the preferred fix is usually to move the candidate filtering or eligibility calculation server-side instead of broadening the client-side fetch.
-- When a page mixes a submission form with a paginated history table, review them separately:
-  - the form needs an authoritative candidate source
-  - the table only needs the page slice chosen for presentation
+- 不得从分页表格的当前页推断是否可修改、是否去重或是否可选。
+- 分页历史表格只是展示切片，不是同页面表单、下拉或操作按钮的权威数据集。
+- 若某选择器或操作依赖"记录是否已提交、已被认领、已复审或已被消费"，应向后端请求符合资格的候选集合或后端计算的资格标志。
+- 前端禁用仅是 UX。若后端仍会拒绝某个选择，正确的修复通常是把候选过滤或资格计算下沉到服务端，而不是扩大客户端抓取范围。
+- 当页面同时存在提交表单与分页历史表格时，应分别审查：
+  - 表单需要权威候选来源
+  - 表格只需为展示选定的分页切片
 
-## Layout Pattern
+## 布局模式
 
-Preferred page structure:
+推荐的页面结构：
 
-- search area outside the table card
-- `ElCard.art-table-card` as the table container
-- `ArtTableHeader` above `ArtTable`
-- dialogs as siblings outside the card
+- 搜索区位于表格卡片之外
+- `ElCard.art-table-card` 作为表格容器
+- `ArtTableHeader` 位于 `ArtTable` 之上
+- 对话框作为兄弟节点位于卡片之外
 
-If the page is mixed layout or analytics-like, you may still use this pattern for the table section itself.
+若页面为混合布局或分析型布局，表格区域仍可使用此模式。
 
-## Overflow And Height Ownership
+## 溢出与高度拥有者
 
-- Paginated table pages must declare who owns overflow. Clipped table content is a layout bug.
-- If the page should grow naturally with content, avoid `art-full-height` and let the application shell own scrolling.
-- If the page uses `art-full-height`, the table section must complete the height chain through every intermediate wrapper that participates in layout.
-  - Typical wrappers include `ElCard` body, `ElTabs`, `el-tabs__content`, and `el-tab-pane`.
-  - Use `display: flex`, `flex-direction: column`, and `min-height: 0` on those wrappers so `ArtTable` can consume the remaining height.
-- Do not rely on `overflow: hidden` alone on card bodies, tab panes, or page wrappers. Hidden overflow is only valid when a descendant table region clearly owns scrolling.
-- Tabbed table pages must keep each tab pane height-aware. A table inside `ElTabs` is incomplete until the tab content area can either expand naturally or hand remaining height to the table.
+- 分页表格页必须声明谁拥有溢出。表格内容被裁剪即视为布局 bug。
+- 若页面应随内容自然增长，避免使用 `art-full-height`，让应用外壳接管滚动。
+- 若页面使用 `art-full-height`，表格区必须通过每个参与布局的中间包装器补全高度链。
+  - 典型包装器包括 `ElCard` body、`ElTabs`、`el-tabs__content` 与 `el-tab-pane`。
+  - 在这些包装器上使用 `display: flex`、`flex-direction: column` 与 `min-height: 0`，使 `ArtTable` 能消费剩余高度。
+- 不要仅依赖卡片体、tab 面板或页面包装器上的 `overflow: hidden`。仅当后代表格区域明确接管滚动时，隐藏溢出才合法。
+- 带标签页的表格页必须让每个 tab 面板具备高度感知。`ElTabs` 内嵌的表格在 tab 内容区能自然扩展或把剩余高度交给表格之前，都属于未完成状态。
 
-Recommended full-height tabbed table pattern:
+推荐的 full-height 标签页表格模式：
 
-- page root uses `art-full-height`
-- `ElCard` body uses flex column layout with `min-height: 0`
-- `ElTabs` grows with `flex: 1` and `min-height: 0`
-- `el-tabs__content` uses `flex: 1`, `min-height: 0`, and only hides overflow when the descendant table region owns scrolling
-- `el-tab-pane` uses `display: flex`, `flex-direction: column`, `height: 100%`, and `min-height: 0`
+- 页面根使用 `art-full-height`
+- `ElCard` body 使用 flex 列布局并设 `min-height: 0`
+- `ElTabs` 使用 `flex: 1` 与 `min-height: 0` 随父级增长
+- `el-tabs__content` 使用 `flex: 1`、`min-height: 0`，仅当后代表格区域接管滚动时才隐藏溢出
+- `el-tab-pane` 使用 `display: flex`、`flex-direction: column`、`height: 100%`、`min-height: 0`
 
-## Theme-Safe Styles
+## 主题安全样式
 
-- Do not hardcode light backgrounds or gradients (`#fff`, very bright RGB values) for table rows, expandable panels, or selection states; they will appear as glaring white bands in dark mode.
-- Prefer Element Plus theme tokens (`var(--el-bg-color)`, `var(--el-bg-color-overlay)`, `var(--el-fill-color)`, `var(--el-border-color-*)`) for backgrounds and borders so both light and dark themes stay consistent.
-- For “selected” or “expanded” cards/rows, keep the background at most one brightness step lighter than the surrounding surface; use border and shadow emphasis instead of large areas of pure white.
-- When adding custom table or list visuals, manually verify the page in both light and dark modes and adjust colors using theme tokens rather than fixed hex values.
+- 不要为表格行、可展开面板或选中态硬编码浅色背景或渐变（`#fff`、极亮 RGB 值），否则在暗色主题下会出现刺眼的白色色带。
+- 背景与边框优先使用 Element Plus 主题 token（`var(--el-bg-color)`、`var(--el-bg-color-overlay)`、`var(--el-fill-color)`、`var(--el-border-color-*)`），使明暗主题保持一致。
+- 对于"选中"或"展开"的卡片/行，背景至多比周围表面亮一档；用边框和阴影做强调，避免大面积纯白。
+- 新增自定义表格或列表视觉时，必须在明暗两种主题下手工验证，并使用主题 token 而非固定十六进制值调整颜色。
 
-## Paginated Sort Rule
+## 分页排序规则
 
-- If a paginated management page supports both drag-and-drop reorder and a persisted numeric `sort_order`, treat them as two views of the same global ordering contract.
-- Do not rewrite reordered page slices to `0..n-1` or any other page-local index range. That causes collisions with other pages and makes the global order unstable.
-- For drag-and-drop inside a paginated slice, preserve that slice's existing persisted `sort_order` slots and only remap those slots to the reordered IDs.
-- For cross-page moves, provide an explicit numeric sort field and document that it is the authoritative cross-page control.
-- After a successful reorder mutation, refresh or reconcile the local row state before opening edit dialogs again so stale `sort_order` values are not resubmitted.
-- If an edit dialog depends on a detail endpoint, that detail response must include every persisted field the dialog can save, including `sort_order`.
+- 若分页管理页同时支持拖拽排序与持久化的数字 `sort_order`，应把它们视为同一份"全局排序契约"的两种视图。
+- 不得把重排后的分页切片改写为 `0..n-1` 或任何页内索引区间。这会与其他页冲突，使全局顺序不稳定。
+- 分页切片内的拖拽排序：保留该切片已持久化的 `sort_order` 槽位，仅把这些槽位重新映射到重排后的 ID。
+- 跨页移动：提供显式数字排序字段，并在文档中写明它是跨页的权威控制。
+- 重排变更成功后，必须先刷新或校正本地行状态，再打开编辑对话框，避免陈旧的 `sort_order` 被再次提交。
+- 若编辑对话框依赖详情接口，则该详情响应必须包含对话框可保存的每一个持久化字段，包括 `sort_order`。
 
-## Inline Copy Rule
+## 行内复制规则
 
-- For compact inline copy actions attached to a text value inside a table cell, list row, or expanded record row, reuse the shared `ArtCopyButton`.
-- Do not introduce page-local copy icon buttons, duplicate clipboard success/failure toast handling, or ad hoc inline copy markup for the same interaction shape.
-- If the requirement is not a compact inline button beside a single displayed value, reuse the shared clipboard hook instead of forcing the button component into a mismatched flow.
-- Feature docs may describe where copy is available, but the reuse rule itself is defined here and applies repository-wide.
+- 对于表格单元格、列表行或展开记录行内、附着于单个文本值的紧凑行内复制动作，复用共享 `ArtCopyButton`。
+- 不得为同一交互形态引入页面本地的复制图标按钮、重复的剪贴板成功/失败 toast 处理或临时拼凑的行内复制标记。
+- 若需求不是"单个展示值旁边的紧凑行内按钮"，应复用共享剪贴板 hook，而不是把按钮组件硬塞进不匹配的流程。
+- Feature 文档可以描述复制入口的位置，但复用规则本身定义于此并适用于全仓库。
 
-## Exceptions
+## 例外
 
-Use native `ElTable` only when the table itself does not fit `ArtTable`, for example:
+仅当表格本身不适合 `ArtTable` 时才使用原生 `ElTable`，例如：
 
-- detail-page subtables
-- tree tables
-- highly customized expandable rows
-- temporary import/preview tables
-- Element Plus interactions that `ArtTable` does not expose cleanly
+- 详情页子表
+- 树形表格
+- 高度自定义的可展开行
+- 临时的导入/预览表格
+- `ArtTable` 无法清晰暴露的 Element Plus 交互
 
-Using native `ElTable` does not relax the other rules in this document.
+使用原生 `ElTable` 不会放宽本文档的其他规则。
 
-## AI Checklist
+## AI 核对清单
 
-Before finishing:
+完成前确认：
 
-- Is this paginated table using `useTable` unless there is a real exception?
-- If it is ledger-style, is it using `visual-variant="ledger"`?
-- If it adds a compact inline copy action, is it reusing `ArtCopyButton`?
-- If a form selector or action on the same page depends on record history, is that eligibility coming from the backend instead of the visible table page?
-- If the page uses `art-full-height` or `ElTabs`, is the overflow owner explicit and is the height chain complete?
-- If the page supports drag sorting plus a numeric sort field, does drag reorder preserve persisted sort slots instead of resetting to page-local indices?
-- Are API calls outside the view?
-- Are visible strings localized?
-- Is the implementation following existing page patterns instead of inventing a one-off abstraction?
+- 除非存在真实例外，该分页表格是否使用了 `useTable`？
+- 若是账本风格，是否使用了 `visual-variant="ledger"`？
+- 若新增紧凑行内复制动作，是否复用了 `ArtCopyButton`？
+- 若同页面的表单选择器或操作依赖记录历史，该资格是否来自后端而非可见表格页？
+- 若页面使用 `art-full-height` 或 `ElTabs`，溢出拥有者是否明确、高度链是否完整？
+- 若页面同时支持拖拽排序与数字排序字段，拖拽重排是否保留了持久化的 sort 槽位，而不是重置为页内索引？
+- API 调用是否位于 view 之外？
+- 可见文案是否已本地化？
+- 实现是否遵循现有页面模式，而不是创造一次性抽象？

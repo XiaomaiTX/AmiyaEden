@@ -11,331 +11,332 @@ source_of_truth:
   - static/
 ---
 
-# Regression Test Plan
+# 回归测试计划
 
-## Purpose
+## 目的
 
-This document is not a new mandatory rule source. It translates the existing testing standard into an incremental implementation plan, answering three practical questions:
+本文档不是新的强制性规则来源。它把已有测试标准翻译为增量实施计划，回答三个实际问题：
 
-- Which regression tests should this repository prioritize?
-- What is the minimum test needed to prevent each class of bug from recurring?
-- How can regression coverage improve incrementally without a one-time test infrastructure overhaul?
+- 本仓库应优先补哪些回归测试？
+- 为防止每类 bug 再次发生，最少需要什么测试？
+- 如何在不进行一次性测试基础设施大改造的前提下，让回归覆盖增量提升？
 
-Intended audience:
+目标受众：
 
-- Developers fixing bugs
-- Developers refactoring modules
-- PR reviewers
-- Documentation and engineering standards maintainers
+- 修复 bug 的开发者
+- 重构模块的开发者
+- PR 评审者
+- 文档与工程标准维护者
 
-## Goals
+## 目标
 
-- Prevent "fixed once, broke again" issues by catching them locally with tests
-- Prioritize test coverage for high-risk boundaries: permissions, fallbacks, query joins, and contracts
-- Allow new tests to fit the current code structure without requiring large new infrastructure first
-- Let each module gradually accumulate a stable set of regression examples
+- 通过本地测试捕获"修过一次又坏了"的问题
+- 为高风险边界优先补覆盖：权限、兜底、查询 join、契约
+- 让新测试贴合当前代码结构，无需先做大规模新基础设施
+- 让每个模块逐步积累稳定的回归示例集
 
-## Non-Goals
+## 非目标
 
-- Do not require backfilling all module tests at once
-- Do not require a full e2e framework for a single small bug fix
-- Do not treat build / lint / typecheck as behavior-level regression tests
-- Do not push high-maintenance UI component snapshot tests at this stage
+- 不要求一次性回填所有模块测试
+- 不要求为单个 bug 修复搭建完整 e2e 框架
+- 不把 build / lint / typecheck 当作行为级回归测试
+- 现阶段不推送高维护成本的 UI 组件快照测试
 
-## Core Strategy
+## 核心策略
 
-Default to "test at the layer closest to the bug":
+默认在"最贴近 bug 的那一层"测试：
 
-1. If the bug is in pure logic, normalization, or permission checks, prefer a service / helper unit test.
-2. If the bug is in a repository query, join, fallback, or field mapping, prefer a repository regression test.
-3. If the bug is in an API contract, response shaping, or pagination envelope, prefer a handler / API contract test.
-4. If the bug is in a frontend pure helper, filter parameter transform, or name fallback, prefer a frontend unit test.
-5. If the bug surfaces only in the page assembly layer but the root cause is a backend contract issue, add the backend test first, then verify the frontend build.
+1. 若 bug 在纯逻辑、归一化或权限校验中，优先 service / helper 单测。
+2. 若 bug 在 repository 查询、join、兜底或字段映射中，优先 repository 回归测试。
+3. 若 bug 在 API 契约、响应整形或分页外壳中，优先 handler / API 契约测试。
+4. 若 bug 在前端纯 helper、过滤参数转换或名称兜底中，优先前端单测。
+5. 若 bug 只在页面装配层显现，但根因是后端契约问题，先补后端测试，再验证前端构建。
 
-Do not default to the heaviest test layer. Choose the smallest, most stable layer that locks down the real risk.
+不要默认选择最重的测试层。选择能锁定真实风险的最小、最稳定层。
 
-## Risk Layers and Recommended Test Types
+## 风险层与推荐测试类型
 
-| Risk Type | Common Examples | Minimum Recommended Test |
+| 风险类型 | 常见示例 | 最低推荐测试 |
 | --- | --- | --- |
-| Permission boundary | admin editing admin, guest accessing login page | service unit test |
-| Input validation / normalization | nickname, QQ, Discord, time range, enum correction | service or helper unit test |
-| Repository query join | column ambiguity after join, missing filter, wrong sort | repository SQL / query-shape test |
-| Repository fallback / merge | nickname falling back to character name, role list falling back to guest | repository behavior test |
-| API contract | field name change, roles[] vs role difference, pagination structure | handler or API contract test |
-| Frontend pure logic | filter parameter transform, fallback text, table helper | `pnpm test:unit` |
-| Localization regression | missing key, page displaying raw key | JSON validation + manual verification on page changes |
-| Page assembly error | wrong column mapping, wrong field binding, wrong button condition | prefer helper / contract test; add lightweight frontend test if needed |
+| 权限边界 | admin 编辑 admin、guest 访问 login 页 | service 单测 |
+| 输入校验/归一化 | 昵称、QQ、Discord、时间范围、枚举纠错 | service 或 helper 单测 |
+| Repository 查询 join | join 后列歧义、漏过滤、排序错 | repository SQL / 查询形态测试 |
+| Repository 兜底/合并 | 昵称回退到角色名、角色列表回退到 guest | repository 行为测试 |
+| API 契约 | 字段名变更、`roles[]` 与 `role` 差异、分页结构 | handler 或 API 契约测试 |
+| 前端纯逻辑 | 过滤参数转换、兜底文案、表格 helper | `pnpm test:unit` |
+| 本地化回归 | 缺键、页面显示原始键 | JSON 校验 + 页面变更时手工验证 |
+| 页面装配错误 | 列映射错、字段绑定错、按钮条件错 | 优先 helper / 契约测试；必要时补轻量前端测试 |
 
-## Current Repository Priorities
+## 当前仓库优先级
 
-First priority modules:
+第一优先级模块：
 
-- `operation`: fleets, fleet-detail, pap, fleet-configs
+- `operation`：fleets、fleet-detail、pap、fleet-configs
 
-  Fleet-configs bug fixes should prefer regression coverage for EFT parse / rebuild round trips and equipment-setting preservation. In particular, verify that settings are preserved only when `flag + type_id + quantity` remain unchanged, and that changed or removed items reset to defaults.
-- `system`: user, role, auto-role, pap, webhook
-- `auth-and-characters`: `/api/v1/me`, character binding, profile completion
+  Fleet-configs 缺陷修复应优先补 EFT 解析/重建往返与装备设置保留的回归覆盖。特别是：仅当 `flag + type_id + quantity` 不变时才保留设置，变更或移除的项应重置为默认值。
+- `system`：user、role、auto-role、pap、webhook
+- `auth-and-characters`：`/api/v1/me`、角色绑定、个人资料完整度
 
-Reasons:
+理由：
 
-- These modules involve permissions, query joins, frontend-backend contracts, and fallback display simultaneously
-- Join query regressions and display field fallback regressions have already occurred recently
-- These modules have high daily usage impact, and their bugs are typically not caught at compile time
+- 这些模块同时涉及权限、查询 join、前后端契约与展示兜底
+- 近期已出现过 join 查询回归与展示字段兜底回归
+- 这些模块日常使用影响大，且 bug 通常在编译期无法捕获
 
-Second priority modules:
+第二优先级模块：
 
 - `srp`
 - `commerce`
 - `info-and-reporting`
 - `skill-planning`
 
-Third priority modules:
+第三优先级模块：
 
-- Documentation, static configuration, low-risk read-only pages
+- 文档、静态配置、低风险只读页面
 
-## Phased Implementation
+## 分阶段实施
 
-### Phase 1: Lock Down New Bugs
+### 阶段 1：锁定新 bug
 
-Goal: from now on, all new bug fixes should include a minimum regression test.
+目标：从现在起，所有新 bug 修复必须包含最低限度的回归测试。
 
-Requirements:
+要求：
 
-- For every bug fix, first ask "which layer is closest to the root cause?"
-- When reasonably testable, a regression test targeting that bug is required
-- If infrastructure is currently missing, at minimum add a query-shape / helper / service level test
+- 每次修复 bug 时，先问"根因最贴近哪一层？"
+- 在可合理测试时，针对该 bug 的回归测试是必备的
+- 若基础设施当前缺失，至少补查询形态 / helper / service 层测试
 
-Completion criteria:
+完成标准：
 
-- New bug fixes no longer rely solely on `go build` or `vue-tsc`
-- Recent regression points begin to have corresponding tests
+- 新 bug 修复不再仅依赖 `go build` 或 `vue-tsc`
+- 近期回归点开始拥有对应测试
 
-Suggested early examples:
+建议早期示例：
 
-- Fleet list FC nickname fallback
-- Column ambiguity after joins (`deleted_at`, `status`, `id`)
-- User list role fallback and sorting
-- admin / super_admin protection logic (super_admin is managed only via config file; API cannot assign / modify / delete it)
-- `/api/v1/me` profile completion and contact info uniqueness
+- Fleet 列表 FC 昵称兜底
+- join 后列歧义（`deleted_at`、`status`、`id`）
+- 用户列表角色兜底与排序
+- admin / super_admin 保护逻辑（super_admin 仅通过配置文件管理；API 不能分配/修改/删除）
+- `/api/v1/me` 个人资料完整度与联系方式唯一性
 
-### Phase 2: Add Module-Level High-Frequency Regression Points
+### 阶段 2：补齐模块级高频回归点
 
-Goal: build a stable "protection belt" for frequently modified modules.
+目标：为经常修改的模块构建稳定的"保护带"。
 
-Each high-priority module should have at least:
+每个高优先级模块至少应包含：
 
-- 2 to 5 service / helper regression tests
-- 1 to 3 repository regression tests
-- 1 key contract test
+- 2 到 5 条 service / helper 回归测试
+- 1 到 3 条 repository 回归测试
+- 1 条关键契约测试
 
-Module suggestions:
+模块建议：
 
 ### Operation
 
-- `fleet list` query join and FC display fallback
-- PAP log display field fallback logic
-- auto SRP mode normalization
-- fleet permission checks: `fc` / `admin` / `super_admin`
+- `fleet list` 查询 join 与 FC 展示兜底
+- PAP 日志展示字段兜底逻辑
+- 自动 SRP 模式归一化
+- 舰队权限校验：`fc` / `admin` / `super_admin`
 
 ### Administration
 
-- User profile update validation and uniqueness
-- Protected admin accounts cannot be modified / deleted by regular admins
-- super_admin role cannot be granted, modified, or deleted via API
-- super_admin users cannot be deleted via API
-- super_admin role syncs automatically from config file on login
-- Role list `roles[]` and legacy `role` fallback
-- `GET /system/basic-config` returns only fixed system identifiers with no corresponding write endpoint
-- auto-role `Director -> admin` rule only accepts corp role signals from Fuxi Legion (`98185110`)
-- `allow_corporations` always retains `98185110` on save and read
+- 用户资料更新校验与唯一性
+- 受保护账号无法被普通 admin 修改/删除
+- super_admin 角色无法通过 API 授予、修改或删除
+- super_admin 用户无法通过 API 删除
+- super_admin 角色在登录时从配置文件自动同步
+- 角色列表 `roles[]` 与遗留 `role` 兜底
+- `GET /system/basic-config` 仅返回固定系统标识符，没有对应的写接口
+- auto-role `Director -> admin` 规则仅接受来自伏羲军团（`98185110`）的军团角色信号
+- `allow_corporations` 在保存和读取时始终保留 `98185110`
 
 ### Auth And Characters
 
-- Profile completeness check
-- Character binding / main character switch permission and input validation
-- `guest` to `user` boundary behavior
+- 个人资料完整度检查
+- 角色绑定/主角色切换权限与输入校验
+- `guest` 到 `user` 的边界行为
 
-### Phase 3: Build Shared Test Fixtures
+### 阶段 3：构建共享测试夹具
 
-Goal: reduce the repeated environment setup cost for each new test.
+目标：降低每个新测试的重复环境搭建成本。
 
-Suggested additions (not required all at once):
+建议新增（不要求一次性完成）：
 
-- Backend repository dry-run GORM helper
-- Backend handler test helper
-- Frontend locale JSON validation helper
-- Frontend API contract mock helper
+- 后端 repository dry-run GORM helper
+- 后端 handler 测试 helper
+- 前端 locale JSON 校验 helper
+- 前端 API 契约 mock helper
 
-Notes:
+注意事项：
 
-- The current repository is already suited for dry-run SQL / schema mapping tests
-- If repository integration tests grow significantly, consider a unified test database fixture later
-- Do not build a complex test platform preemptively for hypothetical future use
+- 本仓库当前已适合做 dry-run SQL / schema mapping 测试
+- 若 repository 集成测试显著增长，后续可考虑统一的测试数据库夹具
+- 不要为假设性的未来用途预先搭建复杂测试平台
 
-## Specific Test Patterns
+## 具体测试模式
 
-### 1. Repository Query-Shape Test
+### 1. Repository 查询形态测试
 
-Applicable when:
+适用场景：
 
-- join changes
-- SQL select / where / order / fallback changes
-- new computed fields
+- join 变更
+- SQL select / where / order / fallback 变更
+- 新增计算字段
 
-Purpose:
+目的：
 
-- Ensure critical SQL fragments are present
-- Ensure column ambiguity does not recur
-- Ensure fallback expressions are preserved
+- 确保关键 SQL 片段存在
+- 确保不再次出现列歧义
+- 确保保留兜底表达式
 
-Examples:
+示例：
 
 - `fleet.deleted_at IS NULL`
 - `LEFT JOIN "user"`
 - `COALESCE(NULLIF("user".nickname, ''), fleet.fc_character_name)`
 
-These tests are particularly suited to this repository because:
+此类测试特别适合本仓库，因为：
 
-- They run fast
-- They do not depend on a real database
-- They catch the join regressions that have occurred recently
+- 运行快
+- 不依赖真实数据库
+- 能捕获近期发生过的 join 回归
 
-### 2. DTO / Schema Mapping Test
+### 2. DTO / schema 映射测试
 
-Applicable when:
+适用场景：
 
-- query adds a new alias field
-- a special DTO field is used only in the response and not persisted
-- a GORM tag typo causes the query to return data that fails to map
+- 查询新增别名字段
+- 某个 DTO 字段仅用于响应、不持久化
+- GORM tag 拼写错误导致查询返回数据无法映射
 
-Purpose:
+目的：
 
-- Ensure query aliases actually scan into the DTO
-- Ensure field names align with JSON / DBName tags
+- 确保查询别名能正确 scan 进 DTO
+- 确保字段名与 JSON / DBName tag 对齐
 
-### 3. Service Behavior Test
+### 3. Service 行为测试
 
-Applicable when:
+适用场景：
 
-- permission checks
-- fallback rules
-- input normalization
-- uniqueness validation
+- 权限校验
+- 兜底规则
+- 输入归一化
+- 唯一性校验
 
-Purpose:
+目的：
 
-- Lock down business rules
-- Prevent policies from being scattered across handlers or pages without protection
+- 锁定业务规则
+- 防止策略散落在 handler 或页面中而没有保护
 
-### 4. Handler / API Contract Test
+### 4. Handler / API 契约测试
 
-Applicable when:
+适用场景：
 
-- pagination structure changes
-- field name changes
-- response envelope changes
-- permission boundary changes on important endpoints
+- 分页结构变更
+- 字段名变更
+- 响应外壳变更
+- 重要端点的权限边界变更
 
-Purpose:
+目的：
 
-- Prevent "compiles on backend but frontend contract is already broken"
+- 防止"后端能编译，但前端契约已坏"
 
-### 5. Frontend Unit Test
+### 5. 前端单测
 
-Applicable when:
+适用场景：
 
-- pure helpers
-- pure computations in hooks
-- filter parameter transforms
-- fallback text selection
+- 纯 helper
+- hook 中的纯计算
+- 过滤参数转换
+- 兜底文案选择
 
-Purpose:
+目的：
 
-- Protect frontend behavior with the lightest possible approach
+- 用最轻的方式保护前端行为
 
-Not prioritized at this stage:
+现阶段不优先：
 
-- Heavy component mount tests for standard list pages
-- End-to-end browser tests for simple text changes
+- 标准列表页的重型组件挂载测试
+- 针对简单文案变更的端到端浏览器测试
 
-## Bug Fix Minimum Regression Requirements
+## 缺陷修复最低回归要求
 
-When fixing a bug, use this table directly:
+修复 bug 时，直接使用下表：
 
-| Bug Root Cause | Minimum Required |
+| Bug 根因 | 最低要求 |
 | --- | --- |
-| Service rule wrong | one service test |
-| Repository query wrong | one repository regression test |
-| Response field wrong | one handler / contract test |
-| Frontend helper wrong | one frontend unit test |
-| Multiple layers involved | root-cause layer test + build verification on another layer |
+| Service 规则错 | 一条 service 测试 |
+| Repository 查询错 | 一条 repository 回归测试 |
+| 响应字段错 | 一条 handler / 契约测试 |
+| 前端 helper 错 | 一条前端单测 |
+| 多层涉及 | 根因层测试 + 另一层构建验证 |
 
-If a test cannot be added immediately, the change description must state:
+若无法立即补测试，变更描述必须写明：
 
-- Why the test was not added now
-- What infrastructure is missing
-- Where the test should be added later
+- 为什么现在没补
+- 缺什么基础设施
+- 后续应在何处补
 
-## Review Checklist
+## 评审清单
 
-When reviewing a bug fix, at minimum ask:
+评审 bug 修复时，至少问：
 
-1. Is the bug's root cause in the handler, service, repository, or frontend helper?
-2. Does the new test actually lock down that root cause, not just surface behavior?
-3. If someone later changes the same logic, will this test fail immediately?
-4. Beyond build / lint / typecheck, is there behavior-level protection?
+1. bug 根因在 handler、service、repository 还是前端 helper？
+2. 新测试是否真正锁定根因，而不只是表面行为？
+3. 若日后有人修改同一逻辑，这条测试是否会立即失败？
+4. 除了 build / lint / typecheck，是否有行为级保护？
 
-## Suggested Module Regression Checklists
+## 建议的模块回归清单
 
-The following are not one-time task lists but priority queues for incremental coverage.
+以下不是一次性任务清单，而是增量覆盖的优先级队列。
 
 ### auth-and-characters
 
-- `ProfileComplete()` stays consistent with frontend profile completion check
-- QQ / Discord uniqueness
-- `/api/v1/me` returns role and permission context
+- `ProfileComplete()` 与前端个人资料完整度检查保持一致
+- QQ / Discord 唯一性
+- `/api/v1/me` 返回角色与权限上下文
 
 ### operation
 
-- Fleet list query and display fallback
-- Fleet management permission checks
-- PAP issuance preconditions
-- auto SRP mode normalization and trigger conditions
+- Fleet 列表查询与展示兜底
+- Fleet 管理权限校验
+- PAP 发放前置条件
+- 自动 SRP 模式归一化与触发条件
 
 ### administration
 
-- User list DTO no longer leaks legacy `role`
-- User role sorting and fallback
-- Admin cannot operate on protected accounts
-- auto-role built-in shortcut rules vs title mapping distinction
+- 用户列表 DTO 不再泄漏遗留 `role`
+- 用户角色排序与兜底
+- admin 无法操作受保护账号
+- auto-role 内置快捷规则与 title 映射的区别
+- super_admin 的配置驱动同步与 API 不可变性
 
 ### commerce
 
-- Purchase limit rules
-- Order status transitions
-- Wallet transaction type and reference type mapping
+- 购买限制规则
+- 订单状态流转
+- 钱包交易类型与引用类型映射
 
 ### srp
 
-- SRP application status transitions
-- Fleet / KM association fallback
-- Auto-approval vs manual approval boundary
+- SRP 申请状态流转
+- 舰队 / KM 关联兜底
+- 自动审批与人工审批边界
 
-## Command Reference
+## 命令参考
 
-See `docs/standards/testing-and-verification.md` for verification commands.
+验证命令见 `docs/standards/testing-and-verification.md`。
 
-## Documentation Maintenance
+## 文档维护
 
-When a module begins to accumulate stable regression tests, update the corresponding feature doc to at minimum state:
+当某模块开始积累稳定的回归测试时，更新对应 feature 文档，至少写明：
 
-- What key invariants the module currently has
-- What high-risk protection points were recently added
-- Which test layer protects those invariants
+- 该模块当前的关键不变量
+- 近期新增的高风险保护点
+- 哪个测试层在保护这些不变量
 
-Do not copy specific test file lists into multiple documents for redundant maintenance. Testing strategy is governed by:
+不要把具体测试文件清单复制到多份文档里重复维护。测试策略由以下文件统管：
 
 - `docs/standards/testing-and-verification.md`
 - `docs/guides/testing-guide.md`
-- This document
+- 本文档

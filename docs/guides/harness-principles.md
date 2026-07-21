@@ -276,3 +276,4 @@ When changing repository-wide agent rules:
 - `docs/standards/documentation-governance.md`
 - `docs/guides/testing-guide.md`
 - `docs/standards/regression-test-plan.md`
+- `docs/standards/periodic-review-cadence.md`

@@ -141,6 +141,7 @@ TODO：
 - [ ] 在 `docs/features/current/audit-log.md` 新增“覆盖矩阵”章节
 - [ ] 补齐首轮模块 action 清单（含 category/action/result）
 - [ ] 标记每个 action 的目标落地文件与 owner
+- [ ] 本草案已登记为周期性任务，见 `docs/standards/periodic-review-cadence.md § Audit Coverage Gap Review`
 
 ### 阶段 1：高风险后台操作补齐（优先）
 

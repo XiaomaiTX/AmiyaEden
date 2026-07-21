@@ -8,97 +8,97 @@ source_of_truth:
   - docs/ai/repo-rules.md
 ---
 
-# Documentation Governance Standard
+# 文档治理规范
 
-## Scope
+## 适用范围
 
-This standard governs canonical repository documentation under the repository root and `docs/`. This includes the agent entry points (`AGENTS.md`, `CLAUDE.md`) which delegate to `docs/ai/repo-rules.md`.
+本规范约束仓库根目录与 `docs/` 下的权威文档。这包括代理入口文件（`AGENTS.md`、`CLAUDE.md`），它们委托给 `docs/ai/repo-rules.md`。
 
-## Core Rules
+## 核心规则
 
-- Each document must have a single primary responsibility.
-- Each class of fact must have a single canonical source.
-- Current implementation, engineering rules, and future proposals must be stored separately.
-- Do not maintain a second parallel documentation tree for the same subject.
-- Repository-level canonical documentation belongs only in `docs/` and the agent entry points (`AGENTS.md`, `CLAUDE.md`) which delegate to `docs/ai/repo-rules.md`.
-- The root `README.md` may serve as an onboarding or product-facing entry point, but it does not define engineering rules. If conflicts exist, `docs/ai/repo-rules.md` and `docs/` take precedence.
-- Subdirectory `README.md` files are local implementation notes only. They must not redefine repository-wide rules, route surfaces, or product behavior.
+- 每份文档必须只有一项主要职责。
+- 每类事实必须只有一处权威来源。
+- 当前实现、工程规则与未来提案必须分别存放。
+- 不得为同一主题维护第二套并行文档树。
+- 仓库级权威文档仅允许存在于 `docs/` 与代理入口（`AGENTS.md`、`CLAUDE.md`），后者委托给 `docs/ai/repo-rules.md`。
+- 根 `README.md` 可作为 onboarding 或面向产品的入口，但不定义工程规则。如存在冲突，以 `docs/ai/repo-rules.md` 与 `docs/` 为准。
+- 子目录下的 `README.md` 仅为本地实现备注，不得重新定义仓库级规则、路由面或产品行为。
 
-## Audience Convention
+## 受众约定
 
-See `docs/README.md § 受众分类` for directory-to-audience mapping. When placing a new document, choose the directory that matches its primary audience.
+目录到受众的映射见 `docs/README.md § 受众分类`。放置新文档时，选择与其主要受众匹配的目录。
 
-### AI-Centric Content Guidelines
+### AI 中心内容准则
 
-Every word in an AI-centric document consumes agent context window. Keep documents concise and avoid content that is derivable from code.
+AI 中心文档中的每个词都会消耗代理上下文窗口。保持文档精简，避免可从代码派生的内容。
 
-**Include:**
+**应包含：**
 
-- UI layout and behavior descriptions — these are requirement specs; without them, agents may unintentionally modify UI behavior
-- Business logic, calculation rules, and eligibility criteria — these enable review and prevent silent drift from intended behavior
-- Permission boundaries and key invariants not obvious from code alone
-- Durable technical design decisions and rationale that constrain future implementation, especially for backend architecture, security, data consistency, external integrations, queues, caching, and compatibility behavior
-- Entry points (routes, pages) and primary code files
+- UI 布局与行为描述——这些是需求规格，没有它们代理可能无意中修改 UI 行为
+- 业务逻辑、计算规则与资格条件——便于评审并防止与预期行为静默漂移
+- 难以从代码直接看出的权限边界与关键不变量
+- 约束未来实现的持久技术设计决策与理由，尤其是后端架构、安全、数据一致性、外部集成、队列、缓存与兼容行为
+- 入口（路由、页面）与主要代码文件
 
-**Exclude:**
+**不应包含：**
 
-- API request/response JSON examples — derivable from handler code and `static/src/types/api/api.d.ts`
-- Routine implementation choices, local control flow, or rationale that is already obvious from nearby code
-- Invariants that restate content already written in the same document's body — a summary section should only add genuinely new information
-- Content already canonical in another document — reference it instead of duplicating (e.g., feature docs should reference `docs/architecture/auth-and-permissions.md` for role assignment rules, not restate the permission matrix)
+- API 请求/响应 JSON 示例——可从 handler 代码与 `static/src/types/api/api.d.ts` 派生
+- 例行实现选择、本地控制流或邻近代码已能直接看出的理由
+- 仅重述本文档其他段落已写内容的不变量——总结小节应只引入真正新的信息
+- 已在其他文档中权威化的内容——以引用代替复制（例如 feature 文档应引用 `docs/architecture/auth-and-permissions.md` 获取角色分配规则，而非重述权限矩阵）
 
-**Rationale:** Feature docs under `docs/features/current/` serve as requirement specs. They define what the system *should* do, enabling agents to verify implementations and reviewers to catch unintended changes. They are not code documentation — they do not describe code structure or repeat what code already expresses.
+**理由：** `docs/features/current/` 下的 feature 文档是需求规格。它们定义系统*应当*做什么，使代理能校验实现、让评审者捕获非预期变更。它们不是代码文档，不描述代码结构，也不重复代码已表达的内容。
 
-## Document Types
+## 文档类型
 
-Use this mapping:
+使用以下映射：
 
 - `agent-rules` / `agent-guide` -> `docs/ai/`
-  Shared agent rule source used by `AGENTS.md` and `CLAUDE.md`, plus agent-facing explanatory docs.
+  共享代理规则源，由 `AGENTS.md` 与 `CLAUDE.md` 使用，以及面向代理的说明性文档。
 - `standard` -> `docs/standards/`
-  Required rules, prohibitions, recommended practices, and regression test strategy.
+  强制规则、禁令、推荐实践与回归测试策略。
 - `architecture` -> `docs/architecture/`
-  How the current system works.
+  当前系统如何工作。
 - `api` -> `docs/api/`
-  Routes, authentication, and response conventions.
+  路由、鉴权与响应约定。
 - `feature` -> `docs/features/current/`
-  Current module behavior, entry points, permissions, and invariants.
+  当前模块行为、入口、权限与不变量。
 - `guide` -> `docs/guides/`
-  Step-by-step operating instructions for human engineers.
+  面向人类工程师的分步操作说明。
 - `reference` -> `docs/reference/`
-  Offline reference assets; not authoritative for current implementation.
+  离线参考资产，不是当前实现的权威。
 - `draft` -> `docs/specs/draft/`
-  Proposals, enhancements, and unimplemented designs.
+  提案、增强与未实现设计。
 - `template` -> `docs/templates/`
-  Templates for creating new documents.
+  用于创建新文档的模板。
 
-## Technical Design Decisions
+## 技术设计决策
 
-Durable backend and architecture decisions must be documented when the reasoning is not obvious from code and the decision constrains future changes.
+难以从代码看出、且约束未来变更的持久后端与架构决策必须文档化。
 
-Document these decisions in the nearest canonical document:
+把这些决策记录在最近的权威文档中：
 
-- Cross-cutting backend architecture, dependency direction, startup behavior, background jobs, caching, queues, or integration strategy -> `docs/architecture/*.md`
-- API contract shape, route boundary, authentication, authorization, or compatibility behavior -> `docs/api/*.md`
-- Module-specific business rules, eligibility logic, side effects, state transitions, or operational caveats -> `docs/features/current/*.md`
-- Reusable engineering rule, prohibition, or required practice -> `docs/standards/*.md`
-- Proposed or unimplemented design -> `docs/specs/draft/*.md`
+- 跨切后端架构、依赖方向、启动行为、后台任务、缓存、队列或集成策略 -> `docs/architecture/*.md`
+- API 契约形状、路由边界、鉴权、授权或兼容行为 -> `docs/api/*.md`
+- 模块级业务规则、资格逻辑、副作用、状态流转或运维警示 -> `docs/features/current/*.md`
+- 可复用的工程规则、禁令或必备实践 -> `docs/standards/*.md`
+- 提案或未实现设计 -> `docs/specs/draft/*.md`
 
-Use a short design note rather than a separate document when an existing canonical doc owns the subject. Create a new document only when the decision is broad enough to stand on its own and no existing doc has the correct primary responsibility.
+当已有权威文档拥有该主题时，使用简短设计备注而非另起文档。仅当决策足够宽泛、能独立成立且没有现有文档具有正确的首要职责时，才创建新文档。
 
-Design notes should include only the durable parts:
+设计备注应只包含持久的部分：
 
-- decision
-- rationale
-- invariants future changes must preserve
-- important tradeoffs or rejected alternatives, when they prevent likely backtracking
-- primary code files
+- 决策
+- 理由
+- 未来变更必须保留的不变量
+- 能防止日后走回头路的重要权衡或被否决的替代方案
+- 主要代码文件
 
-Do not leave durable design rationale only in chat, issue comments, PR summaries, commit messages, or agent memory. Those sources can explain a change review, but they are not authoritative repository memory.
+不得把持久设计理由仅留在聊天、issue 评论、PR 摘要、commit 消息或代理记忆中。这些来源可以解释某次变更的评审，但不是权威的仓库记忆。
 
-## Front Matter Requirements
+## Front Matter 要求
 
-All new canonical documents must include YAML front matter with at least the following fields:
+所有新的权威文档必须包含 YAML front matter，至少声明以下字段：
 
 - `status`
 - `doc_type`
@@ -106,7 +106,7 @@ All new canonical documents must include YAML front matter with at least the fol
 - `last_reviewed`
 - `source_of_truth`
 
-Example front matter:
+front matter 示例：
 
 ```yaml
 status: active  
@@ -117,129 +117,129 @@ source_of_truth:
   - server/internal/router/router.go
 ```
 
-Recommended fields:
+推荐字段：
 
 - `source_of_truth`
 - `supersedes`
 - `related_docs`
 
-Template rules:
+模板规则：
 
-- files under `docs/templates/*` must use `status: template`
-- templates must state clearly that they are templates and do not describe the current implementation
+- `docs/templates/*` 下的文件必须使用 `status: template`
+- 模板必须明确声明自身为模板，不描述当前实现
 
-## File Naming
+## 文件命名
 
-- Use `kebab-case`
-- Name files by scope, not by temporary conclusions
-- Do not use names that will age quickly, such as `new-`, `final-`, `latest-`, or `v2-`
+- 使用 `kebab-case`
+- 按范围而非临时结论命名
+- 不得使用会很快过期的名字，如 `new-`、`final-`、`latest-`、`v2-`
 
-Preferred examples:
+推荐示例：
 
 - `auth-and-permissions.md`
 - `runtime-and-startup.md`
 - `route-index.md`
 
-## Minimum Structure by Document Type
+## 按文档类型的最低结构
 
 ### standard
 
-- scope
-- core rules
-- allowed exceptions
-- checklist
+- 适用范围
+- 核心规则
+- 允许的例外
+- 核对清单
 
 ### architecture
 
-- scope
-- current implementation
-- design decisions and rationale for non-obvious backend or system choices
-- key entry files
-- invariants
+- 适用范围
+- 当前实现
+- 难以从代码看出的后端或系统选择的设计决策与理由
+- 关键入口文件
+- 不变量
 
 ### api
 
-- base URL, authentication, and response conventions
-- route index or interface list
-- explicit permission boundaries where relevant
-- design rationale for non-obvious contract or compatibility choices
-- synchronization requirements for changes
+- base URL、鉴权与响应约定
+- 路由索引或接口列表
+- 相关处的显式权限边界
+- 难以从代码看出的契约或兼容选择的设计理由
+- 变更同步要求
 
 ### feature
 
-- module purpose
-- current entry points
-- permission boundaries
-- design decisions and rationale for non-obvious backend behavior
-- key invariants
-- primary code files
+- 模块目的
+- 当前入口
+- 权限边界
+- 难以从代码看出的后端行为设计决策与理由
+- 关键不变量
+- 主要代码文件
 
 ### reference
 
-- asset purpose
-- file list
-- non-authoritative status
-- usage limits or refresh guidance
+- 资产目的
+- 文件列表
+- 非权威状态
+- 使用限制或刷新指引
 
 ### draft
 
-- background
-- current status
-- proposal
-- open questions
-- explicit statement that it is not yet implemented
+- 背景
+- 当前状态
+- 提案
+- 未决问题
+- 明确声明尚未实现
 
-## When to Create a New Document
+## 何时创建新文档
 
-Create a new document when:
+满足以下条件时创建新文档：
 
-- a new feature module is large enough to stand on its own
-- a new standard will be reused across multiple modules
-- a proposal is not yet implemented but needs ongoing discussion
-- a durable technical design decision is cross-cutting enough to need its own canonical owner
+- 新功能模块足够大，能独立成立
+- 新标准将在多个模块间复用
+- 提案尚未实现但需要持续讨论
+- 持久技术设计决策跨切足够广，需要独立的权威拥有者
 
-Do not create a new document when:
+满足以下条件时不要创建新文档：
 
-- it only repeats an existing route table from another angle
-- it only rewrites an existing rule
-- it only records a temporary discussion outcome
-- it is a design note that belongs in an existing architecture, API, standard, or feature document
-- it creates a subdirectory `README.md` that duplicates canonical documentation already maintained in `docs/`
+- 仅从另一角度重复已有路由表
+- 仅改写已有规则
+- 仅记录临时讨论结论
+- 属于应放在现有 architecture、API、standard 或 feature 文档中的设计备注
+- 会创建一个与 `docs/` 已有权威文档重复的子目录 `README.md`
 
-## Update Rules
+## 更新规则
 
-- Behavior changes and documentation updates must be made in the same change.
-- Intentional backend design decisions that are not obvious from code must be documented in the same change that introduces or materially changes them.
-- When changing document status or scope, update `last_reviewed`.
-- When a document moves from `draft` to active canonical status, move it to the correct directory instead of only renaming the title.
-- When deleting or merging documents, remove stale references so no shadow entry points remain.
+- 行为变更与文档更新必须在同一次变更中完成。
+- 难以从代码看出的、有意的后端设计决策必须在引入或实质性修改它的同一次变更中文档化。
+- 更改文档状态或范围时，更新 `last_reviewed`。
+- 当文档从 `draft` 升为活跃权威时，应移入正确目录而不是仅改标题。
+- 删除或合并文档时，清除失效引用，不留影子入口。
 
-## Canonical Sources
+## 权威来源
 
-Certain facts have a designated single source. Do not redefine or duplicate these in other documents; reference them instead.
+某些事实有指定的唯一来源。不要在其他文档中重新定义或复制，应以引用代替。
 
-Canonical fact map:
+权威事实映射：
 
-- verification commands (`lint`, `test`, `build`) -> `docs/standards/testing-and-verification.md § Default Commands`
-- timestamp / datetime display format -> `docs/standards/timestamp-formatting.md`
-- page-level table layout / ledger defaults -> `docs/standards/frontend-table-pages.md`
-- record-card page overflow / page-expansion rule -> `docs/standards/frontend-record-card-pages.md`
+- 验证命令（`lint`、`test`、`build`）-> `docs/standards/testing-and-verification.md § 默认命令`
+- 时间戳/日期时间展示格式 -> `docs/standards/timestamp-formatting.md`
+- 页面级表格布局 / 账本默认 -> `docs/standards/frontend-table-pages.md`
+- 记录卡片页溢出 / 页面扩展规则 -> `docs/standards/frontend-record-card-pages.md`
 
-When adding a new category of facts that appears in multiple documents, designate one canonical source here and convert all other occurrences to references.
+当新增一类会在多文档中出现的事实时，在此指定唯一权威来源，并将其他出现处转为引用。
 
-## Anti-Patterns
+## 反模式
 
-Avoid the following:
+避免以下做法：
 
-- duplicating the same role list or rules across README files, guides, and feature docs
-- redefining verification commands outside `docs/standards/testing-and-verification.md § Default Commands`
-- restating repository-wide paginated table layout or ledger defaults inside `docs/features/current/*.md` instead of keeping them in `docs/standards/`
-- restating repository-wide UI layout or overflow rules inside `docs/features/current/*.md` instead of keeping them in `docs/standards/`
-- turning the root `README.md` into a competing engineering standard beside `docs/ai/repo-rules.md` and `docs/`
-- mixing future plans into current-state documents
-- maintaining a second parallel documentation tree that conflicts with canonical docs
-- maintaining a catch-all backend decision log when the decision belongs in an existing canonical document
-- relying on chat, issue comments, PR summaries, commit messages, or agent memory as the only record of durable design rationale
-- including API request/response JSON examples in feature docs (derivable from code and type definitions)
-- restating invariants in a summary section that merely repeat what the document's body already says
-- citing code too vaguely for readers to locate the real entry files
+- 在 README、guide 与 feature 文档之间重复同一份角色列表或规则
+- 在 `docs/standards/testing-and-verification.md § 默认命令` 之外重新定义验证命令
+- 把仓库级分页表格布局或账本默认重述在 `docs/features/current/*.md` 中，而不是放在 `docs/standards/`
+- 把仓库级 UI 布局或溢出规则重述在 `docs/features/current/*.md` 中，而不是放在 `docs/standards/`
+- 把根 `README.md` 做成与 `docs/ai/repo-rules.md` 和 `docs/` 并列的工程标准
+- 把未来计划混入当前状态文档
+- 维护第二套与权威文档冲突的并行文档树
+- 维护大杂烩式后端决策日志，而该决策本应放在已有权威文档中
+- 仅依赖聊天、issue 评论、PR 摘要、commit 消息或代理记忆作为持久设计理由的唯一记录
+- 在 feature 文档中包含 API 请求/响应 JSON 示例（可从代码与类型定义派生）
+- 在总结小节中重述文档正文已写的不变量
+- 引用代码时过于模糊，读者无法定位真正的入口文件

@@ -1,8 +1,8 @@
 ---
 
-# 📝 PR Message Generation
+# 📝 PR 文案生成
 
-## Source of Truth
+## 权威来源
 
 生成 PR 标题和正文时，必须先检查 `preview` 到 `main` 之间的所有 commit。
 
@@ -32,7 +32,7 @@
 
 <!-- Template Start -->
 
-# 🧭 Overview
+# 🧭 概览
 
 <!-- 一句话说明：做了什么 + 为什么做 -->
 <!-- 示例：Migrate to frontend routing to simplify backend and unify permission control -->
@@ -48,46 +48,46 @@
 
 ---
 
-# 🚀 Key Changes
+# 🚀 主要变更
 
-## 1. <Module / Feature Name>
+## 1. <模块 / 功能名>
 
-- What changed:
-- Why:
-- Impact:
+- 变更内容：
+- 原因：
+- 影响：
 
-## 2. <Module / Feature Name>
+## 2. <模块 / 功能名>
 
-- What changed:
-- Why:
-- Impact:
+- 变更内容：
+- 原因：
+- 影响：
 
 ---
 
-# 🏗 Architecture Impact
+# 🏗 架构影响
 
 <!-- 是否涉及架构变更（必填） -->
 
-- [ ] No
-- [ ] Yes (describe below)
+- [ ] 否
+- [ ] 是（下方描述）
 
-### Before
+### 变更前
 <!-- 旧架构简述 -->
 
-### After
+### 变更后
 <!-- 新架构简述 -->
 
-### Design Rationale (WHY)
+### 设计理由（WHY）
 <!-- 关键设计决策，必须写 -->
 -
 
 ---
 
-# ⚠️ Breaking Changes
+# ⚠️ 破坏性变更
 
 <!-- 如果有破坏性变更，必须结构化列出 -->
 
-| Type | Change | Impact | Action Required |
+| 类型 | 变更 | 影响 | 需要的操作 |
 |------|--------|--------|----------------|
 | API  |        |        |                |
 | DB   |        |        |                |
@@ -95,82 +95,82 @@
 
 ---
 
-# 🔄 Migration Guide
+# 🔄 迁移指南
 
 <!-- 有破坏性变更时必填 -->
 
-## Database
+## 数据库
 
 ```sql
 -- migration scripts
 ````
 
-## Config
+## 配置
 
 -
 
-## Frontend
-
--
-
----
-
-# 🧪 Testing
-
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Manual test completed
-
-### Coverage Scope
-
--
-
-### Edge Cases
+## 前端
 
 -
 
 ---
 
-# 📚 Documentation
+# 🧪 测试
 
-- [ ] Docs updated
-- [ ] No docs needed
+- [ ] 已新增/更新单元测试
+- [ ] 已新增/更新集成测试
+- [ ] 已完成手工测试
 
-### Updated Files
+### 覆盖范围
+
+-
+
+### 边界用例
 
 -
 
 ---
 
-# 🎯 Impact & Risks
+# 📚 文档
 
-## Impact
+- [ ] 已更新文档
+- [ ] 无需文档
 
--
-
-## Risks
-
--
-
-## Rollback Plan
+### 已更新文件
 
 -
 
 ---
 
-# 📦 Deployment Notes
+# 🎯 影响与风险
+
+## 影响
+
+-
+
+## 风险
+
+-
+
+## 回滚方案
+
+-
+
+---
+
+# 📦 部署备注
 
 <!-- 是否需要特殊部署步骤 -->
 
-- [ ] No special steps
-- [ ] Requires migration
-- [ ] Requires config update
+- [ ] 无特殊步骤
+- [ ] 需要迁移
+- [ ] 需要更新配置
 
-## Details
+## 详情
 
 ---
 
-# 🔍 Review Focus
+# 🔍 评审重点
 
 <!-- 告诉 Reviewer 应重点看什么 -->
 
@@ -179,13 +179,13 @@
 
 ---
 
-# ✅ Checklist
+# ✅ 核对清单
 
-- [ ] Code follows architecture layering (router → handler → service → repository → model)
-- [ ] API / FE / Types are consistent
-- [ ] Permissions enforced on server side
-- [ ] No unintended breaking changes
-- [ ] Migration path is provided (if needed)
-- [ ] Tests cover critical paths
-- [ ] No improper use of `any` / unsafe types
-- [ ] Docs updated or explicitly not needed
+- [ ] 代码遵循分层架构（router → handler → service → repository → model）
+- [ ] API / 前端 / 类型 一致
+- [ ] 权限在服务端强制
+- [ ] 无意外的破坏性变更
+- [ ] 已提供迁移路径（如需）
+- [ ] 测试覆盖关键路径
+- [ ] 无不当使用 `any` / 不安全类型
+- [ ] 文档已更新或明确无需更新

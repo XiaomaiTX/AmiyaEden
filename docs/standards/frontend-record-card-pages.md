@@ -11,40 +11,40 @@ source_of_truth:
   - static/src/views/info/assets/index.vue
 ---
 
-# Frontend Record Card Page Standard
+# 前端记录卡片页规范
 
-## Scope
+## 适用范围
 
-This standard applies to frontend pages whose primary content is a repeated record list rendered as cards, stacked editors, or unpaginated editor tables embedded inside cards.
+本规范适用于主要内容为"以卡片、堆叠编辑器或嵌入卡片的无分页编辑表格"形式渲染的重复记录列表的前端页面。
 
-Use this for pages such as candidate directories, approval card lists, reward-stage editors, and other layouts where the record count can grow beyond a small fixed number.
+典型场景包括候选人目录、审批卡片列表、奖励阶段编辑器，以及其他"记录数量可能超过少量固定上限"的布局。
 
-Use `docs/standards/frontend-table-pages.md` instead when the primary list is a paginated page-level table. This standard covers the overflow behavior of repeated records rendered inside cards, including editable row tables that are not using the table-page pattern.
+若主列表是分页的页面级表格，请改用 `docs/standards/frontend-table-pages.md`。本规范覆盖的是"在卡片内重复渲染的记录"的溢出行为，包括未使用 table-page 模式的可编辑行表格。
 
-## Core Rules
+## 核心规则
 
-- Every repeated-record section must have a declared growth strategy: either page expansion or internal overflow.
-- Implicit clipping is forbidden. User data must not become unreachable because a page root, card body, tab pane, or wrapper hides overflow without providing a scroll owner.
-- Default to page expansion for unbounded card lists and staged editors.
-  - Let the page height grow naturally.
-  - Do not use `art-full-height` on pages whose main content is an unbounded record card list unless a descendant explicitly owns scrolling.
-  - Prefer the application shell scroll path when the list should simply grow with content.
-- Internal scrolling is allowed only when the scroll owner is explicit.
-  - The scrolling element must use `overflow: auto`, `overflow-y: auto`, or `ElScrollbar`.
-  - If the page uses `art-full-height`, complete the height chain with `display: flex`, `flex-direction: column`, and `min-height: 0` through each intermediate wrapper that participates in layout.
-- A card that can contain many records must either expand with the page or contain an explicit inner scroll region. It must never rely on hidden overflow as the only constraint.
-- Mixed pages may combine this standard with `docs/standards/frontend-table-pages.md`, but each section must have one clear overflow owner.
+- 每一处重复记录区域都必须明确声明增长策略：页面扩展或内部滚动二选一。
+- 禁止隐式裁剪。页面根、卡片体、tab 面板或任意包装器不得仅通过隐藏溢出来限制高度而不提供滚动拥有者，否则用户数据将变得不可达。
+- 无界卡片列表与分阶段编辑器默认采用页面扩展。
+  - 让页面高度自然增长。
+  - 当页面主内容是无界记录卡片列表时，除非某个后代元素显式接管滚动，否则不要使用 `art-full-height`。
+  - 当列表只需随内容增长时，优先使用应用外壳的滚动路径。
+- 仅当滚动拥有者显式时才允许内部滚动。
+  - 滚动元素必须使用 `overflow: auto`、`overflow-y: auto` 或 `ElScrollbar`。
+  - 若页面使用 `art-full-height`，则必须通过 `display: flex`、`flex-direction: column` 与 `min-height: 0` 在每个参与布局的中间包装器上把高度链补全。
+- 可能容纳大量记录的卡片，要么随页面扩展，要么包含明确的内部滚动区域，绝不能仅依赖隐藏溢出作为唯一约束。
+- 混合页面可以同时使用本规范与 `docs/standards/frontend-table-pages.md`，但每一区域都必须有一个明确的溢出拥有者。
 
-## Allowed Exceptions
+## 允许的例外
 
-- Fixed-height dashboards or metric cards whose content is intentionally bounded.
-- Dialog or drawer content where the dialog container already owns scrolling.
-- Static summary cards with a guaranteed small item count that cannot grow with live data or configuration.
+- 固定高度的仪表盘或指标卡，其内容本身就有意限定边界。
+- 由对话框或抽屉容器本身接管滚动的场景。
+- 条目数量保证很少、不会因数据或配置增长的静态摘要卡。
 
-## Checklist
+## 核对清单
 
-- If the record count doubles, does the content still remain reachable?
-- If the page uses `art-full-height`, is there a single explicit scroll owner for every unbounded section?
-- If the page does not need internal scrolling, did you avoid `art-full-height` and let the page expand instead?
-- Did you avoid adding `overflow: hidden` on a record container without a nested scroll region?
-- If the page mixes cards and tables, did you apply the card-list rule to cards and the table rule to tables separately?
+- 当记录数量翻倍时，内容是否仍然可达？
+- 当页面使用 `art-full-height` 时，每个无界区域是否都有唯一的显式滚动拥有者？
+- 当页面不需要内部滚动时，是否避免了 `art-full-height` 并改为页面扩展？
+- 是否避免了在记录容器上单独使用 `overflow: hidden` 而没有嵌套滚动区域？
+- 当页面同时存在卡片和表格时，是否对卡片使用卡片列表规则、对表格使用表格规则分别处理？
