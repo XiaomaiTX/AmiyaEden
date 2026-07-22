@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-10
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/model/system_identity.go
   - server/internal/router/router.go
@@ -102,3 +102,9 @@ For role assignment rules, super_admin protection, and Director auto-role rules,
 - `static/src/api/pap-exchange.ts`
 - `static/src/api/webhook.ts`
 - `static/src/views/system`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接系统用户、任务、钱包、审计、PAP、自动角色、Webhook 和基础配置页面，入口与状态以 `docs/specs/draft/frontend-react-migration-plan/migration-scope-baseline.md` 为准。
+- 本文只定义管理行为；Vue/React 的迁移状态不在此重复维护。

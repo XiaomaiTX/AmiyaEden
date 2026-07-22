@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-23
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/README.md
   - docs/ai/repo-rules.md
@@ -42,7 +42,7 @@ AI 中心文档中的每个词都会消耗代理上下文窗口。保持文档�
 
 **不应包含：**
 
-- API 请求/响应 JSON 示例——可从 handler 代码与 `static/src/types/api/api.d.ts` 派生
+- API 请求/响应 JSON 示例——可从 handler 代码与对应的 Vue/React 类型文件派生
 - 例行实现选择、本地控制流或邻近代码已能直接看出的理由
 - 仅重述本文档其他段落已写内容的不变量——总结小节应只引入真正新的信息
 - 已在其他文档中权威化的内容——以引用代替复制（例如 feature 文档应引用 `docs/architecture/auth-and-permissions.md` 获取角色分配规则，而非重述权限矩阵）

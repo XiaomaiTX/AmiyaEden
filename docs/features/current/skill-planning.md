@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/skill_plan.go
@@ -73,3 +73,9 @@ source_of_truth:
 
 - Skill plan `skills_text` parsing now accepts localized client export lines such as `<localized hint="Large Artillery Specialization">大型火炮专业研究*</localized> 4`.
 - During save, parser normalization removes markup tags and trailing `*`, then resolves with the existing skill-name mapping and stores in the current concise structured format.
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接技能计划、个人技能计划和完成度检查页面；类型与 API 以 `static-react/src/api/skill-plan.ts` 和对应类型为准。
+- 解析、排序和权限行为由本文定义，迁移不改变后端契约。

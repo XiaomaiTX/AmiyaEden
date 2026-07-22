@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-11
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/srp.go
@@ -252,3 +252,9 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 - 管理端的申请列表和申请详情在读取时会动态刷新 `recommended_amount`
 - 动态刷新仅作用于 `review_status in (submitted, approved)` 且 `payout_status = notpaid` 的记录
 - 刷新后的推荐金额会写回数据库，并用于当前页面展示
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接 SRP 申请、管理和价格页面；API、类型和路由权限以迁移基线为准。
+- 推荐金额和审批边界是后端/功能不变量，不得由 React 页面自行放宽。

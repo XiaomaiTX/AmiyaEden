@@ -2,7 +2,7 @@
 status: active
 doc_type: guide
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/architecture/module-map.md
@@ -23,12 +23,12 @@ Before investigating, classify the issue:
 | Category | Symptoms | Start Looking At |
 | --- | --- | --- |
 | Build failure | `go build` or `pnpm build` fails | error message, recent changes |
-| Type error | `vue-tsc --noEmit` fails | `api.d.ts`, API wrappers, component props |
+| Type error | Vue `vue-tsc` or React `tsc -b` fails | frontend API types, wrappers, component props |
 | Lint error | `pnpm lint .` fails | ESLint output, auto-fixable vs manual |
 | Test failure | `go test` or `pnpm test:unit` fails | test output, recent changes to tested code |
 | Runtime backend | HTTP 500, wrong response, panic | server logs, handler → service → repository |
 | Runtime frontend | wrong data displayed, missing UI | browser console, API response vs type |
-| Permission error | 403, page/button missing | route protection, route meta, role assignments |
+| Permission error | 403, page/button missing | backend protection, route meta, Vue `v-auth`, React permission gates, role assignments |
 | Data inconsistency | wrong values in UI | repository query, join conditions, fallbacks |
 
 ### Step 2: Locate the Layer
@@ -49,7 +49,7 @@ Start from the symptom and trace toward the root:
 - Wrong display? Start at view template, check data binding
 - Wrong data? Start at API wrapper, check response type
 - Missing/wrong text? Check i18n keys in zh.json / en.json
-- Permission issue? Check route meta, v-auth, store permissions
+- Permission issue? Check route meta, Vue `v-auth`, React permission gates, and frontend session/store permissions
 
 ### Step 3: Reproduce with Minimum Scope
 
@@ -65,7 +65,7 @@ Do not patch symptoms. Common mistakes:
 | --- | --- | --- |
 | Wrong name displayed | Change frontend fallback text | Fix repository query/join |
 | 403 on valid user | Remove permission check | Fix role assignment or middleware |
-| Type error after API change | Cast to `any` | Update `api.d.ts` types |
+| Type error after API change | Cast to `any` | Update the consuming Vue/React types and API wrapper |
 | Duplicate data | Add `distinct` to query | Fix the join that causes duplication |
 
 ### Step 5: Add Regression Test
@@ -93,7 +93,7 @@ After fixing, add a test that would have caught this bug. See `docs/standards/re
 
 **Investigation:**
 
-1. Compare backend handler/service response struct with `api.d.ts` type
+1. Compare backend handler/service response struct with the consuming Vue or React type
 2. Check JSON tags on backend structs match frontend field names
 3. Check if a recent backend change wasn't propagated to frontend
 
@@ -107,7 +107,7 @@ After fixing, add a test that would have caught this bug. See `docs/standards/re
 
 1. Check backend route protection in `router.go`
 2. Check frontend route meta (`meta.login`, `meta.roles`)
-3. Check `v-auth` directives on buttons
+3. Check Vue `v-auth` directives or React permission gates on buttons
 4. Check user's actual roles via `/api/v1/me`
 
 **Prevention:** modify backend route protection, frontend route metadata, and button permission touchpoints together (see "Routing, Menu, and Permission Changes" in `docs/ai/repo-rules.md`).
@@ -146,10 +146,10 @@ After fixing, add a test that would have caught this bug. See `docs/standards/re
 3. Run `go mod tidy` if import errors
 4. Check if model changes broke repository/service signatures
 
-### `vue-tsc --noEmit` fails
+### Frontend typecheck fails
 
 1. Read the type error — file, line, expected vs actual type
-2. Common cause: API response type changed but `api.d.ts` wasn't updated
+2. Common cause: API response type changed but the consuming frontend's type/module export was not updated
 3. Common cause: component prop types changed
 4. Check auto-generated import files are present
 

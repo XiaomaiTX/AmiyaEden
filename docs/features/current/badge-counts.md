@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/badge.go
@@ -70,3 +70,9 @@ source_of_truth:
 - 新增徽章字段时，必须同步更新后端服务字段逻辑、前端 API 类型、前端路由映射与本文件
 - 新计数应优先使用仓储层 `COUNT(*)` 查询；仅在必须复用现有资格判定逻辑时才允许走更重的业务路径
 - 权限控制必须以后端字段省略为准，前端仅负责展示
+
+## 前端实现映射（迁移期）
+
+- Vue 使用 `static/src/store/modules/badge.ts` 和路由初始化流程。
+- React 当前尚未完成独立 badge store 与菜单徽标接入；该缺口属于 Vue 下线前的基础能力阻断项。
+- 两端均不得把前端展示逻辑当作后端权限边界。

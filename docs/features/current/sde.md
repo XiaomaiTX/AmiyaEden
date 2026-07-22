@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: backend
-last_reviewed: 2026-05-11
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/handler/sde.go
   - server/internal/handler/sys_config.go
@@ -113,10 +113,18 @@ source_of_truth:
 - `static/src/types/api/api.d.ts` - API 类型定义
 - `static/src/locales/langs/zh.json` - 中文国际化
 - `static/src/locales/langs/en.json` - 英文国际化
+- `static-react/src/types/api/` - React 模块化 API 类型
+- `static-react/src/i18n/messages/` - React 中英文文案
 
 ## PostgreSQL Bool Mapping Constraint
 
 - mapSolarSystems border, fringe, corridor, hub, international, regional, constellation are flag fields and must map to nullable boolean types in Go model MapSolarSystem.
 - Numeric identity fields such as regionID, constellationID, and solarSystemID remain integer types.
 - Query paths that only need system names (for example npc_kill.GetSolarSystemNames) should select only solarSystemID and solarSystemName to avoid unrelated scan failures.
+
+## 前端实现映射（迁移期）
+
+- Vue SDE 查询与配置入口位于 `static/src`。
+- React 已承接基础配置中的部分 SDE 配置能力；独立 SDE 查询和搜索能力仍以迁移基线的页面/API 状态为准。
+- 后端类型与数据映射不因前端迁移而改变。
 

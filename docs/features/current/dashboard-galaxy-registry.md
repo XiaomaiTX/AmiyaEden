@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-06
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/galaxy_registry.go
@@ -110,3 +110,9 @@ source_of_truth:
 - `static/src/views/dashboard/galaxy-registry/index.vue`
 - `static/src/hooks/galaxy-registry/useGalaxyRegistryTimeoutNotification.ts`
 - `static/src/hooks/galaxy-registry/galaxyRegistryTimeoutNotification.ts`
+
+## 前端实现映射（迁移期）
+
+- 当前行为由 Vue `static/src` 实现。
+- React 尚未建立该页面、API wrapper 和类型出口；它属于迁移基线中的范围漂移追赶项。
+- 在 React 落地前，不得把本页面标记为 React 已迁移，也不得从当前行为文档删除后端权限和通知不变量。

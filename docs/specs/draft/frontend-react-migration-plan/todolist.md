@@ -18,7 +18,7 @@ source_of_truth:
 - [x] 配置 React Router Hash 模式并对齐基础 404/500 页面（`/`、`/500`、`*`）
 - [x] 接入 Tailwind + shadcn/ui 并建立基础主题变量（已执行 `shadcn init -t vite`）
 - [x] 接入 Zustand + persist 中间件，定义首批全局 store 边界（session/auth 快照 + preference）
-- [x] 定义 API 类型契约迁移方案（沿用 `static/src/types/api/api.d.ts`，详见 `./api-contract-migration-plan.md`）
+- [x] 定义 API 类型契约迁移方案（React 使用本地模块化类型，详见 `./api-contract-migration-plan.md`）
 
 ## P0 壳层能力迁移
 
@@ -87,7 +87,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 
 - [ ] DoD-01 页面路由已在 React 注册，路径、参数、404 行为与 Vue 侧一致
 - [ ] DoD-02 页面所需菜单元数据、`authList`、角色约束已接入并生效
-- [ ] DoD-03 页面涉及 API 全部使用共享 `Api.*` 类型，禁止新增同义重复 interface
+- [ ] DoD-03 页面涉及 API 全部使用 React 模块化共享类型，禁止新增同义重复 interface 或回退引用 Vue `Api.*`
 - [ ] DoD-04 页面请求成功态、空态、加载态、错误态完整可见，401/403/500 处理一致
 - [ ] DoD-05 页面表单校验规则、默认值、提交前后行为与 Vue 侧一致
 - [ ] DoD-06 页面表格能力一致：筛选、排序、分页、列显隐、批量操作、导出
@@ -110,6 +110,13 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [ ] 建立回切开关与回切演练流程
 - [ ] 明确替换门槛（错误率、关键路径成功率、性能指标）
 - [ ] 完成 Vue 下线前最终全量回归
+
+## 文档适配与切换阻断
+
+- [ ] 完成 active 架构、API、标准和指南的 Vue/React 双端映射
+- [ ] 完成 current feature docs 的实现映射，未迁移功能明确标记为 React 缺口
+- [ ] 完成 `migration-scope-baseline.md` 文档适配矩阵，并将其作为唯一迁移状态来源
+- [ ] React capability/menu/button permission parity 通过回归后，才允许清理 active 文档中的 Vue-only 限制
 
 ## 验收基线
 

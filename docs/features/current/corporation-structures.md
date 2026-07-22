@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-12
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -117,3 +117,9 @@ source_of_truth:
 ## 关键不变量（2026-05-11）
 
 - 当军团在设置页被显式禁用（`character_id=0`）并保存设置时，后端必须在同一更新流程里清空该军团在 `corp_structure` 中的所有记录，避免历史快照继续被展示或统计。
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接 `/dashboard/corporation-structures`，对应 API 和页面状态以 React 迁移基线为准。
+- `fuel-officer-structures` 是 Vue 后续新增、React 尚未对齐的范围漂移项。

@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-02
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/testing-and-verification.md
@@ -108,7 +108,7 @@ source_of_truth:
 
 完成标准：
 
-- 新 bug 修复不再仅依赖 `go build` 或 `vue-tsc`
+- 新 bug 修复不再仅依赖 `go build`、Vue `vue-tsc` 或 React `tsc -b`
 - 近期回归点开始拥有对应测试
 
 建议早期示例：

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/welfare.go
@@ -135,7 +135,13 @@ source_of_truth:
 - `server/internal/handler/welfare.go`
 - `server/internal/router/router.go`
 - `static/src/api/welfare.ts`
-- `static/src/types/api/api.d.ts` (Welfare namespace)
+- `static/src/types/api/api.d.ts` (Welfare namespace；React 使用 `static-react/src/types/api/welfare.ts`)
 - `static/src/views/welfare/`
 - `static/src/locales/langs/zh.json` (welfareMy, welfareApproval namespaces)
 - `static/src/locales/langs/en.json` (welfareMy, welfareApproval namespaces)
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接我的福利、福利审批和福利设置页面；自动审批配置的权限和文案必须与本文保持一致。
+- React 类型、API wrapper 和页面状态以迁移基线为准。

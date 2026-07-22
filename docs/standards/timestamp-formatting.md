@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-03-28
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src/utils/common/time.ts
   - static/src/utils/common/index.ts
@@ -16,7 +16,7 @@ source_of_truth:
 
 ## 核心规则
 
-- 复用 `static/src/utils/common/time.ts` 中的共享 helper，不要在 view 或 component 中定义本地变体。
+- Vue 复用 `static/src/utils/common/time.ts`；React 应复用其共享时间 helper（当前若未建立等价 helper，属于迁移缺口），不得在 view/page 或 component 中定义本地变体。
 
 ## 允许的例外
 

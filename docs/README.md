@@ -2,12 +2,23 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-04-23
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
 
 # AmiyaEden 文档索引
+
+## Vue / React 前端迁移入口
+
+迁移期间的唯一状态入口是 [`specs/draft/frontend-react-migration-plan/index.md`](specs/draft/frontend-react-migration-plan/index.md)。
+
+- 页面范围、实现状态和文档适配矩阵：[`migration-scope-baseline.md`](specs/draft/frontend-react-migration-plan/migration-scope-baseline.md)
+- 基础组件与权限能力替换：[`component-replacement-list.md`](specs/draft/frontend-react-migration-plan/component-replacement-list.md)
+- API 类型与 wrapper 迁移：[`api-contract-migration-plan.md`](specs/draft/frontend-react-migration-plan/api-contract-migration-plan.md)
+- 替换、回切和下线检查：[`coexistence-migration-todo.md`](specs/draft/frontend-react-migration-plan/coexistence-migration-todo.md)
+
+过渡期 active 文档描述 Vue/React 必须一致的产品行为；Vue-only 的实现限制只能作为明确的迁移缺口出现。归档文档保留历史实现范围，不作为当前行为来源。
 
 ## 目的
 

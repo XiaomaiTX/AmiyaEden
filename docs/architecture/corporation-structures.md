@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/handler/corporation_structure.go
   - server/internal/repository/corporation_structure.go
@@ -15,6 +15,8 @@ source_of_truth:
   - static/src/router/modules/dashboard.ts
   - static/src/api/corporation-structures.ts
   - static/src/views/dashboard/corporation-structures
+  - static-react/src/pages/dashboard-corporation-structures-page.tsx
+  - static-react/src/api/corporation-structures.ts
 ---
 
 # 军团建筑管理架构
@@ -92,6 +94,7 @@ source_of_truth:
 - `static/src/router/modules/dashboard.ts`
 - `static/src/api/corporation-structures.ts`
 - `static/src/views/dashboard/corporation-structures`
+- `static-react/src/pages/dashboard-corporation-structures-page.tsx`
 
 ## 当前不变量
 

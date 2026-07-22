@@ -54,6 +54,13 @@ source_of_truth:
 ## 明确声明
 
 - 本文档组是提案草案，不代表当前已实现行为。
+
+## 文档适配约定
+
+- 迁移期间，`docs/architecture/`、`docs/api/`、`docs/standards/` 和 `docs/features/current/` 描述双端必须一致的行为，并在实现映射处注明 Vue/React 状态。
+- Vue-only 的实现限制只能出现在明确的迁移阶段说明中，不得继续作为产品行为或通用工程规则。
+- React capability/menu parity、按钮权限、WorkTab/KeepAlive、徽标和菜单处理能力在替换 Vue 前均属于发布阻断项。
+- 功能文档的 React 状态统一引用 `migration-scope-baseline.md`，不在各 feature 文档维护第二套迁移清单。
 - 不覆盖 `docs/ai/repo-rules.md`、`docs/architecture/`、`docs/api/`、`docs/features/current/` 的当前权威定义。
 - 落地后转正路径：
   - 架构事实迁移到 `docs/architecture/`

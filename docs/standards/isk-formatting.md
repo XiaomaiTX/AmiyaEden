@@ -2,10 +2,11 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-03
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src/utils/common/isk.ts
   - static/src/utils/common/index.ts
+  - static-react/src/lib/isk.ts
 ---
 
 # ISK 格式规范
@@ -18,7 +19,7 @@ source_of_truth:
 
 ## 共享 Helper
 
-- 从 `@/utils/common` 导入 ISK helper。
+- Vue 从 `@/utils/common` 导入 ISK helper；React 从 `static-react/src/lib/isk.ts` 导入等价 helper。
 - 使用 `formatIskPlain(value)` 输出账本风格的精确金额。
 - 使用 `formatIskSmart(value)` 输出紧凑摘要金额。
 - 仅在编辑器明确以"百万"为单位暴露数字输入、但存储仍为 ISK 时，使用 `iskToMillionInput(value)` 与 `millionInputToIsk(value)`。
@@ -54,7 +55,8 @@ source_of_truth:
 
 ## 核对清单
 
-- [ ] 所有显式的 ISK 字符串格式化逻辑都通过 `static/src/utils/common/isk.ts`
+- [ ] Vue 的显式 ISK 字符串格式化逻辑都通过 `static/src/utils/common/isk.ts`
+- [ ] React 的显式 ISK 字符串格式化逻辑都通过 `static-react/src/lib/isk.ts` 或后续统一 helper
 - [ ] 精确数值展示使用 `formatIskPlain`
 - [ ] 紧凑摘要展示使用 `formatIskSmart`
 - [ ] 以"百万"为单位的编辑器仅使用 `iskToMillionInput` 与 `millionInputToIsk`

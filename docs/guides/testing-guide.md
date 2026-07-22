@@ -2,12 +2,13 @@
 status: active
 doc_type: guide
 owner: engineering
-last_reviewed: 2026-03-26
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/regression-test-plan.md
   - server/go.mod
   - static/package.json
+  - static-react/package.json
 ---
 
 # Testing Guide
@@ -31,7 +32,7 @@ Repository policy lives in `docs/standards/testing-and-verification.md`.
 ### Frontend
 
 - Put pure helper and hook tests next to the file under test when practical.
-- Use `cd static && pnpm test:unit` for current frontend unit coverage.
+- Vue tests use `cd static && pnpm test:unit`; React tests use `cd static-react && pnpm test`.
 
 ## Quick Heuristics
 

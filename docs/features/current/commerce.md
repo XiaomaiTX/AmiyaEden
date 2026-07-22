@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-20
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/shop.go
@@ -40,6 +40,12 @@ source_of_truth:
 - `static/src/views/shop/order-manage`
 - `static/src/views/shop/wallet`
 - `static/src/views/system/wallet`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接商店浏览、商品管理、订单管理和系统钱包页面；React API 与类型以 `static-react/src/api/shop.ts`、`sys-wallet.ts` 及对应类型文件为准。
+- 具体路由和回归状态以 React 迁移基线为唯一迁移清单。
 
 ### 后端路由
 

@@ -2,7 +2,7 @@
 status: draft
 doc_type: spec
 owner: engineering
-last_reviewed: 2026-06-06
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/eve_info.go
@@ -215,7 +215,7 @@ source_of_truth:
 
 决策：
 
-- 优先修改旧 Vue 页错误态和后端日志，再进行接口重构。
+- 迁移阶段先保证后端链路和两端错误态语义一致；若问题只存在于 Vue 或 React，应分别修复对应消费者，不再默认优先修改旧 Vue。
 
 理由：
 
@@ -684,7 +684,7 @@ source_of_truth:
 
 ## 前端代码修改方案
 
-## 1. 旧 Vue 页面
+## 1. Vue 页面（过渡期消费者）
 
 文件：
 
@@ -866,7 +866,7 @@ cd static-react && pnpm test
 
 缓解：
 
-- 先约定迁移窗口，完成双端切换后删除旧全量接口。
+- 先约定迁移窗口，完成 React 页面与 API 回归后再执行入口替换；不得因为 React 已有页面就提前删除 Vue 消费者或共享后端接口。
 - 分两阶段实现：
   - 第一阶段先在 service 层去掉同步 ESI，允许部分内存预处理
   - 第二阶段再把位置/根物品判定进一步下沉 repository/SQL

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-02
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/mentor_service.go
@@ -146,3 +146,9 @@ source_of_truth:
 - `static/src/views/newbro/mentor-manage/`
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接新人选导师、导师 dashboard 和导师管理页面；路由资格与角色门禁仍必须遵守本文及认证架构文档。
+- React 页面和类型的具体路径以迁移基线为准，本文不重复维护页面清单。

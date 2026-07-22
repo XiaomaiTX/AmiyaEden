@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-12
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/eve_info.go
@@ -105,3 +105,9 @@ source_of_truth:
 - `static/src/api/eve-info.ts`
 - `static/src/api/npc-kill.ts`
 - `static/src/views/info`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接钱包、技能、NPC 击杀、舰船、植入体、资产、合同、装配和 ESI 检查等页面；对应 API/类型以 `static-react/src/api` 和 `static-react/src/types/api` 为准。
+- `tool-bookmarks` 仍是 Vue 已实现、React 尚未对齐的范围漂移项。

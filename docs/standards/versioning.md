@@ -2,9 +2,10 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-05-16
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/package.json
+  - static-react/package.json
   - CHANGELOG.md
   - docs/standards/versioning.md
 ---
@@ -18,6 +19,8 @@ source_of_truth:
 ## 版本号格式
 
 项目使用 **Semantic Versioning (SemVer)** 格式：`MAJOR.MINOR.PATCH`
+
+Vue 与 React 暂不引入独立的产品版本号体系；两者均遵循仓库 `CHANGELOG.md` 与当前产品版本。`static-react` 路径与 `static` 路径使用相同的变更级别判断。
 
 ### 格式说明
 
@@ -131,6 +134,11 @@ MAJOR.MINOR.PATCH
 | `static/src/router/*` | 修改路由 | PATCH (c) |
 | `static/src/store/*` | 修改状态管理 | PATCH (c) |
 | `static/src/styles/*` | 样式修改 | PATCH (c) |
+| `static-react/src/pages/*` | 新增页面 / 修改现有页面 | MINOR / PATCH (b / c) |
+| `static-react/src/api/*` | 新增 API / 修改现有 API | MINOR / PATCH (b / c) |
+| `static-react/src/components/*` | 新增公共组件 / 修改现有组件 | MINOR / PATCH (b / c) |
+| `static-react/src/app/*` | 新增路由 / 修改路由或访问元数据 | MINOR / PATCH (b / c) |
+| `static-react/src/stores/*` | 修改状态管理 | PATCH (c) |
 
 #### 后端文件
 

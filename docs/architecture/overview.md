@@ -2,11 +2,12 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/role.go
   - static/src/router
+  - static-react/src/app
 ---
 
 # 架构总览
@@ -32,9 +33,9 @@ source_of_truth:
 | 层 | 当前实现 |
 | --- | --- |
 | Backend | Go, Gin, GORM, PostgreSQL, Redis, cron |
-| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, Element Plus |
+| Frontend | Vue 3 + TypeScript in `static/`; React + TypeScript, Vite, React Router, Zustand and shadcn/ui in `static-react/` |
 | Auth | EVE SSO + JWT |
-| i18n | `vue-i18n` |
+| i18n | Vue `vue-i18n` and React `static-react/src/i18n` |
 
 ## 分层约束
 
@@ -52,6 +53,8 @@ source_of_truth:
 - `store` 跨页面状态
 - `router` 路由与守卫
 - `types` 合同类型
+
+迁移期间两套前端遵守相同的行为、API、权限和本地化约束；实现路径可以不同。React 全量替换 Vue 前，React 未对齐的基础能力仍属于迁移阻断项，具体状态以 `docs/specs/draft/frontend-react-migration-plan/` 为准。
 
 ## 当前模块切分
 

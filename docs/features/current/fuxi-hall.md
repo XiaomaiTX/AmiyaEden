@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-12
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/fuxi_hall.go
@@ -98,3 +98,9 @@ source_of_truth:
 - `fuxi_hall_card`
 
 旧 `hall_of_fame_*` 与 `fuxi_admin_*` 表不做迁移与兼容映射；新模块独立维护数据。
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src/views/fuxi-hall`。
+- React 尚未承接 leadership、contributors、manage 三个页面；它们属于迁移基线中的范围漂移追赶项。
+- React 落地时必须移除遗留 `hall-of-fame/*` stub，并保持本文的数据模型与无兼容映射约束。

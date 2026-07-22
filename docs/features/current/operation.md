@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-03-28
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/fleet.go
@@ -84,3 +84,9 @@ source_of_truth:
 - `static/src/api/fleet.ts`
 - `static/src/api/fleet-config.ts`
 - `static/src/views/operation`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接舰队、舰队详情、舰队配置、入团和 PAP 页面；具体 route/API/type 映射以迁移基线为准。
+- 页面权限、PAP 业务规则和 ESI 行为仍以本文与后端为准。
