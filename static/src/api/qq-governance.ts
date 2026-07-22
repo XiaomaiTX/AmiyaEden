@@ -76,13 +76,6 @@ export function updateQQGovernanceSettings(data: Api.QQGovernance.Settings) {
 export function triggerQQGovernanceReconcile(groupId: number) {
   return request.post({ url: `${base}/groups/${groupId}/reconcile` })
 }
-export function runQQGovernanceManualAction(data: {
-  action: string
-  group_id: number
-  qq: number
-}) {
-  return request.post({ url: `${base}/actions`, data })
-}
 export function resetQQGovernanceRisk() {
   return request.post({ url: `${base}/risk-control/reset` })
 }

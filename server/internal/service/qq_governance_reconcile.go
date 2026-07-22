@@ -6,50 +6,62 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"math/rand/v2"
+	"sort"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-const (
-	qqGovernanceReconcileBatchSize = 50
-	qqGovernanceMaxMembersPerShard = 1200
-)
+const qqGovernanceReconcileBatchSize = 50
 
 type oneBotGroupMember struct {
 	UserID int64 `json:"user_id"`
 }
-type oneBotGroupInfo struct {
-	GroupName       string `json:"group_name"`
-	MemberCount     int    `json:"member_count"`
-	MaxMemberCount  int    `json:"max_member_count"`
-}
 
-// EnqueueScheduledReconciliations 由 cron 或手动入口调用，只创建可恢复的扫描任务。
+// EnqueueScheduledReconciliations starts one durable full-membership run per
+// group. Repeated cron/manual triggers reuse the existing run instead of
+// competing over a shared cursor.
 func (s *QQGovernanceService) EnqueueScheduledReconciliations(ctx context.Context, groupID int64) error {
 	policies, err := s.repo.ListEnabledPolicies()
 	if err != nil {
 		return err
 	}
-	now := s.now()
-	settings := s.GovernanceSettings()
 	for _, policy := range policies {
 		if groupID > 0 && policy.GroupID != groupID {
 			continue
 		}
-		payload, _ := json.Marshal(qqGovernanceActionPayload{Shard: 0})
-		bucket := now.Unix() / int64(settings.ScanIntervalMinutes*60)
-		_, err := s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{
-			ActionType: model.QQGovernanceActionScan, IdempotencyKey: fmt.Sprintf("scan:%d:0:%d", policy.GroupID, bucket), GroupID: policy.GroupID,
-			PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 60, RunAfter: now, Source: "cron",
-		})
-		if err != nil {
+		if err := s.startReconcileRun(ctx, policy.GroupID); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (s *QQGovernanceService) startReconcileRun(_ context.Context, groupID int64) error {
+	if _, err := s.repo.GetActiveReconcileRun(groupID); err == nil {
+		return nil
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	now := s.now()
+	run := &model.QQGovernanceReconcileRun{
+		GroupID: groupID, ActiveKey: fmt.Sprintf("group:%d", groupID), Status: model.QQGovernanceRunPending, StartedAt: &now,
+	}
+	if err := s.repo.CreateReconcileRun(run); err != nil {
+		// A concurrent cron/manual trigger may have won the unique active key.
+		if _, activeErr := s.repo.GetActiveReconcileRun(groupID); activeErr == nil {
+			return nil
+		}
+		return err
+	}
+	payload, _ := json.Marshal(qqGovernanceActionPayload{RunID: run.ID})
+	_, err := s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{
+		ActionType: model.QQGovernanceActionSnapshot, RunID: run.ID,
+		IdempotencyKey: fmt.Sprintf("snapshot:%d:%d", groupID, run.ID), GroupID: groupID,
+		PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 20, RunAfter: now, Source: "cron",
+	})
+	return err
 }
 
 func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.QQGovernanceActionTask) error {
@@ -64,10 +76,34 @@ func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.
 	if err != nil {
 		return s.failTask(task, err, true)
 	}
-	if task.ActionType == model.QQGovernanceActionRecheck {
+	switch task.ActionType {
+	case model.QQGovernanceActionSnapshot:
+		return s.captureReconcileSnapshot(ctx, task, policy, payload.RunID)
+	case model.QQGovernanceActionComputeBatch:
+		return s.computeReconcileBatch(ctx, task, policy, payload.RunID, payload.Batch)
+	case model.QQGovernanceActionRecheck:
 		return s.reconcileOneMember(ctx, task, policy, task.QQ)
+	default:
+		return s.failTask(task, fmt.Errorf("未知治理巡检任务: %s", task.ActionType), false)
 	}
-	settings := s.GovernanceSettings()
+}
+
+func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task *model.QQGovernanceActionTask, _ *model.QQGroupGovernancePolicy, runID uint) error {
+	if runID == 0 {
+		runID = task.RunID
+	}
+	run, err := s.repo.GetReconcileRun(runID)
+	if err != nil {
+		return s.failTask(task, fmt.Errorf("读取巡检轮次失败: %w", err), false)
+	}
+	if run.GroupID != task.GroupID {
+		return s.failTask(task, errors.New("巡检轮次与群号不一致"), false)
+	}
+	if wait, err := s.acquireQQGovernanceRateLimit(ctx, task); err != nil {
+		return s.failTask(task, err, true)
+	} else if wait > 0 {
+		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), "QQ 操作限流等待", false)
+	}
 	executor := s.actionExecutor()
 	if executor == nil || !executor.OneBotConnected() {
 		return s.failTask(task, &OneBotActionError{Message: "OneBot 机器人未连接", Retryable: true}, true)
@@ -82,87 +118,107 @@ func (s *QQGovernanceService) runReconcileTask(ctx context.Context, task *model.
 	if err := json.Unmarshal(raw, &members); err != nil {
 		return s.failTask(task, fmt.Errorf("解析群成员列表失败: %w", err), true)
 	}
-	if payload.Shard == 0 {
-		var info oneBotGroupInfo
-		infoRaw, infoErr := executor.CallOneBot(callCtx, "get_group_info", map[string]any{"group_id": task.GroupID, "no_cache": true})
-		if infoErr == nil {
-			_ = json.Unmarshal(infoRaw, &info)
-		}
-		now := s.now()
-		snapshot, snapshotErr := s.repo.GetRuntimeSnapshot(task.GroupID)
-		if errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
-			snapshot = &model.QQGroupRuntimeSnapshot{GroupID: task.GroupID}
-		}
-		if snapshotErr == nil || errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
-			snapshot.LastSyncAttemptAt = now
-			if infoErr == nil {
-				snapshot.GroupName, snapshot.MemberCount, snapshot.MaxMemberCount = info.GroupName, len(members), info.MaxMemberCount
-				snapshot.LastSyncedAt, snapshot.LastSyncError = &now, ""
-			} else {
-				snapshot.LastSyncError = truncateQQGovernanceError(infoErr)
-			}
-			_ = s.repo.SaveRuntimeSnapshot(snapshot)
-		}
-	}
-	filtered := make([]int64, 0, len(members))
-	shardCount := int(math.Ceil(float64(len(members)) / qqGovernanceMaxMembersPerShard))
-	if shardCount < 1 {
-		shardCount = 1
-	}
 	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
+	seen := make(map[int64]struct{}, len(members))
+	qqs := make([]int64, 0, len(members))
 	for _, member := range members {
-		if botQQ > 0 && member.UserID == botQQ {
+		if member.UserID <= 0 || member.UserID == botQQ {
 			continue
 		}
-		if member.UserID > 0 && int(member.UserID%int64(shardCount)) == payload.Shard {
-			filtered = append(filtered, member.UserID)
+		if _, ok := seen[member.UserID]; ok {
+			continue
 		}
+		seen[member.UserID] = struct{}{}
+		qqs = append(qqs, member.UserID)
 	}
-	cursor, err := s.repo.GetCursor(task.GroupID, payload.Shard)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		cursor = &model.QQGovernanceReconcileCursor{GroupID: task.GroupID, ShardIndex: payload.Shard, ShardCount: shardCount, NextRunAt: s.now()}
-	} else if err != nil {
+	sort.Slice(qqs, func(i, j int) bool { return qqs[i] < qqs[j] })
+	now := s.now()
+	rows := make([]model.QQGovernanceReconcileMember, 0, len(qqs))
+	for _, qq := range qqs {
+		rows = append(rows, model.QQGovernanceReconcileMember{RunID: run.ID, GroupID: task.GroupID, QQ: qq, Status: model.QQGovernanceRunMemberPending})
+	}
+	if err := s.repo.Transaction(func(tx *gorm.DB) error {
+		if err := s.repo.CreateRunMembersTx(tx, rows); err != nil {
+			return err
+		}
+		run.Status, run.ExpectedCount, run.StartedAt, run.LastError = model.QQGovernanceRunRunning, len(rows), &now, ""
+		return tx.Save(run).Error
+	}); err != nil {
 		return s.failTask(task, err, true)
 	}
-	start := 0
-	for start < len(filtered) && filtered[start] <= cursor.LastQQ {
-		start++
+	snapshot, snapshotErr := s.repo.GetRuntimeSnapshot(task.GroupID)
+	if errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
+		snapshot = &model.QQGroupRuntimeSnapshot{GroupID: task.GroupID}
 	}
-	end := start + qqGovernanceReconcileBatchSize
-	if end > len(filtered) {
-		end = len(filtered)
+	if snapshotErr == nil || errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
+		snapshot.MemberCount, snapshot.LastSyncAttemptAt, snapshot.LastSyncError = len(members), now, ""
+		_ = s.repo.SaveRuntimeSnapshot(snapshot)
 	}
-	for _, qq := range filtered[start:end] {
-		if err := s.reconcileMember(ctx, policy, task.GroupID, qq, "scan"); err != nil {
+	payload, _ := json.Marshal(qqGovernanceActionPayload{RunID: run.ID, Batch: 0})
+	_, err = s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{
+		ActionType: model.QQGovernanceActionComputeBatch, RunID: run.ID,
+		IdempotencyKey: fmt.Sprintf("compute:%d:%d", run.ID, 0), GroupID: task.GroupID,
+		PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 40, RunAfter: now, Source: "reconcile",
+	})
+	if err != nil {
+		return s.failTask(task, err, true)
+	}
+	_ = s.logQQGovernanceAction(task, "succeeded", "")
+	return s.repo.CompleteActionTask(task.ID, task.LeaseToken, now)
+}
+
+func (s *QQGovernanceService) computeReconcileBatch(ctx context.Context, task *model.QQGovernanceActionTask, policy *model.QQGroupGovernancePolicy, runID uint, batch int) error {
+	if runID == 0 {
+		runID = task.RunID
+	}
+	run, err := s.repo.GetReconcileRun(runID)
+	if err != nil || run.GroupID != task.GroupID || run.Status != model.QQGovernanceRunRunning {
+		return s.repo.CancelActionTask(task.ID, task.LeaseToken, "巡检轮次已结束或不存在")
+	}
+	rows, err := s.repo.ListPendingRunMembers(run.ID, qqGovernanceReconcileBatchSize)
+	if err != nil {
+		return s.failTask(task, err, true)
+	}
+	for _, row := range rows {
+		if err := s.reconcileMember(ctx, policy, task.GroupID, row.QQ, "scan"); err != nil {
+			return s.failTask(task, err, true)
+		}
+		if err := s.repo.Transaction(func(tx *gorm.DB) error { return s.repo.CompleteRunMemberTx(tx, row.ID) }); err != nil {
 			return s.failTask(task, err, true)
 		}
 	}
 	now := s.now()
-	cursor.ShardCount = shardCount
-	if end >= len(filtered) {
-		cursor.LastQQ = 0
-		cursor.LastCompletedAt = &now
-	} else {
-		cursor.LastQQ = filtered[end-1]
-	}
-	cursor.NextRunAt = now.Add(time.Duration(settings.ScanIntervalMinutes) * time.Minute)
-	if err := s.repo.SaveCursor(cursor); err != nil {
+	run.ProcessedCount += len(rows)
+	pending, err := s.repo.CountPendingRunMembers(run.ID)
+	if err != nil {
 		return s.failTask(task, err, true)
 	}
-	if end < len(filtered) {
-		nextPayload, _ := json.Marshal(qqGovernanceActionPayload{Shard: payload.Shard})
-		_, err = s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionScan, IdempotencyKey: fmt.Sprintf("scan:%d:%d:%d", task.GroupID, payload.Shard, cursor.LastQQ), GroupID: task.GroupID, PayloadJSON: string(nextPayload), Status: model.QQGovernanceActionPending, Priority: 60, RunAfter: now.Add(time.Second), Source: "reconcile"})
+	if pending == 0 {
+		run.Status, run.ActiveKey, run.CompletedAt = model.QQGovernanceRunCompleted, "", &now
+		if err := s.repo.SaveReconcileRun(run); err != nil {
+			return s.failTask(task, err, true)
+		}
+		if err := s.repo.MarkMissingMembersLeft(task.GroupID, run.ID, now); err != nil {
+			return s.failTask(task, err, true)
+		}
+		if snapshot, err := s.repo.GetRuntimeSnapshot(task.GroupID); err == nil {
+			snapshot.LastSyncedAt, snapshot.LastSyncError = &now, ""
+			_ = s.repo.SaveRuntimeSnapshot(snapshot)
+		}
+	} else {
+		if err := s.repo.SaveReconcileRun(run); err != nil {
+			return s.failTask(task, err, true)
+		}
+		payload, _ := json.Marshal(qqGovernanceActionPayload{RunID: run.ID, Batch: batch + 1})
+		_, err = s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{
+			ActionType: model.QQGovernanceActionComputeBatch, RunID: run.ID,
+			IdempotencyKey: fmt.Sprintf("compute:%d:%d", run.ID, batch+1), GroupID: task.GroupID,
+			PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 40, RunAfter: now, Source: "reconcile",
+		})
 		if err != nil {
 			return s.failTask(task, err, true)
 		}
 	}
-	if payload.Shard == 0 {
-		for shard := 1; shard < shardCount; shard++ {
-			p, _ := json.Marshal(qqGovernanceActionPayload{Shard: shard})
-			_, _ = s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionScan, IdempotencyKey: fmt.Sprintf("scan:%d:%d:%d", task.GroupID, shard, now.Unix()/900), GroupID: task.GroupID, PayloadJSON: string(p), Status: model.QQGovernanceActionPending, Priority: 60, RunAfter: now.Add(time.Second), Source: "reconcile"})
-		}
-	}
-	_ = s.logQQGovernanceAction(task, "succeeded", "")
 	return s.repo.CompleteActionTask(task.ID, task.LeaseToken, now)
 }
 
@@ -188,18 +244,12 @@ func (s *QQGovernanceService) reconcileMember(_ context.Context, policy *model.Q
 			state.Version++
 		}
 		now := s.now()
-		state.UserID = decision.UserID
-		state.TargetCard = decision.TargetCard
-		state.LastCheckedAt = now
+		state.UserID, state.TargetCard, state.LastCheckedAt = decision.UserID, decision.TargetCard, now
 		switch decision.Decision {
 		case model.QQGovernanceReviewMatched:
-			state.Status = model.QQGovernanceMemberValid
-			state.MismatchCount = 0
-			state.UnknownCount = 0
-			state.FirstMismatchAt = nil
+			state.Status, state.MismatchCount, state.UnknownCount, state.FirstMismatchAt = model.QQGovernanceMemberValid, 0, 0, nil
 		case model.QQGovernanceReviewUnmatched:
-			state.UnknownCount = 0
-			state.MismatchCount++
+			state.UnknownCount, state.MismatchCount = 0, state.MismatchCount+1
 			if state.FirstMismatchAt == nil {
 				state.FirstMismatchAt = &now
 			}
@@ -209,10 +259,7 @@ func (s *QQGovernanceService) reconcileMember(_ context.Context, policy *model.Q
 				state.Status = model.QQGovernanceMemberInvalidConf
 			}
 		default:
-			state.Status = model.QQGovernanceMemberReview
-			state.UnknownCount++
-			state.MismatchCount = 0
-			state.FirstMismatchAt = nil
+			state.Status, state.UnknownCount, state.MismatchCount, state.FirstMismatchAt = model.QQGovernanceMemberReview, state.UnknownCount+1, 0, nil
 		}
 		if err := s.repo.SaveMemberStateTx(tx, state); err != nil {
 			return err

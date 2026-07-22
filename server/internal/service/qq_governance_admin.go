@@ -15,27 +15,27 @@ import (
 )
 
 type QQGovernancePolicyInput struct {
-	GroupID                  int64    `json:"group_id"`
-	Enabled                  bool     `json:"enabled"`
-	AllowedCorporationIDs    []int64  `json:"allowed_corporation_ids"`
-	AllowedRoleCodes         []string `json:"allowed_role_codes"`
-	AutoRejectUnmatched      bool     `json:"auto_reject_unmatched"`
-	MemberViolationPolicy    string   `json:"member_violation_policy"`
-	CardTemplate             string   `json:"card_template"`
+	GroupID               int64    `json:"group_id"`
+	Enabled               bool     `json:"enabled"`
+	AllowedCorporationIDs []int64  `json:"allowed_corporation_ids"`
+	AllowedRoleCodes      []string `json:"allowed_role_codes"`
+	AutoRejectUnmatched   bool     `json:"auto_reject_unmatched"`
+	MemberViolationPolicy string   `json:"member_violation_policy"`
+	CardTemplate          string   `json:"card_template"`
 }
 
 type QQGovernancePolicyView struct {
-	ID                    uint                       `json:"id"`
-	GroupID               int64                      `json:"group_id"`
-	Enabled               bool                       `json:"enabled"`
-	AllowedCorporationIDs []int64                    `json:"allowed_corporation_ids"`
+	ID                    uint                      `json:"id"`
+	GroupID               int64                     `json:"group_id"`
+	Enabled               bool                      `json:"enabled"`
+	AllowedCorporationIDs []int64                   `json:"allowed_corporation_ids"`
 	AllowedCorporations   []QQGovernanceCorporation `json:"allowed_corporations"`
-	AllowedRoleCodes      []string                   `json:"allowed_role_codes"`
-	AutoRejectUnmatched   bool                       `json:"auto_reject_unmatched"`
-	MemberViolationPolicy string                     `json:"member_violation_policy"`
-	CardTemplate          string                     `json:"card_template"`
-	UpdatedBy             uint                       `json:"updated_by"`
-	UpdatedAt             time.Time                  `json:"updated_at"`
+	AllowedRoleCodes      []string                  `json:"allowed_role_codes"`
+	AutoRejectUnmatched   bool                      `json:"auto_reject_unmatched"`
+	MemberViolationPolicy string                    `json:"member_violation_policy"`
+	CardTemplate          string                    `json:"card_template"`
+	UpdatedBy             uint                      `json:"updated_by"`
+	UpdatedAt             time.Time                 `json:"updated_at"`
 }
 
 // QQGovernanceCorporation pairs a stable corporation ID with its display name,
@@ -72,6 +72,12 @@ type QQGovernanceGroupStatus struct {
 	InvalidConfirmedCount int64      `json:"invalid_confirmed_count"`
 	LastSyncedAt          *time.Time `json:"last_synced_at"`
 	SnapshotState         string     `json:"snapshot_state"`
+	ReconcileRunStatus    string     `json:"reconcile_run_status"`
+	ReconcileExpected     int        `json:"reconcile_expected"`
+	ReconcileProcessed    int        `json:"reconcile_processed"`
+	ReconcileFailed       int        `json:"reconcile_failed"`
+	ReconcileStartedAt    *time.Time `json:"reconcile_started_at"`
+	ReconcileCompletedAt  *time.Time `json:"reconcile_completed_at"`
 }
 
 func (s *QQGovernanceService) ListPolicies(ctx context.Context) ([]QQGovernancePolicyView, error) {
@@ -226,9 +232,17 @@ func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, er
 	if err != nil {
 		return nil, err
 	}
+	runs, err := s.repo.ListLatestReconcileRuns(groupIDs)
+	if err != nil {
+		return nil, err
+	}
 	snapshotByGroup := make(map[int64]model.QQGroupRuntimeSnapshot, len(snapshots))
 	for _, snapshot := range snapshots {
 		snapshotByGroup[snapshot.GroupID] = snapshot
+	}
+	runByGroup := make(map[int64]model.QQGovernanceReconcileRun, len(runs))
+	for _, run := range runs {
+		runByGroup[run.GroupID] = run
 	}
 	countsByGroup := make(map[int64]map[string]int64, len(groupIDs))
 	for _, count := range stateCounts {
@@ -255,6 +269,11 @@ func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, er
 		item.ReviewCount = counts[model.QQGovernanceMemberReview]
 		item.InvalidCandidateCount = counts[model.QQGovernanceMemberInvalidCand]
 		item.InvalidConfirmedCount = counts[model.QQGovernanceMemberInvalidConf]
+		if run, ok := runByGroup[policy.GroupID]; ok {
+			item.ReconcileRunStatus = run.Status
+			item.ReconcileExpected, item.ReconcileProcessed, item.ReconcileFailed = run.ExpectedCount, run.ProcessedCount, run.FailedCount
+			item.ReconcileStartedAt, item.ReconcileCompletedAt = run.StartedAt, run.CompletedAt
+		}
 		result = append(result, item)
 	}
 	return result, nil
@@ -327,41 +346,6 @@ func (s *QQGovernanceService) TriggerReconcile(ctx context.Context, groupID int6
 	}
 	s.audit("qq_governance_reconcile_trigger", operator, "qq_group_governance_policy", fmt.Sprint(groupID), nil)
 	return nil
-}
-func (s *QQGovernanceService) ManualAction(action string, groupID, qq int64, operator uint) error {
-	state, err := s.repo.GetMemberState(groupID, qq)
-	if err != nil {
-		return err
-	}
-	payload := qqGovernanceActionPayload{}
-	switch action {
-	case model.QQGovernanceActionApprove:
-		payload.Approve = true
-		fallthrough
-	case model.QQGovernanceActionReject:
-		if !payload.Approve {
-			payload.Approve = false
-		}
-		flag, err := s.repo.GetLatestRequestFlag(groupID, qq)
-		if err != nil {
-			return errors.New("未找到可处理的入群申请")
-		}
-		payload.RequestFlag = flag
-	case model.QQGovernanceActionSetCard:
-		payload.Card = state.TargetCard
-		if payload.Card == "" {
-			return errors.New("成员没有可同步的目标名片")
-		}
-	case model.QQGovernanceActionKick:
-	default:
-		return errors.New("不支持的人工动作")
-	}
-	data, _ := json.Marshal(payload)
-	_, err = s.repo.CreateActionTaskIfAbsent(&model.QQGovernanceActionTask{ActionType: action, IdempotencyKey: fmt.Sprintf("manual:%s:%d:%d:%d", action, groupID, qq, s.now().UnixNano()), GroupID: groupID, QQ: qq, TargetVersion: state.Version, PayloadJSON: string(data), Status: model.QQGovernanceActionPending, Priority: 10, RunAfter: s.now(), Source: "manual"})
-	if err == nil {
-		s.audit("qq_governance_manual_"+action, operator, "qq_group_member_state", fmt.Sprintf("%d:%d", groupID, qq), nil)
-	}
-	return err
 }
 func (s *QQGovernanceService) audit(action string, operator uint, resourceType, resourceID string, details map[string]any) {
 	if global.DB == nil {

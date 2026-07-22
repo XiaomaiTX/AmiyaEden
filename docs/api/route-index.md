@@ -58,7 +58,7 @@ source_of_truth:
 | GET/PUT | `/settings` | 读取或更新所有受治理 QQ 群共用的扫描、确认和观察期设置 |
 | GET | `/groups` | 查询各已配置群的名称、成员快照、治理状态统计与同步状态 |
 | GET | `/corporations?query=军团名称` | 通过 ESI 公开接口 `POST /universe/ids/` 对输入军团名称进行精确解析，返回可写入规则的军团 ID 与名称 |
-| POST | `/groups/:group_id/reconcile`、`/actions`、`/risk-control/reset` | 立即巡检、人工动作与解除熔断 |
+| POST | `/groups/:group_id/reconcile`、`/risk-control/reset` | 启动或复用完整成员快照巡检、解除熔断；不提供人工 QQ 写操作 |
 
 ### EVE SSO
 

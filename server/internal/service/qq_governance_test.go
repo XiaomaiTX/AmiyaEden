@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func TestQQGovernanceServiceGroupRequestCreatesOneApprovalTask(t *testing.T) {
@@ -57,5 +59,61 @@ func TestQQGovernanceServiceGroupRequestCreatesOneApprovalTask(t *testing.T) {
 	}
 	if review.Decision != model.QQGovernanceReviewMatched || review.UserID != 9 {
 		t.Fatalf("review = %#v", review)
+	}
+}
+
+func TestQQGovernanceEvaluateMissingSeatDataIsUnmatched(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_missing_data",
+		&model.User{}, &model.EveCharacter{}, &model.UserRole{},
+		&model.QQGroupGovernancePolicy{},
+	)
+	policy := &model.QQGroupGovernancePolicy{
+		GroupID:                   778899,
+		Enabled:                   true,
+		AllowedCorporationIDsJSON: `[1001]`,
+		AllowedRoleCodesJSON:      `["admin"]`,
+	}
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+	var decision qqEligibility
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		decision, err = svc.evaluate(tx, policy, 123456)
+		return err
+	}); err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if decision.Decision != model.QQGovernanceReviewUnmatched {
+		t.Fatalf("decision = %q, want unmatched", decision.Decision)
+	}
+	if decision.Reason != "QQ 未绑定 Seat 用户" {
+		t.Fatalf("reason = %q", decision.Reason)
+	}
+}
+
+func TestQQGovernanceReconcileRunIsReused(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_reconcile_run",
+		&model.QQGroupGovernancePolicy{}, &model.QQGovernanceActionTask{},
+		&model.QQGovernanceReconcileRun{}, &model.QQGovernanceReconcileMember{},
+	)
+	if err := db.Create(&model.QQGroupGovernancePolicy{GroupID: 778899, Enabled: true}).Error; err != nil {
+		t.Fatalf("create policy: %v", err)
+	}
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+	if err := svc.startReconcileRun(t.Context(), 778899); err != nil {
+		t.Fatalf("start first run: %v", err)
+	}
+	if err := svc.startReconcileRun(t.Context(), 778899); err != nil {
+		t.Fatalf("reuse active run: %v", err)
+	}
+	var runs []model.QQGovernanceReconcileRun
+	var tasks []model.QQGovernanceActionTask
+	if err := db.Find(&runs).Error; err != nil {
+		t.Fatalf("list runs: %v", err)
+	}
+	if err := db.Find(&tasks).Error; err != nil {
+		t.Fatalf("list tasks: %v", err)
+	}
+	if len(runs) != 1 || len(tasks) != 1 || tasks[0].ActionType != model.QQGovernanceActionSnapshot {
+		t.Fatalf("runs=%d tasks=%#v", len(runs), tasks)
 	}
 }

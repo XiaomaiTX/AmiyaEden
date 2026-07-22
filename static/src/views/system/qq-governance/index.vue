@@ -81,6 +81,16 @@
                 }}<span v-if="row.max_member_count"> / {{ row.max_member_count }}</span></template
               ></ElTableColumn
             >
+            <ElTableColumn :label="t('qqGovernance.v2.progress')" min-width="160"
+              ><template #default="{ row }"
+                ><span v-if="row.reconcile_run_status"
+                  >{{ row.reconcile_processed }} / {{ row.reconcile_expected }}
+                  <ElTag class="ml-2" size="small" :type="runTag(row.reconcile_run_status)">{{
+                    runLabel(row.reconcile_run_status)
+                  }}</ElTag></span
+                ><span v-else>-</span></template
+              ></ElTableColumn
+            >
             <ElTableColumn
               prop="valid_count"
               :label="t('qqGovernance.v2.valid')"
@@ -137,7 +147,8 @@
               <ElOption value="approve" :label="t('qqGovernance.actions.approve')" />
               <ElOption value="reject" :label="t('qqGovernance.actions.reject')" />
               <ElOption value="set_card" :label="t('qqGovernance.actions.card')" />
-              <ElOption value="scan" :label="t('qqGovernance.actions.reconcile')" />
+              <ElOption value="snapshot" :label="t('qqGovernance.v2.snapshotTask')" />
+              <ElOption value="compute_batch" :label="t('qqGovernance.v2.computeTask')" />
               <ElOption value="kick" :label="t('qqGovernance.actions.kick')" />
             </ElSelect>
           </ElFormItem>
@@ -483,6 +494,16 @@
     state === 'fresh' ? 'success' : state === 'stale' ? 'warning' : 'info'
   const snapshotLabel = (state: string) =>
     t(`qqGovernance.v2.${state === 'never_synced' ? 'notSynced' : state}`)
+  const runTag = (state: string) =>
+    state === 'completed'
+      ? 'success'
+      : state === 'failed'
+        ? 'danger'
+        : state === 'running'
+          ? 'warning'
+          : 'info'
+  const runLabel = (state: string) =>
+    t('qqGovernance.v2.run' + state[0].toUpperCase() + state.slice(1))
   function resetPolicyForm() {
     Object.assign(policyForm, {
       group_id: '',

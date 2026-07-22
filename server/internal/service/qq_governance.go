@@ -47,7 +47,8 @@ type qqGovernanceActionPayload struct {
 	RequestFlag string `json:"request_flag"`
 	Approve     bool   `json:"approve"`
 	Card        string `json:"card"`
-	Shard       int    `json:"shard"`
+	RunID       uint   `json:"run_id"`
+	Batch       int    `json:"batch"`
 }
 type qqEligibility struct {
 	Decision, Reason, Nickname, CharacterName, CorporationName, TargetCard string
@@ -122,7 +123,7 @@ func (s *QQGovernanceService) HandleOneBotEvent(ctx context.Context, event QQGov
 }
 
 func (s *QQGovernanceService) evaluate(tx *gorm.DB, policy *model.QQGroupGovernancePolicy, qq int64) (qqEligibility, error) {
-	result := qqEligibility{Decision: model.QQGovernanceReviewWait}
+	result := qqEligibility{Decision: model.QQGovernanceReviewUnmatched}
 	var user model.User
 	if err := tx.Where("qq = ?", fmt.Sprintf("%d", qq)).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -203,7 +204,10 @@ func (s *QQGovernanceService) recordDecision(tx *gorm.DB, event *model.QQGoverna
 		state.Status = model.QQGovernanceMemberJoinPending
 	} else if decision.Decision == model.QQGovernanceReviewMatched {
 		state.Status = model.QQGovernanceMemberValid
+	} else if decision.Decision == model.QQGovernanceReviewUnmatched {
+		state.Status = model.QQGovernanceMemberInvalidCand
 	} else {
+		// 仅保留给依赖读取失败等暂态异常的自动重试；它不是人工审核队列。
 		state.Status = model.QQGovernanceMemberReview
 	}
 	if err := s.repo.SaveMemberStateTx(tx, state); err != nil {
@@ -241,7 +245,7 @@ func (s *QQGovernanceService) recordDeparture(tx *gorm.DB, event *model.QQGovern
 }
 func (s *QQGovernanceService) enqueueDecision(tx *gorm.DB, state *model.QQGroupMemberState, event QQGovernanceInboundEvent, kind string, approve bool, now time.Time) error {
 	payload, _ := json.Marshal(qqGovernanceActionPayload{RequestFlag: event.RequestFlag, Approve: approve})
-	_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: kind, IdempotencyKey: fmt.Sprintf("%s:%d:%d", kind, event.GroupID, event.QQ), GroupID: event.GroupID, QQ: event.QQ, TargetVersion: state.Version, PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 10, RunAfter: now.Add(2*time.Second + time.Duration(rand.IntN(5))*time.Second)})
+	_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: kind, IdempotencyKey: fmt.Sprintf("%s:%d:%d:%s", kind, event.GroupID, event.QQ, event.RequestFlag), GroupID: event.GroupID, QQ: event.QQ, TargetVersion: state.Version, PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 10, RunAfter: now.Add(2*time.Second + time.Duration(rand.IntN(5))*time.Second)})
 	return err
 }
 func (s *QQGovernanceService) enqueueCard(tx *gorm.DB, state *model.QQGroupMemberState, event QQGovernanceInboundEvent, now time.Time) error {

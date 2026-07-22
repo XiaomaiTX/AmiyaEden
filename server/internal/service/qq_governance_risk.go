@@ -11,9 +11,6 @@ import (
 )
 
 func (s *QQGovernanceService) riskWait(task *model.QQGovernanceActionTask) (time.Duration, error) {
-	if task.Source != "automatic" && task.Source != "cron" && task.Source != "reconcile" {
-		return 0, nil
-	}
 	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
 	if botQQ <= 0 {
 		return 0, nil
@@ -29,7 +26,7 @@ func (s *QQGovernanceService) riskWait(task *model.QQGovernanceActionTask) (time
 	if state.OpenUntil != nil && state.OpenUntil.After(now) {
 		switch state.Level {
 		case model.QQGovernanceRiskLevelThree:
-			if task.ActionType != model.QQGovernanceActionScan && task.ActionType != model.QQGovernanceActionRecheck {
+			if task.ActionType != model.QQGovernanceActionSnapshot && task.ActionType != model.QQGovernanceActionComputeBatch && task.ActionType != model.QQGovernanceActionRecheck {
 				return state.OpenUntil.Sub(now), nil
 			}
 		case model.QQGovernanceRiskLevelTwo:
@@ -37,7 +34,7 @@ func (s *QQGovernanceService) riskWait(task *model.QQGovernanceActionTask) (time
 				return state.OpenUntil.Sub(now), nil
 			}
 		case model.QQGovernanceRiskLevelOne:
-			if task.ActionType == model.QQGovernanceActionSetCard || task.ActionType == model.QQGovernanceActionScan {
+			if task.ActionType == model.QQGovernanceActionSetCard {
 				return 30 * time.Second, nil
 			}
 		}

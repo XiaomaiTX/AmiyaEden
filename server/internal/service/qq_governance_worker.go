@@ -46,7 +46,7 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 	if err != nil || task == nil {
 		return err
 	}
-	if task.ActionType == model.QQGovernanceActionScan || task.ActionType == model.QQGovernanceActionRecheck {
+	if task.ActionType == model.QQGovernanceActionSnapshot || task.ActionType == model.QQGovernanceActionComputeBatch || task.ActionType == model.QQGovernanceActionRecheck {
 		return s.runReconcileTask(ctx, task)
 	}
 	if wait, err := s.riskWait(task); err != nil {
@@ -195,10 +195,10 @@ func oneBotActionName(kind string) string {
 	return kind
 }
 
-// 所有自动写操作先经过 Redis。Redis 不可用时安全地进入重试，而不是绕过限流直接写 QQ。
+// 所有 QQ 操作（OneBot 读取和写入）先经过同一个 Redis 限流器。Redis 不可用时进入重试，不绕过限流直连 QQ。
 func (s *QQGovernanceService) acquireQQGovernanceRateLimit(ctx context.Context, task *model.QQGovernanceActionTask) (time.Duration, error) {
 	if global.Redis == nil {
-		return 0, errors.New("redis 不可用，拒绝执行 QQ 自动写操作")
+		return 0, errors.New("redis 不可用，拒绝执行 QQ 操作")
 	}
 	groupInterval := 8 * time.Second
 	if task.ActionType == model.QQGovernanceActionKick {
@@ -231,10 +231,13 @@ for i = 1, #KEYS do
   redis.call('PEXPIRE', KEYS[i], math.ceil(capacity / refill))
 end
 return {1, 0}`
-	result, err := global.Redis.Eval(ctx, tokenBucketScript,
-		[]string{"qq_governance:rate:global", fmt.Sprintf("qq_governance:rate:group:%d", task.GroupID), fmt.Sprintf("qq_governance:rate:qq:%d", task.QQ)},
-		s.now().UnixMilli(), 3, 1.0/3000.0, 1, 1.0/float64(groupInterval.Milliseconds()), 1, 1.0/60000.0,
-	).Result()
+	keys := []string{"qq_governance:rate:global", fmt.Sprintf("qq_governance:rate:group:%d", task.GroupID)}
+	args := []any{s.now().UnixMilli(), 3, 1.0 / 3000.0, 1, 1.0 / float64(groupInterval.Milliseconds())}
+	if task.QQ > 0 {
+		keys = append(keys, fmt.Sprintf("qq_governance:rate:qq:%d", task.QQ))
+		args = append(args, 1, 1.0/60000.0)
+	}
+	result, err := global.Redis.Eval(ctx, tokenBucketScript, keys, args...).Result()
 	if err != nil {
 		return 0, err
 	}
