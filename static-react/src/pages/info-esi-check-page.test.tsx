@@ -79,7 +79,7 @@ describe('info esi check page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Beta' }))
 
     await waitFor(() => {
-      expect(screen.getByText('Beta')).toBeInTheDocument()
+      expect(screen.getByRole('combobox')).toHaveValue('1002')
     })
     expect(screen.getByText('0/1 已授权')).toBeInTheDocument()
   })

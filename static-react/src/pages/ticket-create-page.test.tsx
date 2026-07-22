@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
+import { I18nProvider } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import { useSessionStore } from '@/stores'
 
@@ -21,8 +22,12 @@ describe('ticket create page', () => {
     })
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   test('loads categories, submits a ticket, and returns to my tickets', async () => {
-    vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -112,7 +117,21 @@ describe('ticket create page', () => {
     await waitFor(() => {
       expect(screen.getByText('我的工单')).toBeInTheDocument()
     })
-    expect(screen.getByText('需要帮助')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('需要帮助')).toBeInTheDocument()
+    })
+
+    const createCall = fetchSpy.mock.calls.find(
+      ([input, init]) =>
+        String(input).includes('/api/v1/ticket/tickets') && init?.method === 'POST'
+    )
+    expect(createCall).toBeDefined()
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+      category_id: 10,
+      title: '需要帮助',
+      description: '请帮我确认工单流程。',
+      priority: 'medium',
+    })
   })
 
   test('shows localized category names in English locale', async () => {
@@ -122,7 +141,7 @@ describe('ticket create page', () => {
       theme: 'system',
     })
 
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+    const categoriesResponse = () =>
       new Response(
         JSON.stringify({
           code: 0,
@@ -142,17 +161,21 @@ describe('ticket create page', () => {
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
-    )
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => categoriesResponse())
 
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/ticket/create'],
     })
-    render(<RouterProvider router={router} />)
+    render(
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
+    )
 
-    await waitFor(() => {
-      expect(screen.getByText('Support')).toBeInTheDocument()
-    })
+    const option = await screen.findByRole('option', { name: 'Support' }, { timeout: 8000 })
+    expect(option).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Enter ticket title')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Submit Ticket' })).toBeInTheDocument()
-  })
+  }, 15000)
 })

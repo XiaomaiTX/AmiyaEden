@@ -17,40 +17,29 @@ describe('info assets page', () => {
   })
 
   test('renders location summaries on load', async () => {
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: { character_id: 1001, character_name: 'Amiya', corporation_id: 1 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          code: 0,
+          msg: 'ok',
+          data: {
+            total_locations: 1,
+            total_items: 2,
+            locations: [
+              {
+                location_id: 60003760,
+                location_type: 'station',
+                location_name: 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
+                top_level_count: 2,
+                root_item_count: 2,
+                character_count: 1,
+              },
+            ],
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: {
-              total_locations: 1,
-              total_items: 2,
-              locations: [
-                {
-                  location_id: 60003760,
-                  location_type: 'station',
-                  location_name: 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
-                  top_level_count: 2,
-                  root_item_count: 2,
-                  character_count: 1,
-                },
-              ],
-            },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
+    )
 
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/info/assets'],
@@ -64,16 +53,6 @@ describe('info assets page', () => {
 
   test('renders location items when a location is expanded', async () => {
     vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: { character_id: 1001, character_name: 'Amiya', corporation_id: 1 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -146,18 +125,7 @@ describe('info assets page', () => {
   })
 
   test('shows error when location list request fails', async () => {
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: { character_id: 1001, character_name: 'Amiya', corporation_id: 1 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
-      .mockRejectedValueOnce(new Error('Network failure'))
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network failure'))
 
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/info/assets'],
@@ -165,22 +133,12 @@ describe('info assets page', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load location list.')).toBeInTheDocument()
+      expect(screen.getByText('加载位置列表失败。')).toBeInTheDocument()
     })
   })
 
   test('shows stable total_items in stats bar after search', async () => {
     vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: { character_id: 1001, character_name: 'Amiya', corporation_id: 1 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -257,20 +215,12 @@ describe('info assets page', () => {
   })
 
   test('ignores stale response from slow search', async () => {
-    let resolveSlow: (value: Response) => void
-    const slowPromise = new Promise<Response>((resolve) => { resolveSlow = resolve })
+    let resolveSlow!: (value: Response) => void
+    const slowPromise = new Promise<Response>((resolve) => {
+      resolveSlow = resolve
+    })
 
     vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: { character_id: 1001, character_name: 'Amiya', corporation_id: 1 },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({

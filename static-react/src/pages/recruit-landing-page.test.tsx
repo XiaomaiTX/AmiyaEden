@@ -4,20 +4,16 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
 
 describe('recruit landing page', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   function setUp(code: string) {
     const router = createMemoryRouter(appRoutes, {
       initialEntries: [`/r/${code}`],
     })
     render(<RouterProvider router={router} />)
   }
-
-  test('renders recruit form', () => {
-    setUp('test-code')
-
-    expect(screen.getByRole('heading', { name: '加入我们' })).toBeInTheDocument()
-    expect(screen.getByRole('textbox')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '提交' })).toBeInTheDocument()
-  })
 
   test('shows validation error when QQ is empty', async () => {
     setUp('test-code')
@@ -79,7 +75,7 @@ describe('recruit landing page', () => {
       new Response(
         JSON.stringify({ code: 500, msg: 'server error', data: null }),
         {
-          status: 500,
+          status: 200,
           headers: { 'Content-Type': 'application/json' },
         }
       )

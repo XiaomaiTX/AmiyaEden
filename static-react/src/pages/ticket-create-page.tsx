@@ -6,17 +6,10 @@ import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess, notifyWarning } from '@/feedback/service'
 import { useI18n } from '@/i18n'
 import type { CreateTicketParams, TicketCategory, TicketPriority } from '@/types/api/ticket'
+import { getCategoryName } from '@/pages/ticket-category'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
-}
-
-function getCategoryName(category: TicketCategory, locale: string) {
-  if (locale === 'en-US' && category.name_en.trim()) {
-    return category.name_en
-  }
-
-  return category.name
 }
 
 export function TicketCreatePage() {

@@ -87,10 +87,10 @@ describe('system migration pages', () => {
 
     render(<RouterProvider router={router} />)
 
-    await screen.findByText('用户管理')
+    await screen.findAllByText('用户管理')
     await waitFor(() => {
-      expect(screen.getByText('Character ESI Restriction')).toBeInTheDocument()
-      expect(screen.getByText('Amiya')).toBeInTheDocument()
+      expect(screen.getByText('人物 ESI 限制')).toBeInTheDocument()
+      expect(screen.getAllByText('Amiya').length).toBeGreaterThan(0)
     })
   })
 
@@ -135,7 +135,7 @@ describe('system migration pages', () => {
 
     render(<RouterProvider router={router} />)
 
-    await screen.findByText('任务管理')
+    await screen.findAllByText('任务管理')
     await waitFor(() => {
       expect(screen.getByText('Character Refresh')).toBeInTheDocument()
     })
@@ -171,9 +171,9 @@ describe('system migration pages', () => {
 
     render(<RouterProvider router={router} />)
 
-    await screen.findByText('钱包管理')
+    await screen.findAllByText('钱包管理')
     await waitFor(() => {
-      expect(screen.getByText('Amiya')).toBeInTheDocument()
+      expect(screen.getAllByText('Amiya').length).toBeGreaterThan(0)
       expect(screen.getByText('123,456')).toBeInTheDocument()
     })
   })

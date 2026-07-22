@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
 import { useSessionStore } from '@/stores'
@@ -16,7 +16,7 @@ describe('info contracts page', () => {
   })
 
   test('loads contracts and opens detail sheet', async () => {
-    vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -92,14 +92,24 @@ describe('info contracts page', () => {
     await waitFor(() => {
       expect(screen.getByText('Marketplace Run')).toBeInTheDocument()
     })
-    expect(screen.getByText('拍卖')).toBeInTheDocument()
+    const contractRow = screen.getByRole('row', { name: /Marketplace Run/ })
+    expect(within(contractRow).getByText('拍卖')).toBeInTheDocument()
 
     screen.getByRole('button', { name: '查看详情' }).click()
 
     await waitFor(() => {
       expect(screen.getByText('Tritanium')).toBeInTheDocument()
     })
-    expect(screen.getByText('Tritanium')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'Tritanium' })).toBeInTheDocument()
     expect(screen.getByText('2,500,000.00')).toBeInTheDocument()
+
+    const detailCall = fetchSpy.mock.calls.find(([input]) =>
+      String(input).includes('/api/v1/info/contracts/detail')
+    )
+    expect(detailCall).toBeDefined()
+    expect(JSON.parse(String(detailCall?.[1]?.body))).toMatchObject({
+      character_id: 1001,
+      contract_id: 2001,
+    })
   })
 })

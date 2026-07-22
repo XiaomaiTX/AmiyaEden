@@ -4,13 +4,10 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useI18n } from '@/i18n'
 import type { EveCharacter, RegisteredScope } from '@/types/api/auth'
+import { calculateScopeCoverage, findInvalidCharacters } from '@/pages/info-esi-check-logic'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
-}
-
-function parseScopeSet(scopesText: string) {
-  return new Set(scopesText.split(' ').filter(Boolean))
 }
 
 function portraitUrl(characterId: number) {
@@ -84,38 +81,12 @@ export function InfoEsiCheckPage() {
   )
 
   const invalidCharacters = useMemo(() => {
-    return characters.filter((character) => {
-      if (character.token_invalid) {
-        return true
-      }
-      const scopeSet = parseScopeSet(character.scopes)
-      return scopes.some((scope) => scope.required && !scopeSet.has(scope.scope))
-    })
+    return findInvalidCharacters(scopes, characters)
   }, [characters, scopes])
 
-  const scopeRows = useMemo(() => {
-    if (!selectedCharacter) {
-      return []
-    }
-    const authorizedScopes = selectedCharacter.token_invalid ? new Set<string>() : parseScopeSet(selectedCharacter.scopes)
-
-    return scopes.map((scope) => ({
-      ...scope,
-      authorized: authorizedScopes.has(scope.scope),
-    }))
-  }, [scopes, selectedCharacter])
-
-  const requiredScopes = useMemo(() => scopes.filter((scope) => scope.required), [scopes])
-  const grantedRequiredCount = useMemo(() => {
-    if (!selectedCharacter || selectedCharacter.token_invalid) {
-      return 0
-    }
-    const scopeSet = parseScopeSet(selectedCharacter.scopes)
-    return requiredScopes.filter((scope) => scopeSet.has(scope.scope)).length
-  }, [requiredScopes, selectedCharacter])
-  const hasMissingRequiredScopes = useMemo(
-    () => scopeRows.some((row) => row.required && !row.authorized),
-    [scopeRows]
+  const { scopeRows, requiredScopes, grantedRequiredCount, hasMissingRequiredScopes } = useMemo(
+    () => calculateScopeCoverage(scopes, selectedCharacter),
+    [scopes, selectedCharacter]
   )
 
   const handleReauth = async () => {
