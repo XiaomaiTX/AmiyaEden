@@ -2,9 +2,10 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-05-10
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src
+  - static-react/src
   - docs/ai/repo-rules.md
 ---
 
@@ -38,48 +39,51 @@ source_of_truth:
 - [x] 产出“迁移范围基线清单”：冻结 `static/src/views` 页面清单，标注 owner、优先级、依赖 API、权限码（见 `./migration-scope-baseline.md`）
 - [x] `C-1` 商店首波完成：`shop/browse`、`shop/manage`、`shop/order-manage`、`shop/wallet`
 - [x] `C-2` 技能规划与操作首波完成：`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap`
-- [x] 批次 A 路由骨架已在 React 注册（页面为迁移占位实现，待逐页补业务逻辑）
-- [x] 批次 A 页面进度：`dashboard/console` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`dashboard/characters` 已完成 React 真实页迁移（人物资料、直推、绑定/解绑、主人物切换）
-- [x] 批次 A 页面进度：`info/wallet` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`info/skill` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`info/ships` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`info/implants` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`info/fittings` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`info/assets` 已完成 React 真实页迁移（其余页面待迁移）
-- [x] 批次 A 页面进度：`info/contracts` 已完成 React 真实页迁移（合同列表与详情侧栏，含测试覆盖）
-- [x] 批次 A 页面进度：`info/esi-check` 已完成 React 真实页迁移（授权总览与人物详情，含测试覆盖）
-- [x] 批次 A 页面进度：`dashboard/npc-kills` 已完成 React 真实页迁移（军团刷怪报表）
-- [x] 批次 A 页面进度：`dashboard/corporation-structures` 已完成 React 真实页迁移（军团建筑）
-- [x] 批次 A 页面进度：`info/npc-kills` 已完成 React 真实页迁移（刷怪报表、流水明细）
-- [x] 批次 B 页面进度：`ticket/my-tickets` 已完成 React 真实页迁移（我的工单列表）
-- [x] 批次 B 页面进度：`ticket/create` 已完成 React 真实页迁移（提交工单）
-- [x] 批次 B 页面进度：`ticket/detail` 已完成 React 真实页迁移（工单详情与回复）
-- [x] 批次 B 页面进度：`ticket/management`、`ticket/categories`、`ticket/statistics`、`ticket/admin-detail` 已完成 React 真实页迁移
-- [x] 批次 B 页面进度：`welfare/my`、`welfare/approval`、`welfare/settings` 已完成 React 真实页迁移
-- [x] 批次 B 页面进度：`newbro/select-captain`、`newbro/select-mentor`、`newbro/captain`、`newbro/mentor`、`newbro/manage`、`newbro/mentor-manage`、`newbro/recruit-link` 已完成 React 真实页迁移
-- [x] 批次 B 页面进度：`srp/srp-apply`、`srp/srp-manage`、`srp/srp-prices` 已完成 React 真实页迁移
-- [x] 批次 A（低耦合只读页）路由与页面迁移完成
-- [ ] 批次 A 包含模块：`dashboard/*`、`info/*`
+- [x] 批次 A 路由骨架已在 React 注册（页面全部已替换为真实业务页）
+- [x] 批次 A 页面：`dashboard/console`、`dashboard/characters`、`info/wallet`、`info/skill`、`info/ships`、`info/implants`、`info/fittings`、`info/assets`、`info/contracts`、`info/esi-check`、`dashboard/npc-kills`、`dashboard/corporation-structures`、`info/npc-kills` 已全部完成 React 真实页迁移
+- [x] 批次 B 页面：`ticket/my-tickets`、`ticket/create`、`ticket/detail`、`ticket/management`、`ticket/categories`、`ticket/statistics`、`ticket/admin-detail`、`welfare/my`、`welfare/approval`、`welfare/settings`、`newbro/select-captain`、`newbro/select-mentor`、`newbro/captain`、`newbro/mentor`、`newbro/manage`、`newbro/mentor-manage`、`newbro/recruit-link`、`srp/srp-apply`、`srp/srp-manage`、`srp/srp-prices` 已全部完成 React 真实页迁移
+- [x] 批次 C 页面：`shop/*`、`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap` 已全部完成 React 真实页迁移
+- [x] 批次 D 页面：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`、`system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config` 已全部完成 React 真实页迁移
+- [x] 收尾批次壳层与公共页：`auth/login`、`auth/callback`、`/r/:code`、`outside/iframe`、`403`、`404`、`500` 已全部完成 React 真实页迁移
+
+### Vue 侧范围漂移追赶项（2026-05-01 冻结后新增）
+
+Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐：
+
+- [ ] `/characters` 顶层路由对齐（与 `dashboard/characters` 共享页面，但路由路径独立，2026-05-22 Vue 落地）
+- [ ] `/dashboard/fuel-officer-structures` React 落地（`super_admin/fuel_officer`，2026-05-11 Vue 落地）
+- [ ] `/dashboard/galaxy-registry` React 落地（`super_admin/admin/captain/user`，2026-06-04 Vue 落地）
+- [ ] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地）
+- [ ] `/system/qq-governance` React 落地（`super_admin`，2026-07-12 Vue 落地）
+- [ ] `/fuxi-hall/leadership`、`/fuxi-hall/contributors`、`/fuxi-hall/manage` React 落地（取代旧 `hall-of-fame` 模块，2026-05-12 Vue 落地）
+- [ ] 移除 React 侧历史遗留的 `hall-of-fame/{temple, manage, current-manage}` 三条 stub（Vue 已删除）
+
+### 批次执行与验收节奏
+
+- [ ] 每批次开始前完成“冻结范围 + 风险评审 + 回归清单确认”
+- [ ] 每批次结束时输出“已迁移路由清单 + 未决问题清单 + 下一批依赖项”
+- [ ] 每批次至少完成一次跨角色回归（普通成员/管理员/受限角色）
+- [ ] 每批次完成后更新 `component-replacement-list.md` 与本清单状态
+
+### 回归验收（未关闭）
+
 - [ ] 批次 A 回归通过：路由可达、查询参数一致、表格筛选与分页行为一致
-- [x] 批次 B（中耦合流程页）路由与页面迁移完成
-- [x] 批次 B 包含模块：`ticket/*`、`welfare/*`、`newbro/*`、`srp/*`
 - [ ] 批次 B 回归通过：创建/编辑/审批链路、状态流转、按钮权限一致
-- [ ] 批次 C（中高耦合业务页）路由与页面迁移完成
-- [ ] 批次 C 包含模块：`shop/*`、`skill-planning/*`、`operation/join`、`operation/pap`
 - [ ] 批次 C 回归通过：复杂筛选、批量操作、导入导出、弹窗编辑一致
-- [x] 批次 C 当前已完成：`shop/*`、`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap`
-- [x] 批次 D（高耦合核心页）路由与页面迁移完成
-- [x] 批次 D 包含模块：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
-- [x] 批次 D 包含模块：`system/*`
-- [x] 批次 D 当前已完成：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`
-- [x] 批次 D 当前已完成：`system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config`
 - [ ] 批次 D 回归通过：多角色权限矩阵、长链路事务、跨页面状态一致
-- [x] 收尾批次（边缘与遗留）完成
-- [x] 收尾批次包含模块：`auth/*`（仅保留 EVE SSO 所需页面）、`outside/*`、`hall-of-fame/manage`、`hall-of-fame/current-manage`
 - [ ] 收尾批次回归通过：历史入口兼容策略与替换后可访问性验证
 
-### 页面迁移完成定义（详细 DoD）
+## 基础设施补齐（未关闭）
+
+壳层与权限基座已落地，但以下 Vue 既有能力在 React 侧尚未实现，替换发布前必须补齐：
+
+- [ ] WorkTab 多标签页（Vue `worktabStore` + `ArtWorkTab` 对应能力，含固定、批量关闭、KeepAlive 缓存）
+- [ ] `PermissionGate` / `usePermission`（对应 Vue `v-auth`，当前 Vue 侧仅 `system/pap-exchange` 模板使用 `v-auth`）
+- [ ] `RoleGate` / `useRole`（对应 Vue `v-roles`，Vue 侧当前实际无模板引用，可降优先级）
+- [ ] Zustand 业务 store 补齐：`user`、`menu`、`worktab`、`setting`、`table`、`badge`、`sys-config`（当前 React 仅有 `session` 与 `preference` 两个 store）
+- [ ] React 路由守卫中间层与 `RouteRegistry/MenuProcessor` 等价能力（当前用扁平的 `RouteAccessGate` 代替，需评估是否覆盖菜单折叠/能力过滤等既有行为）
+
+## 页面迁移完成定义（详细 DoD）
 
 - [ ] DoD-01 页面路由已在 React 注册，路径、参数、404 行为与 Vue 侧一致
 - [ ] DoD-02 页面所需菜单元数据、`authList`、角色约束已接入并生效
@@ -94,20 +98,14 @@ source_of_truth:
 - [ ] DoD-11 页面最小回归通过：`lint`、类型检查、对应测试、手工冒烟清单
 - [ ] DoD-12 页面迁移记录已回填：迁移人、完成日期、风险点、回滚要点
 
-### 批次执行与验收节奏
-
-- [ ] 每批次开始前完成“冻结范围 + 风险评审 + 回归清单确认”
-- [ ] 每批次结束时输出“已迁移路由清单 + 未决问题清单 + 下一批依赖项”
-- [ ] 每批次至少完成一次跨角色回归（普通成员/管理员/受限角色）
-- [ ] 每批次完成后更新 `component-replacement-list.md` 与本清单状态
-
 ## 暂缓项
 
-- [x] `hall-of-fame/temple` 本轮取消实现，React 侧仅保留 stub 占位，等待后续重构单独立项
-- [x] `hall-of-fame/manage`、`hall-of-fame/current-manage` 本轮仅保留 stub 占位，stub 文案标记"本轮不实现"
+- [x] `hall-of-fame/*` 模块在 Vue 侧已于 2026-05-12 整体删除并被 `fuxi-hall` 取代；React 侧目前仍保留三条 stub 占位，属于遗留 stub，需在 `fuxi-hall/*` 迁移落地时一并移除
+- [x] Vue 侧 `router/modules/role.ts` 未被 `modules/index.ts` 引用，对应的 `views/role/*` 不存在；React 侧不纳入迁移范围
+- [x] Vue 侧 `views/auth/register/index.vue` 无对应路由，属于模板遗留，React 侧不纳入迁移范围
 
 ## P1 替换发布与回切
- 
+
 - [ ] 制定替换发布策略（按环境批次执行，不做长期 Vue/React 共存）
 - [ ] 建立回切开关与回切演练流程
 - [ ] 明确替换门槛（错误率、关键路径成功率、性能指标）
@@ -118,8 +116,4 @@ source_of_truth:
 - [ ] P0 项有 owner 与目标时间
 - [ ] 路由、权限、登录态、API 契约回归通过
 - [ ] 替换发布流程和回切流程可演练
-
-
-
-
 
