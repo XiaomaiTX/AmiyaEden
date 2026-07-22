@@ -2,9 +2,10 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-05-10
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src
+  - static-react/src
   - docs/ai/repo-rules.md
   - docs/architecture/routing-and-menus.md
   - docs/architecture/auth-and-permissions.md
@@ -35,12 +36,20 @@ source_of_truth:
 - 子文档状态变更时同步更新 `last_reviewed`。
 - React 迁移的 i18n 必须对齐旧 Vue 前端的实际翻译内容，尤其是人物管理、招新/直推、军团 KM、锁定提示等专有场景；只改调用形式不算完成对齐。
 - 允许在 React 运行时补齐 Vue 既有的 `@:引用` 和变量插值能力，但翻译文本本身要以旧 Vue 语义和措辞为准，不得自行简化成通用描述。
-- `hall-of-fame/temple` 当前取消实现，React 侧仅保留 stub 占位；后续重构另起范围后再恢复迁移。
-- `C-1 shop` 已在 React 侧落地，后续波次继续推进 `skill-planning/*` 与 `operation/*`。
-- `C-2` 已完成 `skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap` 的 React 落地。
-- `D-1` 已完成 `operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap` 的 React 落地。
-- `D-2` 已完成 `system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config` 的 React 落地。
+
+## 模块进度摘要（2026-07-22 审计）
+
+- 批次 A/B/C/D 的全部原计划路由已在 React 注册，并替换为真实业务页面。
 - React 壳层的 `SidebarContext` 已从 `sidebar.tsx` 拆出为独立模块，侧边栏状态、移动端展开状态、cookie 记忆和快捷键切换属于已完成基座能力，不单独占用业务批次。
+- Vue 侧在冻结期之后新增以下路由，React 侧尚未对齐，列入追赶清单（见 `./migration-scope-baseline.md`、`./todolist.md`）：
+  - `/characters`（顶层路由，与 `dashboard/characters` 复用同一页，2026-05-22 落地）
+  - `/dashboard/fuel-officer-structures`（2026-05-11 落地，`super_admin/fuel_officer`）
+  - `/dashboard/galaxy-registry`（2026-06-04 落地，`super_admin/admin/captain/user`）
+  - `/info/tool-bookmarks`（2026-05-13 落地）
+  - `/system/qq-governance`（2026-07-12 落地，`super_admin`）
+  - `/fuxi-hall/{leadership, contributors, manage}`（2026-05-12 落地，取代旧 `hall-of-fame` 模块）
+- Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 侧继续保留 `hall-of-fame/*` 三条 stub 占位，属于历史遗留 stub，迁移范围另起后必须移除。
+- 基础设施补齐仍未完成：WorkTab 多标签页、`v-auth`/`v-roles` 的 React 对应物（`PermissionGate`/`RoleGate`/`usePermission`/`useRole`）、Zustand `user/menu/worktab/setting/table/badge/sys-config` 等非 session/preference store 均未落地，详见 `./component-replacement-list.md`。
 
 ## 明确声明
 

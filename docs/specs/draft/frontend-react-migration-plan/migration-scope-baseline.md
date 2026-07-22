@@ -2,15 +2,16 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-05-01
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src/views
   - static/src/router
   - static/src/api
+  - static-react/src
   - docs/specs/draft/frontend-react-migration-plan/todolist.md
 ---
 
-# 迁移范围基线清单（冻结）
+# 迁移范围基线清单（冻结 + 漂移追赶）
 
 ## 冻结规则
 
@@ -18,103 +19,124 @@ source_of_truth:
 - 冻结来源：`static/src/router/modules/*.ts` + `static/src/router/routes/staticRoutes.ts`
 - 冻结口径：仅统计“页面级路由组件”（`component: '/xxx/yyy'` 或 `@views/.../index.vue`）
 - owner 规则：当前统一标记为 `FE-owner(TBD)`，按批次启动前补齐到个人
+- 漂移规则：2026-05-01 之后 Vue 侧新增或删除的路由单独列入“范围漂移追赶项”，不修改原冻结表
 
 ## 页面范围清单（按迁移批次）
 
-| 批次 | Vue 页面组件 | 路由路径 | 优先级 | 依赖 API（主） | 权限/约束 | owner |
+`React 状态` 列以 2026-07-22 审计结果为准，取值：
+- `真实页`：React 侧已有真实业务页实现
+- `stub`：React 侧仅有占位 stub
+- `未对齐`：Vue 侧有路由，React 侧未注册或未实现
+
+| 批次 | Vue 页面组件 | 路由路径 | 优先级 | 依赖 API（主） | 权限/约束 | React 状态 | owner |
+|---|---|---|---|---|---|---|---|
+| A | `/dashboard/console` | `/dashboard/console` | P1 | `dashboard.ts`, `notification.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/dashboard/characters` | `/dashboard/characters` | P1 | `dashboard.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/dashboard/npc-kills` | `/dashboard/npc-kills` | P1 | `npc-kill.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| A | `/dashboard/corporation-structures` | `/dashboard/corporation-structures` | P1 | `corporation-structures.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| A | `/info/wallet` | `/info/wallet` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/skill` | `/info/skill` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/npc-kills` | `/info/npc-kills` | P1 | `npc-kill.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/ships` | `/info/ships` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/implants` | `/info/implants` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/fittings` | `/info/fittings` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/assets` | `/info/assets` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/contracts` | `/info/contracts` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
+| A | `/info/esi-check` | `/info/esi-check` | P1 | `eve-info.ts`, `esi-refresh.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/ticket/my-tickets` | `/ticket/my-tickets` | P1 | `ticket.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/ticket/create` | `/ticket/create` | P1 | `ticket.ts`, `upload.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/ticket/detail` | `/ticket/detail/:id` | P1 | `ticket.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/system/ticket-management` | `/ticket/management` | P1 | `ticket.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| B | `/system/ticket-categories` | `/ticket/categories` | P1 | `ticket.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| B | `/system/ticket-statistics` | `/ticket/statistics` | P1 | `ticket.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| B | `/system/ticket-detail` | `/ticket/admin-detail/:id` | P1 | `ticket.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| B | `/welfare/my` | `/welfare/my` | P1 | `welfare.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/welfare/approval` | `/welfare/approval` | P1 | `welfare.ts` | `roles: super_admin/admin/welfare` | 真实页 | FE-owner(TBD) |
+| B | `/welfare/settings` | `/welfare/settings` | P1 | `welfare.ts` | `roles: super_admin/admin/welfare` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/select-captain` | `/newbro/select-captain` | P1 | `newbro.ts` | `login`, `requiresNewbro` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/select-mentor` | `/newbro/select-mentor` | P1 | `newbro.ts`, `mentor.ts` | `login`, `requiresMentorMenteeEligibility` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/captain` | `/newbro/captain` | P1 | `newbro.ts` | `roles: captain` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/mentor` | `/newbro/mentor` | P1 | `mentor.ts` | `roles: mentor` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/manage` | `/newbro/manage` | P1 | `newbro.ts` | `roles: super_admin/admin/captain` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/mentor-manage` | `/newbro/mentor-manage` | P1 | `mentor.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| B | `/newbro/recruit-link` | `/newbro/recruit-link` | P1 | `newbro.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/srp/apply` | `/srp/srp-apply` | P1 | `srp.ts` | `login` | 真实页 | FE-owner(TBD) |
+| B | `/srp/manage` | `/srp/srp-manage` | P1 | `srp.ts` | `roles: super_admin/admin/senior_fc/srp`, `auth: approve` | 真实页 | FE-owner(TBD) |
+| B | `/srp/prices` | `/srp/srp-prices` | P1 | `srp.ts` | `roles: super_admin/admin/senior_fc/srp` | 真实页 | FE-owner(TBD) |
+| C | `/shop/browse` | `/shop/browse` | P1 | `shop.ts` | `login` | 真实页 | FE-owner(TBD) |
+| C | `/shop/manage` | `/shop/manage` | P1 | `shop.ts` | `roles: super_admin/admin`, `auth: add_product/edit_product/delete_product` | 真实页 | FE-owner(TBD) |
+| C | `/shop/order-manage` | `/shop/order-manage` | P1 | `shop.ts` | `roles: super_admin/admin/shop_order_manage`, `auth: approve_order` | 真实页 | FE-owner(TBD) |
+| C | `/shop/wallet` | `/shop/wallet` | P1 | `shop.ts` | `login` | 真实页 | FE-owner(TBD) |
+| C | `/skill-planning/completion-check` | `/skill-planning/completion-check` | P1 | `skill-plan.ts` | `login` | 真实页 | FE-owner(TBD) |
+| C | `/skill-planning/skill-plans` | `/skill-planning/skill-plans` | P1 | `skill-plan.ts` | `login` | 真实页 | FE-owner(TBD) |
+| C | `/skill-planning/personal-skill-plans` | `/skill-planning/personal-skill-plans` | P1 | `skill-plan.ts` | `login` | 真实页 | FE-owner(TBD) |
+| C | `/operation/join` | `/operation/join` | P1 | `fleet.ts` | `login` | 真实页 | FE-owner(TBD) |
+| C | `/operation/pap` | `/operation/pap` | P1 | `alliance-pap.ts` | `login` | 真实页 | FE-owner(TBD) |
+| D | `/operation/fleets` | `/operation/fleets` | P1 | `fleet.ts` | `roles: super_admin/admin/fc/senior_fc` | 真实页 | FE-owner(TBD) |
+| D | `/operation/fleet-detail` | `/operation/fleet-detail/:id` | P1 | `fleet.ts` | `roles: super_admin/admin/fc/senior_fc` | 真实页 | FE-owner(TBD) |
+| D | `/operation/fleet-configs` | `/operation/fleet-configs` | P1 | `fleet-config.ts` | `login` | 真实页 | FE-owner(TBD) |
+| D | `/operation/corporation-pap` | `/operation/corporation-pap` | P1 | `alliance-pap.ts` | `login` | 真实页 | FE-owner(TBD) |
+| D | `/system/user` | `/system/user` | P1 | `system-manage.ts` | `roles: super_admin/admin`, `auth: delete_user/assign_role` | 真实页 | FE-owner(TBD) |
+| D | `/system/task-manager` | `/system/task-manager` | P1 | `task-manager.ts` | `roles: super_admin/admin`, `auth: execute_task/update_schedule` | 真实页 | FE-owner(TBD) |
+| D | `/system/wallet` | `/system/wallet` | P1 | `sys-wallet.ts` | `roles: super_admin/admin`, `auth: adjust_balance/view_log` | 真实页 | FE-owner(TBD) |
+| D | `/system/audit` | `/system/audit` | P1 | `audit.ts` | `roles: super_admin/admin`, `auth: view_audit_detail` | 真实页 | FE-owner(TBD) |
+| D | `/system/pap-exchange` | `/system/pap-exchange` | P1 | `pap-exchange.ts` | `roles: super_admin/admin`, `auth: edit_exchange_rate` | 真实页 | FE-owner(TBD) |
+| D | `/system/pap` | `/system/pap` | P1 | `alliance-pap.ts` | `roles: super_admin/admin`, `auth: manual_fetch` | 真实页 | FE-owner(TBD) |
+| D | `/system/auto-role` | `/system/auto-role` | P1 | `system-manage.ts` | `roles: super_admin` | 真实页 | FE-owner(TBD) |
+| D | `/system/user-center` | `/system/user-center` | P1 | `system-manage.ts` | `isHide`, `isHideTab` | 真实页 | FE-owner(TBD) |
+| D | `/system/webhook` | `/system/webhook` | P1 | `webhook.ts` | `roles: super_admin` | 真实页 | FE-owner(TBD) |
+| D | `/system/basic-config` | `/system/basic-config` | P1 | `sys-config.ts` | `roles: super_admin` | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/auth/login/index.vue` | `/auth/login` | P1 | `auth.ts` | 静态路由 | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/auth/callback/index.vue` | `/auth/callback` | P1 | `auth.ts` | 静态路由 | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/auth/recruit/index.vue` | `/r/:code` | P1 | `auth.ts` | 静态路由 | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/outside/Iframe.vue` | `/outside/iframe/:path` | P2 | 无后端依赖（外链） | 静态路由 | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/exception/403/index.vue` | `/403` | P2 | 无 | 静态路由 | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/exception/404/index.vue` | `/:pathMatch(.*)*` | P2 | 无 | 静态路由 | 真实页 | FE-owner(TBD) |
+| 收尾 | `@views/exception/500/index.vue` | `/500` | P2 | 无 | 静态路由 | 真实页 | FE-owner(TBD) |
+
+## 范围漂移追赶项（2026-05-01 冻结后新增/删除）
+
+### Vue 侧新增路由（React 侧未对齐）
+
+| Vue 页面组件 | 路由路径 | Vue 落地日期 | 依赖 API（主） | 权限/约束 | React 状态 | owner |
 |---|---|---|---|---|---|---|
-| A | `/dashboard/console` | `/dashboard/console` | P1 | `dashboard.ts`, `notification.ts` | `login` | FE-owner(TBD) |
-| A | `/dashboard/characters` | `/dashboard/characters` | P1 | `dashboard.ts` | `login` | FE-owner(TBD) |
-| A | `/dashboard/npc-kills` | `/dashboard/npc-kills` | P1 | `npc-kill.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| A | `/dashboard/corporation-structures` | `/dashboard/corporation-structures` | P1 | `corporation-structures.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| A | `/info/wallet` | `/info/wallet` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/skill` | `/info/skill` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/npc-kills` | `/info/npc-kills` | P1 | `npc-kill.ts` | `login` | FE-owner(TBD) |
-| A | `/info/ships` | `/info/ships` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/implants` | `/info/implants` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/fittings` | `/info/fittings` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/assets` | `/info/assets` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/contracts` | `/info/contracts` | P1 | `eve-info.ts` | `login` | FE-owner(TBD) |
-| A | `/info/esi-check` | `/info/esi-check` | P1 | `eve-info.ts`, `esi-refresh.ts` | `login` | FE-owner(TBD) |
-| B | `/ticket/my-tickets` | `/ticket/my-tickets` | P1 | `ticket.ts` | `login` | FE-owner(TBD) |
-| B | `/ticket/create` | `/ticket/create` | P1 | `ticket.ts`, `upload.ts` | `login` | FE-owner(TBD) |
-| B | `/ticket/detail` | `/ticket/detail/:id` | P1 | `ticket.ts` | `login` | FE-owner(TBD) |
-| B | `/system/ticket-management` | `/ticket/management` | P1 | `ticket.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| B | `/system/ticket-categories` | `/ticket/categories` | P1 | `ticket.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| B | `/system/ticket-statistics` | `/ticket/statistics` | P1 | `ticket.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| B | `/system/ticket-detail` | `/ticket/admin-detail/:id` | P1 | `ticket.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| B | `/welfare/my` | `/welfare/my` | P1 | `welfare.ts` | `login` | FE-owner(TBD) |
-| B | `/welfare/approval` | `/welfare/approval` | P1 | `welfare.ts` | `roles: super_admin/admin/welfare` | FE-owner(TBD) |
-| B | `/welfare/settings` | `/welfare/settings` | P1 | `welfare.ts` | `roles: super_admin/admin/welfare` | FE-owner(TBD) |
-| B | `/newbro/select-captain` | `/newbro/select-captain` | P1 | `newbro.ts` | `login`, `requiresNewbro` | FE-owner(TBD) |
-| B | `/newbro/select-mentor` | `/newbro/select-mentor` | P1 | `newbro.ts`, `mentor.ts` | `login`, `requiresMentorMenteeEligibility` | FE-owner(TBD) |
-| B | `/newbro/captain` | `/newbro/captain` | P1 | `newbro.ts` | `roles: captain` | FE-owner(TBD) |
-| B | `/newbro/mentor` | `/newbro/mentor` | P1 | `mentor.ts` | `roles: mentor` | FE-owner(TBD) |
-| B | `/newbro/manage` | `/newbro/manage` | P1 | `newbro.ts` | `roles: super_admin/admin/captain` | FE-owner(TBD) |
-| B | `/newbro/mentor-manage` | `/newbro/mentor-manage` | P1 | `mentor.ts` | `roles: super_admin/admin` | FE-owner(TBD) |
-| B | `/newbro/recruit-link` | `/newbro/recruit-link` | P1 | `newbro.ts` | `login` | FE-owner(TBD) |
-| B | `/srp/apply` | `/srp/srp-apply` | P1 | `srp.ts` | `login` | FE-owner(TBD) |
-| B | `/srp/manage` | `/srp/srp-manage` | P1 | `srp.ts` | `roles: super_admin/admin/senior_fc/srp`, `auth: approve` | FE-owner(TBD) |
-| B | `/srp/prices` | `/srp/srp-prices` | P1 | `srp.ts` | `roles: super_admin/admin/senior_fc/srp` | FE-owner(TBD) |
-| C | `/shop/browse` | `/shop/browse` | P1 | `shop.ts` | `login` | FE-owner(TBD) |
-| C | `/shop/manage` | `/shop/manage` | P1 | `shop.ts` | `roles: super_admin/admin`, `auth: add_product/edit_product/delete_product` | FE-owner(TBD) |
-| C | `/shop/order-manage` | `/shop/order-manage` | P1 | `shop.ts` | `roles: super_admin/admin/shop_order_manage`, `auth: approve_order` | FE-owner(TBD) |
-| C | `/shop/wallet` | `/shop/wallet` | P1 | `shop.ts` | `login` | FE-owner(TBD) |
-| C | `/skill-planning/completion-check` | `/skill-planning/completion-check` | P1 | `skill-plan.ts` | `login` | FE-owner(TBD) |
-| C | `/skill-planning/skill-plans` | `/skill-planning/skill-plans` | P1 | `skill-plan.ts` | `login` | FE-owner(TBD) |
-| C | `/skill-planning/personal-skill-plans` | `/skill-planning/personal-skill-plans` | P1 | `skill-plan.ts` | `login` | FE-owner(TBD) |
-| C | `/operation/join` | `/operation/join` | P1 | `fleet.ts` | `login` | FE-owner(TBD) |
-| C | `/operation/pap` | `/operation/pap` | P1 | `alliance-pap.ts` | `login` | FE-owner(TBD) |
-| D | `/operation/fleets` | `/operation/fleets` | P1 | `fleet.ts` | `roles: super_admin/admin/fc/senior_fc` | FE-owner(TBD) |
-| D | `/operation/fleet-detail` | `/operation/fleet-detail/:id` | P1 | `fleet.ts` | `roles: super_admin/admin/fc/senior_fc` | FE-owner(TBD) |
-| D | `/operation/fleet-configs` | `/operation/fleet-configs` | P1 | `fleet-config.ts` | `login` | FE-owner(TBD) |
-| D | `/operation/corporation-pap` | `/operation/corporation-pap` | P1 | `alliance-pap.ts` | `login` | FE-owner(TBD) |
-| D | `/system/user` | `/system/user` | P1 | `system-manage.ts` | `roles: super_admin/admin`, `auth: delete_user/assign_role` | FE-owner(TBD) |
-| D | `/system/task-manager` | `/system/task-manager` | P1 | `task-manager.ts` | `roles: super_admin/admin`, `auth: execute_task/update_schedule` | FE-owner(TBD) |
-| D | `/system/wallet` | `/system/wallet` | P1 | `sys-wallet.ts` | `roles: super_admin/admin`, `auth: adjust_balance/view_log` | FE-owner(TBD) |
-| D | `/system/audit` | `/system/audit` | P1 | `audit.ts` | `roles: super_admin/admin`, `auth: view_audit_detail` | FE-owner(TBD) |
-| D | `/system/pap-exchange` | `/system/pap-exchange` | P1 | `pap-exchange.ts` | `roles: super_admin/admin`, `auth: edit_exchange_rate` | FE-owner(TBD) |
-| D | `/system/pap` | `/system/pap` | P1 | `alliance-pap.ts` | `roles: super_admin/admin`, `auth: manual_fetch` | FE-owner(TBD) |
-| D | `/system/auto-role` | `/system/auto-role` | P1 | `system-manage.ts` | `roles: super_admin` | FE-owner(TBD) |
-| D | `/system/user-center` | `/system/user-center` | P1 | `system-manage.ts` | `isHide`, `isHideTab` | FE-owner(TBD) |
-| D | `/system/webhook` | `/system/webhook` | P1 | `webhook.ts` | `roles: super_admin` | FE-owner(TBD) |
-| D | `/system/basic-config` | `/system/basic-config` | P1 | `sys-config.ts` | `roles: super_admin` | FE-owner(TBD) |
-| 收尾 | `@views/auth/login/index.vue` | `/auth/login` | P1 | `auth.ts` | 静态路由 | FE-owner(TBD) |
-| 收尾 | `@views/auth/callback/index.vue` | `/auth/callback` | P1 | `auth.ts` | 静态路由 | FE-owner(TBD) |
-| 收尾 | `@views/auth/recruit/index.vue` | `/r/:code` | P1 | `auth.ts` | 静态路由 | FE-owner(TBD) |
-| 收尾 | `@views/outside/Iframe.vue` | `/outside/iframe/:path` | P2 | 无后端依赖（外链） | 静态路由 | FE-owner(TBD) |
-| 收尾 | `@views/exception/403/index.vue` | `/403` | P2 | 无 | 静态路由 | FE-owner(TBD) |
-| 收尾 | `@views/exception/404/index.vue` | `/:pathMatch(.*)*` | P2 | 无 | 静态路由 | FE-owner(TBD) |
-| 收尾 | `@views/exception/500/index.vue` | `/500` | P2 | 无 | 静态路由 | FE-owner(TBD) |
+| `/dashboard/characters`（页面复用） | `/characters`（顶层） | 2026-05-22 | `dashboard.ts` | 公开访问（无 `login`） | 未对齐 | FE-owner(TBD) |
+| `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 未对齐 | FE-owner(TBD) |
+| `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 未对齐 | FE-owner(TBD) |
+| `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login` | 未对齐 | FE-owner(TBD) |
+| `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 未对齐 | FE-owner(TBD) |
+| `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 未对齐 | FE-owner(TBD) |
+| `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 未对齐 | FE-owner(TBD) |
+| `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 未对齐 | FE-owner(TBD) |
+
+### Vue 侧已删除（React 侧仍为遗留 stub）
+
+| React 遗留 stub 路径 | Vue 删除日期 | 处理动作 |
+|---|---|---|
+| `hall-of-fame/temple` | 2026-05-12 | React 侧移除 stub 路由与页面占位 |
+| `hall-of-fame/manage` | 2026-05-12 | 同上 |
+| `hall-of-fame/current-manage` | 2026-05-12 | 同上 |
 
 ## 当前进展
 
 - 2026-05-01：static-react 已完成批次 A 全部路由注册与占位页接入，且对关键角色门禁完成测试回归。
-- 2026-05-01：/dashboard/console 已替换为 React 真实数据页（接入 /api/v1/dashboard，含加载/错误态与测试覆盖）。
-- 2026-05-01：/dashboard/characters 已替换为 React 真实数据页（人物资料、直推、绑定/解绑、主人物切换，含测试覆盖）。
-- 2026-05-01：/dashboard/npc-kills 已替换为 React 真实数据页（日期筛选、总览、成员统计、按系统/趋势展示，含测试覆盖）。
-- 2026-05-01：/dashboard/corporation-structures 已替换为 React 真实数据页（列表/设置双标签、筛选、通知阈值与授权配置，含测试覆盖）。
-
-- 2026-05-01：`/info/wallet` 已替换为 React 真实数据页（角色切换、流水类型筛选、余额与流水展示，含测试覆盖）。
-- 2026-05-01：`/info/skill` 已替换为 React 真实数据页（角色切换、技能筛选、技能队列展示与 ESI 拉取触发，含测试覆盖）。
-- 2026-05-01：`/info/npc-kills` 已替换为 React 真实数据页（全部人物/单人物切换、日期筛选、总览、流水明细展示，含测试覆盖）。
-- 2026-05-01：`/info/ships` 已替换为 React 真实数据页（角色切换、舰船分组筛选、可驾驶状态展示，含测试覆盖）。
-- 2026-05-01：`/info/implants` 已替换为 React 真实数据页（角色切换、疲劳状态、活跃植入体与跳克列表展示，含测试覆盖）。
-- 2026-05-01：`/info/fittings` 已替换为 React 真实数据页（种族/分组/关键字筛选、分组折叠、装配详情展示）。
-- 2026-05-01：`/info/assets` 已替换为 React 真实数据页（位置分组、递归子物品、关键字筛选展示）。
-- 2026-05-01：`/info/contracts` 已替换为 React 真实数据页（合同筛选、列表与详情侧栏展示，含测试覆盖）。
-- 2026-05-01：`/info/esi-check` 已替换为 React 真实数据页（授权总览、人物详情与重授权入口，含测试覆盖）。
-- 2026-05-01：`/ticket/my-tickets` 已替换为 React 真实数据页（我的工单列表与状态筛选，含测试覆盖）。
-- 2026-05-01：`/ticket/create` 已替换为 React 真实数据页（分类加载、工单提交与返回我的工单，含测试覆盖）。
-- 2026-05-01：`/ticket/detail/:id` 已替换为 React 真实数据页（工单详情、回复列表与回复提交，含测试覆盖）。
+- 2026-05-01 至 2026-05-10：批次 A/B/C/D 全部原计划路由完成 React 真实页迁移，壳层、i18n、SSO 登录闭环、暗色模式、API 类型本地化同步落地。
+- 2026-05-13：`/dashboard/corporation-structures` 增加 fuel officer 列展示（Vue/React 同步）。
+- 2026-06-05：`/info/npc-kills` 移除误导性的 estimated hours 指标。
+- 2026-06-06：`/info/assets` 增加分页懒加载与显式错误态。
+- 2026-06-29：`/info/npc-kills` 增加 incursion/mission reward、统一筛选与按用户/人物筛选；payout 类型改名。
+- 2026-07-22：本轮审计确认所有原计划路由在 React 侧均有真实业务页实现，`hall-of-fame/*` 三条 stub 成为历史遗留 stub；范围漂移追赶项（8 条新增 Vue 路由）尚未对齐。
 
 ## 说明与已知风险
 
 - 本清单冻结的是“路由页面范围”，不含路由内子组件与纯工具文件（`*.helpers.ts`、`*.test.ts`）。
-- `role/*` 页面在 `static/src/views` 存量中不存在且未在 `routeModules` 注册，暂不纳入本次迁移范围。
-- `hall-of-fame/temple` 已取消本轮实现，React 侧仅保留 stub 占位，待后续重构单独立项后再纳入迁移范围。
-- 路由文件中出现的中文乱码标题未在本次清单修复；权限标识以 `authMark` 英文字段为准。
+- `role/*` 在 `static/src/router/modules/role.ts` 存在但未被 `modules/index.ts` 引用，对应 `views/role/*` 不存在，视为死代码，不纳入迁移范围。
+- `views/auth/register/index.vue` 无对应路由，属于模板遗留，不纳入迁移范围。
+- Vue 侧 `hall-of-fame/*` 已整体删除并由 `fuxi-hall` 取代；React 侧 stub 必须在 `fuxi-hall/*` 落地时一并移除。
+- Vue 工单管理页面组件位于 `views/system/*`，路由暴露在 `/ticket/*` 下；迁移时组件路径与路由路径不一致，需要单独维护映射。
+- Vue 静态路由与 `exception` 模块同名（`Exception403/404/500`），静态路由先生效；React 侧已通过扁平 `RouteAccessGate` + 静态路由表实现等价行为。
 - 批次执行前必须补齐 owner，并基于当前后端接口再确认 API 依赖是否存在跨模块调用。
+
 
 
 
