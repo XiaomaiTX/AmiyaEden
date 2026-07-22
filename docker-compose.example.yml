@@ -49,8 +49,8 @@ services:
         image: xiaomaitx/amiya-eden-frontend:latest
         container_name: amiya-eden-frontend
         restart: unless-stopped
-        ports:
-            - "80:80"
+        expose:
+            - "80"
         networks:
             - amiya-eden-network
 
@@ -60,8 +60,8 @@ services:
         restart: unless-stopped
         depends_on:
             - backend
-        ports:
-            - "3000:80"
+        expose:
+            - "80"
         networks:
             - amiya-eden-network
 
