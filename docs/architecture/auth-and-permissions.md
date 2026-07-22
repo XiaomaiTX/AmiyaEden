@@ -2,12 +2,15 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-05-17
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
   - server/internal/model/role.go
   - static/src/store/modules/user.ts
+  - static-react/src/api/auth.ts
+  - static-react/src/stores/session-store.ts
+  - static-react/src/auth/route-access-gate.tsx
 ---
 
 # 认证与权限
@@ -174,7 +177,7 @@ source_of_truth:
 
 ## 前端路由模式
 
-前端使用静态路由 + `meta.login` / `meta.roles` 模式。
+迁移期间 Vue 和 React 都使用前端静态路由 + `login` / `roles` 元数据模式。Vue 的实现位于 `static/src/router`；React 的实现位于 `static-react/src/app/migration-routes.ts` 和 `static-react/src/auth/route-access-gate.tsx`。
 
 静态路由模式下的约定：
 
@@ -187,6 +190,8 @@ source_of_truth:
 - `skill-planning/skill-plans` 当前使用 `meta.login = true` 提供只读访问，创建 / 编辑 / 删除 / 排序仍依赖页面内 `canManage` 与后端 `RequireRole(admin, senior_fc)` 双层限制
 - 某些页面可以对更宽的路由角色集合提供只读入口，但把新增 / 导入 / 编辑 / 删除等变更能力继续收敛到页面内 `canManage*` 判断与后端 `RequireRole(...)` 的双层限制
 - `super_admin` 在前端 capability 层自动放行，与后端 `RequireCorpCapability` 保持一致
+
+React parity 状态：React 已承接登录、角色、资格快照和部分 `authList` 路由门禁，但尚未完整承接 `corpCapabilities`、菜单 capability 过滤和按钮级权限。React 替换 Vue 前必须补齐这些行为；前端检查只能提供 UX 收敛，后端鉴权永远是最终边界。
 
 修改权限时，必须同时考虑：
 

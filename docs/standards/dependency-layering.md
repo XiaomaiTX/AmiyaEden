@@ -2,11 +2,12 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-03-23
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
   - server/internal
   - static/src
+  - static-react/src
 ---
 
 # 依赖分层规范
@@ -75,34 +76,34 @@ typedID := uint(id)
 ## 前端依赖方向
 
 ```text
-types → api → hooks/store → components → views
+types → api → hooks/store → components → views/pages
 ```
 
 ### 前端规则
 
 - `types/`
   允许 import：无；仅允许纯类型定义
-  禁止 import：`api/`、`hooks/`、`store/`、`components/`、`views/`
+  禁止 import：`api/`、`hooks/`、`store/`、`components/`、`views/`、`pages/`
 - `api/`
   允许 import：`types/`、HTTP client 工具
-  禁止 import：`hooks/`、`store/`、`components/`、`views/`
+  禁止 import：`hooks/`、`store/`、`components/`、`views/`、`pages/`
 - `hooks/`
   允许 import：`types/`、`api/`、`store/`、其他 hook
-  禁止 import：`views/`、特定功能 `components/`
+  禁止 import：`views/`、`pages/`、特定功能 `components/`
 - `store/`
   允许 import：`types/`、`api/`、`hooks/`
-  禁止 import：`views/`、`components/`
+  禁止 import：`views/`、`pages/`、`components/`
 - `components/`
   允许 import：`types/`、`hooks/`、`store/`、其他 component
-  禁止 import：`views/`、直接 import `api/`
-- `views/`
+  禁止 import：`views/`、`pages/`、直接 import `api/`
+- `views/` / `pages/`
   允许 import：以上所有层
   禁止被其他应用层 import
 
 ### 前端快速规则
 
-- `views` 不得直接发起 HTTP 调用，必须使用 `api/`
-- 共享契约必须放在 `types/`，不得放在 `views/` 下
+- `views` / `pages` 不得直接发起 HTTP 调用，必须使用 `api/`
+- 共享契约必须放在对应前端的 `types/`，不得放在 `views/` 或 `pages/` 下
 - `components` 访问后端数据应通过 hook 或 store，不得直接 import `api/`
 
 ## 跨边界规则
@@ -112,9 +113,9 @@ types → api → hooks/store → components → views
 - 变更顺序：
   1. 后端请求或响应结构
   2. 如有需要，后端 service 逻辑
-  3. 前端 `static/src/api/*.ts`
-  4. 前端 `static/src/types/api/api.d.ts`
-  5. 调用方 view 或 component
+  3. Vue `static/src/api/*.ts` 和/或 React `static-react/src/api/*.ts`
+  4. Vue `static/src/types/api/api.d.ts` 和/或 React `static-react/src/types/api/*.ts`
+  5. 调用方 view/page 或 component
 - 后端 JSON 字段名必须与前端类型定义完全一致
 - 不得跨边界悄悄重命名字段
 

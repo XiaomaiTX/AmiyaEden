@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-13
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/eve_sso.go
@@ -26,7 +26,7 @@ source_of_truth:
 - 解绑人物
 - 通过 `/api/v1/me` 获取当前用户、职权、权限与绑定人物信息
 - 通过 `/api/v1/me` 维护昵称、QQ、Discord ID 资料
-- 当用户仅剩 1 个绑定人物且该人物为主人物时，可在旧 Vue `/dashboard/characters` 页面发起自助注销账号
+- 当用户仅剩 1 个绑定人物且该人物为主人物时，可在人物管理页面发起自助注销账号
 - 未填写昵称或未提供 QQ / Discord 任一联系方式时，前端强制停留在 `/dashboard/characters`，且尝试访问其他页面时弹出原因提示
 - 可选启用：任一已绑定人物 ESI 失效时，前端强制停留在 `/dashboard/characters`，且尝试访问其他页面时弹出原因提示
 - 主人物 ESI 已失效时，`/api/v1/me` 仍返回启动上下文，前端强制停留在 `/dashboard/characters` 直到主人物重新授权，且尝试访问其他页面时弹出原因提示
@@ -55,7 +55,7 @@ source_of_truth:
 
 - 登录入口与回调是 `Public`
 - `/api/v1/me` 与人物绑定相关接口要求有效 `JWT`，允许 `guest` 使用
-- `/api/v1/me` 的 `DELETE` 入口仅允许删除当前 JWT 对应的用户，不接受外部 `user_id`，用于旧 Vue 角色页中的自助注销
+- `/api/v1/me` 的 `DELETE` 入口仅允许删除当前 JWT 对应的用户，不接受外部 `user_id`，用于人物管理页中的自助注销
 - `guest` 通过这些接口完成权限上下文建立、人物绑定与资料补全，再决定是否能进入 `Login` 边界的业务页面
 - `/api/v1/me` 会返回主人物 `token_invalid` 状态，供前端将用户锁定在 `/dashboard/characters` 直到主人物重新授权
 - `/api/v1/me` 同时返回 `enforce_character_esi_restriction`，供前端路由守卫决定是否对非主人物失效 ESI 启用页面停留限制
@@ -91,3 +91,9 @@ source_of_truth:
 - `static/src/api/auth.ts`
 - `static/src/views/auth`
 - `static/src/views/dashboard/characters`
+
+## 前端实现映射（迁移期）
+
+- 人物资料、绑定、主人物切换、ESI 锁定和自助注销是双端必须保持一致的行为，不限定为“旧 Vue 页面”。
+- Vue 实现位于 `static/src`；React 实现位于 `static-react/src/api/auth.ts`、`static-react/src/pages/dashboard-characters-page.tsx` 及对应路由。
+- 顶层 `/characters` 入口仍属于 React 范围漂移追赶项，以迁移基线为准。

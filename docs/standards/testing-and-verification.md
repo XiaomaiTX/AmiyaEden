@@ -2,12 +2,13 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/regression-test-plan.md
   - server/go.mod
   - static/package.json
+  - static-react/package.json
 ---
 
 # 测试与验证规范
@@ -21,11 +22,11 @@ source_of_truth:
 | 工具 | 版本 | 安装方式 |
 | --- | --- | --- |
 | golangci-lint | v2.11.4 | `go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.11.4` |
-| pnpm | 10.32.1 | `npm install -g pnpm@10.32.1` |
+| pnpm | 11.15.1 | `npm install -g pnpm@11.15.1` |
 | Node.js | 24 | 见仓库根目录 `.nvmrc` |
 
 - CI 在 `.github/workflows/verify-ci.yaml` 中锁定 `golangci-lint`。
-- 前端包由 `static/pnpm-lock.yaml` 锁定；使用 `pnpm install --frozen-lockfile`。
+- Vue 前端由 `static/pnpm-lock.yaml` 锁定，React 前端由 `static-react/pnpm-lock.yaml` 锁定；分别使用 `pnpm install --frozen-lockfile`。
 
 ## 默认命令
 
@@ -39,10 +40,20 @@ source_of_truth:
 
 ### 前端
 
+Vue：
+
 - `cd static && pnpm lint .`
 - `cd static && pnpm exec vue-tsc --noEmit`
 - `cd static && pnpm test:unit`
 - `cd static && pnpm build`
+
+React：
+
+- `cd static-react && pnpm lint`
+- `cd static-react && pnpm exec tsc -b`
+- `cd static-react && pnpm test`
+- `cd static-react && pnpm check:api-contract`
+- `cd static-react && pnpm build`
 
 ## 规则
 
@@ -91,7 +102,7 @@ source_of_truth:
 ## Repository 注意事项
 
 - 前端单测刻意保持轻量，最适合纯逻辑。
-- 保留 `static/src/types/import/auto-imports.d.ts` 与 `static/src/types/import/components.d.ts`，以使干净 checkout 能通过 lint 与 typecheck。
+- Vue 侧保留 `static/src/types/import/auto-imports.d.ts` 与 `static/src/types/import/components.d.ts`，以使干净 checkout 能通过 lint 与 typecheck；React 侧以其 `tsconfig`、API 契约检查和本地类型目录为准。
 - 不得要求 `static/.auto-import.json` 才能跑 CI lint。
 - 测试放置与实现指导见 `docs/guides/testing-guide.md`。
 - 增量回归计划见 `docs/standards/regression-test-plan.md`。

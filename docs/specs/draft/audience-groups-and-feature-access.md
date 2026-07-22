@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-21
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/pkg/jwt/jwt.go
   - server/internal/model/role.go
@@ -23,6 +23,7 @@ related_docs:
   - docs/architecture/routing-and-menus.md
   - docs/features/current/corporation-access-policy.md
   - docs/specs/draft/frontend-react-migration-plan/index.md
+  - docs/specs/draft/frontend-react-migration-plan/migration-scope-baseline.md
 ---
 
 # 用户分组与统一 Feature Access 草案
@@ -32,7 +33,7 @@ related_docs:
 ## 当前状态与证据约定
 
 - 已实现：EVE SSO、JWT、静态 canonical Role、多职权、军团 capability、Vue 静态路由门禁、独立业务资格检查。
-- 部分实现：React 迁移前端已有 Login / Role 门禁，但尚未承接军团 capability。
+- 部分实现：React 迁移前端已有 Login / Role 门禁，但尚未承接军团 capability；该缺口同时受 React 迁移基线和本文约束。
 - 未实现：Audience Group、成员申请 / 审核、Feature Audience Policy、统一 `feature_access` 与 `RequireFeatureAccess`。
 - “已确认事实”均由当前代码核对；“提案”是未来设计；“风险 / 推断”需在实施时继续验证。
 - 本次只新增草案，不修改运行时代码、数据库或接口。
@@ -63,7 +64,7 @@ Role 应继续由代码定义，不应为了兴趣、白名单或标签改成数
 - `docs/features/current/corporation-access-policy.md` 只列早期 20 项 capability，代码已注册 66 项。
 - 该文档声称前端会对 `full_access=true` 自动放行；当前 `/me` 不返回 `corp_full_access`，Vue 也不消费它。
 - 旧草案中的历史默认值是 deny；当前 `defaultCorpPolicyConfig()` 的缺省值是 allow。
-- 权威架构仍把 Vue `static/` 视为产品前端；React 是迁移草案实现，但其权限缺口必须成为切换阻断项。
+- 过渡期权威架构同时描述 Vue `static/` 和 React `static-react/`；React 权限缺口必须成为切换阻断项。
 
 ## 2. 当前权限链路
 

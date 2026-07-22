@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-11
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/model/ticket.go
   - server/internal/repository/ticket.go
@@ -112,3 +112,9 @@ source_of_truth:
 - `static/src/views/system/ticket-categories`
 - `static/src/views/system/ticket-statistics`
 - `static/src/components/ticket`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接用户工单、创建、详情、管理、分类和统计页面；管理员详情路由与 Vue 的组件路径差异以迁移基线为准。
+- 工单状态流转、上传和权限边界由本文与后端契约定义，不依赖 Vue 组件实现。

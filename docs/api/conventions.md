@@ -2,11 +2,12 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-04-09
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/pkg/response/response.go
   - static/src/types/api/api.d.ts
+  - static-react/src/types/api/
 ---
 
 # API 约定
@@ -66,9 +67,9 @@ source_of_truth:
 改动接口时，按以下顺序同步：
 
 1. 后端 handler / service / response shape
-2. 前端 `static/src/api/*`
-3. `static/src/types/api/api.d.ts`
-4. UI 使用处
+2. Vue `static/src/api/*` 和/或 React `static-react/src/api/*`
+3. Vue `static/src/types/api/api.d.ts`；React `static-react/src/types/api/*`
+4. 对应前端 UI 使用处
 5. `docs/api/route-index.md`
 6. 对应 feature doc
 
@@ -77,6 +78,8 @@ source_of_truth:
 - `docs/api/conventions.md`: 统一规则
 - `docs/api/route-index.md`: 当前已注册路由面
 - 更细的字段结构：以代码和类型文件为准
+
+React 侧使用本地模块化类型，不回退引用 Vue 的 `Api.*` 全局命名空间；迁移期间两端都存在时，后端响应和行为是共同契约，两个前端 wrapper/type 必须分别通过检查。
 
 `docs/api/route-index.md` 中的权限边界应尽量按路由显式写出，不要只依赖章节上下文让读者猜测是否需要登录或额外职权。
 

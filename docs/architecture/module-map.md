@@ -2,11 +2,12 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal
   - server/pkg
   - static/src
+  - static-react/src
   - docs/ai/repo-rules.md
 ---
 
@@ -51,6 +52,18 @@ source_of_truth:
 | `static/src/types/` | TS 类型、导入声明、契约类型 | `static/src/api/`、`server/internal/model/` |
 | `static/src/locales/` | i18n 文案 | `docs/ai/repo-rules.md`「Non-Negotiable Rules」第 3 条 |
 
+React 迁移侧对应职责：
+
+| 路径 | 主要职责 | 修改时通常还要看 |
+| --- | --- | --- |
+| `static-react/src/pages/` | React 页面与页面级状态 | `static-react/src/api/`、对应 feature doc |
+| `static-react/src/api/` | React API 包装层 | 后端 handler、`static-react/src/types/api/` |
+| `static-react/src/components/` | 可复用 React UI 组件 | hooks、stores、i18n |
+| `static-react/src/stores/` | Zustand 会话与跨页面状态 | `static-react/src/auth/`、对应 feature doc |
+| `static-react/src/app/` | React 路由、路由元数据和访问守卫 | `docs/architecture/routing-and-menus.md`、`auth-and-permissions.md` |
+| `static-react/src/types/api/` | React 本地模块化 API 类型 | `static-react/src/api/`、后端 response |
+| `static-react/src/i18n/` | React 本地化文案与解析 | Vue locale 内容、对应 feature doc |
+
 ## 文档目录职责
 
 | 路径 | 主要职责 |
@@ -72,8 +85,8 @@ source_of_truth:
 2. `server/internal/handler/`
 3. `server/internal/service/`
 4. `server/internal/repository/`
-5. `static/src/api/`
-6. `static/src/types/api/api.d.ts`
+5. `static/src/api/` and/or `static-react/src/api/`
+6. corresponding frontend types (`static/src/types/api/api.d.ts` or `static-react/src/types/api/`)
 7. `docs/api/route-index.md`
 
 ### 修改后台任务、调度或执行历史
@@ -96,8 +109,8 @@ source_of_truth:
 
 1. `server/internal/router/`
 2. `server/internal/middleware/`
-3. `static/src/router/`
-4. 页面里的 `v-auth`
+3. `static/src/router/` and/or `static-react/src/app/`
+4. 页面里的 `v-auth` or React permission gate/hook
 5. `docs/architecture/routing-and-menus.md`
 6. `docs/architecture/auth-and-permissions.md`
 
@@ -131,9 +144,9 @@ source_of_truth:
 
 通常需要一起看：
 
-1. `static/src/views/目标页面`
-2. `static/src/components/core/tables/`
-3. `static/src/hooks/`
+1. Vue `static/src/views/目标页面` or React `static-react/src/pages/目标页面`
+2. the frontend's shared table components
+3. the frontend's hooks/stores
 4. `docs/standards/frontend-table-pages.md`
 5. `docs/standards/frontend-record-card-pages.md`
 

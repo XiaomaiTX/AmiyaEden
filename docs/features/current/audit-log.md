@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-07
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/model/audit_event.go
   - server/internal/repository/audit_event.go
@@ -54,6 +54,12 @@ source_of_truth:
 ### 前端页面
 
 - `static/src/views/system/audit`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接 `/system/audit`，API 与本地类型位于 `static-react/src/api/audit.ts` 和 `static-react/src/types/api/audit.ts`。
+- 权限和回归状态以迁移基线及 `docs/architecture/auth-and-permissions.md` 为准。
 - `static/src/router/modules/system.ts` 中的 `/system/audit`
 
 ### 前端 API

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-03-26
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/model/pap_type_rate.go
   - server/internal/repository/pap_type_rate.go
@@ -104,3 +104,9 @@ PAP 兑换汇率功能允许管理员为每种舰队行动类型（Skirmish / St
 - `server/internal/model/pap_type_rate_test.go` — `NormalizePAPLevel` 的所有输入分支
 - `server/internal/service/fleet_test.go` — `papImportanceToWalletRate` 的所有映射分支与缺失键回退
 - `server/internal/service/fleet_test.go` — FC 工资与每月上限的计算分支
+
+## 前端实现映射（迁移期）
+
+- Vue 管理页面位于 `static/src`。
+- React 已承接 `/system/pap-exchange`；按钮权限必须与 Vue `v-auth` 的 `edit_exchange_rate` 语义一致。
+- API 类型和 wrapper 以 `static-react/src/api/pap-exchange.ts` 及对应类型为准。

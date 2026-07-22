@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-02
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/service/npc_kill.go
   - server/internal/repository/npc_kill.go
@@ -66,7 +66,7 @@ NPC 刷怪报表展示人物通过 PvE 活动获得的 NPC 来源收入，涵盖
 
 ## 核心计算逻辑
 
-Request and response structures are defined in handler code and `static/src/types/api/api.d.ts`.
+Request and response structures are defined in handler code and the consuming frontend type modules (`static/src/types/api/api.d.ts` or `static-react/src/types/api/npc-kill.ts`).
 
 ### 总览（calcSummary）
 
@@ -165,3 +165,9 @@ Request and response structures are defined in handler code and `static/src/type
 - `static/src/api/npc-kill.ts` — 前端 API 封装
 - `static/src/views/info/npc-kills` — 个人报表页面
 - `static/src/views/dashboard/npc-kills` — 管理员报表页面
+
+## 前端实现映射（迁移期）
+
+- Vue 页面和 wrapper 保留在 `static/src`。
+- React 已承接个人与管理员 NPC 击杀报表，使用 `static-react/src/api/npc-kill.ts` 与对应模块类型。
+- 展示行为、筛选语义和权限边界由本文定义，不因两端组件实现不同而改变。

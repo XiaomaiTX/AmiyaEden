@@ -137,6 +137,25 @@ source_of_truth:
 - Vue 静态路由与 `exception` 模块同名（`Exception403/404/500`），静态路由先生效；React 侧已通过扁平 `RouteAccessGate` + 静态路由表实现等价行为。
 - 批次执行前必须补齐 owner，并基于当前后端接口再确认 API 依赖是否存在跨模块调用。
 
+## 文档适配矩阵（2026-07-22）
+
+本矩阵只维护“文档是否已正确表达双端约束”，不重复页面迁移清单。页面、路由和 React 状态仍以本文上方的范围表及 `todolist.md` 为准。
+
+| 文档域 | Vue 当前实现 | React 当前体现 | 适配状态 | 切换阻断 |
+|---|---|---|---|---|
+| 认证与人物 | `static/src/api/auth.ts`、Vue router guard | `static-react/src/api/auth.ts`、`session-store`、`RouteAccessGate` | 已建立双端映射 | capability、完整锁定流程需回归 |
+| 路由与菜单 | `static/src/router`、`MenuProcessor` | `static-react/src/app/migration-routes.ts`、扁平 `RouteAccessGate` | 部分对齐 | capability 过滤、菜单处理、WorkTab/KeepAlive |
+| 按钮权限 | `v-auth` / `v-roles` | React gate/hook 尚未完整实现 | 未完成 | `PermissionGate`、`RoleGate` 与按钮回归 |
+| 状态管理 | Pinia `user/menu/worktab/setting/table/badge/sys-config` | Zustand 目前主要是 `session`、`preference` | 未完成 | 跨页面状态、徽标和工作台行为 |
+| API 契约 | `static/src/api` + `api.d.ts` | `static-react/src/api` + 模块化本地类型 | 已建立双端契约 | 每个迁移模块分别通过类型和契约检查 |
+| i18n | Vue `zh/en` locale | `static-react/src/i18n/messages` | 已建立双端映射 | 文案语义、插值和 `@:引用` 对齐 |
+| 表格/卡片布局 | `ArtTable`、Element Plus、Vue overflow 规则 | React 页面按需实现，统一抽象仍不足 | 部分对齐 | 共享 table、滚动拥有者、暗色主题回归 |
+| 格式化 helper | Vue ISK/time helper | React ISK helper；时间 helper 待统一 | 部分对齐 | 禁止页面本地格式化变体 |
+| 测试与交付 | `vue-tsc`、`test:unit`、Vue build | `tsc -b`、`test`、API contract、React build | 已纳入规范 | 双端命令和模块回归均可执行 |
+| 范围漂移页面 | Vue 已落地 | React 未对齐 | 未完成 | `/characters`、fuel officer、galaxy registry、tool bookmarks、QQ governance、Fuxi Hall |
+
+文档适配完成定义：所有 active 规范使用行为级表述；每个 current feature doc 通过本文引用迁移状态；所有 Vue-only 限制都明确标注为过渡期限制或历史归档内容。
+
 
 
 

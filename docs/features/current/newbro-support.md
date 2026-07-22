@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-04-17
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/newbro_service.go
@@ -298,3 +298,9 @@ source_of_truth:
 - `static/src/views/auth/recruit/`
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接新人选队长、招新链接、队长 dashboard、队长管理及公开招募落地页。
+- 人物资料页中的推荐补录和所有资格门禁必须保持与 `auth-and-permissions.md` 一致；具体 React 路由状态以迁移基线为准。

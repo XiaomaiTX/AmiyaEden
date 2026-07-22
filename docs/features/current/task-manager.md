@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/main.go
   - server/global/global.go
@@ -65,6 +65,12 @@ source_of_truth:
 ### 前端页面
 
 - `static/src/views/system/task-manager`
+
+## 前端实现映射（迁移期）
+
+- Vue 当前实现位于 `static/src`。
+- React 已承接系统任务管理、ESI 状态与历史页面，使用 `static-react/src/api/task-manager.ts` 及对应类型。
+- 执行、调度修改和 ESI 刷新权限仍由后端与路由/按钮元数据共同约束。
 - `static/src/router/modules/system.ts` 中的 `/system/task-manager`
 
 ### 后端路由

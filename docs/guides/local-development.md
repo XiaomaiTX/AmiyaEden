@@ -2,13 +2,16 @@
 status: active
 doc_type: guide
 owner: engineering
-last_reviewed: 2026-03-23
+last_reviewed: 2026-07-22
 source_of_truth:
   - Makefile
   - .air.toml
+  - docker-compose.example.yml
   - server/config/config.example.yaml
   - server/go.mod
   - static/package.json
+  - static-react/package.json
+  - static-react/Dockerfile
   - static/.env.development
   - static/.env.development.local
 ---
@@ -29,6 +32,7 @@ source_of_truth:
 cp server/config/config.example.yaml server/config/config.yaml
 docker compose -f docker-compose.example.yml up -d postgres redis
 cd static && pnpm install && cd ..
+cd static-react && pnpm install && cd ..
 make dev
 ```
 
@@ -41,7 +45,7 @@ make dev
 
 - Go `>= 1.24.5`
 - Node.js `24`（与 CI 保持一致，见根目录 `.nvmrc`）
-- pnpm `10.32.1`（与 CI 保持一致）
+- pnpm `11.15.1`（与 CI 和前端 `packageManager` 保持一致）
 - Air（Go 热重载工具）
 - golangci-lint `v2.11.4`（与 CI 保持一致）
 - PostgreSQL
@@ -92,6 +96,10 @@ golangci-lint --version
 cd static
 pnpm install
 cd ..
+
+cd static-react
+pnpm install
+cd ..
 ```
 
 ## 日常开发启动
@@ -104,6 +112,7 @@ make dev
 
 - 后端：使用仓库根目录 `.air.toml`，监听 `server/` 代码变更并自动重启
 - 前端：在 `static/` 下执行 `pnpm dev`
+- React 迁移前端：在 `static-react/` 下执行 `pnpm dev`，可与 Vue 前端按迁移窗口分别启动
 - 后端进程会在 `server/` 目录执行，因此 `./config` 这类相对路径可正常解析
 
 ## 可选：分开启动前后端
@@ -120,6 +129,13 @@ air -c .air.toml
 
 ```bash
 cd static
+pnpm dev
+```
+
+React 迁移前端：
+
+```bash
+cd static-react
 pnpm dev
 ```
 
@@ -148,6 +164,18 @@ VITE_OPEN_ROUTE_INFO=false
 
 参见 `docs/standards/testing-and-verification.md`（`Default Commands` 节）。
 
+## Docker 并行前端
+
+部署示例同时保留 Vue 与 React 两个前端服务：
+
+```bash
+docker compose -f docker-compose.example.yml up -d frontend frontend-react
+```
+
+- Vue：`http://localhost:80`，镜像 `xiaomaitx/amiya-eden-frontend:latest`
+- React：`http://localhost:3000`，镜像 `xiaomaitx/amiya-eden-frontend-react:latest`
+- 两个 Nginx 容器都在 `amiya-eden-network` 中把 `/api/*` 代理到 `backend:8080`
+
 
 ## 常见问题
 
@@ -156,9 +184,9 @@ VITE_OPEN_ROUTE_INFO=false
 - 先执行安装命令
 - 确认 `$(go env GOPATH)/bin` 在 `PATH` 里
 
-`make dev` 前端启动失败：
+`make dev` 或独立前端启动失败：
 
-- 在 `static/` 执行 `pnpm install`
+- 在对应的 `static/` 或 `static-react/` 目录执行 `pnpm install`
 - 确认 Node.js 与 pnpm 版本满足本指南要求
 
 后端报配置文件读取失败：

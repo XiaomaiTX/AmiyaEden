@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-21
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/service/sys_config.go
   - server/internal/handler/qq_governance_onebot.go
@@ -34,3 +34,9 @@ source_of_truth:
 `onebot` 配置保存在 `system_config`，仅超级管理员可在系统基础配置页面维护；它与现有通用 `webhook.onebot` 完全独立。生产环境必须使用随机令牌、唯一机器人 QQ，并仅配置 NapCat 所在受控网段。
 
 事件保留 90 天，审查与动作日志各保留 180 天。NapCat 镜像、容器和生产网络不由本仓库管理；多机器人和多实例连接选主仍未实现。
+
+## 前端实现映射（迁移期）
+
+- 当前管理行为由 Vue `static/` 侧承接。
+- React 尚未承接 `/system/qq-governance`，该页面、API wrapper 和类型出口属于迁移基线的范围漂移追赶项。
+- OneBot 安全约束、日志保留和超级管理员边界不因前端迁移而改变。

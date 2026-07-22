@@ -2,11 +2,12 @@
 status: active
 doc_type: guide
 owner: backend
-last_reviewed: 2026-04-09
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/jobs/esi_refresh.go
   - server/internal/router/router.go
   - static/src/api
+  - static-react/src/api
 ---
 
 # 新增 ESI 功能指南
@@ -24,8 +25,8 @@ source_of_truth:
 5. 编写 service
 6. 编写 handler
 7. 注册路由
-8. 编写 `static/src/api/*`
-9. 更新 `static/src/types/api/api.d.ts`
+8. 编写 Vue `static/src/api/*` 和/或 React `static-react/src/api/*`
+9. 更新对应前端类型：Vue `static/src/types/api/api.d.ts`，React `static-react/src/types/api/*`
 10. 接入页面、路由、i18n
 11. 如有需要，更新前端路由权限元数据与按钮权限
 12. 更新 `docs/api/route-index.md` 与对应 feature doc
@@ -44,12 +45,14 @@ source_of_truth:
 
 ### 前端
 
-- `static/src/api/`
-- `static/src/types/api/api.d.ts`
-- `static/src/router/modules/`
-- `static/src/views/`
+- `static/src/api/` / `static-react/src/api/`
+- `static/src/types/api/api.d.ts` / `static-react/src/types/api/`
+- `static/src/router/modules/` / `static-react/src/app/`
+- `static/src/views/` / `static-react/src/pages/`
 - `static/src/locales/langs/zh.json`
 - `static/src/locales/langs/en.json`
+- `static-react/src/i18n/messages/zh-CN.ts`
+- `static-react/src/i18n/messages/en-US.ts`
 
 ### 可选离线参考
 
@@ -74,6 +77,7 @@ source_of_truth:
 ## 前端要求
 
 - 页面不直接发 HTTP 请求
+- React 页面同样不得直接发 HTTP 请求；必须通过 `static-react/src/api/`。
 - 文本全部本地化
 - 如果是标准列表页，遵守 `docs/standards/frontend-table-pages.md`
 

@@ -2,19 +2,21 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-04-17
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src/hooks/core/useTable
   - static/src/components/core
+  - static-react/src/pages
+  - static-react/src/components
 ---
 
 # 前端表格页规范
 
 ## 默认采用
 
-- 分页的页面级表格使用 `useTable`。
-- 表格区块使用 `ArtTable`。
-- API 调用保持在 `static/src/api`。
+- 分页的页面级表格使用当前前端的共享 table hook/store 或等价封装。
+- 表格区块使用当前前端的共享 table 组件；Vue 默认是 `ArtTable`，React 迁移期间不得为每个页面重复创建同一套行为。
+- API 调用保持在对应前端的 `api/`，不得位于 view/page 内。
 - 所有用户可见文案必须本地化。
 - 保持页面组件轻量；如有帮助，可把页面级搜索区、对话框或重复的列配置抽到 `modules/`。
 
@@ -25,12 +27,12 @@ source_of_truth:
 账本表格：
 
 - 默认请求规模设为 `200`
-- 使用 `ArtTable` 并设置 `visual-variant="ledger"`
+- Vue 使用 `ArtTable` 并设置 `visual-variant="ledger"`；React 使用等价的共享 ledger 预设
 - 除非有意覆盖共享预设，不要在本地重复声明账本分页大小或分页器布局
 
 有界的管理/配置表格：
 
-- 使用 `ArtTable` 默认值
+- 使用当前前端共享 table 的默认值
 - 较小的分页大小也可
 
 ## 可操作选择器与分页数据
@@ -48,8 +50,7 @@ source_of_truth:
 推荐的页面结构：
 
 - 搜索区位于表格卡片之外
-- `ElCard.art-table-card` 作为表格容器
-- `ArtTableHeader` 位于 `ArtTable` 之上
+- Vue 使用 `ElCard.art-table-card` / `ArtTableHeader`；React 使用等价布局组件
 - 对话框作为兄弟节点位于卡片之外
 
 若页面为混合布局或分析型布局，表格区域仍可使用此模式。
@@ -59,14 +60,14 @@ source_of_truth:
 - 分页表格页必须声明谁拥有溢出。表格内容被裁剪即视为布局 bug。
 - 若页面应随内容自然增长，避免使用 `art-full-height`，让应用外壳接管滚动。
 - 若页面使用 `art-full-height`，表格区必须通过每个参与布局的中间包装器补全高度链。
-  - 典型包装器包括 `ElCard` body、`ElTabs`、`el-tabs__content` 与 `el-tab-pane`。
+  - 典型 Vue 包装器包括 `ElCard` body、`ElTabs`、`el-tabs__content` 与 `el-tab-pane`；React 必须对等地补全参与布局的中间包装器。
   - 在这些包装器上使用 `display: flex`、`flex-direction: column` 与 `min-height: 0`，使 `ArtTable` 能消费剩余高度。
 - 不要仅依赖卡片体、tab 面板或页面包装器上的 `overflow: hidden`。仅当后代表格区域明确接管滚动时，隐藏溢出才合法。
 - 带标签页的表格页必须让每个 tab 面板具备高度感知。`ElTabs` 内嵌的表格在 tab 内容区能自然扩展或把剩余高度交给表格之前，都属于未完成状态。
 
 推荐的 full-height 标签页表格模式：
 
-- 页面根使用 `art-full-height`
+- Vue 页面根使用 `art-full-height`；React 使用等价 full-height 布局
 - `ElCard` body 使用 flex 列布局并设 `min-height: 0`
 - `ElTabs` 使用 `flex: 1` 与 `min-height: 0` 随父级增长
 - `el-tabs__content` 使用 `flex: 1`、`min-height: 0`，仅当后代表格区域接管滚动时才隐藏溢出
@@ -75,7 +76,7 @@ source_of_truth:
 ## 主题安全样式
 
 - 不要为表格行、可展开面板或选中态硬编码浅色背景或渐变（`#fff`、极亮 RGB 值），否则在暗色主题下会出现刺眼的白色色带。
-- 背景与边框优先使用 Element Plus 主题 token（`var(--el-bg-color)`、`var(--el-bg-color-overlay)`、`var(--el-fill-color)`、`var(--el-border-color-*)`），使明暗主题保持一致。
+- 背景与边框优先使用当前设计系统的主题 token；Vue 使用 Element Plus token，React 使用 Tailwind/shadcn 主题变量，禁止硬编码破坏暗色主题。
 - 对于"选中"或"展开"的卡片/行，背景至多比周围表面亮一档；用边框和阴影做强调，避免大面积纯白。
 - 新增自定义表格或列表视觉时，必须在明暗两种主题下手工验证，并使用主题 token 而非固定十六进制值调整颜色。
 
@@ -90,30 +91,30 @@ source_of_truth:
 
 ## 行内复制规则
 
-- 对于表格单元格、列表行或展开记录行内、附着于单个文本值的紧凑行内复制动作，复用共享 `ArtCopyButton`。
+- 对于表格单元格、列表行或展开记录行内、附着于单个文本值的紧凑行内复制动作，复用当前前端的共享复制按钮或 clipboard hook；Vue 默认是 `ArtCopyButton`。
 - 不得为同一交互形态引入页面本地的复制图标按钮、重复的剪贴板成功/失败 toast 处理或临时拼凑的行内复制标记。
 - 若需求不是"单个展示值旁边的紧凑行内按钮"，应复用共享剪贴板 hook，而不是把按钮组件硬塞进不匹配的流程。
 - Feature 文档可以描述复制入口的位置，但复用规则本身定义于此并适用于全仓库。
 
 ## 例外
 
-仅当表格本身不适合 `ArtTable` 时才使用原生 `ElTable`，例如：
+仅当表格本身不适合共享 table 组件时才使用原生表格，例如：
 
 - 详情页子表
 - 树形表格
 - 高度自定义的可展开行
 - 临时的导入/预览表格
-- `ArtTable` 无法清晰暴露的 Element Plus 交互
+- 共享 table 组件无法清晰暴露的交互
 
-使用原生 `ElTable` 不会放宽本文档的其他规则。
+使用原生表格不会放宽本文档的其他规则。
 
 ## AI 核对清单
 
 完成前确认：
 
-- 除非存在真实例外，该分页表格是否使用了 `useTable`？
-- 若是账本风格，是否使用了 `visual-variant="ledger"`？
-- 若新增紧凑行内复制动作，是否复用了 `ArtCopyButton`？
+- 除非存在真实例外，该分页表格是否使用了当前前端的共享 table hook/store？
+- 若是账本风格，是否使用了当前前端的共享 ledger 预设？
+- 若新增紧凑行内复制动作，是否复用了当前前端的共享复制能力？
 - 若同页面的表单选择器或操作依赖记录历史，该资格是否来自后端而非可见表格页？
 - 若页面使用 `art-full-height` 或 `ElTabs`，溢出拥有者是否明确、高度链是否完整？
 - 若页面同时支持拖拽排序与数字排序字段，拖拽重排是否保留了持久化的 sort 槽位，而不是重置为页内索引？

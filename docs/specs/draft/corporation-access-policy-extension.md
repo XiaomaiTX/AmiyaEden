@@ -2,7 +2,7 @@
 status: draft
 doc_type: spec
 owner: engineering
-last_reviewed: 2026-07-07
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -162,7 +162,7 @@ source_of_truth:
 - SRP 推荐金额生成路径读取并乘算该比例。
 - 该规则仅示例接入；引擎保持通用，不绑定 SRP 专用结构。
 
-### 5. 前端接入（Vue）
+### 5. 前端接入（迁移期双端）
 
 `GET /api/v1/me` 新增返回字段：
 
@@ -269,7 +269,8 @@ source_of_truth:
 ### 说明
 
 - 当前实现保持“默认 deny”，并对 `default_mode` 做了限制（仅接受 `deny`），符合一期最小权限目标。
-- 一期范围保持在 `static/`（Vue）端，不含 `static-react/`。
+- 一期实现历史上仅落在 `static/`（Vue）端；这是阶段性实施范围，不是产品行为限制。
+- React 侧的 capability/menu parity 是 React 替换 Vue 前的发布阻断项，必须补齐 React 路由元数据、菜单过滤、按钮门禁、API 类型和回归测试。
 
 ### 收口验证记录（2026-05-17）
 
@@ -294,11 +295,11 @@ source_of_truth:
 | `server/internal/handler/me.go` | `/api/v1/me` 增加 `primary_corporation_id`、`corp_capabilities`、`corp_rules` | 前端判定数据源 |
 | `server/internal/service/auto_srp.go` | 推荐金额链路接入 `srp.recommendation_multiplier`（含默认回退） | 规则引擎一期示例落地 |
 
-### 前端（Vue + TS）
+### 前端（Vue + React + TS）
 
 | 文件 | 变更点 | 目标 |
 | --- | --- | --- |
-| `static/src/types/api/api.d.ts` | 扩展 `Api.Auth.MeResponse` / `Api.Auth.UserInfo` / `Api.SysConfig` 策略类型 | 类型契约同步 |
+| `static/src/types/api/api.d.ts` / `static-react/src/types/api/*` | 扩展 `/me` 与策略类型 | 双端类型契约同步 |
 | `static/src/api/auth.ts` | 映射 `/me` 新字段到 `UserInfo` | 登录态能力数据注入 |
 | `static/src/types/router/index.ts` | `RouteMeta` 增加 `corpCapabilities?: string[]` | 路由元数据承载能力要求 |
 | `static/src/router/core/menuAccess.ts` | 菜单过滤增加 capability 判定 | 菜单收敛 |
@@ -306,7 +307,7 @@ source_of_truth:
 | `static/src/router/modules/welfare.ts` | 标注 `menu.welfare`、`welfare.user`、`welfare.approval`、`welfare.settings` | 福利页面能力门禁 |
 | `static/src/api/sys-config.ts` | 新增策略 GET/PUT API 包装 | 配置页接口接入 |
 | `static/src/views/system/basic-config/index.vue` | 新增“军团能力策略”编辑区（能力勾选 + 规则编辑 + 保存） | 超管可视化配置 |
-| `static/src/locales/langs/zh.json` / `static/src/locales/langs/en.json` | 补齐策略配置与校验文案键 | 文案与 i18n 完整 |
+| Vue locale / `static-react/src/i18n/messages/*` | 补齐策略配置与校验文案键 | 双端文案与 i18n 完整 |
 
 ### 测试与回归
 
@@ -388,6 +389,6 @@ source_of_truth:
 
 - 主人物军团信息在 `eve_character.corporation_id` 中可用且及时更新。
 - 军团策略只针对登录后功能访问，不替代 SSO 准入判断。
-- 一期仅 `static/`（Vue）承接策略配置 UI。`static-react/` 本期不改造，不新增策略配置 UI 与 capability 门禁逻辑。
-- 二期继续仅改造 `static/` 与 `server/`，不包含 `static-react/`。
+- 一期完成的是 Vue 侧策略配置 UI 与 capability 门禁；React 侧仍需按迁移计划补齐等价能力。
+- 在 React parity 完成前，不得执行 Vue 下线；具体阻断项以 `docs/specs/draft/frontend-react-migration-plan/` 为准。
 - 二期 capability 先按粗粒度落地，细粒度拆分作为后续增量演进。

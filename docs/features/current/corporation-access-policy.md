@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-05-17
+last_reviewed: 2026-07-22
 source_of_truth:
   - server/internal/model/corporation_capability.go
   - server/internal/model/sys_config.go
@@ -93,4 +93,10 @@ source_of_truth:
 - 不改变 `allow_corporations` 的准入语义。
 - 不替代现有 RBAC，能力策略仅叠加在职权之上。
 - 前后端 capability 语义保持一致，不允许别名映射。
-- 仅 `static/` 承接配置 UI 与 capability 门禁，`static-react/` 不纳入范围。
+- 迁移阶段 Vue `static/` 承接配置 UI 与 capability 门禁；React 已承接基础配置页面，但尚未完整承接 capability/menu 过滤。React capability parity 是 Vue 下线前的切换阻断项，不能将当前缺口解释为产品行为差异。
+
+## 前端实现映射（迁移期）
+
+- Vue 门禁：`static/src/router/core/menuAccess.ts`。
+- React 门禁目标：`static-react/src/app/route-access.ts`、`static-react/src/auth/route-access-gate.tsx` 与菜单配置；当前尚缺 `corpCapabilities` 等价消费。
+- 后端 `RequireCorpCapability` 始终是最终权限边界。

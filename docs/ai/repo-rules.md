@@ -2,7 +2,7 @@
 status: active
 doc_type: agent-rules
 owner: engineering
-last_reviewed: 2026-04-23
+last_reviewed: 2026-07-22
 source_of_truth:
   - AGENTS.md
   - CLAUDE.md
@@ -61,7 +61,7 @@ If code and docs conflict:
 `AmiyaEden` is a full-stack EVE Online operations platform with:
 
 - Go backend in `server/`
-- Vue 3 + TypeScript frontend in `static/`
+- Vue 3 + TypeScript frontend in `static/` and the React + TypeScript frontend in `static-react/` during migration
 - RBAC roles, menus, and button permissions
 - static frontend routing with role-based page access
 - ESI / SSO integrations
@@ -89,7 +89,7 @@ The supported authentication flow is EVE SSO. Legacy auth-related pages may stil
 5. **Business logic belongs in services**
    - Not in handlers
    - Not in repositories
-   - Not in Vue views
+   - Not in frontend views or pages
 
 6. **Permissions are enforced server-side**
    - Frontend permission logic is UX only
@@ -151,16 +151,16 @@ When changing roles, menus, routes, or button permissions, keep the following al
 
 - backend route protection
 - frontend route metadata
-- button permission usage such as `v-auth`
+- button permission usage such as Vue `v-auth` or React permission gates/hooks
 
 ### API Change Order
 
 When changing an endpoint, update in this order:
 
 1. backend request or response shape
-2. frontend API wrapper in `static/src/api`
-3. shared TypeScript types in `static/src/types/api/api.d.ts`
-4. UI usage
+2. frontend API wrappers in `static/src/api` and/or `static-react/src/api`
+3. Vue shared types in `static/src/types/api/api.d.ts` and React local module types in `static-react/src/types/api/`
+4. UI usage in the frontend(s) that consume the contract
 5. `docs/api/route-index.md` if the route surface or permission boundary changed
 
 Do not allow contract drift across backend, API wrappers, shared types, and UI usage.
@@ -182,8 +182,8 @@ If the old contract is intentionally being removed, remove superseded wrappers, 
 
 - Keep page components thin
 - Extract repeated UI into components
-- Extract repeated logic into hooks or composables
-- Keep local state local; use Pinia only when state is genuinely cross-page
+- Extract repeated logic into hooks or composables appropriate to the frontend
+- Keep local state local; use Pinia in Vue or Zustand in React only when state is genuinely cross-page
 - Use established table and form patterns
 - Do not make direct HTTP calls in views
 - Do not extend legacy username/password auth flows unless explicitly requested

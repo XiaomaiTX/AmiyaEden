@@ -2,11 +2,13 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-05-17
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
   - static/src/router/modules
+  - static-react/src/app/migration-routes.ts
+  - static-react/src/auth/route-access-gate.tsx
 ---
 
 # 路由
@@ -17,7 +19,7 @@ source_of_truth:
 
 ## 前端路由源
 
-当前静态模块主要位于：
+Vue 静态模块主要位于：
 
 - `static/src/router/modules/dashboard.ts`
 - `static/src/router/modules/operation.ts`
@@ -33,7 +35,9 @@ source_of_truth:
 
 - `static/src/router/routes/staticRoutes.ts`
 
-静态路由权限约定：
+React 迁移侧的路由源是 `static-react/src/app/migration-routes.ts`，由 `static-react/src/app/router.tsx` 注册，并通过 `RouteAccessGate` 消费登录、角色和 `authList` 元数据。React 当前尚未完整承接 `corpCapabilities`、动态菜单处理、按钮级权限和 WorkTab/KeepAlive，这些是 Vue 下线前的阻断项。
+
+两套前端必须遵守同一组行为约定：
 
 - `meta.login = true` 对应 API / feature 文档中的 `Login`
 - `meta.roles` 只表示显式职权白名单
@@ -52,7 +56,7 @@ source_of_truth:
 
 ## 按钮权限
 
-前端通过 `v-auth` 或权限 hook 消费按钮权限，权限定义在路由的 `meta.authList` 中。
+Vue 通过 `v-auth` 或权限 hook 消费按钮权限；React 应通过 `PermissionGate` / `usePermission` 等价能力消费同一 `meta.authList` 语义。当前 React 仅保存部分路由权限上下文，未完成的按钮门禁不得视为已对齐。
 
 ## 当前不变量
 

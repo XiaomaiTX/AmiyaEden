@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-04-23
+last_reviewed: 2026-07-22
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/dependency-layering.md
@@ -41,24 +41,25 @@ source_of_truth:
 
 ### 仅前端变更
 
-- [ ] `cd static && pnpm lint .`
-- [ ] `cd static && pnpm exec vue-tsc --noEmit`
-- [ ] 若改动了纯 helper 或 hook，执行 `cd static && pnpm test:unit`
+- [ ] Vue 变更执行 `cd static && pnpm lint .` 与 `cd static && pnpm exec vue-tsc --noEmit`
+- [ ] React 变更执行 `cd static-react && pnpm lint` 与 `cd static-react && pnpm exec tsc -b`
+- [ ] 若改动了 Vue helper/hook，执行 `cd static && pnpm test:unit`
+- [ ] 若改动了 React helper/hook，执行 `cd static-react && pnpm test`
 - [ ] 范围保持聚焦，未引入无关重构
 - [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底、隐藏重定向或影子页面
 - [ ] 未在 view 中直接发起 HTTP 调用
 - [ ] 所有新增用户可见文案已同时写入 `zh.json` 和 `en.json`
 - [ ] 若行为发生变化，已更新相关 feature 文档
-- [ ] 通过 `@click` / `@change` 等绑定的事件处理器具有与模板调用点匹配的类型签名；vue-tsc 仅在处理器类型显式时才能捕获不匹配
+- [ ] Vue 通过 `@click` / `@change` 等绑定的事件处理器具有匹配的类型签名；React 通过 TypeScript 检查事件和组件 props
 
 ### 跨契约变更
 
 - [ ] `cd server && golangci-lint run ./...`
 - [ ] `cd server && go build ./...`
 - [ ] `cd server && go test ./...`
-- [ ] `cd static && pnpm lint .`
-- [ ] `cd static && pnpm exec vue-tsc --noEmit`
-- [ ] 如相关，执行 `cd static && pnpm test:unit`
+- [ ] `cd static && pnpm lint .` 与 `cd static && pnpm exec vue-tsc --noEmit`（若 Vue 仍消费该契约）
+- [ ] `cd static-react && pnpm lint`、`pnpm exec tsc -b`、`pnpm check:api-contract`（若 React 消费该契约）
+- [ ] 如相关，执行对应前端的单测
 - [ ] 范围保持聚焦，未引入无关重构
 - [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底、隐藏重定向或重复契约
 - [ ] 已更新前端 API wrapper
@@ -73,7 +74,7 @@ source_of_truth:
 - [ ] 已完成"跨契约变更"的所有适用项
 - [ ] 已按需更新后端路由保护
 - [ ] 已按需更新前端路由元信息
-- [ ] 已对齐 `v-auth` 等按钮权限用法
+- [ ] 已对齐 Vue `v-auth` 与 React permission gate/hook 等按钮权限用法
 - [ ] 若路由或页面访问模型发生变化，已更新 `docs/architecture/routing-and-menus.md`
 - [ ] 若权限模型或行为发生变化，已更新 `docs/architecture/auth-and-permissions.md`
 - [ ] `docs/features/current/badge-counts.md` 中的角标字段可见性仍与更新后的角色边界一致；若不一致需同步更新

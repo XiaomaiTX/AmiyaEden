@@ -2,13 +2,14 @@
 status: active
 doc_type: standard
 owner: frontend
-last_reviewed: 2026-04-17
+last_reviewed: 2026-07-22
 source_of_truth:
   - static/src/assets/styles/core/app.scss
   - static/src/views/newbro/select-mentor/index.vue
   - static/src/views/newbro/mentor-manage/index.vue
   - static/src/views/newbro/select-captain/index.vue
   - static/src/views/info/assets/index.vue
+  - static-react/src/pages
 ---
 
 # 前端记录卡片页规范
@@ -30,8 +31,8 @@ source_of_truth:
   - 当页面主内容是无界记录卡片列表时，除非某个后代元素显式接管滚动，否则不要使用 `art-full-height`。
   - 当列表只需随内容增长时，优先使用应用外壳的滚动路径。
 - 仅当滚动拥有者显式时才允许内部滚动。
-  - 滚动元素必须使用 `overflow: auto`、`overflow-y: auto` 或 `ElScrollbar`。
-  - 若页面使用 `art-full-height`，则必须通过 `display: flex`、`flex-direction: column` 与 `min-height: 0` 在每个参与布局的中间包装器上把高度链补全。
+  - 滚动元素必须使用 `overflow: auto`、`overflow-y: auto` 或当前前端的显式滚动组件（Vue 可使用 `ElScrollbar`）。
+  - 若页面使用 `art-full-height` 或 React 等价的 full-height 布局，则必须通过 `display: flex`、`flex-direction: column` 与 `min-height: 0` 在每个参与布局的中间包装器上把高度链补全。
 - 可能容纳大量记录的卡片，要么随页面扩展，要么包含明确的内部滚动区域，绝不能仅依赖隐藏溢出作为唯一约束。
 - 混合页面可以同时使用本规范与 `docs/standards/frontend-table-pages.md`，但每一区域都必须有一个明确的溢出拥有者。
 
