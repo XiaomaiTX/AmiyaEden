@@ -1,14 +1,55 @@
 import type { CommonSearchParams, SnakePaginatedResponse } from '@/types/api/common'
 
+export interface DashboardCards {
+  eve_wallet_balance: number
+  eve_skill_points: number
+  system_wallet_balance: number
+  alliance_pap: number
+}
+
+export type DashboardFleetSource = 'internal' | 'alliance'
+
+export interface DashboardFleetItem {
+  source: DashboardFleetSource
+  id: string
+  title: string
+  start_at: string
+  end_at?: string
+  importance?: string
+  pap_count: number
+  ship_type_name?: string
+  character_name?: string
+}
+
+export interface DashboardPapMonthly {
+  year: number
+  month: number
+  total_pap: number
+}
+
+export interface DashboardPapStats {
+  alliance: DashboardPapMonthly[]
+  internal: DashboardPapMonthly[]
+}
+
+export interface DashboardSrpItem {
+  id: number
+  character_name: string
+  ship_name: string
+  solar_system_name: string
+  killmail_time: string
+  recommended_amount: number
+  final_amount: number
+  review_status: string
+  payout_status: string
+  created_at: string
+}
+
 export interface DashboardResult {
-  cards: {
-    online_count: number
-    total_assets_count: number
-    total_assets_price: number
-    my_pap_count: number
-  }
-  fleets: unknown[]
-  srp_list: unknown[]
+  cards: DashboardCards
+  fleets: DashboardFleetItem[]
+  pap_stats: DashboardPapStats
+  srp_list: DashboardSrpItem[]
 }
 
 export interface CorporationStructureCorporationDirectorCharacter {
