@@ -158,22 +158,6 @@ func (h *QQGovernanceAdminHandler) TriggerReconcile(c *gin.Context) {
 	}
 	response.OK(c, nil)
 }
-func (h *QQGovernanceAdminHandler) ManualAction(c *gin.Context) {
-	var req struct {
-		Action  string `json:"action" binding:"required"`
-		GroupID int64  `json:"group_id" binding:"required"`
-		QQ      int64  `json:"qq" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
-	if err := h.svc.ManualAction(req.Action, req.GroupID, req.QQ, middleware.GetUserID(c)); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
-}
 func (h *QQGovernanceAdminHandler) ResetRisk(c *gin.Context) {
 	if err := h.svc.ResetRiskControl(middleware.GetUserID(c)); err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())

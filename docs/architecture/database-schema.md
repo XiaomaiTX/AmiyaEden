@@ -398,7 +398,8 @@ ESI 头衔到系统职权的映射表。
 - `qq_governance_review`：资格判断原因和最小身份快照。
 - `qq_governance_action_task`：持久动作队列、稳定幂等键、租约、重试和终态。
 - `qq_governance_action_log`：脱敏动作摘要与每次执行结果。
-- `qq_governance_reconcile_cursor`：每群稳定 QQ 分片的巡检游标与下次执行时间。
+- `qq_governance_reconcile_run`：每群唯一进行中的完整成员快照巡检轮次、总数、进度和结束状态。
+- `qq_governance_reconcile_member`：巡检轮次冻结的成员 QQ 集合及逐成员完成状态；它使重启后的批处理不依赖 OneBot 返回顺序。
 - `qq_governance_risk_control_state`：单机器人熔断等级、恢复时间与半开探测额度。
 - `qq_governance_alert`：仅在治理页展示的持久告警及其确认/恢复状态。
 

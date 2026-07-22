@@ -170,10 +170,11 @@ func autoMigrate(db *gorm.DB) {
 		&model.QQGovernanceEvent{},
 		&model.QQGroupMemberState{},
 		&model.QQGroupRuntimeSnapshot{},
+		&model.QQGovernanceReconcileRun{},
+		&model.QQGovernanceReconcileMember{},
 		&model.QQGovernanceReview{},
 		&model.QQGovernanceActionTask{},
 		&model.QQGovernanceActionLog{},
-		&model.QQGovernanceReconcileCursor{},
 		&model.QQGovernanceRiskControlState{},
 		&model.QQGovernanceAlert{},
 	); err != nil {

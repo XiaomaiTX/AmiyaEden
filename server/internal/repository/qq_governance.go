@@ -148,6 +148,93 @@ func (r *QQGovernanceRepository) SaveRuntimeSnapshot(snapshot *model.QQGroupRunt
 	return r.dbOrGlobal().Save(snapshot).Error
 }
 
+func (r *QQGovernanceRepository) GetActiveReconcileRun(groupID int64) (*model.QQGovernanceReconcileRun, error) {
+	var run model.QQGovernanceReconcileRun
+	if err := r.dbOrGlobal().Where("group_id = ? AND active_key <> ''", groupID).First(&run).Error; err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+
+func (r *QQGovernanceRepository) GetReconcileRun(id uint) (*model.QQGovernanceReconcileRun, error) {
+	var run model.QQGovernanceReconcileRun
+	if err := r.dbOrGlobal().First(&run, id).Error; err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+func (r *QQGovernanceRepository) ListLatestReconcileRuns(groupIDs []int64) ([]model.QQGovernanceReconcileRun, error) {
+	if len(groupIDs) == 0 {
+		return []model.QQGovernanceReconcileRun{}, nil
+	}
+	var rows []model.QQGovernanceReconcileRun
+	if err := r.dbOrGlobal().Where("group_id IN ?", groupIDs).Order("group_id ASC").Order("id DESC").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	latest := make(map[int64]model.QQGovernanceReconcileRun, len(groupIDs))
+	for _, row := range rows {
+		if _, exists := latest[row.GroupID]; !exists {
+			latest[row.GroupID] = row
+		}
+	}
+	result := make([]model.QQGovernanceReconcileRun, 0, len(latest))
+	for _, groupID := range groupIDs {
+		if row, ok := latest[groupID]; ok {
+			result = append(result, row)
+		}
+	}
+	return result, nil
+}
+
+func (r *QQGovernanceRepository) CreateReconcileRun(run *model.QQGovernanceReconcileRun) error {
+	if run == nil {
+		return errors.New("qq governance reconcile run is required")
+	}
+	return r.dbOrGlobal().Create(run).Error
+}
+
+func (r *QQGovernanceRepository) SaveReconcileRun(run *model.QQGovernanceReconcileRun) error {
+	if run == nil {
+		return errors.New("qq governance reconcile run is required")
+	}
+	return r.dbOrGlobal().Save(run).Error
+}
+
+func (r *QQGovernanceRepository) CreateRunMembersTx(tx *gorm.DB, members []model.QQGovernanceReconcileMember) error {
+	if len(members) == 0 {
+		return nil
+	}
+	return tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&members).Error
+}
+
+func (r *QQGovernanceRepository) ListPendingRunMembers(runID uint, limit int) ([]model.QQGovernanceReconcileMember, error) {
+	if limit < 1 {
+		limit = 50
+	}
+	var rows []model.QQGovernanceReconcileMember
+	err := r.dbOrGlobal().Where("run_id = ? AND status = ?", runID, model.QQGovernanceRunMemberPending).
+		Order("qq ASC").Limit(limit).Find(&rows).Error
+	return rows, err
+}
+
+func (r *QQGovernanceRepository) CompleteRunMemberTx(tx *gorm.DB, id uint) error {
+	return tx.Model(&model.QQGovernanceReconcileMember{}).Where("id = ? AND status = ?", id, model.QQGovernanceRunMemberPending).
+		Update("status", model.QQGovernanceRunMemberDone).Error
+}
+
+func (r *QQGovernanceRepository) CountPendingRunMembers(runID uint) (int64, error) {
+	var total int64
+	err := r.dbOrGlobal().Model(&model.QQGovernanceReconcileMember{}).Where("run_id = ? AND status = ?", runID, model.QQGovernanceRunMemberPending).Count(&total).Error
+	return total, err
+}
+
+// MarkMissingMembersLeft only runs after a complete, frozen membership scan.
+func (r *QQGovernanceRepository) MarkMissingMembersLeft(groupID int64, runID uint, now time.Time) error {
+	return r.dbOrGlobal().Model(&model.QQGroupMemberState{}).
+		Where("group_id = ? AND status <> ? AND NOT EXISTS (SELECT 1 FROM qq_governance_reconcile_member m WHERE m.run_id = ? AND m.qq = qq_group_member_state.qq AND m.deleted_at IS NULL)", groupID, model.QQGovernanceMemberLeft, runID).
+		Updates(map[string]any{"status": model.QQGovernanceMemberLeft, "target_card": "", "last_checked_at": now}).Error
+}
+
 func (r *QQGovernanceRepository) ListRuntimeSnapshots(groupIDs []int64) ([]model.QQGroupRuntimeSnapshot, error) {
 	if len(groupIDs) == 0 {
 		return []model.QQGroupRuntimeSnapshot{}, nil
@@ -385,16 +472,6 @@ func (r *QQGovernanceRepository) ResolveAlert(key string, now time.Time) error {
 	return r.dbOrGlobal().Model(&model.QQGovernanceAlert{}).Where("alert_key = ? AND status IN ?", key, []string{model.QQGovernanceAlertOpen, model.QQGovernanceAlertAcknowledged}).Updates(map[string]any{"status": model.QQGovernanceAlertResolved, "resolved_at": now}).Error
 }
 
-func (r *QQGovernanceRepository) GetCursor(groupID int64, shard int) (*model.QQGovernanceReconcileCursor, error) {
-	var c model.QQGovernanceReconcileCursor
-	if err := r.dbOrGlobal().Where("group_id = ? AND shard_index = ?", groupID, shard).First(&c).Error; err != nil {
-		return nil, err
-	}
-	return &c, nil
-}
-func (r *QQGovernanceRepository) SaveCursor(cursor *model.QQGovernanceReconcileCursor) error {
-	return r.dbOrGlobal().Save(cursor).Error
-}
 func (r *QQGovernanceRepository) GetRiskState(botQQ int64) (*model.QQGovernanceRiskControlState, error) {
 	var s model.QQGovernanceRiskControlState
 	if err := r.dbOrGlobal().Where("bot_qq = ?", botQQ).First(&s).Error; err != nil {

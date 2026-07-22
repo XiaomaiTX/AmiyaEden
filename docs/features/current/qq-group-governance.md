@@ -7,27 +7,28 @@ source_of_truth:
   - server/internal/service/sys_config.go
   - server/internal/handler/qq_governance_onebot.go
   - server/internal/service/qq_governance.go
+  - server/internal/service/qq_governance_reconcile.go
   - server/internal/service/qq_governance_worker.go
   - server/internal/repository/qq_governance.go
   - server/internal/model/qq_governance.go
 ---
 
-# QQ 群治理（首期）
+# QQ 群治理
 
 ## 当前能力
 
 - NapCat 通过 OneBot V11 反向 WebSocket 连接 `/internal/onebot/v11/ws`。
 - 连接同时校验专用 Bearer Token、`X-Self-ID` 机器人 QQ 与 `onebot.allowed_cidrs`；未配置或不匹配时拒绝连接。
 - 已启用群规则会处理入群申请、成员加入和成员离开事件；事件以平台稳定字段去重。
-- 准入判断只读取 Seat 本地 QQ 绑定、主人物军团和职权。资料缺失进入 `review_wait`，空规则不会自动放行。
+- 准入判断只读取 Seat 本地 QQ 绑定、主人物军团和职权，并同时满足已配置的军团与职权条件。未绑定、未设置主人物、人物不存在或缺少军团等确定性资料缺失直接判为 `unmatched`；仅数据库读取异常等暂态故障才进入 `review_wait` 自动复查。空规则不会自动放行。
 - 明确匹配的申请创建批准任务；配置 `auto_reject_unmatched` 时，明确不匹配的申请创建拒绝任务；成员加入后可异步同步名片。
 - 动作任务、成员状态、审查记录和动作日志持久化到 PostgreSQL；worker 使用租约领取、状态版本校验、指数退避与死信状态。
-- 自动写操作依赖 Redis 的全局、群和 QQ 级限流；Redis 不可用时只会重试，不会绕过限流写入 QQ。
-- 超级管理员可在 `/system/qq-governance` 管理群规则、查看成员/审查/动作/告警与指标，重试死信、执行人工动作、立即巡检和解除熔断。
-- 周期巡检使用全局设置的扫描间隔创建持久扫描任务；成员以稳定 QQ 分片、每批最多 50 人处理。所有受治理群共用连续不匹配确认次数与观察期，明确不匹配满足这两项全局条件后才会创建清退任务。
-- 管理页按规则、群状态、运行监控和 OneBot/全局设置四个页面组织。群状态只展示已配置治理规则的群，快照由巡检时的 OneBot 群信息读取更新，以便断连时仍可显示最近一次同步结果。
+- 所有 OneBot 读取与写入都进入 QQ 群治理专属的 Redis 限流器（全局、群、写入时再加 QQ 维度）；Redis 不可用时只会重试，不会绕过限流访问 QQ。限流和风控不复用系统通用任务或 ESI 队列。
+- 超级管理员可在 `/system/qq-governance` 管理群规则、查看成员状态/判断记录/队列/告警/指标，重试死信、启动或复用一次完整巡检、确认告警和解除熔断；没有任何人工批准、拒绝、改名片或清退 QQ 成员的接口。
+- 一次巡检先受限流地读取完整成员快照，排除机器人并去重排序后将 QQ 集合固化到数据库；再以每批最多 50 人的持久批任务计算资格。进程重启或再次触发会从未完成的快照成员续跑，绝不使用 OneBot 返回顺序或 `LastQQ` 作为游标。完整结束后才标记快照中不存在的旧成员为离群。
+- 管理页按规则、群状态、运行监控和 OneBot/全局设置四个页面组织。群状态展示已配置治理规则的群，并显示本轮已处理数/快照总数及运行状态；快照由巡检时的 OneBot 成员列表更新，以便断连时仍可显示最近结果。
 - 规则编辑中的允许军团必须从 ESI 名称解析结果选择，持久化稳定的军团 ID；群号使用纯数字输入，不提供增减步进控件。军团搜索走 ESI 公开接口 `POST /universe/ids/`，只对输入的完整军团名称进行精确匹配，因此无需 SSO Token。规则列表、搜索候选和编辑弹窗的已选项都统一展示为 `军团名 (军团ID)`，规则响应额外返回只读的 `allowed_corporations`，数据库仍只持久化稳定的军团 ID。
-- `UNKNOWN` 会延迟复查，连续三次创建治理页告警；动作失败率会触发三级熔断，自动写操作在熔断期间按级别暂停。
+- `UNKNOWN` 会延迟自动复查，连续三次创建治理页告警，不形成待人工审核工作流；动作失败率会触发三级熔断。三级熔断暂停 QQ 写操作，但仍允许受限流的成员快照和本地计算继续恢复可观测性。
 
 ## 配置与边界
 

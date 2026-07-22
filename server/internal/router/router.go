@@ -671,7 +671,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminQQGovernance.PUT("/settings", qqGovernanceAdminH.UpdateSettings)
 		adminQQGovernance.GET("/connection", qqGovernanceAdminH.Connection)
 		adminQQGovernance.POST("/groups/:group_id/reconcile", qqGovernanceAdminH.TriggerReconcile)
-		adminQQGovernance.POST("/actions", qqGovernanceAdminH.ManualAction)
 		adminQQGovernance.POST("/risk-control/reset", qqGovernanceAdminH.ResetRisk)
 	}
 

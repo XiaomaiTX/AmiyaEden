@@ -300,6 +300,7 @@ declare namespace Api {
     }
     interface ActionTask {
       id: number
+      run_id: number
       action_type: string
       group_id: number
       qq: number
@@ -355,6 +356,12 @@ declare namespace Api {
       invalid_confirmed_count: number
       last_synced_at: string | null
       snapshot_state: 'fresh' | 'stale' | 'never_synced'
+      reconcile_run_status: 'pending' | 'running' | 'completed' | 'failed' | ''
+      reconcile_expected: number
+      reconcile_processed: number
+      reconcile_failed: number
+      reconcile_started_at: string | null
+      reconcile_completed_at: string | null
     }
     interface CorporationOption {
       corporation_id: number

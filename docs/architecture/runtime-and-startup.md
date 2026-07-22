@@ -54,7 +54,7 @@ SDE 检查更新当前行为：
 - 通过 cron 或 `/api/v1/tasks/:name/run` 触发的通用任务会写入 `task_executions`
 - `auto_srp` 会在启动时恢复未到点的延迟执行 timer，但它本身不是 cron 周期任务
 - ESI 刷新队列在服务启动后仍会立即补跑一次，避免新启动实例长时间等待下一个周期
-- QQ 群治理动作 worker 随 cron 初始化启动，并由共享后台任务管理器参与关停；其待执行动作、租约和重试状态始终保存在 PostgreSQL，不依赖进程内 timer
+- QQ 群治理 worker 随 cron 初始化启动，并由共享后台任务管理器参与关停；成员快照、批量核验、写动作、租约和重试状态始终保存在 PostgreSQL，不依赖进程内 timer
 
 ## 设计决策
 
@@ -71,8 +71,8 @@ SDE 检查更新当前行为：
 ### QQ 群治理 OneBot 反向连接只接受私有、单机器人接入
 
 - 决策：QQ 群治理独立使用 `/internal/onebot/v11/ws` 的 OneBot V11 反向 WebSocket，不复用通用 `webhook.onebot` 配置或其任意 URL 发送能力。
-- 理由：群治理会接收事件并发起审批、拒绝和名片写操作，需要把机器人身份、来源网络、动作 echo 和持久动作队列作为单独的安全边界。
-- 必须保留的不变量：连接必须同时验证专用 Bearer Token、`X-Self-ID` 与配置的唯一机器人 QQ、以及 `onebot.allowed_cidrs`；配置不完整、来源不受控或 Redis 不可用时，不得执行任何自动 QQ 写操作。
+- 理由：群治理会接收事件并通过受控队列读取成员快照或发起审批、拒绝、名片等自动写操作，需要把机器人身份、来源网络、动作 echo 和持久动作队列作为单独的安全边界。
+- 必须保留的不变量：连接必须同时验证专用 Bearer Token、`X-Self-ID` 与配置的唯一机器人 QQ、以及 `onebot.allowed_cidrs`；配置不完整、来源不受控或 Redis 不可用时，不得执行任何 QQ 操作（包括成员读取）。
 
 ## 关键入口文件
 

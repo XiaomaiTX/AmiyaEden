@@ -3,37 +3,44 @@ package model
 import "time"
 
 const (
-	QQGovernanceReviewMatched     = "matched"
-	QQGovernanceReviewUnmatched   = "unmatched"
-	QQGovernanceReviewWait        = "review_wait"
-	QQGovernanceActionPending     = "pending"
-	QQGovernanceActionRunning     = "running"
-	QQGovernanceActionRetryWait   = "retry_wait"
-	QQGovernanceActionSucceeded   = "succeeded"
-	QQGovernanceActionCancelled   = "cancelled"
-	QQGovernanceActionDead        = "dead"
-	QQGovernanceActionApprove     = "approve"
-	QQGovernanceActionReject      = "reject"
-	QQGovernanceActionSetCard     = "set_card"
-	QQGovernanceActionScan        = "scan"
-	QQGovernanceActionRecheck     = "recheck"
-	QQGovernanceActionKick        = "kick"
-	QQGovernanceActionNotify      = "notify"
-	QQGovernanceViolationReview   = "review_only"
-	QQGovernanceViolationAutoKick = "auto_kick_after_confirmed_mismatch"
-	QQGovernanceMemberJoinPending = "join_pending"
-	QQGovernanceMemberValid       = "in_group_valid"
-	QQGovernanceMemberReview      = "in_group_review"
-	QQGovernanceMemberInvalidCand = "in_group_invalid_candidate"
-	QQGovernanceMemberInvalidConf = "in_group_invalid_confirmed"
-	QQGovernanceMemberLeft        = "left"
-	QQGovernanceAlertOpen         = "open"
-	QQGovernanceAlertAcknowledged = "acknowledged"
-	QQGovernanceAlertResolved     = "resolved"
-	QQGovernanceRiskNormal        = 0
-	QQGovernanceRiskLevelOne      = 1
-	QQGovernanceRiskLevelTwo      = 2
-	QQGovernanceRiskLevelThree    = 3
+	QQGovernanceReviewMatched      = "matched"
+	QQGovernanceReviewUnmatched    = "unmatched"
+	QQGovernanceReviewWait         = "review_wait"
+	QQGovernanceActionPending      = "pending"
+	QQGovernanceActionRunning      = "running"
+	QQGovernanceActionRetryWait    = "retry_wait"
+	QQGovernanceActionSucceeded    = "succeeded"
+	QQGovernanceActionCancelled    = "cancelled"
+	QQGovernanceActionDead         = "dead"
+	QQGovernanceActionApprove      = "approve"
+	QQGovernanceActionReject       = "reject"
+	QQGovernanceActionSetCard      = "set_card"
+	QQGovernanceActionSnapshot     = "snapshot"
+	QQGovernanceActionComputeBatch = "compute_batch"
+	QQGovernanceActionRecheck      = "recheck"
+	QQGovernanceActionKick         = "kick"
+	QQGovernanceActionNotify       = "notify"
+	QQGovernanceViolationReview    = "review_only"
+	QQGovernanceViolationAutoKick  = "auto_kick_after_confirmed_mismatch"
+	QQGovernanceMemberJoinPending  = "join_pending"
+	QQGovernanceMemberValid        = "in_group_valid"
+	QQGovernanceMemberReview       = "in_group_review"
+	QQGovernanceMemberInvalidCand  = "in_group_invalid_candidate"
+	QQGovernanceMemberInvalidConf  = "in_group_invalid_confirmed"
+	QQGovernanceMemberLeft         = "left"
+	QQGovernanceRunPending         = "pending"
+	QQGovernanceRunRunning         = "running"
+	QQGovernanceRunCompleted       = "completed"
+	QQGovernanceRunFailed          = "failed"
+	QQGovernanceRunMemberPending   = "pending"
+	QQGovernanceRunMemberDone      = "done"
+	QQGovernanceAlertOpen          = "open"
+	QQGovernanceAlertAcknowledged  = "acknowledged"
+	QQGovernanceAlertResolved      = "resolved"
+	QQGovernanceRiskNormal         = 0
+	QQGovernanceRiskLevelOne       = 1
+	QQGovernanceRiskLevelTwo       = 2
+	QQGovernanceRiskLevelThree     = 3
 )
 
 // QQGroupGovernancePolicy 保存单个 QQ 群的准入与名片规则。首期仅使用
@@ -82,6 +89,37 @@ type QQGroupMemberState struct {
 
 func (QQGroupMemberState) TableName() string { return "qq_group_member_state" }
 
+// QQGovernanceReconcileRun is one immutable full-group membership snapshot.
+// ActiveKey is populated only while the run is non-terminal, so a group can
+// never have two concurrent full scans.
+type QQGovernanceReconcileRun struct {
+	BaseModel
+	GroupID        int64      `gorm:"not null;index" json:"group_id"`
+	ActiveKey      string     `gorm:"size:64;not null;uniqueIndex" json:"-"`
+	Status         string     `gorm:"size:32;not null;index" json:"status"`
+	ExpectedCount  int        `gorm:"not null;default:0" json:"expected_count"`
+	ProcessedCount int        `gorm:"not null;default:0" json:"processed_count"`
+	FailedCount    int        `gorm:"not null;default:0" json:"failed_count"`
+	StartedAt      *time.Time `json:"started_at"`
+	CompletedAt    *time.Time `json:"completed_at"`
+	LastError      string     `gorm:"type:text;not null;default:''" json:"last_error"`
+}
+
+func (QQGovernanceReconcileRun) TableName() string { return "qq_governance_reconcile_run" }
+
+// QQGovernanceReconcileMember freezes the ordered membership set for a run.
+// It deliberately avoids using OneBot response order as a cursor.
+type QQGovernanceReconcileMember struct {
+	BaseModel
+	RunID     uint   `gorm:"not null;uniqueIndex:idx_qq_governance_run_member;index" json:"run_id"`
+	GroupID   int64  `gorm:"not null;index" json:"group_id"`
+	QQ        int64  `gorm:"not null;uniqueIndex:idx_qq_governance_run_member" json:"qq"`
+	Status    string `gorm:"size:32;not null;index" json:"status"`
+	LastError string `gorm:"type:text;not null;default:''" json:"last_error"`
+}
+
+func (QQGovernanceReconcileMember) TableName() string { return "qq_governance_reconcile_member" }
+
 // QQGroupRuntimeSnapshot 保存最近一次成功读取到的群状态，供管理页在断连时展示。
 type QQGroupRuntimeSnapshot struct {
 	BaseModel
@@ -119,6 +157,7 @@ func (QQGovernanceReview) TableName() string { return "qq_governance_review" }
 type QQGovernanceActionTask struct {
 	BaseModel
 	ActionType     string     `gorm:"size:32;not null;index" json:"action_type"`
+	RunID          uint       `gorm:"not null;default:0;index" json:"run_id"`
 	IdempotencyKey string     `gorm:"size:256;not null;uniqueIndex" json:"idempotency_key"`
 	GroupID        int64      `gorm:"not null;index" json:"group_id"`
 	QQ             int64      `gorm:"not null;index" json:"qq"`
@@ -150,19 +189,6 @@ type QQGovernanceActionLog struct {
 }
 
 func (QQGovernanceActionLog) TableName() string { return "qq_governance_action_log" }
-
-// QQGovernanceReconcileCursor 保存稳定 QQ 分片的巡检游标，支持进程重启后继续推进。
-type QQGovernanceReconcileCursor struct {
-	BaseModel
-	GroupID         int64      `gorm:"not null;uniqueIndex:idx_qq_governance_cursor" json:"group_id"`
-	ShardIndex      int        `gorm:"not null;uniqueIndex:idx_qq_governance_cursor" json:"shard_index"`
-	ShardCount      int        `gorm:"not null;default:1" json:"shard_count"`
-	LastQQ          int64      `gorm:"not null;default:0" json:"last_qq"`
-	LastCompletedAt *time.Time `json:"last_completed_at"`
-	NextRunAt       time.Time  `gorm:"not null;index" json:"next_run_at"`
-}
-
-func (QQGovernanceReconcileCursor) TableName() string { return "qq_governance_reconcile_cursor" }
 
 // QQGovernanceRiskControlState 记录单机器人最近动作失败窗口与熔断状态。
 type QQGovernanceRiskControlState struct {
