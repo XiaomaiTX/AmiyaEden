@@ -63,7 +63,13 @@ export function WelfareApprovalPage() {
   const review = async (id: number, action: 'deliver' | 'reject') => {
     setActionId(id)
     try {
-      await adminReviewApplication({ id, action })
+      const result = await adminReviewApplication({ id, action })
+      if (result?.outcome === 'auto_rejected') {
+        const reason = result.eligibility_reason
+          ? t(`welfareApproval.eligibilityReasons.${result.eligibility_reason}`)
+          : t('welfareApproval.eligibilityReasons.unknown')
+        setError(t('welfareApproval.autoRejected', { reason }))
+      }
       await loadPending()
       await loadHistory()
     } catch (caughtError) {

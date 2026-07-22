@@ -1460,15 +1460,15 @@ func TestAdminReviewApplicationDeliverDispatchesInGameMailAsynchronously(t *test
 	}
 
 	resultCh := make(chan struct {
-		mailSummary MailAttemptSummary
-		err         error
+		reviewResult WelfareReviewResult
+		err          error
 	}, 1)
 	go func() {
-		mailSummary, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
+		reviewResult, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
 		resultCh <- struct {
-			mailSummary MailAttemptSummary
-			err         error
-		}{mailSummary: mailSummary, err: err}
+			reviewResult WelfareReviewResult
+			err          error
+		}{reviewResult: reviewResult, err: err}
 	}()
 
 	select {
@@ -1487,8 +1487,8 @@ func TestAdminReviewApplicationDeliverDispatchesInGameMailAsynchronously(t *test
 	}
 
 	var result struct {
-		mailSummary MailAttemptSummary
-		err         error
+		reviewResult WelfareReviewResult
+		err          error
 	}
 	select {
 	case result = <-resultCh:
@@ -1499,8 +1499,8 @@ func TestAdminReviewApplicationDeliverDispatchesInGameMailAsynchronously(t *test
 	if result.err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", result.err)
 	}
-	if result.mailSummary != (MailAttemptSummary{}) {
-		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", result.mailSummary)
+	if result.reviewResult.MailAttemptSummary != (MailAttemptSummary{}) {
+		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", result.reviewResult.MailAttemptSummary)
 	}
 
 	var updated model.WelfareApplication
@@ -1562,12 +1562,12 @@ func TestAdminReviewApplicationDeliverReturnsEmptyMailSummaryWhenMailRunsAsync(t
 		}, nil
 	}
 
-	mailSummary, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
+	reviewResult, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
 	if err != nil {
 		t.Fatalf("AdminReviewApplication() error = %v", err)
 	}
-	if mailSummary != (MailAttemptSummary{}) {
-		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", mailSummary)
+	if reviewResult.MailAttemptSummary != (MailAttemptSummary{}) {
+		t.Fatalf("mailSummary = %#v, want empty because delivery mail is asynchronous", reviewResult.MailAttemptSummary)
 	}
 	select {
 	case <-mailAttempted:
@@ -1747,7 +1747,7 @@ func TestAdminReviewApplicationDeliverUsesApprovalTimePayoutConfig(t *testing.T)
 	}
 }
 
-func TestAdminReviewApplicationDeliverWithConfiguredPayoutRequiresUserID(t *testing.T) {
+func TestAdminReviewApplicationDeliverAutoRejectsMissingUser(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
 
@@ -1774,16 +1774,20 @@ func TestAdminReviewApplicationDeliverWithConfiguredPayoutRequiresUserID(t *test
 	}
 
 	svc := NewWelfareService()
-	if _, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err == nil {
-		t.Fatal("expected deliver to fail when payout requires user_id")
+	result, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
+	if err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+	if result.Outcome != WelfareReviewOutcomeAutoRejected || result.EligibilityReason != WelfareEligibilityReasonUserMissing {
+		t.Fatalf("result = %#v, want automatic user-missing rejection", result)
 	}
 
 	var updated model.WelfareApplication
 	if err := db.First(&updated, app.ID).Error; err != nil {
 		t.Fatalf("reload application: %v", err)
 	}
-	if updated.Status != model.WelfareAppStatusRequested {
-		t.Fatalf("status = %q, want %q", updated.Status, model.WelfareAppStatusRequested)
+	if updated.Status != model.WelfareAppStatusRejected {
+		t.Fatalf("status = %q, want %q", updated.Status, model.WelfareAppStatusRejected)
 	}
 
 	var txs []model.WalletTransaction
@@ -1792,6 +1796,121 @@ func TestAdminReviewApplicationDeliverWithConfiguredPayoutRequiresUserID(t *test
 	}
 	if len(txs) != 0 {
 		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	}
+}
+
+func TestAdminReviewApplicationDeliverAutoRejectsIneligibleWithoutPayoutEffects(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	payout := 25
+	welfare := &model.Welfare{
+		Name:          "Disabled Starter Pack",
+		DistMode:      model.WelfareDistModePerUser,
+		PayByFuxiCoin: &payout,
+		Status:        model.WelfareStatusActive,
+		CreatedBy:     1,
+	}
+	if err := db.Create(welfare).Error; err != nil {
+		t.Fatalf("create welfare: %v", err)
+	}
+	if err := db.Model(welfare).Update("status", model.WelfareStatusDisabled).Error; err != nil {
+		t.Fatalf("disable welfare: %v", err)
+	}
+	userID := uint(42)
+	app := &model.WelfareApplication{
+		WelfareID:     welfare.ID,
+		UserID:        &userID,
+		CharacterID:   90000042,
+		CharacterName: "char_90000042",
+		EvidenceImage: "data:image/png;base64,proof",
+		Status:        model.WelfareAppStatusRequested,
+	}
+	if err := db.Create(app).Error; err != nil {
+		t.Fatalf("create application: %v", err)
+	}
+
+	svc := NewWelfareService()
+	svc.deliveryMailSender = func(context.Context, uint, *model.Welfare, *model.WelfareApplication) (MailAttemptSummary, error) {
+		t.Fatal("automatic rejection must not send delivery mail")
+		return MailAttemptSummary{}, nil
+	}
+	result, err := svc.AdminReviewApplication(app.ID, 77, adminDeliveryReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"})
+	if err != nil {
+		t.Fatalf("AdminReviewApplication() error = %v", err)
+	}
+	if result.Outcome != WelfareReviewOutcomeAutoRejected || result.EligibilityReason != WelfareEligibilityReasonDisabled {
+		t.Fatalf("result = %#v, want disabled automatic rejection", result)
+	}
+
+	var updated model.WelfareApplication
+	if err := db.First(&updated, app.ID).Error; err != nil {
+		t.Fatalf("reload application: %v", err)
+	}
+	if updated.Status != model.WelfareAppStatusRejected || updated.ReviewedBy != 77 || updated.ReviewedAt == nil {
+		t.Fatalf("updated application = %#v, want rejected and reviewed", updated)
+	}
+	if updated.EvidenceImage != app.EvidenceImage {
+		t.Fatalf("evidence_image = %q, want %q", updated.EvidenceImage, app.EvidenceImage)
+	}
+
+	var txs []model.WalletTransaction
+	if err := db.Find(&txs).Error; err != nil {
+		t.Fatalf("load wallet transactions: %v", err)
+	}
+	if len(txs) != 0 {
+		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	}
+}
+
+func TestApplyForWelfareAllowsReapplicationAfterRejection(t *testing.T) {
+	db := newWelfareServiceTestDB(t)
+	useWelfareServiceTestDB(t, db)
+
+	user := &model.User{
+		BaseModel:          model.BaseModel{ID: 830001},
+		Nickname:           "Retry Pilot",
+		QQ:                 "retry-qq",
+		PrimaryCharacterID: 83000001,
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	character := &model.EveCharacter{CharacterID: 83000001, CharacterName: "Retry Pilot", UserID: user.ID}
+	if err := db.Create(character).Error; err != nil {
+		t.Fatalf("create character: %v", err)
+	}
+
+	perUser := &model.Welfare{Name: "Retry Per User", DistMode: model.WelfareDistModePerUser, Status: model.WelfareStatusActive, CreatedBy: 1}
+	perCharacter := &model.Welfare{Name: "Retry Per Character", DistMode: model.WelfareDistModePerCharacter, Status: model.WelfareStatusActive, CreatedBy: 1}
+	if err := db.Create(perUser).Error; err != nil {
+		t.Fatalf("create per-user welfare: %v", err)
+	}
+	if err := db.Create(perCharacter).Error; err != nil {
+		t.Fatalf("create per-character welfare: %v", err)
+	}
+	for _, app := range []*model.WelfareApplication{
+		{WelfareID: perUser.ID, UserID: &user.ID, CharacterID: character.CharacterID, CharacterName: character.CharacterName, QQ: user.QQ, Status: model.WelfareAppStatusRejected},
+		{WelfareID: perCharacter.ID, UserID: &user.ID, CharacterID: character.CharacterID, CharacterName: character.CharacterName, QQ: user.QQ, Status: model.WelfareAppStatusRejected},
+	} {
+		if err := db.Create(app).Error; err != nil {
+			t.Fatalf("create rejected application: %v", err)
+		}
+	}
+
+	svc := NewWelfareService()
+	eligible, err := svc.GetEligibleWelfares(user.ID)
+	if err != nil {
+		t.Fatalf("GetEligibleWelfares() error = %v", err)
+	}
+	if len(eligible) != 2 {
+		t.Fatalf("eligible welfare count = %d, want 2 after rejection", len(eligible))
+	}
+	if _, err := svc.ApplyForWelfare(user.ID, &ApplyForWelfareRequest{WelfareID: perUser.ID}); err != nil {
+		t.Fatalf("per-user reapplication failed: %v", err)
+	}
+	if _, err := svc.ApplyForWelfare(user.ID, &ApplyForWelfareRequest{WelfareID: perCharacter.ID, CharacterID: character.CharacterID}); err != nil {
+		t.Fatalf("per-character reapplication failed: %v", err)
 	}
 }
 
@@ -2198,6 +2317,9 @@ func newWelfareServiceTestDB(t *testing.T) *gorm.DB {
 	)
 	seedWalletCapabilityEnabledUserForTests(t, db, 42, 90000042, 1001)
 	seedWalletCapabilityEnabledUserForTests(t, db, 77, 90000077, 1001)
+	if err := db.Model(&model.User{}).Where("id IN ?", []uint{42, 77}).Update("qq", "test-contact").Error; err != nil {
+		t.Fatalf("seed user contacts: %v", err)
+	}
 	setWalletCapabilityPolicyForTests(t, db, 1001, true)
 	return db
 }

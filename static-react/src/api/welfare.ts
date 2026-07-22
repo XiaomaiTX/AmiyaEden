@@ -2,7 +2,6 @@ import { requestJson } from '@/api/http-client'
 import { assertSuccess, type ApiResponse } from '@/api/response'
 import { uploadImageAsDataUrl } from '@/api/upload'
 import type {
-  AdminApplication,
   AdminApplicationListResponse,
   AdminApplicationSearchParams,
   AutoApproveConfig,
@@ -19,6 +18,7 @@ import type {
   UpdateAutoApproveConfigParams,
   UpdateParams,
   ApplyParams,
+  ReviewResult,
 } from '@/types/api/welfare'
 
 type ApiResult<T> = ApiResponse<T>
@@ -103,7 +103,7 @@ export async function adminListApplications(data?: AdminApplicationSearchParams)
 }
 
 export async function adminReviewApplication(data: ReviewParams) {
-  const response = await requestJson<ApiResult<AdminApplication>>('/api/v1/system/welfare/review', {
+  const response = await requestJson<ApiResult<ReviewResult>>('/api/v1/system/welfare/review', {
     method: 'POST',
     body: JSON.stringify(data),
   })
