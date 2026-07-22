@@ -1,73 +1,48 @@
-# React + TypeScript + Vite
+# AmiyaEden React frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+`static-react/` is the React 19 + TypeScript + Vite migration frontend. During the migration window it is built, verified, and deployed independently from the production Vue frontend in `static/`.
 
-Currently, two official plugins are available:
+## Toolchain
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 24
+- pnpm 11.15.1
+- React 19 and React Router 7
+- Vite 8 and TypeScript 6
+- Tailwind CSS 4 and shadcn/ui
+- Vitest, Testing Library, and ESLint
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The development server reads `.env.development`, listens on port `5173`, and proxies `/api/*` to `VITE_API_PROXY_URL` (`http://localhost:8080` by default).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Verification
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm lint
+pnpm exec tsc -b
+pnpm test
+pnpm check:api-contract
+pnpm build
 ```
+
+These commands are enforced for `static-react/**` changes by `.github/workflows/verify-ci.yaml`.
+
+## Container deployment
+
+The multi-stage `Dockerfile` builds the Vite application with Node and serves `dist/` from Nginx. Nginx proxies `/api/*` to the Compose service `backend:8080`. From the repository root, run:
+
+```bash
+docker compose -f docker-compose.example.yml up -d backend frontend frontend-react
+```
+
+- Vue remains available on host port `80`.
+- React is available on host port `3000` through the `frontend-react` service.
+- The React image is `xiaomaitx/amiya-eden-frontend-react`.
+- `main` publishes `latest` and short-SHA tags; `preview` publishes the `preview` tag.
+
+`VITE_BASE_URL` can be supplied as a Docker build argument when deploying the compiled assets below a non-root base path; the default is `/`.

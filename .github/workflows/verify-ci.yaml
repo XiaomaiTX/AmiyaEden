@@ -18,6 +18,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      frontend_react: ${{ steps.filter.outputs.frontend_react }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -31,6 +32,8 @@ jobs:
               - 'server/**'
             frontend:
               - 'static/**'
+            frontend_react:
+              - 'static-react/**'
 
   backend:
     name: Backend Verify
@@ -111,10 +114,56 @@ jobs:
         working-directory: static
         run: pnpm build
 
+  frontend_react:
+    name: React Frontend Verify
+    needs: changes
+    if: needs.changes.outputs.frontend_react == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 11.15.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: static-react/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: static-react
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint React frontend
+        working-directory: static-react
+        run: pnpm lint
+
+      - name: Type check
+        working-directory: static-react
+        run: pnpm exec tsc -b
+
+      - name: Unit tests
+        working-directory: static-react
+        run: pnpm test
+
+      - name: Check API contract isolation
+        working-directory: static-react
+        run: pnpm check:api-contract
+
+      - name: Build React frontend
+        working-directory: static-react
+        run: pnpm build
+
   ci-passed:
     name: CI Passed
     if: always()
-    needs: [changes, backend, frontend]
+    needs: [changes, backend, frontend, frontend_react]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -129,6 +178,10 @@ jobs:
           fi
           if [[ "${{ needs.frontend.result }}" == "failure" ]]; then
             echo "::error::Frontend verification failed"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend_react.result }}" == "failure" ]]; then
+            echo "::error::React frontend verification failed"
             exit 1
           fi
           echo "All required checks passed (or were skipped due to path filtering)"

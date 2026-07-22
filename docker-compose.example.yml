@@ -1,6 +1,6 @@
 services:
     backend:
-        image: newdoublex/amiya-eden-backend:latest
+        image: xiaomaitx/amiya-eden-backend:latest
         container_name: amiya-eden-backend
         restart: unless-stopped
         extra_hosts:
@@ -46,11 +46,22 @@ services:
             - amiya-eden-network
 
     frontend:
-        image: newdoublex/amiya-eden-frontend:latest
+        image: xiaomaitx/amiya-eden-frontend:latest
         container_name: amiya-eden-frontend
         restart: unless-stopped
         ports:
             - "80:80"
+        networks:
+            - amiya-eden-network
+
+    frontend-react:
+        image: xiaomaitx/amiya-eden-frontend-react:latest
+        container_name: amiya-eden-frontend-react
+        restart: unless-stopped
+        depends_on:
+            - backend
+        ports:
+            - "3000:80"
         networks:
             - amiya-eden-network
 

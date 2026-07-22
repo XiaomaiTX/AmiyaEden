@@ -1,58 +1,63 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editors and local workspaces
+.idea/
+.vscode/
+*.swp
+*.swo
+*.suo
+*.user
+*.code-workspace
+.worktrees/
+.codex/
+.zcode/
+
+# Environment and local overrides
+.env
+.env.*
+!.env.example
+*.local
+
+# Go build and test artifacts
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-
-# Test binary, built with `go test -c`
 *.test
-
-# Code coverage profiles and other test artifacts
 *.out
-coverage.*
+*.prof
 *.coverprofile
 profile.cov
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
+/server/bin/
+.gocache/
+vendor/
 go.work
 go.work.sum
 
-# env file
-.env
+# Node.js dependencies and package-manager data
+node_modules/
+.npm/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Editor/IDE
-.idea/
-.vscode/
-.worktrees/
+# Build and test output
+dist/
+dist-ssr/
+coverage/
+coverage.*
 
-# Logs
+# Logs and runtime data
 *.log
-tmp/*
+tmp/
+logs/
+/server/internal/handler/uploads/
 
-# Configs
-server/config/config.yaml
-server/config/config.docker-dev.yaml
-
-# Builds
-static/dist/
-
-# Temp Logs
-server/tmp/
-server/logs/
-server/.gocache/
-.gocache/
-
-# VSCode Personcal Workspace
-AmiyaEden.code-workspace
-.codex
-server/internal/handler/uploads/
-
-.zcode/
-static/pnpm-workspace.yaml
+# server configuration
+/server/config/config.yaml
+/server/config/config.docker-dev.yaml
