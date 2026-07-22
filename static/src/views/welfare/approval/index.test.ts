@@ -55,3 +55,9 @@ test('welfare approval shows proof images only for pending rows', () => {
     'expected history table to omit the evidence image column'
   )
 })
+
+test('welfare approval handles delivery-time automatic rejection and refreshes both lists', () => {
+  assert.match(source, /result\.outcome === 'auto_rejected'/)
+  assert.match(source, /welfareApproval\.eligibilityReasons\./)
+  assert.match(source, /Promise\.all\(\[loadPending\(\), loadHistory\(\)\]\)/)
+})

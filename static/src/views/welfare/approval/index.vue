@@ -358,6 +358,13 @@
   // ─── Actions ───
   const actionLoading = ref(false)
 
+  function autoRejectMessage(reason?: Api.Welfare.WelfareEligibilityReason) {
+    const detail = reason
+      ? t(`welfareApproval.eligibilityReasons.${reason}`)
+      : t('welfareApproval.eligibilityReasons.unknown')
+    return t('welfareApproval.autoRejected', { reason: detail })
+  }
+
   async function handleDeliver(row: AppRow) {
     try {
       await ElMessageBox.confirm(
@@ -371,9 +378,13 @@
     actionLoading.value = true
     try {
       const result = await adminReviewApplication({ id: row.id, action: 'deliver' })
-      ElMessage.success(t('welfareApproval.deliverSuccess'))
-      showMailAttemptMessage(result, t)
-      loadPending()
+      if (result.outcome === 'auto_rejected') {
+        ElMessage.warning(autoRejectMessage(result.eligibility_reason))
+      } else {
+        ElMessage.success(t('welfareApproval.deliverSuccess'))
+        showMailAttemptMessage(result, t)
+      }
+      await Promise.all([loadPending(), loadHistory()])
     } catch {
       /* handled by interceptor */
     } finally {
@@ -394,7 +405,7 @@
     try {
       await adminReviewApplication({ id: row.id, action: 'reject' })
       ElMessage.success(t('welfareApproval.rejectSuccess'))
-      loadPending()
+      await Promise.all([loadPending(), loadHistory()])
     } catch {
       /* handled by interceptor */
     } finally {

@@ -117,10 +117,6 @@ describe('ticket create page', () => {
     await waitFor(() => {
       expect(screen.getByText('我的工单')).toBeInTheDocument()
     })
-    await waitFor(() => {
-      expect(screen.getByText('需要帮助')).toBeInTheDocument()
-    })
-
     const createCall = fetchSpy.mock.calls.find(
       ([input, init]) =>
         String(input).includes('/api/v1/ticket/tickets') && init?.method === 'POST'

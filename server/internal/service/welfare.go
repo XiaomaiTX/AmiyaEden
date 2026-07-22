@@ -546,6 +546,9 @@ func (s *WelfareService) isUserIneligible(user *model.User, apps []model.Welfare
 	userDiscord := strings.TrimSpace(user.DiscordID)
 
 	for _, app := range apps {
+		if app.Status == model.WelfareAppStatusRejected {
+			continue
+		}
 		if userQQ != "" && strings.TrimSpace(app.QQ) == userQQ {
 			return true
 		}
@@ -632,6 +635,9 @@ func (s *WelfareService) filterEligibleCharacters(
 	appliedCharIDs := make(map[int64]bool)
 	appliedCharNames := make(map[string]bool)
 	for _, app := range apps {
+		if app.Status == model.WelfareAppStatusRejected {
+			continue
+		}
 		appliedCharIDs[app.CharacterID] = true
 		if name := strings.TrimSpace(app.CharacterName); name != "" {
 			appliedCharNames[name] = true
@@ -760,6 +766,156 @@ type ApplyForWelfareRequest struct {
 	EvidenceImage string `json:"evidence_image"`
 }
 
+// WelfareEligibilityReason is a stable reason code for a current welfare
+// eligibility check. It is returned to clients only when a delivery attempt
+// is automatically rejected, so clients can localize the explanation.
+type WelfareEligibilityReason string
+
+const (
+	WelfareEligibilityReasonDisabled          WelfareEligibilityReason = "welfare_disabled"
+	WelfareEligibilityReasonUserMissing       WelfareEligibilityReason = "user_missing"
+	WelfareEligibilityReasonContactMissing    WelfareEligibilityReason = "contact_missing"
+	WelfareEligibilityReasonCharacterNotOwned WelfareEligibilityReason = "character_not_owned"
+	WelfareEligibilityReasonAgeLimit          WelfareEligibilityReason = "age_limit"
+	WelfareEligibilityReasonMinimumPAP        WelfareEligibilityReason = "minimum_pap"
+	WelfareEligibilityReasonLegionYears       WelfareEligibilityReason = "minimum_fuxi_legion_years"
+	WelfareEligibilityReasonEvidenceMissing   WelfareEligibilityReason = "evidence_missing"
+	WelfareEligibilityReasonSkillPlan         WelfareEligibilityReason = "skill_plan"
+)
+
+func welfareEligibilityReasonError(reason WelfareEligibilityReason) error {
+	switch reason {
+	case WelfareEligibilityReasonDisabled:
+		return errors.New("该福利未启用")
+	case WelfareEligibilityReasonUserMissing:
+		return errors.New("用户不存在")
+	case WelfareEligibilityReasonContactMissing:
+		return errors.New("请先设置QQ或Discord联系方式")
+	case WelfareEligibilityReasonCharacterNotOwned:
+		return errors.New("该人物不属于您")
+	case WelfareEligibilityReasonAgeLimit:
+		return errors.New("您的人物年龄超过该福利限制")
+	case WelfareEligibilityReasonMinimumPAP:
+		return errors.New("您的军团 PAP 未达到该福利限制")
+	case WelfareEligibilityReasonLegionYears:
+		return errors.New("您的人物未满足伏羲军团服役年限要求")
+	case WelfareEligibilityReasonEvidenceMissing:
+		return errors.New("该福利需要上传证明图片")
+	case WelfareEligibilityReasonSkillPlan:
+		return errors.New("您的人物不满足技能计划要求")
+	default:
+		return errors.New("不满足福利条件")
+	}
+}
+
+// checkCurrentWelfareEligibility loads the applicant's current data and
+// evaluates it against the welfare's current configuration. A non-empty
+// reason is a business eligibility failure; an error means verification could
+// not be completed and must not be treated as a rejection.
+func (s *WelfareService) checkCurrentWelfareEligibility(
+	welfare *model.Welfare,
+	userID uint,
+	characterID int64,
+	evidenceImage string,
+) (WelfareEligibilityReason, map[int64]map[uint]bool, error) {
+	if welfare == nil || welfare.Status != model.WelfareStatusActive {
+		return WelfareEligibilityReasonDisabled, nil, nil
+	}
+	if userID == 0 {
+		return WelfareEligibilityReasonUserMissing, nil, nil
+	}
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return WelfareEligibilityReasonUserMissing, nil, nil
+		}
+		return "", nil, errors.New("获取用户信息失败")
+	}
+	characters, err := listOwnedCharacters(s.charRepo, userID)
+	if err != nil {
+		return "", nil, err
+	}
+	return s.evaluateCurrentWelfareEligibility(welfare, user, characters, characterID, evidenceImage)
+}
+
+func (s *WelfareService) evaluateCurrentWelfareEligibility(
+	welfare *model.Welfare,
+	user *model.User,
+	characters []model.EveCharacter,
+	characterID int64,
+	evidenceImage string,
+) (WelfareEligibilityReason, map[int64]map[uint]bool, error) {
+	if welfare == nil || welfare.Status != model.WelfareStatusActive {
+		return WelfareEligibilityReasonDisabled, nil, nil
+	}
+	if user == nil {
+		return WelfareEligibilityReasonUserMissing, nil, nil
+	}
+	if welfare.DistMode == model.WelfareDistModePerUser && strings.TrimSpace(user.QQ) == "" && strings.TrimSpace(user.DiscordID) == "" {
+		return WelfareEligibilityReasonContactMissing, nil, nil
+	}
+	if welfare.DistMode == model.WelfareDistModePerCharacter && findCharacterByID(characters, characterID) == nil {
+		return WelfareEligibilityReasonCharacterNotOwned, nil, nil
+	}
+
+	if welfare.MaxCharAgeMonths != nil && *welfare.MaxCharAgeMonths > 0 {
+		s.ensureBirthdays(characters)
+	}
+	if welfare.MinimumFuxiLegionYears != nil && *welfare.MinimumFuxiLegionYears > 0 {
+		s.ensureFuxiLegionTenureDays(characters)
+	}
+	if welfareAgeRestrictionFailed(characters, welfare.MaxCharAgeMonths, time.Now()) {
+		return WelfareEligibilityReasonAgeLimit, nil, nil
+	}
+	if welfare.MinimumPap != nil && *welfare.MinimumPap > 0 {
+		totalPap, err := s.fleetRepo.SumPapByUserTotal(user.ID)
+		if err != nil {
+			return "", nil, errors.New("获取 PAP 统计失败")
+		}
+		if welfareMinimumPapRestrictionFailed(welfare.MinimumPap, totalPap) {
+			return WelfareEligibilityReasonMinimumPAP, nil, nil
+		}
+	}
+	if welfareFuxiLegionYearsRestrictionFailed(characters, welfare.MinimumFuxiLegionYears) {
+		return WelfareEligibilityReasonLegionYears, nil, nil
+	}
+	if welfare.RequireEvidence && strings.TrimSpace(evidenceImage) == "" {
+		return WelfareEligibilityReasonEvidenceMissing, nil, nil
+	}
+
+	if !welfare.RequireSkillPlan {
+		return "", nil, nil
+	}
+	planIDs, err := s.repo.GetSkillPlanIDsByWelfareID(welfare.ID)
+	if err != nil {
+		return "", nil, errors.New("获取技能计划失败")
+	}
+	validPlans, err := s.planRepo.ListByIDsAndScope(planIDs, model.SkillPlanScopeCorp)
+	if err != nil {
+		return "", nil, errors.New("获取技能计划失败")
+	}
+	welfare.SkillPlanIDs = welfare.SkillPlanIDs[:0]
+	for _, plan := range validPlans {
+		welfare.SkillPlanIDs = append(welfare.SkillPlanIDs, plan.ID)
+	}
+	if len(welfare.SkillPlanIDs) == 0 {
+		return "", nil, nil
+	}
+
+	skillCheckCache, ok := s.buildSkillCheckCache(characters, []model.Welfare{*welfare})
+	if !ok {
+		return "", nil, errors.New("获取技能计划失败")
+	}
+	if welfare.DistMode == model.WelfareDistModePerUser {
+		if !s.anyCharacterSatisfiesSkillPlan(characters, welfare.SkillPlanIDs, skillCheckCache) {
+			return WelfareEligibilityReasonSkillPlan, skillCheckCache, nil
+		}
+	} else if !s.characterSatisfiesAnySkillPlan(characterID, welfare.SkillPlanIDs, skillCheckCache) {
+		return WelfareEligibilityReasonSkillPlan, skillCheckCache, nil
+	}
+	return "", skillCheckCache, nil
+}
+
 func (s *WelfareService) autoApproveFuxiCoinThreshold() int {
 	if s.cfgRepo == nil {
 		return model.SysConfigDefaultWelfareAutoApproveFuxiCoinThreshold
@@ -873,15 +1029,6 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 	if err != nil {
 		return nil, errors.New("获取申请记录失败")
 	}
-	var skillCheckCache map[int64]map[uint]bool
-
-	if welfare.MaxCharAgeMonths != nil && *welfare.MaxCharAgeMonths > 0 {
-		s.ensureBirthdays(characters)
-	}
-	if welfare.MinimumFuxiLegionYears != nil && *welfare.MinimumFuxiLegionYears > 0 {
-		s.ensureFuxiLegionTenureDays(characters)
-	}
-
 	var selectedChar model.EveCharacter
 
 	if welfare.DistMode == model.WelfareDistModePerUser {
@@ -912,71 +1059,27 @@ func (s *WelfareService) ApplyForWelfare(userID uint, req *ApplyForWelfareReques
 		selectedChar = *ownedCharacter
 		// 检查人物是否已申请
 		for _, app := range apps {
+			if app.Status == model.WelfareAppStatusRejected {
+				continue
+			}
 			if app.CharacterID == req.CharacterID || strings.TrimSpace(app.CharacterName) == strings.TrimSpace(selectedChar.CharacterName) {
 				return nil, errors.New("该人物已申请过该福利")
 			}
 		}
 	}
 
-	// 人物年龄检查：任一人物超龄则该福利不可申请
-	if welfareAgeRestrictionFailed(characters, welfare.MaxCharAgeMonths, time.Now()) {
-		return nil, errors.New("您的人物年龄超过该福利限制")
+	reason, skillCheckCache, err := s.evaluateCurrentWelfareEligibility(
+		welfare,
+		user,
+		characters,
+		selectedChar.CharacterID,
+		req.EvidenceImage,
+	)
+	if err != nil {
+		return nil, err
 	}
-
-	// PAP 检查：军团 PAP 总数必须严格大于最低要求
-	if welfare.MinimumPap != nil && *welfare.MinimumPap > 0 {
-		totalPap, err := s.fleetRepo.SumPapByUserTotal(userID)
-		if err != nil {
-			return nil, errors.New("获取 PAP 统计失败")
-		}
-		if welfareMinimumPapRestrictionFailed(welfare.MinimumPap, totalPap) {
-			return nil, errors.New("您的军团 PAP 未达到该福利限制")
-		}
-	}
-	if welfareFuxiLegionYearsRestrictionFailed(characters, welfare.MinimumFuxiLegionYears) {
-		return nil, errors.New("您的人物未满足伏羲军团服役年限要求")
-	}
-
-	// 证明图片检查
-	if welfare.RequireEvidence && strings.TrimSpace(req.EvidenceImage) == "" {
-		return nil, errors.New("该福利需要上传证明图片")
-	}
-
-	// 技能计划检查
-	if welfare.RequireSkillPlan {
-		// 填充 SkillPlanIDs (GetWelfareByID 不会自动填充)
-		planIDs, err := s.repo.GetSkillPlanIDsByWelfareID(welfare.ID)
-		if err != nil {
-			return nil, errors.New("获取技能计划失败")
-		}
-		validPlans, err := s.planRepo.ListByIDsAndScope(planIDs, model.SkillPlanScopeCorp)
-		if err != nil {
-			return nil, errors.New("获取技能计划失败")
-		}
-		validPlanIDs := make([]uint, 0, len(validPlans))
-		for _, plan := range validPlans {
-			validPlanIDs = append(validPlanIDs, plan.ID)
-		}
-		welfare.SkillPlanIDs = validPlanIDs
-
-		if len(welfare.SkillPlanIDs) > 0 {
-			welfares := []model.Welfare{*welfare}
-			cache, ok := s.buildSkillCheckCache(characters, welfares)
-			if !ok {
-				return nil, errors.New("获取技能计划失败")
-			}
-			skillCheckCache = cache
-
-			if welfare.DistMode == model.WelfareDistModePerUser {
-				if !s.anyCharacterSatisfiesSkillPlan(characters, welfare.SkillPlanIDs, cache) {
-					return nil, errors.New("您的人物不满足技能计划要求")
-				}
-			} else {
-				if !s.characterSatisfiesAnySkillPlan(selectedChar.CharacterID, welfare.SkillPlanIDs, cache) {
-					return nil, errors.New("该人物不满足技能计划要求")
-				}
-			}
-		}
+	if reason != "" {
+		return nil, welfareEligibilityReasonError(reason)
 	}
 
 	// 创建申请
@@ -1177,6 +1280,23 @@ type AdminReviewApplicationRequest struct {
 	Action string `json:"action"` // "deliver" or "reject"
 }
 
+type WelfareReviewOutcome string
+
+const (
+	WelfareReviewOutcomeDelivered    WelfareReviewOutcome = "delivered"
+	WelfareReviewOutcomeRejected     WelfareReviewOutcome = "rejected"
+	WelfareReviewOutcomeAutoRejected WelfareReviewOutcome = "auto_rejected"
+)
+
+// WelfareReviewResult describes the state transition caused by a review. A
+// delivery-time eligibility failure is a successful automatic rejection, not
+// a failed request, so clients can refresh the pending and history lists.
+type WelfareReviewResult struct {
+	MailAttemptSummary
+	Outcome           WelfareReviewOutcome     `json:"outcome"`
+	EligibilityReason WelfareEligibilityReason `json:"eligibility_reason,omitempty"`
+}
+
 // validateReviewTransition 验证审批状态转换是否合法，返回目标状态
 func validateReviewTransition(currentStatus, action string) (string, error) {
 	switch action {
@@ -1204,12 +1324,13 @@ func (s *WelfareService) AdminDeleteApplication(id uint) error {
 	return s.repo.DeleteApplication(id)
 }
 
-func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, reviewerRoles []string, req *AdminReviewApplicationRequest) (MailAttemptSummary, error) {
+func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, reviewerRoles []string, req *AdminReviewApplicationRequest) (WelfareReviewResult, error) {
 	var deliveredWelfare *model.Welfare
 	var deliveredApp *model.WelfareApplication
 	var targetUserID uint
 	action := "welfare_application_reject"
 	resourceID := fmt.Sprintf("%d", appID)
+	result := WelfareReviewResult{}
 
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		app, err := s.repo.GetApplicationByIDForUpdateTx(tx, appID)
@@ -1230,13 +1351,33 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 		now := time.Now()
 		app.ReviewedBy = reviewerID
 		app.ReviewedAt = &now
+		if newStatus == model.WelfareAppStatusRejected {
+			result.Outcome = WelfareReviewOutcomeRejected
+		}
 
 		if newStatus == model.WelfareAppStatusDelivered {
-			action = "welfare_application_deliver"
 			welfare, err := s.repo.GetWelfareByIDTx(tx, app.WelfareID)
 			if err != nil {
 				return errors.New("福利不存在")
 			}
+			var applicantID uint
+			if app.UserID != nil {
+				applicantID = *app.UserID
+			}
+			reason, _, err := s.checkCurrentWelfareEligibility(welfare, applicantID, app.CharacterID, app.EvidenceImage)
+			if err != nil {
+				return err
+			}
+			if reason != "" {
+				app.Status = model.WelfareAppStatusRejected
+				action = "welfare_application_auto_reject"
+				result.Outcome = WelfareReviewOutcomeAutoRejected
+				result.EligibilityReason = reason
+				return s.repo.UpdateApplicationTx(tx, app)
+			}
+
+			action = "welfare_application_deliver"
+			result.Outcome = WelfareReviewOutcomeDelivered
 			if err := s.applyDeliveredWelfareEffectsTx(tx, welfare, app, reviewerID); err != nil {
 				return err
 			}
@@ -1261,7 +1402,7 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 		return s.repo.UpdateApplicationTx(tx, app)
 	})
 	if err != nil {
-		return MailAttemptSummary{}, err
+		return WelfareReviewResult{}, err
 	}
 	if s.auditSvc != nil {
 		_ = s.auditSvc.RecordEvent(context.Background(), AuditRecordInput{
@@ -1273,12 +1414,15 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 			ResourceID:   resourceID,
 			Result:       model.AuditResultSuccess,
 			Details: map[string]any{
-				"request_action": strings.TrimSpace(req.Action),
+				"request_action":     strings.TrimSpace(req.Action),
+				"outcome":            result.Outcome,
+				"eligibility_reason": result.EligibilityReason,
 			},
 		})
 	}
 
-	return s.attemptDeliveryMail(reviewerID, deliveredWelfare, deliveredApp), nil
+	result.MailAttemptSummary = s.attemptDeliveryMail(reviewerID, deliveredWelfare, deliveredApp)
+	return result, nil
 }
 
 func (s *WelfareService) attemptDeliveryMail(reviewerID uint, deliveredWelfare *model.Welfare, deliveredApp *model.WelfareApplication) MailAttemptSummary {

@@ -1656,7 +1656,21 @@ declare namespace Api {
       action: 'deliver' | 'reject'
     }
 
-    type ReviewResult = Api.Common.MailActionResult
+    type WelfareEligibilityReason =
+      | 'welfare_disabled'
+      | 'user_missing'
+      | 'contact_missing'
+      | 'character_not_owned'
+      | 'age_limit'
+      | 'minimum_pap'
+      | 'minimum_fuxi_legion_years'
+      | 'evidence_missing'
+      | 'skill_plan'
+
+    type ReviewResult = Api.Common.MailActionResult & {
+      outcome: 'delivered' | 'rejected' | 'auto_rejected'
+      eligibility_reason?: WelfareEligibilityReason
+    }
   }
 
   /** 商店系统类型 */

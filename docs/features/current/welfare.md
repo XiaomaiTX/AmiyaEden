@@ -32,7 +32,7 @@ source_of_truth:
 - 若福利因技能规划未满足而暂不可申请，前端提示会列出对应的技能规划名称
 - 我的福利页面顶部提供前往技能规划完成度检查页的提醒链接
 - 导航栏福利徽章数使用进程内缓存；只会在用户进入“我的福利”页拉取 `/welfare/eligible` 成功后刷新，并在成功提交福利申请后尽力更新。普通 `/badge-counts` 请求本身不会重新计算福利资格；服务重启后或缓存条目过期后计数可为空
-- 申请状态流转：默认 `requested → delivered / rejected`；但当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且申请人资格校验通过时，申请会直接写入 `delivered`
+- 申请状态流转：默认 `requested → delivered / rejected`；但当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且申请人资格校验通过时，申请会直接写入 `delivered`。管理员点击人工发放时，系统会按发放当下的福利配置和用户数据重新检查资格；不满足时申请自动进入 `rejected`，不会执行钱包入账、管理员奖励或发放邮件。
 - 当福利当前配置 `pay_by_fuxi_coin > 0` 时，福利发放会同步给申请人钱包入账，流水 `ref_type = welfare_payout`；小额伏羲币福利会在申请提交事务内直接完成这一步
 - 当管理员在审批端执行人工 `requested -> delivered` 成功时，系统会按 PAP 兑换页的 `admin-award` 配置额外给执行人钱包入账一笔奖励，默认 10 伏羲币，流水 `ref_type = admin_award`；仅有 `welfare` 职权的福利官不会领取该奖励，系统自动发放的小额伏羲币福利也不会领取该奖励
 - 审批端执行 delivered 后，系统会以发放福利官的主人物为发件人异步尽力发送一封双语游戏内邮件；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果，也不会阻塞继续审批下一条申请
@@ -90,7 +90,7 @@ source_of_truth:
 - `POST /api/v1/system/welfare/import` — 导入历史福利记录
 - `POST /api/v1/system/welfare/applications` — 福利申请列表（审批端，支持按状态与人物名/昵称/QQ 关键词筛选）
 - `POST /api/v1/system/welfare/applications/delete` — 删除单条申请记录（仅 admin）
-- `POST /api/v1/system/welfare/review` — 审批福利申请（发放/拒绝）
+- `POST /api/v1/system/welfare/review` — 审批福利申请（发放/拒绝）；响应 `outcome` 为 `delivered`、`rejected` 或 `auto_rejected`，后者附带稳定的 `eligibility_reason` 原因码供前端本地化展示
 
 用户端：
 
@@ -111,17 +111,17 @@ source_of_truth:
 
 ## 关键不变量
 
-- 不论按自然人还是按人物发放，都不允许重复申请
+- 不论按自然人还是按人物发放，`requested` 和 `delivered` 记录都不允许重复申请；`rejected` 记录不占用资格，用户在重新满足当前条件后可再次申请
 - per_user 去重基于 QQ / DiscordID 匹配（非 user_id），要求用户至少设置一个联系方式
 - per_character 去重基于 character_id 和 character_name
-- 申请时服务端二次校验资格，防止并发竞态
+- 申请提交与人工发放时服务端都会复核资格，防止并发竞态及条件变更后继续发放
 - 伏羲军团服役年限检查按单个人物的累计服役时长判断，不要求任职区间连续；该人物的累计服役时长由 `character_corporation_history` 推导并缓存到 `eve_character.fuxi_legion_tenure_days`
 - `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；按人物发放且附带伏羲币的福利还会按当前 `multichar.*` 层级配置乘算奖励倍率；小额伏羲币福利的“发放当下”就是申请提交事务本身
 - 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，福利发放会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
 - 当管理员在福利审批端执行人工发放且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `welfare` 职权的福利官不会写入，配置值为 `0` 时也不写入
 - 当福利官在审批端执行 `requested -> delivered` 成功后，服务会异步尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，也不阻塞审批端继续处理下一条申请
 - 申请进入 `delivered` 状态后，服务会清空 `evidence_image`；后续审批历史查询不会读取证明图片字段
-- 福利审批接口仍复用通用邮件结果结构，但异步路径下成功响应不等待即时邮件结果；具体字段以代码契约为准
+- 福利审批接口的成功响应包含处理结果 `outcome`；当人工发放触发资格复核失败时，服务以 `auto_rejected` 成功结果返回，并附带 `eligibility_reason`。异步发放邮件路径下成功响应不等待即时邮件结果；具体字段以代码契约为准
 - 导入历史福利记录只写福利申请历史，不补写 `welfare_payout` 钱包流水
 - 技能计划检查复用 skill_plan 模块，福利定义通过 welfare_skill_plans 关联表支持多技能计划
 - 福利设置列表按 `sort_order ASC, id DESC` 排序；当前页拖拽只重排该页已有排序区间，跨分页移动依赖显式 `sort_order`

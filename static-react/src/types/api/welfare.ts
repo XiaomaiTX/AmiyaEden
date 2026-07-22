@@ -151,10 +151,24 @@ export interface ReviewParams {
   action: 'deliver' | 'reject'
 }
 
+export type WelfareEligibilityReason =
+  | 'welfare_disabled'
+  | 'user_missing'
+  | 'contact_missing'
+  | 'character_not_owned'
+  | 'age_limit'
+  | 'minimum_pap'
+  | 'minimum_fuxi_legion_years'
+  | 'evidence_missing'
+  | 'skill_plan'
+
 export interface ReviewResult {
-  code?: number
-  msg?: string
-  data?: unknown
+  outcome: 'delivered' | 'rejected' | 'auto_rejected'
+  eligibility_reason?: WelfareEligibilityReason
+  mail_error?: string
+  mail_id?: number
+  mail_sender_character_id?: number
+  mail_sender_character_name?: string
 }
 
 export interface AdminDeleteApplicationParams {
