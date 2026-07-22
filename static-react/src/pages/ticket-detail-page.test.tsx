@@ -21,7 +21,7 @@ describe('ticket detail page', () => {
   })
 
   test('loads ticket detail and submits a reply', async () => {
-    vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -116,7 +116,7 @@ describe('ticket detail page', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getByText('需要帮助')).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /#99 需要帮助/ })).toBeInTheDocument()
     })
     expect(screen.getByText('初始回复')).toBeInTheDocument()
 
@@ -128,5 +128,12 @@ describe('ticket detail page', () => {
     await waitFor(() => {
       expect(screen.getByText('我来跟进')).toBeInTheDocument()
     })
+
+    const replyCall = fetchSpy.mock.calls.find(
+      ([input, init]) =>
+        String(input).includes('/api/v1/ticket/tickets/99/replies') && init?.method === 'POST'
+    )
+    expect(replyCall).toBeDefined()
+    expect(JSON.parse(String(replyCall?.[1]?.body))).toEqual({ content: '我来跟进' })
   })
 })

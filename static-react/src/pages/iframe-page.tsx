@@ -5,7 +5,7 @@ function decodeIframeSrc(splat: string): string {
   const trimmed = splat.replace(/^\/+|\/+$/g, '')
   if (!trimmed) return ''
 
-  let decoded = trimmed
+  let decoded: string
   try {
     decoded = decodeURIComponent(trimmed)
   } catch {
@@ -54,7 +54,7 @@ export function IframePage() {
         title="External Content"
         className="h-full w-full min-h-[calc(100vh-120px)] border-none"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        referrerPolicy="noopener noreferrer"
+        referrerPolicy="no-referrer"
         onLoad={() => setLoaded(true)}
       />
     </div>

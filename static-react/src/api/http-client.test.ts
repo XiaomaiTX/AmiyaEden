@@ -22,14 +22,10 @@ describe('http client', () => {
 
     await requestJson('/api/v1/test')
 
-    expect(fetchSpy).toHaveBeenCalledWith(
-      '/api/v1/test',
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer token-123',
-        }),
-      })
-    )
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [, init] = fetchSpy.mock.calls[0]
+    expect(init?.headers).toBeInstanceOf(Headers)
+    expect((init?.headers as Headers).get('Authorization')).toBe('Bearer token-123')
   })
 
   test('dispatches unauthorized event and throws HttpError on 401', async () => {

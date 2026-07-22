@@ -50,7 +50,7 @@ export function InfoAssetsPage() {
         keyword: searchKeyword || undefined,
       })
       if (requestId !== locationsRequestSeq.current) return
-      setLocations(response.locations)
+      setLocations(response.locations ?? [])
       setTotalLocations(response.total_locations)
       setTotalItems(response.total_items)
       // Clear all caches on search refresh
@@ -85,7 +85,7 @@ export function InfoAssetsPage() {
           page_size: 20,
         })
         if (cancelled || requestId !== locationsRequestSeq.current) return
-        setLocations(response.locations)
+        setLocations(response.locations ?? [])
         setTotalLocations(response.total_locations)
         setTotalItems(response.total_items)
         setExpandedLocations({})
@@ -247,7 +247,7 @@ export function InfoAssetsPage() {
       </div>
       {loading ? <p className="text-sm">{t('infoAssets.loading')}</p> : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {!loading && !error && locations.length === 0 ? <p className="text-sm">{t('infoAssets.empty')}</p> : null}
+      {!loading && !error && (locations?.length ?? 0) === 0 ? <p className="text-sm">{t('infoAssets.empty')}</p> : null}
 
       <div className="space-y-3">
         {locations.map((loc) => {

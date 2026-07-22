@@ -9,7 +9,7 @@ describe('resolveLocaleText', () => {
   })
 
   test('resolves Vue-style reference aliases', () => {
-    expect(resolveLocaleText('zh-CN', 'search.exitKeydown')).toBe('关闭')
+    expect(resolveLocaleText('zh-CN', 'shopWallet.columns.amount')).toBe('金额')
   })
 
   test('resolves top-level ticket messages in zh-CN', () => {

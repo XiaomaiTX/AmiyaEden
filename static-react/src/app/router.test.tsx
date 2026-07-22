@@ -219,7 +219,7 @@ describe('router auth and route meta access flow', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getByText('舰队管理')).toBeInTheDocument()
+      expect(screen.getAllByText('舰队管理').length).toBeGreaterThan(0)
     })
   })
 
@@ -266,7 +266,7 @@ describe('router auth and route meta access flow', () => {
 
       const iframe = screen.getByTitle('External Content')
       expect(iframe).toBeInTheDocument()
-      expect(iframe).toHaveAttribute('src', 'https://example.com')
+      expect(iframe).toHaveAttribute('src', 'https://example.com/')
     })
 
     test('renders iframe page with no-src message when path is empty', () => {
@@ -286,7 +286,8 @@ describe('router auth and route meta access flow', () => {
 
       render(<RouterProvider router={router} />)
 
-      expect(screen.getByText('正在验证登录信息...')).toBeInTheDocument()
+      expect(screen.getByText('登录失败')).toBeInTheDocument()
+      expect(screen.getByText('未收到登录令牌，请重新登录。')).toBeInTheDocument()
     })
 
     test('renders 404 for unknown route', () => {

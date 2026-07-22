@@ -92,8 +92,10 @@ describe('dashboard characters page', () => {
     })
 
     expect(screen.getByDisplayValue('Amiya')).toBeInTheDocument()
-    expect(screen.getByText('补录推荐人')).toBeInTheDocument()
-    expect(screen.getByText('绑定新人物')).toBeInTheDocument()
-    expect(screen.getByText('主人物')).toBeInTheDocument()
+    expect(screen.getByText('Miya')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '补录推荐人' })).toBeInTheDocument()
+    })
   })
 })

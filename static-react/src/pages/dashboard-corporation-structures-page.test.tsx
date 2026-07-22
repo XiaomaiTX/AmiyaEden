@@ -15,8 +15,8 @@ describe('dashboard corporation structures page', () => {
     })
   })
 
-  test('loads list and settings tabs', async () => {
-    vi.spyOn(globalThis, 'fetch')
+  test('loads structure data and maps the initial list request', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -111,6 +111,17 @@ describe('dashboard corporation structures page', () => {
     })
 
     expect(screen.getByText('Amiya Corp')).toBeInTheDocument()
-    expect(screen.getByText('Structure List')).toBeInTheDocument()
+    expect(screen.getByText('12h')).toBeInTheDocument()
+
+    const listCall = fetchSpy.mock.calls.find(([input]) =>
+      String(input).includes('/api/v1/dashboard/corporation-structures/list')
+    )
+    expect(listCall).toBeDefined()
+    expect(JSON.parse(String(listCall?.[1]?.body))).toMatchObject({
+      page: 1,
+      page_size: 20,
+      sort_by: 'fuel_remaining_hours',
+      sort_order: 'asc',
+    })
   })
 })
