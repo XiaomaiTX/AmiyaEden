@@ -35,7 +35,7 @@ AmiyaEden 把联盟 / 军团的日常运营收敛到一个平台：用 EVE SSO �
 
 - **后端**：Go + Gin + GORM + PostgreSQL + Redis（定时任务由 cron 驱动，鉴权为 EVE SSO + JWT）
 - **前端（生产）**：Vue 3 + TypeScript + Vite + Pinia + Vue Router + Element Plus + Tailwind CSS
-- **前端（进行中重写）**：`static-react/` —— 基于 React 19 + Vite + shadcn/ui 的重写，尚未纳入 CI / 发布
+- **前端（迁移期并行）**：`static-react/` —— 基于 React 19 + Vite + shadcn/ui 的重写，使用独立校验任务、镜像和 Compose 服务，不替换当前 Vue 入口
 
 ## 仓库结构
 
@@ -80,8 +80,8 @@ make dev      # 同时启动后端（Air 热重载）与前端（Vite dev server
 ## 项目状态
 
 - **License**：[GPL-3.0](LICENSE)。`static/` 衍生自上游 MIT 模板 [Art Design Pro](https://github.com/Daymychen/art-design-pro)，其自身许可证为 MIT。
-- **前端实现状态**：`static/`（Vue 3）是当前生产实现，由 CI 验证、由 Docker 镜像发布；`static-react/` 是进行中的重写，尚未纳入 CI / 发布流程。
-- **部署**：提供 `docker-compose.example.yml` 多服务示例；`main` 分支推送会构建并发布后端 / 前端镜像。
+- **前端实现状态**：`static/`（Vue 3）仍是当前生产实现；`static-react/` 在迁移期通过独立的 `amiya-eden-frontend-react` 镜像与 Vue 并行运行，Vue 保持端口 `80`，React 使用端口 `3000`。
+- **部署**：`docker-compose.example.yml` 同时定义 Vue `frontend` 与 React `frontend-react`；`main` 分支发布 `latest`/短 SHA 镜像，`preview` 分支发布 `preview` 镜像。
 - **反馈**：通过 [Issue](https://github.com/XiaomaiTX/AmiyaEden/issues/new/choose) 报告问题或提议功能。
 - **提交规范**：使用 [Conventional Commits](https://www.conventionalcommits.org/)（由 Commitlint + Commitizen 约束）；PR 信息规范见 [docs/standards/pr-message-standard.md](docs/standards/pr-message-standard.md)。
 

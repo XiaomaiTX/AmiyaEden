@@ -14,6 +14,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      frontend_react: ${{ steps.filter.outputs.frontend_react }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v4
@@ -24,10 +25,15 @@ jobs:
               - 'server/**'
             frontend:
               - 'static/**'
+            frontend_react:
+              - 'static-react/**'
 
   build:
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    if: >-
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.frontend_react == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -41,18 +47,24 @@ jobs:
           cache-dependency-path: server/go.sum
 
       - name: Setup pnpm
-        if: needs.changes.outputs.frontend == 'true'
+        if: >-
+          needs.changes.outputs.frontend == 'true' ||
+          needs.changes.outputs.frontend_react == 'true'
         uses: pnpm/action-setup@v5
         with:
           version: 11.15.1
 
       - name: Setup Node.js
-        if: needs.changes.outputs.frontend == 'true'
+        if: >-
+          needs.changes.outputs.frontend == 'true' ||
+          needs.changes.outputs.frontend_react == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: pnpm
-          cache-dependency-path: static/pnpm-lock.yaml
+          cache-dependency-path: |
+            static/pnpm-lock.yaml
+            static-react/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         if: needs.changes.outputs.frontend == 'true'
@@ -72,6 +84,20 @@ jobs:
           pnpm lint .
           pnpm exec vue-tsc --noEmit
           pnpm test:unit
+
+      - name: Install React frontend dependencies
+        if: needs.changes.outputs.frontend_react == 'true'
+        working-directory: static-react
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify React frontend
+        if: needs.changes.outputs.frontend_react == 'true'
+        working-directory: static-react
+        run: |
+          pnpm lint
+          pnpm exec tsc -b
+          pnpm test
+          pnpm check:api-contract
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -108,6 +134,17 @@ jobs:
           push: true
           tags: |
             ${{ vars.DOCKER_HUB_REPO }}-frontend:preview
+
+      - name: Build and push React Frontend image
+        if: needs.changes.outputs.frontend_react == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./static-react
+          file: ./static-react/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ vars.DOCKER_HUB_REPO }}-frontend-react:preview
 
       - name: Trigger Self-hosted Auto-Deploy
         run: |

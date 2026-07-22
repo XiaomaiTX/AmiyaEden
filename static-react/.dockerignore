@@ -1,0 +1,19 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies and build/test output
+node_modules/
+dist/
+coverage/
+*.log
+.cache/
+
+# Non-pnpm lockfile
+package-lock.json
+
+# Local tooling and overrides
+.vscode/
+.idea/
+.env.local
+.env.*.local
