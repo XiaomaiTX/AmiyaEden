@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { fetchDashboard } from '@/api/dashboard'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import type { DashboardResult } from '@/types/api/dashboard'
+import { DashboardCardList } from './dashboard-console/card-list'
+import { DashboardFleetList } from './dashboard-console/fleet-list'
+import { DashboardPapChart } from './dashboard-console/pap-chart'
+import { DashboardSrpList } from './dashboard-console/srp-list'
 
 export function DashboardConsolePage() {
   const { t } = useI18n()
@@ -38,51 +43,56 @@ export function DashboardConsolePage() {
   }, [t])
 
   if (loading) {
-    return <section className="rounded-lg border bg-card p-5 text-sm">{t('dashboardConsole.loading')}</section>
+    return (
+      <section className="space-y-4">
+        <DashboardConsoleSkeleton />
+      </section>
+    )
   }
 
   if (error) {
     return (
       <section className="rounded-lg border bg-card p-5">
-        <h1 className="text-lg font-semibold">{t('dashboardConsole.title')}</h1>
-        <p className="mt-2 text-sm text-destructive">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       </section>
     )
   }
 
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold">{t('dashboardConsole.title')}</h1>
+      <DashboardCardList cards={data?.cards} />
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label={t('dashboardConsole.cards.online')} value={data?.cards.online_count ?? 0} />
-        <StatCard label={t('dashboardConsole.cards.totalAssets')} value={data?.cards.total_assets_count ?? 0} />
-        <StatCard label={t('dashboardConsole.cards.totalIsk')} value={data?.cards.total_assets_price ?? 0} />
-        <StatCard label={t('dashboardConsole.cards.myPap')} value={data?.cards.my_pap_count ?? 0} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <DashboardFleetList fleets={data?.fleets ?? []} />
+        <DashboardPapChart
+          title={t('dashboardConsole.alliancePapTitle')}
+          data={data?.pap_stats?.alliance ?? []}
+        />
+        <DashboardPapChart
+          title={t('dashboardConsole.internalPapTitle')}
+          data={data?.pap_stats?.internal ?? []}
+        />
       </div>
 
-      <div className="rounded-lg border bg-card p-4">
-        <h2 className="text-sm font-medium">{t('dashboardConsole.fleets')}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t('dashboardConsole.fleetCount')}: {data?.fleets.length ?? 0}
-        </p>
-      </div>
-
-      <div className="rounded-lg border bg-card p-4">
-        <h2 className="text-sm font-medium">{t('dashboardConsole.srp')}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t('dashboardConsole.srpCount')}: {data?.srp_list.length ?? 0}
-        </p>
-      </div>
+      <DashboardSrpList list={data?.srp_list ?? []} />
     </section>
   )
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function DashboardConsoleSkeleton() {
   return (
-    <article className="rounded-lg border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-2 text-lg font-semibold">{Intl.NumberFormat().format(value)}</p>
-    </article>
+    <>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-32 rounded-lg" />
+        ))}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-128 rounded-lg" />
+        <Skeleton className="h-128 rounded-lg" />
+        <Skeleton className="h-128 rounded-lg" />
+      </div>
+      <Skeleton className="h-64 rounded-lg" />
+    </>
   )
 }
