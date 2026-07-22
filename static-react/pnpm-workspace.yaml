@@ -1,0 +1,3 @@
+allowBuilds:
+  msw: true
+strictDepBuilds: true

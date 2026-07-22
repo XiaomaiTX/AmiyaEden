@@ -4,10 +4,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install pnpm (must stay aligned with .github/workflows/*)
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@11.15.1
 
 # 缓存依赖层
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
 
