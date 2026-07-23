@@ -11,6 +11,7 @@ describe('ticket detail page', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
+      corpCapabilities: ['menu.ticket', 'ticket.user.create', 'ticket.user.reply'],
       authList: [],
     })
     usePreferenceStore.setState({

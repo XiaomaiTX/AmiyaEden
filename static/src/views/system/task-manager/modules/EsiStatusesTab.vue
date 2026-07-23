@@ -80,11 +80,16 @@
     runESIRefreshTask
   } from '@/api/esi-refresh'
   import { useTable } from '@/hooks/core/useTable'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
 
   type TaskInfo = Api.ESIRefresh.TaskInfo
   type TaskStatus = Api.ESIRefresh.TaskStatus
 
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Manual refresh trigger requires `system.task.run`; the route enforces
+  // only the read capability so the button must gate separately.
+  const canRun = computed(() => hasCapability('system.task.run'))
 
   const priorityType = (priority: number) => {
     const map = {
@@ -216,6 +221,7 @@
               {
                 size: 'small',
                 type: 'primary',
+                disabled: !canRun.value,
                 loading: runningTasks.value.has(`${row.task_name}_${row.character_id}`),
                 onClick: () => handleRunTask(row)
               },

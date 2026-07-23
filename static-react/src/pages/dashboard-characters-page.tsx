@@ -113,6 +113,7 @@ export function DashboardCharactersPage() {
       characterId: userInfo.primaryCharacterId ?? null,
       characterName: userInfo.userName,
       roles: userInfo.roles,
+      corpCapabilities: userInfo.corpCapabilities,
       isCurrentlyNewbro: userInfo.isCurrentlyNewbro === true,
       isMentorMenteeEligible: userInfo.isMentorMenteeEligible === true,
     })

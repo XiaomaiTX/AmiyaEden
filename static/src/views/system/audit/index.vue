@@ -67,6 +67,15 @@
             :closable="false"
             show-icon
           />
+          <ElAlert
+            v-if="!canExport"
+            :title="$t('auditAdmin.export.capabilityRequiredTitle')"
+            :description="$t('auditAdmin.export.capabilityRequiredDescription')"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="mt-3"
+          />
         </ElCard>
       </ElTabPane>
     </ElTabs>
@@ -133,10 +142,16 @@
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { adminListAuditEvents } from '@/api/audit'
 
   defineOptions({ name: 'SystemAudit' })
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Exporting audit data requires the `system.audit.export` capability;
+  // the route only enforces `system.audit.read`, so the tab must surface
+  // the missing capability explicitly.
+  const canExport = computed(() => hasCapability('system.audit.export'))
 
   type AuditEvent = Api.Audit.AuditEvent
 

@@ -122,4 +122,4 @@ source_of_truth:
 
 - Vue 当前实现位于 `static/src`。
 - React 已承接 `/dashboard/corporation-structures`，对应 API 和页面状态以 React 迁移基线为准。
-- `fuel-officer-structures` 是 Vue 后续新增、React 尚未对齐的范围漂移项。
+- `fuel-officer-structures` 是 Vue 后续新增、React 尚未迁移的范围漂移项；这属于迁移范围，不属于 Stage 0A capability/menu parity 缺口。

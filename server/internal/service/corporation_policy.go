@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sync"
 
 	"gorm.io/gorm"
 )
@@ -53,11 +52,6 @@ type CorporationPolicyService struct {
 	charRepo *repository.EveCharacterRepository
 }
 
-var (
-	corpPolicyCacheMu sync.RWMutex
-	corpPolicyCache   *CorporationPolicyConfig
-)
-
 func NewCorporationPolicyService() *CorporationPolicyService {
 	return &CorporationPolicyService{
 		cfgRepo:  repository.NewSysConfigRepository(),
@@ -67,21 +61,11 @@ func NewCorporationPolicyService() *CorporationPolicyService {
 }
 
 func (s *CorporationPolicyService) GetPolicies() CorporationPolicyConfig {
-	if cfg := getCorpPolicyCache(); cfg != nil {
-		return *cfg
-	}
-	cfg := s.loadPolicies()
-	setCorpPolicyCache(cfg)
-	return cfg
+	return s.loadPolicies()
 }
 
 func (s *CorporationPolicyService) GetPoliciesTx(tx *gorm.DB) CorporationPolicyConfig {
-	if cfg := getCorpPolicyCache(); cfg != nil {
-		return *cfg
-	}
-	cfg := s.loadPoliciesTx(tx)
-	setCorpPolicyCache(cfg)
-	return cfg
+	return s.loadPoliciesTx(tx)
 }
 
 func (s *CorporationPolicyService) UpdatePolicies(raw CorporationPolicyConfig) error {
@@ -100,13 +84,14 @@ func (s *CorporationPolicyService) UpdatePolicies(raw CorporationPolicyConfig) e
 	); err != nil {
 		return errors.New("更新军团能力策略失败")
 	}
-	s.InvalidateCache()
 	return nil
 }
 
-func (s *CorporationPolicyService) InvalidateCache() {
-	clearCorpPolicyCache()
-}
+// InvalidateCache is retained as a no-op for call-site compatibility during
+// Stage 0A. Cross-instance freshness now comes from the shared SysConfig Redis
+// cache and DB fallback. The in-process cache was removed because updates only
+// invalidated the local process, leaving other instances stale indefinitely.
+func (s *CorporationPolicyService) InvalidateCache() {}
 
 func (s *CorporationPolicyService) BuildUserPolicyContext(userID uint) UserCorpPolicyContext {
 	ctx := UserCorpPolicyContext{
@@ -265,6 +250,17 @@ func EvaluateCapability(ctx UserCorpPolicyContext, capability string) bool {
 	return false
 }
 
+// EffectiveCapabilities returns the capabilities a user actually has, with
+// full_access / default-allow expanded to the enforced catalog. This is what
+// `/me.corp_capabilities` and the frontend consume so that menu visibility
+// matches backend RequireCorpCapability decisions.
+func EffectiveCapabilities(ctx UserCorpPolicyContext) []string {
+	if !ctx.FullAccess {
+		return slices.Clone(ctx.Capabilities)
+	}
+	return model.EnforcedCorpCapabilities()
+}
+
 func normalizeCorpPolicyConfig(raw CorporationPolicyConfig) (CorporationPolicyConfig, error) {
 	cfg := CorporationPolicyConfig{
 		Version:     raw.Version,
@@ -294,8 +290,8 @@ func normalizeCorpPolicyConfig(raw CorporationPolicyConfig) (CorporationPolicyCo
 		capabilities := make([]string, 0, len(policy.Capabilities))
 		seenCapabilities := make(map[string]struct{}, len(policy.Capabilities))
 		for _, capability := range policy.Capabilities {
-			if !model.IsValidCorpCapability(capability) {
-				return CorporationPolicyConfig{}, fmt.Errorf("%w: 非法 capability: %s", ErrInvalidCorporationAccessPolicy, capability)
+			if !model.IsEnforcedCorpCapability(capability) {
+				return CorporationPolicyConfig{}, fmt.Errorf("%w: 非法或未启用的 capability: %s", ErrInvalidCorporationAccessPolicy, capability)
 			}
 			if _, exists := seenCapabilities[capability]; exists {
 				continue
@@ -341,15 +337,7 @@ func (s *CorporationPolicyService) loadPolicies() CorporationPolicyConfig {
 	if err != nil || raw == "" {
 		return defaultCorpPolicyConfig()
 	}
-	var parsed CorporationPolicyConfig
-	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-		return defaultCorpPolicyConfig()
-	}
-	normalized, err := normalizeCorpPolicyConfig(parsed)
-	if err != nil {
-		return defaultCorpPolicyConfig()
-	}
-	return normalized
+	return parseStoredPolicies(raw)
 }
 
 func (s *CorporationPolicyService) loadPoliciesTx(tx *gorm.DB) CorporationPolicyConfig {
@@ -357,15 +345,122 @@ func (s *CorporationPolicyService) loadPoliciesTx(tx *gorm.DB) CorporationPolicy
 	if err != nil || raw == "" {
 		return defaultCorpPolicyConfig()
 	}
+	return parseStoredPolicies(raw)
+}
+
+// parseStoredPolicies decodes a stored JSON blob into a policy config.
+// Legacy capabilities that are no longer enforced are silently dropped on
+// read; the caller surfaces them separately via StoredLegacyCapabilities so
+// the config UI can render an "invalid legacy" warning. Writes always reject
+// unenforced keys, so legacy entries disappear on the next save.
+func parseStoredPolicies(raw string) CorporationPolicyConfig {
 	var parsed CorporationPolicyConfig
 	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
 		return defaultCorpPolicyConfig()
 	}
 	normalized, err := normalizeCorpPolicyConfig(parsed)
-	if err != nil {
-		return defaultCorpPolicyConfig()
+	if err == nil {
+		return normalized
 	}
-	return normalized
+	// Stored config contains legacy capabilities. Fall back to a lenient
+	// normalization that drops unknown keys so reads still succeed.
+	return normalizeStoredCorpPolicyConfig(parsed)
+}
+
+// normalizeStoredCorpPolicyConfig is a read-only normalizer that drops
+// unenforced capabilities instead of rejecting them. It preserves structure
+// so the config UI can show what's currently stored.
+func normalizeStoredCorpPolicyConfig(raw CorporationPolicyConfig) CorporationPolicyConfig {
+	cfg := CorporationPolicyConfig{
+		Version:     raw.Version,
+		DefaultMode: raw.DefaultMode,
+		Policies:    raw.Policies,
+	}
+	if cfg.Version <= 0 {
+		cfg.Version = 1
+	}
+	if cfg.DefaultMode != corpPolicyDefaultModeDeny && cfg.DefaultMode != corpPolicyDefaultModeAllow {
+		cfg.DefaultMode = corpPolicyDefaultModeAllow
+	}
+	normalizedPolicies := make([]CorporationPolicy, 0, len(cfg.Policies))
+	seenCorpID := make(map[int64]struct{}, len(cfg.Policies))
+	for _, policy := range cfg.Policies {
+		if policy.CorporationID <= 0 {
+			continue
+		}
+		if _, exists := seenCorpID[policy.CorporationID]; exists {
+			continue
+		}
+		seenCorpID[policy.CorporationID] = struct{}{}
+
+		capabilities := make([]string, 0, len(policy.Capabilities))
+		seenCapabilities := make(map[string]struct{}, len(policy.Capabilities))
+		for _, capability := range policy.Capabilities {
+			if !model.IsEnforcedCorpCapability(capability) {
+				continue
+			}
+			if _, exists := seenCapabilities[capability]; exists {
+				continue
+			}
+			seenCapabilities[capability] = struct{}{}
+			capabilities = append(capabilities, capability)
+		}
+		slices.Sort(capabilities)
+
+		rules := map[string]any{}
+		for key, value := range policy.Rules {
+			switch value.(type) {
+			case string, bool, float64, int, int32, int64, uint, uint32, uint64:
+				rules[key] = value
+			}
+		}
+
+		normalizedPolicies = append(normalizedPolicies, CorporationPolicy{
+			CorporationID: policy.CorporationID,
+			FullAccess:    policy.FullAccess,
+			Capabilities:  capabilities,
+			Rules:         rules,
+		})
+	}
+	slices.SortFunc(normalizedPolicies, func(a, b CorporationPolicy) int {
+		switch {
+		case a.CorporationID < b.CorporationID:
+			return -1
+		case a.CorporationID > b.CorporationID:
+			return 1
+		default:
+			return 0
+		}
+	})
+	cfg.Policies = normalizedPolicies
+	return cfg
+}
+
+// StoredLegacyCapabilities inspects the raw stored blob and returns the
+// per-corporation legacy capabilities that are no longer enforced. The config
+// UI uses this to mark historical entries as invalid; the next successful
+// save removes them.
+func (s *CorporationPolicyService) StoredLegacyCapabilities() map[int64][]string {
+	result := map[int64][]string{}
+	if s == nil || s.cfgRepo == nil {
+		return result
+	}
+	raw, err := s.cfgRepo.Get(model.SysConfigCorporationAccessPolicies, "")
+	if err != nil || raw == "" {
+		return result
+	}
+	var parsed CorporationPolicyConfig
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return result
+	}
+	for _, policy := range parsed.Policies {
+		for _, capability := range policy.Capabilities {
+			if model.IsValidCorpCapability(capability) && !model.IsEnforcedCorpCapability(capability) {
+				result[policy.CorporationID] = append(result[policy.CorporationID], capability)
+			}
+		}
+	}
+	return result
 }
 
 func defaultCorpPolicyConfig() CorporationPolicyConfig {
@@ -383,31 +478,6 @@ func matchCorporationPolicy(cfg CorporationPolicyConfig, corporationID int64) (C
 		}
 	}
 	return CorporationPolicy{}, false
-}
-
-func getCorpPolicyCache() *CorporationPolicyConfig {
-	corpPolicyCacheMu.RLock()
-	defer corpPolicyCacheMu.RUnlock()
-	if corpPolicyCache == nil {
-		return nil
-	}
-	cloned := *corpPolicyCache
-	cloned.Policies = slices.Clone(corpPolicyCache.Policies)
-	return &cloned
-}
-
-func setCorpPolicyCache(cfg CorporationPolicyConfig) {
-	corpPolicyCacheMu.Lock()
-	defer corpPolicyCacheMu.Unlock()
-	cloned := cfg
-	cloned.Policies = slices.Clone(cfg.Policies)
-	corpPolicyCache = &cloned
-}
-
-func clearCorpPolicyCache() {
-	corpPolicyCacheMu.Lock()
-	defer corpPolicyCacheMu.Unlock()
-	corpPolicyCache = nil
 }
 
 func cloneAnyMap(input map[string]any) map[string]any {

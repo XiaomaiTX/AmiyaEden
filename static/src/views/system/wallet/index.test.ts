@@ -11,3 +11,10 @@ test('analysis tab uses dedicated scroll container to keep filters reachable', (
   assert.match(source, /\.analysis-tab-pane\s*\{[\s\S]*overflow-y:\s*auto/)
   assert.match(source, /\.analysis-tab-pane\s*\{[\s\S]*overflow-x:\s*hidden/)
 })
+
+test('wallet admin page gates adjust confirm behind system.wallet.adjust capability', () => {
+  assert.match(source, /useCorpCapability/)
+  assert.match(source, /hasCapability\('system\.wallet\.adjust'\)/)
+  assert.match(source, /canAdjust/)
+  assert.match(source, /:disabled="!canAdjust"/)
+})

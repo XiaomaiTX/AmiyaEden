@@ -62,14 +62,20 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	}
 	enforceCharacterESIRestriction := h.cfgSvc.GetCharacterESIRestrictionConfig()
 
+	corpCtx := service.UserCorpPolicyContext{
+		PrimaryCorporationID: middleware.GetPrimaryCorporationID(c),
+		Capabilities:         middleware.GetCorpCapabilities(c),
+		Rules:                middleware.GetCorpRules(c),
+		FullAccess:           middleware.IsCorpFullAccess(c),
+	}
+
 	response.OK(c, gin.H{
 		"user":                              user,
 		"characters":                        characters,
 		"roles":                             roles,
-		"primary_corporation_id":            middleware.GetPrimaryCorporationID(c),
-		"corp_capabilities":                 middleware.GetCorpCapabilities(c),
-		"corp_rules":                        middleware.GetCorpRules(c),
-		"profile_complete":                  user.ProfileComplete(),
+		"primary_corporation_id":            corpCtx.PrimaryCorporationID,
+		"corp_capabilities":                 service.EffectiveCapabilities(corpCtx),
+		"corp_rules":                        corpCtx.Rules,
 		"enforce_character_esi_restriction": enforceCharacterESIRestriction,
 		"is_currently_newbro":               isCurrentlyNewbro,
 		"is_mentor_mentee_eligible":         isMentorMenteeEligible,

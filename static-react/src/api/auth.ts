@@ -51,6 +51,7 @@ export async function fetchGetUserInfo() {
 
   return {
     roles,
+    corpCapabilities: Array.isArray(data.corp_capabilities) ? data.corp_capabilities : [],
     userId: user.id,
     userName: primaryChar?.character_name ?? user.nickname ?? `Capsuleer#${user.id}`,
     nickname: user.nickname ?? '',

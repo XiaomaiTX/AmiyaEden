@@ -12,6 +12,7 @@ import {
   UserRoundPlus,
 } from 'lucide-react'
 import { appRouteSpecs } from '@/app/migration-routes'
+import { hasCorpCapabilityPermission } from '@/app/route-access'
 import type { SessionSnapshot } from '@/stores'
 
 export interface ShellMenuItem {
@@ -42,13 +43,12 @@ function hasNonGuestRole(roles: string[]) {
   return roles.some((role) => role !== 'guest')
 }
 
-function canAccessRoute(
-  route: (typeof appRouteSpecs)[number],
-  session: Pick<
-    SessionSnapshot,
-    'isLoggedIn' | 'roles' | 'isCurrentlyNewbro' | 'isMentorMenteeEligible'
-  >
-) {
+type SessionAccess = Pick<
+  SessionSnapshot,
+  'isLoggedIn' | 'roles' | 'corpCapabilities' | 'isCurrentlyNewbro' | 'isMentorMenteeEligible'
+>
+
+function canAccessRoute(route: (typeof appRouteSpecs)[number], session: SessionAccess) {
   const { meta } = route
   if (!meta) return true
 
@@ -57,18 +57,16 @@ function canAccessRoute(
   if (meta.roles && meta.roles.length > 0 && !meta.roles.some((role) => session.roles.includes(role))) {
     return false
   }
+  if (!hasCorpCapabilityPermission(session.roles, session.corpCapabilities, meta)) {
+    return false
+  }
   if (meta.requiresNewbro && !session.isCurrentlyNewbro) return false
   if (meta.requiresMentorMenteeEligibility && !session.isMentorMenteeEligible) return false
 
   return true
 }
 
-export function buildShellMenuGroups(
-  session: Pick<
-    SessionSnapshot,
-    'isLoggedIn' | 'roles' | 'isCurrentlyNewbro' | 'isMentorMenteeEligible'
-  >
-) {
+export function buildShellMenuGroups(session: SessionAccess) {
   const grouped = new Map<string, ShellMenuGroup>()
 
   for (const route of appRouteSpecs) {

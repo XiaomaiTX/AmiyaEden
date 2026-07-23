@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-23
 source_of_truth:
   - static/src
   - static-react/src
@@ -41,6 +41,7 @@ source_of_truth:
 
 - 批次 A/B/C/D 的全部原计划路由已在 React 注册，并替换为真实业务页面。
 - React 壳层的 `SidebarContext` 已从 `sidebar.tsx` 拆出为独立模块，侧边栏状态、移动端展开状态、cookie 记忆和快捷键切换属于已完成基座能力，不单独占用业务批次。
+- Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button parity；具体 AND/OR 语义和 reserved key 规则以 `docs/architecture/routing-and-menus.md` 与 `docs/features/current/corporation-access-policy.md` 为准。
 - Vue 侧在冻结期之后新增以下路由，React 侧尚未对齐，列入追赶清单（见 `./migration-scope-baseline.md`、`./todolist.md`）：
   - `/characters`（顶层路由，与 `dashboard/characters` 复用同一页，2026-05-22 落地）
   - `/dashboard/fuel-officer-structures`（2026-05-11 落地，`super_admin/fuel_officer`）
@@ -59,7 +60,7 @@ source_of_truth:
 
 - 迁移期间，`docs/architecture/`、`docs/api/`、`docs/standards/` 和 `docs/features/current/` 描述双端必须一致的行为，并在实现映射处注明 Vue/React 状态。
 - Vue-only 的实现限制只能出现在明确的迁移阶段说明中，不得继续作为产品行为或通用工程规则。
-- React capability/menu parity、按钮权限、WorkTab/KeepAlive、徽标和菜单处理能力在替换 Vue 前均属于发布阻断项。
+- 当前已迁移页面的 React capability/menu/button parity 已完成；替换 Vue 前仍需完成未迁移范围漂移页面，以及 WorkTab/KeepAlive、徽标和其他菜单基础设施。后续不要把这些剩余迁移项重新描述成 0A 权限缺口。
 - 功能文档的 React 状态统一引用 `migration-scope-baseline.md`，不在各 feature 文档维护第二套迁移清单。
 - 不覆盖 `docs/ai/repo-rules.md`、`docs/architecture/`、`docs/api/`、`docs/features/current/` 的当前权威定义。
 - 落地后转正路径：

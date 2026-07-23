@@ -3535,6 +3535,8 @@ declare namespace Api {
       version: number
       default_mode: 'deny' | 'allow'
       policies: CorporationAccessPolicy[]
+      enforced_capabilities: string[]
+      legacy_capabilities: Record<string, string[]>
     }
 
     interface UpdateCorporationAccessPoliciesParams {

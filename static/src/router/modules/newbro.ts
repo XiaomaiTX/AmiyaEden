@@ -8,7 +8,7 @@ export const newbroRoutes: AppRouteRecord = {
     title: 'menus.newbro.title',
     icon: 'ri:user-heart-line',
     login: true,
-    corpCapabilities: ['menu.newbro']
+    corpCapabilitiesAny: ['menu.newbro']
   },
   children: [
     {
@@ -40,7 +40,10 @@ export const newbroRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.newbro.captain',
         keepAlive: true,
-        roles: ['captain']
+        // super_admin is auto-passed by backend RequireRole; mirror that
+        // here so super-admin operators can see the entry without editing
+        // their own roles.
+        roles: ['super_admin', 'captain']
       }
     },
     {
@@ -50,7 +53,7 @@ export const newbroRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.newbro.mentor',
         keepAlive: true,
-        roles: ['mentor']
+        roles: ['super_admin', 'mentor']
       }
     },
     {

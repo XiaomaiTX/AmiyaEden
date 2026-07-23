@@ -8,7 +8,7 @@ export const operationRoutes: AppRouteRecord = {
     title: 'menus.operation.title',
     icon: 'ri:ship-line',
     login: true,
-    corpCapabilities: ['menu.operation']
+    corpCapabilitiesAny: ['menu.operation']
   },
   children: [
     {

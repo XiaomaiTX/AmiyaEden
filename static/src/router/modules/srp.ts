@@ -8,7 +8,7 @@ export const srpRoutes: AppRouteRecord = {
     title: 'menus.srp.title',
     icon: 'ri:shield-user-line',
     login: true,
-    corpCapabilities: ['menu.srp']
+    corpCapabilitiesAny: ['srp.user', 'srp.manage']
   },
   children: [
     {
@@ -19,7 +19,7 @@ export const srpRoutes: AppRouteRecord = {
         title: 'menus.srp.srpApply',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['srp.user']
+        corpCapabilitiesAny: ['srp.user']
       }
     },
     {
@@ -30,7 +30,7 @@ export const srpRoutes: AppRouteRecord = {
         title: 'menus.srp.srpManage',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
-        corpCapabilities: ['srp.manage'],
+        corpCapabilitiesAny: ['srp.manage'],
         authList: [{ title: 'authActions.srp.approve', authMark: 'approve' }]
       }
     },
@@ -42,7 +42,7 @@ export const srpRoutes: AppRouteRecord = {
         title: 'menus.srp.srpPrices',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
-        corpCapabilities: ['srp.manage']
+        corpCapabilitiesAny: ['srp.manage']
       }
     }
   ]

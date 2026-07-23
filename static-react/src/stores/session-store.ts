@@ -8,6 +8,7 @@ export interface SessionSnapshot {
   characterId: number | null
   characterName: string | null
   roles: string[]
+  corpCapabilities: string[]
   authList: string[]
   isCurrentlyNewbro: boolean
   isMentorMenteeEligible: boolean
@@ -26,6 +27,7 @@ const defaultSnapshot: SessionSnapshot = {
   characterId: null,
   characterName: null,
   roles: [],
+  corpCapabilities: [],
   authList: [],
   isCurrentlyNewbro: false,
   isMentorMenteeEligible: false,
@@ -43,6 +45,7 @@ export const useSessionStore = create<SessionStoreState>()(
           characterId: snapshot.characterId ?? state.characterId,
           characterName: snapshot.characterName ?? state.characterName,
           roles: snapshot.roles ?? state.roles,
+          corpCapabilities: snapshot.corpCapabilities ?? state.corpCapabilities,
           authList: snapshot.authList ?? state.authList,
           isCurrentlyNewbro: snapshot.isCurrentlyNewbro ?? state.isCurrentlyNewbro,
           isMentorMenteeEligible: snapshot.isMentorMenteeEligible ?? state.isMentorMenteeEligible,
@@ -69,6 +72,7 @@ export const useSessionStore = create<SessionStoreState>()(
         characterId: state.characterId,
         characterName: state.characterName,
         roles: state.roles,
+        corpCapabilities: state.corpCapabilities,
         authList: state.authList,
         isCurrentlyNewbro: state.isCurrentlyNewbro,
         isMentorMenteeEligible: state.isMentorMenteeEligible,

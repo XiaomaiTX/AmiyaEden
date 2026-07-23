@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { fetchAuditEvents } from '@/api/audit'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { ShopDialog, formatDateTime, getErrorMessage } from './shop-page-utils'
 import { useI18n } from '@/i18n'
 import type { AuditEvent, AuditEventSearchParams } from '@/types/api/audit'
@@ -27,6 +28,10 @@ const categoryOptions = ['permission', 'fuxi_wallet', 'config', 'approval', 'tas
 
 export function SystemAuditPage() {
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Export capability gate — surfaces the missing capability explicitly so
+  // the exports tab isn't a silent dead end.
+  const canExport = hasCapability('system.audit.export')
   const [activeTab, setActiveTab] = useState<AuditTab>('events')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -353,6 +358,9 @@ export function SystemAuditPage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-base font-semibold">{t('auditAdmin.tabs.exports')}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{t('auditAdmin.export.unavailableDescription')}</p>
+          {!canExport ? (
+            <p className="mt-2 text-sm text-amber-700">{t('auditAdmin.export.capabilityRequiredDescription')}</p>
+          ) : null}
         </div>
       )}
 

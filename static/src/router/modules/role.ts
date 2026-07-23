@@ -7,7 +7,7 @@ export const roleRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.role.title',
     icon: 'ri:shield-user-line',
-    corpCapabilities: ['menu.role']
+    corpCapabilitiesAny: ['system.manage']
   },
   children: [
     {

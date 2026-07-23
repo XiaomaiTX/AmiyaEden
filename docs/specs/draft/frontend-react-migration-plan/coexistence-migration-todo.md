@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-23
 source_of_truth:
   - static/src
   - static-react/src
@@ -44,7 +44,7 @@ source_of_truth:
 
 - [x] 建立迁移期独立 React 镜像与 Compose `frontend-react` 服务，保持 Vue `frontend` 不变并行运行
 - [x] 将 React lint、类型检查、测试、契约检查和构建接入现有 verify/main/preview 工作流
-- [ ] 记录已迁移路由与未迁移路由清单（以 `migration-scope-baseline.md` 为准，范围漂移追赶项尚未对齐）
+- [ ] 记录已迁移路由与未迁移路由清单（以 `migration-scope-baseline.md` 为准；Stage 0A capability/menu/button parity 已完成，剩余为范围漂移页面及其他迁移基础设施）
 - [ ] 建立“模块回归 -> 全量回归 -> Vue 下线”固定流程
 - [ ] 定义替换门槛（页面覆盖率、关键链路成功率、错误率、性能指标）
 - [ ] 完成 Vue 前端下线检查项与演练记录

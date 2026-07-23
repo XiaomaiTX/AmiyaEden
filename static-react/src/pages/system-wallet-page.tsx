@@ -8,6 +8,7 @@ import {
 } from '@/api/sys-wallet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import type {
   AnalyticsParams,
@@ -73,6 +74,10 @@ function adjustActionTone(action: AdjustAction) {
 
 export function SystemWalletPage() {
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Adjusting wallet balance requires `system.wallet.adjust`; the route
+  // enforces only `system.wallet.read`, so the confirm button must gate.
+  const canAdjust = hasCapability('system.wallet.adjust')
   const [activeTab, setActiveTab] = useState<WalletTab>('wallets')
   const [refreshSeed, setRefreshSeed] = useState(0)
   const [transactionsUserId, setTransactionsUserId] = useState<number | ''>('')
@@ -181,7 +186,7 @@ export function SystemWalletPage() {
             <Button type="button" variant="outline" onClick={() => setAdjustOpen(false)} disabled={adjustSaving}>
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submitAdjust()} disabled={adjustSaving}>
+            <Button type="button" onClick={() => void submitAdjust()} disabled={adjustSaving || !canAdjust}>
               {adjustSaving ? t('walletAdmin.messages.saving') : t('common.confirm')}
             </Button>
           </>

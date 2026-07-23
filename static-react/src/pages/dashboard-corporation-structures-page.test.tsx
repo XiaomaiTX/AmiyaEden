@@ -11,6 +11,7 @@ describe('dashboard corporation structures page', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
+      corpCapabilities: ['menu.dashboard'],
       authList: [],
     })
   })

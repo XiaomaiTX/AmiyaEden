@@ -61,3 +61,5 @@ logs/
 # server configuration
 /server/config/config.yaml
 /server/config/config.docker-dev.yaml
+
+.claude/settings.local.json

@@ -677,7 +677,8 @@
       "scheduleUpdateFailed": "Failed to update schedule",
       "scheduleRequired": "Please enter a schedule expression",
       "esiRefreshTriggered": "Full ESI refresh triggered",
-      "eventTriggered": "Event-triggered"
+      "eventTriggered": "Event-triggered",
+      "runCapabilityRequired": "Missing system.task.run capability"
     },
     "tasks": {
       "esi_refresh": {
@@ -2671,6 +2672,8 @@
     "export": {
       "unavailableTitle": "Export is temporarily unavailable",
       "unavailableDescription": "The frontend export entry is temporarily disabled. Backend export capability is retained and will be re-enabled later.",
+      "capabilityRequiredTitle": "Audit export capability required",
+      "capabilityRequiredDescription": "The system.audit.export capability is required to use the export entry.",
       "statusLabel": "Export Status",
       "historyTitle": "Export Task History",
       "expireAt": "Expires At",
@@ -3144,6 +3147,8 @@
       "oneBotAllowedCIDRsHint": "Enter one CIDR per line. Empty values reject OneBot connections.",
       "corporationAccessPolicies": "Corporation Access Policies",
       "corporationAccessPoliciesHint": "Configure capabilities and rules by corporation. Unmatched policies use least privilege.",
+      "corpPolicyLegacyTitle": "Reserved legacy keys present for this corporation",
+      "corpPolicyLegacyDescription": "The following keys are no longer enforced and will be dropped on save:",
       "corporationId": "Corporation ID",
       "selectedCorporation": "Target Corporation",
       "selectCorporationToConfigure": "Select a corporation to configure",

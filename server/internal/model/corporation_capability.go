@@ -1,5 +1,7 @@
 package model
 
+import "slices"
+
 const (
 	CorpCapabilitySRPUser       = "srp.user"
 	CorpCapabilitySRPManage     = "srp.manage"
@@ -141,5 +143,77 @@ var validCorpCapabilities = map[string]struct{}{
 
 func IsValidCorpCapability(capability string) bool {
 	_, ok := validCorpCapabilities[capability]
+	return ok
+}
+
+// enforcedCorpCapabilities lists capabilities that are actually enforced by a
+// backend route middleware or business service. The catalog contains more
+// keys for migration planning, but only enforced ones may be referenced by a
+// corporation access policy: reserving unenforced keys led admins to believe
+// a grant was taking effect when no code path checked it.
+var enforcedCorpCapabilities = []string{
+	CorpCapabilitySRPUser,
+	CorpCapabilitySRPManage,
+	CorpCapabilityWelfareUser,
+	CorpCapabilityWelfareReview,
+	CorpCapabilityWelfareConfig,
+	CorpCapabilityMenuDashboard,
+	CorpCapabilityMenuOperation,
+	CorpCapabilityMenuNewbro,
+	CorpCapabilityMenuFuxiHall,
+	CorpCapabilityMenuTicket,
+	CorpCapabilityMenuShop,
+	CorpCapabilityMenuInfo,
+	CorpCapabilityMenuSkillPlan,
+	CorpCapabilityTicketManage,
+	CorpCapabilityShopManage,
+	CorpCapabilitySystemManage,
+	CorpCapabilityInfoWalletRead,
+	CorpCapabilityInfoNpcKillsSelf,
+	CorpCapabilityInfoNpcKillsCorp,
+	CorpCapabilityInfoSkillsRead,
+	CorpCapabilityInfoAssetsRead,
+	CorpCapabilityInfoContractsRead,
+	CorpCapabilityInfoFittingsManage,
+	CorpCapabilityShopWalletRead,
+	CorpCapabilityWalletUserEnabled,
+	CorpCapabilityShopOrderCreate,
+	CorpCapabilityShopOrderReadSelf,
+	CorpCapabilityDashboardNpcKillsCorp,
+	CorpCapabilitySystemTaskRead,
+	CorpCapabilitySystemTaskRun,
+	CorpCapabilitySystemBasicConfigRead,
+	CorpCapabilitySystemBasicConfigManage,
+	CorpCapabilitySystemWalletRead,
+	CorpCapabilitySystemWalletAdjust,
+	CorpCapabilitySystemAuditRead,
+	CorpCapabilitySystemAuditExport,
+	CorpCapabilityTicketUserCreate,
+	CorpCapabilityTicketUserReply,
+	CorpCapabilityTicketAdminRead,
+	CorpCapabilityTicketAdminManage,
+	CorpCapabilityShopAdminProductManage,
+	CorpCapabilityShopAdminOrderManage,
+}
+
+var enforcedCorpCapabilitySet = func() map[string]struct{} {
+	set := make(map[string]struct{}, len(enforcedCorpCapabilities))
+	for _, capability := range enforcedCorpCapabilities {
+		set[capability] = struct{}{}
+	}
+	return set
+}()
+
+// EnforcedCorpCapabilities returns the capabilities currently enforced by a
+// backend route or business service. Callers must not mutate the slice.
+func EnforcedCorpCapabilities() []string {
+	return slices.Clone(enforcedCorpCapabilities)
+}
+
+// IsEnforcedCorpCapability reports whether a capability is enforced by a
+// backend route or business service. Unenforced keys are still registered in
+// the catalog for historical reasons but may not be used in a policy.
+func IsEnforcedCorpCapability(capability string) bool {
+	_, ok := enforcedCorpCapabilitySet[capability]
 	return ok
 }

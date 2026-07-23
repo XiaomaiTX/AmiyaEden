@@ -8,7 +8,13 @@ export const systemRoutes: AppRouteRecord = {
     title: 'menus.system.title',
     icon: 'ri:user-3-line',
     roles: ['super_admin', 'admin'],
-    corpCapabilities: ['menu.system']
+    corpCapabilitiesAny: [
+      'system.manage',
+      'system.task.read',
+      'system.wallet.read',
+      'system.audit.read',
+      'system.basic_config.read'
+    ]
   },
   children: [
     {
@@ -19,7 +25,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.user',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage', 'system.task.read'],
+        corpCapabilitiesAny: ['system.manage'],
         authList: [
           { title: 'authActions.system.deleteUser', authMark: 'delete_user' },
           { title: 'authActions.system.assignRole', authMark: 'assign_role' }
@@ -34,7 +40,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.taskManager',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage', 'system.wallet.read'],
+        corpCapabilitiesAny: ['system.task.read'],
         authList: [
           { title: 'authActions.system.executeTask', authMark: 'execute_task' },
           { title: 'authActions.system.updateSchedule', authMark: 'update_schedule' }
@@ -49,7 +55,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.wallet',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage', 'system.audit.read'],
+        corpCapabilitiesAny: ['system.wallet.read'],
         authList: [
           { title: 'authActions.system.adjustBalance', authMark: 'adjust_balance' },
           { title: 'authActions.system.viewLog', authMark: 'view_log' }
@@ -64,7 +70,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.audit',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage'],
+        corpCapabilitiesAny: ['system.audit.read'],
         authList: [{ title: 'authActions.system.viewAuditDetail', authMark: 'view_audit_detail' }]
       }
     },
@@ -76,7 +82,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.papExchange',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage'],
+        corpCapabilitiesAny: ['system.manage'],
         authList: [{ title: 'authActions.system.editExchangeRate', authMark: 'edit_exchange_rate' }]
       }
     },
@@ -88,7 +94,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.alliancePap',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['system.manage'],
+        corpCapabilitiesAny: ['system.manage'],
         authList: [{ title: 'authActions.system.manualFetch', authMark: 'manual_fetch' }]
       }
     },
@@ -100,7 +106,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.autoRole',
         keepAlive: true,
         roles: ['super_admin'],
-        corpCapabilities: ['system.manage', 'system.basic_config.read']
+        corpCapabilitiesAny: ['system.basic_config.read']
       }
     },
     {
@@ -122,7 +128,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.webhook',
         keepAlive: true,
         roles: ['super_admin'],
-        corpCapabilities: ['system.manage']
+        corpCapabilitiesAny: ['system.manage']
       }
     },
     {
@@ -133,7 +139,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.qqGovernance',
         keepAlive: true,
         roles: ['super_admin'],
-        corpCapabilities: ['system.manage']
+        corpCapabilitiesAny: ['system.manage']
       }
     },
     {
@@ -144,7 +150,7 @@ export const systemRoutes: AppRouteRecord = {
         title: 'menus.system.basicConfig',
         keepAlive: true,
         roles: ['super_admin'],
-        corpCapabilities: ['system.manage']
+        corpCapabilitiesAny: ['system.basic_config.read']
       }
     }
   ]

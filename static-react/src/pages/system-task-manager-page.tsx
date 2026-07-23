@@ -12,6 +12,7 @@ import {
 } from '@/api/task-manager'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import type { TaskInfo, TaskStatus } from '@/types/api/esi-refresh'
@@ -208,7 +209,10 @@ export function SystemTaskManagerPage() {
 }
 
 function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: string[] }) {
-  const canRun = true
+  const { hasCapability } = useCorpCapability()
+  // Running a task requires the `system.task.run` capability; the route
+  // enforces only `system.task.read`, so the run button must gate separately.
+  const canRun = hasCapability('system.task.run')
   const canUpdateSchedule = roles.includes('super_admin')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -484,6 +488,8 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
 }
 
 function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
+  const { hasCapability } = useCorpCapability()
+  const canRun = hasCapability('system.task.run')
   const [tasks, setTasks] = useState<TaskInfo[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [loadingStatuses, setLoadingStatuses] = useState(true)
@@ -602,11 +608,17 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
           {t('taskManager.esi.sections.tasks')}
         </div>
         <div className="flex flex-wrap items-center gap-3 px-4 py-4">
-          <Button type="button" variant="outline" onClick={() => void handleRunAll()}>
+          <Button type="button" variant="outline" onClick={() => void handleRunAll()} disabled={!canRun}>
             {t('taskManager.actions.runAllEsi')}
           </Button>
           {tasks.map((task) => (
-            <Button key={task.name} type="button" variant="outline" onClick={() => void handleRunTaskByName(task)}>
+            <Button
+              key={task.name}
+              type="button"
+              variant="outline"
+              onClick={() => void handleRunTaskByName(task)}
+              disabled={!canRun}
+            >
               {task.description}
             </Button>
           ))}
@@ -710,7 +722,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={runningKeys.includes(key)}
+                        disabled={runningKeys.includes(key) || !canRun}
                         onClick={() => void handleRunTask(row)}
                       >
                         {t('taskManager.actions.run')}

@@ -11,6 +11,7 @@ describe('info contracts page', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
+      corpCapabilities: ['menu.info', 'info.contracts.read'],
       authList: [],
     })
   })
