@@ -1,5 +1,4 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { fetchGetUserInfo } from '@/api/auth'
 import { fetchCharacterESIRestrictionConfig, updateCharacterESIRestrictionConfig } from '@/api/sys-config'
 import {
@@ -103,7 +102,6 @@ function normalizeRoles(roles: string[]) {
 
 export function SystemUserPage() {
   const { t } = useI18n()
-  const navigate = useNavigate()
   const currentSessionRoles = useSessionStore((state) => state.roles)
   const setSessionSnapshot = useSessionStore((state) => state.setSessionSnapshot)
 
@@ -297,6 +295,10 @@ export function SystemUserPage() {
     setError(null)
     try {
       const result = await fetchImpersonateUser(user.id)
+      setSessionSnapshot({
+        isLoggedIn: true,
+        accessToken: result.token,
+      } satisfies Partial<import('@/stores/session-store').SessionSnapshot>)
       const userInfo = await fetchGetUserInfo()
       setSessionSnapshot({
         isLoggedIn: true,
@@ -308,7 +310,7 @@ export function SystemUserPage() {
         isCurrentlyNewbro: userInfo.isCurrentlyNewbro ?? false,
         isMentorMenteeEligible: userInfo.isMentorMenteeEligible ?? false,
       } satisfies Partial<import('@/stores/session-store').SessionSnapshot>)
-      navigate('/')
+      window.location.assign('/')
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('userAdmin.impersonateFailed')))
     }
