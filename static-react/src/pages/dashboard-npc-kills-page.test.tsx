@@ -11,6 +11,7 @@ describe('dashboard npc kills page', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
+      corpCapabilities: ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp'],
       authList: [],
     })
   })

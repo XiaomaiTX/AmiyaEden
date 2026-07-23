@@ -589,6 +589,8 @@
     export: {
       unavailableTitle: '导出暂不可用',
       unavailableDescription: '当前阶段保留后端导出能力，但前端暂不暴露触发与下载入口。',
+      capabilityRequiredTitle: '当前账号无审计导出权限',
+      capabilityRequiredDescription: '需要 system.audit.export capability 才能使用导出入口。',
     },
     messages: {
       loading: '正在加载审计事件...',

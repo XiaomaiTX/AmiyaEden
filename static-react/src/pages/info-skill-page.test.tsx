@@ -11,6 +11,7 @@ describe('info skill page', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
+      corpCapabilities: ['menu.info', 'info.skills.read'],
       authList: [],
     })
   })

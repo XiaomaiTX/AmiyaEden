@@ -74,9 +74,13 @@
       </ElForm>
       <template #footer>
         <ElButton @click="adjustDialogVisible = false">{{ $t('common.cancel') }}</ElButton>
-        <ElButton type="primary" :loading="adjustLoading" @click="submitAdjust">{{
-          $t('common.confirm')
-        }}</ElButton>
+        <ElButton
+          type="primary"
+          :loading="adjustLoading"
+          :disabled="!canAdjust"
+          @click="submitAdjust"
+          >{{ $t('common.confirm') }}</ElButton
+        >
       </template>
     </ElDialog>
   </div>
@@ -101,6 +105,7 @@
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { adminAdjustWallet } from '@/api/sys-wallet'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import WalletList from './modules/wallet-list.vue'
   import WalletTransactions from './modules/wallet-transactions.vue'
   import WalletLogs from './modules/wallet-logs.vue'
@@ -108,6 +113,11 @@
 
   defineOptions({ name: 'SystemWallet' })
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Adjusting wallet balance requires the `system.wallet.adjust` capability;
+  // the route only enforces `system.wallet.read`, so the confirm button must
+  // gate separately.
+  const canAdjust = computed(() => hasCapability('system.wallet.adjust'))
 
   // ── Tab ──
   const activeTab = ref('wallets')

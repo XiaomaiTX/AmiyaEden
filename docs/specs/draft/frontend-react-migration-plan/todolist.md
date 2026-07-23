@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-23
 source_of_truth:
   - static/src
   - static-react/src
@@ -25,6 +25,7 @@ source_of_truth:
 - [x] 迁移应用壳层（侧边菜单、头部、内容容器、全局层，已完成 React 基线壳层）
 - [x] 迁移登录态守卫与未授权处理链路（RequireAuth + 401 统一回跳 `/login?redirect=`）
 - [x] 迁移路由权限元数据消费逻辑（`login/roles/authList`，含 403 分支与 authList 注入）
+- [x] Stage 0A：当前已迁移 React 页面补齐 capability/menu/button parity；使用 `corpCapabilitiesAll` / `corpCapabilitiesAny`，并放行 `super_admin` 的 Captain/Mentor 页面
 - [x] 迁移 i18n 基础能力（`zh/en` 双语与切换，含 `I18nProvider + useI18n`）
 - [x] 迁移全局消息与错误提示能力（替代 `ElMessage/ElMessageBox`，含 toast + confirm）
 - [x] React 前端接入深色模式主题切换（`ThemeProvider + ModeToggle`，遵循 `dark` 类驱动）
@@ -116,7 +117,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [ ] 完成 active 架构、API、标准和指南的 Vue/React 双端映射
 - [ ] 完成 current feature docs 的实现映射，未迁移功能明确标记为 React 缺口
 - [ ] 完成 `migration-scope-baseline.md` 文档适配矩阵，并将其作为唯一迁移状态来源
-- [ ] React capability/menu/button permission parity 通过回归后，才允许清理 active 文档中的 Vue-only 限制
+- [x] React capability/menu/button permission parity 已通过回归；active 文档中的 capability 规则已按 0A 实现更新。剩余 Vue-only 限制仅对应未迁移范围或其他基础设施。
 
 ## 验收基线
 

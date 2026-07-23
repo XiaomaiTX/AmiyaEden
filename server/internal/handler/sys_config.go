@@ -210,9 +210,11 @@ type UpdateCharacterESIRestrictionConfigRequest struct {
 }
 
 type CorporationAccessPoliciesResponse struct {
-	Version     int                         `json:"version"`
-	DefaultMode string                      `json:"default_mode"`
-	Policies    []service.CorporationPolicy `json:"policies"`
+	Version              int                         `json:"version"`
+	DefaultMode          string                      `json:"default_mode"`
+	Policies             []service.CorporationPolicy `json:"policies"`
+	EnforcedCapabilities []string                    `json:"enforced_capabilities"`
+	LegacyCapabilities   map[int64][]string          `json:"legacy_capabilities"`
 }
 
 type UpdateCorporationAccessPoliciesRequest struct {
@@ -279,9 +281,11 @@ func (h *SysConfigHandler) UpdateCharacterESIRestrictionConfig(c *gin.Context) {
 func (h *SysConfigHandler) GetCorporationAccessPolicies(c *gin.Context) {
 	policies := h.corpPolicySvc.GetPolicies()
 	response.OK(c, CorporationAccessPoliciesResponse{
-		Version:     policies.Version,
-		DefaultMode: policies.DefaultMode,
-		Policies:    policies.Policies,
+		Version:              policies.Version,
+		DefaultMode:          policies.DefaultMode,
+		Policies:             policies.Policies,
+		EnforcedCapabilities: model.EnforcedCorpCapabilities(),
+		LegacyCapabilities:   h.corpPolicySvc.StoredLegacyCapabilities(),
 	})
 }
 
@@ -291,11 +295,13 @@ func (h *SysConfigHandler) UpdateCorporationAccessPolicies(c *gin.Context) {
 		response.Fail(c, response.CodeParamError, "请求参数错误")
 		return
 	}
-	if err := h.corpPolicySvc.UpdatePolicies(service.CorporationPolicyConfig{
+	before := h.corpPolicySvc.GetPolicies()
+	config := service.CorporationPolicyConfig{
 		Version:     req.Version,
 		DefaultMode: req.DefaultMode,
 		Policies:    req.Policies,
-	}); err != nil {
+	}
+	if err := h.corpPolicySvc.UpdatePolicies(config); err != nil {
 		if errors.Is(err, service.ErrInvalidCorporationAccessPolicy) {
 			response.Fail(c, response.CodeParamError, err.Error())
 			return
@@ -307,5 +313,10 @@ func (h *SysConfigHandler) UpdateCorporationAccessPolicies(c *gin.Context) {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
+	after := h.corpPolicySvc.GetPolicies()
+	h.recordConfigAudit(c, "corporation_access_policy_update", model.SysConfigCorporationAccessPolicies, map[string]any{
+		"before": before,
+		"after":  after,
+	})
 	response.OK(c, nil)
 }

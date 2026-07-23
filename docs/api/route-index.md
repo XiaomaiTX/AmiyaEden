@@ -2,9 +2,12 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-07-21
+last_reviewed: 2026-07-23
 source_of_truth:
   - server/internal/router/router.go
+  - server/internal/model/corporation_capability.go
+  - static/src/router/modules
+  - static-react/src/app/migration-routes.ts
 ---
 
 # API 路由索引
@@ -16,7 +19,7 @@ source_of_truth:
 
 - `JWT`：任意持有有效 JWT 的已认证用户可访问，包含 `guest`
 - `Login`：任意已认证且非 `guest` 的产品用户可访问
-- `RequireCorpCapability(x)`：在 JWT/Login/Role 之外叠加军团能力策略；`super_admin` 与 `full_access=true` 军团在 capability 层自动放行
+- `RequireCorpCapability(x)`：在 JWT/Login/Role 之外叠加军团能力策略；`super_admin` 与 `full_access=true` 军团在 capability 层自动放行。前端只消费后端 enforced capability 目录。
 
 业务域 capability 覆盖：
 
@@ -32,9 +35,12 @@ source_of_truth:
 | 工单管理端               | `ticket.manage`                                                           |
 | 商店用户端               | `menu.shop`                                                               |
 | 商店管理端               | `shop.manage`                                                             |
-| 系统管理端               | `system.manage`                                                           |
-| SRP                      | `menu.srp` + `srp.user` / `srp.manage`                                    |
-| 福利                     | `menu.welfare` + `welfare.user` / `welfare.approval` / `welfare.settings` |
+| 系统管理端               | `system.manage` / `system.task.read` / `system.wallet.read` / `system.audit.read` / `system.basic_config.read`（父菜单 OR） |
+| 角色管理                 | `system.manage`                                                           |
+| SRP                      | `srp.user` / `srp.manage`（父菜单 OR）                                   |
+| 福利                     | `welfare.user` / `welfare.approval` / `welfare.settings`（父菜单 OR）     |
+
+> Stage 0A 约定：`menu.srp`、`menu.welfare`、`menu.role`、`menu.system` 和 `dashboard.corp_structures.read` 是 reserved capability，不得用于前端路由、菜单或按钮门禁。页面同时需要模块入口与页面能力时，使用 AND；父菜单没有后端 enforced 的 `menu.*` 时，使用有效子能力 OR。完整目录以 `model.EnforcedCorpCapabilities()` 为准。
 
 ## Public
 

@@ -2,15 +2,21 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-23
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
   - server/internal/model/role.go
+  - server/internal/model/corporation_capability.go
+  - server/internal/service/corporation_policy.go
+  - server/internal/service/eve_sso.go
   - static/src/store/modules/user.ts
+  - static/src/router/core/menuAccess.ts
+  - static/src/hooks/core/useCorpCapability.ts
   - static-react/src/api/auth.ts
   - static-react/src/stores/session-store.ts
   - static-react/src/auth/route-access-gate.tsx
+  - static-react/src/hooks/use-corp-capability.ts
 ---
 
 # 认证与权限
@@ -173,7 +179,8 @@ source_of_truth:
 - 军团策略 `full_access=true` 自动通过。
 - 未命中策略时按 `default_mode` 处理（默认 `allow`，可配置为 `deny`）。
 - 该检查必须叠加在 `JWTAuth` / `RequireLoginUser` / `RequireRole` 之后使用，不能替代职权授权。
-- 主要业务域后端路由与前端 `meta.corpCapabilities` 必须保持一致，避免“菜单可见但接口 403”或“菜单隐藏但接口可调”。
+- 主要业务域后端路由与前端 `meta.corpCapabilitiesAll` / `meta.corpCapabilitiesAny` 必须保持一致，避免"菜单可见但接口 403"或"菜单隐藏但接口可调"。
+- capability 目录区分 enforced（已强制）与 reserved（仅注册）；reserved 键不再写库，历史已存的会在 GET 响应中以 `legacy_capabilities` 暴露。`/me.corp_capabilities` 只展开 enforced 集合，前端路由和菜单不得引用 reserved 键。
 
 ## 前端路由模式
 
@@ -183,7 +190,9 @@ source_of_truth:
 
 - `meta.login = true` 表示任意非 `guest` 已登录产品用户可访问
 - `meta.roles` 只用于真实的显式职权白名单
-- `meta.corpCapabilities` 只用于军团能力策略的前端 UX 收敛，不能替代后端 `RequireCorpCapability`
+- `meta.corpCapabilitiesAll = string[]`：AND 语义的军团能力要求（每个 capability 都需命中）。适合 `shop.order.manage`、`ticket.manage` 这类需要多个管理能力同时满足的路由。
+- `meta.corpCapabilitiesAny = string[]`：OR 语义的军团能力要求（至少一项命中）。适合"任一菜单域能力即可访问入口"的路由。
+- 旧 `meta.corpCapabilities` 已废弃；不允许在新路由使用，存量路由必须显式拆成 All/Any 之一。
 - `meta.requiresNewbro = true` 表示该页面还要求当前用户的新人资格快照为 true
 - `meta.requiresMentorMenteeEligibility = true` 表示该页面还要求当前用户的导师学员资格快照为 true
 - 不要用 `meta.roles: ['admin', 'fc', 'user']` 之类写法冒充 `Login`
@@ -191,7 +200,21 @@ source_of_truth:
 - 某些页面可以对更宽的路由角色集合提供只读入口，但把新增 / 导入 / 编辑 / 删除等变更能力继续收敛到页面内 `canManage*` 判断与后端 `RequireRole(...)` 的双层限制
 - `super_admin` 在前端 capability 层自动放行，与后端 `RequireCorpCapability` 保持一致
 
-React parity 状态：React 已承接登录、角色、资格快照和部分 `authList` 路由门禁，但尚未完整承接 `corpCapabilities`、菜单 capability 过滤和按钮级权限。React 替换 Vue 前必须补齐这些行为；前端检查只能提供 UX 收敛，后端鉴权永远是最终边界。
+### 按钮级 capability 门禁
+
+按钮级权限（下单、回复工单、运行任务、调整钱包、导出审计）不能只靠路由 meta，因为路由 meta 只覆盖"是否能看到入口"。具体动作必须有独立的能力 gate：
+
+| 动作 | capability | 说明 |
+| --- | --- | --- |
+| 商城下单 | `shop.order.create` | 路由只要求 `shop.order.read_self` |
+| 工单回复 | `ticket.user.reply` | 路由只要求 `ticket.user.create` |
+| 手动运行任务 | `system.task.run` | 路由只要求 `system.task.read` |
+| 调整伏羲币余额 | `system.wallet.adjust` | 路由只要求 `system.wallet.read` |
+| 审计日志导出 | `system.audit.export` | 路由只要求 `system.audit.read` |
+
+前端通过 `useCorpCapability`（Vue：`static/src/hooks/core/useCorpCapability.ts`；React：`static-react/src/hooks/use-corp-capability.ts`）读取 session 中的 capability 集合；`super_admin` 短路放行。后端仍是最终权限边界，这里只防止"点击后 403"的体验问题。
+
+React parity 状态：React 与 Vue 共用同一份 enforced capability 目录、同一套 `corpCapabilitiesAll`/`corpCapabilitiesAny` 语义、同一组按钮级 gate。React 替换 Vue 前的不变量已对齐；前端检查只提供 UX 收敛，后端鉴权永远是最终边界。
 
 修改权限时，必须同时考虑：
 

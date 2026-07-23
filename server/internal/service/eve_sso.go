@@ -272,6 +272,7 @@ func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, primaryCharact
 func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
 	charRepo := repository.NewEveCharacterRepository()
 	roleRepo := repository.NewRoleRepository()
+	roleSvc := NewRoleService()
 
 	chars, err := charRepo.ListByUserID(userID)
 	if err != nil {
@@ -305,12 +306,14 @@ func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
 			global.Logger.Error("SyncConfigSuperAdmins 授予 super_admin 失败", zap.Uint("userID", userID), zap.Error(err))
 			return
 		}
+		roleSvc.InvalidateUserCache(ctx, userID)
 		global.Logger.Info("SyncConfigSuperAdmins 授予超级管理员", zap.Uint("userID", userID))
 	} else if !shouldSuperAdmin && hasSuperAdmin {
 		if err := roleRepo.RemoveUserRole(userID, model.RoleSuperAdmin); err != nil {
 			global.Logger.Error("SyncConfigSuperAdmins 移除 super_admin 失败", zap.Uint("userID", userID), zap.Error(err))
 			return
 		}
+		roleSvc.InvalidateUserCache(ctx, userID)
 		global.Logger.Info("SyncConfigSuperAdmins 移除超级管理员", zap.Uint("userID", userID))
 	}
 }

@@ -41,6 +41,7 @@ describe('auth callback page', () => {
               },
             ],
             roles: ['admin'],
+            corp_capabilities: ['menu.dashboard', 'shop.order.create'],
             permissions: [],
             profile_complete: true,
             enforce_character_esi_restriction: false,
@@ -68,6 +69,7 @@ describe('auth callback page', () => {
     expect(state.isLoggedIn).toBe(true)
     expect(state.characterId).toBe(1001)
     expect(state.roles).toEqual(['admin'])
+    expect(state.corpCapabilities).toEqual(['menu.dashboard', 'shop.order.create'])
   })
 
   test('shows error when token is missing', async () => {

@@ -57,6 +57,7 @@ describe('router auth and route meta access flow', () => {
       characterId: null,
       characterName: null,
       roles: [],
+      corpCapabilities: [],
       authList: [],
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,
@@ -209,6 +210,7 @@ describe('router auth and route meta access flow', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
+      corpCapabilities: ['menu.operation'],
       authList: [],
     })
 
@@ -230,6 +232,7 @@ describe('router auth and route meta access flow', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['member'],
+      corpCapabilities: [],
       authList: [],
       isCurrentlyNewbro: false,
     })

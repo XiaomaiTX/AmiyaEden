@@ -17,6 +17,7 @@ describe('store boundaries', () => {
       characterId: null,
       characterName: null,
       roles: [],
+      corpCapabilities: [],
       authList: [],
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,

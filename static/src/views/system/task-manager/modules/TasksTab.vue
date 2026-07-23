@@ -61,6 +61,7 @@
 <script setup lang="ts">
   import { useUserStore } from '@/store/modules/user'
   import { fetchTasks, runTask, updateTaskSchedule } from '@/api/task-manager'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import EsiControls from './EsiControls.vue'
   import { resolveTaskLoadErrorMessage } from './task-load-error'
   import { getTaskDisplayDescription, getTaskDisplayName } from '../task-labels'
@@ -89,6 +90,11 @@
 
   const { t } = useI18n()
   const userStore = useUserStore()
+  const { hasCapability } = useCorpCapability()
+
+  // Running a task requires the `system.task.run` capability; the route meta
+  // only enforces `system.task.read`, so the button must gate separately.
+  const canRun = computed(() => hasCapability('system.task.run'))
 
   const tasks = ref<Api.TaskManager.TaskItem[]>([])
   const loading = ref(false)
@@ -222,6 +228,12 @@
   const renderActions = (task: Api.TaskManager.TaskItem) => {
     if (!canRunTask(task)) {
       return h('span', { class: 'text-gray-400 text-xs' }, t('taskManager.messages.eventTriggered'))
+    }
+
+    if (!canRun.value) {
+      return h(ElTag, { type: 'info', size: 'small', effect: 'plain' }, () =>
+        t('taskManager.messages.runCapabilityRequired')
+      )
     }
 
     return h(

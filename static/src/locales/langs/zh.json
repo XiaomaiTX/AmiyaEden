@@ -609,7 +609,8 @@
       "scheduleUpdateFailed": "调度更新失败",
       "scheduleRequired": "请输入调度表达式",
       "esiRefreshTriggered": "全量 ESI 刷新已触发",
-      "eventTriggered": "事件触发"
+      "eventTriggered": "事件触发",
+      "runCapabilityRequired": "缺少 system.task.run 权限"
     },
     "tasks": {
       "esi_refresh": { "name": "ESI 数据刷新", "description": "刷新已登记人物的 ESI 数据" },
@@ -2521,6 +2522,8 @@
     "export": {
       "unavailableTitle": "导出功能暂不可用",
       "unavailableDescription": "审计日志导出入口已临时关闭，后端导出能力仍保留，恢复后将重新开放前端入口。",
+      "capabilityRequiredTitle": "当前账号无审计导出权限",
+      "capabilityRequiredDescription": "需要 system.audit.export capability 才能使用导出入口。",
       "statusLabel": "导出状态",
       "historyTitle": "导出任务历史",
       "expireAt": "过期时间",
@@ -2888,6 +2891,8 @@
       "oneBotAllowedCIDRsHint": "每行输入一个 CIDR；留空时 OneBot 连接会被拒绝。",
       "corporationAccessPolicies": "军团能力策略",
       "corporationAccessPoliciesHint": "按军团配置能力与规则，未命中策略按最小权限处理。",
+      "corpPolicyLegacyTitle": "该军团存在已保留的旧配置项",
+      "corpPolicyLegacyDescription": "以下键不再强制校验，保存时会被丢弃：",
       "corporationId": "军团 ID",
       "selectedCorporation": "配置军团",
       "selectCorporationToConfigure": "请选择需要配置的军团",

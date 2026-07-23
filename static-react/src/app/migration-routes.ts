@@ -99,7 +99,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'dashboard-console',
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
     path: 'dashboard/characters',
@@ -116,7 +116,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAll: ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp'],
+    },
   },
   {
     path: 'dashboard/corporation-structures',
@@ -125,7 +128,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: { roles: ['super_admin', 'admin'], corpCapabilitiesAny: ['menu.dashboard'] },
   },
 
   {
@@ -134,7 +137,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'info-wallet',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.wallet.read'] },
   },
   {
     path: 'info/skill',
@@ -142,7 +145,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'info-skill',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.skills.read'] },
   },
   {
     path: 'info/npc-kills',
@@ -151,7 +154,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.npc_kills.self'] },
   },
   {
     path: 'info/ships',
@@ -160,7 +163,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
   {
     path: 'info/implants',
@@ -169,7 +172,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
   {
     path: 'info/fittings',
@@ -178,7 +181,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.fittings.manage'] },
   },
   {
     path: 'info/assets',
@@ -187,7 +190,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.assets.read'] },
   },
   {
     path: 'info/contracts',
@@ -196,7 +199,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.contracts.read'] },
   },
   {
     path: 'info/esi-check',
@@ -205,7 +208,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
 
   {
@@ -215,7 +218,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
-    meta: { roles: ['super_admin', 'admin', 'fc', 'senior_fc'] },
+    meta: {
+      roles: ['super_admin', 'admin', 'fc', 'senior_fc'],
+      corpCapabilitiesAny: ['menu.operation'],
+    },
   },
   {
     path: 'operation/fleet-configs',
@@ -224,7 +230,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
   {
     path: 'operation/fleet-detail/:id',
@@ -232,7 +238,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'operation-fleet-detail',
     batch: 'D',
     menuHidden: true,
-    meta: { roles: ['super_admin', 'admin', 'fc', 'senior_fc'] },
+    meta: {
+      roles: ['super_admin', 'admin', 'fc', 'senior_fc'],
+      corpCapabilitiesAny: ['menu.operation'],
+    },
   },
   {
     path: 'operation/corporation-pap',
@@ -241,7 +250,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
   {
     path: 'operation/pap',
@@ -250,7 +259,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.operation',
     menuIcon: 'operation',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
   {
     path: 'operation/join',
@@ -258,7 +267,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'operation-join',
     batch: 'C',
     menuHidden: true,
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
 
   {
@@ -268,7 +277,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.skillPlanning',
     menuIcon: 'skillPlanning',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.skill_planning'] },
   },
   {
     path: 'skill-planning/skill-plans',
@@ -277,7 +286,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.skillPlanning',
     menuIcon: 'skillPlanning',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.skill_planning'] },
   },
   {
     path: 'skill-planning/personal-skill-plans',
@@ -286,7 +295,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.skillPlanning',
     menuIcon: 'skillPlanning',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.skill_planning'] },
   },
 
   {
@@ -296,7 +305,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['welfare.user'] },
   },
   {
     path: 'welfare/approval',
@@ -305,7 +314,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
-    meta: { roles: ['super_admin', 'admin', 'welfare'] },
+    meta: {
+      roles: ['super_admin', 'admin', 'welfare'],
+      corpCapabilitiesAny: ['welfare.approval'],
+    },
   },
   {
     path: 'welfare/settings',
@@ -314,7 +326,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
-    meta: { roles: ['super_admin', 'admin', 'welfare'] },
+    meta: {
+      roles: ['super_admin', 'admin', 'welfare'],
+      corpCapabilitiesAny: ['welfare.settings'],
+    },
   },
 
   {
@@ -324,7 +339,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { login: true, requiresNewbro: true },
+    meta: {
+      login: true,
+      requiresNewbro: true,
+      corpCapabilitiesAny: ['menu.newbro'],
+    },
   },
   {
     path: 'newbro/select-mentor',
@@ -333,7 +352,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { login: true, requiresMentorMenteeEligibility: true },
+    meta: {
+      login: true,
+      requiresMentorMenteeEligibility: true,
+      corpCapabilitiesAny: ['menu.newbro'],
+    },
   },
   {
     path: 'newbro/captain',
@@ -342,7 +365,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { roles: ['captain'] },
+    meta: {
+      roles: ['super_admin', 'captain'],
+      corpCapabilitiesAny: ['menu.newbro'],
+    },
   },
   {
     path: 'newbro/mentor',
@@ -351,7 +377,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { roles: ['mentor'] },
+    meta: {
+      roles: ['super_admin', 'mentor'],
+      corpCapabilitiesAny: ['menu.newbro'],
+    },
   },
   {
     path: 'newbro/manage',
@@ -360,7 +389,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { roles: ['super_admin', 'admin', 'captain'] },
+    meta: {
+      roles: ['super_admin', 'admin', 'captain'],
+      corpCapabilitiesAny: ['menu.newbro'],
+    },
   },
   {
     path: 'newbro/mentor-manage',
@@ -369,7 +401,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['menu.newbro'],
+    },
   },
   {
     path: 'newbro/recruit-link',
@@ -378,7 +413,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.newbro'] },
   },
 
   {
@@ -388,7 +423,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.shop', 'shop.order.read_self'] },
   },
   {
     path: 'shop/manage',
@@ -397,11 +432,15 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
-    meta: { roles: ['super_admin', 'admin'], authList: [
-      { title: '新增商品', authMark: 'add_product' },
-      { title: '编辑商品', authMark: 'edit_product' },
-      { title: '删除商品', authMark: 'delete_product' },
-    ] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAll: ['menu.shop', 'shop.manage', 'shop.admin.product.manage'],
+      authList: [
+        { title: '新增商品', authMark: 'add_product' },
+        { title: '编辑商品', authMark: 'edit_product' },
+        { title: '删除商品', authMark: 'delete_product' },
+      ],
+    },
   },
   {
     path: 'shop/order-manage',
@@ -410,7 +449,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
-    meta: { roles: ['super_admin', 'admin', 'shop_order_manage'], authList: [{ title: '审批订单', authMark: 'approve_order' }] },
+    meta: {
+      roles: ['super_admin', 'admin', 'shop_order_manage'],
+      corpCapabilitiesAll: ['menu.shop', 'shop.manage', 'shop.admin.order.manage'],
+      authList: [{ title: '审批订单', authMark: 'approve_order' }],
+    },
   },
   {
     path: 'shop/wallet',
@@ -419,7 +462,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.shop', 'shop.wallet.read'] },
   },
 
   {
@@ -429,7 +472,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.srp',
     menuIcon: 'srp',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['srp.user'] },
   },
   {
     path: 'srp/srp-manage',
@@ -440,6 +483,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'srp',
     meta: {
       roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
+      corpCapabilitiesAny: ['srp.manage'],
       authList: [{ title: '审批', authMark: 'approve' }],
     },
   },
@@ -450,7 +494,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.srp',
     menuIcon: 'srp',
-    meta: { roles: ['super_admin', 'admin', 'senior_fc', 'srp'] },
+    meta: {
+      roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
+      corpCapabilitiesAny: ['srp.manage'],
+    },
   },
 
   {
@@ -460,7 +507,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.ticket'] },
   },
   {
     path: 'ticket/create',
@@ -469,7 +516,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAll: ['menu.ticket', 'ticket.user.create'] },
   },
   {
     path: 'ticket/detail/:id',
@@ -477,7 +524,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'ticket-detail',
     batch: 'B',
     menuHidden: true,
-    meta: { login: true },
+    meta: { login: true, corpCapabilitiesAny: ['menu.ticket'] },
   },
   {
     path: 'ticket/management',
@@ -486,7 +533,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+    },
   },
   {
     path: 'ticket/categories',
@@ -495,7 +545,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+    },
   },
   {
     path: 'ticket/statistics',
@@ -504,7 +557,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+    },
   },
   {
     path: 'ticket/admin-detail/:id',
@@ -512,7 +568,10 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'ticket-admin-detail',
     batch: 'B',
     menuHidden: true,
-    meta: { roles: ['super_admin', 'admin'] },
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+    },
   },
 
   {
@@ -524,6 +583,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['system.manage'],
       authList: [
         { title: '删除用户', authMark: 'delete_user' },
         { title: '分配职权', authMark: 'assign_role' },
@@ -539,6 +599,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['system.task.read'],
       authList: [
         { title: '执行任务', authMark: 'execute_task' },
         { title: '修改调度', authMark: 'update_schedule' },
@@ -554,6 +615,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['system.wallet.read'],
       authList: [
         { title: '调整余额', authMark: 'adjust_balance' },
         { title: '查看日志', authMark: 'view_log' },
@@ -569,6 +631,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['system.audit.read'],
       authList: [{ title: '查看审计明细', authMark: 'view_audit_detail' }],
     },
   },
@@ -581,6 +644,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['system.manage'],
       authList: [{ title: '编辑兑换率', authMark: 'edit_exchange_rate' }],
     },
   },
@@ -593,6 +657,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: ['system.manage'],
       authList: [{ title: '手动拉取', authMark: 'manual_fetch' }],
     },
   },
@@ -603,7 +668,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
-    meta: { roles: ['super_admin'] },
+    meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
   },
   {
     path: 'system/user-center',
@@ -619,7 +684,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
-    meta: { roles: ['super_admin'] },
+    meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
   },
   {
     path: 'system/basic-config',
@@ -628,7 +693,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
-    meta: { roles: ['super_admin'] },
+    meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.basic_config.read'] },
   },
 
   {

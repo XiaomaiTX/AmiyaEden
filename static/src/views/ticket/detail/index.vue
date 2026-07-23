@@ -19,7 +19,7 @@
       </div>
       <ElInput v-model="content" type="textarea" :rows="3" />
       <div class="ticket-detail-actions">
-        <ElButton type="primary" :loading="submitting" @click="submitReply">{{
+        <ElButton type="primary" :loading="submitting" :disabled="!canReply" @click="submitReply">{{
           t('ticket.reply')
         }}</ElButton>
       </div>
@@ -31,6 +31,7 @@
   import { addMyTicketReply, getMyTicket, listMyTicketReplies } from '@/api/ticket'
   import TicketReplyItem from '@/components/ticket/TicketReplyItem.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -38,6 +39,11 @@
 
   const { t } = useI18n()
   const route = useRoute()
+  const { hasCapability } = useCorpCapability()
+
+  // Replying requires the `ticket.user.reply` capability. Hide the action
+  // when the user lacks it so they don't receive a 403 after typing.
+  const canReply = computed(() => hasCapability('ticket.user.reply'))
 
   const ticketId = computed(() => Number(route.params.id))
   const loading = ref(false)

@@ -8,7 +8,7 @@ export const infoRoutes: AppRouteRecord = {
     title: 'menus.info.title',
     icon: 'ri:user-star-line',
     login: true,
-    corpCapabilities: ['menu.info']
+    corpCapabilitiesAny: ['menu.info']
   },
   children: [
     {
@@ -19,7 +19,7 @@ export const infoRoutes: AppRouteRecord = {
         title: 'menus.info.wallet',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['info.wallet.read']
+        corpCapabilitiesAny: ['info.wallet.read']
       }
     },
     {
@@ -30,7 +30,7 @@ export const infoRoutes: AppRouteRecord = {
         title: 'menus.info.skill',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['info.skills.read']
+        corpCapabilitiesAny: ['info.skills.read']
       }
     },
     {
@@ -41,7 +41,7 @@ export const infoRoutes: AppRouteRecord = {
         title: 'menus.info.npcKills',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['info.npc_kills.self']
+        corpCapabilitiesAny: ['info.npc_kills.self']
       }
     },
     {
@@ -64,7 +64,7 @@ export const infoRoutes: AppRouteRecord = {
         title: 'menus.info.fittings',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['info.fittings.manage']
+        corpCapabilitiesAny: ['info.fittings.manage']
       }
     },
     {
@@ -75,7 +75,7 @@ export const infoRoutes: AppRouteRecord = {
         title: 'menus.info.assets',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['info.assets.read']
+        corpCapabilitiesAny: ['info.assets.read']
       }
     },
     {
@@ -86,7 +86,7 @@ export const infoRoutes: AppRouteRecord = {
         title: 'menus.info.contracts',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['info.contracts.read']
+        corpCapabilitiesAny: ['info.contracts.read']
       }
     },
     {

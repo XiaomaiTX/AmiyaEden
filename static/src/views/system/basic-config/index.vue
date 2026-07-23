@@ -238,9 +238,27 @@
             />
           </div>
 
+          <ElAlert
+            v-if="selectedLegacyCapabilities.length"
+            type="warning"
+            :closable="false"
+            show-icon
+            class="corp-policy-legacy-alert"
+          >
+            <template #title>
+              {{ $t('system.basicConfig.corpPolicyLegacyTitle') }}
+            </template>
+            <template #default>
+              {{ $t('system.basicConfig.corpPolicyLegacyDescription') }}
+              <span class="corp-policy-legacy-keys">
+                {{ selectedLegacyCapabilities.join(', ') }}
+              </span>
+            </template>
+          </ElAlert>
+
           <div class="corp-capability-groups">
             <div
-              v-for="group in corpCapabilityGroups"
+              v-for="group in visibleCorpCapabilityGroups"
               :key="group.labelKey"
               class="corp-capability-group"
             >
@@ -579,6 +597,22 @@
       multiplier: number
     }>
   >([])
+  const enforcedCapabilitySet = ref<Set<string>>(new Set(corpCapabilityOptions))
+  const legacyCapabilities = ref<Record<string, string[]>>({})
+  const selectedLegacyCapabilities = computed(() => {
+    if (!selectedCorporationId.value) return [] as string[]
+    return legacyCapabilities.value[String(selectedCorporationId.value)] ?? []
+  })
+  const visibleCorpCapabilityGroups = computed(() =>
+    corpCapabilityGroups
+      .map((group) => ({
+        labelKey: group.labelKey,
+        capabilities: group.capabilities.filter((capability) =>
+          enforcedCapabilitySet.value.has(capability as string)
+        )
+      }))
+      .filter((group) => group.capabilities.length > 0)
+  )
   const selectedPolicy = computed(() =>
     corpPolicyRows.value.find((row) => row.corporation_id === selectedCorporationId.value)
   )
@@ -858,7 +892,7 @@
       return []
     }
     return capabilities.filter((capability) =>
-      corpCapabilityOptions.includes(capability as Api.SysConfig.CorporationCapability)
+      enforcedCapabilitySet.value.has(capability as string)
     ) as Api.SysConfig.CorporationCapability[]
   }
 
@@ -889,6 +923,10 @@
     try {
       const res = await fetchCorporationAccessPolicies()
       corpPoliciesVersion.value = res.version || 1
+      enforcedCapabilitySet.value = new Set(
+        (res.enforced_capabilities ?? []).length ? res.enforced_capabilities : corpCapabilityOptions
+      )
+      legacyCapabilities.value = { ...(res.legacy_capabilities ?? {}) }
       const policyMap = new Map(
         (res.policies || []).map((policy) => [
           policy.corporation_id,
@@ -908,7 +946,7 @@
           corporation_id: corporationID,
           full_access: policy?.full_access ?? false,
           capabilities: (policy?.capabilities ?? []).filter((capability) =>
-            corpCapabilityOptions.includes(capability as Api.SysConfig.CorporationCapability)
+            enforcedCapabilitySet.value.has(capability as string)
           ) as Api.SysConfig.CorporationCapability[],
           multiplier: clampMultiplier(multiplier) || 1
         }

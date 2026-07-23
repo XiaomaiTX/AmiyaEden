@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { buyProduct, fetchMyOrders, fetchMyWallet, fetchProducts } from '@/api/shop'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import type { Order, Product, Wallet } from '@/types/api/shop'
 import {
@@ -28,6 +29,10 @@ function orderStatusLabel(
 
 export function ShopBrowsePage() {
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Creating an order requires `shop.order.create`; the route enforces only
+  // `shop.order.read_self`, so the buy button must gate separately.
+  const canCreateOrder = hasCapability('shop.order.create')
   const [activeTab, setActiveTab] = useState<ActiveTab>('products')
   const [error, setError] = useState<string | null>(null)
   const [wallet, setWallet] = useState<Wallet | null>(null)
@@ -291,7 +296,7 @@ export function ShopBrowsePage() {
                   <Button
                     type="button"
                     className="w-full"
-                    disabled={item.stock === 0 || item.status !== 1}
+                    disabled={item.stock === 0 || item.status !== 1 || !canCreateOrder}
                     onClick={() => openBuyDialog(item)}
                   >
                     {item.stock === 0 ? t('shop.soldOut') : t('shop.buy')}
@@ -503,7 +508,7 @@ export function ShopBrowsePage() {
             <Button type="button" variant="outline" onClick={closeBuyDialog} disabled={buyLoading}>
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void confirmBuy()} disabled={buyLoading || !selectedProduct}>
+            <Button type="button" onClick={() => void confirmBuy()} disabled={buyLoading || !selectedProduct || !canCreateOrder}>
               {buyLoading ? t('shopBrowse.buying') : t('shop.confirmBuy')}
             </Button>
           </>

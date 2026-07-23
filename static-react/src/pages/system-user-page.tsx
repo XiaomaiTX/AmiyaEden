@@ -304,6 +304,7 @@ export function SystemUserPage() {
         characterId: userInfo.primaryCharacterId ?? null,
         characterName: userInfo.userName,
         roles: userInfo.roles,
+        corpCapabilities: userInfo.corpCapabilities,
         isCurrentlyNewbro: userInfo.isCurrentlyNewbro ?? false,
         isMentorMenteeEligible: userInfo.isMentorMenteeEligible ?? false,
       } satisfies Partial<import('@/stores/session-store').SessionSnapshot>)

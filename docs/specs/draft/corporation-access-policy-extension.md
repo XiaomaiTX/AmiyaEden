@@ -20,6 +20,8 @@ source_of_truth:
 
 # 军团能力策略扩展草案（基于 allow_corporations）
 
+> 实现状态（2026-07-23）：Stage 0A 已落地。当前实现以 `docs/features/current/corporation-access-policy.md`、`docs/architecture/auth-and-permissions.md`、`docs/architecture/routing-and-menus.md` 和 `docs/api/route-index.md` 为准。本草案保留原始设计讨论；其中把 `menu.srp`、`menu.welfare`、`menu.role`、`menu.system` 当作前端门禁，或使用旧 `meta.corpCapabilities` 的段落均已被当前实现取代，不得作为实现依据。
+
 > ⚠️ 实现差异说明（2026-07-07）：本草案原设计为 **默认 `deny`**（最小权限）。**实际落地为默认 `allow`** —— 代码 `server/internal/service/corporation_policy.go`（`DefaultMode = corpPolicyDefaultModeAllow`）与 `docs/features/current/corporation-access-policy.md` 均使用 `default_mode: "allow"`。下文出现的「默认 deny / 一期固定使用 deny」是历史设计意图，保留作决策记录；**以 feature doc 与代码为准**。
 
 ## 背景
@@ -198,7 +200,7 @@ source_of_truth:
 
 落地方式：
 
-- 前端：为全业务路由模块补齐 `RouteMeta.corpCapabilities`，菜单与路由过滤统一走 `menuAccess`。
+- 前端：为全业务路由模块补齐 `RouteMeta.corpCapabilitiesAll` / `RouteMeta.corpCapabilitiesAny`，菜单与路由过滤统一走 `menuAccess`。
 - 后端：为对应业务路由组补齐 `RequireCorpCapability`，确保直链与接口调用均受控。
 - 配置页：按业务域分组展示 capability，减少配置歧义与漏配。
 - 配置页 i18n：能力项、分组标题、帮助文案、校验提示必须使用 i18n 文案键展示，不直接暴露 capability 原始 key（如 `srp.user`、`menu.srp`）。
@@ -219,14 +221,14 @@ source_of_truth:
 
 推荐配置：
 
-- SRP 普通成员：`menu.srp + srp.user`（不含 `srp.manage`）。
-- SRP 管理成员：`menu.srp + srp.user + srp.manage`（且角色满足管理角色约束）。
-- 完全禁用某域：不配置对应 `menu.*` 与动作能力。
+- SRP 普通成员：`srp.user`（父菜单使用 `srp.user` / `srp.manage` OR）。
+- SRP 管理成员：`srp.user + srp.manage`（且角色满足管理角色约束）。
+- 完全禁用某域：不配置对应 enforced capability。
 
 反模式（需避免）：
 
-- 只给 `*.user` 不给 `menu.*`：功能可调用但入口不可见，易造成“不可见但可调”错觉。
-- 只给 `menu.*` 不给 `*.user/*.manage`：入口可见但功能不可用，易造成“可见但不可调”错觉。
+- 父菜单使用未执法的 reserved `menu.*`：有效子能力无法让入口显示，易造成“后端允许但前端隐藏”错觉。
+- 页面同时需要模块入口和页面能力时只配置其中一项：前端入口与后端 AND 门禁会不一致。
 - 将军团层当作“授权层”使用：军团策略只能收敛范围，不应替代角色授予。
 
 ## 当前完成度（2026-05-17）
@@ -268,9 +270,9 @@ source_of_truth:
 
 ### 说明
 
-- 当前实现保持“默认 deny”，并对 `default_mode` 做了限制（仅接受 `deny`），符合一期最小权限目标。
+- 当前实现默认 `default_mode=allow`，同时支持显式 `deny`；具体行为以 `docs/features/current/corporation-access-policy.md` 为准。
 - 一期实现历史上仅落在 `static/`（Vue）端；这是阶段性实施范围，不是产品行为限制。
-- React 侧的 capability/menu parity 是 React 替换 Vue 前的发布阻断项，必须补齐 React 路由元数据、菜单过滤、按钮门禁、API 类型和回归测试。
+- Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button parity；剩余 React 切换阻断项以迁移基线中的未迁移范围和基础设施为准。
 
 ### 收口验证记录（2026-05-17）
 
@@ -378,7 +380,7 @@ source_of_truth:
 
 - 超管可按军团配置能力矩阵并保存。
 - 不同军团成员在 SRP/福利访问面上产生可观测差异。
-- 仅配置 `menu.srp + srp.user` 的军团成员，不可见且不可访问非 SRP 域页面与接口。
+- 仅配置 `srp.user` 的军团成员可见并访问 SRP 用户页面，不可访问非 SRP 域页面与接口。
 - 未授权能力在后端被拒绝，前端入口隐藏或 403。
 - 菜单显示结果与接口 403 结果一致，不出现“可见但不可调”或“不可见但可调”错位。
 - 策略配置页所有 capability 相关展示均为可理解的 i18n 文案，不出现 `srp.user`、`menu.srp` 等原始 key。
@@ -389,6 +391,5 @@ source_of_truth:
 
 - 主人物军团信息在 `eve_character.corporation_id` 中可用且及时更新。
 - 军团策略只针对登录后功能访问，不替代 SSO 准入判断。
-- 一期完成的是 Vue 侧策略配置 UI 与 capability 门禁；React 侧仍需按迁移计划补齐等价能力。
-- 在 React parity 完成前，不得执行 Vue 下线；具体阻断项以 `docs/specs/draft/frontend-react-migration-plan/` 为准。
+- Stage 0A 已完成 Vue/React 当前已迁移页面的等价 capability 门禁；后续 Vue 下线阻断项以 `docs/specs/draft/frontend-react-migration-plan/` 的未迁移范围和基础设施清单为准。
 - 二期 capability 先按粗粒度落地，细粒度拆分作为后续增量演进。

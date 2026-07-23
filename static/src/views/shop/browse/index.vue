@@ -48,9 +48,13 @@
       </ElForm>
       <template #footer>
         <ElButton @click="buyDialogVisible = false">{{ $t('common.cancel') }}</ElButton>
-        <ElButton type="primary" :loading="buyLoading" @click="confirmBuy">{{
-          $t('shop.confirmBuy')
-        }}</ElButton>
+        <ElButton
+          type="primary"
+          :loading="buyLoading"
+          :disabled="!canCreateOrder"
+          @click="confirmBuy"
+          >{{ $t('shop.confirmBuy') }}</ElButton
+        >
       </template>
     </ElDialog>
   </div>
@@ -72,11 +76,18 @@
   import { formatFuxiCoinAmount } from '@utils/common'
   import { buyProduct as apiBuyProduct } from '@/api/shop'
   import { fetchMyWallet } from '@/api/sys-wallet'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import ShopProducts from './modules/shop-products.vue'
   import ShopOrders from './modules/shop-orders.vue'
 
   defineOptions({ name: 'Shop' })
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+
+  // Shop order create is gated by the `shop.order.create` capability in the
+  // backend; hide the confirm button when the user lacks it so they don't
+  // hit a 403 after opening the dialog.
+  const canCreateOrder = computed(() => hasCapability('shop.order.create'))
 
   // ─── Tab ───
   const activeTab = ref('products')

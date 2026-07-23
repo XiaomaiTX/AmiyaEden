@@ -7,7 +7,7 @@ export const dashboardRoutes: AppRouteRecord = {
   meta: {
     title: 'menus.dashboard.title',
     icon: 'ri:pie-chart-line',
-    corpCapabilities: ['menu.dashboard']
+    corpCapabilitiesAny: ['menu.dashboard']
   },
   children: [
     {
@@ -28,7 +28,7 @@ export const dashboardRoutes: AppRouteRecord = {
         title: 'menus.dashboard.npcKills',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilities: ['dashboard.npc_kills.corp', 'info.npc_kills.corp']
+        corpCapabilitiesAll: ['dashboard.npc_kills.corp', 'info.npc_kills.corp']
       }
     },
     {
@@ -38,8 +38,7 @@ export const dashboardRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.dashboard.corporationStructures',
         keepAlive: true,
-        roles: ['super_admin', 'admin'],
-        corpCapabilities: ['dashboard.corp_structures.read']
+        roles: ['super_admin', 'admin']
       }
     },
     {

@@ -8,7 +8,7 @@ export const welfareRoutes: AppRouteRecord = {
     title: 'menus.welfare.title',
     icon: 'ri:gift-line',
     login: true,
-    corpCapabilities: ['menu.welfare']
+    corpCapabilitiesAny: ['welfare.user', 'welfare.approval', 'welfare.settings']
   },
   children: [
     {
@@ -19,7 +19,7 @@ export const welfareRoutes: AppRouteRecord = {
         title: 'menus.welfare.my',
         keepAlive: true,
         login: true,
-        corpCapabilities: ['welfare.user']
+        corpCapabilitiesAny: ['welfare.user']
       }
     },
     {
@@ -30,7 +30,7 @@ export const welfareRoutes: AppRouteRecord = {
         title: 'menus.welfare.approval',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'welfare'],
-        corpCapabilities: ['welfare.approval']
+        corpCapabilitiesAny: ['welfare.approval']
       }
     },
     {
@@ -41,7 +41,7 @@ export const welfareRoutes: AppRouteRecord = {
         title: 'menus.welfare.settings',
         keepAlive: true,
         roles: ['super_admin', 'admin', 'welfare'],
-        corpCapabilities: ['welfare.settings']
+        corpCapabilitiesAny: ['welfare.settings']
       }
     }
   ]

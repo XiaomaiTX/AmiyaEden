@@ -24,12 +24,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const characterName = useSessionStore((state) => state.characterName)
   const isLoggedIn = useSessionStore((state) => state.isLoggedIn)
   const roles = useSessionStore((state) => state.roles)
+  const corpCapabilities = useSessionStore((state) => state.corpCapabilities)
   const isCurrentlyNewbro = useSessionStore((state) => state.isCurrentlyNewbro)
   const isMentorMenteeEligible = useSessionStore((state) => state.isMentorMenteeEligible)
 
   const navMainItems = buildShellMenuGroups({
     isLoggedIn,
     roles,
+    corpCapabilities,
     isCurrentlyNewbro,
     isMentorMenteeEligible,
   }).map((group) => ({

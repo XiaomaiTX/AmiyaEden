@@ -590,6 +590,8 @@
       unavailableTitle: 'Export Unavailable',
       unavailableDescription:
         'Backend export support stays in place, but the front end does not expose trigger or download controls yet.',
+      capabilityRequiredTitle: 'Audit export capability required',
+      capabilityRequiredDescription: 'The system.audit.export capability is required to use the export entry.',
     },
     messages: {
       loading: 'Loading audit events...',

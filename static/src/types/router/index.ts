@@ -54,8 +54,16 @@ export interface RouteMeta extends Record<string | number | symbol, unknown> {
   isFirstLevel?: boolean
   /** 职权要求 */
   roles?: string[]
-  /** 军团 capability 要求 */
-  corpCapabilities?: string[]
+  /**
+   * 军团 capability 要求（AND 语义，全部满足才放行）。
+   * 用于和后端 `RequireCorpCapability` 多中间件链 AND 行为对齐。
+   */
+  corpCapabilitiesAll?: string[]
+  /**
+   * 军团 capability 要求（OR 语义，至少一项即放行）。
+   * 仅用于后端实际只需任一 capability 即通过的路由。
+   */
+  corpCapabilitiesAny?: string[]
   /** 任意非 guest 已登录产品用户可访问 */
   login?: boolean
   /** 仅当前仍符合新人资格的用户可访问 */

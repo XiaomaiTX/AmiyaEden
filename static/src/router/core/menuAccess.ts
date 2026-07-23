@@ -5,6 +5,44 @@ export function hasNonGuestRole(roles: string[]): boolean {
   return roles.some((role) => role !== 'guest')
 }
 
+/**
+ * 评估当前用户的军团 capability 是否满足路由要求。
+ *
+ * 语义：
+ * - `corpCapabilitiesAll`：全部命中才放行（与后端 `RequireCorpCapability`
+ *   连续中间件链的 AND 行为一致）。
+ * - `corpCapabilitiesAny`：至少一项命中即放行。空数组或缺失表示无此约束。
+ *
+ * Stage 0A 之后旧的 `corpCapabilities` 字段已废弃；新代码必须显式选择
+ * `corpCapabilitiesAll` 或 `corpCapabilitiesAny`，避免再让一个模糊数组
+ * 在不同路由上同时承担 OR / AND。
+ */
+export function hasCorpCapabilityPermission(
+  roles: string[],
+  corpCapabilities: string[],
+  meta: {
+    corpCapabilitiesAll?: string[]
+    corpCapabilitiesAny?: string[]
+  }
+): boolean {
+  if (roles.includes('super_admin')) {
+    return true
+  }
+  const all = meta.corpCapabilitiesAll
+  if (all && all.length > 0) {
+    if (!all.every((capability) => corpCapabilities.includes(capability))) {
+      return false
+    }
+  }
+  const any = meta.corpCapabilitiesAny
+  if (any && any.length > 0) {
+    if (!any.some((capability) => corpCapabilities.includes(capability))) {
+      return false
+    }
+  }
+  return true
+}
+
 export function applyMenuAccessFilter(
   menu: AppRouteRecord[],
   roles: string[],
@@ -14,24 +52,22 @@ export function applyMenuAccessFilter(
 ): AppRouteRecord[] {
   return menu.reduce((acc: AppRouteRecord[], item) => {
     const itemRoles = item.meta?.roles
-    const itemCorpCapabilities = item.meta?.corpCapabilities
     const requiresLogin = item.meta?.login === true
     const requiresNewbro = item.meta?.requiresNewbro === true
     const requiresMentorMenteeEligibility = item.meta?.requiresMentorMenteeEligibility === true
-    const isSuperAdmin = roles.includes('super_admin')
     const hasRolePermission = !itemRoles || itemRoles.some((role) => roles.includes(role))
-    const hasCorpCapabilityPermission =
-      isSuperAdmin ||
-      !itemCorpCapabilities ||
-      itemCorpCapabilities.length === 0 ||
-      itemCorpCapabilities.some((capability) => corpCapabilities.includes(capability))
+    const hasCorpCapabilityPermissionForItem = hasCorpCapabilityPermission(
+      roles,
+      corpCapabilities,
+      item.meta ?? {}
+    )
     const hasLoginPermission = !requiresLogin || hasNonGuestRole(roles)
     const hasNewbroPermission = !requiresNewbro || isCurrentlyNewbro === true
     const hasMentorMenteePermission =
       !requiresMentorMenteeEligibility || isMentorMenteeEligible === true
     const hasPermission =
       hasRolePermission &&
-      hasCorpCapabilityPermission &&
+      hasCorpCapabilityPermissionForItem &&
       hasLoginPermission &&
       hasNewbroPermission &&
       hasMentorMenteePermission

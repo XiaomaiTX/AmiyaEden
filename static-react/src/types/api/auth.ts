@@ -31,6 +31,7 @@ export interface MeResponse {
   }
   characters: EveCharacter[]
   roles: string[]
+  corp_capabilities: string[]
   permissions: string[]
   profile_complete: boolean
   enforce_character_esi_restriction: boolean
@@ -40,6 +41,7 @@ export interface MeResponse {
 
 export interface UserInfo {
   roles: string[]
+  corpCapabilities: string[]
   userId: number
   userName: string
   nickname: string

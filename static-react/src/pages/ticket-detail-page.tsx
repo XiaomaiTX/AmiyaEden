@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { addMyTicketReply, getMyTicket, listMyTicketReplies } from '@/api/ticket'
 import { Button } from '@/components/ui/button'
 import { notifyError, notifySuccess } from '@/feedback/service'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import type { TicketItem, TicketPriority, TicketReply, TicketStatus } from '@/types/api/ticket'
 
@@ -55,6 +56,10 @@ function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: TicketPrior
 
 export function TicketDetailPage() {
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  // Replying to a ticket requires `ticket.user.reply`; the route enforces
+  // only `ticket.user.create`, so the reply button must gate separately.
+  const canReply = hasCapability('ticket.user.reply')
   const params = useParams()
   const ticketId = Number(params.id)
   const invalidId = !Number.isFinite(ticketId) || ticketId <= 0
@@ -220,7 +225,7 @@ export function TicketDetailPage() {
           <Button
             type="button"
             onClick={() => void handleReply()}
-            disabled={submitting || !content.trim()}
+            disabled={submitting || !content.trim() || !canReply}
           >
             {submitting ? t('ticket.replySubmitting') : t('ticket.replySubmit')}
           </Button>

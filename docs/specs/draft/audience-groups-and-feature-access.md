@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-23
 source_of_truth:
   - server/pkg/jwt/jwt.go
   - server/internal/model/role.go
@@ -28,12 +28,12 @@ related_docs:
 
 # 用户分组与统一 Feature Access 草案
 
-> 本文记录 2026-07-21 对认证、职权、军团能力和前端门禁代码的检查结果，并提出尚未实现的用户分组 / 标签方案。本文是提案，不代表当前已实现行为；当前行为仍以代码和 `docs/architecture/`、`docs/api/`、`docs/features/current/` 为准。
+> 本文记录 2026-07-21 对认证、职权、军团能力和前端门禁代码的检查结果，并提出尚未实现的用户分组 / 标签方案。本文是提案，不代表当前已实现行为；Stage 0A 已完成当前已迁移页面的 capability/menu/button parity，当前行为仍以代码和 `docs/architecture/`、`docs/api/`、`docs/features/current/` 为准。本文出现的旧 `meta.corpCapabilities` 或 reserved key 描述不覆盖现行实现。
 
 ## 当前状态与证据约定
 
 - 已实现：EVE SSO、JWT、静态 canonical Role、多职权、军团 capability、Vue 静态路由门禁、独立业务资格检查。
-- 部分实现：React 迁移前端已有 Login / Role 门禁，但尚未承接军团 capability；该缺口同时受 React 迁移基线和本文约束。
+- 已实现（Stage 0A）：当前已迁移 React 页面已承接军团 capability，并与 Vue 使用同一套 All/Any 门禁；剩余 React 缺口属于范围漂移页面或其他迁移基础设施。
 - 未实现：Audience Group、成员申请 / 审核、Feature Audience Policy、统一 `feature_access` 与 `RequireFeatureAccess`。
 - “已确认事实”均由当前代码核对；“提案”是未来设计；“风险 / 推断”需在实施时继续验证。
 - 本次只新增草案，不修改运行时代码、数据库或接口。
@@ -47,8 +47,8 @@ related_docs:
 | Role | Go 常量定义，多职权；`super_admin` 是 `RequireRole` 特例 | `model/role.go`、`service/role.go` |
 | Corporation Capability | 按主人物军团读取 `app.corporation_access_policies` | `service/corporation_policy.go` |
 | Business Eligibility | 新人、导师学员、ESI token、资料、用户状态和业务状态机独立判断 | `handler/me.go` 及各业务 service |
-| Vue UX | `/me` 写入 Pinia，动态注册前按 `meta.login`、`roles`、`corpCapabilities` 过滤 | `static/src/api/auth.ts`、`router/core/menuAccess.ts` |
-| React UX | 迁移壳只消费 Login、Role、资格和静态 `authList`，没有 capability | `static-react/src/app/route-access.ts`、`auth/route-access-gate.tsx` |
+| Vue UX | `/me` 写入 Pinia，动态注册前按 `meta.login`、`roles`、`corpCapabilitiesAll` / `corpCapabilitiesAny` 过滤 | `static/src/api/auth.ts`、`router/core/menuAccess.ts` |
+| React UX | 迁移壳消费 Login、Role、资格、静态 `authList` 和 `corpCapabilitiesAll` / `corpCapabilitiesAny` | `static-react/src/app/route-access.ts`、`auth/route-access-gate.tsx` |
 
 当前 `server/internal/model/role.go` 实际定义 12 个 Role：
 
@@ -61,10 +61,10 @@ Role 应继续由代码定义，不应为了兴趣、白名单或标签改成数
 
 当前文档也有漂移：
 
-- `docs/features/current/corporation-access-policy.md` 只列早期 20 项 capability，代码已注册 66 项。
-- 该文档声称前端会对 `full_access=true` 自动放行；当前 `/me` 不返回 `corp_full_access`，Vue 也不消费它。
-- 旧草案中的历史默认值是 deny；当前 `defaultCorpPolicyConfig()` 的缺省值是 allow。
-- 过渡期权威架构同时描述 Vue `static/` 和 React `static-react/`；React 权限缺口必须成为切换阻断项。
+- `docs/features/current/corporation-access-policy.md` 当前列出后端 enforced capability；代码目录还保留 66 项注册 key，其中未执法项属于 reserved。
+- `/me.corp_capabilities` 对 `full_access=true` 或默认允许策略展开 enforced 集合；前端消费该集合，不使用独立的 `corp_full_access` 字段。
+- 旧草案中的历史默认值是 deny；当前 `defaultCorpPolicyConfig()` 的缺省值是 allow，具体以 active feature doc 和代码为准。
+- 过渡期权威架构同时描述 Vue `static/` 和 React `static-react/`；Stage 0A 权限对齐已完成，切换阻断项只保留迁移基线中明确登记的范围漂移页面和其他基础设施。
 
 ## 2. 当前权限链路
 
@@ -106,10 +106,7 @@ userID, characterID, roles, primaryCorporationID,
 corpCapabilities, corpRules, corpFullAccess
 ```
 
-`MeHandler.GetMe()` 返回前六项业务数据中的 `roles`、`primary_corporation_id`、`corp_capabilities`、`corp_rules`，但不返回 `corp_full_access`。结果是：
-
-- `full_access=true` 的普通用户后端通过全部 capability，Vue 可能隐藏菜单；
-- `default_mode=allow` 且未命中策略的普通用户也有同样问题。
+`MeHandler.GetMe()` 返回 `roles`、`primary_corporation_id`、`corp_capabilities`、`corp_rules`，不返回独立的 `corp_full_access` 字段。Stage 0A 通过将 `full_access=true` / 默认允许策略展开为 enforced capability 集合，避免前端菜单因缺少独立标志而隐藏；本段保留为历史问题记录。
 
 ### 2.4 后端中间件顺序
 
@@ -140,13 +137,13 @@ Feature Access 只收敛功能范围，不能代替 Role 或业务状态机。
   -> 只注册过滤后的动态路由
 ```
 
-`meta.corpCapabilities` 数组由 `some()` 计算，即数组内部是 OR；父子路由之间才是 AND。`v-auth` / `useAuth()` 也不读取服务端权限或 capability，只判断当前路由静态 `authList` 是否含标记。新模型中按钮必须显式组合 Role、Feature Access 和业务状态。
+旧 `meta.corpCapabilities` 数组曾由 `some()` 计算；Stage 0A 后路由必须显式使用 `corpCapabilitiesAll`（AND）或 `corpCapabilitiesAny`（OR），按钮 capability 通过 Vue/React `useCorpCapability` 独立 gate。按钮仍需组合 Role、Capability 和业务状态。
 
 动态路由只在初始化时注册。之后 `/me` 即使刷新 store，Role / capability 变化也不会自动重建路由树；后端仍安全拒绝，但菜单可能陈旧。
 
 ### 2.6 React 门禁
 
-React 的 `MeResponse`、Zustand、route meta、`RouteAccessGate` 和 sidebar 都没有 `corp_capabilities` / `feature_access`。若直接切换，会系统性出现入口可见而后端 403。React 切换不得早于 Feature Access 对齐。
+React 的 `MeResponse`、Zustand、route meta、`RouteAccessGate` 和 sidebar 已接入 `corp_capabilities`；当前已迁移页面的 capability parity 已完成。若后续新增迁移页面，必须继续以服务端 enforced capability 与 `corpCapabilitiesAll` / `corpCapabilitiesAny` 为准。
 
 ## 3. Capability 使用清单
 
@@ -679,7 +676,7 @@ corp_rules         继续保留的军团业务规则
 - 使用同一生成的 FeatureKey 类型；
 - 建立 Vue / React 权限快照契约测试。
 
-React parity 是替换 Vue 的发布阻断项，不能留到 Audience Policy 上线后再补。
+Stage 0A capability/menu/button parity 已完成；Audience Policy 仍是独立的后续设计，不能反向改变当前 enforced capability 语义。
 
 ## 10. 缓存与审计方案
 

@@ -9,7 +9,12 @@
         <template #left>
           <div class="task-manager-esi__header-group">
             <span class="font-medium">{{ t('taskManager.esi.sections.tasks') }}</span>
-            <ElButton type="primary" :loading="runAllLoading" @click="handleRunAll">
+            <ElButton
+              type="primary"
+              :loading="runAllLoading"
+              :disabled="!canRun"
+              @click="handleRunAll"
+            >
               {{ t('taskManager.actions.runAllEsi') }}
             </ElButton>
           </div>
@@ -83,11 +88,17 @@
   } from '@/api/esi-refresh'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
   import { useUserStore } from '@/store/modules/user'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
 
   type TaskInfo = Api.ESIRefresh.TaskInfo
 
   const { t } = useI18n()
   const userStore = useUserStore()
+  const { hasCapability } = useCorpCapability()
+
+  // Running ESI refresh tasks requires the same `system.task.run` capability
+  // as any other task; the route meta only enforces the read key.
+  const canRun = computed(() => hasCapability('system.task.run'))
 
   const canEditInterval = computed(() => {
     const roles = userStore.info?.roles ?? []
@@ -214,6 +225,7 @@
             {
               size: 'small',
               type: 'primary',
+              disabled: !canRun.value,
               loading: runningByName.value.has(row.name),
               onClick: () => handleRunTaskByName(row)
             },
