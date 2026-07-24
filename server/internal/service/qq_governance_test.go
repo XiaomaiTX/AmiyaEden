@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -115,5 +116,169 @@ func TestQQGovernanceReconcileRunIsReused(t *testing.T) {
 	}
 	if len(runs) != 1 || len(tasks) != 1 || tasks[0].ActionType != model.QQGovernanceActionSnapshot {
 		t.Fatalf("runs=%d tasks=%#v", len(runs), tasks)
+	}
+}
+
+// applyQQGovernanceReconcileRunActiveIndex mirrors the partial unique index
+// bootstrap/db.go installs for qq_governance_reconcile_run so the regression
+// tests below exercise the same shape on SQLite.
+func applyQQGovernanceReconcileRunActiveIndex(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	stmts := []string{
+		`DROP INDEX IF EXISTS idx_qq_governance_reconcile_run_active_key`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_qq_governance_reconcile_run_active_group ON qq_governance_reconcile_run (group_id) WHERE active_key <> '' AND deleted_at IS NULL`,
+	}
+	for _, stmt := range stmts {
+		if err := db.Exec(stmt).Error; err != nil {
+			t.Fatalf("apply reconcile run index: %v", err)
+		}
+	}
+}
+
+func TestQQGovernanceReconcileRunTerminalRunsCoexist(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_reconcile_run_terminal",
+		&model.QQGroupGovernancePolicy{}, &model.QQGovernanceActionTask{},
+		&model.QQGovernanceReconcileRun{}, &model.QQGovernanceReconcileMember{},
+	)
+	applyQQGovernanceReconcileRunActiveIndex(t, db)
+
+	now := time.Date(2026, 7, 24, 12, 0, 0, 0, time.UTC)
+	for i := range 3 {
+		run := &model.QQGovernanceReconcileRun{
+			GroupID:        778899,
+			ActiveKey:      "",
+			Status:         model.QQGovernanceRunCompleted,
+			ExpectedCount:  10,
+			ProcessedCount: 10,
+			StartedAt:      &now,
+			CompletedAt:    &now,
+		}
+		run.ID = uint(i + 1)
+		if err := db.Create(run).Error; err != nil {
+			t.Fatalf("create terminal run %d: %v", i+1, err)
+		}
+	}
+	var count int64
+	if err := db.Model(&model.QQGovernanceReconcileRun{}).Count(&count).Error; err != nil {
+		t.Fatalf("count runs: %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("terminal run count = %d, want 3", count)
+	}
+}
+
+func TestQQGovernanceReconcileRunActiveKeyIsUniquePerGroup(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_reconcile_run_active_unique",
+		&model.QQGroupGovernancePolicy{}, &model.QQGovernanceActionTask{},
+		&model.QQGovernanceReconcileRun{}, &model.QQGovernanceReconcileMember{},
+	)
+	applyQQGovernanceReconcileRunActiveIndex(t, db)
+
+	now := time.Date(2026, 7, 24, 12, 0, 0, 0, time.UTC)
+	first := &model.QQGovernanceReconcileRun{
+		GroupID: 778899, ActiveKey: "group:778899", Status: model.QQGovernanceRunRunning,
+		StartedAt: &now,
+	}
+	if err := db.Create(first).Error; err != nil {
+		t.Fatalf("create first active run: %v", err)
+	}
+	duplicate := &model.QQGovernanceReconcileRun{
+		GroupID: 778899, ActiveKey: "group:778899", Status: model.QQGovernanceRunRunning,
+		StartedAt: &now,
+	}
+	if err := db.Create(duplicate).Error; err == nil {
+		t.Fatalf("expected duplicate active run to be rejected")
+	}
+
+	// A second group can still run concurrently.
+	other := &model.QQGovernanceReconcileRun{
+		GroupID: 778900, ActiveKey: "group:778900", Status: model.QQGovernanceRunRunning,
+		StartedAt: &now,
+	}
+	if err := db.Create(other).Error; err != nil {
+		t.Fatalf("create active run for second group: %v", err)
+	}
+}
+
+func TestQQGovernanceComputeReconcileBatchCompletesStuckRun(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_reconcile_compute_batch",
+		&model.QQGroupGovernancePolicy{}, &model.QQGovernanceActionTask{},
+		&model.QQGovernanceReconcileRun{}, &model.QQGovernanceReconcileMember{},
+		&model.QQGroupMemberState{}, &model.QQGroupRuntimeSnapshot{},
+		&model.QQGovernanceReview{},
+	)
+	const groupID int64 = 778899
+	const total = 215
+	if err := db.Create(&model.QQGroupGovernancePolicy{GroupID: groupID, Enabled: true}).Error; err != nil {
+		t.Fatalf("create policy: %v", err)
+	}
+	startedAt := time.Date(2026, 7, 24, 12, 0, 0, 0, time.UTC)
+	run := &model.QQGovernanceReconcileRun{
+		GroupID:        groupID,
+		ActiveKey:      fmt.Sprintf("group:%d", groupID),
+		Status:         model.QQGovernanceRunRunning,
+		ExpectedCount:  total,
+		ProcessedCount: 200,
+		StartedAt:      &startedAt,
+	}
+	if err := db.Create(run).Error; err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	members := make([]model.QQGovernanceReconcileMember, 0, total)
+	for i := range total {
+		members = append(members, model.QQGovernanceReconcileMember{
+			RunID:   run.ID,
+			GroupID: groupID,
+			QQ:      int64(100000 + i),
+			Status:  model.QQGovernanceRunMemberDone,
+		})
+	}
+	if err := db.CreateInBatches(members, 100).Error; err != nil {
+		t.Fatalf("seed members: %v", err)
+	}
+	now := time.Date(2026, 7, 24, 12, 30, 0, 0, time.UTC)
+	payload, _ := json.Marshal(qqGovernanceActionPayload{RunID: run.ID, Batch: 4})
+	task := &model.QQGovernanceActionTask{
+		ActionType: model.QQGovernanceActionComputeBatch, RunID: run.ID,
+		IdempotencyKey: fmt.Sprintf("compute:%d:%d", run.ID, 4), GroupID: groupID,
+		PayloadJSON: string(payload), Status: model.QQGovernanceActionRunning,
+		Priority: 40, RunAfter: now, Source: "reconcile", LeaseToken: "lease-token",
+		ClaimedAt:      &now,
+		LeaseExpiresAt: &now,
+	}
+	if err := db.Create(task).Error; err != nil {
+		t.Fatalf("create task: %v", err)
+	}
+
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+	svc.now = func() time.Time { return now }
+
+	if err := svc.computeReconcileBatch(t.Context(), task, &model.QQGroupGovernancePolicy{GroupID: groupID, Enabled: true}, run.ID, 4); err != nil {
+		t.Fatalf("compute batch: %v", err)
+	}
+
+	var refreshed model.QQGovernanceReconcileRun
+	if err := db.First(&refreshed, run.ID).Error; err != nil {
+		t.Fatalf("reload run: %v", err)
+	}
+	if refreshed.Status != model.QQGovernanceRunCompleted {
+		t.Fatalf("run status = %q, want completed", refreshed.Status)
+	}
+	if refreshed.ActiveKey != "" {
+		t.Fatalf("run active_key = %q, want empty", refreshed.ActiveKey)
+	}
+	if refreshed.ProcessedCount != total {
+		t.Fatalf("run processed_count = %d, want %d", refreshed.ProcessedCount, total)
+	}
+	if refreshed.CompletedAt == nil || !refreshed.CompletedAt.Equal(now) {
+		t.Fatalf("run completed_at = %v, want %v", refreshed.CompletedAt, now)
+	}
+
+	var refreshedTask model.QQGovernanceActionTask
+	if err := db.First(&refreshedTask, task.ID).Error; err != nil {
+		t.Fatalf("reload task: %v", err)
+	}
+	if refreshedTask.Status != model.QQGovernanceActionSucceeded {
+		t.Fatalf("task status = %q, want succeeded", refreshedTask.Status)
 	}
 }
