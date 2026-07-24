@@ -366,6 +366,8 @@ func ensureCustomIndexes(db *gorm.DB) {
 
 func qqGovernanceIndexStatements() []string {
 	return []string{
+		`DROP INDEX IF EXISTS idx_qq_governance_reconcile_run_active_key`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_qq_governance_reconcile_run_active_group ON qq_governance_reconcile_run (group_id) WHERE active_key <> '' AND deleted_at IS NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_qq_governance_action_task_ready ON qq_governance_action_task (priority, run_after, id) WHERE status IN ('pending', 'retry_wait') AND deleted_at IS NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_qq_governance_review_member_created ON qq_governance_review (group_id, qq, created_at DESC) WHERE deleted_at IS NULL`,
 		`CREATE INDEX IF NOT EXISTS idx_qq_governance_action_log_type_created ON qq_governance_action_log (action_type, created_at DESC)`,

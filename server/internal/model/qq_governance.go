@@ -91,11 +91,14 @@ func (QQGroupMemberState) TableName() string { return "qq_group_member_state" }
 
 // QQGovernanceReconcileRun is one immutable full-group membership snapshot.
 // ActiveKey is populated only while the run is non-terminal, so a group can
-// never have two concurrent full scans.
+// never have two concurrent full scans. The invariant is enforced by the
+// partial unique index defined in bootstrap/db.go (qqGovernanceIndexStatements);
+// the column itself is a plain non-unique string so completed runs can share
+// the empty terminal value.
 type QQGovernanceReconcileRun struct {
 	BaseModel
 	GroupID        int64      `gorm:"not null;index" json:"group_id"`
-	ActiveKey      string     `gorm:"size:64;not null;uniqueIndex" json:"-"`
+	ActiveKey      string     `gorm:"size:64;not null;default:''" json:"-"`
 	Status         string     `gorm:"size:32;not null;index" json:"status"`
 	ExpectedCount  int        `gorm:"not null;default:0" json:"expected_count"`
 	ProcessedCount int        `gorm:"not null;default:0" json:"processed_count"`

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-27
+last_reviewed: 2026-07-24
 source_of_truth:
   - server/bootstrap/db.go
   - server/internal/model
@@ -398,7 +398,7 @@ ESI 头衔到系统职权的映射表。
 - `qq_governance_review`：资格判断原因和最小身份快照。
 - `qq_governance_action_task`：持久动作队列、稳定幂等键、租约、重试和终态。
 - `qq_governance_action_log`：脱敏动作摘要与每次执行结果。
-- `qq_governance_reconcile_run`：每群唯一进行中的完整成员快照巡检轮次、总数、进度和结束状态。
+- `qq_governance_reconcile_run`：每群最多一个进行中的完整成员快照巡检轮次、总数、进度和结束状态；活动轮次唯一性由部分唯一索引 `idx_qq_governance_reconcile_run_active_group`（仅对 `active_key <> ''` 且未软删除的行生效）保证，终态轮次以空 `active_key` 共存。
 - `qq_governance_reconcile_member`：巡检轮次冻结的成员 QQ 集合及逐成员完成状态；它使重启后的批处理不依赖 OneBot 返回顺序。
 - `qq_governance_risk_control_state`：单机器人熔断等级、恢复时间与半开探测额度。
 - `qq_governance_alert`：仅在治理页展示的持久告警及其确认/恢复状态。

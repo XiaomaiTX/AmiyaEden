@@ -188,11 +188,14 @@ func (s *QQGovernanceService) computeReconcileBatch(ctx context.Context, task *m
 		}
 	}
 	now := s.now()
-	run.ProcessedCount += len(rows)
 	pending, err := s.repo.CountPendingRunMembers(run.ID)
 	if err != nil {
 		return s.failTask(task, err, true)
 	}
+	// Recompute processed_count from the frozen membership set so a retry that
+	// fires after the final batch already completed can still correct any
+	// previously unsaved progress and finish the run.
+	run.ProcessedCount = run.ExpectedCount - int(pending)
 	if pending == 0 {
 		run.Status, run.ActiveKey, run.CompletedAt = model.QQGovernanceRunCompleted, "", &now
 		if err := s.repo.SaveReconcileRun(run); err != nil {
