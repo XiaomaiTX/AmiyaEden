@@ -3153,6 +3153,7 @@
       "overview": "监控概览",
       "progress": "巡检进度",
       "snapshotTask": "成员快照",
+      "groupInfoTask": "群资料刷新",
       "computeTask": "批量核验",
       "runPending": "待开始",
       "runRunning": "进行中",

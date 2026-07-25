@@ -275,74 +275,9 @@ func (s *QQGovernanceService) ListGroupStatuses(ctx context.Context) ([]QQGovern
 			item.ReconcileExpected, item.ReconcileProcessed, item.ReconcileFailed = run.ExpectedCount, run.ProcessedCount, run.FailedCount
 			item.ReconcileStartedAt, item.ReconcileCompletedAt = run.StartedAt, run.CompletedAt
 		}
-		s.enrichGroupStatusFromOneBot(ctx, &item)
 		result = append(result, item)
 	}
 	return result, nil
-}
-
-type qqGovernanceGroupInfo struct {
-	GroupName      string `json:"group_name"`
-	MemberCount    int    `json:"member_count"`
-	MaxMemberCount int    `json:"max_member_count"`
-}
-
-type qqGovernanceGroupMemberInfo struct {
-	Role string `json:"role"`
-}
-
-func isQQGovernanceAdminRole(role string) bool {
-	return role == "admin" || role == "owner"
-}
-
-func (s *QQGovernanceService) enrichGroupStatusFromOneBot(ctx context.Context, item *QQGovernanceGroupStatus) {
-	if item == nil {
-		return
-	}
-	executor := s.actionExecutor()
-	if executor == nil || !executor.OneBotConnected() {
-		return
-	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	// A page refresh needs both group metadata and the bot's member role. Treat
-	// the pair as one read operation so the per-group limiter does not suppress
-	// the second query immediately after the first one.
-	if wait, err := s.acquireQQGovernanceReadRateLimit(ctx, item.GroupID); err != nil || wait > 0 {
-		return
-	}
-	call := func(action string, params map[string]any) (json.RawMessage, bool) {
-		callCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-		raw, err := executor.CallOneBot(callCtx, action, params)
-		return raw, err == nil
-	}
-	if raw, ok := call("get_group_info", map[string]any{"group_id": item.GroupID}); ok {
-		var info qqGovernanceGroupInfo
-		if json.Unmarshal(raw, &info) == nil {
-			if info.GroupName != "" {
-				item.GroupName = info.GroupName
-			}
-			if info.MemberCount > 0 {
-				item.MemberCount = info.MemberCount
-			}
-			if info.MaxMemberCount > 0 {
-				item.MaxMemberCount = info.MaxMemberCount
-			}
-		}
-	}
-	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
-	if botQQ <= 0 {
-		return
-	}
-	if raw, ok := call("get_group_member_info", map[string]any{"group_id": item.GroupID, "user_id": botQQ}); ok {
-		var info qqGovernanceGroupMemberInfo
-		if json.Unmarshal(raw, &info) == nil {
-			isAdmin := isQQGovernanceAdminRole(info.Role)
-			item.BotIsAdmin = &isAdmin
-		}
-	}
 }
 
 func (s *QQGovernanceService) GovernanceSettings() QQGovernanceSettings {

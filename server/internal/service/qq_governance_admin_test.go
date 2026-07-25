@@ -7,9 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
-
-	"github.com/alicebob/miniredis/v2"
-	"github.com/redis/go-redis/v9"
 )
 
 func TestQQGovernanceServiceSavePolicy(t *testing.T) {
@@ -47,46 +44,44 @@ func TestIsQQGovernanceAdminRole(t *testing.T) {
 	}
 }
 
-type qqGovernanceAdminTestExecutor struct{}
+type qqGovernanceAdminTestExecutor struct{ calls int }
 
-func (qqGovernanceAdminTestExecutor) OneBotConnected() bool { return true }
+func (*qqGovernanceAdminTestExecutor) OneBotConnected() bool { return true }
 
-func (qqGovernanceAdminTestExecutor) CallOneBot(_ context.Context, action string, _ map[string]any) (json.RawMessage, error) {
-	switch action {
-	case "get_group_info":
-		return json.RawMessage(`{"group_name":"test-group","member_count":8,"max_member_count":500}`), nil
-	case "get_group_member_info":
-		return json.RawMessage(`{"role":"member"}`), nil
-	default:
-		return json.RawMessage(`{}`), nil
-	}
+func (e *qqGovernanceAdminTestExecutor) CallOneBot(_ context.Context, _ string, _ map[string]any) (json.RawMessage, error) {
+	e.calls++
+	return json.RawMessage(`{}`), nil
 }
 
-func TestEnrichGroupStatusFromOneBotUsesGroupInfoWhenBotIsNotAdmin(t *testing.T) {
-	db := newServiceTestDB(t, "qq_governance_group_status", &model.SystemConfig{})
-	if err := db.Create(&model.SystemConfig{Key: model.SysConfigOneBotBotQQ, Value: "9001"}).Error; err != nil {
-		t.Fatalf("seed bot qq: %v", err)
-	}
-
-	oldDB, oldRedis := global.DB, global.Redis
+func TestListGroupStatusesUsesPersistedSnapshotOnly(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_group_status",
+		&model.SystemConfig{}, &model.QQGroupGovernancePolicy{}, &model.QQGroupRuntimeSnapshot{},
+		&model.QQGroupMemberState{}, &model.QQGovernanceReconcileRun{},
+	)
+	oldDB := global.DB
 	global.DB = db
-	mini := miniredis.RunT(t)
-	global.Redis = redis.NewClient(&redis.Options{Addr: mini.Addr()})
 	defer func() {
-		_ = global.Redis.Close()
-		global.DB, global.Redis = oldDB, oldRedis
+		global.DB = oldDB
 	}()
+	botIsAdmin := false
+	if err := db.Create(&model.QQGroupGovernancePolicy{GroupID: 123, Enabled: true}).Error; err != nil {
+		t.Fatalf("seed policy: %v", err)
+	}
+	if err := db.Create(&model.QQGroupRuntimeSnapshot{GroupID: 123, GroupName: "saved-group", MemberCount: 8, MaxMemberCount: 500, BotIsAdmin: &botIsAdmin}).Error; err != nil {
+		t.Fatalf("seed snapshot: %v", err)
+	}
 
 	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
-	svc.SetOneBotActionExecutor(qqGovernanceAdminTestExecutor{})
-	item := &QQGovernanceGroupStatus{GroupID: 123, GroupName: "-"}
-
-	svc.enrichGroupStatusFromOneBot(context.Background(), item)
-
-	if item.GroupName != "test-group" || item.MemberCount != 8 || item.MaxMemberCount != 500 {
-		t.Fatalf("group status = %#v", item)
+	executor := &qqGovernanceAdminTestExecutor{}
+	svc.SetOneBotActionExecutor(executor)
+	rows, err := svc.ListGroupStatuses(context.Background())
+	if err != nil {
+		t.Fatalf("list group statuses: %v", err)
 	}
-	if item.BotIsAdmin == nil || *item.BotIsAdmin {
-		t.Fatalf("bot admin status = %#v, want false", item.BotIsAdmin)
+	if len(rows) != 1 || rows[0].GroupName != "saved-group" || rows[0].BotIsAdmin == nil || *rows[0].BotIsAdmin {
+		t.Fatalf("group statuses = %#v", rows)
+	}
+	if executor.calls != 0 {
+		t.Fatalf("OneBot calls = %d, want 0", executor.calls)
 	}
 }
