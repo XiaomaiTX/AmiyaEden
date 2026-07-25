@@ -1,7 +1,7 @@
 # AmiyaEden
 
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.14.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.16.0-brightgreen.svg)](CHANGELOG.md)
 [![CI](https://github.com/XiaomaiTX/AmiyaEden/actions/workflows/verify-ci.yaml/badge.svg)](https://github.com/XiaomaiTX/AmiyaEden/actions/workflows/verify-ci.yaml)
 
 > 面向 EVE Online 联盟 / 军团的一体化运营平台。

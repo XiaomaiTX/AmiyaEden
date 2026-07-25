@@ -106,7 +106,7 @@ export function SystemWebhookPage() {
   }, [isQQGovernanceTest, testForm.qq_governance_group_ids, testForm.url])
 
   const saveConfig = async () => {
-    let nextConfig = config
+    let nextConfig: WebhookConfig
     if (isQQGovernanceConfig) {
       let ids: number[]
       try {

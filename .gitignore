@@ -63,3 +63,4 @@ logs/
 /server/config/config.docker-dev.yaml
 
 .claude/settings.local.json
+static/src/types/import/components.d.ts
