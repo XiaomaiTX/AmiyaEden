@@ -46,7 +46,7 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 	if err != nil || task == nil {
 		return err
 	}
-	if task.ActionType == model.QQGovernanceActionSnapshot || task.ActionType == model.QQGovernanceActionComputeBatch || task.ActionType == model.QQGovernanceActionRecheck {
+	if task.ActionType == model.QQGovernanceActionSnapshot || task.ActionType == model.QQGovernanceActionRefreshGroupInfo || task.ActionType == model.QQGovernanceActionComputeBatch || task.ActionType == model.QQGovernanceActionRecheck {
 		return s.runReconcileTask(ctx, task)
 	}
 	if wait, err := s.riskWait(task); err != nil {
@@ -257,13 +257,6 @@ return {1, 0}`
 		waitMS = 1000
 	}
 	return time.Duration(waitMS) * time.Millisecond, nil
-}
-
-func (s *QQGovernanceService) acquireQQGovernanceReadRateLimit(ctx context.Context, groupID int64) (time.Duration, error) {
-	return s.acquireQQGovernanceRateLimit(ctx, &model.QQGovernanceActionTask{
-		ActionType: model.QQGovernanceActionSnapshot,
-		GroupID:    groupID,
-	})
 }
 
 func qqGovernanceInt64(value any) (int64, bool) {

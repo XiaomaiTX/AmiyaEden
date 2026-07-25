@@ -42,17 +42,6 @@
                 groupStatuses.get(row.group_id)?.member_count ?? '-'
               }}</template></ElTableColumn
             >
-            <ElTableColumn :label="t('qqGovernance.fields.botAdmin')" width="140"
-              ><template #default="{ row }"
-                ><ElTag v-if="row.bot_is_admin === true" type="success">{{
-                  t('qqGovernance.values.yes')
-                }}</ElTag
-                ><ElTag v-else-if="row.bot_is_admin === false" type="danger">{{
-                  t('qqGovernance.values.no')
-                }}</ElTag
-                ><ElTag v-else type="info">{{ t('qqGovernance.values.unknown') }}</ElTag></template
-              ></ElTableColumn
-            >
             <ElTableColumn :label="t('common.operation')" width="220" fixed="right"
               ><template #default="{ row }"
                 ><ElButton text type="primary" @click="openPolicyDialog(row)">{{
@@ -86,6 +75,17 @@
               ><template #default="{ row }"
                 >{{ row.member_count
                 }}<span v-if="row.max_member_count"> / {{ row.max_member_count }}</span></template
+              ></ElTableColumn
+            >
+            <ElTableColumn :label="t('qqGovernance.fields.botAdmin')" width="140"
+              ><template #default="{ row }"
+                ><ElTag v-if="row.bot_is_admin === true" type="success">{{
+                  t('qqGovernance.values.yes')
+                }}</ElTag
+                ><ElTag v-else-if="row.bot_is_admin === false" type="danger">{{
+                  t('qqGovernance.values.no')
+                }}</ElTag
+                ><ElTag v-else type="info">{{ t('qqGovernance.values.unknown') }}</ElTag></template
               ></ElTableColumn
             >
             <ElTableColumn :label="t('qqGovernance.v2.progress')" min-width="160"
@@ -155,6 +155,7 @@
               <ElOption value="reject" :label="t('qqGovernance.actions.reject')" />
               <ElOption value="set_card" :label="t('qqGovernance.actions.card')" />
               <ElOption value="snapshot" :label="t('qqGovernance.v2.snapshotTask')" />
+              <ElOption value="refresh_group_info" :label="t('qqGovernance.v2.groupInfoTask')" />
               <ElOption value="compute_batch" :label="t('qqGovernance.v2.computeTask')" />
               <ElOption value="kick" :label="t('qqGovernance.actions.kick')" />
             </ElSelect>
@@ -186,7 +187,10 @@
                   :label="t('qqGovernance.fields.actionType')"
                   width="130"
                   sortable
-                /><ElTableColumn
+                  ><template #default="{ row }">{{
+                    actionLabel(row.action_type)
+                  }}</template></ElTableColumn
+                ><ElTableColumn
                   prop="group_id"
                   :label="t('qqGovernance.fields.groupId')"
                   width="130"
@@ -514,6 +518,14 @@
           : 'info'
   const runLabel = (state: string) =>
     t('qqGovernance.v2.run' + state[0].toUpperCase() + state.slice(1))
+  const actionLabel = (action: string) => {
+    const labels: Record<string, string> = {
+      snapshot: 'qqGovernance.v2.snapshotTask',
+      refresh_group_info: 'qqGovernance.v2.groupInfoTask',
+      compute_batch: 'qqGovernance.v2.computeTask'
+    }
+    return labels[action] ? t(labels[action]) : action
+  }
   function resetPolicyForm() {
     Object.assign(policyForm, {
       group_id: '',

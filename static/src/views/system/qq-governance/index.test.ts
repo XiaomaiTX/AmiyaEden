@@ -23,11 +23,27 @@ test('qq governance rules table shows member count and removes the old detail co
   assert.doesNotMatch(source, /<ElTableColumn\s+prop="card_template"/)
 })
 
-test('qq governance rules table shows the bot administrator status', () => {
+test('qq governance group status table shows the bot administrator status', () => {
+  const rulesStart = source.indexOf(
+    '<ElTabPane :label="t(\'qqGovernance.v2.rules\')" name="rules">'
+  )
+  const groupsStart = source.indexOf(
+    '<ElTabPane :label="t(\'qqGovernance.v2.groups\')" name="groups">'
+  )
+  const rulesSection = source.slice(rulesStart, groupsStart)
+  const groupsSection = source.slice(groupsStart)
   assert.match(source, /t\('qqGovernance\.fields\.botAdmin'\)/)
-  assert.match(source, /row\.bot_is_admin === true/)
-  assert.match(source, /row\.bot_is_admin === false/)
-  assert.match(source, /qqGovernance\.values\.unknown/)
+  assert.doesNotMatch(rulesSection, /row\.bot_is_admin/)
+  assert.match(groupsSection, /row\.bot_is_admin === true/)
+  assert.match(groupsSection, /row\.bot_is_admin === false/)
+  assert.match(groupsSection, /qqGovernance\.values\.unknown/)
   assert.match(zhLocale, /"botAdmin":\s*"机器人管理员"/)
   assert.match(enLocale, /"botAdmin":\s*"Bot Administrator"/)
+})
+
+test('qq governance localizes the group info refresh task', () => {
+  assert.match(source, /refresh_group_info/)
+  assert.match(source, /qqGovernance\.v2\.groupInfoTask/)
+  assert.match(zhLocale, /"groupInfoTask":\s*"群资料刷新"/)
+  assert.match(enLocale, /"groupInfoTask":\s*"Group Info Refresh"/)
 })
