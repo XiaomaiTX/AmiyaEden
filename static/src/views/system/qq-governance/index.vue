@@ -550,13 +550,13 @@
       minWidth: 180,
       useSlot: true
     },
-    { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 150, sortable: true },
-    { prop: 'enabled', label: t('qqGovernance.fields.enabled'), useSlot: true },
-    { prop: 'member_count', label: t('qqGovernance.v2.memberCount'), useSlot: true },
+    { prop: 'group_id', label: t('qqGovernance.fields.groupId'), minWidth: 120, sortable: true },
+    { prop: 'enabled', label: t('qqGovernance.fields.enabled'), minWidth: 100, useSlot: true },
+    { prop: 'member_count', label: t('qqGovernance.v2.memberCount'), minWidth: 120, useSlot: true },
     {
       prop: 'operation',
       label: t('common.operation'),
-      width: 130,
+      minWidth: 140,
       fixed: 'right',
       useSlot: true
     }
@@ -564,16 +564,21 @@
 
   const groupColumns = ref<ColumnOption<Api.QQGovernance.GroupStatus>[]>([
     { prop: 'group_name', label: t('qqGovernance.v2.groupName'), minWidth: 170 },
-    { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 150 },
-    { prop: 'member_count', label: t('qqGovernance.v2.memberCount'), width: 140, useSlot: true },
-    { prop: 'bot_is_admin', label: t('qqGovernance.fields.botAdmin'), width: 140, useSlot: true },
-    { prop: 'progress', label: t('qqGovernance.v2.progress'), minWidth: 160, useSlot: true },
-    { prop: 'valid_count', label: t('qqGovernance.v2.valid'), width: 110 },
-    { prop: 'review_count', label: t('qqGovernance.v2.review'), width: 110 },
-    { prop: 'invalid_count', label: t('qqGovernance.v2.invalid'), width: 110, useSlot: true },
-    { prop: 'snapshot_state', label: t('qqGovernance.v2.snapshot'), width: 120, useSlot: true },
+    { prop: 'group_id', label: t('qqGovernance.fields.groupId'), minWidth: 120 },
+    { prop: 'member_count', label: t('qqGovernance.v2.memberCount'), minWidth: 120, useSlot: true },
+    {
+      prop: 'bot_is_admin',
+      label: t('qqGovernance.fields.botAdmin'),
+      minWidth: 130,
+      useSlot: true
+    },
+    { prop: 'progress', label: t('qqGovernance.v2.progress'), minWidth: 180, useSlot: true },
+    { prop: 'valid_count', label: t('qqGovernance.v2.valid'), minWidth: 100 },
+    { prop: 'review_count', label: t('qqGovernance.v2.review'), minWidth: 100 },
+    { prop: 'invalid_count', label: t('qqGovernance.v2.invalid'), minWidth: 100, useSlot: true },
+    { prop: 'snapshot_state', label: t('qqGovernance.v2.snapshot'), minWidth: 120, useSlot: true },
     { prop: 'last_synced_at', label: t('qqGovernance.v2.lastSync'), minWidth: 180, useSlot: true },
-    { prop: 'operation', label: t('common.operation'), width: 80, fixed: 'right', useSlot: true }
+    { prop: 'operation', label: t('common.operation'), minWidth: 80, fixed: 'right', useSlot: true }
   ])
   const visiblePolicyColumns = computed(() =>
     policyColumns.value.filter((column) => column.visible !== false && column.checked !== false)
