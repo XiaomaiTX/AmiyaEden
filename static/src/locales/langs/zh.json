@@ -3144,7 +3144,7 @@
       "globalSettings": "全局治理参数",
       "saveSettings": "保存全局设置",
       "settingsSaved": "全局设置已保存",
-      "templateHint": "可用占位符：{nickname}、{primary_character_name}、{primary_corporation_name}；最多 60 个字符。",
+      "templateHint": "可用占位符：{nickname}、{primary_character_name}、{primary_corporation_name}；最多 100 个字符。",
       "corpSearch": "按军团名称搜索",
       "notSynced": "从未同步",
       "stale": "数据过期",
