@@ -73,7 +73,6 @@ declare module 'vue' {
     BoxStyleSettings: typeof import('./../../components/core/layouts/art-settings-panel/widget/BoxStyleSettings.vue')['default']
     ColorSettings: typeof import('./../../components/core/layouts/art-settings-panel/widget/ColorSettings.vue')['default']
     ContainerSettings: typeof import('./../../components/core/layouts/art-settings-panel/widget/ContainerSettings.vue')['default']
-    ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']

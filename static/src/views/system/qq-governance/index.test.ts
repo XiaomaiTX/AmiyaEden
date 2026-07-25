@@ -47,3 +47,48 @@ test('qq governance localizes the group info refresh task', () => {
   assert.match(zhLocale, /"groupInfoTask":\s*"群资料刷新"/)
   assert.match(enLocale, /"groupInfoTask":\s*"Group Info Refresh"/)
 })
+
+test('qq governance preserves card template placeholders in the hint', () => {
+  assert.match(source, /t\('qqGovernance\.v2\.templateHint',\s*\{/)
+  assert.match(source, /nickname:\s*'\{nickname\}'/)
+  assert.match(source, /primary_character_name:\s*'\{primary_character_name\}'/)
+  assert.match(source, /primary_corporation_name:\s*'\{primary_corporation_name\}'/)
+})
+
+test('qq governance operation buttons use icons with tooltips', () => {
+  assert.match(source, /import \{ CircleCheck, Delete, Edit, Refresh, RefreshRight \}/)
+  assert.match(source, /:content="t\('qqGovernance\.actions\.edit'\)"/)
+  assert.match(source, /:icon="Edit"/)
+  assert.match(source, /:icon="Refresh"/)
+  assert.match(source, /:icon="Delete"/)
+  assert.match(source, /:icon="RefreshRight"/)
+  assert.match(source, /:icon="CircleCheck"/)
+})
+
+test('qq governance uses shared tables and ledger pagination for growing records', () => {
+  assert.match(source, /import \{ useTable \} from '@\/hooks\/core\/useTable'/)
+  assert.match(source, /<ArtTable[\s\S]*:columns="policyColumns"/)
+  assert.match(source, /<ArtTable[\s\S]*visual-variant="ledger"/)
+  assert.match(source, /pageSize: 200/)
+  assert.match(source, /paginationKey: \{ current: 'page', size: 'pageSize' \}/)
+  assert.match(source, /fetchTaskTableData/)
+  assert.match(source, /fetchReviewTableData/)
+  assert.match(source, /fetchAlertTableData/)
+})
+
+test('qq governance uses the shared table header for rules and group status', () => {
+  assert.match(source, /v-model:columns="policyColumns"/)
+  assert.match(source, /@refresh="loadRules"/)
+  assert.match(source, /v-model:columns="groupColumns"/)
+  assert.match(source, /@refresh="loadGroups"/)
+  assert.doesNotMatch(source, /class="toolbar"/)
+})
+
+test('qq governance gives each operation table a shared header and preserves visible columns', () => {
+  assert.match(source, /v-model:columns="taskColumnChecks"/)
+  assert.match(source, /v-model:columns="reviewColumnChecks"/)
+  assert.match(source, /v-model:columns="alertColumnChecks"/)
+  assert.match(source, /:columns="visiblePolicyColumns"/)
+  assert.match(source, /:columns="visibleGroupColumns"/)
+  assert.match(source, /\.art-table-card \.el-card__body/)
+})

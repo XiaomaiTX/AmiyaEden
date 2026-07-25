@@ -12,125 +12,122 @@
 
     <ElTabs v-model="activeTab" class="qq-governance-tabs">
       <ElTabPane :label="t('qqGovernance.v2.rules')" name="rules">
-        <div class="toolbar"
-          ><ElButton type="primary" @click="openPolicyDialog()">{{
-            t('qqGovernance.actions.addPolicy')
-          }}</ElButton></div
-        >
-        <ElCard class="art-table-card" shadow="never"
-          ><ElTable v-loading="loading.policies" :data="policies" border stripe>
-            <ElTableColumn :label="t('qqGovernance.v2.groupName')" min-width="180"
-              ><template #default="{ row }">{{
-                groupNames.get(row.group_id) || '-'
-              }}</template></ElTableColumn
-            >
-            <ElTableColumn
-              prop="group_id"
-              :label="t('qqGovernance.fields.groupId')"
-              width="150"
-              sortable
-            />
-            <ElTableColumn :label="t('qqGovernance.fields.enabled')" width="100"
-              ><template #default="{ row }"
-                ><ElTag :type="row.enabled ? 'success' : 'info'">{{
-                  row.enabled ? t('common.enable') : t('common.disable')
-                }}</ElTag></template
-              ></ElTableColumn
-            >
-            <ElTableColumn :label="t('qqGovernance.v2.memberCount')" width="120"
-              ><template #default="{ row }">{{
-                groupStatuses.get(row.group_id)?.member_count ?? '-'
-              }}</template></ElTableColumn
-            >
-            <ElTableColumn :label="t('common.operation')" width="220" fixed="right"
-              ><template #default="{ row }"
-                ><ElButton text type="primary" @click="openPolicyDialog(row)">{{
-                  t('qqGovernance.actions.edit')
-                }}</ElButton
-                ><ElButton text type="primary" @click="reconcile(row.group_id)">{{
-                  t('qqGovernance.actions.reconcile')
-                }}</ElButton
-                ><ElPopconfirm
-                  :title="t('qqGovernance.messages.deleteConfirm')"
-                  @confirm="removePolicy(row.group_id)"
-                  ><template #reference
-                    ><ElButton text type="danger">{{
-                      t('qqGovernance.actions.delete')
-                    }}</ElButton></template
-                  ></ElPopconfirm
-                ></template
-              ></ElTableColumn
-            >
-          </ElTable></ElCard
-        >
+        <ElCard class="art-table-card" shadow="never">
+          <ArtTableHeader
+            v-model:columns="policyColumns"
+            :loading="loading.policies"
+            @refresh="loadRules"
+          >
+            <template #left>
+              <ElButton type="primary" @click="openPolicyDialog()">
+                {{ t('qqGovernance.actions.addPolicy') }}
+              </ElButton>
+            </template>
+          </ArtTableHeader>
+          <ArtTable :loading="loading.policies" :data="policies" :columns="visiblePolicyColumns">
+            <template #group_name="{ row }">{{ groupNames.get(row.group_id) || '-' }}</template>
+            <template #enabled="{ row }">
+              <ElTag :type="row.enabled ? 'success' : 'info'">
+                {{ row.enabled ? t('common.enable') : t('common.disable') }}
+              </ElTag>
+            </template>
+            <template #member_count="{ row }">
+              {{ groupStatuses.get(row.group_id)?.member_count ?? '-' }}
+            </template>
+            <template #operation="{ row }">
+              <ElTooltip :content="t('qqGovernance.actions.edit')" placement="top">
+                <ElButton
+                  text
+                  type="primary"
+                  :icon="Edit"
+                  :aria-label="t('qqGovernance.actions.edit')"
+                  @click="openPolicyDialog(row)"
+                />
+              </ElTooltip>
+              <ElTooltip :content="t('qqGovernance.actions.reconcile')" placement="top">
+                <ElButton
+                  text
+                  type="primary"
+                  :icon="Refresh"
+                  :aria-label="t('qqGovernance.actions.reconcile')"
+                  @click="reconcile(row.group_id)"
+                />
+              </ElTooltip>
+              <ElPopconfirm
+                :title="t('qqGovernance.messages.deleteConfirm')"
+                @confirm="removePolicy(row.group_id)"
+              >
+                <template #reference>
+                  <ElTooltip :content="t('qqGovernance.actions.delete')" placement="top">
+                    <ElButton
+                      text
+                      type="danger"
+                      :icon="Delete"
+                      :aria-label="t('qqGovernance.actions.delete')"
+                    />
+                  </ElTooltip>
+                </template>
+              </ElPopconfirm>
+            </template>
+          </ArtTable>
+        </ElCard>
       </ElTabPane>
 
       <ElTabPane :label="t('qqGovernance.v2.groups')" name="groups">
-        <ElCard class="art-table-card" shadow="never"
-          ><ElTable v-loading="loading.groups" :data="groups" border stripe>
-            <ElTableColumn prop="group_name" :label="t('qqGovernance.v2.groupName')" min-width="170"
-              ><template #default="{ row }">{{ row.group_name || '-' }}</template></ElTableColumn
-            ><ElTableColumn prop="group_id" :label="t('qqGovernance.fields.groupId')" width="150" />
-            <ElTableColumn :label="t('qqGovernance.v2.memberCount')" width="140"
-              ><template #default="{ row }"
-                >{{ row.member_count
-                }}<span v-if="row.max_member_count"> / {{ row.max_member_count }}</span></template
-              ></ElTableColumn
-            >
-            <ElTableColumn :label="t('qqGovernance.fields.botAdmin')" width="140"
-              ><template #default="{ row }"
-                ><ElTag v-if="row.bot_is_admin === true" type="success">{{
-                  t('qqGovernance.values.yes')
-                }}</ElTag
-                ><ElTag v-else-if="row.bot_is_admin === false" type="danger">{{
-                  t('qqGovernance.values.no')
-                }}</ElTag
-                ><ElTag v-else type="info">{{ t('qqGovernance.values.unknown') }}</ElTag></template
-              ></ElTableColumn
-            >
-            <ElTableColumn :label="t('qqGovernance.v2.progress')" min-width="160"
-              ><template #default="{ row }"
-                ><span v-if="row.reconcile_run_status"
-                  >{{ row.reconcile_processed }} / {{ row.reconcile_expected }}
-                  <ElTag class="ml-2" size="small" :type="runTag(row.reconcile_run_status)">{{
-                    runLabel(row.reconcile_run_status)
-                  }}</ElTag></span
-                ><span v-else>-</span></template
-              ></ElTableColumn
-            >
-            <ElTableColumn
-              prop="valid_count"
-              :label="t('qqGovernance.v2.valid')"
-              width="110"
-            /><ElTableColumn
-              prop="review_count"
-              :label="t('qqGovernance.v2.review')"
-              width="110"
-            /><ElTableColumn :label="t('qqGovernance.v2.invalid')" width="110"
-              ><template #default="{ row }">{{
-                row.invalid_candidate_count + row.invalid_confirmed_count
-              }}</template></ElTableColumn
-            >
-            <ElTableColumn :label="t('qqGovernance.v2.snapshot')" width="120"
-              ><template #default="{ row }"
-                ><ElTag :type="snapshotTag(row.snapshot_state)">{{
-                  snapshotLabel(row.snapshot_state)
-                }}</ElTag></template
-              ></ElTableColumn
-            ><ElTableColumn :label="t('qqGovernance.v2.lastSync')" min-width="180"
-              ><template #default="{ row }">{{
-                formatTime(row.last_synced_at) || '-'
-              }}</template></ElTableColumn
-            >
-            <ElTableColumn :label="t('common.operation')" width="120" fixed="right"
-              ><template #default="{ row }"
-                ><ElButton text type="primary" @click="reconcile(row.group_id)">{{
-                  t('qqGovernance.actions.reconcile')
-                }}</ElButton></template
-              ></ElTableColumn
-            >
-          </ElTable></ElCard
-        >
+        <ElCard class="art-table-card" shadow="never">
+          <ArtTableHeader
+            v-model:columns="groupColumns"
+            :loading="loading.groups"
+            @refresh="loadGroups"
+          />
+          <ArtTable :loading="loading.groups" :data="groups" :columns="visibleGroupColumns">
+            <template #group_name="{ row }">{{ row.group_name || '-' }}</template>
+            <template #member_count="{ row }">
+              {{ row.member_count
+              }}<span v-if="row.max_member_count"> / {{ row.max_member_count }}</span>
+            </template>
+            <template #bot_is_admin="{ row }">
+              <ElTag v-if="row.bot_is_admin === true" type="success">{{
+                t('qqGovernance.values.yes')
+              }}</ElTag>
+              <ElTag v-else-if="row.bot_is_admin === false" type="danger">{{
+                t('qqGovernance.values.no')
+              }}</ElTag>
+              <ElTag v-else type="info">{{ t('qqGovernance.values.unknown') }}</ElTag>
+            </template>
+            <template #progress="{ row }">
+              <span v-if="row.reconcile_run_status">
+                {{ row.reconcile_processed }} / {{ row.reconcile_expected }}
+                <ElTag class="ml-2" size="small" :type="runTag(row.reconcile_run_status)">
+                  {{ runLabel(row.reconcile_run_status) }}
+                </ElTag>
+              </span>
+              <span v-else>-</span>
+            </template>
+            <template #invalid_count="{ row }">
+              {{ row.invalid_candidate_count + row.invalid_confirmed_count }}
+            </template>
+            <template #snapshot_state="{ row }">
+              <ElTag :type="snapshotTag(row.snapshot_state)">{{
+                snapshotLabel(row.snapshot_state)
+              }}</ElTag>
+            </template>
+            <template #last_synced_at="{ row }">{{
+              formatTime(row.last_synced_at) || '-'
+            }}</template>
+            <template #operation="{ row }">
+              <ElTooltip :content="t('qqGovernance.actions.reconcile')" placement="top">
+                <ElButton
+                  text
+                  type="primary"
+                  :icon="Refresh"
+                  :aria-label="t('qqGovernance.actions.reconcile')"
+                  @click="reconcile(row.group_id)"
+                />
+              </ElTooltip>
+            </template>
+          </ArtTable>
+        </ElCard>
       </ElTabPane>
 
       <ElTabPane :label="t('qqGovernance.v2.operations')" name="operations">
@@ -178,112 +175,99 @@
             ></ElCol
           ></ElRow
         >
-        <ElTabs v-model="operationTab"
-          ><ElTabPane :label="t('qqGovernance.v2.queue')" name="tasks"
-            ><ElCard class="art-table-card" shadow="never"
-              ><ElTable v-loading="loading.tasks" :data="tasks.list" border stripe
-                ><ElTableColumn prop="id" label="ID" width="90" sortable /><ElTableColumn
-                  prop="action_type"
-                  :label="t('qqGovernance.fields.actionType')"
-                  width="130"
-                  sortable
-                  ><template #default="{ row }">{{
-                    actionLabel(row.action_type)
-                  }}</template></ElTableColumn
-                ><ElTableColumn
-                  prop="group_id"
-                  :label="t('qqGovernance.fields.groupId')"
-                  width="130"
-                  sortable
-                /><ElTableColumn
-                  prop="qq"
-                  :label="t('qqGovernance.fields.qq')"
-                  width="140"
-                  sortable
-                /><ElTableColumn
-                  prop="status"
-                  :label="t('qqGovernance.fields.status')"
-                  width="130"
-                  sortable
-                /><ElTableColumn
-                  prop="retry_count"
-                  :label="t('qqGovernance.fields.retryCount')"
-                  width="110"
-                  sortable
-                /><ElTableColumn
-                  prop="last_error"
-                  :label="t('qqGovernance.fields.error')"
-                  min-width="220"
-                  show-overflow-tooltip
-                /><ElTableColumn :label="t('common.operation')" width="120"
-                  ><template #default="{ row }"
-                    ><ElButton
-                      v-if="row.status === 'dead'"
+        <ElTabs v-model="operationTab" class="operation-tabs">
+          <ElTabPane :label="t('qqGovernance.v2.queue')" name="tasks">
+            <ElCard class="art-table-card" shadow="never">
+              <ArtTableHeader
+                v-model:columns="taskColumnChecks"
+                :loading="taskLoading"
+                @refresh="taskTable.refreshData"
+              />
+              <ArtTable
+                :loading="taskLoading"
+                :data="taskData"
+                :columns="taskColumns"
+                :pagination="taskPagination"
+                visual-variant="ledger"
+                @pagination:size-change="taskHandleSizeChange"
+                @pagination:current-change="taskHandleCurrentChange"
+              >
+                <template #action_type="{ row }">{{ actionLabel(row.action_type) }}</template>
+                <template #operation="{ row }">
+                  <ElTooltip
+                    v-if="row.status === 'dead'"
+                    :content="t('qqGovernance.actions.retry')"
+                    placement="top"
+                  >
+                    <ElButton
                       text
                       type="primary"
+                      :icon="RefreshRight"
+                      :aria-label="t('qqGovernance.actions.retry')"
                       @click="retryTask(row.id)"
-                      >{{ t('qqGovernance.actions.retry') }}</ElButton
-                    ></template
-                  ></ElTableColumn
-                ></ElTable
-              ></ElCard
-            ></ElTabPane
-          >
-          <ElTabPane :label="t('qqGovernance.v2.history')" name="reviews"
-            ><ElCard class="art-table-card" shadow="never"
-              ><ElTable v-loading="loading.reviews" :data="reviews.list" border stripe
-                ><ElTableColumn
-                  prop="group_id"
-                  :label="t('qqGovernance.fields.groupId')"
-                  width="130" /><ElTableColumn
-                  prop="qq"
-                  :label="t('qqGovernance.fields.qq')"
-                  width="140" /><ElTableColumn
-                  prop="decision"
-                  :label="t('qqGovernance.fields.decision')"
-                  width="130" /><ElTableColumn
-                  prop="reason"
-                  :label="t('qqGovernance.fields.reason')"
-                  min-width="300"
-                  show-overflow-tooltip /><ElTableColumn
-                  prop="created_at"
-                  :label="t('common.createdAt')"
-                  min-width="180"
-                  sortable /></ElTable></ElCard
-          ></ElTabPane>
-          <ElTabPane :label="t('qqGovernance.tabs.alerts')" name="alerts"
-            ><ElCard class="art-table-card" shadow="never"
-              ><ElTable v-loading="loading.alerts" :data="alerts.list" border stripe
-                ><ElTableColumn
-                  prop="kind"
-                  :label="t('qqGovernance.fields.status')"
-                  width="140"
-                /><ElTableColumn
-                  prop="group_id"
-                  :label="t('qqGovernance.fields.groupId')"
-                  width="130"
-                /><ElTableColumn
-                  prop="message"
-                  :label="t('qqGovernance.fields.message')"
-                  min-width="280"
-                /><ElTableColumn
-                  prop="status"
-                  :label="t('qqGovernance.fields.status')"
-                  width="140"
-                /><ElTableColumn :label="t('common.operation')" width="120"
-                  ><template #default="{ row }"
-                    ><ElButton
-                      v-if="row.status === 'open'"
+                    />
+                  </ElTooltip>
+                </template>
+              </ArtTable>
+            </ElCard>
+          </ElTabPane>
+          <ElTabPane :label="t('qqGovernance.v2.history')" name="reviews">
+            <ElCard class="art-table-card" shadow="never">
+              <ArtTableHeader
+                v-model:columns="reviewColumnChecks"
+                :loading="reviewLoading"
+                @refresh="reviewTable.refreshData"
+              />
+              <ArtTable
+                :loading="reviewLoading"
+                :data="reviewData"
+                :columns="reviewColumns"
+                :pagination="reviewPagination"
+                visual-variant="ledger"
+                @pagination:size-change="reviewHandleSizeChange"
+                @pagination:current-change="reviewHandleCurrentChange"
+              >
+                <template #decision="{ row }">{{ row.decision }}</template>
+              </ArtTable>
+            </ElCard>
+          </ElTabPane>
+          <ElTabPane :label="t('qqGovernance.tabs.alerts')" name="alerts">
+            <ElCard class="art-table-card" shadow="never">
+              <ArtTableHeader
+                v-model:columns="alertColumnChecks"
+                :loading="alertLoading"
+                @refresh="alertTable.refreshData"
+              />
+              <ArtTable
+                :loading="alertLoading"
+                :data="alertData"
+                :columns="alertColumns"
+                :pagination="alertPagination"
+                visual-variant="ledger"
+                @pagination:size-change="alertHandleSizeChange"
+                @pagination:current-change="alertHandleCurrentChange"
+              >
+                <template #status="{ row }">
+                  <ElTag :type="row.status === 'open' ? 'danger' : 'info'">{{ row.status }}</ElTag>
+                </template>
+                <template #operation="{ row }">
+                  <ElTooltip
+                    v-if="row.status === 'open'"
+                    :content="t('qqGovernance.actions.ack')"
+                    placement="top"
+                  >
+                    <ElButton
                       text
                       type="primary"
+                      :icon="CircleCheck"
+                      :aria-label="t('qqGovernance.actions.ack')"
                       @click="acknowledge(row.id)"
-                      >{{ t('qqGovernance.actions.ack') }}</ElButton
-                    ></template
-                  ></ElTableColumn
-                ></ElTable
-              ></ElCard
-            ></ElTabPane
-          >
+                    />
+                  </ElTooltip>
+                </template>
+              </ArtTable>
+            </ElCard>
+          </ElTabPane>
         </ElTabs>
       </ElTabPane>
 
@@ -385,9 +369,15 @@
           ><ElInput
             v-model="policyForm.card_template"
             type="textarea"
-            maxlength="60"
+            maxlength="100"
             show-word-limit
-          /><div class="form-hint">{{ t('qqGovernance.v2.templateHint') }}</div></ElFormItem
+          /><div class="form-hint">{{
+            t('qqGovernance.v2.templateHint', {
+              nickname: '{nickname}',
+              primary_character_name: '{primary_character_name}',
+              primary_corporation_name: '{primary_corporation_name}'
+            })
+          }}</div></ElFormItem
         ></ElForm
       ><template #footer
         ><ElButton @click="policyDialog = false">{{ t('common.cancel') }}</ElButton
@@ -402,6 +392,9 @@
 <script setup lang="ts">
   import { computed, reactive, ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { CircleCheck, Delete, Edit, Refresh, RefreshRight } from '@element-plus/icons-vue'
+  import { useTable } from '@/hooks/core/useTable'
+  import type { ColumnOption } from '@/types/component'
   import { formatTime } from '@/utils/common'
   import { fetchGetRoleDefinitions } from '@/api/system-manage'
   import {
@@ -436,24 +429,6 @@
     corporationOptions = ref<Api.QQGovernance.CorporationOption[]>([]),
     roleOptions = ref<Api.SystemManage.RoleDefinition[]>([]),
     searchingCorporations = ref(false)
-  const tasks = ref<Api.QQGovernance.PageResult<Api.QQGovernance.ActionTask>>({
-      list: [],
-      total: 0,
-      page: 1,
-      page_size: 100
-    }),
-    reviews = ref<Api.QQGovernance.PageResult<Api.QQGovernance.Review>>({
-      list: [],
-      total: 0,
-      page: 1,
-      page_size: 100
-    }),
-    alerts = ref<Api.QQGovernance.PageResult<Api.QQGovernance.Alert>>({
-      list: [],
-      total: 0,
-      page: 1,
-      page_size: 100
-    })
   const metrics = ref<Api.QQGovernance.Metrics>({
       window_minutes: 60,
       created: 0,
@@ -472,10 +447,7 @@
   })
   const loading = reactive({
     policies: false,
-    groups: false,
-    tasks: false,
-    reviews: false,
-    alerts: false
+    groups: false
   })
   const operationFilters = reactive({ groupId: '', status: '', actionType: '', decision: '' })
   const policyForm = reactive({
@@ -526,6 +498,194 @@
     }
     return labels[action] ? t(labels[action]) : action
   }
+
+  type QQTableParams = Omit<Api.QQGovernance.PageParams, 'page_size'> & { pageSize?: number }
+  const fetchTaskTableData = async (
+    params: QQTableParams
+  ): Promise<Api.Common.PaginatedResponse<Api.QQGovernance.ActionTask>> => {
+    const { pageSize, ...query } = params
+    const response = await fetchQQGovernanceTasks({ ...query, page_size: pageSize })
+    return {
+      list: response.list,
+      total: response.total,
+      page: response.page,
+      pageSize: response.page_size
+    }
+  }
+  const fetchReviewTableData = async (
+    params: QQTableParams
+  ): Promise<Api.Common.PaginatedResponse<Api.QQGovernance.Review>> => {
+    const { pageSize, ...query } = params
+    const response = await fetchQQGovernanceReviews({ ...query, page_size: pageSize })
+    return {
+      list: response.list,
+      total: response.total,
+      page: response.page,
+      pageSize: response.page_size
+    }
+  }
+  const fetchAlertTableData = async (
+    params: QQTableParams
+  ): Promise<Api.Common.PaginatedResponse<Api.QQGovernance.Alert>> => {
+    const { pageSize, ...query } = params
+    const response = await fetchQQGovernanceAlerts({ ...query, page_size: pageSize })
+    return {
+      list: response.list,
+      total: response.total,
+      page: response.page,
+      pageSize: response.page_size
+    }
+  }
+
+  const policyColumns = ref<ColumnOption<Api.QQGovernance.Policy>[]>([
+    {
+      prop: 'group_name',
+      label: t('qqGovernance.v2.groupName'),
+      minWidth: 180,
+      useSlot: true
+    },
+    { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 150, sortable: true },
+    { prop: 'enabled', label: t('qqGovernance.fields.enabled'), useSlot: true },
+    { prop: 'member_count', label: t('qqGovernance.v2.memberCount'), useSlot: true },
+    {
+      prop: 'operation',
+      label: t('common.operation'),
+      width: 130,
+      fixed: 'right',
+      useSlot: true
+    }
+  ])
+
+  const groupColumns = ref<ColumnOption<Api.QQGovernance.GroupStatus>[]>([
+    { prop: 'group_name', label: t('qqGovernance.v2.groupName'), minWidth: 170 },
+    { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 150 },
+    { prop: 'member_count', label: t('qqGovernance.v2.memberCount'), width: 140, useSlot: true },
+    { prop: 'bot_is_admin', label: t('qqGovernance.fields.botAdmin'), width: 140, useSlot: true },
+    { prop: 'progress', label: t('qqGovernance.v2.progress'), minWidth: 160, useSlot: true },
+    { prop: 'valid_count', label: t('qqGovernance.v2.valid'), width: 110 },
+    { prop: 'review_count', label: t('qqGovernance.v2.review'), width: 110 },
+    { prop: 'invalid_count', label: t('qqGovernance.v2.invalid'), width: 110, useSlot: true },
+    { prop: 'snapshot_state', label: t('qqGovernance.v2.snapshot'), width: 120, useSlot: true },
+    { prop: 'last_synced_at', label: t('qqGovernance.v2.lastSync'), minWidth: 180, useSlot: true },
+    { prop: 'operation', label: t('common.operation'), width: 80, fixed: 'right', useSlot: true }
+  ])
+  const visiblePolicyColumns = computed(() =>
+    policyColumns.value.filter((column) => column.visible !== false && column.checked !== false)
+  )
+  const visibleGroupColumns = computed(() =>
+    groupColumns.value.filter((column) => column.visible !== false && column.checked !== false)
+  )
+
+  const taskTable = useTable({
+    core: {
+      apiFn: fetchTaskTableData,
+      apiParams: { page: 1, pageSize: 200 },
+      paginationKey: { current: 'page', size: 'pageSize' },
+      immediate: false,
+      columnsFactory: () => [
+        { prop: 'id', label: 'ID', width: 90, sortable: true },
+        {
+          prop: 'action_type',
+          label: t('qqGovernance.fields.actionType'),
+          width: 150,
+          useSlot: true
+        },
+        { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 130, sortable: true },
+        { prop: 'qq', label: t('qqGovernance.fields.qq'), width: 140, sortable: true },
+        { prop: 'status', label: t('qqGovernance.fields.status'), width: 130, sortable: true },
+        {
+          prop: 'retry_count',
+          label: t('qqGovernance.fields.retryCount'),
+          width: 110,
+          sortable: true
+        },
+        {
+          prop: 'last_error',
+          label: t('qqGovernance.fields.error'),
+          minWidth: 220,
+          showOverflowTooltip: true
+        },
+        { prop: 'operation', label: t('common.operation'), width: 80, useSlot: true }
+      ]
+    }
+  })
+
+  const reviewTable = useTable({
+    core: {
+      apiFn: fetchReviewTableData,
+      apiParams: { page: 1, pageSize: 200 },
+      paginationKey: { current: 'page', size: 'pageSize' },
+      immediate: false,
+      columnsFactory: () => [
+        { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 130 },
+        { prop: 'qq', label: t('qqGovernance.fields.qq'), width: 140 },
+        { prop: 'decision', label: t('qqGovernance.fields.decision'), width: 130, useSlot: true },
+        {
+          prop: 'reason',
+          label: t('qqGovernance.fields.reason'),
+          minWidth: 300,
+          showOverflowTooltip: true
+        },
+        {
+          prop: 'created_at',
+          label: t('common.createdAt'),
+          minWidth: 180,
+          sortable: true,
+          formatter: (row) => formatTime(row.created_at)
+        }
+      ]
+    }
+  })
+
+  const alertTable = useTable({
+    core: {
+      apiFn: fetchAlertTableData,
+      apiParams: { page: 1, pageSize: 200 },
+      paginationKey: { current: 'page', size: 'pageSize' },
+      immediate: false,
+      columnsFactory: () => [
+        { prop: 'kind', label: t('qqGovernance.fields.status'), width: 140 },
+        { prop: 'group_id', label: t('qqGovernance.fields.groupId'), width: 130 },
+        {
+          prop: 'message',
+          label: t('qqGovernance.fields.message'),
+          minWidth: 280,
+          showOverflowTooltip: true
+        },
+        { prop: 'status', label: t('qqGovernance.fields.status'), width: 140, useSlot: true },
+        { prop: 'operation', label: t('common.operation'), width: 80, useSlot: true }
+      ]
+    }
+  })
+
+  const {
+    data: taskData,
+    loading: taskLoading,
+    pagination: taskPagination,
+    columns: taskColumns,
+    columnChecks: taskColumnChecks,
+    handleSizeChange: taskHandleSizeChange,
+    handleCurrentChange: taskHandleCurrentChange
+  } = taskTable
+  const {
+    data: reviewData,
+    loading: reviewLoading,
+    pagination: reviewPagination,
+    columns: reviewColumns,
+    columnChecks: reviewColumnChecks,
+    handleSizeChange: reviewHandleSizeChange,
+    handleCurrentChange: reviewHandleCurrentChange
+  } = reviewTable
+  const {
+    data: alertData,
+    loading: alertLoading,
+    pagination: alertPagination,
+    columns: alertColumns,
+    columnChecks: alertColumnChecks,
+    handleSizeChange: alertHandleSizeChange,
+    handleCurrentChange: alertHandleCurrentChange
+  } = alertTable
+
   function resetPolicyForm() {
     Object.assign(policyForm, {
       group_id: '',
@@ -554,36 +714,28 @@
     }
   }
   async function loadOperations() {
-    loading.tasks = loading.reviews = loading.alerts = true
-    try {
-      const [taskRows, reviewRows, alertRows, metricRows] = await Promise.all([
-        fetchQQGovernanceTasks({
-          page: 1,
-          page_size: 100,
-          group_id: Number(operationFilters.groupId) || undefined,
-          status: operationFilters.status || undefined,
-          action_type: operationFilters.actionType || undefined
-        }),
-        fetchQQGovernanceReviews({
-          page: 1,
-          page_size: 100,
-          group_id: Number(operationFilters.groupId) || undefined,
-          decision: operationFilters.decision || undefined
-        }),
-        fetchQQGovernanceAlerts({
-          page: 1,
-          page_size: 100,
-          status: operationFilters.status || undefined
-        }),
-        fetchQQGovernanceMetrics()
-      ])
-      tasks.value = taskRows
-      reviews.value = reviewRows
-      alerts.value = alertRows
-      metrics.value = metricRows
-    } finally {
-      loading.tasks = loading.reviews = loading.alerts = false
-    }
+    Object.assign(taskTable.searchParams, {
+      page: 1,
+      group_id: Number(operationFilters.groupId) || undefined,
+      status: operationFilters.status || undefined,
+      action_type: operationFilters.actionType || undefined
+    })
+    Object.assign(reviewTable.searchParams, {
+      page: 1,
+      group_id: Number(operationFilters.groupId) || undefined,
+      decision: operationFilters.decision || undefined
+    })
+    Object.assign(alertTable.searchParams, {
+      page: 1,
+      status: operationFilters.status || undefined
+    })
+    const [, , , metricRows] = await Promise.all([
+      taskTable.getData(),
+      reviewTable.getData(),
+      alertTable.getData(),
+      fetchQQGovernanceMetrics()
+    ])
+    metrics.value = metricRows
   }
   function resetOperationFilters() {
     Object.assign(operationFilters, { groupId: '', status: '', actionType: '', decision: '' })
@@ -679,11 +831,11 @@
   }
   async function retryTask(id: number) {
     await retryQQGovernanceTask(id)
-    await loadOperations()
+    await taskTable.refreshData()
   }
   async function acknowledge(id: number) {
     await acknowledgeQQGovernanceAlert(id)
-    await loadOperations()
+    await alertTable.refreshData()
   }
   async function saveSettings() {
     savingSettings.value = true
@@ -707,8 +859,7 @@
     flex-direction: column;
     gap: 16px;
   }
-  .page-title,
-  .toolbar {
+  .page-title {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -721,12 +872,28 @@
     gap: 8px 12px;
     margin-bottom: 12px;
   }
-  .toolbar {
-    justify-content: flex-end;
-    margin-bottom: 12px;
-  }
   .qq-governance-tabs :deep(.el-tabs__content) {
     overflow: visible;
+  }
+  .qq-governance-page :deep(.art-table-card .el-card__body) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .qq-governance-page :deep(.art-table-card .art-table) {
+    min-height: 0;
+  }
+  .qq-governance-tabs :deep(.el-tab-pane) {
+    min-height: 0;
+  }
+  .operation-tabs :deep(.el-tab-pane) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .operation-tabs :deep(.art-table-card),
+  .operation-tabs :deep(.art-table-card .el-card__body) {
+    min-height: 0;
   }
   .form-hint {
     margin-top: 6px;
