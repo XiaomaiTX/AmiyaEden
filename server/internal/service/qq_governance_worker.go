@@ -88,6 +88,12 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 }
 
 func (s *QQGovernanceService) actionStillValid(task *model.QQGovernanceActionTask) (bool, string, error) {
+	if task.ActionType == model.QQGovernanceActionNotify {
+		if task.GroupID <= 0 {
+			return false, "通知任务缺少目标群号", nil
+		}
+		return true, "", nil
+	}
 	if _, err := s.repo.GetEnabledPolicy(task.GroupID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, "群治理规则已禁用或删除", nil
@@ -178,6 +184,11 @@ func paramsForQQGovernanceAction(task *model.QQGovernanceActionTask) (map[string
 		return map[string]any{"group_id": task.GroupID, "user_id": task.QQ, "card": payload.Card}, nil
 	case model.QQGovernanceActionKick:
 		return map[string]any{"group_id": task.GroupID, "user_id": task.QQ, "reject_add_request": false}, nil
+	case model.QQGovernanceActionNotify:
+		if strings.TrimSpace(payload.Message) == "" {
+			return nil, errors.New("群通知动作缺少消息内容")
+		}
+		return map[string]any{"group_id": task.GroupID, "message": payload.Message}, nil
 	default:
 		return nil, fmt.Errorf("未知 QQ 治理动作: %s", task.ActionType)
 	}
@@ -191,6 +202,9 @@ func oneBotActionName(kind string) string {
 	}
 	if kind == model.QQGovernanceActionKick {
 		return "set_group_kick"
+	}
+	if kind == model.QQGovernanceActionNotify {
+		return "send_group_msg"
 	}
 	return kind
 }

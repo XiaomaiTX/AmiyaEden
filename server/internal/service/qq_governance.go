@@ -49,6 +49,7 @@ type qqGovernanceActionPayload struct {
 	Card        string `json:"card"`
 	RunID       uint   `json:"run_id"`
 	Batch       int    `json:"batch"`
+	Message     string `json:"message"`
 }
 type qqEligibility struct {
 	Decision, Reason, Nickname, CharacterName, CorporationName, TargetCard string
@@ -252,6 +253,50 @@ func (s *QQGovernanceService) enqueueCard(tx *gorm.DB, state *model.QQGroupMembe
 	payload, _ := json.Marshal(qqGovernanceActionPayload{Card: state.TargetCard})
 	_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionSetCard, IdempotencyKey: fmt.Sprintf("card:%d:%d", event.GroupID, event.QQ), GroupID: event.GroupID, QQ: event.QQ, TargetVersion: state.Version, PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 30, RunAfter: now.Add(15*time.Second + time.Duration(rand.IntN(46))*time.Second)})
 	return err
+}
+
+// EnqueueGroupNotifications 为 qq_governance_onebot webhook 入口创建多群通知任务。
+// 多群入队使用同一事务，避免部分成功造成部分发送。每个群使用独立幂等键以允许重试。
+func (s *QQGovernanceService) EnqueueGroupNotifications(groupIDs []int64, content string) error {
+	trimmedContent := strings.TrimSpace(content)
+	if trimmedContent == "" {
+		return errors.New("QQ 群治理通知内容不能为空")
+	}
+	ids, err := normalizeQQGovernanceGroupIDs(groupIDs)
+	if err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return errors.New("QQ 群治理通知目标群号不能为空")
+	}
+	payload, err := json.Marshal(qqGovernanceActionPayload{Message: trimmedContent})
+	if err != nil {
+		return err
+	}
+	now := s.now()
+	return s.repo.Transaction(func(tx *gorm.DB) error {
+		for _, groupID := range ids {
+			token, err := newQQGovernanceLeaseToken()
+			if err != nil {
+				return err
+			}
+			task := &model.QQGovernanceActionTask{
+				ActionType:     model.QQGovernanceActionNotify,
+				IdempotencyKey: fmt.Sprintf("webhook-notify:%d:%s", groupID, token),
+				GroupID:        groupID,
+				QQ:             0,
+				PayloadJSON:    string(payload),
+				Status:         model.QQGovernanceActionPending,
+				Priority:       20,
+				RunAfter:       now.Add(2*time.Second + time.Duration(rand.IntN(5))*time.Second),
+				Source:         "webhook",
+			}
+			if _, err := s.repo.CreateActionTaskIfAbsentTx(tx, task); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func parseQQGovernanceCorps(raw string) ([]int64, error) {

@@ -719,12 +719,16 @@
       obTargetIdPlaceholder: '请输入群号或 QQ 号',
       obToken: 'Access Token',
       obTokenPlaceholder: '请输入 Token',
+      qqGroupIds: 'QQ 群号',
+      qqGroupIdsPlaceholder: '每行一个 QQ 群号',
+      qqGroupIdsHint: '使用 QQ 群治理已建立的反向 WebSocket 连接发送，无需填写 URL 或 Token。',
     },
     types: {
       discord: 'Discord',
       feishu: '飞书',
       dingtalk: '钉钉',
       onebot: 'OneBot v11',
+      qqGovernanceOnebot: 'QQ 群治理 OneBot',
     },
     test: {
       title: '测试发送',
@@ -736,6 +740,7 @@
       sendBtn: '发送测试消息',
       success: 'Webhook 测试发送成功。',
       failed: 'Webhook 测试发送失败。',
+      qqGroupIdsHint: '测试发送只会将通知任务入队，是否成功送达由 QQ 群治理 Worker 与 OneBot 连接决定。',
     },
     messages: {
       loading: '正在加载 Webhook 配置...',
@@ -745,6 +750,8 @@
       saveSuccess: 'Webhook 配置已保存。',
       saveFailed: '保存 Webhook 配置失败。',
       urlRequired: '请输入 Webhook URL。',
+      invalidQQGroupId: 'QQ 群号必须为正整数。',
+      qqGroupIdsRequired: '请至少填写一个 QQ 群号。',
     },
   },
   skillPlan: {
