@@ -259,6 +259,13 @@ return {1, 0}`
 	return time.Duration(waitMS) * time.Millisecond, nil
 }
 
+func (s *QQGovernanceService) acquireQQGovernanceReadRateLimit(ctx context.Context, groupID int64) (time.Duration, error) {
+	return s.acquireQQGovernanceRateLimit(ctx, &model.QQGovernanceActionTask{
+		ActionType: model.QQGovernanceActionSnapshot,
+		GroupID:    groupID,
+	})
+}
+
 func qqGovernanceInt64(value any) (int64, bool) {
 	switch v := value.(type) {
 	case int64:

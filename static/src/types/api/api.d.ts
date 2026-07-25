@@ -350,6 +350,7 @@ declare namespace Api {
       enabled: boolean
       member_count: number
       max_member_count: number
+      bot_is_admin: boolean | null
       valid_count: number
       review_count: number
       invalid_candidate_count: number

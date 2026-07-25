@@ -37,15 +37,22 @@
                 }}</ElTag></template
               ></ElTableColumn
             >
-            <ElTableColumn :label="t('qqGovernance.fields.corporations')" min-width="220"
-              ><template #default="{ row }">{{ formatCorporations(row) }}</template></ElTableColumn
+            <ElTableColumn :label="t('qqGovernance.v2.memberCount')" width="120"
+              ><template #default="{ row }">{{
+                groupStatuses.get(row.group_id)?.member_count ?? '-'
+              }}</template></ElTableColumn
             >
-            <ElTableColumn
-              prop="card_template"
-              :label="t('qqGovernance.fields.cardTemplate')"
-              min-width="220"
-              show-overflow-tooltip
-            />
+            <ElTableColumn :label="t('qqGovernance.fields.botAdmin')" width="140"
+              ><template #default="{ row }"
+                ><ElTag v-if="row.bot_is_admin === true" type="success">{{
+                  t('qqGovernance.values.yes')
+                }}</ElTag
+                ><ElTag v-else-if="row.bot_is_admin === false" type="danger">{{
+                  t('qqGovernance.values.no')
+                }}</ElTag
+                ><ElTag v-else type="info">{{ t('qqGovernance.values.unknown') }}</ElTag></template
+              ></ElTableColumn
+            >
             <ElTableColumn :label="t('common.operation')" width="220" fixed="right"
               ><template #default="{ row }"
                 ><ElButton text type="primary" @click="openPolicyDialog(row)">{{
@@ -479,6 +486,9 @@
   const groupNames = computed(
     () => new Map(groups.value.map((group) => [group.group_id, group.group_name]))
   )
+  const groupStatuses = computed(
+    () => new Map(groups.value.map((group) => [group.group_id, group]))
+  )
   const metricCards = computed(() => [
     { label: t('qqGovernance.v2.overview'), value: metrics.value.created },
     { label: t('qqGovernance.values.connected'), value: metrics.value.succeeded },
@@ -586,22 +596,6 @@
   function formatCorporationLabel(corp: Api.QQGovernance.CorporationOption) {
     const name = corp.corporation_name || String(corp.corporation_id)
     return `${name} (${corp.corporation_id})`
-  }
-  function formatCorporations(row: Api.QQGovernance.Policy) {
-    const list = row.allowed_corporations?.length
-      ? row.allowed_corporations
-      : row.allowed_corporation_ids.map((id) => ({
-          corporation_id: id,
-          corporation_name: ''
-        }))
-    if (!list.length) return '-'
-    return list
-      .map((corp) =>
-        corp.corporation_name
-          ? `${corp.corporation_name} (${corp.corporation_id})`
-          : String(corp.corporation_id)
-      )
-      .join(', ')
   }
   async function refreshActive() {
     if (activeTab.value === 'rules') await Promise.all([loadRules(), loadGroups()])

@@ -130,6 +130,7 @@ type QQGroupRuntimeSnapshot struct {
 	GroupName         string     `gorm:"size:256;not null;default:''" json:"group_name"`
 	MemberCount       int        `gorm:"not null;default:0" json:"member_count"`
 	MaxMemberCount    int        `gorm:"not null;default:0" json:"max_member_count"`
+	BotIsAdmin        *bool      `json:"bot_is_admin"`
 	LastSyncAttemptAt time.Time  `gorm:"not null" json:"last_sync_attempt_at"`
 	LastSyncedAt      *time.Time `json:"last_synced_at"`
 	LastSyncError     string     `gorm:"type:text;not null;default:''" json:"last_sync_error"`
