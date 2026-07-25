@@ -316,6 +316,32 @@ func (r *QQGovernanceRepository) RetryDeadActionTask(id uint, now time.Time) err
 	return nil
 }
 
+// CancelPendingActionTasks cancels queued tasks for a group/action pair so the
+// worker no longer picks them up after a policy toggle disables the action.
+func (r *QQGovernanceRepository) CancelPendingActionTasks(groupID int64, actionType, reason string) error {
+	now := time.Now()
+	result := r.dbOrGlobal().Model(&model.QQGovernanceActionTask{}).
+		Where("group_id = ? AND action_type = ? AND status IN ?", groupID, actionType, []string{model.QQGovernanceActionPending, model.QQGovernanceActionRetryWait}).
+		Updates(map[string]any{"status": model.QQGovernanceActionCancelled, "completed_at": now, "lease_token": "", "claimed_at": nil, "lease_expires_at": nil, "last_error": reason})
+	return result.Error
+}
+
+// MarkMemberCardUpdated records a successful set_group_card against the matching
+// version. The version guard prevents a stale task from overwriting the field
+// after the member state has already advanced.
+func (r *QQGovernanceRepository) MarkMemberCardUpdated(groupID, qq int64, version uint64, now time.Time) error {
+	result := r.dbOrGlobal().Model(&model.QQGroupMemberState{}).
+		Where("group_id = ? AND qq = ? AND version = ?", groupID, qq, version).
+		Update("last_card_updated_at", now)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 // ClaimNextActionTask 采用条件更新领取任务；并发 worker 只能有一个成功取得租约。
 func (r *QQGovernanceRepository) ClaimNextActionTask(now time.Time, token string, lease time.Duration) (*model.QQGovernanceActionTask, error) {
 	if lease <= 0 {

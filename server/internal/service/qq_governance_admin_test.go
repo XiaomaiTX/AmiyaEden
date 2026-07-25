@@ -10,16 +10,16 @@ import (
 )
 
 func TestQQGovernanceServiceSavePolicy(t *testing.T) {
-	db := newServiceTestDB(t, "qq_governance_policy", &model.QQGroupGovernancePolicy{}, &model.EveEntityNameCache{})
+	db := newServiceTestDB(t, "qq_governance_policy", &model.QQGroupGovernancePolicy{}, &model.QQGovernanceActionTask{}, &model.EveEntityNameCache{})
 	origDB := global.DB
 	global.DB = db
 	defer func() { global.DB = origDB }()
 	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
-	policy, err := svc.SavePolicy(context.Background(), QQGovernancePolicyInput{GroupID: 100, Enabled: true, AllowedCorporationIDs: []int64{200}, AllowedRoleCodes: []string{model.RoleAdmin}, MemberViolationPolicy: model.QQGovernanceViolationAutoKick, CardTemplate: "{nickname}"}, 1)
+	policy, err := svc.SavePolicy(context.Background(), QQGovernancePolicyInput{GroupID: 100, Enabled: true, AllowedCorporationIDs: []int64{200}, AllowedRoleCodes: []string{model.RoleAdmin}, MemberViolationPolicy: model.QQGovernanceViolationAutoKick, CardTemplate: "{nickname}", CardSyncEnabled: true}, 1)
 	if err != nil {
 		t.Fatalf("save valid policy: %v", err)
 	}
-	if policy.GroupID != 100 || policy.MemberViolationPolicy != model.QQGovernanceViolationAutoKick {
+	if policy.GroupID != 100 || policy.MemberViolationPolicy != model.QQGovernanceViolationAutoKick || !policy.CardSyncEnabled {
 		t.Fatalf("policy = %#v", policy)
 	}
 }

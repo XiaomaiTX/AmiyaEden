@@ -264,6 +264,7 @@ declare namespace Api {
       auto_reject_unmatched: boolean
       member_violation_policy: 'review_only' | 'auto_kick_after_confirmed_mismatch'
       card_template: string
+      card_sync_enabled: boolean
       updated_by: number
       updated_at: string
     }
