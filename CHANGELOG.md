@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-07-26
+
+### Added
+
+- 新增 QQ 群治理能力增强：集中式治理配置、群运行快照、精确军团搜索与名称展示、机器人管理员状态、限流群资料刷新、名片同步和大数据量分页管理。
+- 新增 `qq_governance_onebot` Webhook，可通过 QQ 群治理 Worker 向多个群发送舰队 Ping 与系统通知，并复用连接管理、限流、重试和死信机制。
+- 新增 React 端 Dashboard Console，展示舰队参与、PAP 趋势、钱包/技能概览与 SRP 列表，替换原有统计占位内容。
+- 新增福利发放时资格复核与被拒申请重新提交能力。
+- 完成军团 capability Stage 0A 对齐：后端强制能力目录、Vue/React 路由与按钮门禁、审计记录及跨实例缓存一致性同步。
+
+### Changed
+
+- 将 SDE、联盟 PAP 和 OneBot 运行时配置从 YAML 迁移至 `system_config`，支持超级管理员在后台动态修改并记录审计；旧 YAML 配置不再作为运行时来源。
+- 将 QQ 群治理巡检重构为持久化运行快照与后台动作模型，完善幂等、进度恢复、事务复用和 OneBot WebSocket/NapCat 反向代理支持。
+- 完成 React 前端接入 CI/CD 与部署流程，并同步双前端迁移文档、路由/权限契约和能力映射。
+- 使用纯 Go SQLite 驱动并补充事务感知的仓储/服务方法，降低 CGO 依赖和事务内连接竞争风险。
+- 统一升级至 pnpm 11.15.1，启用严格依赖构建策略，并移除 Preview CI 中与 Docker 构建重复的编译步骤。
+
+### Fixed
+
+- 修复 OneBot 连接日志、军团 ID 规范化、模拟登录会话令牌更新及前端 ESI/工单测试稳定性问题。
+- 修复 QQ 群治理活动运行唯一性与重试进度计算问题，允许多个终态运行共存并避免任务卡死。
+- 优化 QQ 群治理表格响应式列宽、共享表格样式、操作入口和国际化提示，避免窄屏内容截断。
+
+### Migration
+
+- 部署后请在系统基础配置中检查并重新录入 SDE、联盟 PAP 和 OneBot 配置；相关配置已改由数据库统一管理。
+
 ## [1.15.0] - 2026-07-13
 
 ### Added

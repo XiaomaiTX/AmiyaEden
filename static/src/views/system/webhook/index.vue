@@ -25,12 +25,19 @@
             <ElOption :label="$t('webhook.providers.feishu')" value="feishu" />
             <ElOption :label="$t('webhook.providers.dingtalk')" value="dingtalk" />
             <ElOption :label="$t('webhook.providers.onebot')" value="onebot" />
-            <ElOption :label="$t('webhook.providers.qqGovernanceOnebot')" value="qq_governance_onebot" />
+            <ElOption
+              :label="$t('webhook.providers.qqGovernanceOnebot')"
+              value="qq_governance_onebot"
+            />
           </ElSelect>
         </ElFormItem>
 
         <!-- Webhook URL -->
-        <ElFormItem v-if="form.type !== 'qq_governance_onebot'" :label="$t('webhook.fields.url')" prop="url">
+        <ElFormItem
+          v-if="form.type !== 'qq_governance_onebot'"
+          :label="$t('webhook.fields.url')"
+          prop="url"
+        >
           <ElInput
             v-model="form.url"
             :placeholder="
@@ -43,7 +50,10 @@
         </ElFormItem>
 
         <!-- QQ 群治理目标群号 -->
-        <ElFormItem v-if="form.type === 'qq_governance_onebot'" :label="$t('webhook.fields.qqGroupIds')">
+        <ElFormItem
+          v-if="form.type === 'qq_governance_onebot'"
+          :label="$t('webhook.fields.qqGroupIds')"
+        >
           <div style="width: 100%">
             <ElInput
               v-model="qqGroupIdsText"
@@ -121,7 +131,10 @@
             <ElOption :label="$t('webhook.providers.feishu')" value="feishu" />
             <ElOption :label="$t('webhook.providers.dingtalk')" value="dingtalk" />
             <ElOption :label="$t('webhook.providers.onebot')" value="onebot" />
-            <ElOption :label="$t('webhook.providers.qqGovernanceOnebot')" value="qq_governance_onebot" />
+            <ElOption
+              :label="$t('webhook.providers.qqGovernanceOnebot')"
+              value="qq_governance_onebot"
+            />
           </ElSelect>
         </ElFormItem>
         <ElFormItem v-if="testForm.type !== 'qq_governance_onebot'" :label="$t('webhook.test.url')">
@@ -134,7 +147,10 @@
             "
           />
         </ElFormItem>
-        <ElFormItem v-if="testForm.type === 'qq_governance_onebot'" :label="$t('webhook.fields.qqGroupIds')">
+        <ElFormItem
+          v-if="testForm.type === 'qq_governance_onebot'"
+          :label="$t('webhook.fields.qqGroupIds')"
+        >
           <div style="width: 100%">
             <ElInput
               v-model="testQQGroupIdsText"
@@ -178,7 +194,12 @@
           />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="warning" :loading="testing" :disabled="!canSubmitTest" @click="handleTest">
+          <ElButton
+            type="warning"
+            :loading="testing"
+            :disabled="!canSubmitTest"
+            @click="handleTest"
+          >
             {{ $t('webhook.test.sendBtn') }}
           </ElButton>
         </ElFormItem>
