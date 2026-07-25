@@ -83,6 +83,8 @@
     "operation": "操作",
     "edit": "编辑",
     "delete": "删除",
+    "enable": "启用",
+    "disable": "停用",
     "reason": "说明",
     "type": "类型",
     "time": "时间",
@@ -3081,6 +3083,7 @@
     "fields": {
       "groupId": "群号",
       "enabled": "启用",
+      "botAdmin": "机器人管理员",
       "corporations": "允许军团",
       "roles": "允许职权",
       "autoReject": "自动拒绝不匹配申请",
@@ -3107,6 +3110,9 @@
       "autoKick": "确认后自动清退",
       "connected": "已连接",
       "disconnected": "未连接",
+      "yes": "是",
+      "no": "否",
+      "unknown": "未知",
       "normal": "正常"
     },
     "placeholders": {

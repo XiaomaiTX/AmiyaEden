@@ -117,7 +117,7 @@ func (h *QQGovernanceAdminHandler) Metrics(c *gin.Context) {
 	response.OK(c, data)
 }
 func (h *QQGovernanceAdminHandler) ListGroups(c *gin.Context) {
-	rows, err := h.svc.ListGroupStatuses()
+	rows, err := h.svc.ListGroupStatuses(c.Request.Context())
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return

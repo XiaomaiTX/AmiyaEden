@@ -66,6 +66,7 @@ type QQGovernanceGroupStatus struct {
 	Enabled               bool       `json:"enabled"`
 	MemberCount           int        `json:"member_count"`
 	MaxMemberCount        int        `json:"max_member_count"`
+	BotIsAdmin            *bool      `json:"bot_is_admin"`
 	ValidCount            int64      `json:"valid_count"`
 	ReviewCount           int64      `json:"review_count"`
 	InvalidCandidateCount int64      `json:"invalid_candidate_count"`
@@ -215,7 +216,7 @@ func (s *QQGovernanceService) collectPolicyCorporationNames(ctx context.Context,
 	resolved := NewSysConfigService().resolveCorporationNamesAllowMissing(ctx, ids)
 	return resolved, nil
 }
-func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, error) {
+func (s *QQGovernanceService) ListGroupStatuses(ctx context.Context) ([]QQGovernanceGroupStatus, error) {
 	policies, err := s.repo.ListPolicies(nil)
 	if err != nil {
 		return nil, err
@@ -256,7 +257,7 @@ func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, er
 	for _, policy := range policies {
 		item := QQGovernanceGroupStatus{GroupID: policy.GroupID, Enabled: policy.Enabled, SnapshotState: "never_synced"}
 		if snapshot, ok := snapshotByGroup[policy.GroupID]; ok {
-			item.GroupName, item.MemberCount, item.MaxMemberCount, item.LastSyncedAt = snapshot.GroupName, snapshot.MemberCount, snapshot.MaxMemberCount, snapshot.LastSyncedAt
+			item.GroupName, item.MemberCount, item.MaxMemberCount, item.BotIsAdmin, item.LastSyncedAt = snapshot.GroupName, snapshot.MemberCount, snapshot.MaxMemberCount, snapshot.BotIsAdmin, snapshot.LastSyncedAt
 			if snapshot.LastSyncedAt != nil {
 				item.SnapshotState = "fresh"
 				if now.Sub(*snapshot.LastSyncedAt) > time.Duration(settings.ScanIntervalMinutes*2)*time.Minute {
@@ -274,9 +275,74 @@ func (s *QQGovernanceService) ListGroupStatuses() ([]QQGovernanceGroupStatus, er
 			item.ReconcileExpected, item.ReconcileProcessed, item.ReconcileFailed = run.ExpectedCount, run.ProcessedCount, run.FailedCount
 			item.ReconcileStartedAt, item.ReconcileCompletedAt = run.StartedAt, run.CompletedAt
 		}
+		s.enrichGroupStatusFromOneBot(ctx, &item)
 		result = append(result, item)
 	}
 	return result, nil
+}
+
+type qqGovernanceGroupInfo struct {
+	GroupName      string `json:"group_name"`
+	MemberCount    int    `json:"member_count"`
+	MaxMemberCount int    `json:"max_member_count"`
+}
+
+type qqGovernanceGroupMemberInfo struct {
+	Role string `json:"role"`
+}
+
+func isQQGovernanceAdminRole(role string) bool {
+	return role == "admin" || role == "owner"
+}
+
+func (s *QQGovernanceService) enrichGroupStatusFromOneBot(ctx context.Context, item *QQGovernanceGroupStatus) {
+	if item == nil {
+		return
+	}
+	executor := s.actionExecutor()
+	if executor == nil || !executor.OneBotConnected() {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	// A page refresh needs both group metadata and the bot's member role. Treat
+	// the pair as one read operation so the per-group limiter does not suppress
+	// the second query immediately after the first one.
+	if wait, err := s.acquireQQGovernanceReadRateLimit(ctx, item.GroupID); err != nil || wait > 0 {
+		return
+	}
+	call := func(action string, params map[string]any) (json.RawMessage, bool) {
+		callCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		raw, err := executor.CallOneBot(callCtx, action, params)
+		return raw, err == nil
+	}
+	if raw, ok := call("get_group_info", map[string]any{"group_id": item.GroupID}); ok {
+		var info qqGovernanceGroupInfo
+		if json.Unmarshal(raw, &info) == nil {
+			if info.GroupName != "" {
+				item.GroupName = info.GroupName
+			}
+			if info.MemberCount > 0 {
+				item.MemberCount = info.MemberCount
+			}
+			if info.MaxMemberCount > 0 {
+				item.MaxMemberCount = info.MaxMemberCount
+			}
+		}
+	}
+	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
+	if botQQ <= 0 {
+		return
+	}
+	if raw, ok := call("get_group_member_info", map[string]any{"group_id": item.GroupID, "user_id": botQQ}); ok {
+		var info qqGovernanceGroupMemberInfo
+		if json.Unmarshal(raw, &info) == nil {
+			isAdmin := isQQGovernanceAdminRole(info.Role)
+			item.BotIsAdmin = &isAdmin
+		}
+	}
 }
 
 func (s *QQGovernanceService) GovernanceSettings() QQGovernanceSettings {

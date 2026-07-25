@@ -16,7 +16,8 @@ import (
 const qqGovernanceReconcileBatchSize = 50
 
 type oneBotGroupMember struct {
-	UserID int64 `json:"user_id"`
+	UserID int64  `json:"user_id"`
+	Role   string `json:"role"`
 }
 
 // EnqueueScheduledReconciliations starts one durable full-membership run per
@@ -108,6 +109,18 @@ func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task
 	if executor == nil || !executor.OneBotConnected() {
 		return s.failTask(task, &OneBotActionError{Message: "OneBot 机器人未连接", Retryable: true}, true)
 	}
+	groupInfo := qqGovernanceGroupInfo{}
+	infoCtx, infoCancel := context.WithTimeout(ctx, 10*time.Second)
+	infoRaw, infoErr := executor.CallOneBot(infoCtx, "get_group_info", map[string]any{"group_id": task.GroupID})
+	infoCancel()
+	if infoErr == nil {
+		_ = json.Unmarshal(infoRaw, &groupInfo)
+	}
+	if wait, err := s.acquireQQGovernanceRateLimit(ctx, task); err != nil {
+		return s.failTask(task, err, true)
+	} else if wait > 0 {
+		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), "QQ 操作限流等待", false)
+	}
 	callCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	raw, err := executor.CallOneBot(callCtx, "get_group_member_list", map[string]any{"group_id": task.GroupID})
@@ -119,9 +132,14 @@ func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task
 		return s.failTask(task, fmt.Errorf("解析群成员列表失败: %w", err), true)
 	}
 	botQQ := NewSysConfigService().GetOneBotConfig().BotQQ
+	var botIsAdmin *bool
 	seen := make(map[int64]struct{}, len(members))
 	qqs := make([]int64, 0, len(members))
 	for _, member := range members {
+		if member.UserID == botQQ {
+			isAdmin := isQQGovernanceAdminRole(member.Role)
+			botIsAdmin = &isAdmin
+		}
 		if member.UserID <= 0 || member.UserID == botQQ {
 			continue
 		}
@@ -152,6 +170,15 @@ func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task
 	}
 	if snapshotErr == nil || errors.Is(snapshotErr, gorm.ErrRecordNotFound) {
 		snapshot.MemberCount, snapshot.LastSyncAttemptAt, snapshot.LastSyncError = len(members), now, ""
+		if groupInfo.GroupName != "" {
+			snapshot.GroupName = groupInfo.GroupName
+		}
+		if groupInfo.MaxMemberCount > 0 {
+			snapshot.MaxMemberCount = groupInfo.MaxMemberCount
+		}
+		if botIsAdmin != nil {
+			snapshot.BotIsAdmin = botIsAdmin
+		}
 		_ = s.repo.SaveRuntimeSnapshot(snapshot)
 	}
 	payload, _ := json.Marshal(qqGovernanceActionPayload{RunID: run.ID, Batch: 0})
