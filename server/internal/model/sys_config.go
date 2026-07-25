@@ -30,6 +30,8 @@ const (
 	SysConfigWebhookOBTargetID   = "webhook.ob_target_id"   // 目标群号或用户 QQ
 	SysConfigWebhookOBToken      = "webhook.ob_token"       // access token（可空）
 
+	SysConfigWebhookQQGroupIDs = "webhook.qq_group_ids" // QQ 群治理通知目标群号数组 (JSON)
+
 	SysConfigSDEAPIKey          = "sde.api_key"      // SDE 查询 API Key
 	SysConfigSDEProxy           = "sde.proxy"        // SDE 下载代理
 	SysConfigSDEDownloadURL     = "sde.download_url" // SDE 下载地址

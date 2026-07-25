@@ -2823,7 +2823,8 @@
       "discord": "Discord",
       "feishu": "飞书 (Feishu)",
       "dingtalk": "钉钉 (DingTalk)",
-      "onebot": "OneBot v11 (QQ)"
+      "onebot": "OneBot v11 (QQ)",
+      "qqGovernanceOnebot": "QQ 群治理 OneBot"
     },
     "fields": {
       "enabled": "启用",
@@ -2840,7 +2841,10 @@
       "obTargetId": "目标 ID",
       "obTargetIdPlaceholder": "群号或用户 QQ",
       "obToken": "Access Token",
-      "obTokenPlaceholder": "留空则不使用身份验证"
+      "obTokenPlaceholder": "留空则不使用身份验证",
+      "qqGroupIds": "QQ 群号",
+      "qqGroupIdsPlaceholder": "每行一个 QQ 群号",
+      "qqGroupIdsHint": "使用 QQ 群治理已建立的反向 WebSocket 连接发送，无需填写 URL 或 Token。"
     },
     "test": {
       "title": "测试发送",
@@ -2849,7 +2853,12 @@
       "content": "测试内容",
       "contentPlaceholder": "留空则使用默认测试文本",
       "sendBtn": "发送测试",
-      "success": "测试消息已发送"
+      "success": "测试消息已发送",
+      "qqGroupIdsHint": "测试发送只会将通知任务入队，是否成功送达由 QQ 群治理 Worker 与 OneBot 连接决定。"
+    },
+    "messages": {
+      "invalidQQGroupId": "QQ 群号必须为正整数",
+      "qqGroupIdsRequired": "请至少填写一个 QQ 群号"
     }
   },
   "system": {

@@ -54,8 +54,8 @@ func TestWebhookSetConfigPersistsSingleBatch(t *testing.T) {
 	if store.setManyCalls != 1 {
 		t.Fatalf("expected exactly one batch write, got %d", store.setManyCalls)
 	}
-	if len(store.setManyItems) != 7 {
-		t.Fatalf("expected 7 config items, got %d", len(store.setManyItems))
+	if len(store.setManyItems) != 8 {
+		t.Fatalf("expected 8 config items, got %d", len(store.setManyItems))
 	}
 
 	wantKeys := []string{
@@ -66,11 +66,42 @@ func TestWebhookSetConfigPersistsSingleBatch(t *testing.T) {
 		model.SysConfigWebhookOBTargetType,
 		model.SysConfigWebhookOBTargetID,
 		model.SysConfigWebhookOBToken,
+		model.SysConfigWebhookQQGroupIDs,
 	}
 	for i, want := range wantKeys {
 		if store.setManyItems[i].Key != want {
 			t.Fatalf("unexpected key at index %d: got %q want %q", i, store.setManyItems[i].Key, want)
 		}
+	}
+}
+
+func TestWebhookSetConfigPersistsQQGovernanceGroupIDs(t *testing.T) {
+	store := &fakeWebhookConfigStore{}
+	svc := &WebhookService{repo: store, http: &http.Client{}}
+
+	err := svc.SetConfig(&WebhookConfig{
+		Type:                 "qq_governance_onebot",
+		Enabled:              true,
+		FleetTemplate:        defaultFleetTemplate,
+		QQGovernanceGroupIDs: []int64{123456789, 987654321},
+	})
+	if err != nil {
+		t.Fatalf("expected config update to succeed, got %v", err)
+	}
+
+	var groupIDsItem *repository.SysConfigUpsertItem
+	for i := range store.setManyItems {
+		if store.setManyItems[i].Key == model.SysConfigWebhookQQGroupIDs {
+			groupIDsItem = &store.setManyItems[i]
+			break
+		}
+	}
+	if groupIDsItem == nil {
+		t.Fatalf("expected %q in saved items", model.SysConfigWebhookQQGroupIDs)
+	}
+	want := `[123456789,987654321]`
+	if groupIDsItem.Value != want {
+		t.Fatalf("group ids JSON = %q, want %q", groupIDsItem.Value, want)
 	}
 }
 
@@ -163,4 +194,41 @@ func TestValidateWebhookRequestTargetRejectsInvalidURLs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateQQGovernanceOnebotTarget(t *testing.T) {
+	t.Run("accepts_multiple_group_ids_without_url", func(t *testing.T) {
+		cfg := &WebhookConfig{Type: "qq_governance_onebot", QQGovernanceGroupIDs: []int64{123456789, 987654321}}
+		if err := validateWebhookRequestTarget(cfg); err != nil {
+			t.Fatalf("expected validation to pass, got %v", err)
+		}
+	})
+	t.Run("rejects_empty_group_ids", func(t *testing.T) {
+		cfg := &WebhookConfig{Type: "qq_governance_onebot"}
+		err := validateWebhookRequestTarget(cfg)
+		if err == nil || !strings.Contains(err.Error(), "至少配置一个") {
+			t.Fatalf("expected empty group ids error, got %v", err)
+		}
+	})
+	t.Run("rejects_zero_group_id", func(t *testing.T) {
+		cfg := &WebhookConfig{Type: "qq_governance_onebot", QQGovernanceGroupIDs: []int64{0}}
+		err := validateWebhookRequestTarget(cfg)
+		if err == nil || !strings.Contains(err.Error(), "正数") {
+			t.Fatalf("expected positive-only error, got %v", err)
+		}
+	})
+	t.Run("rejects_duplicate_group_ids", func(t *testing.T) {
+		cfg := &WebhookConfig{Type: "qq_governance_onebot", QQGovernanceGroupIDs: []int64{100, 100}}
+		err := validateWebhookRequestTarget(cfg)
+		if err == nil || !strings.Contains(err.Error(), "重复") {
+			t.Fatalf("expected duplicate error, got %v", err)
+		}
+	})
+	t.Run("rejects_private_target_type", func(t *testing.T) {
+		cfg := &WebhookConfig{Type: "qq_governance_onebot", OBTargetType: "private", QQGovernanceGroupIDs: []int64{100}}
+		err := validateWebhookRequestTarget(cfg)
+		if err == nil || !strings.Contains(err.Error(), "群组目标") {
+			t.Fatalf("expected group-only error, got %v", err)
+		}
+	})
 }

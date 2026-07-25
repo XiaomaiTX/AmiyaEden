@@ -44,23 +44,25 @@ func (h *WebhookHandler) SetConfig(c *gin.Context) {
 // TestWebhook POST /system/webhook/test
 func (h *WebhookHandler) TestWebhook(c *gin.Context) {
 	var req struct {
-		URL          string `json:"url" binding:"required"`
-		Type         string `json:"type"`
-		Content      string `json:"content"`
-		OBTargetType string `json:"ob_target_type"`
-		OBTargetID   int64  `json:"ob_target_id"`
-		OBToken      string `json:"ob_token"`
+		URL                 string  `json:"url"`
+		Type                string  `json:"type"`
+		Content             string  `json:"content"`
+		OBTargetType        string  `json:"ob_target_type"`
+		OBTargetID          int64   `json:"ob_target_id"`
+		OBToken             string  `json:"ob_token"`
+		QQGovernanceGroupIDs []int64 `json:"qq_governance_group_ids"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
 		return
 	}
 	cfg := &service.WebhookConfig{
-		URL:          req.URL,
-		Type:         req.Type,
-		OBTargetType: req.OBTargetType,
-		OBTargetID:   req.OBTargetID,
-		OBToken:      req.OBToken,
+		URL:                  req.URL,
+		Type:                 req.Type,
+		OBTargetType:         req.OBTargetType,
+		OBTargetID:           req.OBTargetID,
+		OBToken:              req.OBToken,
+		QQGovernanceGroupIDs: req.QQGovernanceGroupIDs,
 	}
 	if err := h.svc.SendTest(cfg, req.Content); err != nil {
 		response.Fail(c, response.CodeBizError, "发送失败: "+err.Error())

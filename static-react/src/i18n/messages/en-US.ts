@@ -720,12 +720,16 @@
       obTargetIdPlaceholder: 'Enter group number or QQ number',
       obToken: 'Access Token',
       obTokenPlaceholder: 'Enter the token',
+      qqGroupIds: 'QQ Group IDs',
+      qqGroupIdsPlaceholder: 'One QQ group ID per line',
+      qqGroupIdsHint: 'Sends via the reverse WebSocket connection managed by QQ group governance. No URL or token required.',
     },
     types: {
       discord: 'Discord',
       feishu: 'Feishu',
       dingtalk: 'DingTalk',
       onebot: 'OneBot v11',
+      qqGovernanceOnebot: 'QQ Group Governance OneBot',
     },
     test: {
       title: 'Send Test',
@@ -737,6 +741,7 @@
       sendBtn: 'Send Test Message',
       success: 'Webhook test message sent successfully.',
       failed: 'Webhook test message failed.',
+      qqGroupIdsHint: 'Test send only enqueues a notify task. Actual delivery depends on the QQ governance worker and OneBot connection.',
     },
     messages: {
       loading: 'Loading webhook config...',
@@ -746,6 +751,8 @@
       saveSuccess: 'Webhook config saved.',
       saveFailed: 'Failed to save webhook config.',
       urlRequired: 'Enter a webhook URL.',
+      invalidQQGroupId: 'QQ group ID must be a positive integer.',
+      qqGroupIdsRequired: 'At least one QQ group ID is required.',
     },
   },
   skillPlan: {

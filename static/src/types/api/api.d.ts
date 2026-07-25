@@ -3420,14 +3420,16 @@ declare namespace Api {
 
   /** Webhook 配置 */
   namespace Webhook {
+    type Type = 'discord' | 'feishu' | 'dingtalk' | 'onebot' | 'qq_governance_onebot' | string
     interface Config {
       url: string
       enabled: boolean
-      type: 'discord' | 'feishu' | 'dingtalk' | 'onebot' | string
+      type: Type
       fleet_template: string
       ob_target_type: 'group' | 'private'
       ob_target_id: number
       ob_token: string
+      qq_governance_group_ids: number[]
     }
   }
 

@@ -19,13 +19,19 @@ const defaultFleetTemplate = "@all 舰队行动通知\n行动: {title}\n指挥�
 
 // WebhookConfig Webhook 配置
 type WebhookConfig struct {
-	URL           string `json:"url"`
-	Enabled       bool   `json:"enabled"`
-	Type          string `json:"type"`           // discord | feishu | dingtalk | onebot
-	FleetTemplate string `json:"fleet_template"` // 舰队行动通知模板
-	OBTargetType  string `json:"ob_target_type"` // group | private
-	OBTargetID    int64  `json:"ob_target_id"`   // 目标群号或用户 QQ
-	OBToken       string `json:"ob_token"`       // access token（可空）
+	URL                  string  `json:"url"`
+	Enabled              bool    `json:"enabled"`
+	Type                 string  `json:"type"`           // discord | feishu | dingtalk | onebot | qq_governance_onebot
+	FleetTemplate        string  `json:"fleet_template"` // 舰队行动通知模板
+	OBTargetType         string  `json:"ob_target_type"` // group | private
+	OBTargetID           int64   `json:"ob_target_id"`   // 目标群号或用户 QQ
+	OBToken              string  `json:"ob_token"`       // access token（可空）
+	QQGovernanceGroupIDs []int64 `json:"qq_governance_group_ids"` // qq_governance_onebot 目标群号数组
+}
+
+// qqGovernanceGroupNotifier 由 QQGovernanceService 实现，避免 webhook 服务直接依赖具体实现。
+type qqGovernanceGroupNotifier interface {
+	EnqueueGroupNotifications(groupIDs []int64, content string) error
 }
 
 // WebhookService Webhook 业务逻辑层
@@ -34,6 +40,7 @@ type WebhookService struct {
 	fleetConfigRepo *repository.FleetConfigRepository
 	http            *http.Client
 	auditSvc        *AuditService
+	qqNotifier      qqGovernanceGroupNotifier
 }
 
 type webhookConfigStore interface {
@@ -48,6 +55,7 @@ func NewWebhookService() *WebhookService {
 		fleetConfigRepo: repository.NewFleetConfigRepository(),
 		http:            &http.Client{Timeout: 10 * time.Second},
 		auditSvc:        NewAuditService(),
+		qqNotifier:      DefaultQQGovernanceService(),
 	}
 }
 
@@ -64,15 +72,33 @@ func (s *WebhookService) GetConfig() (*WebhookConfig, error) {
 	obTargetIDStr, _ := s.repo.Get(model.SysConfigWebhookOBTargetID, "0")
 	obTargetID, _ := strconv.ParseInt(obTargetIDStr, 10, 64)
 	obToken, _ := s.repo.Get(model.SysConfigWebhookOBToken, "")
+	groupIDs, _ := s.loadQQGovernanceGroupIDs()
 	return &WebhookConfig{
-		URL:           url,
-		Enabled:       enabled,
-		Type:          wtype,
-		FleetTemplate: tmpl,
-		OBTargetType:  obTargetType,
-		OBTargetID:    obTargetID,
-		OBToken:       obToken,
+		URL:                  url,
+		Enabled:              enabled,
+		Type:                 wtype,
+		FleetTemplate:        tmpl,
+		OBTargetType:         obTargetType,
+		OBTargetID:           obTargetID,
+		OBToken:              obToken,
+		QQGovernanceGroupIDs: groupIDs,
 	}, nil
+}
+
+func (s *WebhookService) loadQQGovernanceGroupIDs() ([]int64, error) {
+	raw, err := s.repo.Get(model.SysConfigWebhookQQGroupIDs, "")
+	if err != nil {
+		return nil, err
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return []int64{}, nil
+	}
+	var ids []int64
+	if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+		return []int64{}, nil
+	}
+	return ids, nil
 }
 
 // SetConfig 保存 Webhook 配置
@@ -81,14 +107,20 @@ func (s *WebhookService) SetConfig(cfg *WebhookConfig) error {
 		return err
 	}
 
-	items := newSysConfigBatch(7).
+	groupIDsJSON, err := json.Marshal(cfg.QQGovernanceGroupIDs)
+	if err != nil {
+		return fmt.Errorf("serialize qq group ids: %w", err)
+	}
+
+	items := newSysConfigBatch(8).
 		AddString(model.SysConfigWebhookURL, cfg.URL, "Webhook URL").
 		AddBool(model.SysConfigWebhookEnabled, cfg.Enabled, "Webhook 是否启用").
-		AddString(model.SysConfigWebhookType, cfg.Type, "Webhook 类型 (discord/feishu/dingtalk/onebot)").
+		AddString(model.SysConfigWebhookType, cfg.Type, "Webhook 类型 (discord/feishu/dingtalk/onebot/qq_governance_onebot)").
 		AddString(model.SysConfigWebhookFleetTemplate, cfg.FleetTemplate, "舰队行动通知模板").
 		AddString(model.SysConfigWebhookOBTargetType, cfg.OBTargetType, "OneBot 目标类型 (group/private)").
 		AddInt64(model.SysConfigWebhookOBTargetID, cfg.OBTargetID, "OneBot 目标 ID").
 		AddString(model.SysConfigWebhookOBToken, cfg.OBToken, "OneBot Access Token").
+		AddString(model.SysConfigWebhookQQGroupIDs, string(groupIDsJSON), "QQ 群治理通知目标群号数组").
 		Items()
 	return s.repo.SetMany(items)
 }
@@ -120,7 +152,10 @@ func (s *WebhookService) SetConfigByOperator(cfg *WebhookConfig, operatorID uint
 // SendFleetPing 发送舰队行动 Ping（若未启用则静默忽略）
 func (s *WebhookService) SendFleetPing(fleet *model.Fleet) error {
 	cfg, err := s.GetConfig()
-	if err != nil || !cfg.Enabled || cfg.URL == "" {
+	if err != nil || !cfg.Enabled {
+		return nil
+	}
+	if cfg.Type != "qq_governance_onebot" && cfg.URL == "" {
 		return nil
 	}
 
@@ -164,6 +199,13 @@ func (s *WebhookService) SendFleetPing(fleet *model.Fleet) error {
 	}
 	content = strings.ReplaceAll(content, "{fleet_config}", fleetConfigInfo)
 
+	if cfg.Type == "qq_governance_onebot" {
+		if s.qqNotifier == nil {
+			return nil
+		}
+		return s.qqNotifier.EnqueueGroupNotifications(cfg.QQGovernanceGroupIDs, content)
+	}
+
 	return s.sendMessage(cfg, content)
 }
 
@@ -177,6 +219,12 @@ func (s *WebhookService) SendTest(cfg *WebhookConfig, content string) error {
 	}
 	if content == "" {
 		content = "✅ Webhook 测试消息（来自 AmiyaEden）"
+	}
+	if cfg.Type == "qq_governance_onebot" {
+		if s.qqNotifier == nil {
+			return fmt.Errorf("QQ 群治理通知服务不可用")
+		}
+		return s.qqNotifier.EnqueueGroupNotifications(cfg.QQGovernanceGroupIDs, content)
 	}
 	return s.sendMessage(cfg, content)
 }
@@ -250,8 +298,58 @@ func (s *WebhookService) sendMessage(cfg *WebhookConfig, content string) error {
 }
 
 func validateWebhookRequestTarget(cfg *WebhookConfig) error {
+	if cfg == nil {
+		return fmt.Errorf("webhook 配置错误: 配置不能为空")
+	}
+
+	webhookType := strings.ToLower(strings.TrimSpace(cfg.Type))
+	if webhookType == "" {
+		webhookType = "discord"
+	}
+
+	if webhookType == "qq_governance_onebot" {
+		return validateQQGovernanceOnebotTarget(cfg)
+	}
+
 	_, err := buildValidatedWebhookRequestURL(cfg)
 	return err
+}
+
+func validateQQGovernanceOnebotTarget(cfg *WebhookConfig) error {
+	if strings.TrimSpace(cfg.OBToken) != "" {
+		return fmt.Errorf("webhook 配置错误: qq_governance_onebot 不需要 OneBot Access Token")
+	}
+	if cfg.OBTargetType != "" && cfg.OBTargetType != "group" {
+		return fmt.Errorf("webhook 配置错误: qq_governance_onebot 仅支持群组目标")
+	}
+	if cfg.OBTargetID != 0 {
+		return fmt.Errorf("webhook 配置错误: qq_governance_onebot 不需要单一目标 ID")
+	}
+	ids, err := normalizeQQGovernanceGroupIDs(cfg.QQGovernanceGroupIDs)
+	if err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return fmt.Errorf("webhook 配置错误: 至少配置一个 QQ 群号")
+	}
+	cfg.QQGovernanceGroupIDs = ids
+	return nil
+}
+
+func normalizeQQGovernanceGroupIDs(raw []int64) ([]int64, error) {
+	seen := make(map[int64]struct{}, len(raw))
+	out := make([]int64, 0, len(raw))
+	for _, id := range raw {
+		if id <= 0 {
+			return nil, fmt.Errorf("webhook 配置错误: QQ 群号必须为正数")
+		}
+		if _, exists := seen[id]; exists {
+			return nil, fmt.Errorf("webhook 配置错误: QQ 群号不能重复")
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out, nil
 }
 
 func buildValidatedWebhookRequestURL(cfg *WebhookConfig) (string, error) {

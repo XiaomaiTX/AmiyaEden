@@ -4,6 +4,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -281,4 +282,153 @@ func TestQQGovernanceComputeReconcileBatchCompletesStuckRun(t *testing.T) {
 	if refreshedTask.Status != model.QQGovernanceActionSucceeded {
 		t.Fatalf("task status = %q, want succeeded", refreshedTask.Status)
 	}
+}
+
+func TestQQGovernanceEnqueueGroupNotificationsCreatesOneTaskPerGroup(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_enqueue_notify",
+		&model.QQGovernanceActionTask{}, &model.QQGovernanceActionLog{},
+	)
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+	now := time.Date(2026, 7, 26, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return now }
+
+	if err := svc.EnqueueGroupNotifications([]int64{111, 222, 333}, "hello"); err != nil {
+		t.Fatalf("enqueue: %v", err)
+	}
+
+	var tasks []model.QQGovernanceActionTask
+	if err := db.Order("group_id ASC").Find(&tasks).Error; err != nil {
+		t.Fatalf("list tasks: %v", err)
+	}
+	if len(tasks) != 3 {
+		t.Fatalf("task count = %d, want 3", len(tasks))
+	}
+	for i, want := range []int64{111, 222, 333} {
+		if tasks[i].GroupID != want {
+			t.Fatalf("tasks[%d].GroupID = %d, want %d", i, tasks[i].GroupID, want)
+		}
+		if tasks[i].ActionType != model.QQGovernanceActionNotify {
+			t.Fatalf("tasks[%d].ActionType = %q, want notify", i, tasks[i].ActionType)
+		}
+		if tasks[i].QQ != 0 {
+			t.Fatalf("tasks[%d].QQ = %d, want 0", i, tasks[i].QQ)
+		}
+		if tasks[i].Source != "webhook" {
+			t.Fatalf("tasks[%d].Source = %q, want webhook", i, tasks[i].Source)
+		}
+		var payload qqGovernanceActionPayload
+		if err := json.Unmarshal([]byte(tasks[i].PayloadJSON), &payload); err != nil {
+			t.Fatalf("tasks[%d] payload: %v", i, err)
+		}
+		if payload.Message != "hello" {
+			t.Fatalf("tasks[%d].Message = %q, want hello", i, payload.Message)
+		}
+	}
+}
+
+func TestQQGovernanceEnqueueGroupNotificationsRejectsInvalidInput(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_enqueue_notify_invalid",
+		&model.QQGovernanceActionTask{},
+	)
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+
+	cases := []struct {
+		name     string
+		ids      []int64
+		content  string
+		wantSub  string
+	}{
+		{name: "empty_content", ids: []int64{111}, content: "  ", wantSub: "通知内容"},
+		{name: "empty_ids", ids: nil, content: "hi", wantSub: "目标群号"},
+		{name: "zero_id", ids: []int64{0}, content: "hi", wantSub: "正数"},
+		{name: "duplicate_id", ids: []int64{111, 111}, content: "hi", wantSub: "重复"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := svc.EnqueueGroupNotifications(tc.ids, tc.content)
+			if err == nil || !containsSubstr(err.Error(), tc.wantSub) {
+				t.Fatalf("expected error containing %q, got %v", tc.wantSub, err)
+			}
+		})
+	}
+}
+
+func containsSubstr(s, sub string) bool {
+	return len(s) >= len(sub) && (s == sub || indexOf(s, sub) >= 0)
+}
+
+func indexOf(s, sub string) int {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return i
+		}
+	}
+	return -1
+}
+
+func TestQQGovernanceNotifyParamsMapToSendGroupMsg(t *testing.T) {
+	payload, _ := json.Marshal(qqGovernanceActionPayload{Message: "hello"})
+	task := &model.QQGovernanceActionTask{
+		ActionType:  model.QQGovernanceActionNotify,
+		GroupID:     123456,
+		PayloadJSON: string(payload),
+	}
+	params, err := paramsForQQGovernanceAction(task)
+	if err != nil {
+		t.Fatalf("params: %v", err)
+	}
+	if got := params["group_id"]; got != int64(123456) {
+		t.Fatalf("group_id = %v, want 123456", got)
+	}
+	if got := params["message"]; got != "hello" {
+		t.Fatalf("message = %v, want hello", got)
+	}
+	if name := oneBotActionName(model.QQGovernanceActionNotify); name != "send_group_msg" {
+		t.Fatalf("oneBotActionName = %q, want send_group_msg", name)
+	}
+}
+
+func TestQQGovernanceNotifyActionSkipsPolicyCheck(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_notify_valid",
+		&model.QQGroupGovernancePolicy{}, &model.QQGroupMemberState{},
+		&model.QQGovernanceActionTask{},
+	)
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+
+	// No policy, no member state — should still be valid for notify.
+	task := &model.QQGovernanceActionTask{
+		ActionType: model.QQGovernanceActionNotify,
+		GroupID:    123456,
+	}
+	valid, reason, err := svc.actionStillValid(task)
+	if err != nil {
+		t.Fatalf("actionStillValid: %v", err)
+	}
+	if !valid {
+		t.Fatalf("notify task should remain valid without policy, reason = %q", reason)
+	}
+
+	// Non-notify task should be cancelled without policy.
+	other := &model.QQGovernanceActionTask{
+		ActionType: model.QQGovernanceActionSetCard,
+		GroupID:    123456,
+		QQ:         999,
+	}
+	valid, _, err = svc.actionStillValid(other)
+	if err != nil {
+		t.Fatalf("actionStillValid(set_card): %v", err)
+	}
+	if valid {
+		t.Fatalf("set_card task should be invalid without policy")
+	}
+
+	// Notify with GroupID=0 is invalid.
+	invalid := &model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionNotify}
+	if valid, _, err := svc.actionStillValid(invalid); err != nil || valid {
+		t.Fatalf("notify without group id should be invalid (valid=%v err=%v)", valid, err)
+	}
+
+	// Ensure other errors package is still used elsewhere — keep import valid.
+	_ = errors.New("noop")
 }
