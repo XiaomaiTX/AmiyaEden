@@ -22,6 +22,7 @@ type QQGovernancePolicyInput struct {
 	AutoRejectUnmatched   bool     `json:"auto_reject_unmatched"`
 	MemberViolationPolicy string   `json:"member_violation_policy"`
 	CardTemplate          string   `json:"card_template"`
+	CardSyncEnabled       bool     `json:"card_sync_enabled"`
 }
 
 type QQGovernancePolicyView struct {
@@ -34,6 +35,7 @@ type QQGovernancePolicyView struct {
 	AutoRejectUnmatched   bool                      `json:"auto_reject_unmatched"`
 	MemberViolationPolicy string                    `json:"member_violation_policy"`
 	CardTemplate          string                    `json:"card_template"`
+	CardSyncEnabled       bool                      `json:"card_sync_enabled"`
 	UpdatedBy             uint                      `json:"updated_by"`
 	UpdatedAt             time.Time                 `json:"updated_at"`
 }
@@ -139,11 +141,17 @@ func (s *QQGovernanceService) SavePolicy(ctx context.Context, input QQGovernance
 	policy.AutoRejectUnmatched = input.AutoRejectUnmatched
 	policy.MemberViolationPolicy = input.MemberViolationPolicy
 	policy.CardTemplate = strings.TrimSpace(input.CardTemplate)
+	policy.CardSyncEnabled = input.CardSyncEnabled
 	policy.UpdatedBy = operator
 	if err := s.repo.SavePolicy(policy); err != nil {
 		return nil, err
 	}
-	s.audit("qq_governance_policy_save", operator, "qq_group_governance_policy", fmt.Sprintf("%d", input.GroupID), map[string]any{"enabled": input.Enabled, "member_violation_policy": input.MemberViolationPolicy})
+	if !policy.CardSyncEnabled {
+		if err := s.repo.CancelPendingActionTasks(input.GroupID, model.QQGovernanceActionSetCard, "群名片同步已关闭"); err != nil {
+			return nil, err
+		}
+	}
+	s.audit("qq_governance_policy_save", operator, "qq_group_governance_policy", fmt.Sprintf("%d", input.GroupID), map[string]any{"enabled": input.Enabled, "member_violation_policy": input.MemberViolationPolicy, "card_sync_enabled": input.CardSyncEnabled})
 	nameByID, err := s.collectPolicyCorporationNames(ctx, []model.QQGroupGovernancePolicy{*policy})
 	if err != nil {
 		return nil, err
@@ -184,6 +192,7 @@ func qqGovernancePolicyView(row model.QQGroupGovernancePolicy, nameByID map[int6
 		AutoRejectUnmatched:   row.AutoRejectUnmatched,
 		MemberViolationPolicy: row.MemberViolationPolicy,
 		CardTemplate:          row.CardTemplate,
+		CardSyncEnabled:       row.CardSyncEnabled,
 		UpdatedBy:             row.UpdatedBy,
 		UpdatedAt:             row.UpdatedAt,
 	}, nil

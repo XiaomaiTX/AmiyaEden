@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"sort"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -18,6 +19,7 @@ const qqGovernanceReconcileBatchSize = 50
 type oneBotGroupMember struct {
 	UserID int64  `json:"user_id"`
 	Role   string `json:"role"`
+	Card   string `json:"card"`
 }
 
 type qqGovernanceGroupInfo struct {
@@ -149,6 +151,7 @@ func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task
 	botIsAdmin := qqGovernanceBotIsAdmin(members, botQQ)
 	seen := make(map[int64]struct{}, len(members))
 	qqs := make([]int64, 0, len(members))
+	currentCards := make(map[int64]string, len(members))
 	for _, member := range members {
 		if member.UserID <= 0 || member.UserID == botQQ {
 			continue
@@ -158,12 +161,15 @@ func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task
 		}
 		seen[member.UserID] = struct{}{}
 		qqs = append(qqs, member.UserID)
+		if card := strings.TrimSpace(member.Card); card != "" {
+			currentCards[member.UserID] = card
+		}
 	}
 	sort.Slice(qqs, func(i, j int) bool { return qqs[i] < qqs[j] })
 	now := s.now()
 	rows := make([]model.QQGovernanceReconcileMember, 0, len(qqs))
 	for _, qq := range qqs {
-		rows = append(rows, model.QQGovernanceReconcileMember{RunID: run.ID, GroupID: task.GroupID, QQ: qq, Status: model.QQGovernanceRunMemberPending})
+		rows = append(rows, model.QQGovernanceReconcileMember{RunID: run.ID, GroupID: task.GroupID, QQ: qq, Card: currentCards[qq], Status: model.QQGovernanceRunMemberPending})
 	}
 	if err := s.repo.Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.CreateRunMembersTx(tx, rows); err != nil {
@@ -269,7 +275,7 @@ func (s *QQGovernanceService) computeReconcileBatch(ctx context.Context, task *m
 		return s.failTask(task, err, true)
 	}
 	for _, row := range rows {
-		if err := s.reconcileMember(ctx, policy, task.GroupID, row.QQ, "scan"); err != nil {
+		if err := s.reconcileMember(ctx, policy, task.GroupID, row.QQ, "scan", row.Card); err != nil {
 			return s.failTask(task, err, true)
 		}
 		if err := s.repo.Transaction(func(tx *gorm.DB) error { return s.repo.CompleteRunMemberTx(tx, row.ID) }); err != nil {
@@ -315,13 +321,13 @@ func (s *QQGovernanceService) computeReconcileBatch(ctx context.Context, task *m
 }
 
 func (s *QQGovernanceService) reconcileOneMember(ctx context.Context, task *model.QQGovernanceActionTask, policy *model.QQGroupGovernancePolicy, qq int64) error {
-	if err := s.reconcileMember(ctx, policy, task.GroupID, qq, "recheck"); err != nil {
+	if err := s.reconcileMember(ctx, policy, task.GroupID, qq, "recheck", ""); err != nil {
 		return s.failTask(task, err, true)
 	}
 	return s.repo.CompleteActionTask(task.ID, task.LeaseToken, s.now())
 }
 
-func (s *QQGovernanceService) reconcileMember(_ context.Context, policy *model.QQGroupGovernancePolicy, groupID, qq int64, source string) error {
+func (s *QQGovernanceService) reconcileMember(_ context.Context, policy *model.QQGroupGovernancePolicy, groupID, qq int64, source, currentCard string) error {
 	return s.repo.Transaction(func(tx *gorm.DB) error {
 		decision, err := s.evaluate(tx, policy, qq)
 		if err != nil {
@@ -371,6 +377,14 @@ func (s *QQGovernanceService) reconcileMember(_ context.Context, policy *model.Q
 		if state.Status == model.QQGovernanceMemberInvalidConf {
 			p, _ := json.Marshal(qqGovernanceActionPayload{})
 			_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionKick, IdempotencyKey: fmt.Sprintf("kick:%d:%d:%d", groupID, qq, state.Version), GroupID: groupID, QQ: qq, TargetVersion: state.Version, PayloadJSON: string(p), Status: model.QQGovernanceActionPending, Priority: 90, RunAfter: now.Add(time.Minute + time.Duration(rand.IntN(181))*time.Second), Source: "automatic"})
+			return err
+		}
+		// 名片同步：仅当群规则启用 CardSyncEnabled、目标名片非空、且与巡检快照中的当前
+		// 名片不同时，创建 set_card 任务。幂等键包含成员状态版本，成员名片再次变化后旧
+		// 任务会被运行态版本校验取消，新任务可以重新入队。
+		if policy.CardSyncEnabled && decision.Decision == model.QQGovernanceReviewMatched && decision.TargetCard != "" && strings.TrimSpace(currentCard) != decision.TargetCard {
+			cardPayload, _ := json.Marshal(qqGovernanceActionPayload{Card: decision.TargetCard})
+			_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionSetCard, IdempotencyKey: fmt.Sprintf("card:%d:%d:%d", groupID, qq, state.Version), GroupID: groupID, QQ: qq, TargetVersion: state.Version, PayloadJSON: string(cardPayload), Status: model.QQGovernanceActionPending, Priority: 30, RunAfter: now.Add(15*time.Second + time.Duration(rand.IntN(46))*time.Second), Source: source})
 			return err
 		}
 		return nil

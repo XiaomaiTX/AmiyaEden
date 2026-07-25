@@ -364,8 +364,9 @@
           ><ElSelect v-model="policyForm.member_violation_policy" class="!w-full"
             ><ElOption :label="t('qqGovernance.values.reviewOnly')" value="review_only" /><ElOption
               :label="t('qqGovernance.values.autoKick')"
-              value="auto_kick_after_confirmed_mismatch" /></ElSelect></ElFormItem
-        ><ElFormItem :label="t('qqGovernance.fields.cardTemplate')"
+              value="auto_kick_after_confirmed_mismatch" /></ElSelect
+        ></ElFormItem>
+        <ElFormItem :label="t('qqGovernance.fields.cardTemplate')"
           ><ElInput
             v-model="policyForm.card_template"
             type="textarea"
@@ -377,6 +378,10 @@
               primary_character_name: '{primary_character_name}',
               primary_corporation_name: '{primary_corporation_name}'
             })
+          }}</div></ElFormItem
+        ><ElFormItem :label="t('qqGovernance.fields.cardSync')"
+          ><ElSwitch v-model="policyForm.card_sync_enabled" /><div class="form-hint">{{
+            t('qqGovernance.v2.cardSyncHint')
           }}</div></ElFormItem
         ></ElForm
       ><template #footer
@@ -457,7 +462,8 @@
     allowed_role_codes: [] as string[],
     auto_reject_unmatched: false,
     member_violation_policy: 'review_only' as Api.QQGovernance.Policy['member_violation_policy'],
-    card_template: ''
+    card_template: '',
+    card_sync_enabled: false
   })
   const groupNames = computed(
     () => new Map(groups.value.map((group) => [group.group_id, group.group_name]))
@@ -694,7 +700,8 @@
       allowed_role_codes: [],
       auto_reject_unmatched: false,
       member_violation_policy: 'review_only',
-      card_template: ''
+      card_template: '',
+      card_sync_enabled: false
     })
   }
   async function loadRules() {
@@ -780,7 +787,8 @@
         allowed_role_codes: policy.allowed_role_codes,
         auto_reject_unmatched: policy.auto_reject_unmatched,
         member_violation_policy: policy.member_violation_policy,
-        card_template: policy.card_template
+        card_template: policy.card_template,
+        card_sync_enabled: policy.card_sync_enabled
       })
       // Seed options with the rule's saved corporations so already-selected IDs
       // still show the "name (id)" label without requiring a fresh search.
@@ -810,7 +818,8 @@
         allowed_role_codes: policyForm.allowed_role_codes,
         auto_reject_unmatched: policyForm.auto_reject_unmatched,
         member_violation_policy: policyForm.member_violation_policy,
-        card_template: policyForm.card_template
+        card_template: policyForm.card_template,
+        card_sync_enabled: policyForm.card_sync_enabled
       }
       if (editingGroupId.value) await updateQQGovernancePolicy(editingGroupId.value, payload)
       else await saveQQGovernancePolicy({ group_id: groupId, ...payload })

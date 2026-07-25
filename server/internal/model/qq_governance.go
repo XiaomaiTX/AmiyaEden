@@ -46,6 +46,8 @@ const (
 
 // QQGroupGovernancePolicy 保存单个 QQ 群的准入与名片规则。首期仅使用
 // Enabled、军团/职权白名单、拒绝策略与名片模板；其余字段由后续巡检阶段增加。
+// CardSyncEnabled 控制巡检是否在每次完整快照后对匹配成员调用 set_group_card；
+// 它默认关闭，关闭时不影响资格判断和目标名片计算，但禁止所有新的名片写入。
 type QQGroupGovernancePolicy struct {
 	BaseModel
 	GroupID                   int64  `gorm:"not null;uniqueIndex" json:"group_id"`
@@ -55,6 +57,7 @@ type QQGroupGovernancePolicy struct {
 	AutoRejectUnmatched       bool   `gorm:"not null;default:false" json:"auto_reject_unmatched"`
 	MemberViolationPolicy     string `gorm:"size:64;not null;default:'review_only'" json:"member_violation_policy"`
 	CardTemplate              string `gorm:"size:256;not null;default:''" json:"card_template"`
+	CardSyncEnabled           bool   `gorm:"not null;default:false" json:"card_sync_enabled"`
 	UpdatedBy                 uint   `gorm:"not null;default:0" json:"updated_by"`
 }
 
@@ -113,11 +116,13 @@ func (QQGovernanceReconcileRun) TableName() string { return "qq_governance_recon
 
 // QQGovernanceReconcileMember freezes the ordered membership set for a run.
 // It deliberately avoids using OneBot response order as a cursor.
+// Card 保存该巡检快照中读取到的当前群名片，供批处理比较时无需再次请求 OneBot。
 type QQGovernanceReconcileMember struct {
 	BaseModel
 	RunID     uint   `gorm:"not null;uniqueIndex:idx_qq_governance_run_member;index" json:"run_id"`
 	GroupID   int64  `gorm:"not null;index" json:"group_id"`
 	QQ        int64  `gorm:"not null;uniqueIndex:idx_qq_governance_run_member" json:"qq"`
+	Card      string `gorm:"size:128;not null;default:''" json:"card"`
 	Status    string `gorm:"size:32;not null;index" json:"status"`
 	LastError string `gorm:"type:text;not null;default:''" json:"last_error"`
 }

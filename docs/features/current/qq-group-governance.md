@@ -31,6 +31,18 @@ source_of_truth:
 - `UNKNOWN` 会延迟自动复查，连续三次创建治理页告警，不形成待人工审核工作流；动作失败率会触发三级熔断。三级熔断暂停 QQ 写操作，但仍允许受限流的成员快照和本地计算继续恢复可观测性。
 - `notify` 动作类型用于系统 Webhook 的 `qq_governance_onebot` 通知入口：`QQGovernanceService.EnqueueGroupNotifications` 为每个目标群在同一事务中创建独立的 `notify` 任务，`QQ=0`、`source=webhook`，payload 只保存 `message`，绝不保存 OneBot Token 或连接信息。Worker 将其映射为 `send_group_msg`，只校验 `group_id>0`，不依赖群规则或成员运行态；继续走全局和群级 Redis 限流，但不叠加 QQ 维度限流。失败按现有重试与死信策略处理，OneBot 未连接或熔断打开时进入重试。
 
+## 巡检名片同步
+
+- 群规则新增 `card_sync_enabled` 开关，与群治理 `enabled` 相互独立。开关默认关闭，需要超级管理员显式开启；关闭时不影响资格判断和目标名片计算，但禁止所有新的名片写入。
+- 巡检快照从 `get_group_member_list` 读取并持久化每位成员当前的 `card`，写入 `QQGovernanceReconcileMember.Card`，保证批处理、断点续跑或重试都使用同一份快照，不重新请求 OneBot。
+- 每个巡检批次对 `matched` 成员比较快照中的当前名片与目标名片：
+  - 群规则开启 `card_sync_enabled`、目标名片非空且与当前名片不同时，创建 `set_card` 任务，由现有 QQ worker 在限流和风控约束下执行；
+  - 当前名片已等于目标名片时不创建任务；
+  - 关闭开关、不匹配成员、空名片模板都不会创建新的名片任务。
+- 名片任务的幂等键包含群号、QQ 和成员状态版本 `card:{group}:{qq}:{version}`；运行态版本校验照常生效，状态版本变化后旧任务自动取消，状态再次变化后允许重新入队。`group_increase` 的即时名片修改沿用同一幂等规则，且同样只在开关开启时触发。
+- Worker 执行 `set_card` 前额外校验群规则的 `card_sync_enabled`；如果开关被关闭，已排队任务在保存规则时由 `CancelPendingActionTasks` 直接标记为 `cancelled`，未抢占到的任务也会在领取时被版本校验或开关校验取消。
+- 名片写入成功后，worker 通过 `MarkMemberCardUpdated` 按匹配的成员状态版本更新 `last_card_updated_at`，避免被状态版本不一致的过期任务覆盖。成员接口暂不增加当前/目标名片字段，操作队列仍按 `action_type=set_card` 展示待执行、失败和死信任务。
+
 ## 配置与边界
 
 `onebot` 配置保存在 `system_config`，仅超级管理员可在系统基础配置页面维护；它与现有通用 `webhook.onebot` 完全独立。生产环境必须使用随机令牌、唯一机器人 QQ，并仅配置 NapCat 所在受控网段。

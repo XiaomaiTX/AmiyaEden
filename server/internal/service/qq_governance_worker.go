@@ -83,6 +83,11 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 	if err = s.logQQGovernanceAction(task, "succeeded", ""); err != nil {
 		return err
 	}
+	if task.ActionType == model.QQGovernanceActionSetCard {
+		if err := s.repo.MarkMemberCardUpdated(task.GroupID, task.QQ, task.TargetVersion, s.now()); err != nil {
+			return err
+		}
+	}
 	s.recordRiskOutcome(task, true, nil)
 	return s.repo.CompleteActionTask(task.ID, task.LeaseToken, s.now())
 }
@@ -94,11 +99,15 @@ func (s *QQGovernanceService) actionStillValid(task *model.QQGovernanceActionTas
 		}
 		return true, "", nil
 	}
-	if _, err := s.repo.GetEnabledPolicy(task.GroupID); err != nil {
+	policy, err := s.repo.GetEnabledPolicy(task.GroupID)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, "群治理规则已禁用或删除", nil
 		}
 		return false, "", fmt.Errorf("读取群治理规则失败: %w", err)
+	}
+	if task.ActionType == model.QQGovernanceActionSetCard && !policy.CardSyncEnabled {
+		return false, "群名片同步已关闭", nil
 	}
 	state, err := s.repo.GetMemberState(task.GroupID, task.QQ)
 	if err != nil {

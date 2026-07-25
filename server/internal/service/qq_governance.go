@@ -224,7 +224,7 @@ func (s *QQGovernanceService) recordDecision(tx *gorm.DB, event *model.QQGoverna
 	if inbound.EventType == "request/group_add" && decision.Decision == model.QQGovernanceReviewUnmatched && policy.AutoRejectUnmatched {
 		return s.enqueueDecision(tx, state, inbound, model.QQGovernanceActionReject, false, now)
 	}
-	if inbound.EventType == "notice/group_increase" && decision.Decision == model.QQGovernanceReviewMatched && decision.TargetCard != "" {
+	if inbound.EventType == "notice/group_increase" && decision.Decision == model.QQGovernanceReviewMatched && decision.TargetCard != "" && policy.CardSyncEnabled {
 		return s.enqueueCard(tx, state, inbound, now)
 	}
 	return nil
@@ -251,7 +251,7 @@ func (s *QQGovernanceService) enqueueDecision(tx *gorm.DB, state *model.QQGroupM
 }
 func (s *QQGovernanceService) enqueueCard(tx *gorm.DB, state *model.QQGroupMemberState, event QQGovernanceInboundEvent, now time.Time) error {
 	payload, _ := json.Marshal(qqGovernanceActionPayload{Card: state.TargetCard})
-	_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionSetCard, IdempotencyKey: fmt.Sprintf("card:%d:%d", event.GroupID, event.QQ), GroupID: event.GroupID, QQ: event.QQ, TargetVersion: state.Version, PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 30, RunAfter: now.Add(15*time.Second + time.Duration(rand.IntN(46))*time.Second)})
+	_, err := s.repo.CreateActionTaskIfAbsentTx(tx, &model.QQGovernanceActionTask{ActionType: model.QQGovernanceActionSetCard, IdempotencyKey: fmt.Sprintf("card:%d:%d:%d", event.GroupID, event.QQ, state.Version), GroupID: event.GroupID, QQ: event.QQ, TargetVersion: state.Version, PayloadJSON: string(payload), Status: model.QQGovernanceActionPending, Priority: 30, RunAfter: now.Add(15*time.Second + time.Duration(rand.IntN(46))*time.Second)})
 	return err
 }
 
