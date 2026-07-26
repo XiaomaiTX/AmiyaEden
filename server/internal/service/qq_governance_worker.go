@@ -52,7 +52,7 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 	if wait, err := s.riskWait(task); err != nil {
 		return s.failTask(task, err, true)
 	} else if wait > 0 {
-		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), "OneBot 风险控制暂停自动动作", false)
+		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), model.QQGovernanceRetryCauseRateLimited, "OneBot 风险控制暂停自动动作", false)
 	}
 	if valid, reason, err := s.actionStillValid(task); err != nil {
 		return s.failTask(task, err, true)
@@ -62,7 +62,7 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 	if wait, err := s.acquireQQGovernanceRateLimit(ctx, task); err != nil {
 		return s.failTask(task, err, true)
 	} else if wait > 0 {
-		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), "QQ 动作限流等待", false)
+		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), model.QQGovernanceRetryCauseRateLimited, "QQ 动作限流等待", false)
 	}
 	params, err := paramsForQQGovernanceAction(task)
 	if err != nil {
@@ -70,7 +70,7 @@ func (s *QQGovernanceService) RunActionWorkerOnce(ctx context.Context) error {
 	}
 	executor := s.actionExecutor()
 	if executor == nil || !executor.OneBotConnected() {
-		return s.failTask(task, &OneBotActionError{Message: "OneBot 机器人未连接", Retryable: true}, true)
+		return s.failTask(task, &OneBotActionError{Message: oneBotDisconnectedMessage, Retryable: true}, true)
 	}
 	actionCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -133,7 +133,15 @@ func (s *QQGovernanceService) failTask(task *model.QQGovernanceActionTask, err e
 	if dead {
 		_, _ = s.createAlert("dead_task", task.GroupID, task.QQ, task.ID, "QQ 群治理动作任务已进入死信")
 	}
-	return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, count, s.now().Add(qqGovernanceRetryDelay(count)), truncateQQGovernanceError(err), dead)
+	return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, count, s.now().Add(qqGovernanceRetryDelay(count)), qqGovernanceRetryCause(err), truncateQQGovernanceError(err), dead)
+}
+
+func qqGovernanceRetryCause(err error) string {
+	var oneBotErr *OneBotActionError
+	if errors.As(err, &oneBotErr) && oneBotErr.Message == oneBotDisconnectedMessage {
+		return model.QQGovernanceRetryCauseDisconnected
+	}
+	return model.QQGovernanceRetryCauseRetryable
 }
 func qqGovernanceRetryDelay(count int) time.Duration {
 	switch count {
@@ -223,9 +231,9 @@ func (s *QQGovernanceService) acquireQQGovernanceRateLimit(ctx context.Context, 
 	if global.Redis == nil {
 		return 0, errors.New("redis 不可用，拒绝执行 QQ 操作")
 	}
-	groupInterval := 8 * time.Second
+	groupInterval := qqGovernanceGroupActionInterval
 	if task.ActionType == model.QQGovernanceActionKick {
-		groupInterval = 30 * time.Second
+		groupInterval = qqGovernanceKickGroupInterval
 	}
 	const tokenBucketScript = `
 local now = tonumber(ARGV[1])
@@ -255,7 +263,7 @@ for i = 1, #KEYS do
 end
 return {1, 0}`
 	keys := []string{"qq_governance:rate:global", fmt.Sprintf("qq_governance:rate:group:%d", task.GroupID)}
-	args := []any{s.now().UnixMilli(), 3, 1.0 / 3000.0, 1, 1.0 / float64(groupInterval.Milliseconds())}
+	args := []any{s.now().UnixMilli(), qqGovernanceGlobalBucketCapacity, 1.0 / float64(qqGovernanceGlobalRefillInterval.Milliseconds()), 1, 1.0 / float64(groupInterval.Milliseconds())}
 	if task.QQ > 0 {
 		keys = append(keys, fmt.Sprintf("qq_governance:rate:qq:%d", task.QQ))
 		args = append(args, 1, 1.0/60000.0)

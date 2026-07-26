@@ -131,11 +131,11 @@ func (s *QQGovernanceService) captureReconcileSnapshot(ctx context.Context, task
 	if wait, err := s.acquireQQGovernanceRateLimit(ctx, task); err != nil {
 		return s.failTask(task, err, true)
 	} else if wait > 0 {
-		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), "QQ 操作限流等待", false)
+		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), model.QQGovernanceRetryCauseRateLimited, "QQ 操作限流等待", false)
 	}
 	executor := s.actionExecutor()
 	if executor == nil || !executor.OneBotConnected() {
-		return s.failTask(task, &OneBotActionError{Message: "OneBot 机器人未连接", Retryable: true}, true)
+		return s.failTask(task, &OneBotActionError{Message: oneBotDisconnectedMessage, Retryable: true}, true)
 	}
 	callCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -222,11 +222,11 @@ func (s *QQGovernanceService) refreshQQGovernanceGroupInfo(ctx context.Context, 
 	if wait, err := s.acquireQQGovernanceRateLimit(ctx, task); err != nil {
 		return s.failTask(task, err, true)
 	} else if wait > 0 {
-		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), "QQ 操作限流等待", false)
+		return s.repo.RetryOrDeadActionTask(task.ID, task.LeaseToken, task.RetryCount, s.now().Add(wait), model.QQGovernanceRetryCauseRateLimited, "QQ 操作限流等待", false)
 	}
 	executor := s.actionExecutor()
 	if executor == nil || !executor.OneBotConnected() {
-		return s.failTask(task, &OneBotActionError{Message: "OneBot 机器人未连接", Retryable: true}, true)
+		return s.failTask(task, &OneBotActionError{Message: oneBotDisconnectedMessage, Retryable: true}, true)
 	}
 	callCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

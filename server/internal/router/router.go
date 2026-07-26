@@ -664,6 +664,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminQQGovernance.GET("/reviews", qqGovernanceAdminH.ListReviews)
 		adminQQGovernance.GET("/tasks", qqGovernanceAdminH.ListTasks)
 		adminQQGovernance.POST("/tasks/:id/retry", qqGovernanceAdminH.RetryTask)
+		adminQQGovernance.POST("/tasks/recover-disconnected", qqGovernanceAdminH.RecoverDisconnectedTasks)
 		adminQQGovernance.GET("/alerts", qqGovernanceAdminH.ListAlerts)
 		adminQQGovernance.POST("/alerts/:id/acknowledge", qqGovernanceAdminH.AcknowledgeAlert)
 		adminQQGovernance.GET("/metrics", qqGovernanceAdminH.Metrics)

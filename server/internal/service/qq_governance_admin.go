@@ -62,6 +62,15 @@ type QQGovernanceMetrics struct {
 	Connected     bool    `json:"connected"`
 	RiskLevel     int     `json:"risk_level"`
 }
+
+type QQGovernanceRecoveryResult struct {
+	RecoveredTasks int64 `json:"recovered_tasks"`
+}
+
+type QQGovernanceReconcileTriggerResult struct {
+	Status         string `json:"status"`
+	RecoveredTasks int64  `json:"recovered_tasks"`
+}
 type QQGovernanceGroupStatus struct {
 	GroupID               int64      `json:"group_id"`
 	GroupName             string     `json:"group_name"`
@@ -334,6 +343,32 @@ func (s *QQGovernanceService) RetryTask(id, operator uint) error {
 	s.audit("qq_governance_task_retry", operator, "qq_governance_action_task", fmt.Sprint(id), nil)
 	return nil
 }
+
+// OnOneBotConnected is invoked by the protocol layer after a verified reverse
+// WebSocket connection is installed. Dead tasks remain dead until an operator
+// explicitly restores them.
+func (s *QQGovernanceService) OnOneBotConnected() {
+	count, err := s.repo.RecoverDisconnectedActionTasks(s.now(), false, 0, 0, nil)
+	if err != nil {
+		s.logger().Warn("恢复断连等待的 QQ 群治理任务失败")
+		return
+	}
+	if count > 0 {
+		s.logger().Info("OneBot 重连后恢复 QQ 群治理任务")
+	}
+}
+
+func (s *QQGovernanceService) RecoverDisconnectedTasks(operator uint) (QQGovernanceRecoveryResult, error) {
+	if executor := s.actionExecutor(); executor == nil || !executor.OneBotConnected() {
+		return QQGovernanceRecoveryResult{}, errors.New("OneBot 机器人未连接，不能恢复连接阻塞任务")
+	}
+	count, err := s.repo.RecoverDisconnectedActionTasks(s.now(), true, 0, 0, nil)
+	if err != nil {
+		return QQGovernanceRecoveryResult{}, err
+	}
+	s.audit("qq_governance_disconnected_tasks_recover", operator, "qq_governance_action_task", "connection", map[string]any{"recovered_tasks": count})
+	return QQGovernanceRecoveryResult{RecoveredTasks: count}, nil
+}
 func (s *QQGovernanceService) Metrics() (QQGovernanceMetrics, error) {
 	counts, err := s.repo.MetricCounts(s.now().Add(-time.Hour))
 	if err != nil {
@@ -350,12 +385,38 @@ func (s *QQGovernanceService) Metrics() (QQGovernanceMetrics, error) {
 	}
 	return result, nil
 }
-func (s *QQGovernanceService) TriggerReconcile(ctx context.Context, groupID int64, operator uint) error {
-	if err := s.EnqueueScheduledReconciliations(ctx, groupID); err != nil {
-		return err
+func (s *QQGovernanceService) TriggerReconcile(ctx context.Context, groupID int64, operator uint) (QQGovernanceReconcileTriggerResult, error) {
+	active, err := s.repo.GetActiveReconcileRun(groupID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err := s.EnqueueScheduledReconciliations(ctx, groupID); err != nil {
+			return QQGovernanceReconcileTriggerResult{}, err
+		}
+		s.audit("qq_governance_reconcile_trigger", operator, "qq_group_governance_policy", fmt.Sprint(groupID), map[string]any{"status": "created"})
+		return QQGovernanceReconcileTriggerResult{Status: "created"}, nil
 	}
-	s.audit("qq_governance_reconcile_trigger", operator, "qq_group_governance_policy", fmt.Sprint(groupID), nil)
-	return nil
+	if err != nil {
+		return QQGovernanceReconcileTriggerResult{}, err
+	}
+	if executor := s.actionExecutor(); executor != nil && executor.OneBotConnected() {
+		count, recoverErr := s.repo.RecoverDisconnectedActionTasks(s.now(), true, groupID, active.ID, []string{model.QQGovernanceActionSnapshot})
+		if recoverErr != nil {
+			return QQGovernanceReconcileTriggerResult{}, recoverErr
+		}
+		if count > 0 {
+			s.audit("qq_governance_reconcile_trigger", operator, "qq_governance_reconcile_run", fmt.Sprint(active.ID), map[string]any{"status": "resumed", "recovered_tasks": count})
+			return QQGovernanceReconcileTriggerResult{Status: "resumed", RecoveredTasks: count}, nil
+		}
+	}
+	tasks, err := s.repo.ListActionTasksForRun(active.ID)
+	if err != nil {
+		return QQGovernanceReconcileTriggerResult{}, err
+	}
+	for _, task := range tasks {
+		if task.ActionType == model.QQGovernanceActionSnapshot && task.Status == model.QQGovernanceActionDead {
+			return QQGovernanceReconcileTriggerResult{Status: "blocked"}, nil
+		}
+	}
+	return QQGovernanceReconcileTriggerResult{Status: "running"}, nil
 }
 func (s *QQGovernanceService) audit(action string, operator uint, resourceType, resourceID string, details map[string]any) {
 	if global.DB == nil {

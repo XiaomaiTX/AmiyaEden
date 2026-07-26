@@ -21,6 +21,10 @@ const (
 	QQGovernanceActionRecheck          = "recheck"
 	QQGovernanceActionKick             = "kick"
 	QQGovernanceActionNotify           = "notify"
+	QQGovernanceRetryCauseNone         = ""
+	QQGovernanceRetryCauseDisconnected = "onebot_disconnected"
+	QQGovernanceRetryCauseRateLimited  = "rate_limited"
+	QQGovernanceRetryCauseRetryable    = "retryable_error"
 	QQGovernanceViolationReview        = "review_only"
 	QQGovernanceViolationAutoKick      = "auto_kick_after_confirmed_mismatch"
 	QQGovernanceMemberJoinPending      = "join_pending"
@@ -181,6 +185,7 @@ type QQGovernanceActionTask struct {
 	ClaimedAt      *time.Time `json:"claimed_at"`
 	LeaseExpiresAt *time.Time `gorm:"index" json:"lease_expires_at"`
 	Source         string     `gorm:"size:32;not null;default:'automatic'" json:"source"`
+	RetryCause     string     `gorm:"size:64;not null;default:'';index" json:"retry_cause"`
 	LastError      string     `gorm:"type:text;not null;default:''" json:"last_error"`
 	CompletedAt    *time.Time `json:"completed_at"`
 }

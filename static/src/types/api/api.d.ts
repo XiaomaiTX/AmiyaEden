@@ -309,6 +309,7 @@ declare namespace Api {
       status: string
       priority: number
       retry_count: number
+      retry_cause: string
       run_after: string
       last_error: string
       source: string
@@ -339,6 +340,24 @@ declare namespace Api {
     interface Connection {
       connected: boolean
       risk_level: number
+      rate_limit: RateLimitStatus
+    }
+    interface RateLimitBucket {
+      capacity: number
+      tokens: number
+      wait_ms: number
+    }
+    interface RateLimitStatus {
+      available: boolean
+      global: RateLimitBucket
+      groups: Array<{ group_id: number; bucket: RateLimitBucket }>
+    }
+    interface RecoveryResult {
+      recovered_tasks: number
+    }
+    interface ReconcileResult {
+      status: 'created' | 'resumed' | 'running' | 'blocked'
+      recovered_tasks: number
     }
     interface Settings {
       scan_interval_minutes: number

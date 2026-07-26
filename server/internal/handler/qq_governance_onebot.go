@@ -27,7 +27,7 @@ type QQGovernanceOneBotHandler struct {
 
 func NewQQGovernanceOneBotHandler() *QQGovernanceOneBotHandler {
 	svc := service.DefaultQQGovernanceService()
-	m := newQQGovernanceOneBotConnectionManager(svc.HandleOneBotEvent)
+	m := newQQGovernanceOneBotConnectionManager(svc.HandleOneBotEvent, svc.OnOneBotConnected)
 	svc.SetOneBotActionExecutor(m)
 	return &QQGovernanceOneBotHandler{manager: m}
 }
@@ -98,10 +98,11 @@ func validateOneBotReverseRequest(r *http.Request) error {
 }
 
 type qqGovernanceOneBotConnectionManager struct {
-	mu      sync.RWMutex
-	current *qqGovernanceOneBotConnection
-	pending map[string]chan oneBotActionResponse
-	handle  func(context.Context, service.QQGovernanceInboundEvent) error
+	mu          sync.RWMutex
+	current     *qqGovernanceOneBotConnection
+	pending     map[string]chan oneBotActionResponse
+	handle      func(context.Context, service.QQGovernanceInboundEvent) error
+	onConnected func()
 }
 type qqGovernanceOneBotConnection struct {
 	conn    *websocket.Conn
@@ -114,8 +115,8 @@ type oneBotActionResponse struct {
 	Data    json.RawMessage `json:"data"`
 }
 
-func newQQGovernanceOneBotConnectionManager(handle func(context.Context, service.QQGovernanceInboundEvent) error) *qqGovernanceOneBotConnectionManager {
-	return &qqGovernanceOneBotConnectionManager{pending: map[string]chan oneBotActionResponse{}, handle: handle}
+func newQQGovernanceOneBotConnectionManager(handle func(context.Context, service.QQGovernanceInboundEvent) error, onConnected func()) *qqGovernanceOneBotConnectionManager {
+	return &qqGovernanceOneBotConnectionManager{pending: map[string]chan oneBotActionResponse{}, handle: handle, onConnected: onConnected}
 }
 func (m *qqGovernanceOneBotConnectionManager) OneBotConnected() bool {
 	m.mu.RLock()
@@ -136,6 +137,9 @@ func (m *qqGovernanceOneBotConnectionManager) Serve(conn *websocket.Conn, ctx co
 		_ = old.conn.Close()
 	}
 	m.logger().Info("OneBot reverse WebSocket connected")
+	if old == nil && m.onConnected != nil {
+		m.onConnected()
+	}
 	defer func() {
 		m.mu.Lock()
 		if m.current == connection {

@@ -43,6 +43,11 @@ export function fetchQQGovernanceTasks(params?: Api.QQGovernance.PageParams) {
 export function retryQQGovernanceTask(id: number) {
   return request.post({ url: `${base}/tasks/${id}/retry` })
 }
+export function recoverQQGovernanceDisconnectedTasks() {
+  return request.post<Api.QQGovernance.RecoveryResult>({
+    url: `${base}/tasks/recover-disconnected`
+  })
+}
 export function fetchQQGovernanceAlerts(params?: Api.QQGovernance.PageParams) {
   return request.get<Api.QQGovernance.PageResult<Api.QQGovernance.Alert>>({
     url: `${base}/alerts`,
@@ -74,7 +79,9 @@ export function updateQQGovernanceSettings(data: Api.QQGovernance.Settings) {
   return request.put<Api.QQGovernance.Settings>({ url: `${base}/settings`, data })
 }
 export function triggerQQGovernanceReconcile(groupId: number) {
-  return request.post({ url: `${base}/groups/${groupId}/reconcile` })
+  return request.post<Api.QQGovernance.ReconcileResult>({
+    url: `${base}/groups/${groupId}/reconcile`
+  })
 }
 export function resetQQGovernanceRisk() {
   return request.post({ url: `${base}/risk-control/reset` })

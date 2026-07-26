@@ -22,9 +22,14 @@ import (
 )
 
 const (
-	qqGovernanceLease        = 30 * time.Second
-	qqGovernanceMaxRetries   = 5
-	qqGovernanceMaxCardRunes = 60
+	qqGovernanceLease                = 30 * time.Second
+	qqGovernanceMaxRetries           = 5
+	qqGovernanceMaxCardRunes         = 60
+	qqGovernanceGlobalBucketCapacity = 3
+	qqGovernanceGlobalRefillInterval = 3 * time.Second
+	qqGovernanceGroupActionInterval  = 8 * time.Second
+	qqGovernanceKickGroupInterval    = 30 * time.Second
+	oneBotDisconnectedMessage        = "OneBot 机器人未连接"
 )
 
 type OneBotActionExecutor interface {

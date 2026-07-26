@@ -310,11 +310,42 @@
                   }}</ElTag></ElDescriptionsItem
                 ><ElDescriptionsItem :label="t('qqGovernance.fields.risk')">{{
                   connection.risk_level
-                }}</ElDescriptionsItem></ElDescriptions
+                }}</ElDescriptionsItem
+                ><ElDescriptionsItem :label="t('qqGovernance.fields.rateLimit')"
+                  ><ElTag :type="connection.rate_limit.available ? 'success' : 'warning'">{{
+                    connection.rate_limit.available
+                      ? t('qqGovernance.values.normal')
+                      : t('qqGovernance.values.rateUnavailable')
+                  }}</ElTag></ElDescriptionsItem
+                ><template v-if="connection.rate_limit.available"
+                  ><ElDescriptionsItem :label="t('qqGovernance.fields.globalLimit')">{{
+                    rateLimitLabel(connection.rate_limit.global)
+                  }}</ElDescriptionsItem
+                  ><ElDescriptionsItem
+                    v-for="group in connection.rate_limit.groups"
+                    :key="group.group_id"
+                    :label="`${t('qqGovernance.fields.groupLimit')} ${group.group_id}`"
+                    >{{ rateLimitLabel(group.bucket) }}</ElDescriptionsItem
+                  ></template
+                ></ElDescriptions
               ><div class="mt-4"
                 ><ElButton type="danger" plain @click="resetRisk">{{
                   t('qqGovernance.actions.resetRisk')
-                }}</ElButton></div
+                }}</ElButton
+                ><ElPopconfirm
+                  :title="t('qqGovernance.messages.recoverDisconnectedConfirm')"
+                  @confirm="recoverDisconnectedTasks"
+                  ><template #reference
+                    ><ElButton
+                      class="ml-2"
+                      type="primary"
+                      plain
+                      :disabled="!connection.connected"
+                      :loading="recoveringDisconnectedTasks"
+                      >{{ t('qqGovernance.actions.recoverDisconnected') }}</ElButton
+                    ></template
+                  ></ElPopconfirm
+                ></div
               ></ElCard
             ></ElCol
           ></ElRow
@@ -413,6 +444,7 @@
     fetchQQGovernanceReviews,
     fetchQQGovernanceSettings,
     fetchQQGovernanceTasks,
+    recoverQQGovernanceDisconnectedTasks,
     retryQQGovernanceTask,
     resetQQGovernanceRisk,
     saveQQGovernancePolicy,
@@ -428,6 +460,7 @@
     policyDialog = ref(false),
     savingPolicy = ref(false),
     savingSettings = ref(false),
+    recoveringDisconnectedTasks = ref(false),
     editingGroupId = ref(0)
   const policies = ref<Api.QQGovernance.Policy[]>([]),
     groups = ref<Api.QQGovernance.GroupStatus[]>([]),
@@ -444,7 +477,15 @@
       connected: false,
       risk_level: 0
     }),
-    connection = ref<Api.QQGovernance.Connection>({ connected: false, risk_level: 0 })
+    connection = ref<Api.QQGovernance.Connection>({
+      connected: false,
+      risk_level: 0,
+      rate_limit: {
+        available: false,
+        global: { capacity: 3, tokens: 0, wait_ms: 0 },
+        groups: []
+      }
+    })
   const settings = reactive<Api.QQGovernance.Settings>({
     scan_interval_minutes: 15,
     mismatch_confirmations: 2,
@@ -840,8 +881,36 @@
     await refreshActive()
   }
   async function reconcile(id: number) {
-    await triggerQQGovernanceReconcile(id)
-    ElMessage.success(t('qqGovernance.messages.reconcileSuccess'))
+    const result = await triggerQQGovernanceReconcile(id)
+    const messages: Record<Api.QQGovernance.ReconcileResult['status'], string> = {
+      created: 'qqGovernance.messages.reconcileCreated',
+      resumed: 'qqGovernance.messages.reconcileResumed',
+      running: 'qqGovernance.messages.reconcileRunning',
+      blocked: 'qqGovernance.messages.reconcileBlocked'
+    }
+    ElMessage.success(t(messages[result.status]))
+    await refreshActive()
+  }
+  function rateLimitLabel(bucket: Api.QQGovernance.RateLimitBucket) {
+    if (bucket.wait_ms > 0) {
+      return t('qqGovernance.messages.rateLimitWaiting', { milliseconds: bucket.wait_ms })
+    }
+    return t('qqGovernance.messages.rateLimitAvailable', {
+      tokens: bucket.tokens.toFixed(2),
+      capacity: bucket.capacity
+    })
+  }
+  async function recoverDisconnectedTasks() {
+    recoveringDisconnectedTasks.value = true
+    try {
+      const result = await recoverQQGovernanceDisconnectedTasks()
+      ElMessage.success(
+        t('qqGovernance.messages.recoverDisconnectedSuccess', { count: result.recovered_tasks })
+      )
+      await Promise.all([loadSettings(), refreshActive(), taskTable.refreshData()])
+    } finally {
+      recoveringDisconnectedTasks.value = false
+    }
   }
   async function retryTask(id: number) {
     await retryQQGovernanceTask(id)

@@ -65,6 +65,24 @@ test('qq governance operation buttons use icons with tooltips', () => {
   assert.match(source, /:icon="CircleCheck"/)
 })
 
+test('qq governance exposes connection recovery and global plus group rate-limit state', () => {
+  assert.match(source, /recoverQQGovernanceDisconnectedTasks/)
+  assert.match(source, /recoverDisconnectedTasks/)
+  assert.match(source, /connection\.rate_limit\.available/)
+  assert.match(source, /connection\.rate_limit\.global/)
+  assert.match(source, /connection\.rate_limit\.groups/)
+  assert.match(source, /rateLimitLabel\(group\.bucket\)/)
+  assert.match(zhLocale, /"recoverDisconnected":\s*"恢复连接阻塞任务"/)
+  assert.match(enLocale, /"recoverDisconnected":\s*"Recover Connection-blocked Tasks"/)
+})
+
+test('qq governance displays the distinct reconciliation trigger outcomes', () => {
+  assert.match(source, /reconcileCreated/)
+  assert.match(source, /reconcileResumed/)
+  assert.match(source, /reconcileRunning/)
+  assert.match(source, /reconcileBlocked/)
+})
+
 test('qq governance uses shared tables and ledger pagination for growing records', () => {
   assert.match(source, /import \{ useTable \} from '@\/hooks\/core\/useTable'/)
   assert.match(source, /<ArtTable[\s\S]*:columns="policyColumns"/)

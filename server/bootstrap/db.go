@@ -187,6 +187,7 @@ func autoMigrate(db *gorm.DB) {
 	ensureSkillPlanScopes(db)
 	dropObsoleteSchema(db)
 	ensureCustomIndexes(db)
+	migrateQQGovernanceTaskRetryCauses(db)
 
 	// 数据迁移：user_role / esi 映射表从 role_id 迁移到 role_code，然后删除 role 表
 	roleSvc := service.NewRoleService()
@@ -206,6 +207,20 @@ func autoMigrate(db *gorm.DB) {
 	roleSvc.MigrateExistingUsers()
 
 	ensureDefaultTicketCategories(db)
+}
+
+// migrateQQGovernanceTaskRetryCauses classifies legacy disconnected tasks so
+// a OneBot reconnect can safely resume the retry_wait records created before
+// retry_cause was introduced.
+func migrateQQGovernanceTaskRetryCauses(db *gorm.DB) {
+	if !db.Migrator().HasTable("qq_governance_action_task") || !db.Migrator().HasColumn("qq_governance_action_task", "retry_cause") {
+		return
+	}
+	if err := db.Model(&model.QQGovernanceActionTask{}).
+		Where("retry_cause = '' AND last_error = ?", "OneBot 机器人未连接").
+		Update("retry_cause", model.QQGovernanceRetryCauseDisconnected).Error; err != nil {
+		global.Logger.Error("迁移 QQ 群治理任务失败原因失败", zap.Error(err))
+	}
 }
 
 func ensureDefaultTicketCategories(db *gorm.DB) {

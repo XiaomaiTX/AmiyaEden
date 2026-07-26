@@ -3084,7 +3084,8 @@
       "edit": "编辑",
       "delete": "删除",
       "save": "保存规则",
-      "reconcile": "立即巡检",
+        "reconcile": "立即巡检",
+        "recoverDisconnected": "恢复连接阻塞任务",
       "retry": "重试死信",
       "ack": "确认告警",
       "resetRisk": "解除熔断",
@@ -3115,7 +3116,10 @@
       "error": "错误",
       "message": "消息",
       "risk": "风险等级",
-      "connection": "机器人连接",
+        "connection": "机器人连接",
+        "rateLimit": "限流状态",
+        "globalLimit": "全局限流",
+        "groupLimit": "群限流",
       "failureRate": "失败率",
       "dead": "死信任务"
     },
@@ -3127,7 +3131,8 @@
       "yes": "是",
       "no": "否",
       "unknown": "未知",
-      "normal": "正常"
+        "normal": "正常",
+        "rateUnavailable": "不可用"
     },
     "placeholders": {
       "corporations": "输入军团 ID 后回车",
@@ -3138,7 +3143,15 @@
       "saveSuccess": "群规则已保存",
       "deleteConfirm": "确定删除该群规则吗？",
       "actionSuccess": "治理动作已创建",
-      "reconcileSuccess": "巡检任务已创建",
+        "reconcileSuccess": "巡检任务已创建",
+        "reconcileCreated": "巡检任务已创建",
+        "reconcileResumed": "已恢复被阻塞的巡检任务",
+        "reconcileRunning": "巡检已在运行中",
+        "reconcileBlocked": "巡检被非连接错误阻塞，请处理后重试死信任务",
+        "recoverDisconnectedConfirm": "确定恢复所有因 OneBot 断连而阻塞的任务吗？",
+        "recoverDisconnectedSuccess": "已恢复 {count} 个连接阻塞任务",
+        "rateLimitWaiting": "等待 {milliseconds} 毫秒",
+        "rateLimitAvailable": "可用令牌 {tokens} / {capacity}",
       "riskReset": "熔断状态已解除"
     },
     "v2": {

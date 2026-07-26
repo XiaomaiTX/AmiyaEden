@@ -152,11 +152,20 @@ func (h *QQGovernanceAdminHandler) TriggerReconcile(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := h.svc.TriggerReconcile(c.Request.Context(), group, middleware.GetUserID(c)); err != nil {
+	result, err := h.svc.TriggerReconcile(c.Request.Context(), group, middleware.GetUserID(c))
+	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, nil)
+	response.OK(c, result)
+}
+func (h *QQGovernanceAdminHandler) RecoverDisconnectedTasks(c *gin.Context) {
+	result, err := h.svc.RecoverDisconnectedTasks(middleware.GetUserID(c))
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
 }
 func (h *QQGovernanceAdminHandler) ResetRisk(c *gin.Context) {
 	if err := h.svc.ResetRiskControl(middleware.GetUserID(c)); err != nil {
@@ -166,12 +175,12 @@ func (h *QQGovernanceAdminHandler) ResetRisk(c *gin.Context) {
 	response.OK(c, nil)
 }
 func (h *QQGovernanceAdminHandler) Connection(c *gin.Context) {
-	metrics, err := h.svc.Metrics()
+	connection, err := h.svc.ConnectionStatus()
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
-	response.OK(c, gin.H{"connected": metrics.Connected, "risk_level": metrics.RiskLevel})
+	response.OK(c, connection)
 }
 func parseQQGovernanceInt64(c *gin.Context, key string) (int64, bool) {
 	value, err := strconv.ParseInt(c.Param(key), 10, 64)

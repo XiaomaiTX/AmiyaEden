@@ -3340,7 +3340,8 @@
       "edit": "Edit",
       "delete": "Delete",
       "save": "Save Policy",
-      "reconcile": "Reconcile Now",
+        "reconcile": "Reconcile Now",
+        "recoverDisconnected": "Recover Connection-blocked Tasks",
       "retry": "Retry Dead Task",
       "ack": "Acknowledge",
       "resetRisk": "Reset Circuit",
@@ -3371,7 +3372,10 @@
       "error": "Error",
       "message": "Message",
       "risk": "Risk Level",
-      "connection": "Bot Connection",
+        "connection": "Bot Connection",
+        "rateLimit": "Rate Limit",
+        "globalLimit": "Global Limit",
+        "groupLimit": "Group Limit",
       "failureRate": "Failure Rate",
       "dead": "Dead Tasks"
     },
@@ -3383,7 +3387,8 @@
       "yes": "Yes",
       "no": "No",
       "unknown": "Unknown",
-      "normal": "Normal"
+        "normal": "Normal"
+        ,"rateUnavailable": "Unavailable"
     },
     "placeholders": {
       "corporations": "Enter a corporation ID and press Enter",
@@ -3394,7 +3399,15 @@
       "saveSuccess": "Policy saved",
       "deleteConfirm": "Delete this group policy?",
       "actionSuccess": "Governance action created",
-      "reconcileSuccess": "Reconciliation task created",
+        "reconcileSuccess": "Reconciliation task created",
+        "reconcileCreated": "Reconciliation task created",
+        "reconcileResumed": "Blocked reconciliation task resumed",
+        "reconcileRunning": "Reconciliation is already running",
+        "reconcileBlocked": "Reconciliation is blocked by a non-connection error; retry the dead task after resolving it",
+        "recoverDisconnectedConfirm": "Recover all tasks blocked by a disconnected OneBot connection?",
+        "recoverDisconnectedSuccess": "Recovered {count} connection-blocked task(s)",
+        "rateLimitWaiting": "Waiting {milliseconds} ms",
+        "rateLimitAvailable": "{tokens} / {capacity} tokens available",
       "riskReset": "Circuit breaker reset"
     },
     "v2": {

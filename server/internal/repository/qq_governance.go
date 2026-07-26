@@ -306,7 +306,7 @@ func (r *QQGovernanceRepository) GetActionTask(id uint) (*model.QQGovernanceActi
 func (r *QQGovernanceRepository) RetryDeadActionTask(id uint, now time.Time) error {
 	result := r.dbOrGlobal().Model(&model.QQGovernanceActionTask{}).
 		Where("id = ? AND status = ?", id, model.QQGovernanceActionDead).
-		Updates(map[string]any{"status": model.QQGovernanceActionRetryWait, "run_after": now, "retry_count": 0, "last_error": "", "completed_at": nil})
+		Updates(map[string]any{"status": model.QQGovernanceActionRetryWait, "run_after": now, "retry_count": 0, "retry_cause": model.QQGovernanceRetryCauseNone, "last_error": "", "completed_at": nil})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -314,6 +314,44 @@ func (r *QQGovernanceRepository) RetryDeadActionTask(id uint, now time.Time) err
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// RecoverDisconnectedActionTasks makes only tasks explicitly blocked by an
+// unavailable OneBot connection runnable again.
+func (r *QQGovernanceRepository) RecoverDisconnectedActionTasks(now time.Time, includeDead bool, groupID int64, runID uint, actionTypes []string) (int64, error) {
+	statuses := []string{model.QQGovernanceActionRetryWait}
+	if includeDead {
+		statuses = append(statuses, model.QQGovernanceActionDead)
+	}
+	query := r.dbOrGlobal().Model(&model.QQGovernanceActionTask{}).
+		Where("status IN ? AND retry_cause = ?", statuses, model.QQGovernanceRetryCauseDisconnected)
+	if groupID > 0 {
+		query = query.Where("group_id = ?", groupID)
+	}
+	if runID > 0 {
+		query = query.Where("run_id = ?", runID)
+	}
+	if len(actionTypes) > 0 {
+		query = query.Where("action_type IN ?", actionTypes)
+	}
+	result := query.Updates(map[string]any{
+		"status":           model.QQGovernanceActionPending,
+		"run_after":        now,
+		"retry_count":      0,
+		"retry_cause":      model.QQGovernanceRetryCauseNone,
+		"last_error":       "",
+		"completed_at":     nil,
+		"lease_token":      "",
+		"claimed_at":       nil,
+		"lease_expires_at": nil,
+	})
+	return result.RowsAffected, result.Error
+}
+
+func (r *QQGovernanceRepository) ListActionTasksForRun(runID uint) ([]model.QQGovernanceActionTask, error) {
+	var rows []model.QQGovernanceActionTask
+	err := r.dbOrGlobal().Where("run_id = ?", runID).Order("id ASC").Find(&rows).Error
+	return rows, err
 }
 
 // CancelPendingActionTasks cancels queued tasks for a group/action pair so the
@@ -372,14 +410,14 @@ func (r *QQGovernanceRepository) ClaimNextActionTask(now time.Time, token string
 }
 
 func (r *QQGovernanceRepository) CompleteActionTask(id uint, token string, now time.Time) error {
-	return r.updateClaimedTask(id, token, map[string]any{"status": model.QQGovernanceActionSucceeded, "completed_at": now, "lease_token": "", "claimed_at": nil, "lease_expires_at": nil, "last_error": ""})
+	return r.updateClaimedTask(id, token, map[string]any{"status": model.QQGovernanceActionSucceeded, "completed_at": now, "lease_token": "", "claimed_at": nil, "lease_expires_at": nil, "retry_cause": model.QQGovernanceRetryCauseNone, "last_error": ""})
 }
 func (r *QQGovernanceRepository) CancelActionTask(id uint, token, reason string) error {
 	return r.updateClaimedTask(id, token, map[string]any{"status": model.QQGovernanceActionCancelled, "completed_at": time.Now(), "lease_token": "", "claimed_at": nil, "lease_expires_at": nil, "last_error": reason})
 }
-func (r *QQGovernanceRepository) RetryOrDeadActionTask(id uint, token string, count int, runAfter time.Time, errMessage string, dead bool) error {
+func (r *QQGovernanceRepository) RetryOrDeadActionTask(id uint, token string, count int, runAfter time.Time, cause, errMessage string, dead bool) error {
 	status := model.QQGovernanceActionRetryWait
-	updates := map[string]any{"status": status, "retry_count": count, "lease_token": "", "claimed_at": nil, "lease_expires_at": nil, "last_error": errMessage, "run_after": runAfter}
+	updates := map[string]any{"status": status, "retry_count": count, "retry_cause": cause, "lease_token": "", "claimed_at": nil, "lease_expires_at": nil, "last_error": errMessage, "run_after": runAfter}
 	if dead {
 		updates["status"] = model.QQGovernanceActionDead
 		updates["completed_at"] = time.Now()
