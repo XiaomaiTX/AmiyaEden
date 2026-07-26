@@ -68,6 +68,8 @@ export interface CorporationStructuresSettings {
   corporations: CorporationStructureCorporation[]
   fuel_notice_threshold_days: number
   timer_notice_threshold_days: number
+  alert_enabled: boolean
+  alert_group_ids: number[]
 }
 
 export interface CorporationStructureAuthorizationUpdate {
@@ -77,6 +79,8 @@ export interface CorporationStructureAuthorizationUpdate {
   }>
   fuel_notice_threshold_days: number
   timer_notice_threshold_days: number
+  alert_enabled: boolean
+  alert_group_ids: number[]
 }
 
 export interface CorporationStructureSystemOption {

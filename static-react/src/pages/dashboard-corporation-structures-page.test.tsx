@@ -36,6 +36,8 @@ describe('dashboard corporation structures page', () => {
               ],
               fuel_notice_threshold_days: 7,
               timer_notice_threshold_days: 5,
+              alert_enabled: true,
+              alert_group_ids: [123456],
             },
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }

@@ -58,6 +58,7 @@ source_of_truth:
 | `captain_reward_processing` | `operation` | `recurring` | 是 | 处理队长归因奖励，默认 `@every 100h` |
 | `mentor_reward` | `operation` | `recurring` | 是 | 结算导师奖励 |
 | `structure_fuel_rate_sync` | `system` | `recurring` | 是 | 从 ESI 同步建筑服务模块每小时燃料消耗率，默认 `@every 240h`（10 天） |
+| `corporation_structure_alert_scan` | `system` | `recurring` | 是 | 巡查建筑快照的燃料与增强状态阈值并投递 QQ 预警，默认 `0 0 * * * *` |
 | `auto_srp` | `operation` | `triggered` | 否 | 跟踪 PAP 事件驱动的自动 SRP 处理 |
 
 ## 入口

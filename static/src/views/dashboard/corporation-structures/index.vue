@@ -301,6 +301,28 @@
               </div>
               <div class="flex items-center gap-2">
                 <span class="text-sm text-g-500">
+                  {{ $t('corporationStructures.settings.alertEnabled') }}
+                </span>
+                <ElSwitch v-model="alertEnabled" />
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="pt-2 text-sm text-g-500">
+                  {{ $t('corporationStructures.settings.alertGroupIDs') }}
+                </span>
+                <ElInput
+                  v-model="alertGroupIDsText"
+                  type="textarea"
+                  :rows="3"
+                  class="w-72"
+                  :disabled="!alertEnabled"
+                  :placeholder="$t('corporationStructures.settings.alertGroupIDsPlaceholder')"
+                />
+                <span class="text-xs text-g-500">
+                  {{ $t('corporationStructures.settings.alertGroupIDsHint') }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-g-500">
                   {{ $t('corporationStructures.settings.timerNoticeThreshold') }}
                 </span>
                 <ElInputNumber
@@ -540,8 +562,12 @@
   const settings = ref<Api.Dashboard.CorporationStructuresSettings>({
     corporations: [],
     fuel_notice_threshold_days: 7,
-    timer_notice_threshold_days: 7
+    timer_notice_threshold_days: 7,
+    alert_enabled: false,
+    alert_group_ids: []
   })
+  const alertEnabled = ref(false)
+  const alertGroupIDsText = ref('')
   const noticeThresholds = reactive({
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7
@@ -976,6 +1002,8 @@
     noticeThresholds.timer_notice_threshold_days = normalizeThresholdDays(
       settings.value.timer_notice_threshold_days
     )
+    alertEnabled.value = settings.value.alert_enabled
+    alertGroupIDsText.value = settings.value.alert_group_ids.join('\n')
   }
 
   const loadSettings = async () => {
@@ -1064,7 +1092,9 @@
         ),
         timer_notice_threshold_days: normalizeThresholdDays(
           noticeThresholds.timer_notice_threshold_days
-        )
+        ),
+        alert_enabled: alertEnabled.value,
+        alert_group_ids: parseAlertGroupIDs(alertGroupIDsText.value)
       })
       await loadSettings()
       ElMessage.success(t('corporationStructures.messages.authorizationSaved'))
@@ -1072,6 +1102,13 @@
       savingAuthorizations.value = false
     }
   }
+
+  const parseAlertGroupIDs = (value: string): number[] =>
+    value
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((item) => Number(item))
 
   const handleRunTaskForCorporation = async (corporationId: number) => {
     runningTaskCorpId.value = corporationId

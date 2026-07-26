@@ -94,6 +94,11 @@ type CorporationStructureService struct {
 	nameResolver  *EntityNameResolver
 	fuelRateRepo  *repository.StructureServiceFuelRateRepository
 	groupResolver StructureTypeGroupResolver
+	alertNotifier corporationStructureAlertNotifier
+}
+
+type corporationStructureAlertNotifier interface {
+	EnqueueStructureAlertNotifications([]int64, string) error
 }
 
 func NewCorporationStructureService() *CorporationStructureService {
@@ -110,6 +115,7 @@ func NewCorporationStructureService() *CorporationStructureService {
 		nameResolver:  NewEntityNameResolver(),
 		fuelRateRepo:  repository.NewStructureServiceFuelRateRepository(),
 		groupResolver: sdeRepo,
+		alertNotifier: DefaultQQGovernanceService(),
 	}
 }
 
@@ -168,33 +174,33 @@ type CorporationStructureServiceInfo struct {
 }
 
 type CorporationStructureRow struct {
-	CorporationID         int64                             `json:"corporation_id"`
-	CorporationName       string                            `json:"corporation_name"`
-	AssignedUserID        uint                              `json:"assigned_user_id"`
-	AssignedCharacterID   int64                             `json:"assigned_character_id"`
-	AssignedCharacterName string                            `json:"assigned_character_name"`
-	StructureID           int64                             `json:"structure_id"`
-	Name                  string                            `json:"name"`
-	TypeID                int64                             `json:"type_id"`
-	TypeName              string                            `json:"type_name"`
-	SystemID              int64                             `json:"system_id"`
-	SystemName            string                            `json:"system_name"`
-	RegionID              int64                             `json:"region_id"`
-	RegionName            string                            `json:"region_name"`
-	Security              float64                           `json:"security"`
-	State                 string                            `json:"state"`
-	Services              []CorporationStructureServiceInfo `json:"services"`
-	FuelExpires           string                            `json:"fuel_expires"`
-	FuelRemaining         string                            `json:"fuel_remaining"`
-	FuelRemainingHours    *int                              `json:"fuel_remaining_hours"`
-	FuelPerHour           *float64                          `json:"fuel_per_hour"`              // 预计每小时消耗燃料块
-	FuelToMonthEnd        *int                              `json:"fuel_to_month_end"`          // 预计到月底需补燃料块
-	FuelEstimateIncomplete bool                              `json:"fuel_estimate_incomplete"`   // 存在未配置在线服务时为 true，fuel_per_hour 暂不可用
-	FuelUnknownServices    []string                          `json:"fuel_unknown_services"`      // 未映射服务原始名列表
-	ReinforceHour         int                               `json:"reinforce_hour"`
-	StateTimerStart       string                            `json:"state_timer_start"`
-	StateTimerEnd         string                            `json:"state_timer_end"`
-	UpdatedAt             int64                             `json:"updated_at"`
+	CorporationID          int64                             `json:"corporation_id"`
+	CorporationName        string                            `json:"corporation_name"`
+	AssignedUserID         uint                              `json:"assigned_user_id"`
+	AssignedCharacterID    int64                             `json:"assigned_character_id"`
+	AssignedCharacterName  string                            `json:"assigned_character_name"`
+	StructureID            int64                             `json:"structure_id"`
+	Name                   string                            `json:"name"`
+	TypeID                 int64                             `json:"type_id"`
+	TypeName               string                            `json:"type_name"`
+	SystemID               int64                             `json:"system_id"`
+	SystemName             string                            `json:"system_name"`
+	RegionID               int64                             `json:"region_id"`
+	RegionName             string                            `json:"region_name"`
+	Security               float64                           `json:"security"`
+	State                  string                            `json:"state"`
+	Services               []CorporationStructureServiceInfo `json:"services"`
+	FuelExpires            string                            `json:"fuel_expires"`
+	FuelRemaining          string                            `json:"fuel_remaining"`
+	FuelRemainingHours     *int                              `json:"fuel_remaining_hours"`
+	FuelPerHour            *float64                          `json:"fuel_per_hour"`            // 预计每小时消耗燃料块
+	FuelToMonthEnd         *int                              `json:"fuel_to_month_end"`        // 预计到月底需补燃料块
+	FuelEstimateIncomplete bool                              `json:"fuel_estimate_incomplete"` // 存在未配置在线服务时为 true，fuel_per_hour 暂不可用
+	FuelUnknownServices    []string                          `json:"fuel_unknown_services"`    // 未映射服务原始名列表
+	ReinforceHour          int                               `json:"reinforce_hour"`
+	StateTimerStart        string                            `json:"state_timer_start"`
+	StateTimerEnd          string                            `json:"state_timer_end"`
+	UpdatedAt              int64                             `json:"updated_at"`
 }
 
 type CorporationStructureListRequest struct {
@@ -244,6 +250,8 @@ type CorporationStructuresSettingsResponse struct {
 	Corporations             []ManageCorporationOption `json:"corporations"`
 	FuelNoticeThresholdDays  int                       `json:"fuel_notice_threshold_days"`
 	TimerNoticeThresholdDays int                       `json:"timer_notice_threshold_days"`
+	AlertEnabled             bool                      `json:"alert_enabled"`
+	AlertGroupIDs            []int64                   `json:"alert_group_ids"`
 }
 
 type CorporationStructureAuthorizationBinding struct {
@@ -255,6 +263,8 @@ type CorporationStructureAuthorizationUpdate struct {
 	Authorizations           []CorporationStructureAuthorizationBinding `json:"authorizations"`
 	FuelNoticeThresholdDays  *int                                       `json:"fuel_notice_threshold_days"`
 	TimerNoticeThresholdDays *int                                       `json:"timer_notice_threshold_days"`
+	AlertEnabled             *bool                                      `json:"alert_enabled"`
+	AlertGroupIDs            *[]int64                                   `json:"alert_group_ids"`
 	OperatorUserID           uint                                       `json:"-"`
 }
 
@@ -376,6 +386,11 @@ func (s *CorporationStructureService) GetSettings(ctx context.Context) (*Corpora
 	}
 	authMap := s.loadAuthorizationMap()
 	thresholds := s.loadNoticeThresholdSettings()
+	alertEnabled := s.loadAlertEnabled()
+	alertGroupIDs, err := s.loadAlertGroupIDs()
+	if err != nil {
+		return nil, err
+	}
 
 	corporations := make([]ManageCorporationOption, 0, len(manageCtx.corporationIDs))
 	for _, corpID := range manageCtx.corporationIDs {
@@ -414,6 +429,8 @@ func (s *CorporationStructureService) GetSettings(ctx context.Context) (*Corpora
 		Corporations:             corporations,
 		FuelNoticeThresholdDays:  thresholds.FuelNoticeThresholdDays,
 		TimerNoticeThresholdDays: thresholds.TimerNoticeThresholdDays,
+		AlertEnabled:             alertEnabled,
+		AlertGroupIDs:            alertGroupIDs,
 	}, nil
 }
 
@@ -421,6 +438,23 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	ctx context.Context,
 	req CorporationStructureAuthorizationUpdate,
 ) error {
+	alertEnabled := s.loadAlertEnabled()
+	if req.AlertEnabled != nil {
+		alertEnabled = *req.AlertEnabled
+	}
+	alertGroupIDs, err := s.loadAlertGroupIDs()
+	if err != nil {
+		return err
+	}
+	if req.AlertGroupIDs != nil {
+		alertGroupIDs, err = normalizeCorporationStructureAlertGroupIDs(*req.AlertGroupIDs)
+		if err != nil {
+			return err
+		}
+	}
+	if alertEnabled && len(alertGroupIDs) == 0 {
+		return errors.New("启用军团建筑 QQ 预警时至少配置一个 QQ 群号")
+	}
 	manageCtx, err := s.buildManageContext(ctx, false)
 	if err != nil {
 		return err
@@ -482,6 +516,16 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 	if err := s.saveNoticeThresholdSettings(thresholds); err != nil {
 		return err
 	}
+	if req.AlertGroupIDs != nil {
+		if err := s.saveAlertGroupIDs(alertGroupIDs); err != nil {
+			return err
+		}
+	}
+	if req.AlertEnabled != nil {
+		if err := s.saveAlertEnabled(alertEnabled); err != nil {
+			return err
+		}
+	}
 
 	if s.auditSvc != nil {
 		_ = s.auditSvc.RecordEvent(ctx, AuditRecordInput{
@@ -497,6 +541,8 @@ func (s *CorporationStructureService) UpdateAuthorizations(
 				"deleted_snapshot_rows":       deletedSnapshotRows,
 				"fuel_notice_threshold_days":  thresholds.FuelNoticeThresholdDays,
 				"timer_notice_threshold_days": thresholds.TimerNoticeThresholdDays,
+				"alert_enabled_updated":       req.AlertEnabled != nil,
+				"alert_group_ids_updated":     req.AlertGroupIDs != nil,
 			},
 		})
 	}
@@ -550,6 +596,156 @@ func (s *CorporationStructureService) CountAttentionStructures(ctx context.Conte
 	}
 
 	return int64(len(attentionStructures)), nil
+}
+
+type corporationStructureAlertCandidate struct {
+	key             repository.CorporationStructureAlertStateKey
+	corporationName string
+	structureName   string
+	systemName      string
+	deadline        time.Time
+	remaining       string
+}
+
+// RunAlertScan checks only persisted corporation-structure snapshots. It never
+// triggers an ESI refresh, so the existing ESI queue remains the sole owner of
+// snapshot freshness and API consumption.
+func (s *CorporationStructureService) RunAlertScan(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if !s.loadAlertEnabled() {
+		_, err := s.repo.ReconcileAlertStates(nil, time.Now())
+		return err
+	}
+	groupIDs, err := s.loadAlertGroupIDs()
+	if err != nil {
+		return err
+	}
+	if len(groupIDs) == 0 {
+		return errors.New("军团建筑 QQ 预警已启用但未配置目标群号")
+	}
+
+	thresholds := s.loadNoticeThresholdSettings()
+	authorizations := s.loadAuthorizationMap()
+	corporationIDs := make([]int64, 0, len(authorizations))
+	for corporationID := range authorizations {
+		corporationIDs = append(corporationIDs, corporationID)
+	}
+	sort.Slice(corporationIDs, func(i, j int) bool { return corporationIDs[i] < corporationIDs[j] })
+	structures, err := s.repo.ListCorpStructures(corporationIDs)
+	if err != nil {
+		return errors.New("查询军团建筑预警快照失败")
+	}
+
+	now := time.Now()
+	candidates := make(map[repository.CorporationStructureAlertStateKey]corporationStructureAlertCandidate)
+	fuelThresholdHours := thresholds.FuelNoticeThresholdDays * hoursPerDay
+	timerDeadline := now.Add(time.Duration(thresholds.TimerNoticeThresholdDays*hoursPerDay) * time.Hour)
+	for _, structure := range structures {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		corporationName := structure.CorporationName
+		if corporationName == "" {
+			corporationName = fmt.Sprintf("Corporation-%d", structure.CorporationID)
+		}
+		structureName := structure.Name
+		if structureName == "" {
+			structureName = fmt.Sprintf("Structure-%d", structure.StructureID)
+		}
+		if thresholds.FuelNoticeThresholdDays > 0 {
+			remainingHours, remaining := calculateFuelRemaining(structure.FuelExpires, now)
+			if remainingHours != nil && *remainingHours <= fuelThresholdHours {
+				deadline, ok := parseFlexibleTime(structure.FuelExpires)
+				if ok {
+					key := repository.CorporationStructureAlertStateKey{CorporationID: structure.CorporationID, StructureID: structure.StructureID, AlertType: model.CorpStructureAlertFuelExpiring}
+					candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, systemName: structure.SystemName, deadline: deadline, remaining: remaining}
+				}
+			}
+		}
+		if thresholds.TimerNoticeThresholdDays > 0 {
+			timerEnd, ok := parseFlexibleTime(structure.StateTimerEnd)
+			if ok && !timerEnd.Before(now) && !timerEnd.After(timerDeadline) {
+				key := repository.CorporationStructureAlertStateKey{CorporationID: structure.CorporationID, StructureID: structure.StructureID, AlertType: model.CorpStructureAlertReinforceEnding}
+				candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, systemName: structure.SystemName, deadline: timerEnd, remaining: formatAlertRemaining(timerEnd, now)}
+			}
+		}
+	}
+	keys := make([]repository.CorporationStructureAlertStateKey, 0, len(candidates))
+	for key := range candidates {
+		keys = append(keys, key)
+	}
+	pending, err := s.repo.ReconcileAlertStates(keys, now)
+	if err != nil || len(pending) == 0 {
+		return err
+	}
+	if s.alertNotifier == nil {
+		return errors.New("QQ 建筑预警通知服务不可用")
+	}
+
+	byType := make(map[string][]corporationStructureAlertCandidate, 2)
+	keysByType := make(map[string][]repository.CorporationStructureAlertStateKey, 2)
+	for _, key := range pending {
+		candidate, ok := candidates[key]
+		if !ok {
+			continue
+		}
+		byType[key.AlertType] = append(byType[key.AlertType], candidate)
+		keysByType[key.AlertType] = append(keysByType[key.AlertType], key)
+	}
+	for _, alertType := range []string{model.CorpStructureAlertFuelExpiring, model.CorpStructureAlertReinforceEnding} {
+		items := byType[alertType]
+		if len(items) == 0 {
+			continue
+		}
+		message := formatCorporationStructureAlertMessage(alertType, items)
+		if err := s.alertNotifier.EnqueueStructureAlertNotifications(groupIDs, message); err != nil {
+			return fmt.Errorf("入队军团建筑 QQ 预警: %w", err)
+		}
+		if err := s.repo.MarkAlertStatesDelivered(keysByType[alertType]); err != nil {
+			return fmt.Errorf("更新军团建筑预警投递状态: %w", err)
+		}
+	}
+	return nil
+}
+
+func formatAlertRemaining(deadline, now time.Time) string {
+	diff := deadline.Sub(now)
+	if diff <= 0 {
+		return "已结束"
+	}
+	hours := int(math.Ceil(diff.Hours()))
+	if hours >= hoursPerDay {
+		return fmt.Sprintf("%dd %dh", hours/hoursPerDay, hours%hoursPerDay)
+	}
+	return fmt.Sprintf("%dh", hours)
+}
+
+func formatCorporationStructureAlertMessage(alertType string, items []corporationStructureAlertCandidate) string {
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].corporationName != items[j].corporationName {
+			return items[i].corporationName < items[j].corporationName
+		}
+		if items[i].structureName != items[j].structureName {
+			return items[i].structureName < items[j].structureName
+		}
+		return items[i].key.StructureID < items[j].key.StructureID
+	})
+	title := "⚠️ 军团建筑燃料预警"
+	if alertType == model.CorpStructureAlertReinforceEnding {
+		title = "⚠️ 军团建筑增强状态结束预警"
+	}
+	lines := make([]string, 0, len(items)+1)
+	lines = append(lines, title)
+	for _, item := range items {
+		system := item.systemName
+		if system == "" {
+			system = "未知星系"
+		}
+		lines = append(lines, fmt.Sprintf("- %s / %s [%s]：剩余 %s，结束于 %s UTC", item.corporationName, item.structureName, system, item.remaining, item.deadline.UTC().Format("2006-01-02 15:04")))
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (s *CorporationStructureService) ListStructures(
@@ -1234,6 +1430,59 @@ func (s *CorporationStructureService) saveNoticeThresholdSettings(
 			Desc:  "dashboard 军团建筑提醒：增强时间阈值（天）",
 		},
 	})
+}
+
+func (s *CorporationStructureService) loadAlertGroupIDs() ([]int64, error) {
+	raw := strings.TrimSpace(s.sysConfigRepo.GetString(model.SysConfigDashboardCorpStructuresAlertGroupIDs, "[]"))
+	if raw == "" {
+		return []int64{}, nil
+	}
+	var groupIDs []int64
+	if err := json.Unmarshal([]byte(raw), &groupIDs); err != nil {
+		return nil, errors.New("军团建筑 QQ 预警群号配置无效")
+	}
+	return normalizeCorporationStructureAlertGroupIDs(groupIDs)
+}
+
+func (s *CorporationStructureService) loadAlertEnabled() bool {
+	return s.sysConfigRepo.GetBool(model.SysConfigDashboardCorpStructuresAlertEnabled, false)
+}
+
+func (s *CorporationStructureService) saveAlertEnabled(enabled bool) error {
+	return s.sysConfigRepo.Set(
+		model.SysConfigDashboardCorpStructuresAlertEnabled,
+		strconv.FormatBool(enabled),
+		"dashboard 军团建筑 QQ 预警开关",
+	)
+}
+
+func (s *CorporationStructureService) saveAlertGroupIDs(groupIDs []int64) error {
+	normalized, err := normalizeCorporationStructureAlertGroupIDs(groupIDs)
+	if err != nil {
+		return err
+	}
+	payload, err := json.Marshal(normalized)
+	if err != nil {
+		return errors.New("序列化军团建筑 QQ 预警群号失败")
+	}
+	return s.sysConfigRepo.Set(model.SysConfigDashboardCorpStructuresAlertGroupIDs, string(payload), "dashboard 军团建筑 QQ 预警目标群号数组")
+}
+
+func normalizeCorporationStructureAlertGroupIDs(groupIDs []int64) ([]int64, error) {
+	seen := make(map[int64]struct{}, len(groupIDs))
+	normalized := make([]int64, 0, len(groupIDs))
+	for _, groupID := range groupIDs {
+		if groupID <= 0 {
+			return nil, errors.New("军团建筑 QQ 预警群号必须为正数")
+		}
+		if _, exists := seen[groupID]; exists {
+			return nil, errors.New("军团建筑 QQ 预警群号不能重复")
+		}
+		seen[groupID] = struct{}{}
+		normalized = append(normalized, groupID)
+	}
+	sort.Slice(normalized, func(i, j int) bool { return normalized[i] < normalized[j] })
+	return normalized, nil
 }
 
 func normalizeNoticeThresholdDays(days int) int {

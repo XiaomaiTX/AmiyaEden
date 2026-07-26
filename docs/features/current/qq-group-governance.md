@@ -30,6 +30,7 @@ source_of_truth:
 - 规则编辑中的允许军团必须从 ESI 名称解析结果选择，持久化稳定的军团 ID；群号使用纯数字输入，不提供增减步进控件。军团搜索走 ESI 公开接口 `POST /universe/ids/`，只对输入的完整军团名称进行精确匹配，因此无需 SSO Token。规则列表展示当前成员数，编辑弹窗中的已选军团统一展示为 `军团名 (军团ID)`，规则响应额外返回只读的 `allowed_corporations`，数据库仍只持久化稳定的军团 ID。
 - `UNKNOWN` 会延迟自动复查，连续三次创建治理页告警，不形成待人工审核工作流；动作失败率会触发三级熔断。三级熔断暂停 QQ 写操作，但仍允许受限流的成员快照和本地计算继续恢复可观测性。
 - `notify` 动作类型用于系统 Webhook 的 `qq_governance_onebot` 通知入口：`QQGovernanceService.EnqueueGroupNotifications` 为每个目标群在同一事务中创建独立的 `notify` 任务，`QQ=0`、`source=webhook`，payload 只保存 `message`，绝不保存 OneBot Token 或连接信息。Worker 将其映射为 `send_group_msg`，只校验 `group_id>0`，不依赖群规则或成员运行态；继续走全局和群级 Redis 限流，但不叠加 QQ 维度限流。失败按现有重试与死信策略处理，OneBot 未连接或熔断打开时进入重试。
+- 军团建筑预警使用同一 `notify` 队列，但来源标记为 `structure_alert`；建筑巡查仅在阈值首次命中时创建汇总通知，OneBot worker 的连接、限流、重试和死信边界不变。
 
 ## 巡检名片同步
 

@@ -2616,6 +2616,10 @@
       "noticeThresholds": "通知阈值",
       "fuelNoticeThreshold": "燃料剩余阈值",
       "timerNoticeThreshold": "增强时间阈值",
+      "alertEnabled": "启用 QQ 建筑预警",
+      "alertGroupIDs": "QQ 预警群号",
+      "alertGroupIDsPlaceholder": "每行一个 QQ 群号",
+      "alertGroupIDsHint": "启用预警时至少配置一个群号",
       "daysUnit": "天",
       "noticeThresholdHint": "0 = 关闭提醒"
     },

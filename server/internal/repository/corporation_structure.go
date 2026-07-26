@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -33,6 +34,85 @@ type FuelOfficerUserOption struct {
 	DisplayName   string `json:"display_name"`
 	CharacterID   int64  `json:"character_id"`
 	CharacterName string `json:"character_name"`
+}
+
+type CorporationStructureAlertStateKey struct {
+	CorporationID int64
+	StructureID   int64
+	AlertType     string
+}
+
+// ReconcileAlertStates applies the current scan results. It returns alerts
+// that still require durable QQ-queue delivery, including an earlier failed
+// enqueue attempt. Entries absent from activeKeys are re-armed by clearing
+// their active state.
+func (r *CorporationStructureRepository) ReconcileAlertStates(activeKeys []CorporationStructureAlertStateKey, now time.Time) ([]CorporationStructureAlertStateKey, error) {
+	active := make(map[CorporationStructureAlertStateKey]struct{}, len(activeKeys))
+	for _, key := range activeKeys {
+		active[key] = struct{}{}
+	}
+	pending := make([]CorporationStructureAlertStateKey, 0, len(activeKeys))
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		var states []model.CorpStructureAlertState
+		if err := tx.Find(&states).Error; err != nil {
+			return err
+		}
+		existing := make(map[CorporationStructureAlertStateKey]*model.CorpStructureAlertState, len(states))
+		for i := range states {
+			state := &states[i]
+			key := CorporationStructureAlertStateKey{CorporationID: state.CorporationID, StructureID: state.StructureID, AlertType: state.AlertType}
+			existing[key] = state
+			if _, ok := active[key]; ok {
+				continue
+			}
+			if state.Active {
+				state.Active, state.Delivered, state.StateChangedAt = false, false, now
+				if err := tx.Save(state).Error; err != nil {
+					return err
+				}
+			}
+		}
+		for _, key := range activeKeys {
+			state, ok := existing[key]
+			if !ok {
+				state = &model.CorpStructureAlertState{CorporationID: key.CorporationID, StructureID: key.StructureID, AlertType: key.AlertType, Active: true, Delivered: false, StateChangedAt: now}
+				if err := tx.Create(state).Error; err != nil {
+					return err
+				}
+				pending = append(pending, key)
+				continue
+			}
+			if !state.Active {
+				state.Active, state.Delivered, state.StateChangedAt = true, false, now
+				if err := tx.Save(state).Error; err != nil {
+					return err
+				}
+				pending = append(pending, key)
+				continue
+			}
+			if !state.Delivered {
+				pending = append(pending, key)
+			}
+		}
+		return nil
+	})
+	return pending, err
+}
+
+func (r *CorporationStructureRepository) MarkAlertStatesDelivered(keys []CorporationStructureAlertStateKey) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		for _, key := range keys {
+			if err := tx.Model(&model.CorpStructureAlertState{}).
+				Where("corporation_id = ? AND structure_id = ? AND alert_type = ? AND active = ?", key.CorporationID, key.StructureID, key.AlertType, true).
+				Update("delivered", true).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (r *CorporationStructureRepository) ListDirectorCharactersByCorporations(

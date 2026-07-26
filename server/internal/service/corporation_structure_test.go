@@ -439,13 +439,20 @@ func TestCorporationStructureSettingsThresholds(t *testing.T) {
 			settings.TimerNoticeThresholdDays,
 		)
 	}
+	if settings.AlertEnabled {
+		t.Fatal("QQ structure alerts should default to disabled")
+	}
 
 	fuelThreshold := 3
 	timerThreshold := 5
+	alertEnabled := true
+	alertGroupIDs := []int64{10002, 10001}
 	err = svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
 		Authorizations:           []CorporationStructureAuthorizationBinding{},
 		FuelNoticeThresholdDays:  &fuelThreshold,
 		TimerNoticeThresholdDays: &timerThreshold,
+		AlertEnabled:             &alertEnabled,
+		AlertGroupIDs:            &alertGroupIDs,
 	})
 	if err != nil {
 		t.Fatalf("UpdateAuthorizations returned error: %v", err)
@@ -460,6 +467,21 @@ func TestCorporationStructureSettingsThresholds(t *testing.T) {
 	}
 	if updated.TimerNoticeThresholdDays != timerThreshold {
 		t.Fatalf("expected timer threshold %d, got %d", timerThreshold, updated.TimerNoticeThresholdDays)
+	}
+	if !updated.AlertEnabled {
+		t.Fatal("expected QQ structure alerts to be enabled")
+	}
+	if len(updated.AlertGroupIDs) != 2 || updated.AlertGroupIDs[0] != 10001 || updated.AlertGroupIDs[1] != 10002 {
+		t.Fatalf("unexpected alert group IDs: %#v", updated.AlertGroupIDs)
+	}
+	emptyAlertGroupIDs := []int64{}
+	err = svc.UpdateAuthorizations(context.Background(), CorporationStructureAuthorizationUpdate{
+		Authorizations: []CorporationStructureAuthorizationBinding{},
+		AlertEnabled:   &alertEnabled,
+		AlertGroupIDs:  &emptyAlertGroupIDs,
+	})
+	if err == nil {
+		t.Fatal("expected enabled QQ structure alerts without group IDs to be rejected")
 	}
 }
 
@@ -1033,11 +1055,175 @@ func newCorporationStructureServiceTestDB(t *testing.T) *gorm.DB {
 		&model.EveCharacter{},
 		&model.EveCharacterCorpRole{},
 		&model.CorpStructureInfo{},
+		&model.CorpStructureAlertState{},
 		&model.CorpStructureAssignment{},
 		&model.MapSolarSystem{},
 		&model.MapRegion{},
 	)
 	return db
+}
+
+type corporationStructureAlertNotifierStub struct {
+	calls []corporationStructureAlertNotification
+	fail  bool
+}
+
+type corporationStructureAlertNotification struct {
+	groupIDs []int64
+	content  string
+}
+
+func (s *corporationStructureAlertNotifierStub) EnqueueStructureAlertNotifications(groupIDs []int64, content string) error {
+	s.calls = append(s.calls, corporationStructureAlertNotification{groupIDs: append([]int64(nil), groupIDs...), content: content})
+	if s.fail {
+		return fmt.Errorf("enqueue failed")
+	}
+	return nil
+}
+
+func TestCorporationStructureAlertScanNotifiesOnThresholdEntryAndRearmsAfterRecovery(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+	now := time.Now().UTC()
+	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{9001: 91000001}); err != nil {
+		t.Fatalf("seed authorizations: %v", err)
+	}
+	for _, config := range []model.SystemConfig{
+		{Key: model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays, Value: "2"},
+		{Key: model.SysConfigDashboardCorpStructuresTimerNoticeThresholdDays, Value: "2"},
+		{Key: model.SysConfigDashboardCorpStructuresAlertEnabled, Value: "true"},
+		{Key: model.SysConfigDashboardCorpStructuresAlertGroupIDs, Value: "[10001,10002]"},
+	} {
+		if err := db.Create(&config).Error; err != nil {
+			t.Fatalf("seed config: %v", err)
+		}
+	}
+	if err := db.Create([]model.CorpStructureInfo{
+		{CorporationID: 9001, CorporationName: "Alpha", StructureID: 1, Name: "Fuel", SystemName: "Jita", FuelExpires: now.Add(12 * time.Hour).Format(time.RFC3339)},
+		{CorporationID: 9001, CorporationName: "Alpha", StructureID: 2, Name: "Timer", SystemName: "Amarr", StateTimerEnd: now.Add(18 * time.Hour).Format(time.RFC3339)},
+	}).Error; err != nil {
+		t.Fatalf("seed structures: %v", err)
+	}
+	notifier := &corporationStructureAlertNotifierStub{}
+	svc := newCorporationStructureServiceForTest()
+	svc.alertNotifier = notifier
+
+	if err := svc.RunAlertScan(context.Background()); err != nil {
+		t.Fatalf("first scan: %v", err)
+	}
+	if len(notifier.calls) != 2 {
+		t.Fatalf("notification calls = %d, want 2", len(notifier.calls))
+	}
+	for _, call := range notifier.calls {
+		if len(call.groupIDs) != 2 || call.groupIDs[0] != 10001 || call.groupIDs[1] != 10002 {
+			t.Fatalf("group IDs = %#v", call.groupIDs)
+		}
+	}
+	if notifier.calls[0].content == notifier.calls[1].content {
+		t.Fatal("fuel and timer alerts should be sent as separate summaries")
+	}
+	if err := svc.RunAlertScan(context.Background()); err != nil {
+		t.Fatalf("second scan: %v", err)
+	}
+	if len(notifier.calls) != 2 {
+		t.Fatalf("persistent alert must not resend, calls = %d", len(notifier.calls))
+	}
+	if err := db.Model(&model.CorpStructureInfo{}).Where("structure_id = ?", 1).Update("fuel_expires", now.Add(10*24*time.Hour).Format(time.RFC3339)).Error; err != nil {
+		t.Fatalf("recover fuel alert: %v", err)
+	}
+	if err := svc.RunAlertScan(context.Background()); err != nil {
+		t.Fatalf("recovery scan: %v", err)
+	}
+	if err := db.Model(&model.CorpStructureInfo{}).Where("structure_id = ?", 1).Update("fuel_expires", now.Add(6*time.Hour).Format(time.RFC3339)).Error; err != nil {
+		t.Fatalf("re-arm fuel alert: %v", err)
+	}
+	if err := svc.RunAlertScan(context.Background()); err != nil {
+		t.Fatalf("re-entry scan: %v", err)
+	}
+	if len(notifier.calls) != 3 {
+		t.Fatalf("re-entered fuel alert must resend, calls = %d", len(notifier.calls))
+	}
+}
+
+func TestCorporationStructureAlertScanRetriesAfterQueueFailure(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{9001: 91000001}); err != nil {
+		t.Fatalf("seed authorizations: %v", err)
+	}
+	if err := db.Create([]model.SystemConfig{
+		{Key: model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays, Value: "1"},
+		{Key: model.SysConfigDashboardCorpStructuresAlertEnabled, Value: "true"},
+		{Key: model.SysConfigDashboardCorpStructuresAlertGroupIDs, Value: "[10001]"},
+	}).Error; err != nil {
+		t.Fatalf("seed config: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{CorporationID: 9001, StructureID: 1, FuelExpires: time.Now().Add(2 * time.Hour).Format(time.RFC3339)}).Error; err != nil {
+		t.Fatalf("seed structure: %v", err)
+	}
+	notifier := &corporationStructureAlertNotifierStub{fail: true}
+	svc := newCorporationStructureServiceForTest()
+	svc.alertNotifier = notifier
+	if err := svc.RunAlertScan(context.Background()); err == nil {
+		t.Fatal("expected queue failure")
+	}
+	notifier.fail = false
+	if err := svc.RunAlertScan(context.Background()); err != nil {
+		t.Fatalf("retry scan: %v", err)
+	}
+	if len(notifier.calls) != 2 {
+		t.Fatalf("queue failure should be retried, calls = %d", len(notifier.calls))
+	}
+}
+
+func TestCorporationStructureAlertScanRequiresExplicitEnablement(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+	if err := seedCorporationStructureAuthorizationMap(db, map[int64]int64{9001: 91000001}); err != nil {
+		t.Fatalf("seed authorizations: %v", err)
+	}
+	if err := db.Create([]model.SystemConfig{
+		{Key: model.SysConfigDashboardCorpStructuresFuelNoticeThresholdDays, Value: "1"},
+		{Key: model.SysConfigDashboardCorpStructuresAlertGroupIDs, Value: "[10001]"},
+	}).Error; err != nil {
+		t.Fatalf("seed config: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureInfo{CorporationID: 9001, StructureID: 1, FuelExpires: time.Now().Add(2 * time.Hour).Format(time.RFC3339)}).Error; err != nil {
+		t.Fatalf("seed structure: %v", err)
+	}
+	if err := db.Create(&model.CorpStructureAlertState{
+		CorporationID:  9001,
+		StructureID:    1,
+		AlertType:      model.CorpStructureAlertFuelExpiring,
+		Active:         true,
+		Delivered:      true,
+		StateChangedAt: time.Now(),
+	}).Error; err != nil {
+		t.Fatalf("seed alert state: %v", err)
+	}
+	notifier := &corporationStructureAlertNotifierStub{}
+	svc := newCorporationStructureServiceForTest()
+	svc.alertNotifier = notifier
+
+	if err := svc.RunAlertScan(context.Background()); err != nil {
+		t.Fatalf("disabled scan: %v", err)
+	}
+	if len(notifier.calls) != 0 {
+		t.Fatalf("disabled alert scan must not enqueue notifications, calls = %d", len(notifier.calls))
+	}
+	var state model.CorpStructureAlertState
+	if err := db.First(&state).Error; err != nil {
+		t.Fatalf("load alert state: %v", err)
+	}
+	if state.Active || state.Delivered {
+		t.Fatalf("disabled alert scan must reset state, got active=%t delivered=%t", state.Active, state.Delivered)
+	}
 }
 
 func seedCorporationStructureManageScope(t *testing.T, db *gorm.DB, corpID int64) {

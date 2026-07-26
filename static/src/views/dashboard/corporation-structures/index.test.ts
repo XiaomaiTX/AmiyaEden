@@ -61,6 +61,11 @@ test('corporation structures settings includes notice thresholds and submits the
   assert.match(source, /noticeThresholds\.timer_notice_threshold_days/)
   assert.match(source, /fuel_notice_threshold_days:\s*normalizeThresholdDays/)
   assert.match(source, /timer_notice_threshold_days:\s*normalizeThresholdDays/)
+  assert.match(source, /corporationStructures\.settings\.alertEnabled/)
+  assert.match(source, /alert_enabled:\s*alertEnabled\.value/)
+  assert.match(source, /corporationStructures\.settings\.alertGroupIDs/)
+  assert.match(source, /\.split\(\/\\r\?\\n\/\)/)
+  assert.match(source, /alert_group_ids:\s*parseAlertGroupIDs/)
 })
 
 test('corporation structures page uses shared timestamp formatter and avoids inline locale formatting', () => {

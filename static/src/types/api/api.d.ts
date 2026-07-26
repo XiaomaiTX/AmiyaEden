@@ -2009,6 +2009,8 @@ declare namespace Api {
       corporations: CorporationStructureManageCorporationOption[]
       fuel_notice_threshold_days: number
       timer_notice_threshold_days: number
+      alert_enabled: boolean
+      alert_group_ids: number[]
     }
 
     interface CorporationStructureAuthorizationBinding {
@@ -2020,6 +2022,8 @@ declare namespace Api {
       authorizations: CorporationStructureAuthorizationBinding[]
       fuel_notice_threshold_days?: number
       timer_notice_threshold_days?: number
+      alert_enabled?: boolean
+      alert_group_ids?: number[]
     }
 
     interface CorporationStructureRunTaskRequest {

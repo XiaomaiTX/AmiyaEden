@@ -333,10 +333,10 @@ func TestQQGovernanceEnqueueGroupNotificationsRejectsInvalidInput(t *testing.T) 
 	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
 
 	cases := []struct {
-		name     string
-		ids      []int64
-		content  string
-		wantSub  string
+		name    string
+		ids     []int64
+		content string
+		wantSub string
 	}{
 		{name: "empty_content", ids: []int64{111}, content: "  ", wantSub: "通知内容"},
 		{name: "empty_ids", ids: nil, content: "hi", wantSub: "目标群号"},
@@ -351,6 +351,21 @@ func TestQQGovernanceEnqueueGroupNotificationsRejectsInvalidInput(t *testing.T) 
 				t.Fatalf("expected error containing %q, got %v", tc.wantSub, err)
 			}
 		})
+	}
+}
+
+func TestQQGovernanceEnqueueStructureAlertNotificationsMarksDedicatedSource(t *testing.T) {
+	db := newServiceTestDB(t, "qq_governance_enqueue_structure_alert", &model.QQGovernanceActionTask{})
+	svc := NewQQGovernanceServiceWithRepository(repository.NewQQGovernanceRepositoryWithDB(db))
+	if err := svc.EnqueueStructureAlertNotifications([]int64{777}, "fuel alert"); err != nil {
+		t.Fatalf("enqueue structure alert: %v", err)
+	}
+	var task model.QQGovernanceActionTask
+	if err := db.First(&task).Error; err != nil {
+		t.Fatalf("load task: %v", err)
+	}
+	if task.Source != "structure_alert" || task.ActionType != model.QQGovernanceActionNotify {
+		t.Fatalf("task = %#v", task)
 	}
 }
 

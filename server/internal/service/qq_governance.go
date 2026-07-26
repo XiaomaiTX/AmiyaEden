@@ -258,6 +258,17 @@ func (s *QQGovernanceService) enqueueCard(tx *gorm.DB, state *model.QQGroupMembe
 // EnqueueGroupNotifications 为 qq_governance_onebot webhook 入口创建多群通知任务。
 // 多群入队使用同一事务，避免部分成功造成部分发送。每个群使用独立幂等键以允许重试。
 func (s *QQGovernanceService) EnqueueGroupNotifications(groupIDs []int64, content string) error {
+	return s.enqueueGroupNotifications(groupIDs, content, "webhook")
+}
+
+// EnqueueStructureAlertNotifications puts corporation-structure notices onto
+// the existing OneBot worker queue. The worker remains responsible for WSS
+// connectivity, rate limits, retries and dead-letter handling.
+func (s *QQGovernanceService) EnqueueStructureAlertNotifications(groupIDs []int64, content string) error {
+	return s.enqueueGroupNotifications(groupIDs, content, "structure_alert")
+}
+
+func (s *QQGovernanceService) enqueueGroupNotifications(groupIDs []int64, content, source string) error {
 	trimmedContent := strings.TrimSpace(content)
 	if trimmedContent == "" {
 		return errors.New("QQ 群治理通知内容不能为空")
@@ -282,14 +293,14 @@ func (s *QQGovernanceService) EnqueueGroupNotifications(groupIDs []int64, conten
 			}
 			task := &model.QQGovernanceActionTask{
 				ActionType:     model.QQGovernanceActionNotify,
-				IdempotencyKey: fmt.Sprintf("webhook-notify:%d:%s", groupID, token),
+				IdempotencyKey: fmt.Sprintf("%s-notify:%d:%s", source, groupID, token),
 				GroupID:        groupID,
 				QQ:             0,
 				PayloadJSON:    string(payload),
 				Status:         model.QQGovernanceActionPending,
 				Priority:       20,
 				RunAfter:       now.Add(2*time.Second + time.Duration(rand.IntN(5))*time.Second),
-				Source:         "webhook",
+				Source:         source,
 			}
 			if _, err := s.repo.CreateActionTaskIfAbsentTx(tx, task); err != nil {
 				return err

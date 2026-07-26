@@ -52,6 +52,8 @@ const (
 	SysConfigDashboardCorpStructuresAuth                     = "dashboard.corporation_structures_authorizations"
 	SysConfigDashboardCorpStructuresFuelNoticeThresholdDays  = "dashboard.corporation_structures_fuel_notice_threshold_days"
 	SysConfigDashboardCorpStructuresTimerNoticeThresholdDays = "dashboard.corporation_structures_timer_notice_threshold_days"
+	SysConfigDashboardCorpStructuresAlertEnabled             = "dashboard.corporation_structures_alert_enabled"
+	SysConfigDashboardCorpStructuresAlertGroupIDs            = "dashboard.corporation_structures_alert_group_ids"
 
 	SysConfigNewbroMaxCharacterSP          = "newbro.max_character_sp"
 	SysConfigNewbroMultiCharacterSP        = "newbro.multi_character_sp"

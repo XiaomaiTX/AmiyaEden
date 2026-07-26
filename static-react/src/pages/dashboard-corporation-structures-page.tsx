@@ -123,11 +123,15 @@ export function DashboardCorporationStructuresPage() {
     corporations: [],
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7,
+    alert_enabled: false,
+    alert_group_ids: [],
   })
   const [noticeThresholds, setNoticeThresholds] = useState({
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7,
   })
+  const [alertEnabled, setAlertEnabled] = useState(false)
+  const [alertGroupIDsText, setAlertGroupIDsText] = useState('')
   const [authorizationByCorp, setAuthorizationByCorp] = useState<Record<number, number>>({})
   const [filterOptions, setFilterOptions] = useState<CorporationStructureFilterOptionsResponse>({
     systems: [],
@@ -199,6 +203,8 @@ export function DashboardCorporationStructuresPage() {
         fuel_notice_threshold_days: data.fuel_notice_threshold_days,
         timer_notice_threshold_days: data.timer_notice_threshold_days,
       })
+      setAlertEnabled(data.alert_enabled)
+      setAlertGroupIDsText(data.alert_group_ids.join('\n'))
       const nextAuth: Record<number, number> = {}
       data.corporations.forEach((corp) => {
         nextAuth[corp.corporation_id] = corp.authorized_character_id || 0
@@ -240,6 +246,8 @@ export function DashboardCorporationStructuresPage() {
           fuel_notice_threshold_days: settingsData.fuel_notice_threshold_days,
           timer_notice_threshold_days: settingsData.timer_notice_threshold_days,
         })
+        setAlertEnabled(settingsData.alert_enabled)
+        setAlertGroupIDsText(settingsData.alert_group_ids.join('\n'))
         const nextAuth: Record<number, number> = {}
         settingsData.corporations.forEach((corp) => {
           nextAuth[corp.corporation_id] = corp.authorized_character_id || 0
@@ -373,6 +381,8 @@ export function DashboardCorporationStructuresPage() {
         })),
         fuel_notice_threshold_days: noticeThresholds.fuel_notice_threshold_days,
         timer_notice_threshold_days: noticeThresholds.timer_notice_threshold_days,
+        alert_enabled: alertEnabled,
+        alert_group_ids: parseAlertGroupIDs(alertGroupIDsText),
       })
       await loadSettings()
     } finally {
@@ -848,6 +858,33 @@ export function DashboardCorporationStructuresPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-sm text-muted-foreground" htmlFor="corporation-structure-alert-enabled">
+                <input
+                  id="corporation-structure-alert-enabled"
+                  type="checkbox"
+                  checked={alertEnabled}
+                  onChange={(event) => setAlertEnabled(event.target.checked)}
+                />
+                {t('corporationStructures.settings.alertEnabled')}
+              </label>
+            </div>
+
+            <div className="flex flex-wrap items-start gap-3">
+              <label className="text-sm text-muted-foreground" htmlFor="corporation-structure-alert-groups">
+                {t('corporationStructures.settings.alertGroupIDs')}
+              </label>
+              <textarea
+                id="corporation-structure-alert-groups"
+                className="min-h-20 w-80 rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                value={alertGroupIDsText}
+                disabled={!alertEnabled}
+                placeholder={t('corporationStructures.settings.alertGroupIDsPlaceholder')}
+                onChange={(event) => setAlertGroupIDsText(event.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.alertGroupIDsHint')}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.timerNoticeThreshold')}</span>
               <Input
                 className="w-24"
@@ -920,4 +957,12 @@ export function DashboardCorporationStructuresPage() {
       ) : null}
     </section>
   )
+}
+
+function parseAlertGroupIDs(value: string): number[] {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .map((item) => Number(item))
 }

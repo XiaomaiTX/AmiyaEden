@@ -403,6 +403,10 @@ ESI 头衔到系统职权的映射表。
 - `qq_governance_risk_control_state`：单机器人熔断等级、恢复时间与半开探测额度。
 - `qq_governance_alert`：仅在治理页展示的持久告警及其确认/恢复状态。
 
+### `corp_structure_alert_state`
+
+`corp_structure_alert_state` 保存建筑燃料与增强状态预警的进入/恢复状态。`corporation_id + structure_id + alert_type` 唯一，`active=false` 表示建筑已恢复、被删除、阈值关闭或 QQ 建筑预警开关关闭；`delivered` 仅在通知已成功写入 QQ 治理动作队列后置为真。它不保存 OneBot 连接或消息凭据。
+
 关键不变量：事件、成员状态、审查和动作入队由同一事务提交；动作 worker 在执行前比较 `target_version` 与成员当前版本，过期任务必须取消，不能继续写入 QQ 平台。
 
 ### `system_config`
@@ -422,6 +426,12 @@ ESI 头衔到系统职权的映射表。
   - 保存增强计时提醒阈值，单位为天
   - 默认值为 `7`
   - 值为 `0` 时关闭增强计时提醒
+- `dashboard.corporation_structures_alert_enabled`
+  - 保存军团建筑 QQ 预警是否启用，默认 `false`
+  - 是预警巡查与投递状态复位的唯一启停条件
+- `dashboard.corporation_structures_alert_group_ids`
+  - 保存军团建筑 QQ 预警专用的正整数群号 JSON 数组
+  - 设置页每行输入一个群号；启用预警时数组必须至少包含一个群号
 
 说明：
 
