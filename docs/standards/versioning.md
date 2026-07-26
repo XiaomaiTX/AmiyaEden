@@ -315,7 +315,7 @@ git push origin v1.1.0
 
 ```bash
 # 使用版本号构建 Docker 镜像
-# 版本号会在前端构建时通过 sync-version.js 自动注入
+# 版本号会在前端构建时从 static/package.json 直接注入
 docker build -t amiya-eden:latest .
 ```
 
@@ -445,8 +445,8 @@ npm version patch  # 1.1.1 → 1.1.2
 
 ### 版本号同步
 
-- 前端版本号在构建前通过 `static/scripts/sync-version.js` 自动同步到环境变量
-- 构建时通过 Vite 的 `define` 功能注入到应用中
+- 前端版本号以 `static/package.json` 的 `version` 字段为唯一来源
+- 构建时由 Vite 配置通过 `define` 功能直接注入到应用中
 
 ## 相关文件
 
@@ -457,11 +457,10 @@ npm version patch  # 1.1.1 → 1.1.2
 
 ### 构建文件
 
-- `static/scripts/sync-version.js` - 版本同步脚本
-- `static/package.json` - 构建前钩子配置
-- `static/.env.development` - 开发环境变量
+- `static/package.json` - 前端版本号唯一来源
+- `static/vite.config.ts` - Vite 配置（版本和环境变量注入）
+- `static/.env.example` - 本地开发环境变量模板
 - `static/.env.production` - 生产环境变量
-- `static/vite.config.ts` - Vite 配置（环境变量注入）
 
 ### 文档文件
 
