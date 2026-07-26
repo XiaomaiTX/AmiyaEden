@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
+import { readFileSync } from 'node:fs'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -10,19 +11,24 @@ import ElementPlus from 'unplugin-element-plus/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import tailwindcss from '@tailwindcss/vite'
 import { SYSTEM_IDENTITY } from './src/constants/system-identity'
+import { resolveBuildVersion } from './src/config/build-version'
 // import { visualizer } from 'rollup-plugin-visualizer'
+
+const packageJsonPath = fileURLToPath(new URL('./package.json', import.meta.url))
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: unknown }
+const appVersion = resolveBuildVersion(packageJson.version)
 
 export default ({ mode }: { mode: string }) => {
   const root = process.cwd()
   const env = loadEnv(mode, root)
-  const { VITE_VERSION, VITE_PORT, VITE_BASE_URL, VITE_API_URL, VITE_API_PROXY_URL } = env
+  const { VITE_PORT, VITE_BASE_URL, VITE_API_URL, VITE_API_PROXY_URL } = env
 
   console.log(`🚀 API_URL = ${VITE_API_URL}`)
-  console.log(`🚀 VERSION = ${VITE_VERSION}`)
+  console.log(`🚀 VERSION = ${appVersion}`)
 
   return defineConfig({
     define: {
-      __APP_VERSION__: JSON.stringify(VITE_VERSION)
+      __APP_VERSION__: JSON.stringify(appVersion)
     },
     base: VITE_BASE_URL,
     server: {

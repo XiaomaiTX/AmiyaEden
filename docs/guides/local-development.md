@@ -12,8 +12,7 @@ source_of_truth:
   - static/package.json
   - static-react/package.json
   - static-react/Dockerfile
-  - static/.env.development
-  - static/.env.development.local
+  - static/.env.example
 ---
 
 # 本地开发指南
@@ -32,6 +31,7 @@ source_of_truth:
 cp server/config/config.example.yaml server/config/config.yaml
 docker compose -f docker-compose.example.yml up -d postgres redis
 cd static && pnpm install && cd ..
+cp static/.env.example static/.env.development
 cd static-react && pnpm install && cd ..
 make dev
 ```
@@ -141,16 +141,16 @@ pnpm dev
 
 ## 前端环境变量说明
 
-仓库已提供默认开发环境文件：
+仓库提供可提交的开发环境模板 `static/.env.example`。首次开发时复制为本地忽略的
+`static/.env.development`，再按本机服务地址调整：
 
-- `static/.env.development`
-- `static/.env.development.local`
-- `static/.env.production`
+```bash
+cp static/.env.example static/.env.development
+```
 
 本地联调常见关注项：
 
 ```bash
-VITE_VERSION=dev
 VITE_PORT=5173
 VITE_BASE_URL=/
 VITE_API_URL=http://localhost:8080
