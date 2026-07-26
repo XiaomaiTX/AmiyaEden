@@ -348,6 +348,14 @@
             <ElButton type="primary" :loading="savingAuthorizations" @click="saveAuthorizations">
               {{ $t('common.save') }}
             </ElButton>
+            <ElButton
+              v-if="canRunAlertScan"
+              :loading="alertScanRunning"
+              :disabled="!settings.alert_enabled"
+              @click="runAlertScan"
+            >
+              {{ $t('corporationStructures.actions.runAlertScan') }}
+            </ElButton>
           </div>
 
           <ElTable v-loading="settingsLoading" :data="settings.corporations" stripe border>
@@ -527,9 +535,10 @@
 </template>
 
 <script setup lang="ts">
-  import { ElCheckbox, ElMessage, ElTag } from 'element-plus'
+  import { ElCheckbox, ElMessage, ElMessageBox, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { useTable } from '@/hooks/core/useTable'
   import type { ColumnOption } from '@/types/component'
   import { formatTime } from '@/utils/common'
@@ -545,6 +554,7 @@
     updateCorporationStructureAuthorizations,
     updateFuelSalarySettings
   } from '@/api/corporation-structures'
+  import { runTask } from '@/api/task-manager'
 
   defineOptions({ name: 'DashboardCorporationStructures' })
 
@@ -558,6 +568,7 @@
   const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
+  const { hasCapability } = useCorpCapability()
 
   const settings = ref<Api.Dashboard.CorporationStructuresSettings>({
     corporations: [],
@@ -574,7 +585,9 @@
   })
   const settingsLoading = ref(false)
   const savingAuthorizations = ref(false)
+  const alertScanRunning = ref(false)
   const runningTaskCorpId = ref<number>(0)
+  const canRunAlertScan = computed(() => hasCapability('system.task.run'))
   const authorizationByCorp = reactive<Record<number, number>>({})
   const timerRange = ref<[string, string] | null>(null)
   const filterDrawerVisible = ref(false)
@@ -1109,6 +1122,32 @@
       .map((item) => item.trim())
       .filter((item) => item.length > 0)
       .map((item) => Number(item))
+
+  const runAlertScan = async () => {
+    try {
+      await ElMessageBox.confirm(
+        t('corporationStructures.confirm.runAlertScan'),
+        t('common.tips'),
+        {
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel'),
+          type: 'warning'
+        }
+      )
+    } catch {
+      return
+    }
+
+    alertScanRunning.value = true
+    try {
+      await runTask('corporation_structure_alert_scan')
+      ElMessage.success(t('corporationStructures.messages.alertScanTriggered'))
+    } catch {
+      ElMessage.error(t('corporationStructures.messages.alertScanTriggerFailed'))
+    } finally {
+      alertScanRunning.value = false
+    }
+  }
 
   const handleRunTaskForCorporation = async (corporationId: number) => {
     runningTaskCorpId.value = corporationId

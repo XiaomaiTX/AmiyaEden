@@ -66,6 +66,9 @@ test('corporation structures settings includes notice thresholds and submits the
   assert.match(source, /corporationStructures\.settings\.alertGroupIDs/)
   assert.match(source, /\.split\(\/\\r\?\\n\/\)/)
   assert.match(source, /alert_group_ids:\s*parseAlertGroupIDs/)
+  assert.match(source, /corporationStructures\.actions\.runAlertScan/)
+  assert.match(source, /runTask\('corporation_structure_alert_scan'\)/)
+  assert.match(source, /hasCapability\('system\.task\.run'\)/)
 })
 
 test('corporation structures page uses shared timestamp formatter and avoids inline locale formatting', () => {

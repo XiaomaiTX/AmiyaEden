@@ -11,7 +11,7 @@ describe('dashboard corporation structures page', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
-      corpCapabilities: ['menu.dashboard'],
+      corpCapabilities: ['menu.dashboard', 'system.task.run'],
       authList: [],
     })
   })
@@ -115,6 +115,8 @@ describe('dashboard corporation structures page', () => {
 
     expect(screen.getByText('Amiya Corp')).toBeInTheDocument()
     expect(screen.getByText('12h')).toBeInTheDocument()
+    screen.getByRole('button', { name: '设置' }).click()
+    expect(await screen.findByText('手动巡查 QQ 建筑预警')).toBeInTheDocument()
 
     const listCall = fetchSpy.mock.calls.find(([input]) =>
       String(input).includes('/api/v1/dashboard/corporation-structures/list')

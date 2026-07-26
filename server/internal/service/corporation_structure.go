@@ -602,7 +602,6 @@ type corporationStructureAlertCandidate struct {
 	key             repository.CorporationStructureAlertStateKey
 	corporationName string
 	structureName   string
-	systemName      string
 	deadline        time.Time
 	remaining       string
 }
@@ -660,7 +659,7 @@ func (s *CorporationStructureService) RunAlertScan(ctx context.Context) error {
 				deadline, ok := parseFlexibleTime(structure.FuelExpires)
 				if ok {
 					key := repository.CorporationStructureAlertStateKey{CorporationID: structure.CorporationID, StructureID: structure.StructureID, AlertType: model.CorpStructureAlertFuelExpiring}
-					candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, systemName: structure.SystemName, deadline: deadline, remaining: remaining}
+					candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, deadline: deadline, remaining: remaining}
 				}
 			}
 		}
@@ -668,7 +667,7 @@ func (s *CorporationStructureService) RunAlertScan(ctx context.Context) error {
 			timerEnd, ok := parseFlexibleTime(structure.StateTimerEnd)
 			if ok && !timerEnd.Before(now) && !timerEnd.After(timerDeadline) {
 				key := repository.CorporationStructureAlertStateKey{CorporationID: structure.CorporationID, StructureID: structure.StructureID, AlertType: model.CorpStructureAlertReinforceEnding}
-				candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, systemName: structure.SystemName, deadline: timerEnd, remaining: formatAlertRemaining(timerEnd, now)}
+				candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, deadline: timerEnd, remaining: formatAlertRemaining(timerEnd, now)}
 			}
 		}
 	}
@@ -724,6 +723,9 @@ func formatAlertRemaining(deadline, now time.Time) string {
 
 func formatCorporationStructureAlertMessage(alertType string, items []corporationStructureAlertCandidate) string {
 	sort.Slice(items, func(i, j int) bool {
+		if !items[i].deadline.Equal(items[j].deadline) {
+			return items[i].deadline.Before(items[j].deadline)
+		}
 		if items[i].corporationName != items[j].corporationName {
 			return items[i].corporationName < items[j].corporationName
 		}
@@ -739,11 +741,7 @@ func formatCorporationStructureAlertMessage(alertType string, items []corporatio
 	lines := make([]string, 0, len(items)+1)
 	lines = append(lines, title)
 	for _, item := range items {
-		system := item.systemName
-		if system == "" {
-			system = "未知星系"
-		}
-		lines = append(lines, fmt.Sprintf("- %s / %s [%s]：剩余 %s，结束于 %s UTC", item.corporationName, item.structureName, system, item.remaining, item.deadline.UTC().Format("2006-01-02 15:04")))
+		lines = append(lines, fmt.Sprintf("- %s / %s：剩余 %s，结束于 %s UTC", item.corporationName, item.structureName, item.remaining, item.deadline.UTC().Format("2006-01-02 15:04")))
 	}
 	return strings.Join(lines, "\n")
 }

@@ -2127,6 +2127,10 @@
       refreshSettings: '刷新设置',
       save: '保存配置',
       refreshSelected: '触发所选军团后台刷新任务',
+      runAlertScan: '手动巡查 QQ 建筑预警',
+    },
+    confirm: {
+      runAlertScan: '确定要立即巡查并投递 QQ 建筑预警吗？',
     },
     settings: {
       noticeThresholds: '通知阈值',
@@ -2174,6 +2178,8 @@
       loadFailed: '加载军团建筑数据失败',
       refreshQueued: '已触发后台任务，请稍后刷新列表查看结果',
       refreshAlreadyRunning: '该军团建筑刷新任务正在执行，请稍后重试',
+      alertScanTriggered: 'QQ 建筑预警巡查已触发',
+      alertScanTriggerFailed: 'QQ 建筑预警巡查触发失败',
       selectCorporationFirst: '请先选择一个军团',
     },
     empty: {

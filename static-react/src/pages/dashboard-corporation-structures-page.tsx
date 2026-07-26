@@ -7,8 +7,10 @@ import {
   runCorporationStructuresTask,
   updateCorporationStructureAuthorizations,
 } from '@/api/corporation-structures'
+import { runTask } from '@/api/task-manager'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import type {
@@ -111,14 +113,17 @@ function TabButton({
 
 export function DashboardCorporationStructuresPage() {
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
   const location = useLocation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [savingAuthorizations, setSavingAuthorizations] = useState(false)
+  const [alertScanRunning, setAlertScanRunning] = useState(false)
   const [runningTaskCorpId, setRunningTaskCorpId] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
+  const [alertScanMessage, setAlertScanMessage] = useState<string | null>(null)
   const [settings, setSettings] = useState<CorporationStructuresSettings>({
     corporations: [],
     fuel_notice_threshold_days: 7,
@@ -182,6 +187,7 @@ export function DashboardCorporationStructuresPage() {
   }))
 
   const activeTab = normalizeTab(new URLSearchParams(location.search).get('tab'))
+  const canRunAlertScan = hasCapability('system.task.run')
 
   const setTab = (tab: ActiveTab) => {
     const searchParams = new URLSearchParams(location.search)
@@ -387,6 +393,24 @@ export function DashboardCorporationStructuresPage() {
       await loadSettings()
     } finally {
       setSavingAuthorizations(false)
+    }
+  }
+
+  const handleRunAlertScan = async () => {
+    if (!window.confirm(t('corporationStructures.confirm.runAlertScan'))) {
+      return
+    }
+
+    setAlertScanRunning(true)
+    setSettingsError(null)
+    setAlertScanMessage(null)
+    try {
+      await runTask('corporation_structure_alert_scan')
+      setAlertScanMessage(t('corporationStructures.messages.alertScanTriggered'))
+    } catch (caughtError) {
+      setSettingsError(getErrorMessage(caughtError, t('corporationStructures.messages.alertScanTriggerFailed')))
+    } finally {
+      setAlertScanRunning(false)
     }
   }
 
@@ -838,6 +862,7 @@ export function DashboardCorporationStructuresPage() {
           </div>
 
           {settingsError ? <p className="text-sm text-destructive">{settingsError}</p> : null}
+          {alertScanMessage ? <p className="text-sm text-muted-foreground">{alertScanMessage}</p> : null}
           {settingsLoading ? <p className="text-sm text-muted-foreground">{t('common.refresh')}</p> : null}
 
           <div className="space-y-4">
@@ -908,6 +933,16 @@ export function DashboardCorporationStructuresPage() {
             <Button type="button" onClick={() => void saveAuthorizations()} disabled={savingAuthorizations}>
               {t('corporationStructures.actions.save')}
             </Button>
+            {canRunAlertScan ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleRunAlertScan()}
+                disabled={!settings.alert_enabled || alertScanRunning}
+              >
+                {t('corporationStructures.actions.runAlertScan')}
+              </Button>
+            ) : null}
           </div>
 
           <div className="overflow-hidden rounded-lg border">

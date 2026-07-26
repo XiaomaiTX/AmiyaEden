@@ -2145,6 +2145,10 @@
       refreshSettings: 'Refresh Settings',
       save: 'Save Settings',
       refreshSelected: 'Run Background Task for Selected Corporation',
+      runAlertScan: 'Run QQ Structure Alert Scan',
+    },
+    confirm: {
+      runAlertScan: 'Run the QQ structure alert scan and enqueue notifications now?',
     },
     settings: {
       noticeThresholds: 'Notification Thresholds',
@@ -2192,6 +2196,8 @@
       loadFailed: 'Failed to load corporation structure data',
       refreshQueued: 'Background task has been queued. Refresh the list later to see updates.',
       refreshAlreadyRunning: 'A refresh job for this corporation is already running.',
+      alertScanTriggered: 'QQ structure alert scan triggered',
+      alertScanTriggerFailed: 'Failed to trigger QQ structure alert scan',
       selectCorporationFirst: 'Select a corporation first',
     },
     empty: {
