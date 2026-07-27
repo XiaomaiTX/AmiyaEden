@@ -221,8 +221,7 @@ ESI 头衔到系统职权的映射表。
 说明：
 
 - 这是自动权限同步的输入快照之一
-- 当前 `admin` 的内置快捷规则会读取允许军团中的 corp role `Director`
-- `eve_character_title` 只用于显式 title mapping，不负责 `Director` 的内置快捷抬升
+- `eve_character_title` 只用于显式 title mapping
 
 ## 新人帮扶相关表
 
@@ -321,15 +320,15 @@ ESI 头衔到系统职权的映射表。
 - 当前默认维护 `default` 同步游标
 - 当前归因回填窗口限制在最近 `30` 天
 
-### Director 快捷规则的输入边界
+### 自动映射输入边界
 
-这是一个需要明确保留的 schema 语义：
+这是自动映射需要明确保留的 schema 语义：
 
 - `eve_character_corp_role` 承载的是 ESI 返回的真实 corp permission 快照
-- `Director -> admin` 的内置快捷规则只读取这里的 `corp_role`
-- `esi_title_mapping` 使用的 title 数据是另一条显式配置链路，不能和 corp role 混为一谈
+- `esi_role_mapping` 使用这里的 `corp_role` 配置显式映射
+- `esi_title_mapping` 使用 title 数据配置显式映射，不能和 corp role 混为一谈
 
-因此，“title 名称叫 Director” 与 “ESI corp role 是 Director” 在当前系统里不是同一件事。
+因此，corp role 与 title 是两条独立的自动映射输入链路。
 
 ## 福利与伏羲币关联表
 

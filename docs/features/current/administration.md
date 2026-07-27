@@ -98,7 +98,7 @@ source_of_truth:
 
 ## 关键不变量
 
-For role assignment rules, super_admin protection, and Director auto-role rules, see `docs/architecture/auth-and-permissions.md`. Below are invariants specific to the administration module:
+For role assignment rules and super_admin protection, see `docs/architecture/auth-and-permissions.md`. Below are invariants specific to the administration module:
 
 - 系统军团 ID 与网站标题由代码常量提供，当前不通过数据库、API 或 UI 修改
 - 基础配置页不再允许编辑军团 ID 或网站标题

@@ -2383,7 +2383,6 @@
   "autoRolePage": {
     "title": "ESI Auto Roles",
     "description": "Automatically assign system roles based on a character's EVE corporation roles and titles.",
-    "directorHint": "Only characters with the ESI corporation role `Director` in {corporationName} ({corporationId}) are auto-mapped to admin.",
     "triggerSync": "Trigger Sync",
     "syncTriggered": "Sync task triggered and will run in the background",
     "syncFailed": "Failed to trigger sync",

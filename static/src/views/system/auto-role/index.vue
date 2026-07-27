@@ -7,8 +7,7 @@
         <div>
           <div class="text-base font-semibold">{{ t('autoRolePage.title') }}</div>
           <div class="mt-1 text-sm text-gray-500">
-            {{ t('autoRolePage.description') }}<br />
-            {{ t('autoRolePage.directorHint', SYSTEM_IDENTITY_I18N) }}
+            {{ t('autoRolePage.description') }}
           </div>
         </div>
         <ElButton type="primary" :loading="syncLoading" @click="handleTriggerSync">
@@ -251,7 +250,6 @@
   import type { FormInstance, FormRules } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
-  import { SYSTEM_IDENTITY_I18N } from '@/constants/system-identity'
   import {
     fetchGetEsiRoleMappings,
     fetchCreateEsiRoleMapping,

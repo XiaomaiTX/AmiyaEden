@@ -2,7 +2,6 @@ package service
 
 import (
 	"amiya-eden/internal/model"
-	"strings"
 )
 
 func isAllowedCorporation(corporationID int64, allowCorpSet map[int64]struct{}) bool {
@@ -36,12 +35,4 @@ func hasAnyAllowedCharacter(chars []model.EveCharacter, allowCorpSet map[int64]s
 
 func shouldAutoPromoteGuestToUser(currentCodes []string, chars []model.EveCharacter, allowCorpSet map[int64]struct{}) bool {
 	return !model.HasNonGuestRole(currentCodes) && hasAnyAllowedCharacter(chars, allowCorpSet)
-}
-
-func isDirectorCorpRole(name string) bool {
-	return strings.EqualFold(strings.TrimSpace(name), "Director")
-}
-
-func shouldAutoAssignAdminFromDirector(corporationID int64, corpRole string) bool {
-	return corporationID == model.SystemCorporationID && isDirectorCorpRole(corpRole)
 }

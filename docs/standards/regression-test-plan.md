@@ -147,7 +147,6 @@ source_of_truth:
 - super_admin 角色在登录时从配置文件自动同步
 - 角色列表 `roles[]` 与遗留 `role` 兜底
 - `GET /system/basic-config` 仅返回固定系统标识符，没有对应的写接口
-- auto-role `Director -> admin` 规则仅接受来自伏羲军团（`98185110`）的军团角色信号
 - `allow_corporations` 在保存和读取时始终保留 `98185110`
 
 ### Auth And Characters

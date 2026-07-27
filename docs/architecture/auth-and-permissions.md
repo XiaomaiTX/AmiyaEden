@@ -254,12 +254,4 @@ The following are not restated from the body above — they are additional const
 - 细粒度权限不能只靠前端控制
 - 职权编码以代码常量为准，不以文档中文称呼为准
 
-For super_admin rules, see "Super Admin 配置驱动机制" above. For role assignment rules, see "职权分配权限矩阵" above. For Director auto-role rules, see below.
-
-## 重要 Caveat: Auto-role Director Signal
-
-`Director -> admin` 内置快捷规则使用 ESI corporation role 信号（`eve_character_corp_role`），不是 title 文本匹配。
-
-- 当人物不在 `allow_corporations` 中时，`eve_character_corp_role` 快照不保留
-- 只有伏羲军团 Fuxi Legion（`98185110`）的 `Director` corp role 触发此规则
-- corp title 名称为 `Director` 不触发；title 映射通过 `esi_title_mapping` 显式配置
+For super_admin rules, see "Super Admin 配置驱动机制" above. For role assignment rules, see "职权分配权限矩阵" above.
