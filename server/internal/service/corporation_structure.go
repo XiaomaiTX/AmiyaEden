@@ -602,6 +602,8 @@ type corporationStructureAlertCandidate struct {
 	key             repository.CorporationStructureAlertStateKey
 	corporationName string
 	structureName   string
+	regionName      string
+	typeName        string
 	deadline        time.Time
 	remaining       string
 }
@@ -636,6 +638,13 @@ func (s *CorporationStructureService) RunAlertScan(ctx context.Context) error {
 	if err != nil {
 		return errors.New("查询军团建筑预警快照失败")
 	}
+	systemIDs := make([]int64, 0, len(structures))
+	for _, structure := range structures {
+		if structure.SystemID > 0 {
+			systemIDs = append(systemIDs, structure.SystemID)
+		}
+	}
+	systemMetaByID := s.loadSystemMetaMap(systemIDs)
 
 	now := time.Now()
 	candidates := make(map[repository.CorporationStructureAlertStateKey]corporationStructureAlertCandidate)
@@ -653,13 +662,25 @@ func (s *CorporationStructureService) RunAlertScan(ctx context.Context) error {
 		if structureName == "" {
 			structureName = fmt.Sprintf("Structure-%d", structure.StructureID)
 		}
+		regionName := systemMetaByID[structure.SystemID].RegionName
+		if regionName == "" {
+			regionName = "未知星域"
+		}
+		typeName := structure.TypeName
+		if typeName == "" {
+			if structure.TypeID > 0 {
+				typeName = fmt.Sprintf("Type-%d", structure.TypeID)
+			} else {
+				typeName = "未知类型"
+			}
+		}
 		if thresholds.FuelNoticeThresholdDays > 0 {
 			remainingHours, remaining := calculateFuelRemaining(structure.FuelExpires, now)
 			if remainingHours != nil && *remainingHours <= fuelThresholdHours {
 				deadline, ok := parseFlexibleTime(structure.FuelExpires)
 				if ok {
 					key := repository.CorporationStructureAlertStateKey{CorporationID: structure.CorporationID, StructureID: structure.StructureID, AlertType: model.CorpStructureAlertFuelExpiring}
-					candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, deadline: deadline, remaining: remaining}
+					candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, regionName: regionName, typeName: typeName, deadline: deadline, remaining: remaining}
 				}
 			}
 		}
@@ -667,7 +688,7 @@ func (s *CorporationStructureService) RunAlertScan(ctx context.Context) error {
 			timerEnd, ok := parseFlexibleTime(structure.StateTimerEnd)
 			if ok && !timerEnd.Before(now) && !timerEnd.After(timerDeadline) {
 				key := repository.CorporationStructureAlertStateKey{CorporationID: structure.CorporationID, StructureID: structure.StructureID, AlertType: model.CorpStructureAlertReinforceEnding}
-				candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, deadline: timerEnd, remaining: formatAlertRemaining(timerEnd, now)}
+				candidates[key] = corporationStructureAlertCandidate{key: key, corporationName: corporationName, structureName: structureName, regionName: regionName, typeName: typeName, deadline: timerEnd, remaining: formatAlertRemaining(timerEnd, now)}
 			}
 		}
 	}
@@ -741,7 +762,7 @@ func formatCorporationStructureAlertMessage(alertType string, items []corporatio
 	lines := make([]string, 0, len(items)+1)
 	lines = append(lines, title)
 	for _, item := range items {
-		lines = append(lines, fmt.Sprintf("- %s / %s：剩余 %s，结束于 %s UTC", item.corporationName, item.structureName, item.remaining, item.deadline.UTC().Format("2006-01-02 15:04")))
+		lines = append(lines, fmt.Sprintf("- %s / %s（星域：%s，类型：%s）：剩余 %s，结束于 %s UTC", item.corporationName, item.structureName, item.regionName, item.typeName, item.remaining, item.deadline.UTC().Format("2006-01-02 15:04")))
 	}
 	return strings.Join(lines, "\n")
 }

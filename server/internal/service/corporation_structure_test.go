@@ -1153,6 +1153,8 @@ func TestFormatCorporationStructureAlertMessageSortsByRemainingTimeWithoutSystem
 			key:             repository.CorporationStructureAlertStateKey{StructureID: 3},
 			corporationName: "Alpha Legion",
 			structureName:   "Later Structure",
+			regionName:      "Outer Ring",
+			typeName:        "Astrahus",
 			deadline:        time.Date(2026, time.August, 2, 4, 0, 0, 0, time.UTC),
 			remaining:       "6d 12h",
 		},
@@ -1160,6 +1162,8 @@ func TestFormatCorporationStructureAlertMessageSortsByRemainingTimeWithoutSystem
 			key:             repository.CorporationStructureAlertStateKey{StructureID: 2},
 			corporationName: "Zulu Legion",
 			structureName:   "Urgent Structure",
+			regionName:      "The Forge",
+			typeName:        "Fortizar",
 			deadline:        time.Date(2026, time.July, 29, 17, 0, 0, 0, time.UTC),
 			remaining:       "3d 1h",
 		},
@@ -1167,6 +1171,8 @@ func TestFormatCorporationStructureAlertMessageSortsByRemainingTimeWithoutSystem
 			key:             repository.CorporationStructureAlertStateKey{StructureID: 1},
 			corporationName: "Beta Legion",
 			structureName:   "Middle Structure",
+			regionName:      "The Kalevala Expanse",
+			typeName:        "Keepstar",
 			deadline:        time.Date(2026, time.August, 1, 4, 0, 0, 0, time.UTC),
 			remaining:       "5d 12h",
 		},
@@ -1174,9 +1180,9 @@ func TestFormatCorporationStructureAlertMessageSortsByRemainingTimeWithoutSystem
 
 	got := formatCorporationStructureAlertMessage(model.CorpStructureAlertFuelExpiring, items)
 	want := "⚠️ 军团建筑燃料预警\n" +
-		"- Zulu Legion / Urgent Structure：剩余 3d 1h，结束于 2026-07-29 17:00 UTC\n" +
-		"- Beta Legion / Middle Structure：剩余 5d 12h，结束于 2026-08-01 04:00 UTC\n" +
-		"- Alpha Legion / Later Structure：剩余 6d 12h，结束于 2026-08-02 04:00 UTC"
+		"- Zulu Legion / Urgent Structure（星域：The Forge，类型：Fortizar）：剩余 3d 1h，结束于 2026-07-29 17:00 UTC\n" +
+		"- Beta Legion / Middle Structure（星域：The Kalevala Expanse，类型：Keepstar）：剩余 5d 12h，结束于 2026-08-01 04:00 UTC\n" +
+		"- Alpha Legion / Later Structure（星域：Outer Ring，类型：Astrahus）：剩余 6d 12h，结束于 2026-08-02 04:00 UTC"
 	if got != want {
 		t.Fatalf("formatted message = %q, want %q", got, want)
 	}
