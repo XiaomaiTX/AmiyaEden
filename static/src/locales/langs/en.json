@@ -2847,7 +2847,7 @@
       "refreshSelected": "Run Background Task for Selected Corporation",
       "runAlertScan": "Run QQ Structure Alert Scan"
     },
-    "serviceCatalog": { "title": "Service Activity Catalog", "hint": "Map an unknown online ESI activity to a verified service module. The estimate applies after the next refresh.", "empty": "No online service activities need mapping", "activity": "Service activity", "module": "Service module", "save": "Save activity mappings", "modules": "Verified service modules", "mappings": "Configured activity mappings", "typeId": "Module Type ID", "fuelRate": "Fuel blocks / hour", "category": "Discount category", "noMappings": "No activity mappings have been configured" },
+    "serviceCatalog": { "title": "Service Activity Catalog", "hint": "Map only newly observed online activities. System mappings are verified and resolved against the structure's installed service-slot modules.", "empty": "No online service activities need mapping", "activity": "Service activity", "module": "Candidate service modules", "save": "Save activity mappings", "modules": "Verified service modules", "mappings": "Configured activity mappings", "typeId": "Module Type ID", "fuelRate": "Fuel blocks / hour", "category": "Discount category", "management": "Management", "installedModules": "Installed module Type IDs", "noMappings": "No activity mappings have been configured", "systemManaged": "System managed", "customManaged": "Administrator configured" },
     "confirm": { "runAlertScan": "Run the QQ structure alert scan and enqueue notifications now?" },
     "settings": {
       "noticeThresholds": "Notification Thresholds",

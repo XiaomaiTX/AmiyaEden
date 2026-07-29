@@ -140,18 +140,26 @@ export interface StructureServiceModuleCatalogItem {
 
 export interface StructureServiceActivityCatalogItem {
   activity_name: string
-  type_id: number
+  type_ids: number[]
+  system_managed: boolean
+}
+
+export interface StructureServicePendingActivity {
+  activity_name: string
+  structure_id: number
+  structure_name: string
+  installed_module_type_ids: number[]
 }
 
 export interface StructureServiceCatalog {
   modules: StructureServiceModuleCatalogItem[]
   activities: StructureServiceActivityCatalogItem[]
-  unmapped_activities: string[]
+  unmapped_activities: StructureServicePendingActivity[]
 }
 
 export interface StructureServiceCatalogUpdate {
   modules: Array<Pick<StructureServiceModuleCatalogItem, 'service_name' | 'type_id' | 'fuel_category'>>
-  activities: StructureServiceActivityCatalogItem[]
+  activities: Array<Pick<StructureServiceActivityCatalogItem, 'activity_name' | 'type_ids'>>
 }
 
 export interface CorporationStructureListRequest extends Partial<CommonSearchParams> {

@@ -409,14 +409,28 @@
               :label="$t('corporationStructures.serviceCatalog.activity')"
               min-width="260"
             >
-              <template #default="{ row }">{{ row }}</template>
+              <template #default="{ row }">
+                <div>{{ row.activity_name }}</div>
+                <div class="text-xs text-g-500"
+                  >{{ row.structure_name }} ({{ row.structure_id }})</div
+                >
+                <div class="text-xs text-g-500">
+                  {{ $t('corporationStructures.serviceCatalog.installedModules') }}:
+                  {{ row.installed_module_type_ids.join(', ') || '--' }}
+                </div>
+              </template>
             </ElTableColumn>
             <ElTableColumn
               :label="$t('corporationStructures.serviceCatalog.module')"
               min-width="300"
             >
               <template #default="{ row }">
-                <ElSelect v-model="activityModuleByName[row]" class="w-full" filterable>
+                <ElSelect
+                  v-model="activityModuleByName[row.activity_name]"
+                  class="w-full"
+                  filterable
+                  multiple
+                >
                   <ElOption
                     v-for="module in serviceCatalog.modules"
                     :key="module.type_id"
@@ -454,7 +468,7 @@
               width="170"
             />
             <ElTableColumn
-              :label="$t('corporationStructures.serviceCatalog.category')"
+              :label="$t('corporationStructures.serviceCatalog.management')"
               prop="fuel_category"
               min-width="180"
             />
@@ -474,9 +488,20 @@
             />
             <ElTableColumn
               :label="$t('corporationStructures.serviceCatalog.typeId')"
-              prop="type_id"
-              width="150"
-            />
+              min-width="220"
+            >
+              <template #default="{ row }">{{ row.type_ids.join(', ') }}</template>
+            </ElTableColumn>
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.category')"
+              min-width="160"
+            >
+              <template #default="{ row }">{{
+                row.system_managed
+                  ? $t('corporationStructures.serviceCatalog.systemManaged')
+                  : $t('corporationStructures.serviceCatalog.customManaged')
+              }}</template>
+            </ElTableColumn>
           </ElTable>
         </ElCard>
       </ElTabPane>
@@ -675,7 +700,7 @@
     activities: [],
     unmapped_activities: []
   })
-  const activityModuleByName = reactive<Record<string, number>>({})
+  const activityModuleByName = reactive<Record<string, number[]>>({})
   const savingServiceCatalog = ref(false)
   const savingAuthorizations = ref(false)
   const alertScanRunning = ref(false)
@@ -1117,8 +1142,10 @@
     try {
       settings.value = await fetchCorporationStructureSettings()
       serviceCatalog.value = await fetchStructureServiceCatalog()
-      serviceCatalog.value.unmapped_activities.forEach((name) => {
-        activityModuleByName[name] = 0
+      serviceCatalog.value.unmapped_activities.forEach((item) => {
+        if (!activityModuleByName[item.activity_name]) {
+          activityModuleByName[item.activity_name] = []
+        }
       })
       syncAuthorizationsFromSettings()
 
@@ -1214,9 +1241,12 @@
   }
 
   const saveServiceActivityMappings = async () => {
-    const activities = serviceCatalog.value.unmapped_activities
-      .filter((name) => (activityModuleByName[name] || 0) > 0)
-      .map((name) => ({ activity_name: name, type_id: activityModuleByName[name] }))
+    const activityNames = [
+      ...new Set(serviceCatalog.value.unmapped_activities.map((item) => item.activity_name))
+    ]
+    const activities = activityNames
+      .filter((name) => (activityModuleByName[name] || []).length > 0)
+      .map((name) => ({ activity_name: name, type_ids: activityModuleByName[name] }))
     if (activities.length === 0) return
     savingServiceCatalog.value = true
     try {

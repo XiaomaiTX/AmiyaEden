@@ -84,18 +84,18 @@ var (
 )
 
 type CorporationStructureService struct {
-	roleRepo      *repository.RoleRepository
-	charRepo      *repository.EveCharacterRepository
-	sysConfigRepo *repository.SysConfigRepository
-	sdeRepo       *repository.SdeRepository
-	repo          *repository.CorporationStructureRepository
-	esiClient     *esi.Client
-	auditSvc      *AuditService
-	nameResolver  *EntityNameResolver
-	fuelRateRepo  *repository.StructureServiceFuelRateRepository
-	activityRepo  *repository.StructureServiceActivityRepository
-	groupResolver StructureTypeGroupResolver
-	alertNotifier corporationStructureAlertNotifier
+	roleRepo              *repository.RoleRepository
+	charRepo              *repository.EveCharacterRepository
+	sysConfigRepo         *repository.SysConfigRepository
+	sdeRepo               *repository.SdeRepository
+	repo                  *repository.CorporationStructureRepository
+	esiClient             *esi.Client
+	auditSvc              *AuditService
+	nameResolver          *EntityNameResolver
+	fuelRateRepo          *repository.StructureServiceFuelRateRepository
+	activityCandidateRepo *repository.StructureServiceActivityCandidateRepository
+	groupResolver         StructureTypeGroupResolver
+	alertNotifier         corporationStructureAlertNotifier
 }
 
 type corporationStructureAlertNotifier interface {
@@ -106,18 +106,18 @@ func NewCorporationStructureService() *CorporationStructureService {
 	cfg := global.Config.EveSSO
 	sdeRepo := repository.NewSdeRepository()
 	return &CorporationStructureService{
-		roleRepo:      repository.NewRoleRepository(),
-		charRepo:      repository.NewEveCharacterRepository(),
-		sysConfigRepo: repository.NewSysConfigRepository(),
-		sdeRepo:       sdeRepo,
-		repo:          repository.NewCorporationStructureRepository(),
-		esiClient:     esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix),
-		auditSvc:      NewAuditService(),
-		nameResolver:  NewEntityNameResolver(),
-		fuelRateRepo:  repository.NewStructureServiceFuelRateRepository(),
-		activityRepo:  repository.NewStructureServiceActivityRepository(),
-		groupResolver: sdeRepo,
-		alertNotifier: DefaultQQGovernanceService(),
+		roleRepo:              repository.NewRoleRepository(),
+		charRepo:              repository.NewEveCharacterRepository(),
+		sysConfigRepo:         repository.NewSysConfigRepository(),
+		sdeRepo:               sdeRepo,
+		repo:                  repository.NewCorporationStructureRepository(),
+		esiClient:             esi.NewClientWithConfig(cfg.ESIBaseURL, cfg.ESIAPIPrefix),
+		auditSvc:              NewAuditService(),
+		nameResolver:          NewEntityNameResolver(),
+		fuelRateRepo:          repository.NewStructureServiceFuelRateRepository(),
+		activityCandidateRepo: repository.NewStructureServiceActivityCandidateRepository(),
+		groupResolver:         sdeRepo,
+		alertNotifier:         DefaultQQGovernanceService(),
 	}
 }
 
@@ -825,7 +825,7 @@ func (s *CorporationStructureService) ListStructures(
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
 	items := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
-	applyFuelEstimates(items, now, s.loadModuleFuelRateMap(), loadActivityMapping(s.activityRepo), s.loadStructureGroupIDMap(structures))
+	applyFuelEstimates(items, now, s.loadModuleFuelRateMap(), loadActivityCandidates(s.activityCandidateRepo), s.loadStructureGroupIDMap(structures))
 
 	filtered := filterCorporationStructureRows(items, req, now)
 	sortCorporationStructureRows(filtered, req.SortBy, req.SortOrder)
@@ -1233,7 +1233,7 @@ func (s *CorporationStructureService) ListMyAssignedStructures(
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
 	rows := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
-	applyFuelEstimates(rows, now, s.loadModuleFuelRateMap(), loadActivityMapping(s.activityRepo), s.loadStructureGroupIDMap(structures))
+	applyFuelEstimates(rows, now, s.loadModuleFuelRateMap(), loadActivityCandidates(s.activityCandidateRepo), s.loadStructureGroupIDMap(structures))
 	filteredRows := make([]CorporationStructureRow, 0, len(rows))
 	for _, row := range rows {
 		if _, ok := structureIDs[row.StructureID]; !ok {
@@ -1734,7 +1734,7 @@ func applyFuelEstimates(
 	rows []CorporationStructureRow,
 	now time.Time,
 	rateMap map[int]moduleFuelRate,
-	activityMap map[string]int,
+	activityCandidates map[string][]int,
 	groupMap map[int64]int,
 ) {
 	if len(rateMap) == 0 {
@@ -1743,7 +1743,7 @@ func applyFuelEstimates(
 	for i := range rows {
 		row := &rows[i]
 		groupID := groupMap[row.TypeID]
-		est := EstimateFuelFromModules(groupID, row.TypeID, row.Services, row.ServiceModulesKnown, row.ServiceModules, activityMap, rateMap)
+		est := EstimateFuelFromModules(groupID, row.TypeID, row.Services, row.ServiceModulesKnown, row.ServiceModules, activityCandidates, rateMap)
 		row.FuelEstimateStatus = est.Status
 		if est.Status != fuelEstimateStatusAvailable {
 			row.FuelEstimateIncomplete = true

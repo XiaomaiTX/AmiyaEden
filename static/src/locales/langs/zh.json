@@ -2614,7 +2614,7 @@
       "custom": "自定义时间段"
     },
     "actions": { "openFilters": "打开筛选", "refreshSelected": "触发所选军团后台刷新任务", "runAlertScan": "手动巡查 QQ 建筑预警" },
-    "serviceCatalog": { "title": "服务活动目录", "hint": "将 ESI 返回的未知在线活动关联到已验证的服务模块后，燃料估算会在下次刷新时生效。", "empty": "没有待配置的在线服务活动", "activity": "服务活动", "module": "服务模块", "save": "保存活动映射", "modules": "已验证服务模块", "mappings": "已配置活动映射", "typeId": "模块 Type ID", "fuelRate": "燃料块/小时", "category": "折扣类别", "noMappings": "暂无已配置活动映射" },
+    "serviceCatalog": { "title": "服务活动目录", "hint": "仅为新观察到的在线活动配置候选模块；系统映射已验证，并会与建筑实际安装的服务槽位模块交叉判定。", "empty": "没有待配置的在线服务活动", "activity": "服务活动", "module": "候选服务模块", "save": "保存活动映射", "modules": "已验证服务模块", "mappings": "已配置活动映射", "typeId": "模块 Type ID", "fuelRate": "燃料块/小时", "category": "折扣类别", "management": "管理方式", "installedModules": "已安装模块 Type ID", "noMappings": "暂无已配置活动映射", "systemManaged": "系统托管", "customManaged": "管理员配置" },
     "confirm": { "runAlertScan": "确定要立即巡查并投递 QQ 建筑预警吗？" },
     "settings": {
       "noticeThresholds": "通知阈值",

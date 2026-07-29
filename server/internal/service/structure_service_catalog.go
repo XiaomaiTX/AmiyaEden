@@ -8,10 +8,23 @@ import (
 	"strings"
 )
 
+type StructureServiceActivityCatalogItem struct {
+	ActivityName  string `json:"activity_name"`
+	TypeIDs       []int  `json:"type_ids"`
+	SystemManaged bool   `json:"system_managed"`
+}
+
+type StructureServicePendingActivity struct {
+	ActivityName           string `json:"activity_name"`
+	StructureID            int64  `json:"structure_id"`
+	StructureName          string `json:"structure_name"`
+	InstalledModuleTypeIDs []int  `json:"installed_module_type_ids"`
+}
+
 type StructureServiceCatalog struct {
-	Modules            []model.StructureServiceFuelRate `json:"modules"`
-	Activities         []model.StructureServiceActivity `json:"activities"`
-	UnmappedActivities []string                         `json:"unmapped_activities"`
+	Modules            []model.StructureServiceFuelRate      `json:"modules"`
+	Activities         []StructureServiceActivityCatalogItem `json:"activities"`
+	UnmappedActivities []StructureServicePendingActivity     `json:"unmapped_activities"`
 }
 
 type StructureServiceCatalogUpdate struct {
@@ -27,7 +40,7 @@ type StructureServiceModuleInput struct {
 
 type StructureServiceActivityInput struct {
 	ActivityName string `json:"activity_name"`
-	TypeID       int    `json:"type_id"`
+	TypeIDs      []int  `json:"type_ids"`
 }
 
 func (s *CorporationStructureService) GetFuelServiceCatalog(ctx context.Context) (*StructureServiceCatalog, error) {
@@ -36,55 +49,72 @@ func (s *CorporationStructureService) GetFuelServiceCatalog(ctx context.Context)
 		return nil, fmt.Errorf("load service module catalog: %w", err)
 	}
 	modules := effectiveServiceModuleCatalog(persistedModules)
-	activities, err := s.activityRepo.ListAll()
-	if err != nil {
-		return nil, fmt.Errorf("load service activity catalog: %w", err)
-	}
-	known := loadActivityMapping(s.activityRepo)
+	known := loadActivityCandidates(s.activityCandidateRepo)
+	activities := effectiveActivityCatalog(known)
 	structures, err := s.repo.ListAllCorpStructures()
 	if err != nil {
 		return nil, fmt.Errorf("load structures for activity catalog: %w", err)
 	}
-	unknownSet := make(map[string]struct{})
+	pending := make([]StructureServicePendingActivity, 0)
+	seen := make(map[string]struct{})
 	for _, structure := range structures {
+		installed := make([]int, 0)
+		for _, module := range decodeStructureServiceModules(structure.ServiceModules) {
+			installed = append(installed, module.TypeID)
+		}
+		installed = uniqueSortedTypeIDs(installed)
 		for _, activity := range convertStructureServices(structure.Services) {
-			if !strings.EqualFold(activity.State, "online") {
+			if !strings.EqualFold(activity.State, "online") || strings.TrimSpace(activity.Name) == "" {
 				continue
 			}
-			if _, ok := known[normalizeServiceName(activity.Name)]; !ok && strings.TrimSpace(activity.Name) != "" {
-				unknownSet[activity.Name] = struct{}{}
+			if _, ok := known[normalizeServiceName(activity.Name)]; ok {
+				continue
 			}
+			key := fmt.Sprintf("%d:%s", structure.StructureID, normalizeServiceName(activity.Name))
+			if _, exists := seen[key]; exists {
+				continue
+			}
+			seen[key] = struct{}{}
+			pending = append(pending, StructureServicePendingActivity{
+				ActivityName: activity.Name, StructureID: structure.StructureID, StructureName: structure.Name,
+				InstalledModuleTypeIDs: installed,
+			})
 		}
 	}
-	unknown := make([]string, 0, len(unknownSet))
-	for name := range unknownSet {
-		unknown = append(unknown, name)
-	}
-	sort.Slice(unknown, func(i, j int) bool { return strings.ToLower(unknown[i]) < strings.ToLower(unknown[j]) })
-	return &StructureServiceCatalog{Modules: modules, Activities: activities, UnmappedActivities: unknown}, nil
+	sort.Slice(pending, func(i, j int) bool {
+		if pending[i].ActivityName == pending[j].ActivityName {
+			return pending[i].StructureID < pending[j].StructureID
+		}
+		return strings.ToLower(pending[i].ActivityName) < strings.ToLower(pending[j].ActivityName)
+	})
+	return &StructureServiceCatalog{Modules: modules, Activities: activities, UnmappedActivities: pending}, nil
 }
 
-// effectiveServiceModuleCatalog keeps the built-in verified module catalogue
-// available before the scheduled ESI dogma sync has created its first rows.
-// Persisted rows override a built-in module by type ID and add administrator
-// registered modules. This is presentation only; fuel calculation uses the
-// same type-ID keyed effective rate map.
+func effectiveActivityCatalog(candidates map[string][]int) []StructureServiceActivityCatalogItem {
+	managed := builtinActivityCandidates()
+	result := make([]StructureServiceActivityCatalogItem, 0, len(candidates))
+	for name, typeIDs := range candidates {
+		_, systemManaged := managed[name]
+		result = append(result, StructureServiceActivityCatalogItem{
+			ActivityName: name, TypeIDs: uniqueSortedTypeIDs(typeIDs), SystemManaged: systemManaged,
+		})
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].ActivityName < result[j].ActivityName })
+	return result
+}
+
+// effectiveServiceModuleCatalog keeps the verified system catalogue available
+// before scheduled ESI dogma sync has created its first persisted rows.
 func effectiveServiceModuleCatalog(persisted []model.StructureServiceFuelRate) []model.StructureServiceFuelRate {
 	byTypeID := make(map[int]model.StructureServiceFuelRate)
-	for serviceName, rate := range defaultServiceFuelRates() {
-		if _, exists := byTypeID[rate.TypeID]; exists {
-			continue
-		}
-		byTypeID[rate.TypeID] = model.StructureServiceFuelRate{
-			ServiceName:  serviceName,
-			TypeID:       rate.TypeID,
-			TypeName:     rate.TypeName,
-			FuelPerHour:  rate.FuelPerHour,
-			FuelCategory: categoryString(rate.Category),
-		}
+	for _, module := range builtinStructureServiceModules() {
+		byTypeID[module.TypeID] = module
 	}
 	for _, row := range persisted {
 		if row.TypeID > 0 {
+			if builtin, ok := builtinModuleByTypeID(row.TypeID); ok && normalizeServiceName(row.ServiceName) != builtin.ServiceName {
+				continue
+			}
 			byTypeID[row.TypeID] = row
 		}
 	}
@@ -105,6 +135,9 @@ func (s *CorporationStructureService) UpdateFuelServiceCatalog(ctx context.Conte
 	rates := NewStructureFuelRateService()
 	moduleRows := make([]model.StructureServiceFuelRate, 0, len(req.Modules))
 	knownTypes := make(map[int]struct{})
+	for _, module := range effectiveServiceModuleCatalog(nil) {
+		knownTypes[module.TypeID] = struct{}{}
+	}
 	for _, row := range req.Modules {
 		key := normalizeServiceName(row.ServiceName)
 		if key == "" || row.TypeID <= 0 || !validFuelCategory(row.FuelCategory) {
@@ -128,22 +161,24 @@ func (s *CorporationStructureService) UpdateFuelServiceCatalog(ctx context.Conte
 	if err := s.fuelRateRepo.UpsertBatch(moduleRows); err != nil {
 		return fmt.Errorf("save service modules: %w", err)
 	}
-	for typeID := range defaultModuleFuelRates() {
-		knownTypes[typeID] = struct{}{}
-	}
-	activityRows := make([]model.StructureServiceActivity, 0, len(req.Activities))
+	managed := builtinActivityCandidates()
 	for _, row := range req.Activities {
 		name := normalizeServiceName(row.ActivityName)
-		if name == "" || row.TypeID <= 0 {
+		typeIDs := uniqueSortedTypeIDs(row.TypeIDs)
+		if name == "" || len(typeIDs) == 0 {
 			return fmt.Errorf("invalid service activity")
 		}
-		if _, ok := knownTypes[row.TypeID]; !ok {
-			return fmt.Errorf("activity references an unregistered module type %d", row.TypeID)
+		if _, isManaged := managed[name]; isManaged {
+			return fmt.Errorf("system-managed activity %q cannot be changed", row.ActivityName)
 		}
-		activityRows = append(activityRows, model.StructureServiceActivity{ActivityName: name, TypeID: row.TypeID})
-	}
-	if err := s.activityRepo.Upsert(activityRows); err != nil {
-		return fmt.Errorf("save service activities: %w", err)
+		for _, typeID := range typeIDs {
+			if _, ok := knownTypes[typeID]; !ok {
+				return fmt.Errorf("activity references an unregistered module type %d", typeID)
+			}
+		}
+		if err := s.activityCandidateRepo.ReplaceCustom(name, typeIDs); err != nil {
+			return fmt.Errorf("save service activity: %w", err)
+		}
 	}
 	return nil
 }

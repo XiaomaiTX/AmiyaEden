@@ -4,8 +4,10 @@ import {
   fetchCorporationStructureFilterOptions,
   fetchCorporationStructureList,
   fetchCorporationStructureSettings,
+  fetchStructureServiceCatalog,
   runCorporationStructuresTask,
   updateCorporationStructureAuthorizations,
+  updateStructureServiceCatalog,
 } from '@/api/corporation-structures'
 import { runTask } from '@/api/task-manager'
 import { Button } from '@/components/ui/button'
@@ -20,6 +22,7 @@ import type {
   CorporationStructureServiceInfo,
   CorporationStructuresSettings,
   CorporationStructureSystemOption,
+  StructureServiceCatalog,
 } from '@/types/api/dashboard'
 
 type ActiveTab = 'list' | 'settings'
@@ -83,9 +86,35 @@ function formatServices(t: ReturnType<typeof useI18n>['t'], services: Corporatio
   return services.map((service) => `${service.name} (${service.state})`).join(' / ')
 }
 
+function formatFuelEstimate(
+  t: ReturnType<typeof useI18n>['t'],
+  row: CorporationStructureRow,
+  field: 'fuel_per_hour' | 'fuel_to_month_end'
+) {
+  if (row.fuel_estimate_incomplete) {
+    const keyByStatus: Record<string, string> = {
+      authorization_required: 'fuelEstimateAuthorizationRequired',
+      activity_mapping_required: 'fuelEstimateActivityMappingRequired',
+      module_mismatch: 'fuelEstimateModuleMismatch',
+      rate_unavailable: 'fuelEstimateRateUnavailable',
+      ambiguous_module: 'fuelEstimateAmbiguousModule',
+    }
+    return t(`corporationStructures.table.${keyByStatus[row.fuel_estimate_status || ''] || 'fuelEstimateIncomplete'}`)
+  }
+  return row[field] ?? '--'
+}
+
 function formatSystemOption(item: CorporationStructureSystemOption) {
   const regionText = item.region_name ? ` / ${item.region_name}` : ''
   return `${item.system_name}${regionText} (${formatSecurity(item.security)})`
+}
+
+function normalizeServiceCatalog(catalog: Partial<StructureServiceCatalog> | null | undefined): StructureServiceCatalog {
+  return {
+    modules: Array.isArray(catalog?.modules) ? catalog.modules : [],
+    activities: Array.isArray(catalog?.activities) ? catalog.activities : [],
+    unmapped_activities: Array.isArray(catalog?.unmapped_activities) ? catalog.unmapped_activities : [],
+  }
 }
 
 function TabButton({
@@ -119,6 +148,7 @@ export function DashboardCorporationStructuresPage() {
   const [loading, setLoading] = useState(false)
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [savingAuthorizations, setSavingAuthorizations] = useState(false)
+  const [savingServiceCatalog, setSavingServiceCatalog] = useState(false)
   const [alertScanRunning, setAlertScanRunning] = useState(false)
   const [runningTaskCorpId, setRunningTaskCorpId] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -138,6 +168,12 @@ export function DashboardCorporationStructuresPage() {
   const [alertEnabled, setAlertEnabled] = useState(false)
   const [alertGroupIDsText, setAlertGroupIDsText] = useState('')
   const [authorizationByCorp, setAuthorizationByCorp] = useState<Record<number, number>>({})
+  const [serviceCatalog, setServiceCatalog] = useState<StructureServiceCatalog>({
+    modules: [],
+    activities: [],
+    unmapped_activities: [],
+  })
+  const [activityModules, setActivityModules] = useState<Record<string, number[]>>({})
   const [filterOptions, setFilterOptions] = useState<CorporationStructureFilterOptionsResponse>({
     systems: [],
     types: [],
@@ -203,7 +239,10 @@ export function DashboardCorporationStructuresPage() {
     setSettingsLoading(true)
     setSettingsError(null)
     try {
-      const data = await fetchCorporationStructureSettings()
+      const [data, catalog] = await Promise.all([
+        fetchCorporationStructureSettings(),
+        fetchStructureServiceCatalog(),
+      ])
       setSettings(data)
       setNoticeThresholds({
         fuel_notice_threshold_days: data.fuel_notice_threshold_days,
@@ -216,6 +255,15 @@ export function DashboardCorporationStructuresPage() {
         nextAuth[corp.corporation_id] = corp.authorized_character_id || 0
       })
       setAuthorizationByCorp(nextAuth)
+      const normalizedCatalog = normalizeServiceCatalog(catalog)
+      setServiceCatalog(normalizedCatalog)
+      setActivityModules((current) => {
+        const next = { ...current }
+        normalizedCatalog.unmapped_activities.forEach((item) => {
+          next[item.activity_name] ||= []
+        })
+        return next
+      })
     } catch (caughtError) {
       setSettingsError(getErrorMessage(caughtError, t('corporationStructures.messages.loadFailed')))
     } finally {
@@ -238,9 +286,10 @@ export function DashboardCorporationStructuresPage() {
       setSettingsError(null)
 
       try {
-        const [settingsData, filterData] = await Promise.all([
+        const [settingsData, filterData, catalogData] = await Promise.all([
           fetchCorporationStructureSettings(),
           fetchCorporationStructureFilterOptions(),
+          fetchStructureServiceCatalog(),
         ])
 
         if (cancelled) {
@@ -260,6 +309,15 @@ export function DashboardCorporationStructuresPage() {
         })
         setAuthorizationByCorp(nextAuth)
         setFilterOptions(filterData)
+        const normalizedCatalog = normalizeServiceCatalog(catalogData)
+        setServiceCatalog(normalizedCatalog)
+        setActivityModules((current) => {
+          const next = { ...current }
+          normalizedCatalog.unmapped_activities.forEach((item) => {
+            next[item.activity_name] ||= []
+          })
+          return next
+        })
       } catch (caughtError) {
         if (!cancelled) {
           setSettingsError(getErrorMessage(caughtError, t('corporationStructures.messages.loadFailed')))
@@ -393,6 +451,21 @@ export function DashboardCorporationStructuresPage() {
       await loadSettings()
     } finally {
       setSavingAuthorizations(false)
+    }
+  }
+
+  const saveServiceActivityMappings = async () => {
+    const activities = Array.from(new Set(serviceCatalog.unmapped_activities.map((item) => item.activity_name)))
+      .filter((name) => (activityModules[name] || []).length > 0)
+      .map((activity_name) => ({ activity_name, type_ids: activityModules[activity_name] }))
+    if (!activities.length) return
+
+    setSavingServiceCatalog(true)
+    try {
+      await updateStructureServiceCatalog({ modules: [], activities })
+      await loadSettings()
+    } finally {
+      setSavingServiceCatalog(false)
     }
   }
 
@@ -793,6 +866,8 @@ export function DashboardCorporationStructuresPage() {
                     <th className="px-3 py-2">{t('corporationStructures.table.type')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.services')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.fuelRemaining')}</th>
+                    <th className="px-3 py-2">{t('corporationStructures.table.fuelPerHour')}</th>
+                    <th className="px-3 py-2">{t('corporationStructures.table.fuelToMonthEnd')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.reinforceHour')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.timerEnd')}</th>
                     <th className="px-3 py-2">{t('corporationStructures.table.updatedAt')}</th>
@@ -818,6 +893,8 @@ export function DashboardCorporationStructuresPage() {
                       <td className="px-3 py-2">{row.type_name}</td>
                       <td className="px-3 py-2">{formatServices(t, row.services)}</td>
                       <td className="px-3 py-2">{row.fuel_remaining || '--'}</td>
+                      <td className="px-3 py-2">{formatFuelEstimate(t, row, 'fuel_per_hour')}</td>
+                      <td className="px-3 py-2">{formatFuelEstimate(t, row, 'fuel_to_month_end')}</td>
                       <td className="px-3 py-2">{row.reinforce_hour > 0 ? String(row.reinforce_hour).padStart(2, '0') : '--'}</td>
                       <td className="px-3 py-2">{formatTimeText(row.state_timer_end)}</td>
                       <td className="px-3 py-2">{formatUpdatedAt(row.updated_at)}</td>
@@ -983,6 +1060,115 @@ export function DashboardCorporationStructuresPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="space-y-3 border-t pt-5">
+            <div>
+              <h2 className="text-lg font-semibold">{t('corporationStructures.serviceCatalog.title')}</h2>
+              <p className="text-sm text-muted-foreground">{t('corporationStructures.serviceCatalog.hint')}</p>
+            </div>
+
+            {serviceCatalog.unmapped_activities.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('corporationStructures.serviceCatalog.empty')}</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-left">
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.activity')}</th>
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.installedModules')}</th>
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.module')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {serviceCatalog.unmapped_activities.map((item) => (
+                      <tr key={`${item.structure_id}-${item.activity_name}`} className="border-b">
+                        <td className="px-3 py-2">
+                          <div>{item.activity_name}</div>
+                          <div className="text-xs text-muted-foreground">{item.structure_name} ({item.structure_id})</div>
+                        </td>
+                        <td className="px-3 py-2">{item.installed_module_type_ids.join(', ') || '--'}</td>
+                        <td className="px-3 py-2">
+                          <select
+                            multiple
+                            className="min-h-20 min-w-64 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                            value={(activityModules[item.activity_name] || []).map(String)}
+                            onChange={(event) =>
+                              setActivityModules((current) => ({
+                                ...current,
+                                [item.activity_name]: Array.from(event.target.selectedOptions, (option) => Number(option.value)),
+                              }))
+                            }
+                          >
+                            {serviceCatalog.modules.map((module) => (
+                              <option key={module.type_id} value={module.type_id}>
+                                {module.type_name} ({module.type_id})
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {serviceCatalog.unmapped_activities.length > 0 ? (
+              <Button type="button" onClick={() => void saveServiceActivityMappings()} disabled={savingServiceCatalog}>
+                {t('corporationStructures.serviceCatalog.save')}
+              </Button>
+            ) : null}
+
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-left">
+                    <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.activity')}</th>
+                    <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.typeId')}</th>
+                    <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.management')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {serviceCatalog.activities.map((item) => (
+                    <tr key={item.activity_name} className="border-b">
+                      <td className="px-3 py-2">{item.activity_name}</td>
+                      <td className="px-3 py-2">{item.type_ids.join(', ')}</td>
+                      <td className="px-3 py-2">
+                        {item.system_managed
+                          ? t('corporationStructures.serviceCatalog.systemManaged')
+                          : t('corporationStructures.serviceCatalog.customManaged')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">{t('corporationStructures.serviceCatalog.modules')}</h3>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40 text-left">
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.module')}</th>
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.typeId')}</th>
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.fuelRate')}</th>
+                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.category')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {serviceCatalog.modules.map((module) => (
+                      <tr key={module.type_id} className="border-b">
+                        <td className="px-3 py-2">{module.type_name}</td>
+                        <td className="px-3 py-2">{module.type_id}</td>
+                        <td className="px-3 py-2">{module.fuel_per_hour}</td>
+                        <td className="px-3 py-2">{module.fuel_category}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           {!settingsLoading && settings.corporations.length === 0 ? (

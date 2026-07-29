@@ -81,6 +81,7 @@ func autoMigrate(db *gorm.DB) {
 		&model.FuelSalaryPayout{},
 		&model.StructureServiceFuelRate{},
 		&model.StructureServiceActivity{},
+		&model.StructureServiceActivityCandidate{},
 		&model.EveStation{},
 
 		&model.EveKillmailList{},
@@ -188,6 +189,9 @@ func autoMigrate(db *gorm.DB) {
 	ensureSkillPlanScopes(db)
 	dropObsoleteSchema(db)
 	ensureCustomIndexes(db)
+	if err := service.ReconcileStructureServiceCatalog(); err != nil {
+		global.Logger.Warn("修复建筑服务目录失败", zap.Error(err))
+	}
 	migrateQQGovernanceTaskRetryCauses(db)
 
 	// 数据迁移：user_role / esi 映射表从 role_id 迁移到 role_code，然后删除 role 表

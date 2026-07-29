@@ -71,6 +71,20 @@ describe('dashboard corporation structures page', () => {
             code: 0,
             msg: 'ok',
             data: {
+              modules: [],
+              activities: [],
+              unmapped_activities: [],
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            code: 0,
+            msg: 'ok',
+            data: {
               items: [
                 {
                   corporation_id: 1,

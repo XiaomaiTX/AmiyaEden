@@ -85,9 +85,8 @@ const (
 	serviceCategoryRefinery                                    // 再处理反应（精炼厂折扣）
 )
 
-// 默认服务模块燃料率（service name → typeID → 块/小时）。
-// service name 为 ESI 军团建筑快照 services[].name 的 snake_case 标识符。
-// 块/小时取自 ESI dogma 属性 2109（serviceModuleFuelAmount）原始值。
+// 默认服务模块燃料率是系统目录的兼容视图。运行时估算按 type_id
+// 读取 builtinStructureServiceModules；这里仅保留给既有燃料率同步与测试。
 type defaultFuelRate struct {
 	TypeID      int
 	TypeName    string
@@ -95,25 +94,21 @@ type defaultFuelRate struct {
 	Category    structureServiceCategory
 }
 
-// defaultServiceFuelRates 返回硬编码回退表。
-// 注意 industry 与 manufacturing 都映射到同一模块（ESI 可能返回其一）。
+// defaultServiceFuelRates returns one stable internal key per physical module.
 func defaultServiceFuelRates() map[string]defaultFuelRate {
-	return map[string]defaultFuelRate{
-		"manufacturing":         {35878, "Standup Manufacturing Plant I", 12, serviceCategoryEngineeringComplex},
-		"industry":              {35878, "Standup Manufacturing Plant I", 12, serviceCategoryEngineeringComplex},
-		"capital_shipyard":      {35881, "Standup Capital Shipyard I", 24, serviceCategoryEngineeringComplex},
-		"supercapital_shipyard": {35877, "Standup Supercapital Shipyard I", 36, serviceCategoryEngineeringComplex},
-		"research_lab":          {35891, "Standup Research Lab I", 12, serviceCategoryEngineeringComplex},
-		"invention_lab":         {35886, "Standup Invention Lab I", 12, serviceCategoryEngineeringComplex},
-		"market":                {35892, "Standup Market Hub I", 40, serviceCategoryCitadelOnly},
-		"clone_bay":             {35894, "Standup Cloning Center I", 10, serviceCategoryCitadelOnly},
-		"reprocessing":          {35899, "Standup Reprocessing Facility I", 10, serviceCategoryRefinery},
-		"reaction":              {45537, "Standup Composite Reactor I", 15, serviceCategoryRefinery},
-		"cynosural_generator":   {35912, "Standup Cynosural Field Generator I", 15, serviceCategoryOther},
-		"jump_bridge":           {35913, "Standup Conduit Generator I", 30, serviceCategoryOther},
-		"cynosural_jammer":      {35914, "Standup Cynosural System Jammer I", 40, serviceCategoryOther},
-		"moon_drilling":         {82941, "Standup Metenox Moon Drill", 5, serviceCategoryOther},
+	result := make(map[string]defaultFuelRate)
+	for _, module := range builtinStructureServiceModules() {
+		result[module.ServiceName] = defaultFuelRate{
+			TypeID:      module.TypeID,
+			TypeName:    module.TypeName,
+			FuelPerHour: module.FuelPerHour,
+			Category:    parseCategory(module.FuelCategory),
+		}
 	}
+	// Legacy EstimateFuelPerHour callers still accept this old generic label.
+	// The module-aware estimator does not use it.
+	result["industry"] = result["manufacturing"]
+	return result
 }
 
 // serviceFuelFactor 判断服务在指定建筑分组下享受的燃料系数。
@@ -294,12 +289,12 @@ func (s *StructureFuelRateService) SyncFuelRatesIfEmpty(ctx context.Context) (bo
 
 // SyncFuelRates 从 ESI 拉取各服务模块的每小时燃料率，写库；ESI 失败则保留硬编码值。
 func (s *StructureFuelRateService) SyncFuelRates(ctx context.Context) error {
-	defaults := defaultServiceFuelRates()
+	modules := builtinStructureServiceModules()
 
 	// 收集去重的 typeID（多个 service name 可能映射同一 typeID）
-	typeIDSet := make(map[int]struct{}, len(defaults))
-	for _, info := range defaults {
-		typeIDSet[info.TypeID] = struct{}{}
+	typeIDSet := make(map[int]struct{}, len(modules))
+	for _, module := range modules {
+		typeIDSet[module.TypeID] = struct{}{}
 	}
 
 	// typeID → ESI 实际燃料率 + typeName
@@ -325,17 +320,13 @@ func (s *StructureFuelRateService) SyncFuelRates(ctx context.Context) error {
 	}
 
 	// 组装记录（每个 service name 一条；同 typeID 的多条共享 ESI 结果）
-	rows := make([]model.StructureServiceFuelRate, 0, len(defaults))
+	// Build one row per physical module; display-name aliases are never
+	// persisted by the synchroniser.
+	rows := make([]model.StructureServiceFuelRate, 0, len(modules))
 	hitCount := 0
-	for name, info := range defaults {
-		row := model.StructureServiceFuelRate{
-			FuelCategory: categoryString(info.Category),
-			ServiceName:  name,
-			TypeID:       info.TypeID,
-			TypeName:     info.TypeName,
-			FuelPerHour:  info.FuelPerHour, // 默认硬编码
-		}
-		if res, ok := esiResults[info.TypeID]; ok && res.ok {
+	for _, module := range modules {
+		row := module
+		if res, ok := esiResults[module.TypeID]; ok && res.ok {
 			row.FuelPerHour = res.fuelPerHour
 			if res.typeName != "" {
 				row.TypeName = res.typeName
