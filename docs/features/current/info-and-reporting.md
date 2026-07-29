@@ -35,6 +35,7 @@ source_of_truth:
 - ESI 授权检查
   - 总览矩阵：横轴为绑定人物，纵轴为注册 scope，按模块分组，显示每人各 scope 的授权状态
   - 人物详情：下拉选择人物，展示 scope 列表含授权状态、用途说明、模块归属
+  - 未授权的可选 scope 可在对应行发起授权；授权请求仍包含系统全部必需 scope
   - Token 失效时标记警告，缺失 scope 提示需重新绑定
   - 数据来源：`GET /api/v1/sso/eve/scopes`（公开）+ `GET /api/v1/sso/eve/characters`（需 JWT）
 - 常用工具网站

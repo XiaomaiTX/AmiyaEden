@@ -26,6 +26,7 @@ export function InfoEsiCheckPage() {
   const [characters, setCharacters] = useState<EveCharacter[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<number>(0)
   const [reauthLoading, setReauthLoading] = useState(false)
+  const [authorizingScope, setAuthorizingScope] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -97,6 +98,17 @@ export function InfoEsiCheckPage() {
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('infoEsiCheck.reauthFailed')))
       setReauthLoading(false)
+    }
+  }
+
+  const handleAuthorizeOptionalScope = async (scope: string) => {
+    setAuthorizingScope(scope)
+    try {
+      const url = await getEveBindURL([scope])
+      window.location.assign(url)
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError, t('infoEsiCheck.authorizeScopeFailed')))
+      setAuthorizingScope(null)
     }
   }
 
@@ -212,6 +224,7 @@ export function InfoEsiCheckPage() {
                       <th className="px-3 py-2">{t('infoEsiCheck.module')}</th>
                       <th className="px-3 py-2 text-center">{t('infoEsiCheck.required')}</th>
                       <th className="px-3 py-2 text-center">{t('infoEsiCheck.authorized')}</th>
+                      <th className="px-3 py-2 text-center">{t('infoEsiCheck.action')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -231,6 +244,21 @@ export function InfoEsiCheckPage() {
                           ) : (
                             <span className="font-bold text-destructive">✗</span>
                           )}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          {!row.required && !row.authorized && !selectedCharacter?.token_invalid ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={authorizingScope !== null}
+                              onClick={() => void handleAuthorizeOptionalScope(row.scope)}
+                            >
+                              {authorizingScope === row.scope
+                                ? t('infoEsiCheck.authorizing')
+                                : t('infoEsiCheck.authorizeScope')}
+                            </Button>
+                          ) : null}
                         </td>
                       </tr>
                     ))}

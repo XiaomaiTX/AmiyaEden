@@ -75,6 +75,20 @@
             <span v-else class="text-red-400 font-bold">&#10007;</span>
           </template>
         </ElTableColumn>
+        <ElTableColumn :label="$t('info.esiCheckAction')" width="110" align="center">
+          <template #default="{ row }">
+            <ElButton
+              v-if="canAuthorizeOptionalScope(row)"
+              size="small"
+              plain
+              :loading="authorizingScope === row.scope"
+              :disabled="authorizingScope !== ''"
+              @click="handleAuthorizeOptionalScope(row.scope)"
+            >
+              {{ $t('info.esiCheckAuthorizeScope') }}
+            </ElButton>
+          </template>
+        </ElTableColumn>
       </ElTable>
     </template>
   </div>
@@ -101,6 +115,7 @@
   const { t } = useI18n()
 
   const reauthLoading = ref(false)
+  const authorizingScope = ref('')
 
   const handleReauth = async () => {
     reauthLoading.value = true
@@ -110,6 +125,17 @@
     } catch {
       reauthLoading.value = false
       ElMessage.error(t('info.esiCheckReauthFailed'))
+    }
+  }
+
+  const handleAuthorizeOptionalScope = async (scope: string) => {
+    authorizingScope.value = scope
+    try {
+      const url = await getEveBindURL([scope])
+      window.location.href = url
+    } catch {
+      authorizingScope.value = ''
+      ElMessage.error(t('info.esiCheckAuthorizeScopeFailed'))
     }
   }
 
@@ -138,6 +164,9 @@
   const hasMissingRequiredScopes = computed(() =>
     scopeRows.value.some((r) => r.required && !r.authorized)
   )
+
+  const canAuthorizeOptionalScope = (row: { required: boolean; authorized: boolean }): boolean =>
+    !row.required && !row.authorized && !selectedCharacter.value?.token_invalid
 
   const formatCoverage = (char: Api.Auth.EveCharacter): string => {
     const requiredScopes = props.scopes.filter((s) => s.required)

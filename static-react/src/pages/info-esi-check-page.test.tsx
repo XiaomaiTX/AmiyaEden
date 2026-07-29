@@ -42,7 +42,7 @@ describe('info esi check page', () => {
                 character_id: 1001,
                 character_name: 'Amiya',
                 user_id: 1,
-                scopes: 'esi-wallet.read_character_wallet.v1 esi-skills.read_skills.v1',
+                scopes: 'esi-wallet.read_character_wallet.v1',
                 token_expiry: '2026-12-31T00:00:00Z',
                 token_invalid: false,
                 corporation_id: 1,
@@ -64,6 +64,12 @@ describe('info esi check page', () => {
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ code: 0, msg: 'ok', data: { url: '#scope-authorization' } }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
 
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/info/esi-check'],
@@ -76,6 +82,15 @@ describe('info esi check page', () => {
     expect(screen.getByText('共 2 个人物')).toBeInTheDocument()
     expect(screen.getByText('1 个人物授权异常')).toBeInTheDocument()
     expect(screen.getByText('esi-wallet.read_character_wallet.v1')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '授权' }))
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('scopes=esi-skills.read_skills.v1'),
+        expect.any(Object)
+      )
+    })
 
     fireEvent.click(screen.getByRole('button', { name: 'Beta' }))
 

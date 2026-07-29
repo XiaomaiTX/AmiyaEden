@@ -28,6 +28,14 @@ test('character detail reauth button calls getEveBindURL', () => {
   assert.match(source, /esiCheckReauthFailed/)
 })
 
+test('character detail authorizes only missing optional scopes from their table rows', () => {
+  assert.match(source, /esiCheckAction/)
+  assert.match(source, /canAuthorizeOptionalScope/)
+  assert.match(source, /!row\.required && !row\.authorized/)
+  assert.match(source, /getEveBindURL\(\[scope\]\)/)
+  assert.match(source, /esiCheckAuthorizeScopeFailed/)
+})
+
 test('character detail coverage summary counts only required scopes', () => {
   assert.match(source, /formatCoverage/)
   assert.match(source, /esiCheckCoverage/)
