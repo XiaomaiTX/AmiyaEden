@@ -49,7 +49,7 @@ source_of_truth:
   - `/info/tool-bookmarks`（2026-05-13 落地）
   - `/system/qq-governance`（2026-07-12 落地，`super_admin`）
   - `/fuxi-hall/{leadership, contributors, manage}`（2026-05-12 落地，取代旧 `hall-of-fame` 模块）
-- Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 侧继续保留 `hall-of-fame/*` 三条 stub 占位，属于历史遗留 stub，迁移范围另起后必须移除。
+- Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 已迁移 `fuxi-hall/*` 并移除三条历史遗留 stub。
 - 基础设施补齐仍未完成：WorkTab 多标签页、`v-auth`/`v-roles` 的 React 对应物（`PermissionGate`/`RoleGate`/`usePermission`/`useRole`）、Zustand `user/menu/worktab/setting/table/badge/sys-config` 等非 session/preference store 均未落地，详见 `./component-replacement-list.md`。
 
 ## 明确声明

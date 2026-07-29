@@ -102,5 +102,5 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 当前实现位于 `static/src/views/fuxi-hall`。
-- React 尚未承接 leadership、contributors、manage 三个页面；它们属于迁移基线中的范围漂移追赶项。
-- React 落地时必须移除遗留 `hall-of-fame/*` stub，并保持本文的数据模型与无兼容映射约束。
+- React 实现位于 `static-react/src/pages/fuxi-hall-public-page.tsx` 与 `static-react/src/pages/fuxi-hall-manage-page.tsx`，通过 `static-react/src/api/fuxi-hall.ts` 使用本地模块化契约。
+- React 与 Vue 共用既有后端接口和数据模型；历史 `hall-of-fame/*` React stub 已移除，旧路径不保留重定向或兼容页面。

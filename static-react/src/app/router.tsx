@@ -9,6 +9,8 @@ import { DashboardCharactersPage } from '@/pages/dashboard-characters-page'
 import { DashboardConsolePage } from '@/pages/dashboard-console-page'
 import { DashboardNpcKillsPage } from '@/pages/dashboard-npc-kills-page'
 import { DashboardCorporationStructuresPage } from '@/pages/dashboard-corporation-structures-page'
+import { FuxiHallContributorsPage, FuxiHallLeadershipPage } from '@/pages/fuxi-hall-public-page'
+import { FuxiHallManagePage } from '@/pages/fuxi-hall-manage-page'
 import { ForbiddenPage } from '@/pages/forbidden-page'
 import { HomePage } from '@/pages/home-page'
 import { InfoNpcKillsPage } from '@/pages/info-npc-kills-page'
@@ -66,7 +68,6 @@ import { SrpPricesPage } from '@/pages/srp-prices-page'
 import { LoginPage } from '@/pages/login-page'
 import { RecruitLandingPage } from '@/pages/recruit-landing-page'
 import { IframePage } from '@/pages/iframe-page'
-import { MigrationStubPage } from '@/pages/migration-stub-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { ServerErrorPage } from '@/pages/server-error-page'
 
@@ -82,6 +83,12 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <DashboardNpcKillsPage />
     case 'dashboard-corporation-structures':
       return <DashboardCorporationStructuresPage />
+    case 'fuxi-hall-leadership':
+      return <FuxiHallLeadershipPage />
+    case 'fuxi-hall-contributors':
+      return <FuxiHallContributorsPage />
+    case 'fuxi-hall-manage':
+      return <FuxiHallManagePage />
     case 'info-wallet':
       return <InfoWalletPage />
     case 'info-skill':
@@ -188,16 +195,8 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <SrpPricesPage />
     case 'admin-demo':
       return <AdminDemoPage />
-    case 'stub':
     default:
-      return (
-        <MigrationStubPage
-          title={route.stubTitle ?? route.path}
-          path={`/${route.path}`}
-          batch={route.batch ?? 'Tail'}
-          note={route.stubNote}
-        />
-      )
+      return <NotFoundPage />
   }
 }
 

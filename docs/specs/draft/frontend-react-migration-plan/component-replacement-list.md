@@ -103,4 +103,4 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 - [ ] `dashboard/galaxy-registry`（星系登记簿）
 - [ ] `info/tool-bookmarks`（工具书签管理）
 - [ ] `system/qq-governance`（QQ 治理后台）
-- [ ] `fuxi-hall/leadership`、`fuxi-hall/contributors`、`fuxi-hall/manage`（取代旧 `hall-of-fame` 模块）
+- [x] `fuxi-hall/leadership`、`fuxi-hall/contributors`、`fuxi-hall/manage`（取代旧 `hall-of-fame` 模块；遗留 stub 已移除）

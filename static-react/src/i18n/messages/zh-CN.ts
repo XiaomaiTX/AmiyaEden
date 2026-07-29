@@ -31,6 +31,7 @@
     updatedAt: '更新时间',
     copied: '已复制',
     copyFailed: '复制失败',
+    loading: '正在加载...',
   },
   httpMsg: {
     requestFailed: '请求失败',
@@ -49,6 +50,7 @@
       srp: '补损 SRP',
       ticket: '工单中心',
       system: '系统管理',
+      fuxiHall: '伏羲大厅',
     },
     dashboard: {
       console: '控制台',
@@ -126,12 +128,16 @@
       webhook: 'Webhook 通知',
       basicConfig: '基础配置',
     },
-    hallOfFame: {
-      temple: '伏羲名人堂',
-      manage: '编辑名人堂',
-      currentManage: '当前伏羲管理',
+    fuxiHall: {
+      leadership: '管理层',
+      contributors: '重大贡献成员',
+      manage: '伏羲大厅管理',
     },
     permissionDemo: '权限路由示例',
+  },
+  fuxiHall: {
+    public: { leadershipEyebrow: '伏羲大厅 · 管理层', contributorsEyebrow: '伏羲大厅 · 重大贡献成员', defaultLeadershipTitle: '管理层', defaultContributorsTitle: '重大贡献成员', fleetLedCount: '带队次数', welfareDeliveryCount: '福利发放次数', emptyTitle: '暂无成员', emptySubtitle: '管理员可在管理页添加卡片内容', loadFailed: '加载伏羲大厅页面失败' },
+    manage: { leadershipTab: '管理层', contributorsTab: '重大贡献成员', addCard: '新增卡片', editCard: '编辑卡片', pageConfig: '页面配置', pageTitle: '页面标题', pageSubtitle: '页面副标题', pageDescription: '页面说明（富文本）', cardList: '卡片列表', nickname: '昵称', mainCharacterName: '主角色名称', title: '头衔', titleTagPlaceholder: '输入头衔标签后按回车或点击添加', addTitleTag: '添加标签', avatarShape: '头像形状', avatarShapeCircle: '圆形', avatarShapeRounded: '圆角', avatarShapeSquare: '方形', accentColor: '强调色', fontScale: '字体大小', visible: '显隐', welfareDeliveryOffset: '福利发放次数偏移', cardDescription: '成员简介（富文本）', previewPanel: '实时预览', previewFallbackTitle: '未命名页面', previewEmpty: '当前无可见卡片，预览为空', titleRequired: '页面标题不能为空', requiredFields: '昵称、主角色名称、头衔标签为必填项', deleteConfirm: '确定删除这张卡片吗？', saveSuccess: '保存成功', saveFailed: '保存失败', deleteSuccess: '删除成功', loadFailed: '加载伏羲大厅管理数据失败', sortFailed: '排序保存失败' },
   },
   userAdmin: {
     title: '用户管理',

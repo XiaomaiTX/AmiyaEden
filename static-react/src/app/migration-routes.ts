@@ -7,6 +7,9 @@ export type AppPageType =
   | 'dashboard-characters'
   | 'dashboard-npc-kills'
   | 'dashboard-corporation-structures'
+  | 'fuxi-hall-leadership'
+  | 'fuxi-hall-contributors'
+  | 'fuxi-hall-manage'
   | 'info-wallet'
   | 'info-skill'
   | 'info-npc-kills'
@@ -61,7 +64,6 @@ export type AppPageType =
   | 'system-wallet'
   | 'recruit-landing'
   | 'iframe'
-  | 'stub'
   | 'admin-demo'
 
 export interface AppRouteSpec {
@@ -69,8 +71,6 @@ export interface AppRouteSpec {
   titleKey: string
   pageType: AppPageType
   batch?: MigrationBatch
-  stubTitle?: string
-  stubNote?: string
   menuGroup?: string
   menuIcon?: string
   menuHidden?: boolean
@@ -129,6 +129,15 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
     meta: { roles: ['super_admin', 'admin'], corpCapabilitiesAny: ['menu.dashboard'] },
+  },
+  {
+    path: 'fuxi-hall/leadership', titleKey: 'nav.fuxiHall.leadership', pageType: 'fuxi-hall-leadership', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
+  },
+  {
+    path: 'fuxi-hall/contributors', titleKey: 'nav.fuxiHall.contributors', pageType: 'fuxi-hall-contributors', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
+  },
+  {
+    path: 'fuxi-hall/manage', titleKey: 'nav.fuxiHall.manage', pageType: 'fuxi-hall-manage', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { roles: ['super_admin', 'admin'], corpCapabilitiesAny: ['menu.fuxi_hall'] },
   },
 
   {
@@ -696,34 +705,4 @@ export const appRouteSpecs: AppRouteSpec[] = [
     meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.basic_config.read'] },
   },
 
-  {
-    path: 'hall-of-fame/temple',
-    titleKey: 'nav.hallOfFame.temple',
-    pageType: 'stub',
-    stubTitle: 'Hall Of Fame Temple',
-    stubNote: '本轮不实现 — Hall of Fame 待后续独立重构立项',
-    batch: 'Tail',
-    menuHidden: true,
-    meta: { login: true },
-  },
-  {
-    path: 'hall-of-fame/manage',
-    titleKey: 'nav.hallOfFame.manage',
-    pageType: 'stub',
-    stubTitle: 'Hall Of Fame Manage',
-    stubNote: '本轮不实现 — Hall of Fame 待后续独立重构立项',
-    batch: 'Tail',
-    menuHidden: true,
-    meta: { roles: ['super_admin', 'admin'] },
-  },
-  {
-    path: 'hall-of-fame/current-manage',
-    titleKey: 'nav.hallOfFame.manage',
-    pageType: 'stub',
-    stubTitle: 'Hall Of Fame Current Manage',
-    stubNote: '本轮不实现 — Hall of Fame 待后续独立重构立项',
-    batch: 'Tail',
-    menuHidden: true,
-    meta: { login: true },
-  },
 ]

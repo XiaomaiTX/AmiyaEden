@@ -31,6 +31,7 @@
     updatedAt: 'Updated At',
     copied: 'Copied',
     copyFailed: 'Copy failed',
+    loading: 'Loading...',
   },
   httpMsg: {
     requestFailed: 'Request failed',
@@ -49,6 +50,7 @@
       srp: 'SRP',
       ticket: 'Ticket Center',
       system: 'System Settings',
+      fuxiHall: 'Fuxi Hall',
     },
     dashboard: {
       console: 'Console',
@@ -126,12 +128,16 @@
       webhook: 'Webhook Notifications',
       basicConfig: 'Basic Config',
     },
-    hallOfFame: {
-      temple: 'Fuxi Hall of Heroes',
-      manage: 'Edit Hall of Heroes',
-      currentManage: 'Current Fuxi Management',
+    fuxiHall: {
+      leadership: 'Leadership',
+      contributors: 'Major Contributors',
+      manage: 'Fuxi Hall Management',
     },
     permissionDemo: 'Permission Demo',
+  },
+  fuxiHall: {
+    public: { leadershipEyebrow: 'Fuxi Hall · Leadership', contributorsEyebrow: 'Fuxi Hall · Major Contributors', defaultLeadershipTitle: 'Leadership', defaultContributorsTitle: 'Major Contributors', fleetLedCount: 'Fleet Leads', welfareDeliveryCount: 'Welfare Deliveries', emptyTitle: 'No Members Yet', emptySubtitle: 'Admins can add cards from the management page', loadFailed: 'Failed to load Fuxi Hall page' },
+    manage: { leadershipTab: 'Leadership', contributorsTab: 'Major Contributors', addCard: 'Add Card', editCard: 'Edit Card', pageConfig: 'Page Configuration', pageTitle: 'Page Title', pageSubtitle: 'Page Subtitle', pageDescription: 'Page Description (Rich Text)', cardList: 'Card List', nickname: 'Nickname', mainCharacterName: 'Main Character Name', title: 'Title', titleTagPlaceholder: 'Enter a title tag, then press Enter or click Add', addTitleTag: 'Add Tag', avatarShape: 'Avatar Shape', avatarShapeCircle: 'Circle', avatarShapeRounded: 'Rounded', avatarShapeSquare: 'Square', accentColor: 'Accent Color', fontScale: 'Font Scale', visible: 'Visibility', welfareDeliveryOffset: 'Welfare Delivery Offset', cardDescription: 'Member Description (Rich Text)', previewPanel: 'Live Preview', previewFallbackTitle: 'Untitled Page', previewEmpty: 'No visible cards for preview', titleRequired: 'Page title is required', requiredFields: 'Nickname, main character name, and title tags are required', deleteConfirm: 'Delete this card?', saveSuccess: 'Saved successfully', saveFailed: 'Save failed', deleteSuccess: 'Deleted successfully', loadFailed: 'Failed to load Fuxi Hall management data', sortFailed: 'Failed to save ordering' },
   },
   userAdmin: {
     title: 'User Management',

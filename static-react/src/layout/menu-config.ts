@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Ship,
   UserRoundPlus,
+  UsersRound,
 } from 'lucide-react'
 import { appRouteSpecs } from '@/app/migration-routes'
 import { hasCorpCapabilityPermission } from '@/app/route-access'
@@ -37,6 +38,7 @@ const groupIconMap: Record<string, LucideIcon> = {
   srp: ShieldCheck,
   ticket: ClipboardList,
   system: Settings,
+  fuxiHall: UsersRound,
 }
 
 function hasNonGuestRole(roles: string[]) {

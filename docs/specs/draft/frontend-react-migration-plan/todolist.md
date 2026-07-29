@@ -56,8 +56,8 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [ ] `/dashboard/galaxy-registry` React 落地（`super_admin/admin/captain/user`，2026-06-04 Vue 落地）
 - [ ] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地）
 - [ ] `/system/qq-governance` React 落地（`super_admin`，2026-07-12 Vue 落地）
-- [ ] `/fuxi-hall/leadership`、`/fuxi-hall/contributors`、`/fuxi-hall/manage` React 落地（取代旧 `hall-of-fame` 模块，2026-05-12 Vue 落地）
-- [ ] 移除 React 侧历史遗留的 `hall-of-fame/{temple, manage, current-manage}` 三条 stub（Vue 已删除）
+- [x] `/fuxi-hall/leadership`、`/fuxi-hall/contributors`、`/fuxi-hall/manage` React 落地（取代旧 `hall-of-fame` 模块，2026-05-12 Vue 落地）
+- [x] 移除 React 侧历史遗留的 `hall-of-fame/{temple, manage, current-manage}` 三条 stub（Vue 已删除）
 
 ### 批次执行与验收节奏
 
@@ -101,7 +101,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 
 ## 暂缓项
 
-- [x] `hall-of-fame/*` 模块在 Vue 侧已于 2026-05-12 整体删除并被 `fuxi-hall` 取代；React 侧目前仍保留三条 stub 占位，属于遗留 stub，需在 `fuxi-hall/*` 迁移落地时一并移除
+- [x] `hall-of-fame/*` 模块在 Vue 侧已于 2026-05-12 整体删除并被 `fuxi-hall` 取代；React 侧遗留三条 stub 已在 Fuxi Hall 迁移时移除
 - [x] Vue 侧 `router/modules/role.ts` 未被 `modules/index.ts` 引用，对应的 `views/role/*` 不存在；React 侧不纳入迁移范围
 - [x] Vue 侧 `views/auth/register/index.vue` 无对应路由，属于模板遗留，React 侧不纳入迁移范围
 

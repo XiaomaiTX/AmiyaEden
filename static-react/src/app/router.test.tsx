@@ -303,7 +303,7 @@ describe('router auth and route meta access flow', () => {
       expect(screen.getByText('404 Not Found')).toBeInTheDocument()
     })
 
-    test('hall of fame routes show stub with out-of-scope note', () => {
+    test('removed hall of fame routes render 404', () => {
       useSessionStore.getState().setSessionSnapshot({
         isLoggedIn: true,
         accessToken: 'token-123',
@@ -319,7 +319,7 @@ describe('router auth and route meta access flow', () => {
 
       render(<RouterProvider router={router} />)
 
-      expect(screen.getByText('本轮不实现 — Hall of Fame 待后续独立重构立项')).toBeInTheDocument()
+      expect(screen.getByText('404 Not Found')).toBeInTheDocument()
     })
   })
 })

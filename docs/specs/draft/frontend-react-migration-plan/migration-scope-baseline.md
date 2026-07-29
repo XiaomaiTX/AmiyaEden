@@ -105,17 +105,17 @@ source_of_truth:
 | `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 未对齐 | FE-owner(TBD) |
 | `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login` | 未对齐 | FE-owner(TBD) |
 | `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 未对齐 | FE-owner(TBD) |
-| `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 未对齐 | FE-owner(TBD) |
-| `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 未对齐 | FE-owner(TBD) |
-| `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 未对齐 | FE-owner(TBD) |
+| `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
+| `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
+| `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
 
 ### Vue 侧已删除（React 侧仍为遗留 stub）
 
 | React 遗留 stub 路径 | Vue 删除日期 | 处理动作 |
 |---|---|---|
-| `hall-of-fame/temple` | 2026-05-12 | React 侧移除 stub 路由与页面占位 |
-| `hall-of-fame/manage` | 2026-05-12 | 同上 |
-| `hall-of-fame/current-manage` | 2026-05-12 | 同上 |
+| `hall-of-fame/temple` | 2026-05-12 | 已移除 |
+| `hall-of-fame/manage` | 2026-05-12 | 已移除 |
+| `hall-of-fame/current-manage` | 2026-05-12 | 已移除 |
 
 ## 当前进展
 
@@ -126,13 +126,14 @@ source_of_truth:
 - 2026-06-06：`/info/assets` 增加分页懒加载与显式错误态。
 - 2026-06-29：`/info/npc-kills` 增加 incursion/mission reward、统一筛选与按用户/人物筛选；payout 类型改名。
 - 2026-07-22：本轮审计确认所有原计划路由在 React 侧均有真实业务页实现，`hall-of-fame/*` 三条 stub 成为历史遗留 stub；范围漂移追赶项（8 条新增 Vue 路由）尚未对齐。
+- 2026-07-29：React 完成 `fuxi-hall/*` 三页迁移并移除三条 `hall-of-fame/*` stub；剩余范围漂移页面为 5 条路由域。
 
 ## 说明与已知风险
 
 - 本清单冻结的是“路由页面范围”，不含路由内子组件与纯工具文件（`*.helpers.ts`、`*.test.ts`）。
 - `role/*` 在 `static/src/router/modules/role.ts` 存在但未被 `modules/index.ts` 引用，对应 `views/role/*` 不存在，视为死代码，不纳入迁移范围。
 - `views/auth/register/index.vue` 无对应路由，属于模板遗留，不纳入迁移范围。
-- Vue 侧 `hall-of-fame/*` 已整体删除并由 `fuxi-hall` 取代；React 侧 stub 必须在 `fuxi-hall/*` 落地时一并移除。
+- Vue 侧 `hall-of-fame/*` 已整体删除并由 `fuxi-hall` 取代；React 已移除对应 stub，旧路径按未注册路由处理。
 - Vue 工单管理页面组件位于 `views/system/*`，路由暴露在 `/ticket/*` 下；迁移时组件路径与路由路径不一致，需要单独维护映射。
 - Vue 静态路由与 `exception` 模块同名（`Exception403/404/500`），静态路由先生效；React 侧已通过扁平 `RouteAccessGate` + 静态路由表实现等价行为。
 - 批次执行前必须补齐 owner，并基于当前后端接口再确认 API 依赖是否存在跨模块调用。
