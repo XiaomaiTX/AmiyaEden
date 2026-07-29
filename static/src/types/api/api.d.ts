@@ -1996,6 +1996,7 @@ declare namespace Api {
       fuel_min_hours?: number
       fuel_max_hours?: number
       system_ids?: number[]
+      region_ids?: number[]
       security_bands?: ('highsec' | 'lowsec' | 'nullsec')[]
       security_min?: number
       security_max?: number
@@ -2042,12 +2043,18 @@ declare namespace Api {
       type_name: string
     }
 
+    interface CorporationStructureRegionOption {
+      region_id: number
+      region_name: string
+    }
+
     interface CorporationStructureServiceOption {
       name: string
     }
 
     interface CorporationStructureFilterOptionsResponse {
       systems: CorporationStructureSystemOption[]
+      regions: CorporationStructureRegionOption[]
       types: CorporationStructureTypeOption[]
       services: CorporationStructureServiceOption[]
     }

@@ -67,6 +67,25 @@
                   />
                 </ElFormItem>
 
+                <ElFormItem :label="$t('corporationStructures.filters.regions')" class="mb-0">
+                  <ElSelect
+                    v-model="filters.region_ids"
+                    multiple
+                    filterable
+                    clearable
+                    collapse-tags
+                    collapse-tags-tooltip
+                    class="w-full"
+                  >
+                    <ElOption
+                      v-for="item in filterOptions.regions"
+                      :key="item.region_id"
+                      :label="item.region_name"
+                      :value="item.region_id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+
                 <ElFormItem :label="$t('corporationStructures.filters.systems')" class="mb-0">
                   <ElSelect
                     v-model="filters.system_ids"
@@ -714,6 +733,7 @@
 
   const filterOptions = ref<Api.Dashboard.CorporationStructureFilterOptionsResponse>({
     systems: [],
+    regions: [],
     types: [],
     services: []
   })
@@ -726,6 +746,7 @@
     fuel_min_hours: undefined as number | undefined,
     fuel_max_hours: undefined as number | undefined,
     system_ids: [] as number[],
+    region_ids: [] as number[],
     security_bands: [] as ('highsec' | 'lowsec' | 'nullsec')[],
     security_min: undefined as number | undefined,
     security_max: undefined as number | undefined,
@@ -931,6 +952,7 @@
       fuel_min_hours: normalizeFuelHours(params.fuel_min_hours),
       fuel_max_hours: normalizeFuelHours(params.fuel_max_hours),
       system_ids: params.system_ids?.length ? params.system_ids : undefined,
+      region_ids: params.region_ids?.length ? params.region_ids : undefined,
       security_bands: params.security_bands?.length ? params.security_bands : undefined,
       security_min: params.security_min,
       security_max: params.security_max,
@@ -984,6 +1006,7 @@
         fuel_min_hours: undefined,
         fuel_max_hours: undefined,
         system_ids: [],
+        region_ids: [],
         security_bands: [],
         security_min: undefined,
         security_max: undefined,
@@ -1163,6 +1186,7 @@
       corporation_id: filters.corporation_id > 0 ? filters.corporation_id : undefined
     })) || {
       systems: [],
+      regions: [],
       types: [],
       services: []
     }
@@ -1178,6 +1202,7 @@
     searchParams.fuel_max_hours =
       filters.fuel_bucket === 'custom' ? filters.fuel_max_hours : undefined
     searchParams.system_ids = [...filters.system_ids]
+    searchParams.region_ids = [...filters.region_ids]
     searchParams.security_bands = [...filters.security_bands]
     searchParams.security_min = filters.security_min
     searchParams.security_max = filters.security_max

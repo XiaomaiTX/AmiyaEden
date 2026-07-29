@@ -287,6 +287,23 @@ func TestCorporationStructureListFiltersAndSorts(t *testing.T) {
 			t.Fatalf("seed row failed: %v", err)
 		}
 	}
+	for _, region := range []model.MapRegion{
+		{RegionID: 10000002, RegionName: "The Forge"},
+		{RegionID: 10000016, RegionName: "Lonetrek"},
+	} {
+		if err := db.Create(&region).Error; err != nil {
+			t.Fatalf("seed region failed: %v", err)
+		}
+	}
+	for _, system := range []model.MapSolarSystem{
+		{SolarSystemID: 30000142, SolarSystemName: "Jita", RegionID: 10000002, Security: 0.9},
+		{SolarSystemID: 30002187, SolarSystemName: "Otsasai", RegionID: 10000016, Security: 0.3},
+		{SolarSystemID: 30002510, SolarSystemName: "MJ-13", RegionID: 10000016, Security: -0.1},
+	} {
+		if err := db.Create(&system).Error; err != nil {
+			t.Fatalf("seed solar system failed: %v", err)
+		}
+	}
 
 	svc := newCorporationStructureServiceForTest()
 
@@ -329,6 +346,19 @@ func TestCorporationStructureListFiltersAndSorts(t *testing.T) {
 	}
 	if resp.Total != 3 {
 		t.Fatalf("service or expected total 3, got %d", resp.Total)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		RegionIDs:     []int64{10000016},
+		Page:          1,
+		PageSize:      20,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures region filter returned error: %v", err)
+	}
+	if resp.Total != 2 || resp.Items[0].StructureID != 2 || resp.Items[1].StructureID != 3 {
+		t.Fatalf("region filter expected structures #2 and #3, got %+v", resp.Items)
 	}
 
 	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
@@ -388,6 +418,17 @@ func TestCorporationStructureFilterOptions(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatalf("seed snapshot row: %v", err)
 	}
+	if err := db.Create(&model.MapRegion{RegionID: 10000002, RegionName: "The Forge"}).Error; err != nil {
+		t.Fatalf("seed region: %v", err)
+	}
+	if err := db.Create(&model.MapSolarSystem{
+		SolarSystemID:   30000142,
+		SolarSystemName: "Jita",
+		RegionID:        10000002,
+		Security:        0.9,
+	}).Error; err != nil {
+		t.Fatalf("seed solar system: %v", err)
+	}
 
 	svc := newCorporationStructureServiceForTest()
 	resp, err := svc.GetFilterOptions(context.Background(), CorporationStructureFilterOptionsRequest{
@@ -398,6 +439,9 @@ func TestCorporationStructureFilterOptions(t *testing.T) {
 	}
 	if len(resp.Systems) != 1 || resp.Systems[0].SystemID != 30000142 {
 		t.Fatalf("expected single system option, got %+v", resp.Systems)
+	}
+	if len(resp.Regions) != 1 || resp.Regions[0].RegionID != 10000002 || resp.Regions[0].RegionName != "The Forge" {
+		t.Fatalf("expected single region option, got %+v", resp.Regions)
 	}
 	if len(resp.Types) != 1 || resp.Types[0].TypeID != 35832 {
 		t.Fatalf("expected single type option, got %+v", resp.Types)

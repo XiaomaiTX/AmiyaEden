@@ -2103,6 +2103,7 @@
     filters: {
       corporation: 'Corporation',
       keyword: 'Search',
+      regions: 'Region',
       systems: 'Solar System',
       stateGroups: 'State',
       fuel: 'Fuel Remaining',

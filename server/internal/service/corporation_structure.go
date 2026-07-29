@@ -218,6 +218,7 @@ type CorporationStructureListRequest struct {
 	FuelMinHours     *int     `json:"fuel_min_hours"`
 	FuelMaxHours     *int     `json:"fuel_max_hours"`
 	SystemIDs        []int64  `json:"system_ids"`
+	RegionIDs        []int64  `json:"region_ids"`
 	SecurityBands    []string `json:"security_bands"`
 	SecurityMin      *float64 `json:"security_min"`
 	SecurityMax      *float64 `json:"security_max"`
@@ -361,12 +362,18 @@ type CorporationStructureTypeOption struct {
 	TypeName string `json:"type_name"`
 }
 
+type CorporationStructureRegionOption struct {
+	RegionID   int64  `json:"region_id"`
+	RegionName string `json:"region_name"`
+}
+
 type CorporationStructureServiceOption struct {
 	Name string `json:"name"`
 }
 
 type CorporationStructureFilterOptionsResponse struct {
 	Systems  []CorporationStructureSystemOption  `json:"systems"`
+	Regions  []CorporationStructureRegionOption  `json:"regions"`
 	Types    []CorporationStructureTypeOption    `json:"types"`
 	Services []CorporationStructureServiceOption `json:"services"`
 }
@@ -859,6 +866,7 @@ func (s *CorporationStructureService) GetFilterOptions(
 
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	systemByID := make(map[int64]CorporationStructureSystemOption)
+	regionByID := make(map[int64]CorporationStructureRegionOption)
 	typeByID := make(map[int64]CorporationStructureTypeOption)
 	serviceSet := make(map[string]struct{})
 
@@ -872,6 +880,12 @@ func (s *CorporationStructureService) GetFilterOptions(
 				RegionID:   meta.RegionID,
 				RegionName: meta.RegionName,
 				Security:   chooseSecurity(st.Security, meta.Security, meta.SystemName != ""),
+			}
+		}
+		if meta.RegionID > 0 {
+			regionByID[meta.RegionID] = CorporationStructureRegionOption{
+				RegionID:   meta.RegionID,
+				RegionName: meta.RegionName,
 			}
 		}
 
@@ -917,6 +931,17 @@ func (s *CorporationStructureService) GetFilterOptions(
 		return types[i].TypeID < types[j].TypeID
 	})
 
+	regions := make([]CorporationStructureRegionOption, 0, len(regionByID))
+	for _, item := range regionByID {
+		regions = append(regions, item)
+	}
+	sort.Slice(regions, func(i, j int) bool {
+		if regions[i].RegionName != regions[j].RegionName {
+			return strings.ToLower(regions[i].RegionName) < strings.ToLower(regions[j].RegionName)
+		}
+		return regions[i].RegionID < regions[j].RegionID
+	})
+
 	services := make([]CorporationStructureServiceOption, 0, len(serviceSet))
 	for name := range serviceSet {
 		services = append(services, CorporationStructureServiceOption{Name: name})
@@ -927,6 +952,7 @@ func (s *CorporationStructureService) GetFilterOptions(
 
 	return &CorporationStructureFilterOptionsResponse{
 		Systems:  systems,
+		Regions:  regions,
 		Types:    types,
 		Services: services,
 	}, nil
@@ -1822,6 +1848,7 @@ func filterCorporationStructureRows(
 ) []CorporationStructureRow {
 	stateSet := buildSelectedStateSet(req.StateGroups)
 	systemSet := toInt64Set(req.SystemIDs)
+	regionSet := toInt64Set(req.RegionIDs)
 	typeSet := toInt64Set(req.TypeIDs)
 	serviceNames := normalizeLowerStringList(req.ServiceNames)
 	keyword := strings.ToLower(strings.TrimSpace(req.Keyword))
@@ -1847,6 +1874,11 @@ func filterCorporationStructureRows(
 		}
 		if len(systemSet) > 0 {
 			if _, ok := systemSet[row.SystemID]; !ok {
+				continue
+			}
+		}
+		if len(regionSet) > 0 {
+			if _, ok := regionSet[row.RegionID]; !ok {
 				continue
 			}
 		}

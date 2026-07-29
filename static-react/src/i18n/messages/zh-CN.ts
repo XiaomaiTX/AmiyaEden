@@ -2085,6 +2085,7 @@
     filters: {
       corporation: '军团',
       keyword: '搜索',
+      regions: '星域',
       systems: '星系',
       stateGroups: '状态',
       fuel: '燃料剩余',

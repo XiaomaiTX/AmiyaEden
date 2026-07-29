@@ -95,6 +95,11 @@ export interface CorporationStructureTypeOption {
   type_name: string
 }
 
+export interface CorporationStructureRegionOption {
+  region_id: number
+  region_name: string
+}
+
 export interface CorporationStructureServiceInfo {
   name: string
   state: string
@@ -102,6 +107,7 @@ export interface CorporationStructureServiceInfo {
 
 export interface CorporationStructureFilterOptionsResponse {
   systems: CorporationStructureSystemOption[]
+  regions: CorporationStructureRegionOption[]
   types: CorporationStructureTypeOption[]
   services: CorporationStructureServiceInfo[]
 }
@@ -170,6 +176,7 @@ export interface CorporationStructureListRequest extends Partial<CommonSearchPar
   fuel_min_hours?: number
   fuel_max_hours?: number
   system_ids?: number[]
+  region_ids?: number[]
   security_bands?: Array<'highsec' | 'lowsec' | 'nullsec'>
   security_min?: number
   security_max?: number

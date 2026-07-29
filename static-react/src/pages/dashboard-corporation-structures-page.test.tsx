@@ -58,6 +58,7 @@ describe('dashboard corporation structures page', () => {
                   security: 0.9,
                 },
               ],
+              regions: [{ region_id: 1, region_name: 'The Forge' }],
               types: [{ type_id: 1, type_name: 'Astrahus' }],
               services: [{ name: 'Clone Bay' }],
             },
@@ -129,6 +130,7 @@ describe('dashboard corporation structures page', () => {
 
     expect(screen.getByText('Amiya Corp')).toBeInTheDocument()
     expect(screen.getByText('12h')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'The Forge' })).toBeInTheDocument()
     screen.getByRole('button', { name: '设置' }).click()
     expect(await screen.findByText('手动巡查 QQ 建筑预警')).toBeInTheDocument()
 

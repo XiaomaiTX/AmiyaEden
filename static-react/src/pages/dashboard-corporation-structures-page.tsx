@@ -36,6 +36,7 @@ const DEFAULT_FILTERS = {
   fuel_min_hours: '',
   fuel_max_hours: '',
   system_ids: [] as number[],
+  region_ids: [] as number[],
   security_bands: [] as ('highsec' | 'lowsec' | 'nullsec')[],
   security_min: '',
   security_max: '',
@@ -176,6 +177,7 @@ export function DashboardCorporationStructuresPage() {
   const [activityModules, setActivityModules] = useState<Record<string, number[]>>({})
   const [filterOptions, setFilterOptions] = useState<CorporationStructureFilterOptionsResponse>({
     systems: [],
+    regions: [],
     types: [],
     services: [],
   })
@@ -197,6 +199,7 @@ export function DashboardCorporationStructuresPage() {
     fuel_min_hours: '',
     fuel_max_hours: '',
     system_ids: [] as number[],
+    region_ids: [] as number[],
     security_bands: [] as ('highsec' | 'lowsec' | 'nullsec')[],
     security_min: '',
     security_max: '',
@@ -213,6 +216,7 @@ export function DashboardCorporationStructuresPage() {
     fuel_min_hours: '',
     fuel_max_hours: '',
     system_ids: [] as number[],
+    region_ids: [] as number[],
     security_bands: [] as ('highsec' | 'lowsec' | 'nullsec')[],
     security_min: '',
     security_max: '',
@@ -362,6 +366,7 @@ export function DashboardCorporationStructuresPage() {
               ? Number(appliedFilters.fuel_max_hours)
               : undefined,
           system_ids: appliedFilters.system_ids.length ? appliedFilters.system_ids : undefined,
+          region_ids: appliedFilters.region_ids.length ? appliedFilters.region_ids : undefined,
           security_bands: appliedFilters.security_bands.length ? appliedFilters.security_bands : undefined,
           security_min: appliedFilters.security_min !== '' ? Number(appliedFilters.security_min) : undefined,
           security_max: appliedFilters.security_max !== '' ? Number(appliedFilters.security_max) : undefined,
@@ -553,6 +558,27 @@ export function DashboardCorporationStructuresPage() {
                   onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))}
                   placeholder={t('corporationStructures.placeholders.keyword')}
                 />
+              </label>
+
+              <label className="space-y-1">
+                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.regions')}</span>
+                <select
+                  multiple
+                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={filters.region_ids.map(String)}
+                  onChange={(event) =>
+                    updateArrayFilter(
+                      'region_ids',
+                      Array.from(event.target.selectedOptions, (option) => Number(option.value))
+                    )
+                  }
+                >
+                  {filterOptions.regions.map((item) => (
+                    <option key={item.region_id} value={item.region_id}>
+                      {item.region_name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="space-y-1">
