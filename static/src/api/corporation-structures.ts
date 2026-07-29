@@ -6,6 +6,19 @@ export function fetchCorporationStructureSettings() {
   })
 }
 
+export function fetchStructureServiceCatalog() {
+  return request.get<Api.Dashboard.StructureServiceCatalog>({
+    url: '/api/v1/dashboard/corporation-structures/service-catalog'
+  })
+}
+
+export function updateStructureServiceCatalog(data: Api.Dashboard.StructureServiceCatalogUpdate) {
+  return request.put({
+    url: '/api/v1/dashboard/corporation-structures/service-catalog',
+    data
+  })
+}
+
 export function updateCorporationStructureAuthorizations(
   data: Api.Dashboard.CorporationStructureAuthorizationUpdate
 ) {

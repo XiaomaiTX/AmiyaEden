@@ -80,6 +80,7 @@ func autoMigrate(db *gorm.DB) {
 		&model.CorpStructureAssignment{},
 		&model.FuelSalaryPayout{},
 		&model.StructureServiceFuelRate{},
+		&model.StructureServiceActivity{},
 		&model.EveStation{},
 
 		&model.EveKillmailList{},

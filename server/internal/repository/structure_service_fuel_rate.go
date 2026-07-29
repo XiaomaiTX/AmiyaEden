@@ -47,8 +47,15 @@ func (r *StructureServiceFuelRateRepository) UpsertBatch(rows []model.StructureS
 				"type_id",
 				"type_name",
 				"fuel_per_hour",
+				"fuel_category",
 				"updated_at",
 			}),
 		}).
 		Create(&rows).Error
+}
+
+func (r *StructureServiceFuelRateRepository) FindByTypeID(typeID int) (model.StructureServiceFuelRate, error) {
+	var row model.StructureServiceFuelRate
+	err := global.DB.Where("type_id = ?", typeID).First(&row).Error
+	return row, err
 }

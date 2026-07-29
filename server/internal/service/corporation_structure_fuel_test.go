@@ -78,19 +78,21 @@ func TestCorporationStructureListFuelEstimates(t *testing.T) {
 	// Fortizar(35833, group 1657 堡垒) 装 Market(覆盖50)+Clone Bay(默认10)，系数 0.75 → (50+10)*0.75=45
 	// 服务名使用 ESI 原始展示名（含空格/大小写），验证查表前归一化。
 	if err := db.Create(&model.CorpStructureInfo{
-		CorporationID:   9001,
-		CorporationName: "Test Corp",
-		StructureID:     111,
-		Name:            "Fortizar with Market",
-		TypeID:          35833,
-		TypeName:        "Fortizar",
-		SystemID:        30000142,
-		SystemName:      "Jita",
-		Security:        0.9,
-		State:           "shield_vulnerable",
-		Services:        `[{"name":"Market","state":"online"},{"name":"Clone Bay","state":"online"}]`,
-		FuelExpires:     farFutureInCurrentMonth(time.Now()),
-		UpdateAt:        time.Now().Unix(),
+		CorporationID:       9001,
+		CorporationName:     "Test Corp",
+		StructureID:         111,
+		Name:                "Fortizar with Market",
+		TypeID:              35833,
+		TypeName:            "Fortizar",
+		SystemID:            30000142,
+		SystemName:          "Jita",
+		Security:            0.9,
+		State:               "shield_vulnerable",
+		Services:            `[{"name":"Market","state":"online"},{"name":"Clone Bay","state":"online"}]`,
+		ServiceModules:      `[{"type_id":35892,"slot":"ServiceSlot0"},{"type_id":35894,"slot":"ServiceSlot1"}]`,
+		ServiceModulesKnown: true,
+		FuelExpires:         farFutureInCurrentMonth(time.Now()),
+		UpdateAt:            time.Now().Unix(),
 	}).Error; err != nil {
 		t.Fatalf("seed fortizar: %v", err)
 	}
@@ -175,19 +177,21 @@ func TestCorporationStructureListFuelEstimates_MissingGroup(t *testing.T) {
 
 	// 建筑用了未知 typeID（解析器不返回 groupID）→ 市场按无折扣 = 40
 	if err := db.Create(&model.CorpStructureInfo{
-		CorporationID:   9001,
-		CorporationName: "Test Corp",
-		StructureID:     333,
-		Name:            "Unknown Type",
-		TypeID:          99999,
-		TypeName:        "Mystery",
-		SystemID:        30000142,
-		SystemName:      "Jita",
-		Security:        0.9,
-		State:           "shield_vulnerable",
-		Services:        `[{"name":"market","state":"online"}]`,
-		FuelExpires:     farFutureInCurrentMonth(time.Now()),
-		UpdateAt:        time.Now().Unix(),
+		CorporationID:       9001,
+		CorporationName:     "Test Corp",
+		StructureID:         333,
+		Name:                "Unknown Type",
+		TypeID:              99999,
+		TypeName:            "Mystery",
+		SystemID:            30000142,
+		SystemName:          "Jita",
+		Security:            0.9,
+		State:               "shield_vulnerable",
+		Services:            `[{"name":"market","state":"online"}]`,
+		ServiceModules:      `[{"type_id":35892,"slot":"ServiceSlot0"}]`,
+		ServiceModulesKnown: true,
+		FuelExpires:         farFutureInCurrentMonth(time.Now()),
+		UpdateAt:            time.Now().Unix(),
 	}).Error; err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -235,19 +239,21 @@ func TestCorporationStructureListFuelEstimates_Incomplete(t *testing.T) {
 	// Fortizar 同时挂 Market（已配置）和一个 ESI 未映射的在线服务。
 	// 由于存在未配置在线服务 → 不完整估算，不返回部分燃料合计。
 	if err := db.Create(&model.CorpStructureInfo{
-		CorporationID:   9001,
-		CorporationName: "Test Corp",
-		StructureID:     777,
-		Name:            "Fortizar Partial",
-		TypeID:          35833,
-		TypeName:        "Fortizar",
-		SystemID:        30000142,
-		SystemName:      "Jita",
-		Security:        0.9,
-		State:           "shield_vulnerable",
-		Services:        `[{"name":"Market","state":"online"},{"name":"Future Module","state":"online"}]`,
-		FuelExpires:     farFutureInCurrentMonth(time.Now()),
-		UpdateAt:        time.Now().Unix(),
+		CorporationID:       9001,
+		CorporationName:     "Test Corp",
+		StructureID:         777,
+		Name:                "Fortizar Partial",
+		TypeID:              35833,
+		TypeName:            "Fortizar",
+		SystemID:            30000142,
+		SystemName:          "Jita",
+		Security:            0.9,
+		State:               "shield_vulnerable",
+		Services:            `[{"name":"Market","state":"online"},{"name":"Future Module","state":"online"}]`,
+		ServiceModules:      `[{"type_id":35892,"slot":"ServiceSlot0"}]`,
+		ServiceModulesKnown: true,
+		FuelExpires:         farFutureInCurrentMonth(time.Now()),
+		UpdateAt:            time.Now().Unix(),
 	}).Error; err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -282,6 +288,29 @@ func TestCorporationStructureListFuelEstimates_Incomplete(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("FuelUnknownServices 应含原始名 'Future Module'，实际 %v", row.FuelUnknownServices)
+	}
+}
+
+func TestCorporationStructureListFuelEstimates_RequiresServiceModuleSnapshot(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	if err := db.AutoMigrate(&model.StructureServiceFuelRate{}); err != nil {
+		t.Fatalf("migrate fuel rate: %v", err)
+	}
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+	seedCorporationStructureManageScope(t, db, 9001)
+	if err := db.Create(&model.CorpStructureInfo{CorporationID: 9001, CorporationName: "Test Corp", StructureID: 888, TypeID: 35833, SystemID: 30000142, State: "shield_vulnerable", Services: `[{"name":"Market","state":"online"}]`}).Error; err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	svc := newCorpStructureServiceForFuelTest(&fakeGroupResolver{groupByTypeID: map[int]int{35833: structureGroupCitadel}})
+	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{CorporationID: 9001})
+	if err != nil {
+		t.Fatalf("ListStructures: %v", err)
+	}
+	row := resp.Items[0]
+	if !row.FuelEstimateIncomplete || row.FuelEstimateStatus != fuelEstimateStatusAuthorizationRequired || row.FuelPerHour != nil {
+		t.Fatalf("row = %#v, want authorization-required incomplete estimate", row)
 	}
 }
 
@@ -369,19 +398,21 @@ func TestCorporationStructureMyAssignedListFuelEstimates(t *testing.T) {
 
 	// 建筑 + 指派给燃料官。服务名使用 ESI 原始展示名（验证归一化查表）。
 	if err := db.Create(&model.CorpStructureInfo{
-		CorporationID:   9001,
-		CorporationName: "Test Corp",
-		StructureID:     555,
-		Name:            "My Azbel",
-		TypeID:          35826,
-		TypeName:        "Azbel",
-		SystemID:        30000142,
-		SystemName:      "Jita",
-		Security:        0.9,
-		State:           "shield_vulnerable",
-		Services:        `[{"name":"Manufacturing","state":"online"}]`,
-		FuelExpires:     farFutureInCurrentMonth(time.Now()),
-		UpdateAt:        time.Now().Unix(),
+		CorporationID:       9001,
+		CorporationName:     "Test Corp",
+		StructureID:         555,
+		Name:                "My Azbel",
+		TypeID:              35826,
+		TypeName:            "Azbel",
+		SystemID:            30000142,
+		SystemName:          "Jita",
+		Security:            0.9,
+		State:               "shield_vulnerable",
+		Services:            `[{"name":"Manufacturing","state":"online"}]`,
+		ServiceModules:      `[{"type_id":35878,"slot":"ServiceSlot0"}]`,
+		ServiceModulesKnown: true,
+		FuelExpires:         farFutureInCurrentMonth(time.Now()),
+		UpdateAt:            time.Now().Unix(),
 	}).Error; err != nil {
 		t.Fatalf("seed structure: %v", err)
 	}

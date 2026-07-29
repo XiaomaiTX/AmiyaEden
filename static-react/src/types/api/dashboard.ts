@@ -123,6 +123,35 @@ export interface CorporationStructureRow {
   reinforce_hour: number
   state_timer_end: string
   updated_at: number
+  fuel_per_hour?: number | null
+  fuel_to_month_end?: number | null
+  fuel_estimate_incomplete?: boolean
+  fuel_unknown_services?: string[]
+  fuel_estimate_status?: 'available' | 'authorization_required' | 'activity_mapping_required' | 'module_mismatch' | 'rate_unavailable' | 'ambiguous_module'
+}
+
+export interface StructureServiceModuleCatalogItem {
+  service_name: string
+  type_id: number
+  type_name: string
+  fuel_per_hour: number
+  fuel_category: 'other' | 'citadel' | 'engineering_complex' | 'refinery'
+}
+
+export interface StructureServiceActivityCatalogItem {
+  activity_name: string
+  type_id: number
+}
+
+export interface StructureServiceCatalog {
+  modules: StructureServiceModuleCatalogItem[]
+  activities: StructureServiceActivityCatalogItem[]
+  unmapped_activities: string[]
+}
+
+export interface StructureServiceCatalogUpdate {
+  modules: Array<Pick<StructureServiceModuleCatalogItem, 'service_name' | 'type_id' | 'fuel_category'>>
+  activities: StructureServiceActivityCatalogItem[]
 }
 
 export interface CorporationStructureListRequest extends Partial<CommonSearchParams> {

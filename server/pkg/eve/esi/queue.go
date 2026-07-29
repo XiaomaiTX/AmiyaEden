@@ -576,6 +576,9 @@ func (q *Queue) hasRequiredScopes(char model.EveCharacter, task RefreshTask) boo
 	}
 
 	for _, required := range task.RequiredScopes() {
+		if required.Optional {
+			continue
+		}
 		if _, ok := scopeSet[required.Scope]; !ok {
 			return false
 		}

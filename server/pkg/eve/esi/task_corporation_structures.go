@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -20,6 +22,8 @@ const (
 	corporationStructureTaskPaginationConcurrency = 2
 	corporationStructureTaskDetailInterval        = 500 * time.Millisecond
 )
+
+const corporationAssetsScope = "esi-assets.read_corporation_assets.v1"
 
 // ─────────────────────────────────────────────
 //  Corporation Structures 军团建筑信息
@@ -49,6 +53,7 @@ func (t *CorporationStructuresTask) RequiredScopes() []TaskScope {
 	return []TaskScope{
 		{Scope: "esi-corporations.read_structures.v1", Description: "读取军团建筑信息"},
 		{Scope: "esi-universe.read_structures.v1", Description: "读取建筑信息"},
+		{Scope: corporationAssetsScope, Description: "读取军团建筑服务模块", Optional: true},
 	}
 }
 
@@ -76,6 +81,17 @@ type corpStructureESIResponse struct {
 type esiNameResponse struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+}
+
+type corporationAssetESIResponse struct {
+	LocationID   int64  `json:"location_id"`
+	LocationFlag string `json:"location_flag"`
+	TypeID       int    `json:"type_id"`
+}
+
+type structureServiceModuleSnapshot struct {
+	TypeID int    `json:"type_id"`
+	Slot   string `json:"slot"`
 }
 
 type corpStructureSystemSnapshot struct {
@@ -180,15 +196,32 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 	}
 
 	structureIDs := make([]int64, 0, len(dedupedStructures))
+	structureIDSet := make(map[int64]struct{}, len(dedupedStructures))
 	typeSet := make(map[int]struct{}, len(dedupedStructures))
 	systemSet := make(map[int64]struct{}, len(dedupedStructures))
 	for _, structure := range dedupedStructures {
 		structureIDs = append(structureIDs, structure.StructureID)
+		structureIDSet[structure.StructureID] = struct{}{}
 		if structure.TypeID > 0 {
 			typeSet[int(structure.TypeID)] = struct{}{}
 		}
 		if structure.SystemID > 0 {
 			systemSet[structure.SystemID] = struct{}{}
+		}
+	}
+	serviceModulesKnown := hasTaskScope(ctx.CharacterID, corporationAssetsScope)
+	serviceModulesByStructureID := make(map[int64][]structureServiceModuleSnapshot)
+	if serviceModulesKnown {
+		var assets []corporationAssetESIResponse
+		assetsPath := fmt.Sprintf("/corporations/%d/assets/", corporationID)
+		if _, err := ctx.Client.GetPaginated(bgCtx, assetsPath, ctx.AccessToken, &assets); err != nil {
+			return fmt.Errorf("fetch corporation assets for structure modules: %w", err)
+		}
+		for _, asset := range assets {
+			if _, ok := structureIDSet[asset.LocationID]; !ok || !isStructureServiceSlot(asset.LocationFlag) || asset.TypeID <= 0 {
+				continue
+			}
+			serviceModulesByStructureID[asset.LocationID] = append(serviceModulesByStructureID[asset.LocationID], structureServiceModuleSnapshot{TypeID: asset.TypeID, Slot: asset.LocationFlag})
 		}
 	}
 	existingByStructureID := loadExistingCorpStructureSnapshots(corporationID, structureIDs)
@@ -205,6 +238,7 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 	corpRecords := make([]model.CorpStructureInfo, 0, len(dedupedStructures))
 	for _, structure := range dedupedStructures {
 		servicesJSON, _ := json.Marshal(structure.Services)
+		modulesJSON, _ := json.Marshal(serviceModulesByStructureID[structure.StructureID])
 		existing := existingByStructureID[structure.StructureID]
 		typeName := chooseSnapshotText(
 			typeNamesByTypeID[structure.TypeID],
@@ -223,26 +257,28 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		}
 
 		corpRecords = append(corpRecords, model.CorpStructureInfo{
-			CorporationID:      corporationID,
-			CorporationName:    chooseSnapshotText(corporationName, existing.CorporationName, fmt.Sprintf("Corporation-%d", corporationID)),
-			StructureID:        structure.StructureID,
-			Services:           string(servicesJSON),
-			FuelExpires:        structure.FuelExpires,
-			Name:               structure.Name,
-			NextReinforceApply: structure.NextReinforceApply,
-			NextReinforceHour:  structure.NextReinforceHour,
-			ProfileID:          structure.ProfileID,
-			ReinforceHour:      structure.ReinforceHour,
-			State:              structure.State,
-			StateTimerEnd:      structure.StateTimerEnd,
-			StateTimerStart:    structure.StateTimerStart,
-			SystemID:           structure.SystemID,
-			SystemName:         systemName,
-			Security:           security,
-			TypeID:             structure.TypeID,
-			TypeName:           typeName,
-			UnanchorsAt:        structure.UnanchorsAt,
-			UpdateAt:           now,
+			CorporationID:       corporationID,
+			CorporationName:     chooseSnapshotText(corporationName, existing.CorporationName, fmt.Sprintf("Corporation-%d", corporationID)),
+			StructureID:         structure.StructureID,
+			Services:            string(servicesJSON),
+			ServiceModules:      string(modulesJSON),
+			ServiceModulesKnown: serviceModulesKnown,
+			FuelExpires:         structure.FuelExpires,
+			Name:                structure.Name,
+			NextReinforceApply:  structure.NextReinforceApply,
+			NextReinforceHour:   structure.NextReinforceHour,
+			ProfileID:           structure.ProfileID,
+			ReinforceHour:       structure.ReinforceHour,
+			State:               structure.State,
+			StateTimerEnd:       structure.StateTimerEnd,
+			StateTimerStart:     structure.StateTimerStart,
+			SystemID:            structure.SystemID,
+			SystemName:          systemName,
+			Security:            security,
+			TypeID:              structure.TypeID,
+			TypeName:            typeName,
+			UnanchorsAt:         structure.UnanchorsAt,
+			UpdateAt:            now,
 		})
 	}
 	deletedCount, err := syncCorporationStructureSnapshots(corporationID, corpRecords, structureIDs)
@@ -298,6 +334,27 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		zap.Int64("deleted_count", deletedCount),
 	)
 	return nil
+}
+
+func hasTaskScope(characterID int64, scope string) bool {
+	var scopes string
+	if err := global.DB.Model(&model.EveCharacter{}).Where("character_id = ?", characterID).Pluck("scopes", &scopes).Error; err != nil {
+		return false
+	}
+	for _, granted := range strings.Fields(scopes) {
+		if granted == scope {
+			return true
+		}
+	}
+	return false
+}
+
+func isStructureServiceSlot(flag string) bool {
+	if !strings.HasPrefix(flag, "ServiceSlot") {
+		return false
+	}
+	_, err := strconv.Atoi(strings.TrimPrefix(flag, "ServiceSlot"))
+	return err == nil
 }
 
 func dedupeCorpStructureESIResponsesByStructureID(

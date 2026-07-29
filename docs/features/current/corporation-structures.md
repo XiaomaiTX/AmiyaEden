@@ -50,6 +50,9 @@ source_of_truth:
 
 ## 燃料消耗估算
 
+- 燃料率以公司资产中建筑 `ServiceSlot0`–`ServiceSlot7` 的服务模块 `type_id` 为准；建筑接口的 `services[].name` 仅用于判断活动是否在线。多个活动映射到同一模块时只计一次，缺少公司资产授权、活动目录映射、模块匹配或费率时不返回部分估算。
+- 精确识别需要被选为建筑 Director 的人物额外授权可选 scope `esi-assets.read_corporation_assets.v1`；未知活动由管理员在服务目录中映射到已验证模块后生效。
+
 - 数据来源：`structure_service_fuel_rate` 表（service name → 每小时燃料块），由 `structure_fuel_rate_sync` 任务同步
 - service name 为 ESI 军团建筑快照 `services[].name` 的原始展示字符串（如 `Market`、`Clone Bay`、`Moon Drilling`，含空格/大小写）；燃料计算内部经 `normalizeServiceName` 归一化为 snake_case 键（`market`、`clone_bay`、`moon_drilling`）后查表，非模块 typeName
 - 计算模型：每小时消耗 = Σ(在线服务的有效率)，有效率 = 服务率 × 建筑分组系数；建筑本身无基础消耗

@@ -45,6 +45,28 @@ func (h *CorporationStructureHandler) UpdateAuthorizations(c *gin.Context) {
 	response.OK(c, nil)
 }
 
+func (h *CorporationStructureHandler) GetFuelServiceCatalog(c *gin.Context) {
+	result, err := h.svc.GetFuelServiceCatalog(c.Request.Context())
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
+func (h *CorporationStructureHandler) UpdateFuelServiceCatalog(c *gin.Context) {
+	var req service.StructureServiceCatalogUpdate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	if err := h.svc.UpdateFuelServiceCatalog(c.Request.Context(), req); err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, nil)
+}
+
 func (h *CorporationStructureHandler) ListStructures(c *gin.Context) {
 	var req service.CorporationStructureListRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -93,6 +93,7 @@ type CorporationStructureService struct {
 	auditSvc      *AuditService
 	nameResolver  *EntityNameResolver
 	fuelRateRepo  *repository.StructureServiceFuelRateRepository
+	activityRepo  *repository.StructureServiceActivityRepository
 	groupResolver StructureTypeGroupResolver
 	alertNotifier corporationStructureAlertNotifier
 }
@@ -114,6 +115,7 @@ func NewCorporationStructureService() *CorporationStructureService {
 		auditSvc:      NewAuditService(),
 		nameResolver:  NewEntityNameResolver(),
 		fuelRateRepo:  repository.NewStructureServiceFuelRateRepository(),
+		activityRepo:  repository.NewStructureServiceActivityRepository(),
 		groupResolver: sdeRepo,
 		alertNotifier: DefaultQQGovernanceService(),
 	}
@@ -121,8 +123,8 @@ func NewCorporationStructureService() *CorporationStructureService {
 
 // loadServiceFuelRateMap 加载服务燃料率映射（一次性，供批量构建行复用）。
 // DB 中的记录覆盖默认回退表：DB 有则以 DB 为准，DB 缺失的服务沿用默认值。
-func (s *CorporationStructureService) loadServiceFuelRateMap() map[string]float64 {
-	return loadRateMapWithRepo(s.fuelRateRepo)
+func (s *CorporationStructureService) loadModuleFuelRateMap() map[int]moduleFuelRate {
+	return loadModuleFuelRateMap(s.fuelRateRepo)
 }
 
 // loadStructureGroupIDMap 批量解析建筑 typeID → groupID（供燃料折扣判定）。
@@ -197,6 +199,9 @@ type CorporationStructureRow struct {
 	FuelToMonthEnd         *int                              `json:"fuel_to_month_end"`        // 预计到月底需补燃料块
 	FuelEstimateIncomplete bool                              `json:"fuel_estimate_incomplete"` // 存在未配置在线服务时为 true，fuel_per_hour 暂不可用
 	FuelUnknownServices    []string                          `json:"fuel_unknown_services"`    // 未映射服务原始名列表
+	FuelEstimateStatus     string                            `json:"fuel_estimate_status"`
+	ServiceModulesKnown    bool                              `json:"-"`
+	ServiceModules         []structureServiceModuleSnapshot  `json:"-"`
 	ReinforceHour          int                               `json:"reinforce_hour"`
 	StateTimerStart        string                            `json:"state_timer_start"`
 	StateTimerEnd          string                            `json:"state_timer_end"`
@@ -820,7 +825,7 @@ func (s *CorporationStructureService) ListStructures(
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
 	items := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
-	applyFuelEstimates(items, now, s.loadServiceFuelRateMap(), s.loadStructureGroupIDMap(structures))
+	applyFuelEstimates(items, now, s.loadModuleFuelRateMap(), loadActivityMapping(s.activityRepo), s.loadStructureGroupIDMap(structures))
 
 	filtered := filterCorporationStructureRows(items, req, now)
 	sortCorporationStructureRows(filtered, req.SortBy, req.SortOrder)
@@ -1228,7 +1233,7 @@ func (s *CorporationStructureService) ListMyAssignedStructures(
 	systemMeta := s.loadSystemMetaMap(collectSystemIDs(structures))
 	now := time.Now()
 	rows := buildCorporationStructureRows(structures, now, systemMeta, assignByStructure, nameByUserID)
-	applyFuelEstimates(rows, now, s.loadServiceFuelRateMap(), s.loadStructureGroupIDMap(structures))
+	applyFuelEstimates(rows, now, s.loadModuleFuelRateMap(), loadActivityMapping(s.activityRepo), s.loadStructureGroupIDMap(structures))
 	filteredRows := make([]CorporationStructureRow, 0, len(rows))
 	for _, row := range rows {
 		if _, ok := structureIDs[row.StructureID]; !ok {
@@ -1661,26 +1666,28 @@ func buildCorporationStructureRow(
 ) CorporationStructureRow {
 	fuelRemainingHours, fuelRemaining := calculateFuelRemaining(st.FuelExpires, now)
 	row := CorporationStructureRow{
-		CorporationID:      st.CorporationID,
-		CorporationName:    st.CorporationName,
-		StructureID:        st.StructureID,
-		Name:               st.Name,
-		TypeID:             st.TypeID,
-		TypeName:           st.TypeName,
-		SystemID:           st.SystemID,
-		SystemName:         fallbackSystemName(st.SystemID, st.SystemName, meta.SystemName),
-		RegionID:           meta.RegionID,
-		RegionName:         meta.RegionName,
-		Security:           chooseSecurity(st.Security, meta.Security, meta.SystemName != ""),
-		State:              st.State,
-		Services:           convertStructureServices(st.Services),
-		FuelExpires:        st.FuelExpires,
-		FuelRemaining:      fuelRemaining,
-		FuelRemainingHours: fuelRemainingHours,
-		ReinforceHour:      st.ReinforceHour,
-		StateTimerStart:    st.StateTimerStart,
-		StateTimerEnd:      st.StateTimerEnd,
-		UpdatedAt:          st.UpdateAt,
+		CorporationID:       st.CorporationID,
+		CorporationName:     st.CorporationName,
+		StructureID:         st.StructureID,
+		Name:                st.Name,
+		TypeID:              st.TypeID,
+		TypeName:            st.TypeName,
+		SystemID:            st.SystemID,
+		SystemName:          fallbackSystemName(st.SystemID, st.SystemName, meta.SystemName),
+		RegionID:            meta.RegionID,
+		RegionName:          meta.RegionName,
+		Security:            chooseSecurity(st.Security, meta.Security, meta.SystemName != ""),
+		State:               st.State,
+		Services:            convertStructureServices(st.Services),
+		ServiceModulesKnown: st.ServiceModulesKnown,
+		ServiceModules:      decodeStructureServiceModules(st.ServiceModules),
+		FuelExpires:         st.FuelExpires,
+		FuelRemaining:       fuelRemaining,
+		FuelRemainingHours:  fuelRemainingHours,
+		ReinforceHour:       st.ReinforceHour,
+		StateTimerStart:     st.StateTimerStart,
+		StateTimerEnd:       st.StateTimerEnd,
+		UpdatedAt:           st.UpdateAt,
 	}
 	if row.Name == "" {
 		row.Name = fmt.Sprintf("Structure-%d", st.StructureID)
@@ -1726,7 +1733,8 @@ func buildCorporationStructureRows(
 func applyFuelEstimates(
 	rows []CorporationStructureRow,
 	now time.Time,
-	rateMap map[string]float64,
+	rateMap map[int]moduleFuelRate,
+	activityMap map[string]int,
 	groupMap map[int64]int,
 ) {
 	if len(rateMap) == 0 {
@@ -1735,8 +1743,9 @@ func applyFuelEstimates(
 	for i := range rows {
 		row := &rows[i]
 		groupID := groupMap[row.TypeID]
-		est := EstimateFuelPerHour(groupID, row.TypeID, row.Services, rateMap)
-		if len(est.UnknownServices) > 0 {
+		est := EstimateFuelFromModules(groupID, row.TypeID, row.Services, row.ServiceModulesKnown, row.ServiceModules, activityMap, rateMap)
+		row.FuelEstimateStatus = est.Status
+		if est.Status != fuelEstimateStatusAvailable {
 			row.FuelEstimateIncomplete = true
 			row.FuelUnknownServices = est.UnknownServices
 			continue

@@ -329,10 +329,11 @@ func (s *StructureFuelRateService) SyncFuelRates(ctx context.Context) error {
 	hitCount := 0
 	for name, info := range defaults {
 		row := model.StructureServiceFuelRate{
-			ServiceName: name,
-			TypeID:      info.TypeID,
-			TypeName:    info.TypeName,
-			FuelPerHour: info.FuelPerHour, // 默认硬编码
+			FuelCategory: categoryString(info.Category),
+			ServiceName:  name,
+			TypeID:       info.TypeID,
+			TypeName:     info.TypeName,
+			FuelPerHour:  info.FuelPerHour, // 默认硬编码
 		}
 		if res, ok := esiResults[info.TypeID]; ok && res.ok {
 			row.FuelPerHour = res.fuelPerHour
@@ -389,6 +390,7 @@ func logStructureFuelRateWarn(msg string, err error, fields ...zap.Field) {
 type FuelEstimate struct {
 	FuelPerHour     float64
 	UnknownServices []string
+	Status          string
 }
 
 // EstimateFuelPerHour 估算建筑每小时燃料块消耗。
@@ -412,7 +414,7 @@ func EstimateFuelPerHour(
 	services []CorporationStructureServiceInfo,
 	rateMap map[string]float64,
 ) FuelEstimate {
-	var est FuelEstimate
+	est := FuelEstimate{Status: fuelEstimateStatusAvailable}
 	if len(services) == 0 || len(rateMap) == 0 {
 		return est
 	}

@@ -48,7 +48,7 @@
       minWidth: 140,
       formatter: (row: Api.Dashboard.CorporationStructureRow) =>
         row.fuel_estimate_incomplete
-          ? t('corporationStructures.table.fuelEstimateIncomplete')
+          ? formatFuelEstimateStatus(row.fuel_estimate_status)
           : row.fuel_per_hour != null
             ? row.fuel_per_hour
             : '-'
@@ -59,7 +59,7 @@
       minWidth: 160,
       formatter: (row: Api.Dashboard.CorporationStructureRow) =>
         row.fuel_estimate_incomplete
-          ? t('corporationStructures.table.fuelEstimateIncomplete')
+          ? formatFuelEstimateStatus(row.fuel_estimate_status)
           : row.fuel_to_month_end != null
             ? row.fuel_to_month_end
             : '-'
@@ -77,6 +77,19 @@
         row.updated_at ? formatTime(new Date(row.updated_at * 1000).toISOString()) : '-'
     }
   ])
+
+  function formatFuelEstimateStatus(
+    status: Api.Dashboard.CorporationStructureRow['fuel_estimate_status']
+  ) {
+    const keyByStatus: Record<string, string> = {
+      authorization_required: 'fuelEstimateAuthorizationRequired',
+      activity_mapping_required: 'fuelEstimateActivityMappingRequired',
+      module_mismatch: 'fuelEstimateModuleMismatch',
+      rate_unavailable: 'fuelEstimateRateUnavailable',
+      ambiguous_module: 'fuelEstimateAmbiguousModule'
+    }
+    return t(`corporationStructures.table.${keyByStatus[status] || 'fuelEstimateIncomplete'}`)
+  }
 
   async function loadData() {
     loading.value = true

@@ -8,6 +8,8 @@ import type {
   CorporationStructureRunTaskRequest,
   CorporationStructureRunTaskResponse,
   CorporationStructuresSettings,
+  StructureServiceCatalog,
+  StructureServiceCatalogUpdate,
 } from '@/types/api/dashboard'
 
 interface ApiResponse<T> {
@@ -81,4 +83,19 @@ export async function runCorporationStructuresTask(
   )
 
   return assertSuccess(response, 'run corporation structures task failed')
+}
+
+export async function fetchStructureServiceCatalog() {
+  const response = await requestJson<ApiResponse<StructureServiceCatalog>>(
+    '/api/v1/dashboard/corporation-structures/service-catalog'
+  )
+  return assertSuccess(response, 'fetch structure service catalog failed')
+}
+
+export async function updateStructureServiceCatalog(data: StructureServiceCatalogUpdate) {
+  const response = await requestJson<ApiResponse<null>>(
+    '/api/v1/dashboard/corporation-structures/service-catalog',
+    { method: 'PUT', body: JSON.stringify(data) }
+  )
+  return assertSuccess(response, 'update structure service catalog failed')
 }

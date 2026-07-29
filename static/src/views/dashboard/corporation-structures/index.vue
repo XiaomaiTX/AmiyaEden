@@ -961,7 +961,7 @@
           width: 180,
           formatter: (row: StructureRow) =>
             row.fuel_estimate_incomplete
-              ? t('corporationStructures.table.fuelEstimateIncomplete')
+              ? formatFuelEstimateStatus(row.fuel_estimate_status)
               : row.fuel_per_hour != null
                 ? row.fuel_per_hour
                 : '--'
@@ -972,7 +972,7 @@
           width: 200,
           formatter: (row: StructureRow) =>
             row.fuel_estimate_incomplete
-              ? t('corporationStructures.table.fuelEstimateIncomplete')
+              ? formatFuelEstimateStatus(row.fuel_estimate_status)
               : row.fuel_to_month_end != null
                 ? row.fuel_to_month_end
                 : '--'
@@ -1200,6 +1200,19 @@
     return services
       .map((service) => `${service.name} (${formatServiceStateLabel(service.state)})`)
       .join(' / ')
+  }
+
+  const formatFuelEstimateStatus = (
+    status: Api.Dashboard.CorporationStructureRow['fuel_estimate_status']
+  ) => {
+    const keyByStatus: Record<string, string> = {
+      authorization_required: 'fuelEstimateAuthorizationRequired',
+      activity_mapping_required: 'fuelEstimateActivityMappingRequired',
+      module_mismatch: 'fuelEstimateModuleMismatch',
+      rate_unavailable: 'fuelEstimateRateUnavailable',
+      ambiguous_module: 'fuelEstimateAmbiguousModule'
+    }
+    return t(`corporationStructures.table.${keyByStatus[status] || 'fuelEstimateIncomplete'}`)
   }
 
   const formatSecurity = (security: number) => {
