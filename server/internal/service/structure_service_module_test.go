@@ -1,6 +1,29 @@
 package service
 
-import "testing"
+import (
+	"amiya-eden/internal/model"
+	"testing"
+)
+
+func TestEffectiveServiceModuleCatalogIncludesDefaultsAndOverrides(t *testing.T) {
+	catalog := effectiveServiceModuleCatalog([]model.StructureServiceFuelRate{
+		{ServiceName: "custom_market", TypeID: 35892, TypeName: "Verified Market", FuelPerHour: 41, FuelCategory: "citadel"},
+		{ServiceName: "new_module", TypeID: 999999, TypeName: "Verified New Module", FuelPerHour: 7, FuelCategory: "other"},
+	})
+	byTypeID := make(map[int]model.StructureServiceFuelRate, len(catalog))
+	for _, row := range catalog {
+		byTypeID[row.TypeID] = row
+	}
+	if got, ok := byTypeID[82941]; !ok || got.FuelPerHour != 5 {
+		t.Fatalf("default Metenox module = %#v, want verified default with rate 5", got)
+	}
+	if got := byTypeID[35892]; got.TypeName != "Verified Market" || got.FuelPerHour != 41 {
+		t.Fatalf("persisted module override = %#v, want database row", got)
+	}
+	if _, ok := byTypeID[999999]; !ok {
+		t.Fatalf("administrator module missing from effective catalogue: %#v", catalog)
+	}
+}
 
 func TestEstimateFuelFromModules_DeduplicatesActivitiesByPhysicalModule(t *testing.T) {
 	rates := defaultModuleFuelRates()

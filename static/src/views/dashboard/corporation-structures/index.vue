@@ -394,6 +394,90 @@
             :description="$t('corporationStructures.empty.settings')"
             class="mt-4"
           />
+
+          <ElDivider>{{ $t('corporationStructures.serviceCatalog.title') }}</ElDivider>
+          <p class="mb-3 text-sm text-gray-500">{{
+            $t('corporationStructures.serviceCatalog.hint')
+          }}</p>
+          <ElEmpty
+            v-if="serviceCatalog.unmapped_activities.length === 0"
+            :description="$t('corporationStructures.serviceCatalog.empty')"
+            :image-size="56"
+          />
+          <ElTable v-else :data="serviceCatalog.unmapped_activities" border>
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.activity')"
+              min-width="260"
+            >
+              <template #default="{ row }">{{ row }}</template>
+            </ElTableColumn>
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.module')"
+              min-width="300"
+            >
+              <template #default="{ row }">
+                <ElSelect v-model="activityModuleByName[row]" class="w-full" filterable>
+                  <ElOption
+                    v-for="module in serviceCatalog.modules"
+                    :key="module.type_id"
+                    :value="module.type_id"
+                    :label="`${module.type_name} (${module.type_id})`"
+                  />
+                </ElSelect>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+          <div v-if="serviceCatalog.unmapped_activities.length > 0" class="mt-3">
+            <ElButton
+              type="primary"
+              :loading="savingServiceCatalog"
+              @click="saveServiceActivityMappings"
+              >{{ $t('corporationStructures.serviceCatalog.save') }}</ElButton
+            >
+          </div>
+
+          <ElDivider>{{ $t('corporationStructures.serviceCatalog.modules') }}</ElDivider>
+          <ElTable :data="serviceCatalog.modules" border size="small">
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.module')"
+              prop="type_name"
+              min-width="260"
+            />
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.typeId')"
+              prop="type_id"
+              width="150"
+            />
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.fuelRate')"
+              prop="fuel_per_hour"
+              width="170"
+            />
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.category')"
+              prop="fuel_category"
+              min-width="180"
+            />
+          </ElTable>
+
+          <ElDivider>{{ $t('corporationStructures.serviceCatalog.mappings') }}</ElDivider>
+          <ElEmpty
+            v-if="serviceCatalog.activities.length === 0"
+            :description="$t('corporationStructures.serviceCatalog.noMappings')"
+            :image-size="40"
+          />
+          <ElTable v-else :data="serviceCatalog.activities" border size="small">
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.activity')"
+              prop="activity_name"
+              min-width="260"
+            />
+            <ElTableColumn
+              :label="$t('corporationStructures.serviceCatalog.typeId')"
+              prop="type_id"
+              width="150"
+            />
+          </ElTable>
         </ElCard>
       </ElTabPane>
       <ElTabPane
@@ -547,12 +631,14 @@
     fetchCorporationStructureFilterOptions,
     fetchCorporationStructureList,
     fetchCorporationStructureSettings,
+    fetchStructureServiceCatalog,
     fetchFuelSalarySettings,
     runFuelSalaryPayout,
     runCorporationStructuresTask,
     updateCorporationStructureAssignments,
     updateCorporationStructureAuthorizations,
-    updateFuelSalarySettings
+    updateFuelSalarySettings,
+    updateStructureServiceCatalog
   } from '@/api/corporation-structures'
   import { runTask } from '@/api/task-manager'
 
@@ -584,6 +670,13 @@
     timer_notice_threshold_days: 7
   })
   const settingsLoading = ref(false)
+  const serviceCatalog = ref<Api.Dashboard.StructureServiceCatalog>({
+    modules: [],
+    activities: [],
+    unmapped_activities: []
+  })
+  const activityModuleByName = reactive<Record<string, number>>({})
+  const savingServiceCatalog = ref(false)
   const savingAuthorizations = ref(false)
   const alertScanRunning = ref(false)
   const runningTaskCorpId = ref<number>(0)
@@ -1023,6 +1116,10 @@
     settingsLoading.value = true
     try {
       settings.value = await fetchCorporationStructureSettings()
+      serviceCatalog.value = await fetchStructureServiceCatalog()
+      serviceCatalog.value.unmapped_activities.forEach((name) => {
+        activityModuleByName[name] = 0
+      })
       syncAuthorizationsFromSettings()
 
       const validCorpSet = new Set(validCorporations.value.map((item) => item.corporation_id))
@@ -1113,6 +1210,21 @@
       ElMessage.success(t('corporationStructures.messages.authorizationSaved'))
     } finally {
       savingAuthorizations.value = false
+    }
+  }
+
+  const saveServiceActivityMappings = async () => {
+    const activities = serviceCatalog.value.unmapped_activities
+      .filter((name) => (activityModuleByName[name] || 0) > 0)
+      .map((name) => ({ activity_name: name, type_id: activityModuleByName[name] }))
+    if (activities.length === 0) return
+    savingServiceCatalog.value = true
+    try {
+      await updateStructureServiceCatalog({ modules: [], activities })
+      await loadSettings()
+      ElMessage.success(t('corporationStructures.messages.serviceCatalogSaved'))
+    } finally {
+      savingServiceCatalog.value = false
     }
   }
 

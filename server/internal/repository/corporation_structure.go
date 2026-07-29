@@ -150,6 +150,17 @@ func (r *CorporationStructureRepository) ListCorpStructures(
 	return rows, err
 }
 
+// ListAllCorpStructures returns every retained corporation-structure snapshot.
+// Keep this separate from ListCorpStructures: an empty allowed-corporation set
+// means no access for normal list callers, not an unrestricted query.
+func (r *CorporationStructureRepository) ListAllCorpStructures() ([]model.CorpStructureInfo, error) {
+	rows := make([]model.CorpStructureInfo, 0)
+	err := global.DB.
+		Order(`corporation_id ASC, structure_id ASC`).
+		Find(&rows).Error
+	return rows, err
+}
+
 func (r *CorporationStructureRepository) UpsertCorpStructures(records []model.CorpStructureInfo) error {
 	if len(records) == 0 {
 		return nil

@@ -2847,6 +2847,7 @@
       "refreshSelected": "Run Background Task for Selected Corporation",
       "runAlertScan": "Run QQ Structure Alert Scan"
     },
+    "serviceCatalog": { "title": "Service Activity Catalog", "hint": "Map an unknown online ESI activity to a verified service module. The estimate applies after the next refresh.", "empty": "No online service activities need mapping", "activity": "Service activity", "module": "Service module", "save": "Save activity mappings", "modules": "Verified service modules", "mappings": "Configured activity mappings", "typeId": "Module Type ID", "fuelRate": "Fuel blocks / hour", "category": "Discount category", "noMappings": "No activity mappings have been configured" },
     "confirm": { "runAlertScan": "Run the QQ structure alert scan and enqueue notifications now?" },
     "settings": {
       "noticeThresholds": "Notification Thresholds",
@@ -2899,6 +2900,7 @@
       "hull_vulnerable": "Hull Vulnerable"
     },
     "messages": {
+      "serviceCatalogSaved": "Service activity mappings saved",
       "authorizationSaved": "Authorization settings saved",
       "refreshQueued": "Background task has been queued. Refresh the list later to see updates.",
       "refreshAlreadyRunning": "A refresh job for this corporation is already running.",

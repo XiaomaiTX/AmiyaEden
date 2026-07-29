@@ -31,16 +31,17 @@ type StructureServiceActivityInput struct {
 }
 
 func (s *CorporationStructureService) GetFuelServiceCatalog(ctx context.Context) (*StructureServiceCatalog, error) {
-	modules, err := s.fuelRateRepo.ListAll()
+	persistedModules, err := s.fuelRateRepo.ListAll()
 	if err != nil {
 		return nil, fmt.Errorf("load service module catalog: %w", err)
 	}
+	modules := effectiveServiceModuleCatalog(persistedModules)
 	activities, err := s.activityRepo.ListAll()
 	if err != nil {
 		return nil, fmt.Errorf("load service activity catalog: %w", err)
 	}
 	known := loadActivityMapping(s.activityRepo)
-	structures, err := s.repo.ListCorpStructures(nil)
+	structures, err := s.repo.ListAllCorpStructures()
 	if err != nil {
 		return nil, fmt.Errorf("load structures for activity catalog: %w", err)
 	}
@@ -61,6 +62,40 @@ func (s *CorporationStructureService) GetFuelServiceCatalog(ctx context.Context)
 	}
 	sort.Slice(unknown, func(i, j int) bool { return strings.ToLower(unknown[i]) < strings.ToLower(unknown[j]) })
 	return &StructureServiceCatalog{Modules: modules, Activities: activities, UnmappedActivities: unknown}, nil
+}
+
+// effectiveServiceModuleCatalog keeps the built-in verified module catalogue
+// available before the scheduled ESI dogma sync has created its first rows.
+// Persisted rows override a built-in module by type ID and add administrator
+// registered modules. This is presentation only; fuel calculation uses the
+// same type-ID keyed effective rate map.
+func effectiveServiceModuleCatalog(persisted []model.StructureServiceFuelRate) []model.StructureServiceFuelRate {
+	byTypeID := make(map[int]model.StructureServiceFuelRate)
+	for serviceName, rate := range defaultServiceFuelRates() {
+		if _, exists := byTypeID[rate.TypeID]; exists {
+			continue
+		}
+		byTypeID[rate.TypeID] = model.StructureServiceFuelRate{
+			ServiceName:  serviceName,
+			TypeID:       rate.TypeID,
+			TypeName:     rate.TypeName,
+			FuelPerHour:  rate.FuelPerHour,
+			FuelCategory: categoryString(rate.Category),
+		}
+	}
+	for _, row := range persisted {
+		if row.TypeID > 0 {
+			byTypeID[row.TypeID] = row
+		}
+	}
+	modules := make([]model.StructureServiceFuelRate, 0, len(byTypeID))
+	for _, row := range byTypeID {
+		modules = append(modules, row)
+	}
+	sort.Slice(modules, func(i, j int) bool {
+		return strings.ToLower(modules[i].TypeName) < strings.ToLower(modules[j].TypeName)
+	})
+	return modules
 }
 
 func (s *CorporationStructureService) UpdateFuelServiceCatalog(ctx context.Context, req StructureServiceCatalogUpdate) error {
