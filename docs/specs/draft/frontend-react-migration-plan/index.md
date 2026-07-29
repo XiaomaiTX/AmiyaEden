@@ -42,11 +42,10 @@ source_of_truth:
 - 批次 A/B/C/D 的全部原计划路由已在 React 注册，并替换为真实业务页面。
 - React 壳层的 `SidebarContext` 已从 `sidebar.tsx` 拆出为独立模块，侧边栏状态、移动端展开状态、cookie 记忆和快捷键切换属于已完成基座能力，不单独占用业务批次。
 - Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button parity；具体 AND/OR 语义和 reserved key 规则以 `docs/architecture/routing-and-menus.md` 与 `docs/features/current/corporation-access-policy.md` 为准。
-- Vue 侧在冻结期之后新增以下路由，React 侧尚未对齐，列入追赶清单（见 `./migration-scope-baseline.md`、`./todolist.md`）：
+- Vue 侧在冻结期之后新增以下仍未对齐路由，列入追赶清单（见 `./migration-scope-baseline.md`、`./todolist.md`）：
   - `/characters`（顶层路由，与 `dashboard/characters` 复用同一页，2026-05-22 落地）
   - `/dashboard/fuel-officer-structures`（2026-05-11 落地，`super_admin/fuel_officer`）
   - `/dashboard/galaxy-registry`（2026-06-04 落地，`super_admin/admin/captain/user`）
-  - `/info/tool-bookmarks`（2026-05-13 落地）
   - `/system/qq-governance`（2026-07-12 落地，`super_admin`）
   - `/fuxi-hall/{leadership, contributors, manage}`（2026-05-12 落地，取代旧 `hall-of-fame` 模块）
 - Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 已迁移 `fuxi-hall/*` 并移除三条历史遗留 stub。

@@ -54,7 +54,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [ ] `/characters` 顶层路由对齐（与 `dashboard/characters` 共享页面，但路由路径独立，2026-05-22 Vue 落地）
 - [ ] `/dashboard/fuel-officer-structures` React 落地（`super_admin/fuel_officer`，2026-05-11 Vue 落地）
 - [ ] `/dashboard/galaxy-registry` React 落地（`super_admin/admin/captain/user`，2026-06-04 Vue 落地）
-- [ ] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地）
+- [x] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地；普通用户读取启用项，管理员可维护全部书签）
 - [ ] `/system/qq-governance` React 落地（`super_admin`，2026-07-12 Vue 落地）
 - [x] `/fuxi-hall/leadership`、`/fuxi-hall/contributors`、`/fuxi-hall/manage` React 落地（取代旧 `hall-of-fame` 模块，2026-05-12 Vue 落地）
 - [x] 移除 React 侧历史遗留的 `hall-of-fame/{temple, manage, current-manage}` 三条 stub（Vue 已删除）
@@ -124,4 +124,3 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [ ] P0 项有 owner 与目标时间
 - [ ] 路由、权限、登录态、API 契约回归通过
 - [ ] 替换发布流程和回切流程可演练
-

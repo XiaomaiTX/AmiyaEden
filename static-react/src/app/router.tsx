@@ -22,6 +22,7 @@ import { InfoFittingsPage } from '@/pages/info-fittings-page'
 import { InfoAssetsPage } from '@/pages/info-assets-page'
 import { InfoContractsPage } from '@/pages/info-contracts-page'
 import { InfoEsiCheckPage } from '@/pages/info-esi-check-page'
+import { InfoToolBookmarksPage } from '@/pages/info-tool-bookmarks-page'
 import { OperationCorporationPapPage } from '@/pages/operation-corporation-pap-page'
 import { OperationFleetConfigsPage } from '@/pages/operation-fleet-configs-page'
 import { OperationFleetDetailPage } from '@/pages/operation-fleet-detail-page'
@@ -107,6 +108,8 @@ function renderShellPage(route: (typeof appRouteSpecs)[number]) {
       return <InfoContractsPage />
     case 'info-esi-check':
       return <InfoEsiCheckPage />
+    case 'info-tool-bookmarks':
+      return <InfoToolBookmarksPage />
     case 'ticket-my-tickets':
       return <TicketMyTicketsPage />
     case 'ticket-create':

@@ -19,6 +19,7 @@ export type AppPageType =
   | 'info-assets'
   | 'info-contracts'
   | 'info-esi-check'
+  | 'info-tool-bookmarks'
   | 'ticket-my-tickets'
   | 'ticket-create'
   | 'ticket-detail'
@@ -215,6 +216,14 @@ export const appRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.esiCheck',
     pageType: 'info-esi-check',
     batch: 'A',
+    menuGroup: 'nav.group.info',
+    menuIcon: 'info',
+    meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
+  },
+  {
+    path: 'info/tool-bookmarks',
+    titleKey: 'nav.info.toolBookmarks',
+    pageType: 'info-tool-bookmarks',
     menuGroup: 'nav.group.info',
     menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAny: ['menu.info'] },

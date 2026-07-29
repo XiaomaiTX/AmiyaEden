@@ -101,6 +101,6 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 - [ ] `characters`（顶层公开页，复用 `dashboard/characters` 实现）
 - [ ] `dashboard/fuel-officer-structures`（fuel officer 专属建筑视图）
 - [ ] `dashboard/galaxy-registry`（星系登记簿）
-- [ ] `info/tool-bookmarks`（工具书签管理）
+- [x] `info/tool-bookmarks` -> React `InfoToolBookmarksPage`（普通书签列表与管理员 CRUD）
 - [ ] `system/qq-governance`（QQ 治理后台）
 - [x] `fuxi-hall/leadership`、`fuxi-hall/contributors`、`fuxi-hall/manage`（取代旧 `hall-of-fame` 模块；遗留 stub 已移除）

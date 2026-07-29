@@ -110,5 +110,5 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 当前实现位于 `static/src`。
-- React 已承接钱包、技能、NPC 击杀、舰船、植入体、资产、合同、装配和 ESI 检查等页面；对应 API/类型以 `static-react/src/api` 和 `static-react/src/types/api` 为准。
-- `tool-bookmarks` 仍是 Vue 已实现、React 尚未迁移的范围漂移项；这属于迁移范围，不属于 Stage 0A capability/menu parity 缺口。
+- React 已承接钱包、技能、NPC 击杀、舰船、植入体、资产、合同、装配、ESI 检查和工具书签页面；对应 API/类型以 `static-react/src/api` 和 `static-react/src/types/api` 为准。
+- `tool-bookmarks` 已在 React 落地：普通登录用户读取启用书签，`admin` / `super_admin` 使用管理接口读取全部书签并可维护书签；这属于范围漂移追赶完成项，不属于 Stage 0A capability/menu parity 基础设施。

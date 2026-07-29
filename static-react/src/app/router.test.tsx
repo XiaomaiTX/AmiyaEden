@@ -49,6 +49,15 @@ vi.mock('@/api/fleet-config', async () => {
   }
 })
 
+vi.mock('@/api/tool-bookmark', async () => {
+  const actual = await vi.importActual<typeof import('@/api/tool-bookmark')>('@/api/tool-bookmark')
+  return {
+    ...actual,
+    fetchVisibleToolBookmarks: vi.fn().mockResolvedValue([]),
+    fetchAdminToolBookmarks: vi.fn().mockResolvedValue([]),
+  }
+})
+
 describe('router auth and route meta access flow', () => {
   beforeEach(() => {
     useSessionStore.setState({
@@ -73,6 +82,38 @@ describe('router auth and route meta access flow', () => {
     render(<RouterProvider router={router} />)
 
     expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
+  })
+
+  test('redirects to auth login when visiting tool bookmarks without a session', () => {
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/info/tool-bookmarks'],
+    })
+
+    render(<RouterProvider router={router} />)
+
+    expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
+  })
+
+  test('renders tool bookmarks when the user has the menu.info capability', async () => {
+    useSessionStore.getState().setSessionSnapshot({
+      isLoggedIn: true,
+      accessToken: 'token-123',
+      characterId: 1001,
+      characterName: 'Amiya',
+      roles: ['user'],
+      corpCapabilities: ['menu.info'],
+      authList: [],
+    })
+
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/info/tool-bookmarks'],
+    })
+
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: '工具书签' })).toBeInTheDocument()
+    })
   })
 
   test('redirects /login to /auth/login', async () => {
@@ -323,4 +364,3 @@ describe('router auth and route meta access flow', () => {
     })
   })
 })
-
