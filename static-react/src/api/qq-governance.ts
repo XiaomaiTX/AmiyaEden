@@ -63,7 +63,7 @@ export async function deleteQQGovernancePolicy(groupID: number) {
 }
 export const fetchQQGovernanceMembers = async (params?: QQPageParams) => unwrap(await requestJson<ApiResponse<QQPageResult<QQMemberState>>>(`${base}/members${query(params)}`))
 export const fetchQQGovernanceReviews = async (params?: QQPageParams) => unwrap(await requestJson<ApiResponse<QQPageResult<QQReview>>>(`${base}/reviews${query(params)}`))
-export const searchQQGovernanceCorporations = async (keyword: string) => unwrap(await requestJson<ApiResponse<QQCorporationOption[]>>(`${base}/corporations?keyword=${encodeURIComponent(keyword)}`))
+export const searchQQGovernanceCorporations = async (queryText: string) => unwrap(await requestJson<ApiResponse<QQCorporationOption[]>>(`${base}/corporations?query=${encodeURIComponent(queryText)}`))
 export async function retryQQGovernanceTask(id: number) {
   return unwrap(await requestJson<ApiResponse<unknown>>(`${base}/tasks/${id}/retry`, { method: 'POST' }))
 }

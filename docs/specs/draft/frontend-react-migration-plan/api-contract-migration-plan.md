@@ -21,7 +21,7 @@ source_of_truth:
 - React API 封装调用：`static-react/src/api/*.ts`（27 个模块，含 `http-client.ts` 与 `response.ts`）。
 - React 子应用当前状态：已切换为本地契约文件，不再读取 Vue 类型文件；`static-react/src/types/api-contract.d.ts` 已移除 Vue 共享 import。
 - 业务域覆盖：auth、dashboard、eve-info、npc-kill、corporation-structures、fleet、fleet-config、alliance-pap、pap-exchange、skill-plan、shop、srp、ticket、welfare、newbro、mentor、system-manage、sys-wallet、sys-config、task-manager、audit、webhook、upload、tool-bookmark。
-- 漂移缺口：Vue 侧新增的 `qq-governance`、`galaxy-registry`、`fuel-officer-structures`（视为 `corporation-structures` 子集，待确认）对应 API 尚未在 React 侧建立；`tool-bookmarks` 与 `fuxi-hall` 已有 React 本地契约。
+- 漂移追赶：`qq-governance`、`galaxy-registry` 与 `fuel-officer-structures` 均已建立 React 本地类型和 API wrapper；Galaxy Registry 与 QQ Governance 的完整页面同构已关闭，后续字段变更按本方案同步维护。
 
 ## 迁移原则
 

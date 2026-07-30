@@ -58,7 +58,7 @@ source_of_truth:
 
 - 迁移期间，`docs/architecture/`、`docs/api/`、`docs/standards/` 和 `docs/features/current/` 描述双端必须一致的行为，并在实现映射处注明 Vue/React 状态。
 - Vue-only 的实现限制只能出现在明确的迁移阶段说明中，不得继续作为产品行为或通用工程规则。
-- 当前 React capability/menu/button parity 与主要壳层基座已完成；替换 Vue 前的核心剩余项是 Galaxy Registry 与 QQ Governance 的完整业务同构及全量跨角色回归。后续不要把这些剩余项重新描述成 0A 权限缺口。
+- 当前 React capability/menu/button parity、主要壳层基座及 Galaxy Registry、QQ Governance 的完整业务同构已完成；后续工作聚焦全量跨角色回归与替换发布门槛，不将其重新描述为 0A 权限缺口。
 - 功能文档的 React 状态统一引用 `migration-scope-baseline.md`，不在各 feature 文档维护第二套迁移清单。
 - 不覆盖 `docs/ai/repo-rules.md`、`docs/architecture/`、`docs/api/`、`docs/features/current/` 的当前权威定义。
 - 落地后转正路径：

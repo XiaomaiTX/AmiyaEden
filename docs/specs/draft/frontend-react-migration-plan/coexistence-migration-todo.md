@@ -59,6 +59,6 @@ source_of_truth:
 ## 待确认项
 
 - 替换窗口：是否在关键业务周期前设置迁移冻结时间段
-- 模块优先级：先完成 Galaxy Registry 管理/分析/通知同构，再完成 QQ Governance 规则/观测同构
+- 模块优先级：Galaxy Registry 管理/分析/通知与 QQ Governance 规则/观测同构已完成；后续进入跨角色回归与发布门槛验证
 - 回切策略：替换后若出现重大问题的回切条件与执行时限
 

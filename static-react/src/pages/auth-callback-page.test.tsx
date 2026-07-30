@@ -7,6 +7,9 @@ describe('auth callback page', () => {
   beforeEach(() => {
     useSessionStore.getState().clearSession()
     sessionStorage.clear()
+    localStorage.clear()
+    vi.clearAllMocks()
+    vi.restoreAllMocks()
   })
 
   test('hydrates a completed profile from callback /me even when the rolling response omits the flag', async () => {
@@ -141,6 +144,7 @@ describe('auth callback page', () => {
             },
             characters: [],
             roles: ['admin'],
+            corp_capabilities: ['menu.info', 'info.wallet.read'],
             permissions: [],
             profile_complete: true,
             enforce_character_esi_restriction: false,

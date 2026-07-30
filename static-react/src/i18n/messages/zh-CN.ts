@@ -2482,10 +2482,10 @@
     goToQQ: '加入 QQ 群',
   },
   qqGovernance: {
-    operations: '运行记录', reviews: '审核记录', addPolicy: '新增规则', editPolicy: '编辑规则', deletePolicy: '删除规则', cardTemplate: '群名片模板', autoReject: '自动拒绝不匹配成员', cardSync: '同步群名片', groupIdRequired: '请输入有效的 QQ 群号', noResults: '未找到军团', rateLimit: '限流状态', globalLimit: '全局限流', groupLimit: '群限流',
+    operations: '运行记录', reviews: '审核记录', addPolicy: '新增规则', editPolicy: '编辑规则', deletePolicy: '删除规则', cardTemplate: '群名片模板', autoReject: '自动拒绝不匹配成员', cardSync: '同步群名片', groupIdRequired: '请输入有效的 QQ 群号', noResults: '未找到军团', rateLimit: '限流状态', globalLimit: '全局限流', groupLimit: '群限流', reviewOnly: '仅人工审核', autoKick: '确认不匹配后自动移除',
     title: 'QQ 群治理',
     subtitle: '管理群策略、同步任务、告警和 OneBot 运行状态。',
-    tabs: { overview: '概览', policies: '策略', tasks: '任务', alerts: '告警', settings: '设置' },
+    tabs: { overview: '概览', policies: '策略', operations: '运行记录', tasks: '任务', alerts: '告警', settings: '设置' },
     group: '群',
     groupId: 'QQ群号',
     id: '记录 ID',
@@ -2514,6 +2514,7 @@
     actionSuccess: '操作成功',
     actionFailed: '操作失败',
   },
+  browserNotification: { title: '启用浏览器通知', message: '允许浏览器在星系登记超时时提醒你。', confirm: '允许通知', timeoutTitle: '星系登记已超时', timeoutBody: '{system} 的生产登记已达到两小时，请尽快结束登记。' },
   galaxyRegistry: {
     tabs: { current: '当前星系', captain: '队长记录', admin: '管理员' },
     statuses: { active: '进行中', completed: '已完成', pending: '待校验', valid: '有效', violation: '违规' },

@@ -102,9 +102,9 @@ source_of_truth:
 |---|---|---|---|---|---|---|
 | 人物管理 | `/characters`（顶层） | 2026-05-22 | `auth.ts` | `JWT`（含 guest） | 真实页 | FE-owner(TBD) |
 | `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 真实页 | FE-owner(TBD) |
-| `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 部分对齐 | FE-owner(TBD) |
+| `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 已完成同构 | FE-owner(TBD) |
 | `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login`, `corpCapabilitiesAny: menu.info` | 真实页 | FE-owner(TBD) |
-| `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 部分对齐 | FE-owner(TBD) |
+| `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 已完成同构 | FE-owner(TBD) |
 | `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
 | `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
 | `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
@@ -127,7 +127,7 @@ source_of_truth:
 - 2026-06-29：`/info/npc-kills` 增加 incursion/mission reward、统一筛选与按用户/人物筛选；payout 类型改名。
 - 2026-07-22：本轮审计确认所有原计划路由在 React 侧均有真实业务页实现，`hall-of-fame/*` 三条 stub 成为历史遗留 stub；范围漂移追赶项（8 条新增 Vue 路由）尚未对齐。
 - 2026-07-29：React 完成 `fuxi-hall/*` 三页迁移并移除三条 `hall-of-fame/*` stub；完成 `/info/tool-bookmarks` 迁移后，剩余范围漂移页面为 4 条路由域。
-- 2026-07-30：React 完成 `/characters`、fuel officer 页面和迁移基础设施；Galaxy Registry 与 QQ Governance 建立可运行基础页，完整业务同构仍未关闭。
+- 2026-07-30：React 完成 `/characters`、fuel officer 页面和迁移基础设施；Galaxy Registry 与 QQ Governance 已完成完整业务同构，包括官方 shadcn 原语接入、服务端筛选分页和关键写操作刷新。
 
 ## 说明与已知风险
 

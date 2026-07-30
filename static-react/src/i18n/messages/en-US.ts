@@ -2504,11 +2504,12 @@
     goToQQ: 'Join QQ Group',
   },
   qqGovernance: {
-    operations: 'Operations', reviews: 'Reviews', addPolicy: 'Add policy', editPolicy: 'Edit policy', deletePolicy: 'Delete policy', cardTemplate: 'Group-card template', autoReject: 'Auto-reject unmatched members', cardSync: 'Sync group cards', groupIdRequired: 'Enter a valid QQ group ID', noResults: 'No corporations found', rateLimit: 'Rate limit', globalLimit: 'Global limit', groupLimit: 'Group limit',
+    operations: 'Operations', reviews: 'Reviews', addPolicy: 'Add policy', editPolicy: 'Edit policy', deletePolicy: 'Delete policy', cardTemplate: 'Group-card template', autoReject: 'Auto-reject unmatched members', cardSync: 'Sync group cards', groupIdRequired: 'Enter a valid QQ group ID', noResults: 'No corporations found', rateLimit: 'Rate limit', globalLimit: 'Global limit', groupLimit: 'Group limit', reviewOnly: 'Review only', autoKick: 'Auto-remove after confirmed mismatch',
     title: 'QQ Group Governance',
     subtitle: 'Manage policies, reconciliation tasks, alerts, and OneBot health.',
     tabs: {
       overview: 'Overview',
+      operations: 'Operations',
       policies: 'Policies',
       tasks: 'Tasks',
       alerts: 'Alerts',
@@ -2542,6 +2543,7 @@
     actionSuccess: 'Operation succeeded',
     actionFailed: 'Operation failed',
   },
+  browserNotification: { title: 'Enable browser notifications', message: 'Allow browser reminders when a Galaxy Registry entry times out.', confirm: 'Allow notifications', timeoutTitle: 'Galaxy Registry entry timed out', timeoutBody: 'The production entry in {system} has reached two hours. Please end it when possible.' },
   galaxyRegistry: {
     tabs: { current: 'Current systems', captain: 'Captain history', admin: 'Administration' },
     statuses: { active: 'Active', completed: 'Completed', pending: 'Pending', valid: 'Valid', violation: 'Violation' },

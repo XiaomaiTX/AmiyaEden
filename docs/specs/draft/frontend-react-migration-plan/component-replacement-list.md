@@ -100,7 +100,7 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 
 - [x] `characters`（顶层 JWT 人物管理与资料/ESI 锁定页）
 - [x] `dashboard/fuel-officer-structures`（fuel officer 专属建筑视图）
-- [~] `dashboard/galaxy-registry`（基础页已落地，完整管理/分析/通知同构待续）
+- [x] `dashboard/galaxy-registry`（登记、延期、队长历史、管理员配置/分析/校验及超时通知已同构）
 - [x] `info/tool-bookmarks` -> React `InfoToolBookmarksPage`（普通书签列表与管理员 CRUD）
-- [~] `system/qq-governance`（基础页已落地，规则/成员/判断记录完整同构待续）
+- [x] `system/qq-governance`（规则 CRUD、军团异步多选、成员/审核/任务/告警分页与运行观测已同构）
 - [x] `fuxi-hall/leadership`、`fuxi-hall/contributors`、`fuxi-hall/manage`（取代旧 `hall-of-fame` 模块；遗留 stub 已移除）
