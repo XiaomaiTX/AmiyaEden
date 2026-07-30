@@ -1,5 +1,5 @@
 ﻿export interface RouteAuthMetaItem {
-  title: string
+  titleKey: string
   authMark: string
 }
 
@@ -34,8 +34,7 @@ export function hasRouteRolePermission(userRoles: string[], requiredRoles: strin
 
 /**
  * Evaluates whether the current user's corporation capabilities satisfy the
- * route requirement. Mirrors the Vue `hasCorpCapabilityPermission` so both
- * frontends apply identical gating logic:
+ * route requirement:
  *
  * - `corpCapabilitiesAll`: every entry must be present (AND).
  * - `corpCapabilitiesAny`: at least one entry must be present (OR).

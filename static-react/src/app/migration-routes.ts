@@ -80,12 +80,13 @@ export interface AppRouteSpec {
   meta?: RouteAccessMeta
 }
 
-export const appRouteSpecs: AppRouteSpec[] = [
+const unorderedAppRouteSpecs: AppRouteSpec[] = [
   {
     path: 'characters',
     titleKey: 'nav.dashboard.characters',
     pageType: 'dashboard-characters',
-    menuHidden: true,
+    menuGroup: 'nav.group.characters',
+    menuIcon: 'characters',
     meta: { jwt: true },
   },
   {
@@ -98,14 +99,6 @@ export const appRouteSpecs: AppRouteSpec[] = [
     meta: { login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
-    path: 'dashboard/characters',
-    titleKey: 'nav.dashboard.characters',
-    pageType: 'dashboard-characters',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
-    meta: { login: true },
-  },
-  {
     path: 'dashboard/npc-kills',
     titleKey: 'nav.dashboard.npcKills',
     pageType: 'dashboard-npc-kills',
@@ -114,6 +107,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'dashboard',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAll: ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp'],
     },
   },
@@ -125,7 +119,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
     badgeKey: 'corporation_structures_attention',
-    meta: { roles: ['super_admin', 'admin'], corpCapabilitiesAny: ['menu.dashboard'] },
+    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
     path: 'dashboard/fuel-officer-structures',
@@ -135,6 +129,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'dashboard',
     meta: {
       roles: ['super_admin', 'fuel_officer'],
+      login: true,
       corpCapabilitiesAny: ['menu.dashboard'],
     },
   },
@@ -146,17 +141,33 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'dashboard',
     meta: {
       roles: ['super_admin', 'admin', 'captain', 'user'],
+      login: true,
       corpCapabilitiesAny: ['menu.dashboard'],
     },
   },
   {
-    path: 'fuxi-hall/leadership', titleKey: 'nav.fuxiHall.leadership', pageType: 'fuxi-hall-leadership', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
+    path: 'fuxi-hall/leadership',
+    titleKey: 'nav.fuxiHall.leadership',
+    pageType: 'fuxi-hall-leadership',
+    menuGroup: 'nav.group.fuxiHall',
+    menuIcon: 'fuxiHall',
+    meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
   },
   {
-    path: 'fuxi-hall/contributors', titleKey: 'nav.fuxiHall.contributors', pageType: 'fuxi-hall-contributors', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
+    path: 'fuxi-hall/contributors',
+    titleKey: 'nav.fuxiHall.contributors',
+    pageType: 'fuxi-hall-contributors',
+    menuGroup: 'nav.group.fuxiHall',
+    menuIcon: 'fuxiHall',
+    meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
   },
   {
-    path: 'fuxi-hall/manage', titleKey: 'nav.fuxiHall.manage', pageType: 'fuxi-hall-manage', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { roles: ['super_admin', 'admin'], corpCapabilitiesAny: ['menu.fuxi_hall'] },
+    path: 'fuxi-hall/manage',
+    titleKey: 'nav.fuxiHall.manage',
+    pageType: 'fuxi-hall-manage',
+    menuGroup: 'nav.group.fuxiHall',
+    menuIcon: 'fuxiHall',
+    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
   },
 
   {
@@ -256,6 +267,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'operation',
     meta: {
       roles: ['super_admin', 'admin', 'fc', 'senior_fc'],
+      login: true,
       corpCapabilitiesAny: ['menu.operation'],
     },
   },
@@ -276,6 +288,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuHidden: true,
     meta: {
       roles: ['super_admin', 'admin', 'fc', 'senior_fc'],
+      login: true,
       corpCapabilitiesAny: ['menu.operation'],
     },
   },
@@ -354,6 +367,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     badgeKey: 'welfare_pending',
     meta: {
       roles: ['super_admin', 'admin', 'welfare'],
+      login: true,
       corpCapabilitiesAny: ['welfare.approval'],
     },
   },
@@ -366,6 +380,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'welfare',
     meta: {
       roles: ['super_admin', 'admin', 'welfare'],
+      login: true,
       corpCapabilitiesAny: ['welfare.settings'],
     },
   },
@@ -405,6 +420,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'newbro',
     meta: {
       roles: ['super_admin', 'captain'],
+      login: true,
       corpCapabilitiesAny: ['menu.newbro'],
     },
   },
@@ -418,6 +434,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     badgeKey: 'mentor_pending_applications',
     meta: {
       roles: ['super_admin', 'mentor'],
+      login: true,
       corpCapabilitiesAny: ['menu.newbro'],
     },
   },
@@ -430,6 +447,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'newbro',
     meta: {
       roles: ['super_admin', 'admin', 'captain'],
+      login: true,
       corpCapabilitiesAny: ['menu.newbro'],
     },
   },
@@ -442,6 +460,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'newbro',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['menu.newbro'],
     },
   },
@@ -473,11 +492,12 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'shop',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAll: ['menu.shop', 'shop.manage', 'shop.admin.product.manage'],
       authList: [
-        { title: '新增商品', authMark: 'add_product' },
-        { title: '编辑商品', authMark: 'edit_product' },
-        { title: '删除商品', authMark: 'delete_product' },
+        { titleKey: 'authActions.shop.addProduct', authMark: 'add_product' },
+        { titleKey: 'authActions.shop.editProduct', authMark: 'edit_product' },
+        { titleKey: 'authActions.shop.deleteProduct', authMark: 'delete_product' },
       ],
     },
   },
@@ -491,8 +511,9 @@ export const appRouteSpecs: AppRouteSpec[] = [
     badgeKey: 'order_pending',
     meta: {
       roles: ['super_admin', 'admin', 'shop_order_manage'],
+      login: true,
       corpCapabilitiesAll: ['menu.shop', 'shop.manage', 'shop.admin.order.manage'],
-      authList: [{ title: '审批订单', authMark: 'approve_order' }],
+      authList: [{ titleKey: 'authActions.shop.approveOrder', authMark: 'approve_order' }],
     },
   },
   {
@@ -524,8 +545,9 @@ export const appRouteSpecs: AppRouteSpec[] = [
     badgeKey: 'srp_pending',
     meta: {
       roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
+      login: true,
       corpCapabilitiesAny: ['srp.manage'],
-      authList: [{ title: '审批', authMark: 'approve' }],
+      authList: [{ titleKey: 'authActions.srp.approve', authMark: 'approve' }],
     },
   },
   {
@@ -537,6 +559,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'srp',
     meta: {
       roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
+      login: true,
       corpCapabilitiesAny: ['srp.manage'],
     },
   },
@@ -577,7 +600,8 @@ export const appRouteSpecs: AppRouteSpec[] = [
     badgeKey: 'ticket_attention',
     meta: {
       roles: ['super_admin', 'admin'],
-      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+      login: true,
+      corpCapabilitiesAll: ['menu.ticket', 'ticket.manage', 'ticket.admin.read'],
     },
   },
   {
@@ -589,7 +613,8 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'ticket',
     meta: {
       roles: ['super_admin', 'admin'],
-      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+      login: true,
+      corpCapabilitiesAll: ['menu.ticket', 'ticket.manage', 'ticket.admin.read'],
     },
   },
   {
@@ -601,7 +626,8 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'ticket',
     meta: {
       roles: ['super_admin', 'admin'],
-      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+      login: true,
+      corpCapabilitiesAll: ['menu.ticket', 'ticket.manage', 'ticket.admin.read'],
     },
   },
   {
@@ -612,7 +638,8 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuHidden: true,
     meta: {
       roles: ['super_admin', 'admin'],
-      corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
+      login: true,
+      corpCapabilitiesAll: ['menu.ticket', 'ticket.manage', 'ticket.admin.read'],
     },
   },
 
@@ -625,10 +652,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['system.manage'],
       authList: [
-        { title: '删除用户', authMark: 'delete_user' },
-        { title: '分配职权', authMark: 'assign_role' },
+        { titleKey: 'authActions.system.deleteUser', authMark: 'delete_user' },
+        { titleKey: 'authActions.system.assignRole', authMark: 'assign_role' },
       ],
     },
   },
@@ -641,10 +669,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['system.task.read'],
       authList: [
-        { title: '执行任务', authMark: 'execute_task' },
-        { title: '修改调度', authMark: 'update_schedule' },
+        { titleKey: 'authActions.system.executeTask', authMark: 'execute_task' },
+        { titleKey: 'authActions.system.updateSchedule', authMark: 'update_schedule' },
       ],
     },
   },
@@ -657,10 +686,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['system.wallet.read'],
       authList: [
-        { title: '调整余额', authMark: 'adjust_balance' },
-        { title: '查看日志', authMark: 'view_log' },
+        { titleKey: 'authActions.system.adjustBalance', authMark: 'adjust_balance' },
+        { titleKey: 'authActions.system.viewLog', authMark: 'view_log' },
       ],
     },
   },
@@ -673,8 +703,9 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['system.audit.read'],
-      authList: [{ title: '查看审计明细', authMark: 'view_audit_detail' }],
+      authList: [{ titleKey: 'authActions.system.viewAuditDetail', authMark: 'view_audit_detail' }],
     },
   },
   {
@@ -686,8 +717,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['system.manage'],
-      authList: [{ title: '编辑兑换率', authMark: 'edit_exchange_rate' }],
+      authList: [
+        { titleKey: 'authActions.system.editExchangeRate', authMark: 'edit_exchange_rate' },
+      ],
     },
   },
   {
@@ -699,8 +733,9 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
+      login: true,
       corpCapabilitiesAny: ['system.manage'],
-      authList: [{ title: '手动拉取', authMark: 'manual_fetch' }],
+      authList: [{ titleKey: 'authActions.system.manualFetch', authMark: 'manual_fetch' }],
     },
   },
   {
@@ -710,7 +745,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
-    meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
+    meta: { roles: ['super_admin'] },
   },
   {
     path: 'system/user-center',
@@ -718,6 +753,16 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'system-user-center',
     batch: 'D',
     menuHidden: true,
+    meta: {
+      roles: ['super_admin', 'admin'],
+      corpCapabilitiesAny: [
+        'system.manage',
+        'system.task.read',
+        'system.wallet.read',
+        'system.audit.read',
+        'system.basic_config.read',
+      ],
+    },
   },
   {
     path: 'system/webhook',
@@ -726,7 +771,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
-    meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
+    meta: { roles: ['super_admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
     path: 'system/basic-config',
@@ -735,7 +780,11 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'D',
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
-    meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.basic_config.read'] },
+    meta: {
+      roles: ['super_admin'],
+      login: true,
+      corpCapabilitiesAny: ['system.basic_config.read'],
+    },
   },
   {
     path: 'system/qq-governance',
@@ -745,8 +794,84 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'system',
     meta: {
       roles: ['super_admin'],
+      login: true,
       corpCapabilitiesAny: ['system.manage'],
     },
   },
-
 ]
+
+const appRouteOrder = [
+  'characters',
+  'dashboard/console',
+  'dashboard/npc-kills',
+  'dashboard/corporation-structures',
+  'dashboard/fuel-officer-structures',
+  'dashboard/galaxy-registry',
+  'operation/fleets',
+  'operation/fleet-configs',
+  'operation/fleet-detail/:id',
+  'operation/corporation-pap',
+  'operation/pap',
+  'operation/join',
+  'skill-planning/completion-check',
+  'skill-planning/skill-plans',
+  'skill-planning/personal-skill-plans',
+  'info/wallet',
+  'info/skill',
+  'info/npc-kills',
+  'info/ships',
+  'info/implants',
+  'info/fittings',
+  'info/assets',
+  'info/contracts',
+  'info/esi-check',
+  'info/tool-bookmarks',
+  'welfare/my',
+  'welfare/approval',
+  'welfare/settings',
+  'newbro/select-captain',
+  'newbro/select-mentor',
+  'newbro/captain',
+  'newbro/mentor',
+  'newbro/manage',
+  'newbro/mentor-manage',
+  'newbro/recruit-link',
+  'shop/browse',
+  'shop/manage',
+  'shop/order-manage',
+  'shop/wallet',
+  'srp/srp-apply',
+  'srp/srp-manage',
+  'srp/srp-prices',
+  'fuxi-hall/leadership',
+  'fuxi-hall/contributors',
+  'fuxi-hall/manage',
+  'ticket/my-tickets',
+  'ticket/create',
+  'ticket/detail/:id',
+  'ticket/management',
+  'ticket/categories',
+  'ticket/statistics',
+  'ticket/admin-detail/:id',
+  'system/user',
+  'system/task-manager',
+  'system/wallet',
+  'system/audit',
+  'system/pap-exchange',
+  'system/pap',
+  'system/auto-role',
+  'system/user-center',
+  'system/webhook',
+  'system/qq-governance',
+  'system/basic-config',
+] as const
+
+const routesByPath = new Map(unorderedAppRouteSpecs.map((route) => [route.path, route]))
+
+export const appRouteSpecs: AppRouteSpec[] = appRouteOrder.map((path) => {
+  const route = routesByPath.get(path)
+  if (!route) {
+    throw new Error(`Missing React route specification for ${path}`)
+  }
+  return route
+})

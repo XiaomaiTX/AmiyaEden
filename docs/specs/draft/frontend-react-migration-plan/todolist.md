@@ -41,7 +41,7 @@ source_of_truth:
 - [x] `C-1` 商店首波完成：`shop/browse`、`shop/manage`、`shop/order-manage`、`shop/wallet`
 - [x] `C-2` 技能规划与操作首波完成：`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap`
 - [x] 批次 A 路由骨架已在 React 注册（页面全部已替换为真实业务页）
-- [x] 批次 A 页面：`dashboard/console`、`dashboard/characters`、`info/wallet`、`info/skill`、`info/ships`、`info/implants`、`info/fittings`、`info/assets`、`info/contracts`、`info/esi-check`、`dashboard/npc-kills`、`dashboard/corporation-structures`、`info/npc-kills` 已全部完成 React 真实页迁移
+- [x] 批次 A 页面：`dashboard/console`、`info/wallet`、`info/skill`、`info/ships`、`info/implants`、`info/fittings`、`info/assets`、`info/contracts`、`info/esi-check`、`dashboard/npc-kills`、`dashboard/corporation-structures`、`info/npc-kills` 已全部完成 React 真实页迁移
 - [x] 批次 B 页面：`ticket/my-tickets`、`ticket/create`、`ticket/detail`、`ticket/management`、`ticket/categories`、`ticket/statistics`、`ticket/admin-detail`、`welfare/my`、`welfare/approval`、`welfare/settings`、`newbro/select-captain`、`newbro/select-mentor`、`newbro/captain`、`newbro/mentor`、`newbro/manage`、`newbro/mentor-manage`、`newbro/recruit-link`、`srp/srp-apply`、`srp/srp-manage`、`srp/srp-prices` 已全部完成 React 真实页迁移
 - [x] 批次 C 页面：`shop/*`、`skill-planning/completion-check`、`skill-planning/skill-plans`、`skill-planning/personal-skill-plans`、`operation/join`、`operation/pap` 已全部完成 React 真实页迁移
 - [x] 批次 D 页面：`operation/fleets`、`operation/fleet-detail`、`operation/fleet-configs`、`operation/corporation-pap`、`system/user`、`system/task-manager`、`system/wallet`、`system/audit`、`system/pap-exchange`、`system/pap`、`system/auto-role`、`system/user-center`、`system/webhook`、`system/basic-config` 已全部完成 React 真实页迁移
@@ -51,7 +51,7 @@ source_of_truth:
 
 Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐：
 
-- [x] `/characters` 顶层路由对齐（与 `dashboard/characters` 共享页面；作为资料/ESI 锁定唯一落点）
+- [x] `/characters` 顶层人物管理路由（资料/ESI 锁定唯一落点）
 - [x] `/dashboard/fuel-officer-structures` React 落地（`super_admin/fuel_officer`，含分页、加载/空/错误态）
 - [~] `/dashboard/galaxy-registry` React 基础页、路由、API 与类型已落地；预计结束时间修改、管理员星系配置、人工校验、分析与浏览器超时通知仍待完整同构
 - [x] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地；普通用户读取启用项，管理员可维护全部书签）
@@ -83,7 +83,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [x] `RoleGate` / `useRole`（对应 Vue `v-roles`）
 - [~] Zustand 业务 store：已完成 `session`、`preference`、`worktab`、`badge`；`user/menu/setting/table/sys-config` 仅在出现真实跨页状态需求时继续拆分
 - [x] 共享 `DataTable` 基座（TanStack Table；统一加载/错误/空态、服务端分页、排序与选择接口）
-- [ ] React 路由守卫中间层与 `RouteRegistry/MenuProcessor` 等价能力（当前用扁平的 `RouteAccessGate` 代替，需评估是否覆盖菜单折叠/能力过滤等既有行为）
+- [x] React 路由与菜单基础设施：使用扁平 `RouteAccessGate`、React Router 和菜单构建器，不引入或复刻另一端的处理链
 
 ## 下一步代码执行顺序（2026-07-30）
 
@@ -91,6 +91,12 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 2. 完成 QQ Governance 同构：先补齐 policy/member/review/corporation/rate-limit 契约，再实现规则编辑和运行监控；所有写操作继续只做前端 UX gate，后端 `super_admin + system.manage` 保持最终边界。
 3. 将新增复杂表格优先迁入共享 `DataTable`，存量页面只在业务变更触及时渐进迁移，避免无关大面积重写。
 4. 完成替换发布门槛：生产构建体积基线、关键路由冒烟、四角色矩阵、React/Vue 同契约检查与回切演练。
+
+### 路由与菜单并行契约（2026-07-30）
+
+- [x] React 路由与菜单保持独立实现：以 `migration-routes.ts`、React Router、Zustand 和 `buildShellMenuGroups` 为唯一 React 运行时来源。
+- [x] Vue 与 React 不建立代码联系：禁止共享路由包、manifest、运行时、AST 读取或源码比较；Vue 的既有行为仅通过本 draft 的并行契约进入迁移计划。
+- [x] 工单分类读路径为 `ticket.manage + ticket.admin.read`，创建、编辑、删除在页面内额外使用 `ticket.admin.manage` gate；自动角色页仅保留 `super_admin` 角色约束。
 
 ## 页面迁移完成定义（详细 DoD）
 

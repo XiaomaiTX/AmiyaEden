@@ -46,6 +46,7 @@
   nav: {
     home: 'Home',
     group: {
+      characters: 'Characters',
       dashboard: 'Dashboard',
       shortcuts: 'Shortcuts',
       info: 'EVE Character Info',
@@ -146,8 +147,53 @@
     },
   },
   fuxiHall: {
-    public: { leadershipEyebrow: 'Fuxi Hall · Leadership', contributorsEyebrow: 'Fuxi Hall · Major Contributors', defaultLeadershipTitle: 'Leadership', defaultContributorsTitle: 'Major Contributors', fleetLedCount: 'Fleet Leads', welfareDeliveryCount: 'Welfare Deliveries', emptyTitle: 'No Members Yet', emptySubtitle: 'Admins can add cards from the management page', loadFailed: 'Failed to load Fuxi Hall page' },
-    manage: { leadershipTab: 'Leadership', contributorsTab: 'Major Contributors', addCard: 'Add Card', editCard: 'Edit Card', pageConfig: 'Page Configuration', pageTitle: 'Page Title', pageSubtitle: 'Page Subtitle', pageDescription: 'Page Description (Rich Text)', cardList: 'Card List', nickname: 'Nickname', mainCharacterName: 'Main Character Name', title: 'Title', titleTagPlaceholder: 'Enter a title tag, then press Enter or click Add', addTitleTag: 'Add Tag', avatarShape: 'Avatar Shape', avatarShapeCircle: 'Circle', avatarShapeRounded: 'Rounded', avatarShapeSquare: 'Square', accentColor: 'Accent Color', fontScale: 'Font Scale', visible: 'Visibility', welfareDeliveryOffset: 'Welfare Delivery Offset', cardDescription: 'Member Description (Rich Text)', previewPanel: 'Live Preview', previewFallbackTitle: 'Untitled Page', previewEmpty: 'No visible cards for preview', titleRequired: 'Page title is required', requiredFields: 'Nickname, main character name, and title tags are required', deleteConfirm: 'Delete this card?', saveSuccess: 'Saved successfully', saveFailed: 'Save failed', deleteSuccess: 'Deleted successfully', loadFailed: 'Failed to load Fuxi Hall management data', sortFailed: 'Failed to save ordering' },
+    public: {
+      leadershipEyebrow: 'Fuxi Hall · Leadership',
+      contributorsEyebrow: 'Fuxi Hall · Major Contributors',
+      defaultLeadershipTitle: 'Leadership',
+      defaultContributorsTitle: 'Major Contributors',
+      fleetLedCount: 'Fleet Leads',
+      welfareDeliveryCount: 'Welfare Deliveries',
+      emptyTitle: 'No Members Yet',
+      emptySubtitle: 'Admins can add cards from the management page',
+      loadFailed: 'Failed to load Fuxi Hall page',
+    },
+    manage: {
+      leadershipTab: 'Leadership',
+      contributorsTab: 'Major Contributors',
+      addCard: 'Add Card',
+      editCard: 'Edit Card',
+      pageConfig: 'Page Configuration',
+      pageTitle: 'Page Title',
+      pageSubtitle: 'Page Subtitle',
+      pageDescription: 'Page Description (Rich Text)',
+      cardList: 'Card List',
+      nickname: 'Nickname',
+      mainCharacterName: 'Main Character Name',
+      title: 'Title',
+      titleTagPlaceholder: 'Enter a title tag, then press Enter or click Add',
+      addTitleTag: 'Add Tag',
+      avatarShape: 'Avatar Shape',
+      avatarShapeCircle: 'Circle',
+      avatarShapeRounded: 'Rounded',
+      avatarShapeSquare: 'Square',
+      accentColor: 'Accent Color',
+      fontScale: 'Font Scale',
+      visible: 'Visibility',
+      welfareDeliveryOffset: 'Welfare Delivery Offset',
+      cardDescription: 'Member Description (Rich Text)',
+      previewPanel: 'Live Preview',
+      previewFallbackTitle: 'Untitled Page',
+      previewEmpty: 'No visible cards for preview',
+      titleRequired: 'Page title is required',
+      requiredFields: 'Nickname, main character name, and title tags are required',
+      deleteConfirm: 'Delete this card?',
+      saveSuccess: 'Saved successfully',
+      saveFailed: 'Save failed',
+      deleteSuccess: 'Deleted successfully',
+      loadFailed: 'Failed to load Fuxi Hall management data',
+      sortFailed: 'Failed to save ordering',
+    },
   },
   userAdmin: {
     title: 'User Management',
@@ -607,7 +653,8 @@
       unavailableDescription:
         'Backend export support stays in place, but the front end does not expose trigger or download controls yet.',
       capabilityRequiredTitle: 'Audit export capability required',
-      capabilityRequiredDescription: 'The system.audit.export capability is required to use the export entry.',
+      capabilityRequiredDescription:
+        'The system.audit.export capability is required to use the export entry.',
     },
     messages: {
       loading: 'Loading audit events...',
@@ -738,7 +785,8 @@
       obTokenPlaceholder: 'Enter the token',
       qqGroupIds: 'QQ Group IDs',
       qqGroupIdsPlaceholder: 'One QQ group ID per line',
-      qqGroupIdsHint: 'Sends via the reverse WebSocket connection managed by QQ group governance. No URL or token required.',
+      qqGroupIdsHint:
+        'Sends via the reverse WebSocket connection managed by QQ group governance. No URL or token required.',
     },
     types: {
       discord: 'Discord',
@@ -757,7 +805,8 @@
       sendBtn: 'Send Test Message',
       success: 'Webhook test message sent successfully.',
       failed: 'Webhook test message failed.',
-      qqGroupIdsHint: 'Test send only enqueues a notify task. Actual delivery depends on the QQ governance worker and OneBot connection.',
+      qqGroupIdsHint:
+        'Test send only enqueues a notify task. Actual delivery depends on the QQ governance worker and OneBot connection.',
     },
     messages: {
       loading: 'Loading webhook config...',
@@ -1461,7 +1510,8 @@
     loading: 'Loading approval data...',
     loadFailed: 'Failed to load approval data.',
     actionFailed: 'Failed to process approval.',
-    autoRejected: 'The application was automatically rejected because the applicant no longer meets the welfare conditions: {reason}',
+    autoRejected:
+      'The application was automatically rejected because the applicant no longer meets the welfare conditions: {reason}',
     eligibilityReasons: {
       welfare_disabled: 'the welfare is disabled',
       user_missing: 'the applicant account no longer exists',
@@ -1845,7 +1895,6 @@
   shell: {
     runtime: 'React Shell',
     unnamedPage: 'Untitled Page',
-    globalHostPlaceholder: 'GlobalHost placeholder: message, modal, and drawer mounts.',
     guest: 'Guest',
   },
   dashboardConsole: {
@@ -2456,7 +2505,13 @@
   qqGovernance: {
     title: 'QQ Group Governance',
     subtitle: 'Manage policies, reconciliation tasks, alerts, and OneBot health.',
-    tabs: { overview: 'Overview', policies: 'Policies', tasks: 'Tasks', alerts: 'Alerts', settings: 'Settings' },
+    tabs: {
+      overview: 'Overview',
+      policies: 'Policies',
+      tasks: 'Tasks',
+      alerts: 'Alerts',
+      settings: 'Settings',
+    },
     group: 'Group',
     groupId: 'QQ Group ID',
     id: 'Record ID',

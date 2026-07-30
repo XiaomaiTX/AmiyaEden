@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
@@ -16,7 +17,8 @@ describe('info contracts page', () => {
   })
 
   test('loads contracts and opens detail sheet', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -95,7 +97,7 @@ describe('info contracts page', () => {
     const contractRow = screen.getByRole('row', { name: /Marketplace Run/ })
     expect(within(contractRow).getByText('拍卖')).toBeInTheDocument()
 
-    screen.getByRole('button', { name: '查看详情' }).click()
+    await userEvent.click(screen.getByRole('button', { name: '查看详情' }))
 
     await waitFor(() => {
       expect(screen.getByText('Tritanium')).toBeInTheDocument()

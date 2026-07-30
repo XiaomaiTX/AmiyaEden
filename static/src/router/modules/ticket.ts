@@ -62,7 +62,7 @@ export const ticketRoutes: AppRouteRecord = {
         title: 'menus.ticket.categories',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
-        corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.manage']
+        corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read']
       }
     },
     {

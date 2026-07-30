@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
@@ -271,7 +272,7 @@ describe('system migration pages', () => {
     render(<RouterProvider router={router} />)
 
     const impersonateButtons = await screen.findAllByText('模拟登录')
-    impersonateButtons[0].click()
+    await userEvent.click(impersonateButtons[0])
 
     await waitFor(() => {
       expect(assignSpy).toHaveBeenCalledWith('/')

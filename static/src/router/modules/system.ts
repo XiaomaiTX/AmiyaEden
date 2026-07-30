@@ -105,8 +105,7 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.autoRole',
         keepAlive: true,
-        roles: ['super_admin'],
-        corpCapabilitiesAny: ['system.basic_config.read']
+        roles: ['super_admin']
       }
     },
     {

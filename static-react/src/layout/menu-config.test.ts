@@ -23,8 +23,12 @@ describe('menu config', () => {
     })
 
     const dashboard = groups.find((group) => group.labelKey === 'nav.group.dashboard')
+    const characters = groups.find((group) => group.labelKey === 'nav.group.characters')
     const info = groups.find((group) => group.labelKey === 'nav.group.info')
     expect(dashboard).toBeDefined()
+    expect(characters?.items).toEqual([
+      expect.objectContaining({ to: '/characters', labelKey: 'nav.dashboard.characters' }),
+    ])
     expect(info).toBeDefined()
     expect(groups.find((group) => group.labelKey === 'nav.group.system')).toBeUndefined()
   })
@@ -111,18 +115,20 @@ describe('menu config', () => {
     })
     const items = groups.flatMap((group) => group.items.map((item) => item.to))
 
-    expect(items).toEqual(expect.arrayContaining([
-      '/dashboard/console',
-      '/info/wallet',
-      '/operation/fleet-configs',
-      '/skill-planning/skill-plans',
-      '/welfare/approval',
-      '/newbro/captain',
-      '/shop/manage',
-      '/srp/srp-manage',
-      '/ticket/management',
-      '/system/user',
-    ]))
+    expect(items).toEqual(
+      expect.arrayContaining([
+        '/dashboard/console',
+        '/info/wallet',
+        '/operation/fleet-configs',
+        '/skill-planning/skill-plans',
+        '/welfare/approval',
+        '/newbro/captain',
+        '/shop/manage',
+        '/srp/srp-manage',
+        '/ticket/management',
+        '/system/user',
+      ])
+    )
   })
 
   test('super_admin bypasses corp capability gates for menu visibility', () => {

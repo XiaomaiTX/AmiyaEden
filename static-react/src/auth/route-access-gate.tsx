@@ -49,8 +49,7 @@ export function RouteAccessGate({ meta, children }: RouteAccessGateProps) {
 
   if (
     isLoggedIn &&
-    location.pathname !== '/characters' &&
-    location.pathname !== '/dashboard/characters'
+    location.pathname !== '/characters'
   ) {
     const lockReasons = getProfileLockReasons({
       profileComplete,

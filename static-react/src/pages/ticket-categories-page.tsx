@@ -6,6 +6,7 @@ import {
   adminUpdateTicketCategory,
 } from '@/api/ticket'
 import { Button } from '@/components/ui/button'
+import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type { TicketCategory, UpsertCategoryParams } from '@/types/api/ticket'
@@ -16,6 +17,8 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export function TicketCategoriesPage() {
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  const canManageCategories = hasCapability('ticket.admin.manage')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [categories, setCategories] = useState<TicketCategory[]>([])
@@ -53,6 +56,7 @@ export function TicketCategoriesPage() {
   }, [loadData])
 
   const openCreate = () => {
+    if (!canManageCategories) return
     setEditingId(0)
     setForm({
       name: '',
@@ -65,6 +69,7 @@ export function TicketCategoriesPage() {
   }
 
   const openEdit = (category: TicketCategory) => {
+    if (!canManageCategories) return
     setEditingId(category.id)
     setForm({
       name: category.name,
@@ -77,6 +82,7 @@ export function TicketCategoriesPage() {
   }
 
   const save = async () => {
+    if (!canManageCategories) return
     if (!form.name.trim() || !form.name_en.trim()) {
       setError(t('ticketCategories.required'))
       return
@@ -99,6 +105,7 @@ export function TicketCategoriesPage() {
   }
 
   const remove = async (id: number) => {
+    if (!canManageCategories) return
     if (!window.confirm(t('ticketCategories.deleteConfirm'))) {
       return
     }
@@ -122,14 +129,18 @@ export function TicketCategoriesPage() {
             <h1 className="text-xl font-semibold">{t('ticketCategories.title')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t('ticketCategories.subtitle')}</p>
           </div>
-          <Button type="button" onClick={openCreate}>
-            {t('ticketCategories.create')}
-          </Button>
+          {canManageCategories ? (
+            <Button type="button" onClick={openCreate}>
+              {t('ticketCategories.create')}
+            </Button>
+          ) : null}
         </div>
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('ticketCategories.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('ticketCategories.loading')}</p>
+      ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-card">
         <div className="border-b px-4 py-3 text-sm font-medium">
@@ -154,22 +165,33 @@ export function TicketCategoriesPage() {
                   <td className="px-3 py-2">{category.name}</td>
                   <td className="px-3 py-2">{category.name_en}</td>
                   <td className="px-3 py-2">{category.sort_order}</td>
-                  <td className="px-3 py-2">{category.enabled ? t('ticketCategories.enabled') : t('ticketCategories.disabled')}</td>
                   <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={() => openEdit(category)}>
-                        {t('common.edit')}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void remove(category.id)}
-                        disabled={deletingId === category.id}
-                      >
-                        {t('common.delete')}
-                      </Button>
-                    </div>
+                    {category.enabled
+                      ? t('ticketCategories.enabled')
+                      : t('ticketCategories.disabled')}
+                  </td>
+                  <td className="px-3 py-2">
+                    {canManageCategories ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEdit(category)}
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void remove(category.id)}
+                          disabled={deletingId === category.id}
+                        >
+                          {t('common.delete')}
+                        </Button>
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -193,32 +215,61 @@ export function TicketCategoriesPage() {
             </h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('ticketCategories.columns.name')}</span>
-                <Input value={form.name ?? ''} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+                <span className="text-sm text-muted-foreground">
+                  {t('ticketCategories.columns.name')}
+                </span>
+                <Input
+                  value={form.name ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, name: event.target.value }))
+                  }
+                />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('ticketCategories.columns.nameEn')}</span>
-                <Input value={form.name_en ?? ''} onChange={(event) => setForm((current) => ({ ...current, name_en: event.target.value }))} />
+                <span className="text-sm text-muted-foreground">
+                  {t('ticketCategories.columns.nameEn')}
+                </span>
+                <Input
+                  value={form.name_en ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, name_en: event.target.value }))
+                  }
+                />
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('ticketCategories.columns.description')}</span>
-                <Input value={form.description ?? ''} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+                <span className="text-sm text-muted-foreground">
+                  {t('ticketCategories.columns.description')}
+                </span>
+                <Input
+                  value={form.description ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, description: event.target.value }))
+                  }
+                />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('ticketCategories.columns.sortOrder')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('ticketCategories.columns.sortOrder')}
+                </span>
                 <Input
                   type="number"
                   value={String(form.sort_order ?? 0)}
-                  onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))
+                  }
                 />
               </label>
               <label className="flex items-center gap-2 pt-8">
                 <input
                   type="checkbox"
                   checked={Boolean(form.enabled)}
-                  onChange={(event) => setForm((current) => ({ ...current, enabled: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, enabled: event.target.checked }))
+                  }
                 />
-                <span className="text-sm text-muted-foreground">{t('ticketCategories.columns.enabled')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('ticketCategories.columns.enabled')}
+                </span>
               </label>
             </div>
             <div className="mt-5 flex justify-end gap-3">

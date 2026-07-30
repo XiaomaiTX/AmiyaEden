@@ -2,14 +2,20 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
+import { navigateExternal } from '@/lib/external-navigation'
+
+vi.mock('@/lib/external-navigation', () => ({ navigateExternal: vi.fn() }))
 
 describe('login page', () => {
   test('starts eve sso login flow', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ code: 0, msg: 'ok', data: { url: 'https://example.com/sso' } }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      new Response(
+        JSON.stringify({ code: 0, msg: 'ok', data: { url: 'https://example.com/sso' } }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
     )
 
     const router = createMemoryRouter(appRoutes, {
@@ -22,6 +28,7 @@ describe('login page', () => {
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalled()
+      expect(navigateExternal).toHaveBeenCalledWith('https://example.com/sso')
     })
   })
 })

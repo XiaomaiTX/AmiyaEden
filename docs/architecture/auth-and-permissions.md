@@ -44,7 +44,7 @@ source_of_truth:
 
 React 只持久化最小会话快照；已有 token 的应用启动必须先重新请求 `/api/v1/me`，完成前路由显示加载占位，不得使用持久化的旧角色、能力或资料锁状态渲染业务页。刷新失败时清除会话并进入登录流程。
 
-React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资料未完成、主人物 ESI 失效，或开启全人物限制时其他绑定人物 ESI 失效，访问其他业务路由都会重定向并在人物页列出原因。React 冻结范围内已有的 `/dashboard/characters` 也是同一修复页，用户已经在该页时不会再次跳转。`/characters` 是 JWT 边界，允许仍处于 `guest` 的已认证用户完成自助修复。
+React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资料未完成、主人物 ESI 失效，或开启全人物限制时其他绑定人物 ESI 失效，访问其他业务路由都会重定向并在人物页列出原因。`/characters` 是 JWT 边界，允许仍处于 `guest` 的已认证用户完成自助修复。
 
 当前用户还可以通过 `DELETE /api/v1/me` 自助注销账号；该能力与 `/api/v1/me` 同样只允许当前 JWT 对应的用户操作，不提供任意 `user_id` 删除入口。
 
@@ -192,6 +192,8 @@ React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资
 
 迁移期间 Vue 和 React 都使用前端静态路由 + `login` / `roles` 元数据模式。Vue 的实现位于 `static/src/router`；React 的实现位于 `static-react/src/app/migration-routes.ts` 和 `static-react/src/auth/route-access-gate.tsx`。
 
+两端的对齐由 migration spec draft 中的并行契约定义，不通过共享代码、共享 manifest 或静态读取另一端源码实现。React capability 与按钮 gate 仍可直接对照后端 enforced capability 目录，因为后端是两端共同的最终鉴权边界。
+
 静态路由模式下的约定：
 
 - `meta.login = true` 表示任意非 `guest` 已登录产品用户可访问
@@ -217,6 +219,7 @@ React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资
 | 手动运行任务 | `system.task.run` | 路由只要求 `system.task.read` |
 | 调整伏羲币余额 | `system.wallet.adjust` | 路由只要求 `system.wallet.read` |
 | 审计日志导出 | `system.audit.export` | 路由只要求 `system.audit.read` |
+| 工单分类创建、编辑、删除 | `ticket.admin.manage` | 路由只要求 `ticket.manage + ticket.admin.read` |
 
 前端通过 `useCorpCapability`（Vue：`static/src/hooks/core/useCorpCapability.ts`；React：`static-react/src/hooks/use-corp-capability.ts`）读取 session 中的 capability 集合；`super_admin` 短路放行。后端仍是最终权限边界，这里只防止"点击后 403"的体验问题。
 

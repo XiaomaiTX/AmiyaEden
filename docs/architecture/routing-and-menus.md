@@ -44,6 +44,12 @@ Vue 静态模块主要位于：
 
 React 迁移侧的路由源是 `static-react/src/app/migration-routes.ts`，由 `static-react/src/app/router.tsx` 注册，并通过 `RouteAccessGate` 消费登录、角色、`authList` 和 `corpCapabilitiesAll` / `corpCapabilitiesAny` 元数据。业务页面通过 `page-loaders.ts` 动态导入，静态登录/错误页保持同步加载，避免单一入口包包含全部业务页面。Vue 与 React 共用同一份 enforced capability 目录与同一套 AND/OR 语义。
 
+### 迁移期的实现隔离
+
+Vue 与 React 没有路由、菜单或状态的代码级联系：不共享 manifest、运行时、组件、Pinia/Zustand 状态，也不以 AST、import 或脚本读取另一端的路由源码。两端并行行为的计划和定义只维护在 `docs/specs/draft/frontend-react-migration-plan/`；React 的 `migration-routes.ts`、React Router、Lucide 图标、`nav.*` i18n key、`RouteAccessGate` 和 `buildShellMenuGroups` 仍是 React 自己的实现。
+
+修改 Vue 或 React 路由时，先更新 migration spec draft 中的并行定义，再分别修改两端并执行各自的既有验证；CI 不读取或比较 Vue 路由代码。
+
 React WorkTab 由路由声明派生，保存 route id、完整 pathname/search、固定状态和所属人物。相同 route id 复用同一标签并更新 URL；切换人物时清空旧人物标签。React 不通过隐藏挂载页面树模拟 Vue KeepAlive，筛选、分页等可恢复状态应进入 URL，真正跨页状态才进入 Zustand。
 
 两套前端必须遵守同一组行为约定：

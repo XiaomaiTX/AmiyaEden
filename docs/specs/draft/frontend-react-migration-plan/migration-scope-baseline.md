@@ -32,7 +32,6 @@ source_of_truth:
 | 批次 | Vue 页面组件 | 路由路径 | 优先级 | 依赖 API（主） | 权限/约束 | React 状态 | owner |
 |---|---|---|---|---|---|---|---|
 | A | `/dashboard/console` | `/dashboard/console` | P1 | `dashboard.ts`, `notification.ts` | `login` | 真实页 | FE-owner(TBD) |
-| A | `/dashboard/characters` | `/dashboard/characters` | P1 | `dashboard.ts` | `login` | 真实页 | FE-owner(TBD) |
 | A | `/dashboard/npc-kills` | `/dashboard/npc-kills` | P1 | `npc-kill.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
 | A | `/dashboard/corporation-structures` | `/dashboard/corporation-structures` | P1 | `corporation-structures.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
 | A | `/info/wallet` | `/info/wallet` | P1 | `eve-info.ts` | `login` | 真实页 | FE-owner(TBD) |
@@ -101,7 +100,7 @@ source_of_truth:
 
 | Vue 页面组件 | 路由路径 | Vue 落地日期 | 依赖 API（主） | 权限/约束 | React 状态 | owner |
 |---|---|---|---|---|---|---|
-| `/dashboard/characters`（页面复用） | `/characters`（顶层） | 2026-05-22 | `auth.ts` | `JWT`（含 guest） | 真实页 | FE-owner(TBD) |
+| 人物管理 | `/characters`（顶层） | 2026-05-22 | `auth.ts` | `JWT`（含 guest） | 真实页 | FE-owner(TBD) |
 | `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 真实页 | FE-owner(TBD) |
 | `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 部分对齐 | FE-owner(TBD) |
 | `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login`, `corpCapabilitiesAny: menu.info` | 真实页 | FE-owner(TBD) |
@@ -158,4 +157,3 @@ source_of_truth:
 | 范围漂移页面 | Vue 已落地 | characters/fuel officer 已完成；galaxy registry/QQ governance 基础页已落地 | 进行中 | Galaxy Registry 与 QQ Governance 完整业务同构 |
 
 文档适配完成定义：所有 active 规范使用行为级表述；每个 current feature doc 通过本文引用迁移状态；所有 Vue-only 限制都明确标注为过渡期限制或历史归档内容。
-

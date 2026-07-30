@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getEveSSOLoginURL } from '@/api/auth'
 import { useI18n } from '@/i18n'
+import { navigateExternal } from '@/lib/external-navigation'
 
 const SSO_REDIRECT_STORAGE_KEY = 'auth:sso:redirect'
 
@@ -33,7 +34,7 @@ export function LoginPage() {
     try {
       sessionStorage.setItem(SSO_REDIRECT_STORAGE_KEY, redirectPath)
       const loginURL = await getEveSSOLoginURL()
-      window.location.href = loginURL
+      navigateExternal(loginURL)
     } catch (error) {
       setError(error instanceof Error ? error.message : t('auth.loginStartFailed'))
       setLoading(false)
@@ -60,4 +61,3 @@ export function LoginPage() {
     </main>
   )
 }
-

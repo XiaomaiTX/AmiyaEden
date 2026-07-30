@@ -81,7 +81,7 @@ describe('dashboard characters page', () => {
       )
 
     const router = createMemoryRouter(appRoutes, {
-      initialEntries: ['/dashboard/characters'],
+      initialEntries: ['/characters'],
     })
 
     render(<RouterProvider router={router} />)
@@ -160,17 +160,24 @@ describe('dashboard characters page', () => {
       }
 
       if (url.includes('/api/v1/newbro/direct-referral/status')) {
-        return new Response(JSON.stringify({ code: 0, msg: 'ok', data: { show_card: false, needs_profile_qq: false } }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({
+            code: 0,
+            msg: 'ok',
+            data: { show_card: false, needs_profile_qq: false },
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
       }
 
       throw new Error(`Unexpected request: ${url}`)
     })
 
     const router = createMemoryRouter(appRoutes, {
-      initialEntries: ['/dashboard/characters'],
+      initialEntries: ['/characters'],
     })
     render(<RouterProvider router={router} />)
 

@@ -31,7 +31,7 @@ source_of_truth:
 - [x] `v-roles` 指令 -> `RoleGate` / `useRole`
 - [x] 未登录守卫 -> React `RequireAuth` + `RouteAccessGate`（替代 Vue `beforeEach`）
 - [x] 角色与 `authList` 元数据消费 -> `RouteAccessGate`（替代 Vue 守卫链；新菜单/角色/能力过滤的等价性仍需回归）
-- [ ] Vue `RouteRegistry/MenuProcessor/RouteTransformer` 等价能力 -> 当前用扁平 `RouteAccessGate` + `migration-routes.ts` 静态表代替，长链路菜单处理能力需评估是否完整覆盖
+- [x] React 路由与菜单收口 -> 使用扁平 `RouteAccessGate`、`migration-routes.ts`、React Router 与菜单构建器；不引入或复刻另一端的路由处理链
 
 参考：
 
@@ -98,7 +98,7 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 
 以下页面在 Vue 侧已落地，React 侧尚未实现，按业务模块归类到下一波次：
 
-- [x] `characters`（顶层 JWT 页，复用 `dashboard/characters` 实现）
+- [x] `characters`（顶层 JWT 人物管理与资料/ESI 锁定页）
 - [x] `dashboard/fuel-officer-structures`（fuel officer 专属建筑视图）
 - [~] `dashboard/galaxy-registry`（基础页已落地，完整管理/分析/通知同构待续）
 - [x] `info/tool-bookmarks` -> React `InfoToolBookmarksPage`（普通书签列表与管理员 CRUD）

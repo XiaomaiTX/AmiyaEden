@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Ship,
   UserRoundPlus,
+  UserRound,
   UsersRound,
 } from 'lucide-react'
 import { appRouteSpecs } from '@/app/migration-routes'
@@ -31,6 +32,7 @@ export interface ShellMenuGroup {
 }
 
 const groupIconMap: Record<string, LucideIcon> = {
+  characters: UserRound,
   dashboard: LayoutDashboard,
   info: Info,
   operation: Ship,

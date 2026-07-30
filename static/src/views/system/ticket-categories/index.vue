@@ -1,7 +1,9 @@
 <template>
   <div class="ticket-page art-full-height">
     <div>
-      <ElButton type="primary" @click="openCreate">{{ t('ticket.category.create') }}</ElButton>
+      <ElButton v-if="canManageCategories" type="primary" @click="openCreate">{{
+        t('ticket.category.create')
+      }}</ElButton>
     </div>
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
@@ -42,12 +44,15 @@
     adminUpdateTicketCategory
   } from '@/api/ticket'
   import { useTable } from '@/hooks/core/useTable'
+  import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { ElButton, ElMessage, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'TicketCategoriesPage' })
 
   const { t } = useI18n()
+  const { hasCapability } = useCorpCapability()
+  const canManageCategories = computed(() => hasCapability('ticket.admin.manage'))
   const visible = ref(false)
   const editingId = ref(0)
   const form = reactive<Api.Ticket.UpsertCategoryParams>({
@@ -103,26 +108,30 @@
           width: 180,
           fixed: 'right',
           formatter: (row) =>
-            h('div', {}, [
-              h(ElButton, { link: true, type: 'primary', onClick: () => openEdit(row) }, () =>
-                t('common.edit')
-              ),
-              h(ElButton, { link: true, type: 'danger', onClick: () => remove(row.id) }, () =>
-                t('common.delete')
-              )
-            ])
+            canManageCategories.value
+              ? h('div', {}, [
+                  h(ElButton, { link: true, type: 'primary', onClick: () => openEdit(row) }, () =>
+                    t('common.edit')
+                  ),
+                  h(ElButton, { link: true, type: 'danger', onClick: () => remove(row.id) }, () =>
+                    t('common.delete')
+                  )
+                ])
+              : null
         }
       ]
     }
   })
 
   const openCreate = () => {
+    if (!canManageCategories.value) return
     editingId.value = 0
     resetForm()
     visible.value = true
   }
 
   const openEdit = (item: Api.Ticket.TicketCategory) => {
+    if (!canManageCategories.value) return
     editingId.value = item.id
     form.name = item.name
     form.name_en = item.name_en
@@ -133,6 +142,7 @@
   }
 
   const save = async () => {
+    if (!canManageCategories.value) return
     if (!form.name.trim() || !form.name_en.trim()) {
       ElMessage.warning(t('ticket.messages.required'))
       return
@@ -152,6 +162,7 @@
   }
 
   const remove = async (id: number) => {
+    if (!canManageCategories.value) return
     try {
       await adminDeleteTicketCategory(id)
       ElMessage.success(t('ticket.messages.deleted'))

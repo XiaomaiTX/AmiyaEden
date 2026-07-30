@@ -1,7 +1,7 @@
 import { useSessionStore } from '@/stores'
 
 /**
- * useCorpCapability — React mirror of the Vue `useCorpCapability` hook.
+ * React capability predicates for button-level and component-level gating.
  *
  * Reads the corp capability set from the session store (populated from
  * `/me.corp_capabilities`) and exposes three predicates used by button-level

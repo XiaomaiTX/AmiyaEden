@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
@@ -16,7 +17,8 @@ describe('dashboard corporation structures page', () => {
   })
 
   test('loads structure data and maps the initial list request', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -130,7 +132,7 @@ describe('dashboard corporation structures page', () => {
     expect(screen.getByText('Amiya Corp')).toBeInTheDocument()
     expect(screen.getByText('12h')).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'The Forge' })).toBeInTheDocument()
-    screen.getByRole('button', { name: '设置' }).click()
+    await userEvent.click(screen.getByRole('button', { name: '设置' }))
     expect(await screen.findByText('手动巡查 QQ 建筑预警')).toBeInTheDocument()
 
     const listCall = fetchSpy.mock.calls.find(([input]) =>

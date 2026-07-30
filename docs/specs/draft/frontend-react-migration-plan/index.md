@@ -51,6 +51,8 @@ source_of_truth:
 ## 明确声明
 
 - 本文档组是提案草案，不代表当前已实现行为。
+- Vue 与 React 的路由、菜单和权限实现必须完全隔离：不共享 manifest、运行时代码、组件、状态或源码读取脚本。迁移期的并行定义只在本目录维护；任何一端的变更先更新本 draft，再分别实施和验证。
+- React 使用其自有的 `migration-routes.ts`、React Router、Zustand、Lucide 与 i18n；不复刻 Vue 的 `RouteRegistry`、`MenuProcessor` 或 `RouteTransformer` 处理链。
 
 ## 文档适配约定
 
