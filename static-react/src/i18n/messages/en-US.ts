@@ -1894,6 +1894,7 @@
   },
   shell: {
     runtime: 'React Shell',
+    subtitle: 'Legion Management System',
     unnamedPage: 'Untitled Page',
     guest: 'Guest',
   },

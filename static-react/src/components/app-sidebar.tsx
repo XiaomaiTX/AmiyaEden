@@ -12,16 +12,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { TerminalIcon } from "lucide-react"
 import { NavLink } from "react-router-dom"
 import { useI18n } from "@/i18n"
 import { buildShellMenuGroups } from "@/layout/menu-config"
-import { useBadgeStore, usePreferenceStore, useSessionStore } from "@/stores"
+import { buildEveCharacterPortraitUrl, buildEveCorporationLogoUrl } from "@/lib/eve-image"
+import { SYSTEM_IDENTITY } from "@/constants/system-identity"
+import { useBadgeStore, useSessionStore } from "@/stores"
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const { t } = useI18n()
-  const locale = usePreferenceStore((state) => state.locale)
   const characterName = useSessionStore((state) => state.characterName)
+  const characterId = useSessionStore((state) => state.characterId)
+  const primaryCharacterId = useSessionStore((state) => state.primaryCharacterId)
   const isLoggedIn = useSessionStore((state) => state.isLoggedIn)
   const roles = useSessionStore((state) => state.roles)
   const corpCapabilities = useSessionStore((state) => state.corpCapabilities)
@@ -56,12 +58,14 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <NavLink to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <TerminalIcon className="size-4" />
-                </div>
+                <img
+                  className="size-8 rounded-lg object-cover"
+                  src={buildEveCorporationLogoUrl(SYSTEM_IDENTITY.corporationId)}
+                  alt={SYSTEM_IDENTITY.displayName}
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">AmiyaEden</span>
-                  <span className="truncate text-xs">{t("shell.runtime")} · {locale}</span>
+                  <span className="truncate font-medium">{SYSTEM_IDENTITY.displayName}</span>
+                  <span className="truncate text-xs">{t("shell.subtitle")}</span>
                 </div>
               </NavLink>
             </SidebarMenuButton>
@@ -78,7 +82,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
             email:
               roles.map((role) => t(`userAdmin.roles.${role}`)).join(", ") ||
               t("userAdmin.roles.guest"),
-            avatar: "",
+            avatar: buildEveCharacterPortraitUrl(primaryCharacterId ?? characterId ?? 0),
           }}
         />
       </SidebarFooter>

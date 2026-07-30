@@ -16,3 +16,9 @@ export function buildEveCharacterPortraitUrl(characterId: number, size = 128) {
     ? `${EVE_IMAGE_BASE_URL}/characters/${characterId}/portrait?size=${normalizeEvePortraitSize(size)}`
     : ''
 }
+
+export function buildEveCorporationLogoUrl(corporationId: number, size = 128) {
+  return corporationId > 0
+    ? `${EVE_IMAGE_BASE_URL}/corporations/${corporationId}/logo?size=${normalizeEvePortraitSize(size)}`
+    : ''
+}

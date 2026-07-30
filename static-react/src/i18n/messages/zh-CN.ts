@@ -1886,6 +1886,7 @@
   },
   shell: {
     runtime: 'React 壳层',
+    subtitle: '军团管理系统',
     unnamedPage: '未命名页面',
     guest: '访客',
   },
