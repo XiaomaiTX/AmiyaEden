@@ -25,7 +25,23 @@ export interface QQPolicy {
   member_violation_policy: 'review_only' | 'auto_kick_after_confirmed_mismatch'
   card_template: string
   card_sync_enabled: boolean
+  allowed_corporations?: QQCorporationOption[]
+  updated_by?: number
+  updated_at?: string
 }
+
+export interface QQCorporationOption { corporation_id: number; corporation_name: string }
+export interface QQPolicyPayload {
+  enabled: boolean
+  allowed_corporation_ids: number[]
+  allowed_role_codes: string[]
+  auto_reject_unmatched: boolean
+  member_violation_policy: QQPolicy['member_violation_policy']
+  card_template: string
+  card_sync_enabled: boolean
+}
+export interface QQMemberState { id: number; group_id: number; qq: number; user_id: number; status: string; target_card: string; version: number; mismatch_count: number; unknown_count: number; last_checked_at: string }
+export interface QQReview { id: number; group_id: number; qq: number; source: string; decision: string; reason: string; user_id: number; nickname: string; primary_character_name: string; primary_corporation_name: string; created_at: string }
 
 export interface QQGroupStatus {
   group_id: number
@@ -81,7 +97,10 @@ export interface QQMetrics {
 export interface QQConnection {
   connected: boolean
   risk_level: number
+  rate_limit?: { available: boolean; global: QQRateLimitBucket; groups: Array<{ group_id: number; bucket: QQRateLimitBucket }> }
 }
+export interface QQRateLimitBucket { capacity: number; tokens: number; wait_ms: number }
+export interface QQReconcileResult { status: 'created' | 'resumed' | 'running' | 'blocked'; recovered_tasks: number }
 
 export interface QQSettings {
   scan_interval_minutes: number

@@ -3,11 +3,16 @@ import type {
   QQActionTask,
   QQAlert,
   QQConnection,
+  QQCorporationOption,
+  QQMemberState,
   QQGroupStatus,
   QQMetrics,
   QQPageParams,
   QQPageResult,
   QQPolicy,
+  QQPolicyPayload,
+  QQReconcileResult,
+  QQReview,
   QQSettings,
 } from '@/types/api/qq-governance'
 
@@ -47,6 +52,18 @@ export async function updateQQGovernanceSettings(data: QQSettings) {
     method: 'PUT', body: JSON.stringify(data),
   }))
 }
+export async function createQQGovernancePolicy(data: QQPolicyPayload & { group_id: number }) {
+  return unwrap(await requestJson<ApiResponse<QQPolicy>>(`${base}/policies`, { method: 'POST', body: JSON.stringify(data) }))
+}
+export async function updateQQGovernancePolicy(groupID: number, data: QQPolicyPayload) {
+  return unwrap(await requestJson<ApiResponse<QQPolicy>>(`${base}/policies/${groupID}`, { method: 'PUT', body: JSON.stringify(data) }))
+}
+export async function deleteQQGovernancePolicy(groupID: number) {
+  return unwrap(await requestJson<ApiResponse<unknown>>(`${base}/policies/${groupID}`, { method: 'DELETE' }))
+}
+export const fetchQQGovernanceMembers = async (params?: QQPageParams) => unwrap(await requestJson<ApiResponse<QQPageResult<QQMemberState>>>(`${base}/members${query(params)}`))
+export const fetchQQGovernanceReviews = async (params?: QQPageParams) => unwrap(await requestJson<ApiResponse<QQPageResult<QQReview>>>(`${base}/reviews${query(params)}`))
+export const searchQQGovernanceCorporations = async (keyword: string) => unwrap(await requestJson<ApiResponse<QQCorporationOption[]>>(`${base}/corporations?keyword=${encodeURIComponent(keyword)}`))
 export async function retryQQGovernanceTask(id: number) {
   return unwrap(await requestJson<ApiResponse<unknown>>(`${base}/tasks/${id}/retry`, { method: 'POST' }))
 }
@@ -57,7 +74,7 @@ export async function acknowledgeQQGovernanceAlert(id: number) {
   return unwrap(await requestJson<ApiResponse<unknown>>(`${base}/alerts/${id}/acknowledge`, { method: 'POST' }))
 }
 export async function triggerQQGovernanceReconcile(groupId: number) {
-  return unwrap(await requestJson<ApiResponse<unknown>>(`${base}/groups/${groupId}/reconcile`, { method: 'POST' }))
+  return unwrap(await requestJson<ApiResponse<QQReconcileResult>>(`${base}/groups/${groupId}/reconcile`, { method: 'POST' }))
 }
 export async function resetQQGovernanceRisk() {
   return unwrap(await requestJson<ApiResponse<unknown>>(`${base}/risk-control/reset`, { method: 'POST' }))

@@ -1,4 +1,13 @@
-﻿import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useFeedbackStore } from '@/feedback/store'
 import { cn } from '@/lib/utils'
 
@@ -41,22 +50,27 @@ export function FeedbackHost() {
         ))}
       </div>
 
-      {confirm.open ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-md rounded-lg border bg-card p-5 shadow-xl">
-            <h2 className="text-base font-semibold">{confirm.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{confirm.message}</p>
-            <div className="mt-5 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => resolveConfirm(false)}>
-                {confirm.cancelText}
-              </Button>
-              <Button type="button" onClick={() => resolveConfirm(true)}>
-                {confirm.confirmText}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AlertDialog
+        open={confirm.open}
+        onOpenChange={(open) => {
+          if (!open) resolveConfirm(false)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirm.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirm.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => resolveConfirm(false)}>
+              {confirm.cancelText}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => resolveConfirm(true)}>
+              {confirm.confirmText}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

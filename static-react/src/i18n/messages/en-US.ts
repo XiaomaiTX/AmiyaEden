@@ -2504,6 +2504,7 @@
     goToQQ: 'Join QQ Group',
   },
   qqGovernance: {
+    operations: 'Operations', reviews: 'Reviews', addPolicy: 'Add policy', editPolicy: 'Edit policy', deletePolicy: 'Delete policy', cardTemplate: 'Group-card template', autoReject: 'Auto-reject unmatched members', cardSync: 'Sync group cards', groupIdRequired: 'Enter a valid QQ group ID', noResults: 'No corporations found', rateLimit: 'Rate limit', globalLimit: 'Global limit', groupLimit: 'Group limit',
     title: 'QQ Group Governance',
     subtitle: 'Manage policies, reconciliation tasks, alerts, and OneBot health.',
     tabs: {
@@ -2542,6 +2543,10 @@
     actionFailed: 'Operation failed',
   },
   galaxyRegistry: {
+    tabs: { current: 'Current systems', captain: 'Captain history', admin: 'Administration' },
+    statuses: { active: 'Active', completed: 'Completed', pending: 'Pending', valid: 'Valid', violation: 'Violation' },
+    fields: { keyword: 'Keyword', note: 'Note', minBounty: 'Minimum bounty', enabled: 'Enabled', violationReason: 'Violation reason' },
+    analytics: { recent7d: 'Entries in last 7 days', recent30d: 'Entries in last 30 days' },
     title: 'Galaxy Registry',
     subtitle: 'View production status and manage captain registrations.',
     system: 'System',
