@@ -12,7 +12,6 @@ describe('info npc kills page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.info', 'info.npc_kills.self'],
-      authList: [],
     })
   })
 

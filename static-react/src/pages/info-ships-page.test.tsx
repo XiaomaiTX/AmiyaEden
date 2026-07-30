@@ -12,7 +12,6 @@ describe('info ships page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.info'],
-      authList: [],
     })
   })
 

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/badge.go
@@ -13,6 +13,10 @@ source_of_truth:
   - static/src/api/badge.ts
   - static/src/store/modules/badge.ts
   - static/src/store/modules/badge.helpers.ts
+  - static-react/src/api/badge.ts
+  - static-react/src/stores/badge-store.ts
+  - static-react/src/components/badge-bootstrap.tsx
+  - static-react/src/layout/menu-config.ts
   - static/src/router/guards/beforeEach.ts
 ---
 
@@ -39,7 +43,9 @@ source_of_truth:
 | `srp_pending` | `super_admin` / `admin` / `srp` / `fc` | `review_status IN ('submitted', 'approved') AND payout_status = 'notpaid'` 的 SRP 申请数 |
 | `welfare_pending` | `super_admin` / `admin` / `welfare` | `status = 'requested'` 的福利申请数 |
 | `order_pending` | `super_admin` / `admin` / `shop_order_manage` | `status = 'requested'` 的商店订单数 |
+| `mentor_pending_applications` | `mentor` | 当前导师本人待处理的学员申请数 |
 | `corporation_structures_attention` | `super_admin` / `admin` | 当前可管理军团中需关注建筑数（去重后）；命中任一规则：1) `fuel_remaining_hours <= fuel_notice_threshold_days * 24`（阈值 > 0，含已到期）；2) `now <= state_timer_end <= now + timer_notice_threshold_days * 24h`（阈值 > 0） |
+| `ticket_attention` | `super_admin` / `admin` | 待处理工单与当前管理员本人处理中工单的关注数 |
 
 ## 前端映射
 
@@ -49,7 +55,9 @@ source_of_truth:
 | `WelfareApproval` | `welfare_pending` |
 | `SrpManage` | `srp_pending` |
 | `ShopOrderManage` | `order_pending` |
+| `NewbroMentorDashboard` | `mentor_pending_applications` |
 | `DashboardCorporationStructures` | `corporation_structures_attention` |
+| `TicketManagement` | `ticket_attention` |
 
 ## 徽章规则
 
@@ -74,5 +82,5 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 使用 `static/src/store/modules/badge.ts` 和路由初始化流程。
-- React 当前尚未完成独立 badge store 与菜单徽标接入；该缺口属于 Vue 下线前的基础能力阻断项。
+- React 使用 `useBadgeStore`，在 `/me` 启动刷新完成后按当前人物加载一次；切换人物或退出会清空旧计数，并丢弃已失效会话的并发响应。`menu-config.ts` 负责叶子映射和父菜单汇总。
 - 两端均不得把前端展示逻辑当作后端权限边界。

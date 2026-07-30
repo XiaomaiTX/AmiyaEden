@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-23
+last_reviewed: 2026-07-30
 source_of_truth:
   - static/src
   - static-react/src
@@ -37,19 +37,16 @@ source_of_truth:
 - React 迁移的 i18n 必须对齐旧 Vue 前端的实际翻译内容，尤其是人物管理、招新/直推、军团 KM、锁定提示等专有场景；只改调用形式不算完成对齐。
 - 允许在 React 运行时补齐 Vue 既有的 `@:引用` 和变量插值能力，但翻译文本本身要以旧 Vue 语义和措辞为准，不得自行简化成通用描述。
 
-## 模块进度摘要（2026-07-22 审计）
+## 模块进度摘要（2026-07-30 执行）
 
 - 批次 A/B/C/D 的全部原计划路由已在 React 注册，并替换为真实业务页面。
 - React 壳层的 `SidebarContext` 已从 `sidebar.tsx` 拆出为独立模块，侧边栏状态、移动端展开状态、cookie 记忆和快捷键切换属于已完成基座能力，不单独占用业务批次。
 - Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button parity；具体 AND/OR 语义和 reserved key 规则以 `docs/architecture/routing-and-menus.md` 与 `docs/features/current/corporation-access-policy.md` 为准。
-- Vue 侧在冻结期之后新增以下仍未对齐路由，列入追赶清单（见 `./migration-scope-baseline.md`、`./todolist.md`）：
-  - `/characters`（顶层路由，与 `dashboard/characters` 复用同一页，2026-05-22 落地）
-  - `/dashboard/fuel-officer-structures`（2026-05-11 落地，`super_admin/fuel_officer`）
-  - `/dashboard/galaxy-registry`（2026-06-04 落地，`super_admin/admin/captain/user`）
-  - `/system/qq-governance`（2026-07-12 落地，`super_admin`）
-  - `/fuxi-hall/{leadership, contributors, manage}`（2026-05-12 落地，取代旧 `hall-of-fame` 模块）
+- 冻结期后的 `/characters` 与 `/dashboard/fuel-officer-structures` 已完成 React 对齐。
+- `/dashboard/galaxy-registry` 与 `/system/qq-governance` 已具备 React 路由、API、类型和基础业务页，但完整管理行为仍按 `./todolist.md` 的明确缺口继续追赶。
+- `/fuxi-hall/{leadership, contributors, manage}` 与 `/info/tool-bookmarks` 已完成 React 对齐。
 - Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 已迁移 `fuxi-hall/*` 并移除三条历史遗留 stub。
-- 基础设施补齐仍未完成：WorkTab 多标签页、`v-auth`/`v-roles` 的 React 对应物（`PermissionGate`/`RoleGate`/`usePermission`/`useRole`）、Zustand `user/menu/worktab/setting/table/badge/sys-config` 等非 session/preference store 均未落地，详见 `./component-replacement-list.md`。
+- 基础设施已完成业务路由懒加载、启动 `/me` 刷新、资料/ESI 锁、WorkTab、`PermissionGate`/`RoleGate`、badge store/菜单徽章与 TanStack `DataTable`。其余 store 只在出现真实跨页状态需求时拆分，详见 `./component-replacement-list.md`。
 
 ## 明确声明
 
@@ -59,7 +56,7 @@ source_of_truth:
 
 - 迁移期间，`docs/architecture/`、`docs/api/`、`docs/standards/` 和 `docs/features/current/` 描述双端必须一致的行为，并在实现映射处注明 Vue/React 状态。
 - Vue-only 的实现限制只能出现在明确的迁移阶段说明中，不得继续作为产品行为或通用工程规则。
-- 当前已迁移页面的 React capability/menu/button parity 已完成；替换 Vue 前仍需完成未迁移范围漂移页面，以及 WorkTab/KeepAlive、徽标和其他菜单基础设施。后续不要把这些剩余迁移项重新描述成 0A 权限缺口。
+- 当前 React capability/menu/button parity 与主要壳层基座已完成；替换 Vue 前的核心剩余项是 Galaxy Registry 与 QQ Governance 的完整业务同构及全量跨角色回归。后续不要把这些剩余项重新描述成 0A 权限缺口。
 - 功能文档的 React 状态统一引用 `migration-scope-baseline.md`，不在各 feature 文档维护第二套迁移清单。
 - 不覆盖 `docs/ai/repo-rules.md`、`docs/architecture/`、`docs/api/`、`docs/features/current/` 的当前权威定义。
 - 落地后转正路径：

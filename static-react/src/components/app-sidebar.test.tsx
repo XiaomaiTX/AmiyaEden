@@ -36,7 +36,6 @@ describe('AppSidebar', () => {
       characterName: 'Amiya',
       roles: ['member'],
       corpCapabilities: ['menu.dashboard', 'menu.info', 'info.assets.read', 'info.wallet.read'],
-      authList: [],
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,
       hydratedAt: null,

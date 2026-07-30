@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { fetchGetUserInfo, getEveBindURL, setPrimaryCharacter, unbindCharacter, updateMyProfile } from '@/api/auth'
 import {
   checkDirectReferrerQQ,
@@ -12,6 +13,8 @@ import { useI18n } from '@/i18n'
 import type { EveCharacter, UserInfo } from '@/types/api/auth'
 import type { DirectReferralStatus, DirectReferrerCandidate } from '@/types/api/newbro'
 import { useSessionStore } from '@/stores'
+import { toSessionSnapshot } from '@/auth'
+import type { ProfileLockReason } from '@/auth/profile-lock'
 
 const CORP_KM_SCOPE = 'esi-killmails.read_corporation_killmails.v1'
 const MAX_TEXT_LENGTH = 20
@@ -26,8 +29,15 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 export function DashboardCharactersPage() {
   const { t } = useI18n()
+  const location = useLocation()
   const setSessionSnapshot = useSessionStore((state) => state.setSessionSnapshot)
   const roles = useSessionStore((state) => state.roles)
+  const lockReasons =
+    (
+      location.state as
+        | { profileLockReasons?: ProfileLockReason[] }
+        | null
+    )?.profileLockReasons ?? []
 
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
@@ -108,15 +118,7 @@ export function DashboardCharactersPage() {
     character.scopes?.split(' ').includes(CORP_KM_SCOPE) ?? false
 
   const applyUserInfo = useCallback((userInfo: UserInfo) => {
-    setSessionSnapshot({
-      isLoggedIn: true,
-      characterId: userInfo.primaryCharacterId ?? null,
-      characterName: userInfo.userName,
-      roles: userInfo.roles,
-      corpCapabilities: userInfo.corpCapabilities,
-      isCurrentlyNewbro: userInfo.isCurrentlyNewbro === true,
-      isMentorMenteeEligible: userInfo.isMentorMenteeEligible === true,
-    })
+    setSessionSnapshot(toSessionSnapshot(userInfo))
     setCharacters(userInfo.characters ?? [])
     setPrimaryCharacterId(userInfo.primaryCharacterId ?? 0)
     setProfileComplete(userInfo.profileComplete)
@@ -362,6 +364,18 @@ export function DashboardCharactersPage() {
             </Button>
           </div>
         </div>
+
+        {lockReasons.length > 0 ? (
+          <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-800">
+            <p className="font-medium">{t('characters.lockoutWarning.title')}</p>
+            <p className="mt-1">{t('characters.lockoutWarning.summary')}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {lockReasons.map((reason) => (
+                <li key={reason}>{t(`characters.lockoutWarning.reasons.${reason}`)}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div
           className={[

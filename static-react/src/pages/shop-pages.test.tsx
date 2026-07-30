@@ -35,7 +35,6 @@ function resetStores() {
       'shop.admin.product.manage',
       'shop.admin.order.manage',
     ],
-    authList: [],
     isCurrentlyNewbro: false,
     isMentorMenteeEligible: false,
     hydratedAt: null,

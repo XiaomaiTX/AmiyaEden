@@ -13,7 +13,6 @@ describe('info assets page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.info', 'info.assets.read'],
-      authList: [],
     })
   })
 

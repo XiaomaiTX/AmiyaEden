@@ -21,7 +21,6 @@ describe('dashboard console page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.dashboard'],
-      authList: [],
     })
   })
 

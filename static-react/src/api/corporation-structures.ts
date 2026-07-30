@@ -99,3 +99,14 @@ export async function updateStructureServiceCatalog(data: StructureServiceCatalo
   )
   return assertSuccess(response, 'update structure service catalog failed')
 }
+
+export async function fetchMyAssignedCorporationStructures(data: CorporationStructureListRequest) {
+  const response = await requestJson<ApiResponse<CorporationStructureListResponse>>(
+    '/api/v1/dashboard/corporation-structures/my-assigned-list',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  )
+  return assertSuccess(response, 'fetch assigned corporation structures failed')
+}

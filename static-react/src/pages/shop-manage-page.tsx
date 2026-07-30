@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { adminCreateProduct, adminDeleteProduct, adminListProducts, adminUpdateProduct } from '@/api/shop'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { usePermission } from '@/hooks/use-permission'
 import { useI18n } from '@/i18n'
-import { useSessionStore } from '@/stores'
 import type { Product } from '@/types/api/shop'
 import {
   formatCoin,
@@ -41,13 +41,8 @@ const defaultFormState: ProductFormState = {
   sort_order: 0,
 }
 
-function hasAction(authList: string[], mark: string) {
-  return authList.includes(mark)
-}
-
 export function ShopManagePage() {
   const { t } = useI18n()
-  const authList = useSessionStore((state) => state.authList)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -62,9 +57,9 @@ export function ShopManagePage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [form, setForm] = useState<ProductFormState>(defaultFormState)
 
-  const canCreate = hasAction(authList, 'add_product')
-  const canEdit = hasAction(authList, 'edit_product')
-  const canDelete = hasAction(authList, 'delete_product')
+  const canCreate = usePermission('add_product')
+  const canEdit = usePermission('edit_product')
+  const canDelete = usePermission('delete_product')
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 

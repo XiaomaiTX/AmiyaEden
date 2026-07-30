@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { fetchGetUserInfo } from '@/api/auth'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
+import { toSessionSnapshot } from '@/auth'
 
 type CallbackStatus = 'loading' | 'success' | 'error'
 const SSO_REDIRECT_STORAGE_KEY = 'auth:sso:redirect'
@@ -55,15 +56,8 @@ export function AuthCallbackPage() {
         if (cancelled) return
 
         setSessionSnapshot({
-          isLoggedIn: true,
           accessToken: token,
-          characterId: userInfo.primaryCharacterId ?? null,
-          characterName: userInfo.userName,
-          roles: userInfo.roles,
-          corpCapabilities: userInfo.corpCapabilities,
-          authList: [],
-          isCurrentlyNewbro: userInfo.isCurrentlyNewbro === true,
-          isMentorMenteeEligible: userInfo.isMentorMenteeEligible === true,
+          ...toSessionSnapshot(userInfo),
         })
 
         setStatus('success')

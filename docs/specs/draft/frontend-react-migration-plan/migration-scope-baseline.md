@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - static/src/views
   - static/src/router
@@ -25,6 +25,7 @@ source_of_truth:
 
 `React 状态` 列以 2026-07-22 审计结果为准，取值：
 - `真实页`：React 侧已有真实业务页实现
+- `部分对齐`：React 侧已有可运行真实页，但仍缺 Vue 当前行为的一部分
 - `stub`：React 侧仅有占位 stub
 - `未对齐`：Vue 侧有路由，React 侧未注册或未实现
 
@@ -100,11 +101,11 @@ source_of_truth:
 
 | Vue 页面组件 | 路由路径 | Vue 落地日期 | 依赖 API（主） | 权限/约束 | React 状态 | owner |
 |---|---|---|---|---|---|---|
-| `/dashboard/characters`（页面复用） | `/characters`（顶层） | 2026-05-22 | `dashboard.ts` | 公开访问（无 `login`） | 未对齐 | FE-owner(TBD) |
-| `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 未对齐 | FE-owner(TBD) |
-| `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 未对齐 | FE-owner(TBD) |
+| `/dashboard/characters`（页面复用） | `/characters`（顶层） | 2026-05-22 | `auth.ts` | `JWT`（含 guest） | 真实页 | FE-owner(TBD) |
+| `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 真实页 | FE-owner(TBD) |
+| `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 部分对齐 | FE-owner(TBD) |
 | `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login`, `corpCapabilitiesAny: menu.info` | 真实页 | FE-owner(TBD) |
-| `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 未对齐 | FE-owner(TBD) |
+| `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 部分对齐 | FE-owner(TBD) |
 | `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
 | `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
 | `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
@@ -127,6 +128,7 @@ source_of_truth:
 - 2026-06-29：`/info/npc-kills` 增加 incursion/mission reward、统一筛选与按用户/人物筛选；payout 类型改名。
 - 2026-07-22：本轮审计确认所有原计划路由在 React 侧均有真实业务页实现，`hall-of-fame/*` 三条 stub 成为历史遗留 stub；范围漂移追赶项（8 条新增 Vue 路由）尚未对齐。
 - 2026-07-29：React 完成 `fuxi-hall/*` 三页迁移并移除三条 `hall-of-fame/*` stub；完成 `/info/tool-bookmarks` 迁移后，剩余范围漂移页面为 4 条路由域。
+- 2026-07-30：React 完成 `/characters`、fuel officer 页面和迁移基础设施；Galaxy Registry 与 QQ Governance 建立可运行基础页，完整业务同构仍未关闭。
 
 ## 说明与已知风险
 
@@ -145,16 +147,15 @@ source_of_truth:
 | 文档域 | Vue 当前实现 | React 当前体现 | 适配状态 | 切换阻断 |
 |---|---|---|---|---|
 | 认证与人物 | `static/src/api/auth.ts`、Vue router guard | `static-react/src/api/auth.ts`、`session-store`、`RouteAccessGate` | 已建立双端映射 | capability、完整锁定流程需回归 |
-| 路由与菜单 | `static/src/router`、`MenuProcessor` | `static-react/src/app/migration-routes.ts`、扁平 `RouteAccessGate` | 部分对齐 | capability 过滤、菜单处理、WorkTab/KeepAlive |
-| 按钮权限 | `v-auth` / `v-roles` | React gate/hook 尚未完整实现 | 未完成 | `PermissionGate`、`RoleGate` 与按钮回归 |
-| 状态管理 | Pinia `user/menu/worktab/setting/table/badge/sys-config` | Zustand 目前主要是 `session`、`preference` | 未完成 | 跨页面状态、徽标和工作台行为 |
+| 路由与菜单 | `static/src/router`、`MenuProcessor` | 路由懒加载、`RouteAccessGate`、WorkTab、badge 菜单汇总 | 已建立等价基座 | 完整跨角色回归 |
+| 按钮权限 | `v-auth` / `v-roles` | `PermissionGate` / `RoleGate` 与 hooks | 已对齐 | 新增使用点持续回归 |
+| 状态管理 | Pinia 多 store | Zustand `session/preference/worktab/badge`，其余按真实跨页需求拆分 | 部分对齐 | 运行时 sys-config 等尚未迁移 |
 | API 契约 | `static/src/api` + `api.d.ts` | `static-react/src/api` + 模块化本地类型 | 已建立双端契约 | 每个迁移模块分别通过类型和契约检查 |
 | i18n | Vue `zh/en` locale | `static-react/src/i18n/messages` | 已建立双端映射 | 文案语义、插值和 `@:引用` 对齐 |
-| 表格/卡片布局 | `ArtTable`、Element Plus、Vue overflow 规则 | React 页面按需实现，统一抽象仍不足 | 部分对齐 | 共享 table、滚动拥有者、暗色主题回归 |
+| 表格/卡片布局 | `ArtTable`、Element Plus、Vue overflow 规则 | TanStack `DataTable` 基座 + 存量页面按需迁移 | 部分对齐 | 存量复杂表格渐进迁移、暗色主题回归 |
 | 格式化 helper | Vue ISK/time helper | React ISK helper；时间 helper 待统一 | 部分对齐 | 禁止页面本地格式化变体 |
 | 测试与交付 | `vue-tsc`、`test:unit`、Vue build | `tsc -b`、`test`、API contract、React build | 已纳入规范 | 双端命令和模块回归均可执行 |
-| 范围漂移页面 | Vue 已落地 | React 已完成 Fuxi Hall 与 tool bookmarks，其余待对齐 | 进行中 | `/characters`、fuel officer、galaxy registry、QQ governance |
+| 范围漂移页面 | Vue 已落地 | characters/fuel officer 已完成；galaxy registry/QQ governance 基础页已落地 | 进行中 | Galaxy Registry 与 QQ Governance 完整业务同构 |
 
 文档适配完成定义：所有 active 规范使用行为级表述；每个 current feature doc 通过本文引用迁移状态；所有 Vue-only 限制都明确标注为过渡期限制或历史归档内容。
-
 

@@ -53,6 +53,9 @@ func TestMeHandlerGetMeAllowsInvalidPrimaryCharacterTokenForRefreshFlow(t *testi
 	if _, exists := userPayload["avatar"]; exists {
 		t.Fatalf("expected user payload to omit avatar, got %#v", userPayload["avatar"])
 	}
+	if payload["profile_complete"] != true {
+		t.Fatalf("expected completed profile flag, got %#v", payload["profile_complete"])
+	}
 	characters, ok := payload["characters"].([]any)
 	if !ok || len(characters) != 2 {
 		t.Fatalf("expected two characters in payload, got %#v", payload["characters"])
@@ -125,6 +128,43 @@ func TestMeHandlerGetMeReturnsCharacterRestrictionToggleWhenPrimaryIsHealthy(t *
 	}
 	if _, exists := secondCharacter["portrait_url"]; exists {
 		t.Fatalf("expected second character payload to omit portrait_url, got %#v", secondCharacter["portrait_url"])
+	}
+}
+
+func TestMeHandlerGetMeReturnsIncompleteProfileFlag(t *testing.T) {
+	db := newMeHandlerTestDB(t)
+	seedMeHandlerUser(t, db, false)
+	if err := db.Model(&model.User{}).Where("id = ?", 1).Updates(map[string]any{
+		"nickname":   "",
+		"qq":         "",
+		"discord_id": "",
+	}).Error; err != nil {
+		t.Fatalf("clear profile fields: %v", err)
+	}
+
+	originalDB := global.DB
+	originalRedis := global.Redis
+	global.DB = db
+	global.Redis = redis.NewClient(&redis.Options{Addr: "127.0.0.1:0"})
+	defer func() {
+		global.DB = originalDB
+		if global.Redis != nil {
+			_ = global.Redis.Close()
+		}
+		global.Redis = originalRedis
+	}()
+
+	recorder, result := performGetMeRequest(t, 1)
+	if recorder.Code != http.StatusOK || result.Code != response.CodeOK {
+		t.Fatalf("expected successful response, status=%d result=%#v", recorder.Code, result)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(result.Data, &payload); err != nil {
+		t.Fatalf("decode payload: %v", err)
+	}
+	if payload["profile_complete"] != false {
+		t.Fatalf("expected incomplete profile flag, got %#v", payload["profile_complete"])
 	}
 }
 

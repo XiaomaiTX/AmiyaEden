@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - static/src
   - static-react/src
@@ -15,7 +15,7 @@ source_of_truth:
 - [x] `ArtSidebarMenu` -> React Sidebar + MenuTree（基线）
 - [x] `ArtHeaderBar` -> React HeaderBar（基线）
 - [x] `ArtPageContent` -> React PageContent（基线；KeepAlive 替代策略待补）
-- [ ] `ArtWorkTab` -> React WorkTab（标签页、固定页、批量关闭，未实现）
+- [x] `ArtWorkTab` -> React WorkTab（标签页、固定页、批量关闭、按人物隔离与 URL 恢复；不挂载隐藏页面树）
 - [x] `ArtGlobalComponent` -> React GlobalHost（基线占位）
 
 参考：
@@ -27,8 +27,8 @@ source_of_truth:
 
 ## 权限与路由基础设施（P0）
 
-- [ ] `v-auth` 指令 -> `PermissionGate` / `usePermission`（未实现；Vue 侧实际仅 `system/pap-exchange` 模板使用 `v-auth`）
-- [ ] `v-roles` 指令 -> `RoleGate` / `useRole`（未实现；Vue 侧当前模板层零引用，属低优先级）
+- [x] `v-auth` 指令 -> `PermissionGate` / `usePermission`（路由 Context 单一来源）
+- [x] `v-roles` 指令 -> `RoleGate` / `useRole`
 - [x] 未登录守卫 -> React `RequireAuth` + `RouteAccessGate`（替代 Vue `beforeEach`）
 - [x] 角色与 `authList` 元数据消费 -> `RouteAccessGate`（替代 Vue 守卫链；新菜单/角色/能力过滤的等价性仍需回归）
 - [ ] Vue `RouteRegistry/MenuProcessor/RouteTransformer` 等价能力 -> 当前用扁平 `RouteAccessGate` + `migration-routes.ts` 静态表代替，长链路菜单处理能力需评估是否完整覆盖
@@ -47,9 +47,9 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 
 - [~] `userStore` -> `useUserStore`（部分能力由 `useSessionStore` 承载，但搜索历史、锁屏等字段尚未迁移）
 - [ ] `menuStore` -> `useMenuStore`（未实现；菜单通过 `layout/menu-config.ts` 在壳层内构造）
-- [ ] `worktabStore` -> `useWorktabStore`（未实现；WorkTab 整体未落地）
+- [x] `worktabStore` -> `useWorktabStore`
 - [ ] `settingStore` -> `useSettingStore`（未实现；主题与布局偏好部分由 `usePreferenceStore` 承载）
-- [ ] `badgeStore` -> Zustand slice（未实现；菜单徽标未接入）
+- [x] `badgeStore` -> `useBadgeStore`（登录启动加载、叶子徽章与父菜单汇总）
 - [ ] `sys-configStore` -> Zustand slice（未实现；运行时站点配置未接入）
 - [ ] `tableStore` -> Zustand slice（未实现；表格展示偏好未接入）
 
@@ -62,7 +62,7 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 
 - [~] Element Plus 基础组件（Button/Input/Dialog/Form/Table/Tabs/Dropdown）-> shadcn/ui 等价组件已覆盖各迁移页面常见用法，剩余高耦合控件（日期范围、富文本、图表、拖拽）按需补齐
 - [x] 消息与确认框（`ElMessage`/`ElMessageBox`）-> React 反馈层（toast + confirm）已落地
-- [~] 表格与分页能力 -> 已在批次 A-D 页面中按需实现；尚未沉淀为统一 `ArtTable` 等价封装
+- [x] 表格与分页基座 -> `DataTable` + TanStack Table（页面可渐进迁移，复杂列显隐偏好仍按需求补充）
 - [ ] 日期、上传、富文本、图表、拖拽等高耦合组件 -> 按页面需要逐项补齐，暂无统一方案
 
 ## 商店迁移（C-1）
@@ -98,9 +98,9 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 
 以下页面在 Vue 侧已落地，React 侧尚未实现，按业务模块归类到下一波次：
 
-- [ ] `characters`（顶层公开页，复用 `dashboard/characters` 实现）
-- [ ] `dashboard/fuel-officer-structures`（fuel officer 专属建筑视图）
-- [ ] `dashboard/galaxy-registry`（星系登记簿）
+- [x] `characters`（顶层 JWT 页，复用 `dashboard/characters` 实现）
+- [x] `dashboard/fuel-officer-structures`（fuel officer 专属建筑视图）
+- [~] `dashboard/galaxy-registry`（基础页已落地，完整管理/分析/通知同构待续）
 - [x] `info/tool-bookmarks` -> React `InfoToolBookmarksPage`（普通书签列表与管理员 CRUD）
-- [ ] `system/qq-governance`（QQ 治理后台）
+- [~] `system/qq-governance`（基础页已落地，规则/成员/判断记录完整同构待续）
 - [x] `fuxi-hall/leadership`、`fuxi-hall/contributors`、`fuxi-hall/manage`（取代旧 `hall-of-fame` 模块；遗留 stub 已移除）

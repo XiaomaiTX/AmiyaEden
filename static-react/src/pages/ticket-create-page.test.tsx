@@ -14,7 +14,6 @@ describe('ticket create page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.ticket', 'ticket.user.create'],
-      authList: [],
     })
     usePreferenceStore.setState({
       locale: 'zh-CN',

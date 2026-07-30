@@ -25,7 +25,6 @@ function resetSession() {
     characterId: 1001,
     characterName: 'Amiya',
     roles: ['super_admin'],
-    authList: [],
     isCurrentlyNewbro: false,
     isMentorMenteeEligible: false,
     hydratedAt: null,
@@ -291,5 +290,8 @@ describe('system migration pages', () => {
     expect(state.characterName).toBe('TargetUser')
     expect(state.corpCapabilities).toEqual(['menu.dashboard'])
     expect(state.isCurrentlyNewbro).toBe(true)
+    expect(state.profileComplete).toBe(true)
+    expect(state.primaryCharacterId).toBe(2002)
+    expect(state.characters).toEqual([{ characterId: 2002, tokenInvalid: false }])
   })
 })

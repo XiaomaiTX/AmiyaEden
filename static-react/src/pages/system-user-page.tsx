@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchGetUserInfo } from '@/api/auth'
+import { toSessionSnapshot } from '@/auth'
 import { fetchCharacterESIRestrictionConfig, updateCharacterESIRestrictionConfig } from '@/api/sys-config'
 import {
   fetchDeleteUser,
@@ -301,15 +302,9 @@ export function SystemUserPage() {
       } satisfies Partial<import('@/stores/session-store').SessionSnapshot>)
       const userInfo = await fetchGetUserInfo()
       setSessionSnapshot({
-        isLoggedIn: true,
         accessToken: result.token,
-        characterId: userInfo.primaryCharacterId ?? null,
-        characterName: userInfo.userName,
-        roles: userInfo.roles,
-        corpCapabilities: userInfo.corpCapabilities,
-        isCurrentlyNewbro: userInfo.isCurrentlyNewbro ?? false,
-        isMentorMenteeEligible: userInfo.isMentorMenteeEligible ?? false,
-      } satisfies Partial<import('@/stores/session-store').SessionSnapshot>)
+        ...toSessionSnapshot(userInfo),
+      })
       window.location.assign('/')
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('userAdmin.impersonateFailed')))

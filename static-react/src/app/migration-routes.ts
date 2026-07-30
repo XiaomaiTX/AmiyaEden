@@ -1,12 +1,14 @@
 import type { RouteAccessMeta } from '@/app/route-access'
+import type { BadgeCounts } from '@/types/api/badge'
 
 export type MigrationBatch = 'A' | 'B' | 'C' | 'D' | 'Tail'
 export type AppPageType =
-  | 'home'
   | 'dashboard-console'
   | 'dashboard-characters'
   | 'dashboard-npc-kills'
   | 'dashboard-corporation-structures'
+  | 'dashboard-fuel-officer-structures'
+  | 'dashboard-galaxy-registry'
   | 'fuxi-hall-leadership'
   | 'fuxi-hall-contributors'
   | 'fuxi-hall-manage'
@@ -57,15 +59,13 @@ export type AppPageType =
   | 'system-user-center'
   | 'system-webhook'
   | 'system-basic-config'
+  | 'system-qq-governance'
   | 'srp-apply'
   | 'srp-manage'
   | 'srp-prices'
   | 'system-user'
   | 'system-task-manager'
   | 'system-wallet'
-  | 'recruit-landing'
-  | 'iframe'
-  | 'admin-demo'
 
 export interface AppRouteSpec {
   path: string
@@ -75,24 +75,18 @@ export interface AppRouteSpec {
   menuGroup?: string
   menuIcon?: string
   menuHidden?: boolean
+  fixedTab?: boolean
+  badgeKey?: keyof BadgeCounts
   meta?: RouteAccessMeta
 }
 
 export const appRouteSpecs: AppRouteSpec[] = [
-  { path: '', titleKey: 'nav.home', pageType: 'home', menuHidden: true, meta: { authList: [] } },
   {
-    path: 'admin-demo',
-    titleKey: 'nav.permissionDemo',
-    pageType: 'admin-demo',
+    path: 'characters',
+    titleKey: 'nav.dashboard.characters',
+    pageType: 'dashboard-characters',
     menuHidden: true,
-    meta: {
-      login: true,
-      roles: ['super_admin', 'admin'],
-      authList: [
-        { title: '审批订单', authMark: 'approve_order' },
-        { title: '编辑兑换率', authMark: 'edit_exchange_rate' },
-      ],
-    },
+    meta: { jwt: true },
   },
   {
     path: 'dashboard/console',
@@ -100,6 +94,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     pageType: 'dashboard-console',
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
+    fixedTab: true,
     meta: { login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
@@ -129,7 +124,30 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'A',
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
+    badgeKey: 'corporation_structures_attention',
     meta: { roles: ['super_admin', 'admin'], corpCapabilitiesAny: ['menu.dashboard'] },
+  },
+  {
+    path: 'dashboard/fuel-officer-structures',
+    titleKey: 'nav.dashboard.fuelOfficerStructures',
+    pageType: 'dashboard-fuel-officer-structures',
+    menuGroup: 'nav.group.dashboard',
+    menuIcon: 'dashboard',
+    meta: {
+      roles: ['super_admin', 'fuel_officer'],
+      corpCapabilitiesAny: ['menu.dashboard'],
+    },
+  },
+  {
+    path: 'dashboard/galaxy-registry',
+    titleKey: 'nav.dashboard.galaxyRegistry',
+    pageType: 'dashboard-galaxy-registry',
+    menuGroup: 'nav.group.dashboard',
+    menuIcon: 'dashboard',
+    meta: {
+      roles: ['super_admin', 'admin', 'captain', 'user'],
+      corpCapabilitiesAny: ['menu.dashboard'],
+    },
   },
   {
     path: 'fuxi-hall/leadership', titleKey: 'nav.fuxiHall.leadership', pageType: 'fuxi-hall-leadership', menuGroup: 'nav.group.fuxiHall', menuIcon: 'fuxiHall', meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
@@ -323,6 +341,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
+    badgeKey: 'welfare_eligible',
     meta: { login: true, corpCapabilitiesAny: ['welfare.user'] },
   },
   {
@@ -332,6 +351,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.welfare',
     menuIcon: 'welfare',
+    badgeKey: 'welfare_pending',
     meta: {
       roles: ['super_admin', 'admin', 'welfare'],
       corpCapabilitiesAny: ['welfare.approval'],
@@ -395,6 +415,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
+    badgeKey: 'mentor_pending_applications',
     meta: {
       roles: ['super_admin', 'mentor'],
       corpCapabilitiesAny: ['menu.newbro'],
@@ -467,6 +488,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'C',
     menuGroup: 'nav.group.shop',
     menuIcon: 'shop',
+    badgeKey: 'order_pending',
     meta: {
       roles: ['super_admin', 'admin', 'shop_order_manage'],
       corpCapabilitiesAll: ['menu.shop', 'shop.manage', 'shop.admin.order.manage'],
@@ -499,6 +521,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.srp',
     menuIcon: 'srp',
+    badgeKey: 'srp_pending',
     meta: {
       roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
       corpCapabilitiesAny: ['srp.manage'],
@@ -551,6 +574,7 @@ export const appRouteSpecs: AppRouteSpec[] = [
     batch: 'B',
     menuGroup: 'nav.group.ticket',
     menuIcon: 'ticket',
+    badgeKey: 'ticket_attention',
     meta: {
       roles: ['super_admin', 'admin'],
       corpCapabilitiesAll: ['ticket.manage', 'ticket.admin.read'],
@@ -712,6 +736,17 @@ export const appRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
     meta: { roles: ['super_admin'], corpCapabilitiesAny: ['system.basic_config.read'] },
+  },
+  {
+    path: 'system/qq-governance',
+    titleKey: 'nav.system.qqGovernance',
+    pageType: 'system-qq-governance',
+    menuGroup: 'nav.group.system',
+    menuIcon: 'system',
+    meta: {
+      roles: ['super_admin'],
+      corpCapabilitiesAny: ['system.manage'],
+    },
   },
 
 ]

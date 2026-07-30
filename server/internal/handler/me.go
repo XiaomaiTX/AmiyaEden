@@ -73,6 +73,7 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 		"user":                              user,
 		"characters":                        characters,
 		"roles":                             roles,
+		"profile_complete":                  user.ProfileComplete(),
 		"primary_corporation_id":            corpCtx.PrimaryCorporationID,
 		"corp_capabilities":                 service.EffectiveCapabilities(corpCtx),
 		"corp_rules":                        corpCtx.Rules,

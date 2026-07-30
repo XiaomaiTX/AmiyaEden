@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-07-23
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -16,6 +16,8 @@ source_of_truth:
   - static-react/src/api/auth.ts
   - static-react/src/stores/session-store.ts
   - static-react/src/auth/route-access-gate.tsx
+  - static-react/src/auth/session-bootstrap.tsx
+  - static-react/src/auth/profile-lock.ts
   - static-react/src/hooks/use-corp-capability.ts
 ---
 
@@ -39,6 +41,10 @@ source_of_truth:
 - 当前新人资格快照 `is_currently_newbro`
 - 当前导师学员资格快照 `is_mentor_mentee_eligible`
 - 主军团与军团能力上下文 `primary_corporation_id`、`corp_capabilities`、`corp_rules`
+
+React 只持久化最小会话快照；已有 token 的应用启动必须先重新请求 `/api/v1/me`，完成前路由显示加载占位，不得使用持久化的旧角色、能力或资料锁状态渲染业务页。刷新失败时清除会话并进入登录流程。
+
+React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资料未完成、主人物 ESI 失效，或开启全人物限制时其他绑定人物 ESI 失效，访问其他业务路由都会重定向并在人物页列出原因。React 冻结范围内已有的 `/dashboard/characters` 也是同一修复页，用户已经在该页时不会再次跳转。`/characters` 是 JWT 边界，允许仍处于 `guest` 的已认证用户完成自助修复。
 
 当前用户还可以通过 `DELETE /api/v1/me` 自助注销账号；该能力与 `/api/v1/me` 同样只允许当前 JWT 对应的用户操作，不提供任意 `user_id` 删除入口。
 

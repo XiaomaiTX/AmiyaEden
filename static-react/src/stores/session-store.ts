@@ -9,15 +9,20 @@ export interface SessionSnapshot {
   characterName: string | null
   roles: string[]
   corpCapabilities: string[]
-  authList: string[]
   isCurrentlyNewbro: boolean
   isMentorMenteeEligible: boolean
+  profileComplete: boolean
+  enforceCharacterESIRestriction: boolean
+  primaryCharacterId: number | null
+  characters: Array<{ characterId: number; tokenInvalid: boolean }>
   hydratedAt: string | null
 }
 
 interface SessionStoreState extends SessionSnapshot {
   setSessionSnapshot: (snapshot: Partial<SessionSnapshot>) => void
-  setRouteAuthList: (authList: string[]) => void
+  markBootstrapRequired: () => void
+  markBootstrapComplete: () => void
+  bootstrapRequired: boolean
   clearSession: () => void
 }
 
@@ -28,9 +33,12 @@ const defaultSnapshot: SessionSnapshot = {
   characterName: null,
   roles: [],
   corpCapabilities: [],
-  authList: [],
   isCurrentlyNewbro: false,
   isMentorMenteeEligible: false,
+  profileComplete: true,
+  enforceCharacterESIRestriction: true,
+  primaryCharacterId: null,
+  characters: [],
   hydratedAt: null,
 }
 
@@ -38,6 +46,7 @@ export const useSessionStore = create<SessionStoreState>()(
   persist(
     (set) => ({
       ...defaultSnapshot,
+      bootstrapRequired: false,
       setSessionSnapshot: (snapshot) => {
         set((state) => ({
           isLoggedIn: snapshot.isLoggedIn ?? state.isLoggedIn,
@@ -46,20 +55,23 @@ export const useSessionStore = create<SessionStoreState>()(
           characterName: snapshot.characterName ?? state.characterName,
           roles: snapshot.roles ?? state.roles,
           corpCapabilities: snapshot.corpCapabilities ?? state.corpCapabilities,
-          authList: snapshot.authList ?? state.authList,
           isCurrentlyNewbro: snapshot.isCurrentlyNewbro ?? state.isCurrentlyNewbro,
           isMentorMenteeEligible: snapshot.isMentorMenteeEligible ?? state.isMentorMenteeEligible,
+          profileComplete: snapshot.profileComplete ?? state.profileComplete,
+          enforceCharacterESIRestriction:
+            snapshot.enforceCharacterESIRestriction ?? state.enforceCharacterESIRestriction,
+          primaryCharacterId: snapshot.primaryCharacterId ?? state.primaryCharacterId,
+          characters: snapshot.characters ?? state.characters,
           hydratedAt: new Date().toISOString(),
+          bootstrapRequired: false,
         }))
       },
-      setRouteAuthList: (authList) => {
-        set({
-          authList: Array.from(new Set(authList)),
-        })
-      },
+      markBootstrapRequired: () => set({ bootstrapRequired: true }),
+      markBootstrapComplete: () => set({ bootstrapRequired: false }),
       clearSession: () => {
         set({
           ...defaultSnapshot,
+          bootstrapRequired: false,
         })
       },
     }),
@@ -73,11 +85,19 @@ export const useSessionStore = create<SessionStoreState>()(
         characterName: state.characterName,
         roles: state.roles,
         corpCapabilities: state.corpCapabilities,
-        authList: state.authList,
         isCurrentlyNewbro: state.isCurrentlyNewbro,
         isMentorMenteeEligible: state.isMentorMenteeEligible,
+        profileComplete: state.profileComplete,
+        enforceCharacterESIRestriction: state.enforceCharacterESIRestriction,
+        primaryCharacterId: state.primaryCharacterId,
+        characters: state.characters,
         hydratedAt: state.hydratedAt,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.accessToken) {
+          state.markBootstrapRequired()
+        }
+      },
     }
   )
 )

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { adminDeliverOrder, adminListOrderHistory, adminListOrders, adminRejectOrder } from '@/api/shop'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { usePermission } from '@/hooks/use-permission'
 import { useI18n } from '@/i18n'
-import { useSessionStore } from '@/stores'
 import type { Order } from '@/types/api/shop'
 import {
   formatCoin,
@@ -25,7 +25,6 @@ function orderStatusLabel(t: ReturnType<typeof useI18n>['t'], status: string) {
 
 export function ShopOrderManagePage() {
   const { t } = useI18n()
-  const authList = useSessionStore((state) => state.authList)
   const [activeTab, setActiveTab] = useState<ActiveTab>('orders')
   const [error, setError] = useState<string | null>(null)
   const [keyword, setKeyword] = useState('')
@@ -45,7 +44,7 @@ export function ShopOrderManagePage() {
   const [reviewRemark, setReviewRemark] = useState('')
   const didMountRef = useRef(false)
 
-  const canApprove = authList.includes('approve_order')
+  const canApprove = usePermission('approve_order')
 
   const pendingPageCount = useMemo(
     () => Math.max(1, Math.ceil(pendingTotal / pendingPageSize) || 1),

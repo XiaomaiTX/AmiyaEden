@@ -1,4 +1,7 @@
 export { useSessionStore } from '@/stores/session-store'
 export { usePreferenceStore } from '@/stores/preference-store'
+export { useBadgeStore } from '@/stores/badge-store'
+export { useWorktabStore } from '@/stores/worktab-store'
+export type { WorktabItem } from '@/stores/worktab-store'
 export type { SessionSnapshot } from '@/stores/session-store'
 export type { Locale, ThemeMode } from '@/stores/preference-store'

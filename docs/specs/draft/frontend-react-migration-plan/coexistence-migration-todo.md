@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-23
+last_reviewed: 2026-07-30
 source_of_truth:
   - static/src
   - static-react/src
@@ -28,10 +28,10 @@ source_of_truth:
 
 ## 状态与核心能力迁移
 
-- [~] 定义全局状态最小集合（用户、权限、语言、主题）—— 当前由 `useSessionStore` 与 `usePreferenceStore` 承载；菜单、工作台、徽标等业务 store 未拆分
-- [ ] 完成 Pinia -> Zustand 的状态迁移映射（`user/menu/worktab/setting/table/badge/sys-config` 7 个 Vue store 中尚有 5 个未迁移）
+- [x] 定义全局状态最小集合：`session`、`preference`、`worktab`、`badge`；菜单保持由路由声明派生
+- [~] 完成 Pinia -> Zustand 的行为映射；不按 Pinia 文件数量机械复制 store，仅为真实跨页持久状态建 Zustand store
 - [x] 明确 React 侧单一权威源，禁止新增 Vue 侧状态耦合
-- [ ] 对齐工作台标签页等核心能力的最终行为（WorkTab 未落地，KeepAlive 等价策略未定）
+- [x] 对齐工作台核心行为：固定、批量关闭、按人物隔离和完整 URL 恢复；React 不保留隐藏挂载页面树
 
 ## UI 与样式迁移
 
@@ -44,7 +44,7 @@ source_of_truth:
 
 - [x] 建立迁移期独立 React 镜像与 Compose `frontend-react` 服务，保持 Vue `frontend` 不变并行运行
 - [x] 将 React lint、类型检查、测试、契约检查和构建接入现有 verify/main/preview 工作流
-- [ ] 记录已迁移路由与未迁移路由清单（以 `migration-scope-baseline.md` 为准；Stage 0A capability/menu/button parity 已完成，剩余为范围漂移页面及其他迁移基础设施）
+- [x] 记录已迁移路由与未迁移路由清单（以 `migration-scope-baseline.md` 为准）
 - [ ] 建立“模块回归 -> 全量回归 -> Vue 下线”固定流程
 - [ ] 定义替换门槛（页面覆盖率、关键链路成功率、错误率、性能指标）
 - [ ] 完成 Vue 前端下线检查项与演练记录
@@ -59,6 +59,6 @@ source_of_truth:
 ## 待确认项
 
 - 替换窗口：是否在关键业务周期前设置迁移冻结时间段
-- 模块优先级：首批迁移模块的业务优先级与资源顺序（当前漂移追赶项已隐含优先级：`characters`、`fuxi-hall/*`、`system/qq-governance` 等）
+- 模块优先级：先完成 Galaxy Registry 管理/分析/通知同构，再完成 QQ Governance 规则/观测同构
 - 回切策略：替换后若出现重大问题的回切条件与执行时限
 

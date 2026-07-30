@@ -12,7 +12,6 @@ describe('info esi check page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.info'],
-      authList: [],
     })
   })
 
@@ -79,7 +78,9 @@ describe('info esi check page', () => {
     await waitFor(() => {
       expect(screen.getByText('授权总览')).toBeInTheDocument()
     })
-    expect(screen.getByText('共 2 个人物')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('共 2 个人物')).toBeInTheDocument()
+    })
     expect(screen.getByText('1 个人物授权异常')).toBeInTheDocument()
     expect(screen.getByText('esi-wallet.read_character_wallet.v1')).toBeInTheDocument()
 

@@ -1,8 +1,10 @@
 ﻿import type { PropsWithChildren } from 'react'
-import { useEffect } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import type { RouteAccessMeta } from '@/app/route-access'
-import { hasCorpCapabilityPermission, hasRouteRolePermission } from '@/app/route-access'
+import { evaluateRouteAccess } from '@/app/route-access'
+import { RouteLoadingFallback } from '@/app/route-loading-fallback'
+import { getProfileLockReasons } from '@/auth/profile-lock'
+import { RoutePermissionProvider } from '@/auth/permission-gates'
 import { useSessionStore } from '@/stores'
 
 interface RouteAccessGateProps extends PropsWithChildren {
@@ -12,42 +14,60 @@ interface RouteAccessGateProps extends PropsWithChildren {
 export function RouteAccessGate({ meta, children }: RouteAccessGateProps) {
   const location = useLocation()
   const isLoggedIn = useSessionStore((state) => state.isLoggedIn)
+  const bootstrapRequired = useSessionStore((state) => state.bootstrapRequired)
   const roles = useSessionStore((state) => state.roles)
   const corpCapabilities = useSessionStore((state) => state.corpCapabilities)
   const isCurrentlyNewbro = useSessionStore((state) => state.isCurrentlyNewbro)
   const isMentorMenteeEligible = useSessionStore((state) => state.isMentorMenteeEligible)
-  const setRouteAuthList = useSessionStore((state) => state.setRouteAuthList)
+  const profileComplete = useSessionStore((state) => state.profileComplete)
+  const enforceCharacterESIRestriction = useSessionStore(
+    (state) => state.enforceCharacterESIRestriction
+  )
+  const primaryCharacterId = useSessionStore((state) => state.primaryCharacterId)
+  const characters = useSessionStore((state) => state.characters)
 
-  useEffect(() => {
-    if (meta?.authList === undefined) {
-      return
-    }
+  if (bootstrapRequired) {
+    return <RouteLoadingFallback />
+  }
 
-    const authMarks = meta.authList.map((item) => item.authMark)
-    setRouteAuthList(authMarks)
-  }, [meta?.authList, setRouteAuthList])
+  const decision = evaluateRouteAccess(meta, {
+    isLoggedIn,
+    roles,
+    corpCapabilities,
+    isCurrentlyNewbro,
+    isMentorMenteeEligible,
+  })
 
-  if (meta?.login && !isLoggedIn) {
+  if (decision === 'login') {
     const redirect = `${location.pathname}${location.search}${location.hash}`
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(redirect)}`} replace />
   }
 
-  if (!hasRouteRolePermission(roles, meta?.roles)) {
+  if (decision === 'forbidden') {
     return <Navigate to="/403" replace />
   }
 
-  if (!hasCorpCapabilityPermission(roles, corpCapabilities, meta ?? {})) {
-    return <Navigate to="/403" replace />
+  if (
+    isLoggedIn &&
+    location.pathname !== '/characters' &&
+    location.pathname !== '/dashboard/characters'
+  ) {
+    const lockReasons = getProfileLockReasons({
+      profileComplete,
+      enforceCharacterESIRestriction,
+      primaryCharacterId,
+      characters,
+    })
+    if (lockReasons.length > 0) {
+      return <Navigate to="/characters" replace state={{ profileLockReasons: lockReasons }} />
+    }
   }
 
-  if (meta?.requiresNewbro && !isCurrentlyNewbro) {
-    return <Navigate to="/403" replace />
-  }
-
-  if (meta?.requiresMentorMenteeEligibility && !isMentorMenteeEligible) {
-    return <Navigate to="/403" replace />
-  }
-
-  return children
+  const content = children ?? <Outlet />
+  return (
+    <RoutePermissionProvider permissions={meta?.authList?.map((item) => item.authMark) ?? []}>
+      {content}
+    </RoutePermissionProvider>
+  )
 }
 

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/model/ticket.go
   - server/internal/repository/ticket.go
@@ -91,7 +91,7 @@ source_of_truth:
 
 ## 当前非目标
 
-- 尚未落地菜单栏徽章提醒（不接入独立通知中心）
+- 不接入独立通知中心；菜单栏数字徽章由通用 badge-counts 能力承接
 - 尚未落地管理员间转派能力
 - 尚未落地归档 / 清理策略
 - 尚未补齐 E2E 回归

@@ -12,7 +12,6 @@ describe('info wallet page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.info', 'info.wallet.read'],
-      authList: [],
     })
   })
 

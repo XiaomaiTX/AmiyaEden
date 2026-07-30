@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
 import { fetchPAPExchangeConfig, updatePAPExchangeConfig } from '@/api/pap-exchange'
+import { PermissionGate } from '@/auth'
 import type { ConfigResponse, RateItem } from '@/types/api/pap-exchange'
 import { formatDateTime } from './shop-page-utils'
 
@@ -73,9 +74,11 @@ export function SystemPAPExchangePage() {
             <h1 className="text-xl font-semibold">{t('papExchange.title')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t('papExchange.subtitle')}</p>
           </div>
-          <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
-            {saving ? t('papExchange.messages.saving') : t('common.save')}
-          </Button>
+          <PermissionGate permission="edit_exchange_rate">
+            <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
+              {saving ? t('papExchange.messages.saving') : t('common.save')}
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -204,9 +207,11 @@ export function SystemPAPExchangePage() {
             <h2 className="text-base font-semibold">{t('papExchange.sections.rates')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('papExchange.sections.ratesSubtitle')}</p>
           </div>
-          <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
-            {saving ? t('papExchange.messages.saving') : t('common.save')}
-          </Button>
+          <PermissionGate permission="edit_exchange_rate">
+            <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
+              {saving ? t('papExchange.messages.saving') : t('common.save')}
+            </Button>
+          </PermissionGate>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">

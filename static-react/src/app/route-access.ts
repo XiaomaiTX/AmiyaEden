@@ -4,6 +4,7 @@
 }
 
 export interface RouteAccessMeta {
+  jwt?: boolean
   login?: boolean
   roles?: string[]
   corpCapabilitiesAll?: string[]
@@ -12,6 +13,16 @@ export interface RouteAccessMeta {
   requiresNewbro?: boolean
   requiresMentorMenteeEligibility?: boolean
 }
+
+export interface RouteSessionAccess {
+  isLoggedIn: boolean
+  roles: string[]
+  corpCapabilities: string[]
+  isCurrentlyNewbro: boolean
+  isMentorMenteeEligible: boolean
+}
+
+export type RouteAccessDecision = 'allow' | 'login' | 'forbidden'
 
 export function hasRouteRolePermission(userRoles: string[], requiredRoles: string[] = []) {
   if (requiredRoles.length === 0) {
@@ -54,4 +65,52 @@ export function hasCorpCapabilityPermission(
   }
 
   return true
+}
+
+function hasNonGuestRole(roles: string[]) {
+  return roles.some((role) => role !== 'guest')
+}
+
+export function evaluateRouteAccess(
+  meta: RouteAccessMeta | undefined,
+  session: RouteSessionAccess
+): RouteAccessDecision {
+  if (!meta) {
+    return 'allow'
+  }
+
+  const requiresAuthentication =
+    meta.jwt === true ||
+    meta.login === true ||
+    Boolean(meta.roles?.length) ||
+    Boolean(meta.corpCapabilitiesAll?.length) ||
+    Boolean(meta.corpCapabilitiesAny?.length) ||
+    meta.requiresNewbro === true ||
+    meta.requiresMentorMenteeEligibility === true
+
+  if (requiresAuthentication && !session.isLoggedIn) {
+    return 'login'
+  }
+
+  if (meta.login && !hasNonGuestRole(session.roles)) {
+    return 'forbidden'
+  }
+
+  if (!hasRouteRolePermission(session.roles, meta.roles)) {
+    return 'forbidden'
+  }
+
+  if (!hasCorpCapabilityPermission(session.roles, session.corpCapabilities, meta)) {
+    return 'forbidden'
+  }
+
+  if (meta.requiresNewbro && !session.isCurrentlyNewbro) {
+    return 'forbidden'
+  }
+
+  if (meta.requiresMentorMenteeEligibility && !session.isMentorMenteeEligible) {
+    return 'forbidden'
+  }
+
+  return 'allow'
 }

@@ -13,18 +13,21 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { appRouteSpecs } from '@/app/migration-routes'
-import { hasCorpCapabilityPermission } from '@/app/route-access'
+import { evaluateRouteAccess } from '@/app/route-access'
 import type { SessionSnapshot } from '@/stores'
+import type { BadgeCounts } from '@/types/api/badge'
 
 export interface ShellMenuItem {
   to: string
   labelKey: string
+  badge?: number
 }
 
 export interface ShellMenuGroup {
   labelKey: string
   icon: LucideIcon
   items: ShellMenuItem[]
+  badge?: number
 }
 
 const groupIconMap: Record<string, LucideIcon> = {
@@ -41,34 +44,16 @@ const groupIconMap: Record<string, LucideIcon> = {
   fuxiHall: UsersRound,
 }
 
-function hasNonGuestRole(roles: string[]) {
-  return roles.some((role) => role !== 'guest')
-}
-
 type SessionAccess = Pick<
   SessionSnapshot,
   'isLoggedIn' | 'roles' | 'corpCapabilities' | 'isCurrentlyNewbro' | 'isMentorMenteeEligible'
 >
 
 function canAccessRoute(route: (typeof appRouteSpecs)[number], session: SessionAccess) {
-  const { meta } = route
-  if (!meta) return true
-
-  if (meta.login && !session.isLoggedIn) return false
-  if (meta.login && !hasNonGuestRole(session.roles)) return false
-  if (meta.roles && meta.roles.length > 0 && !meta.roles.some((role) => session.roles.includes(role))) {
-    return false
-  }
-  if (!hasCorpCapabilityPermission(session.roles, session.corpCapabilities, meta)) {
-    return false
-  }
-  if (meta.requiresNewbro && !session.isCurrentlyNewbro) return false
-  if (meta.requiresMentorMenteeEligibility && !session.isMentorMenteeEligible) return false
-
-  return true
+  return evaluateRouteAccess(route.meta, session) === 'allow'
 }
 
-export function buildShellMenuGroups(session: SessionAccess) {
+export function buildShellMenuGroups(session: SessionAccess, badgeCounts: BadgeCounts = {}) {
   const grouped = new Map<string, ShellMenuGroup>()
 
   for (const route of appRouteSpecs) {
@@ -85,8 +70,14 @@ export function buildShellMenuGroups(session: SessionAccess) {
     grouped.get(route.menuGroup)?.items.push({
       to: `/${route.path}`,
       labelKey: route.titleKey,
+      badge: route.badgeKey ? badgeCounts[route.badgeKey] : undefined,
     })
   }
 
-  return Array.from(grouped.values()).filter((group) => group.items.length > 0)
+  return Array.from(grouped.values())
+    .filter((group) => group.items.length > 0)
+    .map((group) => ({
+      ...group,
+      badge: group.items.reduce((total, item) => total + (item.badge ?? 0), 0) || undefined,
+    }))
 }

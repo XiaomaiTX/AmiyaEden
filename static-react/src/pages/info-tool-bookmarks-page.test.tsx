@@ -54,7 +54,6 @@ function setRoles(roles: string[]) {
     characterName: 'Amiya',
     roles,
     corpCapabilities: ['menu.info'],
-    authList: [],
   })
 }
 

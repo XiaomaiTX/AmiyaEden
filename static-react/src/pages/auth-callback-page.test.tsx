@@ -9,7 +9,7 @@ describe('auth callback page', () => {
     sessionStorage.clear()
   })
 
-  test('hydrates session from callback token and /me', async () => {
+  test('hydrates a completed profile from callback /me even when the rolling response omits the flag', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
@@ -19,7 +19,7 @@ describe('auth callback page', () => {
             user: {
               id: 1,
               nickname: 'Amiya',
-              qq: '',
+              qq: '123456',
               discord_id: '',
               status: 1,
               role: 'admin',
@@ -43,7 +43,6 @@ describe('auth callback page', () => {
             roles: ['admin'],
             corp_capabilities: ['menu.dashboard', 'shop.order.create'],
             permissions: [],
-            profile_complete: true,
             enforce_character_esi_restriction: false,
           },
         }),
@@ -70,6 +69,7 @@ describe('auth callback page', () => {
     expect(state.characterId).toBe(1001)
     expect(state.roles).toEqual(['admin'])
     expect(state.corpCapabilities).toEqual(['menu.dashboard', 'shop.order.create'])
+    expect(state.profileComplete).toBe(true)
   })
 
   test('shows error when token is missing', async () => {

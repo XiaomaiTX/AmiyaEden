@@ -14,6 +14,17 @@ function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
   return response.data
 }
 
+function resolveProfileComplete(data: MeResponse) {
+  if (typeof data.profile_complete === 'boolean') {
+    return data.profile_complete
+  }
+
+  const nickname = data.user.nickname?.trim() ?? ''
+  const qq = data.user.qq?.trim() ?? ''
+  const discordId = data.user.discord_id?.trim() ?? ''
+  return nickname.length > 0 && (qq.length > 0 || discordId.length > 0)
+}
+
 export async function getEveSSOLoginURL(scopes?: string[]) {
   const callbackURL = `${window.location.origin}/#/auth/callback`
 
@@ -57,7 +68,7 @@ export async function fetchGetUserInfo() {
     nickname: user.nickname ?? '',
     qq: user.qq ?? '',
     discordId: user.discord_id ?? '',
-    profileComplete: data.profile_complete,
+    profileComplete: resolveProfileComplete(data),
     enforceCharacterESIRestriction: data.enforce_character_esi_restriction !== false,
     isCurrentlyNewbro:
       typeof data.is_currently_newbro === 'boolean' ? data.is_currently_newbro : undefined,

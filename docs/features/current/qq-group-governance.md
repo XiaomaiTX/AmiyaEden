@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-27
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/service/sys_config.go
   - server/internal/handler/qq_governance_onebot.go
@@ -11,6 +11,9 @@ source_of_truth:
   - server/internal/service/qq_governance_worker.go
   - server/internal/repository/qq_governance.go
   - server/internal/model/qq_governance.go
+  - static-react/src/api/qq-governance.ts
+  - static-react/src/types/api/qq-governance.ts
+  - static-react/src/pages/system-qq-governance-page.tsx
 ---
 
 # QQ 群治理
@@ -52,6 +55,6 @@ source_of_truth:
 
 ## 前端实现映射（迁移期）
 
-- 当前管理行为由 Vue `static/` 侧承接。
-- React 尚未承接 `/system/qq-governance`，该页面、API wrapper 和类型出口属于迁移基线的范围漂移追赶项。
-- OneBot 安全约束、日志保留和超级管理员边界不因前端迁移而改变。
+- 当前完整管理行为仍由 Vue `static/` 侧承接。
+- React 已承接路由、API、模块化类型和基础业务页，覆盖群快照、策略只读列表、任务重试/断连恢复、告警确认、指标/连接、风控重置和全局设置。
+- React 尚未对齐策略 CRUD、成员状态、判断记录、军团搜索与完整限流观测，因此迁移基线仍标记为“部分对齐”。OneBot 安全约束、日志保留和超级管理员边界不因前端迁移而改变。

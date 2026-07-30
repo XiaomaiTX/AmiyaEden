@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-07-23
+last_reviewed: 2026-07-30
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
@@ -11,6 +11,10 @@ source_of_truth:
   - static-react/src/app/migration-routes.ts
   - static-react/src/app/route-access.ts
   - static-react/src/auth/route-access-gate.tsx
+  - static-react/src/auth/permission-gates.tsx
+  - static-react/src/app/page-loaders.ts
+  - static-react/src/layout/worktab-bar.tsx
+  - static-react/src/stores/worktab-store.ts
   - static-react/src/hooks/use-corp-capability.ts
 ---
 
@@ -38,7 +42,9 @@ Vue 静态模块主要位于：
 
 - `static/src/router/routes/staticRoutes.ts`
 
-React 迁移侧的路由源是 `static-react/src/app/migration-routes.ts`，由 `static-react/src/app/router.tsx` 注册，并通过 `RouteAccessGate` 消费登录、角色、`authList` 和 `corpCapabilitiesAll` / `corpCapabilitiesAny` 元数据。Vue 与 React 共用同一份 enforced capability 目录与同一套 AND/OR 语义。
+React 迁移侧的路由源是 `static-react/src/app/migration-routes.ts`，由 `static-react/src/app/router.tsx` 注册，并通过 `RouteAccessGate` 消费登录、角色、`authList` 和 `corpCapabilitiesAll` / `corpCapabilitiesAny` 元数据。业务页面通过 `page-loaders.ts` 动态导入，静态登录/错误页保持同步加载，避免单一入口包包含全部业务页面。Vue 与 React 共用同一份 enforced capability 目录与同一套 AND/OR 语义。
+
+React WorkTab 由路由声明派生，保存 route id、完整 pathname/search、固定状态和所属人物。相同 route id 复用同一标签并更新 URL；切换人物时清空旧人物标签。React 不通过隐藏挂载页面树模拟 Vue KeepAlive，筛选、分页等可恢复状态应进入 URL，真正跨页状态才进入 Zustand。
 
 两套前端必须遵守同一组行为约定：
 
@@ -80,7 +86,7 @@ React 迁移侧的路由源是 `static-react/src/app/migration-routes.ts`，由 
 | 调整伏羲币余额 | `system.wallet.adjust` | 路由只要求 `system.wallet.read` |
 | 审计日志导出 | `system.audit.export` | 路由只要求 `system.audit.read` |
 
-Vue 通过 `v-auth` 或权限 hook 消费 `meta.authList` 语义；Stage 0A 已迁移页面的 React 按钮 capability 通过 `useCorpCapability` 消费同一套能力语义。通用 `PermissionGate` / `usePermission` 仍属于后续迁移基础设施，不再作为 0A capability parity 缺口。
+Vue 通过 `v-auth` 或权限 hook 消费 `meta.authList` 语义。React 由叶子 `RouteAccessGate` 把当前路由 `authList` 注入 `RoutePermissionProvider`，页面通过 `PermissionGate` / `usePermission` 消费；权限列表不进入 session，也不会跨路由持久化。`RoleGate` / `useRole` 对应 Vue `v-roles`。按钮 capability 仍通过 `useCorpCapability` 消费军团能力，两类权限不能混用。
 
 ## 当前不变量
 

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/eve_sso.go
@@ -13,6 +13,10 @@ source_of_truth:
   - static/src/router/guards/beforeEach.ts
   - static/src/views/auth
   - static/src/views/dashboard/characters
+  - static-react/src/api/auth.ts
+  - static-react/src/auth/session-bootstrap.tsx
+  - static-react/src/auth/profile-lock.ts
+  - static-react/src/pages/dashboard-characters-page.tsx
 ---
 
 # 认证与人物绑定
@@ -68,10 +72,11 @@ source_of_truth:
 
 - 当前受支持的产品登录方式是 EVE SSO
 - `register` 页面源码仍存在，但不是当前产品规范；`forget-password` 页面已移除
-- `/api/v1/me` 是前端启动权限上下文的关键接口
+- `/api/v1/me` 是前端启动权限上下文的关键接口；`GET` 必须返回 `profile_complete`，由后端按昵称和至少一种联系方式计算
 - `/api/v1/me` 不是"非 guest 才可访问"的业务接口，而是登录后立即可用的自助上下文接口
 - `/api/v1/me` 的自助注销能力只针对当前登录用户，不等同于 `/api/v1/system/user/:id` 管理端删除
 - 当前登录后必须完成昵称与联系方式资料，才允许继续访问其他业务页面
+- React 在后端滚动部署期间若暂时未收到 `profile_complete`，会按昵称与 QQ / Discord ID 重新计算，避免持久化会话误判资料未完成
 - QQ / Discord ID 的默认管理入口是 `/api/v1/me`；管理员侧 `/api/v1/system/user/:id` 仅允许 `super_admin` 维护非 `super_admin` 用户的联系方式
 - 当前登录后若系统配置 `auth.enforce_character_esi_restriction = true`，则还必须保证所有已绑定人物的 ESI 有效，才允许离开 `/dashboard/characters`
 - 无论系统配置是否开启，主人物 ESI 已失效都会强制前端停留在 `/dashboard/characters`，直到主人物重新授权；不会自动退出登录
@@ -95,5 +100,5 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - 人物资料、绑定、主人物切换、ESI 锁定和自助注销是双端必须保持一致的行为，不限定为“旧 Vue 页面”。
-- Vue 实现位于 `static/src`；React 实现位于 `static-react/src/api/auth.ts`、`static-react/src/pages/dashboard-characters-page.tsx` 及对应路由。
-- 顶层 `/characters` 入口仍属于 React 范围漂移追赶项，以迁移基线为准。
+- Vue 实现位于 `static/src`；React 实现位于 `static-react/src/api/auth.ts`、启动 session bootstrap、资料锁 helper、人物页及对应路由。
+- React 已注册顶层 JWT `/characters`，并将其作为资料或 ESI 锁定的自动落点；锁定原因由人物页本地化展示。冻结范围内已有的 `/dashboard/characters` 复用同一修复页。

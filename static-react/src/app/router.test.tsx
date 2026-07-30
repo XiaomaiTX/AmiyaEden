@@ -1,5 +1,6 @@
 ﻿import { render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
+import { act } from '@testing-library/react'
 import { appRoutes } from '@/app/router'
 import { dispatchUnauthorized } from '@/auth'
 import { useSessionStore } from '@/stores'
@@ -67,7 +68,6 @@ describe('router auth and route meta access flow', () => {
       characterName: null,
       roles: [],
       corpCapabilities: [],
-      authList: [],
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,
       hydratedAt: null,
@@ -84,14 +84,16 @@ describe('router auth and route meta access flow', () => {
     expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
   })
 
-  test('redirects to auth login when visiting tool bookmarks without a session', () => {
+  test('redirects to auth login when visiting tool bookmarks without a session', async () => {
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/info/tool-bookmarks'],
     })
 
     render(<RouterProvider router={router} />)
 
-    expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
+    })
   })
 
   test('renders tool bookmarks when the user has the menu.info capability', async () => {
@@ -102,7 +104,6 @@ describe('router auth and route meta access flow', () => {
       characterName: 'Amiya',
       roles: ['user'],
       corpCapabilities: ['menu.info'],
-      authList: [],
     })
 
     const router = createMemoryRouter(appRoutes, {
@@ -128,14 +129,14 @@ describe('router auth and route meta access flow', () => {
     })
   })
 
-  test('renders home page when session is logged in', () => {
+  test('redirects the authenticated root route to the dashboard console', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
       accessToken: 'token-123',
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
-      authList: ['route:dashboard:view'],
+      corpCapabilities: ['menu.dashboard'],
     })
 
     const router = createMemoryRouter(appRoutes, {
@@ -144,7 +145,9 @@ describe('router auth and route meta access flow', () => {
 
     render(<RouterProvider router={router} />)
 
-    expect(screen.getByText('AmiyaEden React Shell')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/dashboard/console')
+    })
   })
 
   test('redirects to 403 when role does not match route meta roles', async () => {
@@ -154,11 +157,10 @@ describe('router auth and route meta access flow', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['guest'],
-      authList: [],
     })
 
     const router = createMemoryRouter(appRoutes, {
-      initialEntries: ['/admin-demo'],
+      initialEntries: ['/system/basic-config'],
     })
 
     render(<RouterProvider router={router} />)
@@ -175,7 +177,6 @@ describe('router auth and route meta access flow', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['member'],
-      authList: [],
     })
 
     const router = createMemoryRouter(appRoutes, {
@@ -189,29 +190,6 @@ describe('router auth and route meta access flow', () => {
     })
   })
 
-  test('consumes route authList meta on admin route', async () => {
-    useSessionStore.getState().setSessionSnapshot({
-      isLoggedIn: true,
-      accessToken: 'token-123',
-      characterId: 1001,
-      characterName: 'Amiya',
-      roles: ['admin'],
-      authList: [],
-    })
-
-    const router = createMemoryRouter(appRoutes, {
-      initialEntries: ['/admin-demo'],
-    })
-
-    render(<RouterProvider router={router} />)
-
-    await waitFor(() => {
-      expect(screen.getByText('Admin Route Demo')).toBeInTheDocument()
-    })
-
-    expect(useSessionStore.getState().authList).toEqual(['approve_order', 'edit_exchange_rate'])
-  })
-
   test('navigates to auth login when unauthorized event is dispatched', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
@@ -219,7 +197,6 @@ describe('router auth and route meta access flow', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
-      authList: ['route:dashboard:view'],
     })
 
     const router = createMemoryRouter(appRoutes, {
@@ -227,7 +204,9 @@ describe('router auth and route meta access flow', () => {
     })
 
     render(<RouterProvider router={router} />)
-    dispatchUnauthorized({ reason: 'manual' })
+    act(() => {
+      dispatchUnauthorized({ reason: 'manual' })
+    })
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'EVE SSO 登录' })).toBeInTheDocument()
@@ -252,7 +231,6 @@ describe('router auth and route meta access flow', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.operation'],
-      authList: [],
     })
 
     const router = createMemoryRouter(appRoutes, {
@@ -274,7 +252,6 @@ describe('router auth and route meta access flow', () => {
       characterName: 'Amiya',
       roles: ['member'],
       corpCapabilities: [],
-      authList: [],
       isCurrentlyNewbro: false,
     })
 
@@ -286,6 +263,55 @@ describe('router auth and route meta access flow', () => {
 
     await waitFor(() => {
       expect(screen.getByText('403 Forbidden')).toBeInTheDocument()
+    })
+  })
+
+  test('redirects locked profiles to the JWT characters route with localized reasons', async () => {
+    useSessionStore.getState().setSessionSnapshot({
+      isLoggedIn: true,
+      accessToken: 'token-123',
+      characterId: 1001,
+      characterName: 'Amiya',
+      roles: ['user'],
+      corpCapabilities: ['menu.info'],
+      profileComplete: false,
+      primaryCharacterId: 1001,
+      characters: [{ characterId: 1001, tokenInvalid: false }],
+    })
+
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/info/tool-bookmarks'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/characters')
+      expect(router.state.location.state).toEqual({
+        profileLockReasons: ['profile_incomplete'],
+      })
+    })
+  })
+
+  test('allows a completed profile to access a protected route', async () => {
+    useSessionStore.getState().setSessionSnapshot({
+      isLoggedIn: true,
+      accessToken: 'token-123',
+      characterId: 1001,
+      characterName: 'Amiya',
+      roles: ['user'],
+      corpCapabilities: ['menu.info'],
+      profileComplete: true,
+      primaryCharacterId: 1001,
+      characters: [{ characterId: 1001, tokenInvalid: false }],
+    })
+
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/info/tool-bookmarks'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/info/tool-bookmarks')
     })
   })
 
@@ -351,7 +377,6 @@ describe('router auth and route meta access flow', () => {
         characterId: 1001,
         characterName: 'Amiya',
         roles: ['admin'],
-        authList: [],
       })
 
       const router = createMemoryRouter(appRoutes, {

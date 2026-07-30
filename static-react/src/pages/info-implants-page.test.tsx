@@ -12,7 +12,6 @@ describe('info implants page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.info'],
-      authList: [],
     })
   })
 

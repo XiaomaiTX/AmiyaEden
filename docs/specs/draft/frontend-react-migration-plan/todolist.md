@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-23
+last_reviewed: 2026-07-30
 source_of_truth:
   - static/src
   - static-react/src
@@ -51,11 +51,11 @@ source_of_truth:
 
 Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐：
 
-- [ ] `/characters` 顶层路由对齐（与 `dashboard/characters` 共享页面，但路由路径独立，2026-05-22 Vue 落地）
-- [ ] `/dashboard/fuel-officer-structures` React 落地（`super_admin/fuel_officer`，2026-05-11 Vue 落地）
-- [ ] `/dashboard/galaxy-registry` React 落地（`super_admin/admin/captain/user`，2026-06-04 Vue 落地）
+- [x] `/characters` 顶层路由对齐（与 `dashboard/characters` 共享页面；作为资料/ESI 锁定唯一落点）
+- [x] `/dashboard/fuel-officer-structures` React 落地（`super_admin/fuel_officer`，含分页、加载/空/错误态）
+- [~] `/dashboard/galaxy-registry` React 基础页、路由、API 与类型已落地；预计结束时间修改、管理员星系配置、人工校验、分析与浏览器超时通知仍待完整同构
 - [x] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地；普通用户读取启用项，管理员可维护全部书签）
-- [ ] `/system/qq-governance` React 落地（`super_admin`，2026-07-12 Vue 落地）
+- [~] `/system/qq-governance` React 基础页、路由、API 与类型已落地；规则 CRUD、成员/判断记录、军团搜索和完整限流观测仍待完整同构
 - [x] `/fuxi-hall/leadership`、`/fuxi-hall/contributors`、`/fuxi-hall/manage` React 落地（取代旧 `hall-of-fame` 模块，2026-05-12 Vue 落地）
 - [x] 移除 React 侧历史遗留的 `hall-of-fame/{temple, manage, current-manage}` 三条 stub（Vue 已删除）
 
@@ -78,11 +78,19 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 
 壳层与权限基座已落地，但以下 Vue 既有能力在 React 侧尚未实现，替换发布前必须补齐：
 
-- [ ] WorkTab 多标签页（Vue `worktabStore` + `ArtWorkTab` 对应能力，含固定、批量关闭、KeepAlive 缓存）
-- [ ] `PermissionGate` / `usePermission`（对应 Vue `v-auth`，当前 Vue 侧仅 `system/pap-exchange` 模板使用 `v-auth`）
-- [ ] `RoleGate` / `useRole`（对应 Vue `v-roles`，Vue 侧当前实际无模板引用，可降优先级）
-- [ ] Zustand 业务 store 补齐：`user`、`menu`、`worktab`、`setting`、`table`、`badge`、`sys-config`（当前 React 仅有 `session` 与 `preference` 两个 store）
+- [x] WorkTab 多标签页（固定、批量关闭、按人物隔离、完整 URL 恢复；React 采用 URL/store 恢复，不保留隐藏挂载的页面树）
+- [x] `PermissionGate` / `usePermission`（对应 Vue `v-auth`；权限由当前叶子路由 Context 提供，不写入 session）
+- [x] `RoleGate` / `useRole`（对应 Vue `v-roles`）
+- [~] Zustand 业务 store：已完成 `session`、`preference`、`worktab`、`badge`；`user/menu/setting/table/sys-config` 仅在出现真实跨页状态需求时继续拆分
+- [x] 共享 `DataTable` 基座（TanStack Table；统一加载/错误/空态、服务端分页、排序与选择接口）
 - [ ] React 路由守卫中间层与 `RouteRegistry/MenuProcessor` 等价能力（当前用扁平的 `RouteAccessGate` 代替，需评估是否覆盖菜单折叠/能力过滤等既有行为）
+
+## 下一步代码执行顺序（2026-07-30）
+
+1. 完成 Galaxy Registry 同构：先补齐类型与 API wrapper，再拆分状态/队长/管理员三个 Tab，最后迁移超时通知 helper；覆盖 `user/captain/admin/super_admin` 四类角色回归。
+2. 完成 QQ Governance 同构：先补齐 policy/member/review/corporation/rate-limit 契约，再实现规则编辑和运行监控；所有写操作继续只做前端 UX gate，后端 `super_admin + system.manage` 保持最终边界。
+3. 将新增复杂表格优先迁入共享 `DataTable`，存量页面只在业务变更触及时渐进迁移，避免无关大面积重写。
+4. 完成替换发布门槛：生产构建体积基线、关键路由冒烟、四角色矩阵、React/Vue 同契约检查与回切演练。
 
 ## 页面迁移完成定义（详细 DoD）
 

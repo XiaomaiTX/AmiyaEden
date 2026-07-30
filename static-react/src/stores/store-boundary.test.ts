@@ -18,7 +18,6 @@ describe('store boundaries', () => {
       characterName: null,
       roles: [],
       corpCapabilities: [],
-      authList: [],
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,
       hydratedAt: null,
@@ -44,7 +43,6 @@ describe('store boundaries', () => {
       characterId: 1001,
       characterName: 'Amiya',
       roles: ['admin'],
-      authList: ['route:dashboard:view'],
     })
 
     let state = useSessionStore.getState()
@@ -55,7 +53,6 @@ describe('store boundaries', () => {
     useSessionStore.getState().clearSession()
     state = useSessionStore.getState()
     expect(state.isLoggedIn).toBe(false)
-    expect(state.authList).toEqual([])
   })
 })
 

@@ -33,7 +33,7 @@ export interface MeResponse {
   roles: string[]
   corp_capabilities: string[]
   permissions: string[]
-  profile_complete: boolean
+  profile_complete?: boolean
   enforce_character_esi_restriction: boolean
   is_currently_newbro?: boolean | null
   is_mentor_mentee_eligible?: boolean | null

@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "@fontsource-variable/geist": "^5.2.8",
+        "@tanstack/react-table": "^8.21.3",
         "@tiptap/extension-image": "^3.29.2",
         "@tiptap/extension-link": "^3.29.2",
         "@tiptap/extension-underline": "^3.29.2",

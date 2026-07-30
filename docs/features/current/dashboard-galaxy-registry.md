@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/galaxy_registry.go
@@ -14,6 +14,9 @@ source_of_truth:
   - static/src/api/galaxy-registry.ts
   - static/src/views/dashboard/galaxy-registry/index.vue
   - static/src/hooks/galaxy-registry/useGalaxyRegistryTimeoutNotification.ts
+  - static-react/src/api/galaxy-registry.ts
+  - static-react/src/types/api/galaxy-registry.ts
+  - static-react/src/pages/dashboard-galaxy-registry-page.tsx
 ---
 
 # Dashboard 星系登记
@@ -113,6 +116,6 @@ source_of_truth:
 
 ## 前端实现映射（迁移期）
 
-- 当前行为由 Vue `static/src` 实现。
-- React 尚未建立该页面、API wrapper 和类型出口；它属于迁移基线中的范围漂移追赶项。
-- 在 React 落地前，不得把本页面标记为 React 已迁移，也不得从当前行为文档删除后端权限和通知不变量。
+- Vue `static/src` 仍承接本页完整行为。
+- React 已建立路由、API、模块化类型和基础业务页，覆盖状态总览、队长登记/结束、管理员登记列表、强制结束与重新校验。
+- React 尚未对齐预计结束时间修改、本人历史、管理员星系配置、人工校验、分析面板和浏览器超时通知，因此在迁移基线中仍标记为“部分对齐”，不得视为完成 DoD。

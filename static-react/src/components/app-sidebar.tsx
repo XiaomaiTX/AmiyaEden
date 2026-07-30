@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import type { ComponentProps } from "react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -16,9 +16,9 @@ import { TerminalIcon } from "lucide-react"
 import { NavLink } from "react-router-dom"
 import { useI18n } from "@/i18n"
 import { buildShellMenuGroups } from "@/layout/menu-config"
-import { usePreferenceStore, useSessionStore } from "@/stores"
+import { useBadgeStore, usePreferenceStore, useSessionStore } from "@/stores"
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const { t } = useI18n()
   const locale = usePreferenceStore((state) => state.locale)
   const characterName = useSessionStore((state) => state.characterName)
@@ -27,19 +27,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const corpCapabilities = useSessionStore((state) => state.corpCapabilities)
   const isCurrentlyNewbro = useSessionStore((state) => state.isCurrentlyNewbro)
   const isMentorMenteeEligible = useSessionStore((state) => state.isMentorMenteeEligible)
+  const badgeCounts = useBadgeStore((state) => state.counts)
 
-  const navMainItems = buildShellMenuGroups({
-    isLoggedIn,
-    roles,
-    corpCapabilities,
-    isCurrentlyNewbro,
-    isMentorMenteeEligible,
-  }).map((group) => ({
+  const navMainItems = buildShellMenuGroups(
+    {
+      isLoggedIn,
+      roles,
+      corpCapabilities,
+      isCurrentlyNewbro,
+      isMentorMenteeEligible,
+    },
+    badgeCounts
+  ).map((group) => ({
     title: group.labelKey,
     icon: <group.icon />,
+    badge: group.badge,
     items: group.items.map((item) => ({
       title: item.labelKey,
       url: item.to,
+      badge: item.badge,
     })),
   }))
 
@@ -68,8 +74,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser
           user={{
-            name: characterName ?? "Guest",
-            email: roles.join(", ") || "guest",
+            name: characterName ?? t("shell.guest"),
+            email:
+              roles.map((role) => t(`userAdmin.roles.${role}`)).join(", ") ||
+              t("userAdmin.roles.guest"),
             avatar: "",
           }}
         />

@@ -12,7 +12,6 @@ describe('ticket my tickets page', () => {
       characterName: 'Amiya',
       roles: ['admin'],
       corpCapabilities: ['menu.ticket'],
-      authList: [],
     })
   })
 

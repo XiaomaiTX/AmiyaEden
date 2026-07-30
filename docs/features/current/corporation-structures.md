@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-07-30
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -23,6 +23,9 @@ source_of_truth:
   - static/src/api/corporation-structures.ts
   - static/src/views/dashboard/corporation-structures
   - static/src/store/modules/badge.helpers.ts
+  - static-react/src/api/corporation-structures.ts
+  - static-react/src/pages/dashboard-corporation-structures-page.tsx
+  - static-react/src/pages/dashboard-fuel-officer-structures-page.tsx
 ---
 
 # 军团建筑管理
@@ -141,4 +144,4 @@ source_of_truth:
 
 - Vue 当前实现位于 `static/src`。
 - React 已承接 `/dashboard/corporation-structures`，对应 API 和页面状态以 React 迁移基线为准。
-- `fuel-officer-structures` 是 Vue 后续新增、React 尚未迁移的范围漂移项；这属于迁移范围，不属于 Stage 0A capability/menu parity 缺口。
+- `fuel-officer-structures` 已由 Vue 与 React 双端承接；React 使用共享 `DataTable` 和同一 `my-assigned-list` 契约。

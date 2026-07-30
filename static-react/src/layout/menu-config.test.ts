@@ -152,4 +152,21 @@ describe('menu config', () => {
     expect(items).toContain('/newbro/captain')
     expect(items).toContain('/newbro/mentor')
   })
+
+  test('maps leaf badge counts and aggregates them into the parent menu', () => {
+    const groups = buildShellMenuGroups(
+      {
+        isLoggedIn: true,
+        roles: ['mentor'],
+        corpCapabilities: ['menu.newbro'],
+        isCurrentlyNewbro: false,
+        isMentorMenteeEligible: false,
+      },
+      { mentor_pending_applications: 4 }
+    )
+    const newbro = groups.find((group) => group.labelKey === 'nav.group.newbro')
+
+    expect(newbro?.items.find((item) => item.to === '/newbro/mentor')?.badge).toBe(4)
+    expect(newbro?.badge).toBe(4)
+  })
 })
