@@ -65,6 +65,13 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 - [x] 表格与分页基座 -> `DataTable` + TanStack Table（页面可渐进迁移，复杂列显隐偏好仍按需求补充）
 - [ ] 日期、上传、富文本、图表、拖拽等高耦合组件 -> 按页面需要逐项补齐，暂无统一方案
 
+## shadcn/ui 收敛基元（2026-07-30）
+
+- [x] `Table`、`Field`、`Label`、`Checkbox` -> React 本地 shadcn/ui 基元
+- [x] `DataTable` -> 组合 `Table`、`Button`、`NativeSelect`，保留 TanStack server-side pagination/sorting/selection 接口
+- [x] `ShopDialog` -> shadcn `Dialog`，覆盖既有商店、系统和舰队调用点
+- [~] 页面级原生组件债务 -> 以 `ui-standardization-backlog.md` 为唯一分批清单；本轮不启用 CI 阻断
+
 ## 商店迁移（C-1）
 
 - [x] `shop/browse` -> React `ShopBrowsePage`（商品卡片、购买弹窗、我的订单）

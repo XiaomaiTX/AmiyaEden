@@ -8,6 +8,8 @@ import {
   type SortingState,
 } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export interface DataTablePagination {
   page: number
@@ -20,6 +22,8 @@ export interface DataTablePagination {
   nextLabel: string
   pageSizeLabel: string
 }
+
+export const DEFAULT_LEDGER_PAGE_SIZE = 200
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, unknown>[]
@@ -73,25 +77,29 @@ export function DataTable<TData>({
   const pageCount = pagination
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
     : 1
+  const pageSizeOptions = pagination?.pageSizeOptions ??
+    (variant === 'ledger' ? [DEFAULT_LEDGER_PAGE_SIZE] : [10, 20, 50, 100, 200])
 
   return (
     <div className={variant === 'ledger' ? 'space-y-3' : 'space-y-4'}>
-      <div className="overflow-x-auto rounded-md border">
-        <table className="min-w-full text-sm">
-          <thead className="bg-muted/50">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th
+                  <TableHead
                     key={header.id}
                     className="whitespace-nowrap px-3 py-2 text-left font-medium"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder ? null : onSortingChange &&
                       header.column.getCanSort() ? (
-                      <button
+                      <Button
                         type="button"
-                        className="flex items-center gap-1"
+                        variant="ghost"
+                        size="sm"
+                        className="-ml-2 h-7 gap-1 px-2"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
@@ -102,52 +110,51 @@ export function DataTable<TData>({
                               ? '↓'
                               : '↕'}
                         </span>
-                      </button>
+                      </Button>
                     ) : (
                       flexRender(header.column.columnDef.header, header.getContext())
                     )}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </thead>
-          <tbody>
+          </TableHeader>
+          <TableBody>
             {loading || error || table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td className="px-3 py-8 text-center text-muted-foreground" colSpan={columns.length}>
+              <TableRow>
+                <TableCell className="py-8 text-center text-muted-foreground" colSpan={columns.length}>
                   {loading ? loadingText : error || emptyText}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-t hover:bg-muted/30">
+                <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2 align-top">
+                    <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {pagination ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{pagination.pageSizeLabel}</span>
-            <select
-              className="h-9 rounded-md border bg-background px-2"
+            <NativeSelect
               value={pagination.pageSize}
               onChange={(event) => pagination.onPageSizeChange(Number(event.target.value))}
             >
-              {(pagination.pageSizeOptions ?? [10, 20, 50, 100, 200]).map((size) => (
-                <option key={size} value={size}>
+              {pageSizeOptions.map((size) => (
+                <NativeSelectOption key={size} value={size}>
                   {size}
-                </option>
+                </NativeSelectOption>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <div className="flex items-center gap-2">
             <Button

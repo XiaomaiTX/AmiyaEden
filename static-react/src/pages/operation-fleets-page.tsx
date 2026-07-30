@@ -12,7 +12,11 @@ import {
 } from '@/api/fleet'
 import { fetchFleetConfigList } from '@/api/fleet-config'
 import { Button } from '@/components/ui/button'
+import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { Input } from '@/components/ui/input'
+import { NativeSelect } from '@/components/ui/native-select'
+import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import type { EveCharacter } from '@/types/api/auth'
@@ -92,8 +96,6 @@ export function OperationFleetsPage() {
 
   const canManageFleet = roles.some((role) => ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role))
   const canDeleteFleet = roles.some((role) => ['super_admin', 'admin'].includes(role))
-
-  const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -275,6 +277,41 @@ export function OperationFleetsPage() {
     [t]
   )
 
+  const columns = useMemo<ColumnDef<FleetItem>[]>(
+    () => [
+      {
+        accessorKey: 'title',
+        header: t('fleet.fields.title'),
+        cell: ({ row }) => (
+          <>
+            <Button type="button" variant="link" className="h-auto p-0 font-medium" onClick={() => navigate(`/operation/fleet-detail/${row.original.id}`)}>
+              {row.original.title}
+            </Button>
+            <div className="line-clamp-2 text-xs text-muted-foreground">{row.original.description || '-'}</div>
+          </>
+        ),
+      },
+      { accessorKey: 'importance', header: t('fleet.fields.importance'), cell: ({ row }) => <ShopBadge className={importanceBadgeClass(row.original.importance)}>{importanceLabel(row.original.importance)}</ShopBadge> },
+      { id: 'fc', header: t('fleet.fields.fc'), cell: ({ row }) => <><div>{row.original.fc_display_name || row.original.fc_character_name}</div><div className="text-xs text-muted-foreground">#{row.original.fc_character_id}</div></> },
+      { id: 'timeRange', header: t('fleet.fields.timeRange'), cell: ({ row }) => <span className="text-xs text-muted-foreground">{formatDateTime(row.original.start_at)} <span className="mx-1">~</span> {formatDateTime(row.original.end_at)}</span> },
+      { accessorKey: 'pap_count', header: t('fleet.fields.papCount') },
+      { accessorKey: 'updated_at', header: t('common.updatedAt'), cell: ({ row }) => formatDateTime(row.original.updated_at) },
+      {
+        id: 'actions',
+        header: t('common.operation'),
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/operation/fleet-detail/${row.original.id}`)}>{t('fleet.manage.detail')}</Button>
+            {canManageFleet ? <Button type="button" size="sm" variant="outline" onClick={() => openEditDialog(row.original)}>{t('common.edit')}</Button> : null}
+            {canManageFleet ? <Button type="button" size="sm" variant="outline" onClick={() => void handleIssuePap(row.original)} disabled={papFleetId === row.original.id}>{t('fleet.pap.issue')}</Button> : null}
+            {canDeleteFleet ? <Button type="button" size="sm" variant="outline" onClick={() => void handleDelete(row.original)}>{t('common.delete')}</Button> : null}
+          </div>
+        ),
+      },
+    ],
+    [canDeleteFleet, canManageFleet, handleDelete, handleIssuePap, importanceLabel, navigate, openEditDialog, papFleetId, t]
+  )
+
   return (
     <section className="space-y-4">
       <div className="rounded-lg border bg-card p-5">
@@ -286,8 +323,7 @@ export function OperationFleetsPage() {
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              <NativeSelect
                 value={importance}
                 onChange={(event) => {
                   setImportance(event.target.value)
@@ -298,7 +334,7 @@ export function OperationFleetsPage() {
                 <option value="strat_op">{importanceLabel('strat_op')}</option>
                 <option value="cta">{importanceLabel('cta')}</option>
                 <option value="other">{importanceLabel('other')}</option>
-              </select>
+              </NativeSelect>
             </label>
             <Button type="button" variant="outline" onClick={() => setRefreshSeed((current) => current + 1)}>
               {t('common.refresh')}
@@ -313,136 +349,7 @@ export function OperationFleetsPage() {
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {loading ? <p className="text-sm text-muted-foreground">{t('fleet.manage.loading')}</p> : null}
 
-      <div className="overflow-hidden rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">
-          {t('fleet.manage.title')} ({total})
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('fleet.fields.title')}</th>
-                <th className="px-3 py-2">{t('fleet.fields.importance')}</th>
-                <th className="px-3 py-2">{t('fleet.fields.fc')}</th>
-                <th className="px-3 py-2">{t('fleet.fields.timeRange')}</th>
-                <th className="px-3 py-2">{t('fleet.fields.papCount')}</th>
-                <th className="px-3 py-2">{t('common.updatedAt')}</th>
-                <th className="px-3 py-2">{t('common.operation')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fleets.map((fleet) => (
-                <tr key={fleet.id} className="border-b">
-                  <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      className="font-medium text-left text-primary hover:underline"
-                      onClick={() => navigate(`/operation/fleet-detail/${fleet.id}`)}
-                    >
-                      {fleet.title}
-                    </button>
-                    <div className="line-clamp-2 text-xs text-muted-foreground">{fleet.description || '-'}</div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <ShopBadge className={importanceBadgeClass(fleet.importance)}>
-                      {importanceLabel(fleet.importance)}
-                    </ShopBadge>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div>{fleet.fc_display_name || fleet.fc_character_name}</div>
-                    <div className="text-xs text-muted-foreground">#{fleet.fc_character_id}</div>
-                  </td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground">
-                    {formatDateTime(fleet.start_at)} <span className="mx-1">~</span> {formatDateTime(fleet.end_at)}
-                  </td>
-                  <td className="px-3 py-2">{fleet.pap_count}</td>
-                  <td className="px-3 py-2">{formatDateTime(fleet.updated_at)}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/operation/fleet-detail/${fleet.id}`)}>
-                        {t('fleet.manage.detail')}
-                      </Button>
-                      {canManageFleet ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(fleet)}
-                        >
-                          {t('common.edit')}
-                        </Button>
-                      ) : null}
-                      {canManageFleet ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void handleIssuePap(fleet)}
-                          disabled={papFleetId === fleet.id}
-                        >
-                          {t('fleet.pap.issue')}
-                        </Button>
-                      ) : null}
-                      {canDeleteFleet ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void handleDelete(fleet)}
-                        >
-                          {t('common.delete')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!loading && fleets.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
-                    {t('fleet.manage.empty')}
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span>
-          {page}/{pageCount}
-        </span>
-        <Button type="button" variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
-          {t('welfareMy.pagination.prev')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setPage((current) => current + 1)}
-          disabled={fleets.length < pageSize || page * pageSize >= total}
-        >
-          {t('welfareMy.pagination.next')}
-        </Button>
-        <label className="flex items-center gap-2">
-          <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
-              setPage(1)
-            }}
-          >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <DataTable columns={columns} data={fleets} getRowId={(fleet) => String(fleet.id)} loading={loading} error={error} loadingText={t('fleet.manage.loading')} emptyText={t('fleet.manage.empty')} pagination={{ page, pageSize, total, onPageChange: setPage, onPageSizeChange: (nextPageSize) => { setPageSize(nextPageSize); setPage(1) }, pageSizeOptions: [10, 20, 50], previousLabel: t('welfareMy.pagination.prev'), nextLabel: t('welfareMy.pagination.next'), pageSizeLabel: t('welfareMy.pageSize') }} />
 
       <ShopDialog
         open={dialogOpen}
@@ -481,16 +388,15 @@ export function OperationFleetsPage() {
           </label>
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.description')}</span>
-            <textarea
-              className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+            <Textarea
+              className="min-h-24"
               value={form.description}
               onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            <NativeSelect className="w-full"
               value={form.importance}
               onChange={(event) =>
                 setForm((current) => ({
@@ -502,7 +408,7 @@ export function OperationFleetsPage() {
               <option value="strat_op">{importanceLabel('strat_op')}</option>
               <option value="cta">{importanceLabel('cta')}</option>
               <option value="other">{importanceLabel('other')}</option>
-            </select>
+            </NativeSelect>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.papCount')}</span>
@@ -515,8 +421,7 @@ export function OperationFleetsPage() {
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fc')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            <NativeSelect className="w-full"
               value={String(form.character_id)}
               onChange={(event) =>
                 setForm((current) => ({
@@ -531,12 +436,11 @@ export function OperationFleetsPage() {
                   {character.character_name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fleetConfig')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            <NativeSelect className="w-full"
               value={String(form.fleet_config_id)}
               onChange={(event) =>
                 setForm((current) => ({
@@ -551,12 +455,11 @@ export function OperationFleetsPage() {
                   {config.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.autoSrpMode')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            <NativeSelect className="w-full"
               value={form.auto_srp_mode}
               onChange={(event) =>
                 setForm((current) => ({
@@ -568,7 +471,7 @@ export function OperationFleetsPage() {
               <option value="disabled">{t('fleet.autoSrp.disabled')}</option>
               <option value="submit_only">{t('fleet.autoSrp.submitOnly')}</option>
               <option value="auto_approve">{t('fleet.autoSrp.autoApprove')}</option>
-            </select>
+            </NativeSelect>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.startAt')}</span>
@@ -588,10 +491,9 @@ export function OperationFleetsPage() {
           </label>
           {!editingFleet ? (
             <label className="flex items-center gap-2 md:col-span-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={form.send_ping}
-                onChange={(event) => setForm((current) => ({ ...current, send_ping: event.target.checked }))}
+                onCheckedChange={(checked) => setForm((current) => ({ ...current, send_ping: checked === true }))}
               />
               <span className="text-sm text-muted-foreground">{t('fleet.fields.sendPing')}</span>
             </label>

@@ -1,6 +1,6 @@
 # AmiyaEden React frontend
 
-`static-react/` is the React 19 + TypeScript + Vite migration frontend. During the migration window it is built, verified, and deployed independently from the production Vue frontend in `static/`.
+`static-react/` is the React 19 + TypeScript + Vite frontend. It is built, verified, and deployed as the independent `frontend-react` image alongside the Vue `frontend` image in `static/`.
 
 ## Toolchain
 

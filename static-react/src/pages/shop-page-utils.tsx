@@ -1,5 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ReactNode } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 export function getErrorMessage(error: unknown, fallback: string) {
@@ -121,35 +129,16 @@ export function ShopDialog({
   closeLabel: string
   widthClass?: string
 }) {
-  if (!open) {
-    return null
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        aria-label={title}
-        aria-modal="true"
-        className={cn('w-full rounded-lg border bg-card p-5 shadow-xl', widthClass)}
-        role="dialog"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">{title}</h2>
-            {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
-          </div>
-          <button
-            type="button"
-            className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
-            aria-label={closeLabel}
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-        <div className="mt-4 space-y-4">{children}</div>
-        {footer ? <div className="mt-5 flex justify-end gap-3">{footer}</div> : null}
-      </div>
-    </div>
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className={cn('max-h-[calc(100vh-2rem)] overflow-y-auto', widthClass)} closeLabel={closeLabel}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        <div className="space-y-4">{children}</div>
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   )
 }

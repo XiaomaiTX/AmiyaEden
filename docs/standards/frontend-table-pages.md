@@ -15,7 +15,7 @@ source_of_truth:
 ## 默认采用
 
 - 分页的页面级表格使用当前前端的共享 table hook/store 或等价封装。
-- 表格区块使用当前前端的共享 table 组件；Vue 默认是 `ArtTable`，React 迁移期间不得为每个页面重复创建同一套行为。
+- 表格区块使用当前前端的共享 table 组件；Vue 默认是 `ArtTable`，React 使用 `DataTable`（TanStack 行为 + shadcn `Table` 基元），不得为每个页面重复创建同一套行为。
 - API 调用保持在对应前端的 `api/`，不得位于 view/page 内。
 - 所有用户可见文案必须本地化。
 - 保持页面组件轻量；如有帮助，可把页面级搜索区、对话框或重复的列配置抽到 `modules/`。
@@ -27,7 +27,7 @@ source_of_truth:
 账本表格：
 
 - 默认请求规模设为 `200`
-- Vue 使用 `ArtTable` 并设置 `visual-variant="ledger"`；React 使用等价的共享 ledger 预设
+- Vue 使用 `ArtTable` 并设置 `visual-variant="ledger"`；React 使用 `DataTable variant="ledger"`，其未覆盖的分页选项默认仅为 `200`
 - 除非有意覆盖共享预设，不要在本地重复声明账本分页大小或分页器布局
 
 有界的管理/配置表格：
@@ -107,6 +107,8 @@ source_of_truth:
 - 共享 table 组件无法清晰暴露的交互
 
 使用原生表格不会放宽本文档的其他规则。
+
+在 React 中，“原生表格”例外仍必须通过 `Table`、`TableHeader`、`TableBody`、`TableRow`、`TableHead` 和 `TableCell` 基元组合，不能直接书写 HTML table 标签。
 
 ## AI 核对清单
 

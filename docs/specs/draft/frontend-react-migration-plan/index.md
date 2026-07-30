@@ -18,7 +18,7 @@ source_of_truth:
 ## 草案目标
 
 - 迁移策略：`独立 React 重建 + Hash 路由 + 先保真后优化 UI`
-- 替换策略：`完成全部模块迁移与回归后，React 前端直接替换现有 Vue 前端`
+- 部署策略：`Vue frontend` 与 `React frontend-react` 保持独立镜像并行部署；不在本草稿规划入口替换或 Vue 下线
 - 目标技术栈：`Vite + React + TypeScript + React Router + shadcn/ui + Tailwind + Zustand`
 - 当前前端现状：`Vue3 + Vue Router + Pinia + Element Plus + vue-i18n`
 
@@ -26,6 +26,7 @@ source_of_truth:
 
 - 迁移总清单：`./todolist.md`
 - 组件替换列表：`./component-replacement-list.md`
+- shadcn/ui 规范收敛债务：`./ui-standardization-backlog.md`
 - 独立 React 替换迁移清单：`./coexistence-migration-todo.md`
 - API 类型契约迁移方案：`./api-contract-migration-plan.md`
 
@@ -58,7 +59,7 @@ source_of_truth:
 
 - 迁移期间，`docs/architecture/`、`docs/api/`、`docs/standards/` 和 `docs/features/current/` 描述双端必须一致的行为，并在实现映射处注明 Vue/React 状态。
 - Vue-only 的实现限制只能出现在明确的迁移阶段说明中，不得继续作为产品行为或通用工程规则。
-- 当前 React capability/menu/button parity、主要壳层基座及 Galaxy Registry、QQ Governance 的完整业务同构已完成；后续工作聚焦全量跨角色回归与替换发布门槛，不将其重新描述为 0A 权限缺口。
+- 当前 React capability/menu/button parity、主要壳层基座及 Galaxy Registry、QQ Governance 的完整业务同构已完成；后续工作聚焦全量跨角色回归、双端契约与文案对齐，以及 shadcn/ui 组件收敛，不将其重新描述为 0A 权限缺口。
 - 功能文档的 React 状态统一引用 `migration-scope-baseline.md`，不在各 feature 文档维护第二套迁移清单。
 - 不覆盖 `docs/ai/repo-rules.md`、`docs/architecture/`、`docs/api/`、`docs/features/current/` 的当前权威定义。
 - 落地后转正路径：

@@ -13,6 +13,8 @@ import {
   fetchMembersWithPap,
 } from '@/api/fleet'
 import { Button } from '@/components/ui/button'
+import { DataTable, type ColumnDef } from '@/components/ui/data-table'
+import { Textarea } from '@/components/ui/textarea'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import type { FleetInvite, FleetItem, MemberWithPap } from '@/types/api/fleet'
@@ -54,11 +56,6 @@ export function OperationFleetDetailPage() {
   const [manualText, setManualText] = useState('')
 
   const canManageFleet = roles.some((role) => ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role))
-
-  const pageCount = useMemo(
-    () => Math.max(1, Math.ceil(memberTotal / memberPageSize) || 1),
-    [memberPageSize, memberTotal]
-  )
 
   const loadFleet = useCallback(async () => {
     setLoading(true)
@@ -216,20 +213,41 @@ export function OperationFleetDetailPage() {
     }
   }, [fleetId, loadMembers, manualText, t])
 
-  const copyInviteLink = async (invite: FleetInvite) => {
+  const copyInviteLink = useCallback(async (invite: FleetInvite) => {
     const link = `${window.location.origin}/#/operation/join?code=${invite.code}`
     try {
       await navigator.clipboard.writeText(link)
     } catch {
       setError(t('common.copyFailed'))
     }
-  }
+  }, [t])
 
   const refreshAll = useCallback(() => {
     void loadFleet()
     void loadMembers()
     void loadInvites()
   }, [loadFleet, loadInvites, loadMembers])
+
+  const memberColumns = useMemo<ColumnDef<MemberWithPap>[]>(
+    () => [
+      { accessorKey: 'character_name', header: t('fleet.members.characterName') },
+      { accessorKey: 'ship_type_id', header: t('fleet.members.shipType'), cell: ({ row }) => row.original.ship_type_id ?? '-' },
+      { accessorKey: 'solar_system_id', header: t('fleet.members.solarSystem'), cell: ({ row }) => row.original.solar_system_id ?? '-' },
+      { accessorKey: 'joined_at', header: t('fleet.members.joinedAt'), cell: ({ row }) => formatDateTime(row.original.joined_at) },
+      { accessorKey: 'pap_count', header: t('fleet.pap.count'), cell: ({ row }) => row.original.pap_count ?? '-' },
+    ],
+    [t]
+  )
+
+  const inviteColumns = useMemo<ColumnDef<FleetInvite>[]>(
+    () => [
+      { accessorKey: 'code', header: t('fleet.invite.code'), cell: ({ row }) => <code className="rounded bg-muted px-2 py-0.5 text-xs">{row.original.code}</code> },
+      { accessorKey: 'active', header: t('common.status'), cell: ({ row }) => <ShopBadge className={row.original.active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'}>{row.original.active ? t('fleet.invite.active') : t('fleet.invite.inactive')}</ShopBadge> },
+      { accessorKey: 'expires_at', header: t('fleet.invite.expiresAt'), cell: ({ row }) => formatDateTime(row.original.expires_at) },
+      { id: 'actions', header: t('common.operation'), cell: ({ row }) => <div className="flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => void copyInviteLink(row.original)}>{t('fleet.invite.copyLink')}</Button>{canManageFleet && row.original.active ? <Button type="button" size="sm" variant="outline" onClick={() => void handleDeactivateInvite(row.original)}>{t('fleet.invite.deactivate')}</Button> : null}</div> },
+    ],
+    [canManageFleet, copyInviteLink, handleDeactivateInvite, t]
+  )
 
   return (
     <section className="space-y-4">
@@ -322,125 +340,9 @@ export function OperationFleetDetailPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">{t('fleet.detail.memberTitle')}</div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('fleet.members.characterName')}</th>
-                <th className="px-3 py-2">{t('fleet.members.shipType')}</th>
-                <th className="px-3 py-2">{t('fleet.members.solarSystem')}</th>
-                <th className="px-3 py-2">{t('fleet.members.joinedAt')}</th>
-                <th className="px-3 py-2">{t('fleet.pap.count')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member) => (
-                <tr key={member.id} className="border-b">
-                  <td className="px-3 py-2">{member.character_name}</td>
-                  <td className="px-3 py-2">{member.ship_type_id ?? '-'}</td>
-                  <td className="px-3 py-2">{member.solar_system_id ?? '-'}</td>
-                  <td className="px-3 py-2">{formatDateTime(member.joined_at)}</td>
-                  <td className="px-3 py-2">{member.pap_count ?? '-'}</td>
-                </tr>
-              ))}
-              {!membersLoading && members.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
-                    {t('fleet.detail.memberEmpty')}
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable columns={memberColumns} data={members} getRowId={(member) => String(member.id)} loading={membersLoading} error={error} loadingText={t('common.loading')} emptyText={t('fleet.detail.memberEmpty')} pagination={{ page: memberPage, pageSize: memberPageSize, total: memberTotal, onPageChange: setMemberPage, onPageSizeChange: (nextPageSize) => { setMemberPageSize(nextPageSize); setMemberPage(1) }, pageSizeOptions: [10, 20, 50], previousLabel: t('welfareMy.pagination.prev'), nextLabel: t('welfareMy.pagination.next'), pageSizeLabel: t('welfareMy.pageSize') }} />
 
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span>
-          {memberPage}/{pageCount}
-        </span>
-        <Button type="button" variant="outline" size="sm" onClick={() => setMemberPage((current) => Math.max(1, current - 1))} disabled={memberPage <= 1}>
-          {t('welfareMy.pagination.prev')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setMemberPage((current) => current + 1)}
-          disabled={members.length < memberPageSize || memberPage * memberPageSize >= memberTotal}
-        >
-          {t('welfareMy.pagination.next')}
-        </Button>
-        <label className="flex items-center gap-2">
-          <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={memberPageSize}
-            onChange={(event) => {
-              setMemberPageSize(Number(event.target.value))
-              setMemberPage(1)
-            }}
-          >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">{t('fleet.invite.title')}</div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('fleet.invite.code')}</th>
-                <th className="px-3 py-2">{t('common.status')}</th>
-                <th className="px-3 py-2">{t('fleet.invite.expiresAt')}</th>
-                <th className="px-3 py-2">{t('common.operation')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invites.map((invite) => (
-                <tr key={invite.id} className="border-b">
-                  <td className="px-3 py-2">
-                    <code className="rounded bg-muted px-2 py-0.5 text-xs">{invite.code}</code>
-                  </td>
-                  <td className="px-3 py-2">
-                    <ShopBadge className={invite.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}>
-                      {invite.active ? t('fleet.invite.active') : t('fleet.invite.inactive')}
-                    </ShopBadge>
-                  </td>
-                  <td className="px-3 py-2">{formatDateTime(invite.expires_at)}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={() => void copyInviteLink(invite)}>
-                        {t('fleet.invite.copyLink')}
-                      </Button>
-                      {canManageFleet && invite.active ? (
-                        <Button type="button" size="sm" variant="outline" onClick={() => void handleDeactivateInvite(invite)}>
-                          {t('fleet.invite.deactivate')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!invitesLoading && invites.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
-                    {t('fleet.invite.empty')}
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable columns={inviteColumns} data={invites} getRowId={(invite) => String(invite.id)} loading={invitesLoading} loadingText={t('common.loading')} emptyText={t('fleet.invite.empty')} />
 
       <ShopDialog
         open={manualOpen}
@@ -459,8 +361,8 @@ export function OperationFleetDetailPage() {
         }
       >
         <div className="space-y-2 text-sm">
-          <textarea
-            className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+          <Textarea
+            className="min-h-40"
             value={manualText}
             placeholder={t('fleet.members.manualAddPlaceholder')}
             onChange={(event) => setManualText(event.target.value)}

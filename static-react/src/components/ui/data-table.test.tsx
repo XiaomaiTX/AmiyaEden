@@ -73,4 +73,28 @@ describe('DataTable', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Name' }))
     expect(onSortingChange).toHaveBeenCalledOnce()
   })
+
+  test('uses the ledger page-size preset when no page options are supplied', () => {
+    render(
+      <DataTable
+        columns={columns}
+        data={[]}
+        loadingText="Loading"
+        emptyText="Empty"
+        variant="ledger"
+        pagination={{
+          page: 1,
+          pageSize: 200,
+          total: 0,
+          onPageChange: vi.fn(),
+          onPageSizeChange: vi.fn(),
+          previousLabel: 'Previous',
+          nextLabel: 'Next',
+          pageSizeLabel: 'Page size',
+        }}
+      />
+    )
+
+    expect(screen.getByRole('option', { name: '200' })).toBeInTheDocument()
+  })
 })
