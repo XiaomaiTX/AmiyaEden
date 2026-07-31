@@ -97,7 +97,7 @@ export function InfoImplantsPage() {
           selectedKey={String(selectedCharacterId ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          <SelectTrigger id="implants-character" className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger id="implants-character" className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

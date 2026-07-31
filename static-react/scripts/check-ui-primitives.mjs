@@ -29,6 +29,14 @@ for (const root of auditedRoots) {
     if (/NativeSelect/.test(source))
       errors.push(`${relativePath}: NativeSelect has been removed; use Select or Combobox`)
 
+    for (const dialogBlock of source.matchAll(/<ShopDialog\b[\s\S]*?<\/ShopDialog>/g)) {
+      if (/rounded-lg\s+border\s+bg-card|shadow-xl/.test(dialogBlock[0])) {
+        errors.push(
+          `${relativePath}: ShopDialog content must not add a second card surface or shadow`
+        )
+      }
+    }
+
     const ast = ts.createSourceFile(
       filePath,
       source,
@@ -103,6 +111,24 @@ for (const root of auditedRoots) {
             const { line } = ast.getLineAndCharacterOfPosition(node.getStart(ast))
             errors.push(
               `${relativePath}:${line + 1}: surface backgrounds on Button require an explicit non-default variant`
+            )
+          }
+        }
+
+        if (tagName === 'SelectTrigger' || tagName === 'Textarea') {
+          const className = getAttribute(attributes, 'className')
+          const classText =
+            className && ts.isJsxAttribute(className) && className.initializer
+              ? className.initializer.getText(ast)
+              : ''
+          if (
+            /(?:rounded-(?:md|lg)|border(?:-input)?|bg-background|px-[23]|py-2|text-sm|outline-none|focus-visible:)/.test(
+              classText
+            )
+          ) {
+            const { line } = ast.getLineAndCharacterOfPosition(node.getStart(ast))
+            errors.push(
+              `${relativePath}:${line + 1}: ${tagName} should rely on shadcn defaults; keep only layout or size classes`
             )
           }
         }

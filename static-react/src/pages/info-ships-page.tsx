@@ -107,7 +107,7 @@ export function InfoShipsPage() {
           selectedKey={String(selectedCharacterId ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          <SelectTrigger id="ships-character" className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger id="ships-character" className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -126,7 +126,7 @@ export function InfoShipsPage() {
           selectedKey={String(selectedGroup ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedGroup(value))(String(key))}
         >
-          <SelectTrigger id="ships-group" className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger id="ships-group" className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

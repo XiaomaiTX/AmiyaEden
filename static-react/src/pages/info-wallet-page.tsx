@@ -102,7 +102,7 @@ export function InfoWalletPage() {
           selectedKey={String(selectedCharacterId ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          <SelectTrigger id="wallet-character" className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger id="wallet-character" className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +121,7 @@ export function InfoWalletPage() {
           selectedKey={String(selectedRefType ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedRefType(value))(String(key))}
         >
-          <SelectTrigger id="wallet-ref-type" className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger id="wallet-ref-type" className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -156,7 +156,7 @@ export function TicketCreatePage() {
               >
                 <SelectTrigger
                   aria-label={t('ticketCreate.fields.category')}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full"
                   isDisabled={loadingCategories || categories.length === 0}
                 >
                   <SelectValue />
@@ -184,7 +184,7 @@ export function TicketCreatePage() {
                   }))
                 })(String(key))}
               >
-                <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +213,7 @@ export function TicketCreatePage() {
               {t('ticketCreate.fields.description')}
             </span>
             <Textarea
-              className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-40"
               value={form.description}
               placeholder={t('ticketCreate.placeholders.description')}
               onChange={(event) => {

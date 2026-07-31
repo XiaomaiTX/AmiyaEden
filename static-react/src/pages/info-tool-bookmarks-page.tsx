@@ -238,89 +238,72 @@ export function InfoToolBookmarksPage() {
           title={editingBookmark ? t('infoToolBookmarks.edit') : t('infoToolBookmarks.add')}
           onClose={() => setDialogOpen(false)}
           closeLabel={t('common.close')}
+          widthClass="w-full max-w-sm"
+          scrollable={false}
         >
-          <div
-            aria-modal="true"
-            className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-xl"
-            role="dialog"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="text-lg font-semibold">
-                {editingBookmark ? t('infoToolBookmarks.edit') : t('infoToolBookmarks.add')}
-              </h2>
-              <Button
-                type="button"
-                className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
-                aria-label={t('common.close')}
-                onClick={() => setDialogOpen(false)}
-              >
-                ×
-              </Button>
-            </div>
-            <div className="mt-4 space-y-4">
-              <label className="block space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('infoToolBookmarks.fields.name')}
-                </span>
-                <Input
-                  value={form.name}
-                  maxLength={128}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, name: event.target.value }))
-                  }
-                />
-              </label>
-              <label className="block space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('infoToolBookmarks.fields.url')}
-                </span>
-                <Input
-                  value={form.url}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, url: event.target.value }))
-                  }
-                />
-              </label>
-              <label className="block space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('infoToolBookmarks.fields.description')}
-                </span>
-                <Textarea
-                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={form.description ?? ''}
-                  maxLength={1024}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, description: event.target.value }))
-                  }
-                />
-              </label>
-              <label className="block space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('infoToolBookmarks.fields.sortOrder')}
-                </span>
-                <Input
-                  type="number"
-                  min={0}
-                  value={String(form.sort_order ?? 0)}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      sort_order: Number(event.target.value) || 0,
-                    }))
-                  }
-                />
-              </label>
-              <label className="flex items-center gap-3 text-sm">
-                <Checkbox
-                  isSelected={form.is_enabled ?? true}
-                  onChange={(selected) =>
-                    setForm((current) => ({ ...current, is_enabled: selected === true }))
-                  }
-                />
-                {t('infoToolBookmarks.fields.enabled')}
-              </label>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
+          <div className="space-y-4">
+            <label className="block space-y-2">
+              <span className="text-sm text-muted-foreground">
+                {t('infoToolBookmarks.fields.name')}
+              </span>
+              <Input
+                value={form.name}
+                maxLength={128}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, name: event.target.value }))
+                }
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-sm text-muted-foreground">
+                {t('infoToolBookmarks.fields.url')}
+              </span>
+              <Input
+                value={form.url}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, url: event.target.value }))
+                }
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-sm text-muted-foreground">
+                {t('infoToolBookmarks.fields.description')}
+              </span>
+              <Textarea
+                className="min-h-24"
+                value={form.description ?? ''}
+                maxLength={1024}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, description: event.target.value }))
+                }
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-sm text-muted-foreground">
+                {t('infoToolBookmarks.fields.sortOrder')}
+              </span>
+              <Input
+                type="number"
+                min={0}
+                value={String(form.sort_order ?? 0)}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    sort_order: Number(event.target.value) || 0,
+                  }))
+                }
+              />
+            </label>
+            <label className="flex items-center gap-3 text-sm">
+              <Checkbox
+                isSelected={form.is_enabled ?? true}
+                onChange={(selected) =>
+                  setForm((current) => ({ ...current, is_enabled: selected === true }))
+                }
+              />
+              {t('infoToolBookmarks.fields.enabled')}
+            </label>
+            <div className="flex justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"

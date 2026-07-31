@@ -212,7 +212,7 @@ export function SystemWalletPage() {
         title={t('walletAdmin.adjustTitle')}
         onClose={() => setAdjustOpen(false)}
         closeLabel={t('common.close')}
-        widthClass="max-w-xl"
+        widthClass="w-full sm:max-w-xl"
         footer={
           <>
             <Button
@@ -254,7 +254,7 @@ export function SystemWalletPage() {
               onSelectionChange={(key) => ((value) =>
                 setAdjustForm((current) => ({ ...current, action: value as AdjustAction })))(String(key))}
             >
-              <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -279,7 +279,7 @@ export function SystemWalletPage() {
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('walletAdmin.fields.reason')}</span>
             <Textarea
-              className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+              className="min-h-24"
               value={adjustForm.reason}
               onChange={(event) =>
                 setAdjustForm((current) => ({ ...current, reason: event.target.value }))
@@ -548,7 +548,7 @@ function WalletTransactionsPanel({
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
           <Select selectedKey={String(refType ?? '')} onSelectionChange={(key) => ((value) => setRefType(value))(String(key))}>
-            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -751,7 +751,7 @@ function WalletLogsPanel({
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
           <Select selectedKey={String(action ?? '')} onSelectionChange={(key) => ((value) => setAction(value))(String(key))}>
-            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1175,7 +1175,7 @@ function Pager({
             setPage(1)
           })(String(key))}
         >
-          <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+          <SelectTrigger className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

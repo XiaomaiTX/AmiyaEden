@@ -233,7 +233,7 @@ export function InfoNpcKillsPage() {
                 selectedKey={String(selectedCharacterId ?? '')}
                 onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
               >
-                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

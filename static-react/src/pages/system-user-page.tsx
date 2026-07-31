@@ -396,7 +396,7 @@ export function SystemUserPage() {
                 onSelectionChange={(key) => ((value) =>
                   setSearchDraft((current) => ({ ...current, status: value })))(String(key))}
               >
-                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -413,7 +413,7 @@ export function SystemUserPage() {
                 onSelectionChange={(key) => ((value) =>
                   setSearchDraft((current) => ({ ...current, role: value })))(String(key))}
               >
-                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -743,7 +743,7 @@ export function SystemUserPage() {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -765,7 +765,7 @@ export function SystemUserPage() {
           setEditingUser(null)
         }}
         closeLabel={t('common.close')}
-        widthClass="max-w-2xl"
+        widthClass="w-full sm:max-w-2xl"
         footer={
           <>
             <Button
@@ -850,7 +850,7 @@ export function SystemUserPage() {
                     onSelectionChange={(key) => ((value) =>
                       setDialogForm((current) => ({ ...current, status: Number(value) })))(String(key))}
                   >
-                    <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

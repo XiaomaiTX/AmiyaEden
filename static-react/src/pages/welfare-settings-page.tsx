@@ -361,10 +361,10 @@ export function WelfareSettingsPage() {
           title={editingId > 0 ? t('welfareSettings.edit') : t('welfareSettings.create')}
           onClose={() => setDialogVisible(false)}
           closeLabel={t('common.close')}
-          widthClass="max-w-2xl"
+          widthClass="w-full sm:max-w-2xl"
         >
-          <div className="w-full max-w-2xl rounded-lg border bg-card p-5 shadow-xl">
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2 md:col-span-2">
                 <span className="text-sm text-muted-foreground">
                   {t('welfareSettings.columns.name')}
@@ -381,7 +381,7 @@ export function WelfareSettingsPage() {
                   {t('welfareSettings.columns.description')}
                 </span>
                 <Textarea
-                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+                  className="min-h-24"
                   value={form.description ?? ''}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, description: event.target.value }))
@@ -400,7 +400,7 @@ export function WelfareSettingsPage() {
                       dist_mode: value as 'per_user' | 'per_character',
                     })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -420,7 +420,7 @@ export function WelfareSettingsPage() {
                   onSelectionChange={(key) => ((value) =>
                     setForm((current) => ({ ...current, status: Number(value) })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -496,7 +496,7 @@ export function WelfareSettingsPage() {
                 ) : null}
               </label>
             </div>
-            <div className="mt-5 flex justify-end gap-3">
+            <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>

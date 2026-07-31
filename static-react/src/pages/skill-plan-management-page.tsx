@@ -483,7 +483,7 @@ export function SkillPlanManagementPage({
       <ShopDialog
         open={dialogOpen}
         title={form.id > 0 ? t('skillPlan.edit') : t('skillPlan.create')}
-        widthClass="max-w-2xl"
+        widthClass="w-full sm:max-w-2xl"
         closeLabel={t('common.close')}
         onClose={() => setDialogOpen(false)}
         footer={
@@ -523,7 +523,7 @@ export function SkillPlanManagementPage({
               {t('skillPlan.fields.description')}
             </span>
             <Textarea
-              className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+              className="min-h-24"
               value={form.description}
               placeholder={t('skillPlan.fields.descriptionPlaceholder')}
               onChange={(event) =>
@@ -557,7 +557,7 @@ export function SkillPlanManagementPage({
               {t('skillPlan.fields.skillsText')}
             </span>
             <Textarea
-              className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+              className="min-h-40"
               value={form.skills_text}
               placeholder={t('skillPlan.fields.skillsTextPlaceholder')}
               onChange={(event) =>

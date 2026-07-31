@@ -408,7 +408,7 @@ export function SystemAutoRolePage() {
         title={t('autoRolePage.createEsiRoleTitle')}
         onClose={() => setEsiRoleDialogOpen(false)}
         closeLabel={t('common.close')}
-        widthClass="max-w-lg"
+        widthClass="w-full sm:max-w-lg"
         footer={
           <>
             <Button
@@ -439,7 +439,7 @@ export function SystemAutoRolePage() {
               onSelectionChange={(key) => ((value) =>
                 setEsiRoleForm((current) => ({ ...current, esi_role: value })))(String(key))}
             >
-              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -461,7 +461,7 @@ export function SystemAutoRolePage() {
               onSelectionChange={(key) => ((value) =>
                 setEsiRoleForm((current) => ({ ...current, role_code: value })))(String(key))}
             >
-              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -482,7 +482,7 @@ export function SystemAutoRolePage() {
         title={t('autoRolePage.createTitleTitle')}
         onClose={() => setTitleDialogOpen(false)}
         closeLabel={t('common.close')}
-        widthClass="max-w-xl"
+        widthClass="w-full sm:max-w-xl"
         footer={
           <>
             <Button
@@ -522,7 +522,7 @@ export function SystemAutoRolePage() {
                 })
               })(String(key))}
             >
-              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -549,7 +549,7 @@ export function SystemAutoRolePage() {
               onSelectionChange={(key) => ((value) =>
                 setTitleForm((current) => ({ ...current, role_code: value })))(String(key))}
             >
-              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

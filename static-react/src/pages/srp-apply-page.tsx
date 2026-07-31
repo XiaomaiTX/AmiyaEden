@@ -145,7 +145,7 @@ export function SrpApplyPage() {
                 selectedKey={String(selectedKillmailId ?? '')}
                 onSelectionChange={(key) => ((value) => setSelectedKillmailId(Number(value)))(String(key))}
               >
-                <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,7 +165,7 @@ export function SrpApplyPage() {
             <label className="space-y-2 block">
               <span className="text-sm text-muted-foreground">{t('srpApply.note')}</span>
               <Textarea
-                className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
+                className="min-h-24"
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder={t('srpApply.notePlaceholder')}

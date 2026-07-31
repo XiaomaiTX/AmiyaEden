@@ -434,7 +434,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
         title={t('taskManager.actions.editSchedule')}
         onClose={() => setScheduleDialogOpen(false)}
         closeLabel={t('common.close')}
-        widthClass="max-w-xl"
+        widthClass="w-full sm:max-w-xl"
         footer={
           <>
             <Button
@@ -511,7 +511,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                       intervalUnit: value as ScheduleIntervalUnit,
                     })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -696,7 +696,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
             placeholder={t('taskManager.esi.filters.character')}
           />
           <Select selectedKey={String(taskName ?? '')} onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}>
-            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -709,7 +709,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
             </SelectContent>
           </Select>
           <Select selectedKey={String(status ?? '')} onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}>
-            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -834,7 +834,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -919,7 +919,7 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium">{t('taskManager.tabs.history')}</span>
           <Select selectedKey={String(taskName ?? '')} onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}>
-            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -932,7 +932,7 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
             </SelectContent>
           </Select>
           <Select selectedKey={String(status ?? '')} onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}>
-            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1042,7 +1042,7 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

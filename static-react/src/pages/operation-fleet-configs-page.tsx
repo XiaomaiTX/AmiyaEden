@@ -284,7 +284,7 @@ export function OperationFleetConfigsPage() {
           setForm(defaultFormState)
         }}
         closeLabel={t('common.close')}
-        widthClass="max-w-4xl"
+        widthClass="w-full sm:max-w-4xl"
         footer={
           <>
             <Button

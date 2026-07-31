@@ -387,7 +387,7 @@ export function ShopBrowsePage() {
                   setProductPage(1)
                 })(String(key))}
               >
-                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -416,7 +416,7 @@ export function ShopBrowsePage() {
                     setOrderPage(1)
                   })(String(key))}
                 >
-                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -536,7 +536,7 @@ export function ShopBrowsePage() {
                   setOrderPage(1)
                 })(String(key))}
               >
-                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -607,7 +607,7 @@ export function ShopBrowsePage() {
             <label className="space-y-2 block">
               <span className="text-muted-foreground">{t('shop.remark')}</span>
               <Textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+                className="min-h-24"
                 value={buyRemark}
                 placeholder={t('shop.remarkPlaceholder')}
                 onChange={(event) => setBuyRemark(event.target.value)}

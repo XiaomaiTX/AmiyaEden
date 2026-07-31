@@ -185,7 +185,7 @@ export function SystemUserCenterPage() {
                 onSelectionChange={(key) => ((value) => setProfileForm((current) => ({ ...current, sex: value })))(String(key))}
               >
                 <SelectTrigger
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-10 w-full"
                   isDisabled={!profileEditing}
                 >
                   <SelectValue />
@@ -235,7 +235,7 @@ export function SystemUserCenterPage() {
                 {t('userCenter.profile.description')}
               </span>
               <Textarea
-                className="min-h-28 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-28"
                 value={profileForm.description}
                 disabled={!profileEditing}
                 onChange={(event) =>

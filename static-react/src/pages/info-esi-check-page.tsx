@@ -193,7 +193,7 @@ export function InfoEsiCheckPage() {
                     selectedKey={String(selectedCharacterId ?? '')}
                     onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
                   >
-                    <SelectTrigger className="h-10 min-w-[240px] rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectTrigger className="h-10 min-w-[240px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

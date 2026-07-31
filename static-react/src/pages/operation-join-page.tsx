@@ -101,7 +101,7 @@ export function OperationJoinPage() {
                 onSelectionChange={(key) => ((value) => setCharacterId(Number(value)))(String(key))}
               >
                 <SelectTrigger
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full"
                   isDisabled={loading}
                 >
                   <SelectValue />

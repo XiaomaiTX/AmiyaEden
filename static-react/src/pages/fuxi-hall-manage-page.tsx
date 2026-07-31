@@ -353,13 +353,10 @@ export function FuxiHallManagePage() {
           title={form.id ? t('fuxiHall.manage.editCard') : t('fuxiHall.manage.addCard')}
           onClose={() => setDialogOpen(false)}
           closeLabel={t('common.close')}
-          widthClass="max-w-3xl"
+          widthClass="w-full sm:max-w-3xl"
         >
-          <div className="mx-auto my-8 max-w-3xl rounded-lg border bg-card p-5">
-            <h2 className="text-lg font-semibold">
-              {form.id ? t('fuxiHall.manage.editCard') : t('fuxiHall.manage.addCard')}
-            </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm">{t('fuxiHall.manage.nickname')}</span>
                 <Input
@@ -399,7 +396,8 @@ export function FuxiHallManagePage() {
                     <Button
                       key={item}
                       type="button"
-                      className="rounded-full border px-2 py-1 text-xs"
+                      variant="outline"
+                      size="sm"
                       onClick={() =>
                         setForm({
                           ...form,
@@ -422,7 +420,7 @@ export function FuxiHallManagePage() {
                       avatar_shape: value as CardForm['avatar_shape'],
                     }))(String(key))}
                 >
-                  <SelectTrigger className="h-10 w-full rounded-md border bg-background px-3">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -484,7 +482,7 @@ export function FuxiHallManagePage() {
                 />
               </div>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 {t('common.cancel')}
               </Button>

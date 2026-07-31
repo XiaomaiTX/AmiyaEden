@@ -217,7 +217,7 @@ export function ShopManagePage() {
                 selectedKey={String(statusFilter ?? '')}
                 onSelectionChange={(key) => ((value) => setStatusFilter(value))(String(key))}
               >
-                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -400,7 +400,7 @@ export function ShopManagePage() {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -417,7 +417,7 @@ export function ShopManagePage() {
       <ShopDialog
         open={dialogOpen}
         title={form.id > 0 ? t('shopManage.editProduct') : t('shopManage.createProduct')}
-        widthClass="max-w-2xl"
+        widthClass="w-full sm:max-w-2xl"
         onClose={() => setDialogOpen(false)}
         closeLabel={t('common.close')}
         footer={
@@ -458,7 +458,7 @@ export function ShopManagePage() {
               {t('shopManage.fields.description')}
             </span>
             <Textarea
-              className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+              className="min-h-24"
               value={form.description}
               onChange={(event) =>
                 setForm((current) => ({ ...current, description: event.target.value }))
@@ -519,7 +519,7 @@ export function ShopManagePage() {
                   limit_period: value as ProductFormState['limit_period'],
                 })))(String(key))}
             >
-              <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -537,7 +537,7 @@ export function ShopManagePage() {
               onSelectionChange={(key) => ((value) =>
                 setForm((current) => ({ ...current, status: Number(value) })))(String(key))}
             >
-              <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

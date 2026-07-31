@@ -216,7 +216,7 @@ export function TicketDetailPage() {
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('ticket.reply')}</span>
             <Textarea
-              className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-28"
               value={content}
               placeholder={t('ticket.replyPlaceholder')}
               onChange={(event) => setContent(event.target.value)}

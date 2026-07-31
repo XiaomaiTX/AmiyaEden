@@ -215,7 +215,7 @@ export function SystemWebhookPage() {
               selectedKey={String(config.type ?? '')}
               onSelectionChange={(key) => ((value) => setConfig((current) => ({ ...current, type: value })))(String(key))}
             >
-              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -246,7 +246,7 @@ export function SystemWebhookPage() {
                 {t('webhook.fields.qqGroupIds')}
               </span>
               <Textarea
-                className="min-h-32 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+                className="min-h-32"
                 value={qqGroupIDsText}
                 onChange={(event) => setQQGroupIDsText(event.target.value)}
                 placeholder={t('webhook.fields.qqGroupIdsPlaceholder')}
@@ -257,7 +257,7 @@ export function SystemWebhookPage() {
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('webhook.fields.template')}</span>
             <Textarea
-              className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+              className="min-h-40"
               value={config.fleet_template}
               onChange={(event) =>
                 setConfig((current) => ({ ...current, fleet_template: event.target.value }))
@@ -280,7 +280,7 @@ export function SystemWebhookPage() {
                       ob_target_type: value as 'group' | 'private',
                     })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -344,7 +344,7 @@ export function SystemWebhookPage() {
               selectedKey={String(testForm.type ?? '')}
               onSelectionChange={(key) => ((value) => setTestForm((current) => ({ ...current, type: value })))(String(key))}
             >
-              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -375,7 +375,7 @@ export function SystemWebhookPage() {
                 {t('webhook.fields.qqGroupIds')}
               </span>
               <Textarea
-                className="min-h-32 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+                className="min-h-32"
                 value={testQQGroupIDsText}
                 onChange={(event) => setTestQQGroupIDsText(event.target.value)}
                 placeholder={t('webhook.fields.qqGroupIdsPlaceholder')}
@@ -407,7 +407,7 @@ export function SystemWebhookPage() {
                       ob_target_type: value,
                     })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

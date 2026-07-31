@@ -216,10 +216,10 @@ export function TicketCategoriesPage() {
           title={editingId > 0 ? t('ticketCategories.edit') : t('ticketCategories.create')}
           onClose={() => setVisible(false)}
           closeLabel={t('common.close')}
-          widthClass="max-w-2xl"
+          widthClass="w-full sm:max-w-2xl"
         >
-          <div className="w-full max-w-2xl rounded-lg border bg-card p-5 shadow-xl">
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm text-muted-foreground">
                   {t('ticketCategories.columns.name')}
@@ -277,7 +277,7 @@ export function TicketCategoriesPage() {
                 </span>
               </label>
             </div>
-            <div className="mt-5 flex justify-end gap-3">
+            <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setVisible(false)}>
                 {t('common.cancel')}
               </Button>

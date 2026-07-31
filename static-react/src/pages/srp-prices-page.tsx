@@ -205,33 +205,37 @@ export function SrpPricesPage() {
           onClose={() => setDialogVisible(false)}
           closeLabel={t('common.close')}
         >
-          <div className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-xl">
-            <div className="mt-4 space-y-4">
-              <label className="space-y-2 block">
-                <span className="text-sm text-muted-foreground">{t('srpPrices.fields.typeId')}</span>
-                <Input
-                  type="number"
-                  value={String(form.ship_type_id ?? 0)}
-                  onChange={(event) => setForm((current) => ({ ...current, ship_type_id: Number(event.target.value) }))}
-                />
-              </label>
-              <label className="space-y-2 block">
-                <span className="text-sm text-muted-foreground">{t('srpPrices.fields.name')}</span>
-                <Input
-                  value={form.ship_name ?? ''}
-                  onChange={(event) => setForm((current) => ({ ...current, ship_name: event.target.value }))}
-                />
-              </label>
-              <label className="space-y-2 block">
-                <span className="text-sm text-muted-foreground">{t('srpPrices.fields.amount')}</span>
-                <Input
-                  type="number"
-                  value={String(form.amount ?? 0)}
-                  onChange={(event) => setForm((current) => ({ ...current, amount: Number(event.target.value) }))}
-                />
-              </label>
-            </div>
-            <div className="mt-5 flex justify-end gap-3">
+          <div className="space-y-4">
+            <label className="space-y-2 block">
+              <span className="text-sm text-muted-foreground">{t('srpPrices.fields.typeId')}</span>
+              <Input
+                type="number"
+                value={String(form.ship_type_id ?? 0)}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, ship_type_id: Number(event.target.value) }))
+                }
+              />
+            </label>
+            <label className="space-y-2 block">
+              <span className="text-sm text-muted-foreground">{t('srpPrices.fields.name')}</span>
+              <Input
+                value={form.ship_name ?? ''}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, ship_name: event.target.value }))
+                }
+              />
+            </label>
+            <label className="space-y-2 block">
+              <span className="text-sm text-muted-foreground">{t('srpPrices.fields.amount')}</span>
+              <Input
+                type="number"
+                value={String(form.amount ?? 0)}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, amount: Number(event.target.value) }))
+                }
+              />
+            </label>
+            <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>

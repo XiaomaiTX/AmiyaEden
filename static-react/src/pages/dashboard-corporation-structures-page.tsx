@@ -570,7 +570,7 @@ export function DashboardCorporationStructuresPage() {
                     await loadFilterOptionsForSelectedCorp(corpId)
                   })(String(key))}
                 >
-                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1034,7 +1034,7 @@ export function DashboardCorporationStructuresPage() {
                 selectedKey={String(pageSize ?? '')}
                 onSelectionChange={(key) => ((value) => setPageSize(Number(value)))(String(key))}
               >
-                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1113,7 +1113,7 @@ export function DashboardCorporationStructuresPage() {
               </label>
               <Textarea
                 id="corporation-structure-alert-groups"
-                className="min-h-20 w-80 rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-20 w-80"
                 value={alertGroupIDsText}
                 disabled={!alertEnabled}
                 placeholder={t('corporationStructures.settings.alertGroupIDsPlaceholder')}
@@ -1201,7 +1201,7 @@ export function DashboardCorporationStructuresPage() {
                             [corp.corporation_id]: Number(value),
                           })))(String(key))}
                       >
-                        <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                        <SelectTrigger className="h-10 w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

@@ -179,7 +179,7 @@ export function TicketManagementPage() {
                   setPage(1)
                 })(String(key))}
               >
-                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,7 +245,7 @@ export function TicketManagementPage() {
                       })(String(key))}
                     >
                       <SelectTrigger
-                        className={`h-9 rounded-md border px-2 text-xs ${statusTone(ticket.status)}`}
+                        className={`h-9 text-xs ${statusTone(ticket.status)}`}
                         isDisabled={updatingId === ticket.id}
                       >
                         <SelectValue />
@@ -271,7 +271,7 @@ export function TicketManagementPage() {
                       })(String(key))}
                     >
                       <SelectTrigger
-                        className={`h-9 rounded-md border px-2 text-xs ${priorityTone(ticket.priority)}`}
+                        className={`h-9 text-xs ${priorityTone(ticket.priority)}`}
                         isDisabled={updatingId === ticket.id}
                       >
                         <SelectValue />
@@ -341,7 +341,7 @@ export function TicketManagementPage() {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

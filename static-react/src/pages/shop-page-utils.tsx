@@ -117,7 +117,8 @@ export function ShopDialog({
   footer,
   onClose,
   closeLabel,
-  widthClass = 'max-w-lg',
+  widthClass = 'w-full sm:max-w-lg',
+  scrollable = true,
 }: {
   open: boolean
   title: string
@@ -127,14 +128,21 @@ export function ShopDialog({
   onClose: () => void
   closeLabel: string
   widthClass?: string
+  scrollable?: boolean
 }) {
   return (
     <Dialog
       aria-label={closeLabel}
       isOpen={open}
       onOpenChange={(nextOpen) => !nextOpen && onClose()}
+      className={cn('w-full', widthClass)}
     >
-      <div className={cn('max-h-[calc(100vh-2rem)] overflow-y-auto', widthClass)}>
+      <div
+        className={cn(
+          scrollable && 'max-h-[calc(100vh-2rem)] overflow-y-auto',
+          'w-full'
+        )}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}

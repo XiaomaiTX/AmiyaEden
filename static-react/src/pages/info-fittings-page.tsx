@@ -93,7 +93,7 @@ export function InfoFittingsPage() {
           selectedKey={String(selectedRace ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedRace(value))(String(key))}
         >
-          <SelectTrigger className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -109,7 +109,7 @@ export function InfoFittingsPage() {
           selectedKey={String(selectedGroup ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedGroup(value))(String(key))}
         >
-          <SelectTrigger className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

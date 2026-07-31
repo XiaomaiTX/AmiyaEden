@@ -289,7 +289,7 @@ export function WelfareMyPage() {
                   setAppPage(1)
                 })(String(key))}
               >
-                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -312,39 +312,37 @@ export function WelfareMyPage() {
           onClose={() => setSelectedRow(null)}
           closeLabel={t('common.close')}
         >
-          <div className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-xl">
-            <div className="mt-4 space-y-3 text-sm">
+          <div className="space-y-3 text-sm">
+            <p>
+              <span className="font-medium">{t('welfareMy.welfareName')}:</span>{' '}
+              {selectedRow.welfareName}
+            </p>
+            {selectedRow.characterName ? (
               <p>
-                <span className="font-medium">{t('welfareMy.welfareName')}:</span>{' '}
-                {selectedRow.welfareName}
+                <span className="font-medium">{t('welfareMy.characterName')}:</span>{' '}
+                {selectedRow.characterName}
               </p>
-              {selectedRow.characterName ? (
-                <p>
-                  <span className="font-medium">{t('welfareMy.characterName')}:</span>{' '}
-                  {selectedRow.characterName}
-                </p>
-              ) : null}
-              {selectedRow.requireEvidence ? (
-                <label className="space-y-2 block">
-                  <span className="text-sm text-muted-foreground">
-                    {t('welfareMy.evidenceImage')}
-                  </span>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    disabled={evidenceUploading || applying}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0]
-                      if (file) void handleEvidenceUpload(file)
-                    }}
-                  />
-                  {evidenceUrl ? (
-                    <img src={evidenceUrl} alt="" className="max-h-40 rounded border" />
-                  ) : null}
-                </label>
-              ) : null}
-            </div>
-            <div className="mt-5 flex justify-end gap-3">
+            ) : null}
+            {selectedRow.requireEvidence ? (
+              <label className="space-y-2 block">
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareMy.evidenceImage')}
+                </span>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={evidenceUploading || applying}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void handleEvidenceUpload(file)
+                  }}
+                />
+                {evidenceUrl ? (
+                  <img src={evidenceUrl} alt="" className="max-h-40 rounded border" />
+                ) : null}
+              </label>
+            ) : null}
+            <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => setSelectedRow(null)}>
                 {t('common.cancel')}
               </Button>

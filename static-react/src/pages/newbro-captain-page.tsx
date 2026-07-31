@@ -167,7 +167,7 @@ export function NewbroCaptainPage() {
                 setRefreshSeed((current) => current + 1)
               })(String(key))}
             >
-              <SelectTrigger className="h-9 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

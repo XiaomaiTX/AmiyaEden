@@ -199,7 +199,7 @@ export function TicketAdminDetailPage() {
               <span>{t('ticketAdminDetail.internalNote')}</span>
             </label>
             <Textarea
-              className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+              className="min-h-28"
               value={content}
               placeholder={t('ticketAdminDetail.replyPlaceholder')}
               onChange={(event) => setContent(event.target.value)}

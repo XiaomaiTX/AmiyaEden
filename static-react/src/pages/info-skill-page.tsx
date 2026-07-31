@@ -138,7 +138,7 @@ export function InfoSkillPage() {
           selectedKey={String(selectedCharacterId ?? '')}
           onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          <SelectTrigger id="skill-character" className="rounded border px-2 py-1 text-sm">
+          <SelectTrigger id="skill-character" className="h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -172,7 +172,7 @@ export function InfoSkillPage() {
               selectedKey={String(selectedGroup ?? '')}
               onSelectionChange={(key) => ((value) => setSelectedGroup(value))(String(key))}
             >
-              <SelectTrigger className="rounded border px-2 py-1 text-sm">
+              <SelectTrigger className="h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

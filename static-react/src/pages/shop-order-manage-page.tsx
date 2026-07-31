@@ -399,7 +399,7 @@ export function ShopOrderManagePage() {
               setHistoryPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -465,7 +465,7 @@ export function ShopOrderManagePage() {
                 {t('shopAdmin.orders.fields.deliverRemark')}
               </span>
               <Textarea
-                className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+                className="min-h-24"
                 value={reviewRemark}
                 placeholder={t('shopAdmin.orders.placeholders.deliverRemark')}
                 onChange={(event) => setReviewRemark(event.target.value)}

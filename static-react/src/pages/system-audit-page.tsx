@@ -186,7 +186,7 @@ export function SystemAuditPage() {
                   onSelectionChange={(key) => ((value) =>
                     setSearchDraft((current) => ({ ...current, category: value })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -211,7 +211,7 @@ export function SystemAuditPage() {
                       result: value ? (value as 'success' | 'failed') : undefined,
                     })))(String(key))}
                 >
-                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -409,7 +409,7 @@ export function SystemAuditPage() {
                   setPage(1)
                 })(String(key))}
               >
-                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -442,7 +442,7 @@ export function SystemAuditPage() {
         title={t('auditAdmin.detailTitle')}
         onClose={() => setDetailOpen(false)}
         closeLabel={t('common.close')}
-        widthClass="max-w-3xl"
+        widthClass="w-full sm:max-w-3xl"
       >
         {currentEvent ? (
           <div className="space-y-4 text-sm">

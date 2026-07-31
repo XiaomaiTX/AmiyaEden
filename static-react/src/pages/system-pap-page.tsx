@@ -310,7 +310,7 @@ export function SystemPAPPage() {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -329,7 +329,7 @@ export function SystemPAPPage() {
         title={t('alliancePap.import.title')}
         onClose={() => setImportOpen(false)}
         closeLabel={t('common.close')}
-        widthClass="max-w-2xl"
+        widthClass="w-full sm:max-w-2xl"
         footer={
           <>
             <Button
@@ -349,7 +349,7 @@ export function SystemPAPPage() {
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">{t('alliancePap.import.hint')}</p>
           <Textarea
-            className="min-h-56 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+            className="min-h-56"
             value={importDraft.content}
             onChange={(event) => setImportDraft({ content: event.target.value })}
             placeholder={t('alliancePap.import.placeholder')}

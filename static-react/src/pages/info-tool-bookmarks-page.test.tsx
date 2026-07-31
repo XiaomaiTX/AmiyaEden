@@ -104,6 +104,25 @@ describe('info tool bookmarks page', () => {
     expect(fetchVisibleToolBookmarks).not.toHaveBeenCalled()
   })
 
+  test('renders the bookmark editor as a single dialog surface', async () => {
+    setRoles(['admin'])
+    vi.mocked(fetchAdminToolBookmarks).mockResolvedValueOnce([bookmark])
+    const user = userEvent.setup()
+
+    renderPage()
+
+    await screen.findByRole('link', { name: 'EVE Tools' })
+    await user.click(screen.getByRole('button', { name: '编辑' }))
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(document.querySelector('[data-slot="dialog-content"]')).toHaveClass(
+      'w-full',
+      'max-w-sm'
+    )
+    expect(screen.getByRole('dialog').querySelector('[data-slot="dialog-footer"]')).toBeNull()
+    expect(document.querySelector('[data-slot="dialog-content"] .overflow-y-auto')).toBeNull()
+  })
+
   test('shows the empty state', async () => {
     setRoles(['user'])
     vi.mocked(fetchVisibleToolBookmarks).mockResolvedValueOnce([])

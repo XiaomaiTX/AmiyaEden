@@ -483,7 +483,7 @@ export function OperationFleetsPage() {
           setForm(defaultFormState)
         }}
         closeLabel={t('common.close')}
-        widthClass="max-w-3xl"
+        widthClass="w-full sm:max-w-3xl"
         footer={
           <>
             <Button

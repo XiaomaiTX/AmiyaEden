@@ -153,7 +153,7 @@ export function SystemBasicConfigPage() {
 
           <div className="mt-4 space-y-2">
             <Textarea
-              className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
+              className="min-h-40"
               value={allowCorporationsInput}
               onChange={(event) => setAllowCorporationsInput(event.target.value)}
               placeholder={t('systemBasicConfig.allowCorporations.placeholder')}

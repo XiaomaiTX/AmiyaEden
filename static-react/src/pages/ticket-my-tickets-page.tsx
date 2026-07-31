@@ -145,7 +145,7 @@ export function TicketMyTicketsPage() {
                 selectedKey={String(statusFilter ?? '')}
                 onSelectionChange={(key) => ((value) => setStatusFilter(value))(String(key))}
               >
-                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -270,7 +270,7 @@ export function TicketMyTicketsPage() {
               setPage(1)
             })(String(key))}
           >
-            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectTrigger className="h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
