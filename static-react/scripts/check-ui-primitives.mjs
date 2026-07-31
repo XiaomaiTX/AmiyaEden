@@ -3,7 +3,7 @@ import path from 'node:path'
 import ts from 'typescript'
 
 const sourceRoot = path.resolve('src')
-const auditedRoots = ['pages', 'layout', 'components']
+const auditedRoots = ['.']
 const ignoredPaths = new Set(['components/ui'])
 const errors = []
 
@@ -36,10 +36,47 @@ for (const root of auditedRoots) {
       true,
       ts.ScriptKind.TSX
     )
+    const inputNames = new Set(['Input'])
+
+    const getAttribute = (attributes, name) =>
+      attributes.find(
+        (attribute) => ts.isJsxAttribute(attribute) && attribute.name.text === name
+      )
+
+    const getStaticAttributeValue = (attribute) => {
+      if (!attribute || !ts.isJsxAttribute(attribute)) return null
+      if (!attribute.initializer) return true
+      if (ts.isStringLiteral(attribute.initializer)) return attribute.initializer.text
+      if (
+        ts.isJsxExpression(attribute.initializer) &&
+        attribute.initializer.expression &&
+        ts.isStringLiteral(attribute.initializer.expression)
+      ) {
+        return attribute.initializer.expression.text
+      }
+      return undefined
+    }
+
     const visit = (node) => {
       if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
-        if (node.tagName.getText(ast) === 'Button') {
-          const attributes = node.attributes.properties
+        const tagName = node.tagName.getText(ast)
+        const attributes = node.attributes.properties
+        const typeAttribute = getAttribute(attributes, 'type')
+        const typeValue = getStaticAttributeValue(typeAttribute)
+        const isNativeInput = tagName === 'input'
+        const isSharedInput = inputNames.has(tagName)
+
+        if (
+          (isNativeInput || isSharedInput) &&
+          (typeValue === 'checkbox' || typeValue === 'radio' || typeValue === undefined)
+        ) {
+          const { line } = ast.getLineAndCharacterOfPosition(node.getStart(ast))
+          errors.push(
+            `${relativePath}:${line + 1}: use shadcn Checkbox or RadioGroup instead of native ${tagName} checkbox/radio controls`
+          )
+        }
+
+        if (tagName === 'Button') {
           const variant = attributes.find(
             (attribute) => ts.isJsxAttribute(attribute) && attribute.name.text === 'variant'
           )

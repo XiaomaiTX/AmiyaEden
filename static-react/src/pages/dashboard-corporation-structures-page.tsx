@@ -28,6 +28,7 @@ import {
 } from '@/api/corporation-structures'
 import { runTask } from '@/api/task-manager'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
@@ -1094,11 +1095,10 @@ export function DashboardCorporationStructuresPage() {
                 className="flex items-center gap-2 text-sm text-muted-foreground"
                 htmlFor="corporation-structure-alert-enabled"
               >
-                <Input
+                <Checkbox
                   id="corporation-structure-alert-enabled"
-                  type="checkbox"
-                  checked={alertEnabled}
-                  onChange={(event) => setAlertEnabled(event.target.checked)}
+                  isSelected={alertEnabled}
+                  onChange={(selected) => setAlertEnabled(selected === true)}
                 />
                 {t('corporationStructures.settings.alertEnabled')}
               </label>

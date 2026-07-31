@@ -1,4 +1,3 @@
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
@@ -10,6 +9,7 @@ import {
   adminListTicketStatusHistory,
 } from '@/api/ticket'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import type { TicketItem, TicketReply, TicketStatusHistory } from '@/types/api/ticket'
 
@@ -195,7 +195,7 @@ export function TicketAdminDetailPage() {
 
           <div className="mt-5 space-y-3">
             <label className="flex items-center gap-2 text-sm">
-              <Input type="checkbox" checked={isInternal} onChange={(event) => setIsInternal(event.target.checked)} />
+              <Checkbox isSelected={isInternal} onChange={(selected) => setIsInternal(selected === true)} />
               <span>{t('ticketAdminDetail.internalNote')}</span>
             </label>
             <Textarea

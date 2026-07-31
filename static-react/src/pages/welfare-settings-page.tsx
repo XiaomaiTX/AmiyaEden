@@ -26,6 +26,7 @@ import {
   uploadWelfareEvidence,
 } from '@/api/welfare'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type { AutoApproveConfig, WelfareItem, CreateParams } from '@/types/api/welfare'
@@ -456,11 +457,10 @@ export function WelfareSettingsPage() {
                 />
               </label>
               <label className="flex items-center gap-2">
-                <Input
-                  type="checkbox"
-                  checked={Boolean(form.require_skill_plan)}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, require_skill_plan: event.target.checked }))
+                <Checkbox
+                  isSelected={Boolean(form.require_skill_plan)}
+                  onChange={(selected) =>
+                    setForm((current) => ({ ...current, require_skill_plan: selected === true }))
                   }
                 />
                 <span className="text-sm text-muted-foreground">
@@ -468,11 +468,10 @@ export function WelfareSettingsPage() {
                 </span>
               </label>
               <label className="flex items-center gap-2">
-                <Input
-                  type="checkbox"
-                  checked={Boolean(form.require_evidence)}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, require_evidence: event.target.checked }))
+                <Checkbox
+                  isSelected={Boolean(form.require_evidence)}
+                  onChange={(selected) =>
+                    setForm((current) => ({ ...current, require_evidence: selected === true }))
                   }
                 />
                 <span className="text-sm text-muted-foreground">

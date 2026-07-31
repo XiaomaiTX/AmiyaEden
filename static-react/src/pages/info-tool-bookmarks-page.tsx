@@ -8,6 +8,7 @@ import {
   updateToolBookmark,
 } from '@/api/tool-bookmark'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { confirmAction, notifyError, notifySuccess, notifyWarning } from '@/feedback'
 import { useI18n } from '@/i18n'
@@ -310,11 +311,10 @@ export function InfoToolBookmarksPage() {
                 />
               </label>
               <label className="flex items-center gap-3 text-sm">
-                <Input
-                  checked={form.is_enabled ?? true}
-                  type="checkbox"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, is_enabled: event.target.checked }))
+                <Checkbox
+                  isSelected={form.is_enabled ?? true}
+                  onChange={(selected) =>
+                    setForm((current) => ({ ...current, is_enabled: selected === true }))
                   }
                 />
                 {t('infoToolBookmarks.fields.enabled')}

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { vi } from 'vitest'
 import {
   Table,
   TableBody,
@@ -47,5 +48,15 @@ describe('shared form and table primitives', () => {
     const checkbox = screen.getByRole('checkbox', { name: 'Visible' })
     fireEvent.click(checkbox)
     expect(checkbox).toBeChecked()
+  })
+
+  test('supports controlled checkbox state changes', () => {
+    const onChange = vi.fn()
+
+    render(<Checkbox aria-label="Controlled visible" isSelected={false} onChange={onChange} />)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Controlled visible' }))
+
+    expect(onChange).toHaveBeenCalledWith(true)
   })
 })

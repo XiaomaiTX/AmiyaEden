@@ -1,4 +1,3 @@
-import { Input } from '@/components/ui/input'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import {
@@ -11,6 +10,7 @@ import {
   saveSkillPlanCheckSelection,
 } from '@/api/skill-plan'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import type { EveCharacter } from '@/types/api/auth'
@@ -335,12 +335,11 @@ export function SkillPlanCompletionCheckPage() {
         <div className="space-y-2">
           {characters.map((character) => (
             <label key={character.character_id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
-              <Input
-                type="checkbox"
-                checked={draftCharacterIds.includes(character.character_id)}
-                onChange={(event) => {
+              <Checkbox
+                isSelected={draftCharacterIds.includes(character.character_id)}
+                onChange={(selected) => {
                   setDraftCharacterIds((current) =>
-                    event.target.checked
+                    selected === true
                       ? [...current, character.character_id]
                       : current.filter((id) => id !== character.character_id)
                   )
@@ -372,12 +371,11 @@ export function SkillPlanCompletionCheckPage() {
         <div className="space-y-2">
           {allPlans.map((plan) => (
             <label key={plan.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
-              <Input
-                type="checkbox"
-                checked={draftPlanIds.includes(plan.id)}
-                onChange={(event) => {
+              <Checkbox
+                isSelected={draftPlanIds.includes(plan.id)}
+                onChange={(selected) => {
                   setDraftPlanIds((current) =>
-                    event.target.checked ? [...current, plan.id] : current.filter((id) => id !== plan.id)
+                    selected === true ? [...current, plan.id] : current.filter((id) => id !== plan.id)
                   )
                 }}
               />

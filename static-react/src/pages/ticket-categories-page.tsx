@@ -7,6 +7,7 @@ import {
   adminUpdateTicketCategory,
 } from '@/api/ticket'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
@@ -265,11 +266,10 @@ export function TicketCategoriesPage() {
                 />
               </label>
               <label className="flex items-center gap-2 pt-8">
-                <Input
-                  type="checkbox"
-                  checked={Boolean(form.enabled)}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, enabled: event.target.checked }))
+                <Checkbox
+                  isSelected={Boolean(form.enabled)}
+                  onChange={(selected) =>
+                    setForm((current) => ({ ...current, enabled: selected === true }))
                   }
                 />
                 <span className="text-sm text-muted-foreground">

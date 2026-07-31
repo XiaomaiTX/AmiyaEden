@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/select'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
@@ -200,11 +201,10 @@ export function SystemWebhookPage() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="flex items-center gap-3 md:col-span-2">
-            <Input
-              checked={config.enabled}
-              type="checkbox"
-              onChange={(event) =>
-                setConfig((current) => ({ ...current, enabled: event.target.checked }))
+            <Checkbox
+              isSelected={config.enabled}
+              onChange={(selected) =>
+                setConfig((current) => ({ ...current, enabled: selected === true }))
               }
             />
             <span className="text-sm">{t('webhook.fields.enabled')}</span>
