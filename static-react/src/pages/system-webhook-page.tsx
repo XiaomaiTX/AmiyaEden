@@ -1,3 +1,11 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -175,7 +183,9 @@ export function SystemWebhookPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('webhook.messages.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('webhook.messages.loading')}</p>
+      ) : null}
 
       <div className="rounded-lg border bg-card p-5">
         <div className="flex flex-col gap-3 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
@@ -183,14 +193,14 @@ export function SystemWebhookPage() {
             <h2 className="text-base font-semibold">{t('webhook.config.title')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('webhook.config.subtitle')}</p>
           </div>
-          <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
+          <Button type="button" onClick={() => void saveConfig()} isDisabled={saving || loading}>
             {saving ? t('webhook.messages.saving') : t('common.save')}
           </Button>
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="flex items-center gap-3 md:col-span-2">
-            <input
+            <Input
               checked={config.enabled}
               type="checkbox"
               onChange={(event) =>
@@ -201,33 +211,41 @@ export function SystemWebhookPage() {
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('webhook.fields.type')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={config.type}
-              onChange={(event) =>
-                setConfig((current) => ({ ...current, type: event.target.value }))
-              }
+            <Select
+              selectedKey={String(config.type ?? '')}
+              onSelectionChange={(key) => ((value) => setConfig((current) => ({ ...current, type: value })))(String(key))}
             >
-              <option value="discord">{t('webhook.types.discord')}</option>
-              <option value="feishu">{t('webhook.types.feishu')}</option>
-              <option value="dingtalk">{t('webhook.types.dingtalk')}</option>
-              <option value="onebot">{t('webhook.types.onebot')}</option>
-              <option value="qq_governance_onebot">{t('webhook.types.qqGovernanceOnebot')}</option>
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="discord">{t('webhook.types.discord')}</SelectItem>
+                <SelectItem id="feishu">{t('webhook.types.feishu')}</SelectItem>
+                <SelectItem id="dingtalk">{t('webhook.types.dingtalk')}</SelectItem>
+                <SelectItem id="onebot">{t('webhook.types.onebot')}</SelectItem>
+                <SelectItem id="qq_governance_onebot">
+                  {t('webhook.types.qqGovernanceOnebot')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           {!isQQGovernanceConfig ? (
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">{t('webhook.fields.url')}</span>
               <Input
                 value={config.url}
-                onChange={(event) => setConfig((current) => ({ ...current, url: event.target.value }))}
+                onChange={(event) =>
+                  setConfig((current) => ({ ...current, url: event.target.value }))
+                }
                 placeholder={t('webhook.fields.urlPlaceholder')}
               />
             </label>
           ) : (
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">{t('webhook.fields.qqGroupIds')}</span>
-              <textarea
+              <span className="text-sm text-muted-foreground">
+                {t('webhook.fields.qqGroupIds')}
+              </span>
+              <Textarea
                 className="min-h-32 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
                 value={qqGroupIDsText}
                 onChange={(event) => setQQGroupIDsText(event.target.value)}
@@ -238,7 +256,7 @@ export function SystemWebhookPage() {
           )}
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('webhook.fields.template')}</span>
-            <textarea
+            <Textarea
               className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
               value={config.fleet_template}
               onChange={(event) =>
@@ -251,23 +269,30 @@ export function SystemWebhookPage() {
           {config.type === 'onebot' ? (
             <>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('webhook.fields.obTargetType')}</span>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={config.ob_target_type}
-                  onChange={(event) =>
+                <span className="text-sm text-muted-foreground">
+                  {t('webhook.fields.obTargetType')}
+                </span>
+                <Select
+                  selectedKey={String(config.ob_target_type ?? '')}
+                  onSelectionChange={(key) => ((value) =>
                     setConfig((current) => ({
                       ...current,
-                      ob_target_type: event.target.value as 'group' | 'private',
-                    }))
-                  }
+                      ob_target_type: value as 'group' | 'private',
+                    })))(String(key))}
                 >
-                  <option value="group">{t('webhook.fields.obGroup')}</option>
-                  <option value="private">{t('webhook.fields.obPrivate')}</option>
-                </select>
+                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="group">{t('webhook.fields.obGroup')}</SelectItem>
+                    <SelectItem id="private">{t('webhook.fields.obPrivate')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('webhook.fields.obTargetId')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('webhook.fields.obTargetId')}
+                </span>
                 <Input
                   type="number"
                   min={0}
@@ -302,7 +327,12 @@ export function SystemWebhookPage() {
             <h2 className="text-base font-semibold">{t('webhook.test.title')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('webhook.test.subtitle')}</p>
           </div>
-          <Button type="button" variant="outline" onClick={() => void sendTest()} disabled={testing || !canSubmitTest}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void sendTest()}
+            isDisabled={testing || !canSubmitTest}
+          >
             {testing ? t('webhook.messages.testing') : t('webhook.test.sendBtn')}
           </Button>
         </div>
@@ -310,33 +340,41 @@ export function SystemWebhookPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('webhook.test.type')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={testForm.type}
-              onChange={(event) =>
-                setTestForm((current) => ({ ...current, type: event.target.value }))
-              }
+            <Select
+              selectedKey={String(testForm.type ?? '')}
+              onSelectionChange={(key) => ((value) => setTestForm((current) => ({ ...current, type: value })))(String(key))}
             >
-              <option value="discord">{t('webhook.types.discord')}</option>
-              <option value="feishu">{t('webhook.types.feishu')}</option>
-              <option value="dingtalk">{t('webhook.types.dingtalk')}</option>
-              <option value="onebot">{t('webhook.types.onebot')}</option>
-              <option value="qq_governance_onebot">{t('webhook.types.qqGovernanceOnebot')}</option>
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="discord">{t('webhook.types.discord')}</SelectItem>
+                <SelectItem id="feishu">{t('webhook.types.feishu')}</SelectItem>
+                <SelectItem id="dingtalk">{t('webhook.types.dingtalk')}</SelectItem>
+                <SelectItem id="onebot">{t('webhook.types.onebot')}</SelectItem>
+                <SelectItem id="qq_governance_onebot">
+                  {t('webhook.types.qqGovernanceOnebot')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           {!isQQGovernanceTest ? (
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">{t('webhook.test.url')}</span>
               <Input
                 value={testForm.url ?? ''}
-                onChange={(event) => setTestForm((current) => ({ ...current, url: event.target.value }))}
+                onChange={(event) =>
+                  setTestForm((current) => ({ ...current, url: event.target.value }))
+                }
                 placeholder={t('webhook.fields.urlPlaceholder')}
               />
             </label>
           ) : (
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">{t('webhook.fields.qqGroupIds')}</span>
-              <textarea
+              <span className="text-sm text-muted-foreground">
+                {t('webhook.fields.qqGroupIds')}
+              </span>
+              <Textarea
                 className="min-h-32 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
                 value={testQQGroupIDsText}
                 onChange={(event) => setTestQQGroupIDsText(event.target.value)}
@@ -358,23 +396,30 @@ export function SystemWebhookPage() {
           {testForm.type === 'onebot' ? (
             <>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('webhook.fields.obTargetType')}</span>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={testForm.ob_target_type ?? 'group'}
-                  onChange={(event) =>
+                <span className="text-sm text-muted-foreground">
+                  {t('webhook.fields.obTargetType')}
+                </span>
+                <Select
+                  selectedKey={String(testForm.ob_target_type ?? 'group')}
+                  onSelectionChange={(key) => ((value) =>
                     setTestForm((current) => ({
                       ...current,
-                      ob_target_type: event.target.value,
-                    }))
-                  }
+                      ob_target_type: value,
+                    })))(String(key))}
                 >
-                  <option value="group">{t('webhook.fields.obGroup')}</option>
-                  <option value="private">{t('webhook.fields.obPrivate')}</option>
-                </select>
+                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="group">{t('webhook.fields.obGroup')}</SelectItem>
+                    <SelectItem id="private">{t('webhook.fields.obPrivate')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('webhook.fields.obTargetId')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('webhook.fields.obTargetId')}
+                </span>
                 <Input
                   type="number"
                   min={0}

@@ -95,6 +95,6 @@ describe('DataTable', () => {
       />
     )
 
-    expect(screen.getByRole('option', { name: '200' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Page size/ })).toHaveTextContent('200')
   })
 })

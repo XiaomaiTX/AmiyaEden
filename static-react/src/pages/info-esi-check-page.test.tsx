@@ -23,8 +23,18 @@ describe('info esi check page', () => {
             code: 0,
             msg: 'ok',
             data: [
-              { module: 'wallet', scope: 'esi-wallet.read_character_wallet.v1', description: 'Wallet', required: true },
-              { module: 'skills', scope: 'esi-skills.read_skills.v1', description: 'Skills', required: false },
+              {
+                module: 'wallet',
+                scope: 'esi-wallet.read_character_wallet.v1',
+                description: 'Wallet',
+                required: true,
+              },
+              {
+                module: 'skills',
+                scope: 'esi-skills.read_skills.v1',
+                description: 'Skills',
+                required: false,
+              },
             ],
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -96,7 +106,10 @@ describe('info esi check page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Beta' }))
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toHaveValue('1002')
+      expect(screen.getAllByRole('button', { name: 'Beta' })[1]).toHaveAttribute(
+        'data-slot',
+        'select-trigger'
+      )
     })
     expect(screen.getByText('0/1 已授权')).toBeInTheDocument()
   })

@@ -3,7 +3,8 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { act } from '@testing-library/react'
 import { appRoutes } from '@/app/router'
 import { dispatchUnauthorized } from '@/auth'
-import { useSessionStore } from '@/stores'
+import { I18nProvider } from '@/i18n'
+import { usePreferenceStore, useSessionStore } from '@/stores'
 
 vi.mock('@/api/auth', async () => {
   const actual = await vi.importActual<typeof import('@/api/auth')>('@/api/auth')
@@ -71,6 +72,11 @@ describe('router auth and route meta access flow', () => {
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,
       hydratedAt: null,
+    })
+    usePreferenceStore.setState({
+      locale: 'en-US',
+      sidebarCollapsed: false,
+      theme: 'system',
     })
   })
 
@@ -332,7 +338,11 @@ describe('router auth and route meta access flow', () => {
         initialEntries: ['/outside/iframe/https://example.com'],
       })
 
-      render(<RouterProvider router={router} />)
+      render(
+        <I18nProvider>
+          <RouterProvider router={router} />
+        </I18nProvider>
+      )
 
       const iframe = screen.getByTitle('External Content')
       expect(iframe).toBeInTheDocument()
@@ -344,7 +354,11 @@ describe('router auth and route meta access flow', () => {
         initialEntries: ['/outside/iframe//'],
       })
 
-      render(<RouterProvider router={router} />)
+      render(
+        <I18nProvider>
+          <RouterProvider router={router} />
+        </I18nProvider>
+      )
 
       expect(screen.getByText('Missing iframe target path.')).toBeInTheDocument()
     })

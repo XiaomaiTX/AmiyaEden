@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { fetchGetUserInfo, getEveBindURL, setPrimaryCharacter, unbindCharacter, updateMyProfile } from '@/api/auth'
+import {
+  fetchGetUserInfo,
+  getEveBindURL,
+  setPrimaryCharacter,
+  unbindCharacter,
+  updateMyProfile,
+} from '@/api/auth'
 import {
   checkDirectReferrerQQ,
   confirmDirectReferrer,
@@ -33,11 +39,8 @@ export function DashboardCharactersPage() {
   const setSessionSnapshot = useSessionStore((state) => state.setSessionSnapshot)
   const roles = useSessionStore((state) => state.roles)
   const lockReasons =
-    (
-      location.state as
-        | { profileLockReasons?: ProfileLockReason[] }
-        | null
-    )?.profileLockReasons ?? []
+    (location.state as { profileLockReasons?: ProfileLockReason[] } | null)?.profileLockReasons ??
+    []
 
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState<{ kind: 'error' | 'success'; text: string } | null>(null)
@@ -117,18 +120,21 @@ export function DashboardCharactersPage() {
   const hasCorpKmScope = (character: EveCharacter) =>
     character.scopes?.split(' ').includes(CORP_KM_SCOPE) ?? false
 
-  const applyUserInfo = useCallback((userInfo: UserInfo) => {
-    setSessionSnapshot(toSessionSnapshot(userInfo))
-    setCharacters(userInfo.characters ?? [])
-    setPrimaryCharacterId(userInfo.primaryCharacterId ?? 0)
-    setProfileComplete(userInfo.profileComplete)
-    setEnforceCharacterESIRestriction(userInfo.enforceCharacterESIRestriction)
-    setProfileForm({
-      nickname: userInfo.nickname,
-      qq: userInfo.qq,
-      discordId: userInfo.discordId,
-    })
-  }, [setSessionSnapshot])
+  const applyUserInfo = useCallback(
+    (userInfo: UserInfo) => {
+      setSessionSnapshot(toSessionSnapshot(userInfo))
+      setCharacters(userInfo.characters ?? [])
+      setPrimaryCharacterId(userInfo.primaryCharacterId ?? 0)
+      setProfileComplete(userInfo.profileComplete)
+      setEnforceCharacterESIRestriction(userInfo.enforceCharacterESIRestriction)
+      setProfileForm({
+        nickname: userInfo.nickname,
+        qq: userInfo.qq,
+        discordId: userInfo.discordId,
+      })
+    },
+    [setSessionSnapshot]
+  )
 
   const syncUserInfo = useCallback(async () => {
     const userInfo = await fetchGetUserInfo()
@@ -253,7 +259,10 @@ export function DashboardCharactersPage() {
       const url = await getEveBindURL([CORP_KM_SCOPE])
       window.location.assign(url)
     } catch (error) {
-      setNotice({ kind: 'error', text: getErrorMessage(error, t('characters.corpKm.enableFailed')) })
+      setNotice({
+        kind: 'error',
+        text: getErrorMessage(error, t('characters.corpKm.enableFailed')),
+      })
     }
   }
 
@@ -263,7 +272,10 @@ export function DashboardCharactersPage() {
     try {
       await setPrimaryCharacter(character.character_id)
       await syncUserInfo()
-      setNotice({ kind: 'success', text: t('characters.setPrimarySuccess', { name: character.character_name }) })
+      setNotice({
+        kind: 'success',
+        text: t('characters.setPrimarySuccess', { name: character.character_name }),
+      })
     } catch (error) {
       setNotice({ kind: 'error', text: getErrorMessage(error, t('characters.setPrimaryFailed')) })
     } finally {
@@ -272,7 +284,9 @@ export function DashboardCharactersPage() {
   }
 
   const handleUnbind = async (character: EveCharacter) => {
-    const confirmed = window.confirm(t('characters.unbindConfirm', { name: character.character_name }))
+    const confirmed = window.confirm(
+      t('characters.unbindConfirm', { name: character.character_name })
+    )
     if (!confirmed) {
       return
     }
@@ -282,7 +296,10 @@ export function DashboardCharactersPage() {
     try {
       await unbindCharacter(character.character_id)
       await syncUserInfo()
-      setNotice({ kind: 'success', text: t('characters.unbindSuccess', { name: character.character_name }) })
+      setNotice({
+        kind: 'success',
+        text: t('characters.unbindSuccess', { name: character.character_name }),
+      })
     } catch (error) {
       setNotice({ kind: 'error', text: getErrorMessage(error, t('characters.unbindFailed')) })
     } finally {
@@ -357,7 +374,9 @@ export function DashboardCharactersPage() {
                   : 'bg-amber-500/10 text-amber-600',
               ].join(' ')}
             >
-              {profileComplete ? t('characters.profile.completed') : t('characters.profile.incomplete')}
+              {profileComplete
+                ? t('characters.profile.completed')
+                : t('characters.profile.incomplete')}
             </span>
             <Button type="button" variant="outline" onClick={() => void handleRefresh()}>
               {t('common.refresh')}
@@ -385,7 +404,9 @@ export function DashboardCharactersPage() {
               : 'border-amber-500/20 bg-amber-500/5 text-amber-700',
           ].join(' ')}
         >
-          {profileComplete ? t('characters.profile.completedHint') : t('characters.profile.requiredHint')}
+          {profileComplete
+            ? t('characters.profile.completedHint')
+            : t('characters.profile.requiredHint')}
         </div>
 
         {notice ? (
@@ -419,7 +440,9 @@ export function DashboardCharactersPage() {
             <Input
               value={profileForm.qq}
               maxLength={MAX_TEXT_LENGTH}
-              onChange={(event) => setProfileForm((current) => ({ ...current, qq: event.target.value }))}
+              onChange={(event) =>
+                setProfileForm((current) => ({ ...current, qq: event.target.value }))
+              }
               placeholder={t('characters.profile.qqPlaceholder')}
             />
           </label>
@@ -438,7 +461,7 @@ export function DashboardCharactersPage() {
         </div>
 
         <div className="mt-4 flex justify-end">
-          <Button type="button" onClick={() => void handleSaveProfile()} disabled={profileSaving}>
+          <Button type="button" onClick={() => void handleSaveProfile()} isDisabled={profileSaving}>
             {profileSaving ? t('characters.profile.saving') : t('characters.profile.save')}
           </Button>
         </div>
@@ -449,7 +472,9 @@ export function DashboardCharactersPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl">
               <h2 className="text-lg font-semibold">{t('characters.directReferral.title')}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{t('characters.directReferral.subtitle')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('characters.directReferral.subtitle')}
+              </p>
             </div>
             <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-600">
               {t('characters.directReferral.windowTag')}
@@ -457,7 +482,9 @@ export function DashboardCharactersPage() {
           </div>
 
           {directReferralLoading ? (
-            <p className="mt-4 text-sm text-muted-foreground">{t('characters.directReferral.loading')}</p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {t('characters.directReferral.loading')}
+            </p>
           ) : null}
 
           {directReferralStatus.needs_profile_qq ? (
@@ -468,7 +495,9 @@ export function DashboardCharactersPage() {
             <>
               <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-end">
                 <label className="flex-1 space-y-2">
-                  <span className="text-sm font-medium">{t('characters.directReferral.referrerQQ')}</span>
+                  <span className="text-sm font-medium">
+                    {t('characters.directReferral.referrerQQ')}
+                  </span>
                   <Input
                     value={directReferrerQQ}
                     maxLength={MAX_TEXT_LENGTH}
@@ -481,36 +510,53 @@ export function DashboardCharactersPage() {
                   type="button"
                   variant="outline"
                   onClick={() => void handleCheckDirectReferrer()}
-                  disabled={directReferralChecking}
+                  isDisabled={directReferralChecking}
                 >
-                  {directReferralChecking ? t('characters.directReferral.checking') : t('characters.directReferral.checkBtn')}
+                  {directReferralChecking
+                    ? t('characters.directReferral.checking')
+                    : t('characters.directReferral.checkBtn')}
                 </Button>
               </div>
 
-              <p className="mt-3 text-sm text-muted-foreground">{t('characters.directReferral.confirmHint')}</p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {t('characters.directReferral.confirmHint')}
+              </p>
 
               {directReferrerCandidate ? (
                 <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-4">
                       <img
-                        src={buildEveCharacterPortraitUrl(directReferrerCandidate.primary_character_id, 64)}
+                        src={buildEveCharacterPortraitUrl(
+                          directReferrerCandidate.primary_character_id,
+                          64
+                        )}
                         alt={directReferrerCandidate.nickname}
                         className="size-14 rounded-full border object-cover"
                       />
                       <div className="min-w-0">
-                        <div className="truncate text-base font-medium">{directReferrerCandidate.nickname}</div>
-                        <div className="mt-1 truncate text-sm text-muted-foreground">
-                          {t('characters.directReferral.mainCharacter')}: {directReferrerCandidate.primary_character_name}
+                        <div className="truncate text-base font-medium">
+                          {directReferrerCandidate.nickname}
                         </div>
                         <div className="mt-1 truncate text-sm text-muted-foreground">
-                          {t('characters.directReferral.nickname')}: {directReferrerCandidate.nickname}
+                          {t('characters.directReferral.mainCharacter')}:{' '}
+                          {directReferrerCandidate.primary_character_name}
+                        </div>
+                        <div className="mt-1 truncate text-sm text-muted-foreground">
+                          {t('characters.directReferral.nickname')}:{' '}
+                          {directReferrerCandidate.nickname}
                         </div>
                       </div>
                     </div>
 
-                    <Button type="button" onClick={() => void handleConfirmDirectReferrer()} disabled={directReferralConfirming}>
-                      {directReferralConfirming ? t('characters.directReferral.confirming') : t('characters.directReferral.confirmBtn')}
+                    <Button
+                      type="button"
+                      onClick={() => void handleConfirmDirectReferrer()}
+                      isDisabled={directReferralConfirming}
+                    >
+                      {directReferralConfirming
+                        ? t('characters.directReferral.confirming')
+                        : t('characters.directReferral.confirmBtn')}
                     </Button>
                   </div>
                 </div>
@@ -526,7 +572,7 @@ export function DashboardCharactersPage() {
             <h2 className="text-lg font-semibold">{t('characters.listTitle')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('characters.listSubTitle')}</p>
           </div>
-          <Button type="button" onClick={() => void handleBind()} disabled={bindLoading}>
+          <Button type="button" onClick={() => void handleBind()} isDisabled={bindLoading}>
             {bindLoading ? t('characters.binding') : t('characters.bind')}
           </Button>
         </div>
@@ -573,11 +619,18 @@ export function DashboardCharactersPage() {
                   <h3 className="truncate text-base font-medium">
                     {character.character_name}
                     {character.token_invalid ? (
-                      <span className="ml-1 text-sm text-destructive">{t('characters.tokenInvalid')}</span>
+                      <span className="ml-1 text-sm text-destructive">
+                        {t('characters.tokenInvalid')}
+                      </span>
                     ) : null}
                   </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">ID: {character.character_id}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground" title={character.scopes}>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {t('common.id')}: {character.character_id}
+                  </p>
+                  <p
+                    className="mt-0.5 truncate text-xs text-muted-foreground"
+                    title={character.scopes}
+                  >
                     {character.scopes
                       ? `${character.scopes.split(' ').filter(Boolean).length} ${t('characters.scopeCount')}`
                       : t('characters.noScopes')}
@@ -590,7 +643,7 @@ export function DashboardCharactersPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => void handleSetPrimary(character)}
-                        disabled={switchingId === character.character_id}
+                        isDisabled={switchingId === character.character_id}
                       >
                         {switchingId === character.character_id
                           ? t('characters.setPrimaryLoading')
@@ -604,9 +657,11 @@ export function DashboardCharactersPage() {
                         size="sm"
                         variant="destructive"
                         onClick={() => void handleUnbind(character)}
-                        disabled={unbindingId === character.character_id}
+                        isDisabled={unbindingId === character.character_id}
                       >
-                        {unbindingId === character.character_id ? t('characters.unbinding') : t('characters.unbind')}
+                        {unbindingId === character.character_id
+                          ? t('characters.unbinding')
+                          : t('characters.unbind')}
                       </Button>
                     ) : null}
 
@@ -616,7 +671,12 @@ export function DashboardCharactersPage() {
                           {t('characters.corpKm.enabled')}
                         </span>
                       ) : (
-                        <Button type="button" size="sm" variant="outline" onClick={() => void handleEnableCorpKm()}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void handleEnableCorpKm()}
+                        >
                           {t('characters.corpKm.enable')}
                         </Button>
                       )

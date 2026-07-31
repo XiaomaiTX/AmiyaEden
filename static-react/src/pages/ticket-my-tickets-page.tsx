@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { listMyTickets } from '@/api/ticket'
@@ -126,16 +141,20 @@ export function TicketMyTicketsPage() {
               <span className="text-sm text-muted-foreground">
                 {t('ticketMyTickets.filters.status')}
               </span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+              <Select
+                selectedKey={String(statusFilter ?? '')}
+                onSelectionChange={(key) => ((value) => setStatusFilter(value))(String(key))}
               >
-                <option value="">{t('ticketMyTickets.allStatuses')}</option>
-                <option value="pending">{statusLabel(t, 'pending')}</option>
-                <option value="in_progress">{statusLabel(t, 'in_progress')}</option>
-                <option value="completed">{statusLabel(t, 'completed')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('ticketMyTickets.allStatuses')}</SelectItem>
+                  <SelectItem id="pending">{statusLabel(t, 'pending')}</SelectItem>
+                  <SelectItem id="in_progress">{statusLabel(t, 'in_progress')}</SelectItem>
+                  <SelectItem id="completed">{statusLabel(t, 'completed')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
 
             <Button type="button" onClick={handleSearch}>
@@ -158,43 +177,45 @@ export function TicketMyTicketsPage() {
           {t('ticketMyTickets.title')} ({total})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('ticketMyTickets.columns.id')}</th>
-                <th className="px-3 py-2">{t('ticketMyTickets.columns.title')}</th>
-                <th className="px-3 py-2">{t('ticketMyTickets.columns.status')}</th>
-                <th className="px-3 py-2">{t('ticketMyTickets.columns.priority')}</th>
-                <th className="px-3 py-2">{t('ticketMyTickets.columns.updatedAt')}</th>
-                <th className="px-3 py-2">{t('ticketMyTickets.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.id')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.title')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.priority')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('ticketMyTickets.columns.updatedAt')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {tickets.map((ticket) => (
-                <tr key={ticket.id} className="border-b">
-                  <td className="px-3 py-2">{ticket.id}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={ticket.id} className="border-b">
+                  <TableCell className="px-3 py-2">{ticket.id}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="font-medium">{ticket.title}</div>
                     <div className="line-clamp-2 text-xs text-muted-foreground">
                       {ticket.description}
                     </div>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(ticket.status)}`}
                     >
                       {statusLabel(t, ticket.status)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${priorityTone(ticket.priority)}`}
                     >
                       {priorityLabel(t, ticket.priority)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{formatTime(ticket.updated_at)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatTime(ticket.updated_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <Button
                       type="button"
                       size="sm"
@@ -203,18 +224,18 @@ export function TicketMyTicketsPage() {
                     >
                       {t('ticketMyTickets.viewDetail')}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && tickets.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('ticketMyTickets.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -227,7 +248,7 @@ export function TicketMyTicketsPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={page <= 1}
+          isDisabled={page <= 1}
         >
           {t('ticketMyTickets.pagination.prev')}
         </Button>
@@ -236,26 +257,30 @@ export function TicketMyTicketsPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => current + 1)}
-          disabled={tickets.length < pageSize || page * pageSize >= total}
+          isDisabled={tickets.length < pageSize || page * pageSize >= total}
         >
           {t('ticketMyTickets.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('ticketMyTickets.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
     </section>

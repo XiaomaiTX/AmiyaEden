@@ -1,3 +1,11 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createTicket, listTicketCategories } from '@/api/ticket'
@@ -139,40 +147,52 @@ export function TicketCreatePage() {
               <span className="text-sm text-muted-foreground">
                 {t('ticketCreate.fields.category')}
               </span>
-              <select
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={form.category_id}
-                onChange={(event) => {
-                  setForm((current) => ({ ...current, category_id: Number(event.target.value) }))
-                }}
-                disabled={loadingCategories || categories.length === 0}
+              <Select
+                aria-label={t('ticketCreate.fields.category')}
+                selectedKey={String(form.category_id ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setForm((current) => ({ ...current, category_id: Number(value) }))
+                })(String(key))}
               >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {getCategoryName(category, locale)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  aria-label={t('ticketCreate.fields.category')}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  isDisabled={loadingCategories || categories.length === 0}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} id={String(category.id ?? '')}>
+                      {getCategoryName(category, locale)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
 
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">
                 {t('ticketCreate.fields.priority')}
               </span>
-              <select
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={form.priority}
-                onChange={(event) => {
+              <Select
+                selectedKey={String(form.priority ?? '')}
+                onSelectionChange={(key) => ((value) => {
                   setForm((current) => ({
                     ...current,
-                    priority: event.target.value as TicketPriority,
+                    priority: value as TicketPriority,
                   }))
-                }}
+                })(String(key))}
               >
-                <option value="low">{t('ticketCreate.priorities.low')}</option>
-                <option value="medium">{t('ticketCreate.priorities.medium')}</option>
-                <option value="high">{t('ticketCreate.priorities.high')}</option>
-              </select>
+                <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="low">{t('ticketCreate.priorities.low')}</SelectItem>
+                  <SelectItem id="medium">{t('ticketCreate.priorities.medium')}</SelectItem>
+                  <SelectItem id="high">{t('ticketCreate.priorities.high')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
           </div>
 
@@ -192,7 +212,7 @@ export function TicketCreatePage() {
             <span className="text-sm text-muted-foreground">
               {t('ticketCreate.fields.description')}
             </span>
-            <textarea
+            <Textarea
               className="min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               value={form.description}
               placeholder={t('ticketCreate.placeholders.description')}
@@ -203,7 +223,7 @@ export function TicketCreatePage() {
           </label>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={() => void handleSubmit()} disabled={!canSubmit}>
+            <Button type="button" onClick={() => void handleSubmit()} isDisabled={!canSubmit}>
               {submitting ? t('ticketCreate.actions.submitting') : t('ticketCreate.actions.submit')}
             </Button>
             <span className="text-sm text-muted-foreground">{t('ticketCreate.submitHint')}</span>

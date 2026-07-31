@@ -2,7 +2,6 @@
 import type { ReactNode } from 'react'
 import {
   Dialog,
-  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -130,15 +129,19 @@ export function ShopDialog({
   widthClass?: string
 }) {
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className={cn('max-h-[calc(100vh-2rem)] overflow-y-auto', widthClass)} closeLabel={closeLabel}>
+    <Dialog
+      aria-label={closeLabel}
+      isOpen={open}
+      onOpenChange={(nextOpen) => !nextOpen && onClose()}
+    >
+      <div className={cn('max-h-[calc(100vh-2rem)] overflow-y-auto', widthClass)}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>
         <div className="space-y-4">{children}</div>
         {footer ? <DialogFooter>{footer}</DialogFooter> : null}
-      </DialogContent>
+      </div>
     </Dialog>
   )
 }

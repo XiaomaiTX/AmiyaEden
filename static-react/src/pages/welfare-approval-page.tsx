@@ -1,3 +1,5 @@
+import { Input } from '@/components/ui/input'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useState } from 'react'
 import { adminDeleteApplication, adminListApplications, adminReviewApplication } from '@/api/welfare'
 import { Button } from '@/components/ui/button'
@@ -102,7 +104,7 @@ export function WelfareApprovalPage() {
             <p className="mt-1 text-sm text-muted-foreground">{t('welfareApproval.subtitle')}</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
-            <input
+            <Input
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
@@ -129,36 +131,36 @@ export function WelfareApprovalPage() {
         </div>
 
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('welfareApproval.columns.character')}</th>
-                <th className="px-3 py-2">{t('welfareApproval.columns.welfare')}</th>
-                <th className="px-3 py-2">{t('welfareApproval.columns.status')}</th>
-                <th className="px-3 py-2">{t('welfareApproval.columns.reviewer')}</th>
-                <th className="px-3 py-2">{t('welfareApproval.columns.appliedAt')}</th>
-                <th className="px-3 py-2">{t('welfareApproval.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('welfareApproval.columns.character')}</TableHead>
+                <TableHead className="px-3 py-2">{t('welfareApproval.columns.welfare')}</TableHead>
+                <TableHead className="px-3 py-2">{t('welfareApproval.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('welfareApproval.columns.reviewer')}</TableHead>
+                <TableHead className="px-3 py-2">{t('welfareApproval.columns.appliedAt')}</TableHead>
+                <TableHead className="px-3 py-2">{t('welfareApproval.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {(activeTab === 'pending' ? pending : history).map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="px-3 py-2">{item.character_name}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={item.id} className="border-b">
+                  <TableCell className="px-3 py-2">{item.character_name}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="font-medium">{item.welfare_name}</div>
                     <div className="text-xs text-muted-foreground">{item.welfare_description}</div>
-                  </td>
-                  <td className="px-3 py-2">{item.status}</td>
-                  <td className="px-3 py-2">{item.reviewer_name || '-'}</td>
-                  <td className="px-3 py-2">{formatTime(item.created_at)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{item.status}</TableCell>
+                  <TableCell className="px-3 py-2">{item.reviewer_name || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{formatTime(item.created_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     {activeTab === 'pending' ? (
                       <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"
                           size="sm"
                           onClick={() => void review(item.id, 'deliver')}
-                          disabled={actionId === item.id}
+                          isDisabled={actionId === item.id}
                         >
                           {t('welfareApproval.deliverBtn')}
                         </Button>
@@ -167,7 +169,7 @@ export function WelfareApprovalPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => void review(item.id, 'reject')}
-                          disabled={actionId === item.id}
+                          isDisabled={actionId === item.id}
                         >
                           {t('welfareApproval.rejectBtn')}
                         </Button>
@@ -178,23 +180,23 @@ export function WelfareApprovalPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => void removeHistory(item.id)}
-                        disabled={actionId === item.id}
+                        isDisabled={actionId === item.id}
                       >
                         {t('common.delete')}
                       </Button>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && (activeTab === 'pending' ? pending : history).length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('welfareApproval.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </section>

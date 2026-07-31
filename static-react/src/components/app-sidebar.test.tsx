@@ -45,7 +45,10 @@ describe('AppSidebar', () => {
   test('auto-expands the active route group and marks the active child', () => {
     renderSidebar('/info/assets')
 
-    expect(screen.getByRole('button', { name: 'EVE 人物信息' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'EVE 人物信息' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
     expect(screen.getByRole('link', { name: '人物资产' })).toHaveAttribute('data-active', 'true')
     expect(screen.getByText('钱包流水')).toBeInTheDocument()
   })

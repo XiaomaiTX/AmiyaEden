@@ -1,5 +1,15 @@
+"use client"
+
 import * as React from "react"
-import { Slot } from "radix-ui"
+import {
+  Breadcrumb as BreadcrumbPrimitive,
+  Breadcrumbs as BreadcrumbsPrimitive,
+  composeRenderProps,
+  Link as LinkPrimitive,
+  type BreadcrumbProps,
+  type BreadcrumbsProps,
+  type LinkProps,
+} from "react-aria-components"
 
 import { cn } from "@/lib/utils"
 import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react"
@@ -15,9 +25,12 @@ function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   )
 }
 
-function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
+function BreadcrumbList<T extends object>({
+  className,
+  ...props
+}: BreadcrumbsProps<T>) {
   return (
-    <ol
+    <BreadcrumbsPrimitive
       data-slot="breadcrumb-list"
       className={cn(
         "flex flex-wrap items-center gap-1.5 text-sm wrap-break-word text-muted-foreground",
@@ -28,29 +41,43 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
   )
 }
 
-function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
+function BreadcrumbItem({
+  className,
+  children,
+  separatorClassName,
+  ...props
+}: BreadcrumbProps & { separatorClassName?: string }) {
   return (
-    <li
+    <BreadcrumbPrimitive
       data-slot="breadcrumb-item"
       className={cn("inline-flex items-center gap-1", className)}
       {...props}
-    />
+    >
+      {composeRenderProps(children, (children, { isCurrent }) => (
+        <>
+          {children}
+          {!isCurrent && (
+            <span
+              data-slot="breadcrumb-separator"
+              role="presentation"
+              aria-hidden="true"
+              className={cn("[&>svg]:size-3.5", separatorClassName)}
+            >
+              <ChevronRightIcon />
+            </span>
+          )}
+        </>
+      ))}
+    </BreadcrumbPrimitive>
   )
 }
 
-function BreadcrumbLink({
-  asChild,
-  className,
-  ...props
-}: React.ComponentProps<"a"> & {
-  asChild?: boolean
-}) {
-  const Comp = asChild ? Slot.Root : "a"
-
+function BreadcrumbLink({ className, render, ...props }: LinkProps) {
   return (
-    <Comp
+    <LinkPrimitive
       data-slot="breadcrumb-link"
       className={cn("transition-colors hover:text-foreground", className)}
+      render={render}
       {...props}
     />
   )
@@ -66,26 +93,6 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       className={cn("font-normal text-foreground", className)}
       {...props}
     />
-  )
-}
-
-function BreadcrumbSeparator({
-  children,
-  className,
-  ...props
-}: React.ComponentProps<"li">) {
-  return (
-    <li
-      data-slot="breadcrumb-separator"
-      role="presentation"
-      aria-hidden="true"
-      className={cn("[&>svg]:size-3.5", className)}
-      {...props}
-    >
-      {children ?? (
-        <ChevronRightIcon />
-      )}
-    </li>
   )
 }
 
@@ -117,6 +124,5 @@ export {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbPage,
-  BreadcrumbSeparator,
   BreadcrumbEllipsis,
 }

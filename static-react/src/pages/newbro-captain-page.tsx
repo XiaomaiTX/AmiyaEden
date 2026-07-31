@@ -1,3 +1,10 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCallback, useEffect, useState } from 'react'
 import {
   fetchCaptainAttributions,
@@ -38,13 +45,14 @@ export function NewbroCaptainPage() {
     setLoading(true)
     setError(null)
     try {
-      const [overviewData, playerList, eligibleList, attributionData, rewardData] = await Promise.all([
-        fetchCaptainOverview(),
-        fetchCaptainPlayers({ current: 1, size: 20, status: playerStatus }),
-        fetchCaptainEligiblePlayers({ current: 1, size: 20 }),
-        fetchCaptainAttributions({ current: 1, size: 20 }),
-        fetchCaptainRewardSettlements({ current: 1, size: 20 }),
-      ])
+      const [overviewData, playerList, eligibleList, attributionData, rewardData] =
+        await Promise.all([
+          fetchCaptainOverview(),
+          fetchCaptainPlayers({ current: 1, size: 20, status: playerStatus }),
+          fetchCaptainEligiblePlayers({ current: 1, size: 20 }),
+          fetchCaptainAttributions({ current: 1, size: 20 }),
+          fetchCaptainRewardSettlements({ current: 1, size: 20 }),
+        ])
 
       setOverview(overviewData)
       setPlayers(playerList.list ?? [])
@@ -109,24 +117,42 @@ export function NewbroCaptainPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('newbroCaptain.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('newbroCaptain.loading')}</p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-4">
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-sm text-muted-foreground">{t('newbroCaptain.metrics.activePlayers')}</div>
-          <div className="mt-1 text-2xl font-semibold">{formatNumber(overview?.active_player_count)}</div>
+          <div className="text-sm text-muted-foreground">
+            {t('newbroCaptain.metrics.activePlayers')}
+          </div>
+          <div className="mt-1 text-2xl font-semibold">
+            {formatNumber(overview?.active_player_count)}
+          </div>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-sm text-muted-foreground">{t('newbroCaptain.metrics.historicalPlayers')}</div>
-          <div className="mt-1 text-2xl font-semibold">{formatNumber(overview?.historical_player_count)}</div>
+          <div className="text-sm text-muted-foreground">
+            {t('newbroCaptain.metrics.historicalPlayers')}
+          </div>
+          <div className="mt-1 text-2xl font-semibold">
+            {formatNumber(overview?.historical_player_count)}
+          </div>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-sm text-muted-foreground">{t('newbroCaptain.metrics.bountyTotal')}</div>
-          <div className="mt-1 text-2xl font-semibold">{formatNumber(overview?.attributed_bounty_total)}</div>
+          <div className="text-sm text-muted-foreground">
+            {t('newbroCaptain.metrics.bountyTotal')}
+          </div>
+          <div className="mt-1 text-2xl font-semibold">
+            {formatNumber(overview?.attributed_bounty_total)}
+          </div>
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <div className="text-sm text-muted-foreground">{t('newbroCaptain.metrics.recordCount')}</div>
-          <div className="mt-1 text-2xl font-semibold">{formatNumber(overview?.attribution_record_count)}</div>
+          <div className="text-sm text-muted-foreground">
+            {t('newbroCaptain.metrics.recordCount')}
+          </div>
+          <div className="mt-1 text-2xl font-semibold">
+            {formatNumber(overview?.attribution_record_count)}
+          </div>
         </div>
       </div>
 
@@ -134,18 +160,24 @@ export function NewbroCaptainPage() {
         <div className="rounded-lg border bg-card p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-base font-semibold">{t('newbroCaptain.playersSection')}</h2>
-            <select
-              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-              value={playerStatus}
-              onChange={(event) => {
-                setPlayerStatus(event.target.value as CaptainPlayerStatus)
+            <Select
+              selectedKey={String(playerStatus ?? '')}
+              onSelectionChange={(key) => ((value) => {
+                setPlayerStatus(value as CaptainPlayerStatus)
                 setRefreshSeed((current) => current + 1)
-              }}
+              })(String(key))}
             >
-              <option value="all">{t('newbroCaptain.playerStatus.all')}</option>
-              <option value="active">{t('newbroCaptain.playerStatus.active')}</option>
-              <option value="historical">{t('newbroCaptain.playerStatus.historical')}</option>
-            </select>
+              <SelectTrigger className="h-9 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="all">{t('newbroCaptain.playerStatus.all')}</SelectItem>
+                <SelectItem id="active">{t('newbroCaptain.playerStatus.active')}</SelectItem>
+                <SelectItem id="historical">
+                  {t('newbroCaptain.playerStatus.historical')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="mt-4 space-y-3">
@@ -154,7 +186,9 @@ export function NewbroCaptainPage() {
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="font-medium">{player.player_character_name}</div>
-                    <div className="text-sm text-muted-foreground">{player.player_nickname || '-'}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {player.player_nickname || '-'}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {t('newbroCaptain.startedAt')}: {formatDateTime(player.started_at)}
                     </div>
@@ -166,7 +200,7 @@ export function NewbroCaptainPage() {
                     <Button
                       type="button"
                       variant="destructive"
-                      disabled={endingPlayerId === player.player_user_id}
+                      isDisabled={endingPlayerId === player.player_user_id}
                       onClick={() => void handleEndAffiliation(player.player_user_id)}
                     >
                       {endingPlayerId === player.player_user_id
@@ -189,7 +223,9 @@ export function NewbroCaptainPage() {
           <div className="rounded-lg border bg-card p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">{t('newbroCaptain.eligibleSection')}</h2>
-              <span className="text-sm text-muted-foreground">{formatNumber(eligiblePlayers.length)}</span>
+              <span className="text-sm text-muted-foreground">
+                {formatNumber(eligiblePlayers.length)}
+              </span>
             </div>
             <div className="mt-4 space-y-3">
               {eligiblePlayers.map((player) => (
@@ -197,7 +233,9 @@ export function NewbroCaptainPage() {
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="font-medium">{player.player_character_name}</div>
-                      <div className="text-sm text-muted-foreground">{player.player_nickname || '-'}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {player.player_nickname || '-'}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {player.current_affiliation
                           ? t('newbroCaptain.currentCaptain', {
@@ -208,7 +246,7 @@ export function NewbroCaptainPage() {
                     </div>
                     <Button
                       type="button"
-                      disabled={enrollingPlayerId === player.player_user_id}
+                      isDisabled={enrollingPlayerId === player.player_user_id}
                       onClick={() => void handleEnroll(player.player_user_id)}
                     >
                       {enrollingPlayerId === player.player_user_id

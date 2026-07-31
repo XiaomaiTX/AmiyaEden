@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMyWallet, fetchMyWalletTransactions } from '@/api/shop'
 import { Button } from '@/components/ui/button'
@@ -69,7 +84,11 @@ export function ShopWalletPage() {
             <h1 className="text-xl font-semibold">{t('shopWallet.title')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t('shopWallet.subtitle')}</p>
           </div>
-          <Button type="button" variant="outline" onClick={() => setRefreshSeed((current) => current + 1)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setRefreshSeed((current) => current + 1)}
+          >
             {t('common.refresh')}
           </Button>
         </div>
@@ -82,7 +101,9 @@ export function ShopWalletPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm text-muted-foreground">{t('shop.myBalance')}</p>
-            <p className={`mt-1 text-3xl font-semibold ${wallet && wallet.balance < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+            <p
+              className={`mt-1 text-3xl font-semibold ${wallet && wallet.balance < 0 ? 'text-rose-600' : 'text-emerald-600'}`}
+            >
               {wallet ? `${formatCoin(wallet.balance)} ${t('shop.currency')}` : '-'}
             </p>
             {wallet?.character_name ? (
@@ -104,47 +125,49 @@ export function ShopWalletPage() {
           {t('shopWallet.transactionsTitle')} ({total})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('shopWallet.columns.createdAt')}</th>
-                <th className="px-3 py-2">{t('shopWallet.columns.refType')}</th>
-                <th className="px-3 py-2">{t('shopWallet.columns.amount')}</th>
-                <th className="px-3 py-2">{t('shopWallet.columns.balanceAfter')}</th>
-                <th className="px-3 py-2">{t('shopWallet.columns.reason')}</th>
-                <th className="px-3 py-2">{t('shopWallet.columns.operator')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('shopWallet.columns.createdAt')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopWallet.columns.refType')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopWallet.columns.amount')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopWallet.columns.balanceAfter')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopWallet.columns.reason')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopWallet.columns.operator')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {transactions.map((row) => (
-                <tr key={row.id} className="border-b">
-                  <td className="px-3 py-2">{formatDateTime(row.created_at)}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={row.id} className="border-b">
+                  <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <ShopBadge className={refTypeClass(row.ref_type)}>
                       {refTypeLabel(t, row.ref_type)}
                     </ShopBadge>
-                  </td>
-                  <td className="px-3 py-2 font-medium">
+                  </TableCell>
+                  <TableCell className="px-3 py-2 font-medium">
                     <span className={row.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
                       {formatSignedCoin(row.amount)} {t('shop.currency')}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     {formatCoin(row.balance_after)} {t('shop.currency')}
-                  </td>
-                  <td className="px-3 py-2">{row.reason || '-'}</td>
-                  <td className="px-3 py-2">{row.operator_name || row.operator_id || '-'}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{row.reason || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">
+                    {row.operator_name || row.operator_id || '-'}
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && transactions.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('shopWallet.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -157,7 +180,7 @@ export function ShopWalletPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={page <= 1}
+          isDisabled={page <= 1}
         >
           {t('welfareMy.pagination.prev')}
         </Button>
@@ -166,26 +189,30 @@ export function ShopWalletPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => current + 1)}
-          disabled={transactions.length < pageSize || page * pageSize >= total}
+          isDisabled={transactions.length < pageSize || page * pageSize >= total}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
     </section>

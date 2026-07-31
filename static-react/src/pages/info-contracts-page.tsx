@@ -1,7 +1,28 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { fetchInfoContractDetail, fetchInfoContracts } from '@/api/eve-info'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { formatIskPlain } from '@/lib/isk'
 import { useI18n } from '@/i18n'
 import type { ContractBidItem, ContractItem, ContractItemDetail } from '@/types/api/eve-info'
@@ -188,46 +209,69 @@ export function InfoContractsPage() {
 
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('infoContracts.filters.type')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={filterType}
-                onChange={(event) => {
-                  setFilterType(event.target.value)
+              <span className="text-sm text-muted-foreground">
+                {t('infoContracts.filters.type')}
+              </span>
+              <Select
+                selectedKey={String(filterType ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setFilterType(value)
                   setPage(1)
-                }}
+                })(String(key))}
               >
-                <option value="">{t('infoContracts.allTypes')}</option>
-                <option value="item_exchange">{t('infoContracts.types.item_exchange')}</option>
-                <option value="auction">{t('infoContracts.types.auction')}</option>
-                <option value="courier">{t('infoContracts.types.courier')}</option>
-                <option value="loan">{t('infoContracts.types.loan')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('infoContracts.allTypes')}</SelectItem>
+                  <SelectItem id="item_exchange">
+                    {t('infoContracts.types.item_exchange')}
+                  </SelectItem>
+                  <SelectItem id="auction">{t('infoContracts.types.auction')}</SelectItem>
+                  <SelectItem id="courier">{t('infoContracts.types.courier')}</SelectItem>
+                  <SelectItem id="loan">{t('infoContracts.types.loan')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('infoContracts.filters.status')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={filterStatus}
-                onChange={(event) => {
-                  setFilterStatus(event.target.value)
+              <span className="text-sm text-muted-foreground">
+                {t('infoContracts.filters.status')}
+              </span>
+              <Select
+                selectedKey={String(filterStatus ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setFilterStatus(value)
                   setPage(1)
-                }}
+                })(String(key))}
               >
-                <option value="">{t('infoContracts.allStatuses')}</option>
-                <option value="outstanding">{t('infoContracts.statuses.outstanding')}</option>
-                <option value="in_progress">{t('infoContracts.statuses.in_progress')}</option>
-                <option value="finished">{t('infoContracts.statuses.finished')}</option>
-                <option value="cancelled">{t('infoContracts.statuses.cancelled')}</option>
-                <option value="rejected">{t('infoContracts.statuses.rejected')}</option>
-                <option value="failed">{t('infoContracts.statuses.failed')}</option>
-                <option value="deleted">{t('infoContracts.statuses.deleted')}</option>
-                <option value="reversed">{t('infoContracts.statuses.reversed')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('infoContracts.allStatuses')}</SelectItem>
+                  <SelectItem id="outstanding">
+                    {t('infoContracts.statuses.outstanding')}
+                  </SelectItem>
+                  <SelectItem id="in_progress">
+                    {t('infoContracts.statuses.in_progress')}
+                  </SelectItem>
+                  <SelectItem id="finished">{t('infoContracts.statuses.finished')}</SelectItem>
+                  <SelectItem id="cancelled">{t('infoContracts.statuses.cancelled')}</SelectItem>
+                  <SelectItem id="rejected">{t('infoContracts.statuses.rejected')}</SelectItem>
+                  <SelectItem id="failed">{t('infoContracts.statuses.failed')}</SelectItem>
+                  <SelectItem id="deleted">{t('infoContracts.statuses.deleted')}</SelectItem>
+                  <SelectItem id="reversed">{t('infoContracts.statuses.reversed')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
 
-            <Button type="button" variant="outline" onClick={() => setRefreshToken((current) => current + 1)} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRefreshToken((current) => current + 1)}
+              isDisabled={loading}
+            >
               {t('common.refresh')}
             </Button>
           </div>
@@ -235,51 +279,67 @@ export function InfoContractsPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('infoContracts.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('infoContracts.loading')}</p>
+      ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-card">
         <div className="border-b px-4 py-3 text-sm font-medium">
           {t('infoContracts.title')} ({total})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('infoContracts.columns.type')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.status')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.title')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.price')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.reward')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.owner')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.expiry')}</th>
-                <th className="px-3 py-2">{t('infoContracts.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.type')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.title')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.price')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.reward')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.owner')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.expiry')}</TableHead>
+                <TableHead className="px-3 py-2">{t('infoContracts.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {contractRows.map((contract) => (
-                <tr key={contract.contract_id} className="border-b">
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${contractTypeTone(contract.type)}`}>
+                <TableRow key={contract.contract_id} className="border-b">
+                  <TableCell className="px-3 py-2">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${contractTypeTone(contract.type)}`}
+                    >
                       {formatContractTypeLabel(t, contract.type)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${contractStatusTone(contract.status)}`}>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${contractStatusTone(contract.status)}`}
+                    >
                       {formatContractStatusLabel(t, contract.status)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{contract.title ?? `#${contract.contract_id}`}</div>
-                    <div className="text-xs text-muted-foreground">{contract.for_corporation ? t('infoContracts.forCorporation') : t('infoContracts.forPersonal')}</div>
-                  </td>
-                  <td className="px-3 py-2">{contract.price == null ? '-' : formatIskPlain(contract.price)}</td>
-                  <td className="px-3 py-2">{contract.reward == null ? '-' : formatIskPlain(contract.reward)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <div className="font-medium">
+                      {contract.title ?? `#${contract.contract_id}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {contract.for_corporation
+                        ? t('infoContracts.forCorporation')
+                        : t('infoContracts.forPersonal')}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    {contract.price == null ? '-' : formatIskPlain(contract.price)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    {contract.reward == null ? '-' : formatIskPlain(contract.reward)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <div>{contract.character_name}</div>
                     <div className="text-xs text-muted-foreground">{contract.character_id}</div>
-                  </td>
-                  <td className="px-3 py-2">{formatTime(contract.date_expired)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatTime(contract.date_expired)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <Button
                       type="button"
                       size="sm"
@@ -291,26 +351,33 @@ export function InfoContractsPage() {
                     >
                       {t('infoContracts.actions.viewDetail')}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && contractRows.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={8}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={8}>
                     {t('infoContracts.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span>
-          {t('infoContracts.pagination.page')} {page}/{Math.max(1, Math.ceil(total / pageSize) || 1)}
+          {t('infoContracts.pagination.page')} {page}/
+          {Math.max(1, Math.ceil(total / pageSize) || 1)}
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPage((current) => Math.max(1, current - 1))}
+          isDisabled={page <= 1}
+        >
           -
         </Button>
         <Button
@@ -318,115 +385,165 @@ export function InfoContractsPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => current + 1)}
-          disabled={contractRows.length < pageSize || page * pageSize >= total}
+          isDisabled={contractRows.length < pageSize || page * pageSize >= total}
         >
           +
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('infoContracts.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 
-      <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
+      <Sheet isOpen={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent className="w-full sm:max-w-2xl">
           <SheetHeader>
-            <SheetTitle>{selectedContract?.title ?? (selectedContract ? `#${selectedContract.contract_id}` : t('infoContracts.detailTitle'))}</SheetTitle>
+            <SheetTitle>
+              {selectedContract?.title ??
+                (selectedContract
+                  ? `#${selectedContract.contract_id}`
+                  : t('infoContracts.detailTitle'))}
+            </SheetTitle>
             <SheetDescription>
-              {selectedContract ? `${formatContractTypeLabel(t, selectedContract.type)} · ${formatContractStatusLabel(t, selectedContract.status)}` : t('infoContracts.detailHint')}
+              {selectedContract
+                ? `${formatContractTypeLabel(t, selectedContract.type)} · ${formatContractStatusLabel(t, selectedContract.status)}`
+                : t('infoContracts.detailHint')}
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-4 px-4 pb-4">
             {selectedContract ? (
               <div className="grid gap-3 sm:grid-cols-2">
-                <ContractMeta label={t('infoContracts.detail.character')} value={`${selectedContract.character_name} (${selectedContract.character_id})`} />
-                <ContractMeta label={t('infoContracts.detail.owner')} value={`${selectedContract.for_corporation ? t('infoContracts.detail.corporation') : t('infoContracts.detail.personal')}`} />
-                <ContractMeta label={t('infoContracts.detail.issued')} value={formatTime(selectedContract.date_issued)} />
-                <ContractMeta label={t('infoContracts.detail.expires')} value={formatTime(selectedContract.date_expired)} />
+                <ContractMeta
+                  label={t('infoContracts.detail.character')}
+                  value={`${selectedContract.character_name} (${selectedContract.character_id})`}
+                />
+                <ContractMeta
+                  label={t('infoContracts.detail.owner')}
+                  value={`${selectedContract.for_corporation ? t('infoContracts.detail.corporation') : t('infoContracts.detail.personal')}`}
+                />
+                <ContractMeta
+                  label={t('infoContracts.detail.issued')}
+                  value={formatTime(selectedContract.date_issued)}
+                />
+                <ContractMeta
+                  label={t('infoContracts.detail.expires')}
+                  value={formatTime(selectedContract.date_expired)}
+                />
               </div>
             ) : null}
 
-            {detailLoading ? <p className="text-sm text-muted-foreground">{t('infoContracts.detailLoading')}</p> : null}
+            {detailLoading ? (
+              <p className="text-sm text-muted-foreground">{t('infoContracts.detailLoading')}</p>
+            ) : null}
             {detailError ? <p className="text-sm text-destructive">{detailError}</p> : null}
 
             {!detailLoading && !detailError && detailData?.items?.length ? (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold">{t('infoContracts.detail.items')}</h3>
                 <div className="overflow-hidden rounded-lg border">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/40 text-left">
-                        <th className="px-3 py-2" />
-                        <th className="px-3 py-2">{t('infoContracts.detail.itemName')}</th>
-                        <th className="px-3 py-2">{t('infoContracts.detail.itemGroup')}</th>
-                        <th className="px-3 py-2">{t('infoContracts.detail.itemQty')}</th>
-                        <th className="px-3 py-2">{t('infoContracts.detail.itemIncluded')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table className="min-w-full text-sm">
+                    <TableHeader>
+                      <TableRow className="border-b bg-muted/40 text-left">
+                        <TableHead className="px-3 py-2" />
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.itemName')}
+                        </TableHead>
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.itemGroup')}
+                        </TableHead>
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.itemQty')}
+                        </TableHead>
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.itemIncluded')}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {detailData.items.map((item) => (
-                        <tr key={`${item.type_id}-${item.type_name}`} className="border-b">
-                          <td className="px-3 py-2">
+                        <TableRow key={`${item.type_id}-${item.type_name}`} className="border-b">
+                          <TableCell className="px-3 py-2">
                             <img
                               alt=""
                               className="h-7 w-7"
                               loading="lazy"
                               src={`https://images.evetech.net/types/${item.type_id}/icon?size=32`}
                             />
-                          </td>
-                          <td className="px-3 py-2">{item.type_name}</td>
-                          <td className="px-3 py-2">{item.group_name}</td>
-                          <td className="px-3 py-2 text-right">{item.quantity}</td>
-                          <td className="px-3 py-2">{item.is_included ? '✓' : '✗'}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell className="px-3 py-2">{item.type_name}</TableCell>
+                          <TableCell className="px-3 py-2">{item.group_name}</TableCell>
+                          <TableCell className="px-3 py-2 text-right">{item.quantity}</TableCell>
+                          <TableCell className="px-3 py-2">
+                            {item.is_included ? '✓' : '✗'}
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             ) : null}
 
-            {!detailLoading && !detailError && selectedContract?.type === 'auction' && sortedBids.length > 0 ? (
+            {!detailLoading &&
+            !detailError &&
+            selectedContract?.type === 'auction' &&
+            sortedBids.length > 0 ? (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold">{t('infoContracts.detail.bids')}</h3>
                 <div className="overflow-hidden rounded-lg border">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/40 text-left">
-                        <th className="px-3 py-2">{t('infoContracts.detail.bidAmount')}</th>
-                        <th className="px-3 py-2">{t('infoContracts.detail.bidder')}</th>
-                        <th className="px-3 py-2">{t('infoContracts.detail.bidTime')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table className="min-w-full text-sm">
+                    <TableHeader>
+                      <TableRow className="border-b bg-muted/40 text-left">
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.bidAmount')}
+                        </TableHead>
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.bidder')}
+                        </TableHead>
+                        <TableHead className="px-3 py-2">
+                          {t('infoContracts.detail.bidTime')}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {sortedBids.map((bid) => (
-                        <tr key={bid.bid_id} className="border-b">
-                          <td className="px-3 py-2 font-medium">{formatIskPlain(bid.amount)}</td>
-                          <td className="px-3 py-2">{bid.bidder_id}</td>
-                          <td className="px-3 py-2">{formatTime(bid.date_bid)}</td>
-                        </tr>
+                        <TableRow key={bid.bid_id} className="border-b">
+                          <TableCell className="px-3 py-2 font-medium">
+                            {formatIskPlain(bid.amount)}
+                          </TableCell>
+                          <TableCell className="px-3 py-2">{bid.bidder_id}</TableCell>
+                          <TableCell className="px-3 py-2">{formatTime(bid.date_bid)}</TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             ) : null}
 
-            {!detailLoading && !detailError && detailData && detailData.items.length === 0 && !(selectedContract?.type === 'auction' && sortedBids.length > 0) ? (
+            {!detailLoading &&
+            !detailError &&
+            detailData &&
+            detailData.items.length === 0 &&
+            !(selectedContract?.type === 'auction' && sortedBids.length > 0) ? (
               <p className="text-sm text-muted-foreground">{t('infoContracts.detail.empty')}</p>
             ) : null}
           </div>

@@ -39,6 +39,17 @@
     pageSize: 'Page size',
     yes: 'Yes',
     no: 'No',
+    id: 'ID',
+    pap: 'PAP',
+    more: 'More',
+    sidebar: 'Sidebar',
+    sidebarDescription: 'Displays the mobile sidebar.',
+    toggleSidebar: 'Toggle sidebar',
+    dismissToast: 'Dismiss notification',
+    min: 'Minimum',
+    max: 'Maximum',
+    isk: 'ISK',
+    avatarFallback: 'CN',
   },
   httpMsg: {
     requestFailed: 'Request failed',
@@ -235,6 +246,7 @@
       character: 'Character',
       characterIdLabel: 'Character ID',
       tokenHealth: 'Authorization',
+      seat: 'SeAT',
       tokenValid: 'Valid',
       tokenExpired: 'Expired',
       empty: 'No bound characters',
@@ -277,6 +289,10 @@
       tasks: 'Task Definitions',
       esiStatuses: 'ESI Status',
       history: 'Execution History',
+    },
+    filters: {
+      taskName: 'Filter by task',
+      status: 'Filter by status',
     },
     columns: {
       name: 'Name',
@@ -697,6 +713,7 @@
     },
     messages: {
       loading: 'Loading alliance PAP...',
+      loadFailed: 'Failed to load alliance PAP data.',
       fetchTriggered: 'Background fetch task has been triggered.',
       fetchFailed: 'Failed to fetch alliance PAP.',
       fetching: 'Fetching...',
@@ -1043,6 +1060,7 @@
       invalidCode: 'Invalid or expired invite code',
     },
     pap: {
+      issue: 'Issue PAP',
       myTitle: 'Corporation PAP',
       totalPap: 'Total PAP',
       participations: 'Participations',
@@ -1076,6 +1094,9 @@
       fleetName: 'Fleet Name',
       characterId: 'Character ID',
       characterName: 'Character Name',
+    },
+    ping: {
+      send: 'Send Ping',
     },
   },
   fleetConfig: {
@@ -2153,6 +2174,10 @@
       list: 'Structure List',
       settings: 'Settings',
     },
+    salary: {
+      assignedFuelOfficer: 'Assigned Fuel Officer',
+      unassignedLabel: 'Unassigned',
+    },
     allCorporations: 'All Corporations',
     noServices: 'No active services',
     filters: {
@@ -2504,7 +2529,21 @@
     goToQQ: 'Join QQ Group',
   },
   qqGovernance: {
-    operations: 'Operations', reviews: 'Reviews', addPolicy: 'Add policy', editPolicy: 'Edit policy', deletePolicy: 'Delete policy', cardTemplate: 'Group-card template', autoReject: 'Auto-reject unmatched members', cardSync: 'Sync group cards', groupIdRequired: 'Enter a valid QQ group ID', noResults: 'No corporations found', rateLimit: 'Rate limit', globalLimit: 'Global limit', groupLimit: 'Group limit', reviewOnly: 'Review only', autoKick: 'Auto-remove after confirmed mismatch',
+    operations: 'Operations',
+    reviews: 'Reviews',
+    addPolicy: 'Add policy',
+    editPolicy: 'Edit policy',
+    deletePolicy: 'Delete policy',
+    cardTemplate: 'Group-card template',
+    autoReject: 'Auto-reject unmatched members',
+    cardSync: 'Sync group cards',
+    groupIdRequired: 'Enter a valid QQ group ID',
+    noResults: 'No corporations found',
+    rateLimit: 'Rate limit',
+    globalLimit: 'Global limit',
+    groupLimit: 'Group limit',
+    reviewOnly: 'Review only',
+    autoKick: 'Auto-remove after confirmed mismatch',
     title: 'QQ Group Governance',
     subtitle: 'Manage policies, reconciliation tasks, alerts, and OneBot health.',
     tabs: {
@@ -2543,11 +2582,30 @@
     actionSuccess: 'Operation succeeded',
     actionFailed: 'Operation failed',
   },
-  browserNotification: { title: 'Enable browser notifications', message: 'Allow browser reminders when a Galaxy Registry entry times out.', confirm: 'Allow notifications', timeoutTitle: 'Galaxy Registry entry timed out', timeoutBody: 'The production entry in {system} has reached two hours. Please end it when possible.' },
+  browserNotification: {
+    title: 'Enable browser notifications',
+    message: 'Allow browser reminders when a Galaxy Registry entry times out.',
+    confirm: 'Allow notifications',
+    timeoutTitle: 'Galaxy Registry entry timed out',
+    timeoutBody:
+      'The production entry in {system} has reached two hours. Please end it when possible.',
+  },
   galaxyRegistry: {
     tabs: { current: 'Current systems', captain: 'Captain history', admin: 'Administration' },
-    statuses: { active: 'Active', completed: 'Completed', pending: 'Pending', valid: 'Valid', violation: 'Violation' },
-    fields: { keyword: 'Keyword', note: 'Note', minBounty: 'Minimum bounty', enabled: 'Enabled', violationReason: 'Violation reason' },
+    statuses: {
+      active: 'Active',
+      completed: 'Completed',
+      pending: 'Pending',
+      valid: 'Valid',
+      violation: 'Violation',
+    },
+    fields: {
+      keyword: 'Keyword',
+      note: 'Note',
+      minBounty: 'Minimum bounty',
+      enabled: 'Enabled',
+      violationReason: 'Violation reason',
+    },
     analytics: { recent7d: 'Entries in last 7 days', recent30d: 'Entries in last 30 days' },
     title: 'Galaxy Registry',
     subtitle: 'View production status and manage captain registrations.',
@@ -2584,6 +2642,21 @@
     confirmMessage: 'Do you want to continue this action?',
     confirmed: 'Confirmed.',
     cancelled: 'Cancelled.',
+  },
+  info: {
+    assetCount: 'Item count',
+    locationName: 'Location count',
+    assetNoItemsInLocation: 'No items in this location',
+    assetItemSummary: '{count} items',
+    assetCharacterSummary: '{count} characters',
+    skillLevel: 'Level {level}',
+    iframeMissingTarget: 'Missing iframe target path.',
+    iframeTitle: 'External Content',
+  },
+  newbro: {
+    recruitLink: {
+      title: 'Recruit Link',
+    },
   },
 } as const
 

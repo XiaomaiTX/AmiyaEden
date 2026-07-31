@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from 'react'
 
 import {
   SidebarGroup,
@@ -6,7 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 
 export function NavSecondary({
   items,
@@ -24,11 +24,9 @@ export function NavSecondary({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild size="sm">
-                <a href={item.url}>
-                  {item.icon}
-                  <span>{item.title}</span>
-                </a>
+              <SidebarMenuButton href={item.url} size="sm">
+                {item.icon}
+                <span>{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +29,12 @@ import {
 } from '@/api/system-manage'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
-import type { CorpTitleInfo, EsiRoleMapping, EsiTitleMapping, RoleDefinition } from '@/types/api/system-manage'
+import type {
+  CorpTitleInfo,
+  EsiRoleMapping,
+  EsiTitleMapping,
+  RoleDefinition,
+} from '@/types/api/system-manage'
 import { ShopDialog, formatDateTime } from './shop-page-utils'
 
 type AutoRoleTab = 'esi-role' | 'title'
@@ -64,7 +84,8 @@ export function SystemAutoRolePage() {
   const [titleForm, setTitleForm] = useState<TitleFormState>(defaultTitleForm)
 
   const systemRoles = useMemo(
-    () => roleDefinitions.filter((role) => role.code !== 'super_admin').sort((a, b) => a.sort - b.sort),
+    () =>
+      roleDefinitions.filter((role) => role.code !== 'super_admin').sort((a, b) => a.sort - b.sort),
     [roleDefinitions]
   )
   const corpTitleNameMap = useMemo(
@@ -92,7 +113,10 @@ export function SystemAutoRolePage() {
 
   const loadMappings = useCallback(async () => {
     try {
-      const [esi, title] = await Promise.all([fetchGetEsiRoleMappings(), fetchGetEsiTitleMappings()])
+      const [esi, title] = await Promise.all([
+        fetchGetEsiRoleMappings(),
+        fetchGetEsiTitleMappings(),
+      ])
       setEsiRoleMappings(esi)
       setTitleMappings(title)
     } catch {
@@ -220,20 +244,24 @@ export function SystemAutoRolePage() {
             <h1 className="text-xl font-semibold">{t('autoRolePage.title')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t('autoRolePage.description')}</p>
           </div>
-          <Button type="button" onClick={() => void triggerSync()} disabled={syncing}>
+          <Button type="button" onClick={() => void triggerSync()} isDisabled={syncing}>
             {syncing ? t('autoRolePage.messages.syncing') : t('autoRolePage.triggerSync')}
           </Button>
         </div>
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('autoRolePage.messages.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('autoRolePage.messages.loading')}</p>
+      ) : null}
 
       <div className="flex flex-wrap gap-2 rounded-lg border bg-card p-2">
-        {([
-          ['esi-role', t('autoRolePage.tabs.esiRole')],
-          ['title', t('autoRolePage.tabs.title')],
-        ] as const).map(([key, label]) => (
+        {(
+          [
+            ['esi-role', t('autoRolePage.tabs.esiRole')],
+            ['title', t('autoRolePage.tabs.title')],
+          ] as const
+        ).map(([key, label]) => (
           <Button
             key={key}
             type="button"
@@ -248,7 +276,9 @@ export function SystemAutoRolePage() {
       {activeTab === 'esi-role' ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">{t('autoRolePage.descriptions.esiRole')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('autoRolePage.descriptions.esiRole')}
+            </p>
             <Button type="button" onClick={() => setEsiRoleDialogOpen(true)}>
               {t('autoRolePage.addMapping')}
             </Button>
@@ -256,41 +286,50 @@ export function SystemAutoRolePage() {
 
           <div className="overflow-hidden rounded-lg border bg-card">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">#</th>
-                    <th className="px-3 py-2">{t('autoRolePage.columns.esiRole')}</th>
-                    <th className="px-3 py-2">{t('autoRolePage.columns.mappedRole')}</th>
-                    <th className="px-3 py-2">{t('common.createdAt')}</th>
-                    <th className="px-3 py-2">{t('common.operation')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">#</TableHead>
+                    <TableHead className="px-3 py-2">{t('autoRolePage.columns.esiRole')}</TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('autoRolePage.columns.mappedRole')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">{t('common.createdAt')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {esiRoleMappings.map((row, index) => (
-                    <tr key={row.id} className="border-b align-top">
-                      <td className="px-3 py-2">{index + 1}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={row.id} className="border-b align-top">
+                      <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                      <TableCell className="px-3 py-2">
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
                           {row.esi_role}
                         </span>
-                      </td>
-                      <td className="px-3 py-2">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getRoleTone(row.role_code)}`}>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getRoleTone(row.role_code)}`}
+                        >
                           {row.role_name || row.role_code}
                         </span>
                         <span className="ml-2 text-xs text-muted-foreground">{row.role_code}</span>
-                      </td>
-                      <td className="px-3 py-2">{formatDateTime(row.created_at)}</td>
-                      <td className="px-3 py-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => void deleteEsiRoleMapping(row.id)}>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void deleteEsiRoleMapping(row.id)}
+                        >
                           {t('common.delete')}
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
@@ -307,41 +346,58 @@ export function SystemAutoRolePage() {
 
           <div className="overflow-hidden rounded-lg border bg-card">
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">#</th>
-                    <th className="px-3 py-2">{t('autoRolePage.columns.corporationId')}</th>
-                    <th className="px-3 py-2">{t('autoRolePage.columns.titleId')}</th>
-                    <th className="px-3 py-2">{t('autoRolePage.columns.titleName')}</th>
-                    <th className="px-3 py-2">{t('autoRolePage.columns.mappedRole')}</th>
-                    <th className="px-3 py-2">{t('common.createdAt')}</th>
-                    <th className="px-3 py-2">{t('common.operation')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">#</TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('autoRolePage.columns.corporationId')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">{t('autoRolePage.columns.titleId')}</TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('autoRolePage.columns.titleName')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('autoRolePage.columns.mappedRole')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">{t('common.createdAt')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {titleMappings.map((row, index) => (
-                    <tr key={row.id} className="border-b align-top">
-                      <td className="px-3 py-2">{index + 1}</td>
-                      <td className="px-3 py-2">{corpTitleNameMap.get(row.corporation_id) || row.corporation_id}</td>
-                      <td className="px-3 py-2">{row.title_id}</td>
-                      <td className="px-3 py-2">{row.title_name || t('autoRolePage.titleFallback', { id: row.title_id })}</td>
-                      <td className="px-3 py-2">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getRoleTone(row.role_code)}`}>
+                    <TableRow key={row.id} className="border-b align-top">
+                      <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {corpTitleNameMap.get(row.corporation_id) || row.corporation_id}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{row.title_id}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {row.title_name || t('autoRolePage.titleFallback', { id: row.title_id })}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getRoleTone(row.role_code)}`}
+                        >
                           {row.role_name || row.role_code}
                         </span>
                         <span className="ml-2 text-xs text-muted-foreground">{row.role_code}</span>
-                      </td>
-                      <td className="px-3 py-2">{formatDateTime(row.created_at)}</td>
-                      <td className="px-3 py-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => void deleteTitleMapping(row.id)}>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void deleteTitleMapping(row.id)}
+                        >
                           {t('common.delete')}
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
@@ -355,10 +411,19 @@ export function SystemAutoRolePage() {
         widthClass="max-w-lg"
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setEsiRoleDialogOpen(false)} disabled={esiRoleSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEsiRoleDialogOpen(false)}
+              isDisabled={esiRoleSaving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void createEsiRoleMapping()} disabled={esiRoleSaving}>
+            <Button
+              type="button"
+              onClick={() => void createEsiRoleMapping()}
+              isDisabled={esiRoleSaving}
+            >
               {esiRoleSaving ? t('autoRolePage.messages.saving') : t('common.confirm')}
             </Button>
           </>
@@ -366,38 +431,48 @@ export function SystemAutoRolePage() {
       >
         <div className="space-y-4">
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('autoRolePage.fields.esiRole')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={esiRoleForm.esi_role}
-              onChange={(event) =>
-                setEsiRoleForm((current) => ({ ...current, esi_role: event.target.value }))
-              }
+            <span className="text-sm text-muted-foreground">
+              {t('autoRolePage.fields.esiRole')}
+            </span>
+            <Select
+              selectedKey={String(esiRoleForm.esi_role ?? '')}
+              onSelectionChange={(key) => ((value) =>
+                setEsiRoleForm((current) => ({ ...current, esi_role: value })))(String(key))}
             >
-              <option value="">{t('autoRolePage.placeholders.esiRole')}</option>
-              {esiRoles.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('autoRolePage.placeholders.esiRole')}</SelectItem>
+                {esiRoles.map((role) => (
+                  <SelectItem key={role} id={String(role ?? '')}>
+                    {role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('autoRolePage.fields.systemRole')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={esiRoleForm.role_code}
-              onChange={(event) =>
-                setEsiRoleForm((current) => ({ ...current, role_code: event.target.value }))
-              }
+            <span className="text-sm text-muted-foreground">
+              {t('autoRolePage.fields.systemRole')}
+            </span>
+            <Select
+              selectedKey={String(esiRoleForm.role_code ?? '')}
+              onSelectionChange={(key) => ((value) =>
+                setEsiRoleForm((current) => ({ ...current, role_code: value })))(String(key))}
             >
-              <option value="">{t('autoRolePage.placeholders.systemRole')}</option>
-              {systemRoles.map((role) => (
-                <option key={role.code} value={role.code}>
-                  {role.name} ({role.code})
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('autoRolePage.placeholders.systemRole')}</SelectItem>
+                {systemRoles.map((role) => (
+                  <SelectItem key={role.code} id={String(role.code ?? '')}>
+                    {role.name} ({role.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </ShopDialog>
@@ -410,10 +485,15 @@ export function SystemAutoRolePage() {
         widthClass="max-w-xl"
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setTitleDialogOpen(false)} disabled={titleSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setTitleDialogOpen(false)}
+              isDisabled={titleSaving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void createTitleMapping()} disabled={titleSaving}>
+            <Button type="button" onClick={() => void createTitleMapping()} isDisabled={titleSaving}>
               {titleSaving ? t('autoRolePage.messages.saving') : t('common.confirm')}
             </Button>
           </>
@@ -422,12 +502,11 @@ export function SystemAutoRolePage() {
         <div className="space-y-4">
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('autoRolePage.fields.title')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={titleForm.title_key}
-              onChange={(event) => {
+            <Select
+              selectedKey={String(titleForm.title_key ?? '')}
+              onSelectionChange={(key) => ((value) => {
                 const selected = corpTitles.find(
-                  (item) => `${item.corporation_id}_${item.title_id}` === event.target.value
+                  (item) => `${item.corporation_id}_${item.title_id}` === value
                 )
                 if (!selected) {
                   setTitleForm(defaultTitleForm)
@@ -435,38 +514,53 @@ export function SystemAutoRolePage() {
                 }
 
                 setTitleForm({
-                  title_key: event.target.value,
+                  title_key: value,
                   corporation_id: selected.corporation_id,
                   title_id: selected.title_id,
                   title_name: selected.title_name,
                   role_code: titleForm.role_code,
                 })
-              }}
+              })(String(key))}
             >
-              <option value="">{t('autoRolePage.placeholders.title')}</option>
-              {corpTitles.map((item) => (
-                <option key={`${item.corporation_id}_${item.title_id}`} value={`${item.corporation_id}_${item.title_id}`}>
-                  {item.title_name || t('autoRolePage.titleFallback', { id: item.title_id })} - {item.corporation_name || t('autoRolePage.corpFallback', { id: item.corporation_id })}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('autoRolePage.placeholders.title')}</SelectItem>
+                {corpTitles.map((item) => (
+                  <SelectItem
+                    key={`${item.corporation_id}_${item.title_id}`}
+                    id={`${item.corporation_id}_${item.title_id}`}
+                  >
+                    {item.title_name || t('autoRolePage.titleFallback', { id: item.title_id })} -{' '}
+                    {item.corporation_name ||
+                      t('autoRolePage.corpFallback', { id: item.corporation_id })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('autoRolePage.fields.systemRole')}</span>
-            <select
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              value={titleForm.role_code}
-              onChange={(event) =>
-                setTitleForm((current) => ({ ...current, role_code: event.target.value }))
-              }
+            <span className="text-sm text-muted-foreground">
+              {t('autoRolePage.fields.systemRole')}
+            </span>
+            <Select
+              selectedKey={String(titleForm.role_code ?? '')}
+              onSelectionChange={(key) => ((value) =>
+                setTitleForm((current) => ({ ...current, role_code: value })))(String(key))}
             >
-              <option value="">{t('autoRolePage.placeholders.systemRole')}</option>
-              {systemRoles.map((role) => (
-                <option key={role.code} value={role.code}>
-                  {role.name} ({role.code})
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('autoRolePage.placeholders.systemRole')}</SelectItem>
+                {systemRoles.map((role) => (
+                  <SelectItem key={role.code} id={String(role.code ?? '')}>
+                    {role.name} ({role.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </ShopDialog>

@@ -1,5 +1,26 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchKillmailDetail, fetchMyApplications, fetchMyKillmails, submitApplication } from '@/api/srp'
+import {
+  fetchKillmailDetail,
+  fetchMyApplications,
+  fetchMyKillmails,
+  submitApplication,
+} from '@/api/srp'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import type { Application, FleetKillmailItem, KillmailDetailResponse } from '@/types/api/srp'
@@ -120,22 +141,30 @@ export function SrpApplyPage() {
           <div className="mt-4 space-y-4">
             <label className="space-y-2 block">
               <span className="text-sm text-muted-foreground">{t('srpApply.killmail')}</span>
-              <select
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={selectedKillmailId}
-                onChange={(event) => setSelectedKillmailId(Number(event.target.value))}
+              <Select
+                selectedKey={String(selectedKillmailId ?? '')}
+                onSelectionChange={(key) => ((value) => setSelectedKillmailId(Number(value)))(String(key))}
               >
-                {killmails.map((killmail) => (
-                  <option key={killmail.killmail_id} value={killmail.killmail_id}>
-                    {killmail.killmail_id} - {killmail.victim_name} - {formatTime(killmail.killmail_time)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {killmails.map((killmail) => (
+                    <SelectItem
+                      key={killmail.killmail_id}
+                      id={String(killmail.killmail_id ?? '')}
+                    >
+                      {killmail.killmail_id} - {killmail.victim_name} -{' '}
+                      {formatTime(killmail.killmail_time)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
 
             <label className="space-y-2 block">
               <span className="text-sm text-muted-foreground">{t('srpApply.note')}</span>
-              <textarea
+              <Textarea
                 className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
@@ -143,7 +172,11 @@ export function SrpApplyPage() {
               />
             </label>
 
-            <Button type="button" onClick={() => void submit()} disabled={submitting || !selectedKillmail}>
+            <Button
+              type="button"
+              onClick={() => void submit()}
+              isDisabled={submitting || !selectedKillmail}
+            >
               {submitting ? t('srpApply.submitting') : t('srpApply.submitBtn')}
             </Button>
           </div>
@@ -158,11 +191,14 @@ export function SrpApplyPage() {
           </div>
 
           <div className="mt-4 space-y-3 text-sm">
-            {detailLoading ? <p className="text-muted-foreground">{t('srpApply.detailLoading')}</p> : null}
+            {detailLoading ? (
+              <p className="text-muted-foreground">{t('srpApply.detailLoading')}</p>
+            ) : null}
             {detail ? (
               <div className="rounded-lg border bg-background p-4 space-y-2">
                 <p>
-                  <span className="font-medium">{t('srpApply.killmail')}:</span> {detail.killmail_id}
+                  <span className="font-medium">{t('srpApply.killmail')}:</span>{' '}
+                  {detail.killmail_id}
                 </p>
                 <p>
                   <span className="font-medium">{t('srpApply.ship')}:</span> {detail.ship_name}
@@ -171,7 +207,8 @@ export function SrpApplyPage() {
                   <span className="font-medium">{t('srpApply.system')}:</span> {detail.system_name}
                 </p>
                 <p>
-                  <span className="font-medium">{t('srpApply.character')}:</span> {detail.character_name}
+                  <span className="font-medium">{t('srpApply.character')}:</span>{' '}
+                  {detail.character_name}
                 </p>
                 <p>
                   <span className="font-medium">{t('srpApply.janiceAmount')}:</span>{' '}
@@ -188,35 +225,35 @@ export function SrpApplyPage() {
       <div className="rounded-lg border bg-card p-5">
         <h2 className="text-lg font-semibold">{t('srpApply.myApplications')}</h2>
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('srpApply.columns.killmail')}</th>
-                <th className="px-3 py-2">{t('srpApply.columns.character')}</th>
-                <th className="px-3 py-2">{t('srpApply.columns.ship')}</th>
-                <th className="px-3 py-2">{t('srpApply.columns.reviewStatus')}</th>
-                <th className="px-3 py-2">{t('srpApply.columns.payoutStatus')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('srpApply.columns.killmail')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpApply.columns.character')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpApply.columns.ship')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpApply.columns.reviewStatus')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpApply.columns.payoutStatus')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {applications.map((application) => (
-                <tr key={application.id} className="border-b">
-                  <td className="px-3 py-2">{application.killmail_id}</td>
-                  <td className="px-3 py-2">{application.character_name}</td>
-                  <td className="px-3 py-2">{application.ship_name}</td>
-                  <td className="px-3 py-2">{application.review_status}</td>
-                  <td className="px-3 py-2">{application.payout_status}</td>
-                </tr>
+                <TableRow key={application.id} className="border-b">
+                  <TableCell className="px-3 py-2">{application.killmail_id}</TableCell>
+                  <TableCell className="px-3 py-2">{application.character_name}</TableCell>
+                  <TableCell className="px-3 py-2">{application.ship_name}</TableCell>
+                  <TableCell className="px-3 py-2">{application.review_status}</TableCell>
+                  <TableCell className="px-3 py-2">{application.payout_status}</TableCell>
+                </TableRow>
               ))}
               {!loading && applications.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
                     {t('srpApply.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </section>

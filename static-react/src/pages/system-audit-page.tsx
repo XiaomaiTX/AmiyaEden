@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +39,14 @@ const defaultSearchDraft: AuditEventSearchParams = {
   keyword: '',
 }
 
-const categoryOptions = ['permission', 'fuxi_wallet', 'config', 'approval', 'task_ops', 'security'] as const
+const categoryOptions = [
+  'permission',
+  'fuxi_wallet',
+  'config',
+  'approval',
+  'task_ops',
+  'security',
+] as const
 
 export function SystemAuditPage() {
   const { t } = useI18n()
@@ -110,10 +132,12 @@ export function SystemAuditPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-lg border bg-card p-2">
-        {([
-          ['events', t('auditAdmin.tabs.events')],
-          ['exports', t('auditAdmin.tabs.exports')],
-        ] as const).map(([key, label]) => (
+        {(
+          [
+            ['events', t('auditAdmin.tabs.events')],
+            ['exports', t('auditAdmin.tabs.exports')],
+          ] as const
+        ).map(([key, label]) => (
           <Button
             key={key}
             type="button"
@@ -130,7 +154,9 @@ export function SystemAuditPage() {
           <div className="rounded-lg border bg-card p-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.startDate')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.startDate')}
+                </span>
                 <Input
                   type="date"
                   value={searchDraft.start_date ?? ''}
@@ -140,7 +166,9 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.endDate')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.endDate')}
+                </span>
                 <Input
                   type="date"
                   value={searchDraft.end_date ?? ''}
@@ -150,41 +178,53 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.category')}</span>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={searchDraft.category ?? ''}
-                  onChange={(event) =>
-                    setSearchDraft((current) => ({ ...current, category: event.target.value }))
-                  }
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.category')}
+                </span>
+                <Select
+                  selectedKey={String(searchDraft.category ?? '')}
+                  onSelectionChange={(key) => ((value) =>
+                    setSearchDraft((current) => ({ ...current, category: value })))(String(key))}
                 >
-                  <option value="">{t('common.all')}</option>
-                  {categoryOptions.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`auditAdmin.categories.${value}`)}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="">{t('common.all')}</SelectItem>
+                    {categoryOptions.map((value) => (
+                      <SelectItem key={value} id={String(value ?? '')}>
+                        {t(`auditAdmin.categories.${value}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.result')}</span>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={searchDraft.result ?? ''}
-                  onChange={(event) =>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.result')}
+                </span>
+                <Select
+                  selectedKey={String(searchDraft.result ?? '')}
+                  onSelectionChange={(key) => ((value) =>
                     setSearchDraft((current) => ({
                       ...current,
-                      result: event.target.value ? (event.target.value as 'success' | 'failed') : undefined,
-                    }))
-                  }
+                      result: value ? (value as 'success' | 'failed') : undefined,
+                    })))(String(key))}
                 >
-                  <option value="">{t('common.all')}</option>
-                  <option value="success">{t('auditAdmin.results.success')}</option>
-                  <option value="failed">{t('auditAdmin.results.failed')}</option>
-                </select>
+                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="">{t('common.all')}</SelectItem>
+                    <SelectItem id="success">{t('auditAdmin.results.success')}</SelectItem>
+                    <SelectItem id="failed">{t('auditAdmin.results.failed')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.action')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.action')}
+                </span>
                 <Input
                   value={searchDraft.action ?? ''}
                   onChange={(event) =>
@@ -193,7 +233,9 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.actorUserId')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.actorUserId')}
+                </span>
                 <Input
                   type="number"
                   value={searchDraft.actor_user_id ?? ''}
@@ -206,7 +248,9 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.targetUserId')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.targetUserId')}
+                </span>
                 <Input
                   type="number"
                   value={searchDraft.target_user_id ?? ''}
@@ -219,7 +263,9 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.keyword')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.keyword')}
+                </span>
                 <Input
                   value={searchDraft.keyword ?? ''}
                   onChange={(event) =>
@@ -229,7 +275,9 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.requestId')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.requestId')}
+                </span>
                 <Input
                   value={searchDraft.request_id ?? ''}
                   onChange={(event) =>
@@ -239,7 +287,9 @@ export function SystemAuditPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('auditAdmin.filters.resourceId')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('auditAdmin.filters.resourceId')}
+                </span>
                 <Input
                   value={searchDraft.resource_id ?? ''}
                   onChange={(event) =>
@@ -260,36 +310,46 @@ export function SystemAuditPage() {
           </div>
 
           <div className="overflow-hidden rounded-lg border bg-card">
-            <div className="border-b px-4 py-3 text-sm font-medium">{t('auditAdmin.tabs.events')}</div>
+            <div className="border-b px-4 py-3 text-sm font-medium">
+              {t('auditAdmin.tabs.events')}
+            </div>
             <div className="overflow-x-auto">
               {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
               {loading ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground">{t('auditAdmin.messages.loading')}</p>
+                <p className="px-4 py-3 text-sm text-muted-foreground">
+                  {t('auditAdmin.messages.loading')}
+                </p>
               ) : null}
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">#</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.time')}</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.category')}</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.action')}</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.actorUserId')}</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.targetUserId')}</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.result')}</th>
-                    <th className="px-3 py-2">{t('auditAdmin.columns.requestId')}</th>
-                    <th className="px-3 py-2">{t('common.operation')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">#</TableHead>
+                    <TableHead className="px-3 py-2">{t('auditAdmin.columns.time')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('auditAdmin.columns.category')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('auditAdmin.columns.action')}</TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('auditAdmin.columns.actorUserId')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('auditAdmin.columns.targetUserId')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">{t('auditAdmin.columns.result')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('auditAdmin.columns.requestId')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rows.map((row, index) => (
-                    <tr key={row.event_id} className="border-b align-top">
-                      <td className="px-3 py-2">{index + 1}</td>
-                      <td className="px-3 py-2">{formatDateTime(row.occurred_at)}</td>
-                      <td className="px-3 py-2">{getAuditCategoryLabel(t, row.category)}</td>
-                      <td className="px-3 py-2">{row.action}</td>
-                      <td className="px-3 py-2">{row.actor_user_id || '-'}</td>
-                      <td className="px-3 py-2">{row.target_user_id || '-'}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={row.event_id} className="border-b align-top">
+                      <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                      <TableCell className="px-3 py-2">{formatDateTime(row.occurred_at)}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {getAuditCategoryLabel(t, row.category)}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{row.action}</TableCell>
+                      <TableCell className="px-3 py-2">{row.actor_user_id || '-'}</TableCell>
+                      <TableCell className="px-3 py-2">{row.target_user_id || '-'}</TableCell>
+                      <TableCell className="px-3 py-2">
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                             row.result === 'success'
@@ -299,17 +359,22 @@ export function SystemAuditPage() {
                         >
                           {t(`auditAdmin.results.${row.result}`)}
                         </span>
-                      </td>
-                      <td className="px-3 py-2">{row.request_id || '-'}</td>
-                      <td className="px-3 py-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => openDetail(row)}>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{row.request_id || '-'}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openDetail(row)}
+                        >
                           {t('auditAdmin.actions.detail')}
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
 
@@ -322,7 +387,7 @@ export function SystemAuditPage() {
               size="sm"
               variant="outline"
               onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={page <= 1}
+              isDisabled={page <= 1}
             >
               {t('welfareMy.pagination.prev')}
             </Button>
@@ -331,35 +396,43 @@ export function SystemAuditPage() {
               size="sm"
               variant="outline"
               onClick={() => setPage((current) => current + 1)}
-              disabled={page >= pageCount}
+              isDisabled={page >= pageCount}
             >
               {t('welfareMy.pagination.next')}
             </Button>
             <label className="flex items-center gap-2">
               <span>{t('welfareMy.pageSize')}</span>
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value))
+              <Select
+                selectedKey={String(pageSize ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setPageSize(Number(value))
                   setPage(1)
-                }}
+                })(String(key))}
               >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50].map((size) => (
+                    <SelectItem key={size} id={String(size ?? '')}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
         </div>
       ) : (
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-base font-semibold">{t('auditAdmin.tabs.exports')}</h2>
-          <p className="mt-2 text-sm text-muted-foreground">{t('auditAdmin.export.unavailableDescription')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t('auditAdmin.export.unavailableDescription')}
+          </p>
           {!canExport ? (
-            <p className="mt-2 text-sm text-amber-700">{t('auditAdmin.export.capabilityRequiredDescription')}</p>
+            <p className="mt-2 text-sm text-amber-700">
+              {t('auditAdmin.export.capabilityRequiredDescription')}
+            </p>
           ) : null}
         </div>
       )}
@@ -375,15 +448,33 @@ export function SystemAuditPage() {
           <div className="space-y-4 text-sm">
             <div className="grid gap-3 md:grid-cols-2">
               <KeyValue label={t('auditAdmin.columns.eventId')} value={currentEvent.event_id} />
-              <KeyValue label={t('auditAdmin.columns.time')} value={formatDateTime(currentEvent.occurred_at)} />
+              <KeyValue
+                label={t('auditAdmin.columns.time')}
+                value={formatDateTime(currentEvent.occurred_at)}
+              />
               <KeyValue label={t('auditAdmin.columns.category')} value={currentEvent.category} />
               <KeyValue label={t('auditAdmin.columns.action')} value={currentEvent.action} />
-              <KeyValue label={t('auditAdmin.columns.actorUserId')} value={currentEvent.actor_user_id || '-'} />
-              <KeyValue label={t('auditAdmin.columns.targetUserId')} value={currentEvent.target_user_id || '-'} />
-              <KeyValue label={t('auditAdmin.columns.requestId')} value={currentEvent.request_id || '-'} />
-              <KeyValue label={t('auditAdmin.columns.resourceId')} value={currentEvent.resource_id || '-'} />
+              <KeyValue
+                label={t('auditAdmin.columns.actorUserId')}
+                value={currentEvent.actor_user_id || '-'}
+              />
+              <KeyValue
+                label={t('auditAdmin.columns.targetUserId')}
+                value={currentEvent.target_user_id || '-'}
+              />
+              <KeyValue
+                label={t('auditAdmin.columns.requestId')}
+                value={currentEvent.request_id || '-'}
+              />
+              <KeyValue
+                label={t('auditAdmin.columns.resourceId')}
+                value={currentEvent.resource_id || '-'}
+              />
               <KeyValue label={t('auditAdmin.columns.ip')} value={currentEvent.ip || '-'} />
-              <KeyValue label={t('auditAdmin.columns.userAgent')} value={currentEvent.user_agent || '-'} />
+              <KeyValue
+                label={t('auditAdmin.columns.userAgent')}
+                value={currentEvent.user_agent || '-'}
+              />
             </div>
 
             <div className="rounded-lg border bg-muted/20 p-4">

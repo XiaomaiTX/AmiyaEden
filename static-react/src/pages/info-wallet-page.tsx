@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoWallet } from '@/api/eve-info'
@@ -83,35 +98,41 @@ export function InfoWalletPage() {
         <label className="text-sm text-muted-foreground" htmlFor="wallet-character">
           {t('infoWallet.selectCharacter')}
         </label>
-        <select
-          id="wallet-character"
-          className="rounded border px-2 py-1 text-sm"
-          value={selectedCharacterId ?? ''}
-          onChange={(event) => setSelectedCharacterId(Number(event.target.value))}
+        <Select
+          selectedKey={String(selectedCharacterId ?? '')}
+          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          {characters.map((character) => (
-            <option key={character.character_id} value={character.character_id}>
-              {character.character_name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="wallet-character" className="rounded border px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {characters.map((character) => (
+              <SelectItem key={character.character_id} id={String(character.character_id ?? '')}>
+                {character.character_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <label className="text-sm text-muted-foreground" htmlFor="wallet-ref-type">
           {t('infoWallet.refType')}
         </label>
-        <select
-          id="wallet-ref-type"
-          className="rounded border px-2 py-1 text-sm"
-          value={selectedRefType}
-          onChange={(event) => setSelectedRefType(event.target.value)}
+        <Select
+          selectedKey={String(selectedRefType ?? '')}
+          onSelectionChange={(key) => ((value) => setSelectedRefType(value))(String(key))}
         >
-          <option value="">{t('infoWallet.allRefTypes')}</option>
-          {refTypeOptions.map((refType) => (
-            <option key={refType} value={refType}>
-              {refType}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="wallet-ref-type" className="rounded border px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem id="">{t('infoWallet.allRefTypes')}</SelectItem>
+            {refTypeOptions.map((refType) => (
+              <SelectItem key={refType} id={String(refType ?? '')}>
+                {refType}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? <p className="text-sm">{t('infoWallet.loading')}</p> : null}
@@ -121,32 +142,34 @@ export function InfoWalletPage() {
         <>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">{t('infoWallet.balance')}</p>
-            <p className="mt-1 text-2xl font-semibold">{Intl.NumberFormat().format(wallet.balance)} ISK</p>
+            <p className="mt-1 text-2xl font-semibold">
+              {Intl.NumberFormat().format(wallet.balance)} {t('common.isk')}
+            </p>
           </div>
 
           <div className="overflow-x-auto rounded-lg border bg-card">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('infoWallet.columns.date')}</th>
-                  <th className="px-3 py-2">{t('infoWallet.columns.refType')}</th>
-                  <th className="px-3 py-2">{t('infoWallet.columns.amount')}</th>
-                  <th className="px-3 py-2">{t('infoWallet.columns.balance')}</th>
-                  <th className="px-3 py-2">{t('infoWallet.columns.description')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('infoWallet.columns.date')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoWallet.columns.refType')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoWallet.columns.amount')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoWallet.columns.balance')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoWallet.columns.description')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {wallet.journals.map((row) => (
-                  <tr key={row.id} className="border-b">
-                    <td className="px-3 py-2">{row.date}</td>
-                    <td className="px-3 py-2">{row.ref_type}</td>
-                    <td className="px-3 py-2">{row.amount}</td>
-                    <td className="px-3 py-2">{row.balance}</td>
-                    <td className="px-3 py-2">{row.description}</td>
-                  </tr>
+                  <TableRow key={row.id} className="border-b">
+                    <TableCell className="px-3 py-2">{row.date}</TableCell>
+                    <TableCell className="px-3 py-2">{row.ref_type}</TableCell>
+                    <TableCell className="px-3 py-2">{row.amount}</TableCell>
+                    <TableCell className="px-3 py-2">{row.balance}</TableCell>
+                    <TableCell className="px-3 py-2">{row.description}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       ) : null}

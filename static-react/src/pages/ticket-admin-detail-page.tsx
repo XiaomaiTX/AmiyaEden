@@ -1,3 +1,6 @@
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
@@ -192,16 +195,16 @@ export function TicketAdminDetailPage() {
 
           <div className="mt-5 space-y-3">
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isInternal} onChange={(event) => setIsInternal(event.target.checked)} />
+              <Input type="checkbox" checked={isInternal} onChange={(event) => setIsInternal(event.target.checked)} />
               <span>{t('ticketAdminDetail.internalNote')}</span>
             </label>
-            <textarea
+            <Textarea
               className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
               value={content}
               placeholder={t('ticketAdminDetail.replyPlaceholder')}
               onChange={(event) => setContent(event.target.value)}
             />
-            <Button type="button" onClick={() => void submitReply()} disabled={submitting || !content.trim()}>
+            <Button type="button" onClick={() => void submitReply()} isDisabled={submitting || !content.trim()}>
               {submitting ? t('ticketAdminDetail.replySubmitting') : t('ticketAdminDetail.replySubmit')}
             </Button>
           </div>
@@ -210,33 +213,33 @@ export function TicketAdminDetailPage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold">{t('ticketAdminDetail.statusHistory')}</h2>
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('ticketAdminDetail.columns.fromStatus')}</th>
-                  <th className="px-3 py-2">{t('ticketAdminDetail.columns.toStatus')}</th>
-                  <th className="px-3 py-2">{t('ticketAdminDetail.columns.operator')}</th>
-                  <th className="px-3 py-2">{t('ticketAdminDetail.columns.changedAt')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.fromStatus')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.toStatus')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.operator')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.changedAt')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {histories.map((history) => (
-                  <tr key={history.id} className="border-b">
-                    <td className="px-3 py-2">{history.from_status}</td>
-                    <td className="px-3 py-2">{history.to_status}</td>
-                    <td className="px-3 py-2">{history.changed_by}</td>
-                    <td className="px-3 py-2">{formatTime(history.changed_at)}</td>
-                  </tr>
+                  <TableRow key={history.id} className="border-b">
+                    <TableCell className="px-3 py-2">{history.from_status}</TableCell>
+                    <TableCell className="px-3 py-2">{history.to_status}</TableCell>
+                    <TableCell className="px-3 py-2">{history.changed_by}</TableCell>
+                    <TableCell className="px-3 py-2">{formatTime(history.changed_at)}</TableCell>
+                  </TableRow>
                 ))}
                 {!loading && histories.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={4}>
                       {t('ticketAdminDetail.noHistory')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       </div>

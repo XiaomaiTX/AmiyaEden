@@ -1,7 +1,28 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { fetchAllAlliancePAP, importAlliancePAP, settleAlliancePAPMonth, triggerAlliancePAPFetch } from '@/api/alliance-pap'
+import {
+  fetchAllAlliancePAP,
+  importAlliancePAP,
+  settleAlliancePAPMonth,
+  triggerAlliancePAPFetch,
+} from '@/api/alliance-pap'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
 import type { AlliancePAPImportInfo, AlliancePAPSummary } from '@/types/api/alliance-pap'
@@ -40,7 +61,12 @@ export function SystemPAPPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchAllAlliancePAP({ current: page, size: pageSize, year, month: monthNumber })
+      const response = await fetchAllAlliancePAP({
+        current: page,
+        size: pageSize,
+        year,
+        month: monthNumber,
+      })
       setRows(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -139,10 +165,15 @@ export function SystemPAPPage() {
             <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
               {t('alliancePap.actions.import')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleFetch()} disabled={fetching}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleFetch()}
+              isDisabled={fetching}
+            >
               {fetching ? t('alliancePap.messages.fetching') : t('alliancePap.actions.fetch')}
             </Button>
-            <Button type="button" onClick={() => void handleSettle()} disabled={settling}>
+            <Button type="button" onClick={() => void handleSettle()} isDisabled={settling}>
               {settling ? t('alliancePap.messages.settling') : t('alliancePap.actions.settle')}
             </Button>
           </div>
@@ -166,57 +197,69 @@ export function SystemPAPPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('alliancePap.messages.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('alliancePap.messages.loading')}</p>
+      ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-card">
         <div className="border-b px-4 py-3 text-sm font-medium">{t('alliancePap.table.title')}</div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.mainCharacter')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.monthlyPap')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.yearlyPap')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.corpMonthlyRank')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.allianceMonthlyRank')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.corpYearlyRank')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.allianceYearlyRank')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.calculatedAt')}</th>
-                <th className="px-3 py-2">{t('alliancePap.columns.status')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('alliancePap.columns.mainCharacter')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('alliancePap.columns.monthlyPap')}</TableHead>
+                <TableHead className="px-3 py-2">{t('alliancePap.columns.yearlyPap')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('alliancePap.columns.corpMonthlyRank')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('alliancePap.columns.allianceMonthlyRank')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('alliancePap.columns.corpYearlyRank')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('alliancePap.columns.allianceYearlyRank')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('alliancePap.columns.calculatedAt')}</TableHead>
+                <TableHead className="px-3 py-2">{t('alliancePap.columns.status')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((row, index) => (
-                <tr key={row.id} className="border-b align-top">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2 font-medium">{row.main_character}</td>
-                  <td className="px-3 py-2">{row.total_pap}</td>
-                  <td className="px-3 py-2">{row.yearly_total_pap}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={row.id} className="border-b align-top">
+                  <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                  <TableCell className="px-3 py-2 font-medium">{row.main_character}</TableCell>
+                  <TableCell className="px-3 py-2">{row.total_pap}</TableCell>
+                  <TableCell className="px-3 py-2">{row.yearly_total_pap}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">
                       #{row.monthly_rank}
                     </span>
                     <span className="text-xs text-muted-foreground"> / {row.total_in_corp}</span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span className="font-medium text-amber-600 dark:text-amber-400">
                       #{row.global_monthly_rank}
                     </span>
                     <span className="text-xs text-muted-foreground"> / {row.total_global}</span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span className="font-medium text-violet-600 dark:text-violet-400">
                       #{row.yearly_rank}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span className="font-medium text-sky-600 dark:text-sky-400">
                       #{row.global_yearly_rank}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{formatDateTime(row.calculated_at)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatDateTime(row.calculated_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                         row.is_archived
@@ -224,13 +267,15 @@ export function SystemPAPPage() {
                           : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
                       }`}
                     >
-                      {row.is_archived ? t('alliancePap.status.archived') : t('alliancePap.status.current')}
+                      {row.is_archived
+                        ? t('alliancePap.status.archived')
+                        : t('alliancePap.status.current')}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -243,7 +288,7 @@ export function SystemPAPPage() {
           size="sm"
           variant="outline"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={page <= 1}
+          isDisabled={page <= 1}
         >
           {t('welfareMy.pagination.prev')}
         </Button>
@@ -252,26 +297,30 @@ export function SystemPAPPage() {
           size="sm"
           variant="outline"
           onClick={() => setPage((current) => current + 1)}
-          disabled={page >= pageCount}
+          isDisabled={page >= pageCount}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 
@@ -283,10 +332,15 @@ export function SystemPAPPage() {
         widthClass="max-w-2xl"
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setImportOpen(false)} disabled={importSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setImportOpen(false)}
+              isDisabled={importSaving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void handleImport()} disabled={importSaving}>
+            <Button type="button" onClick={() => void handleImport()} isDisabled={importSaving}>
               {importSaving ? t('alliancePap.messages.importing') : t('common.confirm')}
             </Button>
           </>
@@ -294,7 +348,7 @@ export function SystemPAPPage() {
       >
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">{t('alliancePap.import.hint')}</p>
-          <textarea
+          <Textarea
             className="min-h-56 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
             value={importDraft.content}
             onChange={(event) => setImportDraft({ content: event.target.value })}

@@ -1,3 +1,4 @@
+import { Textarea } from '@/components/ui/textarea'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -145,13 +146,13 @@ export function SystemBasicConfigPage() {
                 })}
               </p>
             </div>
-            <Button type="button" onClick={() => void saveAllowCorporations()} disabled={allowCorporationsSaving}>
+            <Button type="button" onClick={() => void saveAllowCorporations()} isDisabled={allowCorporationsSaving}>
               {allowCorporationsSaving ? t('systemBasicConfig.messages.saving') : t('common.save')}
             </Button>
           </div>
 
           <div className="mt-4 space-y-2">
-            <textarea
+            <Textarea
               className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
               value={allowCorporationsInput}
               onChange={(event) => setAllowCorporationsInput(event.target.value)}
@@ -172,7 +173,7 @@ export function SystemBasicConfigPage() {
             <h2 className="text-base font-semibold">{t('systemBasicConfig.sdeConfig.title')}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{t('systemBasicConfig.sdeConfig.subtitle')}</p>
           </div>
-          <Button type="button" onClick={() => void saveSdeConfig()} disabled={sdeSaving}>
+          <Button type="button" onClick={() => void saveSdeConfig()} isDisabled={sdeSaving}>
             {sdeSaving ? t('systemBasicConfig.messages.saving') : t('common.save')}
           </Button>
         </div>

@@ -1,7 +1,26 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchGetUserInfo } from '@/api/auth'
 import { toSessionSnapshot } from '@/auth'
-import { fetchCharacterESIRestrictionConfig, updateCharacterESIRestrictionConfig } from '@/api/sys-config'
+import {
+  fetchCharacterESIRestrictionConfig,
+  updateCharacterESIRestrictionConfig,
+} from '@/api/sys-config'
 import {
   fetchDeleteUser,
   fetchGetRoleDefinitions,
@@ -169,7 +188,9 @@ export function SystemUserPage() {
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
       setPageSize(response.pageSize ?? pageSize)
-      setExpandedUserIds((current) => current.filter((id) => (response.list ?? []).some((user) => user.id === id)))
+      setExpandedUserIds((current) =>
+        current.filter((id) => (response.list ?? []).some((user) => user.id === id))
+      )
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('userAdmin.loadFailed')))
       setUsers([])
@@ -195,7 +216,8 @@ export function SystemUserPage() {
   }, [loadRoleDefinitions, loadRestriction])
 
   const canEditProfile = (user: UserListItem) => isSuperAdmin || !isProtectedRoleSet(user.roles)
-  const canEditContacts = (user: UserListItem) => isSuperAdmin && !user.roles.includes('super_admin')
+  const canEditContacts = (user: UserListItem) =>
+    isSuperAdmin && !user.roles.includes('super_admin')
   const canEditRoles = (user: UserListItem) => isSuperAdmin || !user.roles.includes('super_admin')
   const canDeleteUser = (user: UserListItem) => isSuperAdmin || !isProtectedRoleSet(user.roles)
 
@@ -361,40 +383,48 @@ export function SystemUserPage() {
               <Input
                 className="w-60"
                 value={searchDraft.keyword}
-                onChange={(event) => setSearchDraft((current) => ({ ...current, keyword: event.target.value }))}
+                onChange={(event) =>
+                  setSearchDraft((current) => ({ ...current, keyword: event.target.value }))
+                }
                 placeholder={t('userAdmin.search.keywordPlaceholder')}
               />
             </label>
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('common.status')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={searchDraft.status}
-                onChange={(event) =>
-                  setSearchDraft((current) => ({ ...current, status: event.target.value }))
-                }
+              <Select
+                selectedKey={String(searchDraft.status ?? '')}
+                onSelectionChange={(key) => ((value) =>
+                  setSearchDraft((current) => ({ ...current, status: value })))(String(key))}
               >
-                <option value="">{t('userAdmin.search.statusPlaceholder')}</option>
-                <option value="1">{t('userAdmin.status.active')}</option>
-                <option value="0">{t('userAdmin.status.disabled')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('userAdmin.search.statusPlaceholder')}</SelectItem>
+                  <SelectItem id="1">{t('userAdmin.status.active')}</SelectItem>
+                  <SelectItem id="0">{t('userAdmin.status.disabled')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('common.role')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={searchDraft.role}
-                onChange={(event) =>
-                  setSearchDraft((current) => ({ ...current, role: event.target.value }))
-                }
+              <Select
+                selectedKey={String(searchDraft.role ?? '')}
+                onSelectionChange={(key) => ((value) =>
+                  setSearchDraft((current) => ({ ...current, role: value })))(String(key))}
               >
-                <option value="">{t('userAdmin.search.rolePlaceholder')}</option>
-                {roleDefinitions.map((role) => (
-                  <option key={role.code} value={role.code}>
-                    {getRoleLabel(t, role.code)}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('userAdmin.search.rolePlaceholder')}</SelectItem>
+                  {roleDefinitions.map((role) => (
+                    <SelectItem key={role.code} id={String(role.code ?? '')}>
+                      {getRoleLabel(t, role.code)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
             <Button type="button" variant="outline" onClick={applySearch}>
               {t('common.search')}
@@ -410,7 +440,9 @@ export function SystemUserPage() {
         <div className="rounded-lg border bg-card p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-base font-semibold">{t('userAdmin.characterEsiRestriction.title')}</h2>
+              <h2 className="text-base font-semibold">
+                {t('userAdmin.characterEsiRestriction.title')}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t('userAdmin.characterEsiRestriction.description')}
               </p>
@@ -445,23 +477,23 @@ export function SystemUserPage() {
           {t('userAdmin.title')} ({total})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('userAdmin.table.userInfo')}</th>
-                <th className="px-3 py-2">{t('common.role')}</th>
-                <th className="px-3 py-2">{t('userAdmin.table.contact')}</th>
-                <th className="px-3 py-2">{t('common.status')}</th>
-                <th className="px-3 py-2">{t('userAdmin.table.lastLogin')}</th>
-                <th className="px-3 py-2">{t('common.operation')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('userAdmin.table.userInfo')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.role')}</TableHead>
+                <TableHead className="px-3 py-2">{t('userAdmin.table.contact')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('userAdmin.table.lastLogin')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {users.map((user) => {
                 const expanded = expandedUserIds.includes(user.id)
                 return (
                   <Fragment key={user.id}>
-                    <tr
+                    <TableRow
                       className="border-b align-top hover:bg-muted/40"
                       onClick={() =>
                         setExpandedUserIds((current) =>
@@ -471,7 +503,7 @@ export function SystemUserPage() {
                         )
                       }
                     >
-                      <td className="px-3 py-2">
+                      <TableCell className="px-3 py-2">
                         <div className="flex items-center gap-3">
                           <img
                             alt={user.nickname || String(user.id)}
@@ -479,12 +511,16 @@ export function SystemUserPage() {
                             src={buildEveCharacterPortraitUrl(user.primary_character_id, 64)}
                           />
                           <div className="min-w-0">
-                            <div className="font-medium">{user.nickname || t('userAdmin.unnamed')}</div>
-                            <div className="text-xs text-muted-foreground">ID: {user.id}</div>
+                            <div className="font-medium">
+                              {user.nickname || t('userAdmin.unnamed')}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {t('common.id')}: {user.id}
+                            </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         <div className="flex flex-wrap gap-1">
                           {getDisplayRoles(user).map((role) => (
                             <span
@@ -495,22 +531,24 @@ export function SystemUserPage() {
                             </span>
                           ))}
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         <div className="space-y-1 text-xs">
                           <div>
-                            <span className="text-muted-foreground">{t('characters.profile.qq')}: </span>
+                            <span className="text-muted-foreground">
+                              {t('characters.profile.qq')}:{' '}
+                            </span>
                             <span>{user.qq || '-'}</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">
-                              {t('characters.profile.discordId')}: 
+                              {t('characters.profile.discordId')}:
                             </span>
                             <span>{user.discord_id || '-'}</span>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${getStatusTone(
                             user.status
@@ -520,12 +558,14 @@ export function SystemUserPage() {
                             ? t('userAdmin.status.active')
                             : t('userAdmin.status.disabled')}
                         </span>
-                      </td>
-                      <td className="px-3 py-2">
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         <div>{formatTime(user.last_login_at)}</div>
-                        <div className="text-xs text-muted-foreground">{user.last_login_ip || '-'}</div>
-                      </td>
-                      <td className="px-3 py-2">
+                        <div className="text-xs text-muted-foreground">
+                          {user.last_login_ip || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         <div className="flex flex-wrap gap-2">
                           {isSuperAdmin ? (
                             <Button
@@ -544,7 +584,7 @@ export function SystemUserPage() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            disabled={!canEditProfile(user) && !canEditRoles(user)}
+                            isDisabled={!canEditProfile(user) && !canEditRoles(user)}
                             onClick={(event) => {
                               event.stopPropagation()
                               void openEditDialog(user)
@@ -556,7 +596,7 @@ export function SystemUserPage() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            disabled={!canDeleteUser(user)}
+                            isDisabled={!canDeleteUser(user)}
                             onClick={(event) => {
                               event.stopPropagation()
                               void deleteUser(user)
@@ -565,46 +605,59 @@ export function SystemUserPage() {
                             {t('common.delete')}
                           </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                     {expanded ? (
-                      <tr className="border-b bg-muted/20">
-                        <td className="px-3 py-3" colSpan={6}>
+                      <TableRow className="border-b bg-muted/20">
+                        <TableCell className="px-3 py-3" colSpan={6}>
                           <div className="overflow-hidden rounded-lg border bg-background">
                             <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
                               {t('userAdmin.characters.title')} ({getUserCharacters(user).length})
                             </div>
                             <div className="overflow-x-auto">
                               {getUserCharacters(user).length > 0 ? (
-                                <table className="min-w-full text-xs">
-                                  <thead>
-                                    <tr className="border-b bg-muted/40 text-left">
-                                      <th className="px-3 py-2">{t('userAdmin.characters.character')}</th>
-                                      <th className="px-3 py-2">
+                                <Table className="min-w-full text-xs">
+                                  <TableHeader>
+                                    <TableRow className="border-b bg-muted/40 text-left">
+                                      <TableHead className="px-3 py-2">
+                                        {t('userAdmin.characters.character')}
+                                      </TableHead>
+                                      <TableHead className="px-3 py-2">
                                         {t('userAdmin.characters.characterIdLabel')}
-                                      </th>
-                                      <th className="px-3 py-2">{t('userAdmin.characters.tokenHealth')}</th>
-                                      <th className="px-3 py-2">SeAT</th>
-                                      <th className="px-3 py-2">
+                                      </TableHead>
+                                      <TableHead className="px-3 py-2">
+                                        {t('userAdmin.characters.tokenHealth')}
+                                      </TableHead>
+                                      <TableHead className="px-3 py-2">
+                                        {t('userAdmin.characters.seat')}
+                                      </TableHead>
+                                      <TableHead className="px-3 py-2">
                                         {t('userAdmin.characters.totalSkillPointsLabel')}
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
+                                      </TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
                                     {getUserCharacters(user).map((character) => (
-                                      <tr key={character.character_id} className="border-b">
-                                        <td className="px-3 py-2">
+                                      <TableRow key={character.character_id} className="border-b">
+                                        <TableCell className="px-3 py-2">
                                           <div className="flex items-center gap-2">
                                             <img
                                               alt={character.character_name}
                                               className="h-8 w-8 rounded-full border"
-                                              src={buildEveCharacterPortraitUrl(character.character_id, 32)}
+                                              src={buildEveCharacterPortraitUrl(
+                                                character.character_id,
+                                                32
+                                              )}
                                             />
-                                            <span className="font-medium">{character.character_name}</span>
+                                            <span className="font-medium">
+                                              {character.character_name}
+                                            </span>
                                           </div>
-                                        </td>
-                                        <td className="px-3 py-2">{character.character_id}</td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2">
+                                          {character.character_id}
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2">
                                           <span
                                             className={`inline-flex rounded-full px-2 py-0.5 font-medium ${
                                               character.token_invalid
@@ -616,8 +669,8 @@ export function SystemUserPage() {
                                               ? t('userAdmin.characters.tokenExpired')
                                               : t('userAdmin.characters.tokenValid')}
                                           </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2">
                                           <a
                                             className="text-primary hover:underline"
                                             href={`https://seat.winterco.space/character/view/sheet/${character.character_id}`}
@@ -626,14 +679,14 @@ export function SystemUserPage() {
                                           >
                                             {character.character_id}
                                           </a>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2">
                                           {numberFormatter.format(character.total_sp)}
-                                        </td>
-                                      </tr>
+                                        </TableCell>
+                                      </TableRow>
                                     ))}
-                                  </tbody>
-                                </table>
+                                  </TableBody>
+                                </Table>
                               ) : (
                                 <div className="px-3 py-5 text-muted-foreground">
                                   {t('userAdmin.characters.empty')}
@@ -641,21 +694,21 @@ export function SystemUserPage() {
                               )}
                             </div>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ) : null}
                   </Fragment>
                 )
               })}
               {!loading && users.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('userAdmin.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -668,7 +721,7 @@ export function SystemUserPage() {
           size="sm"
           variant="outline"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={page <= 1}
+          isDisabled={page <= 1}
         >
           {t('welfareMy.pagination.prev')}
         </Button>
@@ -677,26 +730,30 @@ export function SystemUserPage() {
           size="sm"
           variant="outline"
           onClick={() => setPage((current) => current + 1)}
-          disabled={users.length < pageSize || page * pageSize >= total}
+          isDisabled={users.length < pageSize || page * pageSize >= total}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 
@@ -718,11 +775,11 @@ export function SystemUserPage() {
                 setDialogOpen(false)
                 setEditingUser(null)
               }}
-              disabled={dialogSaving}
+              isDisabled={dialogSaving}
             >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submitEdit()} disabled={dialogSaving}>
+            <Button type="button" onClick={() => void submitEdit()} isDisabled={dialogSaving}>
               {dialogSaving ? t('userAdmin.manageDialog.saving') : t('common.confirm')}
             </Button>
           </>
@@ -747,7 +804,9 @@ export function SystemUserPage() {
             {canEditProfile(editingUser) ? (
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2 md:col-span-2">
-                  <span className="text-sm text-muted-foreground">{t('characters.profile.nickname')}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t('characters.profile.nickname')}
+                  </span>
                   <Input
                     value={dialogForm.nickname}
                     onChange={(event) =>
@@ -758,7 +817,9 @@ export function SystemUserPage() {
                 {canEditContacts(editingUser) ? (
                   <>
                     <label className="space-y-2">
-                      <span className="text-sm text-muted-foreground">{t('characters.profile.qq')}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {t('characters.profile.qq')}
+                      </span>
                       <Input
                         value={dialogForm.qq}
                         onChange={(event) =>
@@ -773,7 +834,10 @@ export function SystemUserPage() {
                       <Input
                         value={dialogForm.discordId}
                         onChange={(event) =>
-                          setDialogForm((current) => ({ ...current, discordId: event.target.value }))
+                          setDialogForm((current) => ({
+                            ...current,
+                            discordId: event.target.value,
+                          }))
                         }
                       />
                     </label>
@@ -781,44 +845,50 @@ export function SystemUserPage() {
                 ) : null}
                 <label className="space-y-2">
                   <span className="text-sm text-muted-foreground">{t('common.status')}</span>
-                  <select
-                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    value={String(dialogForm.status)}
-                    onChange={(event) =>
-                      setDialogForm((current) => ({ ...current, status: Number(event.target.value) }))
-                    }
+                  <Select
+                    selectedKey={String(dialogForm.status)}
+                    onSelectionChange={(key) => ((value) =>
+                      setDialogForm((current) => ({ ...current, status: Number(value) })))(String(key))}
                   >
-                    <option value="1">{t('userAdmin.status.active')}</option>
-                    <option value="0">{t('userAdmin.status.disabled')}</option>
-                  </select>
+                    <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem id="1">{t('userAdmin.status.active')}</SelectItem>
+                      <SelectItem id="0">{t('userAdmin.status.disabled')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </label>
               </div>
             ) : null}
             {canEditRoles(editingUser) ? (
               <div className="space-y-2">
                 <div className="text-sm font-medium">{t('userAdmin.roleManageTitle')}</div>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                   {roleDefinitions.map((role) => {
                     const checked = dialogForm.roleCodes.includes(role.code)
                     const disabled =
-                      role.code === 'super_admin' ||
-                      (role.code === 'admin' && !isSuperAdmin)
+                      role.code === 'super_admin' || (role.code === 'admin' && !isSuperAdmin)
                     return (
-                      <label key={role.code} className="flex items-center gap-2 text-sm">
-                        <input
-                          checked={checked}
-                          disabled={disabled}
-                          type="checkbox"
-                          onChange={(event) =>
+                      <label key={role.code} className="flex min-w-0 items-center gap-2 text-sm">
+                        <Checkbox
+                          isSelected={checked}
+                          isDisabled={disabled}
+                          onChange={(nextChecked) =>
                             setDialogForm((current) => ({
                               ...current,
-                              roleCodes: event.target.checked
-                                ? normalizeRoles([...current.roleCodes, role.code])
-                                : normalizeRoles(current.roleCodes.filter((item) => item !== role.code)),
+                              roleCodes:
+                                nextChecked === true
+                                  ? normalizeRoles([...current.roleCodes, role.code])
+                                  : normalizeRoles(
+                                      current.roleCodes.filter((item) => item !== role.code)
+                                    ),
                             }))
                           }
                         />
-                        <span>{getRoleLabel(t, role.code)}</span>
+                        <span className="truncate whitespace-nowrap">
+                          {getRoleLabel(t, role.code)}
+                        </span>
                       </label>
                     )
                   })}

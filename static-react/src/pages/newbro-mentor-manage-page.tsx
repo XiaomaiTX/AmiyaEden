@@ -146,7 +146,7 @@ export function NewbroMentorManagePage() {
                     <Button
                       type="button"
                       variant="destructive"
-                      disabled={revokeId === relationship.id}
+                      isDisabled={revokeId === relationship.id}
                       onClick={() => void handleRevoke(relationship.id)}
                     >
                       {revokeId === relationship.id
@@ -219,7 +219,7 @@ export function NewbroMentorManagePage() {
                     }
                   />
                 </label>
-                <Button type="button" onClick={() => void handleSaveSettings()} disabled={savingSettings}>
+                <Button type="button" onClick={() => void handleSaveSettings()} isDisabled={savingSettings}>
                   {savingSettings ? t('newbroMentorManage.saving') : t('newbroMentorManage.save')}
                 </Button>
               </div>
@@ -255,7 +255,7 @@ export function NewbroMentorManagePage() {
               ) : null}
             </div>
             <div className="mt-4">
-              <Button type="button" variant="outline" onClick={() => void handleProcessRewards()} disabled={processingRewards}>
+              <Button type="button" variant="outline" onClick={() => void handleProcessRewards()} isDisabled={processingRewards}>
                 {processingRewards ? t('newbroMentorManage.processing') : t('newbroMentorManage.processRewards')}
               </Button>
             </div>

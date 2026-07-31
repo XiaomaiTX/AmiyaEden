@@ -216,10 +216,10 @@ export function OperationFleetConfigsPage() {
         header: t('common.operation'),
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => void openEditDialog(row.original)} disabled={!canManage}>
+            <Button type="button" size="sm" variant="outline" onClick={() => void openEditDialog(row.original)} isDisabled={!canManage}>
               {t('common.edit')}
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => void handleDelete(row.original)} disabled={!canManage}>
+            <Button type="button" size="sm" variant="outline" onClick={() => void handleDelete(row.original)} isDisabled={!canManage}>
               {t('common.delete')}
             </Button>
           </div>
@@ -241,7 +241,7 @@ export function OperationFleetConfigsPage() {
             <Button type="button" variant="outline" onClick={() => setRefreshSeed((current) => current + 1)}>
               {t('common.refresh')}
             </Button>
-            <Button type="button" onClick={openCreateDialog} disabled={!canManage}>
+            <Button type="button" onClick={openCreateDialog} isDisabled={!canManage}>
               {t('fleetConfig.create')}
             </Button>
           </div>
@@ -295,11 +295,11 @@ export function OperationFleetConfigsPage() {
                 setEditingConfig(null)
                 setForm(defaultFormState)
               }}
-              disabled={saving}
+              isDisabled={saving}
             >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submit()} disabled={saving || dialogLoading}>
+            <Button type="button" onClick={() => void submit()} isDisabled={saving || dialogLoading}>
               {saving ? t('fleetConfig.saving') : t('common.confirm')}
             </Button>
           </>

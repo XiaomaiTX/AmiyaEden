@@ -1,3 +1,12 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -297,12 +306,16 @@ export function SkillPlanManagementPage({
             <p className="text-sm text-muted-foreground">{t('skillPlan.loading')}</p>
           ) : null}
           {plans.map((plan, index) => (
-            <button
+            <Button
               key={plan.id}
               type="button"
-              className={`w-full rounded-lg border p-3 text-left transition ${
-                selectedPlanId === plan.id ? 'border-primary bg-primary/5' : 'bg-background'
+              variant="outline"
+              className={`w-full p-3 text-left transition ${
+                selectedPlanId === plan.id
+                  ? 'border-primary bg-primary/10 text-foreground'
+                  : 'text-foreground'
               }`}
+              aria-pressed={selectedPlanId === plan.id}
               onClick={() => void loadDetail(plan.id)}
             >
               <div className="flex items-start justify-between gap-2">
@@ -322,7 +335,7 @@ export function SkillPlanManagementPage({
                     type="button"
                     size="sm"
                     variant="outline"
-                    disabled={reorderSaving || index === 0}
+                    isDisabled={reorderSaving || index === 0}
                     onClick={(event) => {
                       event.stopPropagation()
                       void reorder(index, -1)
@@ -334,7 +347,7 @@ export function SkillPlanManagementPage({
                     type="button"
                     size="sm"
                     variant="outline"
-                    disabled={reorderSaving || index === plans.length - 1}
+                    isDisabled={reorderSaving || index === plans.length - 1}
                     onClick={(event) => {
                       event.stopPropagation()
                       void reorder(index, 1)
@@ -344,7 +357,7 @@ export function SkillPlanManagementPage({
                   </Button>
                 </div>
               ) : null}
-            </button>
+            </Button>
           ))}
           {!loading && plans.length === 0 ? (
             <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
@@ -364,7 +377,7 @@ export function SkillPlanManagementPage({
             onClick={() => {
               setPage((current) => Math.max(1, current - 1))
             }}
-            disabled={page <= 1}
+            isDisabled={page <= 1}
           >
             {t('welfareMy.pagination.prev')}
           </Button>
@@ -375,7 +388,7 @@ export function SkillPlanManagementPage({
             onClick={() => {
               setPage((current) => current + 1)
             }}
-            disabled={plans.length < pageSize || page * pageSize >= total}
+            isDisabled={plans.length < pageSize || page * pageSize >= total}
           >
             {t('welfareMy.pagination.next')}
           </Button>
@@ -384,20 +397,29 @@ export function SkillPlanManagementPage({
 
       <div className="rounded-lg border bg-card p-4">
         {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
-        {detailLoading ? <p className="mb-4 text-sm text-muted-foreground">{t('skillPlan.loading')}</p> : null}
+        {detailLoading ? (
+          <p className="mb-4 text-sm text-muted-foreground">{t('skillPlan.loading')}</p>
+        ) : null}
         {selectedPlan ? (
           <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold">{selectedPlan.title}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{selectedPlan.description || t('skillPlan.descriptionEmpty')}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedPlan.description || t('skillPlan.descriptionEmpty')}
+                </p>
               </div>
               {canManage ? (
                 <div className="flex gap-2">
                   <Button type="button" variant="outline" onClick={openEdit}>
                     {t('common.edit')}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => void remove()} disabled={saving}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void remove()}
+                    isDisabled={saving}
+                  >
                     {t('common.delete')}
                   </Button>
                 </div>
@@ -411,35 +433,45 @@ export function SkillPlanManagementPage({
               </div>
               <div className="rounded-lg border p-3">
                 <div className="text-xs text-muted-foreground">{t('common.updatedAt')}</div>
-                <div className="mt-1 text-sm font-medium">{formatDateTime(selectedPlan.updated_at)}</div>
+                <div className="mt-1 text-sm font-medium">
+                  {formatDateTime(selectedPlan.updated_at)}
+                </div>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="text-xs text-muted-foreground">{t('common.createdAt')}</div>
-                <div className="mt-1 text-sm font-medium">{formatDateTime(selectedPlan.created_at)}</div>
+                <div className="mt-1 text-sm font-medium">
+                  {formatDateTime(selectedPlan.created_at)}
+                </div>
               </div>
             </div>
 
             <div className="rounded-lg border p-3">
-              <div className="text-sm font-medium text-muted-foreground">{t('skillPlan.skillListTitle')}</div>
+              <div className="text-sm font-medium text-muted-foreground">
+                {t('skillPlan.skillListTitle')}
+              </div>
               <div className="mt-3 overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left">
-                      <th className="px-3 py-2">{t('skillPlan.table.skill')}</th>
-                      <th className="px-3 py-2">{t('skillPlan.table.group')}</th>
-                      <th className="px-3 py-2">{t('skillPlan.table.requiredLevel')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b bg-muted/40 text-left">
+                      <TableHead className="px-3 py-2">{t('skillPlan.table.skill')}</TableHead>
+                      <TableHead className="px-3 py-2">{t('skillPlan.table.group')}</TableHead>
+                      <TableHead className="px-3 py-2">
+                        {t('skillPlan.table.requiredLevel')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {selectedPlan.skills.map((skill) => (
-                      <tr key={skill.id} className="border-b">
-                        <td className="px-3 py-2">{skill.skill_name}</td>
-                        <td className="px-3 py-2">{skill.group_name}</td>
-                        <td className="px-3 py-2">{t('skillPlan.level', { level: skill.required_level })}</td>
-                      </tr>
+                      <TableRow key={skill.id} className="border-b">
+                        <TableCell className="px-3 py-2">{skill.skill_name}</TableCell>
+                        <TableCell className="px-3 py-2">{skill.group_name}</TableCell>
+                        <TableCell className="px-3 py-2">
+                          {t('skillPlan.level', { level: skill.required_level })}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           </div>
@@ -456,10 +488,19 @@ export function SkillPlanManagementPage({
         onClose={() => setDialogOpen(false)}
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              isDisabled={saving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submit()} disabled={saving || !form.title.trim()}>
+            <Button
+              type="button"
+              onClick={() => void submit()}
+              isDisabled={saving || !form.title.trim()}
+            >
               {saving ? t('shopManage.saving') : t('common.confirm')}
             </Button>
           </>
@@ -472,16 +513,22 @@ export function SkillPlanManagementPage({
               value={form.title}
               placeholder={t('skillPlan.fields.titlePlaceholder')}
               required
-              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, title: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm text-muted-foreground">{t('skillPlan.fields.description')}</span>
-            <textarea
+            <span className="text-sm text-muted-foreground">
+              {t('skillPlan.fields.description')}
+            </span>
+            <Textarea
               className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
               value={form.description}
               placeholder={t('skillPlan.fields.descriptionPlaceholder')}
-              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, description: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-2">
@@ -490,7 +537,9 @@ export function SkillPlanManagementPage({
               type="number"
               value={form.ship_type_id}
               placeholder={t('skillPlan.fields.shipPlaceholder')}
-              onChange={(event) => setForm((current) => ({ ...current, ship_type_id: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, ship_type_id: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-2">
@@ -498,16 +547,22 @@ export function SkillPlanManagementPage({
             <Input
               type="number"
               value={String(form.sort_order)}
-              onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))
+              }
             />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm text-muted-foreground">{t('skillPlan.fields.skillsText')}</span>
-            <textarea
+            <span className="text-sm text-muted-foreground">
+              {t('skillPlan.fields.skillsText')}
+            </span>
+            <Textarea
               className="min-h-40 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
               value={form.skills_text}
               placeholder={t('skillPlan.fields.skillsTextPlaceholder')}
-              onChange={(event) => setForm((current) => ({ ...current, skills_text: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, skills_text: event.target.value }))
+              }
             />
           </label>
         </div>

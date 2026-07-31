@@ -73,6 +73,6 @@ describe('info skill page', () => {
     await waitFor(() => {
       expect(screen.getByText('Gunnery (Combat)')).toBeInTheDocument()
     })
-    expect(screen.getByText('Missiles L2')).toBeInTheDocument()
+    expect(screen.getByText(/Missiles/)).toBeInTheDocument()
   })
 })

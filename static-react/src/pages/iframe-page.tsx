@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
+import { useI18n } from '@/i18n'
 
 function decodeIframeSrc(splat: string): string {
   const trimmed = splat.replace(/^\/+|\/+$/g, '')
@@ -27,6 +28,7 @@ function decodeIframeSrc(splat: string): string {
 }
 
 export function IframePage() {
+  const { t } = useI18n()
   const { '*': splat } = useParams<{ '*': string }>()
   const [loaded, setLoaded] = useState(false)
 
@@ -35,9 +37,7 @@ export function IframePage() {
   if (!src) {
     return (
       <div className="flex h-full items-center justify-center p-8">
-        <p className="text-sm text-muted-foreground">
-          Missing iframe target path.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('info.iframeMissingTarget')}</p>
       </div>
     )
   }
@@ -51,7 +51,7 @@ export function IframePage() {
       ) : null}
       <iframe
         src={src}
-        title="External Content"
+        title={t('info.iframeTitle')}
         className="h-full w-full min-h-[calc(100vh-120px)] border-none"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         referrerPolicy="no-referrer"

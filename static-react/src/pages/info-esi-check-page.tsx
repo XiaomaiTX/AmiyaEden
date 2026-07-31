@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchEveSSOScopes, fetchMyCharacters, getEveBindURL } from '@/api/auth'
 import { Button } from '@/components/ui/button'
@@ -50,7 +65,10 @@ export function InfoEsiCheckPage() {
         setScopes(nextScopes)
         setCharacters(nextCharacters)
         setSelectedCharacterId((current) => {
-          if (current > 0 && nextCharacters.some((character) => character.character_id === current)) {
+          if (
+            current > 0 &&
+            nextCharacters.some((character) => character.character_id === current)
+          ) {
             return current
           }
           return nextCharacters[0]?.character_id ?? 0
@@ -143,14 +161,14 @@ export function InfoEsiCheckPage() {
                     {t('infoEsiCheck.invalidCount', { count: invalidCharacters.length })}
                   </span>
                   {invalidCharacters.map((character) => (
-                    <button
+                    <Button
                       key={character.character_id}
                       type="button"
                       className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
                       onClick={() => setSelectedCharacterId(character.character_id)}
                     >
                       {character.character_name}
-                    </button>
+                    </Button>
                   ))}
                 </>
               )}
@@ -168,25 +186,39 @@ export function InfoEsiCheckPage() {
             <>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="space-y-1">
-                  <span className="text-sm text-muted-foreground">{t('infoEsiCheck.selectCharacter')}</span>
-                  <select
-                    className="h-10 min-w-[240px] rounded-md border border-input bg-background px-3 text-sm"
-                    value={selectedCharacterId}
-                    onChange={(event) => setSelectedCharacterId(Number(event.target.value))}
+                  <span className="text-sm text-muted-foreground">
+                    {t('infoEsiCheck.selectCharacter')}
+                  </span>
+                  <Select
+                    selectedKey={String(selectedCharacterId ?? '')}
+                    onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
                   >
-                    {characters.map((character) => (
-                      <option key={character.character_id} value={character.character_id}>
-                        {character.character_name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-10 min-w-[240px] rounded-md border border-input bg-background px-3 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {characters.map((character) => (
+                        <SelectItem
+                          key={character.character_id}
+                          id={String(character.character_id ?? '')}
+                        >
+                          {character.character_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
 
                 {selectedCharacter ? (
                   <div className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
                     <Avatar className="size-10">
-                      <AvatarImage src={portraitUrl(selectedCharacter.character_id)} alt={selectedCharacter.character_name} />
-                      <AvatarFallback>{selectedCharacter.character_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarImage
+                        src={portraitUrl(selectedCharacter.character_id)}
+                        alt={selectedCharacter.character_name}
+                      />
+                      <AvatarFallback>
+                        {selectedCharacter.character_name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="text-sm">
                       <div className="font-medium">{selectedCharacter.character_name}</div>
@@ -197,7 +229,12 @@ export function InfoEsiCheckPage() {
                   </div>
                 ) : null}
 
-                <Button type="button" variant="outline" onClick={() => void handleReauth()} disabled={reauthLoading}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleReauth()}
+                  isDisabled={reauthLoading}
+                >
                   {t('infoEsiCheck.reauth')}
                 </Button>
               </div>
@@ -216,42 +253,50 @@ export function InfoEsiCheckPage() {
               ) : null}
 
               <div className="overflow-hidden rounded-lg border">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left">
-                      <th className="px-3 py-2">{t('infoEsiCheck.scope')}</th>
-                      <th className="px-3 py-2">{t('infoEsiCheck.description')}</th>
-                      <th className="px-3 py-2">{t('infoEsiCheck.module')}</th>
-                      <th className="px-3 py-2 text-center">{t('infoEsiCheck.required')}</th>
-                      <th className="px-3 py-2 text-center">{t('infoEsiCheck.authorized')}</th>
-                      <th className="px-3 py-2 text-center">{t('infoEsiCheck.action')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b bg-muted/40 text-left">
+                      <TableHead className="px-3 py-2">{t('infoEsiCheck.scope')}</TableHead>
+                      <TableHead className="px-3 py-2">{t('infoEsiCheck.description')}</TableHead>
+                      <TableHead className="px-3 py-2">{t('infoEsiCheck.module')}</TableHead>
+                      <TableHead className="px-3 py-2 text-center">
+                        {t('infoEsiCheck.required')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-center">
+                        {t('infoEsiCheck.authorized')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-center">
+                        {t('infoEsiCheck.action')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {scopeRows.map((row) => (
-                      <tr key={row.scope} className="border-b">
-                        <td className="px-3 py-2 font-mono text-xs">{row.scope}</td>
-                        <td className="px-3 py-2">{row.description}</td>
-                        <td className="px-3 py-2">{row.module}</td>
-                        <td className="px-3 py-2 text-center">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${row.required ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'}`}>
+                      <TableRow key={row.scope} className="border-b">
+                        <TableCell className="px-3 py-2 font-mono text-xs">{row.scope}</TableCell>
+                        <TableCell className="px-3 py-2">{row.description}</TableCell>
+                        <TableCell className="px-3 py-2">{row.module}</TableCell>
+                        <TableCell className="px-3 py-2 text-center">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${row.required ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'}`}
+                          >
                             {row.required ? t('infoEsiCheck.required') : t('infoEsiCheck.optional')}
                           </span>
-                        </td>
-                        <td className="px-3 py-2 text-center">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-center">
                           {row.authorized ? (
                             <span className="font-bold text-emerald-600">✓</span>
                           ) : (
                             <span className="font-bold text-destructive">✗</span>
                           )}
-                        </td>
-                        <td className="px-3 py-2 text-center">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-center">
                           {!row.required && !row.authorized && !selectedCharacter?.token_invalid ? (
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              disabled={authorizingScope !== null}
+                              isDisabled={authorizingScope !== null}
                               onClick={() => void handleAuthorizeOptionalScope(row.scope)}
                             >
                               {authorizingScope === row.scope
@@ -259,11 +304,11 @@ export function InfoEsiCheckPage() {
                                 : t('infoEsiCheck.authorizeScope')}
                             </Button>
                           ) : null}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </>
           )}

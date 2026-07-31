@@ -141,7 +141,7 @@ export function NewbroRecruitLinkPage() {
                 <h2 className="text-base font-semibold">{t('newbroRecruitLink.myLinksTitle')}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{t('newbroRecruitLink.myLinksHint')}</p>
               </div>
-              <Button type="button" onClick={() => void handleGenerate()} disabled={generating}>
+              <Button type="button" onClick={() => void handleGenerate()} isDisabled={generating}>
                 {generating ? t('newbroRecruitLink.generating') : t('newbroRecruitLink.generate')}
               </Button>
             </div>
@@ -236,7 +236,7 @@ export function NewbroRecruitLinkPage() {
                     }
                   />
                 </label>
-                <Button type="button" onClick={() => void handleSaveSettings()} disabled={settingsSaving}>
+                <Button type="button" onClick={() => void handleSaveSettings()} isDisabled={settingsSaving}>
                   {settingsSaving ? t('newbroRecruitLink.saving') : t('newbroRecruitLink.save')}
                 </Button>
               </div>

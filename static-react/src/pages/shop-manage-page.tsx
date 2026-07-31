@@ -1,5 +1,26 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { adminCreateProduct, adminDeleteProduct, adminListProducts, adminUpdateProduct } from '@/api/shop'
+import {
+  adminCreateProduct,
+  adminDeleteProduct,
+  adminListProducts,
+  adminUpdateProduct,
+} from '@/api/shop'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePermission } from '@/hooks/use-permission'
@@ -192,15 +213,19 @@ export function ShopManagePage() {
             </label>
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('shopManage.filterStatus')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+              <Select
+                selectedKey={String(statusFilter ?? '')}
+                onSelectionChange={(key) => ((value) => setStatusFilter(value))(String(key))}
               >
-                <option value="">{t('shopManage.filterStatus')}</option>
-                <option value="1">{t('shopManage.statusOnSale')}</option>
-                <option value="0">{t('shopManage.statusOffSale')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('shopManage.filterStatus')}</SelectItem>
+                  <SelectItem id="1">{t('shopManage.statusOnSale')}</SelectItem>
+                  <SelectItem id="0">{t('shopManage.statusOffSale')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             <Button
               type="button"
@@ -224,7 +249,7 @@ export function ShopManagePage() {
             >
               {t('common.reset')}
             </Button>
-            <Button type="button" onClick={openCreateDialog} disabled={!canCreate}>
+            <Button type="button" onClick={openCreateDialog} isDisabled={!canCreate}>
               {t('shopManage.createProduct')}
             </Button>
           </div>
@@ -239,60 +264,82 @@ export function ShopManagePage() {
           {t('shopManage.title')} ({total})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('shopManage.columns.image')}</th>
-                <th className="px-3 py-2">{t('shop.productName')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.price')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.stock')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.limitPerUser')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.limitPeriod')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.status')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.sort')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.updatedAt')}</th>
-                <th className="px-3 py-2">{t('shopManage.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('shopManage.columns.image')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shop.productName')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.price')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.stock')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.limitPerUser')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.limitPeriod')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.sort')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.updatedAt')}</TableHead>
+                <TableHead className="px-3 py-2">{t('shopManage.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {products.map((product) => (
-                <tr key={product.id} className="border-b">
-                  <td className="px-3 py-2">
+                <TableRow key={product.id} className="border-b">
+                  <TableCell className="px-3 py-2">
                     {product.image ? (
-                      <img alt={product.name} className="h-10 w-10 rounded object-cover" src={product.image} />
+                      <img
+                        alt={product.name}
+                        className="h-10 w-10 rounded object-cover"
+                        src={product.image}
+                      />
                     ) : (
                       <div className="h-10 w-10 rounded bg-muted" />
                     )}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="font-medium">{product.name}</div>
-                    <div className="line-clamp-2 text-xs text-muted-foreground">{product.description || '-'}</div>
-                  </td>
-                  <td className="px-3 py-2 font-medium text-orange-600">
+                    <div className="line-clamp-2 text-xs text-muted-foreground">
+                      {product.description || '-'}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-3 py-2 font-medium text-orange-600">
                     {formatCoin(product.price)} {t('shop.currency')}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className={product.stock < 0 ? 'text-muted-foreground' : product.stock === 0 ? 'text-rose-600' : ''}>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <span
+                      className={
+                        product.stock < 0
+                          ? 'text-muted-foreground'
+                          : product.stock === 0
+                            ? 'text-rose-600'
+                            : ''
+                      }
+                    >
                       {product.stock < 0 ? t('shopManage.stockUnlimited') : product.stock}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{product.max_per_user > 0 ? product.max_per_user : t('shopManage.stockUnlimited')}</td>
-                  <td className="px-3 py-2">{getLimitPeriodLabel(t, product.limit_period)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    {product.max_per_user > 0
+                      ? product.max_per_user
+                      : t('shopManage.stockUnlimited')}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    {getLimitPeriodLabel(t, product.limit_period)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <ShopBadge className={productStatusClass(product.status)}>
-                      {product.status === 1 ? t('shopManage.statusOnSale') : t('shopManage.statusOffSale')}
+                      {product.status === 1
+                        ? t('shopManage.statusOnSale')
+                        : t('shopManage.statusOffSale')}
                     </ShopBadge>
-                  </td>
-                  <td className="px-3 py-2">{product.sort_order}</td>
-                  <td className="px-3 py-2">{formatDateTime(product.updated_at)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{product.sort_order}</TableCell>
+                  <TableCell className="px-3 py-2">{formatDateTime(product.updated_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => openEditDialog(product)}
-                        disabled={!canEdit}
+                        isDisabled={!canEdit}
                       >
                         {t('common.edit')}
                       </Button>
@@ -301,23 +348,23 @@ export function ShopManagePage() {
                         size="sm"
                         variant="outline"
                         onClick={() => void remove(product)}
-                        disabled={!canDelete || deletingId === product.id}
+                        isDisabled={!canDelete || deletingId === product.id}
                       >
                         {t('common.delete')}
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && products.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={10}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={10}>
                     {t('shopManage.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -330,7 +377,7 @@ export function ShopManagePage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={page <= 1}
+          isDisabled={page <= 1}
         >
           {t('welfareMy.pagination.prev')}
         </Button>
@@ -339,27 +386,31 @@ export function ShopManagePage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => current + 1)}
-          disabled={products.length < pageSize || page * pageSize >= total}
+          isDisabled={products.length < pageSize || page * pageSize >= total}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              const nextSize = Number(event.target.value)
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              const nextSize = Number(value)
               setPageSize(nextSize)
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 
@@ -371,10 +422,15 @@ export function ShopManagePage() {
         closeLabel={t('common.close')}
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              isDisabled={saving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submit()} disabled={saving}>
+            <Button type="button" onClick={() => void submit()} isDisabled={saving}>
               {saving ? t('shopManage.saving') : t('common.confirm')}
             </Button>
           </>
@@ -383,18 +439,30 @@ export function ShopManagePage() {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('shop.productName')}</span>
-            <Input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+            <Input
+              value={form.name}
+              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+            />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('shopManage.fields.image')}</span>
-            <Input value={form.image} onChange={(event) => setForm((current) => ({ ...current, image: event.target.value }))} />
+            <Input
+              value={form.image}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, image: event.target.value }))
+              }
+            />
           </label>
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm text-muted-foreground">{t('shopManage.fields.description')}</span>
-            <textarea
+            <span className="text-sm text-muted-foreground">
+              {t('shopManage.fields.description')}
+            </span>
+            <Textarea
               className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
               value={form.description}
-              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, description: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-2">
@@ -402,7 +470,9 @@ export function ShopManagePage() {
             <Input
               type="number"
               value={String(form.price)}
-              onChange={(event) => setForm((current) => ({ ...current, price: Number(event.target.value) }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, price: Number(event.target.value) }))
+              }
             />
           </label>
           <label className="space-y-2">
@@ -410,15 +480,21 @@ export function ShopManagePage() {
             <Input
               type="number"
               value={String(form.stock)}
-              onChange={(event) => setForm((current) => ({ ...current, stock: Number(event.target.value) }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, stock: Number(event.target.value) }))
+              }
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('shopManage.fields.maxPerUser')}</span>
+            <span className="text-sm text-muted-foreground">
+              {t('shopManage.fields.maxPerUser')}
+            </span>
             <Input
               type="number"
               value={String(form.max_per_user)}
-              onChange={(event) => setForm((current) => ({ ...current, max_per_user: Number(event.target.value) }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, max_per_user: Number(event.target.value) }))
+              }
             />
           </label>
           <label className="space-y-2">
@@ -426,37 +502,49 @@ export function ShopManagePage() {
             <Input
               type="number"
               value={String(form.sort_order)}
-              onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))
+              }
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('shopManage.fields.limitPeriod')}</span>
-            <select
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={form.limit_period}
-              onChange={(event) =>
+            <span className="text-sm text-muted-foreground">
+              {t('shopManage.fields.limitPeriod')}
+            </span>
+            <Select
+              selectedKey={String(form.limit_period ?? '')}
+              onSelectionChange={(key) => ((value) =>
                 setForm((current) => ({
                   ...current,
-                  limit_period: event.target.value as ProductFormState['limit_period'],
-                }))
-              }
+                  limit_period: value as ProductFormState['limit_period'],
+                })))(String(key))}
             >
-              <option value="forever">{t('shopManage.periodForever')}</option>
-              <option value="daily">{t('shopManage.periodDaily')}</option>
-              <option value="weekly">{t('shopManage.periodWeekly')}</option>
-              <option value="monthly">{t('shopManage.periodMonthly')}</option>
-            </select>
+              <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="forever">{t('shopManage.periodForever')}</SelectItem>
+                <SelectItem id="daily">{t('shopManage.periodDaily')}</SelectItem>
+                <SelectItem id="weekly">{t('shopManage.periodWeekly')}</SelectItem>
+                <SelectItem id="monthly">{t('shopManage.periodMonthly')}</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('shopManage.fields.status')}</span>
-            <select
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={String(form.status)}
-              onChange={(event) => setForm((current) => ({ ...current, status: Number(event.target.value) }))}
+            <Select
+              selectedKey={String(form.status ?? '')}
+              onSelectionChange={(key) => ((value) =>
+                setForm((current) => ({ ...current, status: Number(value) })))(String(key))}
             >
-              <option value="1">{t('shopManage.statusOnSale')}</option>
-              <option value="0">{t('shopManage.statusOffSale')}</option>
-            </select>
+              <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="1">{t('shopManage.statusOnSale')}</SelectItem>
+                <SelectItem id="0">{t('shopManage.statusOffSale')}</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
         </div>
       </ShopDialog>

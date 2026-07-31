@@ -1,9 +1,30 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { applyForWelfare, getEligibleWelfares, getMyApplications, uploadWelfareEvidence } from '@/api/welfare'
+import {
+  applyForWelfare,
+  getEligibleWelfares,
+  getMyApplications,
+  uploadWelfareEvidence,
+} from '@/api/welfare'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type { EligibleWelfare, MyApplication } from '@/types/api/welfare'
+import { ShopDialog } from './shop-page-utils'
 
 type EligibleRow = {
   welfareId: number
@@ -106,7 +127,10 @@ export function WelfareMyPage() {
     return () => window.clearTimeout(timer)
   }, [loadData])
 
-  const appPageCount = useMemo(() => Math.max(1, Math.ceil(appTotal / appPageSize) || 1), [appPageSize, appTotal])
+  const appPageCount = useMemo(
+    () => Math.max(1, Math.ceil(appTotal / appPageSize) || 1),
+    [appPageSize, appTotal]
+  )
 
   const handleEvidenceUpload = async (file: File) => {
     setEvidenceUploading(true)
@@ -181,7 +205,7 @@ export function WelfareMyPage() {
                   </div>
                   <Button
                     type="button"
-                    disabled={!row.canApplyNow}
+                    isDisabled={!row.canApplyNow}
                     onClick={() => {
                       setSelectedRow(row)
                       setEvidenceUrl('')
@@ -201,35 +225,37 @@ export function WelfareMyPage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold">{t('welfareMy.applicationsTitle')}</h2>
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('welfareMy.columns.welfare')}</th>
-                  <th className="px-3 py-2">{t('welfareMy.columns.character')}</th>
-                  <th className="px-3 py-2">{t('welfareMy.columns.status')}</th>
-                  <th className="px-3 py-2">{t('welfareMy.columns.reviewer')}</th>
-                  <th className="px-3 py-2">{t('welfareMy.columns.appliedAt')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('welfareMy.columns.welfare')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareMy.columns.character')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareMy.columns.status')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareMy.columns.reviewer')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareMy.columns.appliedAt')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {applications.map((application) => (
-                  <tr key={application.id} className="border-b">
-                    <td className="px-3 py-2">{application.welfare_name}</td>
-                    <td className="px-3 py-2">{application.character_name}</td>
-                    <td className="px-3 py-2">{application.status}</td>
-                    <td className="px-3 py-2">{application.reviewer_name || '-'}</td>
-                    <td className="px-3 py-2">{formatTime(application.created_at)}</td>
-                  </tr>
+                  <TableRow key={application.id} className="border-b">
+                    <TableCell className="px-3 py-2">{application.welfare_name}</TableCell>
+                    <TableCell className="px-3 py-2">{application.character_name}</TableCell>
+                    <TableCell className="px-3 py-2">{application.status}</TableCell>
+                    <TableCell className="px-3 py-2">{application.reviewer_name || '-'}</TableCell>
+                    <TableCell className="px-3 py-2">
+                      {formatTime(application.created_at)}
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {!loading && applications.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
                       {t('welfareMy.noApplications')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
@@ -241,7 +267,7 @@ export function WelfareMyPage() {
               variant="outline"
               size="sm"
               onClick={() => setAppPage((current) => Math.max(1, current - 1))}
-              disabled={appPage <= 1}
+              isDisabled={appPage <= 1}
             >
               {t('welfareMy.pagination.prev')}
             </Button>
@@ -250,38 +276,47 @@ export function WelfareMyPage() {
               variant="outline"
               size="sm"
               onClick={() => setAppPage((current) => current + 1)}
-              disabled={applications.length < appPageSize || appPage * appPageSize >= appTotal}
+              isDisabled={applications.length < appPageSize || appPage * appPageSize >= appTotal}
             >
               {t('welfareMy.pagination.next')}
             </Button>
             <label className="flex items-center gap-2">
               <span>{t('welfareMy.pageSize')}</span>
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                value={appPageSize}
-                onChange={(event) => {
-                  setAppPageSize(Number(event.target.value))
+              <Select
+                selectedKey={String(appPageSize ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setAppPageSize(Number(value))
                   setAppPage(1)
-                }}
+                })(String(key))}
               >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50].map((size) => (
+                    <SelectItem key={size} id={String(size ?? '')}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
         </div>
       </div>
 
       {selectedRow ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <ShopDialog
+          open={selectedRow !== null}
+          title={t('welfareMy.applyDialogTitle')}
+          onClose={() => setSelectedRow(null)}
+          closeLabel={t('common.close')}
+        >
           <div className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-xl">
-            <h2 className="text-lg font-semibold">{t('welfareMy.applyDialogTitle')}</h2>
             <div className="mt-4 space-y-3 text-sm">
               <p>
-                <span className="font-medium">{t('welfareMy.welfareName')}:</span> {selectedRow.welfareName}
+                <span className="font-medium">{t('welfareMy.welfareName')}:</span>{' '}
+                {selectedRow.welfareName}
               </p>
               {selectedRow.characterName ? (
                 <p>
@@ -291,7 +326,9 @@ export function WelfareMyPage() {
               ) : null}
               {selectedRow.requireEvidence ? (
                 <label className="space-y-2 block">
-                  <span className="text-sm text-muted-foreground">{t('welfareMy.evidenceImage')}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t('welfareMy.evidenceImage')}
+                  </span>
                   <Input
                     type="file"
                     accept="image/*"
@@ -314,13 +351,13 @@ export function WelfareMyPage() {
               <Button
                 type="button"
                 onClick={() => void submitApply(selectedRow)}
-                disabled={applying || (selectedRow.requireEvidence && !evidenceUrl)}
+                isDisabled={applying || (selectedRow.requireEvidence && !evidenceUrl)}
               >
                 {applying ? t('welfareMy.applying') : t('welfareMy.confirmApply')}
               </Button>
             </div>
           </div>
-        </div>
+        </ShopDialog>
       ) : null}
     </section>
   )

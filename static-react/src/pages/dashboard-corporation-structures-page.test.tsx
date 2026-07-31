@@ -131,8 +131,25 @@ describe('dashboard corporation structures page', () => {
 
     expect(screen.getByText('Amiya Corp')).toBeInTheDocument()
     expect(screen.getByText('12h')).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'The Forge' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: '设置' }))
+    expect(screen.getAllByRole('combobox')).not.toHaveLength(0)
+
+    const filterToggles = screen
+      .getAllByRole('button')
+      .filter((button) => button.hasAttribute('aria-pressed'))
+    expect(filterToggles).toHaveLength(18)
+    expect(
+      filterToggles.every((button) => ['default', 'outline'].includes(button.dataset.variant ?? ''))
+    ).toBe(true)
+
+    const inactiveToggle = filterToggles.find(
+      (button) => button.getAttribute('aria-pressed') === 'false'
+    )
+    expect(inactiveToggle).toBeDefined()
+    await userEvent.click(inactiveToggle!)
+    expect(inactiveToggle).toHaveAttribute('aria-pressed', 'true')
+    expect(inactiveToggle).toHaveAttribute('data-variant', 'default')
+
+    await userEvent.click(screen.getByRole('tab', { name: '设置' }))
     expect(await screen.findByText('手动巡查 QQ 建筑预警')).toBeInTheDocument()
 
     const listCall = fetchSpy.mock.calls.find(([input]) =>

@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check:api-contract": "node ./scripts/check-api-contract.mjs",
+    "check:i18n": "node ./scripts/check-i18n.mjs",
+    "check:ui-primitives": "node ./scripts/check-ui-primitives.mjs",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -15,7 +17,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@base-ui/react": "^1.6.0",
     "@fontsource-variable/geist": "^5.2.8",
     "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-image": "^3.29.2",
@@ -27,8 +28,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
-    "radix-ui": "^1.4.3",
     "react": "^19.2.5",
+    "react-aria-components": "^1.19.0",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
     "recharts": "3.8.0",

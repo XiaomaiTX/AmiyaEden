@@ -1,7 +1,17 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchInfoAssetLocations, fetchInfoAssetLocationItems, fetchInfoAssetChildren } from '@/api/eve-info'
+import {
+  fetchInfoAssetLocations,
+  fetchInfoAssetLocationItems,
+  fetchInfoAssetChildren,
+} from '@/api/eve-info'
 import { useI18n } from '@/i18n'
-import type { AssetListItemNode, AssetLocationItemsResponse, AssetLocationSummary } from '@/types/api/eve-info'
+import type {
+  AssetListItemNode,
+  AssetLocationItemsResponse,
+  AssetLocationSummary,
+} from '@/types/api/eve-info'
 
 const BLUEPRINT_CATEGORY_ID = 9
 
@@ -37,39 +47,42 @@ export function InfoAssetsPage() {
   const [childrenLoading, setChildrenLoading] = useState<Record<number, boolean>>({})
   const [childrenErrors, setChildrenErrors] = useState<Record<number, string>>({})
 
-  const loadLocations = useCallback(async (searchKeyword?: string) => {
-    locationsRequestSeq.current += 1
-    const requestId = locationsRequestSeq.current
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await fetchInfoAssetLocations({
-        language: 'en',
-        page: 1,
-        page_size: 20,
-        keyword: searchKeyword || undefined,
-      })
-      if (requestId !== locationsRequestSeq.current) return
-      setLocations(response.locations ?? [])
-      setTotalLocations(response.total_locations)
-      setTotalItems(response.total_items)
-      // Clear all caches on search refresh
-      setExpandedLocations({})
-      setLocationItems({})
-      setLocationLoading({})
-      setLocationErrors({})
-      setExpandedItems({})
-      setChildren({})
-      setChildrenLoading({})
-      setChildrenErrors({})
-    } catch {
-      if (requestId !== locationsRequestSeq.current) return
-      setError(t('infoAssets.locationsFailed'))
-      setLocations([])
-    } finally {
-      if (requestId === locationsRequestSeq.current) setLoading(false)
-    }
-  }, [t])
+  const loadLocations = useCallback(
+    async (searchKeyword?: string) => {
+      locationsRequestSeq.current += 1
+      const requestId = locationsRequestSeq.current
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetchInfoAssetLocations({
+          language: 'en',
+          page: 1,
+          page_size: 20,
+          keyword: searchKeyword || undefined,
+        })
+        if (requestId !== locationsRequestSeq.current) return
+        setLocations(response.locations ?? [])
+        setTotalLocations(response.total_locations)
+        setTotalItems(response.total_items)
+        // Clear all caches on search refresh
+        setExpandedLocations({})
+        setLocationItems({})
+        setLocationLoading({})
+        setLocationErrors({})
+        setExpandedItems({})
+        setChildren({})
+        setChildrenLoading({})
+        setChildrenErrors({})
+      } catch {
+        if (requestId !== locationsRequestSeq.current) return
+        setError(t('infoAssets.locationsFailed'))
+        setLocations([])
+      } finally {
+        if (requestId === locationsRequestSeq.current) setLoading(false)
+      }
+    },
+    [t]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -105,26 +118,34 @@ export function InfoAssetsPage() {
       }
     }
     void run()
-    return () => { cancelled = true }
-  }, [t])
-
-  const loadLocationItemsFor = useCallback(async (loc: AssetLocationSummary) => {
-    setLocationLoading((prev) => ({ ...prev, [loc.location_id]: true }))
-    setLocationErrors((prev) => ({ ...prev, [loc.location_id]: '' }))
-    try {
-      const response: AssetLocationItemsResponse = await fetchInfoAssetLocationItems({
-        language: 'en',
-        location_id: loc.location_id,
-        page: 1,
-        page_size: 50,
-      })
-      setLocationItems((prev) => ({ ...prev, [loc.location_id]: response.items }))
-    } catch {
-      setLocationErrors((prev) => ({ ...prev, [loc.location_id]: t('infoAssets.locationItemsFailed') }))
-    } finally {
-      setLocationLoading((prev) => ({ ...prev, [loc.location_id]: false }))
+    return () => {
+      cancelled = true
     }
   }, [t])
+
+  const loadLocationItemsFor = useCallback(
+    async (loc: AssetLocationSummary) => {
+      setLocationLoading((prev) => ({ ...prev, [loc.location_id]: true }))
+      setLocationErrors((prev) => ({ ...prev, [loc.location_id]: '' }))
+      try {
+        const response: AssetLocationItemsResponse = await fetchInfoAssetLocationItems({
+          language: 'en',
+          location_id: loc.location_id,
+          page: 1,
+          page_size: 50,
+        })
+        setLocationItems((prev) => ({ ...prev, [loc.location_id]: response.items }))
+      } catch {
+        setLocationErrors((prev) => ({
+          ...prev,
+          [loc.location_id]: t('infoAssets.locationItemsFailed'),
+        }))
+      } finally {
+        setLocationLoading((prev) => ({ ...prev, [loc.location_id]: false }))
+      }
+    },
+    [t]
+  )
 
   const toggleLocation = (loc: AssetLocationSummary) => {
     const locId = loc.location_id
@@ -139,21 +160,24 @@ export function InfoAssetsPage() {
     }
   }
 
-  const loadChildrenFor = useCallback(async (itemId: number) => {
-    setChildrenLoading((prev) => ({ ...prev, [itemId]: true }))
-    setChildrenErrors((prev) => ({ ...prev, [itemId]: '' }))
-    try {
-      const response = await fetchInfoAssetChildren({
-        language: 'en',
-        parent_item_id: itemId,
-      })
-      setChildren((prev) => ({ ...prev, [itemId]: response.items }))
-    } catch {
-      setChildrenErrors((prev) => ({ ...prev, [itemId]: t('infoAssets.childrenFailed') }))
-    } finally {
-      setChildrenLoading((prev) => ({ ...prev, [itemId]: false }))
-    }
-  }, [t])
+  const loadChildrenFor = useCallback(
+    async (itemId: number) => {
+      setChildrenLoading((prev) => ({ ...prev, [itemId]: true }))
+      setChildrenErrors((prev) => ({ ...prev, [itemId]: '' }))
+      try {
+        const response = await fetchInfoAssetChildren({
+          language: 'en',
+          parent_item_id: itemId,
+        })
+        setChildren((prev) => ({ ...prev, [itemId]: response.items }))
+      } catch {
+        setChildrenErrors((prev) => ({ ...prev, [itemId]: t('infoAssets.childrenFailed') }))
+      } finally {
+        setChildrenLoading((prev) => ({ ...prev, [itemId]: false }))
+      }
+    },
+    [t]
+  )
 
   const toggleItem = (item: AssetListItemNode) => {
     const itemId = item.item_id
@@ -182,7 +206,7 @@ export function InfoAssetsPage() {
 
     return (
       <div key={item.item_id}>
-        <button
+        <Button
           type="button"
           className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/40"
           onClick={() => hasKids && toggleItem(item)}
@@ -191,7 +215,9 @@ export function InfoAssetsPage() {
           <img src={getIconUrl(item)} alt={item.type_name} className="h-8 w-8 rounded border" />
           <span className="min-w-0 flex-1 truncate">{item.type_name}</span>
           {item.child_count > 0 ? (
-            <span className="rounded bg-muted px-1 text-xs text-muted-foreground">{item.child_count}</span>
+            <span className="rounded bg-muted px-1 text-xs text-muted-foreground">
+              {item.child_count}
+            </span>
           ) : null}
           <span className="w-28 shrink-0 truncate text-right text-xs text-muted-foreground">
             {item.group_name}
@@ -202,17 +228,23 @@ export function InfoAssetsPage() {
           <span className="w-28 shrink-0 truncate text-right text-xs text-muted-foreground">
             {item.character_name}
           </span>
-        </button>
+        </Button>
         {hasKids && itemExpanded ? (
           <div className="ml-8 space-y-1 border-l pl-3">
             {kidsError ? <p className="px-3 py-1 text-xs text-destructive">{kidsError}</p> : null}
             {kidsLoading ? <p className="px-3 py-1 text-xs">{t('infoAssets.loading')}</p> : null}
             {kids?.map((child) => (
               <div key={child.item_id} className="flex items-center gap-2 px-3 py-2 text-sm">
-                <img src={getIconUrl(child)} alt={child.type_name} className="h-8 w-8 rounded border" />
+                <img
+                  src={getIconUrl(child)}
+                  alt={child.type_name}
+                  className="h-8 w-8 rounded border"
+                />
                 <span className="min-w-0 flex-1 truncate">{child.type_name}</span>
                 {child.child_count > 0 ? (
-                  <span className="rounded bg-muted px-1 text-xs text-muted-foreground">{child.child_count}</span>
+                  <span className="rounded bg-muted px-1 text-xs text-muted-foreground">
+                    {child.child_count}
+                  </span>
                 ) : null}
                 <span className="w-28 shrink-0 truncate text-right text-xs text-muted-foreground">
                   {child.group_name}
@@ -235,7 +267,7 @@ export function InfoAssetsPage() {
     <section className="space-y-4">
       <h1 className="text-xl font-semibold">{t('infoAssets.title')}</h1>
       <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-4">
-        <input
+        <Input
           className="rounded border px-2 py-1 text-sm"
           value={keyword}
           onChange={(event) => handleSearch(event.target.value)}
@@ -247,7 +279,9 @@ export function InfoAssetsPage() {
       </div>
       {loading ? <p className="text-sm">{t('infoAssets.loading')}</p> : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {!loading && !error && (locations?.length ?? 0) === 0 ? <p className="text-sm">{t('infoAssets.empty')}</p> : null}
+      {!loading && !error && (locations?.length ?? 0) === 0 ? (
+        <p className="text-sm">{t('infoAssets.empty')}</p>
+      ) : null}
 
       <div className="space-y-3">
         {locations.map((loc) => {
@@ -258,23 +292,29 @@ export function InfoAssetsPage() {
 
           return (
             <div key={loc.location_id} className="rounded-lg border bg-card">
-              <button
+              <Button
                 type="button"
                 className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium"
                 onClick={() => toggleLocation(loc)}
               >
                 <span>{loc.location_name}</span>
                 <span className="flex gap-3 text-xs text-muted-foreground">
-                  <span>{loc.top_level_count} items</span>
-                  <span>{loc.character_count} chars</span>
+                  <span>{t('info.assetItemSummary', { count: loc.top_level_count })}</span>
+                  <span>{t('info.assetCharacterSummary', { count: loc.character_count })}</span>
                 </span>
-              </button>
+              </Button>
               {!collapsed ? (
                 <div className="space-y-1 pb-2">
-                  {locError ? <p className="px-3 py-1 text-xs text-destructive">{locError}</p> : null}
-                  {locLoading ? <p className="px-3 py-1 text-xs">{t('infoAssets.loading')}</p> : null}
+                  {locError ? (
+                    <p className="px-3 py-1 text-xs text-destructive">{locError}</p>
+                  ) : null}
+                  {locLoading ? (
+                    <p className="px-3 py-1 text-xs">{t('infoAssets.loading')}</p>
+                  ) : null}
                   {!locLoading && !locError && items?.length === 0 ? (
-                    <p className="px-3 py-1 text-xs text-muted-foreground">{t('info.assetNoItemsInLocation')}</p>
+                    <p className="px-3 py-1 text-xs text-muted-foreground">
+                      {t('info.assetNoItemsInLocation')}
+                    </p>
                   ) : null}
                   {items?.map((item) => renderItemRow(item))}
                 </div>

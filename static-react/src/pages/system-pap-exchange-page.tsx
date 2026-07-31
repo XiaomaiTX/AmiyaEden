@@ -1,3 +1,4 @@
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,7 +76,7 @@ export function SystemPAPExchangePage() {
             <p className="mt-1 text-sm text-muted-foreground">{t('papExchange.subtitle')}</p>
           </div>
           <PermissionGate permission="edit_exchange_rate">
-            <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
+            <Button type="button" onClick={() => void saveConfig()} isDisabled={saving || loading}>
               {saving ? t('papExchange.messages.saving') : t('common.save')}
             </Button>
           </PermissionGate>
@@ -208,26 +209,26 @@ export function SystemPAPExchangePage() {
             <p className="mt-1 text-sm text-muted-foreground">{t('papExchange.sections.ratesSubtitle')}</p>
           </div>
           <PermissionGate permission="edit_exchange_rate">
-            <Button type="button" onClick={() => void saveConfig()} disabled={saving || loading}>
+            <Button type="button" onClick={() => void saveConfig()} isDisabled={saving || loading}>
               {saving ? t('papExchange.messages.saving') : t('common.save')}
             </Button>
           </PermissionGate>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('papExchange.columns.papType')}</th>
-                <th className="px-3 py-2">{t('papExchange.columns.displayName')}</th>
-                <th className="px-3 py-2">{t('papExchange.columns.rate')}</th>
-                <th className="px-3 py-2">{t('papExchange.columns.updatedAt')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('papExchange.columns.papType')}</TableHead>
+                <TableHead className="px-3 py-2">{t('papExchange.columns.displayName')}</TableHead>
+                <TableHead className="px-3 py-2">{t('papExchange.columns.rate')}</TableHead>
+                <TableHead className="px-3 py-2">{t('papExchange.columns.updatedAt')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rates.map((rate, index) => (
-                <tr key={rate.pap_type} className="border-b align-top">
-                  <td className="px-3 py-2 font-medium">{rate.pap_type}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={rate.pap_type} className="border-b align-top">
+                  <TableCell className="px-3 py-2 font-medium">{rate.pap_type}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <Input
                       value={rate.display_name}
                       onChange={(event) =>
@@ -239,8 +240,8 @@ export function SystemPAPExchangePage() {
                         }))
                       }
                     />
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <Input
                       type="number"
                       min={0.01}
@@ -255,12 +256,12 @@ export function SystemPAPExchangePage() {
                         }))
                       }
                     />
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatDateTime(rate.updated_at)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-muted-foreground">{formatDateTime(rate.updated_at)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </section>

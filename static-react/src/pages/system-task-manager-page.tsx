@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchESIRefreshStatuses,
@@ -55,7 +70,10 @@ function taskDisplayName(t: ReturnType<typeof useI18n>['t'], task: Pick<TaskItem
   return translated === key ? task.name : translated
 }
 
-function taskDescription(t: ReturnType<typeof useI18n>['t'], task: Pick<TaskItem, 'name' | 'description'>) {
+function taskDescription(
+  t: ReturnType<typeof useI18n>['t'],
+  task: Pick<TaskItem, 'name' | 'description'>
+) {
   const key = `taskManager.taskDescriptions.${task.name}`
   const translated = t(key)
   return translated === key ? task.description || task.name : translated
@@ -185,11 +203,13 @@ export function SystemTaskManagerPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-lg border bg-card p-2">
-        {([
-          ['tasks', t('taskManager.tabs.tasks')],
-          ['esi-statuses', t('taskManager.tabs.esiStatuses')],
-          ['history', t('taskManager.tabs.history')],
-        ] as const).map(([key, label]) => (
+        {(
+          [
+            ['tasks', t('taskManager.tabs.tasks')],
+            ['esi-statuses', t('taskManager.tabs.esiStatuses')],
+            ['history', t('taskManager.tabs.history')],
+          ] as const
+        ).map(([key, label]) => (
           <Button
             key={key}
             type="button"
@@ -302,33 +322,37 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
   return (
     <>
       <div className="overflow-hidden rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">
-          {t('taskManager.tabs.tasks')}
-        </div>
+        <div className="border-b px-4 py-3 text-sm font-medium">{t('taskManager.tabs.tasks')}</div>
         <div className="overflow-x-auto">
           {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
-          {loading ? <p className="px-4 py-3 text-sm text-muted-foreground">{t('taskManager.loading')}</p> : null}
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('taskManager.columns.name')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.description')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.category')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.type')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.schedule')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.lastRun')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.lastStatus')}</th>
-                <th className="px-3 py-2">{t('common.operation')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          {loading ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">{t('taskManager.loading')}</p>
+          ) : null}
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.name')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.description')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.category')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.type')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.schedule')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.lastRun')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.lastStatus')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {tasks.map((task, index) => (
-                <tr key={task.name} className="border-b align-top">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2 font-medium">{taskDisplayName(t, task)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{taskDescription(t, task)}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={task.name} className="border-b align-top">
+                  <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                  <TableCell className="px-3 py-2 font-medium">
+                    {taskDisplayName(t, task)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2 text-muted-foreground">
+                    {taskDescription(t, task)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${categoryTone(
                         task.category
@@ -336,8 +360,8 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                     >
                       {t(`taskManager.category.${task.category}`)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${typeTone(
                         task.type
@@ -345,8 +369,8 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                     >
                       {t(`taskManager.type.${task.type}`)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       {task.type === 'triggered' ? (
                         <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-500/10 dark:text-slate-300">
@@ -356,14 +380,21 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                         <span className="font-mono text-xs">{runTaskOptions(t, task)}</span>
                       )}
                       {task.type === 'recurring' && canUpdateSchedule ? (
-                        <Button type="button" size="sm" variant="outline" onClick={() => openScheduleDialog(task)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openScheduleDialog(task)}
+                        >
                           {t('taskManager.actions.editSchedule')}
                         </Button>
                       ) : null}
                     </div>
-                  </td>
-                  <td className="px-3 py-2">{formatDateTime(task.last_execution?.started_at)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    {formatDateTime(task.last_execution?.started_at)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(
                         task.last_execution?.status
@@ -373,14 +404,14 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                         ? t(`taskManager.status.${task.last_execution.status}`)
                         : '-'}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     {task.runnable && canRun ? (
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={runningTaskNames.includes(task.name)}
+                        isDisabled={runningTaskNames.includes(task.name)}
                         onClick={() => void handleRunTask(task)}
                       >
                         {t('taskManager.actions.run')}
@@ -390,11 +421,11 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                         {t('taskManager.messages.eventTriggered')}
                       </span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -406,10 +437,19 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
         widthClass="max-w-xl"
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setScheduleDialogOpen(false)} disabled={scheduleSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setScheduleDialogOpen(false)}
+              isDisabled={scheduleSaving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submitScheduleUpdate()} disabled={scheduleSaving}>
+            <Button
+              type="button"
+              onClick={() => void submitScheduleUpdate()}
+              isDisabled={scheduleSaving}
+            >
               {scheduleSaving ? t('taskManager.saving') : t('common.confirm')}
             </Button>
           </>
@@ -443,40 +483,54 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
           {scheduleForm.mode === 'every' ? (
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('taskManager.fields.intervalValue')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('taskManager.fields.intervalValue')}
+                </span>
                 <Input
                   type="number"
                   min={1}
                   step={1}
                   value={String(scheduleForm.intervalValue)}
                   onChange={(event) =>
-                    setScheduleForm((current) => ({ ...current, intervalValue: Number(event.target.value) }))
+                    setScheduleForm((current) => ({
+                      ...current,
+                      intervalValue: Number(event.target.value),
+                    }))
                   }
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('taskManager.fields.intervalUnit')}</span>
-                <select
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={scheduleForm.intervalUnit}
-                  onChange={(event) =>
+                <span className="text-sm text-muted-foreground">
+                  {t('taskManager.fields.intervalUnit')}
+                </span>
+                <Select
+                  selectedKey={String(scheduleForm.intervalUnit ?? '')}
+                  onSelectionChange={(key) => ((value) =>
                     setScheduleForm((current) => ({
                       ...current,
-                      intervalUnit: event.target.value as ScheduleIntervalUnit,
-                    }))
-                  }
+                      intervalUnit: value as ScheduleIntervalUnit,
+                    })))(String(key))}
                 >
-                  <option value="m">{t('taskManager.intervalUnits.m')}</option>
-                  <option value="h">{t('taskManager.intervalUnits.h')}</option>
-                </select>
+                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="m">{t('taskManager.intervalUnits.m')}</SelectItem>
+                    <SelectItem id="h">{t('taskManager.intervalUnits.h')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
             </div>
           ) : (
             <label className="space-y-2 block">
-              <span className="text-sm text-muted-foreground">{t('taskManager.fields.cronExpr')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('taskManager.fields.cronExpr')}
+              </span>
               <Input
                 value={scheduleForm.cronExpr}
-                onChange={(event) => setScheduleForm((current) => ({ ...current, cronExpr: event.target.value }))}
+                onChange={(event) =>
+                  setScheduleForm((current) => ({ ...current, cronExpr: event.target.value }))
+                }
                 placeholder={t('taskManager.placeholders.cronExpr')}
               />
             </label>
@@ -595,7 +649,9 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
       await runESIRefreshTask({ task_name: row.task_name, character_id: row.character_id })
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
-      setError(getErrorMessage(caughtError, t('taskManager.esi.messages.characterTaskTriggerFailed')))
+      setError(
+        getErrorMessage(caughtError, t('taskManager.esi.messages.characterTaskTriggerFailed'))
+      )
     } finally {
       setRunningKeys((current) => current.filter((item) => item !== key))
     }
@@ -608,7 +664,12 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
           {t('taskManager.esi.sections.tasks')}
         </div>
         <div className="flex flex-wrap items-center gap-3 px-4 py-4">
-          <Button type="button" variant="outline" onClick={() => void handleRunAll()} disabled={!canRun}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handleRunAll()}
+            isDisabled={!canRun}
+          >
             {t('taskManager.actions.runAllEsi')}
           </Button>
           {tasks.map((task) => (
@@ -617,7 +678,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               type="button"
               variant="outline"
               onClick={() => void handleRunTaskByName(task)}
-              disabled={!canRun}
+              isDisabled={!canRun}
             >
               {task.description}
             </Button>
@@ -634,30 +695,32 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
             onChange={(event) => setCharacter(event.target.value)}
             placeholder={t('taskManager.esi.filters.character')}
           />
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={taskName}
-            onChange={(event) => setTaskName(event.target.value)}
-          >
-            <option value="">{t('taskManager.esi.filters.taskName')}</option>
-            {tasks.map((task) => (
-              <option key={task.name} value={task.name}>
-                {task.description}
-              </option>
-            ))}
-          </select>
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="">{t('taskManager.esi.filters.status')}</option>
-            <option value="pending">{t('taskManager.esi.status.pending')}</option>
-            <option value="running">{t('taskManager.esi.status.running')}</option>
-            <option value="success">{t('taskManager.esi.status.success')}</option>
-            <option value="failed">{t('taskManager.esi.status.failed')}</option>
-            <option value="skipped">{t('taskManager.esi.status.skipped')}</option>
-          </select>
+          <Select selectedKey={String(taskName ?? '')} onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}>
+            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem id="">{t('taskManager.esi.filters.taskName')}</SelectItem>
+              {tasks.map((task) => (
+                <SelectItem key={task.name} id={String(task.name ?? '')}>
+                  {task.description}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select selectedKey={String(status ?? '')} onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}>
+            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem id="">{t('taskManager.esi.filters.status')}</SelectItem>
+              <SelectItem id="pending">{t('taskManager.esi.status.pending')}</SelectItem>
+              <SelectItem id="running">{t('taskManager.esi.status.running')}</SelectItem>
+              <SelectItem id="success">{t('taskManager.esi.status.success')}</SelectItem>
+              <SelectItem id="failed">{t('taskManager.esi.status.failed')}</SelectItem>
+              <SelectItem id="skipped">{t('taskManager.esi.status.skipped')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -667,36 +730,38 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
         </div>
         <div className="overflow-x-auto">
           {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
-          {(loadingTasks || loadingStatuses) ? (
+          {loadingTasks || loadingStatuses ? (
             <p className="px-4 py-3 text-sm text-muted-foreground">{t('taskManager.loading')}</p>
           ) : null}
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('taskManager.columns.name')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.description')}</th>
-                <th className="px-3 py-2">{t('common.name')}</th>
-                <th className="px-3 py-2">{t('taskManager.esi.columns.characterId')}</th>
-                <th className="px-3 py-2">{t('taskManager.esi.columns.priority')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.status')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.lastRun')}</th>
-                <th className="px-3 py-2">{t('taskManager.esi.columns.nextRun')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.error')}</th>
-                <th className="px-3 py-2">{t('common.operation')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.name')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.description')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.name')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('taskManager.esi.columns.characterId')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.esi.columns.priority')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.lastRun')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.esi.columns.nextRun')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.error')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {statusRows.map((row, index) => {
                 const key = `${row.task_name}_${row.character_id}`
                 return (
-                  <tr key={key} className="border-b align-top">
-                    <td className="px-3 py-2">{index + 1}</td>
-                    <td className="px-3 py-2">{row.task_name}</td>
-                    <td className="px-3 py-2">{row.description}</td>
-                    <td className="px-3 py-2">{row.character_name || '-'}</td>
-                    <td className="px-3 py-2">{row.character_id}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={key} className="border-b align-top">
+                    <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                    <TableCell className="px-3 py-2">{row.task_name}</TableCell>
+                    <TableCell className="px-3 py-2">{row.description}</TableCell>
+                    <TableCell className="px-3 py-2">{row.character_name || '-'}</TableCell>
+                    <TableCell className="px-3 py-2">{row.character_id}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${priorityTone(
                           row.priority
@@ -704,8 +769,8 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                       >
                         {priorityLabel(t, row.priority)}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${taskStatusTone(
                           row.status
@@ -713,26 +778,28 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                       >
                         {t(`taskManager.esi.status.${row.status}`)}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">{formatDateTime(row.last_run)}</td>
-                    <td className="px-3 py-2">{formatDateTime(row.next_run)}</td>
-                    <td className="px-3 py-2 text-xs text-destructive">{row.error || '-'}</td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(row.last_run)}</TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(row.next_run)}</TableCell>
+                    <TableCell className="px-3 py-2 text-xs text-destructive">
+                      {row.error || '-'}
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        disabled={runningKeys.includes(key) || !canRun}
+                        isDisabled={runningKeys.includes(key) || !canRun}
                         onClick={() => void handleRunTask(row)}
                       >
                         {t('taskManager.actions.run')}
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -740,7 +807,13 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
         <span>
           {page}/{pageCount}
         </span>
-        <Button type="button" size="sm" variant="outline" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setPage((current) => Math.max(1, current - 1))}
+          isDisabled={page <= 1}
+        >
           {t('welfareMy.pagination.prev')}
         </Button>
         <Button
@@ -748,26 +821,30 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
           size="sm"
           variant="outline"
           onClick={() => setPage((current) => current + 1)}
-          disabled={statusRows.length < pageSize || page * pageSize >= total}
+          isDisabled={statusRows.length < pageSize || page * pageSize >= total}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
     </div>
@@ -841,28 +918,30 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
       <div className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium">{t('taskManager.tabs.history')}</span>
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={taskName}
-            onChange={(event) => setTaskName(event.target.value)}
-          >
-            <option value="">{t('taskManager.filters.taskName')}</option>
-            {taskOptions.map((task) => (
-              <option key={task.name} value={task.name}>
-                {taskDisplayName(t, task)}
-              </option>
-            ))}
-          </select>
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="">{t('taskManager.filters.status')}</option>
-            <option value="running">{t('taskManager.status.running')}</option>
-            <option value="success">{t('taskManager.status.success')}</option>
-            <option value="failed">{t('taskManager.status.failed')}</option>
-          </select>
+          <Select selectedKey={String(taskName ?? '')} onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}>
+            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem id="">{t('taskManager.filters.taskName')}</SelectItem>
+              {taskOptions.map((task) => (
+                <SelectItem key={task.name} id={String(task.name ?? '')}>
+                  {taskDisplayName(t, task)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select selectedKey={String(status ?? '')} onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}>
+            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem id="">{t('taskManager.filters.status')}</SelectItem>
+              <SelectItem id="running">{t('taskManager.status.running')}</SelectItem>
+              <SelectItem id="success">{t('taskManager.status.success')}</SelectItem>
+              <SelectItem id="failed">{t('taskManager.status.failed')}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -872,30 +951,34 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
         </div>
         <div className="overflow-x-auto">
           {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
-          {(loadingTasks || loadingHistory) ? (
+          {loadingTasks || loadingHistory ? (
             <p className="px-4 py-3 text-sm text-muted-foreground">{t('taskManager.loading')}</p>
           ) : null}
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('taskManager.columns.name')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.trigger')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.triggeredBy')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.triggeredById')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.status')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.startedAt')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.duration')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.error')}</th>
-                <th className="px-3 py-2">{t('taskManager.columns.summary')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.name')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.trigger')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.triggeredBy')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('taskManager.columns.triggeredById')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.startedAt')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.duration')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.error')}</TableHead>
+                <TableHead className="px-3 py-2">{t('taskManager.columns.summary')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((row, index) => (
-                <tr key={row.id} className="border-b align-top">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2">{taskDisplayName(t, { name: row.task_name })}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={row.id} className="border-b align-top">
+                  <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                  <TableCell className="px-3 py-2">
+                    {taskDisplayName(t, { name: row.task_name })}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${triggerTone(
                         row.trigger
@@ -903,10 +986,10 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                     >
                       {t(`taskManager.trigger.${row.trigger}`)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{row.triggered_by_name || '-'}</td>
-                  <td className="px-3 py-2">{row.triggered_by ?? '-'}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{row.triggered_by_name || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{row.triggered_by ?? '-'}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${taskStatusTone(
                         row.status
@@ -914,15 +997,17 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                     >
                       {t(`taskManager.status.${row.status}`)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{formatDateTime(row.started_at)}</td>
-                  <td className="px-3 py-2">{formatDuration(row.duration_ms)}</td>
-                  <td className="px-3 py-2 text-xs text-destructive">{row.error || '-'}</td>
-                  <td className="px-3 py-2">{row.summary || '-'}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatDateTime(row.started_at)}</TableCell>
+                  <TableCell className="px-3 py-2">{formatDuration(row.duration_ms)}</TableCell>
+                  <TableCell className="px-3 py-2 text-xs text-destructive">
+                    {row.error || '-'}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{row.summary || '-'}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -930,7 +1015,13 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
         <span>
           {page}/{pageCount}
         </span>
-        <Button type="button" size="sm" variant="outline" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => setPage((current) => Math.max(1, current - 1))}
+          isDisabled={page <= 1}
+        >
           {t('welfareMy.pagination.prev')}
         </Button>
         <Button
@@ -938,26 +1029,30 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
           size="sm"
           variant="outline"
           onClick={() => setPage((current) => current + 1)}
-          disabled={rows.length < pageSize || page * pageSize >= total}
+          isDisabled={rows.length < pageSize || page * pageSize >= total}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
     </div>

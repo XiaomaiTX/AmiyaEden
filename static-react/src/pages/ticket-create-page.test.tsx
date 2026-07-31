@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+﻿import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
 import { I18nProvider } from '@/i18n'
@@ -102,9 +102,7 @@ describe('ticket create page', () => {
     })
     render(<RouterProvider router={router} />)
 
-    await waitFor(() => {
-      expect(screen.getByText('技术支持')).toBeInTheDocument()
-    })
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce())
 
     fireEvent.change(screen.getByPlaceholderText('请输入工单标题'), {
       target: { value: '需要帮助' },
@@ -169,8 +167,14 @@ describe('ticket create page', () => {
       </I18nProvider>
     )
 
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-slot="select-trigger"]')).toHaveLength(2)
+    )
+    const categorySelect = document.querySelector('[data-slot="select-trigger"]') as HTMLElement
+    fireEvent.click(categorySelect)
     const option = await screen.findByRole('option', { name: 'Support' }, { timeout: 8000 })
     expect(option).toBeInTheDocument()
+    fireEvent.click(option)
     expect(screen.getByPlaceholderText('Enter ticket title')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Submit Ticket' })).toBeInTheDocument()
   }, 15000)

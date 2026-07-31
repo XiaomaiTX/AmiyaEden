@@ -1,3 +1,12 @@
+import { MultiSelect } from '@/components/ui/multi-select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { fetchCorpNpcKills } from '@/api/npc-kill'
 import { Button } from '@/components/ui/button'
@@ -203,23 +212,18 @@ export function DashboardNpcKillsPage() {
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('npcKill.filters.refTypes')}</span>
-              <select
-                multiple
-                className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              <MultiSelect
+                className="min-w-48"
+                placeholder={t('npcKill.filters.refTypes')}
                 value={draftFilters.refTypes}
-                onChange={(event) =>
-                  setDraftFilters((current) => ({
-                    ...current,
-                    refTypes: Array.from(event.target.selectedOptions, (option) => option.value),
-                  }))
+                onValueChange={(value) =>
+                  setDraftFilters((current) => ({ ...current, refTypes: value }))
                 }
-              >
-                {refTypeOptions.map((refType) => (
-                  <option key={refType} value={refType}>
-                    {formatRefTypeLabel(refType)}
-                  </option>
-                ))}
-              </select>
+                options={refTypeOptions.map((refType) => ({
+                  value: refType,
+                  label: formatRefTypeLabel(refType),
+                }))}
+              />
             </label>
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">
@@ -317,66 +321,88 @@ export function DashboardNpcKillsPage() {
             <section className="overflow-hidden rounded-lg border bg-card">
               <div className="border-b px-4 py-3 text-sm font-medium">{t('npcKill.members')}</div>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left">
-                      <th className="px-3 py-2">#</th>
-                      <th className="px-3 py-2">{t('npcKill.userDisplayName')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.characterCount')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.totalBounty')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.totalTax')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.actualIncome')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.recordCount')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b bg-muted/40 text-left">
+                      <TableHead className="px-3 py-2">#</TableHead>
+                      <TableHead className="px-3 py-2">{t('npcKill.userDisplayName')}</TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.characterCount')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.totalBounty')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.totalTax')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.actualIncome')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.recordCount')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {reportData.members.map((member, index) => (
-                      <tr key={member.user_id} className="border-b">
-                        <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
-                        <td className="px-3 py-2">{member.display_name}</td>
-                        <td className="px-3 py-2 text-right">{member.character_count}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">
+                      <TableRow key={member.user_id} className="border-b">
+                        <TableCell className="px-3 py-2 text-muted-foreground">
+                          {index + 1}
+                        </TableCell>
+                        <TableCell className="px-3 py-2">{member.display_name}</TableCell>
+                        <TableCell className="px-3 py-2 text-right">
+                          {member.character_count}
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right text-emerald-600">
                           {formatIskPlain(member.total_bounty)}
-                        </td>
-                        <td className="px-3 py-2 text-right text-destructive">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right text-destructive">
                           {formatIskPlain(member.total_tax)}
-                        </td>
-                        <td className="px-3 py-2 text-right text-emerald-600">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right text-emerald-600">
                           {formatIskPlain(member.actual_income)}
-                        </td>
-                        <td className="px-3 py-2 text-right">{member.record_count}</td>
-                      </tr>
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-right">
+                          {member.record_count}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </section>
 
             <section className="overflow-hidden rounded-lg border bg-card">
               <div className="border-b px-4 py-3 text-sm font-medium">{t('npcKill.bySystem')}</div>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left">
-                      <th className="px-3 py-2">#</th>
-                      <th className="px-3 py-2">{t('npcKill.solarSystem')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.systemCount')}</th>
-                      <th className="px-3 py-2 text-right">{t('npcKill.systemAmount')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b bg-muted/40 text-left">
+                      <TableHead className="px-3 py-2">#</TableHead>
+                      <TableHead className="px-3 py-2">{t('npcKill.solarSystem')}</TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.systemCount')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2 text-right">
+                        {t('npcKill.systemAmount')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {reportData.by_system.map((system, index) => (
-                      <tr key={system.solar_system_id} className="border-b">
-                        <td className="px-3 py-2 text-muted-foreground">{index + 1}</td>
-                        <td className="px-3 py-2">{system.solar_system_name}</td>
-                        <td className="px-3 py-2 text-right">{system.count}</td>
-                        <td className="px-3 py-2 text-right text-emerald-600">
+                      <TableRow key={system.solar_system_id} className="border-b">
+                        <TableCell className="px-3 py-2 text-muted-foreground">
+                          {index + 1}
+                        </TableCell>
+                        <TableCell className="px-3 py-2">{system.solar_system_name}</TableCell>
+                        <TableCell className="px-3 py-2 text-right">{system.count}</TableCell>
+                        <TableCell className="px-3 py-2 text-right text-emerald-600">
                           {formatIskPlain(system.amount)}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </section>
           </div>
@@ -384,26 +410,30 @@ export function DashboardNpcKillsPage() {
           <section className="overflow-hidden rounded-lg border bg-card">
             <div className="border-b px-4 py-3 text-sm font-medium">{t('npcKill.trend')}</div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">{t('npcKill.trendDate')}</th>
-                    <th className="px-3 py-2 text-right">{t('npcKill.trendAmount')}</th>
-                    <th className="px-3 py-2 text-right">{t('npcKill.trendCount')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">{t('npcKill.trendDate')}</TableHead>
+                    <TableHead className="px-3 py-2 text-right">
+                      {t('npcKill.trendAmount')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2 text-right">
+                      {t('npcKill.trendCount')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {reportData.trend.map((item) => (
-                    <tr key={item.date} className="border-b">
-                      <td className="px-3 py-2">{item.date}</td>
-                      <td className="px-3 py-2 text-right text-emerald-600">
+                    <TableRow key={item.date} className="border-b">
+                      <TableCell className="px-3 py-2">{item.date}</TableCell>
+                      <TableCell className="px-3 py-2 text-right text-emerald-600">
                         {formatIskPlain(item.amount)}
-                      </td>
-                      <td className="px-3 py-2 text-right">{item.count}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-right">{item.count}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </section>
         </>

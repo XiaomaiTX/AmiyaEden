@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/input'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import {
@@ -180,7 +181,7 @@ export function SkillPlanCompletionCheckPage() {
             <Button type="button" variant="outline" onClick={openCharacterDialog}>
               {t('skillPlanCheck.selectCharacters')}
             </Button>
-            <Button type="button" onClick={() => void runCheck()} disabled={running || !selectedCharacterIds.length}>
+            <Button type="button" onClick={() => void runCheck()} isDisabled={running || !selectedCharacterIds.length}>
               {t('skillPlanCheck.startCheck')}
             </Button>
           </div>
@@ -334,7 +335,7 @@ export function SkillPlanCompletionCheckPage() {
         <div className="space-y-2">
           {characters.map((character) => (
             <label key={character.character_id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
-              <input
+              <Input
                 type="checkbox"
                 checked={draftCharacterIds.includes(character.character_id)}
                 onChange={(event) => {
@@ -371,7 +372,7 @@ export function SkillPlanCompletionCheckPage() {
         <div className="space-y-2">
           {allPlans.map((plan) => (
             <label key={plan.id} className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
-              <input
+              <Input
                 type="checkbox"
                 checked={draftPlanIds.includes(plan.id)}
                 onChange={(event) => {

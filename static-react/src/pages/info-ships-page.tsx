@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoShips } from '@/api/eve-info'
@@ -75,7 +90,9 @@ export function InfoShipsPage() {
   }, [ships?.ships])
 
   const visibleShips = useMemo(() => {
-    return (ships?.ships ?? []).filter((item) => (selectedGroup ? item.group_name === selectedGroup : true))
+    return (ships?.ships ?? []).filter((item) =>
+      selectedGroup ? item.group_name === selectedGroup : true
+    )
   }, [selectedGroup, ships?.ships])
 
   return (
@@ -86,35 +103,41 @@ export function InfoShipsPage() {
         <label className="text-sm text-muted-foreground" htmlFor="ships-character">
           {t('infoShips.selectCharacter')}
         </label>
-        <select
-          id="ships-character"
-          className="rounded border px-2 py-1 text-sm"
-          value={selectedCharacterId ?? ''}
-          onChange={(event) => setSelectedCharacterId(Number(event.target.value))}
+        <Select
+          selectedKey={String(selectedCharacterId ?? '')}
+          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          {characters.map((character) => (
-            <option key={character.character_id} value={character.character_id}>
-              {character.character_name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="ships-character" className="rounded border px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {characters.map((character) => (
+              <SelectItem key={character.character_id} id={String(character.character_id ?? '')}>
+                {character.character_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <label className="text-sm text-muted-foreground" htmlFor="ships-group">
           {t('infoShips.group')}
         </label>
-        <select
-          id="ships-group"
-          className="rounded border px-2 py-1 text-sm"
-          value={selectedGroup}
-          onChange={(event) => setSelectedGroup(event.target.value)}
+        <Select
+          selectedKey={String(selectedGroup ?? '')}
+          onSelectionChange={(key) => ((value) => setSelectedGroup(value))(String(key))}
         >
-          <option value="">{t('infoShips.allGroups')}</option>
-          {groupOptions.map((group) => (
-            <option key={group} value={group}>
-              {group}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="ships-group" className="rounded border px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem id="">{t('infoShips.allGroups')}</SelectItem>
+            {groupOptions.map((group) => (
+              <SelectItem key={group} id={String(group ?? '')}>
+                {group}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? <p className="text-sm">{t('infoShips.loading')}</p> : null}
@@ -133,35 +156,37 @@ export function InfoShipsPage() {
             </div>
           </div>
 
-          {!loading && visibleShips.length === 0 ? <p className="text-sm">{t('infoShips.empty')}</p> : null}
+          {!loading && visibleShips.length === 0 ? (
+            <p className="text-sm">{t('infoShips.empty')}</p>
+          ) : null}
 
           <div className="overflow-x-auto rounded-lg border bg-card">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('infoShips.columns.typeName')}</th>
-                  <th className="px-3 py-2">{t('infoShips.columns.groupName')}</th>
-                  <th className="px-3 py-2">{t('infoShips.columns.raceName')}</th>
-                  <th className="px-3 py-2">{t('infoShips.columns.status')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('infoShips.columns.typeName')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoShips.columns.groupName')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoShips.columns.raceName')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('infoShips.columns.status')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {visibleShips.map((ship) => (
-                  <tr key={ship.type_id} className="border-b">
-                    <td className="px-3 py-2">{ship.type_name}</td>
-                    <td className="px-3 py-2">{ship.group_name}</td>
-                    <td className="px-3 py-2">{ship.race_name}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={ship.type_id} className="border-b">
+                    <TableCell className="px-3 py-2">{ship.type_name}</TableCell>
+                    <TableCell className="px-3 py-2">{ship.group_name}</TableCell>
+                    <TableCell className="px-3 py-2">{ship.race_name}</TableCell>
+                    <TableCell className="px-3 py-2">
                       {ship.can_fly ? (
                         <span className="text-emerald-600">{t('infoShips.status.flyable')}</span>
                       ) : (
                         <span className="text-amber-600">{t('infoShips.status.unavailable')}</span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       ) : null}

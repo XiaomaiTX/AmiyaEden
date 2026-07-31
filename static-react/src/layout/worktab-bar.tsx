@@ -72,14 +72,16 @@ export function WorktabBar() {
             </NavLink>
             {tab.fixed ? <Pin className="ml-1 size-3" /> : null}
             {!tab.fixed ? (
-              <button
+              <Button
                 type="button"
+                size="icon"
+                variant="ghost"
                 className="ml-1 rounded p-0.5 hover:bg-muted"
-                title={t('worktab.close')}
+                aria-label={t('worktab.close')}
                 onClick={() => handleClose(tab.path)}
               >
                 <X className="size-3" />
-              </button>
+              </Button>
             ) : null}
           </div>
         ))}
@@ -90,7 +92,7 @@ export function WorktabBar() {
           size="icon"
           variant="ghost"
           className="size-7 shrink-0"
-          title={active.fixed ? t('worktab.unpin') : t('worktab.pin')}
+          aria-label={active.fixed ? t('worktab.unpin') : t('worktab.pin')}
           onClick={() => toggleFixed(active.path)}
         >
           {active.fixed ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}

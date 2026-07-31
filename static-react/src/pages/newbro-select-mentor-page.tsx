@@ -132,7 +132,7 @@ export function NewbroSelectMentorPage() {
                         </div>
                       </div>
                     </div>
-                    <Button type="button" disabled={disabled || submitting} onClick={() => void handleApply(mentor.mentor_user_id)}>
+                    <Button type="button" isDisabled={disabled || submitting} onClick={() => void handleApply(mentor.mentor_user_id)}>
                       {submitting ? t('newbroSelectMentor.applying') : t('newbroSelectMentor.apply')}
                     </Button>
                   </div>

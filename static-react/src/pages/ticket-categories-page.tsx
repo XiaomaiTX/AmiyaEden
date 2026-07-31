@@ -1,3 +1,4 @@
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useState } from 'react'
 import {
   adminCreateTicketCategory,
@@ -10,6 +11,7 @@ import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type { TicketCategory, UpsertCategoryParams } from '@/types/api/ticket'
+import { ShopDialog } from './shop-page-utils'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -147,30 +149,30 @@ export function TicketCategoriesPage() {
           {t('ticketCategories.title')} ({categories.length})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">ID</th>
-                <th className="px-3 py-2">{t('ticketCategories.columns.name')}</th>
-                <th className="px-3 py-2">{t('ticketCategories.columns.nameEn')}</th>
-                <th className="px-3 py-2">{t('ticketCategories.columns.sortOrder')}</th>
-                <th className="px-3 py-2">{t('ticketCategories.columns.enabled')}</th>
-                <th className="px-3 py-2">{t('ticketCategories.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('common.id')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketCategories.columns.name')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketCategories.columns.nameEn')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketCategories.columns.sortOrder')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketCategories.columns.enabled')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketCategories.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {categories.map((category) => (
-                <tr key={category.id} className="border-b">
-                  <td className="px-3 py-2">{category.id}</td>
-                  <td className="px-3 py-2">{category.name}</td>
-                  <td className="px-3 py-2">{category.name_en}</td>
-                  <td className="px-3 py-2">{category.sort_order}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={category.id} className="border-b">
+                  <TableCell className="px-3 py-2">{category.id}</TableCell>
+                  <TableCell className="px-3 py-2">{category.name}</TableCell>
+                  <TableCell className="px-3 py-2">{category.name_en}</TableCell>
+                  <TableCell className="px-3 py-2">{category.sort_order}</TableCell>
+                  <TableCell className="px-3 py-2">
                     {category.enabled
                       ? t('ticketCategories.enabled')
                       : t('ticketCategories.disabled')}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     {canManageCategories ? (
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -186,33 +188,36 @@ export function TicketCategoriesPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => void remove(category.id)}
-                          disabled={deletingId === category.id}
+                          isDisabled={deletingId === category.id}
                         >
                           {t('common.delete')}
                         </Button>
                       </div>
                     ) : null}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && categories.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('ticketCategories.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
       {visible ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <ShopDialog
+          open={visible}
+          title={editingId > 0 ? t('ticketCategories.edit') : t('ticketCategories.create')}
+          onClose={() => setVisible(false)}
+          closeLabel={t('common.close')}
+          widthClass="max-w-2xl"
+        >
           <div className="w-full max-w-2xl rounded-lg border bg-card p-5 shadow-xl">
-            <h2 className="text-lg font-semibold">
-              {editingId > 0 ? t('ticketCategories.edit') : t('ticketCategories.create')}
-            </h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm text-muted-foreground">
@@ -260,7 +265,7 @@ export function TicketCategoriesPage() {
                 />
               </label>
               <label className="flex items-center gap-2 pt-8">
-                <input
+                <Input
                   type="checkbox"
                   checked={Boolean(form.enabled)}
                   onChange={(event) =>
@@ -276,12 +281,12 @@ export function TicketCategoriesPage() {
               <Button type="button" variant="outline" onClick={() => setVisible(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="button" onClick={() => void save()} disabled={saving}>
+              <Button type="button" onClick={() => void save()} isDisabled={saving}>
                 {saving ? t('ticketCategories.saving') : t('common.confirm')}
               </Button>
             </div>
           </div>
-        </div>
+        </ShopDialog>
       ) : null}
     </section>
   )

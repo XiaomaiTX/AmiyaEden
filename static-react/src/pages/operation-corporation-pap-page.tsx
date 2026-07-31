@@ -1,3 +1,18 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchCorporationPapSummary } from '@/api/fleet'
 import { Button } from '@/components/ui/button'
@@ -135,28 +150,44 @@ export function OperationCorporationPapPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-xl font-semibold">{t('fleet.corporationPap.title')}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{t('fleet.corporationPap.subtitle')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('fleet.corporationPap.subtitle')}
+            </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('fleet.corporationPap.filters.period')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={period}
-                onChange={(event) => {
-                  setPeriod(event.target.value as PapSummaryPeriod)
+              <span className="text-sm text-muted-foreground">
+                {t('fleet.corporationPap.filters.period')}
+              </span>
+              <Select
+                selectedKey={String(period ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setPeriod(value as PapSummaryPeriod)
                   setPage(1)
-                }}
+                })(String(key))}
               >
-                <option value="current_month">{t('fleet.corporationPap.periods.currentMonth')}</option>
-                <option value="last_month">{t('fleet.corporationPap.periods.lastMonth')}</option>
-                <option value="at_year">{t('fleet.corporationPap.periods.atYear')}</option>
-                <option value="all">{t('fleet.corporationPap.periods.all')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="current_month">
+                    {t('fleet.corporationPap.periods.currentMonth')}
+                  </SelectItem>
+                  <SelectItem id="last_month">
+                    {t('fleet.corporationPap.periods.lastMonth')}
+                  </SelectItem>
+                  <SelectItem id="at_year">
+                    {t('fleet.corporationPap.periods.atYear')}
+                  </SelectItem>
+                  <SelectItem id="all">{t('fleet.corporationPap.periods.all')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             {period === 'at_year' ? (
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">{t('fleet.corporationPap.filters.year')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('fleet.corporationPap.filters.year')}
+                </span>
                 <Input
                   type="number"
                   min={2003}
@@ -167,7 +198,9 @@ export function OperationCorporationPapPage() {
               </label>
             ) : null}
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('fleet.corporationPap.filters.corpTickers')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('fleet.corporationPap.filters.corpTickers')}
+              </span>
               <Input value={tickerText} onChange={(event) => setTickerText(event.target.value)} />
             </label>
             <Button type="button" variant="outline" onClick={() => void loadData()}>
@@ -178,7 +211,9 @@ export function OperationCorporationPapPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('fleet.corporationPap.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('fleet.corporationPap.loading')}</p>
+      ) : null}
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
@@ -190,43 +225,59 @@ export function OperationCorporationPapPage() {
       </div>
 
       <div className="rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">{t('fleet.corporationPap.summaryTitle')}</div>
+        <div className="border-b px-4 py-3 text-sm font-medium">
+          {t('fleet.corporationPap.summaryTitle')}
+        </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.corpTicker')}</th>
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.nickname')}</th>
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.mainCharacter')}</th>
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.characterCount')}</th>
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.stratOpPaps')}</th>
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.skirmishPaps')}</th>
-                <th className="px-3 py-2">{t('fleet.corporationPap.columns.allianceStratPaps')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.corpTicker')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.nickname')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.mainCharacter')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.characterCount')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.stratOpPaps')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.skirmishPaps')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('fleet.corporationPap.columns.allianceStratPaps')}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {records.map((row) => (
-                <tr key={row.user_id} className="border-b">
-                  <td className="px-3 py-2">
+                <TableRow key={row.user_id} className="border-b">
+                  <TableCell className="px-3 py-2">
                     <ShopBadge className={periodClass(period)}>{row.corp_ticker}</ShopBadge>
-                  </td>
-                  <td className="px-3 py-2">{row.nickname || '-'}</td>
-                  <td className="px-3 py-2">{row.main_character_name || '-'}</td>
-                  <td className="px-3 py-2">{row.character_count}</td>
-                  <td className="px-3 py-2">{row.strat_op_paps}</td>
-                  <td className="px-3 py-2">{row.skirmish_paps}</td>
-                  <td className="px-3 py-2">{row.alliance_strat_paps}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{row.nickname || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{row.main_character_name || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{row.character_count}</TableCell>
+                  <TableCell className="px-3 py-2">{row.strat_op_paps}</TableCell>
+                  <TableCell className="px-3 py-2">{row.skirmish_paps}</TableCell>
+                  <TableCell className="px-3 py-2">{row.alliance_strat_paps}</TableCell>
+                </TableRow>
               ))}
               {!loading && records.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
                     {t('fleet.corporationPap.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -234,7 +285,13 @@ export function OperationCorporationPapPage() {
         <span>
           {page}/{pageCount}
         </span>
-        <Button type="button" variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setPage((current) => Math.max(1, current - 1))}
+          isDisabled={page <= 1}
+        >
           {t('welfareMy.pagination.prev')}
         </Button>
         <Button
@@ -242,26 +299,30 @@ export function OperationCorporationPapPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => current + 1)}
-          disabled={records.length < pageSize || page * pageSize >= total}
+          isDisabled={records.length < pageSize || page * pageSize >= total}
         >
           {t('welfareMy.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('welfareMy.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[20, 50, 100, 200].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[20, 50, 100, 200].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
     </section>

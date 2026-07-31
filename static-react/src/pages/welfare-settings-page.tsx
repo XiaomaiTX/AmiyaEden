@@ -1,3 +1,19 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   adminCreateWelfare,
@@ -13,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type { AutoApproveConfig, WelfareItem, CreateParams } from '@/types/api/welfare'
+import { ShopDialog } from './shop-page-utils'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -72,7 +89,10 @@ export function WelfareSettingsPage() {
     return () => window.clearTimeout(timer)
   }, [loadData])
 
-  const orderedItems = useMemo(() => [...items].sort((left, right) => left.sort_order - right.sort_order), [items])
+  const orderedItems = useMemo(
+    () => [...items].sort((left, right) => left.sort_order - right.sort_order),
+    [items]
+  )
 
   const openCreate = () => {
     setEditingId(0)
@@ -124,8 +144,8 @@ export function WelfareSettingsPage() {
     try {
       const payload = {
         ...form,
-        skill_plan_ids: form.require_skill_plan ? form.skill_plan_ids ?? [] : [],
-        example_evidence: form.require_evidence ? form.example_evidence ?? '' : '',
+        skill_plan_ids: form.require_skill_plan ? (form.skill_plan_ids ?? []) : [],
+        example_evidence: form.require_evidence ? (form.example_evidence ?? '') : '',
       }
       if (editingId > 0) {
         await adminUpdateWelfare({ id: editingId, ...payload })
@@ -207,76 +227,110 @@ export function WelfareSettingsPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('welfareSettings.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('welfareSettings.loading')}</p>
+      ) : null}
 
       <div className="rounded-lg border bg-card p-5">
         <div className="flex gap-2">
-          <Button type="button" variant={activeTab === 'welfares' ? 'default' : 'outline'} onClick={() => setActiveTab('welfares')}>
+          <Button
+            type="button"
+            variant={activeTab === 'welfares' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('welfares')}
+          >
             {t('welfareSettings.welfareListTab')}
           </Button>
-          <Button type="button" variant={activeTab === 'config' ? 'default' : 'outline'} onClick={() => setActiveTab('config')}>
+          <Button
+            type="button"
+            variant={activeTab === 'config' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('config')}
+          >
             {t('welfareSettings.autoApproveConfigTab')}
           </Button>
         </div>
 
         {activeTab === 'welfares' ? (
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">#</th>
-                  <th className="px-3 py-2">{t('welfareSettings.columns.name')}</th>
-                  <th className="px-3 py-2">{t('welfareSettings.columns.mode')}</th>
-                  <th className="px-3 py-2">{t('welfareSettings.columns.status')}</th>
-                  <th className="px-3 py-2">{t('welfareSettings.columns.sort')}</th>
-                  <th className="px-3 py-2">{t('welfareSettings.columns.actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">#</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareSettings.columns.name')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareSettings.columns.mode')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareSettings.columns.status')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('welfareSettings.columns.sort')}</TableHead>
+                  <TableHead className="px-3 py-2">
+                    {t('welfareSettings.columns.actions')}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {orderedItems.map((item, index) => (
-                  <tr key={item.id} className="border-b">
-                    <td className="px-3 py-2">{index + 1}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={item.id} className="border-b">
+                    <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <div className="font-medium">{item.name}</div>
                       <div className="text-xs text-muted-foreground">{item.description || '-'}</div>
-                    </td>
-                    <td className="px-3 py-2">{item.dist_mode}</td>
-                    <td className="px-3 py-2">{item.status}</td>
-                    <td className="px-3 py-2">{item.sort_order}</td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">{item.dist_mode}</TableCell>
+                    <TableCell className="px-3 py-2">{item.status}</TableCell>
+                    <TableCell className="px-3 py-2">{item.sort_order}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => void moveItem(item.id, 'up')}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void moveItem(item.id, 'up')}
+                        >
                           {t('welfareSettings.moveUp')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void moveItem(item.id, 'down')}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void moveItem(item.id, 'down')}
+                        >
                           {t('welfareSettings.moveDown')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => openEdit(item)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEdit(item)}
+                        >
                           {t('common.edit')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void remove(item.id)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void remove(item.id)}
+                        >
                           {t('common.delete')}
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {!loading && orderedItems.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                       {t('welfareSettings.empty')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : null}
 
         {activeTab === 'config' ? (
           <div className="mt-4 max-w-lg space-y-4">
             <label className="space-y-2 block">
-              <span className="text-sm text-muted-foreground">{t('welfareSettings.autoApproveThreshold')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('welfareSettings.autoApproveThreshold')}
+              </span>
               <Input
                 type="number"
                 value={String(config?.auto_approve_fuxi_coin_threshold ?? 0)}
@@ -289,7 +343,11 @@ export function WelfareSettingsPage() {
                 }
               />
             </label>
-            <Button type="button" onClick={() => void saveConfig()} disabled={configSaving || !config}>
+            <Button
+              type="button"
+              onClick={() => void saveConfig()}
+              isDisabled={configSaving || !config}
+            >
               {configSaving ? t('welfareSettings.saving') : t('welfareSettings.saveConfig')}
             </Button>
           </div>
@@ -297,48 +355,83 @@ export function WelfareSettingsPage() {
       </div>
 
       {dialogVisible ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <ShopDialog
+          open={dialogVisible}
+          title={editingId > 0 ? t('welfareSettings.edit') : t('welfareSettings.create')}
+          onClose={() => setDialogVisible(false)}
+          closeLabel={t('common.close')}
+          widthClass="max-w-2xl"
+        >
           <div className="w-full max-w-2xl rounded-lg border bg-card p-5 shadow-xl">
-            <h2 className="text-lg font-semibold">
-              {editingId > 0 ? t('welfareSettings.edit') : t('welfareSettings.create')}
-            </h2>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="space-y-2 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.columns.name')}</span>
-                <Input value={form.name ?? ''} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.columns.name')}
+                </span>
+                <Input
+                  value={form.name ?? ''}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, name: event.target.value }))
+                  }
+                />
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.columns.description')}</span>
-                <textarea
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.columns.description')}
+                </span>
+                <Textarea
                   className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none"
                   value={form.description ?? ''}
-                  onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, description: event.target.value }))
+                  }
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.columns.mode')}</span>
-                <select
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={form.dist_mode}
-                  onChange={(event) => setForm((current) => ({ ...current, dist_mode: event.target.value as 'per_user' | 'per_character' }))}
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.columns.mode')}
+                </span>
+                <Select
+                  selectedKey={String(form.dist_mode ?? '')}
+                  onSelectionChange={(key) => ((value) =>
+                    setForm((current) => ({
+                      ...current,
+                      dist_mode: value as 'per_user' | 'per_character',
+                    })))(String(key))}
                 >
-                  <option value="per_user">{t('welfareSettings.distModePerUser')}</option>
-                  <option value="per_character">{t('welfareSettings.distModePerCharacter')}</option>
-                </select>
+                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="per_user">{t('welfareSettings.distModePerUser')}</SelectItem>
+                    <SelectItem id="per_character">
+                      {t('welfareSettings.distModePerCharacter')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.columns.status')}</span>
-                <select
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={String(form.status ?? 1)}
-                  onChange={(event) => setForm((current) => ({ ...current, status: Number(event.target.value) }))}
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.columns.status')}
+                </span>
+                <Select
+                  selectedKey={String(form.status ?? 1)}
+                  onSelectionChange={(key) => ((value) =>
+                    setForm((current) => ({ ...current, status: Number(value) })))(String(key))}
                 >
-                  <option value="1">{t('welfareSettings.statusActive')}</option>
-                  <option value="0">{t('welfareSettings.statusDisabled')}</option>
-                </select>
+                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="1">{t('welfareSettings.statusActive')}</SelectItem>
+                    <SelectItem id="0">{t('welfareSettings.statusDisabled')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.payByFuxiCoin')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.payByFuxiCoin')}
+                </span>
                 <Input
                   type="number"
                   value={String(form.pay_by_fuxi_coin ?? '')}
@@ -351,31 +444,45 @@ export function WelfareSettingsPage() {
                 />
               </label>
               <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.sortOrder')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.sortOrder')}
+                </span>
                 <Input
                   type="number"
                   value={String(form.sort_order ?? 0)}
-                  onChange={(event) => setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, sort_order: Number(event.target.value) }))
+                  }
                 />
               </label>
               <label className="flex items-center gap-2">
-                <input
+                <Input
                   type="checkbox"
                   checked={Boolean(form.require_skill_plan)}
-                  onChange={(event) => setForm((current) => ({ ...current, require_skill_plan: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, require_skill_plan: event.target.checked }))
+                  }
                 />
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.requireSkillPlan')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.requireSkillPlan')}
+                </span>
               </label>
               <label className="flex items-center gap-2">
-                <input
+                <Input
                   type="checkbox"
                   checked={Boolean(form.require_evidence)}
-                  onChange={(event) => setForm((current) => ({ ...current, require_evidence: event.target.checked }))}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, require_evidence: event.target.checked }))
+                  }
                 />
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.requireEvidence')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.requireEvidence')}
+                </span>
               </label>
               <label className="space-y-2 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('welfareSettings.exampleEvidence')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('welfareSettings.exampleEvidence')}
+                </span>
                 <Input
                   type="file"
                   accept="image/*"
@@ -394,12 +501,12 @@ export function WelfareSettingsPage() {
               <Button type="button" variant="outline" onClick={() => setDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="button" onClick={() => void save()} disabled={saving}>
+              <Button type="button" onClick={() => void save()} isDisabled={saving}>
                 {saving ? t('welfareSettings.saving') : t('common.confirm')}
               </Button>
             </div>
           </div>
-        </div>
+        </ShopDialog>
       ) : null}
     </section>
   )

@@ -1,4 +1,28 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { MultiSelect } from '@/components/ui/multi-select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
 import {
   adminAdjustWallet,
   adminGetWalletAnalytics,
@@ -17,7 +41,13 @@ import type {
   WalletLog,
   WalletTransaction,
 } from '@/types/api/sys-wallet'
-import { formatCoin, formatDateTime, formatSignedCoin, getErrorMessage, ShopDialog } from './shop-page-utils'
+import {
+  formatCoin,
+  formatDateTime,
+  formatSignedCoin,
+  getErrorMessage,
+  ShopDialog,
+} from './shop-page-utils'
 
 type WalletTab = 'wallets' | 'transactions' | 'logs' | 'analysis'
 type AdjustAction = 'add' | 'deduct' | 'set'
@@ -133,12 +163,14 @@ export function SystemWalletPage() {
             <p className="mt-1 text-sm text-muted-foreground">{t('walletAdmin.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {([
-              ['wallets', t('walletAdmin.tabs.wallets')],
-              ['transactions', t('walletAdmin.tabs.transactions')],
-              ['logs', t('walletAdmin.tabs.logs')],
-              ['analysis', t('walletAdmin.tabs.analysis')],
-            ] as const).map(([key, label]) => (
+            {(
+              [
+                ['wallets', t('walletAdmin.tabs.wallets')],
+                ['transactions', t('walletAdmin.tabs.transactions')],
+                ['logs', t('walletAdmin.tabs.logs')],
+                ['analysis', t('walletAdmin.tabs.analysis')],
+              ] as const
+            ).map(([key, label]) => (
               <Button
                 key={key}
                 type="button"
@@ -183,10 +215,19 @@ export function SystemWalletPage() {
         widthClass="max-w-xl"
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setAdjustOpen(false)} disabled={adjustSaving}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAdjustOpen(false)}
+              isDisabled={adjustSaving}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submitAdjust()} disabled={adjustSaving || !canAdjust}>
+            <Button
+              type="button"
+              onClick={() => void submitAdjust()}
+              isDisabled={adjustSaving || !canAdjust}
+            >
               {adjustSaving ? t('walletAdmin.messages.saving') : t('common.confirm')}
             </Button>
           </>
@@ -194,7 +235,9 @@ export function SystemWalletPage() {
       >
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('walletAdmin.fields.targetUserId')}</span>
+            <span className="text-sm text-muted-foreground">
+              {t('walletAdmin.fields.targetUserId')}
+            </span>
             <Input
               type="number"
               min={1}
@@ -206,17 +249,20 @@ export function SystemWalletPage() {
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('walletAdmin.fields.action')}</span>
-            <select
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={adjustForm.action}
-              onChange={(event) =>
-                setAdjustForm((current) => ({ ...current, action: event.target.value as AdjustAction }))
-              }
+            <Select
+              selectedKey={String(adjustForm.action ?? '')}
+              onSelectionChange={(key) => ((value) =>
+                setAdjustForm((current) => ({ ...current, action: value as AdjustAction })))(String(key))}
             >
-              <option value="add">{t('walletAdmin.actions.add')}</option>
-              <option value="deduct">{t('walletAdmin.actions.deduct')}</option>
-              <option value="set">{t('walletAdmin.actions.set')}</option>
-            </select>
+              <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="add">{t('walletAdmin.actions.add')}</SelectItem>
+                <SelectItem id="deduct">{t('walletAdmin.actions.deduct')}</SelectItem>
+                <SelectItem id="set">{t('walletAdmin.actions.set')}</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('walletAdmin.fields.amount')}</span>
@@ -232,10 +278,12 @@ export function SystemWalletPage() {
           </label>
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('walletAdmin.fields.reason')}</span>
-            <textarea
+            <Textarea
               className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
               value={adjustForm.reason}
-              onChange={(event) => setAdjustForm((current) => ({ ...current, reason: event.target.value }))}
+              onChange={(event) =>
+                setAdjustForm((current) => ({ ...current, reason: event.target.value }))
+              }
               placeholder={t('walletAdmin.placeholders.reason')}
             />
           </label>
@@ -331,28 +379,34 @@ function WalletListPanel({
       </div>
 
       <div className="overflow-hidden rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">{t('walletAdmin.tabs.wallets')}</div>
+        <div className="border-b px-4 py-3 text-sm font-medium">
+          {t('walletAdmin.tabs.wallets')}
+        </div>
         <div className="overflow-x-auto">
           {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
-          {loading ? <p className="px-4 py-3 text-sm text-muted-foreground">{t('walletAdmin.loading')}</p> : null}
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.userId')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.characterName')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.wallets.balance')}</th>
-                <th className="px-3 py-2">{t('common.updatedAt')}</th>
-                <th className="px-3 py-2">{t('common.operation')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          {loading ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">{t('walletAdmin.loading')}</p>
+          ) : null}
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.transactions.userId')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('walletAdmin.transactions.characterName')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.wallets.balance')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.updatedAt')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.operation')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {users.map((wallet, index) => (
-                <tr key={wallet.id} className="border-b align-top">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2">{wallet.user_id}</td>
-                  <td className="px-3 py-2">{wallet.character_name || '-'}</td>
-                  <td className="px-3 py-2 font-medium">
+                <TableRow key={wallet.id} className="border-b align-top">
+                  <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                  <TableCell className="px-3 py-2">{wallet.user_id}</TableCell>
+                  <TableCell className="px-3 py-2">{wallet.character_name || '-'}</TableCell>
+                  <TableCell className="px-3 py-2 font-medium">
                     <span
                       className={
                         wallet.balance >= 0
@@ -362,29 +416,50 @@ function WalletListPanel({
                     >
                       {formatCoin(wallet.balance)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{formatDateTime(wallet.updated_at)}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatDateTime(wallet.updated_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={() => onAdjust(wallet.user_id, 'add')}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onAdjust(wallet.user_id, 'add')}
+                      >
                         {t('walletAdmin.actions.add')}
                       </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => onAdjust(wallet.user_id, 'deduct')}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onAdjust(wallet.user_id, 'deduct')}
+                      >
                         {t('walletAdmin.actions.deduct')}
                       </Button>
-                      <Button type="button" size="sm" variant="outline" onClick={() => onViewTransactions(wallet.user_id)}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onViewTransactions(wallet.user_id)}
+                      >
                         {t('walletAdmin.actions.transactions')}
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      <Pager page={page} pageCount={pageCount} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} />
+      <Pager
+        page={page}
+        pageCount={pageCount}
+        pageSize={pageSize}
+        setPage={setPage}
+        setPageSize={setPageSize}
+      />
     </div>
   )
 }
@@ -407,7 +482,11 @@ function WalletTransactionsPanel({
   const [userId, setUserId] = useState<number | ''>(initialUserId)
   const [userKeyword, setUserKeyword] = useState('')
   const [refType, setRefType] = useState('')
-  const [searchState, setSearchState] = useState({ userId: initialUserId, userKeyword: '', refType: '' })
+  const [searchState, setSearchState] = useState({
+    userId: initialUserId,
+    userKeyword: '',
+    refType: '',
+  })
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -468,30 +547,31 @@ function WalletTransactionsPanel({
             onChange={(event) => setUserId(event.target.value ? Number(event.target.value) : '')}
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={refType}
-            onChange={(event) => setRefType(event.target.value)}
-          >
-            <option value="">{t('walletAdmin.placeholders.refType')}</option>
-            {[
-              'pap_reward',
-              'pap_fc_salary',
-              'admin_adjust',
-              'admin_award',
-              'manual',
-              'srp_payout',
-              'welfare_payout',
-              'shop_purchase',
-              'shop_refund',
-              'newbro_captain_reward',
-              'mentor_reward',
-            ].map((value) => (
-              <option key={value} value={value}>
-                {refTypeLabel(t, value)}
-              </option>
-            ))}
-          </select>
+          <Select selectedKey={String(refType ?? '')} onSelectionChange={(key) => ((value) => setRefType(value))(String(key))}>
+            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem id="">{t('walletAdmin.placeholders.refType')}</SelectItem>
+              {[
+                'pap_reward',
+                'pap_fc_salary',
+                'admin_adjust',
+                'admin_award',
+                'manual',
+                'srp_payout',
+                'welfare_payout',
+                'shop_purchase',
+                'shop_refund',
+                'newbro_captain_reward',
+                'mentor_reward',
+              ].map((value) => (
+                <SelectItem key={value} id={String(value ?? '')}>
+                  {refTypeLabel(t, value)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             type="button"
             variant="outline"
@@ -522,56 +602,81 @@ function WalletTransactionsPanel({
       </div>
 
       <div className="overflow-hidden rounded-lg border bg-card">
-        <div className="border-b px-4 py-3 text-sm font-medium">{t('walletAdmin.tabs.transactions')}</div>
+        <div className="border-b px-4 py-3 text-sm font-medium">
+          {t('walletAdmin.tabs.transactions')}
+        </div>
         <div className="overflow-x-auto">
           {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
-          {loading ? <p className="px-4 py-3 text-sm text-muted-foreground">{t('walletAdmin.loading')}</p> : null}
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.userId')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.characterName')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.amount')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.balanceAfter')}</th>
-                <th className="px-3 py-2">{t('common.reason')}</th>
-                <th className="px-3 py-2">{t('common.type')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.operator')}</th>
-                <th className="px-3 py-2">{t('common.createdAt')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          {loading ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">{t('walletAdmin.loading')}</p>
+          ) : null}
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.transactions.userId')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('walletAdmin.transactions.characterName')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.transactions.amount')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('walletAdmin.transactions.balanceAfter')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('common.reason')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.type')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('walletAdmin.transactions.operator')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('common.createdAt')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((row, index) => (
-                <tr key={row.id} className="border-b align-top">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2">{row.user_id}</td>
-                  <td className="px-3 py-2">{row.character_name || '-'}</td>
-                  <td className="px-3 py-2 font-medium">
+                <TableRow key={row.id} className="border-b align-top">
+                  <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                  <TableCell className="px-3 py-2">{row.user_id}</TableCell>
+                  <TableCell className="px-3 py-2">{row.character_name || '-'}</TableCell>
+                  <TableCell className="px-3 py-2 font-medium">
                     <span
-                      className={row.amount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                      className={
+                        row.amount >= 0
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-rose-600 dark:text-rose-400'
+                      }
                     >
                       {formatSignedCoin(row.amount)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{formatCoin(row.balance_after)}</td>
-                  <td className="px-3 py-2">{row.reason || '-'}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatCoin(row.balance_after)}</TableCell>
+                  <TableCell className="px-3 py-2">{row.reason || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${refTypeTone(row.ref_type)}`}
                     >
                       {refTypeLabel(t, row.ref_type)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{row.operator_name || (row.operator_id === 0 ? t('walletAdmin.actions.system') : `#${row.operator_id}`)}</td>
-                  <td className="px-3 py-2">{formatDateTime(row.created_at)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    {row.operator_name ||
+                      (row.operator_id === 0
+                        ? t('walletAdmin.actions.system')
+                        : `#${row.operator_id}`)}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      <Pager page={page} pageCount={pageCount} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} />
+      <Pager
+        page={page}
+        pageCount={pageCount}
+        pageSize={pageSize}
+        setPage={setPage}
+        setPageSize={setPageSize}
+      />
     </div>
   )
 }
@@ -645,16 +750,17 @@ function WalletLogsPanel({
             onChange={(event) => setTargetUid(event.target.value)}
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
-          <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={action}
-            onChange={(event) => setAction(event.target.value)}
-          >
-            <option value="">{t('walletAdmin.placeholders.action')}</option>
-            <option value="add">{t('walletAdmin.actions.add')}</option>
-            <option value="deduct">{t('walletAdmin.actions.deduct')}</option>
-            <option value="set">{t('walletAdmin.actions.set')}</option>
-          </select>
+          <Select selectedKey={String(action ?? '')} onSelectionChange={(key) => ((value) => setAction(value))(String(key))}>
+            <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem id="">{t('walletAdmin.placeholders.action')}</SelectItem>
+              <SelectItem id="add">{t('walletAdmin.actions.add')}</SelectItem>
+              <SelectItem id="deduct">{t('walletAdmin.actions.deduct')}</SelectItem>
+              <SelectItem id="set">{t('walletAdmin.actions.set')}</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             type="button"
             variant="outline"
@@ -688,30 +794,36 @@ function WalletLogsPanel({
         <div className="border-b px-4 py-3 text-sm font-medium">{t('walletAdmin.tabs.logs')}</div>
         <div className="overflow-x-auto">
           {error ? <p className="px-4 py-3 text-sm text-destructive">{error}</p> : null}
-          {loading ? <p className="px-4 py-3 text-sm text-muted-foreground">{t('walletAdmin.loading')}</p> : null}
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">{t('walletAdmin.logs.targetUser')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.transactions.characterName')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.logs.operator')}</th>
-                <th className="px-3 py-2">{t('common.type')}</th>
-                <th className="px-3 py-2">{t('common.amount')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.logs.before')}</th>
-                <th className="px-3 py-2">{t('walletAdmin.logs.after')}</th>
-                <th className="px-3 py-2">{t('common.reason')}</th>
-                <th className="px-3 py-2">{t('common.createdAt')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          {loading ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">{t('walletAdmin.loading')}</p>
+          ) : null}
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">#</TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.logs.targetUser')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('walletAdmin.transactions.characterName')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.logs.operator')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.type')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.amount')}</TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.logs.before')}</TableHead>
+                <TableHead className="px-3 py-2">{t('walletAdmin.logs.after')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.reason')}</TableHead>
+                <TableHead className="px-3 py-2">{t('common.createdAt')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((row, index) => (
-                <tr key={row.id} className="border-b align-top">
-                  <td className="px-3 py-2">{index + 1}</td>
-                  <td className="px-3 py-2">{row.target_uid}</td>
-                  <td className="px-3 py-2">{row.target_character_name || '-'}</td>
-                  <td className="px-3 py-2">{row.operator_character_name || row.operator_id}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={row.id} className="border-b align-top">
+                  <TableCell className="px-3 py-2">{index + 1}</TableCell>
+                  <TableCell className="px-3 py-2">{row.target_uid}</TableCell>
+                  <TableCell className="px-3 py-2">{row.target_character_name || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">
+                    {row.operator_character_name || row.operator_id}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${adjustActionTone(
                         row.action
@@ -719,20 +831,26 @@ function WalletLogsPanel({
                     >
                       {t(`walletAdmin.actions.${row.action}`)}
                     </span>
-                  </td>
-                  <td className="px-3 py-2">{formatCoin(row.amount)}</td>
-                  <td className="px-3 py-2">{formatCoin(row.before)}</td>
-                  <td className="px-3 py-2">{formatCoin(row.after)}</td>
-                  <td className="px-3 py-2">{row.reason || '-'}</td>
-                  <td className="px-3 py-2">{formatDateTime(row.created_at)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatCoin(row.amount)}</TableCell>
+                  <TableCell className="px-3 py-2">{formatCoin(row.before)}</TableCell>
+                  <TableCell className="px-3 py-2">{formatCoin(row.after)}</TableCell>
+                  <TableCell className="px-3 py-2">{row.reason || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      <Pager page={page} pageCount={pageCount} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} />
+      <Pager
+        page={page}
+        pageCount={pageCount}
+        pageSize={pageSize}
+        setPage={setPage}
+        setPageSize={setPageSize}
+      />
     </div>
   )
 }
@@ -806,7 +924,11 @@ function WalletAnalysisPanel({
   }, [loadData, refreshSeed])
 
   const summaryCards = [
-    { key: 'wallet_count', label: t('walletAdmin.analysis.walletCount'), value: analytics?.summary.wallet_count ?? 0 },
+    {
+      key: 'wallet_count',
+      label: t('walletAdmin.analysis.walletCount'),
+      value: analytics?.summary.wallet_count ?? 0,
+    },
     {
       key: 'active_wallet_count',
       label: t('walletAdmin.analysis.activeWalletCount'),
@@ -838,32 +960,25 @@ function WalletAnalysisPanel({
     <div className="space-y-4">
       <div className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <input
+          <Input
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             type="date"
             value={dateRange[0]}
             onChange={(event) => setDateRange((current) => [event.target.value, current[1]])}
           />
-          <input
+          <Input
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             type="date"
             value={dateRange[1]}
             onChange={(event) => setDateRange((current) => [current[0], event.target.value])}
           />
-          <select
-            multiple
-            className="min-h-10 rounded-md border border-input bg-background px-3 text-sm"
+          <MultiSelect
+            className="min-w-48"
+            placeholder={t('walletAdmin.placeholders.refType')}
             value={refTypes}
-            onChange={(event) =>
-              setRefTypes(Array.from(event.target.selectedOptions).map((option) => option.value))
-            }
-          >
-            {refTypeOptions.map((value) => (
-              <option key={value} value={value}>
-                {refTypeLabel(t, value)}
-              </option>
-            ))}
-          </select>
+            onValueChange={setRefTypes}
+            options={refTypeOptions.map((value) => ({ value, label: refTypeLabel(t, value) }))}
+          />
           <Input
             className="w-60"
             value={userKeyword}
@@ -983,31 +1098,31 @@ function SimpleTableCard<T extends object>({
     <div className="overflow-hidden rounded-lg border bg-card">
       <div className="border-b px-4 py-3 text-sm font-medium">{title}</div>
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40 text-left">
+        <Table className="min-w-full text-sm">
+          <TableHeader>
+            <TableRow className="border-b bg-muted/40 text-left">
               {columns.map((column) => (
-                <th key={column[1]} className="px-3 py-2">
+                <TableHead key={column[1]} className="px-3 py-2">
                   {column[1]}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((row, index) => (
-              <tr key={index} className="border-b">
+              <TableRow key={index} className="border-b">
                 {columns.map(([key]) => (
-                  <td key={key} className="px-3 py-2">
+                  <TableCell key={key} className="px-3 py-2">
                     {(() => {
                       const value = (row as Record<string, unknown>)[key]
                       return value == null ? '-' : String(value)
                     })()}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )
@@ -1033,7 +1148,13 @@ function Pager({
       <span>
         {page}/{pageCount}
       </span>
-      <Button type="button" size="sm" variant="outline" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => setPage((current) => Math.max(1, current - 1))}
+        isDisabled={page <= 1}
+      >
         {t('welfareMy.pagination.prev')}
       </Button>
       <Button
@@ -1041,26 +1162,30 @@ function Pager({
         size="sm"
         variant="outline"
         onClick={() => setPage((current) => current + 1)}
-        disabled={page >= pageCount}
+        isDisabled={page >= pageCount}
       >
         {t('welfareMy.pagination.next')}
       </Button>
       <label className="flex items-center gap-2">
         <span>{t('welfareMy.pageSize')}</span>
-        <select
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-          value={pageSize}
-          onChange={(event) => {
-            setPageSize(Number(event.target.value))
+        <Select
+          selectedKey={String(pageSize ?? '')}
+          onSelectionChange={(key) => ((value) => {
+            setPageSize(Number(value))
             setPage(1)
-          }}
+          })(String(key))}
         >
-          {[10, 20, 50].map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[10, 20, 50].map((size) => (
+              <SelectItem key={size} id={String(size ?? '')}>
+                {size}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </label>
     </div>
   )

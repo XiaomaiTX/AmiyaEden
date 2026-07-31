@@ -29,9 +29,7 @@ describe('buildPapTrendSeries', () => {
   })
 
   it('fills missing months with zero values', () => {
-    const series = buildPapTrendSeries([
-      { year: 2026, month: 7, total_pap: 4 },
-    ])
+    const series = buildPapTrendSeries([{ year: 2026, month: 7, total_pap: 4 }])
 
     expect(series).toHaveLength(PAP_TREND_MONTHS)
     expect(series.at(-1)).toEqual({ year: 2026, month: 7, total_pap: 4 })
@@ -40,9 +38,7 @@ describe('buildPapTrendSeries', () => {
   })
 
   it('handles cross-year month arithmetic correctly', () => {
-    const series = buildPapTrendSeries([
-      { year: 2026, month: 2, total_pap: 1 },
-    ])
+    const series = buildPapTrendSeries([{ year: 2026, month: 2, total_pap: 1 }])
 
     expect(series[0]).toEqual({ year: 2025, month: 3, total_pap: 0 })
     expect(series.at(-1)).toEqual({ year: 2026, month: 2, total_pap: 1 })

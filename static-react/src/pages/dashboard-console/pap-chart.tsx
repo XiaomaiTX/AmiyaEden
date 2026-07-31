@@ -1,5 +1,10 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart'
 import { useI18n } from '@/i18n'
 import type { DashboardPapMonthly } from '@/types/api/dashboard'
 import { buildPapTrendSeries } from './pap-trend'
@@ -31,12 +36,7 @@ export function DashboardPapChart({ title, data, className }: DashboardPapChartP
   }))
 
   return (
-    <section
-      className={cn(
-        'flex h-128 flex-col rounded-lg border bg-card p-5',
-        className
-      )}
-    >
+    <section className={cn('flex h-128 flex-col rounded-lg border bg-card p-5', className)}>
       <header className="mb-2 flex items-center justify-between gap-2">
         <div>
           <h4 className="text-sm font-semibold">{title}</h4>
@@ -62,12 +62,7 @@ export function DashboardPapChart({ title, data, className }: DashboardPapChartP
                 tickMargin={8}
                 minTickGap={4}
               />
-              <YAxis
-                allowDecimals={false}
-                tickLine={false}
-                axisLine={false}
-                width={28}
-              />
+              <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent

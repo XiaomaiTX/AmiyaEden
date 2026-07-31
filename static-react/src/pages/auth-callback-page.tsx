@@ -86,9 +86,15 @@ export function AuthCallbackPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
       <section className="rounded-lg border bg-card p-6">
-        {status === 'loading' ? <h1 className="text-xl font-semibold">{t('auth.callbackLoading')}</h1> : null}
-        {status === 'success' ? <h1 className="text-xl font-semibold">{t('auth.callbackSuccess')}</h1> : null}
-        {status === 'error' ? <h1 className="text-xl font-semibold">{t('auth.callbackError')}</h1> : null}
+        {status === 'loading' ? (
+          <h1 className="text-xl font-semibold">{t('auth.callbackLoading')}</h1>
+        ) : null}
+        {status === 'success' ? (
+          <h1 className="text-xl font-semibold">{t('auth.callbackSuccess')}</h1>
+        ) : null}
+        {status === 'error' ? (
+          <h1 className="text-xl font-semibold">{t('auth.callbackError')}</h1>
+        ) : null}
 
         {status === 'loading' ? (
           <p className="mt-2 text-sm text-muted-foreground">{t('auth.callbackLoadingSub')}</p>
@@ -98,7 +104,9 @@ export function AuthCallbackPage() {
           <p className="mt-2 text-sm text-muted-foreground">{t('auth.callbackSuccessSub')}</p>
         ) : null}
 
-        {status === 'error' ? <p className="mt-2 text-sm text-destructive">{errorMessage}</p> : null}
+        {status === 'error' ? (
+          <p className="mt-2 text-sm text-destructive">{errorMessage}</p>
+        ) : null}
 
         {status === 'error' ? (
           <div className="mt-4">

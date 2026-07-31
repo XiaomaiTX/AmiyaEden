@@ -21,10 +21,10 @@ import {
   updateQQGovernanceSettings,
 } from '@/api/qq-governance'
 import { Button } from '@/components/ui/button'
-import { Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput, ComboboxContent, ComboboxEmpty, ComboboxItem, ComboboxList, ComboboxValue } from '@/components/ui/combobox'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -259,10 +259,10 @@ export function SystemQQGovernancePage() {
         </div>
         <Button variant="outline" onClick={() => void (tab === 'operations' ? loadOperations() : load())}>{t('common.refresh')}</Button>
       </div>
-      <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
+      <Tabs selectedKey={tab} onSelectionChange={(key) => ((value) => setTab(value as Tab))(String(key))}>
       <TabsList>
         {(['overview', 'policies', 'operations', 'settings'] as Tab[]).map((item) => (
-          <TabsTrigger key={item} value={item}>
+          <TabsTrigger key={item} id={item}>
             {t(`qqGovernance.tabs.${item}`)}
           </TabsTrigger>
         ))}
@@ -289,7 +289,7 @@ export function SystemQQGovernancePage() {
         </div>
       ) : null}
       {tab === 'policies' ? <div className="space-y-3"><Button onClick={() => openPolicy('new')}>{t('qqGovernance.addPolicy')}</Button><DataTable columns={policyColumns} data={policies} getRowId={(row) => String(row.id)} {...tableProps} /></div> : null}
-      {tab === 'operations' ? <div className="space-y-3"><Tabs value={operationTab} onValueChange={(value) => { setOperationTab(value as OperationTab); setOperationFilters((current) => ({ ...current, page: 1 })) }}><TabsList><TabsTrigger value="tasks">{t('qqGovernance.tabs.tasks')}</TabsTrigger><TabsTrigger value="reviews">{t('qqGovernance.reviews')}</TabsTrigger><TabsTrigger value="alerts">{t('qqGovernance.tabs.alerts')}</TabsTrigger><TabsTrigger value="members">{t('qqGovernance.members')}</TabsTrigger></TabsList></Tabs><div className="flex flex-wrap gap-2"><Input type="number" placeholder={t('qqGovernance.groupId')} value={operationFilters.groupID} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, groupID: event.target.value }))} /><Input type="number" placeholder={t('qqGovernance.qq')} value={operationFilters.qq} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, qq: event.target.value }))} /><Input placeholder={t('common.status')} value={operationFilters.status} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, status: event.target.value }))} />{operationTab === 'tasks' && <Input placeholder={t('common.type')} value={operationFilters.actionType} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, actionType: event.target.value }))} />}{operationTab === 'reviews' && <Input placeholder={t('common.status')} value={operationFilters.decision} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, decision: event.target.value }))} />}<Button variant="outline" onClick={() => void loadOperations()}>{t('common.search')}</Button></div>{operationTab === 'tasks' ? <DataTable columns={taskColumns} data={tasks.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}{operationTab === 'reviews' ? <DataTable columns={reviewColumns} data={reviews.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}{operationTab === 'alerts' ? <DataTable columns={alertColumns} data={alerts.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}{operationTab === 'members' ? <DataTable columns={memberColumns} data={members.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}</div> : null}
+      {tab === 'operations' ? <div className="space-y-3"><Tabs selectedKey={operationTab} onSelectionChange={(key) => ((value) => { setOperationTab(value as OperationTab); setOperationFilters((current) => ({ ...current, page: 1 })) })(String(key))}><TabsList><TabsTrigger id="tasks">{t('qqGovernance.tabs.tasks')}</TabsTrigger><TabsTrigger id="reviews">{t('qqGovernance.reviews')}</TabsTrigger><TabsTrigger id="alerts">{t('qqGovernance.tabs.alerts')}</TabsTrigger><TabsTrigger id="members">{t('qqGovernance.members')}</TabsTrigger></TabsList></Tabs><div className="flex flex-wrap gap-2"><Input type="number" placeholder={t('qqGovernance.groupId')} value={operationFilters.groupID} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, groupID: event.target.value }))} /><Input type="number" placeholder={t('qqGovernance.qq')} value={operationFilters.qq} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, qq: event.target.value }))} /><Input placeholder={t('common.status')} value={operationFilters.status} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, status: event.target.value }))} />{operationTab === 'tasks' && <Input placeholder={t('common.type')} value={operationFilters.actionType} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, actionType: event.target.value }))} />}{operationTab === 'reviews' && <Input placeholder={t('common.status')} value={operationFilters.decision} onChange={(event) => setOperationFilters((current) => ({ ...current, page: 1, decision: event.target.value }))} />}<Button variant="outline" onClick={() => void loadOperations()}>{t('common.search')}</Button></div>{operationTab === 'tasks' ? <DataTable columns={taskColumns} data={tasks.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}{operationTab === 'reviews' ? <DataTable columns={reviewColumns} data={reviews.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}{operationTab === 'alerts' ? <DataTable columns={alertColumns} data={alerts.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}{operationTab === 'members' ? <DataTable columns={memberColumns} data={members.list} getRowId={(row) => String(row.id)} {...tableProps} pagination={operationPagination} /> : null}</div> : null}
       {tab === 'settings' && settings ? (
         <div className="grid max-w-2xl gap-4 rounded-lg border p-5 sm:grid-cols-3">
           {([
@@ -307,24 +307,36 @@ export function SystemQQGovernancePage() {
           </div>
         </div>
       ) : null}
-      <Dialog open={policyDialog !== null} onOpenChange={(open) => !open && setPolicyDialog(null)}>
-        <DialogContent>
+      <Dialog isOpen={policyDialog !== null} onOpenChange={(open) => !open && setPolicyDialog(null)}>
+        <div>
           <DialogHeader><DialogTitle>{policyDialog === 'new' ? t('qqGovernance.addPolicy') : t('qqGovernance.editPolicy')}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Input type="number" placeholder={t('qqGovernance.groupId')} value={policyForm.group_id} disabled={policyDialog !== 'new'} onChange={(event) => setPolicyForm({ ...policyForm, group_id: event.target.value })} />
-            <Combobox<QQCorporationOption, true> multiple value={corporations.filter((item) => policyForm.allowed_corporation_ids.includes(item.corporation_id))} onValueChange={(value) => setPolicyForm((form) => ({ ...form, allowed_corporation_ids: value.map((item) => item.corporation_id) }))} onInputValueChange={(value) => void searchCorporations(value)} itemToStringLabel={(item) => item.corporation_name} itemToStringValue={(item) => String(item.corporation_id)}>
-              <ComboboxChips><ComboboxValue>{(value: QQCorporationOption[]) => <>{value.map((item) => <ComboboxChip key={item.corporation_id}>{item.corporation_name}</ComboboxChip>)}<ComboboxChipsInput placeholder={value.length ? '' : t('qqGovernance.corporations')} /></>}</ComboboxValue></ComboboxChips>
-              <ComboboxContent><ComboboxEmpty>{t('qqGovernance.noResults')}</ComboboxEmpty><ComboboxList>{corporations.map((item) => <ComboboxItem key={item.corporation_id} value={item}>{item.corporation_name}</ComboboxItem>)}</ComboboxList></ComboboxContent>
-            </Combobox>
+            <MultiSelect
+              value={policyForm.allowed_corporation_ids.map(String)}
+              onValueChange={(value) =>
+                setPolicyForm((form) => ({
+                  ...form,
+                  allowed_corporation_ids: value.map(Number),
+                }))
+              }
+              options={corporations.map((item) => ({
+                value: String(item.corporation_id),
+                label: item.corporation_name,
+              }))}
+              placeholder={t('qqGovernance.corporations')}
+              emptyText={t('qqGovernance.noResults')}
+              onInputValueChange={(value) => void searchCorporations(value)}
+            />
             <Input placeholder={t('qqGovernance.roles')} value={policyForm.allowed_role_codes} onChange={(event) => setPolicyForm({ ...policyForm, allowed_role_codes: event.target.value })} />
-            <Select value={policyForm.member_violation_policy} onValueChange={(member_violation_policy) => setPolicyForm({ ...policyForm, member_violation_policy: member_violation_policy as QQPolicy['member_violation_policy'] })}><SelectTrigger className="w-full"><SelectValue placeholder={t('qqGovernance.violationPolicy')} /></SelectTrigger><SelectContent><SelectItem value="review_only">{t('qqGovernance.reviewOnly')}</SelectItem><SelectItem value="auto_kick_after_confirmed_mismatch">{t('qqGovernance.autoKick')}</SelectItem></SelectContent></Select>
+            <Select selectedKey={policyForm.member_violation_policy} onSelectionChange={(key) => ((member_violation_policy) => setPolicyForm({ ...policyForm, member_violation_policy: member_violation_policy as QQPolicy['member_violation_policy'] }))(String(key))} placeholder={t('qqGovernance.violationPolicy')}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem id="review_only">{t('qqGovernance.reviewOnly')}</SelectItem><SelectItem id="auto_kick_after_confirmed_mismatch">{t('qqGovernance.autoKick')}</SelectItem></SelectContent></Select>
             <Textarea placeholder={t('qqGovernance.cardTemplate')} value={policyForm.card_template} onChange={(event) => setPolicyForm({ ...policyForm, card_template: event.target.value })} />
-            <label className="flex items-center gap-2"><Switch checked={policyForm.enabled} onCheckedChange={(enabled) => setPolicyForm({ ...policyForm, enabled })} />{t('qqGovernance.enabled')}</label>
-            <label className="flex items-center gap-2"><Switch checked={policyForm.auto_reject_unmatched} onCheckedChange={(auto_reject_unmatched) => setPolicyForm({ ...policyForm, auto_reject_unmatched })} />{t('qqGovernance.autoReject')}</label>
-            <label className="flex items-center gap-2"><Switch checked={policyForm.card_sync_enabled} onCheckedChange={(card_sync_enabled) => setPolicyForm({ ...policyForm, card_sync_enabled })} />{t('qqGovernance.cardSync')}</label>
+            <label className="flex items-center gap-2"><Switch isSelected={policyForm.enabled} onChange={(enabled) => setPolicyForm({ ...policyForm, enabled })} />{t('qqGovernance.enabled')}</label>
+            <label className="flex items-center gap-2"><Switch isSelected={policyForm.auto_reject_unmatched} onChange={(auto_reject_unmatched) => setPolicyForm({ ...policyForm, auto_reject_unmatched })} />{t('qqGovernance.autoReject')}</label>
+            <label className="flex items-center gap-2"><Switch isSelected={policyForm.card_sync_enabled} onChange={(card_sync_enabled) => setPolicyForm({ ...policyForm, card_sync_enabled })} />{t('qqGovernance.cardSync')}</label>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setPolicyDialog(null)}>{t('common.cancel')}</Button><Button onClick={() => void act(async () => { const groupID = Number(policyForm.group_id); if (!Number.isSafeInteger(groupID) || groupID <= 0) throw new Error(t('qqGovernance.groupIdRequired')); const payload = { enabled: policyForm.enabled, allowed_corporation_ids: policyForm.allowed_corporation_ids, allowed_role_codes: policyForm.allowed_role_codes.split(',').map((value) => value.trim()).filter(Boolean), auto_reject_unmatched: policyForm.auto_reject_unmatched, member_violation_policy: policyForm.member_violation_policy, card_template: policyForm.card_template, card_sync_enabled: policyForm.card_sync_enabled }; if (policyDialog === 'new') await createQQGovernancePolicy({ group_id: groupID, ...payload }); else await updateQQGovernancePolicy(groupID, payload); setPolicyDialog(null) })}>{t('common.save')}</Button></DialogFooter>
-        </DialogContent>
+        </div>
       </Dialog>
     </section>
   )

@@ -317,19 +317,19 @@ export function OperationFleetDetailPage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold">{t('fleet.detail.actions')}</h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void handleSyncESI()} disabled={!canManageFleet || syncLoading}>
+            <Button type="button" onClick={() => void handleSyncESI()} isDisabled={!canManageFleet || syncLoading}>
               {t('fleet.members.syncESI')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleIssuePap()} disabled={!canManageFleet || papLoading}>
+            <Button type="button" variant="outline" onClick={() => void handleIssuePap()} isDisabled={!canManageFleet || papLoading}>
               {t('fleet.pap.issue')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setManualOpen(true)} disabled={!canManageFleet}>
+            <Button type="button" variant="outline" onClick={() => setManualOpen(true)} isDisabled={!canManageFleet}>
               {t('fleet.members.manualAdd')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handlePing()} disabled={!canManageFleet || pingLoading}>
+            <Button type="button" variant="outline" onClick={() => void handlePing()} isDisabled={!canManageFleet || pingLoading}>
               {t('fleet.ping.send')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleCreateInvite()} disabled={!canManageFleet || inviteLoading}>
+            <Button type="button" variant="outline" onClick={() => void handleCreateInvite()} isDisabled={!canManageFleet || inviteLoading}>
               {t('fleet.invite.create')}
             </Button>
           </div>
@@ -351,10 +351,10 @@ export function OperationFleetDetailPage() {
         closeLabel={t('common.close')}
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setManualOpen(false)} disabled={manualLoading}>
+            <Button type="button" variant="outline" onClick={() => setManualOpen(false)} isDisabled={manualLoading}>
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void handleManualAddMembers()} disabled={manualLoading}>
+            <Button type="button" onClick={() => void handleManualAddMembers()} isDisabled={manualLoading}>
               {manualLoading ? t('fleet.members.manualAdding') : t('common.confirm')}
             </Button>
           </>

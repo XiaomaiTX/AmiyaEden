@@ -1,3 +1,10 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchMyCharacters } from '@/api/auth'
@@ -86,20 +93,31 @@ export function OperationJoinPage() {
         ) : (
           <div className="mt-4 space-y-4">
             <label className="space-y-2">
-              <span className="text-sm text-muted-foreground">{t('fleet.join.selectCharacter')}</span>
-              <select
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                value={characterId}
-                disabled={loading}
-                onChange={(event) => setCharacterId(Number(event.target.value))}
+              <span className="text-sm text-muted-foreground">
+                {t('fleet.join.selectCharacter')}
+              </span>
+              <Select
+                selectedKey={String(characterId ?? '')}
+                onSelectionChange={(key) => ((value) => setCharacterId(Number(value)))(String(key))}
               >
-                <option value="">{t('fleet.join.selectCharacterPlaceholder')}</option>
-                {characters.map((character) => (
-                  <option key={character.character_id} value={character.character_id}>
-                    {character.character_name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  isDisabled={loading}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('fleet.join.selectCharacterPlaceholder')}</SelectItem>
+                  {characters.map((character) => (
+                    <SelectItem
+                      key={character.character_id}
+                      id={String(character.character_id ?? '')}
+                    >
+                      {character.character_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
 
             {selectedCharacter ? (
@@ -111,7 +129,9 @@ export function OperationJoinPage() {
                 />
                 <div>
                   <div className="font-medium">{selectedCharacter.character_name}</div>
-                  <div className="text-xs text-muted-foreground">{selectedCharacter.corporation_id}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {selectedCharacter.corporation_id}
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -120,7 +140,11 @@ export function OperationJoinPage() {
               <Button type="button" variant="outline" onClick={() => navigate(-1)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="button" onClick={() => void handleJoin()} disabled={submitLoading || !characterId}>
+              <Button
+                type="button"
+                onClick={() => void handleJoin()}
+                isDisabled={submitLoading || !characterId}
+              >
                 {submitLoading ? t('common.confirm') : t('common.confirm')}
               </Button>
             </div>

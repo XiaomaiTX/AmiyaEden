@@ -51,7 +51,7 @@ export function LoginPage() {
         </p>
 
         <div className="mt-4 flex gap-2">
-          <Button type="button" onClick={handleEveLogin} disabled={loading}>
+          <Button type="button" onClick={handleEveLogin} isDisabled={loading}>
             {loading ? t('auth.loginStarting') : t('auth.loginWithEve')}
           </Button>
         </div>

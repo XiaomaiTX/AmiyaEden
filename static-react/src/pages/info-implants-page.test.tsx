@@ -33,7 +33,11 @@ describe('info implants page', () => {
             code: 0,
             msg: 'ok',
             data: {
-              home_location: { location_id: 1, location_type: 'station', location_name: 'Jita IV - Moon 4' },
+              home_location: {
+                location_id: 1,
+                location_type: 'station',
+                location_name: 'Jita IV - Moon 4',
+              },
               last_clone_jump_date: '2026-05-01T00:00:00Z',
               last_station_change_date: null,
               jump_fatigue_expire: null,
@@ -42,7 +46,11 @@ describe('info implants page', () => {
               jump_clones: [
                 {
                   jump_clone_id: 10,
-                  location: { location_id: 2, location_type: 'station', location_name: 'Amarr VIII' },
+                  location: {
+                    location_id: 2,
+                    location_type: 'station',
+                    location_name: 'Amarr VIII',
+                  },
                   implants: [{ implant_id: 222, implant_name: 'Memory Augmentation - Basic' }],
                 },
               ],

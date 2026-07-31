@@ -39,7 +39,7 @@ export function HeaderBar() {
           type="button"
           variant="outline"
           size="sm"
-          title={t('common.switchLocale')}
+          aria-label={t('common.switchLocale')}
           onClick={() => setLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN')}
         >
           {locale}

@@ -1,3 +1,4 @@
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   batchPayoutAsFuxiCoin,
@@ -165,84 +166,84 @@ export function SrpManagePage() {
         </div>
 
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('srpManage.columns.killmail')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.character')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.ship')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.reviewStatus')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.finalAmount')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('srpManage.columns.killmail')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.character')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.ship')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.reviewStatus')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.finalAmount')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filteredItems.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="px-3 py-2">{item.killmail_id}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={item.id} className="border-b">
+                  <TableCell className="px-3 py-2">{item.killmail_id}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="font-medium">{item.character_name}</div>
                     <div className="text-xs text-muted-foreground">{item.nickname || '-'}</div>
-                  </td>
-                  <td className="px-3 py-2">{item.ship_name}</td>
-                  <td className="px-3 py-2">{item.review_status}</td>
-                  <td className="px-3 py-2">{item.final_amount || item.recommended_amount}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{item.ship_name}</TableCell>
+                  <TableCell className="px-3 py-2">{item.review_status}</TableCell>
+                  <TableCell className="px-3 py-2">{item.final_amount || item.recommended_amount}</TableCell>
+                  <TableCell className="px-3 py-2">
                     {activeTab === 'pending' ? (
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" onClick={() => void approve(item)} disabled={actionId === item.id}>
+                        <Button type="button" size="sm" onClick={() => void approve(item)} isDisabled={actionId === item.id}>
                           {t('srpManage.approveBtn')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void reject(item)} disabled={actionId === item.id}>
+                        <Button type="button" size="sm" variant="outline" onClick={() => void reject(item)} isDisabled={actionId === item.id}>
                           {t('srpManage.rejectBtn')}
                         </Button>
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => void payout(item)} disabled={actionId === item.id}>
+                        <Button type="button" size="sm" variant="outline" onClick={() => void payout(item)} isDisabled={actionId === item.id}>
                           {t('srpManage.payoutBtn')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void batchPayoutBySelected(item.user_id)} disabled={actionId === item.id}>
+                        <Button type="button" size="sm" variant="outline" onClick={() => void batchPayoutBySelected(item.user_id)} isDisabled={actionId === item.id}>
                           {t('srpManage.batchByUserBtn')}
                         </Button>
                       </div>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && filteredItems.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('srpManage.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
       <div className="rounded-lg border bg-card p-5">
         <h2 className="text-lg font-semibold">{t('srpManage.batchSummaryTitle')}</h2>
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('srpManage.columns.user')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.amount')}</th>
-                <th className="px-3 py-2">{t('srpManage.columns.count')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('srpManage.columns.user')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.amount')}</TableHead>
+                <TableHead className="px-3 py-2">{t('srpManage.columns.count')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {summary.map((row) => (
-                <tr key={row.user_id} className="border-b">
-                  <td className="px-3 py-2">{row.main_character_name}</td>
-                  <td className="px-3 py-2">{row.total_amount}</td>
-                  <td className="px-3 py-2">{row.application_count}</td>
-                </tr>
+                <TableRow key={row.user_id} className="border-b">
+                  <TableCell className="px-3 py-2">{row.main_character_name}</TableCell>
+                  <TableCell className="px-3 py-2">{row.total_amount}</TableCell>
+                  <TableCell className="px-3 py-2">{row.application_count}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
     </section>

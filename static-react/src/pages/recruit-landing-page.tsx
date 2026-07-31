@@ -86,7 +86,7 @@ export function RecruitLandingPage() {
                 {qqError ? <p className="mt-1 text-xs text-destructive">{qqError}</p> : null}
               </div>
 
-              <Button className="w-full" onClick={handleSubmit} disabled={loading}>
+              <Button className="w-full" onClick={handleSubmit} isDisabled={loading}>
                 {loading ? '...' : t('recruit.submitBtn')}
               </Button>
             </div>

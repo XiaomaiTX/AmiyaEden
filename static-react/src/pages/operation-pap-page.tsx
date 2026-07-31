@@ -1,3 +1,19 @@
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMyAlliancePAP } from '@/api/alliance-pap'
 import { fetchMyPapLogs } from '@/api/fleet'
@@ -51,7 +67,10 @@ export function OperationPapPage() {
   const [alliancePage, setAlliancePage] = useState(1)
   const [alliancePageSize, setAlliancePageSize] = useState(50)
 
-  const papPageCount = useMemo(() => Math.max(1, Math.ceil(papLogs.length / papPageSize) || 1), [papLogs.length, papPageSize])
+  const papPageCount = useMemo(
+    () => Math.max(1, Math.ceil(papLogs.length / papPageSize) || 1),
+    [papLogs.length, papPageSize]
+  )
   const alliancePageCount = useMemo(
     () => Math.max(1, Math.ceil(allianceFleets.length / alliancePageSize) || 1),
     [allianceFleets.length, alliancePageSize]
@@ -126,10 +145,18 @@ export function OperationPapPage() {
     <section className="space-y-4">
       <div className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant={activeTab === 'corporation' ? 'default' : 'outline'} onClick={() => setActiveTab('corporation')}>
+          <Button
+            type="button"
+            variant={activeTab === 'corporation' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('corporation')}
+          >
             {t('fleet.pap.myTitle')}
           </Button>
-          <Button type="button" variant={activeTab === 'alliance' ? 'default' : 'outline'} onClick={() => setActiveTab('alliance')}>
+          <Button
+            type="button"
+            variant={activeTab === 'alliance' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('alliance')}
+          >
             {t('fleet.pap.allianceCard')}
           </Button>
         </div>
@@ -144,7 +171,12 @@ export function OperationPapPage() {
               <h1 className="text-xl font-semibold">{t('fleet.pap.myTitle')}</h1>
               <p className="mt-1 text-sm text-muted-foreground">{t('fleet.pap.participations')}</p>
             </div>
-            <Button type="button" variant="outline" onClick={() => void loadPapLogs()} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void loadPapLogs()}
+              isDisabled={loading}
+            >
               {t('common.refresh')}
             </Button>
           </div>
@@ -163,54 +195,64 @@ export function OperationPapPage() {
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('fleet.pap.operation')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.level')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.character')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.ship')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.count')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.fc')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.issuedAt')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('fleet.pap.operation')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.level')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.character')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.ship')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.count')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.fc')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.issuedAt')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {pagedPapLogs.map((row) => (
-                  <tr key={row.id} className="border-b">
-                    <td className="px-3 py-2">{row.fleet_title || '-'}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={row.id} className="border-b">
+                    <TableCell className="px-3 py-2">{row.fleet_title || '-'}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <ShopBadge className={importanceClass(row.fleet_importance)}>
                         {importanceLabel(row.fleet_importance)}
                       </ShopBadge>
-                    </td>
-                    <td className="px-3 py-2">{row.character_name || row.character_id}</td>
-                    <td className="px-3 py-2">{row.ship_type_id ?? '-'}</td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      {row.character_name || row.character_id}
+                    </TableCell>
+                    <TableCell className="px-3 py-2">{row.ship_type_id ?? '-'}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <ShopBadge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                         +{row.pap_count}
                       </ShopBadge>
-                    </td>
-                    <td className="px-3 py-2">{row.fc_character_name || row.issued_by}</td>
-                    <td className="px-3 py-2">{formatDateTime(row.created_at)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      {row.fc_character_name || row.issued_by}
+                    </TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                  </TableRow>
                 ))}
                 {!loading && papLogs.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
                       {t('fleet.pap.empty')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
             <span>
               {papPage}/{papPageCount}
             </span>
-            <Button type="button" variant="outline" size="sm" onClick={() => setPapPage((current) => Math.max(1, current - 1))} disabled={papPage <= 1}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPapPage((current) => Math.max(1, current - 1))}
+              isDisabled={papPage <= 1}
+            >
               {t('welfareMy.pagination.prev')}
             </Button>
             <Button
@@ -218,24 +260,30 @@ export function OperationPapPage() {
               variant="outline"
               size="sm"
               onClick={() => setPapPage((current) => current + 1)}
-              disabled={pagedPapLogs.length < papPageSize || papPage * papPageSize >= papLogs.length}
+              isDisabled={
+                pagedPapLogs.length < papPageSize || papPage * papPageSize >= papLogs.length
+              }
             >
               {t('welfareMy.pagination.next')}
             </Button>
-            <select
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-              value={papPageSize}
-              onChange={(event) => {
-                setPapPageSize(Number(event.target.value))
+            <Select
+              selectedKey={String(papPageSize ?? '')}
+              onSelectionChange={(key) => ((value) => {
+                setPapPageSize(Number(value))
                 setPapPage(1)
-              }}
+              })(String(key))}
             >
-              {[50, 100, 200].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[50, 100, 200].map((size) => (
+                  <SelectItem key={size} id={String(size ?? '')}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       ) : (
@@ -243,14 +291,19 @@ export function OperationPapPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-xl font-semibold">{t('fleet.pap.allianceCard')}</h1>
-              <input
+              <Input
                 type="month"
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={allianceMonth}
                 onChange={(event) => setAllianceMonth(event.target.value)}
               />
             </div>
-            <Button type="button" variant="outline" onClick={() => void loadAlliancePAP()} disabled={allianceLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void loadAlliancePAP()}
+              isDisabled={allianceLoading}
+            >
               {t('common.refresh')}
             </Button>
           </div>
@@ -258,86 +311,116 @@ export function OperationPapPage() {
           {allianceSummary ? (
             <div className="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-6">
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">{t('fleet.pap.allianceMonthly')}</div>
-                <div className="mt-1 text-xl font-semibold text-primary">{allianceSummary.total_pap}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('fleet.pap.allianceMonthly')}
+                </div>
+                <div className="mt-1 text-xl font-semibold text-primary">
+                  {allianceSummary.total_pap}
+                </div>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="text-xs text-muted-foreground">{t('fleet.pap.allianceYearly')}</div>
-                <div className="mt-1 text-xl font-semibold text-blue-500">{allianceSummary.yearly_total_pap}</div>
+                <div className="mt-1 text-xl font-semibold text-blue-500">
+                  {allianceSummary.yearly_total_pap}
+                </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">{t('fleet.pap.allianceCorpMonthRank')}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('fleet.pap.allianceCorpMonthRank')}
+                </div>
                 <div className="mt-1 text-xl font-semibold text-emerald-600">
                   #{allianceSummary.monthly_rank}/{allianceSummary.total_in_corp}
                 </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">{t('fleet.pap.allianceGlobalMonthRank')}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('fleet.pap.allianceGlobalMonthRank')}
+                </div>
                 <div className="mt-1 text-xl font-semibold text-yellow-500">
                   #{allianceSummary.global_monthly_rank}/{allianceSummary.total_global}
                 </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">{t('fleet.pap.allianceCorpYearRank')}</div>
-                <div className="mt-1 text-xl font-semibold text-purple-500">#{allianceSummary.yearly_rank}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('fleet.pap.allianceCorpYearRank')}
+                </div>
+                <div className="mt-1 text-xl font-semibold text-purple-500">
+                  #{allianceSummary.yearly_rank}
+                </div>
               </div>
               <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">{t('fleet.pap.allianceLastCalc')}</div>
-                <div className="mt-1 text-sm font-medium">{formatDateTime(allianceSummary.calculated_at)}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t('fleet.pap.allianceLastCalc')}
+                </div>
+                <div className="mt-1 text-sm font-medium">
+                  {formatDateTime(allianceSummary.calculated_at)}
+                </div>
               </div>
             </div>
           ) : null}
 
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('fleet.pap.allianceOperationName')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.character')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.level')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.count')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.ship')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.allianceStartTime')}</th>
-                  <th className="px-3 py-2">{t('fleet.pap.allianceEndTime')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">
+                    {t('fleet.pap.allianceOperationName')}
+                  </TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.character')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.level')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.count')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.ship')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.allianceStartTime')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('fleet.pap.allianceEndTime')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {pagedAllianceFleets.map((row) => (
-                  <tr key={row.id} className="border-b">
-                    <td className="px-3 py-2">{row.title}</td>
-                    <td className="px-3 py-2">{row.character_name}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={row.id} className="border-b">
+                    <TableCell className="px-3 py-2">{row.title}</TableCell>
+                    <TableCell className="px-3 py-2">{row.character_name}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <ShopBadge className={levelClass(row.level)}>{row.level}</ShopBadge>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
                       <ShopBadge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
                         {row.pap}
                       </ShopBadge>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
                       {row.ship_type_name}
-                      <span className="ml-1 text-xs text-muted-foreground">({row.ship_group_name})</span>
-                    </td>
-                    <td className="px-3 py-2">{formatDateTime(row.start_at)}</td>
-                    <td className="px-3 py-2">{row.end_at ? formatDateTime(row.end_at) : '-'}</td>
-                  </tr>
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({row.ship_group_name})
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(row.start_at)}</TableCell>
+                    <TableCell className="px-3 py-2">
+                      {row.end_at ? formatDateTime(row.end_at) : '-'}
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {!allianceLoading && allianceFleets.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={7}>
                       {t('fleet.pap.allianceEmpty')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
             <span>
               {alliancePage}/{alliancePageCount}
             </span>
-            <Button type="button" variant="outline" size="sm" onClick={() => setAlliancePage((current) => Math.max(1, current - 1))} disabled={alliancePage <= 1}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAlliancePage((current) => Math.max(1, current - 1))}
+              isDisabled={alliancePage <= 1}
+            >
               {t('welfareMy.pagination.prev')}
             </Button>
             <Button
@@ -345,24 +428,31 @@ export function OperationPapPage() {
               variant="outline"
               size="sm"
               onClick={() => setAlliancePage((current) => current + 1)}
-              disabled={pagedAllianceFleets.length < alliancePageSize || alliancePage * alliancePageSize >= allianceFleets.length}
+              isDisabled={
+                pagedAllianceFleets.length < alliancePageSize ||
+                alliancePage * alliancePageSize >= allianceFleets.length
+              }
             >
               {t('welfareMy.pagination.next')}
             </Button>
-            <select
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-              value={alliancePageSize}
-              onChange={(event) => {
-                setAlliancePageSize(Number(event.target.value))
+            <Select
+              selectedKey={String(alliancePageSize ?? '')}
+              onSelectionChange={(key) => ((value) => {
+                setAlliancePageSize(Number(value))
                 setAlliancePage(1)
-              }}
+              })(String(key))}
             >
-              {[50, 100, 200].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[50, 100, 200].map((size) => (
+                  <SelectItem key={size} id={String(size ?? '')}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}

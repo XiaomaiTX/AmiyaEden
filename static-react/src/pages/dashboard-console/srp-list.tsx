@@ -1,3 +1,11 @@
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useI18n } from '@/i18n'
 import { formatIskSmart } from '@/lib/isk'
 import { formatTime } from '@/lib/format'
@@ -25,13 +33,7 @@ const PAYOUT_STATUS_TONE: Record<string, StatusTone> = {
 const REVIEW_STATUS_KEYS = new Set(['submitted', 'approved', 'rejected'])
 const PAYOUT_STATUS_KEYS = new Set(['notpaid', 'paid'])
 
-function StatusBadge({
-  label,
-  tone,
-}: {
-  label: string
-  tone: StatusTone
-}) {
+function StatusBadge({ label, tone }: { label: string; tone: StatusTone }) {
   return (
     <span
       className={cn(
@@ -64,14 +66,10 @@ export function DashboardSrpList({ list, className }: DashboardSrpListProps) {
   const { t } = useI18n()
 
   const resolveReviewLabel = (status: string): string =>
-    REVIEW_STATUS_KEYS.has(status)
-      ? t(`dashboardConsole.srpList.reviewStatus.${status}`)
-      : status
+    REVIEW_STATUS_KEYS.has(status) ? t(`dashboardConsole.srpList.reviewStatus.${status}`) : status
 
   const resolvePayoutLabel = (status: string): string =>
-    PAYOUT_STATUS_KEYS.has(status)
-      ? t(`dashboardConsole.srpList.payoutStatus.${status}`)
-      : status
+    PAYOUT_STATUS_KEYS.has(status) ? t(`dashboardConsole.srpList.payoutStatus.${status}`) : status
 
   return (
     <section className={cn('rounded-lg border bg-card p-5', className)}>
@@ -90,68 +88,68 @@ export function DashboardSrpList({ list, className }: DashboardSrpListProps) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                <th className="px-3 py-2 font-medium">
+          <Table className="w-full min-w-[860px] border-collapse text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-border text-left text-xs text-muted-foreground">
+                <TableHead className="px-3 py-2 font-medium">
                   {t('dashboardConsole.srpList.columns.character')}
-                </th>
-                <th className="px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 font-medium">
                   {t('dashboardConsole.srpList.columns.ship')}
-                </th>
-                <th className="px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 font-medium">
                   {t('dashboardConsole.srpList.columns.system')}
-                </th>
-                <th className="px-3 py-2 font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 font-medium">
                   {t('dashboardConsole.srpList.lossTime')}
-                </th>
-                <th className="px-3 py-2 text-right font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-right font-medium">
                   {t('dashboardConsole.srpList.recommendedAmount')}
-                </th>
-                <th className="px-3 py-2 text-right font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-right font-medium">
                   {t('dashboardConsole.srpList.finalAmount')}
-                </th>
-                <th className="px-3 py-2 text-center font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-center font-medium">
                   {t('dashboardConsole.srpList.columns.reviewStatus')}
-                </th>
-                <th className="px-3 py-2 text-center font-medium">
+                </TableHead>
+                <TableHead className="px-3 py-2 text-center font-medium">
                   {t('dashboardConsole.srpList.columns.payoutStatus')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {list.map((row) => {
                 const reviewTone = REVIEW_STATUS_TONE[row.review_status] ?? 'info'
                 const payoutTone = PAYOUT_STATUS_TONE[row.payout_status] ?? 'info'
                 return (
-                  <tr key={row.id} className="border-b border-border last:border-b-0">
-                    <td className="px-3 py-2">{row.character_name}</td>
-                    <td className="px-3 py-2">{row.ship_name}</td>
-                    <td className="px-3 py-2">{row.solar_system_name}</td>
-                    <td className="px-3 py-2">{formatTime(row.killmail_time)}</td>
-                    <td className="px-3 py-2 text-right text-muted-foreground">
+                  <TableRow key={row.id} className="border-b border-border last:border-b-0">
+                    <TableCell className="px-3 py-2">{row.character_name}</TableCell>
+                    <TableCell className="px-3 py-2">{row.ship_name}</TableCell>
+                    <TableCell className="px-3 py-2">{row.solar_system_name}</TableCell>
+                    <TableCell className="px-3 py-2">{formatTime(row.killmail_time)}</TableCell>
+                    <TableCell className="px-3 py-2 text-right text-muted-foreground">
                       {formatIskSmart(row.recommended_amount)}
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right font-medium">
                       {formatIskSmart(row.final_amount)}
-                    </td>
-                    <td className="px-3 py-2 text-center">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-center">
                       <StatusBadge
                         label={resolveReviewLabel(row.review_status)}
                         tone={reviewTone}
                       />
-                    </td>
-                    <td className="px-3 py-2 text-center">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-center">
                       <StatusBadge
                         label={resolvePayoutLabel(row.payout_status)}
                         tone={payoutTone}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </section>

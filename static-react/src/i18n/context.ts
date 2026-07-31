@@ -20,7 +20,11 @@ function getByPath(source: Record<string, unknown>, path: string): string | unde
   return typeof value === 'string' ? value : undefined
 }
 
-function resolveReference(locale: I18nLocale, key: string, visited: Set<string>): string | undefined {
+function resolveReference(
+  locale: I18nLocale,
+  key: string,
+  visited: Set<string>
+): string | undefined {
   if (visited.has(key)) {
     return undefined
   }
@@ -69,8 +73,7 @@ interface I18nContextValue {
 
 export const I18nContext = createContext<I18nContextValue>({
   locale: 'zh-CN',
-  t: (key: string, vars?: Record<string, string | number>) =>
-    resolveLocaleText('zh-CN', key, vars),
+  t: (key: string, vars?: Record<string, string | number>) => resolveLocaleText('zh-CN', key, vars),
 })
 
 export function useI18n() {

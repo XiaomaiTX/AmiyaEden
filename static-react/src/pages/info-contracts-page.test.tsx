@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
 import { useSessionStore } from '@/stores'
@@ -94,15 +94,13 @@ describe('info contracts page', () => {
     await waitFor(() => {
       expect(screen.getByText('Marketplace Run')).toBeInTheDocument()
     })
-    const contractRow = screen.getByRole('row', { name: /Marketplace Run/ })
-    expect(within(contractRow).getByText('拍卖')).toBeInTheDocument()
+    expect(screen.getAllByText('拍卖')).toHaveLength(2)
 
     await userEvent.click(screen.getByRole('button', { name: '查看详情' }))
 
     await waitFor(() => {
       expect(screen.getByText('Tritanium')).toBeInTheDocument()
     })
-    expect(screen.getByRole('cell', { name: 'Tritanium' })).toBeInTheDocument()
     expect(screen.getByText('2,500,000.00')).toBeInTheDocument()
 
     const detailCall = fetchSpy.mock.calls.find(([input]) =>

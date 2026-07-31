@@ -1,3 +1,4 @@
+import { Textarea } from '@/components/ui/textarea'
 import { useCallback, useEffect, useState } from 'react'
 import {
   createToolBookmark,
@@ -12,6 +13,7 @@ import { confirmAction, notifyError, notifySuccess, notifyWarning } from '@/feed
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import type { ToolBookmark, ToolBookmarkUpsertRequest } from '@/types/api/tool-bookmark'
+import { ShopDialog } from './shop-page-utils'
 
 const emptyForm: ToolBookmarkUpsertRequest = {
   name: '',
@@ -139,7 +141,7 @@ export function InfoToolBookmarksPage() {
                 type="button"
                 variant="outline"
                 onClick={() => void loadBookmarks()}
-                disabled={loading}
+                isDisabled={loading}
               >
                 {t('common.refresh')}
               </Button>
@@ -230,7 +232,12 @@ export function InfoToolBookmarksPage() {
       ) : null}
 
       {dialogOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <ShopDialog
+          open={dialogOpen}
+          title={editingBookmark ? t('infoToolBookmarks.edit') : t('infoToolBookmarks.add')}
+          onClose={() => setDialogOpen(false)}
+          closeLabel={t('common.close')}
+        >
           <div
             aria-modal="true"
             className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-xl"
@@ -240,14 +247,14 @@ export function InfoToolBookmarksPage() {
               <h2 className="text-lg font-semibold">
                 {editingBookmark ? t('infoToolBookmarks.edit') : t('infoToolBookmarks.add')}
               </h2>
-              <button
+              <Button
                 type="button"
                 className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-muted"
                 aria-label={t('common.close')}
                 onClick={() => setDialogOpen(false)}
               >
                 ×
-              </button>
+              </Button>
             </div>
             <div className="mt-4 space-y-4">
               <label className="block space-y-2">
@@ -277,7 +284,7 @@ export function InfoToolBookmarksPage() {
                 <span className="text-sm text-muted-foreground">
                   {t('infoToolBookmarks.fields.description')}
                 </span>
-                <textarea
+                <Textarea
                   className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={form.description ?? ''}
                   maxLength={1024}
@@ -303,7 +310,7 @@ export function InfoToolBookmarksPage() {
                 />
               </label>
               <label className="flex items-center gap-3 text-sm">
-                <input
+                <Input
                   checked={form.is_enabled ?? true}
                   type="checkbox"
                   onChange={(event) =>
@@ -318,16 +325,16 @@ export function InfoToolBookmarksPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
-                disabled={saving}
+                isDisabled={saving}
               >
                 {t('common.cancel')}
               </Button>
-              <Button type="button" onClick={() => void submitForm()} disabled={saving}>
+              <Button type="button" onClick={() => void submitForm()} isDisabled={saving}>
                 {saving ? t('infoToolBookmarks.saving') : t('common.save')}
               </Button>
             </div>
           </div>
-        </div>
+        </ShopDialog>
       ) : null}
     </section>
   )

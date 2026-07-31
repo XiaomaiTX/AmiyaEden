@@ -2,13 +2,14 @@ import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
 import { useFeedbackStore } from '@/feedback/store'
+import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 const toastTypeClass: Record<string, string> = {
@@ -19,6 +20,7 @@ const toastTypeClass: Record<string, string> = {
 }
 
 export function FeedbackHost() {
+  const { t } = useI18n()
   const toasts = useFeedbackStore((state) => state.toasts)
   const removeToast = useFeedbackStore((state) => state.removeToast)
   const confirm = useFeedbackStore((state) => state.confirm)
@@ -37,39 +39,37 @@ export function FeedbackHost() {
           >
             <div className="flex items-start justify-between gap-3">
               <span>{toast.message}</span>
-              <button
+              <Button
                 type="button"
                 className="text-xs opacity-70 hover:opacity-100"
                 onClick={() => removeToast(toast.id)}
-                aria-label="dismiss-toast"
+                aria-label={t('common.dismissToast')}
               >
                 ×
-              </button>
+              </Button>
             </div>
           </div>
         ))}
       </div>
 
       <AlertDialog
-        open={confirm.open}
+        isOpen={confirm.open}
         onOpenChange={(open) => {
           if (!open) resolveConfirm(false)
         }}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirm.title}</AlertDialogTitle>
-            <AlertDialogDescription>{confirm.message}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => resolveConfirm(false)}>
-              {confirm.cancelText}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => resolveConfirm(true)}>
-              {confirm.confirmText}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{confirm.title}</AlertDialogTitle>
+          <AlertDialogDescription>{confirm.message}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => resolveConfirm(false)}>
+            {confirm.cancelText}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => resolveConfirm(true)}>
+            {confirm.confirmText}
+          </AlertDialogAction>
+        </AlertDialogFooter>
       </AlertDialog>
     </>
   )

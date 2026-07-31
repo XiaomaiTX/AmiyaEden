@@ -1,9 +1,11 @@
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { deleteShipPrice, fetchSrpConfig, fetchShipPrices, updateSrpConfig, upsertShipPrice } from '@/api/srp'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import type { ShipPrice, SrpConfig, UpsertShipPriceParams } from '@/types/api/srp'
+import { ShopDialog } from './shop-page-utils'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -137,24 +139,24 @@ export function SrpPricesPage() {
         <div className="rounded-lg border bg-card p-5 xl:col-span-2">
           <h2 className="text-lg font-semibold">{t('srpPrices.priceListTitle')}</h2>
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">ID</th>
-                  <th className="px-3 py-2">{t('srpPrices.columns.typeId')}</th>
-                  <th className="px-3 py-2">{t('srpPrices.columns.name')}</th>
-                  <th className="px-3 py-2">{t('srpPrices.columns.amount')}</th>
-                  <th className="px-3 py-2">{t('srpPrices.columns.actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('common.id')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('srpPrices.columns.typeId')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('srpPrices.columns.name')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('srpPrices.columns.amount')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('srpPrices.columns.actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {orderedPrices.map((price) => (
-                  <tr key={price.id} className="border-b">
-                    <td className="px-3 py-2">{price.id}</td>
-                    <td className="px-3 py-2">{price.ship_type_id}</td>
-                    <td className="px-3 py-2">{price.ship_name}</td>
-                    <td className="px-3 py-2">{price.amount}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={price.id} className="border-b">
+                    <TableCell className="px-3 py-2">{price.id}</TableCell>
+                    <TableCell className="px-3 py-2">{price.ship_type_id}</TableCell>
+                    <TableCell className="px-3 py-2">{price.ship_name}</TableCell>
+                    <TableCell className="px-3 py-2">{price.amount}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <div className="flex gap-2">
                         <Button type="button" size="sm" variant="outline" onClick={() => openEdit(price)}>
                           {t('common.edit')}
@@ -163,18 +165,18 @@ export function SrpPricesPage() {
                           {t('common.delete')}
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {!loading && orderedPrices.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
                       {t('srpPrices.empty')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
 
@@ -189,7 +191,7 @@ export function SrpPricesPage() {
                 onChange={(event) => setConfig((current) => ({ ...current, amount_limit: Number(event.target.value) }))}
               />
             </label>
-            <Button type="button" onClick={() => void saveConfig()} disabled={configSaving}>
+            <Button type="button" onClick={() => void saveConfig()} isDisabled={configSaving}>
               {configSaving ? t('srpPrices.saving') : t('srpPrices.saveConfig')}
             </Button>
           </div>
@@ -197,11 +199,13 @@ export function SrpPricesPage() {
       </div>
 
       {dialogVisible ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <ShopDialog
+          open={dialogVisible}
+          title={editingId > 0 ? t('srpPrices.editDialog') : t('srpPrices.addDialog')}
+          onClose={() => setDialogVisible(false)}
+          closeLabel={t('common.close')}
+        >
           <div className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-xl">
-            <h2 className="text-lg font-semibold">
-              {editingId > 0 ? t('srpPrices.editDialog') : t('srpPrices.addDialog')}
-            </h2>
             <div className="mt-4 space-y-4">
               <label className="space-y-2 block">
                 <span className="text-sm text-muted-foreground">{t('srpPrices.fields.typeId')}</span>
@@ -231,12 +235,12 @@ export function SrpPricesPage() {
               <Button type="button" variant="outline" onClick={() => setDialogVisible(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="button" onClick={() => void save()} disabled={saving}>
+              <Button type="button" onClick={() => void save()} isDisabled={saving}>
                 {saving ? t('srpPrices.saving') : t('common.confirm')}
               </Button>
             </div>
           </div>
-        </div>
+        </ShopDialog>
       ) : null}
     </section>
   )

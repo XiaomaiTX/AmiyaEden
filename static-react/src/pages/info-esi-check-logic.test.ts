@@ -30,7 +30,9 @@ const characters = [
 
 describe('ESI scope coverage logic', () => {
   test('marks a character missing a required scope as invalid', () => {
-    expect(findInvalidCharacters(scopes, characters).map((character) => character.character_id)).toEqual([1002])
+    expect(
+      findInvalidCharacters(scopes, characters).map((character) => character.character_id)
+    ).toEqual([1002])
   })
 
   test('calculates required coverage and row authorization for the selected character', () => {

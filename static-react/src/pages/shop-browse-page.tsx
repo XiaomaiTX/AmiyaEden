@@ -1,3 +1,19 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { buyProduct, fetchMyOrders, fetchMyWallet, fetchProducts } from '@/api/shop'
 import { Button } from '@/components/ui/button'
@@ -18,10 +34,7 @@ import {
 
 type ActiveTab = 'products' | 'orders'
 
-function orderStatusLabel(
-  t: ReturnType<typeof useI18n>['t'],
-  status: string
-) {
+function orderStatusLabel(t: ReturnType<typeof useI18n>['t'], status: string) {
   const key = `shopAdmin.orders.status.${status}`
   const translated = t(key)
   return translated === key ? status : translated
@@ -57,7 +70,8 @@ export function ShopBrowsePage() {
     if (!selectedProduct) return 1
 
     const stockLimit = selectedProduct.stock < 0 ? Number.POSITIVE_INFINITY : selectedProduct.stock
-    const perUserLimit = selectedProduct.max_per_user > 0 ? selectedProduct.max_per_user : Number.POSITIVE_INFINITY
+    const perUserLimit =
+      selectedProduct.max_per_user > 0 ? selectedProduct.max_per_user : Number.POSITIVE_INFINITY
     const maxQty = Math.min(stockLimit, perUserLimit)
     return Number.isFinite(maxQty) ? Math.max(1, maxQty) : 999
   }, [selectedProduct])
@@ -222,7 +236,12 @@ export function ShopBrowsePage() {
               </p>
             ) : null}
           </div>
-          <Button type="button" variant="outline" onClick={() => void loadWallet()} disabled={walletLoading}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void loadWallet()}
+            isDisabled={walletLoading}
+          >
             {t('common.refresh')}
           </Button>
         </div>
@@ -240,7 +259,12 @@ export function ShopBrowsePage() {
         <div className="space-y-4">
           <div className="rounded-lg border bg-card p-4">
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" variant="outline" onClick={() => void loadProducts()} disabled={productLoading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void loadProducts()}
+                isDisabled={productLoading}
+              >
                 {t('common.refresh')}
               </Button>
               <span className="text-sm text-muted-foreground">
@@ -251,10 +275,17 @@ export function ShopBrowsePage() {
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {products.map((item) => (
-              <article key={item.id} className="overflow-hidden rounded-lg border bg-card shadow-sm">
+              <article
+                key={item.id}
+                className="overflow-hidden rounded-lg border bg-card shadow-sm"
+              >
                 <div className="flex aspect-square items-center justify-center border-b bg-muted/30">
                   {item.image ? (
-                    <img alt={item.name} className="h-full w-full object-contain p-4" src={item.image} />
+                    <img
+                      alt={item.name}
+                      className="h-full w-full object-contain p-4"
+                      src={item.image}
+                    />
                   ) : (
                     <div className="text-sm text-muted-foreground">{t('shop.products')}</div>
                   )}
@@ -263,12 +294,16 @@ export function ShopBrowsePage() {
                   <div>
                     <h3 className="font-semibold">{item.name}</h3>
                     {item.description ? (
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {item.description}
+                      </p>
                     ) : null}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <ShopBadge className={productStatusClass(item.status)}>
-                      {item.status === 1 ? t('shopManage.statusOnSale') : t('shopManage.statusOffSale')}
+                      {item.status === 1
+                        ? t('shopManage.statusOnSale')
+                        : t('shopManage.statusOffSale')}
                     </ShopBadge>
                     {item.stock < 0 ? (
                       <ShopBadge className="bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300">
@@ -296,7 +331,7 @@ export function ShopBrowsePage() {
                   <Button
                     type="button"
                     className="w-full"
-                    disabled={item.stock === 0 || item.status !== 1 || !canCreateOrder}
+                    isDisabled={item.stock === 0 || item.status !== 1 || !canCreateOrder}
                     onClick={() => openBuyDialog(item)}
                   >
                     {item.stock === 0 ? t('shop.soldOut') : t('shop.buy')}
@@ -324,7 +359,7 @@ export function ShopBrowsePage() {
                 const next = Math.max(1, productPage - 1)
                 setProductPage(next)
               }}
-              disabled={productPage <= 1}
+              isDisabled={productPage <= 1}
             >
               {t('welfareMy.pagination.prev')}
             </Button>
@@ -336,27 +371,33 @@ export function ShopBrowsePage() {
                 const next = productPage + 1
                 setProductPage(next)
               }}
-              disabled={products.length < productPageSize || productPage * productPageSize >= productTotal}
+              isDisabled={
+                products.length < productPageSize || productPage * productPageSize >= productTotal
+              }
             >
               {t('welfareMy.pagination.next')}
             </Button>
             <label className="flex items-center gap-2">
               <span>{t('welfareMy.pageSize')}</span>
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                value={productPageSize}
-                onChange={(event) => {
-                  const nextSize = Number(event.target.value)
+              <Select
+                selectedKey={String(productPageSize ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  const nextSize = Number(value)
                   setProductPageSize(nextSize)
                   setProductPage(1)
-                }}
+                })(String(key))}
               >
-                {[12, 24, 36, 48].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[12, 24, 36, 48].map((size) => (
+                    <SelectItem key={size} id={String(size ?? '')}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
         </div>
@@ -368,25 +409,29 @@ export function ShopBrowsePage() {
             <div className="flex flex-wrap items-end gap-3">
               <label className="space-y-1">
                 <span className="text-sm text-muted-foreground">{t('shop.allStatuses')}</span>
-                <select
-                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  value={orderStatus}
-                  onChange={(event) => {
-                    setOrderStatus(event.target.value)
+                <Select
+                  selectedKey={String(orderStatus ?? '')}
+                  onSelectionChange={(key) => ((value) => {
+                    setOrderStatus(value)
                     setOrderPage(1)
-                  }}
+                  })(String(key))}
                 >
-                  <option value="">{t('shop.allStatuses')}</option>
-                  <option value="requested">{orderStatusLabel(t, 'requested')}</option>
-                  <option value="delivered">{orderStatusLabel(t, 'delivered')}</option>
-                  <option value="rejected">{orderStatusLabel(t, 'rejected')}</option>
-                </select>
+                  <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id="">{t('shop.allStatuses')}</SelectItem>
+                    <SelectItem id="requested">{orderStatusLabel(t, 'requested')}</SelectItem>
+                    <SelectItem id="delivered">{orderStatusLabel(t, 'delivered')}</SelectItem>
+                    <SelectItem id="rejected">{orderStatusLabel(t, 'rejected')}</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => void loadOrders()}
-                disabled={orderLoading}
+                isDisabled={orderLoading}
               >
                 {t('common.refresh')}
               </Button>
@@ -398,53 +443,58 @@ export function ShopBrowsePage() {
               {t('shop.myOrders')} ({orderTotal})
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">{t('shop.orderNo')}</th>
-                    <th className="px-3 py-2">{t('shop.productName')}</th>
-                    <th className="px-3 py-2">{t('shop.quantity')}</th>
-                    <th className="px-3 py-2">{t('shop.unitPrice')}</th>
-                    <th className="px-3 py-2">{t('shop.totalPrice')}</th>
-                    <th className="px-3 py-2">{t('shop.status')}</th>
-                    <th className="px-3 py-2">{t('shop.reviewerName')}</th>
-                    <th className="px-3 py-2">{t('shop.submitterRemark')}</th>
-                    <th className="px-3 py-2">{t('shop.reviewRemark')}</th>
-                    <th className="px-3 py-2">{t('shop.orderTime')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">{t('shop.orderNo')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.productName')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.quantity')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.unitPrice')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.totalPrice')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.status')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.reviewerName')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.submitterRemark')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.reviewRemark')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('shop.orderTime')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {orders.map((order) => (
-                    <tr key={order.id} className="border-b">
-                      <td className="px-3 py-2 font-medium">{order.order_no}</td>
-                      <td className="px-3 py-2">{order.product_name}</td>
-                      <td className="px-3 py-2">{order.quantity}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={order.id} className="border-b">
+                      <TableCell className="px-3 py-2 font-medium">{order.order_no}</TableCell>
+                      <TableCell className="px-3 py-2">{order.product_name}</TableCell>
+                      <TableCell className="px-3 py-2">{order.quantity}</TableCell>
+                      <TableCell className="px-3 py-2">
                         {formatCoin(order.unit_price)} {t('shop.currency')}
-                      </td>
-                      <td className="px-3 py-2 font-medium text-red-600">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 font-medium text-red-600">
                         {formatCoin(order.total_price)} {t('shop.currency')}
-                      </td>
-                      <td className="px-3 py-2">
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
                         <ShopBadge className={orderStatusClass(order.status)}>
                           {orderStatusLabel(t, order.status)}
                         </ShopBadge>
-                      </td>
-                      <td className="px-3 py-2">{order.reviewer_name || '-'}</td>
-                      <td className="px-3 py-2">{order.remark || '-'}</td>
-                      <td className="px-3 py-2">{order.review_remark || '-'}</td>
-                      <td className="px-3 py-2">{formatDateTime(order.created_at)}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{order.reviewer_name || '-'}</TableCell>
+                      <TableCell className="px-3 py-2">{order.remark || '-'}</TableCell>
+                      <TableCell className="px-3 py-2">{order.review_remark || '-'}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {formatDateTime(order.created_at)}
+                      </TableCell>
+                    </TableRow>
                   ))}
                   {!orderLoading && orders.length === 0 ? (
-                    <tr>
-                      <td className="px-3 py-6 text-center text-muted-foreground" colSpan={10}>
+                    <TableRow>
+                      <TableCell
+                        className="px-3 py-6 text-center text-muted-foreground"
+                        colSpan={10}
+                      >
                         {t('shop.noOrders')}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : null}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
 
@@ -460,7 +510,7 @@ export function ShopBrowsePage() {
                 const next = Math.max(1, orderPage - 1)
                 setOrderPage(next)
               }}
-              disabled={orderPage <= 1}
+              isDisabled={orderPage <= 1}
             >
               {t('welfareMy.pagination.prev')}
             </Button>
@@ -472,27 +522,31 @@ export function ShopBrowsePage() {
                 const next = orderPage + 1
                 setOrderPage(next)
               }}
-              disabled={orders.length < orderPageSize || orderPage * orderPageSize >= orderTotal}
+              isDisabled={orders.length < orderPageSize || orderPage * orderPageSize >= orderTotal}
             >
               {t('welfareMy.pagination.next')}
             </Button>
             <label className="flex items-center gap-2">
               <span>{t('welfareMy.pageSize')}</span>
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                value={orderPageSize}
-                onChange={(event) => {
-                  const nextSize = Number(event.target.value)
+              <Select
+                selectedKey={String(orderPageSize ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  const nextSize = Number(value)
                   setOrderPageSize(nextSize)
                   setOrderPage(1)
-                }}
+                })(String(key))}
               >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50].map((size) => (
+                    <SelectItem key={size} id={String(size ?? '')}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
         </div>
@@ -505,10 +559,14 @@ export function ShopBrowsePage() {
         closeLabel={t('common.close')}
         footer={
           <>
-            <Button type="button" variant="outline" onClick={closeBuyDialog} disabled={buyLoading}>
+            <Button type="button" variant="outline" onClick={closeBuyDialog} isDisabled={buyLoading}>
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void confirmBuy()} disabled={buyLoading || !selectedProduct || !canCreateOrder}>
+            <Button
+              type="button"
+              onClick={() => void confirmBuy()}
+              isDisabled={buyLoading || !selectedProduct || !canCreateOrder}
+            >
               {buyLoading ? t('shopBrowse.buying') : t('shop.confirmBuy')}
             </Button>
           </>
@@ -523,7 +581,10 @@ export function ShopBrowsePage() {
               </label>
               <label className="space-y-2">
                 <span className="text-muted-foreground">{t('shop.unitPrice')}</span>
-                <Input value={`${formatCoin(selectedProduct.price)} ${t('shop.currency')}`} disabled />
+                <Input
+                  value={`${formatCoin(selectedProduct.price)} ${t('shop.currency')}`}
+                  disabled
+                />
               </label>
               <label className="space-y-2">
                 <span className="text-muted-foreground">{t('shop.quantity')}</span>
@@ -545,7 +606,7 @@ export function ShopBrowsePage() {
             </div>
             <label className="space-y-2 block">
               <span className="text-muted-foreground">{t('shop.remark')}</span>
-              <textarea
+              <Textarea
                 className="min-h-24 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none"
                 value={buyRemark}
                 placeholder={t('shop.remarkPlaceholder')}

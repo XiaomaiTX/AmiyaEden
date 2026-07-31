@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import type { ComponentProps } from "react"
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import type { ComponentProps } from 'react'
+import { NavMain } from '@/components/nav-main'
+import { NavUser } from '@/components/nav-user'
 import {
   Sidebar,
   SidebarContent,
@@ -11,13 +11,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
-import { NavLink } from "react-router-dom"
-import { useI18n } from "@/i18n"
-import { buildShellMenuGroups } from "@/layout/menu-config"
-import { buildEveCharacterPortraitUrl, buildEveCorporationLogoUrl } from "@/lib/eve-image"
-import { SYSTEM_IDENTITY } from "@/constants/system-identity"
-import { useBadgeStore, useSessionStore } from "@/stores"
+} from '@/components/ui/sidebar'
+import { useI18n } from '@/i18n'
+import { buildShellMenuGroups } from '@/layout/menu-config'
+import { buildEveCharacterPortraitUrl, buildEveCorporationLogoUrl } from '@/lib/eve-image'
+import { SYSTEM_IDENTITY } from '@/constants/system-identity'
+import { useBadgeStore, useSessionStore } from '@/stores'
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const { t } = useI18n()
@@ -56,8 +55,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <NavLink to="/">
+            <SidebarMenuButton size="lg" href="/">
                 <img
                   className="size-8 rounded-lg object-cover"
                   src={buildEveCorporationLogoUrl(SYSTEM_IDENTITY.corporationId)}
@@ -65,9 +63,8 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
                 />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{SYSTEM_IDENTITY.displayName}</span>
-                  <span className="truncate text-xs">{t("shell.subtitle")}</span>
+                  <span className="truncate text-xs">{t('shell.subtitle')}</span>
                 </div>
-              </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -78,10 +75,10 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser
           user={{
-            name: characterName ?? t("shell.guest"),
+            name: characterName ?? t('shell.guest'),
             email:
-              roles.map((role) => t(`userAdmin.roles.${role}`)).join(", ") ||
-              t("userAdmin.roles.guest"),
+              roles.map((role) => t(`userAdmin.roles.${role}`)).join(', ') ||
+              t('userAdmin.roles.guest'),
             avatar: buildEveCharacterPortraitUrl(primaryCharacterId ?? characterId ?? 0),
           }}
         />

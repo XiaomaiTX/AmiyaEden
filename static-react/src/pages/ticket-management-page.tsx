@@ -1,3 +1,19 @@
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminListTickets, adminUpdateTicketPriority, adminUpdateTicketStatus } from '@/api/ticket'
@@ -103,7 +119,9 @@ export function TicketManagementPage() {
     try {
       await adminUpdateTicketStatus(ticketId, { status: nextStatus })
       setTickets((current) =>
-        current.map((ticket) => (ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket))
+        current.map((ticket) =>
+          ticket.id === ticketId ? { ...ticket, status: nextStatus } : ticket
+        )
       )
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('ticketManagement.updateFailed')))
@@ -139,8 +157,10 @@ export function TicketManagementPage() {
 
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('ticketManagement.filters.keyword')}</span>
-              <input
+              <span className="text-sm text-muted-foreground">
+                {t('ticketManagement.filters.keyword')}
+              </span>
+              <Input
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
@@ -149,20 +169,30 @@ export function TicketManagementPage() {
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm text-muted-foreground">{t('ticketManagement.filters.status')}</span>
-              <select
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                value={status}
-                onChange={(event) => {
-                  setStatus(event.target.value as TicketStatus | '')
+              <span className="text-sm text-muted-foreground">
+                {t('ticketManagement.filters.status')}
+              </span>
+              <Select
+                selectedKey={String(status ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setStatus(value as TicketStatus | '')
                   setPage(1)
-                }}
+                })(String(key))}
               >
-                <option value="">{t('ticketManagement.allStatuses')}</option>
-                <option value="pending">{t('ticketManagement.status.pending')}</option>
-                <option value="in_progress">{t('ticketManagement.status.in_progress')}</option>
-                <option value="completed">{t('ticketManagement.status.completed')}</option>
-              </select>
+                <SelectTrigger className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('ticketManagement.allStatuses')}</SelectItem>
+                  <SelectItem id="pending">{t('ticketManagement.status.pending')}</SelectItem>
+                  <SelectItem id="in_progress">
+                    {t('ticketManagement.status.in_progress')}
+                  </SelectItem>
+                  <SelectItem id="completed">
+                    {t('ticketManagement.status.completed')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </label>
 
             <Button type="button" onClick={refresh}>
@@ -173,64 +203,90 @@ export function TicketManagementPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('ticketManagement.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('ticketManagement.loading')}</p>
+      ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-card">
         <div className="border-b px-4 py-3 text-sm font-medium">
           {t('ticketManagement.title')} ({total})
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-left">
-                <th className="px-3 py-2">{t('ticketManagement.columns.id')}</th>
-                <th className="px-3 py-2">{t('ticketManagement.columns.title')}</th>
-                <th className="px-3 py-2">{t('ticketManagement.columns.status')}</th>
-                <th className="px-3 py-2">{t('ticketManagement.columns.priority')}</th>
-                <th className="px-3 py-2">{t('ticketManagement.columns.updatedAt')}</th>
-                <th className="px-3 py-2">{t('ticketManagement.columns.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-muted/40 text-left">
+                <TableHead className="px-3 py-2">{t('ticketManagement.columns.id')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketManagement.columns.title')}</TableHead>
+                <TableHead className="px-3 py-2">{t('ticketManagement.columns.status')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('ticketManagement.columns.priority')}
+                </TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('ticketManagement.columns.updatedAt')}
+                </TableHead>
+                <TableHead className="px-3 py-2">{t('ticketManagement.columns.actions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {tickets.map((ticket) => (
-                <tr key={ticket.id} className="border-b">
-                  <td className="px-3 py-2">{ticket.id}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={ticket.id} className="border-b">
+                  <TableCell className="px-3 py-2">{ticket.id}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <div className="font-medium">{ticket.title}</div>
                     <div className="line-clamp-2 text-xs text-muted-foreground">
                       {ticket.description}
                     </div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <select
-                      className={`h-9 rounded-md border px-2 text-xs ${statusTone(ticket.status)}`}
-                      value={ticket.status}
-                      disabled={updatingId === ticket.id}
-                      onChange={(event) => {
-                        void updateTicketStatus(ticket.id, event.target.value as TicketStatus)
-                      }}
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <Select
+                      selectedKey={String(ticket.status ?? '')}
+                      onSelectionChange={(key) => ((value) => {
+                        void updateTicketStatus(ticket.id, value as TicketStatus)
+                      })(String(key))}
                     >
-                      <option value="pending">{t('ticketManagement.status.pending')}</option>
-                      <option value="in_progress">{t('ticketManagement.status.in_progress')}</option>
-                      <option value="completed">{t('ticketManagement.status.completed')}</option>
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <select
-                      className={`h-9 rounded-md border px-2 text-xs ${priorityTone(ticket.priority)}`}
-                      value={ticket.priority}
-                      disabled={updatingId === ticket.id}
-                      onChange={(event) => {
-                        void updateTicketPriority(ticket.id, event.target.value as TicketPriority)
-                      }}
+                      <SelectTrigger
+                        className={`h-9 rounded-md border px-2 text-xs ${statusTone(ticket.status)}`}
+                        isDisabled={updatingId === ticket.id}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem id="pending">
+                          {t('ticketManagement.status.pending')}
+                        </SelectItem>
+                        <SelectItem id="in_progress">
+                          {t('ticketManagement.status.in_progress')}
+                        </SelectItem>
+                        <SelectItem id="completed">
+                          {t('ticketManagement.status.completed')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">
+                    <Select
+                      selectedKey={String(ticket.priority ?? '')}
+                      onSelectionChange={(key) => ((value) => {
+                        void updateTicketPriority(ticket.id, value as TicketPriority)
+                      })(String(key))}
                     >
-                      <option value="low">{t('ticketManagement.priority.low')}</option>
-                      <option value="medium">{t('ticketManagement.priority.medium')}</option>
-                      <option value="high">{t('ticketManagement.priority.high')}</option>
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">{formatTime(ticket.updated_at)}</td>
-                  <td className="px-3 py-2">
+                      <SelectTrigger
+                        className={`h-9 rounded-md border px-2 text-xs ${priorityTone(ticket.priority)}`}
+                        isDisabled={updatingId === ticket.id}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem id="low">{t('ticketManagement.priority.low')}</SelectItem>
+                        <SelectItem id="medium">
+                          {t('ticketManagement.priority.medium')}
+                        </SelectItem>
+                        <SelectItem id="high">{t('ticketManagement.priority.high')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="px-3 py-2">{formatTime(ticket.updated_at)}</TableCell>
+                  <TableCell className="px-3 py-2">
                     <Button
                       type="button"
                       size="sm"
@@ -239,18 +295,18 @@ export function TicketManagementPage() {
                     >
                       {t('ticketManagement.viewDetail')}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {!loading && tickets.length === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                <TableRow>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
                     {t('ticketManagement.empty')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : null}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
@@ -263,7 +319,7 @@ export function TicketManagementPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => Math.max(1, current - 1))}
-          disabled={page <= 1}
+          isDisabled={page <= 1}
         >
           {t('ticketManagement.pagination.prev')}
         </Button>
@@ -272,26 +328,30 @@ export function TicketManagementPage() {
           variant="outline"
           size="sm"
           onClick={() => setPage((current) => current + 1)}
-          disabled={tickets.length < pageSize || page * pageSize >= total}
+          isDisabled={tickets.length < pageSize || page * pageSize >= total}
         >
           {t('ticketManagement.pagination.next')}
         </Button>
         <label className="flex items-center gap-2">
           <span>{t('ticketManagement.pageSize')}</span>
-          <select
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value))
+          <Select
+            selectedKey={String(pageSize ?? '')}
+            onSelectionChange={(key) => ((value) => {
+              setPageSize(Number(value))
               setPage(1)
-            }}
+            })(String(key))}
           >
-            {[10, 20, 50].map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((size) => (
+                <SelectItem key={size} id={String(size ?? '')}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
     </section>

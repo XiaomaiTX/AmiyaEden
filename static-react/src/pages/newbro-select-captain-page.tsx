@@ -1,3 +1,4 @@
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -113,7 +114,7 @@ export function NewbroSelectCaptainPage() {
                 </p>
               </div>
               {state?.current_affiliation ? (
-                <Button type="button" variant="destructive" onClick={handleEndAffiliation} disabled={endingAffiliation}>
+                <Button type="button" variant="destructive" onClick={handleEndAffiliation} isDisabled={endingAffiliation}>
                   {endingAffiliation
                     ? t('newbroSelectCaptain.endingAffiliation')
                     : t('newbroSelectCaptain.endAffiliation')}
@@ -167,7 +168,7 @@ export function NewbroSelectCaptainPage() {
                     <Button
                       type="button"
                       onClick={() => void handleSelectCaptain(captain.captain_user_id)}
-                      disabled={!canChooseCaptain || submittingCaptainId === captain.captain_user_id}
+                      isDisabled={!canChooseCaptain || submittingCaptainId === captain.captain_user_id}
                     >
                       {submittingCaptainId === captain.captain_user_id
                         ? t('newbroSelectCaptain.choosingCaptain')
@@ -192,34 +193,34 @@ export function NewbroSelectCaptainPage() {
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('newbroSelectCaptain.columns.captain')}</th>
-                  <th className="px-3 py-2">{t('newbroSelectCaptain.columns.startedAt')}</th>
-                  <th className="px-3 py-2">{t('newbroSelectCaptain.columns.endedAt')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">{t('newbroSelectCaptain.columns.captain')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('newbroSelectCaptain.columns.startedAt')}</TableHead>
+                  <TableHead className="px-3 py-2">{t('newbroSelectCaptain.columns.endedAt')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {history.map((item) => (
-                  <tr key={item.affiliation_id} className="border-b">
-                    <td className="px-3 py-2">
+                  <TableRow key={item.affiliation_id} className="border-b">
+                    <TableCell className="px-3 py-2">
                       <div className="font-medium">{item.captain_character_name}</div>
                       <div className="text-xs text-muted-foreground">#{item.captain_user_id}</div>
-                    </td>
-                    <td className="px-3 py-2">{formatDateTime(item.started_at)}</td>
-                    <td className="px-3 py-2">{formatDateTime(item.ended_at)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(item.started_at)}</TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(item.ended_at)}</TableCell>
+                  </TableRow>
                 ))}
                 {!loading && history.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6 text-center text-muted-foreground" colSpan={3}>
+                  <TableRow>
+                    <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={3}>
                       {t('newbroSelectCaptain.historyEmpty')}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : null}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="mt-4">

@@ -48,7 +48,9 @@ export function calculateScopeCoverage(
     ...scope,
     authorized: authorizedScopes.has(scope.scope),
   }))
-  const grantedRequiredCount = requiredScopes.filter((scope) => authorizedScopes.has(scope.scope)).length
+  const grantedRequiredCount = requiredScopes.filter((scope) =>
+    authorizedScopes.has(scope.scope)
+  ).length
 
   return {
     scopeRows,

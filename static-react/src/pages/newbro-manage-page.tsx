@@ -1,3 +1,4 @@
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { useCallback, useEffect, useState } from 'react'
 import {
   fetchAdminAffiliationHistory,
@@ -94,7 +95,7 @@ export function NewbroManagePage() {
           </div>
           <div className="mt-4 space-y-3">
             {captains.map((captain) => (
-              <button
+              <Button
                 key={captain.captain_user_id}
                 type="button"
                 className={`w-full rounded-md border p-4 text-left ${
@@ -107,7 +108,7 @@ export function NewbroManagePage() {
                 <div className="text-sm text-muted-foreground">
                   {t('newbroManage.activePlayers')}: {captain.active_player_count}
                 </div>
-              </button>
+              </Button>
             ))}
             {!loading && captains.length === 0 ? (
               <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -147,31 +148,31 @@ export function NewbroManagePage() {
           <div className="rounded-lg border bg-card p-5">
             <h2 className="text-base font-semibold">{t('newbroManage.historySection')}</h2>
             <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">{t('newbroManage.columns.player')}</th>
-                    <th className="px-3 py-2">{t('newbroManage.columns.captain')}</th>
-                    <th className="px-3 py-2">{t('newbroManage.columns.startedAt')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">{t('newbroManage.columns.player')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('newbroManage.columns.captain')}</TableHead>
+                    <TableHead className="px-3 py-2">{t('newbroManage.columns.startedAt')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {history.map((item) => (
-                    <tr key={item.affiliation_id} className="border-b">
-                      <td className="px-3 py-2">{item.player_character_name}</td>
-                      <td className="px-3 py-2">{item.captain_character_name}</td>
-                      <td className="px-3 py-2">{formatDateTime(item.started_at)}</td>
-                    </tr>
+                    <TableRow key={item.affiliation_id} className="border-b">
+                      <TableCell className="px-3 py-2">{item.player_character_name}</TableCell>
+                      <TableCell className="px-3 py-2">{item.captain_character_name}</TableCell>
+                      <TableCell className="px-3 py-2">{formatDateTime(item.started_at)}</TableCell>
+                    </TableRow>
                   ))}
                   {!loading && history.length === 0 ? (
-                    <tr>
-                      <td className="px-3 py-6 text-center text-muted-foreground" colSpan={3}>
+                    <TableRow>
+                      <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={3}>
                         {t('newbroManage.noHistory')}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : null}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
 

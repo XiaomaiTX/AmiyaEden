@@ -1,3 +1,10 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useEffect, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoImplants } from '@/api/eve-info'
@@ -58,7 +65,8 @@ export function InfoImplantsPage() {
         const data = await fetchInfoImplants({ character_id: selectedCharacterId, language: 'en' })
         if (!cancelled) {
           setImplants(data)
-          const expired = !data.jump_fatigue_expire || new Date(data.jump_fatigue_expire).getTime() <= Date.now()
+          const expired =
+            !data.jump_fatigue_expire || new Date(data.jump_fatigue_expire).getTime() <= Date.now()
           setIsFatigueExpired(expired)
         }
       } catch {
@@ -85,18 +93,21 @@ export function InfoImplantsPage() {
         <label className="text-sm text-muted-foreground" htmlFor="implants-character">
           {t('infoImplants.selectCharacter')}
         </label>
-        <select
-          id="implants-character"
-          className="rounded border px-2 py-1 text-sm"
-          value={selectedCharacterId ?? ''}
-          onChange={(event) => setSelectedCharacterId(Number(event.target.value))}
+        <Select
+          selectedKey={String(selectedCharacterId ?? '')}
+          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          {characters.map((character) => (
-            <option key={character.character_id} value={character.character_id}>
-              {character.character_name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="implants-character" className="rounded border px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {characters.map((character) => (
+              <SelectItem key={character.character_id} id={String(character.character_id ?? '')}>
+                {character.character_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? <p className="text-sm">{t('infoImplants.loading')}</p> : null}
@@ -108,7 +119,9 @@ export function InfoImplantsPage() {
             <div>
               <p className="text-xs text-muted-foreground">{t('infoImplants.jumpFatigue')}</p>
               <p className="mt-1 text-sm font-medium">
-                {isFatigueExpired ? t('infoImplants.fatigueReady') : formatDateTime(implants.jump_fatigue_expire)}
+                {isFatigueExpired
+                  ? t('infoImplants.fatigueReady')
+                  : formatDateTime(implants.jump_fatigue_expire)}
               </p>
             </div>
             <div>
@@ -117,7 +130,9 @@ export function InfoImplantsPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">{t('infoImplants.lastCloneJump')}</p>
-              <p className="mt-1 text-sm font-medium">{formatDateTime(implants.last_clone_jump_date)}</p>
+              <p className="mt-1 text-sm font-medium">
+                {formatDateTime(implants.last_clone_jump_date)}
+              </p>
             </div>
           </div>
 
@@ -152,7 +167,9 @@ export function InfoImplantsPage() {
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">#{clone.jump_clone_id}</p>
                     {clone.implants.length === 0 ? (
-                      <p className="mt-2 text-sm text-muted-foreground">{t('infoImplants.noImplants')}</p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {t('infoImplants.noImplants')}
+                      </p>
                     ) : (
                       <ul className="mt-2 grid gap-2 sm:grid-cols-2">
                         {clone.implants.map((item) => (

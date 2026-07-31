@@ -1,3 +1,20 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { MultiSelect } from '@/components/ui/multi-select'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -12,8 +29,8 @@ import {
 import { runTask } from '@/api/task-manager'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
-import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import type {
   CorporationStructureFilterOptionsResponse,
@@ -82,7 +99,10 @@ function stateLabel(t: ReturnType<typeof useI18n>['t'], state: string) {
   return translated === key ? state || '--' : translated
 }
 
-function formatServices(t: ReturnType<typeof useI18n>['t'], services: CorporationStructureServiceInfo[]) {
+function formatServices(
+  t: ReturnType<typeof useI18n>['t'],
+  services: CorporationStructureServiceInfo[]
+) {
   if (!services.length) return t('corporationStructures.noServices')
   return services.map((service) => `${service.name} (${service.state})`).join(' / ')
 }
@@ -100,7 +120,9 @@ function formatFuelEstimate(
       rate_unavailable: 'fuelEstimateRateUnavailable',
       ambiguous_module: 'fuelEstimateAmbiguousModule',
     }
-    return t(`corporationStructures.table.${keyByStatus[row.fuel_estimate_status || ''] || 'fuelEstimateIncomplete'}`)
+    return t(
+      `corporationStructures.table.${keyByStatus[row.fuel_estimate_status || ''] || 'fuelEstimateIncomplete'}`
+    )
   }
   return row[field] ?? '--'
 }
@@ -110,35 +132,16 @@ function formatSystemOption(item: CorporationStructureSystemOption) {
   return `${item.system_name}${regionText} (${formatSecurity(item.security)})`
 }
 
-function normalizeServiceCatalog(catalog: Partial<StructureServiceCatalog> | null | undefined): StructureServiceCatalog {
+function normalizeServiceCatalog(
+  catalog: Partial<StructureServiceCatalog> | null | undefined
+): StructureServiceCatalog {
   return {
     modules: Array.isArray(catalog?.modules) ? catalog.modules : [],
     activities: Array.isArray(catalog?.activities) ? catalog.activities : [],
-    unmapped_activities: Array.isArray(catalog?.unmapped_activities) ? catalog.unmapped_activities : [],
+    unmapped_activities: Array.isArray(catalog?.unmapped_activities)
+      ? catalog.unmapped_activities
+      : [],
   }
-}
-
-function TabButton({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean
-  children: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
-        active ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:bg-muted'
-      )}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  )
 }
 
 export function DashboardCorporationStructuresPage() {
@@ -185,7 +188,10 @@ export function DashboardCorporationStructuresPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [sort, setSort] = useState<{ sort_by?: CorporationStructureListRequest['sort_by']; sort_order?: CorporationStructureListRequest['sort_order'] }>({
+  const [sort, setSort] = useState<{
+    sort_by?: CorporationStructureListRequest['sort_by']
+    sort_order?: CorporationStructureListRequest['sort_order']
+  }>({
     sort_by: 'fuel_remaining_hours',
     sort_order: 'asc',
   })
@@ -236,7 +242,10 @@ export function DashboardCorporationStructuresPage() {
     } else {
       searchParams.delete('tab')
     }
-    navigate({ search: searchParams.toString() ? `?${searchParams.toString()}` : '' }, { replace: true })
+    navigate(
+      { search: searchParams.toString() ? `?${searchParams.toString()}` : '' },
+      { replace: true }
+    )
   }
 
   const loadSettings = async () => {
@@ -324,7 +333,9 @@ export function DashboardCorporationStructuresPage() {
         })
       } catch (caughtError) {
         if (!cancelled) {
-          setSettingsError(getErrorMessage(caughtError, t('corporationStructures.messages.loadFailed')))
+          setSettingsError(
+            getErrorMessage(caughtError, t('corporationStructures.messages.loadFailed'))
+          )
         }
       } finally {
         if (!cancelled) {
@@ -353,9 +364,12 @@ export function DashboardCorporationStructuresPage() {
 
       try {
         const data = await fetchCorporationStructureList({
-          corporation_id: appliedFilters.corporation_id > 0 ? appliedFilters.corporation_id : undefined,
+          corporation_id:
+            appliedFilters.corporation_id > 0 ? appliedFilters.corporation_id : undefined,
           keyword: appliedFilters.keyword || undefined,
-          state_groups: appliedFilters.state_groups.length ? appliedFilters.state_groups : undefined,
+          state_groups: appliedFilters.state_groups.length
+            ? appliedFilters.state_groups
+            : undefined,
           fuel_bucket: appliedFilters.fuel_bucket,
           fuel_min_hours:
             appliedFilters.fuel_bucket === 'custom' && appliedFilters.fuel_min_hours !== ''
@@ -367,17 +381,27 @@ export function DashboardCorporationStructuresPage() {
               : undefined,
           system_ids: appliedFilters.system_ids.length ? appliedFilters.system_ids : undefined,
           region_ids: appliedFilters.region_ids.length ? appliedFilters.region_ids : undefined,
-          security_bands: appliedFilters.security_bands.length ? appliedFilters.security_bands : undefined,
-          security_min: appliedFilters.security_min !== '' ? Number(appliedFilters.security_min) : undefined,
-          security_max: appliedFilters.security_max !== '' ? Number(appliedFilters.security_max) : undefined,
+          security_bands: appliedFilters.security_bands.length
+            ? appliedFilters.security_bands
+            : undefined,
+          security_min:
+            appliedFilters.security_min !== '' ? Number(appliedFilters.security_min) : undefined,
+          security_max:
+            appliedFilters.security_max !== '' ? Number(appliedFilters.security_max) : undefined,
           type_ids: appliedFilters.type_ids.length ? appliedFilters.type_ids : undefined,
-          service_names: appliedFilters.service_names.length ? appliedFilters.service_names : undefined,
+          service_names: appliedFilters.service_names.length
+            ? appliedFilters.service_names
+            : undefined,
           service_match_mode: appliedFilters.service_match_mode,
           timer_bucket: appliedFilters.timer_bucket,
           timer_start:
-            appliedFilters.timer_bucket === 'custom' && appliedTimerRange ? appliedTimerRange[0] : undefined,
+            appliedFilters.timer_bucket === 'custom' && appliedTimerRange
+              ? appliedTimerRange[0]
+              : undefined,
           timer_end:
-            appliedFilters.timer_bucket === 'custom' && appliedTimerRange ? appliedTimerRange[1] : undefined,
+            appliedFilters.timer_bucket === 'custom' && appliedTimerRange
+              ? appliedTimerRange[1]
+              : undefined,
           sort_by: sort.sort_by,
           sort_order: sort.sort_order,
           page,
@@ -460,7 +484,9 @@ export function DashboardCorporationStructuresPage() {
   }
 
   const saveServiceActivityMappings = async () => {
-    const activities = Array.from(new Set(serviceCatalog.unmapped_activities.map((item) => item.activity_name)))
+    const activities = Array.from(
+      new Set(serviceCatalog.unmapped_activities.map((item) => item.activity_name))
+    )
       .filter((name) => (activityModules[name] || []).length > 0)
       .map((activity_name) => ({ activity_name, type_ids: activityModules[activity_name] }))
     if (!activities.length) return
@@ -486,7 +512,9 @@ export function DashboardCorporationStructuresPage() {
       await runTask('corporation_structure_alert_scan')
       setAlertScanMessage(t('corporationStructures.messages.alertScanTriggered'))
     } catch (caughtError) {
-      setSettingsError(getErrorMessage(caughtError, t('corporationStructures.messages.alertScanTriggerFailed')))
+      setSettingsError(
+        getErrorMessage(caughtError, t('corporationStructures.messages.alertScanTriggerFailed'))
+      )
     } finally {
       setAlertScanRunning(false)
     }
@@ -518,92 +546,97 @@ export function DashboardCorporationStructuresPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <TabButton active={activeTab === 'list'} onClick={() => setTab('list')}>
-          {t('corporationStructures.tabs.list')}
-        </TabButton>
-        <TabButton active={activeTab === 'settings'} onClick={() => setTab('settings')}>
-          {t('corporationStructures.tabs.settings')}
-        </TabButton>
-      </div>
+      <Tabs selectedKey={activeTab} onSelectionChange={(key) => ((value) => setTab(value as ActiveTab))(String(key))}>
+        <TabsList>
+          <TabsTrigger id="list">{t('corporationStructures.tabs.list')}</TabsTrigger>
+          <TabsTrigger id="settings">{t('corporationStructures.tabs.settings')}</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {activeTab === 'list' ? (
         <>
           <div className="rounded-lg border bg-card p-5">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.corporation')}</span>
-                <select
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  value={filters.corporation_id}
-                  onChange={async (event) => {
-                    const corpId = Number(event.target.value)
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.corporation')}
+                </span>
+                <Select
+                  selectedKey={String(filters.corporation_id ?? '')}
+                  onSelectionChange={(key) => (async (value) => {
+                    const corpId = Number(value)
                     setFilters((current) => ({ ...current, corporation_id: corpId }))
                     await loadFilterOptionsForSelectedCorp(corpId)
-                  }}
+                  })(String(key))}
                 >
-                  <option value={0}>{t('corporationStructures.allCorporations')}</option>
-                  {settings.corporations.map((corp) => (
-                    <option key={corp.corporation_id} value={corp.corporation_id}>
-                      {corp.corporation_name} ({corp.corporation_id})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem id={String(0)}>
+                      {t('corporationStructures.allCorporations')}
+                    </SelectItem>
+                    {settings.corporations.map((corp) => (
+                      <SelectItem
+                        key={corp.corporation_id}
+                        id={String(corp.corporation_id ?? '')}
+                      >
+                        {corp.corporation_name} ({corp.corporation_id})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.keyword')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.keyword')}
+                </span>
                 <Input
                   value={filters.keyword}
-                  onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))}
+                  onChange={(event) =>
+                    setFilters((current) => ({ ...current, keyword: event.target.value }))
+                  }
                   placeholder={t('corporationStructures.placeholders.keyword')}
                 />
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.regions')}</span>
-                <select
-                  multiple
-                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.regions')}
+                </span>
+                <MultiSelect
+                  className="w-full"
+                  placeholder={t('corporationStructures.filters.regions')}
                   value={filters.region_ids.map(String)}
-                  onChange={(event) =>
-                    updateArrayFilter(
-                      'region_ids',
-                      Array.from(event.target.selectedOptions, (option) => Number(option.value))
-                    )
-                  }
-                >
-                  {filterOptions.regions.map((item) => (
-                    <option key={item.region_id} value={item.region_id}>
-                      {item.region_name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => updateArrayFilter('region_ids', value.map(Number))}
+                  options={filterOptions.regions.map((item) => ({
+                    value: String(item.region_id),
+                    label: item.region_name,
+                  }))}
+                />
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.systems')}</span>
-                <select
-                  multiple
-                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.systems')}
+                </span>
+                <MultiSelect
+                  className="w-full"
+                  placeholder={t('corporationStructures.filters.systems')}
                   value={filters.system_ids.map(String)}
-                  onChange={(event) =>
-                    updateArrayFilter(
-                      'system_ids',
-                      Array.from(event.target.selectedOptions, (option) => Number(option.value))
-                    )
-                  }
-                >
-                  {filterOptions.systems.map((item) => (
-                    <option key={item.system_id} value={item.system_id}>
-                      {formatSystemOption(item)}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => updateArrayFilter('system_ids', value.map(Number))}
+                  options={filterOptions.systems.map((item) => ({
+                    value: String(item.system_id),
+                    label: formatSystemOption(item),
+                  }))}
+                />
               </label>
 
               <label className="space-y-1 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.stateGroups')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.stateGroups')}
+                </span>
                 <div className="flex flex-wrap gap-2">
                   {[
                     ['online', t('corporationStructures.stateGroups.online')],
@@ -611,15 +644,12 @@ export function DashboardCorporationStructuresPage() {
                     ['abandoned', t('corporationStructures.stateGroups.abandoned')],
                     ['reinforced', t('corporationStructures.stateGroups.reinforced')],
                   ].map(([value, label]) => (
-                    <button
+                    <Button
                       key={value}
                       type="button"
-                      className={cn(
-                        'rounded-lg border px-3 py-1.5 text-sm',
-                        filters.state_groups.includes(value)
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background'
-                      )}
+                      variant={filters.state_groups.includes(value) ? 'default' : 'outline'}
+                      className="px-3 py-1.5"
+                      aria-pressed={filters.state_groups.includes(value)}
                       onClick={() => {
                         const next = filters.state_groups.includes(value)
                           ? filters.state_groups.filter((item) => item !== value)
@@ -628,13 +658,15 @@ export function DashboardCorporationStructuresPage() {
                       }}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </label>
 
               <label className="space-y-1 md:col-span-2 xl:col-span-3">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.fuel')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.fuel')}
+                </span>
                 <div className="flex flex-wrap items-center gap-2">
                   {[
                     ['all', t('corporationStructures.fuelBuckets.all')],
@@ -643,19 +675,21 @@ export function DashboardCorporationStructuresPage() {
                     ['lt_168h', t('corporationStructures.fuelBuckets.lt7d')],
                     ['custom', t('corporationStructures.fuelBuckets.custom')],
                   ].map(([value, label]) => (
-                    <button
+                    <Button
                       key={value}
                       type="button"
-                      className={cn(
-                        'rounded-lg border px-3 py-1.5 text-sm',
-                        filters.fuel_bucket === value
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background'
-                      )}
-                      onClick={() => setFilters((current) => ({ ...current, fuel_bucket: value as typeof filters.fuel_bucket }))}
+                      variant={filters.fuel_bucket === value ? 'default' : 'outline'}
+                      className="px-3 py-1.5"
+                      aria-pressed={filters.fuel_bucket === value}
+                      onClick={() =>
+                        setFilters((current) => ({
+                          ...current,
+                          fuel_bucket: value as typeof filters.fuel_bucket,
+                        }))
+                      }
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                   {filters.fuel_bucket === 'custom' ? (
                     <>
@@ -669,7 +703,7 @@ export function DashboardCorporationStructuresPage() {
                             fuel_min_hours: parseNumberInput(event.target.value),
                           }))
                         }
-                        placeholder="min"
+                        placeholder={t('common.min')}
                       />
                       <span>~</span>
                       <Input
@@ -682,7 +716,7 @@ export function DashboardCorporationStructuresPage() {
                             fuel_max_hours: parseNumberInput(event.target.value),
                           }))
                         }
-                        placeholder="max"
+                        placeholder={t('common.max')}
                       />
                     </>
                   ) : null}
@@ -690,21 +724,26 @@ export function DashboardCorporationStructuresPage() {
               </label>
 
               <label className="space-y-1 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.security')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.security')}
+                </span>
                 <div className="flex flex-wrap items-center gap-2">
                   {[
                     ['highsec', t('corporationStructures.securityBands.highsec')],
                     ['lowsec', t('corporationStructures.securityBands.lowsec')],
                     ['nullsec', t('corporationStructures.securityBands.nullsec')],
                   ].map(([value, label]) => (
-                    <button
+                    <Button
                       key={value}
                       type="button"
-                      className={cn(
-                        'rounded-lg border px-3 py-1.5 text-sm',
+                      variant={
                         filters.security_bands.includes(value as 'highsec' | 'lowsec' | 'nullsec')
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background'
+                          ? 'default'
+                          : 'outline'
+                      }
+                      className="px-3 py-1.5"
+                      aria-pressed={filters.security_bands.includes(
+                        value as 'highsec' | 'lowsec' | 'nullsec'
                       )}
                       onClick={() => {
                         const band = value as 'highsec' | 'lowsec' | 'nullsec'
@@ -715,14 +754,17 @@ export function DashboardCorporationStructuresPage() {
                       }}
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                   <Input
                     className="w-24"
                     inputMode="decimal"
                     value={filters.security_min}
                     onChange={(event) =>
-                      setFilters((current) => ({ ...current, security_min: parseNumberInput(event.target.value) }))
+                      setFilters((current) => ({
+                        ...current,
+                        security_min: parseNumberInput(event.target.value),
+                      }))
                     }
                     placeholder="-1.0"
                   />
@@ -732,7 +774,10 @@ export function DashboardCorporationStructuresPage() {
                     inputMode="decimal"
                     value={filters.security_max}
                     onChange={(event) =>
-                      setFilters((current) => ({ ...current, security_max: parseNumberInput(event.target.value) }))
+                      setFilters((current) => ({
+                        ...current,
+                        security_max: parseNumberInput(event.target.value),
+                      }))
                     }
                     placeholder="1.0"
                   />
@@ -740,58 +785,49 @@ export function DashboardCorporationStructuresPage() {
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.types')}</span>
-                <select
-                  multiple
-                  className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.types')}
+                </span>
+                <MultiSelect
+                  className="w-full"
+                  placeholder={t('corporationStructures.filters.types')}
                   value={filters.type_ids.map(String)}
-                  onChange={(event) =>
-                    updateArrayFilter(
-                      'type_ids',
-                      Array.from(event.target.selectedOptions, (option) => Number(option.value))
-                    )
-                  }
-                >
-                  {filterOptions.types.map((item) => (
-                    <option key={item.type_id} value={item.type_id}>
-                      {item.type_name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(value) => updateArrayFilter('type_ids', value.map(Number))}
+                  options={filterOptions.types.map((item) => ({
+                    value: String(item.type_id),
+                    label: item.type_name,
+                  }))}
+                />
               </label>
 
               <label className="space-y-1 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.services')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.services')}
+                </span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    multiple
-                    className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm md:w-[360px]"
+                  <MultiSelect
+                    className="w-full md:w-[360px]"
+                    placeholder={t('corporationStructures.filters.services')}
                     value={filters.service_names}
-                    onChange={(event) => {
-                      const next = Array.from(event.target.selectedOptions, (option) => option.value)
-                      setFilters((current) => ({ ...current, service_names: next }))
-                    }}
-                  >
-                    {filterOptions.services.map((item) => (
-                      <option key={item.name} value={item.name}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(value) =>
+                      setFilters((current) => ({ ...current, service_names: value }))
+                    }
+                    options={filterOptions.services.map((item) => ({
+                      value: item.name,
+                      label: item.name,
+                    }))}
+                  />
                   <div className="flex flex-wrap gap-2">
                     {[
                       ['and', t('corporationStructures.serviceMatch.and')],
                       ['or', t('corporationStructures.serviceMatch.or')],
                     ].map(([value, label]) => (
-                      <button
+                      <Button
                         key={value}
                         type="button"
-                        className={cn(
-                          'rounded-lg border px-3 py-1.5 text-sm',
-                          filters.service_match_mode === value
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border bg-background'
-                        )}
+                        variant={filters.service_match_mode === value ? 'default' : 'outline'}
+                        className="px-3 py-1.5"
+                        aria-pressed={filters.service_match_mode === value}
                         onClick={() =>
                           setFilters((current) => ({
                             ...current,
@@ -800,14 +836,16 @@ export function DashboardCorporationStructuresPage() {
                         }
                       >
                         {label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
               </label>
 
               <label className="space-y-1 md:col-span-2 xl:col-span-3">
-                <span className="text-sm text-muted-foreground">{t('corporationStructures.filters.timer')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('corporationStructures.filters.timer')}
+                </span>
                 <div className="flex flex-wrap items-center gap-2">
                   {[
                     ['all', t('corporationStructures.timerBuckets.all')],
@@ -815,21 +853,21 @@ export function DashboardCorporationStructuresPage() {
                     ['next_2_hours', t('corporationStructures.timerBuckets.next2Hours')],
                     ['custom', t('corporationStructures.timerBuckets.custom')],
                   ].map(([value, label]) => (
-                    <button
+                    <Button
                       key={value}
                       type="button"
-                      className={cn(
-                        'rounded-lg border px-3 py-1.5 text-sm',
-                        filters.timer_bucket === value
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background'
-                      )}
+                      variant={filters.timer_bucket === value ? 'default' : 'outline'}
+                      className="px-3 py-1.5"
+                      aria-pressed={filters.timer_bucket === value}
                       onClick={() =>
-                        setFilters((current) => ({ ...current, timer_bucket: value as typeof filters.timer_bucket }))
+                        setFilters((current) => ({
+                          ...current,
+                          timer_bucket: value as typeof filters.timer_bucket,
+                        }))
                       }
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                   {filters.timer_bucket === 'custom' ? (
                     <>
@@ -856,7 +894,7 @@ export function DashboardCorporationStructuresPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <Button type="button" onClick={applySearch} disabled={loading}>
+              <Button type="button" onClick={applySearch} isDisabled={loading}>
                 {t('corporationStructures.actions.search')}
               </Button>
               <Button type="button" variant="outline" onClick={resetSearch}>
@@ -865,7 +903,9 @@ export function DashboardCorporationStructuresPage() {
               <Button
                 type="button"
                 variant="outline"
-                disabled={filters.corporation_id <= 0 || runningTaskCorpId === filters.corporation_id}
+                isDisabled={
+                  filters.corporation_id <= 0 || runningTaskCorpId === filters.corporation_id
+                }
                 onClick={() => void handleRunTask(filters.corporation_id)}
               >
                 {t('corporationStructures.actions.refreshSelected')}
@@ -881,77 +921,129 @@ export function DashboardCorporationStructuresPage() {
               {t('corporationStructures.tabs.list')} ({total})
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">{t('corporationStructures.table.corporation')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.salary.assignedFuelOfficer')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.state')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.system')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.name')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.type')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.services')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.fuelRemaining')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.fuelPerHour')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.fuelToMonthEnd')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.reinforceHour')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.timerEnd')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.table.updatedAt')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.corporation')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.salary.assignedFuelOfficer')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.state')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.system')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.name')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.type')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.services')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.fuelRemaining')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.fuelPerHour')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.fuelToMonthEnd')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.reinforceHour')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.timerEnd')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.table.updatedAt')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {tableData.map((row) => (
-                    <tr key={row.structure_id} className="border-b">
-                      <td className="px-3 py-2">{row.corporation_name}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={row.structure_id} className="border-b">
+                      <TableCell className="px-3 py-2">{row.corporation_name}</TableCell>
+                      <TableCell className="px-3 py-2">
                         {row.assigned_user_id > 0
                           ? row.assigned_character_name || '--'
                           : t('corporationStructures.salary.unassignedLabel')}
-                      </td>
-                      <td className="px-3 py-2">{stateLabel(t, row.state)}</td>
-                      <td className="px-3 py-2">
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{stateLabel(t, row.state)}</TableCell>
+                      <TableCell className="px-3 py-2">
                         <div>{row.system_name || '--'}</div>
                         <div className="text-xs text-muted-foreground">
                           {row.region_name || '--'} / {formatSecurity(row.security)}
                         </div>
-                      </td>
-                      <td className="px-3 py-2">{row.name}</td>
-                      <td className="px-3 py-2">{row.type_name}</td>
-                      <td className="px-3 py-2">{formatServices(t, row.services)}</td>
-                      <td className="px-3 py-2">{row.fuel_remaining || '--'}</td>
-                      <td className="px-3 py-2">{formatFuelEstimate(t, row, 'fuel_per_hour')}</td>
-                      <td className="px-3 py-2">{formatFuelEstimate(t, row, 'fuel_to_month_end')}</td>
-                      <td className="px-3 py-2">{row.reinforce_hour > 0 ? String(row.reinforce_hour).padStart(2, '0') : '--'}</td>
-                      <td className="px-3 py-2">{formatTimeText(row.state_timer_end)}</td>
-                      <td className="px-3 py-2">{formatUpdatedAt(row.updated_at)}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{row.name}</TableCell>
+                      <TableCell className="px-3 py-2">{row.type_name}</TableCell>
+                      <TableCell className="px-3 py-2">{formatServices(t, row.services)}</TableCell>
+                      <TableCell className="px-3 py-2">{row.fuel_remaining || '--'}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {formatFuelEstimate(t, row, 'fuel_per_hour')}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
+                        {formatFuelEstimate(t, row, 'fuel_to_month_end')}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
+                        {row.reinforce_hour > 0
+                          ? String(row.reinforce_hour).padStart(2, '0')
+                          : '--'}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">
+                        {formatTimeText(row.state_timer_end)}
+                      </TableCell>
+                      <TableCell className="px-3 py-2">{formatUpdatedAt(row.updated_at)}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <span>{page}</span>
-            <Button type="button" variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              isDisabled={page <= 1}
+            >
               -
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setPage((current) => current + 1)} disabled={tableData.length < pageSize || page * pageSize >= total}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((current) => current + 1)}
+              isDisabled={tableData.length < pageSize || page * pageSize >= total}
+            >
               +
             </Button>
             <label className="flex items-center gap-2">
               <span>{t('common.refresh')}</span>
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-                value={pageSize}
-                onChange={(event) => setPageSize(Number(event.target.value))}
+              <Select
+                selectedKey={String(pageSize ?? '')}
+                onSelectionChange={(key) => ((value) => setPageSize(Number(value)))(String(key))}
               >
-                {[10, 20, 50].map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 rounded-md border border-input bg-background px-2 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 20, 50].map((size) => (
+                    <SelectItem key={size} id={String(size ?? '')}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
         </>
@@ -960,17 +1052,27 @@ export function DashboardCorporationStructuresPage() {
       {activeTab === 'settings' ? (
         <div className="space-y-4 rounded-lg border bg-card p-5">
           <div>
-            <h2 className="text-lg font-semibold">{t('corporationStructures.settings.noticeThresholds')}</h2>
-            <p className="text-sm text-muted-foreground">{t('corporationStructures.settings.noticeThresholdHint')}</p>
+            <h2 className="text-lg font-semibold">
+              {t('corporationStructures.settings.noticeThresholds')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t('corporationStructures.settings.noticeThresholdHint')}
+            </p>
           </div>
 
           {settingsError ? <p className="text-sm text-destructive">{settingsError}</p> : null}
-          {alertScanMessage ? <p className="text-sm text-muted-foreground">{alertScanMessage}</p> : null}
-          {settingsLoading ? <p className="text-sm text-muted-foreground">{t('common.refresh')}</p> : null}
+          {alertScanMessage ? (
+            <p className="text-sm text-muted-foreground">{alertScanMessage}</p>
+          ) : null}
+          {settingsLoading ? (
+            <p className="text-sm text-muted-foreground">{t('common.refresh')}</p>
+          ) : null}
 
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.fuelNoticeThreshold')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('corporationStructures.settings.fuelNoticeThreshold')}
+              </span>
               <Input
                 className="w-24"
                 inputMode="numeric"
@@ -982,12 +1084,17 @@ export function DashboardCorporationStructuresPage() {
                   }))
                 }
               />
-              <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.daysUnit')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('corporationStructures.settings.daysUnit')}
+              </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-muted-foreground" htmlFor="corporation-structure-alert-enabled">
-                <input
+              <label
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+                htmlFor="corporation-structure-alert-enabled"
+              >
+                <Input
                   id="corporation-structure-alert-enabled"
                   type="checkbox"
                   checked={alertEnabled}
@@ -998,10 +1105,13 @@ export function DashboardCorporationStructuresPage() {
             </div>
 
             <div className="flex flex-wrap items-start gap-3">
-              <label className="text-sm text-muted-foreground" htmlFor="corporation-structure-alert-groups">
+              <label
+                className="text-sm text-muted-foreground"
+                htmlFor="corporation-structure-alert-groups"
+              >
                 {t('corporationStructures.settings.alertGroupIDs')}
               </label>
-              <textarea
+              <Textarea
                 id="corporation-structure-alert-groups"
                 className="min-h-20 w-80 rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                 value={alertGroupIDsText}
@@ -1009,11 +1119,15 @@ export function DashboardCorporationStructuresPage() {
                 placeholder={t('corporationStructures.settings.alertGroupIDsPlaceholder')}
                 onChange={(event) => setAlertGroupIDsText(event.target.value)}
               />
-              <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.alertGroupIDsHint')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('corporationStructures.settings.alertGroupIDsHint')}
+              </span>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.timerNoticeThreshold')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('corporationStructures.settings.timerNoticeThreshold')}
+              </span>
               <Input
                 className="w-24"
                 inputMode="numeric"
@@ -1025,15 +1139,26 @@ export function DashboardCorporationStructuresPage() {
                   }))
                 }
               />
-              <span className="text-sm text-muted-foreground">{t('corporationStructures.settings.daysUnit')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('corporationStructures.settings.daysUnit')}
+              </span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" variant="outline" onClick={() => void loadSettings()} disabled={settingsLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void loadSettings()}
+              isDisabled={settingsLoading}
+            >
               {t('corporationStructures.actions.refreshSettings')}
             </Button>
-            <Button type="button" onClick={() => void saveAuthorizations()} disabled={savingAuthorizations}>
+            <Button
+              type="button"
+              onClick={() => void saveAuthorizations()}
+              isDisabled={savingAuthorizations}
+            >
               {t('corporationStructures.actions.save')}
             </Button>
             {canRunAlertScan ? (
@@ -1041,7 +1166,7 @@ export function DashboardCorporationStructuresPage() {
                 type="button"
                 variant="outline"
                 onClick={() => void handleRunAlertScan()}
-                disabled={!settings.alert_enabled || alertScanRunning}
+                isDisabled={!settings.alert_enabled || alertScanRunning}
               >
                 {t('corporationStructures.actions.runAlertScan')}
               </Button>
@@ -1049,156 +1174,207 @@ export function DashboardCorporationStructuresPage() {
           </div>
 
           <div className="overflow-hidden rounded-lg border">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left">
-                  <th className="px-3 py-2">{t('corporationStructures.table.corporation')}</th>
-                  <th className="px-3 py-2">{t('corporationStructures.table.directorCharacter')}</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-muted/40 text-left">
+                  <TableHead className="px-3 py-2">
+                    {t('corporationStructures.table.corporation')}
+                  </TableHead>
+                  <TableHead className="px-3 py-2">
+                    {t('corporationStructures.table.directorCharacter')}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {settings.corporations.map((corp) => (
-                  <tr key={corp.corporation_id} className="border-b">
-                    <td className="px-3 py-2">
+                  <TableRow key={corp.corporation_id} className="border-b">
+                    <TableCell className="px-3 py-2">
                       <div className="font-medium">{corp.corporation_name}</div>
                       <div className="text-xs text-muted-foreground">{corp.corporation_id}</div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <select
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                        value={authorizationByCorp[corp.corporation_id] || 0}
-                        onChange={(event) =>
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      <Select
+                        selectedKey={String(authorizationByCorp[corp.corporation_id] || 0)}
+                        onSelectionChange={(key) => ((value) =>
                           setAuthorizationByCorp((current) => ({
                             ...current,
-                            [corp.corporation_id]: Number(event.target.value),
-                          }))
-                        }
+                            [corp.corporation_id]: Number(value),
+                          })))(String(key))}
                       >
-                        <option value={0}>{t('corporationStructures.options.disabled')}</option>
-                        {corp.director_characters.map((option) => (
-                          <option key={option.character_id} value={option.character_id}>
-                            {option.character_name} ({option.character_id})
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
+                        <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem id={String(0)}>
+                            {t('corporationStructures.options.disabled')}
+                          </SelectItem>
+                          {corp.director_characters.map((option) => (
+                            <SelectItem
+                              key={option.character_id}
+                              id={String(option.character_id ?? '')}
+                            >
+                              {option.character_name} ({option.character_id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="space-y-3 border-t pt-5">
             <div>
-              <h2 className="text-lg font-semibold">{t('corporationStructures.serviceCatalog.title')}</h2>
-              <p className="text-sm text-muted-foreground">{t('corporationStructures.serviceCatalog.hint')}</p>
+              <h2 className="text-lg font-semibold">
+                {t('corporationStructures.serviceCatalog.title')}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t('corporationStructures.serviceCatalog.hint')}
+              </p>
             </div>
 
             {serviceCatalog.unmapped_activities.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('corporationStructures.serviceCatalog.empty')}</p>
+              <p className="text-sm text-muted-foreground">
+                {t('corporationStructures.serviceCatalog.empty')}
+              </p>
             ) : (
               <div className="overflow-x-auto rounded-lg border">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left">
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.activity')}</th>
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.installedModules')}</th>
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.module')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b bg-muted/40 text-left">
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.activity')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.installedModules')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.module')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {serviceCatalog.unmapped_activities.map((item) => (
-                      <tr key={`${item.structure_id}-${item.activity_name}`} className="border-b">
-                        <td className="px-3 py-2">
+                      <TableRow
+                        key={`${item.structure_id}-${item.activity_name}`}
+                        className="border-b"
+                      >
+                        <TableCell className="px-3 py-2">
                           <div>{item.activity_name}</div>
-                          <div className="text-xs text-muted-foreground">{item.structure_name} ({item.structure_id})</div>
-                        </td>
-                        <td className="px-3 py-2">{item.installed_module_type_ids.join(', ') || '--'}</td>
-                        <td className="px-3 py-2">
-                          <select
-                            multiple
-                            className="min-h-20 min-w-64 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                          <div className="text-xs text-muted-foreground">
+                            {item.structure_name} ({item.structure_id})
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          {item.installed_module_type_ids.join(', ') || '--'}
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
+                          <MultiSelect
+                            className="min-w-64"
+                            placeholder={item.activity_name}
                             value={(activityModules[item.activity_name] || []).map(String)}
-                            onChange={(event) =>
+                            onValueChange={(value) =>
                               setActivityModules((current) => ({
                                 ...current,
-                                [item.activity_name]: Array.from(event.target.selectedOptions, (option) => Number(option.value)),
+                                [item.activity_name]: value.map(Number),
                               }))
                             }
-                          >
-                            {serviceCatalog.modules.map((module) => (
-                              <option key={module.type_id} value={module.type_id}>
-                                {module.type_name} ({module.type_id})
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
+                            options={serviceCatalog.modules.map((module) => ({
+                              value: String(module.type_id),
+                              label: `${module.type_name} (${module.type_id})`,
+                            }))}
+                          />
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
             {serviceCatalog.unmapped_activities.length > 0 ? (
-              <Button type="button" onClick={() => void saveServiceActivityMappings()} disabled={savingServiceCatalog}>
+              <Button
+                type="button"
+                onClick={() => void saveServiceActivityMappings()}
+                isDisabled={savingServiceCatalog}
+              >
                 {t('corporationStructures.serviceCatalog.save')}
               </Button>
             ) : null}
 
             <div className="overflow-x-auto rounded-lg border">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40 text-left">
-                    <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.activity')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.typeId')}</th>
-                    <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.management')}</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.serviceCatalog.activity')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.serviceCatalog.typeId')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.serviceCatalog.management')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {serviceCatalog.activities.map((item) => (
-                    <tr key={item.activity_name} className="border-b">
-                      <td className="px-3 py-2">{item.activity_name}</td>
-                      <td className="px-3 py-2">{item.type_ids.join(', ')}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={item.activity_name} className="border-b">
+                      <TableCell className="px-3 py-2">{item.activity_name}</TableCell>
+                      <TableCell className="px-3 py-2">{item.type_ids.join(', ')}</TableCell>
+                      <TableCell className="px-3 py-2">
                         {item.system_managed
                           ? t('corporationStructures.serviceCatalog.systemManaged')
                           : t('corporationStructures.serviceCatalog.customManaged')}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-medium">{t('corporationStructures.serviceCatalog.modules')}</h3>
+              <h3 className="text-sm font-medium">
+                {t('corporationStructures.serviceCatalog.modules')}
+              </h3>
               <div className="overflow-x-auto rounded-lg border">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left">
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.module')}</th>
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.typeId')}</th>
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.fuelRate')}</th>
-                      <th className="px-3 py-2">{t('corporationStructures.serviceCatalog.category')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b bg-muted/40 text-left">
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.module')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.typeId')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.fuelRate')}
+                      </TableHead>
+                      <TableHead className="px-3 py-2">
+                        {t('corporationStructures.serviceCatalog.category')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {serviceCatalog.modules.map((module) => (
-                      <tr key={module.type_id} className="border-b">
-                        <td className="px-3 py-2">{module.type_name}</td>
-                        <td className="px-3 py-2">{module.type_id}</td>
-                        <td className="px-3 py-2">{module.fuel_per_hour}</td>
-                        <td className="px-3 py-2">{module.fuel_category}</td>
-                      </tr>
+                      <TableRow key={module.type_id} className="border-b">
+                        <TableCell className="px-3 py-2">{module.type_name}</TableCell>
+                        <TableCell className="px-3 py-2">{module.type_id}</TableCell>
+                        <TableCell className="px-3 py-2">{module.fuel_per_hour}</TableCell>
+                        <TableCell className="px-3 py-2">{module.fuel_category}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           </div>
 
           {!settingsLoading && settings.corporations.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('corporationStructures.empty.settings')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t('corporationStructures.empty.settings')}
+            </p>
           ) : null}
         </div>
       ) : null}

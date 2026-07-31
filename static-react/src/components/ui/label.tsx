@@ -1,10 +1,32 @@
-import * as React from 'react'
-import { Label as LabelPrimitive } from 'radix-ui'
+"use client"
 
-import { cn } from '@/lib/utils'
+import {
+  LabelContext,
+  Label as LabelPrimitive,
+  type LabelProps,
+} from "react-aria-components"
 
-function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
-  return <LabelPrimitive.Root data-slot="label" className={cn('flex items-center gap-2 text-sm font-medium leading-none select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50', className)} {...props} />
+import { cn } from "@/lib/utils"
+
+function Label({ className, htmlFor, slot, ...props }: LabelProps) {
+  const label = (
+    <LabelPrimitive
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 peer-data-disabled:opacity-50",
+        className
+      )}
+      {...props}
+      htmlFor={htmlFor}
+      slot={slot}
+    />
+  )
+
+  if (htmlFor && slot === undefined) {
+    return <LabelContext.Provider value={null}>{label}</LabelContext.Provider>
+  }
+
+  return label
 }
 
 export { Label }

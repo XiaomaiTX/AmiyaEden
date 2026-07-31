@@ -93,8 +93,8 @@ describe('ticket my tickets page', () => {
     })
     expect(screen.getByText('Resolved issue')).toBeInTheDocument()
 
-    const statusSelect = screen.getAllByRole('combobox')[0]
-    fireEvent.change(statusSelect, { target: { value: 'pending' } })
+    fireEvent.click(screen.getAllByRole('button', { name: /状态/ })[0])
+    fireEvent.click(screen.getByRole('option', { name: '待处理' }))
     fireEvent.click(screen.getByRole('button', { name: '搜索' }))
 
     await waitFor(() => {

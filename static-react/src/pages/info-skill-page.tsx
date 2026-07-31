@@ -1,3 +1,12 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoSkills, runMyCharacterESIRefresh } from '@/api/eve-info'
@@ -90,7 +99,10 @@ export function InfoSkillPage() {
           skill.group_name.toLowerCase().includes(normalized)
         )
       })
-      .sort((a, b) => a.group_name.localeCompare(b.group_name) || a.skill_name.localeCompare(b.skill_name))
+      .sort(
+        (a, b) =>
+          a.group_name.localeCompare(b.group_name) || a.skill_name.localeCompare(b.skill_name)
+      )
   }, [keyword, selectedGroup, skillData?.skills])
 
   const queue = useMemo(
@@ -102,7 +114,10 @@ export function InfoSkillPage() {
     if (!selectedCharacterId) return
     setEsiRefreshing(true)
     try {
-      await runMyCharacterESIRefresh({ task_name: 'character_skill', character_id: selectedCharacterId })
+      await runMyCharacterESIRefresh({
+        task_name: 'character_skill',
+        character_id: selectedCharacterId,
+      })
       setError(null)
     } catch {
       setError(t('infoSkill.esiRefreshFailed'))
@@ -119,43 +134,57 @@ export function InfoSkillPage() {
         <label className="text-sm text-muted-foreground" htmlFor="skill-character">
           {t('infoSkill.selectCharacter')}
         </label>
-        <select
-          id="skill-character"
-          className="rounded border px-2 py-1 text-sm"
-          value={selectedCharacterId ?? ''}
-          onChange={(event) => setSelectedCharacterId(Number(event.target.value))}
+        <Select
+          selectedKey={String(selectedCharacterId ?? '')}
+          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
         >
-          {characters.map((character) => (
-            <option key={character.character_id} value={character.character_id}>
-              {character.character_name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="skill-character" className="rounded border px-2 py-1 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {characters.map((character) => (
+              <SelectItem key={character.character_id} id={String(character.character_id ?? '')}>
+                {character.character_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <button className="rounded border px-2 py-1 text-sm" onClick={() => setReloadVersion((v) => v + 1)}>
+        <Button
+          className="rounded border px-2 py-1 text-sm"
+          onClick={() => setReloadVersion((v) => v + 1)}
+        >
           {t('common.refresh')}
-        </button>
-        <button className="rounded border px-2 py-1 text-sm" onClick={() => void refreshESI()} disabled={esiRefreshing}>
+        </Button>
+        <Button
+          className="rounded border px-2 py-1 text-sm"
+          onClick={() => void refreshESI()}
+          isDisabled={esiRefreshing}
+        >
           {esiRefreshing ? t('infoSkill.esiRefreshing') : t('infoSkill.esiRefresh')}
-        </button>
+        </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-3 rounded-lg border bg-card p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              className="rounded border px-2 py-1 text-sm"
-              value={selectedGroup}
-              onChange={(event) => setSelectedGroup(event.target.value)}
+            <Select
+              selectedKey={String(selectedGroup ?? '')}
+              onSelectionChange={(key) => ((value) => setSelectedGroup(value))(String(key))}
             >
-              <option value="">{t('infoSkill.allGroups')}</option>
-              {groups.map((group) => (
-                <option key={group.name} value={group.name}>
-                  {group.name} ({group.count})
-                </option>
-              ))}
-            </select>
-            <input
+              <SelectTrigger className="rounded border px-2 py-1 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('infoSkill.allGroups')}</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.name} id={String(group.name ?? '')}>
+                    {group.name} ({group.count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
               className="rounded border px-2 py-1 text-sm"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
@@ -164,15 +193,20 @@ export function InfoSkillPage() {
           </div>
           {loading ? <p className="text-sm">{t('infoSkill.loading')}</p> : null}
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {!loading && filteredSkills.length === 0 ? <p className="text-sm">{t('infoSkill.empty')}</p> : null}
+          {!loading && filteredSkills.length === 0 ? (
+            <p className="text-sm">{t('infoSkill.empty')}</p>
+          ) : null}
           <ul className="space-y-2">
             {filteredSkills.map((skill) => (
-              <li key={skill.skill_id} className="flex items-center justify-between rounded border px-3 py-2 text-sm">
+              <li
+                key={skill.skill_id}
+                className="flex items-center justify-between rounded border px-3 py-2 text-sm"
+              >
                 <span>
                   {skill.skill_name} ({skill.group_name})
                 </span>
                 <span className="text-muted-foreground">
-                  L{skill.active_level}/{skill.trained_level}
+                  {t('info.skillLevel', { level: `${skill.active_level}/${skill.trained_level}` })}
                 </span>
               </li>
             ))}
@@ -188,7 +222,7 @@ export function InfoSkillPage() {
           <ul className="space-y-2">
             {queue.map((item) => (
               <li key={item.queue_position} className="rounded border px-3 py-2 text-sm">
-                {item.skill_name} L{item.finished_level}
+                {item.skill_name} {t('info.skillLevel', { level: item.finished_level })}
               </li>
             ))}
           </ul>

@@ -1,3 +1,11 @@
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useMemo, useState } from 'react'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { notifySuccess } from '@/feedback'
@@ -136,7 +144,9 @@ export function SystemUserCenterPage() {
           <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="text-xl font-semibold">{t('userCenter.profile.title')}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{t('userCenter.profile.subtitle')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('userCenter.profile.subtitle')}
+              </p>
             </div>
             <Button type="button" onClick={toggleProfileEdit}>
               {profileEditing ? t('userCenter.profile.save') : t('userCenter.profile.edit')}
@@ -145,7 +155,9 @@ export function SystemUserCenterPage() {
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.profile.nickname')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.profile.nickname')}
+              </span>
               <Input
                 value={profileForm.nickname}
                 disabled={!profileEditing}
@@ -155,7 +167,9 @@ export function SystemUserCenterPage() {
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.profile.realName')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.profile.realName')}
+              </span>
               <Input
                 value={profileForm.realName}
                 disabled={!profileEditing}
@@ -166,17 +180,21 @@ export function SystemUserCenterPage() {
             </label>
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">{t('userCenter.profile.sex')}</span>
-              <select
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                value={profileForm.sex}
-                disabled={!profileEditing}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, sex: event.target.value }))
-                }
+              <Select
+                selectedKey={String(profileForm.sex ?? '')}
+                onSelectionChange={(key) => ((value) => setProfileForm((current) => ({ ...current, sex: value })))(String(key))}
               >
-                <option value="1">{t('userCenter.profile.sexMale')}</option>
-                <option value="2">{t('userCenter.profile.sexFemale')}</option>
-              </select>
+                <SelectTrigger
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                  isDisabled={!profileEditing}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="1">{t('userCenter.profile.sexMale')}</SelectItem>
+                  <SelectItem id="2">{t('userCenter.profile.sexFemale')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">{t('userCenter.profile.email')}</span>
@@ -189,7 +207,9 @@ export function SystemUserCenterPage() {
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.profile.mobile')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.profile.mobile')}
+              </span>
               <Input
                 value={profileForm.mobile}
                 disabled={!profileEditing}
@@ -199,7 +219,9 @@ export function SystemUserCenterPage() {
               />
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.profile.address')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.profile.address')}
+              </span>
               <Input
                 value={profileForm.address}
                 disabled={!profileEditing}
@@ -209,8 +231,10 @@ export function SystemUserCenterPage() {
               />
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.profile.description')}</span>
-              <textarea
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.profile.description')}
+              </span>
+              <Textarea
                 className="min-h-28 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-60"
                 value={profileForm.description}
                 disabled={!profileEditing}
@@ -226,7 +250,9 @@ export function SystemUserCenterPage() {
           <div className="flex flex-col gap-4 border-b pb-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="text-xl font-semibold">{t('userCenter.password.title')}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{t('userCenter.password.subtitle')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('userCenter.password.subtitle')}
+              </p>
             </div>
             <Button type="button" variant="outline" onClick={togglePasswordEdit}>
               {passwordEditing ? t('userCenter.password.save') : t('userCenter.password.edit')}
@@ -235,13 +261,18 @@ export function SystemUserCenterPage() {
 
           <div className="mt-5 grid gap-4">
             <label className="space-y-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.password.current')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.password.current')}
+              </span>
               <Input
                 type="password"
                 value={passwordForm.currentPassword}
                 disabled={!passwordEditing}
                 onChange={(event) =>
-                  setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))
+                  setPasswordForm((current) => ({
+                    ...current,
+                    currentPassword: event.target.value,
+                  }))
                 }
               />
             </label>
@@ -257,13 +288,18 @@ export function SystemUserCenterPage() {
               />
             </label>
             <label className="space-y-2">
-              <span className="text-sm text-muted-foreground">{t('userCenter.password.confirm')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('userCenter.password.confirm')}
+              </span>
               <Input
                 type="password"
                 value={passwordForm.confirmPassword}
                 disabled={!passwordEditing}
                 onChange={(event) =>
-                  setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                  setPasswordForm((current) => ({
+                    ...current,
+                    confirmPassword: event.target.value,
+                  }))
                 }
               />
             </label>

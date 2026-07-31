@@ -65,14 +65,14 @@ export function DashboardFleetList({ fleets, className }: DashboardFleetListProp
                       <span>{formatTime(item.start_at)}</span>
                       {item.character_name ? <span>{item.character_name}</span> : null}
                       {item.ship_type_name ? <span>{item.ship_type_name}</span> : null}
-                      {importanceKey
-                        ? <span>{t(`dashboardConsole.fleetList.importance.${importanceKey}`)}</span>
-                        : null}
+                      {importanceKey ? (
+                        <span>{t(`dashboardConsole.fleetList.importance.${importanceKey}`)}</span>
+                      ) : null}
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
                     <span className="font-medium text-primary">{item.pap_count}</span>
-                    <span className="ml-0.5 text-xs text-muted-foreground">PAP</span>
+                    <span className="ml-0.5 text-xs text-muted-foreground">{t('common.pap')}</span>
                   </div>
                 </li>
               )

@@ -14,7 +14,13 @@ import { fetchFleetConfigList } from '@/api/fleet-config'
 import { Button } from '@/components/ui/button'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { Input } from '@/components/ui/input'
-import { NativeSelect } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
@@ -94,7 +100,9 @@ export function OperationFleetsPage() {
   const [papFleetId, setPapFleetId] = useState<string | null>(null)
   const [form, setForm] = useState<FleetFormState>(defaultFormState)
 
-  const canManageFleet = roles.some((role) => ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role))
+  const canManageFleet = roles.some((role) =>
+    ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role)
+  )
   const canDeleteFleet = roles.some((role) => ['super_admin', 'admin'].includes(role))
 
   const loadData = useCallback(async () => {
@@ -284,32 +292,114 @@ export function OperationFleetsPage() {
         header: t('fleet.fields.title'),
         cell: ({ row }) => (
           <>
-            <Button type="button" variant="link" className="h-auto p-0 font-medium" onClick={() => navigate(`/operation/fleet-detail/${row.original.id}`)}>
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto p-0 font-medium"
+              onClick={() => navigate(`/operation/fleet-detail/${row.original.id}`)}
+            >
               {row.original.title}
             </Button>
-            <div className="line-clamp-2 text-xs text-muted-foreground">{row.original.description || '-'}</div>
+            <div className="line-clamp-2 text-xs text-muted-foreground">
+              {row.original.description || '-'}
+            </div>
           </>
         ),
       },
-      { accessorKey: 'importance', header: t('fleet.fields.importance'), cell: ({ row }) => <ShopBadge className={importanceBadgeClass(row.original.importance)}>{importanceLabel(row.original.importance)}</ShopBadge> },
-      { id: 'fc', header: t('fleet.fields.fc'), cell: ({ row }) => <><div>{row.original.fc_display_name || row.original.fc_character_name}</div><div className="text-xs text-muted-foreground">#{row.original.fc_character_id}</div></> },
-      { id: 'timeRange', header: t('fleet.fields.timeRange'), cell: ({ row }) => <span className="text-xs text-muted-foreground">{formatDateTime(row.original.start_at)} <span className="mx-1">~</span> {formatDateTime(row.original.end_at)}</span> },
+      {
+        accessorKey: 'importance',
+        header: t('fleet.fields.importance'),
+        cell: ({ row }) => (
+          <ShopBadge className={importanceBadgeClass(row.original.importance)}>
+            {importanceLabel(row.original.importance)}
+          </ShopBadge>
+        ),
+      },
+      {
+        id: 'fc',
+        header: t('fleet.fields.fc'),
+        cell: ({ row }) => (
+          <>
+            <div>{row.original.fc_display_name || row.original.fc_character_name}</div>
+            <div className="text-xs text-muted-foreground">#{row.original.fc_character_id}</div>
+          </>
+        ),
+      },
+      {
+        id: 'timeRange',
+        header: t('fleet.fields.timeRange'),
+        cell: ({ row }) => (
+          <span className="text-xs text-muted-foreground">
+            {formatDateTime(row.original.start_at)} <span className="mx-1">~</span>{' '}
+            {formatDateTime(row.original.end_at)}
+          </span>
+        ),
+      },
       { accessorKey: 'pap_count', header: t('fleet.fields.papCount') },
-      { accessorKey: 'updated_at', header: t('common.updatedAt'), cell: ({ row }) => formatDateTime(row.original.updated_at) },
+      {
+        accessorKey: 'updated_at',
+        header: t('common.updatedAt'),
+        cell: ({ row }) => formatDateTime(row.original.updated_at),
+      },
       {
         id: 'actions',
         header: t('common.operation'),
         cell: ({ row }) => (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => navigate(`/operation/fleet-detail/${row.original.id}`)}>{t('fleet.manage.detail')}</Button>
-            {canManageFleet ? <Button type="button" size="sm" variant="outline" onClick={() => openEditDialog(row.original)}>{t('common.edit')}</Button> : null}
-            {canManageFleet ? <Button type="button" size="sm" variant="outline" onClick={() => void handleIssuePap(row.original)} disabled={papFleetId === row.original.id}>{t('fleet.pap.issue')}</Button> : null}
-            {canDeleteFleet ? <Button type="button" size="sm" variant="outline" onClick={() => void handleDelete(row.original)}>{t('common.delete')}</Button> : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => navigate(`/operation/fleet-detail/${row.original.id}`)}
+            >
+              {t('fleet.manage.detail')}
+            </Button>
+            {canManageFleet ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => openEditDialog(row.original)}
+              >
+                {t('common.edit')}
+              </Button>
+            ) : null}
+            {canManageFleet ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void handleIssuePap(row.original)}
+                isDisabled={papFleetId === row.original.id}
+              >
+                {t('fleet.pap.issue')}
+              </Button>
+            ) : null}
+            {canDeleteFleet ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void handleDelete(row.original)}
+              >
+                {t('common.delete')}
+              </Button>
+            ) : null}
           </div>
         ),
       },
     ],
-    [canDeleteFleet, canManageFleet, handleDelete, handleIssuePap, importanceLabel, navigate, openEditDialog, papFleetId, t]
+    [
+      canDeleteFleet,
+      canManageFleet,
+      handleDelete,
+      handleIssuePap,
+      importanceLabel,
+      navigate,
+      openEditDialog,
+      papFleetId,
+      t,
+    ]
   )
 
   return (
@@ -323,23 +413,32 @@ export function OperationFleetsPage() {
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1">
               <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
-              <NativeSelect
-                value={importance}
-                onChange={(event) => {
-                  setImportance(event.target.value)
+              <Select
+                selectedKey={String(importance ?? '')}
+                onSelectionChange={(key) => ((value) => {
+                  setImportance(value)
                   setPage(1)
-                }}
+                })(String(key))}
               >
-                <option value="">{t('fleet.manage.allImportance')}</option>
-                <option value="strat_op">{importanceLabel('strat_op')}</option>
-                <option value="cta">{importanceLabel('cta')}</option>
-                <option value="other">{importanceLabel('other')}</option>
-              </NativeSelect>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="">{t('fleet.manage.allImportance')}</SelectItem>
+                  <SelectItem id="strat_op">{importanceLabel('strat_op')}</SelectItem>
+                  <SelectItem id="cta">{importanceLabel('cta')}</SelectItem>
+                  <SelectItem id="other">{importanceLabel('other')}</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
-            <Button type="button" variant="outline" onClick={() => setRefreshSeed((current) => current + 1)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRefreshSeed((current) => current + 1)}
+            >
               {t('common.refresh')}
             </Button>
-            <Button type="button" onClick={openCreateDialog} disabled={!canManageFleet}>
+            <Button type="button" onClick={openCreateDialog} isDisabled={!canManageFleet}>
               {t('fleet.manage.create')}
             </Button>
           </div>
@@ -347,9 +446,33 @@ export function OperationFleetsPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('fleet.manage.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('fleet.manage.loading')}</p>
+      ) : null}
 
-      <DataTable columns={columns} data={fleets} getRowId={(fleet) => String(fleet.id)} loading={loading} error={error} loadingText={t('fleet.manage.loading')} emptyText={t('fleet.manage.empty')} pagination={{ page, pageSize, total, onPageChange: setPage, onPageSizeChange: (nextPageSize) => { setPageSize(nextPageSize); setPage(1) }, pageSizeOptions: [10, 20, 50], previousLabel: t('welfareMy.pagination.prev'), nextLabel: t('welfareMy.pagination.next'), pageSizeLabel: t('welfareMy.pageSize') }} />
+      <DataTable
+        columns={columns}
+        data={fleets}
+        getRowId={(fleet) => String(fleet.id)}
+        loading={loading}
+        error={error}
+        loadingText={t('fleet.manage.loading')}
+        emptyText={t('fleet.manage.empty')}
+        pagination={{
+          page,
+          pageSize,
+          total,
+          onPageChange: setPage,
+          onPageSizeChange: (nextPageSize) => {
+            setPageSize(nextPageSize)
+            setPage(1)
+          },
+          pageSizeOptions: [10, 20, 50],
+          previousLabel: t('welfareMy.pagination.prev'),
+          nextLabel: t('welfareMy.pagination.next'),
+          pageSizeLabel: t('welfareMy.pageSize'),
+        }}
+      />
 
       <ShopDialog
         open={dialogOpen}
@@ -371,11 +494,11 @@ export function OperationFleetsPage() {
                 setEditingFleet(null)
                 setForm(defaultFormState)
               }}
-              disabled={saving}
+              isDisabled={saving}
             >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void submit()} disabled={saving}>
+            <Button type="button" onClick={() => void submit()} isDisabled={saving}>
               {saving ? t('fleet.manage.saving') : t('common.confirm')}
             </Button>
           </>
@@ -384,31 +507,42 @@ export function OperationFleetsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.title')}</span>
-            <Input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} />
+            <Input
+              value={form.title}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, title: event.target.value }))
+              }
+            />
           </label>
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.description')}</span>
             <Textarea
               className="min-h-24"
               value={form.description}
-              onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, description: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.importance')}</span>
-            <NativeSelect className="w-full"
-              value={form.importance}
-              onChange={(event) =>
+            <Select
+              selectedKey={String(form.importance ?? '')}
+              onSelectionChange={(key) => ((value) =>
                 setForm((current) => ({
                   ...current,
-                  importance: event.target.value as FleetImportance,
-                }))
-              }
+                  importance: value as FleetImportance,
+                })))(String(key))}
             >
-              <option value="strat_op">{importanceLabel('strat_op')}</option>
-              <option value="cta">{importanceLabel('cta')}</option>
-              <option value="other">{importanceLabel('other')}</option>
-            </NativeSelect>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="strat_op">{importanceLabel('strat_op')}</SelectItem>
+                <SelectItem id="cta">{importanceLabel('cta')}</SelectItem>
+                <SelectItem id="other">{importanceLabel('other')}</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.papCount')}</span>
@@ -416,69 +550,88 @@ export function OperationFleetsPage() {
               type="number"
               min={0}
               value={String(form.pap_count)}
-              onChange={(event) => setForm((current) => ({ ...current, pap_count: Number(event.target.value) }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, pap_count: Number(event.target.value) }))
+              }
             />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fc')}</span>
-            <NativeSelect className="w-full"
-              value={String(form.character_id)}
-              onChange={(event) =>
+            <Select
+              selectedKey={String(form.character_id ?? '')}
+              onSelectionChange={(key) => ((value) =>
                 setForm((current) => ({
                   ...current,
-                  character_id: event.target.value ? Number(event.target.value) : '',
-                }))
-              }
+                  character_id: value ? Number(value) : '',
+                })))(String(key))}
             >
-              <option value="">{t('fleet.fields.fcPlaceholder')}</option>
-              {characters.map((character) => (
-                <option key={character.character_id} value={character.character_id}>
-                  {character.character_name}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('fleet.fields.fcPlaceholder')}</SelectItem>
+                {characters.map((character) => (
+                  <SelectItem
+                    key={character.character_id}
+                    id={String(character.character_id ?? '')}
+                  >
+                    {character.character_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.fleetConfig')}</span>
-            <NativeSelect className="w-full"
-              value={String(form.fleet_config_id)}
-              onChange={(event) =>
+            <Select
+              selectedKey={String(form.fleet_config_id ?? '')}
+              onSelectionChange={(key) => ((value) =>
                 setForm((current) => ({
                   ...current,
-                  fleet_config_id: event.target.value ? Number(event.target.value) : '',
-                }))
-              }
+                  fleet_config_id: value ? Number(value) : '',
+                })))(String(key))}
             >
-              <option value="">{t('fleet.fields.fleetConfigPlaceholder')}</option>
-              {fleetConfigs.map((config) => (
-                <option key={config.id} value={config.id}>
-                  {config.name}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="">{t('fleet.fields.fleetConfigPlaceholder')}</SelectItem>
+                {fleetConfigs.map((config) => (
+                  <SelectItem key={config.id} id={String(config.id ?? '')}>
+                    {config.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.autoSrpMode')}</span>
-            <NativeSelect className="w-full"
-              value={form.auto_srp_mode}
-              onChange={(event) =>
+            <Select
+              selectedKey={String(form.auto_srp_mode ?? '')}
+              onSelectionChange={(key) => ((value) =>
                 setForm((current) => ({
                   ...current,
-                  auto_srp_mode: event.target.value as FleetAutoSrpMode,
-                }))
-              }
+                  auto_srp_mode: value as FleetAutoSrpMode,
+                })))(String(key))}
             >
-              <option value="disabled">{t('fleet.autoSrp.disabled')}</option>
-              <option value="submit_only">{t('fleet.autoSrp.submitOnly')}</option>
-              <option value="auto_approve">{t('fleet.autoSrp.autoApprove')}</option>
-            </NativeSelect>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="disabled">{t('fleet.autoSrp.disabled')}</SelectItem>
+                <SelectItem id="submit_only">{t('fleet.autoSrp.submitOnly')}</SelectItem>
+                <SelectItem id="auto_approve">{t('fleet.autoSrp.autoApprove')}</SelectItem>
+              </SelectContent>
+            </Select>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">{t('fleet.fields.startAt')}</span>
             <Input
               type="datetime-local"
               value={form.start_at}
-              onChange={(event) => setForm((current) => ({ ...current, start_at: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, start_at: event.target.value }))
+              }
             />
           </label>
           <label className="space-y-2">
@@ -486,14 +639,18 @@ export function OperationFleetsPage() {
             <Input
               type="datetime-local"
               value={form.end_at}
-              onChange={(event) => setForm((current) => ({ ...current, end_at: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, end_at: event.target.value }))
+              }
             />
           </label>
           {!editingFleet ? (
             <label className="flex items-center gap-2 md:col-span-2">
               <Checkbox
-                checked={form.send_ping}
-                onCheckedChange={(checked) => setForm((current) => ({ ...current, send_ping: checked === true }))}
+                isSelected={form.send_ping}
+                onChange={(checked) =>
+                  setForm((current) => ({ ...current, send_ping: checked === true }))
+                }
               />
               <span className="text-sm text-muted-foreground">{t('fleet.fields.sendPing')}</span>
             </label>
