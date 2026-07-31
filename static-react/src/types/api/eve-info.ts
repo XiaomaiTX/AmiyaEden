@@ -30,18 +30,30 @@ export interface SkillRequest {
 export interface SkillItem {
   skill_id: number
   skill_name: string
+  group_id: number
   group_name: string
   active_level: number
   trained_level: number
+  skillpoints_in_skill: number
+  learned: boolean
 }
 
 export interface SkillQueueItem {
   queue_position: number
+  skill_id: number
   skill_name: string
   finished_level: number
+  level_start_sp: number
+  level_end_sp: number
+  training_start_sp: number
+  start_date: number
+  finish_date: number
 }
 
 export interface SkillResponse {
+  total_sp: number
+  unallocated_sp: number
+  skill_count: number
   skills: SkillItem[]
   skill_queue: SkillQueueItem[]
 }

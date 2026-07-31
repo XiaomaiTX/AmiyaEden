@@ -39,10 +39,11 @@ describe('info skill page', () => {
                 {
                   skill_id: 1,
                   skill_name: 'Gunnery',
+                  group_id: 255,
                   group_name: 'Combat',
                   active_level: 3,
                   trained_level: 3,
-                  skill_points: 100,
+                  skillpoints_in_skill: 100,
                   learned: true,
                 },
               ],
@@ -71,8 +72,9 @@ describe('info skill page', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getByText('Gunnery (Combat)')).toBeInTheDocument()
+      expect(screen.getByText('Gunnery')).toBeInTheDocument()
     })
+    expect(screen.getAllByText('Combat').length).toBeGreaterThan(0)
     expect(screen.getByText(/Missiles/)).toBeInTheDocument()
   })
 })
