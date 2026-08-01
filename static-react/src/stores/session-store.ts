@@ -1,6 +1,7 @@
 ﻿import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { SESSION_STORE_KEY } from '@/stores/persistence-keys'
+import { useSidebarNavigationStore } from '@/stores/sidebar-navigation-store'
 
 export interface SessionSnapshot {
   isLoggedIn: boolean
@@ -69,6 +70,7 @@ export const useSessionStore = create<SessionStoreState>()(
       markBootstrapRequired: () => set({ bootstrapRequired: true }),
       markBootstrapComplete: () => set({ bootstrapRequired: false }),
       clearSession: () => {
+        useSidebarNavigationStore.getState().clear()
         set({
           ...defaultSnapshot,
           bootstrapRequired: false,

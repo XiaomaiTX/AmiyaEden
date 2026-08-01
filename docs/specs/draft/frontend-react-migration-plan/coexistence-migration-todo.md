@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-01
 source_of_truth:
   - static/src
   - static-react/src
@@ -22,7 +22,7 @@ source_of_truth:
 ## 已完成
 
 - [x] React Hash 路由、404/500/403 与 SSO 登录闭环。
-- [x] Token、会话、权限、WorkTab、主题和徽章基础能力。
+- [x] Token、会话、权限、按人物隔离的侧边栏菜单组展开状态、主题和徽章基础能力。
 - [x] React 独立镜像、Compose `frontend-react` 服务及 verify/main/preview 工作流。
 - [x] 全部计划内路由和冻结后的范围漂移页面均有 React 真实业务实现。
 

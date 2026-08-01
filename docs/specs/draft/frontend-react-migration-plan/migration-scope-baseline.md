@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-01
 source_of_truth:
   - static/src/views
   - static/src/router
@@ -146,9 +146,9 @@ source_of_truth:
 | 文档域 | Vue 当前实现 | React 当前体现 | 适配状态 | 切换阻断 |
 |---|---|---|---|---|
 | 认证与人物 | `static/src/api/auth.ts`、Vue router guard | `static-react/src/api/auth.ts`、`session-store`、`RouteAccessGate` | 已建立双端映射 | capability、完整锁定流程需回归 |
-| 路由与菜单 | `static/src/router`、`MenuProcessor` | 路由懒加载、`RouteAccessGate`、WorkTab、badge 菜单汇总 | 已建立等价基座 | 完整跨角色回归 |
+| 路由与菜单 | `static/src/router`、`MenuProcessor` | 路由懒加载、`RouteAccessGate`、按人物隔离的侧边栏菜单组状态、badge 菜单汇总 | 已建立等价基座 | 完整跨角色回归 |
 | 按钮权限 | `v-auth` / `v-roles` | `PermissionGate` / `RoleGate` 与 hooks | 已对齐 | 新增使用点持续回归 |
-| 状态管理 | Pinia 多 store | Zustand `session/preference/worktab/badge`，其余按真实跨页需求拆分 | 部分对齐 | 运行时 sys-config 等尚未迁移 |
+| 状态管理 | Pinia 多 store | Zustand `session/preference/sidebar-navigation/badge`，其余按真实跨页需求拆分 | 部分对齐 | 运行时 sys-config 等尚未迁移 |
 | API 契约 | `static/src/api` + `api.d.ts` | `static-react/src/api` + 模块化本地类型 | 已建立双端契约 | 每个迁移模块分别通过类型和契约检查 |
 | i18n | Vue `zh/en` locale | `static-react/src/i18n/messages` | 已建立双端映射 | 文案语义、插值和 `@:引用` 对齐 |
 | 表格/卡片布局 | `ArtTable`、Element Plus、Vue overflow 规则 | TanStack `DataTable` 基座 + 存量页面按需迁移 | 部分对齐 | 存量复杂表格渐进迁移、暗色主题回归 |

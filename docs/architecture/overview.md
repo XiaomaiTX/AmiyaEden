@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-07-23
+last_reviewed: 2026-08-01
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/role.go
@@ -54,7 +54,7 @@ source_of_truth:
 - `router` 路由与守卫
 - `types` 合同类型
 
-迁移期间两套前端遵守相同的行为、API、权限和本地化约束；实现路径可以不同。Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button 权限对齐；仍未迁移的范围漂移页面及 WorkTab、徽标等其他迁移基础设施，继续以 `docs/specs/draft/frontend-react-migration-plan/` 为准，不能再把它们描述成 0A 权限漂移。
+迁移期间两套前端遵守相同的行为、API、权限和本地化约束；实现路径可以不同。Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button 权限对齐；仍未迁移的范围漂移页面及徽标等其他迁移基础设施，继续以 `docs/specs/draft/frontend-react-migration-plan/` 为准，不能再把它们描述成 0A 权限漂移。
 
 ## 当前模块切分
 

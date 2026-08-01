@@ -2649,13 +2649,6 @@
     actionSuccess: 'Operation succeeded',
     actionFailed: 'Operation failed',
   },
-  worktab: {
-    close: 'Close tab',
-    pin: 'Pin tab',
-    unpin: 'Unpin tab',
-    closeOthers: 'Close others',
-    closeAll: 'Close all',
-  },
   feedback: {
     unauthorized: 'Session expired, please sign in again.',
     successDemo: 'Operation succeeded.',

@@ -40,6 +40,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
     },
     badgeCounts
   ).map((group) => ({
+    groupKey: group.key,
     title: group.labelKey,
     icon: <group.icon />,
     badge: group.badge,

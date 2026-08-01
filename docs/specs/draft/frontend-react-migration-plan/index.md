@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-01
 source_of_truth:
   - static/src
   - static-react/src
@@ -47,7 +47,7 @@ source_of_truth:
 - `/dashboard/galaxy-registry` 与 `/system/qq-governance` 已具备 React 路由、API、类型和基础业务页，但完整管理行为仍按 `./todolist.md` 的明确缺口继续追赶。
 - `/fuxi-hall/{leadership, contributors, manage}` 与 `/info/tool-bookmarks` 已完成 React 对齐。
 - Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 已迁移 `fuxi-hall/*` 并移除三条历史遗留 stub。
-- 基础设施已完成业务路由懒加载、启动 `/me` 刷新、资料/ESI 锁、WorkTab、`PermissionGate`/`RoleGate`、badge store/菜单徽章与 TanStack `DataTable`。其余 store 只在出现真实跨页状态需求时拆分，详见 `./component-replacement-list.md`。
+- 基础设施已完成业务路由懒加载、启动 `/me` 刷新、资料/ESI 锁、按人物隔离的侧边栏菜单组展开状态、`PermissionGate`/`RoleGate`、badge store/菜单徽章与 TanStack `DataTable`。其余 store 只在出现真实跨页状态需求时拆分，详见 `./component-replacement-list.md`。
 
 ## 明确声明
 

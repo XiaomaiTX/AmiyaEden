@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-01
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
@@ -13,8 +13,8 @@ source_of_truth:
   - static-react/src/auth/route-access-gate.tsx
   - static-react/src/auth/permission-gates.tsx
   - static-react/src/app/page-loaders.ts
-  - static-react/src/layout/worktab-bar.tsx
-  - static-react/src/stores/worktab-store.ts
+  - static-react/src/components/nav-main.tsx
+  - static-react/src/stores/sidebar-navigation-store.ts
   - static-react/src/hooks/use-corp-capability.ts
 ---
 
@@ -50,7 +50,7 @@ Vue 与 React 没有路由、菜单或状态的代码级联系：不共享 manif
 
 修改 Vue 或 React 路由时，先更新 migration spec draft 中的并行定义，再分别修改两端并执行各自的既有验证；CI 不读取或比较 Vue 路由代码。
 
-React WorkTab 由路由声明派生，保存 route id、完整 pathname/search、固定状态和所属人物。相同 route id 复用同一标签并更新 URL；切换人物时清空旧人物标签。React 不通过隐藏挂载页面树模拟 Vue KeepAlive，筛选、分页等可恢复状态应进入 URL，真正跨页状态才进入 Zustand。
+React 侧边栏按人物持久化手动展开的菜单组；当前路由所属组始终展开，人物切换或退出登录时清空状态。React 不通过隐藏挂载页面树模拟 Vue KeepAlive，筛选、分页等可恢复状态应进入 URL，真正跨页状态才进入 Zustand。
 
 两套前端必须遵守同一组行为约定：
 

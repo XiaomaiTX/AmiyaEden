@@ -75,7 +75,6 @@ export interface AppRouteSpec {
   menuGroup?: string
   menuIcon?: string
   menuHidden?: boolean
-  fixedTab?: boolean
   badgeKey?: keyof BadgeCounts
   meta?: RouteAccessMeta
 }
@@ -95,7 +94,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     pageType: 'dashboard-console',
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
-    fixedTab: true,
     meta: { login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {

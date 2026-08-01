@@ -2,15 +2,19 @@
 import {
   PREFERENCE_STORE_KEY,
   SESSION_STORE_KEY,
+  SIDEBAR_NAVIGATION_STORE_KEY,
 } from '@/stores/persistence-keys'
 import { usePreferenceStore } from '@/stores/preference-store'
 import { useSessionStore } from '@/stores/session-store'
+import { useSidebarNavigationStore } from '@/stores/sidebar-navigation-store'
 
 describe('store boundaries', () => {
   beforeEach(() => {
     localStorage.removeItem(PREFERENCE_STORE_KEY)
     localStorage.removeItem(SESSION_STORE_KEY)
+    localStorage.removeItem(SIDEBAR_NAVIGATION_STORE_KEY)
     usePreferenceStore.setState({ locale: 'zh-CN', sidebarCollapsed: false, theme: 'system' })
+    useSidebarNavigationStore.getState().clear()
     useSessionStore.setState({
       isLoggedIn: false,
       accessToken: null,
@@ -50,9 +54,15 @@ describe('store boundaries', () => {
     expect(state.characterId).toBe(1001)
     expect(state.roles).toEqual(['admin'])
 
+    useSidebarNavigationStore.getState().resetForCharacter(1001)
+    useSidebarNavigationStore.getState().expandMenuGroup('nav.group.info')
     useSessionStore.getState().clearSession()
     state = useSessionStore.getState()
     expect(state.isLoggedIn).toBe(false)
+    expect(useSidebarNavigationStore.getState()).toMatchObject({
+      ownerCharacterId: null,
+      expandedMenuGroupKeys: [],
+    })
   })
 })
 

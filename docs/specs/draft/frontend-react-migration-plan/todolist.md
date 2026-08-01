@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-01
 source_of_truth:
   - static/src
   - static-react/src
@@ -78,10 +78,10 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 
 壳层与权限基座已落地；以下项目持续按真实跨页需求补齐，不作为 Vue 下线或入口替换门槛：
 
-- [x] WorkTab 多标签页（固定、批量关闭、按人物隔离、完整 URL 恢复；React 采用 URL/store 恢复，不保留隐藏挂载的页面树）
+- [x] 侧边栏菜单组状态（手动展开按人物隔离持久化，当前路由组始终展开）
 - [x] `PermissionGate` / `usePermission`（对应 Vue `v-auth`；权限由当前叶子路由 Context 提供，不写入 session）
 - [x] `RoleGate` / `useRole`（对应 Vue `v-roles`）
-- [~] Zustand 业务 store：已完成 `session`、`preference`、`worktab`、`badge`；`user/menu/setting/table/sys-config` 仅在出现真实跨页状态需求时继续拆分
+- [~] Zustand 业务 store：已完成 `session`、`preference`、`sidebar-navigation`、`badge`；`user/setting/table/sys-config` 仅在出现真实跨页状态需求时继续拆分
 - [x] 共享 `DataTable` 基座（TanStack Table；统一加载/错误/空态、服务端分页、排序与选择接口）
 - [x] React 路由与菜单基础设施：使用扁平 `RouteAccessGate`、React Router 和菜单构建器，不引入或复刻另一端的处理链
 

@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-01
 source_of_truth:
   - static/src
   - static-react/src
@@ -12,10 +12,9 @@ source_of_truth:
 
 ## 布局与导航（P0）
 
-- [x] `ArtSidebarMenu` -> React Sidebar + MenuTree（基线）
+- [x] `ArtSidebarMenu` -> React Sidebar + MenuTree（按人物持久化菜单组展开状态；当前路由组始终展开）
 - [x] `ArtHeaderBar` -> React HeaderBar（基线）
 - [x] `ArtPageContent` -> React PageContent（基线；KeepAlive 替代策略待补）
-- [x] `ArtWorkTab` -> React WorkTab（标签页、固定页、批量关闭、按人物隔离与 URL 恢复；不挂载隐藏页面树）
 - [x] `ArtGlobalComponent` -> React GlobalHost（基线占位）
 
 参考：
@@ -46,8 +45,7 @@ source_of_truth:
 Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store 未拆分：
 
 - [~] `userStore` -> `useUserStore`（部分能力由 `useSessionStore` 承载，但搜索历史、锁屏等字段尚未迁移）
-- [ ] `menuStore` -> `useMenuStore`（未实现；菜单通过 `layout/menu-config.ts` 在壳层内构造）
-- [x] `worktabStore` -> `useWorktabStore`
+- [x] `menuStore` -> `useSidebarNavigationStore`（按人物隔离的菜单组展开状态；菜单项仍由 `layout/menu-config.ts` 在壳层内构造）
 - [ ] `settingStore` -> `useSettingStore`（未实现；主题与布局偏好部分由 `usePreferenceStore` 承载）
 - [x] `badgeStore` -> `useBadgeStore`（登录启动加载、叶子徽章与父菜单汇总）
 - [ ] `sys-configStore` -> Zustand slice（未实现；运行时站点配置未接入）

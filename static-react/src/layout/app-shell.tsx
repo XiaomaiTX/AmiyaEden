@@ -3,7 +3,6 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { HeaderBar } from '@/layout/header-bar'
 import { PageContent } from '@/layout/page-content'
 import { usePreferenceStore } from '@/stores'
-import { WorktabBar } from '@/layout/worktab-bar'
 
 export function AppShell() {
   const collapsed = usePreferenceStore((state) => state.sidebarCollapsed)
@@ -14,7 +13,6 @@ export function AppShell() {
       <AppSidebar />
       <SidebarInset>
         <HeaderBar />
-        <WorktabBar />
         <PageContent />
       </SidebarInset>
     </SidebarProvider>

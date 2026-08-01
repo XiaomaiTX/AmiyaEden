@@ -2625,13 +2625,6 @@
     actionSuccess: '操作成功',
     actionFailed: '操作失败',
   },
-  worktab: {
-    close: '关闭标签页',
-    pin: '固定标签页',
-    unpin: '取消固定',
-    closeOthers: '关闭其他',
-    closeAll: '关闭全部',
-  },
   feedback: {
     unauthorized: '登录态已失效，请重新登录。',
     successDemo: '操作成功。',

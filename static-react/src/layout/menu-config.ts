@@ -25,6 +25,7 @@ export interface ShellMenuItem {
 }
 
 export interface ShellMenuGroup {
+  key: string
   labelKey: string
   icon: LucideIcon
   items: ShellMenuItem[]
@@ -66,7 +67,7 @@ export function buildShellMenuGroups(session: SessionAccess, badgeCounts: BadgeC
     if (!icon) continue
 
     if (!grouped.has(route.menuGroup)) {
-      grouped.set(route.menuGroup, { labelKey: route.menuGroup, icon, items: [] })
+      grouped.set(route.menuGroup, { key: route.menuGroup, labelKey: route.menuGroup, icon, items: [] })
     }
 
     grouped.get(route.menuGroup)?.items.push({
