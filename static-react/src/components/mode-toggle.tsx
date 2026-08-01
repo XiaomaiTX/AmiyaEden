@@ -35,7 +35,12 @@ export function ModeToggle() {
         aria-label={t('common.switchTheme')}
         selectionMode="single"
         selectedKeys={[theme]}
-        onSelectionChange={(key) => setTheme(String(key) as ThemeMode)}
+        onSelectionChange={(keys) => {
+          const key = Array.from(keys)[0]
+          if (key === 'light' || key === 'dark' || key === 'system') {
+            setTheme(key)
+          }
+        }}
       >
         {themeOptions.map((option) => (
           <DropdownMenuItem key={option.value} id={option.value}>

@@ -42,6 +42,11 @@ export const usePreferenceStore = create<PreferenceStoreState>()(
         sidebarCollapsed: state.sidebarCollapsed,
         theme: state.theme,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state && state.theme !== 'light' && state.theme !== 'dark' && state.theme !== 'system') {
+          state.setTheme('system')
+        }
+      },
     }
   )
 )

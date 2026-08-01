@@ -14,6 +14,10 @@ function resolveTheme(theme: 'light' | 'dark' | 'system', systemTheme: ResolvedT
   return theme === 'system' ? systemTheme : theme
 }
 
+function normalizeTheme(theme: unknown): 'light' | 'dark' | 'system' {
+  return theme === 'light' || theme === 'dark' || theme === 'system' ? theme : 'system'
+}
+
 function applyThemeClass(theme: ResolvedTheme) {
   const root = window.document.documentElement
 
@@ -23,8 +27,9 @@ function applyThemeClass(theme: ResolvedTheme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const theme = usePreferenceStore((state) => state.theme)
+  const storedTheme = usePreferenceStore((state) => state.theme)
   const setTheme = usePreferenceStore((state) => state.setTheme)
+  const theme = normalizeTheme(storedTheme)
   const [systemTheme, setSystemTheme] = React.useState<ResolvedTheme>(() => getSystemTheme())
   const resolvedTheme = resolveTheme(theme, systemTheme)
 
