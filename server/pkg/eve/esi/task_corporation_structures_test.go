@@ -665,3 +665,69 @@ func newCorporationStructuresTaskTestDB(t *testing.T) *gorm.DB {
 	}
 	return db
 }
+
+func TestCorporationStructuresTaskDegradesWhenAssetsScopeForbidden(t *testing.T) {
+	db := newCorporationStructuresTaskTestDB(t)
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	const (
+		characterID   = int64(90010015)
+		corporationID = int64(555017)
+		structureID   = int64(1020000000171)
+		systemID      = int64(30000142)
+		typeID        = int64(35832)
+	)
+	seedCorporationStructuresTaskScope(t, db, characterID, corporationID)
+	// 授权记录（DB scopes）含资产 scope，但当前 token 链未包含 → ESI 返回 403
+	if err := db.Model(&model.EveCharacter{}).
+		Where("character_id = ?", characterID).
+		Update("scopes", "publicData "+corporationAssetsScope).Error; err != nil {
+		t.Fatalf("seed character scopes: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch req.URL.Path {
+		case fmt.Sprintf("/corporations/%d/structures/", corporationID):
+			w.Header().Set("X-Pages", "1")
+			_, _ = fmt.Fprintf(w, `[
+{"corporation_id":%d,"structure_id":%d,"system_id":%d,"type_id":%d,"state":"shield_vulnerable","name":"Degrade-Keep","services":[]}
+]`, corporationID, structureID, systemID, typeID)
+		case fmt.Sprintf("/corporations/%d/assets/", corporationID):
+			http.Error(w, `{"error":"insufficient_scope"}`, http.StatusForbidden)
+		case "/universe/names":
+			_, _ = fmt.Fprintf(w, `[{"id":%d,"name":"Test Corp"}]`, corporationID)
+		case fmt.Sprintf("/universe/structures/%d/", structureID):
+			_, _ = fmt.Fprintf(w, `{"name":"Degrade-Keep","owner_id":%d,"solar_system_id":%d,"type_id":%d,"position":{"x":7,"y":8,"z":9}}`, corporationID, systemID, typeID)
+		default:
+			t.Fatalf("unexpected request path: %s", req.URL.Path)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorporationStructuresTask{}
+	if err := task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	}); err != nil {
+		t.Fatalf("expected graceful degradation on assets 403, got error: %v", err)
+	}
+
+	var rows []model.CorpStructureInfo
+	if err := db.Where("corporation_id = ?", corporationID).Find(&rows).Error; err != nil {
+		t.Fatalf("load corp rows: %v", err)
+	}
+	if len(rows) != 1 || rows[0].StructureID != structureID {
+		t.Fatalf("corp rows = %+v, want one row with structure_id %d", rows, structureID)
+	}
+	if rows[0].ServiceModulesKnown {
+		t.Fatalf("expected ServiceModulesKnown=false after assets 403, got %+v", rows[0])
+	}
+}

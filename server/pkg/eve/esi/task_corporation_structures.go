@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -215,7 +216,14 @@ func (t *CorporationStructuresTask) Execute(ctx *TaskContext) error {
 		var assets []corporationAssetESIResponse
 		assetsPath := fmt.Sprintf("/corporations/%d/assets/", corporationID)
 		if _, err := ctx.Client.GetPaginated(bgCtx, assetsPath, ctx.AccessToken, &assets); err != nil {
-			return fmt.Errorf("fetch corporation assets for structure modules: %w", err)
+			if !IsHTTPStatus(err, http.StatusForbidden) {
+				return fmt.Errorf("fetch corporation assets for structure modules: %w", err)
+			}
+			// 授权记录仍在但当前 token 链未包含该 scope：本次降级为模块未知，基础建筑同步继续
+			corpStructuresLogger().Warn("[ESI] 军团资产接口 403，服务模块本次按未授权处理",
+				zap.Int64("character_id", ctx.CharacterID),
+				zap.Int64("corporation_id", corporationID))
+			serviceModulesKnown = false
 		}
 		for _, asset := range assets {
 			if _, ok := structureIDSet[asset.LocationID]; !ok || !isStructureServiceSlot(asset.LocationFlag) || asset.TypeID <= 0 {

@@ -1730,10 +1730,12 @@ func (s *WelfareService) ensureBirthdays(characters []model.EveCharacter) {
 			continue
 		}
 		characters[i].Birthday = birthday
-		// 持久化
-		if dbChar, err := s.charRepo.GetByCharacterID(characters[i].CharacterID); err == nil {
-			dbChar.Birthday = birthday
-			_ = s.charRepo.Save(dbChar)
+		// 仅更新生日列，避免整行覆盖与并发 token 刷新互相踩写
+		if err := s.charRepo.UpdateBirthday(characters[i].CharacterID, birthday); err != nil {
+			global.Logger.Warn("持久化人物生日失败",
+				zap.Int64("character_id", characters[i].CharacterID),
+				zap.Error(err),
+			)
 		}
 	}
 }

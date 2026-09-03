@@ -106,6 +106,11 @@ source_of_truth:
 - `alliance_id`
 - `faction_id`
 
+说明：
+
+- `scopes` 是"历史授予并集 ∩ 当前注册 scope 集"的快照，不是当前 access_token 链的实时镜像：SSO 回调按并集合并写入，后台 token 刷新不写该列；管理员专属可选 scope 在归属用户失去管理员职权后的下一次回调中被剥离
+- `access_token` / `refresh_token` / `token_expiry` 的写入路径（SSO 回调与后台刷新）共用 per-character 互斥锁，保证轮换式 refresh token 不被旧值覆盖
+
 关系上：
 
 - 一个 `user` 可以绑定多个 `eve_character`

@@ -15,6 +15,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -101,16 +102,78 @@ func ValidateExtraScopes(extraScopes []string, userRoles []string) error {
 
 func validateExtraScopes(extraScopes []string, userRoles []string) error {
 	for _, scope := range extraScopes {
-		switch strings.TrimSpace(scope) {
-		case "":
+		trimmed := strings.TrimSpace(scope)
+		if trimmed == "" {
 			continue
-		case corpKillmailScope:
-			if !model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
-				return fmt.Errorf("scope %s 仅管理员可申请", scope)
-			}
+		}
+		if isAdminOnlyScope(trimmed) && !model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin) {
+			return fmt.Errorf("scope %s 仅管理员可申请", trimmed)
 		}
 	}
 	return nil
+}
+
+// isAdminOnlyScope 判断 scope 是否仅允许管理员持有（当前仅军团击杀邮件 scope）
+func isAdminOnlyScope(scope string) bool {
+	return strings.TrimSpace(scope) == corpKillmailScope
+}
+
+// allowedScopeSet 返回允许持久化到 eve_characters.scopes 的 scope 集合：
+// 全部已注册 scope（含 Optional）+ publicData。已下线模块的残留 scope 会在合并时被剔除。
+func allowedScopeSet() map[string]struct{} {
+	set := map[string]struct{}{"publicData": {}}
+	scopeMu.RLock()
+	defer scopeMu.RUnlock()
+	for _, rs := range registeredScopes {
+		if s := strings.TrimSpace(rs.Scope); s != "" {
+			set[s] = struct{}{}
+		}
+	}
+	return set
+}
+
+// candidateScopeSet 计算 (existing ∪ granted) ∩ allowed 的候选 scope 集合
+func candidateScopeSet(existing string, granted []string, allowed map[string]struct{}) map[string]struct{} {
+	set := make(map[string]struct{}, len(allowed))
+	for _, s := range strings.Fields(existing) {
+		if _, ok := allowed[s]; ok {
+			set[s] = struct{}{}
+		}
+	}
+	for _, s := range granted {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		if _, ok := allowed[s]; ok {
+			set[s] = struct{}{}
+		}
+	}
+	return set
+}
+
+// containsAdminOnlyScope 判断 scope 集合中是否含管理员专属可选 scope
+func containsAdminOnlyScope(set map[string]struct{}) bool {
+	for s := range set {
+		if isAdminOnlyScope(s) {
+			return true
+		}
+	}
+	return false
+}
+
+// scopeSnapshot 将 scope 集合按字典序排序后以空格连接为快照字符串；
+// keepAdminOnly=false 时剥离管理员专属可选 scope
+func scopeSnapshot(set map[string]struct{}, keepAdminOnly bool) string {
+	scopes := make([]string, 0, len(set))
+	for s := range set {
+		if !keepAdminOnly && isAdminOnlyScope(s) {
+			continue
+		}
+		scopes = append(scopes, s)
+	}
+	sort.Strings(scopes)
+	return strings.Join(scopes, " ")
 }
 
 // ─────────────────────────────────────────────
@@ -139,9 +202,10 @@ var OnExistingCharacterSyncFunc func(characterID int64, userID uint)
 
 // stateData OAuth state 中存储的数据
 type stateData struct {
-	ExtraScopes  []string `json:"extra_scopes,omitempty"`
-	RedirectURL  string   `json:"redirect_url,omitempty"`
-	BindToUserID uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定人物」流程，而非登录
+	ExtraScopes         []string `json:"extra_scopes,omitempty"`
+	RedirectURL         string   `json:"redirect_url,omitempty"`
+	BindToUserID        uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定人物」流程，而非登录
+	ScopeRefreshAttempted bool   `json:"scope_refresh_attempted,omitempty"` // 已发起过一次可选 scope 补授，防循环
 }
 
 // EveSSOService EVE SSO 业务逻辑层
@@ -327,6 +391,46 @@ func applyAffiliationToCharacter(char *model.EveCharacter, affiliation *characte
 	char.FactionID = affiliation.FactionID
 }
 
+// mergedScopesForOwner 计算已有人物的合并 scope 快照：
+// (库中现有 scopes ∪ 本次授予 scopes) ∩ 当前注册 scope 集合。
+// 仅当候选集包含管理员专属可选 scope 时才查询归属用户当前职权（常规登录零额外查询），
+// 查询失败返回错误（fail-closed，与 authorizeBindExtraScopes 一致）。
+func (s *EveSSOService) mergedScopesForOwner(ctx context.Context, existing string, granted []string, ownerUserID uint) (string, error) {
+	candidates := candidateScopeSet(existing, granted, allowedScopeSet())
+	if !containsAdminOnlyScope(candidates) {
+		return scopeSnapshot(candidates, true), nil
+	}
+	keepAdminOnly := false
+	if ownerUserID > 0 {
+		userRoles, err := s.roleSvc.GetUserRoleNames(ctx, ownerUserID)
+		if err != nil {
+			return "", fmt.Errorf("查询用户职权失败: %w", err)
+		}
+		keepAdminOnly = model.ContainsAnyRole(userRoles, model.RoleSuperAdmin, model.RoleAdmin)
+	}
+	return scopeSnapshot(candidates, keepAdminOnly), nil
+}
+
+// applyMergedScopes 将合并后的 scope 快照写回内存中的 char（调用方负责持久化）。
+// 合并幂等：普通登录不再剥离此前显式授予的可选 scope。
+func (s *EveSSOService) applyMergedScopes(ctx context.Context, char *model.EveCharacter, grantedScopes []string) error {
+	merged, err := s.mergedScopesForOwner(ctx, char.Scopes, grantedScopes, char.UserID)
+	if err != nil {
+		return err
+	}
+	char.Scopes = merged
+	return nil
+}
+
+// applyCallbackTokenFields 将本次 SSO 授权得到的 token 写入内存中的 char（调用方负责持久化）
+func applyCallbackTokenFields(char *model.EveCharacter, accessToken, refreshToken string, tokenExpiry time.Time, characterName string) {
+	char.AccessToken = accessToken
+	char.RefreshToken = refreshToken
+	char.TokenExpiry = tokenExpiry
+	char.CharacterName = characterName
+	char.TokenInvalid = false
+}
+
 // GetAuthURL 生成 EVE SSO 授权 URL，并将 state 存入 Redis
 //
 //	extraScopes: 额外需要的 scope，传 nil 则使用所有已注册 scope
@@ -368,12 +472,93 @@ func (s *EveSSOService) GetBindAuthURL(ctx context.Context, userID uint, extraSc
 	return s.eveClient.BuildAuthURL(state, scopes), nil
 }
 
+// missingOptionalScopesForReauth 计算需要透明补授的可选 scope：
+// 历史授权中已存在、本次授予链缺失、且当前已注册的非管理员专属 Optional scope。
+// 管理员专属 scope 不参与补授——公共登录链无法通过 nil-roles 校验，
+// 维持管理员经 ESI 检查页 bind 流程显式授予的现状。
+func missingOptionalScopesForReauth(existing string, granted []string) []string {
+	grantedSet := make(map[string]struct{}, len(granted))
+	for _, s := range granted {
+		if s = strings.TrimSpace(s); s != "" {
+			grantedSet[s] = struct{}{}
+		}
+	}
+
+	optionalSet := make(map[string]struct{})
+	scopeMu.RLock()
+	for _, rs := range registeredScopes {
+		if !rs.Required && rs.Scope != "" && !isAdminOnlyScope(rs.Scope) {
+			optionalSet[rs.Scope] = struct{}{}
+		}
+	}
+	scopeMu.RUnlock()
+
+	seen := make(map[string]struct{}, len(optionalSet))
+	missing := make([]string, 0)
+	for _, s := range strings.Fields(existing) {
+		if _, ok := grantedSet[s]; ok {
+			continue
+		}
+		if _, optional := optionalSet[s]; !optional {
+			continue
+		}
+		if _, dup := seen[s]; dup {
+			continue
+		}
+		seen[s] = struct{}{}
+		missing = append(missing, s)
+	}
+	sort.Strings(missing)
+	return missing
+}
+
+// buildScopeReauthURL 生成补授缺失可选 scope 的授权 URL（请求范围为必需 scope + 缺失项）。
+// state 写入失败时返回错误——ScopeRefreshAttempted 标记无法持久化时不得发起补授，
+// 避免缓存降级场景下的无限重定向。
+func (s *EveSSOService) buildScopeReauthURL(ctx context.Context, sd stateData, missingScopes []string) (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	state := hex.EncodeToString(b)
+
+	next := stateData{
+		ExtraScopes:           missingScopes,
+		RedirectURL:           sd.RedirectURL,
+		BindToUserID:          sd.BindToUserID,
+		ScopeRefreshAttempted: true,
+	}
+	if err := cache.Set(ctx, stateCachePrefix+state, next, stateCacheTTL); err != nil {
+		return "", fmt.Errorf("存储补授 state 失败: %w", err)
+	}
+
+	return s.eveClient.BuildAuthURL(state, buildLoginScopes(missingScopes)), nil
+}
+
+// scopeReauthResult 判定是否需要透明补授并生成授权 URL。
+// missing 为空、本轮已补授过、或补授 state 无法持久化时返回 ok=false，
+// 调用方按普通登录继续（链收缩由任务层 403 降级与 ESI 检查页兜底）。
+func (s *EveSSOService) scopeReauthResult(ctx context.Context, sd stateData, missing []string) (string, bool) {
+	if len(missing) == 0 || sd.ScopeRefreshAttempted {
+		return "", false
+	}
+	reauthURL, err := s.buildScopeReauthURL(ctx, sd, missing)
+	if err != nil {
+		global.Logger.Warn("生成可选 scope 补授 URL 失败，跳过补授", zap.Error(err))
+		return "", false
+	}
+	return reauthURL, true
+}
+
 // CallbackResult EVE SSO 回调处理结果
 type CallbackResult struct {
 	Token       string              `json:"token"` // 我们系统颁发的 JWT
 	User        *model.User         `json:"user"`
 	Character   *model.EveCharacter `json:"character"`
 	RedirectURL string              `json:"redirect_url"` // 前端跳转地址（可能为空）
+	// ReauthURL 非空时表示需要透明补授缺失的可选 scope：handler 应 302 到该 EVE 授权地址
+	// 而不是返回 JWT。EVE 对历史已授过的 scope 不再弹确认页，用户近乎无感。
+	ReauthURL string `json:"-"`
 }
 
 // HandleCallback 处理 EVE SSO 回调，完成 Token 交换、用户创建/更新，颁发本系统 JWT
@@ -520,64 +705,73 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 			// 保存原用户ID
 			oldUserID := char.UserID
 
-			// 检查原用户是否存在（是否被软删除）
-			_, err := s.userRepo.GetByID(oldUserID)
-			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-				// 原用户已被软删除（孤儿人物），直接重新绑定到新用户
-				char.UserID = sd.BindToUserID
-				char.AccessToken = tokenResp.AccessToken
-				char.RefreshToken = tokenResp.RefreshToken
-				char.TokenExpiry = tokenExpiry
-				char.Scopes = scopesStr
-				char.CharacterName = claims.Name
-				char.TokenInvalid = false
-				if err := s.charRepo.Update(char); err != nil {
-					return nil, err
-				}
-
-				// 获取目标用户
-				user, err := s.userRepo.GetByID(sd.BindToUserID)
-				if err != nil {
-					return nil, err
-				}
-
-				// 如果用户还没有主人物，自动设为主人物
-				if user.PrimaryCharacterID == 0 {
-					user.PrimaryCharacterID = characterID
-					if err := s.userRepo.Update(user); err != nil {
-						return nil, err
-					}
-				}
-
-				// 同步刷新 affiliation / corp roles 并重算权限，确保 JWT 基于最新安全状态签发
-				if OnExistingCharacterSyncFunc != nil {
-					OnExistingCharacterSyncFunc(characterID, user.ID)
-				}
-
-				global.Logger.Info("孤儿人物重新绑定到新用户（绑定流程）",
-					zap.Int64("characterID", characterID),
-					zap.Uint("oldUserID", oldUserID),
-					zap.Uint("newUserID", sd.BindToUserID))
-
-				jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
-				if err != nil {
-					return nil, err
-				}
-				return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
+			// 检查原用户是否存在（是否被软删除）；仍存在则拒绝抢绑
+			if _, err := s.userRepo.GetByID(oldUserID); err == nil || !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, errors.New("该人物已绑定到其他账号，无法再次绑定")
 			}
 
-			// 原用户存在，人物已绑定到其他账号，返回错误
-			return nil, errors.New("该人物已绑定到其他账号，无法再次绑定")
+			// 原用户已被软删除（孤儿人物），直接重新绑定到新用户
+			char, err = s.updateExistingCharacterLocked(characterID, func(c *model.EveCharacter) error {
+				// 锁内复查归属，防止并发期间人物被绑到其他账号
+				if c.UserID != oldUserID {
+					return errors.New("该人物已绑定到其他账号，无法再次绑定")
+				}
+				c.UserID = sd.BindToUserID
+				applyCallbackTokenFields(c, tokenResp.AccessToken, tokenResp.RefreshToken, tokenExpiry, claims.Name)
+				return s.applyMergedScopes(ctx, c, grantedScopes)
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			// 获取目标用户
+			user, err := s.userRepo.GetByID(sd.BindToUserID)
+			if err != nil {
+				return nil, err
+			}
+
+			// 如果用户还没有主人物，自动设为主人物
+			if user.PrimaryCharacterID == 0 {
+				user.PrimaryCharacterID = characterID
+				if err := s.userRepo.Update(user); err != nil {
+					return nil, err
+				}
+			}
+
+			// 同步刷新 affiliation / corp roles 并重算权限，确保 JWT 基于最新安全状态签发
+			if OnExistingCharacterSyncFunc != nil {
+				OnExistingCharacterSyncFunc(characterID, user.ID)
+			}
+
+			global.Logger.Info("孤儿人物重新绑定到新用户（绑定流程）",
+				zap.Int64("characterID", characterID),
+				zap.Uint("oldUserID", oldUserID),
+				zap.Uint("newUserID", sd.BindToUserID))
+
+			jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
+			if err != nil {
+				return nil, err
+			}
+			return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 		}
+
 		// 人物已属于当前用户，更新 Token 即可
-		char.AccessToken = tokenResp.AccessToken
-		char.RefreshToken = tokenResp.RefreshToken
-		char.TokenExpiry = tokenExpiry
-		char.Scopes = scopesStr
-		char.CharacterName = claims.Name
-		char.TokenInvalid = false
-		if err := s.charRepo.Update(char); err != nil {
+		var reauthScopes []string
+		char, err = s.updateExistingCharacterLocked(characterID, func(c *model.EveCharacter) error {
+			// 锁内复查归属，防止并发期间人物被绑到其他账号
+			if c.UserID != sd.BindToUserID {
+				return errors.New("该人物已绑定到其他账号，无法再次绑定")
+			}
+			// 用合并前的库中快照计算缺失项，供本次回调后透明补授
+			reauthScopes = missingOptionalScopesForReauth(c.Scopes, grantedScopes)
+			applyCallbackTokenFields(c, tokenResp.AccessToken, tokenResp.RefreshToken, tokenExpiry, claims.Name)
+			return s.applyMergedScopes(ctx, c, grantedScopes)
+		})
+		if err != nil {
 			return nil, err
+		}
+		if reauthURL, ok := s.scopeReauthResult(ctx, sd, reauthScopes); ok {
+			return &CallbackResult{ReauthURL: reauthURL}, nil
 		}
 		user, err := s.userRepo.GetByID(sd.BindToUserID)
 		if err != nil {
@@ -595,15 +789,19 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	}
 
 	// ── 登录流程：已有人物重新登录 ──
-	char.AccessToken = tokenResp.AccessToken
-	char.RefreshToken = tokenResp.RefreshToken
-	char.TokenExpiry = tokenExpiry
-	char.Scopes = scopesStr
-	char.CharacterName = claims.Name
-	char.TokenInvalid = false
-	applyAffiliationToCharacter(char, affiliation)
-	if err := s.charRepo.Update(char); err != nil {
+	var reauthScopes []string
+	char, err = s.updateExistingCharacterLocked(characterID, func(c *model.EveCharacter) error {
+		// 用合并前的库中快照计算缺失项，供本次回调后透明补授
+		reauthScopes = missingOptionalScopesForReauth(c.Scopes, grantedScopes)
+		applyCallbackTokenFields(c, tokenResp.AccessToken, tokenResp.RefreshToken, tokenExpiry, claims.Name)
+		applyAffiliationToCharacter(c, affiliation)
+		return s.applyMergedScopes(ctx, c, grantedScopes)
+	})
+	if err != nil {
 		return nil, err
+	}
+	if reauthURL, ok := s.scopeReauthResult(ctx, sd, reauthScopes); ok {
+		return &CallbackResult{ReauthURL: reauthURL}, nil
 	}
 
 	// 更新用户最后登录信息
@@ -623,8 +821,12 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 			return nil, err
 		}
 
-		char.UserID = user.ID
-		if err := s.charRepo.Update(char); err != nil {
+		char, err = s.updateExistingCharacterLocked(characterID, func(c *model.EveCharacter) error {
+			c.UserID = user.ID
+			// 按新归属用户的职权重新合并，管理员专属可选 scope 会被剥离
+			return s.applyMergedScopes(ctx, c, grantedScopes)
+		})
+		if err != nil {
 			return nil, err
 		}
 
@@ -685,6 +887,33 @@ var tokenRefreshLocks sync.Map
 func getCharacterLock(characterID int64) *sync.Mutex {
 	mu, _ := tokenRefreshLocks.LoadOrStore(characterID, &sync.Mutex{})
 	return mu.(*sync.Mutex)
+}
+
+// updateExistingCharacterLocked 在 per-character 锁内完成已有人物的读-改-写：
+// 重读最新行 → mutate → 整行写回。用于 SSO 回调路径，防止与 refreshCharacterToken
+// 的并发刷新互相覆盖对方刚写入的 refresh_token（EVE refresh token 为轮换式）。
+// mutate 内只允许内存修改与本地 DB/Redis 读取，禁止网络调用；
+// 返回更新后的行。调用方必须在拿回结果并释放锁之后才能执行 OnExistingCharacterSyncFunc
+// 等会经 GetValidToken 重入同一把锁的钩子。
+func (s *EveSSOService) updateExistingCharacterLocked(
+	characterID int64,
+	mutate func(char *model.EveCharacter) error,
+) (*model.EveCharacter, error) {
+	mu := getCharacterLock(characterID)
+	mu.Lock()
+	defer mu.Unlock()
+
+	char, err := s.charRepo.GetByCharacterID(characterID)
+	if err != nil {
+		return nil, err
+	}
+	if err := mutate(char); err != nil {
+		return nil, err
+	}
+	if err := s.charRepo.Update(char); err != nil {
+		return nil, err
+	}
+	return char, nil
 }
 
 // isTokenErrorPermanent 判断 ESI token 刷新错误是否为不可恢复错误。
@@ -768,20 +997,13 @@ func (s *EveSSOService) refreshCharacterToken(ctx context.Context, characterID i
 		return err
 	}
 
-	claims, err := eve.ParseAccessToken(tokenResp.AccessToken)
-	if err != nil {
-		// access_token 解析失败是意外情况，但 refresh_token 本身没有问题，不标记失效
-		global.Logger.Error("解析新 access_token 失败",
-			zap.Int64("character_id", characterID),
-			zap.Error(err),
-		)
-		return err
-	}
-
+	// 不解析新 access_token、也不用其 claims 覆盖 scopes：
+	// 刷新产生的 token 链只包含授予时请求的 scope 集合，覆盖会剥离此前
+	// 显式授予的可选 scope；且解析失败时若直接返回会丢弃已轮换的
+	// refresh_token（旧 token 已作废，下次刷新必然 invalid_grant）。
 	char.AccessToken = tokenResp.AccessToken
 	char.RefreshToken = tokenResp.RefreshToken
 	char.TokenExpiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
-	char.Scopes = strings.Join(claims.GetScopes(), " ")
 	char.TokenInvalid = false
 
 	return s.charRepo.Update(char)

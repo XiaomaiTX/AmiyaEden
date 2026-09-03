@@ -4,10 +4,13 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -80,4 +83,65 @@ func newCorpKillmailTaskTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db
+}
+
+func TestCorpKillmailsTaskSkipsOnForbidden(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:corp_killmails_forbidden_test_%d?mode=memory&cache=shared", time.Now().UnixNano())), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	if err := db.AutoMigrate(&model.EveCharacter{}, &model.EveCharacterCorpRole{}); err != nil {
+		t.Fatalf("auto migrate: %v", err)
+	}
+
+	oldDB := global.DB
+	oldLogger := global.Logger
+	global.DB = db
+	global.Logger = zap.NewNop()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		global.Logger = oldLogger
+	})
+
+	const (
+		characterID   = int64(90020001)
+		corporationID = int64(555021)
+	)
+	if err := db.Create(&model.EveCharacter{
+		CharacterID:   characterID,
+		CharacterName: "Director",
+		UserID:        1,
+		CorporationID: corporationID,
+	}).Error; err != nil {
+		t.Fatalf("seed eve_character: %v", err)
+	}
+	if err := db.Create(&model.EveCharacterCorpRole{
+		CharacterID: characterID,
+		CorpRole:    "Director",
+	}).Error; err != nil {
+		t.Fatalf("seed corp role: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if req.URL.Path == fmt.Sprintf("/corporations/%d/killmails/recent/", corporationID) {
+			http.Error(w, `{"error":"insufficient_scope"}`, http.StatusForbidden)
+			return
+		}
+		t.Fatalf("unexpected request path: %s", req.URL.Path)
+	}))
+	t.Cleanup(server.Close)
+
+	task := &CorpKillmailsTask{}
+	err = task.Execute(&TaskContext{
+		CharacterID: characterID,
+		AccessToken: "token",
+		Client:      NewClientWithConfig(server.URL, ""),
+	})
+	if err == nil {
+		t.Fatal("expected ErrTaskSkipped on 403, got nil")
+	}
+	if err != ErrTaskSkipped {
+		t.Fatalf("expected ErrTaskSkipped on 403, got %v", err)
+	}
 }

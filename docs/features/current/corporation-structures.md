@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-09-04
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/corporation_structure.go
@@ -62,7 +62,8 @@ source_of_truth:
 - 活动目录是“活动名 → 候选模块 `type_id[]`”的多对多关系。估算时把候选集与该建筑实际安装模块相交：恰好一个匹配才计入；零匹配为模块不一致；多个匹配或同类型多实例为模块歧义；未映射为活动待配置。
 - 系统已验证映射由程序托管，管理员不能覆盖；管理员只能为新观察到的未知活动添加一个或多个已验证候选模块。服务目录会显示原始活动名、建筑与已安装模块 Type ID，避免无依据猜测。
 - 同一物理模块对应多个在线活动时按模块去重，只计算一次；任一在线活动无法唯一识别时，`fuel_per_hour` 和 `fuel_to_month_end` 均返回 `null`，绝不返回部分数值。
-- 精确识别需要被选为建筑 Director 的人物额外授权可选 scope `esi-assets.read_corporation_assets.v1`；缺少授权时基础建筑同步仍可完成，但燃料估算状态为 `authorization_required`。
+- 精确识别需要被选为建筑 Director 的人物额外授权可选 scope `esi-assets.read_corporation_assets.v1`。该授权按并集持久化在人物 scopes 快照中，普通重新登录不再丢失，且重新登录时后端会自动引导补授缺失的该类可选 scope（详见认证文档不变量）。
+- 当前 token 链缺少该 scope（ESI 返回 403）时基础建筑同步仍完成，服务模块标记为未知（`service_modules_known=false`），燃料估算状态为 `authorization_required`；军团击杀邮件任务遇 403 按跳过处理，不视为任务失败。
 - 计算模型：每小时消耗 = Σ(唯一已识别在线模块的有效率)，有效率 = 模块燃料率 × 建筑分组系数；建筑本身无基础消耗。
 - 月底补料：目标 = `fuel_expires` 所在自然月月底（EVE UTC）；blocks = ceil((月底 − fuel_expires) × 每小时消耗)；`fuel_expires` 为空/已过期/rate≤0 时该字段为 `null`
 - 不完整估算：`fuel_estimate_incomplete=true` 并在 `fuel_unknown_services` 返回造成失败的原始活动名；状态可为 `authorization_required`、`activity_mapping_required`、`module_mismatch`、`ambiguous_module` 或 `rate_unavailable`。前端列表展示对应本地化状态而非部分数值。

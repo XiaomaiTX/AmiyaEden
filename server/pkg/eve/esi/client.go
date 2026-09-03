@@ -133,7 +133,7 @@ func (c *Client) Get(ctx context.Context, path string, accessToken string, dest 
 		return ErrNotModified
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ESI error %d on %s: %s", resp.StatusCode, path, string(body))
+		return newHTTPError(resp.StatusCode, "", path, string(body))
 	}
 
 	if dest != nil {
@@ -189,7 +189,7 @@ func (c *Client) postJSON(ctx context.Context, path string, accessToken string, 
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ESI error %d on POST %s: %s", resp.StatusCode, path, string(respBody))
+		return newHTTPError(resp.StatusCode, "POST ", path, string(respBody))
 	}
 
 	if dest != nil {
@@ -218,7 +218,7 @@ func (c *Client) PostCreatedJSON(ctx context.Context, path string, accessToken s
 		return err
 	}
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("ESI error %d on POST %s: %s", resp.StatusCode, path, string(respBody))
+		return newHTTPError(resp.StatusCode, "POST ", path, string(respBody))
 	}
 
 	if dest != nil {
@@ -247,7 +247,7 @@ func (c *Client) PutJSON(ctx context.Context, path string, accessToken string, r
 		return err
 	}
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("ESI error %d on PUT %s: %s", resp.StatusCode, path, string(respBody))
+		return newHTTPError(resp.StatusCode, "PUT ", path, string(respBody))
 	}
 	return nil
 }
@@ -270,7 +270,7 @@ func (c *Client) PostNoContent(ctx context.Context, path string, accessToken str
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("ESI error %d on POST %s: %s", resp.StatusCode, path, string(respBody))
+		return newHTTPError(resp.StatusCode, "POST ", path, string(respBody))
 	}
 	return nil
 }
@@ -288,7 +288,7 @@ func (c *Client) Delete(ctx context.Context, path string, accessToken string) er
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("ESI error %d on DELETE %s: %s", resp.StatusCode, path, string(respBody))
+		return newHTTPError(resp.StatusCode, "DELETE ", path, string(respBody))
 	}
 	return nil
 }

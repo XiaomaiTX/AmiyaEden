@@ -300,7 +300,7 @@ func (c *Client) GetWithMeta(ctx context.Context, path string, accessToken strin
 		return meta, ErrNotModified
 	}
 	if meta.StatusCode != http.StatusOK {
-		return meta, fmt.Errorf("ESI error %d on %s: %s", meta.StatusCode, path, string(body))
+		return meta, newHTTPError(meta.StatusCode, "", path, string(body))
 	}
 
 	if dest != nil {
@@ -347,7 +347,7 @@ func (c *Client) GetPaginatedWithConcurrency(
 		return meta, ErrNotModified
 	}
 	if meta.StatusCode != http.StatusOK {
-		return meta, fmt.Errorf("ESI error %d on %s: %s", meta.StatusCode, path, string(body))
+		return meta, newHTTPError(meta.StatusCode, "", path, string(body))
 	}
 
 	totalPages := meta.Pages
@@ -417,8 +417,7 @@ func (c *Client) GetPaginatedWithConcurrency(
 			if pageMeta.StatusCode != http.StatusOK {
 				mu.Lock()
 				if fetchErr == nil {
-					fetchErr = fmt.Errorf("ESI error %d on page %d of %s: %s",
-						pageMeta.StatusCode, p, path, string(pageBody))
+					fetchErr = newPaginatedHTTPError(pageMeta.StatusCode, p, path, string(pageBody))
 				}
 				mu.Unlock()
 				return

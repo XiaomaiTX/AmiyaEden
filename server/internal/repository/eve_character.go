@@ -20,9 +20,11 @@ func (r *EveCharacterRepository) Create(char *model.EveCharacter) error {
 	return global.DB.Create(char).Error
 }
 
-// Save 保存（create or update）人物记录
-func (r *EveCharacterRepository) Save(char *model.EveCharacter) error {
-	return global.DB.Save(char).Error
+// UpdateBirthday 仅更新人物生日列，避免整行覆盖与并发 token 刷新互相踩写
+func (r *EveCharacterRepository) UpdateBirthday(characterID int64, birthday *time.Time) error {
+	return global.DB.Model(&model.EveCharacter{}).
+		Where("character_id = ?", characterID).
+		Update("birthday", birthday).Error
 }
 
 // GetByCharacterID 根据 EVE 人物 ID 查询

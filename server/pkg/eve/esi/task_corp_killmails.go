@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"fmt"
+	"net/http"
 	"time"
 
 	"go.uber.org/zap"
@@ -78,6 +79,12 @@ func (t *CorpKillmailsTask) Execute(ctx *TaskContext) error {
 	recentPath := fmt.Sprintf("/corporations/%d/killmails/recent/", corpID)
 	var refs []KillmailRef
 	if _, err := ctx.Client.GetPaginated(bgCtx, recentPath, ctx.AccessToken, &refs); err != nil {
+		if IsHTTPStatus(err, http.StatusForbidden) {
+			// 授权记录仍在但当前 token 链未包含该 scope（管理员重新登录后链收缩），按跳过处理
+			global.Logger.Warn("[ESI] 军团击杀邮件：token 未包含所需 scope，跳过本次刷新",
+				zap.Int64("character_id", ctx.CharacterID))
+			return ErrTaskSkipped
+		}
 		return fmt.Errorf("fetch corporation killmails: %w", err)
 	}
 

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-09-04
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/eve_sso.go
@@ -82,6 +82,10 @@ source_of_truth:
 - 无论系统配置是否开启，主人物 ESI 已失效都会强制前端停留在 `/dashboard/characters`，直到主人物重新授权；不会自动退出登录
 - 用户仍被锁定在 `/dashboard/characters` 时，尝试导航到其他页面会弹出警告消息框，说明资料未完成、主人物 ESI 失效或其他绑定人物 ESI 失效等原因
 - 重新绑定已存在人物会沿用当前 SSO 回调流程刷新该人物 token 并清除 `token_invalid`
+- 人物 `scopes` 列是“历史授予并集 ∩ 当前注册 scope 集”的快照：SSO 回调按并集合并保存（含此前单独授予的可选 scope），后台 token 刷新不再覆盖该字段
+- 管理员专属可选 scope（军团击杀邮件）在归属用户失去管理员职权后的下一次 SSO 回调写入时被剥离；普通可选 scope 不受职权影响
+- SSO 回调对已有人物的读-改-写与后台 token 刷新共用 per-character 互斥锁，防止轮换式 refresh token 被旧值覆盖；生日等旁路字段只做目标列更新，不做整行覆盖
+- 已有人物重新登录时，若历史授权含当前 token 链缺失的非管理员专属可选 scope，后端自动 302 引导到 EVE 授权页补授一次（state 携带 `scope_refresh_attempted` 标记防循环）；补授链仍缺 scope 时正常颁发 JWT
 - QQ / Discord ID 的唯一性由后端校验
 - 职权编码与权限列表必须与后端返回保持一致，不做前端别名映射
 - 所有 EVE SSO 端点（授权、令牌、图片服务等）通过 `server/config/config.go` 中的 `EveSSOConfig` 配置管理，禁止硬编码 URL

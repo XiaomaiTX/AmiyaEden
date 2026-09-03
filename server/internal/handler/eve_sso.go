@@ -105,6 +105,15 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 		redirectError("登录处理失败: " + err.Error())
 		return
 	}
+
+	// 需要透明补授缺失的可选 scope：302 回 EVE 授权页（历史已授过的 scope 不再弹确认页），
+	// 补授回调将携带完整 scope 集再次进入本端点并正常颁发 JWT。
+	if result.ReauthURL != "" {
+		h.recordSecurityEvent(c, "eve_sso_scope_reauth", model.AuditResultSuccess, map[string]any{})
+		c.Redirect(302, result.ReauthURL)
+		return
+	}
+
 	h.recordSecurityEvent(c, "eve_sso_callback_success", model.AuditResultSuccess, map[string]any{
 		"user_id":      result.User.ID,
 		"character_id": result.Character.CharacterID,
