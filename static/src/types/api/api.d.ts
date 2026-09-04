@@ -2016,6 +2016,8 @@ declare namespace Api {
         | 'name'
         | 'type_name'
         | 'corporation_name'
+        | 'fuel_per_hour'
+        | 'fuel_to_month_end'
       sort_order?: 'asc' | 'desc'
     }
 

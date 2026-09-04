@@ -2867,7 +2867,7 @@
       "system": "System / Security",
       "name": "Structure Name",
       "type": "Structure Type",
-      "services": "Services",
+      "services": "Service Count",
       "fuelRemaining": "Fuel Remaining",
       "fuelPerHour": "Est. Fuel Blocks / Hour",
       "fuelToMonthEnd": "Fuel Blocks Needed to Month-End",
@@ -2899,6 +2899,17 @@
       "armor_vulnerable": "Armor Vulnerable",
       "hull_reinforce": "Hull Reinforced",
       "hull_vulnerable": "Hull Vulnerable"
+    },
+    "serviceStates": {
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "servicesDialog": {
+      "title": "Services",
+      "subtitle": "Services installed on this structure",
+      "serviceName": "Service",
+      "serviceState": "State",
+      "empty": "No services on this structure"
     },
     "messages": {
       "serviceCatalogSaved": "Service activity mappings saved",

@@ -55,6 +55,21 @@ test('corporation structures list tab shows fuel officer column', () => {
   assert.match(source, /corporationStructures\.salary\.unassignedLabel/)
 })
 
+test('corporation structures list tab sorts fuel estimate columns and opens services dialog', () => {
+  const fuelPerHourColumn = /prop:\s*'fuel_per_hour'[\s\S]*?sortable:\s*'custom' as const/s
+  const fuelToMonthEndColumn = /prop:\s*'fuel_to_month_end'[\s\S]*?sortable:\s*'custom' as const/s
+  assert.match(source, fuelPerHourColumn)
+  assert.match(source, fuelToMonthEndColumn)
+  assert.match(source, /const servicesDialogVisible = ref\(false\)/)
+  assert.match(source, /const openServicesDialog = \(row: StructureRow\) => \{/)
+  assert.match(source, /<StructureServicesDialog v-model:visible="servicesDialogVisible"/)
+  assert.match(
+    source,
+    /import StructureServicesDialog from '\.\/modules\/structure-services-dialog\.vue'/
+  )
+  assert.doesNotMatch(source, /const formatServices = /)
+})
+
 test('corporation structures settings includes notice thresholds and submits them together', () => {
   assert.match(source, /corporationStructures\.settings\.noticeThresholds/)
   assert.match(source, /noticeThresholds\.fuel_notice_threshold_days/)

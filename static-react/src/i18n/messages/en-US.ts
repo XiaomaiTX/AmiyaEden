@@ -2286,7 +2286,7 @@
       system: 'System / Security',
       name: 'Structure Name',
       type: 'Structure Type',
-      services: 'Services',
+      services: 'Service Count',
       fuelRemaining: 'Fuel Remaining',
       fuelPerHour: 'Fuel / Hour',
       fuelToMonthEnd: 'Fuel to Month End',
@@ -2317,6 +2317,17 @@
       armor_vulnerable: 'Armor Vulnerable',
       hull_reinforce: 'Hull Reinforced',
       hull_vulnerable: 'Hull Vulnerable',
+    },
+    serviceStates: {
+      online: 'Online',
+      offline: 'Offline',
+    },
+    servicesDialog: {
+      title: 'Services',
+      subtitle: 'Services installed on this structure',
+      serviceName: 'Service',
+      serviceState: 'State',
+      empty: 'No services on this structure',
     },
     messages: {
       authorizationSaved: 'Authorization settings saved',

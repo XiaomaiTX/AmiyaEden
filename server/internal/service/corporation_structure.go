@@ -44,6 +44,8 @@ const (
 	corporationStructureSortName               = "name"
 	corporationStructureSortTypeName           = "type_name"
 	corporationStructureSortCorporationName    = "corporation_name"
+	corporationStructureSortFuelPerHour        = "fuel_per_hour"
+	corporationStructureSortFuelToMonthEnd     = "fuel_to_month_end"
 
 	corporationStructureSortOrderAsc  = "asc"
 	corporationStructureSortOrderDesc = "desc"
@@ -80,6 +82,8 @@ var (
 		corporationStructureSortName:               {},
 		corporationStructureSortTypeName:           {},
 		corporationStructureSortCorporationName:    {},
+		corporationStructureSortFuelPerHour:        {},
+		corporationStructureSortFuelToMonthEnd:     {},
 	}
 )
 
@@ -2065,6 +2069,12 @@ func sortCorporationStructureRows(rows []CorporationStructureRow, sortBy string,
 
 	sort.SliceStable(rows, func(i, j int) bool {
 		a, b := rows[i], rows[j]
+		if aMissing, applies := corporationStructureSortValueMissing(a, normalizedSortBy); applies {
+			bMissing, _ := corporationStructureSortValueMissing(b, normalizedSortBy)
+			if aMissing != bMissing {
+				return bMissing
+			}
+		}
 		order := compareCorporationStructureRows(a, b, normalizedSortBy)
 		if order == 0 {
 			if a.CorporationID != b.CorporationID {
@@ -2086,6 +2096,10 @@ func compareCorporationStructureRows(a CorporationStructureRow, b CorporationStr
 	switch sortBy {
 	case corporationStructureSortFuelRemainingHours:
 		return compareNullableInt(a.FuelRemainingHours, b.FuelRemainingHours)
+	case corporationStructureSortFuelPerHour:
+		return compareNullableFloat64(a.FuelPerHour, b.FuelPerHour)
+	case corporationStructureSortFuelToMonthEnd:
+		return compareNullableInt(a.FuelToMonthEnd, b.FuelToMonthEnd)
 	case corporationStructureSortSecurity:
 		return compareFloat64(a.Security, b.Security)
 	case corporationStructureSortReinforceHour:
@@ -2237,6 +2251,33 @@ func compareNullableInt(a *int, b *int) int {
 		return -1
 	}
 	return compareInt(*a, *b)
+}
+
+func compareNullableFloat64(a *float64, b *float64) int {
+	if a == nil && b == nil {
+		return 0
+	}
+	if a == nil {
+		return 1
+	}
+	if b == nil {
+		return -1
+	}
+	return compareFloat64(*a, *b)
+}
+
+// corporationStructureSortValueMissing 报告该行在当前 sort key 下是否无值可排，
+// 以及该 key 是否启用 "nil 双向排最后" 语义（当前仅两个燃料估算列启用；
+// fuel_remaining_hours 等既有 key 维持 "asc 排后 / desc 排前" 的历史行为）。
+func corporationStructureSortValueMissing(row CorporationStructureRow, sortBy string) (missing bool, applies bool) {
+	switch sortBy {
+	case corporationStructureSortFuelPerHour:
+		return row.FuelPerHour == nil, true
+	case corporationStructureSortFuelToMonthEnd:
+		return row.FuelToMonthEnd == nil, true
+	default:
+		return false, false
+	}
 }
 
 func compareNullableTime(aRaw string, bRaw string) int {

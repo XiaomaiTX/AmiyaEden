@@ -186,7 +186,18 @@ export interface CorporationStructureListRequest extends Partial<CommonSearchPar
   timer_bucket?: 'all' | 'current_hour' | 'next_2_hours' | 'custom'
   timer_start?: string
   timer_end?: string
-  sort_by?: string
+  sort_by?:
+    | 'fuel_remaining_hours'
+    | 'security'
+    | 'reinforce_hour'
+    | 'state_timer_end'
+    | 'updated_at'
+    | 'system_name'
+    | 'name'
+    | 'type_name'
+    | 'corporation_name'
+    | 'fuel_per_hour'
+    | 'fuel_to_month_end'
   sort_order?: 'asc' | 'desc'
   page?: number
   page_size?: number

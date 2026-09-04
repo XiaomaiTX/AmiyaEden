@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1382,4 +1384,61 @@ func seedCorporationStructureAuthorizationMap(db *gorm.DB, authMap map[int64]int
 
 	existing.Value = string(raw)
 	return db.Save(&existing).Error
+}
+
+func TestSortCorporationStructureRowsFuelKeysNilLast(t *testing.T) {
+	fuelPerHour := func(v float64) *float64 { return &v }
+	fuelToMonthEnd := func(v int) *int { return &v }
+	remainingHours := func(v int) *int { return &v }
+
+	fuelRows := func() []CorporationStructureRow {
+		return []CorporationStructureRow{
+			{StructureID: 1, Name: "Alpha", CorporationID: 9001, SystemName: "Jita", FuelPerHour: fuelPerHour(30), FuelToMonthEnd: fuelToMonthEnd(900)},
+			{StructureID: 2, Name: "Beta", CorporationID: 9001, SystemName: "Amarr", FuelPerHour: fuelPerHour(9), FuelToMonthEnd: fuelToMonthEnd(270)},
+			{StructureID: 3, Name: "Charlie", CorporationID: 9001, SystemName: "Amarr"},
+			{StructureID: 4, Name: "Delta", CorporationID: 9001, SystemName: "Jita"},
+		}
+	}
+	ids := func(rows []CorporationStructureRow) string {
+		parts := make([]string, 0, len(rows))
+		for _, row := range rows {
+			parts = append(parts, strconv.FormatInt(row.StructureID, 10))
+		}
+		return strings.Join(parts, ",")
+	}
+
+	rows := fuelRows()
+	sortCorporationStructureRows(rows, corporationStructureSortFuelPerHour, corporationStructureSortOrderAsc)
+	if got := ids(rows); got != "2,1,3,4" {
+		t.Fatalf("fuel_per_hour asc expected 2,1,3,4 (nil last), got %s", got)
+	}
+
+	rows = fuelRows()
+	sortCorporationStructureRows(rows, corporationStructureSortFuelPerHour, corporationStructureSortOrderDesc)
+	if got := ids(rows); got != "1,2,4,3" {
+		t.Fatalf("fuel_per_hour desc expected 1,2,4,3 (nil still last), got %s", got)
+	}
+
+	rows = fuelRows()
+	sortCorporationStructureRows(rows, corporationStructureSortFuelToMonthEnd, corporationStructureSortOrderAsc)
+	if got := ids(rows); got != "2,1,3,4" {
+		t.Fatalf("fuel_to_month_end asc expected 2,1,3,4 (nil last), got %s", got)
+	}
+
+	rows = fuelRows()
+	sortCorporationStructureRows(rows, corporationStructureSortFuelToMonthEnd, corporationStructureSortOrderDesc)
+	if got := ids(rows); got != "1,2,4,3" {
+		t.Fatalf("fuel_to_month_end desc expected 1,2,4,3 (nil still last), got %s", got)
+	}
+
+	// 既有行为锁定：fuel_remaining_hours desc 时 nil 行仍排最前。
+	legacyRows := []CorporationStructureRow{
+		{StructureID: 11, Name: "L1", CorporationID: 9001, FuelRemainingHours: remainingHours(10)},
+		{StructureID: 12, Name: "L2", CorporationID: 9001, FuelRemainingHours: remainingHours(5)},
+		{StructureID: 13, Name: "L3", CorporationID: 9001},
+	}
+	sortCorporationStructureRows(legacyRows, corporationStructureSortFuelRemainingHours, corporationStructureSortOrderDesc)
+	if got := ids(legacyRows); got != "13,11,12" {
+		t.Fatalf("fuel_remaining_hours desc expected legacy nil-first order 13,11,12, got %s", got)
+	}
 }

@@ -2265,7 +2265,7 @@
       system: '星系 / 安全',
       name: '建筑名称',
       type: '建筑类型',
-      services: '服务',
+      services: '服务数量',
       fuelRemaining: '燃料剩余',
       fuelPerHour: '每小时燃料',
       fuelToMonthEnd: '到月底需补充',
@@ -2296,6 +2296,17 @@
       armor_vulnerable: '装甲可被攻击',
       hull_reinforce: '结构增强中',
       hull_vulnerable: '结构可被攻击',
+    },
+    serviceStates: {
+      online: '在线',
+      offline: '离线',
+    },
+    servicesDialog: {
+      title: '服务列表',
+      subtitle: '该建筑当前安装的服务',
+      serviceName: '服务',
+      serviceState: '状态',
+      empty: '该建筑没有服务',
     },
     messages: {
       authorizationSaved: '授权配置已保存',

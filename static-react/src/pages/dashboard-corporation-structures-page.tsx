@@ -8,6 +8,12 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
 import {
+  Dialog,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Table,
   TableHeader,
   TableBody,
@@ -37,7 +43,6 @@ import type {
   CorporationStructureFilterOptionsResponse,
   CorporationStructureListRequest,
   CorporationStructureRow,
-  CorporationStructureServiceInfo,
   CorporationStructuresSettings,
   CorporationStructureSystemOption,
   StructureServiceCatalog,
@@ -100,12 +105,53 @@ function stateLabel(t: ReturnType<typeof useI18n>['t'], state: string) {
   return translated === key ? state || '--' : translated
 }
 
-function formatServices(
-  t: ReturnType<typeof useI18n>['t'],
-  services: CorporationStructureServiceInfo[]
-) {
-  if (!services.length) return t('corporationStructures.noServices')
-  return services.map((service) => `${service.name} (${service.state})`).join(' / ')
+function serviceStateLabel(t: ReturnType<typeof useI18n>['t'], state: string) {
+  const key = `corporationStructures.serviceStates.${state}`
+  const translated = t(key)
+  return translated === key ? state || '--' : translated
+}
+
+type CorporationStructureSort = {
+  sort_by?: CorporationStructureListRequest['sort_by']
+  sort_order?: CorporationStructureListRequest['sort_order']
+}
+
+function SortableTableHead({
+  label,
+  sortKey,
+  sort,
+  onSort,
+  className,
+}: {
+  label: string
+  sortKey: NonNullable<CorporationStructureListRequest['sort_by']>
+  sort: CorporationStructureSort
+  onSort: (key: NonNullable<CorporationStructureListRequest['sort_by']>) => void
+  className?: string
+}) {
+  const isActive = sort.sort_by === sortKey
+  const direction = isActive ? sort.sort_order : undefined
+  return (
+    <TableHead
+      className={className}
+      {...(isActive
+        ? { 'aria-sort': direction === 'desc' ? 'descending' : 'ascending' }
+        : undefined)}
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="-ml-2 h-7 gap-1 px-2"
+        onPress={() => onSort(sortKey)}
+      >
+        {label}
+        <span aria-hidden="true">
+          {direction === 'asc' ? '↑' : direction === 'desc' ? '↓' : '↕'}
+        </span>
+      </Button>
+    </TableHead>
+  )
 }
 
 function formatFuelEstimate(
@@ -189,13 +235,11 @@ export function DashboardCorporationStructuresPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [sort, setSort] = useState<{
-    sort_by?: CorporationStructureListRequest['sort_by']
-    sort_order?: CorporationStructureListRequest['sort_order']
-  }>({
+  const [sort, setSort] = useState<CorporationStructureSort>({
     sort_by: 'fuel_remaining_hours',
     sort_order: 'asc',
   })
+  const [servicesDialogRow, setServicesDialogRow] = useState<CorporationStructureRow | null>(null)
   const [draftTimerRange, setDraftTimerRange] = useState<DateTimeRange>(null)
   const [appliedTimerRange, setAppliedTimerRange] = useState<DateTimeRange>(null)
   const [filters, setFilters] = useState({
@@ -442,6 +486,14 @@ export function DashboardCorporationStructuresPage() {
       ...filters,
     })
     setAppliedTimerRange(filters.timer_bucket === 'custom' ? draftTimerRange : null)
+    setPage(1)
+  }
+
+  const handleSort = (key: NonNullable<CorporationStructureListRequest['sort_by']>) => {
+    setSort((current) => ({
+      sort_by: key,
+      sort_order: current.sort_by === key && current.sort_order === 'asc' ? 'desc' : 'asc',
+    }))
     setPage(1)
   }
 
@@ -934,36 +986,72 @@ export function DashboardCorporationStructuresPage() {
                     <TableHead className="px-3 py-2">
                       {t('corporationStructures.table.state')}
                     </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.system')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.name')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.type')}
-                    </TableHead>
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.system')}
+                      sortKey="system_name"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.name')}
+                      sortKey="name"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.type')}
+                      sortKey="type_name"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
                     <TableHead className="px-3 py-2">
                       {t('corporationStructures.table.services')}
                     </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.fuelRemaining')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.fuelPerHour')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.fuelToMonthEnd')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.reinforceHour')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.timerEnd')}
-                    </TableHead>
-                    <TableHead className="px-3 py-2">
-                      {t('corporationStructures.table.updatedAt')}
-                    </TableHead>
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.fuelRemaining')}
+                      sortKey="fuel_remaining_hours"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.fuelPerHour')}
+                      sortKey="fuel_per_hour"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.fuelToMonthEnd')}
+                      sortKey="fuel_to_month_end"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.reinforceHour')}
+                      sortKey="reinforce_hour"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.timerEnd')}
+                      sortKey="state_timer_end"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
+                    <SortableTableHead
+                      className="px-3 py-2"
+                      label={t('corporationStructures.table.updatedAt')}
+                      sortKey="updated_at"
+                      sort={sort}
+                      onSort={handleSort}
+                    />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -984,7 +1072,19 @@ export function DashboardCorporationStructuresPage() {
                       </TableCell>
                       <TableCell className="px-3 py-2">{row.name}</TableCell>
                       <TableCell className="px-3 py-2">{row.type_name}</TableCell>
-                      <TableCell className="px-3 py-2">{formatServices(t, row.services)}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {row.services.length > 0 ? (
+                          <button
+                            type="button"
+                            className="font-medium text-primary underline-offset-2 hover:underline"
+                            onClick={() => setServicesDialogRow(row)}
+                          >
+                            {row.services.length}
+                          </button>
+                        ) : (
+                          t('corporationStructures.noServices')
+                        )}
+                      </TableCell>
                       <TableCell className="px-3 py-2">{row.fuel_remaining || '--'}</TableCell>
                       <TableCell className="px-3 py-2">
                         {formatFuelEstimate(t, row, 'fuel_per_hour')}
@@ -1047,6 +1147,49 @@ export function DashboardCorporationStructuresPage() {
               </Select>
             </label>
           </div>
+
+          <Dialog
+            isOpen={servicesDialogRow !== null}
+            onOpenChange={(open) => {
+              if (!open) setServicesDialogRow(null)
+            }}
+            className="sm:max-w-md"
+          >
+            <DialogHeader>
+              <DialogTitle>{servicesDialogRow?.name}</DialogTitle>
+              <DialogDescription>
+                {t('corporationStructures.servicesDialog.subtitle')}
+              </DialogDescription>
+            </DialogHeader>
+            {servicesDialogRow && servicesDialogRow.services.length > 0 ? (
+              <Table className="text-sm">
+                <TableHeader>
+                  <TableRow className="border-b bg-muted/40 text-left">
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.servicesDialog.serviceName')}
+                    </TableHead>
+                    <TableHead className="px-3 py-2">
+                      {t('corporationStructures.servicesDialog.serviceState')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {servicesDialogRow.services.map((service) => (
+                    <TableRow key={`${service.name}-${service.state}`} className="border-b">
+                      <TableCell className="px-3 py-2">{service.name}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        {serviceStateLabel(t, service.state)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t('corporationStructures.servicesDialog.empty')}
+              </p>
+            )}
+          </Dialog>
         </>
       ) : null}
 

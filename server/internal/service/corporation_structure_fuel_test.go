@@ -6,6 +6,8 @@ import (
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
 	"context"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -463,4 +465,152 @@ func farFutureInCurrentMonth(now time.Time) string {
 		ts = time.Date(now.Year(), now.Month()+2, 15, 0, 0, 0, 0, time.UTC)
 	}
 	return ts.Format(time.RFC3339)
+}
+
+// ─────────────────────────────────────────────
+//  列表集成测试：燃料估算排序
+// ─────────────────────────────────────────────
+
+func TestCorporationStructureListFuelSorts(t *testing.T) {
+	db := newCorporationStructureServiceTestDB(t)
+	if err := db.AutoMigrate(&model.StructureServiceFuelRate{}); err != nil {
+		t.Fatalf("migrate fuel rate: %v", err)
+	}
+	oldDB := global.DB
+	global.DB = db
+	utils.InvalidateAllowCorporationsCache()
+	t.Cleanup(func() {
+		global.DB = oldDB
+		utils.InvalidateAllowCorporationsCache()
+	})
+
+	seedCorporationStructureManageScope(t, db, 9001)
+	now := time.Now()
+	fuelExpires := farFutureInCurrentMonth(now)
+	seedRows := []model.CorpStructureInfo{
+		// Fortizar(35833, 堡垒)：market 默认 40 ×0.75 = 30
+		{
+			CorporationID:       9001,
+			CorporationName:     "Test Corp",
+			StructureID:         111,
+			Name:                "Fortizar Market",
+			TypeID:              35833,
+			TypeName:            "Fortizar",
+			SystemID:            30000142,
+			SystemName:          "Jita",
+			Security:            0.9,
+			State:               "shield_vulnerable",
+			Services:            `[{"name":"market","state":"online"}]`,
+			ServiceModules:      `[{"type_id":35892,"slot":"ServiceSlot0"}]`,
+			ServiceModulesKnown: true,
+			FuelExpires:         fuelExpires,
+			UpdateAt:            now.Unix(),
+		},
+		// Azbel(35826, 工业站)：manufacturing 默认 12 ×0.75 = 9
+		{
+			CorporationID:       9001,
+			CorporationName:     "Test Corp",
+			StructureID:         222,
+			Name:                "Azbel Factory",
+			TypeID:              35826,
+			TypeName:            "Azbel",
+			SystemID:            30002187,
+			SystemName:          "Amarr",
+			Security:            1.0,
+			State:               "shield_vulnerable",
+			Services:            `[{"name":"manufacturing","state":"online"}]`,
+			ServiceModules:      `[{"type_id":35878,"slot":"ServiceSlot0"}]`,
+			ServiceModulesKnown: true,
+			FuelExpires:         fuelExpires,
+			UpdateAt:            now.Unix(),
+		},
+		// 无服务 → 估算字段 nil
+		{
+			CorporationID:   9001,
+			CorporationName: "Test Corp",
+			StructureID:     333,
+			Name:            "Empty Rig",
+			TypeID:          35826,
+			TypeName:        "Azbel",
+			SystemID:        30002510,
+			SystemName:      "Amarr",
+			Security:        0.5,
+			State:           "shield_vulnerable",
+			Services:        `[]`,
+			FuelExpires:     fuelExpires,
+			UpdateAt:        now.Unix(),
+		},
+		// 在线服务引用未安装模块 → 估算不完整 → nil
+		{
+			CorporationID:       9001,
+			CorporationName:     "Test Corp",
+			StructureID:         444,
+			Name:                "Fortizar Partial",
+			TypeID:              35833,
+			TypeName:            "Fortizar",
+			SystemID:            30002510,
+			SystemName:          "Amarr",
+			Security:            0.5,
+			State:               "shield_vulnerable",
+			Services:            `[{"name":"market","state":"online"},{"name":"cynosural_jammer","state":"online"}]`,
+			ServiceModules:      `[{"type_id":35892,"slot":"ServiceSlot0"}]`,
+			ServiceModulesKnown: true,
+			FuelExpires:         fuelExpires,
+			UpdateAt:            now.Unix(),
+		},
+	}
+	for _, row := range seedRows {
+		if err := db.Create(&row).Error; err != nil {
+			t.Fatalf("seed row failed: %v", err)
+		}
+	}
+
+	resolver := &fakeGroupResolver{groupByTypeID: map[int]int{
+		35833: structureGroupCitadel,
+		35826: structureGroupEngineeringComplex,
+	}}
+	svc := newCorpStructureServiceForFuelTest(resolver)
+	ids := func(rows []CorporationStructureRow) string {
+		parts := make([]string, 0, len(rows))
+		for _, row := range rows {
+			parts = append(parts, strconv.FormatInt(row.StructureID, 10))
+		}
+		return strings.Join(parts, ",")
+	}
+
+	resp, err := svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		SortBy:        corporationStructureSortFuelPerHour,
+		SortOrder:     corporationStructureSortOrderDesc,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures fuel_per_hour desc: %v", err)
+	}
+	if got := ids(resp.Items); got != "111,222,444,333" {
+		t.Fatalf("fuel_per_hour desc expected 111,222 first with nil rows last, got %s", got)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		SortBy:        corporationStructureSortFuelPerHour,
+		SortOrder:     corporationStructureSortOrderAsc,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures fuel_per_hour asc: %v", err)
+	}
+	if got := ids(resp.Items); got != "222,111,333,444" {
+		t.Fatalf("fuel_per_hour asc expected 222,111 first with nil rows last, got %s", got)
+	}
+
+	resp, err = svc.ListStructures(context.Background(), CorporationStructureListRequest{
+		CorporationID: 9001,
+		SortBy:        corporationStructureSortFuelToMonthEnd,
+		SortOrder:     corporationStructureSortOrderDesc,
+	})
+	if err != nil {
+		t.Fatalf("ListStructures fuel_to_month_end desc: %v", err)
+	}
+	if got := ids(resp.Items); got != "111,222,444,333" {
+		t.Fatalf("fuel_to_month_end desc expected 111,222 first with nil rows last, got %s", got)
+	}
 }

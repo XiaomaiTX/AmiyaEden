@@ -4,6 +4,78 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
 import { useSessionStore } from '@/stores'
 
+const jsonResponse = (data: unknown) =>
+  new Response(JSON.stringify({ code: 0, msg: 'ok', data }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+const structureFixture = {
+  corporation_id: 1,
+  corporation_name: 'Amiya Corp',
+  structure_id: 10,
+  name: 'HQ Astrahus',
+  type_id: 1,
+  type_name: 'Astrahus',
+  system_id: 1,
+  system_name: 'Jita',
+  region_id: 1,
+  region_name: 'The Forge',
+  security: 0.9,
+  state: 'shield_vulnerable',
+  services: [{ name: 'Clone Bay', state: 'online' }],
+  fuel_expires: '2026-05-01T00:00:00Z',
+  fuel_remaining: '12h',
+  fuel_remaining_hours: 12,
+  reinforce_hour: 18,
+  state_timer_start: '2026-05-01T00:00:00Z',
+  state_timer_end: '2026-05-02T00:00:00Z',
+  updated_at: 1710000000,
+}
+
+const mockCorporationStructureFetches = (items: Array<Record<string, unknown>>) =>
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input)
+    if (url.includes('/corporation-structures/list')) {
+      return jsonResponse({ items, total: items.length, page: 1, page_size: 20 })
+    }
+    if (url.includes('/settings')) {
+      return jsonResponse({
+        corporations: [
+          {
+            corporation_id: 1,
+            corporation_name: 'Amiya Corp',
+            authorized_character_id: 1001,
+            director_characters: [
+              { user_id: 1, character_id: 1001, character_name: 'Amiya' },
+            ],
+          },
+        ],
+        fuel_notice_threshold_days: 7,
+        timer_notice_threshold_days: 5,
+        alert_enabled: true,
+        alert_group_ids: [123456],
+      })
+    }
+    if (url.includes('/filter-options')) {
+      return jsonResponse({
+        systems: [
+          {
+            system_id: 1,
+            system_name: 'Jita',
+            region_id: 1,
+            region_name: 'The Forge',
+            security: 0.9,
+          },
+        ],
+        regions: [{ region_id: 1, region_name: 'The Forge' }],
+        types: [{ type_id: 1, type_name: 'Astrahus' }],
+        services: [{ name: 'Clone Bay' }],
+      })
+    }
+    return jsonResponse({ modules: [], activities: [], unmapped_activities: [] })
+  })
+
 describe('dashboard corporation structures page', () => {
   beforeEach(() => {
     useSessionStore.getState().setSessionSnapshot({
@@ -162,5 +234,76 @@ describe('dashboard corporation structures page', () => {
       sort_by: 'fuel_remaining_hours',
       sort_order: 'asc',
     })
+  })
+
+  test('sorting by fuel estimate columns requests the fuel sort keys', async () => {
+    const fetchSpy = mockCorporationStructureFetches([structureFixture])
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/dashboard/corporation-structures'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('HQ Astrahus')).toBeInTheDocument()
+    })
+
+    const listBodies = () =>
+      fetchSpy.mock.calls
+        .filter(([input]) => String(input).includes('/corporation-structures/list'))
+        .map(([, init]) => JSON.parse(String(init?.body)))
+
+    await userEvent.click(screen.getByRole('button', { name: /每小时燃料/ }))
+    await waitFor(() => {
+      expect(listBodies().at(-1)).toMatchObject({
+        sort_by: 'fuel_per_hour',
+        sort_order: 'asc',
+        page: 1,
+      })
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: /每小时燃料/ }))
+    await waitFor(() => {
+      expect(listBodies().at(-1)).toMatchObject({
+        sort_by: 'fuel_per_hour',
+        sort_order: 'desc',
+        page: 1,
+      })
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: /到月底需补充/ }))
+    await waitFor(() => {
+      expect(listBodies().at(-1)).toMatchObject({
+        sort_by: 'fuel_to_month_end',
+        sort_order: 'asc',
+        page: 1,
+      })
+    })
+  })
+
+  test('services column shows count and opens the services dialog', async () => {
+    mockCorporationStructureFetches([
+      {
+        ...structureFixture,
+        services: [
+          { name: 'Market Hub', state: 'online' },
+          { name: 'Clone Bay', state: 'offline' },
+        ],
+      },
+    ])
+    const router = createMemoryRouter(appRoutes, {
+      initialEntries: ['/dashboard/corporation-structures'],
+    })
+    render(<RouterProvider router={router} />)
+
+    await waitFor(() => {
+      expect(screen.getByText('HQ Astrahus')).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: '2' }))
+
+    expect(await screen.findByText('Market Hub')).toBeInTheDocument()
+    expect(screen.getByText('Clone Bay')).toBeInTheDocument()
+    expect(screen.getByText('离线')).toBeInTheDocument()
+    expect(screen.getByText('该建筑当前安装的服务')).toBeInTheDocument()
   })
 })

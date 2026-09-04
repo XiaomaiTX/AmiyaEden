@@ -297,6 +297,10 @@
               @pagination:current-change="handleCurrentChange"
             />
           </ElCard>
+          <StructureServicesDialog
+            v-model:visible="servicesDialogVisible"
+            :row="servicesDialogRow"
+          />
         </div>
       </ElTabPane>
 
@@ -663,13 +667,14 @@
 </template>
 
 <script setup lang="ts">
-  import { ElCheckbox, ElMessage, ElMessageBox, ElTag } from 'element-plus'
+  import { ElCheckbox, ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { useTable } from '@/hooks/core/useTable'
   import type { ColumnOption } from '@/types/component'
   import { formatTime } from '@/utils/common'
+  import StructureServicesDialog from './modules/structure-services-dialog.vue'
   import {
     fetchCorporationStructureAssignments,
     fetchCorporationStructureFilterOptions,
@@ -730,6 +735,13 @@
   const filterDrawerVisible = ref(false)
   const { width: windowWidth } = useWindowSize()
   const filterDrawerSize = computed(() => (windowWidth.value < 768 ? '100%' : '560px'))
+
+  const servicesDialogVisible = ref(false)
+  const servicesDialogRow = ref<StructureRow | null>(null)
+  const openServicesDialog = (row: StructureRow) => {
+    servicesDialogRow.value = row
+    servicesDialogVisible.value = true
+  }
 
   const filterOptions = ref<Api.Dashboard.CorporationStructureFilterOptionsResponse>({
     systems: [],
@@ -1086,8 +1098,16 @@
         {
           prop: 'services',
           label: t('corporationStructures.table.services'),
-          minWidth: 260,
-          formatter: (row: StructureRow) => formatServices(row.services)
+          width: 110,
+          align: 'center',
+          formatter: (row: StructureRow) =>
+            row.services && row.services.length > 0
+              ? h(
+                  ElLink,
+                  { type: 'primary', underline: 'never', onClick: () => openServicesDialog(row) },
+                  () => String(row.services.length)
+                )
+              : t('corporationStructures.noServices')
         },
         {
           prop: 'fuel_remaining_hours',
@@ -1100,6 +1120,7 @@
           prop: 'fuel_per_hour',
           label: t('corporationStructures.table.fuelPerHour'),
           width: 180,
+          sortable: 'custom' as const,
           formatter: (row: StructureRow) =>
             row.fuel_estimate_incomplete
               ? formatFuelEstimateStatus(row.fuel_estimate_status)
@@ -1111,6 +1132,7 @@
           prop: 'fuel_to_month_end',
           label: t('corporationStructures.table.fuelToMonthEnd'),
           width: 200,
+          sortable: 'custom' as const,
           formatter: (row: StructureRow) =>
             row.fuel_estimate_incomplete
               ? formatFuelEstimateStatus(row.fuel_estimate_status)
@@ -1360,15 +1382,6 @@
     getData()
   }
 
-  const formatServices = (services: Api.Dashboard.CorporationStructureServiceInfo[]) => {
-    if (!services || services.length === 0) {
-      return t('corporationStructures.noServices')
-    }
-    return services
-      .map((service) => `${service.name} (${formatServiceStateLabel(service.state)})`)
-      .join(' / ')
-  }
-
   const formatFuelEstimateStatus = (
     status: Api.Dashboard.CorporationStructureRow['fuel_estimate_status']
   ) => {
@@ -1405,15 +1418,6 @@
       return value
     }
     return formatTime(parsed.toISOString())
-  }
-
-  const formatServiceStateLabel = (state: string) => {
-    const key = `corporationStructures.serviceStates.${state}`
-    const translated = t(key)
-    if (translated === key) {
-      return state || '--'
-    }
-    return translated
   }
 
   const formatReinforceHour = (hour: number) => {
