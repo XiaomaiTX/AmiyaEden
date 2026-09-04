@@ -62,7 +62,7 @@ test('corporation structures list tab sorts fuel estimate columns and opens serv
   assert.match(source, fuelToMonthEndColumn)
   assert.match(source, /const servicesDialogVisible = ref\(false\)/)
   assert.match(source, /const openServicesDialog = \(row: StructureRow\) => \{/)
-  assert.match(source, /<StructureServicesDialog v-model:visible="servicesDialogVisible"/)
+  assert.match(source, /<StructureServicesDialog\s+v-model:visible="servicesDialogVisible"/)
   assert.match(
     source,
     /import StructureServicesDialog from '\.\/modules\/structure-services-dialog\.vue'/
