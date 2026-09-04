@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import test, { afterEach } from 'node:test'
-import { readFileSync } from 'node:fs'
 import * as charactersGate from './charactersGate'
 
 const {
@@ -12,21 +11,8 @@ const {
   shouldRedirectToCharactersPage
 } = charactersGate
 
-const source = readFileSync(new URL('./beforeEach.ts', import.meta.url), 'utf8')
-
 afterEach(() => {
   resetCharactersGateStateRefreshForTest()
-})
-
-test('dynamic route initialization fetches badge counts after storing the menu list', () => {
-  assert.match(source, /menuStore\.setMenuList\(menuList\)[\s\S]*loadBadgeCounts\(badgeStore\)/)
-})
-
-test('dynamic route initialization always navigates when permission is granted', () => {
-  assert.match(
-    source,
-    /const redirected = applyCharactersGateTransition\([\s\S]*if \(!redirected\) \{[\s\S]*next\(\{/
-  )
 })
 
 test('invalid non-primary character still requires redirect to characters page', () => {

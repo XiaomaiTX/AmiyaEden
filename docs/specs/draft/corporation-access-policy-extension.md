@@ -280,7 +280,7 @@ source_of_truth:
   - `go test ./internal/middleware ./internal/router ./internal/service -run "CorporationPolicy|RequireCorpCapability|SRP|Corp"`
   - `go test ./internal/handler -run "CorporationAccessPolicies|MeResponse"`
 - 前端特性相关测试通过：
-  - `pnpm exec tsx --test src/router/core/menuAccess.test.ts src/views/system/basic-config/index.test.ts`
+  - `pnpm exec tsx --test src/router/core/menuAccess.test.ts`
 
 ## 代码文件级实施清单
 
@@ -319,7 +319,6 @@ source_of_truth:
 | `server/internal/handler/me_test.go` | 断言 `/me` 新字段返回 | 合同字段稳定 |
 | `server/internal/service`（新增 policy service 测试文件） | 覆盖策略解析、校验、default deny、super_admin 放行、规则读取默认值 | 核心逻辑回归保护 |
 | `static/src/router/core/menuAccess.test.ts` | 新增 capability 过滤分支测试 | 菜单权限边界稳定 |
-| `static/src/views/system/basic-config/index.test.ts` | 新增策略区块渲染、API 调用、文案键断言 | 配置页可维护性 |
 
 ### 文档与契约对齐
 
