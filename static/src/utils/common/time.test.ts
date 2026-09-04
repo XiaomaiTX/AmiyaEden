@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatTime, toLocalOffsetISO } from './time'
+import { formatTime, fuelExpiryMonthOffset, toLocalOffsetISO } from './time'
 
 test('formatTime returns a localized string for valid timestamps', () => {
   const originalToLocaleString = Date.prototype.toLocaleString
@@ -32,6 +32,22 @@ test('toLocalOffsetISO produces an RFC3339 string with the browser offset', () =
   } finally {
     Date.prototype.getTimezoneOffset = originalGetTimezoneOffset
   }
+})
+
+test('fuelExpiryMonthOffset computes whole-month difference in UTC', () => {
+  const now = new Date('2026-08-15T12:00:00Z')
+  assert.equal(fuelExpiryMonthOffset('2026-08-20T00:00:00Z', now), 0)
+  assert.equal(fuelExpiryMonthOffset('2026-09-01T00:00:00Z', now), 1)
+  assert.equal(fuelExpiryMonthOffset('2026-11-15T00:00:00Z', now), 3)
+})
+
+test('fuelExpiryMonthOffset rolls over across the year boundary', () => {
+  const now = new Date('2026-12-31T23:00:00Z')
+  assert.equal(fuelExpiryMonthOffset('2027-01-01T00:00:00Z', now), 1)
+})
+
+test('fuelExpiryMonthOffset returns null for invalid input', () => {
+  assert.equal(fuelExpiryMonthOffset('not-a-date', new Date('2026-08-15T00:00:00Z')), null)
 })
 
 test('toLocalOffsetISO handles a negative (west of UTC) offset', () => {

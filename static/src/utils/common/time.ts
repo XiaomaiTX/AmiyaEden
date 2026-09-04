@@ -2,6 +2,23 @@ export const formatTime = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString('en-GB', { hour12: false }) : '-'
 
 /**
+ * 整月差（UTC 口径）：fuel_expires 所在月距当前月还有几个月。
+ * 与后端 EstimateFuelToMonthEnd 的「耗尽所在自然月（EVE UTC）月底」保持同一时区基准，
+ * 避免月末/月初时本地时区与 UTC 月份不一致导致徽标口径漂移。解析失败返回 null。
+ */
+export const fuelExpiryMonthOffset = (
+  fuelExpires: string,
+  now: Date = new Date()
+): number | null => {
+  const expiry = new Date(fuelExpires)
+  if (Number.isNaN(expiry.getTime())) return null
+  return (
+    (expiry.getUTCFullYear() - now.getUTCFullYear()) * 12 +
+    (expiry.getUTCMonth() - now.getUTCMonth())
+  )
+}
+
+/**
  * Convert a browser-local naive datetime string (e.g. "YYYY-MM-DD HH:mm:ss",
  * as emitted by ElDatePicker's value-format) into a self-describing RFC3339
  * string carrying the browser timezone offset (e.g.

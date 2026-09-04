@@ -14,11 +14,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage } from 'element-plus'
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { ElMessage, ElTag } from 'element-plus'
+  import { computed, h, onMounted, reactive, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { fetchMyAssignedCorporationStructures } from '@/api/corporation-structures'
-  import { formatTime } from '@/utils/common/time'
+  import { formatTime, fuelExpiryMonthOffset } from '@/utils/common/time'
   import type { ColumnOption } from '@/types/component'
 
   defineOptions({ name: 'DashboardFuelOfficerStructures' })
@@ -57,12 +57,7 @@
       prop: 'fuel_to_month_end',
       label: t('corporationStructures.table.fuelToMonthEnd'),
       minWidth: 160,
-      formatter: (row: Api.Dashboard.CorporationStructureRow) =>
-        row.fuel_estimate_incomplete
-          ? formatFuelEstimateStatus(row.fuel_estimate_status)
-          : row.fuel_to_month_end != null
-            ? row.fuel_to_month_end
-            : '-'
+      formatter: formatFuelToMonthEnd
     },
     {
       prop: 'state_timer_end',
@@ -89,6 +84,24 @@
       ambiguous_module: 'fuelEstimateAmbiguousModule'
     }
     return t(`corporationStructures.table.${keyByStatus[status] || 'fuelEstimateIncomplete'}`)
+  }
+
+  // 数值后的 +N 徽标表示目标月底（fuel_expires 所在月）距当前月还有几个整月
+  function formatFuelToMonthEnd(row: Api.Dashboard.CorporationStructureRow) {
+    if (row.fuel_estimate_incomplete) {
+      return formatFuelEstimateStatus(row.fuel_estimate_status)
+    }
+    if (row.fuel_to_month_end == null) {
+      return '-'
+    }
+    const monthOffset = fuelExpiryMonthOffset(row.fuel_expires)
+    if (monthOffset == null || monthOffset < 1) {
+      return row.fuel_to_month_end
+    }
+    return h('span', { class: 'inline-flex items-center gap-1' }, [
+      String(row.fuel_to_month_end),
+      h(ElTag, { size: 'small', type: 'info', effect: 'plain' }, () => `+${monthOffset}`)
+    ])
   }
 
   async function loadData() {

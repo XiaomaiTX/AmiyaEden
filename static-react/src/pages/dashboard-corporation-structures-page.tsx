@@ -39,6 +39,7 @@ import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
+import { fuelExpiryMonthOffset } from '@/lib/format'
 import type {
   CorporationStructureFilterOptionsResponse,
   CorporationStructureListRequest,
@@ -171,7 +172,25 @@ function formatFuelEstimate(
       `corporationStructures.table.${keyByStatus[row.fuel_estimate_status || ''] || 'fuelEstimateIncomplete'}`
     )
   }
-  return row[field] ?? '--'
+  const value = row[field]
+  if (value == null) {
+    return '--'
+  }
+  // +N 徽标表示目标月底（fuel_expires 所在月）距当前月还有几个整月
+  if (field === 'fuel_to_month_end' && row.fuel_expires) {
+    const monthOffset = fuelExpiryMonthOffset(row.fuel_expires)
+    if (monthOffset != null && monthOffset >= 1) {
+      return (
+        <>
+          {value}
+          <span className="ml-1.5 inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            +{monthOffset}
+          </span>
+        </>
+      )
+    }
+  }
+  return value
 }
 
 function formatSystemOption(item: CorporationStructureSystemOption) {

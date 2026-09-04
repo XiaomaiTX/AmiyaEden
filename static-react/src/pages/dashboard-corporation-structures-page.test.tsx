@@ -280,6 +280,62 @@ describe('dashboard corporation structures page', () => {
     })
   })
 
+  test('fuel to month end shows a +N badge when fuel expires in a future month', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-04-10T12:00:00Z'))
+    try {
+      mockCorporationStructureFetches([
+        {
+          ...structureFixture,
+          fuel_per_hour: 12,
+          fuel_to_month_end: 4800,
+          fuel_expires: '2026-05-20T00:00:00Z',
+        },
+      ])
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/dashboard/corporation-structures'],
+      })
+      render(<RouterProvider router={router} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('HQ Astrahus')).toBeInTheDocument()
+      })
+
+      expect(screen.getByText('4800')).toBeInTheDocument()
+      expect(screen.getByText('+1')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('fuel to month end hides the badge when fuel expires within the current month', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-04-10T12:00:00Z'))
+    try {
+      mockCorporationStructureFetches([
+        {
+          ...structureFixture,
+          fuel_per_hour: 12,
+          fuel_to_month_end: 300,
+          fuel_expires: '2026-04-25T00:00:00Z',
+        },
+      ])
+      const router = createMemoryRouter(appRoutes, {
+        initialEntries: ['/dashboard/corporation-structures'],
+      })
+      render(<RouterProvider router={router} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('HQ Astrahus')).toBeInTheDocument()
+      })
+
+      expect(screen.getByText('300')).toBeInTheDocument()
+      expect(screen.queryByText(/^\+\d+$/)).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   test('services column shows count and opens the services dialog', async () => {
     mockCorporationStructureFetches([
       {

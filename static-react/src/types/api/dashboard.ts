@@ -126,6 +126,7 @@ export interface CorporationStructureRow {
   type_name: string
   services: CorporationStructureServiceInfo[]
   fuel_remaining: string
+  fuel_expires?: string
   reinforce_hour: number
   state_timer_end: string
   updated_at: number

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatIskPlain, formatIskSmart } from './isk'
-import { formatTime, humanizeNumber } from './format'
+import { formatTime, fuelExpiryMonthOffset, humanizeNumber } from './format'
 
 describe('formatIskSmart', () => {
   it('applies unit thresholds and promotion', () => {
@@ -47,6 +47,24 @@ describe('humanizeNumber', () => {
 
   it('keeps sign for negative values', () => {
     expect(humanizeNumber(-2_500_000)).toBe('-2.50m')
+  })
+})
+
+describe('fuelExpiryMonthOffset', () => {
+  it('computes whole-month difference in UTC', () => {
+    const now = new Date('2026-08-15T12:00:00Z')
+    expect(fuelExpiryMonthOffset('2026-08-20T00:00:00Z', now)).toBe(0)
+    expect(fuelExpiryMonthOffset('2026-09-01T00:00:00Z', now)).toBe(1)
+    expect(fuelExpiryMonthOffset('2026-11-15T00:00:00Z', now)).toBe(3)
+  })
+
+  it('rolls over across the year boundary', () => {
+    const now = new Date('2026-12-31T23:00:00Z')
+    expect(fuelExpiryMonthOffset('2027-01-01T00:00:00Z', now)).toBe(1)
+  })
+
+  it('returns null for invalid input', () => {
+    expect(fuelExpiryMonthOffset('not-a-date', new Date('2026-08-15T00:00:00Z'))).toBeNull()
   })
 })
 

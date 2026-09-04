@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchMyAssignedCorporationStructures } from '@/api/corporation-structures'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { useI18n } from '@/i18n'
-import { formatTime } from '@/lib/format'
+import { formatTime, fuelExpiryMonthOffset } from '@/lib/format'
 import type { CorporationStructureRow } from '@/types/api/dashboard'
 
 export function DashboardFuelOfficerStructuresPage() {
@@ -17,7 +17,25 @@ export function DashboardFuelOfficerStructuresPage() {
   const formatEstimate = useCallback(
     (row: CorporationStructureRow, field: 'fuel_per_hour' | 'fuel_to_month_end') => {
       if (!row.fuel_estimate_incomplete) {
-        return row[field] ?? '-'
+        const value = row[field]
+        if (value == null) {
+          return '-'
+        }
+        // +N 徽标表示目标月底（fuel_expires 所在月）距当前月还有几个整月
+        if (field === 'fuel_to_month_end' && row.fuel_expires) {
+          const monthOffset = fuelExpiryMonthOffset(row.fuel_expires)
+          if (monthOffset != null && monthOffset >= 1) {
+            return (
+              <>
+                {value}
+                <span className="ml-1.5 inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  +{monthOffset}
+                </span>
+              </>
+            )
+          }
+        }
+        return value
       }
       const keys: Record<string, string> = {
         authorization_required: 'fuelEstimateAuthorizationRequired',
