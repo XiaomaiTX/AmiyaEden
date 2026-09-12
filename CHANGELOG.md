@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1] - 2026-09-12
+
+### Added
+
+- 新增 Mumble 用户端连接提示，可在凭据卡片查看并复制服务器地址与端口；用户侧凭据响应不再暴露协议内部稳定用户 ID。
+- 新增 Mumble 昵称显示模板，支持联盟/军团缩写、昵称、人物名和职权；通过 ticker 快照缓存生成显示名，并在快照未就绪时安全回退为主人物名。
+
+### Changed
+
+- Mumble 归属信息由 ESI 归属任务以 7 天有效期缓存，语音认证与重校验仅读取数据库快照，避免依赖实时 ESI 请求。
+
 ## [1.17.0] - 2026-09-12
 
 ### Added
