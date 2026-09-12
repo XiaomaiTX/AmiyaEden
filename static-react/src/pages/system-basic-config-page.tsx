@@ -31,6 +31,8 @@ const defaultMumbleForm: MumbleConfig = {
   server_url: '',
   revalidate_token: '',
   revalidate_timeout_ms: 1000,
+  public_address: '',
+  public_port: 0,
 }
 
 function parseCorporationId(raw: string) {
@@ -227,6 +229,35 @@ export function SystemBasicConfigPage() {
                 setMumbleForm((current) => ({ ...current, server_url: event.target.value }))
               }
               placeholder="http://go-mumble-server:64730"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.publicAddress')}
+            </span>
+            <Input
+              value={mumbleForm.public_address}
+              onChange={(event) =>
+                setMumbleForm((current) => ({ ...current, public_address: event.target.value }))
+              }
+              placeholder="mumble.example.com"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.publicPort')}
+            </span>
+            <Input
+              type="number"
+              min={0}
+              max={65535}
+              value={mumbleForm.public_port}
+              onChange={(event) =>
+                setMumbleForm((current) => ({
+                  ...current,
+                  public_port: Number(event.target.value),
+                }))
+              }
             />
           </label>
           <label className="space-y-2">

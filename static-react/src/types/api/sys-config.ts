@@ -36,4 +36,6 @@ export interface MumbleConfig {
   server_url: string
   revalidate_token: string
   revalidate_timeout_ms: number
+  public_address: string
+  public_port: number
 }

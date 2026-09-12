@@ -47,12 +47,15 @@ type OneBotRuntimeConfig struct {
 
 // MumbleRuntimeConfig is managed in Seat system settings. ServiceToken is used
 // for go-mumble-server -> Seat calls; RevalidateToken is used in the reverse
-// direction and must be a different credential.
+// direction and must be a different credential. PublicAddress/PublicPort are
+// display-only connection hints for end users and are unrelated to ServerURL.
 type MumbleRuntimeConfig struct {
 	ServiceToken        string `json:"service_token"`
 	ServerURL           string `json:"server_url"`
 	RevalidateToken     string `json:"revalidate_token"`
 	RevalidateTimeoutMS int    `json:"revalidate_timeout_ms"`
+	PublicAddress       string `json:"public_address"`
+	PublicPort          int    `json:"public_port"`
 }
 
 // QQGovernanceSettings 是所有受治理 QQ 群共用的巡检与清退确认参数。
@@ -178,6 +181,8 @@ func (s *SysConfigService) GetMumbleConfig() MumbleRuntimeConfig {
 		ServerURL:           s.repo.GetString(model.SysConfigMumbleServerURL, ""),
 		RevalidateToken:     s.repo.GetString(model.SysConfigMumbleRevalidateToken, ""),
 		RevalidateTimeoutMS: s.repo.GetInt(model.SysConfigMumbleRevalidateTimeoutMS, model.SysConfigDefaultMumbleRevalidateTimeoutMS),
+		PublicAddress:       strings.TrimSpace(s.repo.GetString(model.SysConfigMumblePublicAddress, "")),
+		PublicPort:          s.repo.GetInt(model.SysConfigMumblePublicPort, 0),
 	}
 }
 
@@ -185,6 +190,7 @@ func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
 	cfg.ServiceToken = strings.TrimSpace(cfg.ServiceToken)
 	cfg.ServerURL = strings.TrimRight(strings.TrimSpace(cfg.ServerURL), "/")
 	cfg.RevalidateToken = strings.TrimSpace(cfg.RevalidateToken)
+	cfg.PublicAddress = strings.TrimSpace(cfg.PublicAddress)
 	if cfg.ServerURL != "" {
 		parsed, err := url.Parse(cfg.ServerURL)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
@@ -203,11 +209,19 @@ func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
 	if cfg.RevalidateTimeoutMS < 100 || cfg.RevalidateTimeoutMS > 10000 {
 		return errors.New("mumble 重校验超时必须在 100 到 10000 毫秒之间")
 	}
-	items := newSysConfigBatch(4).
+	if cfg.PublicAddress != "" && (len(cfg.PublicAddress) > 253 || strings.ContainsAny(cfg.PublicAddress, "/ \t\r\n")) {
+		return errors.New("mumble 服务器连接地址格式无效")
+	}
+	if cfg.PublicPort < 0 || cfg.PublicPort > 65535 {
+		return errors.New("mumble 服务器连接端口必须在 0 到 65535 之间")
+	}
+	items := newSysConfigBatch(6).
 		AddString(model.SysConfigMumbleServiceToken, cfg.ServiceToken, "Mumble 调用 Seat 的服务令牌").
 		AddString(model.SysConfigMumbleServerURL, cfg.ServerURL, "Mumble 服务管理地址").
 		AddString(model.SysConfigMumbleRevalidateToken, cfg.RevalidateToken, "Seat 调用 Mumble 的重校验令牌").
 		AddInt(model.SysConfigMumbleRevalidateTimeoutMS, cfg.RevalidateTimeoutMS, "Mumble 重校验请求超时（毫秒）").
+		AddString(model.SysConfigMumblePublicAddress, cfg.PublicAddress, "对用户展示的 Mumble 服务器连接地址").
+		AddInt(model.SysConfigMumblePublicPort, cfg.PublicPort, "对用户展示的 Mumble 服务器连接端口（0 表示未设置）").
 		Items()
 	if err := s.repo.SetMany(items); err != nil {
 		return errors.New("更新 Mumble 连接设置失败")

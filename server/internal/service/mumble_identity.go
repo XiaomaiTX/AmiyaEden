@@ -34,13 +34,18 @@ type MumbleIdentityService struct {
 	userRepo     *repository.UserRepository
 	charRepo     *repository.EveCharacterRepository
 	roleRepo     *repository.RoleRepository
+	cfgRepo      *repository.SysConfigRepository
 	auditSvc     *AuditService
 }
 
+// MumbleCredentialStatus is the user-facing credential payload. The stable
+// Mumble user id is protocol-only and must never appear here; ServerAddress
+// and ServerPort are display-only connection hints from system config.
 type MumbleCredentialStatus struct {
 	Created           bool       `json:"created"`
 	Enabled           bool       `json:"enabled"`
-	StableUserID      uint32     `json:"stable_user_id,omitempty"`
+	ServerAddress     string     `json:"server_address,omitempty"`
+	ServerPort        int        `json:"server_port,omitempty"`
 	CredentialVersion uint       `json:"credential_version,omitempty"`
 	PasswordRotatedAt *time.Time `json:"password_rotated_at,omitempty"`
 }
@@ -57,19 +62,20 @@ type MumbleClaims struct {
 func NewMumbleIdentityService() *MumbleIdentityService {
 	return &MumbleIdentityService{
 		identityRepo: repository.NewMumbleIdentityRepository(), userRepo: repository.NewUserRepository(),
-		charRepo: repository.NewEveCharacterRepository(), roleRepo: repository.NewRoleRepository(), auditSvc: NewAuditService(),
+		charRepo: repository.NewEveCharacterRepository(), roleRepo: repository.NewRoleRepository(),
+		cfgRepo: repository.NewSysConfigRepository(), auditSvc: NewAuditService(),
 	}
 }
 
 func (s *MumbleIdentityService) GetCredentialStatus(userID uint) (MumbleCredentialStatus, error) {
 	identity, err := s.identityRepo.GetBySeatUserID(userID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return MumbleCredentialStatus{}, nil
+		return s.withConnectionInfo(MumbleCredentialStatus{}), nil
 	}
 	if err != nil {
 		return MumbleCredentialStatus{}, err
 	}
-	return credentialStatus(identity), nil
+	return s.withConnectionInfo(credentialStatus(identity)), nil
 }
 
 // CreateCredential creates the only copy of a Mumble app password. The secret
@@ -104,7 +110,7 @@ func (s *MumbleIdentityService) CreateCredential(userID uint) (MumbleCredentialS
 		identity.CredentialEnabled, identity.CredentialVersion, identity.IdentityVersion, identity.PasswordRotatedAt = true, version, version, &now
 	}
 	s.recordAudit("mumble_credential_create", userID, model.AuditResultSuccess, nil)
-	return credentialStatus(identity), secret, nil
+	return s.withConnectionInfo(credentialStatus(identity)), secret, nil
 }
 
 func (s *MumbleIdentityService) RotateCredential(userID uint) (MumbleCredentialStatus, string, error) {
@@ -126,7 +132,7 @@ func (s *MumbleIdentityService) RotateCredential(userID uint) (MumbleCredentialS
 	identity.CredentialEnabled, identity.CredentialVersion, identity.IdentityVersion, identity.PasswordRotatedAt = true, version, version, &now
 	s.recordAudit("mumble_credential_rotate", userID, model.AuditResultSuccess, nil)
 	NotifyMumbleIdentityChanged(global.BackgroundContext(), userID)
-	return credentialStatus(identity), secret, nil
+	return s.withConnectionInfo(credentialStatus(identity)), secret, nil
 }
 
 func (s *MumbleIdentityService) RevokeCredential(userID uint) error {
@@ -236,7 +242,18 @@ func credentialStatus(identity *model.MumbleIdentity) MumbleCredentialStatus {
 	if identity == nil {
 		return MumbleCredentialStatus{}
 	}
-	return MumbleCredentialStatus{Created: true, Enabled: identity.CredentialEnabled && identity.CredentialHash != "", StableUserID: identity.StableMumbleUserID(), CredentialVersion: identity.CredentialVersion, PasswordRotatedAt: identity.PasswordRotatedAt}
+	return MumbleCredentialStatus{Created: true, Enabled: identity.CredentialEnabled && identity.CredentialHash != "", CredentialVersion: identity.CredentialVersion, PasswordRotatedAt: identity.PasswordRotatedAt}
+}
+
+// withConnectionInfo fills the display-only public connection fields from
+// system config so every user-facing credential response stays self-sufficient.
+func (s *MumbleIdentityService) withConnectionInfo(status MumbleCredentialStatus) MumbleCredentialStatus {
+	if s.cfgRepo == nil {
+		return status
+	}
+	status.ServerAddress = strings.TrimSpace(s.cfgRepo.GetString(model.SysConfigMumblePublicAddress, ""))
+	status.ServerPort = s.cfgRepo.GetInt(model.SysConfigMumblePublicPort, 0)
+	return status
 }
 
 func (s *MumbleIdentityService) recordAudit(action string, targetUserID uint, result string, details map[string]any) {

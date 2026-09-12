@@ -83,14 +83,17 @@ export function MumbleCredentialCard({ canonicalName }: MumbleCredentialCardProp
     }
   }
 
-  const copyPassword = async () => {
+  const copyValue = async (value: string) => {
     try {
-      await navigator.clipboard.writeText(password)
-      setNotice({ kind: 'success', text: t('characters.mumble.copied') })
+      await navigator.clipboard.writeText(value)
+      setNotice({ kind: 'success', text: t('common.copied') })
     } catch {
       setNotice({ kind: 'error', text: t('common.copyFailed') })
     }
   }
+
+  const serverAddress = status?.server_address ?? ''
+  const serverPort = status?.server_port ?? 0
 
   return (
     <div className="rounded-lg border bg-card p-5">
@@ -124,7 +127,7 @@ export function MumbleCredentialCard({ canonicalName }: MumbleCredentialCardProp
           <div className="mt-3 grid gap-2 text-sm sm:grid-cols-[auto_1fr_auto] sm:items-center">
             <span className="text-muted-foreground">{t('characters.mumble.password')}</span>
             <code className="break-all rounded bg-background px-3 py-2">{password}</code>
-            <Button type="button" variant="outline" onClick={() => void copyPassword()}>
+            <Button type="button" variant="outline" onClick={() => void copyValue(password)}>
               {t('common.copy')}
             </Button>
           </div>
@@ -134,14 +137,45 @@ export function MumbleCredentialCard({ canonicalName }: MumbleCredentialCardProp
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+      <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
         <div>
           <span className="text-muted-foreground">{t('characters.mumble.username')}</span>
-          <p className="mt-1 font-medium">{canonicalName || '—'}</p>
+          <div className="mt-1 flex items-center gap-1">
+            <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 font-medium">
+              {canonicalName || '—'}
+            </code>
+            {canonicalName ? (
+              <Button type="button" variant="ghost" onClick={() => void copyValue(canonicalName)}>
+                {t('common.copy')}
+              </Button>
+            ) : null}
+          </div>
         </div>
         <div>
-          <span className="text-muted-foreground">{t('characters.mumble.stableId')}</span>
-          <p className="mt-1 font-medium">{status?.stable_user_id ?? '—'}</p>
+          <span className="text-muted-foreground">{t('characters.mumble.serverAddress')}</span>
+          <div className="mt-1 flex items-center gap-1">
+            <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 font-medium">
+              {serverAddress || '—'}
+            </code>
+            {serverAddress ? (
+              <Button type="button" variant="ghost" onClick={() => void copyValue(serverAddress)}>
+                {t('common.copy')}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <div>
+          <span className="text-muted-foreground">{t('characters.mumble.serverPort')}</span>
+          <div className="mt-1 flex items-center gap-1">
+            <code className="min-w-0 flex-1 truncate rounded bg-muted px-2 py-1 font-medium">
+              {serverPort || '—'}
+            </code>
+            {serverPort ? (
+              <Button type="button" variant="ghost" onClick={() => void copyValue(String(serverPort))}>
+                {t('common.copy')}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
 

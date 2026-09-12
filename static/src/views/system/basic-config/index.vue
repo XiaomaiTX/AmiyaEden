@@ -68,6 +68,12 @@
             placeholder="http://go-mumble-server:64730"
           />
         </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.mumblePublicAddress')">
+          <ElInput v-model="mumbleForm.public_address" clearable placeholder="mumble.example.com" />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.mumblePublicPort')">
+          <ElInputNumber v-model="mumbleForm.public_port" :min="0" :max="65535" />
+        </ElFormItem>
         <ElFormItem :label="$t('system.basicConfig.mumbleServiceToken')">
           <ElInput v-model="mumbleForm.service_token" show-password clearable />
         </ElFormItem>
@@ -614,7 +620,9 @@
     service_token: '',
     server_url: '',
     revalidate_token: '',
-    revalidate_timeout_ms: 1000
+    revalidate_timeout_ms: 1000,
+    public_address: '',
+    public_port: 0
   })
   const sdeStatus = reactive<Api.SysConfig.SDEStatus>({
     current_version: '',

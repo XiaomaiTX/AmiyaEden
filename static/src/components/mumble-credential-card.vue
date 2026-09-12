@@ -25,15 +25,28 @@
       </div>
     </ElAlert>
 
-    <div class="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-      <div
-        ><span class="text-g-500">{{ t('characters.mumble.username') }}</span
-        ><p class="mt-1 font-medium">{{ canonicalName || '—' }}</p></div
-      >
-      <div
-        ><span class="text-g-500">{{ t('characters.mumble.stableId') }}</span
-        ><p class="mt-1 font-medium">{{ status?.stable_user_id ?? '—' }}</p></div
-      >
+    <div class="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+      <div>
+        <span class="text-g-500">{{ t('characters.mumble.username') }}</span>
+        <div class="mt-1 flex items-center gap-1">
+          <p class="min-w-0 flex-1 truncate font-medium">{{ canonicalName || '—' }}</p>
+          <ArtCopyButton :text="canonicalName" />
+        </div>
+      </div>
+      <div>
+        <span class="text-g-500">{{ t('characters.mumble.serverAddress') }}</span>
+        <div class="mt-1 flex items-center gap-1">
+          <p class="min-w-0 flex-1 truncate font-medium">{{ status?.server_address || '—' }}</p>
+          <ArtCopyButton :text="status?.server_address" />
+        </div>
+      </div>
+      <div>
+        <span class="text-g-500">{{ t('characters.mumble.serverPort') }}</span>
+        <div class="mt-1 flex items-center gap-1">
+          <p class="min-w-0 flex-1 truncate font-medium">{{ status?.server_port || '—' }}</p>
+          <ArtCopyButton :text="status?.server_port" />
+        </div>
+      </div>
     </div>
 
     <div class="mt-5 flex flex-wrap justify-end gap-2">

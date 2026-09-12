@@ -39,15 +39,12 @@ func setupMumbleIdentityTest(t *testing.T) *MumbleIdentityService {
 func TestMumbleIdentityServiceCredentialAndEntitlement(t *testing.T) {
 	svc := setupMumbleIdentityTest(t)
 	status, password, err := svc.CreateCredential(42)
-	if err != nil || password == "" || status.StableUserID == 0 {
+	if err != nil || password == "" {
 		t.Fatalf("create credential: status=%+v err=%v", status, err)
-	}
-	if status.StableUserID == 42 {
-		t.Fatal("stable Mumble user id must not reuse Seat user id")
 	}
 
 	claims, err := svc.Authenticate("Primary Pilot", password)
-	if err != nil || !claims.Eligible || claims.Name != "Primary Pilot" {
+	if err != nil || !claims.Eligible || claims.Name != "Primary Pilot" || claims.StableUserID == 0 || claims.StableUserID == 42 {
 		t.Fatalf("authenticate: claims=%+v err=%v", claims, err)
 	}
 	if !containsMumbleGroup(claims.Groups, "fuxi_role_fc") || !containsMumbleGroup(claims.Groups, "fuxi_role_user") {
@@ -95,9 +92,13 @@ func TestMumbleIdentityServiceCredentialAndEntitlement(t *testing.T) {
 
 func TestMumbleIdentityServicePrimaryCharacterAndRevoke(t *testing.T) {
 	svc := setupMumbleIdentityTest(t)
-	status, password, err := svc.CreateCredential(42)
+	_, password, err := svc.CreateCredential(42)
 	if err != nil {
 		t.Fatal(err)
+	}
+	before, err := svc.Authenticate("Primary Pilot", password)
+	if err != nil || !before.Eligible || before.StableUserID == 0 {
+		t.Fatalf("authenticate before primary change: claims=%+v err=%v", before, err)
 	}
 	newChar := model.EveCharacter{CharacterID: 900002, CharacterName: "New Primary", UserID: 42}
 	if err := global.DB.Create(&newChar).Error; err != nil {
@@ -110,7 +111,7 @@ func TestMumbleIdentityServicePrimaryCharacterAndRevoke(t *testing.T) {
 		t.Fatal("old primary name must deny")
 	}
 	claims, err := svc.Authenticate("New Primary", password)
-	if err != nil || claims.StableUserID != status.StableUserID {
+	if err != nil || claims.StableUserID != before.StableUserID {
 		t.Fatalf("primary change must retain identity: %+v %v", claims, err)
 	}
 	if err := global.DB.Model(&model.User{}).Where("id = 42").Update("primary_character_id", 0).Error; err != nil {
@@ -128,6 +129,42 @@ func TestMumbleIdentityServicePrimaryCharacterAndRevoke(t *testing.T) {
 	if _, err := svc.Authenticate("New Primary", password); err == nil {
 		t.Fatal("revoked credential must deny")
 	}
+}
+
+func TestMumbleIdentityServiceCredentialStatusConnectionInfo(t *testing.T) {
+	t.Run("configured", func(t *testing.T) {
+		svc := setupMumbleIdentityTest(t)
+		if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumblePublicAddress, Value: " mumble.example.com "}).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumblePublicPort, Value: "64738"}).Error; err != nil {
+			t.Fatal(err)
+		}
+		status, err := svc.GetCredentialStatus(42)
+		if err != nil || status.Created || status.Enabled {
+			t.Fatalf("status before create: %+v err=%v", status, err)
+		}
+		if status.ServerAddress != "mumble.example.com" || status.ServerPort != 64738 {
+			t.Fatalf("connection info missing before create: %+v", status)
+		}
+		created, password, err := svc.CreateCredential(42)
+		if err != nil || password == "" || !created.Created || !created.Enabled {
+			t.Fatalf("create credential: %+v err=%v", created, err)
+		}
+		if created.ServerAddress != "mumble.example.com" || created.ServerPort != 64738 {
+			t.Fatalf("connection info missing after create: %+v", created)
+		}
+	})
+	t.Run("unconfigured", func(t *testing.T) {
+		svc := setupMumbleIdentityTest(t)
+		status, err := svc.GetCredentialStatus(42)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if status.ServerAddress != "" || status.ServerPort != 0 {
+			t.Fatalf("unconfigured connection info must stay empty: %+v", status)
+		}
+	})
 }
 
 func containsMumbleGroup(groups []string, want string) bool {

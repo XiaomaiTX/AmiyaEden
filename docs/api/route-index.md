@@ -115,7 +115,7 @@ source_of_truth:
 | DELETE | `/sso/eve/characters/:character_id`                         | 解绑人物                                                                                                                                                                                                                    | JWT                         |
 | GET    | `/me`                                                       | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`、`primary_corporation_id`、`corp_capabilities`、`corp_rules`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT                         |
 | DELETE | `/me`                                                       | 注销当前登录用户 / 自助删除账号                                                                                                                                                                                             | JWT                         |
-| GET | `/mumble/credential` | 查询当前用户的 Mumble App Password 状态；不返回密码 | JWT |
+| GET | `/mumble/credential` | 查询当前用户的 Mumble App Password 状态；不返回密码；附带仅展示的 `server_address`/`server_port` 连接提示，不含稳定用户 ID | JWT |
 | POST | `/mumble/credential` | 首次创建 Mumble App Password；明文仅在本响应返回一次 | JWT |
 | POST | `/mumble/credential/rotate` | 轮换 Mumble App Password；旧密码立即失效，明文仅在本响应返回一次 | JWT |
 | DELETE | `/mumble/credential` | 吊销 Mumble App Password | JWT |
@@ -402,7 +402,7 @@ source_of_truth:
 | GET    | `/system/basic-config/allow-corporations`          | 获取允许军团列表；返回 `allow_corporations` 及军团展示信息 `corporations[{corporation_id, corporation_name}]` | `RequireRole(super_admin)` |
 | PUT    | `/system/basic-config/allow-corporations`          | 更新允许军团列表                                                                                              | `RequireRole(super_admin)` |
 | GET    | `/system/basic-config/mumble`                      | 获取 Mumble 双向连接设置                                                                                      | `RequireRole(super_admin)` |
-| PUT    | `/system/basic-config/mumble`                      | 更新 Mumble 双向服务令牌、管理地址与重校验超时；两个方向的令牌必须不同                                        | `RequireRole(super_admin)` |
+| PUT    | `/system/basic-config/mumble`                      | 更新 Mumble 双向服务令牌、管理地址、重校验超时与对用户展示的连接地址/端口（`public_address`/`public_port`）；两个方向的令牌必须不同 | `RequireRole(super_admin)` |
 | GET    | `/system/basic-config/corporation-access-policies` | 获取军团能力策略配置（`default_mode` 默认 `allow`）                                                           | `RequireRole(super_admin)` |
 | PUT    | `/system/basic-config/corporation-access-policies` | 更新军团能力策略配置（`default_mode` 允许 `allow` / `deny`）                                                  | `RequireRole(super_admin)` |
 | GET    | `/system/basic-config/character-esi-restriction`   | 获取任一绑定人物 ESI 失效时是否强制停留人物页的配置                                                           | `RequireRole(super_admin)` |

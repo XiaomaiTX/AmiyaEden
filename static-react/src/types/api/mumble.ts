@@ -1,7 +1,8 @@
 export interface MumbleCredentialStatus {
   created: boolean
   enabled: boolean
-  stable_user_id?: number
+  server_address?: string
+  server_port?: number
   credential_version?: number
   password_rotated_at?: string | null
 }

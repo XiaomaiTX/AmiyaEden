@@ -40,7 +40,9 @@ Mumble App Password 由 `crypto/rand` 生成，数据库仅保存 Argon2id 哈�
 
 双向服务令牌、Mumble 管理地址和回调超时均持久化在 `system_config`，由超级管理员通过“系统管理 → 基础配置”维护，不属于 Seat YAML 配置。两个方向必须使用不同令牌，并与 go-mumble-server 自身进程配置中的对应值一致。
 
-普通用户在“EVE 人物管理”页面创建、轮换或吊销 Mumble 凭据。登录用户名始终显示为当前主人物名；明文密码只在创建或轮换成功后显示一次。
+`mumble.public_address` 与 `mumble.public_port` 是仅对用户展示的连接提示，凭据状态响应会原样带给前端；它们不参与服务间通信，也与 Mumble 管理地址无关。
+
+普通用户在“EVE 人物管理”页面创建、轮换或吊销 Mumble 凭据。凭据卡片展示可复制的登录用户名、服务器连接地址与端口；登录用户名始终为当前主人物名，明文密码只在创建或轮换成功后显示一次。稳定 Mumble User ID 属于协议内部标识，只通过 `/api/internal/mumble/v1/*` 的 claims 暴露，不出现在任何用户侧响应或页面中。
 
 ## 对端实现
 
