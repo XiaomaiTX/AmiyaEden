@@ -519,6 +519,9 @@
       serverUrl: 'Mumble 管理地址',
       publicAddress: 'Mumble 服务器连接地址（对用户展示）',
       publicPort: '端口（对用户展示，0 表示不展示）',
+      displayNameTemplate: 'Mumble 昵称显示模板',
+      displayNameTemplateHint:
+        '支持 {alliance_ticker}、{corporation_ticker}、{nickname}、{character_name} 和 {roles}；留空时默认仅显示主人物名。',
       serviceToken: 'Mumble → Seat 服务令牌',
       revalidateToken: 'Seat → Mumble 重校验令牌',
       timeout: '重校验超时（毫秒）',

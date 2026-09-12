@@ -3,8 +3,10 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"go.uber.org/zap"
@@ -91,10 +93,68 @@ func (t *AffiliationTask) fetchAffiliation(ctx context.Context, client *Client, 
 			)
 		}
 	}
+	if err := t.refreshAffiliationTickerCache(ctx, client, results); err != nil {
+		return err
+	}
 
 	global.Logger.Debug("[ESI] 人物归属刷新并入库完成",
 		zap.Int("count", len(results)),
 	)
 
+	return nil
+}
+
+const affiliationTickerCacheTTL = 7 * 24 * time.Hour
+
+func (t *AffiliationTask) refreshAffiliationTickerCache(ctx context.Context, client *Client, results []AffiliationResult) error {
+	idsByType := map[string]map[int64]struct{}{
+		model.EntityTickerTypeCorporation: {},
+		model.EntityTickerTypeAlliance:    {},
+	}
+	for _, result := range results {
+		if result.CorporationID > 0 {
+			idsByType[model.EntityTickerTypeCorporation][result.CorporationID] = struct{}{}
+		}
+		if result.AllianceID != nil && *result.AllianceID > 0 {
+			idsByType[model.EntityTickerTypeAlliance][*result.AllianceID] = struct{}{}
+		}
+	}
+
+	repo := repository.NewEntityTickerCacheRepository()
+	now := time.Now()
+	entries := make([]model.EveEntityTickerCache, 0)
+	for entityType, idSet := range idsByType {
+		ids := make([]int64, 0, len(idSet))
+		for id := range idSet {
+			ids = append(ids, id)
+		}
+		sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+		freshIDs, err := repo.ListFreshEntityIDs(entityType, ids, now)
+		if err != nil {
+			return fmt.Errorf("load affiliation ticker cache: %w", err)
+		}
+		for _, id := range ids {
+			if _, fresh := freshIDs[id]; fresh {
+				continue
+			}
+			var payload struct {
+				Ticker string `json:"ticker"`
+			}
+			path := fmt.Sprintf("/corporations/%d/", id)
+			if entityType == model.EntityTickerTypeAlliance {
+				path = fmt.Sprintf("/alliances/%d/", id)
+			}
+			if err := client.Get(ctx, path, "", &payload); err != nil {
+				return fmt.Errorf("fetch %s ticker %d: %w", entityType, id, err)
+			}
+			entries = append(entries, model.EveEntityTickerCache{
+				EntityID: id, EntityType: entityType, Ticker: payload.Ticker,
+				LastResolvedAt: now, ExpiresAt: now.Add(affiliationTickerCacheTTL),
+			})
+		}
+	}
+	if err := repo.Upsert(entries); err != nil {
+		return fmt.Errorf("upsert affiliation ticker cache: %w", err)
+	}
 	return nil
 }

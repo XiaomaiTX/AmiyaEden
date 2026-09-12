@@ -74,6 +74,14 @@
         <ElFormItem :label="$t('system.basicConfig.mumblePublicPort')">
           <ElInputNumber v-model="mumbleForm.public_port" :min="0" :max="65535" />
         </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.mumbleDisplayNameTemplate')">
+          <ElInput
+            v-model="mumbleForm.display_name_template"
+            clearable
+            placeholder="{alliance_ticker}-{corporation_ticker}-{nickname}/{character_name}"
+          />
+          <div class="form-hint">{{ $t('system.basicConfig.mumbleDisplayNameTemplateHint') }}</div>
+        </ElFormItem>
         <ElFormItem :label="$t('system.basicConfig.mumbleServiceToken')">
           <ElInput v-model="mumbleForm.service_token" show-password clearable />
         </ElFormItem>
@@ -622,7 +630,8 @@
     revalidate_token: '',
     revalidate_timeout_ms: 1000,
     public_address: '',
-    public_port: 0
+    public_port: 0,
+    display_name_template: '{character_name}'
   })
   const sdeStatus = reactive<Api.SysConfig.SDEStatus>({
     current_version: '',

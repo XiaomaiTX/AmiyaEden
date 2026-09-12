@@ -33,6 +33,7 @@ const defaultMumbleForm: MumbleConfig = {
   revalidate_timeout_ms: 1000,
   public_address: '',
   public_port: 0,
+  display_name_template: '{character_name}',
 }
 
 function parseCorporationId(raw: string) {
@@ -242,6 +243,21 @@ export function SystemBasicConfigPage() {
               }
               placeholder="mumble.example.com"
             />
+          </label>
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.displayNameTemplate')}
+            </span>
+            <Input
+              value={mumbleForm.display_name_template}
+              onChange={(event) =>
+                setMumbleForm((current) => ({ ...current, display_name_template: event.target.value }))
+              }
+              placeholder="{alliance_ticker}-{corporation_ticker}-{nickname}/{character_name}"
+            />
+            <span className="text-xs text-muted-foreground">
+              {t('systemBasicConfig.mumble.displayNameTemplateHint')}
+            </span>
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">

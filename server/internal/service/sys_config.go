@@ -56,7 +56,10 @@ type MumbleRuntimeConfig struct {
 	RevalidateTimeoutMS int    `json:"revalidate_timeout_ms"`
 	PublicAddress       string `json:"public_address"`
 	PublicPort          int    `json:"public_port"`
+	DisplayNameTemplate string `json:"display_name_template"`
 }
+
+const defaultMumbleDisplayNameTemplate = "{character_name}"
 
 // QQGovernanceSettings 是所有受治理 QQ 群共用的巡检与清退确认参数。
 type QQGovernanceSettings struct {
@@ -183,6 +186,7 @@ func (s *SysConfigService) GetMumbleConfig() MumbleRuntimeConfig {
 		RevalidateTimeoutMS: s.repo.GetInt(model.SysConfigMumbleRevalidateTimeoutMS, model.SysConfigDefaultMumbleRevalidateTimeoutMS),
 		PublicAddress:       strings.TrimSpace(s.repo.GetString(model.SysConfigMumblePublicAddress, "")),
 		PublicPort:          s.repo.GetInt(model.SysConfigMumblePublicPort, 0),
+		DisplayNameTemplate: s.repo.GetString(model.SysConfigMumbleDisplayNameTemplate, defaultMumbleDisplayNameTemplate),
 	}
 }
 
@@ -191,6 +195,10 @@ func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
 	cfg.ServerURL = strings.TrimRight(strings.TrimSpace(cfg.ServerURL), "/")
 	cfg.RevalidateToken = strings.TrimSpace(cfg.RevalidateToken)
 	cfg.PublicAddress = strings.TrimSpace(cfg.PublicAddress)
+	cfg.DisplayNameTemplate = strings.TrimSpace(cfg.DisplayNameTemplate)
+	if cfg.DisplayNameTemplate == "" {
+		cfg.DisplayNameTemplate = defaultMumbleDisplayNameTemplate
+	}
 	if cfg.ServerURL != "" {
 		parsed, err := url.Parse(cfg.ServerURL)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
@@ -215,16 +223,35 @@ func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
 	if cfg.PublicPort < 0 || cfg.PublicPort > 65535 {
 		return errors.New("mumble 服务器连接端口必须在 0 到 65535 之间")
 	}
-	items := newSysConfigBatch(6).
+	if err := validateMumbleDisplayNameTemplate(cfg.DisplayNameTemplate); err != nil {
+		return err
+	}
+	items := newSysConfigBatch(7).
 		AddString(model.SysConfigMumbleServiceToken, cfg.ServiceToken, "Mumble 调用 Seat 的服务令牌").
 		AddString(model.SysConfigMumbleServerURL, cfg.ServerURL, "Mumble 服务管理地址").
 		AddString(model.SysConfigMumbleRevalidateToken, cfg.RevalidateToken, "Seat 调用 Mumble 的重校验令牌").
 		AddInt(model.SysConfigMumbleRevalidateTimeoutMS, cfg.RevalidateTimeoutMS, "Mumble 重校验请求超时（毫秒）").
 		AddString(model.SysConfigMumblePublicAddress, cfg.PublicAddress, "对用户展示的 Mumble 服务器连接地址").
 		AddInt(model.SysConfigMumblePublicPort, cfg.PublicPort, "对用户展示的 Mumble 服务器连接端口（0 表示未设置）").
+		AddString(model.SysConfigMumbleDisplayNameTemplate, cfg.DisplayNameTemplate, "Mumble 昵称显示模板").
 		Items()
 	if err := s.repo.SetMany(items); err != nil {
 		return errors.New("更新 Mumble 连接设置失败")
+	}
+	return nil
+}
+
+func validateMumbleDisplayNameTemplate(template string) error {
+	if len(template) > 128 {
+		return errors.New("mumble 昵称显示模板最多 128 个字节")
+	}
+	remaining := strings.ReplaceAll(template, "{nickname}", "")
+	remaining = strings.ReplaceAll(remaining, "{character_name}", "")
+	remaining = strings.ReplaceAll(remaining, "{corporation_ticker}", "")
+	remaining = strings.ReplaceAll(remaining, "{alliance_ticker}", "")
+	remaining = strings.ReplaceAll(remaining, "{roles}", "")
+	if strings.Contains(remaining, "{") || strings.Contains(remaining, "}") {
+		return errors.New("mumble 昵称显示模板只支持 {alliance_ticker}、{corporation_ticker}、{nickname}、{character_name} 和 {roles}")
 	}
 	return nil
 }

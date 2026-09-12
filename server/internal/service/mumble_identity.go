@@ -35,6 +35,7 @@ type MumbleIdentityService struct {
 	charRepo     *repository.EveCharacterRepository
 	roleRepo     *repository.RoleRepository
 	cfgRepo      *repository.SysConfigRepository
+	tickerRepo   *repository.EntityTickerCacheRepository
 	auditSvc     *AuditService
 }
 
@@ -63,7 +64,7 @@ func NewMumbleIdentityService() *MumbleIdentityService {
 	return &MumbleIdentityService{
 		identityRepo: repository.NewMumbleIdentityRepository(), userRepo: repository.NewUserRepository(),
 		charRepo: repository.NewEveCharacterRepository(), roleRepo: repository.NewRoleRepository(),
-		cfgRepo: repository.NewSysConfigRepository(), auditSvc: NewAuditService(),
+		cfgRepo: repository.NewSysConfigRepository(), tickerRepo: repository.NewEntityTickerCacheRepository(), auditSvc: NewAuditService(),
 	}
 }
 
@@ -235,7 +236,79 @@ func (s *MumbleIdentityService) resolveBySeatUserID(userID uint, identity *model
 			groups = append(groups, "fuxi_role_"+role)
 		}
 	}
-	return MumbleClaims{Eligible: true, StableUserID: identity.StableMumbleUserID(), Name: char.CharacterName, Groups: groups, IdentityVersion: identity.IdentityVersion, PolicyVersion: mumblePolicyVersion(user, char, roles, identity)}, nil
+	displayName, err := s.formatMumbleDisplayName(user.Nickname, char, roles)
+	if err != nil {
+		return MumbleClaims{}, err
+	}
+	return MumbleClaims{Eligible: true, StableUserID: identity.StableMumbleUserID(), Name: displayName, Groups: groups, IdentityVersion: identity.IdentityVersion, PolicyVersion: mumblePolicyVersion(user, char, roles, identity)}, nil
+}
+
+func (s *MumbleIdentityService) formatMumbleDisplayName(nickname string, char *model.EveCharacter, roles []string) (string, error) {
+	template := defaultMumbleDisplayNameTemplate
+	if s.cfgRepo != nil {
+		template = strings.TrimSpace(s.cfgRepo.GetString(model.SysConfigMumbleDisplayNameTemplate, defaultMumbleDisplayNameTemplate))
+	}
+	if template == "" {
+		template = defaultMumbleDisplayNameTemplate
+	}
+	corporationTicker, allianceTicker := "", ""
+	if strings.Contains(template, "{corporation_ticker}") || strings.Contains(template, "{alliance_ticker}") {
+		var err error
+		var ready bool
+		corporationTicker, allianceTicker, ready, err = s.resolveMumbleAffiliationTickers(char)
+		if err != nil {
+			return "", err
+		}
+		if !ready {
+			// 归属任务尚未写入快照时不让显示模板影响语音登录资格；下次
+			// 周期身份重验会在快照就绪后推送完整昵称。
+			return char.CharacterName, nil
+		}
+	}
+	replacements := strings.NewReplacer(
+		"{alliance_ticker}", allianceTicker,
+		"{corporation_ticker}", corporationTicker,
+		"{nickname}", nickname,
+		"{character_name}", char.CharacterName,
+		"{roles}", strings.Join(roles, ","),
+	)
+	displayName := strings.TrimSpace(replacements.Replace(template))
+	if displayName == "" || displayName == "SuperUser" || len(displayName) > 128 {
+		return "", ErrMumbleIdentityDenied
+	}
+	return displayName, nil
+}
+
+func (s *MumbleIdentityService) resolveMumbleAffiliationTickers(char *model.EveCharacter) (string, string, bool, error) {
+	if char == nil {
+		return "", "", false, ErrMumbleIdentityDenied
+	}
+	resolve := func(kind string, entityID int64) (string, bool, error) {
+		if entityID <= 0 {
+			return "", true, nil
+		}
+		if s.tickerRepo == nil {
+			return "", false, ErrMumbleIdentityDenied
+		}
+		ticker, found, err := s.tickerRepo.GetFreshTicker(kind, entityID, time.Now())
+		if err != nil {
+			return "", false, err
+		}
+		return ticker, found, nil
+	}
+	corporationTicker, corporationReady, err := resolve(model.EntityTickerTypeCorporation, char.CorporationID)
+	if err != nil {
+		return "", "", false, err
+	}
+	allianceID := int64(0)
+	if char.AllianceID != nil {
+		allianceID = *char.AllianceID
+	}
+	allianceTicker, allianceReady, err := resolve(model.EntityTickerTypeAlliance, allianceID)
+	if err != nil {
+		return "", "", false, err
+	}
+	return corporationTicker, allianceTicker, corporationReady && allianceReady, nil
 }
 
 func credentialStatus(identity *model.MumbleIdentity) MumbleCredentialStatus {

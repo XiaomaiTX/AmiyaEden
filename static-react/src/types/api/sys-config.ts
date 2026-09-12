@@ -38,4 +38,5 @@ export interface MumbleConfig {
   revalidate_timeout_ms: number
   public_address: string
   public_port: number
+  display_name_template: string
 }

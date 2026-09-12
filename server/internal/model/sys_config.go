@@ -48,6 +48,7 @@ const (
 	SysConfigMumbleRevalidateTimeoutMS            = "mumble.revalidate_timeout_ms"
 	SysConfigMumblePublicAddress                  = "mumble.public_address"
 	SysConfigMumblePublicPort                     = "mumble.public_port"
+	SysConfigMumbleDisplayNameTemplate            = "mumble.display_name_template"
 	SysConfigQQGovernanceScanIntervalMinutes      = "qq_governance.scan_interval_minutes"
 	SysConfigQQGovernanceMismatchConfirmations    = "qq_governance.mismatch_confirmations"
 	SysConfigQQGovernanceMismatchObservationHours = "qq_governance.mismatch_observation_hours"

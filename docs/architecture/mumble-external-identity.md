@@ -42,6 +42,8 @@ Mumble App Password 由 `crypto/rand` 生成，数据库仅保存 Argon2id 哈�
 
 `mumble.public_address` 与 `mumble.public_port` 是仅对用户展示的连接提示，凭据状态响应会原样带给前端；它们不参与服务间通信，也与 Mumble 管理地址无关。
 
+`mumble.display_name_template` 决定 Seat 返回给 go-mumble-server 的 Mumble 显示名，支持 `{alliance_ticker}`、`{corporation_ticker}`、`{nickname}`、`{character_name}` 和 `{roles}`，默认 `{character_name}`。联盟和军团缩写由既有的 ESI 人物归属任务写入 `eve_entity_ticker_cache`，Mumble 身份服务只读取尚未过期的数据库快照，绝不在认证或重验时访问 ESI；若模板需要的 ticker 快照尚未就绪，暂时回退为主人物名，等待下一次周期重验更新完整显示名；`{roles}` 输出当前有效职权代码的逗号分隔值。登录时提交的用户名仍始终是主人物名；模板仅影响 Mumble 内显示和基于稳定 ID 的周期重验结果，不参与凭据校验。
+
 普通用户在“EVE 人物管理”页面创建、轮换或吊销 Mumble 凭据。凭据卡片展示可复制的登录用户名、服务器连接地址与端口；登录用户名始终为当前主人物名，明文密码只在创建或轮换成功后显示一次。稳定 Mumble User ID 属于协议内部标识，只通过 `/api/internal/mumble/v1/*` 的 claims 暴露，不出现在任何用户侧响应或页面中。
 
 ## 对端实现

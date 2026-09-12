@@ -3670,6 +3670,7 @@ declare namespace Api {
       revalidate_timeout_ms: number
       public_address: string
       public_port: number
+      display_name_template: string
     }
 
     interface SDEConfig {

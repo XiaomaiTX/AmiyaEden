@@ -519,6 +519,9 @@
       serverUrl: 'Mumble management URL',
       publicAddress: 'Mumble server address (shown to users)',
       publicPort: 'Port (shown to users, 0 hides it)',
+      displayNameTemplate: 'Mumble display name template',
+      displayNameTemplateHint:
+        'Supports {alliance_ticker}, {corporation_ticker}, {nickname}, {character_name}, and {roles}; empty uses the primary character name.',
       serviceToken: 'Mumble → Seat service token',
       revalidateToken: 'Seat → Mumble revalidation token',
       timeout: 'Revalidation timeout (ms)',

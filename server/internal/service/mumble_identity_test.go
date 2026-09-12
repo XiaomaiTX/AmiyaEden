@@ -4,6 +4,7 @@ import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"testing"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -15,11 +16,11 @@ func setupMumbleIdentityTest(t *testing.T) *MumbleIdentityService {
 	if err != nil {
 		t.Fatalf("open db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.UserRole{}, &model.MumbleIdentity{}, &model.AuditEvent{}, &model.SystemConfig{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.UserRole{}, &model.MumbleIdentity{}, &model.AuditEvent{}, &model.SystemConfig{}, &model.EveEntityTickerCache{}); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 	global.DB = db
-	user := model.User{BaseModel: model.BaseModel{ID: 42}, Status: 1, Role: model.RoleUser, PrimaryCharacterID: 900001}
+	user := model.User{BaseModel: model.BaseModel{ID: 42}, Nickname: "Doctor", Status: 1, Role: model.RoleUser, PrimaryCharacterID: 900001}
 	char := model.EveCharacter{CharacterID: 900001, CharacterName: "Primary Pilot", UserID: 42}
 	if err := db.Create(&user).Error; err != nil {
 		t.Fatal(err)
@@ -34,6 +35,51 @@ func setupMumbleIdentityTest(t *testing.T) *MumbleIdentityService {
 		t.Fatal(err)
 	}
 	return NewMumbleIdentityService()
+}
+
+func TestMumbleIdentityServiceFormatsDisplayNameFromTemplate(t *testing.T) {
+	svc := setupMumbleIdentityTest(t)
+	allianceID := int64(99000006)
+	if err := global.DB.Model(&model.EveCharacter{}).Where("character_id = ?", 900001).Updates(map[string]any{"corporation_id": 98000001, "alliance_id": allianceID}).Error; err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	if err := global.DB.Create(&[]model.EveEntityTickerCache{
+		{EntityID: 98000001, EntityType: model.EntityTickerTypeCorporation, Ticker: "FUXI", LastResolvedAt: now, ExpiresAt: now.Add(time.Hour)},
+		{EntityID: allianceID, EntityType: model.EntityTickerTypeAlliance, Ticker: "FRT", LastResolvedAt: now, ExpiresAt: now.Add(time.Hour)},
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumbleDisplayNameTemplate, Value: "{alliance_ticker}-{corporation_ticker}-{nickname}/{character_name}"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	_, password, err := svc.CreateCredential(42)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims, err := svc.Authenticate("Primary Pilot", password)
+	if err != nil || claims.Name != "FRT-FUXI-Doctor/Primary Pilot" {
+		t.Fatalf("template display name = %q, err=%v", claims.Name, err)
+	}
+}
+
+func TestMumbleIdentityServiceUsesCharacterNameUntilTickerSnapshotsExist(t *testing.T) {
+	svc := setupMumbleIdentityTest(t)
+	allianceID := int64(99000006)
+	if err := global.DB.Model(&model.EveCharacter{}).Where("character_id = ?", 900001).Updates(map[string]any{"corporation_id": 98000001, "alliance_id": allianceID}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumbleDisplayNameTemplate, Value: "{alliance_ticker}-{corporation_ticker}-{nickname}/{character_name}"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	_, password, err := svc.CreateCredential(42)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims, err := svc.Authenticate("Primary Pilot", password)
+	if err != nil || claims.Name != "Primary Pilot" {
+		t.Fatalf("missing ticker snapshots must retain login with character name: claims=%+v err=%v", claims, err)
+	}
 }
 
 func TestMumbleIdentityServiceCredentialAndEntitlement(t *testing.T) {

@@ -3228,6 +3228,8 @@
       "mumbleServerUrl": "Mumble Management URL",
       "mumblePublicAddress": "Mumble server address (shown to users)",
       "mumblePublicPort": "Port (shown to users, 0 hides it)",
+      "mumbleDisplayNameTemplate": "Mumble display name template",
+      "mumbleDisplayNameTemplateHint": "Supports {alliance_ticker}, {corporation_ticker}, {nickname}, {character_name}, and {roles}; empty uses the primary character name.",
       "mumbleServiceToken": "Mumble → Seat Service Token",
       "mumbleRevalidateToken": "Seat → Mumble Revalidation Token",
       "mumbleTimeout": "Revalidation Timeout (ms)",
