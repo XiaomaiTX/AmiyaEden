@@ -32,8 +32,8 @@ func TestNotifyMumbleIdentityChanged(t *testing.T) {
 	called := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
-		if r.URL.Path != "/internal/identity/v1/revalidate" {
-			t.Errorf("request path = %q, want %q", r.URL.Path, "/internal/identity/v1/revalidate")
+		if r.URL.Path != "/api/internal/identity/v1/revalidate" {
+			t.Errorf("request path = %q, want %q", r.URL.Path, "/api/internal/identity/v1/revalidate")
 		}
 		if got := r.Header.Get("Authorization"); got != "Bearer reverse-token" {
 			t.Errorf("authorization = %q", got)

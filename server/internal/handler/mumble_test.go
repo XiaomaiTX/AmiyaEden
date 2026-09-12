@@ -32,10 +32,10 @@ func TestMumbleInternalEndpointsRejectJWTAndMalformedPayload(t *testing.T) {
 
 	router := gin.New()
 	h := NewMumbleHandler()
-	internal := router.Group("/internal/mumble/v1", middleware.RequireMumbleService())
+	internal := router.Group("/api/internal/mumble/v1", middleware.RequireMumbleService())
 	internal.POST("/authenticate", h.Authenticate)
 
-	jwtRequest := httptest.NewRequest(http.MethodPost, "/internal/mumble/v1/authenticate", strings.NewReader(`{}`))
+	jwtRequest := httptest.NewRequest(http.MethodPost, "/api/internal/mumble/v1/authenticate", strings.NewReader(`{}`))
 	jwtRequest.Header.Set("Authorization", "Bearer eyJhbGciOiJIUzI1NiJ9.seat.jwt")
 	jwtRecorder := httptest.NewRecorder()
 	router.ServeHTTP(jwtRecorder, jwtRequest)
@@ -43,7 +43,7 @@ func TestMumbleInternalEndpointsRejectJWTAndMalformedPayload(t *testing.T) {
 		t.Fatalf("Seat JWT status=%d, want %d", jwtRecorder.Code, http.StatusUnauthorized)
 	}
 
-	malformed := httptest.NewRequest(http.MethodPost, "/internal/mumble/v1/authenticate", strings.NewReader(`{"username":"pilot"}`))
+	malformed := httptest.NewRequest(http.MethodPost, "/api/internal/mumble/v1/authenticate", strings.NewReader(`{"username":"pilot"}`))
 	malformed.Header.Set("Authorization", "Bearer mumble-service-test-token")
 	malformed.Header.Set("Content-Type", "application/json")
 	malformedRecorder := httptest.NewRecorder()

@@ -64,7 +64,7 @@ func notifyMumbleIdentityChanged(ctx context.Context, seatUserID uint) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	requestURL := strings.TrimRight(serverURL, "/") + "/internal/identity/v1/revalidate"
+	requestURL := strings.TrimRight(serverURL, "/") + "/api/internal/identity/v1/revalidate"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("创建重校验请求: %w", err)

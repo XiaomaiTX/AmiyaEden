@@ -14,12 +14,12 @@ source_of_truth:
 
 ## 私有 Mumble 身份接口
 
-以下入口不属于 `/api/v1` 用户 API，路径为 `/internal/mumble/v1`，仅接受 `mumble.service_token` 对应的 Bearer 服务凭据；普通 Seat JWT 一律拒绝。生产部署还应使用私网 HTTPS，并推荐 mTLS。
+以下入口位于 `/api/internal/mumble/v1`，仅接受 `mumble.service_token` 对应的 Bearer 服务凭据；普通 Seat JWT 一律拒绝。`/api/internal` 是服务间路由分类，不面向浏览器用户。生产部署还应使用私网 HTTPS，并推荐 mTLS。
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/authenticate` | 验证主人物名和 Mumble App Password；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny | Mumble service |
-| POST | `/identities/resolve` | 最多批量解析 500 个稳定 ID 和/或 canonical name，供在线会话重验与协议身份查找；返回当前资格、名称与 runtime groups | Mumble service |
+| POST | `/api/internal/mumble/v1/authenticate` | 验证主人物名和 Mumble App Password；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny | Mumble service |
+| POST | `/api/internal/mumble/v1/identities/resolve` | 最多批量解析 500 个稳定 ID 和/或 canonical name，供在线会话重验与协议身份查找；返回当前资格、名称与 runtime groups | Mumble service |
 
 ## 说明
 

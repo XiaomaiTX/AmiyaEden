@@ -27,7 +27,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	qqGovernanceOneBotH := handler.NewQQGovernanceOneBotHandler()
 	r.GET("/internal/onebot/v11/ws", qqGovernanceOneBotH.ReverseWebSocket)
 	mumbleInternalH := handler.NewMumbleHandler()
-	mumbleInternal := r.Group("/internal/mumble/v1", middleware.RequireMumbleService())
+	mumbleInternal := r.Group("/api/internal/mumble/v1", middleware.RequireMumbleService())
 	{
 		mumbleInternal.POST("/authenticate", mumbleInternalH.Authenticate)
 		mumbleInternal.POST("/identities/resolve", mumbleInternalH.ResolveIdentities)

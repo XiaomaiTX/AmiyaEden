@@ -32,9 +32,9 @@ Mumble App Password 由 `crypto/rand` 生成，数据库仅保存 Argon2id 哈�
 
 ## 外部接口与故障策略
 
-`/internal/mumble/v1/*` 仅接受 Seat“系统管理 → 基础配置”中保存的 Mumble → Seat 服务令牌，绝不接受普通 Seat JWT；生产部署还必须置于私网 HTTPS，并推荐 mTLS。认证接口将未知用户名、错误密码和资格不足统一为 `INVALID_CREDENTIALS`，以避免枚举。Seat 不在认证路径访问 ESI。
+`/api/internal/mumble/v1/*` 仅接受 Seat“系统管理 → 基础配置”中保存的 Mumble → Seat 服务令牌，绝不接受普通 Seat JWT；`/api/internal` 仅作服务间路由分类，不代表天然安全。生产部署还必须置于私网 HTTPS，并推荐 mTLS。认证接口将未知用户名、错误密码和资格不足统一为 `INVALID_CREDENTIALS`，以避免枚举。Seat 不在认证路径访问 ESI。
 
-新登录在 Seat 不可用时必须 fail closed。在线会话由 Mumble 定期调用 batch resolve 重新拉取真值；不再合格时断开，群组变更时替换 runtime claims 并失效 ACL 缓存。Seat 在凭据、角色、账号状态或主人物变化后，使用系统设置中的 Mumble 管理地址与 Seat → Mumble 重校验令牌调用 `POST /internal/identity/v1/revalidate`，发送最佳努力失效信号。推送只包含稳定 Mumble User ID，不能携带新的角色或群组事实；通知失败不回滚 Seat 写操作，周期重验负责最终收敛。
+新登录在 Seat 不可用时必须 fail closed。在线会话由 Mumble 定期调用 batch resolve 重新拉取真值；不再合格时断开，群组变更时替换 runtime claims 并失效 ACL 缓存。Seat 在凭据、角色、账号状态或主人物变化后，使用系统设置中的 Mumble 管理地址与 Seat → Mumble 重校验令牌调用 `POST /api/internal/identity/v1/revalidate`，发送最佳努力失效信号。推送只包含稳定 Mumble User ID，不能携带新的角色或群组事实；通知失败不回滚 Seat 写操作，周期重验负责最终收敛。
 
 ## 配置与用户入口
 
