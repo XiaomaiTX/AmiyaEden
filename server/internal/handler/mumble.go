@@ -53,7 +53,10 @@ func (h *MumbleHandler) RevokeCredential(c *gin.Context) {
 }
 
 type mumbleAuthenticateRequest struct {
-	ServerInstanceID string `json:"server_instance_id" binding:"required,max=128"`
+	// ServerInstanceID is supplied by implementations that identify their
+	// instance. Seat currently has no per-instance authorization policy, so it
+	// must not prevent otherwise valid external authentication requests.
+	ServerInstanceID string `json:"server_instance_id" binding:"max=128"`
 	Username         string `json:"username" binding:"required,max=128"`
 	Password         string `json:"password" binding:"required,max=1024"`
 	CertificateHash  string `json:"certificate_hash" binding:"max=128"`

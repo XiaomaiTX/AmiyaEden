@@ -54,4 +54,16 @@ func TestMumbleInternalEndpointsRejectJWTAndMalformedPayload(t *testing.T) {
 	if !strings.Contains(malformedRecorder.Body.String(), "请求参数错误") {
 		t.Fatalf("unexpected malformed response: %s", malformedRecorder.Body.String())
 	}
+
+	withoutInstanceID := httptest.NewRequest(http.MethodPost, "/api/internal/mumble/v1/authenticate", strings.NewReader(`{"username":"pilot","password":"password"}`))
+	withoutInstanceID.Header.Set("Authorization", "Bearer mumble-service-test-token")
+	withoutInstanceID.Header.Set("Content-Type", "application/json")
+	withoutInstanceIDRecorder := httptest.NewRecorder()
+	router.ServeHTTP(withoutInstanceIDRecorder, withoutInstanceID)
+	if withoutInstanceIDRecorder.Code != http.StatusOK {
+		t.Fatalf("request without server instance ID status=%d, want %d", withoutInstanceIDRecorder.Code, http.StatusOK)
+	}
+	if !strings.Contains(withoutInstanceIDRecorder.Body.String(), `"decision":"deny"`) {
+		t.Fatalf("request without server instance ID must return a decision: %s", withoutInstanceIDRecorder.Body.String())
+	}
 }

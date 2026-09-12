@@ -18,7 +18,7 @@ source_of_truth:
 
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
-| POST | `/api/internal/mumble/v1/authenticate` | 验证主人物名和 Mumble App Password；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny | Mumble service |
+| POST | `/api/internal/mumble/v1/authenticate` | 验证主人物名和 Mumble App Password；`server_instance_id` 可选且当前仅供调用方标识；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny | Mumble service |
 | POST | `/api/internal/mumble/v1/identities/resolve` | 最多批量解析 500 个稳定 ID 和/或 canonical name，供在线会话重验与协议身份查找；返回当前资格、名称与 runtime groups | Mumble service |
 
 ## 说明
