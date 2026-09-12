@@ -15,70 +15,63 @@ describe('dashboard characters page', () => {
   })
 
   test('loads profile data and renders character controls', async () => {
-    vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: {
-              user: {
-                id: 1,
-                nickname: 'Amiya',
-                qq: '123456',
-                discord_id: 'amiya#0001',
-                status: 1,
-                role: 'admin',
-                primary_character_id: 1001,
-                last_login_at: null,
-                last_login_ip: '127.0.0.1',
-              },
-              characters: [
-                {
-                  id: 1,
-                  character_id: 1001,
-                  character_name: 'Amiya',
-                  user_id: 1,
-                  scopes: 'esi-killmails.read_corporation_killmails.v1 esi-skills.read_skills.v1',
-                  token_expiry: '2026-06-01T00:00:00Z',
-                  token_invalid: false,
-                  corporation_id: 1,
-                  alliance_id: 1,
-                },
-                {
-                  id: 2,
-                  character_id: 1002,
-                  character_name: 'Miya',
-                  user_id: 1,
-                  scopes: 'esi-skills.read_skills.v1',
-                  token_expiry: '2026-06-01T00:00:00Z',
-                  token_invalid: true,
-                  corporation_id: 1,
-                  alliance_id: 1,
-                },
-              ],
-              roles: ['admin'],
-              permissions: [],
-              profile_complete: false,
-              enforce_character_esi_restriction: true,
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input)
+      let data: unknown
+      if (url === '/api/v1/me') {
+        data = {
+          user: {
+            id: 1,
+            nickname: 'Amiya',
+            qq: '123456',
+            discord_id: 'amiya#0001',
+            status: 1,
+            role: 'admin',
+            primary_character_id: 1001,
+            last_login_at: null,
+            last_login_ip: '127.0.0.1',
+          },
+          characters: [
+            {
+              id: 1,
+              character_id: 1001,
+              character_name: 'Amiya',
+              user_id: 1,
+              scopes: 'esi-killmails.read_corporation_killmails.v1 esi-skills.read_skills.v1',
+              token_expiry: '2026-06-01T00:00:00Z',
+              token_invalid: false,
+              corporation_id: 1,
+              alliance_id: 1,
             },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            code: 0,
-            msg: 'ok',
-            data: {
-              show_card: true,
-              needs_profile_qq: false,
+            {
+              id: 2,
+              character_id: 1002,
+              character_name: 'Miya',
+              user_id: 1,
+              scopes: 'esi-skills.read_skills.v1',
+              token_expiry: '2026-06-01T00:00:00Z',
+              token_invalid: true,
+              corporation_id: 1,
+              alliance_id: 1,
             },
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        )
-      )
+          ],
+          roles: ['admin'],
+          permissions: [],
+          profile_complete: false,
+          enforce_character_esi_restriction: true,
+        }
+      } else if (url === '/api/v1/newbro/recruit/direct-referral') {
+        data = { show_card: true, needs_profile_qq: false }
+      } else if (url === '/api/v1/mumble/credential') {
+        data = { created: false, enabled: false }
+      } else {
+        throw new Error(`Unexpected request: ${url}`)
+      }
+      return new Response(JSON.stringify({ code: 0, msg: 'ok', data }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
 
     const router = createMemoryRouter(appRoutes, {
       initialEntries: ['/characters'],
@@ -93,6 +86,8 @@ describe('dashboard characters page', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: '补录推荐人' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Mumble 语音凭据' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '创建语音密码' })).toBeInTheDocument()
     })
   })
 
@@ -159,7 +154,7 @@ describe('dashboard characters page', () => {
         )
       }
 
-      if (url.includes('/api/v1/newbro/direct-referral/status')) {
+      if (url === '/api/v1/newbro/recruit/direct-referral') {
         return new Response(
           JSON.stringify({
             code: 0,
@@ -170,6 +165,13 @@ describe('dashboard characters page', () => {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
           }
+        )
+      }
+
+      if (url === '/api/v1/mumble/credential') {
+        return new Response(
+          JSON.stringify({ code: 0, msg: 'ok', data: { created: false, enabled: false } }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
 

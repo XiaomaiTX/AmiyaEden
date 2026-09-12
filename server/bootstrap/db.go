@@ -61,6 +61,7 @@ func InitDB() {
 func autoMigrate(db *gorm.DB) {
 	if err := db.AutoMigrate(
 		&model.User{},
+		&model.MumbleIdentity{},
 		&model.OperationLog{},
 		&model.AuditEvent{},
 		&model.AuditExportTask{},

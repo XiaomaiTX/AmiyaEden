@@ -202,10 +202,10 @@ var OnExistingCharacterSyncFunc func(characterID int64, userID uint)
 
 // stateData OAuth state 中存储的数据
 type stateData struct {
-	ExtraScopes         []string `json:"extra_scopes,omitempty"`
-	RedirectURL         string   `json:"redirect_url,omitempty"`
-	BindToUserID        uint     `json:"bind_to_user_id,omitempty"` // >0 时表示「绑定人物」流程，而非登录
-	ScopeRefreshAttempted bool   `json:"scope_refresh_attempted,omitempty"` // 已发起过一次可选 scope 补授，防循环
+	ExtraScopes           []string `json:"extra_scopes,omitempty"`
+	RedirectURL           string   `json:"redirect_url,omitempty"`
+	BindToUserID          uint     `json:"bind_to_user_id,omitempty"`         // >0 时表示「绑定人物」流程，而非登录
+	ScopeRefreshAttempted bool     `json:"scope_refresh_attempted,omitempty"` // 已发起过一次可选 scope 补授，防循环
 }
 
 // EveSSOService EVE SSO 业务逻辑层
@@ -1031,7 +1031,11 @@ func (s *EveSSOService) SetPrimaryCharacter(userID uint, characterID int64) erro
 	}
 
 	user.PrimaryCharacterID = characterID
-	return s.userRepo.Update(user)
+	if err := s.userRepo.Update(user); err != nil {
+		return err
+	}
+	NotifyMumbleIdentityChanged(global.BackgroundContext(), userID)
+	return nil
 }
 
 // UnbindCharacter 解除绑定某个 EVE 人物
@@ -1068,6 +1072,7 @@ func (s *EveSSOService) UnbindCharacter(userID uint, characterID int64) error {
 		if err := s.userRepo.Update(user); err != nil {
 			return err
 		}
+		NotifyMumbleIdentityChanged(global.BackgroundContext(), userID)
 	}
 
 	return s.charRepo.Delete(char.ID)

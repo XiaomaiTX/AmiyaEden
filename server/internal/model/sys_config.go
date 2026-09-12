@@ -32,16 +32,20 @@ const (
 
 	SysConfigWebhookQQGroupIDs = "webhook.qq_group_ids" // QQ 群治理通知目标群号数组 (JSON)
 
-	SysConfigSDEAPIKey          = "sde.api_key"      // SDE 查询 API Key
-	SysConfigSDEProxy           = "sde.proxy"        // SDE 下载代理
-	SysConfigSDEDownloadURL     = "sde.download_url" // SDE 下载地址
-	SysConfigSDEStatus          = "sde.status"       // SDE 状态快照（JSON）
-	SysConfigAlliancePAPBaseURL = "alliance_pap.base_url"
-	SysConfigAlliancePAPAPIKey  = "alliance_pap.api_key"
-	SysConfigOneBotEnabled      = "onebot.enabled"
-	SysConfigOneBotAccessToken  = "onebot.access_token"
-	SysConfigOneBotBotQQ        = "onebot.bot_qq"
-	SysConfigOneBotAllowedCIDRs = "onebot.allowed_cidrs"
+	SysConfigSDEAPIKey                            = "sde.api_key"      // SDE 查询 API Key
+	SysConfigSDEProxy                             = "sde.proxy"        // SDE 下载代理
+	SysConfigSDEDownloadURL                       = "sde.download_url" // SDE 下载地址
+	SysConfigSDEStatus                            = "sde.status"       // SDE 状态快照（JSON）
+	SysConfigAlliancePAPBaseURL                   = "alliance_pap.base_url"
+	SysConfigAlliancePAPAPIKey                    = "alliance_pap.api_key"
+	SysConfigOneBotEnabled                        = "onebot.enabled"
+	SysConfigOneBotAccessToken                    = "onebot.access_token"
+	SysConfigOneBotBotQQ                          = "onebot.bot_qq"
+	SysConfigOneBotAllowedCIDRs                   = "onebot.allowed_cidrs"
+	SysConfigMumbleServiceToken                   = "mumble.service_token"
+	SysConfigMumbleServerURL                      = "mumble.server_url"
+	SysConfigMumbleRevalidateToken                = "mumble.revalidate_token"
+	SysConfigMumbleRevalidateTimeoutMS            = "mumble.revalidate_timeout_ms"
 	SysConfigQQGovernanceScanIntervalMinutes      = "qq_governance.scan_interval_minutes"
 	SysConfigQQGovernanceMismatchConfirmations    = "qq_governance.mismatch_confirmations"
 	SysConfigQQGovernanceMismatchObservationHours = "qq_governance.mismatch_observation_hours"
@@ -76,17 +80,18 @@ const (
 
 	SysConfigESITaskIntervals = "esi.task_intervals" // ESI 子任务刷新间隔覆盖（JSON）
 
-	SysConfigDefaultSDEAPIKey                = "change_me_sde_api_key"
-	SysConfigDefaultSDEProxy                 = ""
-	SysConfigDefaultSDEDownloadURL           = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
-	SysConfigDefaultAlliancePAPBaseURL       = "http://jp.newdoublex.space:25220"
-	SysConfigDefaultAlliancePAPAPIKey        = ""
-	SysConfigDefaultOneBotEnabled            = false
-	SysConfigDefaultOneBotAccessToken        = "change_me_onebot_reverse_ws_token"
-	SysConfigDefaultOneBotBotQQ        int64 = 0
-	SysConfigDefaultQQGovernanceScanIntervalMinutes      = 15
-	SysConfigDefaultQQGovernanceMismatchConfirmations    = 2
-	SysConfigDefaultQQGovernanceMismatchObservationHours = 2
+	SysConfigDefaultSDEAPIKey                                  = "change_me_sde_api_key"
+	SysConfigDefaultSDEProxy                                   = ""
+	SysConfigDefaultSDEDownloadURL                             = "https://api.github.com/repos/garveen/eve-sde-converter/releases/latest"
+	SysConfigDefaultAlliancePAPBaseURL                         = "http://jp.newdoublex.space:25220"
+	SysConfigDefaultAlliancePAPAPIKey                          = ""
+	SysConfigDefaultOneBotEnabled                              = false
+	SysConfigDefaultOneBotAccessToken                          = "change_me_onebot_reverse_ws_token"
+	SysConfigDefaultOneBotBotQQ                          int64 = 0
+	SysConfigDefaultMumbleRevalidateTimeoutMS                  = 1000
+	SysConfigDefaultQQGovernanceScanIntervalMinutes            = 15
+	SysConfigDefaultQQGovernanceMismatchConfirmations          = 2
+	SysConfigDefaultQQGovernanceMismatchObservationHours       = 2
 
 	SysConfigDefaultNewbroMaxCharacterSP                            int64   = 20_000_000
 	SysConfigDefaultNewbroMultiCharacterSP                          int64   = 10_000_000

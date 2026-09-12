@@ -7,13 +7,16 @@ import { notifyError, notifySuccess } from '@/feedback'
 import {
   fetchAllowCorporations,
   fetchBasicConfig,
+  fetchMumbleConfig,
   fetchSDEConfig,
   updateAllowCorporations,
+  updateMumbleConfig,
   updateSDEConfig,
 } from '@/api/sys-config'
 import type {
   AllowCorporationsConfig,
   BasicConfig,
+  MumbleConfig,
   SDEConfig,
 } from '@/types/api/sys-config'
 
@@ -21,6 +24,13 @@ const defaultSdeForm: SDEConfig = {
   api_key: '',
   proxy: '',
   download_url: '',
+}
+
+const defaultMumbleForm: MumbleConfig = {
+  service_token: '',
+  server_url: '',
+  revalidate_token: '',
+  revalidate_timeout_ms: 1000,
 }
 
 function parseCorporationId(raw: string) {
@@ -44,6 +54,8 @@ export function SystemBasicConfigPage() {
   const [allowCorporationsSaving, setAllowCorporationsSaving] = useState(false)
   const [sdeForm, setSdeForm] = useState<SDEConfig>(defaultSdeForm)
   const [sdeSaving, setSdeSaving] = useState(false)
+  const [mumbleForm, setMumbleForm] = useState<MumbleConfig>(defaultMumbleForm)
+  const [mumbleSaving, setMumbleSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,14 +63,16 @@ export function SystemBasicConfigPage() {
     setLoading(true)
     setError(null)
     try {
-      const [basic, allowCorps, sde] = await Promise.all([
+      const [basic, allowCorps, sde, mumble] = await Promise.all([
         fetchBasicConfig(),
         fetchAllowCorporations(),
         fetchSDEConfig(),
+        fetchMumbleConfig(),
       ])
       setBasicConfig(basic)
       setAllowCorporationsInput(renderAllowCorporations(basic.corp_id, allowCorps))
       setSdeForm(sde)
+      setMumbleForm(mumble)
     } catch {
       setError(t('systemBasicConfig.messages.loadFailed'))
     } finally {
@@ -114,6 +128,18 @@ export function SystemBasicConfigPage() {
     }
   }
 
+  const saveMumbleConfig = async () => {
+    setMumbleSaving(true)
+    try {
+      await updateMumbleConfig(mumbleForm)
+      notifySuccess(t('systemBasicConfig.messages.saveSuccess'))
+    } catch {
+      notifyError(t('systemBasicConfig.messages.saveFailed'))
+    } finally {
+      setMumbleSaving(false)
+    }
+  }
+
   return (
     <section className="space-y-4">
       <div className="rounded-lg border bg-card p-5">
@@ -122,13 +148,18 @@ export function SystemBasicConfigPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('systemBasicConfig.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('systemBasicConfig.loading')}</p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-base font-semibold">{t('systemBasicConfig.basicInfo.title')}</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <InfoCard label={t('systemBasicConfig.basicInfo.corpId')} value={basicConfig?.corp_id ?? '-'} />
+            <InfoCard
+              label={t('systemBasicConfig.basicInfo.corpId')}
+              value={basicConfig?.corp_id ?? '-'}
+            />
             <InfoCard
               label={t('systemBasicConfig.basicInfo.siteTitle')}
               value={basicConfig?.site_title || '-'}
@@ -139,14 +170,20 @@ export function SystemBasicConfigPage() {
         <div className="rounded-lg border bg-card p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold">{t('systemBasicConfig.allowCorporations.title')}</h2>
+              <h2 className="text-base font-semibold">
+                {t('systemBasicConfig.allowCorporations.title')}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t('systemBasicConfig.allowCorporations.subtitle', {
                   corpId: basicConfig?.corp_id ?? 0,
                 })}
               </p>
             </div>
-            <Button type="button" onClick={() => void saveAllowCorporations()} isDisabled={allowCorporationsSaving}>
+            <Button
+              type="button"
+              onClick={() => void saveAllowCorporations()}
+              isDisabled={allowCorporationsSaving}
+            >
               {allowCorporationsSaving ? t('systemBasicConfig.messages.saving') : t('common.save')}
             </Button>
           </div>
@@ -170,8 +207,79 @@ export function SystemBasicConfigPage() {
       <div className="rounded-lg border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
+            <h2 className="text-base font-semibold">{t('systemBasicConfig.mumble.title')}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.subtitle')}
+            </p>
+          </div>
+          <Button type="button" onClick={() => void saveMumbleConfig()} isDisabled={mumbleSaving}>
+            {mumbleSaving ? t('systemBasicConfig.messages.saving') : t('common.save')}
+          </Button>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="space-y-2 md:col-span-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.serverUrl')}
+            </span>
+            <Input
+              value={mumbleForm.server_url}
+              onChange={(event) =>
+                setMumbleForm((current) => ({ ...current, server_url: event.target.value }))
+              }
+              placeholder="http://go-mumble-server:64730"
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.serviceToken')}
+            </span>
+            <Input
+              type="password"
+              value={mumbleForm.service_token}
+              onChange={(event) =>
+                setMumbleForm((current) => ({ ...current, service_token: event.target.value }))
+              }
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.revalidateToken')}
+            </span>
+            <Input
+              type="password"
+              value={mumbleForm.revalidate_token}
+              onChange={(event) =>
+                setMumbleForm((current) => ({ ...current, revalidate_token: event.target.value }))
+              }
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.mumble.timeout')}
+            </span>
+            <Input
+              type="number"
+              min={100}
+              max={10000}
+              value={mumbleForm.revalidate_timeout_ms}
+              onChange={(event) =>
+                setMumbleForm((current) => ({
+                  ...current,
+                  revalidate_timeout_ms: Number(event.target.value),
+                }))
+              }
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="rounded-lg border bg-card p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
             <h2 className="text-base font-semibold">{t('systemBasicConfig.sdeConfig.title')}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t('systemBasicConfig.sdeConfig.subtitle')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('systemBasicConfig.sdeConfig.subtitle')}
+            </p>
           </div>
           <Button type="button" onClick={() => void saveSdeConfig()} isDisabled={sdeSaving}>
             {sdeSaving ? t('systemBasicConfig.messages.saving') : t('common.save')}
@@ -180,27 +288,39 @@ export function SystemBasicConfigPage() {
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-2 md:col-span-2">
-            <span className="text-sm text-muted-foreground">{t('systemBasicConfig.sdeConfig.apiKey')}</span>
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.sdeConfig.apiKey')}
+            </span>
             <Input
               value={sdeForm.api_key}
               type="password"
-              onChange={(event) => setSdeForm((current) => ({ ...current, api_key: event.target.value }))}
+              onChange={(event) =>
+                setSdeForm((current) => ({ ...current, api_key: event.target.value }))
+              }
               placeholder={t('systemBasicConfig.sdeConfig.apiKeyPlaceholder')}
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('systemBasicConfig.sdeConfig.proxy')}</span>
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.sdeConfig.proxy')}
+            </span>
             <Input
               value={sdeForm.proxy}
-              onChange={(event) => setSdeForm((current) => ({ ...current, proxy: event.target.value }))}
+              onChange={(event) =>
+                setSdeForm((current) => ({ ...current, proxy: event.target.value }))
+              }
               placeholder={t('systemBasicConfig.sdeConfig.proxyPlaceholder')}
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('systemBasicConfig.sdeConfig.downloadUrl')}</span>
+            <span className="text-sm text-muted-foreground">
+              {t('systemBasicConfig.sdeConfig.downloadUrl')}
+            </span>
             <Input
               value={sdeForm.download_url}
-              onChange={(event) => setSdeForm((current) => ({ ...current, download_url: event.target.value }))}
+              onChange={(event) =>
+                setSdeForm((current) => ({ ...current, download_url: event.target.value }))
+              }
               placeholder={t('systemBasicConfig.sdeConfig.downloadUrlPlaceholder')}
             />
           </label>

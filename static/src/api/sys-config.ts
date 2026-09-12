@@ -51,6 +51,19 @@ export function updateCharacterESIRestrictionConfig(
   })
 }
 
+export function fetchMumbleConfig() {
+  return request.get<Api.SysConfig.MumbleConfig>({
+    url: '/api/v1/system/basic-config/mumble'
+  })
+}
+
+export function updateMumbleConfig(data: Api.SysConfig.MumbleConfig) {
+  return request.put({
+    url: '/api/v1/system/basic-config/mumble',
+    data
+  })
+}
+
 /** 获取 SDE 配置 */
 export function fetchSDEConfig() {
   return request.get<Api.SysConfig.SDEConfig>({

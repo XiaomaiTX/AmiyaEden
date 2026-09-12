@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-07-27
+last_reviewed: 2026-09-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/corporation_capability.go
@@ -11,6 +11,15 @@ source_of_truth:
 ---
 
 # API 路由索引
+
+## 私有 Mumble 身份接口
+
+以下入口不属于 `/api/v1` 用户 API，路径为 `/internal/mumble/v1`，仅接受 `mumble.service_token` 对应的 Bearer 服务凭据；普通 Seat JWT 一律拒绝。生产部署还应使用私网 HTTPS，并推荐 mTLS。
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| POST | `/authenticate` | 验证主人物名和 Mumble App Password；成功返回稳定 Mumble User ID、canonical name 与 `fuxi_*` runtime groups；失败统一返回业务 deny | Mumble service |
+| POST | `/identities/resolve` | 最多批量解析 500 个稳定 ID 和/或 canonical name，供在线会话重验与协议身份查找；返回当前资格、名称与 runtime groups | Mumble service |
 
 ## 说明
 
@@ -106,6 +115,10 @@ source_of_truth:
 | DELETE | `/sso/eve/characters/:character_id`                         | 解绑人物                                                                                                                                                                                                                    | JWT                         |
 | GET    | `/me`                                                       | 当前用户、人物、职权、绑定人物，并返回 `enforce_character_esi_restriction`、`primary_corporation_id`、`corp_capabilities`、`corp_rules`；主人物 ESI 已失效时仍返回启动上下文（含 `token_invalid` 状态），由前端决定是否锁定 | JWT                         |
 | DELETE | `/me`                                                       | 注销当前登录用户 / 自助删除账号                                                                                                                                                                                             | JWT                         |
+| GET | `/mumble/credential` | 查询当前用户的 Mumble App Password 状态；不返回密码 | JWT |
+| POST | `/mumble/credential` | 首次创建 Mumble App Password；明文仅在本响应返回一次 | JWT |
+| POST | `/mumble/credential/rotate` | 轮换 Mumble App Password；旧密码立即失效，明文仅在本响应返回一次 | JWT |
+| DELETE | `/mumble/credential` | 吊销 Mumble App Password | JWT |
 | PUT    | `/me`                                                       | 更新当前用户昵称 / QQ / Discord ID                                                                                                                                                                                          | JWT                         |
 | POST   | `/dashboard`                                                | Dashboard 聚合数据                                                                                                                                                                                                          | JWT                         |
 | GET    | `/dashboard/corporation-structures/settings`                | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射，同时返回全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（天）                                                                       | `RequireRole(admin)`        |
@@ -388,6 +401,8 @@ source_of_truth:
 | GET    | `/system/basic-config`                             | 获取固定系统标识（军团 ID / 网站标题）                                                                        | `RequireRole(super_admin)` |
 | GET    | `/system/basic-config/allow-corporations`          | 获取允许军团列表；返回 `allow_corporations` 及军团展示信息 `corporations[{corporation_id, corporation_name}]` | `RequireRole(super_admin)` |
 | PUT    | `/system/basic-config/allow-corporations`          | 更新允许军团列表                                                                                              | `RequireRole(super_admin)` |
+| GET    | `/system/basic-config/mumble`                      | 获取 Mumble 双向连接设置                                                                                      | `RequireRole(super_admin)` |
+| PUT    | `/system/basic-config/mumble`                      | 更新 Mumble 双向服务令牌、管理地址与重校验超时；两个方向的令牌必须不同                                        | `RequireRole(super_admin)` |
 | GET    | `/system/basic-config/corporation-access-policies` | 获取军团能力策略配置（`default_mode` 默认 `allow`）                                                           | `RequireRole(super_admin)` |
 | PUT    | `/system/basic-config/corporation-access-policies` | 更新军团能力策略配置（`default_mode` 允许 `allow` / `deny`）                                                  | `RequireRole(super_admin)` |
 | GET    | `/system/basic-config/character-esi-restriction`   | 获取任一绑定人物 ESI 失效时是否强制停留人物页的配置                                                           | `RequireRole(super_admin)` |

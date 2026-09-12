@@ -511,6 +511,15 @@
       placeholder: 'Enter one corporation ID per line',
       hint: 'Fuxi Legion {corpId} will always be preserved automatically.',
     },
+    mumble: {
+      title: 'Mumble Connection',
+      subtitle:
+        'Configure both service tokens and the Mumble management URL used by Seat to trigger online identity revalidation.',
+      serverUrl: 'Mumble management URL',
+      serviceToken: 'Mumble → Seat service token',
+      revalidateToken: 'Seat → Mumble revalidation token',
+      timeout: 'Revalidation timeout (ms)',
+    },
     sdeConfig: {
       title: 'SDE Config',
       subtitle: 'Configure the API key, proxy, and download URL for SDE queries.',
@@ -2047,6 +2056,29 @@
         qqDigits: 'QQ number must contain digits only',
         discordLength: 'Discord ID must be 20 characters or fewer',
       },
+    },
+    mumble: {
+      title: 'Mumble Voice Credential',
+      subtitle:
+        'Sign in to the voice server with your primary character name and a separate app password. This is not your Seat password.',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      username: 'Sign-in username',
+      stableId: 'Stable user ID',
+      password: 'One-time password',
+      create: 'Create voice password',
+      rotate: 'Rotate password',
+      revoke: 'Revoke credential',
+      dismissSecret: 'Saved — hide password',
+      oneTimeWarning:
+        'Save this password now. It cannot be shown again after closing; you can only rotate it.',
+      rotateConfirm: 'Rotating immediately invalidates the old password. Continue?',
+      revokeConfirm: 'Revoking disconnects the current voice session. Continue?',
+      issued: 'Voice password generated',
+      revoked: 'Voice credential revoked',
+      copied: 'Password copied',
+      loadFailed: 'Failed to load the voice credential',
+      operationFailed: 'Voice credential operation failed',
     },
     directReferral: {
       title: 'Add Your Referrer',

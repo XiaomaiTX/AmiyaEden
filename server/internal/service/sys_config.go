@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -42,6 +43,16 @@ type OneBotRuntimeConfig struct {
 	AccessToken  string
 	BotQQ        int64
 	AllowedCIDRs []string
+}
+
+// MumbleRuntimeConfig is managed in Seat system settings. ServiceToken is used
+// for go-mumble-server -> Seat calls; RevalidateToken is used in the reverse
+// direction and must be a different credential.
+type MumbleRuntimeConfig struct {
+	ServiceToken        string `json:"service_token"`
+	ServerURL           string `json:"server_url"`
+	RevalidateToken     string `json:"revalidate_token"`
+	RevalidateTimeoutMS int    `json:"revalidate_timeout_ms"`
 }
 
 // QQGovernanceSettings 是所有受治理 QQ 群共用的巡检与清退确认参数。
@@ -161,10 +172,53 @@ func (s *SysConfigService) UpdateOneBotConfig(enabled *bool, accessToken *string
 	return nil
 }
 
+func (s *SysConfigService) GetMumbleConfig() MumbleRuntimeConfig {
+	return MumbleRuntimeConfig{
+		ServiceToken:        s.repo.GetString(model.SysConfigMumbleServiceToken, ""),
+		ServerURL:           s.repo.GetString(model.SysConfigMumbleServerURL, ""),
+		RevalidateToken:     s.repo.GetString(model.SysConfigMumbleRevalidateToken, ""),
+		RevalidateTimeoutMS: s.repo.GetInt(model.SysConfigMumbleRevalidateTimeoutMS, model.SysConfigDefaultMumbleRevalidateTimeoutMS),
+	}
+}
+
+func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
+	cfg.ServiceToken = strings.TrimSpace(cfg.ServiceToken)
+	cfg.ServerURL = strings.TrimRight(strings.TrimSpace(cfg.ServerURL), "/")
+	cfg.RevalidateToken = strings.TrimSpace(cfg.RevalidateToken)
+	if cfg.ServerURL != "" {
+		parsed, err := url.Parse(cfg.ServerURL)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+			return errors.New("mumble 服务地址无效")
+		}
+	}
+	if cfg.ServiceToken != "" && len(cfg.ServiceToken) < 16 {
+		return errors.New("mumble 调用 Seat 的服务令牌至少需要 16 个字符")
+	}
+	if cfg.RevalidateToken != "" && len(cfg.RevalidateToken) < 16 {
+		return errors.New("seat 调用 Mumble 的重校验令牌至少需要 16 个字符")
+	}
+	if cfg.ServiceToken != "" && cfg.ServiceToken == cfg.RevalidateToken {
+		return errors.New("两个方向必须使用不同的服务令牌")
+	}
+	if cfg.RevalidateTimeoutMS < 100 || cfg.RevalidateTimeoutMS > 10000 {
+		return errors.New("mumble 重校验超时必须在 100 到 10000 毫秒之间")
+	}
+	items := newSysConfigBatch(4).
+		AddString(model.SysConfigMumbleServiceToken, cfg.ServiceToken, "Mumble 调用 Seat 的服务令牌").
+		AddString(model.SysConfigMumbleServerURL, cfg.ServerURL, "Mumble 服务管理地址").
+		AddString(model.SysConfigMumbleRevalidateToken, cfg.RevalidateToken, "Seat 调用 Mumble 的重校验令牌").
+		AddInt(model.SysConfigMumbleRevalidateTimeoutMS, cfg.RevalidateTimeoutMS, "Mumble 重校验请求超时（毫秒）").
+		Items()
+	if err := s.repo.SetMany(items); err != nil {
+		return errors.New("更新 Mumble 连接设置失败")
+	}
+	return nil
+}
+
 func (s *SysConfigService) GetQQGovernanceSettings() QQGovernanceSettings {
 	return QQGovernanceSettings{
-		ScanIntervalMinutes: s.repo.GetInt(model.SysConfigQQGovernanceScanIntervalMinutes, model.SysConfigDefaultQQGovernanceScanIntervalMinutes),
-		MismatchConfirmations: s.repo.GetInt(model.SysConfigQQGovernanceMismatchConfirmations, model.SysConfigDefaultQQGovernanceMismatchConfirmations),
+		ScanIntervalMinutes:      s.repo.GetInt(model.SysConfigQQGovernanceScanIntervalMinutes, model.SysConfigDefaultQQGovernanceScanIntervalMinutes),
+		MismatchConfirmations:    s.repo.GetInt(model.SysConfigQQGovernanceMismatchConfirmations, model.SysConfigDefaultQQGovernanceMismatchConfirmations),
 		MismatchObservationHours: s.repo.GetInt(model.SysConfigQQGovernanceMismatchObservationHours, model.SysConfigDefaultQQGovernanceMismatchObservationHours),
 	}
 }

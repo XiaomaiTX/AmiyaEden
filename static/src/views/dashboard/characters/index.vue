@@ -72,6 +72,8 @@
       </div>
     </div>
 
+    <MumbleCredentialCard :canonical-name="primaryCharacterName" />
+
     <div
       v-if="directReferralStatus.show_card"
       v-loading="directReferralLoading"
@@ -310,6 +312,7 @@
   import { isHttpError } from '@/utils/http/error'
   import { ApiStatus } from '@/utils/http/status'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
+  import MumbleCredentialCard from '@/components/mumble-credential-card.vue'
 
   defineOptions({ name: 'Characters' })
 
@@ -345,6 +348,11 @@
   const directReferrerQQ = ref('')
   const checkedDirectReferrerQQ = ref('')
   const primaryCharacterId = ref<number>(0)
+  const primaryCharacterName = computed(
+    () =>
+      characters.value.find((character) => character.character_id === primaryCharacterId.value)
+        ?.character_name ?? ''
+  )
   const profileForm = reactive({
     nickname: '',
     qq: '',

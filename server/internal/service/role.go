@@ -186,6 +186,7 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 			"after_roles":  afterCodes,
 		},
 	})
+	NotifyMumbleIdentityChanged(ctx, userID)
 	return nil
 }
 
@@ -305,6 +306,7 @@ func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID u
 		s.SyncUserPrimaryRole(userID)
 		global.Logger.Info("[CorpCheck] 用户升级为 user",
 			zap.Uint("user_id", userID))
+		NotifyMumbleIdentityChanged(ctx, userID)
 	} else {
 		if len(rollCodes) == 1 && rollCodes[0] == model.RoleGuest {
 			return nil
@@ -317,6 +319,7 @@ func (s *RoleService) CheckCorpAccessAndAdjustRole(ctx context.Context, userID u
 		s.SyncUserPrimaryRole(userID)
 		global.Logger.Info("[CorpCheck] 用户降级为 guest",
 			zap.Uint("user_id", userID))
+		NotifyMumbleIdentityChanged(ctx, userID)
 	}
 	return nil
 }

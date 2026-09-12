@@ -155,6 +155,27 @@ func (h *SysConfigHandler) UpdateOneBotConfig(c *gin.Context) {
 	response.OK(c, nil)
 }
 
+func (h *SysConfigHandler) GetMumbleConfig(c *gin.Context) {
+	response.OK(c, h.cfgSvc.GetMumbleConfig())
+}
+
+func (h *SysConfigHandler) UpdateMumbleConfig(c *gin.Context) {
+	var req service.MumbleRuntimeConfig
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "请求参数错误")
+		return
+	}
+	if err := h.cfgSvc.UpdateMumbleConfig(req); err != nil {
+		response.Fail(c, response.CodeParamError, err.Error())
+		return
+	}
+	h.recordConfigAudit(c, "mumble_config_update", model.SysConfigMumbleServerURL, map[string]any{
+		"server_url_updated": true, "service_token_updated": true, "revalidate_token_updated": true,
+		"revalidate_timeout_ms": req.RevalidateTimeoutMS,
+	})
+	response.OK(c, nil)
+}
+
 func (h *SysConfigHandler) recordConfigAudit(c *gin.Context, action, resourceID string, details map[string]any) {
 	if h.auditSvc == nil {
 		return

@@ -14,6 +14,7 @@ import {
 } from '@/api/newbro'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { MumbleCredentialCard } from '@/components/mumble-credential-card'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { useI18n } from '@/i18n'
 import type { EveCharacter, UserInfo } from '@/types/api/auth'
@@ -77,6 +78,13 @@ export function DashboardCharactersPage() {
   const hasInvalidCharacterToken = useMemo(
     () => characters.some((character) => character.token_invalid),
     [characters]
+  )
+
+  const primaryCharacterName = useMemo(
+    () =>
+      characters.find((character) => character.character_id === primaryCharacterId)
+        ?.character_name ?? '',
+    [characters, primaryCharacterId]
   )
 
   const hasInvalidPrimaryCharacterToken = useMemo(
@@ -466,6 +474,8 @@ export function DashboardCharactersPage() {
           </Button>
         </div>
       </div>
+
+      <MumbleCredentialCard canonicalName={primaryCharacterName} />
 
       {directReferralStatus.show_card ? (
         <div className="rounded-lg border bg-card p-5">

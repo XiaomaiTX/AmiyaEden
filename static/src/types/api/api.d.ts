@@ -152,6 +152,21 @@ declare namespace Api {
     }
   }
 
+  namespace Mumble {
+    interface CredentialStatus {
+      created: boolean
+      enabled: boolean
+      stable_user_id?: number
+      credential_version?: number
+      password_rotated_at?: string | null
+    }
+
+    interface CredentialResult {
+      credential: CredentialStatus
+      password: string
+    }
+  }
+
   /** 导航徽章类型 */
   namespace Badge {
     interface BadgeCounts {
@@ -3645,6 +3660,13 @@ declare namespace Api {
 
     interface UpdateCharacterESIRestrictionParams {
       enforce_character_esi_restriction: boolean
+    }
+
+    interface MumbleConfig {
+      service_token: string
+      server_url: string
+      revalidate_token: string
+      revalidate_timeout_ms: number
     }
 
     interface SDEConfig {

@@ -53,6 +53,48 @@
 
     <ElCard shadow="never" style="margin-top: 16px">
       <template #header>
+        <h2 class="section-title">{{ $t('system.basicConfig.mumbleConfig') }}</h2>
+      </template>
+      <ElForm
+        :model="mumbleForm"
+        label-width="160px"
+        style="max-width: 760px"
+        v-loading="loadingMumble"
+      >
+        <ElFormItem :label="$t('system.basicConfig.mumbleServerUrl')">
+          <ElInput
+            v-model="mumbleForm.server_url"
+            clearable
+            placeholder="http://go-mumble-server:64730"
+          />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.mumbleServiceToken')">
+          <ElInput v-model="mumbleForm.service_token" show-password clearable />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.mumbleRevalidateToken')">
+          <ElInput v-model="mumbleForm.revalidate_token" show-password clearable />
+        </ElFormItem>
+        <ElFormItem :label="$t('system.basicConfig.mumbleTimeout')">
+          <ElInputNumber
+            v-model="mumbleForm.revalidate_timeout_ms"
+            :min="100"
+            :max="10000"
+            :step="100"
+          />
+        </ElFormItem>
+        <ElFormItem>
+          <div class="form-hint">{{ $t('system.basicConfig.mumbleHint') }}</div>
+        </ElFormItem>
+        <ElFormItem>
+          <ElButton type="primary" :loading="savingMumble" @click="handleSaveMumble">
+            {{ $t('system.basicConfig.save') }}
+          </ElButton>
+        </ElFormItem>
+      </ElForm>
+    </ElCard>
+
+    <ElCard shadow="never" style="margin-top: 16px">
+      <template #header>
         <h2 class="section-title">{{ $t('system.basicConfig.alliancePapConfig') }}</h2>
       </template>
       <ElForm
@@ -331,6 +373,8 @@
     updateAlliancePAPConfig,
     fetchOneBotConfig,
     updateOneBotConfig,
+    fetchMumbleConfig,
+    updateMumbleConfig,
     fetchAllowCorporations,
     updateAllowCorporations,
     fetchCorporationAccessPolicies,
@@ -351,6 +395,8 @@
   const savingAlliancePAP = ref(false)
   const loadingOneBot = ref(false)
   const savingOneBot = ref(false)
+  const loadingMumble = ref(false)
+  const savingMumble = ref(false)
   const loadingAllowCorpsConfig = ref(false)
   const savingAllowCorps = ref(false)
   const loadingCorpPolicies = ref(false)
@@ -564,6 +610,12 @@
     allowed_cidrs: []
   })
   const oneBotCIDRsInput = ref('')
+  const mumbleForm = reactive<Api.SysConfig.MumbleConfig>({
+    service_token: '',
+    server_url: '',
+    revalidate_token: '',
+    revalidate_timeout_ms: 1000
+  })
   const sdeStatus = reactive<Api.SysConfig.SDEStatus>({
     current_version: '',
     latest_version: '',
@@ -832,6 +884,29 @@
     }
   }
 
+  const loadMumbleConfig = async () => {
+    loadingMumble.value = true
+    try {
+      Object.assign(mumbleForm, await fetchMumbleConfig())
+    } catch {
+      ElMessage.error(t('system.basicConfig.loadFailed'))
+    } finally {
+      loadingMumble.value = false
+    }
+  }
+
+  const handleSaveMumble = async () => {
+    savingMumble.value = true
+    try {
+      await updateMumbleConfig({ ...mumbleForm })
+      ElMessage.success(t('system.basicConfig.saveSuccess'))
+    } catch {
+      ElMessage.error(t('system.basicConfig.saveFailed'))
+    } finally {
+      savingMumble.value = false
+    }
+  }
+
   const loadAllowCorpsConfig = async () => {
     loadingAllowCorpsConfig.value = true
     try {
@@ -1026,6 +1101,7 @@
     loadSDEStatus()
     loadAlliancePAPConfig()
     loadOneBotConfig()
+    loadMumbleConfig()
   })
 </script>
 

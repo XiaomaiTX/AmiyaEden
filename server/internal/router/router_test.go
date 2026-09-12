@@ -249,6 +249,8 @@ func TestSystemBasicConfigRequiresSuperAdmin(t *testing.T) {
 	assertRouteStatus(t, adminRouter, http.MethodPut, "/system/basic-config/corporation-access-policies", http.StatusForbidden)
 	assertRouteStatus(t, adminRouter, http.MethodGet, "/system/basic-config/character-esi-restriction", http.StatusForbidden)
 	assertRouteStatus(t, adminRouter, http.MethodPut, "/system/basic-config/character-esi-restriction", http.StatusForbidden)
+	assertRouteStatus(t, adminRouter, http.MethodGet, "/system/basic-config/mumble", http.StatusForbidden)
+	assertRouteStatus(t, adminRouter, http.MethodPut, "/system/basic-config/mumble", http.StatusForbidden)
 
 	superAdminRouter := newSystemBasicConfigPermissionTestRouter([]string{model.RoleSuperAdmin})
 	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/system/basic-config", http.StatusNoContent)
@@ -263,6 +265,8 @@ func TestSystemBasicConfigRequiresSuperAdmin(t *testing.T) {
 	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/system/basic-config/corporation-access-policies", http.StatusNoContent)
 	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/system/basic-config/character-esi-restriction", http.StatusNoContent)
 	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/system/basic-config/character-esi-restriction", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodGet, "/system/basic-config/mumble", http.StatusNoContent)
+	assertRouteStatus(t, superAdminRouter, http.MethodPut, "/system/basic-config/mumble", http.StatusNoContent)
 }
 
 func TestAutoRoleRequiresSuperAdmin(t *testing.T) {
@@ -815,6 +819,8 @@ func newSystemBasicConfigPermissionTestRouter(roles []string) *gin.Engine {
 	basicConfig.PUT("/corporation-access-policies", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.GET("/character-esi-restriction", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 	basicConfig.PUT("/character-esi-restriction", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	basicConfig.GET("/mumble", func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	basicConfig.PUT("/mumble", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	return r
 }

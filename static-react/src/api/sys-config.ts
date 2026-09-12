@@ -4,6 +4,7 @@ import type {
   AllowCorporationsConfig,
   BasicConfig,
   CharacterESIRestrictionConfig,
+  MumbleConfig,
   SDEConfig,
   UpdateAllowCorporationsParams,
   UpdateCharacterESIRestrictionParams,
@@ -40,7 +41,9 @@ export async function fetchCharacterESIRestrictionConfig() {
   return assertSuccess(response, 'fetch character esi restriction config failed')
 }
 
-export async function updateCharacterESIRestrictionConfig(data: UpdateCharacterESIRestrictionParams) {
+export async function updateCharacterESIRestrictionConfig(
+  data: UpdateCharacterESIRestrictionParams
+) {
   const response = await requestJson<ApiResponse<null>>(
     '/api/v1/system/basic-config/character-esi-restriction',
     {
@@ -49,6 +52,21 @@ export async function updateCharacterESIRestrictionConfig(data: UpdateCharacterE
     }
   )
   assertSuccess(response, 'update character esi restriction config failed')
+}
+
+export async function fetchMumbleConfig() {
+  const response = await requestJson<ApiResponse<MumbleConfig>>(
+    '/api/v1/system/basic-config/mumble'
+  )
+  return assertSuccess(response, 'fetch mumble config failed')
+}
+
+export async function updateMumbleConfig(data: MumbleConfig) {
+  const response = await requestJson<ApiResponse<null>>('/api/v1/system/basic-config/mumble', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+  assertSuccess(response, 'update mumble config failed')
 }
 
 export async function fetchSDEConfig() {

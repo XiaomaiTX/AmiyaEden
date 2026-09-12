@@ -26,6 +26,12 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// QQ 群治理使用独立的 OneBot 反向 WebSocket 私有入口，不复用通用 Webhook。
 	qqGovernanceOneBotH := handler.NewQQGovernanceOneBotHandler()
 	r.GET("/internal/onebot/v11/ws", qqGovernanceOneBotH.ReverseWebSocket)
+	mumbleInternalH := handler.NewMumbleHandler()
+	mumbleInternal := r.Group("/internal/mumble/v1", middleware.RequireMumbleService())
+	{
+		mumbleInternal.POST("/authenticate", mumbleInternalH.Authenticate)
+		mumbleInternal.POST("/identities/resolve", mumbleInternalH.ResolveIdentities)
+	}
 
 	// ─── 上传文件静态目录 ───
 	r.Static("/uploads", "./uploads")
@@ -114,9 +120,15 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 
 	// ─── 当前用户 ───
 	meH := handler.NewMeHandler()
+	mumbleH := handler.NewMumbleHandler()
 	auth.GET("/me", meH.GetMe)
 	auth.PUT("/me", meH.UpdateMe)
 	auth.DELETE("/me", meH.DeleteMe)
+	// Mumble 凭据是 guest 也可管理的 JWT-only 自助能力；其可用性仍由服务层统一判定。
+	auth.GET("/mumble/credential", mumbleH.GetCredential)
+	auth.POST("/mumble/credential", mumbleH.CreateCredential)
+	auth.POST("/mumble/credential/rotate", mumbleH.RotateCredential)
+	auth.DELETE("/mumble/credential", mumbleH.RevokeCredential)
 
 	dashboardH := handler.NewDashboardHandler()
 	galaxyRegistryH := handler.NewGalaxyRegistryHandler()
@@ -476,6 +488,8 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	adminBasicConfig.PUT("/corporation-access-policies", requireSystemBasicConfigManage, sysConfigH.UpdateCorporationAccessPolicies)
 	adminBasicConfig.GET("/character-esi-restriction", sysConfigH.GetCharacterESIRestrictionConfig)
 	adminBasicConfig.PUT("/character-esi-restriction", requireSystemBasicConfigManage, sysConfigH.UpdateCharacterESIRestrictionConfig)
+	adminBasicConfig.GET("/mumble", sysConfigH.GetMumbleConfig)
+	adminBasicConfig.PUT("/mumble", requireSystemBasicConfigManage, sysConfigH.UpdateMumbleConfig)
 
 	// NPC 刷怪报表（管理员 — 公司级）
 	admin.POST("/npc-kills", requireMenuDashboard, requireDashboardNpcKillsCorp, requireInfoNpcKillsCorp, npcKillH.GetCorpNpcKills)

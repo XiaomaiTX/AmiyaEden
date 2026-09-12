@@ -51,7 +51,7 @@ source_of_truth:
 
 当前应用表大致分为这些分组：
 
-- 认证与用户：`user`、`eve_character`
+- 认证与用户：`user`、`eve_character`、`mumble_identity`
 - RBAC：`user_role`
 - 自动权限映射：`esi_role_mapping`、`esi_title_mapping`、`eve_character_corp_role`
 - ESI 快照：资产、通知、技能、合同、装配、结构、钱包等 `eve_*` / `esi_*` 相关表
@@ -89,6 +89,12 @@ source_of_truth:
 ### `eve_character`
 
 `eve_character` 表示绑定到平台用户的 EVE 人物。
+
+### `mumble_identity`
+
+`mumble_identity` 是 Seat 用户到 Mumble 协议身份的单向投影，不是 Mumble 用户副本。它以独立表的主键作为稳定 Mumble User ID（保留值 `0` 永不分配），并以 `seat_user_id` 一对一关联 `user`。表中只保存 Argon2id 凭据哈希、启用状态、版本与使用时间；绝不保存 Mumble 明文密码或 Seat/EVE 凭据。
+
+稳定 Mumble ID 不等于 `user.id`，也不会因凭据轮换、职权或主人物变化而改变。
 
 关键列包括：
 

@@ -126,6 +126,9 @@ func (s *UserService) UpdateUserByAdmin(id uint, operatorID uint, operatorRoles 
 		return err
 	}
 	s.recordAdminAudit("user_update", operatorID, id, model.AuditResultSuccess, map[string]any{"updates": updates})
+	if patch.Status != nil {
+		NotifyMumbleIdentityChanged(global.BackgroundContext(), id)
+	}
 	return nil
 }
 

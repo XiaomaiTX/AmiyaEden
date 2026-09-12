@@ -30,3 +30,10 @@ export interface UpdateSDEConfigParams {
   proxy?: string
   download_url?: string
 }
+
+export interface MumbleConfig {
+  service_token: string
+  server_url: string
+  revalidate_token: string
+  revalidate_timeout_ms: number
+}

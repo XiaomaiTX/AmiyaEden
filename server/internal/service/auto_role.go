@@ -404,6 +404,7 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 		}
 		s.roleSvc.InvalidateUserCache(ctx, userID)
 		s.roleSvc.SyncUserPrimaryRole(userID)
+		NotifyMumbleIdentityChanged(ctx, userID)
 		global.Logger.Info("[AutoRole] 用户自动职权已更新",
 			zap.Uint("user_id", userID),
 			zap.Int("added", len(toAdd)))
