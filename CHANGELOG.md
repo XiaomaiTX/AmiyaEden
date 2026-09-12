@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-09-12
+
+### Added
+
+- 新增 QQ 建筑预警能力：按燃料余量和增强计时阈值持久化预警状态，复用 OneBot 队列发送通知，并提供手动巡查、断连恢复、重试原因和限流状态可视化。
+- 新增基于服务模块的军团建筑燃料估算与系统托管的多对多活动目录，支持活动映射、星域筛选、燃料列排序、服务详情弹窗和燃料到期月份徽标。
+- 新增 ESI 可选权限的单 scope 授权流程，减少不必要的整角色重新授权。
+- 完成 React 端伏羲大厅、工具书签、银河登记和 QQ 群治理管理/运营页面，补齐权限、分页、筛选、分析和超时浏览器通知能力。
+- 新增 Mumble 外部身份权威与语音凭据：支持应用密码创建、轮换、吊销、批量解析和服务间重校验。
+
+### Changed
+
+- 将版本号改为由 `static/package.json` 在构建时直接读取并校验，移除环境变量同步脚本和 `VITE_VERSION` 依赖。
+- 将 React 迁移基座扩展为与 Vue 对齐的双前端实现，统一路由、会话水合、角色/能力权限、API 类型、DataTable、React Aria 和 shadcn/ui 基元。
+- 将自动权限分配收敛为管理员显式配置的 ESI 角色/头衔映射，移除隐藏的 Director 自动授予 admin 规则。
+- 改进 EVE SSO scope 持久化、token 并发写入和 ESI 403 降级处理；主题偏好、侧边栏导航状态和技能训练页面的交互更加稳定。
+- 将服务间 Mumble 端点归入 `/api/internal` 路由分类，并将服务端口统一支持 `PORT` 环境变量；新增按模块及聚合的 lint、类型检查、测试、构建和 verify 入口。
+- 移除依赖源码正则的脆弱测试，保留真实行为测试，并补充 React UI 基元、权限、结构燃料和 Mumble 边界测试。
+
+### Fixed
+
+- 修复建筑燃料估算中活动重复计数、模块映射不完整、无授权场景和不准确部分结果的问题。
+- 修复 OneBot 断连任务无法按原因恢复、预警消息排序和建筑上下文不足等问题。
+- 修复 React 主题水合、人物资料锁定、权限路由、表格布局和中英文文案不同步问题。
+- 修复 Mumble 认证请求因缺少 `server_instance_id` 被错误拒绝的问题；该字段现为可选且仍限制长度。
+
+### Migration
+
+- Mumble 服务间端点由 `/internal/mumble/v1` 调整为 `/api/internal/mumble/v1`；调用方必须同步更新路径，并继续使用服务令牌、私网 HTTPS 和 mTLS，不能把路径前缀当作安全边界。
+- 服务目录启动时会迁移历史活动映射；如需计算建筑燃料，请按需为角色补充 `esi-assets.read_corporation_assets.v1` 可选 scope，并在管理页维护新发现活动的模块候选。
+
 ## [1.16.0] - 2026-07-26
 
 ### Added
