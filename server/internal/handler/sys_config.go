@@ -172,6 +172,7 @@ func (h *SysConfigHandler) UpdateMumbleConfig(c *gin.Context) {
 	h.recordConfigAudit(c, "mumble_config_update", model.SysConfigMumbleServerURL, map[string]any{
 		"server_url_updated": true, "service_token_updated": true, "revalidate_token_updated": true,
 		"revalidate_timeout_ms": req.RevalidateTimeoutMS, "display_name_template": req.DisplayNameTemplate,
+		"public_nodes": len(req.PublicNodes),
 	})
 	response.OK(c, nil)
 }

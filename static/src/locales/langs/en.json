@@ -451,6 +451,9 @@
     "characters": {
       "title": "EVE Characters"
     },
+    "mumble": {
+      "title": "Mumble Credentials"
+    },
     "operation": {
       "title": "Fleet Operations",
       "fleets": "Fleet Management",
@@ -1946,6 +1949,30 @@
     "planSelectionSaved": "Plan selection saved",
     "planOptionLabel": "{scope} - {title}"
   },
+  "mumble": {
+    "credential": {
+      "title": "Mumble Voice Credential",
+      "subtitle": "Sign in to the voice server with your primary character name and a separate app password. This is not your Seat password.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "username": "Sign-in username",
+      "nodes": "Server nodes",
+      "noNodes": "No server nodes have been configured yet",
+      "password": "One-time password",
+      "create": "Create voice password",
+      "rotate": "Rotate password",
+      "revoke": "Revoke credential",
+      "dismissSecret": "Saved — hide password",
+      "oneTimeWarning": "Save this password now. It cannot be shown again after closing; you can only rotate it.",
+      "rotateConfirm": "Rotating immediately invalidates the old password. Continue?",
+      "revokeConfirm": "Revoking disconnects the current voice session. Continue?",
+      "issued": "Voice password generated",
+      "revoked": "Voice credential revoked",
+      "copied": "Password copied",
+      "loadFailed": "Failed to load the voice credential",
+      "operationFailed": "Voice credential operation failed"
+    }
+  },
   "characters": {
     "title": "EVE Characters",
     "subTitle": "Manage EVE Online characters linked to your account. You can bind multiple characters and switch the primary one.",
@@ -2006,28 +2033,6 @@
         "qqDigits": "QQ number must contain digits only",
         "discordLength": "Discord ID must be 20 characters or fewer"
       }
-    },
-    "mumble": {
-      "title": "Mumble Voice Credential",
-      "subtitle": "Sign in to the voice server with your primary character name and a separate app password. This is not your Seat password.",
-      "enabled": "Enabled",
-      "disabled": "Disabled",
-      "username": "Sign-in username",
-      "serverAddress": "Server address",
-      "serverPort": "Port",
-      "password": "One-time password",
-      "create": "Create voice password",
-      "rotate": "Rotate password",
-      "revoke": "Revoke credential",
-      "dismissSecret": "Saved — hide password",
-      "oneTimeWarning": "Save this password now. It cannot be shown again after closing; you can only rotate it.",
-      "rotateConfirm": "Rotating immediately invalidates the old password. Continue?",
-      "revokeConfirm": "Revoking disconnects the current voice session. Continue?",
-      "issued": "Voice password generated",
-      "revoked": "Voice credential revoked",
-      "copied": "Password copied",
-      "loadFailed": "Failed to load the voice credential",
-      "operationFailed": "Voice credential operation failed"
     },
     "directReferral": {
       "title": "Add Your Referrer",
@@ -3226,14 +3231,19 @@
       "oneBotAllowedCIDRsHint": "Enter one CIDR per line. Empty values reject OneBot connections.",
       "mumbleConfig": "Mumble Connection",
       "mumbleServerUrl": "Mumble Management URL",
-      "mumblePublicAddress": "Mumble server address (shown to users)",
-      "mumblePublicPort": "Port (shown to users, 0 hides it)",
+      "mumbleNodes": "Server nodes (shown to users)",
+      "mumbleNodeName": "Node name",
+      "mumbleNodeDescription": "Node description",
+      "mumbleNodeAddress": "Node address",
+      "mumbleNodePort": "Port",
+      "mumbleNodeAdd": "Add node",
+      "mumbleNodeRemove": "Remove",
       "mumbleDisplayNameTemplate": "Mumble display name template",
       "mumbleDisplayNameTemplateHint": "Supports {alliance_ticker}, {corporation_ticker}, {nickname}, {character_name}, and {roles}; empty uses the primary character name.",
       "mumbleServiceToken": "Mumble → Seat Service Token",
       "mumbleRevalidateToken": "Seat → Mumble Revalidation Token",
       "mumbleTimeout": "Revalidation Timeout (ms)",
-      "mumbleHint": "Use different tokens for each direction. Leaving the URL or tokens empty disables active revalidation notifications. The server address and port are display-only hints for users and are not used for service-to-service traffic.",
+      "mumbleHint": "Use different tokens for each direction. Leaving the URL or tokens empty disables active revalidation notifications. The server node list is a display-only hint for users and is not used for service-to-service traffic.",
       "loadFailed": "Failed to load configuration",
       "saveFailed": "Failed to save configuration",
       "corporationAccessPolicies": "Corporation Access Policies",

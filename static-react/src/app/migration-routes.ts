@@ -5,6 +5,7 @@ export type MigrationBatch = 'A' | 'B' | 'C' | 'D' | 'Tail'
 export type AppPageType =
   | 'dashboard-console'
   | 'dashboard-characters'
+  | 'mumble-credentials'
   | 'dashboard-npc-kills'
   | 'dashboard-corporation-structures'
   | 'dashboard-fuel-officer-structures'
@@ -84,6 +85,14 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'characters',
     titleKey: 'nav.dashboard.characters',
     pageType: 'dashboard-characters',
+    menuGroup: 'nav.group.characters',
+    menuIcon: 'characters',
+    meta: { jwt: true },
+  },
+  {
+    path: 'mumble',
+    titleKey: 'nav.mumble.credentials',
+    pageType: 'mumble-credentials',
     menuGroup: 'nav.group.characters',
     menuIcon: 'characters',
     meta: { jwt: true },
@@ -800,6 +809,7 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
 
 const appRouteOrder = [
   'characters',
+  'mumble',
   'dashboard/console',
   'dashboard/npc-kills',
   'dashboard/corporation-structures',

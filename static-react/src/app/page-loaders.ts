@@ -17,6 +17,7 @@ function lazyNamed(
 export const appPageLoaders: Record<AppPageType, LazyRoute> = {
   'dashboard-console': lazyNamed(() => import('@/pages/dashboard-console-page'), 'DashboardConsolePage'),
   'dashboard-characters': lazyNamed(() => import('@/pages/dashboard-characters-page'), 'DashboardCharactersPage'),
+  'mumble-credentials': lazyNamed(() => import('@/pages/mumble-credentials-page'), 'MumbleCredentialsPage'),
   'dashboard-npc-kills': lazyNamed(() => import('@/pages/dashboard-npc-kills-page'), 'DashboardNpcKillsPage'),
   'dashboard-corporation-structures': lazyNamed(
     () => import('@/pages/dashboard-corporation-structures-page'),

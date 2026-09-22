@@ -3,6 +3,7 @@ package service
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"reflect"
 	"testing"
 	"time"
 
@@ -180,24 +181,26 @@ func TestMumbleIdentityServicePrimaryCharacterAndRevoke(t *testing.T) {
 func TestMumbleIdentityServiceCredentialStatusConnectionInfo(t *testing.T) {
 	t.Run("configured", func(t *testing.T) {
 		svc := setupMumbleIdentityTest(t)
-		if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumblePublicAddress, Value: " mumble.example.com "}).Error; err != nil {
+		raw := `[{"name":"香港-1","description":"香港节点","address":"hk.mumble.example.com","port":64738},{"name":"法兰克福","description":"","address":"fra.mumble.example.com","port":64739}]`
+		if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumblePublicNodes, Value: raw}).Error; err != nil {
 			t.Fatal(err)
 		}
-		if err := global.DB.Create(&model.SystemConfig{Key: model.SysConfigMumblePublicPort, Value: "64738"}).Error; err != nil {
-			t.Fatal(err)
+		want := []MumblePublicNode{
+			{Name: "香港-1", Description: "香港节点", Address: "hk.mumble.example.com", Port: 64738},
+			{Name: "法兰克福", Address: "fra.mumble.example.com", Port: 64739},
 		}
 		status, err := svc.GetCredentialStatus(42)
 		if err != nil || status.Created || status.Enabled {
 			t.Fatalf("status before create: %+v err=%v", status, err)
 		}
-		if status.ServerAddress != "mumble.example.com" || status.ServerPort != 64738 {
+		if !reflect.DeepEqual(status.Servers, want) {
 			t.Fatalf("connection info missing before create: %+v", status)
 		}
 		created, password, err := svc.CreateCredential(42)
 		if err != nil || password == "" || !created.Created || !created.Enabled {
 			t.Fatalf("create credential: %+v err=%v", created, err)
 		}
-		if created.ServerAddress != "mumble.example.com" || created.ServerPort != 64738 {
+		if !reflect.DeepEqual(created.Servers, want) {
 			t.Fatalf("connection info missing after create: %+v", created)
 		}
 	})
@@ -207,7 +210,7 @@ func TestMumbleIdentityServiceCredentialStatusConnectionInfo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if status.ServerAddress != "" || status.ServerPort != 0 {
+		if len(status.Servers) != 0 {
 			t.Fatalf("unconfigured connection info must stay empty: %+v", status)
 		}
 	})

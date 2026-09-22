@@ -62,13 +62,6 @@ describe('dashboard characters page', () => {
         }
       } else if (url === '/api/v1/newbro/recruit/direct-referral') {
         data = { show_card: true, needs_profile_qq: false }
-      } else if (url === '/api/v1/mumble/credential') {
-        data = {
-          created: false,
-          enabled: false,
-          server_address: 'mumble.example.com',
-          server_port: 64738,
-        }
       } else {
         throw new Error(`Unexpected request: ${url}`)
       }
@@ -91,12 +84,7 @@ describe('dashboard characters page', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: '补录推荐人' })).toBeInTheDocument()
-      expect(screen.getByRole('heading', { name: 'Mumble 语音凭据' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: '创建语音密码' })).toBeInTheDocument()
-      expect(screen.getByText('mumble.example.com')).toBeInTheDocument()
-      expect(screen.getByText('64738')).toBeInTheDocument()
-      expect(screen.queryByText('稳定用户 ID')).not.toBeInTheDocument()
-      expect(screen.getAllByRole('button', { name: '复制' }).length).toBe(3)
+      expect(screen.queryByRole('heading', { name: 'Mumble 语音凭据' })).not.toBeInTheDocument()
     })
   })
 
@@ -174,13 +162,6 @@ describe('dashboard characters page', () => {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
           }
-        )
-      }
-
-      if (url === '/api/v1/mumble/credential') {
-        return new Response(
-          JSON.stringify({ code: 0, msg: 'ok', data: { created: false, enabled: false } }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
 

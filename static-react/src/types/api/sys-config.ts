@@ -31,12 +31,18 @@ export interface UpdateSDEConfigParams {
   download_url?: string
 }
 
+export interface MumblePublicNode {
+  name: string
+  description: string
+  address: string
+  port: number
+}
+
 export interface MumbleConfig {
   service_token: string
   server_url: string
   revalidate_token: string
   revalidate_timeout_ms: number
-  public_address: string
-  public_port: number
+  public_nodes: MumblePublicNode[]
   display_name_template: string
 }

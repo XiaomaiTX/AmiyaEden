@@ -40,15 +40,14 @@ type MumbleIdentityService struct {
 }
 
 // MumbleCredentialStatus is the user-facing credential payload. The stable
-// Mumble user id is protocol-only and must never appear here; ServerAddress
-// and ServerPort are display-only connection hints from system config.
+// Mumble user id is protocol-only and must never appear here; Servers are
+// display-only connection hints from system config.
 type MumbleCredentialStatus struct {
-	Created           bool       `json:"created"`
-	Enabled           bool       `json:"enabled"`
-	ServerAddress     string     `json:"server_address,omitempty"`
-	ServerPort        int        `json:"server_port,omitempty"`
-	CredentialVersion uint       `json:"credential_version,omitempty"`
-	PasswordRotatedAt *time.Time `json:"password_rotated_at,omitempty"`
+	Created           bool               `json:"created"`
+	Enabled           bool               `json:"enabled"`
+	Servers           []MumblePublicNode `json:"servers,omitempty"`
+	CredentialVersion uint               `json:"credential_version,omitempty"`
+	PasswordRotatedAt *time.Time         `json:"password_rotated_at,omitempty"`
 }
 
 type MumbleClaims struct {
@@ -324,8 +323,7 @@ func (s *MumbleIdentityService) withConnectionInfo(status MumbleCredentialStatus
 	if s.cfgRepo == nil {
 		return status
 	}
-	status.ServerAddress = strings.TrimSpace(s.cfgRepo.GetString(model.SysConfigMumblePublicAddress, ""))
-	status.ServerPort = s.cfgRepo.GetInt(model.SysConfigMumblePublicPort, 0)
+	status.Servers = loadMumblePublicNodes(s.cfgRepo)
 	return status
 }
 

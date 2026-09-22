@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-09-22
+
+### Added
+
+- 新增 "Mumble 凭据" 独立页面：侧边栏"人物管理"组新菜单项，路径 `/mumble`，Vue 与 React 双前端同步提供；语音凭据不再随人物管理页对所有访客展示。
+- Mumble 服务器信息支持多节点列表：凭据卡片逐节点展示名称、描述、地址与端口并提供独立复制按钮；管理员可在 系统设置→基础配置→Mumble 维护节点列表（名称、描述、地址、端口，上限 10 个，地址与端口重复校验）。
+
+### Changed
+
+- 凭据接口 `GET /api/v1/mumble/credential` 以仅展示用途的 `servers[]`（name/description/address/port）替换原 `server_address`/`server_port`；未配置节点时响应不含该字段，页面显示占位提示。
+- 人物管理页移除 Mumble 凭据卡片；用户侧凭据文案命名空间由 `characters.mumble.*` 迁移至 `mumble.credential.*`。
+
+### Migration
+
+- 服务启动时将旧配置 `mumble.public_address`/`mumble.public_port` 一次性折叠为 `mumble.public_nodes` 单节点并删除旧 key；迁移幂等，无需人工干预。
+
 ## [1.17.1] - 2026-09-12
 
 ### Added

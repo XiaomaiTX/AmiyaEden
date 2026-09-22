@@ -87,6 +87,16 @@ func (r *SysConfigRepository) Get(key, defaultVal string) (string, error) {
 	return cfg.Value, nil
 }
 
+// GetIfExists 获取配置值字符串；key 不存在时返回 ("", false)，且不回写默认值
+func (r *SysConfigRepository) GetIfExists(key string) (string, bool) {
+	var cfg model.SystemConfig
+	err := global.DB.Where("key = ?", key).First(&cfg).Error
+	if err != nil {
+		return "", false
+	}
+	return cfg.Value, true
+}
+
 // GetTx reads and, when necessary, persists a setting through an existing
 // transaction. Callers must use this inside the transaction that owns the
 // surrounding write so a second database connection is not opened.
@@ -136,6 +146,23 @@ func (r *SysConfigRepository) SetMany(items []SysConfigUpsertItem) error {
 	if sysConfigCacheAvailable() {
 		for _, item := range items {
 			_ = cache.SetString(ctx, cacheKey(item.Key), item.Value, sysConfigCacheTTL)
+		}
+	}
+	return nil
+}
+
+// DeleteMany 删除一组配置并使缓存失效
+func (r *SysConfigRepository) DeleteMany(keys []string) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	if err := global.DB.Where("key IN ?", keys).Delete(&model.SystemConfig{}).Error; err != nil {
+		return err
+	}
+	if sysConfigCacheAvailable() {
+		ctx := context.Background()
+		for _, key := range keys {
+			_ = cache.Del(ctx, cacheKey(key))
 		}
 	}
 	return nil

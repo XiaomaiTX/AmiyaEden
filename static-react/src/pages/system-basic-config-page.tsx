@@ -17,6 +17,7 @@ import type {
   AllowCorporationsConfig,
   BasicConfig,
   MumbleConfig,
+  MumblePublicNode,
   SDEConfig,
 } from '@/types/api/sys-config'
 
@@ -31,8 +32,7 @@ const defaultMumbleForm: MumbleConfig = {
   server_url: '',
   revalidate_token: '',
   revalidate_timeout_ms: 1000,
-  public_address: '',
-  public_port: 0,
+  public_nodes: [],
   display_name_template: '{character_name}',
 }
 
@@ -75,7 +75,10 @@ export function SystemBasicConfigPage() {
       setBasicConfig(basic)
       setAllowCorporationsInput(renderAllowCorporations(basic.corp_id, allowCorps))
       setSdeForm(sde)
-      setMumbleForm(mumble)
+      setMumbleForm({
+        ...mumble,
+        public_nodes: Array.isArray(mumble.public_nodes) ? mumble.public_nodes : [],
+      })
     } catch {
       setError(t('systemBasicConfig.messages.loadFailed'))
     } finally {
@@ -141,6 +144,29 @@ export function SystemBasicConfigPage() {
     } finally {
       setMumbleSaving(false)
     }
+  }
+
+  const updateMumbleNode = (index: number, patch: Partial<MumblePublicNode>) => {
+    setMumbleForm((current) => ({
+      ...current,
+      public_nodes: current.public_nodes.map((node, i) =>
+        i === index ? { ...node, ...patch } : node,
+      ),
+    }))
+  }
+
+  const addMumbleNode = () => {
+    setMumbleForm((current) => ({
+      ...current,
+      public_nodes: [...current.public_nodes, { name: '', description: '', address: '', port: 0 }],
+    }))
+  }
+
+  const removeMumbleNode = (index: number) => {
+    setMumbleForm((current) => ({
+      ...current,
+      public_nodes: current.public_nodes.filter((_, i) => i !== index),
+    }))
   }
 
   return (
@@ -232,18 +258,67 @@ export function SystemBasicConfigPage() {
               placeholder="http://go-mumble-server:64730"
             />
           </label>
-          <label className="space-y-2">
+          <div className="space-y-3 md:col-span-2">
             <span className="text-sm text-muted-foreground">
-              {t('systemBasicConfig.mumble.publicAddress')}
+              {t('systemBasicConfig.mumble.nodesTitle')}
             </span>
-            <Input
-              value={mumbleForm.public_address}
-              onChange={(event) =>
-                setMumbleForm((current) => ({ ...current, public_address: event.target.value }))
-              }
-              placeholder="mumble.example.com"
-            />
-          </label>
+            <div className="flex flex-col gap-3">
+              {mumbleForm.public_nodes.map((node, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                >
+                  <Input
+                    className="sm:w-40"
+                    maxLength={64}
+                    value={node.name}
+                    onChange={(event) => updateMumbleNode(index, { name: event.target.value })}
+                    placeholder={t('systemBasicConfig.mumble.nodeName')}
+                  />
+                  <Input
+                    className="sm:w-48"
+                    maxLength={256}
+                    value={node.description}
+                    onChange={(event) => updateMumbleNode(index, { description: event.target.value })}
+                    placeholder={t('systemBasicConfig.mumble.nodeDescription')}
+                  />
+                  <Input
+                    className="sm:min-w-0 sm:flex-1"
+                    value={node.address}
+                    onChange={(event) => updateMumbleNode(index, { address: event.target.value })}
+                    placeholder={t('systemBasicConfig.mumble.nodeAddress')}
+                  />
+                  <Input
+                    className="sm:w-28"
+                    type="number"
+                    min={0}
+                    max={65535}
+                    value={node.port}
+                    onChange={(event) =>
+                      updateMumbleNode(index, { port: Number(event.target.value) })
+                    }
+                    placeholder={t('systemBasicConfig.mumble.nodePort')}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => removeMumbleNode(index)}
+                  >
+                    {t('systemBasicConfig.mumble.removeNode')}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-fit"
+              isDisabled={mumbleForm.public_nodes.length >= 10}
+              onClick={addMumbleNode}
+            >
+              {t('systemBasicConfig.mumble.addNode')}
+            </Button>
+          </div>
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">
               {t('systemBasicConfig.mumble.displayNameTemplate')}
@@ -258,23 +333,6 @@ export function SystemBasicConfigPage() {
             <span className="text-xs text-muted-foreground">
               {t('systemBasicConfig.mumble.displayNameTemplateHint')}
             </span>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">
-              {t('systemBasicConfig.mumble.publicPort')}
-            </span>
-            <Input
-              type="number"
-              min={0}
-              max={65535}
-              value={mumbleForm.public_port}
-              onChange={(event) =>
-                setMumbleForm((current) => ({
-                  ...current,
-                  public_port: Number(event.target.value),
-                }))
-              }
-            />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-muted-foreground">

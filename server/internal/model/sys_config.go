@@ -46,8 +46,7 @@ const (
 	SysConfigMumbleServerURL                      = "mumble.server_url"
 	SysConfigMumbleRevalidateToken                = "mumble.revalidate_token"
 	SysConfigMumbleRevalidateTimeoutMS            = "mumble.revalidate_timeout_ms"
-	SysConfigMumblePublicAddress                  = "mumble.public_address"
-	SysConfigMumblePublicPort                     = "mumble.public_port"
+	SysConfigMumblePublicNodes                   = "mumble.public_nodes" // 对用户展示的 Mumble 服务器节点列表 (JSON 数组)
 	SysConfigMumbleDisplayNameTemplate            = "mumble.display_name_template"
 	SysConfigQQGovernanceScanIntervalMinutes      = "qq_governance.scan_interval_minutes"
 	SysConfigQQGovernanceMismatchConfirmations    = "qq_governance.mismatch_confirmations"

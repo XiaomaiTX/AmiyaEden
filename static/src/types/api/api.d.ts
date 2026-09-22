@@ -153,11 +153,17 @@ declare namespace Api {
   }
 
   namespace Mumble {
+    interface PublicNode {
+      name: string
+      description: string
+      address: string
+      port: number
+    }
+
     interface CredentialStatus {
       created: boolean
       enabled: boolean
-      server_address?: string
-      server_port?: number
+      servers?: PublicNode[]
       credential_version?: number
       password_rotated_at?: string | null
     }
@@ -3663,13 +3669,19 @@ declare namespace Api {
       enforce_character_esi_restriction: boolean
     }
 
+    interface MumblePublicNode {
+      name: string
+      description: string
+      address: string
+      port: number
+    }
+
     interface MumbleConfig {
       service_token: string
       server_url: string
       revalidate_token: string
       revalidate_timeout_ms: number
-      public_address: string
-      public_port: number
+      public_nodes: MumblePublicNode[]
       display_name_template: string
     }
 

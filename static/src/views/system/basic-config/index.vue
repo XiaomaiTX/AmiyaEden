@@ -68,11 +68,49 @@
             placeholder="http://go-mumble-server:64730"
           />
         </ElFormItem>
-        <ElFormItem :label="$t('system.basicConfig.mumblePublicAddress')">
-          <ElInput v-model="mumbleForm.public_address" clearable placeholder="mumble.example.com" />
-        </ElFormItem>
-        <ElFormItem :label="$t('system.basicConfig.mumblePublicPort')">
-          <ElInputNumber v-model="mumbleForm.public_port" :min="0" :max="65535" />
+        <ElFormItem :label="$t('system.basicConfig.mumbleNodes')">
+          <div class="flex w-full flex-col gap-3">
+            <div
+              v-for="(node, index) in mumbleForm.public_nodes"
+              :key="index"
+              class="flex flex-col gap-2 sm:flex-row sm:items-center"
+            >
+              <ElInput
+                v-model="node.name"
+                maxlength="64"
+                :placeholder="$t('system.basicConfig.mumbleNodeName')"
+                style="width: 160px"
+              />
+              <ElInput
+                v-model="node.description"
+                maxlength="256"
+                :placeholder="$t('system.basicConfig.mumbleNodeDescription')"
+                style="width: 200px"
+              />
+              <ElInput
+                v-model="node.address"
+                clearable
+                :placeholder="$t('system.basicConfig.mumbleNodeAddress')"
+                class="min-w-0 flex-1"
+              />
+              <ElInputNumber
+                v-model="node.port"
+                :min="0"
+                :max="65535"
+                :placeholder="$t('system.basicConfig.mumbleNodePort')"
+              />
+              <ElButton type="danger" plain @click="removeMumbleNode(index)">
+                {{ $t('system.basicConfig.mumbleNodeRemove') }}
+              </ElButton>
+            </div>
+            <ElButton
+              :disabled="mumbleForm.public_nodes.length >= 10"
+              style="width: fit-content"
+              @click="addMumbleNode"
+            >
+              {{ $t('system.basicConfig.mumbleNodeAdd') }}
+            </ElButton>
+          </div>
         </ElFormItem>
         <ElFormItem :label="$t('system.basicConfig.mumbleDisplayNameTemplate')">
           <ElInput
@@ -629,10 +667,15 @@
     server_url: '',
     revalidate_token: '',
     revalidate_timeout_ms: 1000,
-    public_address: '',
-    public_port: 0,
+    public_nodes: [],
     display_name_template: '{character_name}'
   })
+  const addMumbleNode = () => {
+    mumbleForm.public_nodes.push({ name: '', description: '', address: '', port: 0 })
+  }
+  const removeMumbleNode = (index: number) => {
+    mumbleForm.public_nodes.splice(index, 1)
+  }
   const sdeStatus = reactive<Api.SysConfig.SDEStatus>({
     current_version: '',
     latest_version: '',
@@ -904,7 +947,9 @@
   const loadMumbleConfig = async () => {
     loadingMumble.value = true
     try {
-      Object.assign(mumbleForm, await fetchMumbleConfig())
+      const loaded = await fetchMumbleConfig()
+      if (!Array.isArray(loaded.public_nodes)) loaded.public_nodes = []
+      Object.assign(mumbleForm, loaded)
     } catch {
       ElMessage.error(t('system.basicConfig.loadFailed'))
     } finally {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/url"
 	"sort"
@@ -45,18 +46,28 @@ type OneBotRuntimeConfig struct {
 	AllowedCIDRs []string
 }
 
+// MumblePublicNode 是一个对用户展示的 Mumble 服务器节点。Name 与 Description
+// 仅用于展示，Address+Port 才是用户实际连接的入口。
+type MumblePublicNode struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Address     string `json:"address"`
+	Port        int    `json:"port"`
+}
+
+const maxMumblePublicNodes = 10
+
 // MumbleRuntimeConfig is managed in Seat system settings. ServiceToken is used
 // for go-mumble-server -> Seat calls; RevalidateToken is used in the reverse
-// direction and must be a different credential. PublicAddress/PublicPort are
-// display-only connection hints for end users and are unrelated to ServerURL.
+// direction and must be a different credential. PublicNodes are display-only
+// connection hints for end users and are unrelated to ServerURL.
 type MumbleRuntimeConfig struct {
-	ServiceToken        string `json:"service_token"`
-	ServerURL           string `json:"server_url"`
-	RevalidateToken     string `json:"revalidate_token"`
-	RevalidateTimeoutMS int    `json:"revalidate_timeout_ms"`
-	PublicAddress       string `json:"public_address"`
-	PublicPort          int    `json:"public_port"`
-	DisplayNameTemplate string `json:"display_name_template"`
+	ServiceToken        string             `json:"service_token"`
+	ServerURL           string             `json:"server_url"`
+	RevalidateToken     string             `json:"revalidate_token"`
+	RevalidateTimeoutMS int                `json:"revalidate_timeout_ms"`
+	PublicNodes         []MumblePublicNode `json:"public_nodes"`
+	DisplayNameTemplate string             `json:"display_name_template"`
 }
 
 const defaultMumbleDisplayNameTemplate = "{character_name}"
@@ -178,23 +189,70 @@ func (s *SysConfigService) UpdateOneBotConfig(enabled *bool, accessToken *string
 	return nil
 }
 
+// loadMumblePublicNodes 读取对用户展示的 Mumble 服务器节点列表；未配置或损坏时返回空列表。
+func loadMumblePublicNodes(repo *repository.SysConfigRepository) []MumblePublicNode {
+	nodes := []MumblePublicNode{}
+	if repo == nil {
+		return nodes
+	}
+	raw := strings.TrimSpace(repo.GetString(model.SysConfigMumblePublicNodes, ""))
+	if raw == "" {
+		return nodes
+	}
+	if err := json.Unmarshal([]byte(raw), &nodes); err != nil || nodes == nil {
+		return []MumblePublicNode{}
+	}
+	return nodes
+}
+
 func (s *SysConfigService) GetMumbleConfig() MumbleRuntimeConfig {
 	return MumbleRuntimeConfig{
 		ServiceToken:        s.repo.GetString(model.SysConfigMumbleServiceToken, ""),
 		ServerURL:           s.repo.GetString(model.SysConfigMumbleServerURL, ""),
 		RevalidateToken:     s.repo.GetString(model.SysConfigMumbleRevalidateToken, ""),
 		RevalidateTimeoutMS: s.repo.GetInt(model.SysConfigMumbleRevalidateTimeoutMS, model.SysConfigDefaultMumbleRevalidateTimeoutMS),
-		PublicAddress:       strings.TrimSpace(s.repo.GetString(model.SysConfigMumblePublicAddress, "")),
-		PublicPort:          s.repo.GetInt(model.SysConfigMumblePublicPort, 0),
+		PublicNodes:         loadMumblePublicNodes(s.repo),
 		DisplayNameTemplate: s.repo.GetString(model.SysConfigMumbleDisplayNameTemplate, defaultMumbleDisplayNameTemplate),
 	}
+}
+
+// normalizeMumblePublicNodes 校验并规范化对用户展示的 Mumble 服务器节点列表。
+func normalizeMumblePublicNodes(nodes []MumblePublicNode) ([]MumblePublicNode, error) {
+	if len(nodes) > maxMumblePublicNodes {
+		return nil, fmt.Errorf("mumble 服务器节点最多 %d 个", maxMumblePublicNodes)
+	}
+	normalized := make([]MumblePublicNode, 0, len(nodes))
+	seen := make(map[string]struct{}, len(nodes))
+	for _, node := range nodes {
+		node.Name = strings.TrimSpace(node.Name)
+		node.Description = strings.TrimSpace(node.Description)
+		node.Address = strings.TrimSpace(node.Address)
+		if len(node.Name) > 64 {
+			return nil, errors.New("mumble 服务器节点名称最多 64 个字节")
+		}
+		if len(node.Description) > 256 {
+			return nil, errors.New("mumble 服务器节点描述最多 256 个字节")
+		}
+		if node.Address == "" || len(node.Address) > 253 || strings.ContainsAny(node.Address, "/ \t\r\n") {
+			return nil, errors.New("mumble 服务器连接地址格式无效")
+		}
+		if node.Port < 0 || node.Port > 65535 {
+			return nil, errors.New("mumble 服务器连接端口必须在 0 到 65535 之间")
+		}
+		key := fmt.Sprintf("%s:%d", node.Address, node.Port)
+		if _, dup := seen[key]; dup {
+			return nil, errors.New("mumble 服务器节点地址与端口不能重复")
+		}
+		seen[key] = struct{}{}
+		normalized = append(normalized, node)
+	}
+	return normalized, nil
 }
 
 func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
 	cfg.ServiceToken = strings.TrimSpace(cfg.ServiceToken)
 	cfg.ServerURL = strings.TrimRight(strings.TrimSpace(cfg.ServerURL), "/")
 	cfg.RevalidateToken = strings.TrimSpace(cfg.RevalidateToken)
-	cfg.PublicAddress = strings.TrimSpace(cfg.PublicAddress)
 	cfg.DisplayNameTemplate = strings.TrimSpace(cfg.DisplayNameTemplate)
 	if cfg.DisplayNameTemplate == "" {
 		cfg.DisplayNameTemplate = defaultMumbleDisplayNameTemplate
@@ -217,28 +275,53 @@ func (s *SysConfigService) UpdateMumbleConfig(cfg MumbleRuntimeConfig) error {
 	if cfg.RevalidateTimeoutMS < 100 || cfg.RevalidateTimeoutMS > 10000 {
 		return errors.New("mumble 重校验超时必须在 100 到 10000 毫秒之间")
 	}
-	if cfg.PublicAddress != "" && (len(cfg.PublicAddress) > 253 || strings.ContainsAny(cfg.PublicAddress, "/ \t\r\n")) {
-		return errors.New("mumble 服务器连接地址格式无效")
+	nodes, err := normalizeMumblePublicNodes(cfg.PublicNodes)
+	if err != nil {
+		return err
 	}
-	if cfg.PublicPort < 0 || cfg.PublicPort > 65535 {
-		return errors.New("mumble 服务器连接端口必须在 0 到 65535 之间")
+	rawNodes, err := json.Marshal(nodes)
+	if err != nil {
+		return errors.New("编码 Mumble 服务器节点列表失败")
 	}
 	if err := validateMumbleDisplayNameTemplate(cfg.DisplayNameTemplate); err != nil {
 		return err
 	}
-	items := newSysConfigBatch(7).
+	items := newSysConfigBatch(6).
 		AddString(model.SysConfigMumbleServiceToken, cfg.ServiceToken, "Mumble 调用 Seat 的服务令牌").
 		AddString(model.SysConfigMumbleServerURL, cfg.ServerURL, "Mumble 服务管理地址").
 		AddString(model.SysConfigMumbleRevalidateToken, cfg.RevalidateToken, "Seat 调用 Mumble 的重校验令牌").
 		AddInt(model.SysConfigMumbleRevalidateTimeoutMS, cfg.RevalidateTimeoutMS, "Mumble 重校验请求超时（毫秒）").
-		AddString(model.SysConfigMumblePublicAddress, cfg.PublicAddress, "对用户展示的 Mumble 服务器连接地址").
-		AddInt(model.SysConfigMumblePublicPort, cfg.PublicPort, "对用户展示的 Mumble 服务器连接端口（0 表示未设置）").
+		AddString(model.SysConfigMumblePublicNodes, string(rawNodes), "对用户展示的 Mumble 服务器节点列表").
 		AddString(model.SysConfigMumbleDisplayNameTemplate, cfg.DisplayNameTemplate, "Mumble 昵称显示模板").
 		Items()
 	if err := s.repo.SetMany(items); err != nil {
 		return errors.New("更新 Mumble 连接设置失败")
 	}
 	return nil
+}
+
+// legacyMumblePublicKeys 是 v1 单节点展示配置的 key，仅在启动迁移中引用。
+var legacyMumblePublicKeys = []string{"mumble.public_address", "mumble.public_port"}
+
+// MigrateLegacyMumblePublicNodes 在启动时把废弃的单节点配置折叠进 mumble.public_nodes，
+// 并删除旧 key；幂等，可安全重复执行。
+func (s *SysConfigService) MigrateLegacyMumblePublicNodes() {
+	if _, exists := s.repo.GetIfExists(model.SysConfigMumblePublicNodes); !exists {
+		addrRaw, hasAddr := s.repo.GetIfExists(legacyMumblePublicKeys[0])
+		addr := strings.TrimSpace(addrRaw)
+		if hasAddr && addr != "" {
+			port := 0
+			if portRaw, hasPort := s.repo.GetIfExists(legacyMumblePublicKeys[1]); hasPort {
+				if v, err := strconv.Atoi(strings.TrimSpace(portRaw)); err == nil {
+					port = v
+				}
+			}
+			if raw, err := json.Marshal([]MumblePublicNode{{Address: addr, Port: port}}); err == nil {
+				_ = s.repo.Set(model.SysConfigMumblePublicNodes, string(raw), "对用户展示的 Mumble 服务器节点列表")
+			}
+		}
+	}
+	_ = s.repo.DeleteMany(legacyMumblePublicKeys)
 }
 
 func validateMumbleDisplayNameTemplate(template string) error {

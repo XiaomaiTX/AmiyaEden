@@ -80,6 +80,9 @@
       fuelOfficerStructures: 'My Fuel Structures',
       galaxyRegistry: 'Galaxy Registry',
     },
+    mumble: {
+      credentials: 'Mumble Credentials',
+    },
     info: {
       wallet: 'Wallet',
       skill: 'Skill List',
@@ -515,10 +518,15 @@
     mumble: {
       title: 'Mumble Connection',
       subtitle:
-        'Configure both service tokens and the Mumble management URL used by Seat to trigger online identity revalidation. The server address and port are display-only hints for users.',
+        'Configure both service tokens and the Mumble management URL used by Seat to trigger online identity revalidation. The server node list is a display-only hint for users.',
       serverUrl: 'Mumble management URL',
-      publicAddress: 'Mumble server address (shown to users)',
-      publicPort: 'Port (shown to users, 0 hides it)',
+      nodesTitle: 'Server nodes (shown to users)',
+      nodeName: 'Node name',
+      nodeDescription: 'Node description',
+      nodeAddress: 'Node address',
+      nodePort: 'Port',
+      addNode: 'Add node',
+      removeNode: 'Remove',
       displayNameTemplate: 'Mumble display name template',
       displayNameTemplateHint:
         'Supports {alliance_ticker}, {corporation_ticker}, {nickname}, {character_name}, and {roles}; empty uses the primary character name.',
@@ -1991,6 +1999,31 @@
       },
     },
   },
+  mumble: {
+    credential: {
+      title: 'Mumble Voice Credential',
+      subtitle:
+        'Sign in to the voice server with your primary character name and a separate app password. This is not your Seat password.',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      username: 'Sign-in username',
+      nodes: 'Server nodes',
+      noNodes: 'No server nodes have been configured yet',
+      password: 'One-time password',
+      create: 'Create voice password',
+      rotate: 'Rotate password',
+      revoke: 'Revoke credential',
+      dismissSecret: 'Saved — hide password',
+      oneTimeWarning:
+        'Save this password now. It cannot be shown again after closing; you can only rotate it.',
+      rotateConfirm: 'Rotating immediately invalidates the old password. Continue?',
+      revokeConfirm: 'Revoking disconnects the current voice session. Continue?',
+      issued: 'Voice password generated',
+      revoked: 'Voice credential revoked',
+      loadFailed: 'Failed to load the voice credential',
+      operationFailed: 'Voice credential operation failed',
+    },
+  },
   characters: {
     title: 'EVE Characters',
     subTitle:
@@ -2062,29 +2095,6 @@
         qqDigits: 'QQ number must contain digits only',
         discordLength: 'Discord ID must be 20 characters or fewer',
       },
-    },
-    mumble: {
-      title: 'Mumble Voice Credential',
-      subtitle:
-        'Sign in to the voice server with your primary character name and a separate app password. This is not your Seat password.',
-      enabled: 'Enabled',
-      disabled: 'Disabled',
-      username: 'Sign-in username',
-      serverAddress: 'Server address',
-      serverPort: 'Port',
-      password: 'One-time password',
-      create: 'Create voice password',
-      rotate: 'Rotate password',
-      revoke: 'Revoke credential',
-      dismissSecret: 'Saved — hide password',
-      oneTimeWarning:
-        'Save this password now. It cannot be shown again after closing; you can only rotate it.',
-      rotateConfirm: 'Rotating immediately invalidates the old password. Continue?',
-      revokeConfirm: 'Revoking disconnects the current voice session. Continue?',
-      issued: 'Voice password generated',
-      revoked: 'Voice credential revoked',
-      loadFailed: 'Failed to load the voice credential',
-      operationFailed: 'Voice credential operation failed',
     },
     directReferral: {
       title: 'Add Your Referrer',

@@ -28,6 +28,7 @@ describe('menu config', () => {
     expect(dashboard).toBeDefined()
     expect(characters?.items).toEqual([
       expect.objectContaining({ to: '/characters', labelKey: 'nav.dashboard.characters' }),
+      expect.objectContaining({ to: '/mumble', labelKey: 'nav.mumble.credentials' }),
     ])
     expect(info).toBeDefined()
     expect(groups.find((group) => group.labelKey === 'nav.group.system')).toBeUndefined()

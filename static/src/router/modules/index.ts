@@ -1,5 +1,6 @@
 import { AppRouteRecord } from '@/types/router'
 import { charactersRoutes } from './characters'
+import { mumbleRoutes } from './mumble'
 import { dashboardRoutes } from './dashboard'
 import { systemRoutes } from './system'
 import { operationRoutes } from './operation'
@@ -18,6 +19,7 @@ import { ticketRoutes } from './ticket'
  */
 export const routeModules: AppRouteRecord[] = [
   charactersRoutes,
+  mumbleRoutes,
   dashboardRoutes,
   operationRoutes,
   skillPlanningRoutes,

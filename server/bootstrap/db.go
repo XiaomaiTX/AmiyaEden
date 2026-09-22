@@ -201,6 +201,9 @@ func autoMigrate(db *gorm.DB) {
 	roleSvc.MigrateUserRoleTableToCode()
 	roleSvc.MigrateEsiMappingsToCode()
 
+	// 折叠废弃的 mumble 单节点展示配置到 mumble.public_nodes
+	service.NewSysConfigService().MigrateLegacyMumblePublicNodes()
+
 	// 删除旧的 role 表（迁移完成后不再需要）
 	if db.Migrator().HasTable("role") {
 		if err := db.Migrator().DropTable("role"); err != nil {
