@@ -22,6 +22,51 @@ export interface WalletResponse {
   journals: WalletJournal[]
 }
 
+export interface WalletAnalyticsRequest {
+  character_id: number
+  /** 起始日（含），YYYY-MM-DD；留空时后端按本地可得范围取 */
+  from?: string
+  /** 结束日（含），YYYY-MM-DD；留空时后端按本地可得范围取 */
+  to?: string
+}
+
+export interface WalletAnalyticsSummary {
+  /** 本地已收集流水的最早 UTC 自然日，空串表示无数据 */
+  available_from: string
+  /** 本地已收集流水的最晚 UTC 自然日，空串表示无数据 */
+  available_to: string
+  opening_balance: number | null
+  closing_balance: number | null
+  total_income: number
+  total_expense: number
+  total_net: number
+  total_tax: number
+  entry_count: number
+}
+
+export interface WalletAnalyticsDailyPoint {
+  date: string
+  income: number
+  expense: number
+  net: number
+  tax: number
+  balance: number
+  count: number
+}
+
+export interface WalletAnalyticsRefTypeItem {
+  ref_type: string
+  income: number
+  expense: number
+  count: number
+}
+
+export interface WalletAnalyticsResponse {
+  summary: WalletAnalyticsSummary
+  daily_series: WalletAnalyticsDailyPoint[]
+  ref_type_breakdown: WalletAnalyticsRefTypeItem[]
+}
+
 export interface SkillRequest {
   character_id: number
   language: string

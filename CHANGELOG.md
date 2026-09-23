@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-09-23
+
+### Added
+
+- 新增钱包收支分析（个人钱包流水页）：后端新增 `POST /api/v1/info/wallet/analytics`，复用钱包读取权限，按 EVE 时间（UTC）自然日聚合每日余额、每日收支与交易类型构成；Vue 与 React 页面同步落地，提供 1 / 7 / 30 / 90 天与全部可得范围预设，并展示期初/期末余额、总收入、总支出、净收支与税金汇总。
+
+### Changed
+
+- 钱包收支分析的时间范围以本地已收集流水的最早/最晚日期为边界，不使用固定的 30 天窗口，可得历史随实例持续运行自动增长。
+- 钱包收支分析图表（每日余额、每日收支、收入/支出类型构成）的数值轴改用 ISK 智能缩写（K/M/B/T）渲染刻度，替代原先的原始长数字；悬浮提示中的数值同步使用相同格式化，不再显示全精度小数。
+- 钱包收支分析的「每日收支」图配色改为语义色：收入为绿色、支出为红色（与汇总卡同色系），不再依赖默认主题色序列。
+- 钱包收支分析的「每日收支」与「收入/支出类型构成」柱体统一限制最大厚度（14px），避免短区间（如近 1 天）类目较少时柱体过度臃肿；类型构成图按金额降序排列，数值轴为最右刻度预留右侧留白以避免标签被裁切。
+
 ## [1.18.0] - 2026-09-22
 
 ### Added

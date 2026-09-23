@@ -1,5 +1,5 @@
 <template>
-  <div class="info-wallet-page art-full-height">
+  <div class="info-wallet-page">
     <!-- 人物切换器 + 余额展示（特殊上下文选择器，非标准搜索栏） -->
     <ElCard class="art-card" shadow="never">
       <div class="flex items-center justify-between flex-wrap gap-4">
@@ -65,6 +65,9 @@
       </div>
     </ElCard>
 
+    <!-- 收支分析（每日余额 / 每日收支 / 收支类型构成，按 EVE 时间 UTC 自然日） -->
+    <WalletAnalytics :character-id="selectedCharacterId" />
+
     <!-- 流水表格 -->
     <ElCard class="art-table-card" shadow="never">
       <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData" />
@@ -92,6 +95,9 @@
   import { formatIskPlain } from '@/utils/common'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useI18n } from 'vue-i18n'
+
+  import WalletAnalytics from './modules/wallet-analytics.vue'
+  import { formatJournalTypeLabel } from './modules/wallet-journal-type'
 
   defineOptions({ name: 'EveInfoWallet' })
 
@@ -163,7 +169,9 @@
           label: t('info.journalType'),
           width: 180,
           formatter: (row: WalletJournal) =>
-            h(ElTag, { size: 'small', effect: 'plain' }, () => formatJournalTypeLabel(row.ref_type))
+            h(ElTag, { size: 'small', effect: 'plain' }, () =>
+              formatJournalTypeLabel(row.ref_type, t)
+            )
         },
         {
           prop: 'amount',
@@ -205,32 +213,13 @@
   const selectedRefTypes = ref<string[]>([])
   const walletJournalTypes = ref<string[]>([])
 
-  const formatJournalTypeLabel = (value: string) => {
-    const npcKey = `npcKill.refTypes.${value}`
-    const npcTranslated = t(npcKey)
-    if (npcTranslated !== npcKey) return npcTranslated
-
-    const walletAdminKey = `walletAdmin.refTypes.${value}`
-    const walletAdminTranslated = t(walletAdminKey)
-    if (walletAdminTranslated !== walletAdminKey) return walletAdminTranslated
-
-    const key = `info.wallet.refTypes.${value}`
-    const translated = t(key)
-    if (translated !== key) return translated
-
-    return value
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ')
-  }
-
   const journalTypeOptions = computed(() =>
     walletJournalTypes.value
       .slice()
       .sort((a, b) => a.localeCompare(b))
       .map((value) => ({
         value,
-        label: formatJournalTypeLabel(value)
+        label: formatJournalTypeLabel(value, t)
       }))
   )
 

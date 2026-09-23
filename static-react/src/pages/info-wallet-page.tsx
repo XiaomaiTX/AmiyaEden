@@ -20,6 +20,8 @@ import { useI18n } from '@/i18n'
 import type { EveCharacter } from '@/types/api/auth'
 import type { WalletResponse } from '@/types/api/eve-info'
 
+import { WalletAnalyticsSection } from './info-wallet-analytics/wallet-analytics-section'
+
 const PAGE_SIZE = 50
 
 export function InfoWalletPage() {
@@ -100,7 +102,9 @@ export function InfoWalletPage() {
         </label>
         <Select
           selectedKey={String(selectedCharacterId ?? '')}
-          onSelectionChange={(key) => ((value) => setSelectedCharacterId(Number(value)))(String(key))}
+          onSelectionChange={(key) =>
+            ((value) => setSelectedCharacterId(Number(value)))(String(key))
+          }
         >
           <SelectTrigger id="wallet-character" className="h-8">
             <SelectValue />
@@ -146,6 +150,8 @@ export function InfoWalletPage() {
               {Intl.NumberFormat().format(wallet.balance)} {t('common.isk')}
             </p>
           </div>
+
+          <WalletAnalyticsSection characterId={selectedCharacterId} />
 
           <div className="overflow-x-auto rounded-lg border bg-card">
             <Table className="min-w-full text-sm">

@@ -27,7 +27,10 @@
     data: () => [0, 0, 0, 0, 0, 0, 0],
     xAxisData: () => [],
     barWidth: '36%',
+    // 类目较少时（如按类型构成仅几个类目）限制柱体厚度，避免百分比折算后过粗
+    barMaxWidth: 14,
     stack: false,
+    reverseCategoryAxis: false,
 
     // 轴线显示配置
     showAxisLabel: true,
@@ -99,6 +102,7 @@
     data: number[]
     color?: string | InstanceType<typeof graphic.LinearGradient>
     barWidth?: string | number
+    barMaxWidth?: number
     stack?: string
   }) => {
     const animationConfig = getAnimationConfig()
@@ -110,6 +114,7 @@
       stack: config.stack,
       itemStyle: getBaseItemStyle(config.color),
       barWidth: config.barWidth || props.barWidth,
+      barMaxWidth: config.barMaxWidth ?? props.barMaxWidth,
       ...animationConfig
     }
   }
@@ -150,20 +155,22 @@
       const options: EChartsOption = {
         grid: getGridWithLegend(props.showLegend && isMultipleData.value, props.legendPosition, {
           top: 15,
-          right: 0,
+          // 右侧留白：数值轴刻度（如 30.00 B）在 grid.right=0 时会被容器右缘裁切
+          right: 24,
           left: 0
         }),
-        tooltip: props.showTooltip ? getTooltipStyle() : undefined,
+        tooltip: props.showTooltip ? getTooltipStyle('axis', getTooltipValueOptions()) : undefined,
         xAxis: {
           type: 'value',
           axisTick: getAxisTickStyle(),
           axisLine: getAxisLineStyle(props.showAxisLine),
-          axisLabel: getAxisLabelStyle(props.showAxisLabel),
+          axisLabel: getValueAxisLabelStyle(),
           splitLine: getSplitLineStyle(props.showSplitLine)
         },
         yAxis: {
           type: 'category',
           data: props.xAxisData,
+          inverse: props.reverseCategoryAxis,
           axisTick: getAxisTickStyle(),
           axisLabel: getAxisLabelStyle(props.showAxisLabel),
           axisLine: getAxisLineStyle(props.showAxisLine)
@@ -186,6 +193,7 @@
             data: item.data,
             color: computedColor,
             barWidth: item.barWidth,
+            barMaxWidth: item.barWidth ? undefined : props.barMaxWidth,
             stack: props.stack ? item.stack || 'total' : undefined
           })
         })
@@ -205,4 +213,40 @@
       return options
     }
   })
+
+  /**
+   * 数值轴刻度样式
+   *
+   * 传入 `valueFormatter` 时用它渲染刻度标签（如 ISK 智能缩写 1.50 B），
+   * 避免原始长数字（2,600,000,000）在窄轴上互相重叠；未传入则沿用默认样式。
+   */
+  const getValueAxisLabelStyle = () => {
+    const baseStyle = getAxisLabelStyle(props.showAxisLabel)
+    const { valueFormatter } = props
+    if (!valueFormatter) {
+      return baseStyle
+    }
+    return {
+      ...baseStyle,
+      // 刻度过密时自动隐藏，避免标签互相重叠
+      hideOverlap: true,
+      formatter: (value: number) => valueFormatter(Number(value))
+    }
+  }
+
+  /**
+   * 提示框数值格式化
+   *
+   * 传入 `valueFormatter` 时同步用于悬浮提示中的数值（如 ISK 智能缩写 1.50 B），
+   * 与数值轴刻度保持一致；未传入则保留 ECharts 默认渲染。
+   */
+  const getTooltipValueOptions = () => {
+    const { valueFormatter } = props
+    if (!valueFormatter) {
+      return {}
+    }
+    return {
+      valueFormatter: (value: unknown) => valueFormatter(Number(value))
+    }
+  }
 </script>

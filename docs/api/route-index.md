@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-09-12
+last_reviewed: 2026-09-23
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/corporation_capability.go
@@ -228,6 +228,7 @@ source_of_truth:
 | Method | Path                     | 说明                                              | 权限  |
 | ------ | ------------------------ | ------------------------------------------------- | ----- |
 | POST   | `/info/wallet`           | 钱包流水                                          | Login |
+| POST   | `/info/wallet/analytics` | 钱包收支分析（按 UTC 自然日聚合）                 | Login |
 | POST   | `/info/skills`           | 技能列表                                          | Login |
 | POST   | `/info/ships`            | 舰船列表                                          | Login |
 | POST   | `/info/implants`         | 植入体                                            | Login |
