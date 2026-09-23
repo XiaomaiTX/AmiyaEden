@@ -198,7 +198,7 @@
         right: 15,
         left: 0
       }),
-      tooltip: props.showTooltip ? getTooltipStyle() : undefined,
+      tooltip: props.showTooltip ? getTooltipStyle('axis', getTooltipValueOptions()) : undefined,
       xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -211,7 +211,7 @@
         type: 'value',
         min: 0,
         max: maxValue.value,
-        axisLabel: getAxisLabelStyle(props.showAxisLabel),
+        axisLabel: getValueAxisLabelStyle(),
         axisLine: getAxisLineStyle(props.showAxisLine),
         splitLine: getSplitLineStyle(props.showSplitLine)
       }
@@ -349,6 +349,40 @@
     },
     generateOptions: () => generateChartOptions(false)
   })
+
+  /**
+   * 数值轴刻度样式
+   *
+   * 传入 `valueFormatter` 时用它渲染刻度标签（如 ISK 智能缩写 1.50 B），
+   * 避免原始长数字（20,000,000,000）在窄轴上互相重叠；未传入则沿用默认样式。
+   */
+  const getValueAxisLabelStyle = () => {
+    const baseStyle = getAxisLabelStyle(props.showAxisLabel)
+    const { valueFormatter } = props
+    if (!valueFormatter) {
+      return baseStyle
+    }
+    return {
+      ...baseStyle,
+      formatter: (value: number) => valueFormatter(Number(value))
+    }
+  }
+
+  /**
+   * 提示框数值格式化
+   *
+   * 传入 `valueFormatter` 时同步用于悬浮提示中的数值（如 ISK 智能缩写 1.50 B），
+   * 与数值轴刻度保持一致；未传入则保留 ECharts 默认渲染。
+   */
+  const getTooltipValueOptions = () => {
+    const { valueFormatter } = props
+    if (!valueFormatter) {
+      return {}
+    }
+    return {
+      valueFormatter: (value: unknown) => valueFormatter(Number(value))
+    }
+  }
 
   // 图表渲染函数（优化：防止动画期间重复触发）
   const renderChart = () => {

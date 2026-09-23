@@ -299,6 +299,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	{
 		info.GET("/tool-bookmarks", toolBookmarkH.ListVisible)
 		info.POST("/wallet", requireInfoWalletRead, infoH.GetWalletJournal)
+		info.POST("/wallet/analytics", requireInfoWalletRead, infoH.GetWalletAnalytics)
 		info.POST("/skills", requireInfoSkillsRead, infoH.GetCharacterSkills)
 		info.POST("/ships", infoH.GetCharacterShips)
 		info.POST("/implants", infoH.GetCharacterImplants)

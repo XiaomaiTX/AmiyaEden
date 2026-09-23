@@ -401,6 +401,24 @@ func TestWelfareRoutesRequireCorporationCapability(t *testing.T) {
 	assertRouteStatus(t, withCapability, http.MethodPut, "/system/welfare/settings", http.StatusNoContent)
 }
 
+func TestInfoWalletRoutesRequireCorporationCapability(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	withoutCapability := newInfoWalletCorpCapabilityTestRouter(
+		[]string{model.RoleUser},
+		[]string{model.CorpCapabilityMenuInfo},
+	)
+	assertRouteStatus(t, withoutCapability, http.MethodPost, "/info/wallet", http.StatusForbidden)
+	assertRouteStatus(t, withoutCapability, http.MethodPost, "/info/wallet/analytics", http.StatusForbidden)
+
+	withCapability := newInfoWalletCorpCapabilityTestRouter(
+		[]string{model.RoleUser},
+		[]string{model.CorpCapabilityMenuInfo, model.CorpCapabilityInfoWalletRead},
+	)
+	assertRouteStatus(t, withCapability, http.MethodPost, "/info/wallet", http.StatusNoContent)
+	assertRouteStatus(t, withCapability, http.MethodPost, "/info/wallet/analytics", http.StatusNoContent)
+}
+
 func TestDashboardCorporationStructuresRequiresAdmin(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -892,6 +910,33 @@ func newWelfareCorpCapabilityTestRouter(roles []string, capabilities []string) *
 
 	adminWelfare := r.Group("/system/welfare", inject, middleware.RequireRole(model.RoleAdmin))
 	adminWelfare.PUT("/settings", middleware.RequireCorpCapability(model.CorpCapabilityWelfareConfig), func(c *gin.Context) { c.Status(http.StatusNoContent) })
+	return r
+}
+
+func newInfoWalletCorpCapabilityTestRouter(roles []string, capabilities []string) *gin.Engine {
+	r := gin.New()
+	inject := func(c *gin.Context) {
+		c.Set("roles", roles)
+		c.Set("corpCapabilities", capabilities)
+		c.Next()
+	}
+
+	info := r.Group(
+		"/info",
+		inject,
+		middleware.RequireLoginUser(),
+		middleware.RequireCorpCapability(model.CorpCapabilityMenuInfo),
+	)
+	info.POST(
+		"/wallet",
+		middleware.RequireCorpCapability(model.CorpCapabilityInfoWalletRead),
+		func(c *gin.Context) { c.Status(http.StatusNoContent) },
+	)
+	info.POST(
+		"/wallet/analytics",
+		middleware.RequireCorpCapability(model.CorpCapabilityInfoWalletRead),
+		func(c *gin.Context) { c.Status(http.StatusNoContent) },
+	)
 	return r
 }
 

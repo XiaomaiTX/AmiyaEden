@@ -5,6 +5,14 @@ export function fetchInfoWallet(data: Api.EveInfo.WalletRequest) {
   return request.post<Api.EveInfo.WalletResponse>({ url: '/api/v1/info/wallet', data })
 }
 
+/** 获取人物钱包收支分析（按 EVE 时间 UTC 分日聚合） */
+export function fetchInfoWalletAnalytics(data: Api.EveInfo.WalletAnalyticsRequest) {
+  return request.post<Api.EveInfo.WalletAnalyticsResponse>({
+    url: '/api/v1/info/wallet/analytics',
+    data
+  })
+}
+
 /** 获取人物技能列表与队列 */
 export function fetchInfoSkills(data: Api.EveInfo.SkillRequest) {
   return request.post<Api.EveInfo.SkillResponse>({ url: '/api/v1/info/skills', data })

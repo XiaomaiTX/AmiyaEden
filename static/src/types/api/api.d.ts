@@ -2397,6 +2397,61 @@ declare namespace Api {
       page_size: number
     }
 
+    /** 钱包收支分析请求参数 */
+    interface WalletAnalyticsRequest {
+      character_id: number
+      /** 起始日（含），UTC 自然日 YYYY-MM-DD；留空表示不设下界 */
+      from?: string
+      /** 结束日（含），UTC 自然日 YYYY-MM-DD；留空表示不设上界 */
+      to?: string
+    }
+
+    /** 钱包收支分析总览 */
+    interface WalletAnalyticsSummary {
+      /** 库内该人物最早一条流水的 UTC 自然日，空字符串表示无数据 */
+      available_from: string
+      /** 库内该人物最晚一条流水的 UTC 自然日，空字符串表示无数据 */
+      available_to: string
+      /** 区间期初余额，无流水时为 null */
+      opening_balance: number | null
+      /** 区间期末余额，无流水时为 null */
+      closing_balance: number | null
+      total_income: number
+      total_expense: number
+      total_net: number
+      total_tax: number
+      entry_count: number
+    }
+
+    /** 钱包收支分析每日数据点（按 UTC 自然日，无流水的日子补零且余额延续） */
+    interface WalletAnalyticsDailyPoint {
+      /** UTC 自然日 YYYY-MM-DD */
+      date: string
+      income: number
+      expense: number
+      net: number
+      tax: number
+      /** 当日最后一笔流水的余额，无流水时延续前一日 */
+      balance: number
+      /** 当日流水笔数 */
+      count: number
+    }
+
+    /** 钱包收支分析交易类型构成项 */
+    interface WalletAnalyticsRefTypeItem {
+      ref_type: string
+      income: number
+      expense: number
+      count: number
+    }
+
+    /** 钱包收支分析响应 */
+    interface WalletAnalyticsResponse {
+      summary: WalletAnalyticsSummary
+      daily_series: WalletAnalyticsDailyPoint[]
+      ref_type_breakdown: WalletAnalyticsRefTypeItem[]
+    }
+
     /** 技能请求参数 */
     interface SkillRequest {
       character_id: number

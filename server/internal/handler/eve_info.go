@@ -44,6 +44,25 @@ func (h *EveInfoHandler) GetWalletJournal(c *gin.Context) {
 	response.OK(c, result)
 }
 
+// GetWalletAnalytics POST /info/wallet/analytics
+// 获取指定人物的钱包收支分析（按 UTC 自然日聚合日收支、日终余额与交易类型构成）
+func (h *EveInfoHandler) GetWalletAnalytics(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	var req service.InfoWalletAnalyticsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "参数错误: "+err.Error())
+		return
+	}
+
+	result, err := h.svc.GetWalletAnalytics(userID, &req)
+	if err != nil {
+		response.Fail(c, response.CodeBizError, err.Error())
+		return
+	}
+	response.OK(c, result)
+}
+
 // GetCharacterSkills POST /info/skills
 // 获取指定人物的技能列表和学习队列
 func (h *EveInfoHandler) GetCharacterSkills(c *gin.Context) {

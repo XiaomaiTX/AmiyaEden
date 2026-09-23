@@ -77,6 +77,13 @@ export interface BaseChartProps {
   isEmpty?: boolean
   /** 颜色配置 */
   colors?: string[]
+  /**
+   * 数值轴刻度标签格式化函数
+   *
+   * 用于把原始数值渲染成紧凑文案（如 ISK 智能缩写），避免长数字刻度互相重叠。
+   * 未提供时沿用 ECharts 默认数值渲染。
+   */
+  valueFormatter?: (value: number) => string
 }
 
 // 轴线显示控制接口 - 统一轴线相关配置
@@ -87,6 +94,13 @@ export interface AxisDisplayProps {
   showAxisLine?: boolean
   /** 是否显示分割线 */
   showSplitLine?: boolean
+  /**
+   * 是否反转类目轴顺序
+   *
+   * 仅对类目轴有意义（水平柱状图的纵轴、垂直柱状图的横轴）。用于「数值大的在上/在左」
+   * 这类展示诉求，对应 ECharts 类目轴的 `inverse`。默认不反转（按数据给定顺序）。
+   */
+  reverseCategoryAxis?: boolean
 }
 
 // 交互显示控制接口 - 统一交互相关配置
@@ -119,6 +133,8 @@ export interface BarChartProps extends BaseChartProps, AxisDisplayProps, Interac
   xAxisData?: string[]
   /** 柱状图宽度 */
   barWidth?: string | number
+  /** 柱状图最大厚度（barWidth 为百分比时限制柱体过长/过粗，单位 px） */
+  barMaxWidth?: number
   /** 是否堆叠显示 */
   stack?: boolean
   /** 圆角 */
@@ -295,6 +311,8 @@ export interface BidirectionalBarChartProps
   negativeName?: string
   /** 柱状图宽度 */
   barWidth?: string | number
+  /** 柱状图最大宽度（barWidth 为百分比时限制柱体过粗，单位 px） */
+  barMaxWidth?: number
   /** Y轴最小值 */
   yAxisMin?: number
   /** Y轴最大值 */
