@@ -43,6 +43,16 @@ export const dashboardRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'skill-readiness',
+      name: 'DashboardSkillReadiness',
+      component: '/dashboard/skill-readiness',
+      meta: {
+        title: 'menus.dashboard.skillReadiness',
+        keepAlive: true,
+        roles: ['super_admin', 'admin']
+      }
+    },
+    {
       path: 'fuel-officer-structures',
       name: 'DashboardFuelOfficerStructures',
       component: '/dashboard/fuel-officer-structures',

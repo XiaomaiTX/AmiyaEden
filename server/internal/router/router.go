@@ -135,6 +135,12 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	auth.POST("/dashboard", requireMenuDashboard, dashboardH.GetDashboard)
 	corpStructureH := handler.NewCorporationStructureHandler()
 	dashboard := login.Group("/dashboard")
+	skillReadinessH := handler.NewSkillReadinessHandler()
+	skillReadiness := dashboard.Group("/skill-readiness", requireMenuDashboard, middleware.RequireRole(model.RoleAdmin))
+	skillReadiness.GET("/options", skillReadinessH.Options)
+	skillReadiness.POST("/query", skillReadinessH.Query)
+	skillReadiness.POST("/users/:user_id/characters", skillReadinessH.UserCharacters)
+	skillReadiness.POST("/characters/:character_id/skills", skillReadinessH.CharacterSkills)
 	{
 		corpStructures := dashboard.Group("/corporation-structures", requireMenuDashboard, middleware.RequireRole(model.RoleAdmin))
 		corpStructures.GET("/settings", corpStructureH.GetSettings)
