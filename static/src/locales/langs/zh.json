@@ -362,7 +362,8 @@
       "npcKills": "军团刷怪报表",
       "corporationStructures": "军团建筑",
       "fuelOfficerStructures": "我的燃料建筑",
-      "galaxyRegistry": "星系登记"
+      "galaxyRegistry": "星系登记",
+      "skillReadiness": "军团技能达标"
     },
     "exception": {
       "title": "异常页面",
@@ -2625,6 +2626,63 @@
       "empty": "暂无舰队参与记录",
       "source": { "alliance": "联盟", "internal": "内部" }
     }
+  },
+  "dashboardSkillReadiness": {
+    "title": "军团技能达标查询",
+    "subtitle": "按军团查看用户角色的技能方案完成情况。",
+    "filters": { "corporations": "军团范围", "plan": "技能方案" },
+    "allCorporations": "全部军团",
+    "unknownCorporation": "未知军团",
+    "selectPlan": "请选择军团技能方案",
+    "search": "查询",
+    "refresh": "刷新",
+    "stats": {
+      "characters": "角色总数",
+      "users": "用户总数",
+      "satisfiedUsers": "达标用户",
+      "satisfiedCharacters": "达标角色",
+      "unknownCharacters": "技能未同步"
+    },
+    "columns": {
+      "user": "用户",
+      "userId": "用户 ID",
+      "characters": "范围内角色",
+      "satisfiedCharacters": "达标角色",
+      "unknownCharacters": "未同步角色",
+      "actions": "操作"
+    },
+    "viewCharacters": "查看角色",
+    "noPlans": "暂无可用的军团技能方案",
+    "empty": "暂无符合条件的用户",
+    "loading": "正在加载…",
+    "loadFailed": "加载军团技能达标数据失败",
+    "queryFailed": "查询军团技能达标数据失败",
+    "charactersTitle": "用户角色",
+    "character": "角色",
+    "corporation": "军团",
+    "status": { "satisfied": "已达标", "unsatisfied": "未达标", "unknown": "无法判断" },
+    "skills": "方案技能",
+    "updatedAt": "技能同步时间",
+    "tokenInvalid": "ESI 授权已失效；当前结果使用最近一次技能快照。",
+    "unknownHint": "该角色尚无技能快照，无法判断达标情况。",
+    "details": "技能详情",
+    "comparison": "方案比对",
+    "allSkills": "全部技能",
+    "skillName": "技能",
+    "group": "技能分类",
+    "requiredLevel": "要求等级",
+    "currentLevel": "已训练等级",
+    "activeLevel": "当前可用等级",
+    "skillPoints": "技能点",
+    "matchedOnly": "仅看未达标技能",
+    "searchSkills": "搜索技能名称或分类",
+    "noSkills": "没有技能记录",
+    "noCharacters": "该用户在所选范围内没有角色",
+    "noMissingSkills": "全部要求均已满足",
+    "pageSize": "每页条数",
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "第 {page} / {pages} 页"
   },
   "corporationStructures": {
     "title": "军团建筑",

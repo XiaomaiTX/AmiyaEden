@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-10-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -264,3 +264,7 @@ The following are not restated from the body above — they are additional const
 - 职权编码以代码常量为准，不以文档中文称呼为准
 
 For super_admin rules, see "Super Admin 配置驱动机制" above. For role assignment rules, see "职权分配权限矩阵" above.
+
+## 仪表盘军团技能达标查询
+
+`/api/v1/dashboard/skill-readiness/*` 为独立的跨用户管理读取边界，要求 Login、admin 与 `menu.dashboard` capability；super_admin 沿用现有角色和 capability 自动放行。admin 目标查询范围为全站有效绑定角色，军团筛选作用于目标角色，不形成新的管理者所属军团授权关系。senior_fc 维护技能方案的权限不包含本接口。个人完成度检查仍只能查询本人绑定角色。当前仅后端接口已交付，前端入口待实现。

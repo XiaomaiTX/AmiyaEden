@@ -8,6 +8,7 @@ export type AppPageType =
   | 'mumble-credentials'
   | 'dashboard-npc-kills'
   | 'dashboard-corporation-structures'
+  | 'dashboard-skill-readiness'
   | 'dashboard-fuel-officer-structures'
   | 'dashboard-galaxy-registry'
   | 'fuxi-hall-leadership'
@@ -126,6 +127,14 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.dashboard',
     menuIcon: 'dashboard',
     badgeKey: 'corporation_structures_attention',
+    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.dashboard'] },
+  },
+  {
+    path: 'dashboard/skill-readiness',
+    titleKey: 'nav.dashboard.skillReadiness',
+    pageType: 'dashboard-skill-readiness',
+    menuGroup: 'nav.group.dashboard',
+    menuIcon: 'dashboard',
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
@@ -813,6 +822,7 @@ const appRouteOrder = [
   'dashboard/console',
   'dashboard/npc-kills',
   'dashboard/corporation-structures',
+  'dashboard/skill-readiness',
   'dashboard/fuel-officer-structures',
   'dashboard/galaxy-registry',
   'operation/fleets',

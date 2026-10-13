@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-08-01
+last_reviewed: 2026-10-12
 source_of_truth:
   - static/src
   - static-react/src
@@ -66,3 +66,7 @@ source_of_truth:
   - 架构事实迁移到 `docs/architecture/`
   - 功能行为迁移到 `docs/features/current/`
   - 接口边界变化同步更新 `docs/api/`
+
+## 已实现：军团技能达标页面
+
+仪表盘新增 `/dashboard/skill-readiness`，Vue 与 React 路由、菜单、wrapper、类型、本地化和页面均已实现；权限为 Login、admin/super_admin、`menu.dashboard`。页面包含军团多选、共享军团方案单选、全范围统计、分页用户表格、角色展开及方案比对/全部技能详情；筛选与分页保存在 URL。行为和后端契约见 [军团技能达标查询](../../../features/current/dashboard-skill-readiness.md)。

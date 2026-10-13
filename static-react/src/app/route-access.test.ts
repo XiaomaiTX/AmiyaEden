@@ -64,6 +64,7 @@ describe('route access evaluation', () => {
         ['admin'],
         ['menu.dashboard', 'dashboard.npc_kills.corp', 'info.npc_kills.corp'],
       ],
+      ['dashboard/skill-readiness', ['admin'], ['menu.dashboard']],
       ['info/wallet', ['user'], ['menu.info', 'info.wallet.read']],
       ['operation/fleet-configs', ['user'], ['menu.operation']],
       ['skill-planning/skill-plans', ['user'], ['menu.skill_planning']],
@@ -81,6 +82,10 @@ describe('route access evaluation', () => {
         true
       )
     }
+
+    const readinessRoute = appRouteSpecs.find((item) => item.path === 'dashboard/skill-readiness')
+    expect(readinessRoute?.meta?.roles).toEqual(['super_admin', 'admin'])
+    expect(readinessRoute?.meta?.corpCapabilitiesAny).toEqual(['menu.dashboard'])
   })
 
   test('keeps ticket category reads separate from category mutations', () => {

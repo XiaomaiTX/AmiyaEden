@@ -1,6 +1,5 @@
 import {
   Combobox,
-  ComboboxChip,
   ComboboxChips,
   ComboboxChipsInput,
   ComboboxContent,
@@ -24,6 +23,8 @@ type MultiSelectProps = {
   options: readonly MultiSelectOption[]
   placeholder?: string
   emptyText?: string
+  removeLabel?: (label: string) => string
+  ariaLabel?: string
   disabled?: boolean
   className?: string
   onInputValueChange?: (value: string) => void
@@ -35,12 +36,15 @@ function MultiSelect({
   options,
   placeholder,
   emptyText,
+  removeLabel,
+  ariaLabel,
   disabled = false,
   className,
   onInputValueChange,
 }: MultiSelectProps) {
   return (
     <Combobox<MultiSelectOption>
+      aria-label={ariaLabel ?? placeholder}
       selectedKey={null}
       onSelectionChange={(key) => {
         if (key === null) return
@@ -59,17 +63,25 @@ function MultiSelect({
           {() => (
             <>
               {value.map((item) => (
-                <ComboboxChip key={item} id={item} showRemove={false}>
+                <span
+                  key={item}
+                  className="flex h-[calc(--spacing(5.25))] w-fit items-center gap-1 rounded-sm bg-muted px-1.5 text-xs font-medium text-foreground"
+                >
                   {options.find((option) => option.value === item)?.label ?? item}
                   <Button
                     type="button"
                     size="icon-xs"
                     variant="ghost"
+                    aria-label={
+                      removeLabel?.(
+                        options.find((option) => option.value === item)?.label ?? item
+                      ) ?? item
+                    }
                     onPress={() => onValueChange(value.filter((selected) => selected !== item))}
                   >
                     <XIcon />
                   </Button>
-                </ComboboxChip>
+                </span>
               ))}
               <ComboboxChipsInput
                 placeholder={value.length ? '' : placeholder}
@@ -83,7 +95,12 @@ function MultiSelect({
         {emptyText ? <ComboboxEmpty>{emptyText}</ComboboxEmpty> : null}
         <ComboboxList>
           {options.map((option) => (
-            <ComboboxItem key={option.value} id={option.value} value={option} isDisabled={option.disabled}>
+            <ComboboxItem
+              key={option.value}
+              id={option.value}
+              value={option}
+              isDisabled={option.disabled}
+            >
               {option.label}
             </ComboboxItem>
           ))}

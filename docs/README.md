@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-10-12
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
@@ -167,3 +167,7 @@ source_of_truth:
 `docs/ai/repo-rules.md` 与 `docs/` 是唯一维护中的 repo-level canonical Markdown 文档体系。`AGENTS.md` 和 `CLAUDE.md` 是代理入口文件，委托给 `docs/ai/repo-rules.md`。局部 `README.md` 可以存在，但只能补充子目录实现细节，不能重新建立影子规范树。
 
 根目录 `README.md` 是例外中的入口文档：应持续维护，但定位是 onboarding / product-facing guide，而不是与 `docs/ai/repo-rules.md` 并列的工程规则源。
+
+## 军团技能管理查询
+
+- [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。

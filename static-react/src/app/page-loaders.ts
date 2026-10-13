@@ -23,6 +23,10 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
     () => import('@/pages/dashboard-corporation-structures-page'),
     'DashboardCorporationStructuresPage'
   ),
+  'dashboard-skill-readiness': lazyNamed(
+    () => import('@/pages/dashboard-skill-readiness-page'),
+    'DashboardSkillReadinessPage'
+  ),
   'dashboard-fuel-officer-structures': lazyNamed(
     () => import('@/pages/dashboard-fuel-officer-structures-page'),
     'DashboardFuelOfficerStructuresPage'

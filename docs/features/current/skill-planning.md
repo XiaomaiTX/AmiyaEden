@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-10-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/skill_plan.go
@@ -79,3 +79,7 @@ source_of_truth:
 - Vue 当前实现位于 `static/src`。
 - React 已承接技能计划、个人技能计划和完成度检查页面；类型与 API 以 `static-react/src/api/skill-plan.ts` 和对应类型为准。
 - 解析、排序和权限行为由本文定义，迁移不改变后端契约。
+
+## 仪表盘管理查询
+
+[军团技能达标查询](dashboard-skill-readiness.md) 在 Vue 与 React 仪表盘提供独立的 admin 查询页面，按军团筛选跨用户绑定角色并比较一个共享军团方案。复用当前等级判断口径，但不复用或放宽个人完成度检查的归属校验。该管理功能不读取或修改个人页面保存的角色、方案选择。
