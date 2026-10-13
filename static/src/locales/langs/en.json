@@ -398,7 +398,8 @@
       "npcKills": "Corp NPC Kill Report",
       "corporationStructures": "Corporation Structures",
       "fuelOfficerStructures": "My Fuel Structures",
-      "galaxyRegistry": "Galaxy Registry"
+      "galaxyRegistry": "Galaxy Registry",
+      "skillReadiness": "Corporation Skill Readiness"
     },
     "exception": {
       "title": "Exception",
@@ -2846,6 +2847,63 @@
       "replyAdded": "Reply submitted",
       "replyFailed": "Failed to reply"
     }
+  },
+  "dashboardSkillReadiness": {
+    "title": "Corporation Skill Readiness",
+    "subtitle": "Review characters' skill plan completion by corporation.",
+    "filters": { "corporations": "Corporations", "plan": "Skill plan" },
+    "allCorporations": "All corporations",
+    "unknownCorporation": "Unknown corporation",
+    "selectPlan": "Select a corporation skill plan",
+    "search": "Search",
+    "refresh": "Refresh",
+    "stats": {
+      "characters": "Characters",
+      "users": "Users",
+      "satisfiedUsers": "Qualified users",
+      "satisfiedCharacters": "Qualified characters",
+      "unknownCharacters": "Skills not synced"
+    },
+    "columns": {
+      "user": "User",
+      "userId": "User ID",
+      "characters": "Characters in scope",
+      "satisfiedCharacters": "Qualified characters",
+      "unknownCharacters": "Unsynced characters",
+      "actions": "Actions"
+    },
+    "viewCharacters": "View characters",
+    "noPlans": "No corporation skill plans are available",
+    "empty": "No matching users",
+    "loading": "Loading…",
+    "loadFailed": "Failed to load corporation skill readiness",
+    "queryFailed": "Failed to query corporation skill readiness",
+    "charactersTitle": "User characters",
+    "character": "Character",
+    "corporation": "Corporation",
+    "status": { "satisfied": "Qualified", "unsatisfied": "Not qualified", "unknown": "Unknown" },
+    "skills": "Plan skills",
+    "updatedAt": "Skills synced at",
+    "tokenInvalid": "ESI authorization expired; showing the most recent skill snapshot.",
+    "unknownHint": "No skill snapshot is available for this character.",
+    "details": "Skill details",
+    "comparison": "Plan comparison",
+    "allSkills": "All skills",
+    "skillName": "Skill",
+    "group": "Skill group",
+    "requiredLevel": "Required level",
+    "currentLevel": "Trained level",
+    "activeLevel": "Active level",
+    "skillPoints": "Skill points",
+    "matchedOnly": "Show unmet requirements only",
+    "searchSkills": "Search skill or group",
+    "noSkills": "No skill records",
+    "noCharacters": "This user has no characters in the selected scope",
+    "noMissingSkills": "All requirements are met",
+    "pageSize": "Rows per page",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} / {pages}"
   },
   "corporationStructures": {
     "title": "Corporation Structures",

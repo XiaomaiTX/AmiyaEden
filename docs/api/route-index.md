@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-09-23
+last_reviewed: 2026-10-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/corporation_capability.go
@@ -121,6 +121,10 @@ source_of_truth:
 | DELETE | `/mumble/credential` | 吊销 Mumble App Password | JWT |
 | PUT    | `/me`                                                       | 更新当前用户昵称 / QQ / Discord ID                                                                                                                                                                                          | JWT                         |
 | POST   | `/dashboard`                                                | Dashboard 聚合数据                                                                                                                                                                                                          | JWT                         |
+| GET | `/dashboard/skill-readiness/options` | 军团与共享军团技能方案完整候选 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
+| POST | `/dashboard/skill-readiness/query` | 全范围技能达标统计与分页用户明细 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
+| POST | `/dashboard/skill-readiness/users/:user_id/characters` | 指定用户在军团筛选范围内的角色达标情况 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
+| POST | `/dashboard/skill-readiness/characters/:character_id/skills` | 有效范围内角色的方案比对及全部已同步技能 | Login + `RequireRole(admin)` + `RequireCorpCapability(menu.dashboard)` |
 | GET    | `/dashboard/corporation-structures/settings`                | 获取可管理军团列表、每个军团可选 Director 角色与当前授权映射，同时返回全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（天）                                                                       | `RequireRole(admin)`        |
 | PUT    | `/dashboard/corporation-structures/settings/authorizations` | 保存军团到 Director 角色授权映射；`character_id=0` 表示该军团不参与军团建筑 ESI 刷新；可同时更新全局通知阈值 `fuel_notice_threshold_days` / `timer_notice_threshold_days`（`>=0`，`0` 表示关闭）                            | `RequireRole(admin)`        |
 | GET    | `/dashboard/corporation-structures/filter-options`          | 获取建筑列表筛选元数据（星域、星系、类型、服务）                                                                                                                                                                            | `RequireRole(admin)`        |

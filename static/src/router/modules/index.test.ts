@@ -12,3 +12,11 @@ test('routeModules registers MumbleCredentials right after Characters', () => {
   assert.equal(routeModules[1]?.path, '/mumble')
   assert.equal(routeModules[1]?.meta?.title, 'menus.mumble.title')
 })
+
+test('dashboard exposes the admin-only skill readiness page', () => {
+  const dashboard = routeModules.find((route) => route.name === 'Dashboard')
+  const page = dashboard?.children?.find((route) => route.path === 'skill-readiness')
+  assert.equal(page?.name, 'DashboardSkillReadiness')
+  assert.equal(page?.component, '/dashboard/skill-readiness')
+  assert.deepEqual(page?.meta?.roles, ['super_admin', 'admin'])
+})
