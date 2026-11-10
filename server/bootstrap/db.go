@@ -187,6 +187,9 @@ func autoMigrate(db *gorm.DB) {
 	}
 
 	// 清理旧列/旧表（GORM AutoMigrate 不会自动删除）
+	if err := migrateRequiredUserContact(db); err != nil {
+		global.Logger.Fatal("强制用户联系方式迁移失败", zap.Error(err))
+	}
 	ensureFuxiHallSchema(db)
 	ensureSkillPlanScopes(db)
 	dropObsoleteSchema(db)
