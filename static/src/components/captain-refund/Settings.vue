@@ -1,9 +1,11 @@
 <template>
   <ElCard v-loading="loading || busy">
-    <h2>{{ t('refund.settingsTitle') }}</h2>
-    <p>{{ t('refund.settingsHint') }}</p>
+    <template #header>
+      <h2 class="section-title">{{ t('refund.settingsTitle') }}</h2>
+    </template>
+    <p class="section-description">{{ t('refund.settingsHint') }}</p>
     <ElAlert v-if="message" :title="message" :type="messageType" :closable="false" class="mb-4" />
-    <ElForm v-if="cfg" label-position="top">
+    <ElForm v-if="cfg" label-position="top" class="settings-form">
       <ElFormItem v-for="key in keys" :key="key" :label="t('refund.' + key)">
         <ElInputNumber
           v-model="cfg[key]"
@@ -88,3 +90,20 @@
     }
   }
 </script>
+
+<style scoped>
+  .section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .section-description {
+    margin: 0 0 16px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .settings-form {
+    max-width: 680px;
+  }
+</style>

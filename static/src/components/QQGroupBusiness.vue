@@ -1,54 +1,80 @@
 <template>
-  <section>
-    <h2>{{ t('qqbot.groupBusiness') }}</h2
-    ><p>{{ t('qqbot.groupPolicy') }}</p>
-    <ElForm label-position="top">
-      <ElFormItem :label="t('qqbot.notificationGroup')"
-        ><ElInputNumber v-model="rule.group_id" :min="1"
-      /></ElFormItem>
-      <ElFormItem :label="t('qqbot.corporations')"><ElInput v-model="corps" /></ElFormItem>
-      <ElFormItem :label="t('qqbot.roles')"><ElInput v-model="roles" /></ElFormItem>
-      <ElFormItem v-for="key in switches" :key="key" :label="t(`qqbot.${key}`)"
-        ><ElSwitch v-model="rule[key]"
-      /></ElFormItem>
-      <ElFormItem :label="t('qqbot.cardTemplate')"
-        ><ElInput v-model="rule.card_template" /></ElFormItem
-      ><p>{{ t('qqbot.cardVariables') }}</p>
-      <ElFormItem :label="t('qqbot.confirmations')"
-        ><ElInputNumber v-model="rule.mismatch_confirmations" :min="1" :max="100"
-      /></ElFormItem>
-      <ElFormItem :label="t('qqbot.observation')"
-        ><ElInputNumber v-model="rule.observation_hours" :min="0" :max="8760"
-      /></ElFormItem>
-      <ElButton :disabled="busy" @click="run(true)">{{ t('qqbot.save') }}</ElButton
-      ><ElButton :disabled="busy" @click="run(false)">{{ t('qqbot.refresh') }}</ElButton> </ElForm
-    ><p role="status">{{ message }}</p> <h3>{{ t('qqbot.rules') }}</h3
-    ><ArtTable visual-variant="ledger" :data="audit?.rules ?? []"
-      ><ElTableColumn prop="group_id" :label="t('qqbot.notificationGroup')" /><ElTableColumn
-        prop="version"
-        :label="t('qqbot.version')"
-      /><ElTableColumn :label="t('qqbot.detail')"
-        ><template #default="{ row }"
-          ><ElButton @click="edit(row)">{{ t('qqbot.editRule') }}</ElButton></template
-        ></ElTableColumn
-      ></ArtTable
-    >
-    <template v-for="table in tables" :key="table.key"
-      ><h3>{{ t(`qqbot.${table.key}`) }}</h3
-      ><ArtTable visual-variant="ledger" :data="audit?.[table.key] ?? []"
-        ><ElTableColumn
+  <div class="group-business-page">
+    <ElCard shadow="never">
+      <template #header>
+        <h2 class="section-title">{{ t('qqbot.groupBusiness') }}</h2>
+      </template>
+      <p class="section-description">{{ t('qqbot.groupPolicy') }}</p>
+      <ElForm label-position="top" class="rule-form">
+        <ElFormItem :label="t('qqbot.notificationGroup')">
+          <ElInputNumber v-model="rule.group_id" :min="1" />
+        </ElFormItem>
+        <ElFormItem :label="t('qqbot.corporations')">
+          <ElInput v-model="corps" />
+        </ElFormItem>
+        <ElFormItem :label="t('qqbot.roles')">
+          <ElInput v-model="roles" />
+        </ElFormItem>
+        <ElFormItem v-for="key in switches" :key="key" :label="t(`qqbot.${key}`)">
+          <ElSwitch v-model="rule[key]" />
+        </ElFormItem>
+        <ElFormItem :label="t('qqbot.cardTemplate')">
+          <ElInput v-model="rule.card_template" />
+          <div class="form-hint">{{ t('qqbot.cardVariables') }}</div>
+        </ElFormItem>
+        <ElFormItem :label="t('qqbot.confirmations')">
+          <ElInputNumber v-model="rule.mismatch_confirmations" :min="1" :max="100" />
+        </ElFormItem>
+        <ElFormItem :label="t('qqbot.observation')">
+          <ElInputNumber v-model="rule.observation_hours" :min="0" :max="8760" />
+        </ElFormItem>
+        <div class="form-actions">
+          <ElButton type="primary" :disabled="busy" @click="run(true)">
+            {{ t('qqbot.save') }}
+          </ElButton>
+          <ElButton :disabled="busy" @click="run(false)">{{ t('qqbot.refresh') }}</ElButton>
+        </div>
+      </ElForm>
+      <p v-if="message" class="operation-message" role="status">{{ message }}</p>
+    </ElCard>
+
+    <ElCard shadow="never">
+      <template #header>
+        <h3 class="section-title">{{ t('qqbot.rules') }}</h3>
+      </template>
+      <ArtTable visual-variant="ledger" :data="audit?.rules ?? []">
+        <ElTableColumn prop="group_id" :label="t('qqbot.notificationGroup')" />
+        <ElTableColumn prop="version" :label="t('qqbot.version')" />
+        <ElTableColumn :label="t('qqbot.detail')">
+          <template #default="{ row }">
+            <ElButton @click="edit(row)">{{ t('qqbot.editRule') }}</ElButton>
+          </template>
+        </ElTableColumn>
+      </ArtTable>
+    </ElCard>
+
+    <ElCard v-for="table in tables" :key="table.key" shadow="never">
+      <template #header>
+        <h3 class="section-title">{{ t(`qqbot.${table.key}`) }}</h3>
+      </template>
+      <ArtTable visual-variant="ledger" :data="audit?.[table.key] ?? []">
+        <ElTableColumn
           v-for="field in table.fields"
           :key="field"
           :prop="field"
-          :label="t(`qqbot.field_${field}`)" /></ArtTable
-    ></template>
-  </section>
+          :label="t(`qqbot.field_${field}`)"
+        />
+      </ArtTable>
+    </ElCard>
+  </div>
 </template>
+
 <script setup lang="ts">
   import { ref, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { fetchQQGroupBusiness, saveQQGroupRule } from '@/api/qqbot'
   import type { QQGroupRule, QQGroupBusinessAudit } from '@/types/api/qqbot'
+
   const { t } = useI18n()
   const rule = ref<QQGroupRule>({
     group_id: 0,
@@ -67,10 +93,10 @@
     updated_at: ''
   })
   const audit = ref<QQGroupBusinessAudit | null>(null)
-  const corps = ref(''),
-    roles = ref(''),
-    busy = ref(false),
-    message = ref('')
+  const corps = ref('')
+  const roles = ref('')
+  const busy = ref(false)
+  const message = ref('')
   const switches = [
     'admission_enabled',
     'auto_reject',
@@ -98,11 +124,13 @@
     { key: 'inspections', fields: ['id', 'group_id', 'rule_version', 'status', 'operation_id'] },
     { key: 'judgements', fields: ['run_id', 'qq', 'done', 'decision', 'evidence', 'operation_id'] }
   ] as const
-  function edit(v: QQGroupRule) {
-    rule.value = { ...v }
-    corps.value = (v.corporation_ids ?? []).join(',')
-    roles.value = (v.roles ?? []).join(',')
+
+  function edit(value: QQGroupRule) {
+    rule.value = { ...value }
+    corps.value = (value.corporation_ids ?? []).join(',')
+    roles.value = (value.roles ?? []).join(',')
   }
+
   async function run(save: boolean) {
     busy.value = true
     try {
@@ -112,7 +140,7 @@
           corporation_ids: corps.value.trim() ? corps.value.split(',').map(Number) : [],
           roles: roles.value
             .split(',')
-            .map((s) => s.trim())
+            .map((value) => value.trim())
             .filter(Boolean)
         })
       audit.value = await fetchQQGroupBusiness()
@@ -123,5 +151,50 @@
       busy.value = false
     }
   }
+
   onMounted(() => run(false))
 </script>
+
+<style scoped>
+  .group-business-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .section-description,
+  .operation-message,
+  .form-hint {
+    color: var(--el-text-color-secondary);
+  }
+
+  .section-description {
+    margin: 0 0 16px;
+  }
+
+  .rule-form {
+    max-width: 680px;
+  }
+
+  .form-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .operation-message {
+    margin: 12px 0 0;
+  }
+</style>
