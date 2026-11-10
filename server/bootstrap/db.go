@@ -78,7 +78,6 @@ func autoMigrate(db *gorm.DB) {
 		&model.CharacterCorporationHistory{},
 		&model.EveStructure{},
 		&model.CorpStructureInfo{},
-		&model.CorpStructureAlertState{},
 		&model.CorpStructureAssignment{},
 		&model.FuelSalaryPayout{},
 		&model.StructureServiceFuelRate{},
@@ -167,18 +166,6 @@ func autoMigrate(db *gorm.DB) {
 		&model.ToolBookmark{},
 		&model.GalaxyRegistrySystem{},
 		&model.GalaxyRegistryEntry{},
-		// QQ 群治理 / OneBot 持久状态
-		&model.QQGroupGovernancePolicy{},
-		&model.QQGovernanceEvent{},
-		&model.QQGroupMemberState{},
-		&model.QQGroupRuntimeSnapshot{},
-		&model.QQGovernanceReconcileRun{},
-		&model.QQGovernanceReconcileMember{},
-		&model.QQGovernanceReview{},
-		&model.QQGovernanceActionTask{},
-		&model.QQGovernanceActionLog{},
-		&model.QQGovernanceRiskControlState{},
-		&model.QQGovernanceAlert{},
 	); err != nil {
 		global.Logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
@@ -191,7 +178,6 @@ func autoMigrate(db *gorm.DB) {
 	if err := service.ReconcileStructureServiceCatalog(); err != nil {
 		global.Logger.Warn("修复建筑服务目录失败", zap.Error(err))
 	}
-	migrateQQGovernanceTaskRetryCauses(db)
 
 	// 数据迁移：user_role / esi 映射表从 role_id 迁移到 role_code，然后删除 role 表
 	roleSvc := service.NewRoleService()
@@ -214,20 +200,6 @@ func autoMigrate(db *gorm.DB) {
 	roleSvc.MigrateExistingUsers()
 
 	ensureDefaultTicketCategories(db)
-}
-
-// migrateQQGovernanceTaskRetryCauses classifies legacy disconnected tasks so
-// a OneBot reconnect can safely resume the retry_wait records created before
-// retry_cause was introduced.
-func migrateQQGovernanceTaskRetryCauses(db *gorm.DB) {
-	if !db.Migrator().HasTable("qq_governance_action_task") || !db.Migrator().HasColumn("qq_governance_action_task", "retry_cause") {
-		return
-	}
-	if err := db.Model(&model.QQGovernanceActionTask{}).
-		Where("retry_cause = '' AND last_error = ?", "OneBot 机器人未连接").
-		Update("retry_cause", model.QQGovernanceRetryCauseDisconnected).Error; err != nil {
-		global.Logger.Error("迁移 QQ 群治理任务失败原因失败", zap.Error(err))
-	}
 }
 
 func ensureDefaultTicketCategories(db *gorm.DB) {
@@ -298,9 +270,6 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 		{table: "fuxi_hall_card", col: "cover_image"},
 		{table: "fuxi_hall_card", col: "title"},
 		{table: "ticket", col: "priority"},
-		{table: "qq_group_governance_policy", col: "scan_interval_minutes"},
-		{table: "qq_group_governance_policy", col: "mismatch_confirmations"},
-		{table: "qq_group_governance_policy", col: "mismatch_observation_hours"},
 	}
 }
 
@@ -382,23 +351,11 @@ func ensureCustomIndexes(db *gorm.DB) {
 	allStatements = append(allStatements, auditEventIndexStatements()...)
 	allStatements = append(allStatements, toolBookmarkIndexStatements()...)
 	allStatements = append(allStatements, galaxyRegistryIndexStatements()...)
-	allStatements = append(allStatements, qqGovernanceIndexStatements()...)
 	allStatements = append(allStatements, assetIndexStatements()...)
 	for _, stmt := range allStatements {
 		if err := db.Exec(stmt).Error; err != nil {
 			global.Logger.Warn("创建自定义索引失败", zap.String("statement", stmt), zap.Error(err))
 		}
-	}
-}
-
-func qqGovernanceIndexStatements() []string {
-	return []string{
-		`DROP INDEX IF EXISTS idx_qq_governance_reconcile_run_active_key`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_qq_governance_reconcile_run_active_group ON qq_governance_reconcile_run (group_id) WHERE active_key <> '' AND deleted_at IS NULL`,
-		`CREATE INDEX IF NOT EXISTS idx_qq_governance_action_task_ready ON qq_governance_action_task (priority, run_after, id) WHERE status IN ('pending', 'retry_wait') AND deleted_at IS NULL`,
-		`CREATE INDEX IF NOT EXISTS idx_qq_governance_review_member_created ON qq_governance_review (group_id, qq, created_at DESC) WHERE deleted_at IS NULL`,
-		`CREATE INDEX IF NOT EXISTS idx_qq_governance_action_log_type_created ON qq_governance_action_log (action_type, created_at DESC)`,
-		`CREATE INDEX IF NOT EXISTS idx_qq_governance_alert_status_created ON qq_governance_alert (status, created_at DESC) WHERE deleted_at IS NULL`,
 	}
 }
 

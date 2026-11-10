@@ -20,10 +20,6 @@ export function testWebhook(data: {
   url?: string
   type: string
   content?: string
-  ob_target_type?: string
-  ob_target_id?: number
-  ob_token?: string
-  qq_governance_group_ids?: number[]
 }) {
   return request.post({
     url: '/api/v1/system/webhook/test',

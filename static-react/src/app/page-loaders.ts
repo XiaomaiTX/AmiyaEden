@@ -91,10 +91,6 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
   'system-webhook': lazyNamed(() => import('@/pages/system-webhook-page'), 'SystemWebhookPage'),
   'system-newbro-settings': lazyNamed(() => import('@/pages/captain-refund-settings'), 'CaptainRefundSettingsPanel'),
   'system-basic-config': lazyNamed(() => import('@/pages/system-basic-config-page'), 'SystemBasicConfigPage'),
-  'system-qq-governance': lazyNamed(
-    () => import('@/pages/system-qq-governance-page'),
-    'SystemQQGovernancePage'
-  ),
   'srp-apply': lazyNamed(() => import('@/pages/srp-apply-page'), 'SrpApplyPage'),
   'srp-manage': lazyNamed(() => import('@/pages/srp-manage-page'), 'SrpManagePage'),
   'srp-prices': lazyNamed(() => import('@/pages/srp-prices-page'), 'SrpPricesPage'),

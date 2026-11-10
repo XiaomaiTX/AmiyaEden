@@ -104,7 +104,6 @@ source_of_truth:
 | `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 真实页 | FE-owner(TBD) |
 | `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 已完成同构 | FE-owner(TBD) |
 | `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login`, `corpCapabilitiesAny: menu.info` | 真实页 | FE-owner(TBD) |
-| `/system/qq-governance` | `/system/qq-governance` | 2026-07-12 | `qq-governance.ts` | `roles: super_admin` | 已完成同构 | FE-owner(TBD) |
 | `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
 | `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
 | `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
@@ -127,7 +126,7 @@ source_of_truth:
 - 2026-06-29：`/info/npc-kills` 增加 incursion/mission reward、统一筛选与按用户/人物筛选；payout 类型改名。
 - 2026-07-22：本轮审计确认所有原计划路由在 React 侧均有真实业务页实现，`hall-of-fame/*` 三条 stub 成为历史遗留 stub；范围漂移追赶项（8 条新增 Vue 路由）尚未对齐。
 - 2026-07-29：React 完成 `fuxi-hall/*` 三页迁移并移除三条 `hall-of-fame/*` stub；完成 `/info/tool-bookmarks` 迁移后，剩余范围漂移页面为 4 条路由域。
-- 2026-07-30：React 完成 `/characters`、fuel officer 页面和迁移基础设施；Galaxy Registry 与 QQ Governance 已完成完整业务同构，包括官方 shadcn 原语接入、服务端筛选分页和关键写操作刷新。
+- 2026-07-30：React 完成 `/characters`、fuel officer 页面和迁移基础设施；Galaxy Registry 已完成完整业务同构，包括官方 shadcn 原语接入、服务端筛选分页和关键写操作刷新。
 
 ## 说明与已知风险
 
@@ -154,6 +153,7 @@ source_of_truth:
 | 表格/卡片布局 | `ArtTable`、Element Plus、Vue overflow 规则 | TanStack `DataTable` 基座 + 存量页面按需迁移 | 部分对齐 | 存量复杂表格渐进迁移、暗色主题回归 |
 | 格式化 helper | Vue ISK/time helper | React ISK helper；时间 helper 待统一 | 部分对齐 | 禁止页面本地格式化变体 |
 | 测试与交付 | `vue-tsc`、`test:unit`、Vue build | `tsc -b`、`test`、API contract、React build | 已纳入规范 | 双端命令和模块回归均可执行 |
-| 范围漂移页面 | Vue 已落地 | characters/fuel officer 已完成；galaxy registry/QQ governance 基础页已落地 | 进行中 | Galaxy Registry 与 QQ Governance 完整业务同构 |
 
 文档适配完成定义：所有 active 规范使用行为级表述；每个 current feature doc 通过本文引用迁移状态；所有 Vue-only 限制都明确标注为过渡期限制或历史归档内容。
+
+历史范围变更（2026-11-10）：QQ 群治理已下线，不再属于双前端迁移或验收范围。

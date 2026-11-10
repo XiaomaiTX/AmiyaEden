@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -16,17 +17,22 @@ import (
 )
 
 type fakeWebhookConfigStore struct {
+	values       map[string]string
+	enabled      bool
 	setManyCalls int
 	setManyItems []repository.SysConfigUpsertItem
 	setManyErr   error
 }
 
-func (f *fakeWebhookConfigStore) Get(_ string, defaultVal string) (string, error) {
+func (f *fakeWebhookConfigStore) Get(key string, defaultVal string) (string, error) {
+	if value, ok := f.values[key]; ok {
+		return value, nil
+	}
 	return defaultVal, nil
 }
 
 func (f *fakeWebhookConfigStore) GetBool(_ string, defaultVal bool) bool {
-	return defaultVal
+	return f.enabled || defaultVal
 }
 
 func (f *fakeWebhookConfigStore) SetMany(items []repository.SysConfigUpsertItem) error {
@@ -44,9 +50,6 @@ func TestWebhookSetConfigPersistsSingleBatch(t *testing.T) {
 		Enabled:       true,
 		Type:          "discord",
 		FleetTemplate: defaultFleetTemplate,
-		OBTargetType:  "group",
-		OBTargetID:    42,
-		OBToken:       "token",
 	})
 	if err != nil {
 		t.Fatalf("expected config update to succeed, got %v", err)
@@ -54,8 +57,8 @@ func TestWebhookSetConfigPersistsSingleBatch(t *testing.T) {
 	if store.setManyCalls != 1 {
 		t.Fatalf("expected exactly one batch write, got %d", store.setManyCalls)
 	}
-	if len(store.setManyItems) != 8 {
-		t.Fatalf("expected 8 config items, got %d", len(store.setManyItems))
+	if len(store.setManyItems) != 4 {
+		t.Fatalf("expected 4 config items, got %d", len(store.setManyItems))
 	}
 
 	wantKeys := []string{
@@ -63,45 +66,11 @@ func TestWebhookSetConfigPersistsSingleBatch(t *testing.T) {
 		model.SysConfigWebhookEnabled,
 		model.SysConfigWebhookType,
 		model.SysConfigWebhookFleetTemplate,
-		model.SysConfigWebhookOBTargetType,
-		model.SysConfigWebhookOBTargetID,
-		model.SysConfigWebhookOBToken,
-		model.SysConfigWebhookQQGroupIDs,
 	}
 	for i, want := range wantKeys {
 		if store.setManyItems[i].Key != want {
 			t.Fatalf("unexpected key at index %d: got %q want %q", i, store.setManyItems[i].Key, want)
 		}
-	}
-}
-
-func TestWebhookSetConfigPersistsQQGovernanceGroupIDs(t *testing.T) {
-	store := &fakeWebhookConfigStore{}
-	svc := &WebhookService{repo: store, http: &http.Client{}}
-
-	err := svc.SetConfig(&WebhookConfig{
-		Type:                 "qq_governance_onebot",
-		Enabled:              true,
-		FleetTemplate:        defaultFleetTemplate,
-		QQGovernanceGroupIDs: []int64{123456789, 987654321},
-	})
-	if err != nil {
-		t.Fatalf("expected config update to succeed, got %v", err)
-	}
-
-	var groupIDsItem *repository.SysConfigUpsertItem
-	for i := range store.setManyItems {
-		if store.setManyItems[i].Key == model.SysConfigWebhookQQGroupIDs {
-			groupIDsItem = &store.setManyItems[i]
-			break
-		}
-	}
-	if groupIDsItem == nil {
-		t.Fatalf("expected %q in saved items", model.SysConfigWebhookQQGroupIDs)
-	}
-	want := `[123456789,987654321]`
-	if groupIDsItem.Value != want {
-		t.Fatalf("group ids JSON = %q, want %q", groupIDsItem.Value, want)
 	}
 }
 
@@ -126,9 +95,6 @@ func TestWebhookSetConfigByOperatorWritesAuditEvent(t *testing.T) {
 		Enabled:       true,
 		Type:          "discord",
 		FleetTemplate: defaultFleetTemplate,
-		OBTargetType:  "group",
-		OBTargetID:    42,
-		OBToken:       "token",
 	}, 77)
 	if err != nil {
 		t.Fatalf("SetConfigByOperator() error = %v", err)
@@ -154,8 +120,6 @@ func TestValidateWebhookRequestTargetAcceptsExpectedURLs(t *testing.T) {
 		{Type: "feishu", URL: "https://open.larksuite.com/open-apis/bot/v2/hook/abc"},
 		{Type: "dingtalk", URL: "https://oapi.dingtalk.com/robot/send?access_token=abc"},
 		{Type: "dingtalk", URL: "https://api.dingtalkapps.com/robot/send?access_token=abc"},
-		{Type: "onebot", URL: "http://127.0.0.1:3000", OBTargetType: "group"},
-		{Type: "onebot", URL: "https://onebot.example.com", OBTargetType: "private"},
 	}
 
 	for _, tc := range testCases {
@@ -178,8 +142,6 @@ func TestValidateWebhookRequestTargetRejectsInvalidURLs(t *testing.T) {
 		{name: "discord_non_allowlisted_host", cfg: WebhookConfig{Type: "discord", URL: "https://example.com/webhook"}},
 		{name: "feishu_non_allowlisted_host", cfg: WebhookConfig{Type: "feishu", URL: "https://example.com/webhook"}},
 		{name: "dingtalk_non_allowlisted_host", cfg: WebhookConfig{Type: "dingtalk", URL: "https://example.com/webhook"}},
-		{name: "onebot_non_http_scheme", cfg: WebhookConfig{Type: "onebot", URL: "ftp://example.com/webhook"}},
-		{name: "onebot_invalid_target_type", cfg: WebhookConfig{Type: "onebot", URL: "https://example.com/webhook", OBTargetType: "channel"}},
 	}
 
 	for _, tc := range testCases {
@@ -196,39 +158,82 @@ func TestValidateWebhookRequestTargetRejectsInvalidURLs(t *testing.T) {
 	}
 }
 
-func TestValidateQQGovernanceOnebotTarget(t *testing.T) {
-	t.Run("accepts_multiple_group_ids_without_url", func(t *testing.T) {
-		cfg := &WebhookConfig{Type: "qq_governance_onebot", QQGovernanceGroupIDs: []int64{123456789, 987654321}}
-		if err := validateWebhookRequestTarget(cfg); err != nil {
-			t.Fatalf("expected validation to pass, got %v", err)
-		}
-	})
-	t.Run("rejects_empty_group_ids", func(t *testing.T) {
-		cfg := &WebhookConfig{Type: "qq_governance_onebot"}
-		err := validateWebhookRequestTarget(cfg)
-		if err == nil || !strings.Contains(err.Error(), "至少配置一个") {
-			t.Fatalf("expected empty group ids error, got %v", err)
-		}
-	})
-	t.Run("rejects_zero_group_id", func(t *testing.T) {
-		cfg := &WebhookConfig{Type: "qq_governance_onebot", QQGovernanceGroupIDs: []int64{0}}
-		err := validateWebhookRequestTarget(cfg)
-		if err == nil || !strings.Contains(err.Error(), "正数") {
-			t.Fatalf("expected positive-only error, got %v", err)
-		}
-	})
-	t.Run("rejects_duplicate_group_ids", func(t *testing.T) {
-		cfg := &WebhookConfig{Type: "qq_governance_onebot", QQGovernanceGroupIDs: []int64{100, 100}}
-		err := validateWebhookRequestTarget(cfg)
-		if err == nil || !strings.Contains(err.Error(), "重复") {
-			t.Fatalf("expected duplicate error, got %v", err)
-		}
-	})
-	t.Run("rejects_private_target_type", func(t *testing.T) {
-		cfg := &WebhookConfig{Type: "qq_governance_onebot", OBTargetType: "private", QQGovernanceGroupIDs: []int64{100}}
-		err := validateWebhookRequestTarget(cfg)
-		if err == nil || !strings.Contains(err.Error(), "群组目标") {
-			t.Fatalf("expected group-only error, got %v", err)
-		}
-	})
+func TestRetiredWebhookTypesRejectWithoutSendingOrSaving(t *testing.T) {
+	for _, kind := range []string{"onebot", "qq_governance_onebot"} {
+		t.Run(kind, func(t *testing.T) {
+			store := &fakeWebhookConfigStore{}
+			transport := &recordingWebhookTransport{}
+			svc := &WebhookService{repo: store, http: &http.Client{Transport: transport}}
+			cfg := &WebhookConfig{Type: kind, URL: "https://discord.com/api/webhooks/1/token", Enabled: true}
+			if err := svc.SetConfig(cfg); err == nil {
+				t.Fatal("retired type must be rejected")
+			}
+			if err := svc.SendTest(cfg, "test"); err == nil {
+				t.Fatal("retired type must not send a test message")
+			}
+			if err := svc.sendMessage(cfg, "fleet ping"); err == nil {
+				t.Fatal("persisted retired type must not fall through to Discord")
+			}
+			if store.setManyCalls != 0 || transport.calls != 0 {
+				t.Fatal("retired type wrote configuration or sent HTTP request")
+			}
+		})
+	}
+}
+
+type recordingWebhookTransport struct {
+	calls int
+	body  string
+}
+
+func (r *recordingWebhookTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	r.calls++
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
+	r.body = string(body)
+	return &http.Response{StatusCode: http.StatusNoContent, Body: io.NopCloser(strings.NewReader("")), Header: make(http.Header)}, nil
+}
+
+func TestSupportedWebhookProvidersStillSend(t *testing.T) {
+	cases := []struct{ kind, url, payload string }{
+		{"discord", "https://discord.com/api/webhooks/1/token", `{"content":"hello"}`},
+		{"feishu", "https://open.feishu.cn/open-apis/bot/v2/hook/test", `{"content":{"text":"hello"},"msg_type":"text"}`},
+		{"dingtalk", "https://oapi.dingtalk.com/robot/send?access_token=test", `{"msgtype":"text","text":{"content":"hello"}}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.kind, func(t *testing.T) {
+			transport := &recordingWebhookTransport{}
+			svc := &WebhookService{http: &http.Client{Transport: transport}}
+			if err := svc.SendTest(&WebhookConfig{Type: tc.kind, URL: tc.url}, "hello"); err != nil {
+				t.Fatal(err)
+			}
+			if transport.calls != 1 || transport.body != tc.payload {
+				t.Fatalf("unexpected delivery: calls=%d payload=%s", transport.calls, transport.body)
+			}
+		})
+	}
+}
+
+func TestFleetPingKeepsSupportedDeliveryAndRejectsRetiredConfiguration(t *testing.T) {
+	for _, kind := range []string{"discord", "onebot", "qq_governance_onebot"} {
+		t.Run(kind, func(t *testing.T) {
+			transport := &recordingWebhookTransport{}
+			store := &fakeWebhookConfigStore{enabled: true, values: map[string]string{
+				model.SysConfigWebhookType:          kind,
+				model.SysConfigWebhookURL:           "https://discord.com/api/webhooks/1/token",
+				model.SysConfigWebhookFleetTemplate: "{title} {fc_name} {pap_count}",
+			}}
+			svc := &WebhookService{repo: store, http: &http.Client{Transport: transport}}
+			err := svc.SendFleetPing(&model.Fleet{Title: "Operation", FCCharacterName: "Commander", PapCount: 2})
+			if kind == "discord" {
+				if err != nil || transport.calls != 1 || transport.body != `{"content":"Operation Commander 2"}` {
+					t.Fatalf("fleet delivery: err=%v calls=%d body=%s", err, transport.calls, transport.body)
+				}
+			} else if err == nil || transport.calls != 0 {
+				t.Fatalf("retired fleet notification: err=%v calls=%d", err, transport.calls)
+			}
+		})
+	}
 }

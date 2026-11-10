@@ -46,18 +46,7 @@ source_of_truth:
 - `discord` — Discord 频道 Webhook，URL 走 HTTPS 域名白名单
 - `feishu` — 飞书自定义机器人
 - `dingtalk` — 钉钉自定义机器人
-- `onebot` — 通用 OneBot v11 HTTP 接口，需要填写服务地址、目标类型、目标 ID 和（可选）Access Token
-- `qq_governance_onebot` — 复用 QQ 群治理已建立的反向 WebSocket 连接；目标为 QQ 群号数组 `qq_governance_group_ids`，无需 HTTP URL、通用 OneBot Token 或私聊目标
-
-`qq_governance_onebot` 行为：
-
-- 不填写 URL、`ob_token`、`ob_target_id`，`ob_target_type` 只能省略或填 `group`
-- 必须至少配置一个正数 QQ 群号；群号不能重复
-- 舰队 Ping 与测试发送都会调用 `QQGovernanceService.EnqueueGroupNotifications`
-- 每个目标群创建一个独立的 `notify` 任务，多群入队使用同一事务，避免部分成功
-- 任务进入 QQ 群治理现有 Worker，复用风险控制、Redis 限流（全局 + 群级，不再叠加 QQ 维度）、重试、死信和动作日志
-- OneBot 未连接或熔断打开时按现有策略进入重试
-- 测试发送成功只表示通知任务已入队，不代表 QQ 平台已经送达
+QQ Bot 通知已下线；旧类型配置需人工清理，不会映射到其他通知渠道。
 
 ## 入口
 

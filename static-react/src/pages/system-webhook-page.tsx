@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -20,39 +20,12 @@ const defaultWebhookConfig: WebhookConfig = {
   enabled: false,
   type: 'discord',
   fleet_template: '',
-  ob_target_type: 'group',
-  ob_target_id: 0,
-  ob_token: '',
-  qq_governance_group_ids: [],
 }
 
 const defaultWebhookTest: WebhookTestParams = {
   url: '',
   type: 'discord',
   content: '',
-  ob_target_type: 'group',
-  ob_target_id: 0,
-  ob_token: '',
-  qq_governance_group_ids: [],
-}
-
-function parseQQGroupIDs(text: string): number[] {
-  const out: number[] = []
-  for (const part of text.split(/[\s,，;；\n]+/)) {
-    const trimmed = part.trim()
-    if (!trimmed) continue
-    const id = Number(trimmed)
-    if (!Number.isFinite(id) || id <= 0 || !Number.isInteger(id)) {
-      throw new Error('invalid')
-    }
-    out.push(id)
-  }
-  return out
-}
-
-function formatQQGroupIDs(ids: number[] | undefined): string {
-  if (!ids || ids.length === 0) return ''
-  return ids.join('\n')
 }
 
 export function SystemWebhookPage() {
@@ -63,8 +36,6 @@ export function SystemWebhookPage() {
   const [error, setError] = useState<string | null>(null)
   const [config, setConfig] = useState<WebhookConfig>(defaultWebhookConfig)
   const [testForm, setTestForm] = useState<WebhookTestParams>(defaultWebhookTest)
-  const [qqGroupIDsText, setQQGroupIDsText] = useState('')
-  const [testQQGroupIDsText, setTestQQGroupIDsText] = useState('')
 
   const loadConfig = useCallback(async () => {
     setLoading(true)
@@ -72,17 +43,11 @@ export function SystemWebhookPage() {
     try {
       const nextConfig = await fetchWebhookConfig()
       setConfig(nextConfig)
-      setQQGroupIDsText(formatQQGroupIDs(nextConfig.qq_governance_group_ids))
       setTestForm({
         url: nextConfig.url,
         type: nextConfig.type,
         content: '',
-        ob_target_type: nextConfig.ob_target_type,
-        ob_target_id: nextConfig.ob_target_id,
-        ob_token: nextConfig.ob_token,
-        qq_governance_group_ids: nextConfig.qq_governance_group_ids ?? [],
       })
-      setTestQQGroupIDsText(formatQQGroupIDs(nextConfig.qq_governance_group_ids))
     } catch {
       setError(t('webhook.messages.loadFailed'))
     } finally {
@@ -104,39 +69,12 @@ export function SystemWebhookPage() {
     }
   }, [loadConfig])
 
-  const isQQGovernanceConfig = config.type === 'qq_governance_onebot'
-  const isQQGovernanceTest = testForm.type === 'qq_governance_onebot'
-
-  const canSubmitTest = useMemo(() => {
-    if (isQQGovernanceTest) {
-      return (testForm.qq_governance_group_ids?.length ?? 0) > 0
-    }
-    return !!testForm.url?.trim()
-  }, [isQQGovernanceTest, testForm.qq_governance_group_ids, testForm.url])
+  const canSubmitTest = !!testForm.url?.trim()
 
   const saveConfig = async () => {
-    let nextConfig: WebhookConfig
-    if (isQQGovernanceConfig) {
-      let ids: number[]
-      try {
-        ids = parseQQGroupIDs(qqGroupIDsText)
-      } catch {
-        notifyError(t('webhook.messages.invalidQQGroupId'))
-        return
-      }
-      if (ids.length === 0) {
-        notifyError(t('webhook.messages.qqGroupIdsRequired'))
-        return
-      }
-      nextConfig = { ...config, qq_governance_group_ids: ids }
-      setConfig(nextConfig)
-    } else {
-      nextConfig = { ...config, qq_governance_group_ids: [] }
-      setConfig(nextConfig)
-    }
     setSaving(true)
     try {
-      await setWebhookConfig(nextConfig)
+      await setWebhookConfig(config)
       notifySuccess(t('webhook.messages.saveSuccess'))
     } catch {
       notifyError(t('webhook.messages.saveFailed'))
@@ -146,28 +84,9 @@ export function SystemWebhookPage() {
   }
 
   const sendTest = async () => {
-    let nextTest = testForm
-    if (isQQGovernanceTest) {
-      let ids: number[]
-      try {
-        ids = parseQQGroupIDs(testQQGroupIDsText)
-      } catch {
-        notifyError(t('webhook.messages.invalidQQGroupId'))
-        return
-      }
-      if (ids.length === 0) {
-        notifyError(t('webhook.messages.qqGroupIdsRequired'))
-        return
-      }
-      nextTest = { ...testForm, qq_governance_group_ids: ids, url: undefined }
-      setTestForm(nextTest)
-    } else if (!nextTest.url?.trim()) {
-      notifyError(t('webhook.messages.urlRequired'))
-      return
-    }
     setTesting(true)
     try {
-      await testWebhook(nextTest)
+      await testWebhook(testForm)
       notifySuccess(t('webhook.test.success'))
     } catch {
       notifyError(t('webhook.test.failed'))
@@ -222,14 +141,10 @@ export function SystemWebhookPage() {
                 <SelectItem id="discord">{t('webhook.types.discord')}</SelectItem>
                 <SelectItem id="feishu">{t('webhook.types.feishu')}</SelectItem>
                 <SelectItem id="dingtalk">{t('webhook.types.dingtalk')}</SelectItem>
-                <SelectItem id="onebot">{t('webhook.types.onebot')}</SelectItem>
-                <SelectItem id="qq_governance_onebot">
-                  {t('webhook.types.qqGovernanceOnebot')}
-                </SelectItem>
               </SelectContent>
             </Select>
           </label>
-          {!isQQGovernanceConfig ? (
+
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">{t('webhook.fields.url')}</span>
               <Input
@@ -240,20 +155,7 @@ export function SystemWebhookPage() {
                 placeholder={t('webhook.fields.urlPlaceholder')}
               />
             </label>
-          ) : (
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">
-                {t('webhook.fields.qqGroupIds')}
-              </span>
-              <Textarea
-                className="min-h-32"
-                value={qqGroupIDsText}
-                onChange={(event) => setQQGroupIDsText(event.target.value)}
-                placeholder={t('webhook.fields.qqGroupIdsPlaceholder')}
-              />
-              <p className="text-xs text-muted-foreground">{t('webhook.fields.qqGroupIdsHint')}</p>
-            </label>
-          )}
+
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('webhook.fields.template')}</span>
             <Textarea
@@ -266,58 +168,6 @@ export function SystemWebhookPage() {
             />
             <p className="text-xs text-muted-foreground">{t('webhook.fields.templateHint')}</p>
           </label>
-          {config.type === 'onebot' ? (
-            <>
-              <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('webhook.fields.obTargetType')}
-                </span>
-                <Select
-                  selectedKey={String(config.ob_target_type ?? '')}
-                  onSelectionChange={(key) => ((value) =>
-                    setConfig((current) => ({
-                      ...current,
-                      ob_target_type: value as 'group' | 'private',
-                    })))(String(key))}
-                >
-                  <SelectTrigger className="h-10 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem id="group">{t('webhook.fields.obGroup')}</SelectItem>
-                    <SelectItem id="private">{t('webhook.fields.obPrivate')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('webhook.fields.obTargetId')}
-                </span>
-                <Input
-                  type="number"
-                  min={0}
-                  value={String(config.ob_target_id)}
-                  onChange={(event) =>
-                    setConfig((current) => ({
-                      ...current,
-                      ob_target_id: Number(event.target.value),
-                    }))
-                  }
-                  placeholder={t('webhook.fields.obTargetIdPlaceholder')}
-                />
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('webhook.fields.obToken')}</span>
-                <Input
-                  value={config.ob_token}
-                  onChange={(event) =>
-                    setConfig((current) => ({ ...current, ob_token: event.target.value }))
-                  }
-                  placeholder={t('webhook.fields.obTokenPlaceholder')}
-                />
-              </label>
-            </>
-          ) : null}
         </div>
       </div>
 
@@ -351,14 +201,10 @@ export function SystemWebhookPage() {
                 <SelectItem id="discord">{t('webhook.types.discord')}</SelectItem>
                 <SelectItem id="feishu">{t('webhook.types.feishu')}</SelectItem>
                 <SelectItem id="dingtalk">{t('webhook.types.dingtalk')}</SelectItem>
-                <SelectItem id="onebot">{t('webhook.types.onebot')}</SelectItem>
-                <SelectItem id="qq_governance_onebot">
-                  {t('webhook.types.qqGovernanceOnebot')}
-                </SelectItem>
               </SelectContent>
             </Select>
           </label>
-          {!isQQGovernanceTest ? (
+
             <label className="space-y-2">
               <span className="text-sm text-muted-foreground">{t('webhook.test.url')}</span>
               <Input
@@ -369,20 +215,7 @@ export function SystemWebhookPage() {
                 placeholder={t('webhook.fields.urlPlaceholder')}
               />
             </label>
-          ) : (
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm text-muted-foreground">
-                {t('webhook.fields.qqGroupIds')}
-              </span>
-              <Textarea
-                className="min-h-32"
-                value={testQQGroupIDsText}
-                onChange={(event) => setTestQQGroupIDsText(event.target.value)}
-                placeholder={t('webhook.fields.qqGroupIdsPlaceholder')}
-              />
-              <p className="text-xs text-muted-foreground">{t('webhook.test.qqGroupIdsHint')}</p>
-            </label>
-          )}
+
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('webhook.test.content')}</span>
             <Input
@@ -393,57 +226,6 @@ export function SystemWebhookPage() {
               placeholder={t('webhook.test.contentPlaceholder')}
             />
           </label>
-          {testForm.type === 'onebot' ? (
-            <>
-              <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('webhook.fields.obTargetType')}
-                </span>
-                <Select
-                  selectedKey={String(testForm.ob_target_type ?? 'group')}
-                  onSelectionChange={(key) => ((value) =>
-                    setTestForm((current) => ({
-                      ...current,
-                      ob_target_type: value,
-                    })))(String(key))}
-                >
-                  <SelectTrigger className="h-10 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem id="group">{t('webhook.fields.obGroup')}</SelectItem>
-                    <SelectItem id="private">{t('webhook.fields.obPrivate')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('webhook.fields.obTargetId')}
-                </span>
-                <Input
-                  type="number"
-                  min={0}
-                  value={String(testForm.ob_target_id ?? 0)}
-                  onChange={(event) =>
-                    setTestForm((current) => ({
-                      ...current,
-                      ob_target_id: Number(event.target.value),
-                    }))
-                  }
-                />
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-sm text-muted-foreground">{t('webhook.fields.obToken')}</span>
-                <Input
-                  value={testForm.ob_token ?? ''}
-                  onChange={(event) =>
-                    setTestForm((current) => ({ ...current, ob_token: event.target.value }))
-                  }
-                  placeholder={t('webhook.fields.obTokenPlaceholder')}
-                />
-              </label>
-            </>
-          ) : null}
         </div>
       </div>
     </section>
