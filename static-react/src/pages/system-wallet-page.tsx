@@ -83,6 +83,7 @@ function refTypeTone(value: string) {
       return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
     case 'admin_award':
     case 'srp_payout':
+    case 'captain_refund':
     case 'newbro_captain_reward':
     case 'mentor_reward':
       return 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
@@ -251,8 +252,12 @@ export function SystemWalletPage() {
             <span className="text-sm text-muted-foreground">{t('walletAdmin.fields.action')}</span>
             <Select
               selectedKey={String(adjustForm.action ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setAdjustForm((current) => ({ ...current, action: value as AdjustAction })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) =>
+                  setAdjustForm((current) => ({ ...current, action: value as AdjustAction })))(
+                  String(key)
+                )
+              }
             >
               <SelectTrigger className="h-10">
                 <SelectValue />
@@ -547,7 +552,10 @@ function WalletTransactionsPanel({
             onChange={(event) => setUserId(event.target.value ? Number(event.target.value) : '')}
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
-          <Select selectedKey={String(refType ?? '')} onSelectionChange={(key) => ((value) => setRefType(value))(String(key))}>
+          <Select
+            selectedKey={String(refType ?? '')}
+            onSelectionChange={(key) => ((value) => setRefType(value))(String(key))}
+          >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
@@ -564,6 +572,7 @@ function WalletTransactionsPanel({
                 'shop_purchase',
                 'shop_refund',
                 'newbro_captain_reward',
+                'captain_refund',
                 'mentor_reward',
               ].map((value) => (
                 <SelectItem key={value} id={String(value ?? '')}>
@@ -750,7 +759,10 @@ function WalletLogsPanel({
             onChange={(event) => setTargetUid(event.target.value)}
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
-          <Select selectedKey={String(action ?? '')} onSelectionChange={(key) => ((value) => setAction(value))(String(key))}>
+          <Select
+            selectedKey={String(action ?? '')}
+            onSelectionChange={(key) => ((value) => setAction(value))(String(key))}
+          >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
@@ -891,6 +903,7 @@ function WalletAnalysisPanel({
     'shop_purchase',
     'shop_refund',
     'newbro_captain_reward',
+    'captain_refund',
     'mentor_reward',
     'recruit_link_reward',
   ]
@@ -1170,10 +1183,12 @@ function Pager({
         <span>{t('welfareMy.pageSize')}</span>
         <Select
           selectedKey={String(pageSize ?? '')}
-          onSelectionChange={(key) => ((value) => {
-            setPageSize(Number(value))
-            setPage(1)
-          })(String(key))}
+          onSelectionChange={(key) =>
+            ((value) => {
+              setPageSize(Number(value))
+              setPage(1)
+            })(String(key))
+          }
         >
           <SelectTrigger className="h-8">
             <SelectValue />

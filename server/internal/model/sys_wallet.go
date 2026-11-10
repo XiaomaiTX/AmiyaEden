@@ -79,6 +79,7 @@ const (
 	WalletRefWelfarePayout       = "welfare_payout"        // 福利审批发放
 	WalletRefShopBuy             = "shop_purchase"         // 商城购买
 	WalletRefShopRefund          = "shop_refund"           // 商城退款（拒绝订单）
+	WalletRefCaptainRefund       = "captain_refund"        // 队长退税
 	WalletRefNewbroCaptainReward = "newbro_captain_reward" // 队长帮扶奖励
 	WalletRefMentorReward        = "mentor_reward"         // 导师帮扶奖励
 	WalletRefRecruitReward       = "recruit_link_reward"   // 招募链接奖励

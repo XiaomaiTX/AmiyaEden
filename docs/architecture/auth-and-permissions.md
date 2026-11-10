@@ -233,11 +233,8 @@ React parity 状态：React 与 Vue 共用同一份 enforced capability 目录�
 
 `新人帮扶 / 导师系统` 模块还有几条额外边界：
 
-- `新人选队长` 不是纯职权权限，而是 `Login + 当前新人资格`
 - `新人选导师` 不是纯职权权限，而是 `Login + 当前导师学员资格`
 - `新人选导师` 页面入口依赖 `/api/v1/me` 返回的 `is_mentor_mentee_eligible` 做路由与菜单过滤；页面加载后仍会读取 `/api/v1/mentor/me` 做二次 UX 校验，后端服务层也会再次校验
-- `队长帮扶` 需要真实系统职权 `captain`；普通 `admin` 应使用 `队长管理` 页面，而不是把 `admin` 当作 captain 的别名
-- `队长管理` 页面可对 `admin` / `super_admin` 提供完整管理视图，同时对仅有 `captain` 的用户提供只读入口；当前放宽的是全量 `奖励发放历史` 与 `关系变更历史`，绩效、详情与 `帮扶设置` 仍不开放
 - `招新链接` 页面对 `admin` / `super_admin` 额外展示 `全部链接` 与 `链接设置` tab，但这不会扩大非 admin 用户的路由权限
 - `导师帮扶` 需要真实系统职权 `mentor`；普通 `admin` 不能访问导师 dashboard 接口
 - `导师管理` 页面及其 `设置奖励阶段` tab 仍属于 `admin` 管理面，不是 mentor 的延伸权限
@@ -268,3 +265,5 @@ For super_admin rules, see "Super Admin 配置驱动机制" above. For role assi
 ## 仪表盘军团技能达标查询
 
 `/api/v1/dashboard/skill-readiness/*` 为独立的跨用户管理读取边界，要求 Login、admin 与 `menu.dashboard` capability；super_admin 沿用现有角色和 capability 自动放行。admin 目标查询范围为全站有效绑定角色，军团筛选作用于目标角色，不形成新的管理者所属军团授权关系。senior_fc 维护技能方案的权限不包含本接口。个人完成度检查仍只能查询本人绑定角色。当前仅后端接口已交付，前端入口待实现。
+
+队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。系统管理的独立 `/system/newbro-settings` 入口配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。

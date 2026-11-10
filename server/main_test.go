@@ -102,7 +102,9 @@ func TestShutdownServerKeepsBackgroundManagerAliveWhileRequestsDrain(t *testing.
 	select {
 	case <-mgr.Context().Done():
 		close(releaseHandler)
-		<-requestDone
+		if err := <-requestDone; err != nil {
+			t.Logf("request cleanup: %v", err)
+		}
 		<-shutdownDone
 		t.Fatal("background manager shut down before in-flight request drained")
 	case <-time.After(150 * time.Millisecond):
@@ -224,7 +226,9 @@ func TestShutdownServerHonorsDeadlineAfterHTTPDrainTimeout(t *testing.T) {
 	case <-time.After(300 * time.Millisecond):
 		close(releaseHandler)
 		close(releaseBackgroundTask)
-		<-requestDone
+		if err := <-requestDone; err != nil {
+			t.Logf("request cleanup: %v", err)
+		}
 		<-shutdownDone
 		t.Fatal("shutdown exceeded its deadline after HTTP drain timed out")
 	}
@@ -233,7 +237,10 @@ func TestShutdownServerHonorsDeadlineAfterHTTPDrainTimeout(t *testing.T) {
 	close(releaseBackgroundTask)
 
 	select {
-	case <-requestDone:
+	case err := <-requestDone:
+		if err != nil {
+			t.Fatalf("request failed: %v", err)
+		}
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for request cleanup")
 	}

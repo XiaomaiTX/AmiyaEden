@@ -145,7 +145,7 @@ describe('menu config', () => {
     expect(system).toBeDefined()
   })
 
-  test('shows Captain and Mentor entries to super_admin without specialist roles', () => {
+  test('requires real captain role for refund menu and preserves mentor access', () => {
     const groups = buildShellMenuGroups({
       isLoggedIn: true,
       roles: ['super_admin'],
@@ -156,7 +156,7 @@ describe('menu config', () => {
     const newbro = groups.find((group) => group.labelKey === 'nav.group.newbro')
     const items = newbro?.items.map((item) => item.to) ?? []
 
-    expect(items).toContain('/newbro/captain')
+    expect(items).not.toContain('/newbro/captain')
     expect(items).toContain('/newbro/mentor')
   })
 

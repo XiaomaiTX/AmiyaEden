@@ -167,9 +167,11 @@ describe('ticket create page', () => {
       </I18nProvider>
     )
 
-    await waitFor(() =>
-      expect(document.querySelectorAll('[data-slot="select-trigger"]')).toHaveLength(2)
-    )
+    await waitFor(() => {
+      const triggers = document.querySelectorAll('[data-slot="select-trigger"]')
+      expect(triggers).toHaveLength(2)
+      expect(triggers[0]).toBeEnabled()
+    })
     const categorySelect = document.querySelector('[data-slot="select-trigger"]') as HTMLElement
     fireEvent.click(categorySelect)
     const option = await screen.findByRole('option', { name: 'Support' }, { timeout: 8000 })

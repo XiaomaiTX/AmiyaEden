@@ -199,7 +199,7 @@
       </ElTabPane>
 
       <ElTabPane v-if="isAdmin" :label="t('newbro.recruitLink.settingsTab')" name="settings" lazy>
-        <NewbroAdminSettingsPanel ref="linkSettingsPanelRef" mode="recruit" />
+        <NewbroAdminSettingsPanel ref="linkSettingsPanelRef" />
       </ElTabPane>
     </ElTabs>
   </div>

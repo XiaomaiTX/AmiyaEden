@@ -34,7 +34,6 @@ export type AppPageType =
   | 'welfare-my'
   | 'welfare-approval'
   | 'welfare-settings'
-  | 'newbro-select-captain'
   | 'newbro-select-mentor'
   | 'newbro-captain'
   | 'newbro-mentor'
@@ -61,6 +60,7 @@ export type AppPageType =
   | 'system-user-center'
   | 'system-webhook'
   | 'system-basic-config'
+  | 'system-newbro-settings'
   | 'system-qq-governance'
   | 'srp-apply'
   | 'srp-manage'
@@ -402,19 +402,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
   },
 
   {
-    path: 'newbro/select-captain',
-    titleKey: 'nav.newbro.selectCaptain',
-    pageType: 'newbro-select-captain',
-    batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
-    meta: {
-      login: true,
-      requiresNewbro: true,
-      corpCapabilitiesAny: ['menu.newbro'],
-    },
-  },
-  {
     path: 'newbro/select-mentor',
     titleKey: 'nav.newbro.selectMentor',
     pageType: 'newbro-select-mentor',
@@ -435,7 +422,7 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
     meta: {
-      roles: ['super_admin', 'captain'],
+      roles: ['captain'],
       login: true,
       corpCapabilitiesAny: ['menu.newbro'],
     },
@@ -462,7 +449,7 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.newbro',
     menuIcon: 'newbro',
     meta: {
-      roles: ['super_admin', 'admin', 'captain'],
+      roles: ['super_admin', 'admin'],
       login: true,
       corpCapabilitiesAny: ['menu.newbro'],
     },
@@ -790,6 +777,15 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     meta: { roles: ['super_admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
+    path: 'system/newbro-settings',
+    titleKey: 'refund.settings',
+    pageType: 'system-newbro-settings',
+    batch: 'B',
+    menuGroup: 'nav.group.system',
+    menuIcon: 'system',
+    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
+  },
+  {
     path: 'system/basic-config',
     titleKey: 'nav.system.basicConfig',
     pageType: 'system-basic-config',
@@ -847,7 +843,6 @@ const appRouteOrder = [
   'welfare/my',
   'welfare/approval',
   'welfare/settings',
-  'newbro/select-captain',
   'newbro/select-mentor',
   'newbro/captain',
   'newbro/mentor',
@@ -881,6 +876,7 @@ const appRouteOrder = [
   'system/user-center',
   'system/webhook',
   'system/qq-governance',
+  'system/newbro-settings',
   'system/basic-config',
 ] as const
 

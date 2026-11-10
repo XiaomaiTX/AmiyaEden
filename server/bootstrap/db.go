@@ -133,15 +133,12 @@ func autoMigrate(db *gorm.DB) {
 		&model.WelfareSkillPlan{},
 		&model.WelfareApplication{},
 		// 新人帮扶相关表
-		&model.NewbroPlayerState{},
-		&model.NewbroCaptainAffiliation{},
-		&model.CaptainBountyAttribution{},
-		&model.CaptainBountySyncState{},
-		&model.CaptainRewardSettlement{},
 		&model.MentorMenteeRelationship{},
 		&model.MentorRewardStage{},
 		&model.MentorRewardDistribution{},
 		// 招募链接相关表
+		&model.CaptainRefund{},
+		&model.CaptainRefundClaim{},
 		&model.NewbroRecruitment{},
 		&model.NewbroRecruitmentEntry{},
 		// 联盟 PAP 相关表
@@ -309,6 +306,7 @@ func obsoleteColumnDrops() []obsoleteColumnDrop {
 
 func obsoleteTables() []string {
 	return []string{
+		"newbro_captain_affiliation", "captain_bounty_attribution", "captain_bounty_sync_state", "captain_reward_settlement", "newbro_player_state",
 		"shop_lottery_record",
 		"shop_lottery_prize",
 		"shop_lottery_activity",
@@ -318,6 +316,10 @@ func obsoleteTables() []string {
 }
 
 func dropObsoleteSchema(db *gorm.DB) {
+	if err := cleanupLegacyCaptainData(db); err != nil {
+		panic(err)
+	}
+
 	migrator := db.Migrator()
 	for _, d := range obsoleteColumnDrops() {
 		if migrator.HasColumn(d.table, d.col) {
@@ -342,7 +344,6 @@ func dropObsoleteSchema(db *gorm.DB) {
 
 func newbroCustomIndexStatements() []string {
 	return []string{
-		`CREATE UNIQUE INDEX IF NOT EXISTS idx_newbro_captain_affiliation_active_player_user_id ON newbro_captain_affiliation (player_user_id) WHERE ended_at IS NULL AND deleted_at IS NULL`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_mentor_rel_active_mentee ON mentor_mentee_relationship (mentee_user_id) WHERE status IN ('pending', 'active') AND deleted_at IS NULL`,
 	}
 }
@@ -423,4 +424,25 @@ func assetIndexStatements() []string {
 		`CREATE INDEX IF NOT EXISTS idx_eve_character_asset_char_item ON eve_character_asset (character_id, item_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_eve_character_asset_location ON eve_character_asset (location_id)`,
 	}
+}
+
+// cleanupLegacyCaptainData intentionally preserves all wallet balances and journal rows.
+func cleanupLegacyCaptainData(db *gorm.DB) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		names := []string{"captain_attribution_sync", "captain_reward_processing"}
+		for _, table := range []string{"task_executions", "task_schedules"} {
+			if tx.Migrator().HasTable(table) {
+				if err := tx.Table(table).Where("task_name IN ?", names).Delete(map[string]interface{}{}).Error; err != nil {
+					return err
+				}
+			}
+		}
+		if tx.Migrator().HasTable("system_config") {
+			keys := []string{"newbro.max_character_sp", "newbro.multi_character_sp", "newbro.multi_character_threshold", "newbro.refresh_interval_days", "newbro.bonus_rate", "mentor.mentee_max_character_sp", "mentor.mentee_max_account_age_days"}
+			if err := tx.Table("system_config").Where("key IN ?", keys).Delete(map[string]interface{}{}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
