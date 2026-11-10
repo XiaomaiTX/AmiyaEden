@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-10-12
+last_reviewed: 2026-11-10
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
@@ -172,8 +172,12 @@ source_of_truth:
 
 - [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。
 
-## QQ Bot 下线
+## 旧 QQ Bot 业务下线
 
 - [当前下线边界](features/current/qq-group-governance.md)
 - [数据库清理与删除清单](guides/qq-bot-retirement-cleanup.md)
 - [第二阶段业务场景](specs/draft/qq-bot-business-scenarios.md)
+
+- [QQ 调度基础设施](features/current/qqbot.md)
+- [OneBot V11 PRD 与设计](architecture/qqbot-dispatch.md)
+- [QQ 调度验证与运行](guides/qqbot-verification.md)

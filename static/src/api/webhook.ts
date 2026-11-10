@@ -16,11 +16,7 @@ export function setWebhookConfig(data: Api.Webhook.Config) {
 }
 
 /** 发送测试消息 */
-export function testWebhook(data: {
-  url?: string
-  type: string
-  content?: string
-}) {
+export function testWebhook(data: { url?: string; type: string; content?: string }) {
   return request.post({
     url: '/api/v1/system/webhook/test',
     data
