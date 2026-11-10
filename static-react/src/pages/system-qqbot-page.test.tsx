@@ -8,33 +8,45 @@ import {
   retryQQBotOperation,
 } from '@/api/qqbot'
 vi.mock('@/api/qqbot', () => ({
+  fetchQQGroupBusiness: vi
+    .fn()
+    .mockResolvedValue({
+      rules: [],
+      applications: [],
+      members: [],
+      inspections: [],
+      judgements: [],
+    }),
+  saveQQGroupRule: vi.fn(),
+  fetchQQNotificationChannels: vi.fn().mockResolvedValue([]),
+  fetchQQNotificationTargets: vi.fn().mockResolvedValue([]),
+  saveQQNotificationChannel: vi.fn(),
+  testQQNotification: vi.fn(),
   fetchQQBotConfig: vi
     .fn()
     .mockResolvedValue({ enabled: false, bot_id: 42, cidrs: '127.0.0.1/32', interval_ms: 100 }),
-  fetchQQBotSnapshot: vi
-    .fn()
-    .mockResolvedValue({
-      connected: false,
-      redis_available: true,
-      rate_wait_ms: 0,
-      last_frame: '',
-      ingress_error: '',
-      operations: [
-        {
-          id: 'unknown',
-          business_key: 'business-send',
-          kind: 'group_message',
-          status: 'unknown',
-          failures: 0,
-          result: 'unconfirmed',
-          wait_reason: '',
-        },
-      ],
-      attempts: [],
-      events: [],
-      deliveries: [],
-      circuits: [],
-    }),
+  fetchQQBotSnapshot: vi.fn().mockResolvedValue({
+    connected: false,
+    redis_available: true,
+    rate_wait_ms: 0,
+    last_frame: '',
+    ingress_error: '',
+    operations: [
+      {
+        id: 'unknown',
+        business_key: 'business-send',
+        kind: 'group_message',
+        status: 'unknown',
+        failures: 0,
+        result: 'unconfirmed',
+        wait_reason: '',
+      },
+    ],
+    attempts: [],
+    events: [],
+    deliveries: [],
+    circuits: [],
+  }),
   fetchQQBotOperation: vi.fn(),
   saveQQBotConfig: vi.fn(),
   cancelQQBotOperation: vi.fn(),

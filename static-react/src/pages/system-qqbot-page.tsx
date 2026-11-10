@@ -1,3 +1,5 @@
+import { QQGroupBusiness } from '@/components/qq-group-business'
+import { QQNotifications } from '@/components/qq-notifications'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
@@ -150,6 +152,10 @@ export function SystemQQBotPage() {
           </Button>
         </div>
       ))}
+      <QQNotifications />
+      <QQNotifications channel="fleet" />
+      <QQNotifications channel="structure" />
+      <QQGroupBusiness />
       <h2>{t('qqbot.operations')}</h2>
       <label>
         {t('qqbot.id')}
@@ -189,7 +195,8 @@ export function SystemQQBotPage() {
                 )}
                 {o.status === 'failed' &&
                   o.failures >= 3 &&
-                  !o.business_key.startsWith('retry:') && (
+                  !o.business_key.startsWith('retry:') &&
+                  !/^(notification|application|card|kick|inspection):/.test(o.business_key) && (
                     <Button
                       isDisabled={busy}
                       onClick={() => void run(() => retryQQBotOperation(o.id))}

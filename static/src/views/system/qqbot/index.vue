@@ -35,6 +35,10 @@
         t(c.paused ? 'qqbot.resume' : 'qqbot.pause')
       }}</ElButton>
     </div>
+    <QQNotifications />
+    <QQNotifications channel="fleet" />
+    <QQNotifications channel="structure" />
+    <QQGroupBusiness />
     <h2>{{ t('qqbot.operations') }}</h2>
     <ElInput v-model="query" :placeholder="t('qqbot.id')" />
     <ElButton
@@ -62,7 +66,10 @@
           >
           <ElButton
             v-if="
-              row.status === 'failed' && row.failures >= 3 && !row.business_key.startsWith('retry:')
+              row.status === 'failed' &&
+              row.failures >= 3 &&
+              !row.business_key.startsWith('retry:') &&
+              !/^(notification|application|card|kick|inspection):/.test(row.business_key)
             "
             :disabled="busy"
             @click="run(() => retryQQBotOperation(row.id))"
@@ -103,6 +110,8 @@
 </template>
 <script setup lang="ts">
   import { ref, onMounted } from 'vue'
+  import QQGroupBusiness from '@/components/QQGroupBusiness.vue'
+  import QQNotifications from '@/components/QQNotifications.vue'
   import { useI18n } from 'vue-i18n'
   import {
     fetchQQBotConfig,

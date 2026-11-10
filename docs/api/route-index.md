@@ -565,3 +565,27 @@ source_of_truth:
 
 无公开业务操作提交或任意 Action 透传。内部服务契约见 [设计](../architecture/qqbot-dispatch.md)。
 - `GET /operations/:id`：按操作 ID 查询当前状态和诚实终态；同样仅超管。快照同时暴露 Redis 可用性与全局桶剩余等待毫秒。
+
+### QQ 业务通知
+
+以下均位于 `/api/v1/system/qqbot/notifications`，要求登录、`super_admin` 和 `system.manage`：
+
+| 方法 | 路径 | 契约 |
+| --- | --- | --- |
+| GET | `/channels` | 渠道列表，`name/enabled/group_ids`（JSON 字符串）/`updated_at` |
+| PUT | `/channels/:channel` | `{enabled, group_ids: number[]}`；general/fleet/structure，最多 50 群 |
+| GET | `/targets` | 最近 200 个逐群业务结果，含通知 ID、群 ID、关联操作 ID、状态及结果 |
+| POST | `/test` | `{key, expires_at}`；固定纯文本、general 渠道、最多五分钟有效，返回逐群意图 |
+
+同业务键重试须保持期限及内容不变。配置读取不包含调度令牌；这些路由不提供任意 Action 或任意文本发送。
+
+### QQ 群业务与审计
+
+同属 `/api/v1/system/qqbot`，继承 `super_admin + system.manage`：
+
+| 方法 | 路径 | 契约 |
+| --- | --- | --- |
+| GET | `/groups` | `rules/applications/members/inspections/judgements`，关联调度操作 ID，申请 flag 不返回 |
+| PUT | `/groups/rules` | `group_id`、`corporation_ids`、`roles`、`admission_enabled`、`auto_reject`、`card_enabled`、`card_template`、`inspection_enabled`、`auto_kick`、`mismatch_confirmations`、`observation_hours` |
+
+未传确认参数默认三轮、二十四小时；显式观察期零有效，确认次数 1–100，观察期 0–8760 小时。服务端管理版本号，重复相同规则不提高版本；规则变化取消旧操作并重置确认链。只有业务配置写入口，无人工申请处理、名片写入或清退入口。业务操作禁止通过通用操作重试生成脱离业务跟踪的子操作。

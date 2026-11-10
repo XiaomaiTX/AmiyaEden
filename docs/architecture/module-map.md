@@ -163,3 +163,7 @@ React 迁移侧对应职责：
 旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
 
 独立 QQ 调度基础设施现位于 `model/repository/service/handler/qqbot*.go`，运维页为双前端 `/system/qqbot`。旧治理模块继续下线，业务仅可使用新服务的类型化提交和持久消费契约，详见 [QQ 调度](../features/current/qqbot.md)。
+
+QQ 通用通知业务位于 `model/repository/service/qq_notification.go`，双前端调度运维页内提供配置及固定测试。参见 [通知业务](../features/current/qq-notifications.md)。
+
+QQ 群业务位于 `qq_group_business.go`（规则、申请、成员、名片）与 `qq_group_inspection.go`（冻结快照、检查点、清退）；建筑预警位于 `qq_structure_alert.go`。后台任务 `qq_group_business` 与 `qq_structure_alert` 只编排业务，协议操作仍由统一调度执行。

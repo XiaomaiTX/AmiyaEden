@@ -1,6 +1,14 @@
 import { requestJson } from '@/api/http-client'
 import { assertSuccess, type ApiResponse } from '@/api/response'
-import type { QQBotConfig, QQBotSnapshot, QQBotOperation } from '@/types/api/qqbot'
+import type {
+  QQGroupRule,
+  QQGroupBusinessAudit,
+  QQBotConfig,
+  QQBotSnapshot,
+  QQBotOperation,
+  QQNotificationChannel,
+  QQNotificationTarget,
+} from '@/types/api/qqbot'
 const base = '/api/v1/system/qqbot'
 async function call<T>(path: string, method = 'GET', body?: unknown) {
   return assertSuccess(
@@ -25,3 +33,15 @@ export const pauseQQBotCircuit = (name: string, paused: boolean) =>
 
 export const fetchQQBotOperation = (id: string) =>
   call<QQBotOperation>(`/operations/${encodeURIComponent(id)}`)
+
+export const fetchQQNotificationChannels = () =>
+  call<QQNotificationChannel[]>('/notifications/channels')
+export const fetchQQNotificationTargets = () =>
+  call<QQNotificationTarget[]>('/notifications/targets')
+export const saveQQNotificationChannel = (name: string, enabled: boolean, group_ids: number[]) =>
+  call<null>(`/notifications/channels/${encodeURIComponent(name)}`, 'PUT', { enabled, group_ids })
+export const testQQNotification = (key: string, expires_at: string) =>
+  call<QQNotificationTarget[]>('/notifications/test', 'POST', { key, expires_at })
+
+export const fetchQQGroupBusiness = () => call<QQGroupBusinessAudit>('/groups')
+export const saveQQGroupRule = (data: QQGroupRule) => call<null>('/groups/rules', 'PUT', data)

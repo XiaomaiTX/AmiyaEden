@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"amiya-eden/internal/model"
@@ -89,6 +90,9 @@ func (s *QQBotService) RetryOperation(ctx context.Context, id string) (model.QQB
 	if e != nil {
 		return o, e
 	}
+	if qqbotManagedBusiness(o.BusinessKey) {
+		return o, errors.New("business notification retry requires a new business intent")
+	}
 	if o.Status != "failed" || o.Failures < 3 || !o.ExpiresAt.After(time.Now()) || len(o.BusinessKey) > 180 {
 		return o, errors.New("retry not allowed")
 	}
@@ -114,4 +118,13 @@ func (s *QQBotService) Pause(ctx context.Context, class string, paused bool) err
 		c.Paused = paused
 		return s.repo.SaveCircuit(tx, &c)
 	})
+}
+
+func qqbotManagedBusiness(key string) bool {
+	for _, prefix := range []string{"notification:", "application:", "card:", "kick:", "inspection:"} {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }

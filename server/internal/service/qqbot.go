@@ -33,14 +33,16 @@ type qqbotConsumer struct {
 	fn          QQBotConsumer
 }
 type QQBotService struct {
-	repo      *repository.QQBotRepository
-	redis     redis.UniversalClient
-	client    *qqbotClient
-	mu        sync.Mutex
-	consumers []qqbotConsumer
-	started   bool
-	active    map[string]context.CancelFunc
-	stepMu    sync.Mutex
+	repo          *repository.QQBotRepository
+	redis         redis.UniversalClient
+	client        *qqbotClient
+	mu            sync.Mutex
+	consumers     []qqbotConsumer
+	started       bool
+	active        map[string]context.CancelFunc
+	stepMu        sync.Mutex
+	notifications *QQNotificationService
+	groups        *QQGroupBusinessService
 }
 
 var qqbotSingleton struct {
@@ -57,6 +59,17 @@ func DefaultQQBotService() *QQBotService {
 			client = global.Redis
 		}
 		qqbotSingleton.svc = NewQQBotService(global.DB, client)
+		qqbotSingleton.svc.groups = NewQQGroupBusinessService(global.DB, qqbotSingleton.svc)
+		if err := qqbotSingleton.svc.RegisterConsumer("event", "qq-group-business", qqbotSingleton.svc.groups.ConsumeEvent); err != nil {
+			panic(err)
+		}
+		if err := qqbotSingleton.svc.RegisterConsumer("result", "qq-group-business", qqbotSingleton.svc.groups.ConsumeResult); err != nil {
+			panic(err)
+		}
+		qqbotSingleton.svc.notifications = NewQQNotificationService(global.DB, qqbotSingleton.svc)
+		if err := qqbotSingleton.svc.RegisterConsumer("result", "qq-notifications", qqbotSingleton.svc.notifications.ConsumeResult); err != nil {
+			panic(err)
+		}
 	}
 	return qqbotSingleton.svc
 }
@@ -423,6 +436,30 @@ func (s *QQBotService) RunOnce(ctx context.Context, now time.Time) error {
 	a := model.QQBotAttempt{ID: uuid.NewString(), OperationID: o.ID, Classification: "executing", StartedAt: now}
 	execute := false
 	e = s.repo.Transaction(ctx, func(tx *gorm.DB) error {
+		if s.notifications != nil {
+			valid, err := s.notifications.valid(tx, o.ID)
+			if err != nil {
+				return err
+			}
+			if !valid {
+				return s.finish(tx, o, "cancelled", "channel_disabled", time.Now())
+			}
+		}
+		if s.groups != nil {
+			valid, e := s.groups.valid(tx, *o)
+			if errors.Is(e, errQQBusinessRecheck) {
+				o.Status = "queued"
+				o.WaitReason = "business_recheck"
+				o.AvailableAt = time.Now().Add(5 * time.Minute)
+				return s.repo.UpdateOwned(tx, o)
+			}
+			if e != nil {
+				return e
+			}
+			if !valid {
+				return s.finish(tx, o, "cancelled", "business_invalidated", time.Now())
+			}
+		}
 		if e := s.repo.RefreshOwned(tx, o); e != nil {
 			return e
 		}
@@ -435,6 +472,7 @@ func (s *QQBotService) RunOnce(ctx context.Context, now time.Time) error {
 		if !o.ExpiresAt.After(time.Now()) {
 			return s.finish(tx, o, "expired", "", time.Now())
 		}
+
 		o.Status = "executing"
 		if e := s.repo.UpdateOwned(tx, o); e != nil {
 			return e
