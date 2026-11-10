@@ -222,7 +222,7 @@ func (q *Queue) Run(ctx context.Context) error {
 			defer wg.Done()
 			defer func() { <-sem }() // 释放
 
-			recordErr(q.executeTask(ctx, j.task, j.character, j.isActive, false))
+			recordErr(q.executeTaskWithProviders(ctx, j.task, j.character, j.isActive, false, characters, authorizedProviders))
 		}(job)
 	}
 
@@ -386,7 +386,7 @@ func (q *Queue) RunTaskByName(ctx context.Context, taskName string) error {
 		go func(ch model.EveCharacter, active bool) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			recordErr(q.executeTask(ctx, task, ch, active, true))
+			recordErr(q.executeTaskWithProviders(ctx, task, ch, active, true, characters, authorizedProviders))
 		}(char, isActive)
 	}
 
@@ -400,6 +400,39 @@ func (q *Queue) RunTaskByName(ctx context.Context, taskName string) error {
 // ─────────────────────────────────────────────
 //  内部方法
 // ─────────────────────────────────────────────
+
+// executeTaskWithProviders keeps corporation deduplication while allowing a
+// rejected authorization to fall through to the next eligible director.
+func (q *Queue) executeTaskWithProviders(ctx context.Context, task RefreshTask, char model.EveCharacter, isActive, force bool, characters []model.EveCharacter, providers map[int64]int64) error {
+	if task.Name() != "corporation_killmails" {
+		return q.executeTask(ctx, task, char, isActive, force)
+	}
+	candidates := []model.EveCharacter{char}
+	for _, candidate := range characters {
+		if candidate.CharacterID != char.CharacterID && providers[candidate.CharacterID] == char.CorporationID {
+			candidates = append(candidates, candidate)
+		}
+	}
+	for _, candidate := range candidates {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := q.executeTask(ctx, task, candidate, isActive, force)
+		if errors.Is(err, ErrTaskSkipped) {
+			continue
+		}
+		if err != nil {
+			// Refresh-token rejection is persisted by the SSO service. Do not let
+			// that provider prevent another director from refreshing this corp.
+			current, lookupErr := q.charRepo.GetByCharacterID(candidate.CharacterID)
+			if lookupErr == nil && current.TokenInvalid {
+				continue
+			}
+		}
+		return err
+	}
+	return ErrTaskSkipped
+}
 
 // executeTask 执行单个任务
 func (q *Queue) executeTask(ctx context.Context, task RefreshTask, char model.EveCharacter, isActive bool, force bool) error {
@@ -612,7 +645,7 @@ func buildAuthorizedCorpKillmailProviders(characters []model.EveCharacter) (map[
 	candidates := make(map[int64]int64)
 	for i := range characters {
 		char := characters[i]
-		if char.CorporationID == 0 {
+		if char.CorporationID == 0 || char.TokenInvalid {
 			continue
 		}
 		for _, scope := range strings.Fields(char.Scopes) {

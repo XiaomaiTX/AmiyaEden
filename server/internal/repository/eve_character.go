@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -88,6 +89,25 @@ func (r *EveCharacterRepository) ListUserIDsByCharacterIDs(characterIDs []int64)
 // Update 更新人物信息
 func (r *EveCharacterRepository) Update(char *model.EveCharacter) error {
 	return global.DB.Save(char).Error
+}
+
+// RemoveRejectedScope only updates the credential that ESI rejected. A concurrent
+// SSO callback or token rotation must not lose its newly granted scopes.
+func (r *EveCharacterRepository) RemoveRejectedScope(characterID int64, accessToken, scope string) error {
+	char, err := r.GetByCharacterID(characterID)
+	if err != nil {
+		return err
+	}
+	scopes := strings.Fields(char.Scopes)
+	kept := make([]string, 0, len(scopes))
+	for _, value := range scopes {
+		if value != scope {
+			kept = append(kept, value)
+		}
+	}
+	return global.DB.Model(&model.EveCharacter{}).
+		Where("character_id = ? AND access_token = ? AND scopes = ?", characterID, accessToken, char.Scopes).
+		Update("scopes", strings.Join(kept, " ")).Error
 }
 
 // ListAllWithToken 查询所有有 refresh_token 且 token 未失效的人物（用于 ESI 数据刷新队列）
