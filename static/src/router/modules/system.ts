@@ -131,17 +131,6 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
-      path: 'qq-governance',
-      name: 'QQGovernance',
-      component: '/system/qq-governance',
-      meta: {
-        title: 'menus.system.qqGovernance',
-        keepAlive: true,
-        roles: ['super_admin'],
-        corpCapabilitiesAny: ['system.manage']
-      }
-    },
-    {
       path: 'newbro-settings',
       name: 'NewbroSettings',
       component: '/system/newbro-settings',

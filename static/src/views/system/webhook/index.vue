@@ -24,74 +24,20 @@
             <ElOption :label="$t('webhook.providers.discord')" value="discord" />
             <ElOption :label="$t('webhook.providers.feishu')" value="feishu" />
             <ElOption :label="$t('webhook.providers.dingtalk')" value="dingtalk" />
-            <ElOption :label="$t('webhook.providers.onebot')" value="onebot" />
-            <ElOption
-              :label="$t('webhook.providers.qqGovernanceOnebot')"
-              value="qq_governance_onebot"
-            />
           </ElSelect>
         </ElFormItem>
 
         <!-- Webhook URL -->
         <ElFormItem
-          v-if="form.type !== 'qq_governance_onebot'"
           :label="$t('webhook.fields.url')"
           prop="url"
         >
           <ElInput
             v-model="form.url"
-            :placeholder="
-              form.type === 'onebot'
-                ? $t('webhook.fields.obUrlPlaceholder')
-                : $t('webhook.fields.urlPlaceholder')
-            "
+            :placeholder="$t('webhook.fields.urlPlaceholder')"
             clearable
           />
         </ElFormItem>
-
-        <!-- QQ 群治理目标群号 -->
-        <ElFormItem
-          v-if="form.type === 'qq_governance_onebot'"
-          :label="$t('webhook.fields.qqGroupIds')"
-        >
-          <div style="width: 100%">
-            <ElInput
-              v-model="qqGroupIdsText"
-              type="textarea"
-              :rows="4"
-              :placeholder="$t('webhook.fields.qqGroupIdsPlaceholder')"
-            />
-            <div class="template-hint">
-              {{ $t('webhook.fields.qqGroupIdsHint') }}
-            </div>
-          </div>
-        </ElFormItem>
-
-        <!-- OneBot 专属字段 -->
-        <template v-if="form.type === 'onebot'">
-          <ElFormItem :label="$t('webhook.fields.obTargetType')">
-            <ElSelect v-model="form.ob_target_type" style="width: 160px">
-              <ElOption :label="$t('webhook.fields.obGroup')" value="group" />
-              <ElOption :label="$t('webhook.fields.obPrivate')" value="private" />
-            </ElSelect>
-          </ElFormItem>
-          <ElFormItem :label="$t('webhook.fields.obTargetId')">
-            <ElInputNumber
-              v-model="form.ob_target_id"
-              :min="0"
-              :controls="false"
-              style="width: 220px"
-              :placeholder="$t('webhook.fields.obTargetIdPlaceholder')"
-            />
-          </ElFormItem>
-          <ElFormItem :label="$t('webhook.fields.obToken')">
-            <ElInput
-              v-model="form.ob_token"
-              :placeholder="$t('webhook.fields.obTokenPlaceholder')"
-              clearable
-            />
-          </ElFormItem>
-        </template>
 
         <!-- 消息模板 -->
         <ElFormItem :label="$t('webhook.fields.template')">
@@ -130,63 +76,14 @@
             <ElOption :label="$t('webhook.providers.discord')" value="discord" />
             <ElOption :label="$t('webhook.providers.feishu')" value="feishu" />
             <ElOption :label="$t('webhook.providers.dingtalk')" value="dingtalk" />
-            <ElOption :label="$t('webhook.providers.onebot')" value="onebot" />
-            <ElOption
-              :label="$t('webhook.providers.qqGovernanceOnebot')"
-              value="qq_governance_onebot"
-            />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem v-if="testForm.type !== 'qq_governance_onebot'" :label="$t('webhook.test.url')">
+        <ElFormItem :label="$t('webhook.test.url')">
           <ElInput
             v-model="testForm.url"
-            :placeholder="
-              testForm.type === 'onebot'
-                ? $t('webhook.fields.obUrlPlaceholder')
-                : $t('webhook.fields.urlPlaceholder')
-            "
+            :placeholder="$t('webhook.fields.urlPlaceholder')"
           />
         </ElFormItem>
-        <ElFormItem
-          v-if="testForm.type === 'qq_governance_onebot'"
-          :label="$t('webhook.fields.qqGroupIds')"
-        >
-          <div style="width: 100%">
-            <ElInput
-              v-model="testQQGroupIdsText"
-              type="textarea"
-              :rows="4"
-              :placeholder="$t('webhook.fields.qqGroupIdsPlaceholder')"
-            />
-            <div class="template-hint">
-              {{ $t('webhook.test.qqGroupIdsHint') }}
-            </div>
-          </div>
-        </ElFormItem>
-        <template v-if="testForm.type === 'onebot'">
-          <ElFormItem :label="$t('webhook.fields.obTargetType')">
-            <ElSelect v-model="testForm.ob_target_type" style="width: 160px">
-              <ElOption :label="$t('webhook.fields.obGroup')" value="group" />
-              <ElOption :label="$t('webhook.fields.obPrivate')" value="private" />
-            </ElSelect>
-          </ElFormItem>
-          <ElFormItem :label="$t('webhook.fields.obTargetId')">
-            <ElInputNumber
-              v-model="testForm.ob_target_id"
-              :min="0"
-              :controls="false"
-              style="width: 220px"
-              :placeholder="$t('webhook.fields.obTargetIdPlaceholder')"
-            />
-          </ElFormItem>
-          <ElFormItem :label="$t('webhook.fields.obToken')">
-            <ElInput
-              v-model="testForm.ob_token"
-              :placeholder="$t('webhook.fields.obTokenPlaceholder')"
-              clearable
-            />
-          </ElFormItem>
-        </template>
         <ElFormItem :label="$t('webhook.test.content')">
           <ElInput
             v-model="testForm.content"
@@ -216,7 +113,6 @@
     ElForm,
     ElFormItem,
     ElInput,
-    ElInputNumber,
     ElSwitch,
     ElSelect,
     ElOption,
@@ -238,50 +134,15 @@
     enabled: false,
     type: 'discord',
     fleet_template: '',
-    ob_target_type: 'group',
-    ob_target_id: 0,
-    ob_token: '',
-    qq_governance_group_ids: []
   })
 
   const testForm = reactive({
     url: '',
     type: 'discord',
     content: '',
-    ob_target_type: 'group' as 'group' | 'private',
-    ob_target_id: 0,
-    ob_token: '',
-    qq_governance_group_ids: [] as number[]
   })
 
-  const qqGroupIdsText = ref('')
-  const testQQGroupIdsText = ref('')
-
-  const parseQQGroupIds = (text: string): number[] => {
-    const out: number[] = []
-    for (const part of text.split(/[\s,，;；\n]+/)) {
-      const trimmed = part.trim()
-      if (!trimmed) continue
-      const id = Number(trimmed)
-      if (!Number.isFinite(id) || id <= 0 || !Number.isInteger(id)) {
-        throw new Error(t('webhook.messages.invalidQQGroupId'))
-      }
-      out.push(id)
-    }
-    return out
-  }
-
-  const formatQQGroupIds = (ids: number[] | undefined): string => {
-    if (!ids || ids.length === 0) return ''
-    return ids.join('\n')
-  }
-
-  const canSubmitTest = computed(() => {
-    if (testForm.type === 'qq_governance_onebot') {
-      return testForm.qq_governance_group_ids.length > 0
-    }
-    return !!testForm.url
-  })
+  const canSubmitTest = computed(() => !!testForm.url)
 
   const loadConfig = async () => {
     loadingConfig.value = true
@@ -292,19 +153,9 @@
         form.enabled = cfg.enabled
         form.type = cfg.type
         form.fleet_template = cfg.fleet_template
-        form.ob_target_type = cfg.ob_target_type || 'group'
-        form.ob_target_id = cfg.ob_target_id ?? 0
-        form.ob_token = cfg.ob_token || ''
-        form.qq_governance_group_ids = cfg.qq_governance_group_ids ?? []
-        qqGroupIdsText.value = formatQQGroupIds(form.qq_governance_group_ids)
 
         testForm.url = cfg.url
         testForm.type = cfg.type
-        testForm.ob_target_type = cfg.ob_target_type || 'group'
-        testForm.ob_target_id = cfg.ob_target_id ?? 0
-        testForm.ob_token = cfg.ob_token || ''
-        testForm.qq_governance_group_ids = form.qq_governance_group_ids
-        testQQGroupIdsText.value = qqGroupIdsText.value
       }
     } catch {
       /* handled */
@@ -314,16 +165,6 @@
   }
 
   const handleSave = async () => {
-    if (form.type === 'qq_governance_onebot') {
-      try {
-        form.qq_governance_group_ids = parseQQGroupIds(qqGroupIdsText.value)
-      } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : t('webhook.messages.invalidQQGroupId'))
-        return
-      }
-    } else {
-      form.qq_governance_group_ids = []
-    }
     saving.value = true
     try {
       await setWebhookConfig({ ...form })
@@ -336,30 +177,12 @@
   }
 
   const handleTest = async () => {
-    if (testForm.type === 'qq_governance_onebot') {
-      try {
-        testForm.qq_governance_group_ids = parseQQGroupIds(testQQGroupIdsText.value)
-      } catch (err) {
-        ElMessage.error(err instanceof Error ? err.message : t('webhook.messages.invalidQQGroupId'))
-        return
-      }
-      if (testForm.qq_governance_group_ids.length === 0) {
-        ElMessage.error(t('webhook.messages.qqGroupIdsRequired'))
-        return
-      }
-    } else if (!testForm.url) {
-      return
-    }
     testing.value = true
     try {
       await testWebhook({
         url: testForm.url,
         type: testForm.type,
         content: testForm.content,
-        ob_target_type: testForm.ob_target_type,
-        ob_target_id: testForm.ob_target_id,
-        ob_token: testForm.ob_token,
-        qq_governance_group_ids: testForm.qq_governance_group_ids
       })
       ElMessage.success(t('webhook.test.success'))
     } catch {

@@ -53,28 +53,6 @@ source_of_truth:
 
 ## Public
 
-### Internal OneBot
-
-| Method | Path                      | 说明                                      | 权限 |
-| ------ | ------------------------- | ----------------------------------------- | ---- |
-| GET    | `/internal/onebot/v11/ws` | NapCat OneBot V11 反向 WebSocket 协议入口 | 专用令牌 + 机器人 QQ + 受控网段 |
-
-### QQ 群治理管理
-
-以下接口均位于 `/api/v1/system/qq-governance`，要求 JWT、`system.manage` capability 与 `super_admin`。
-
-| Method | Path | 说明 |
-| ------ | ---- | ---- |
-| GET/POST | `/policies` | 查询或新建群治理规则；GET 与 POST/PUT 响应均附带只读的 `allowed_corporations[{corporation_id, corporation_name}]`，数据库仍只持久化稳定的军团 ID |
-| PUT/DELETE | `/policies/:group_id` | 更新或删除单群规则 |
-| GET | `/members`、`/reviews`、`/tasks`、`/alerts` | 分页查询运行态、审查、动作和治理页告警 |
-| POST | `/tasks/:id/retry`、`/tasks/recover-disconnected`、`/alerts/:id/acknowledge` | 重试单个死信、在 OneBot 已连接时恢复因断连阻塞的任务、确认告警 |
-| GET | `/metrics`、`/connection` | 获取治理页指标与 OneBot 连接/风险状态；`/connection` 同时返回 Redis 限流器可用性、全局和各已配置群的令牌桶状态 |
-| GET/PUT | `/settings` | 读取或更新所有受治理 QQ 群共用的扫描、确认和观察期设置 |
-| GET | `/groups` | 查询各已配置群的名称、成员快照、治理状态统计与同步状态 |
-| GET | `/corporations?query=军团名称` | 通过 ESI 公开接口 `POST /universe/ids/` 对输入军团名称进行精确解析，返回可写入规则的军团 ID 与名称 |
-| POST | `/groups/:group_id/reconcile`、`/risk-control/reset` | 启动巡检，或在 OneBot 已恢复时恢复当前群因断连阻塞的快照任务；响应返回 `created`、`resumed`、`running` 或 `blocked`；解除熔断；不提供人工 QQ 写操作 |
-
 ### EVE SSO
 
 | Method | Path                | 说明                | 权限   |

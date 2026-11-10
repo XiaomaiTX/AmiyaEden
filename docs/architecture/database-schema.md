@@ -313,28 +313,7 @@ ESI 头衔到系统职权的映射表。
 - `ref_id` 当前按 `welfare_application:<application_id>` 生成，用于追踪该次福利发放
 - 导入历史福利记录不会补写 `welfare_payout` 钱包流水
 
-## QQ 群治理持久状态
-
-首期 QQ 群治理使用下列独立表：
-
-- `qq_group_governance_policy`：每群启停、军团/职权白名单、拒绝策略和名片模板。
-- `qq_governance_event`：OneBot 最小事件摘要和唯一事件键；不保存原始 payload。
-- `qq_group_member_state`：群成员当前状态、目标名片和单调递增版本。
-- `qq_governance_review`：资格判断原因和最小身份快照。
-- `qq_governance_action_task`：持久动作队列、稳定幂等键、租约、重试和终态。
-- `qq_governance_action_log`：脱敏动作摘要与每次执行结果。
-- `qq_governance_reconcile_run`：每群最多一个进行中的完整成员快照巡检轮次、总数、进度和结束状态；活动轮次唯一性由部分唯一索引 `idx_qq_governance_reconcile_run_active_group`（仅对 `active_key <> ''` 且未软删除的行生效）保证，终态轮次以空 `active_key` 共存。
-- `qq_governance_reconcile_member`：巡检轮次冻结的成员 QQ 集合及逐成员完成状态；它使重启后的批处理不依赖 OneBot 返回顺序。
-- `qq_governance_risk_control_state`：单机器人熔断等级、恢复时间与半开探测额度。
-- `qq_governance_alert`：仅在治理页展示的持久告警及其确认/恢复状态。
-
-### `corp_structure_alert_state`
-
-`corp_structure_alert_state` 保存建筑燃料与增强状态预警的进入/恢复状态。`corporation_id + structure_id + alert_type` 唯一，`active=false` 表示建筑已恢复、被删除、阈值关闭或 QQ 建筑预警开关关闭；`delivered` 仅在通知已成功写入 QQ 治理动作队列后置为真。它不保存 OneBot 连接或消息凭据。
-
-关键不变量：事件、成员状态、审查和动作入队由同一事务提交；动作 worker 在执行前比较 `target_version` 与成员当前版本，过期任务必须取消，不能继续写入 QQ 平台。
-
-### `system_config`
+## `system_config`
 
 `system_config` 仍然是当前应用的全局键值配置表。
 
@@ -351,13 +330,6 @@ ESI 头衔到系统职权的映射表。
   - 保存增强计时提醒阈值，单位为天
   - 默认值为 `7`
   - 值为 `0` 时关闭增强计时提醒
-- `dashboard.corporation_structures_alert_enabled`
-  - 保存军团建筑 QQ 预警是否启用，默认 `false`
-  - 是预警巡查与投递状态复位的唯一启停条件
-- `dashboard.corporation_structures_alert_group_ids`
-  - 保存军团建筑 QQ 预警专用的正整数群号 JSON 数组
-  - 设置页每行输入一个群号；启用预警时数组必须至少包含一个群号
-
 说明：
 
 - 这些配置键由军团建筑设置页读写
@@ -394,3 +366,5 @@ ESI 头衔到系统职权的映射表。
 - 自动权限映射表
 
 应优先检查 `docs/architecture/auth-and-permissions.md` 与 `docs/features/current/administration.md` 是否也需要更新。
+
+QQ Bot 专属模型、索引和自动迁移已移除。现存旧表不会自动删除；清理范围及恢复要求见 [QQ Bot 数据库清理方案](../guides/qq-bot-retirement-cleanup.md)。共享 `user.qq` 及其唯一索引继续保留。

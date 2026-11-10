@@ -267,3 +267,5 @@ For super_admin rules, see "Super Admin 配置驱动机制" above. For role assi
 `/api/v1/dashboard/skill-readiness/*` 为独立的跨用户管理读取边界，要求 Login、admin 与 `menu.dashboard` capability；super_admin 沿用现有角色和 capability 自动放行。admin 目标查询范围为全站有效绑定角色，军团筛选作用于目标角色，不形成新的管理者所属军团授权关系。senior_fc 维护技能方案的权限不包含本接口。个人完成度检查仍只能查询本人绑定角色。当前仅后端接口已交付，前端入口待实现。
 
 队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。系统管理的独立 `/system/newbro-settings` 入口配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
+
+QQ Bot 已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
