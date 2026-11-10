@@ -133,6 +133,7 @@ func TestBuildAuthorizedCorpKillmailProvidersMarksOnlyDirectorBackedProviders(t 
 		{CharacterID: 1001, CorporationID: 9901, Scopes: "esi-killmails.read_corporation_killmails.v1 esi-location.read_location.v1"},
 		{CharacterID: 1002, CorporationID: 9901, Scopes: "esi-location.read_location.v1"},
 		{CharacterID: 1003, CorporationID: 9902, Scopes: "esi-location.read_location.v1"},
+		{CharacterID: 1004, CorporationID: 9901, Scopes: "esi-killmails.read_corporation_killmails.v1", TokenInvalid: true},
 	}
 
 	db := newQueueCoverageTestDB(t)
@@ -141,6 +142,9 @@ func TestBuildAuthorizedCorpKillmailProvidersMarksOnlyDirectorBackedProviders(t 
 	t.Cleanup(func() { global.DB = oldDB })
 	if err := db.Create(&model.EveCharacterCorpRole{CharacterID: 1001, CorpRole: "Director"}).Error; err != nil {
 		t.Fatalf("create corp role: %v", err)
+	}
+	if err := db.Create(&model.EveCharacterCorpRole{CharacterID: 1004, CorpRole: "Director"}).Error; err != nil {
+		t.Fatal(err)
 	}
 
 	providers, err := buildAuthorizedCorpKillmailProviders(chars)
@@ -155,6 +159,9 @@ func TestBuildAuthorizedCorpKillmailProvidersMarksOnlyDirectorBackedProviders(t 
 	}
 	if _, ok := providers[1003]; ok {
 		t.Fatalf("expected character without scope to stay unauthorized")
+	}
+	if _, ok := providers[1004]; ok {
+		t.Fatal("expected invalid token to stay unauthorized")
 	}
 }
 

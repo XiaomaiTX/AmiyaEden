@@ -29,13 +29,13 @@ func TestUpdateBirthdayOnlyWritesBirthdayColumn(t *testing.T) {
 
 	const characterID = int64(4210020001)
 	seed := &model.EveCharacter{
-		CharacterID:  characterID,
+		CharacterID:   characterID,
 		CharacterName: "Birthday",
-		UserID:       1,
-		AccessToken:  "at-seed",
-		RefreshToken: "rt-seed",
-		TokenExpiry:  time.Now().Add(time.Hour),
-		Scopes:       "publicData esi-corporations.read_structures.v1",
+		UserID:        1,
+		AccessToken:   "at-seed",
+		RefreshToken:  "rt-seed",
+		TokenExpiry:   time.Now().Add(time.Hour),
+		Scopes:        "publicData esi-corporations.read_structures.v1",
 	}
 	if err := db.Create(seed).Error; err != nil {
 		t.Fatalf("seed character: %v", err)
@@ -56,5 +56,41 @@ func TestUpdateBirthdayOnlyWritesBirthdayColumn(t *testing.T) {
 	}
 	if got.AccessToken != seed.AccessToken || got.RefreshToken != seed.RefreshToken || got.Scopes != seed.Scopes {
 		t.Fatalf("token/scopes columns must stay untouched by UpdateBirthday: %+v", got)
+	}
+}
+
+func TestRemoveRejectedScopePreservesOtherScopesAndRenewedCredentials(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:rejected_scope_%d?mode=memory&cache=shared", time.Now().UnixNano())), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.AutoMigrate(&model.EveCharacter{}); err != nil {
+		t.Fatal(err)
+	}
+	oldDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = oldDB })
+	repo := NewEveCharacterRepository()
+	for _, token := range []string{"rejected", "renewed"} {
+		t.Run(token, func(t *testing.T) {
+			char := model.EveCharacter{CharacterID: int64(len(token)), AccessToken: token, RefreshToken: "refresh", Scopes: "publicData killmail assets"}
+			if err := db.Create(&char).Error; err != nil {
+				t.Fatal(err)
+			}
+			if err := repo.RemoveRejectedScope(char.CharacterID, "rejected", "killmail"); err != nil {
+				t.Fatal(err)
+			}
+			got, err := repo.GetByCharacterID(char.CharacterID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := char.Scopes
+			if token == "rejected" {
+				want = "publicData assets"
+			}
+			if got.Scopes != want || got.AccessToken != token || got.RefreshToken != "refresh" || got.TokenInvalid {
+				t.Fatalf("unexpected credential update: scopes=%q token_invalid=%v", got.Scopes, got.TokenInvalid)
+			}
+		})
 	}
 }

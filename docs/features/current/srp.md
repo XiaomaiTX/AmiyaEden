@@ -224,6 +224,7 @@ SRP 推荐金额同时由手动SRP机制和自动SRP机制使用，用于计算S
 管理员可通过人物管理页面授权军团击杀邮件 scope（`esi-killmails.read_corporation_killmails.v1`），该 scope 标记为 `Optional`，不影响普通用户 SSO 登录。要实际拉取军团击杀邮件，该授权人物还需要在已同步的军团职权中具备 `Director`。
 
 - **ESI 任务**：`corporation_killmails` 定期拉取军团范围的击杀邮件（活跃间隔 1 小时，非活跃 1 天）
+- **授权失效隔离**：自动及按任务名触发的军团 KM 同步遇到授权失效时，依次尝试同军团其他具备 scope 和 `Director` 职权的人物；已标记 `token_invalid` 的人物不进入候选集。ESI 返回 401/403 时，仅移除被拒绝人物的军团 KM scope，保留其他 ESI 权限，后续不再选用该授权，直到人物重新授予该 scope。更新按被拒绝的 access token 和原 scope 集合校验，避免覆盖并发 SSO 更新；网络和服务端暂态错误不会停用授权，也不触发候选切换。
 - **效果**：军团 KM 入库后，PAP 后 2 小时执行的一次性自动 SRP 任务可为成员匹配到更多击杀邮件，提高自动 SRP 覆盖率
 - **队列优化**：当某军团已经存在同时具备 `corporation_killmails` scope 与 `Director` 职权、且最近一次军团 KM 刷新仍在有效期内的授权人物时，自动 ESI 队列会跳过该军团成员的 `character_killmails` 自动刷新，避免重复消耗任务与 ESI 额度
 ## 关键不变量
