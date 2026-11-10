@@ -643,6 +643,12 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	registerAdminAutoRoleRoutes(admin.Group("", requireSystemManage), autoRoleH)
 
 	qqbotAdmin := admin.Group("/qqbot", requireSystemManage, middleware.RequireRole(model.RoleSuperAdmin))
+	qqbotAdmin.GET("/groups", qqbotH.GroupBusiness)
+	qqbotAdmin.PUT("/groups/rules", qqbotH.ConfigureGroupBusiness)
+	qqbotAdmin.GET("/notifications/channels", qqbotH.NotificationChannels)
+	qqbotAdmin.PUT("/notifications/channels/:channel", qqbotH.ConfigureNotifications)
+	qqbotAdmin.GET("/notifications/targets", qqbotH.NotificationTargets)
+	qqbotAdmin.POST("/notifications/test", qqbotH.TestNotification)
 	qqbotAdmin.GET("/config", qqbotH.GetSetting)
 	qqbotAdmin.PUT("/config", qqbotH.SetSetting)
 	qqbotAdmin.GET("/snapshot", qqbotH.Snapshot)

@@ -65,3 +65,86 @@ export interface QQBotSnapshot {
   deliveries: QQBotDelivery[]
   circuits: QQBotCircuit[]
 }
+
+export interface QQNotificationChannel {
+  name: string
+  enabled: boolean
+  group_ids: string
+  updated_at: string
+}
+export interface QQNotificationTarget {
+  channel: string
+  correlation_id: string
+  business_key: string
+  notification_id: string
+  group_id: number
+  operation_id: string
+  status: 'pending' | 'confirmed' | 'failed' | 'expired' | 'unknown' | 'cancelled'
+  result: string
+  updated_at: string
+}
+export interface QQGroupRule {
+  group_id: number
+  version: number
+  admission_enabled: boolean
+  auto_reject: boolean
+  corporation_ids: number[] | null
+  roles: string[] | null
+  card_enabled: boolean
+  card_template: string
+  inspection_enabled: boolean
+  auto_kick: boolean
+  mismatch_confirmations: number
+  observation_hours: number
+  last_inspection_at: string
+  updated_at: string
+}
+export interface QQGroupApplication {
+  id: string
+  group_id: number
+  qq: number
+  status: string
+  decision: string
+  evidence: string
+  operation_id: string
+  rule_version: number
+  expires_at: string
+}
+export interface QQGroupMember {
+  group_id: number
+  qq: number
+  present: boolean
+  epoch: number
+  evidence: string
+  confirmations: number
+  mismatch_since: string | null
+  card_target: string
+  card_status: string
+  card_operation_id: string
+  kick_status: string
+  kick_operation_id: string
+}
+export interface QQGroupInspection {
+  id: string
+  group_id: number
+  rule_version: number
+  status: string
+  operation_id: string
+  snapshot_at: string
+}
+export interface QQGroupJudgement {
+  run_id: string
+  qq: number
+  present: boolean
+  done: boolean
+  decision: string
+  evidence: string
+  operation_id: string
+}
+export interface QQGroupBusinessAudit {
+  rules: QQGroupRule[]
+  applications: QQGroupApplication[]
+  members: QQGroupMember[]
+  inspections: QQGroupInspection[]
+  judgements: QQGroupJudgement[]
+}

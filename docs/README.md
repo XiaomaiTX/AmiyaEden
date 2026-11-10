@@ -179,5 +179,6 @@ source_of_truth:
 - [第二阶段业务场景](specs/draft/qq-bot-business-scenarios.md)
 
 - [QQ 调度基础设施](features/current/qqbot.md)
+- [QQ 通用通知业务](features/current/qq-notifications.md)
 - [OneBot V11 PRD 与设计](architecture/qqbot-dispatch.md)
 - [QQ 调度验证与运行](guides/qqbot-verification.md)
