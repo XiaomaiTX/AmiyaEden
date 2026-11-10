@@ -95,10 +95,6 @@
       height: 100dvh;
     }
 
-    .el-menu {
-      height: 100%;
-    }
-
     &:hover {
       .dual-menu-collapse-btn {
         opacity: 1 !important;
@@ -170,17 +166,12 @@
 
   .el-menu {
     box-sizing: border-box;
-    height: calc(100vh - 60px);
-    overflow-y: auto;
-    // 防止菜单内的滚动影响整个页面滚动
-    overscroll-behavior: contain;
     border-right: 0;
-    scrollbar-width: none;
-    -ms-scroll-chaining: contain;
+  }
 
-    &::-webkit-scrollbar {
-      width: 0 !important;
-    }
+  // ElScrollbar owns scrolling; a nested scroll container traps wheel events.
+  :deep(.el-scrollbar__wrap) {
+    overscroll-behavior-y: contain;
   }
 
   .menu-model {
@@ -195,10 +186,6 @@
     .header {
       height: 50px;
       line-height: 50px;
-    }
-
-    .el-menu {
-      height: calc(100vh - 60px);
     }
 
     .el-menu--collapse {

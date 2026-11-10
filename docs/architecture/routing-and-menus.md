@@ -52,6 +52,8 @@ Vue 与 React 没有路由、菜单或状态的代码级联系：不共享 manif
 
 React 侧边栏按人物持久化手动展开的菜单组；当前路由所属组始终展开，人物切换或退出登录时清空状态。React 不通过隐藏挂载页面树模拟 Vue KeepAlive，筛选、分页等可恢复状态应进入 URL，真正跨页状态才进入 Zustand。
 
+侧边导航超出窗口高度时，鼠标滚轮在导航区域内滚动，滚动到边界不会带动主页面。React 的展开和图标折叠模式均由 `SidebarContent` 负责纵向滚动，头部和用户区保持固定；Vue 由 `ElScrollbar` 负责滚动，内部 `ElMenu` 随内容自然增高，避免嵌套滚动区域截断滚轮操作。
+
 两套前端必须遵守同一组行为约定：
 
 - `meta.login = true` 对应 API / feature 文档中的 `Login`
