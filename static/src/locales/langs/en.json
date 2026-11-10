@@ -490,7 +490,6 @@
       "autoRole": "Auto Roles",
       "audit": "Audit Logs",
       "webhook": "Webhook Notifications",
-      "qqGovernance": "QQ Group Governance",
       "basicConfig": "@:setting.basics.title"
     },
     "ticket": {
@@ -2917,9 +2916,8 @@
     },
     "actions": {
       "openFilters": "Open Filters",
-      "refreshSelected": "Run Background Task for Selected Corporation",
-      "runAlertScan": "Run QQ Structure Alert Scan"
-    },
+      "refreshSelected": "Run Background Task for Selected Corporation"
+     },
     "serviceCatalog": {
       "title": "Service Activity Catalog",
       "hint": "Map only newly observed online activities. System mappings are verified and resolved against the structure's installed service-slot modules.",
@@ -2943,10 +2941,6 @@
       "noticeThresholds": "Notification Thresholds",
       "fuelNoticeThreshold": "Fuel Remaining Threshold",
       "timerNoticeThreshold": "Reinforce Timer Threshold",
-      "alertEnabled": "Enable QQ Structure Alerts",
-      "alertGroupIDs": "QQ Alert Group IDs",
-      "alertGroupIDsPlaceholder": "One QQ group ID per line",
-      "alertGroupIDsHint": "Configure at least one group ID when alerts are enabled",
       "daysUnit": "days",
       "noticeThresholdHint": "0 = disable reminders"
     },
@@ -3005,8 +2999,6 @@
       "authorizationSaved": "Authorization settings saved",
       "refreshQueued": "Background task has been queued. Refresh the list later to see updates.",
       "refreshAlreadyRunning": "A refresh job for this corporation is already running.",
-      "alertScanTriggered": "QQ structure alert scan triggered",
-      "alertScanTriggerFailed": "Failed to trigger QQ structure alert scan",
       "selectCorporationFirst": "Select a corporation first"
     },
     "salary": {
@@ -3196,30 +3188,17 @@
     "providers": {
       "discord": "Discord",
       "feishu": "Feishu",
-      "dingtalk": "DingTalk",
-      "onebot": "OneBot v11 (QQ)",
-      "qqGovernanceOnebot": "QQ Group Governance OneBot"
-    },
+      "dingtalk": "DingTalk"
+     },
     "fields": {
       "enabled": "Enabled",
       "url": "Webhook URL",
       "urlPlaceholder": "https://discord.com/api/webhooks/...",
-      "obUrlPlaceholder": "http://127.0.0.1:5700",
       "type": "@:common.type",
       "template": "Message Template",
       "templatePlaceholder": "Enter message template with variable placeholders",
-      "templateHint": "Available variables",
-      "obTargetType": "Target Type",
-      "obGroup": "Group",
-      "obPrivate": "Private",
-      "obTargetId": "Target ID",
-      "obTargetIdPlaceholder": "Group ID or User QQ",
-      "obToken": "Access Token",
-      "obTokenPlaceholder": "Leave blank for no authentication",
-      "qqGroupIds": "QQ Group IDs",
-      "qqGroupIdsPlaceholder": "One QQ group ID per line",
-      "qqGroupIdsHint": "Sends via the reverse WebSocket connection managed by QQ group governance. No URL or token required."
-    },
+      "templateHint": "Available variables"
+      },
     "test": {
       "title": "Test",
       "url": "Test URL",
@@ -3227,12 +3206,9 @@
       "content": "Test Content",
       "contentPlaceholder": "Leave blank for default test message",
       "sendBtn": "Send Test",
-      "success": "Test message sent",
-      "qqGroupIdsHint": "Test send only enqueues a notify task. Actual delivery depends on the QQ governance worker and OneBot connection."
-    },
+      "success": "Test message sent"
+     },
     "messages": {
-      "invalidQQGroupId": "QQ group ID must be a positive integer",
-      "qqGroupIdsRequired": "At least one QQ group ID is required"
     }
   },
   "system": {
@@ -3268,12 +3244,6 @@
       "alliancePapConfig": "Alliance PAP Configuration",
       "alliancePapBaseUrl": "API URL",
       "alliancePapApiKey": "API Key",
-      "oneBotConfig": "OneBot Group Governance Configuration",
-      "oneBotEnabled": "Enable Reverse Connection",
-      "oneBotAccessToken": "Access Token",
-      "oneBotBotQQ": "Bot QQ",
-      "oneBotAllowedCIDRs": "Allowed CIDRs",
-      "oneBotAllowedCIDRsHint": "Enter one CIDR per line. Empty values reject OneBot connections.",
       "mumbleConfig": "Mumble Connection",
       "mumbleServerUrl": "Mumble Management URL",
       "mumbleNodes": "Server nodes (shown to users)",
@@ -3430,135 +3400,5 @@
         "rewardAmount": "Enter an integer reward amount greater than 0"
       }
     }
-  },
-  "qqGovernance": {
-    "title": "QQ Group Governance",
-    "description": "Manage group eligibility, member reconciliation, automated actions, and runtime risk.",
-    "tabs": {
-      "policies": "Policies",
-      "members": "Members & Reviews",
-      "tasks": "Action Tasks",
-      "alerts": "Governance Alerts",
-      "runtime": "Connection & Metrics"
-    },
-    "actions": {
-      "addPolicy": "Add Policy",
-      "edit": "Edit",
-      "delete": "Delete",
-      "save": "Save Policy",
-      "reconcile": "Reconcile Now",
-      "recoverDisconnected": "Recover Connection-blocked Tasks",
-      "retry": "Retry Dead Task",
-      "ack": "Acknowledge",
-      "resetRisk": "Reset Circuit",
-      "approve": "Approve",
-      "reject": "Reject",
-      "card": "Sync Card",
-      "kick": "Kick"
-    },
-    "fields": {
-      "groupId": "Group ID",
-      "enabled": "Enabled",
-      "botAdmin": "Bot Administrator",
-      "corporations": "Allowed Corporations",
-      "roles": "Allowed Roles",
-      "autoReject": "Auto reject unmatched requests",
-      "violationPolicy": "Violation Policy",
-      "scanInterval": "Scan Interval (minutes)",
-      "confirmations": "Confirmations",
-      "observation": "Observation (hours)",
-      "cardTemplate": "Group Card Template",
-      "cardSync": "Sync Card on Reconciliation",
-      "status": "Status",
-      "qq": "QQ",
-      "decision": "Decision",
-      "reason": "Reason",
-      "actionType": "Action",
-      "retryCount": "Retries",
-      "error": "Error",
-      "message": "Message",
-      "risk": "Risk Level",
-      "connection": "Bot Connection",
-      "rateLimit": "Rate Limit",
-      "globalLimit": "Global Limit",
-      "groupLimit": "Group Limit",
-      "failureRate": "Failure Rate",
-      "dead": "Dead Tasks"
-    },
-    "values": {
-      "reviewOnly": "Review only",
-      "autoKick": "Auto kick after confirmation",
-      "connected": "Connected",
-      "disconnected": "Disconnected",
-      "yes": "Yes",
-      "no": "No",
-      "unknown": "Unknown",
-      "normal": "Normal",
-      "rateUnavailable": "Unavailable"
-    },
-    "placeholders": {
-      "corporations": "Enter a corporation ID and press Enter",
-      "roles": "Select allowed roles",
-      "cardTemplate": "e.g. {nickname}-{primary_character_name}"
-    },
-    "messages": {
-      "saveSuccess": "Policy saved",
-      "deleteConfirm": "Delete this group policy?",
-      "actionSuccess": "Governance action created",
-      "reconcileSuccess": "Reconciliation task created",
-      "reconcileCreated": "Reconciliation task created",
-      "reconcileResumed": "Blocked reconciliation task resumed",
-      "reconcileRunning": "Reconciliation is already running",
-      "reconcileBlocked": "Reconciliation is blocked by a non-connection error; retry the dead task after resolving it",
-      "recoverDisconnectedConfirm": "Recover all tasks blocked by a disconnected OneBot connection?",
-      "recoverDisconnectedSuccess": "Recovered {count} connection-blocked task(s)",
-      "rateLimitWaiting": "Waiting {milliseconds} ms",
-      "rateLimitAvailable": "{tokens} / {capacity} tokens available",
-      "riskReset": "Circuit breaker reset"
-    },
-    "v2": {
-      "rules": "Group Rules",
-      "groups": "Group Status",
-      "operations": "Monitoring & Tasks",
-      "settings": "OneBot & Global Settings",
-      "groupName": "Group Name",
-      "members": "Members",
-      "snapshot": "Data State",
-      "valid": "Valid",
-      "review": "Needs Review",
-      "invalid": "Unmatched",
-      "lastSync": "Last Sync",
-      "queue": "Task Queue",
-      "history": "Review History",
-      "globalSettings": "Global Governance Settings",
-      "saveSettings": "Save Global Settings",
-      "settingsSaved": "Global settings saved",
-      "templateHint": "Available placeholders: {nickname}, {primary_character_name}, {primary_corporation_name}; maximum 100 characters.",
-      "cardSyncHint": "When enabled, every full reconciliation updates matched members' group card to match the template.",
-      "corpSearch": "Search corporation name",
-      "notSynced": "Never synced",
-      "stale": "Stale",
-      "fresh": "Fresh",
-      "memberCount": "Member Count",
-      "overview": "Monitoring Overview",
-      "progress": "Reconciliation Progress",
-      "snapshotTask": "Member Snapshot",
-      "groupInfoTask": "Group Info Refresh",
-      "computeTask": "Batch Evaluation",
-      "runPending": "Pending",
-      "runRunning": "Running",
-      "runCompleted": "Completed",
-      "runFailed": "Failed",
-      "statusPending": "Pending",
-      "statusRunning": "Running",
-      "statusRetryWait": "Waiting to retry",
-      "statusSucceeded": "Succeeded",
-      "statusDead": "Dead",
-      "statusOpen": "Open",
-      "statusAcknowledged": "Acknowledged",
-      "decisionMatched": "Matched",
-      "decisionUnmatched": "Unmatched",
-      "decisionWait": "Needs review"
-    }
   }
-}
+ }

@@ -53,8 +53,6 @@ const mockCorporationStructureFetches = (items: Array<Record<string, unknown>>) 
         ],
         fuel_notice_threshold_days: 7,
         timer_notice_threshold_days: 5,
-        alert_enabled: true,
-        alert_group_ids: [123456],
       })
     }
     if (url.includes('/filter-options')) {
@@ -109,8 +107,6 @@ describe('dashboard corporation structures page', () => {
               ],
               fuel_notice_threshold_days: 7,
               timer_notice_threshold_days: 5,
-              alert_enabled: true,
-              alert_group_ids: [123456],
             },
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -222,7 +218,7 @@ describe('dashboard corporation structures page', () => {
     expect(inactiveToggle).toHaveAttribute('data-variant', 'default')
 
     await userEvent.click(screen.getByRole('tab', { name: '设置' }))
-    expect(await screen.findByText('手动巡查 QQ 建筑预警')).toBeInTheDocument()
+    expect(screen.queryByText('手动巡查 QQ 建筑预警')).not.toBeInTheDocument()
 
     const listCall = fetchSpy.mock.calls.find(([input]) =>
       String(input).includes('/api/v1/dashboard/corporation-structures/list')

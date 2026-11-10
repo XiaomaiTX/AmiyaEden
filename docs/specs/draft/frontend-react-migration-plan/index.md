@@ -44,7 +44,7 @@ source_of_truth:
 - React 壳层的 `SidebarContext` 已从 `sidebar.tsx` 拆出为独立模块，侧边栏状态、移动端展开状态、cookie 记忆和快捷键切换属于已完成基座能力，不单独占用业务批次。
 - Stage 0A 已完成当前已迁移 React 页面与 Vue 的 capability/menu/button parity；具体 AND/OR 语义和 reserved key 规则以 `docs/architecture/routing-and-menus.md` 与 `docs/features/current/corporation-access-policy.md` 为准。
 - 冻结期后的 `/characters` 与 `/dashboard/fuel-officer-structures` 已完成 React 对齐。
-- `/dashboard/galaxy-registry` 与 `/system/qq-governance` 已具备 React 路由、API、类型和基础业务页，但完整管理行为仍按 `./todolist.md` 的明确缺口继续追赶。
+- `/dashboard/galaxy-registry` 已具备 React 路由、API、类型和基础业务页，但完整管理行为仍按 `./todolist.md` 的明确缺口继续追赶。
 - `/fuxi-hall/{leadership, contributors, manage}` 与 `/info/tool-bookmarks` 已完成 React 对齐。
 - Vue 侧已于 2026-05-12 移除 `hall-of-fame/*`，被 `fuxi-hall` 模块取代；React 已迁移 `fuxi-hall/*` 并移除三条历史遗留 stub。
 - 基础设施已完成业务路由懒加载、启动 `/me` 刷新、资料/ESI 锁、按人物隔离的侧边栏菜单组展开状态、`PermissionGate`/`RoleGate`、badge store/菜单徽章与 TanStack `DataTable`。其余 store 只在出现真实跨页状态需求时拆分，详见 `./component-replacement-list.md`。
@@ -70,3 +70,5 @@ source_of_truth:
 ## 已实现：军团技能达标页面
 
 仪表盘新增 `/dashboard/skill-readiness`，Vue 与 React 路由、菜单、wrapper、类型、本地化和页面均已实现；权限为 Login、admin/super_admin、`menu.dashboard`。页面包含军团多选、共享军团方案单选、全范围统计、分页用户表格、角色展开及方案比对/全部技能详情；筛选与分页保存在 URL。行为和后端契约见 [军团技能达标查询](../../../features/current/dashboard-skill-readiness.md)。
+
+历史范围变更（2026-11-10）：QQ 群治理已下线，不再属于双前端迁移或验收范围。

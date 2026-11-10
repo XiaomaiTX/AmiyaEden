@@ -61,7 +61,6 @@ export type AppPageType =
   | 'system-webhook'
   | 'system-basic-config'
   | 'system-newbro-settings'
-  | 'system-qq-governance'
   | 'srp-apply'
   | 'srp-manage'
   | 'srp-prices'
@@ -798,18 +797,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
       corpCapabilitiesAny: ['system.basic_config.read'],
     },
   },
-  {
-    path: 'system/qq-governance',
-    titleKey: 'nav.system.qqGovernance',
-    pageType: 'system-qq-governance',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
-    meta: {
-      roles: ['super_admin'],
-      login: true,
-      corpCapabilitiesAny: ['system.manage'],
-    },
-  },
 ]
 
 const appRouteOrder = [
@@ -875,7 +862,6 @@ const appRouteOrder = [
   'system/auto-role',
   'system/user-center',
   'system/webhook',
-  'system/qq-governance',
   'system/newbro-settings',
   'system/basic-config',
 ] as const

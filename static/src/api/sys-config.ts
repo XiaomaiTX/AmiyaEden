@@ -87,14 +87,6 @@ export function updateAlliancePAPConfig(data: Api.SysConfig.UpdateAlliancePAPCon
   return request.put({ url: '/api/v1/system/alliance-pap-config', data })
 }
 
-export function fetchOneBotConfig() {
-  return request.get<Api.SysConfig.OneBotConfig>({ url: '/api/v1/system/onebot-config' })
-}
-
-export function updateOneBotConfig(data: Api.SysConfig.UpdateOneBotConfigParams) {
-  return request.put({ url: '/api/v1/system/onebot-config', data })
-}
-
 /** 获取 SDE 状态 */
 export function fetchSDEStatus() {
   return request.get<Api.SysConfig.SDEStatus>({

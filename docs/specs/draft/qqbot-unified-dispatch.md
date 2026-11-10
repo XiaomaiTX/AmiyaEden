@@ -1,5 +1,5 @@
 ---
-status: draft
+status: deprecated
 doc_type: draft
 owner: engineering
 last_reviewed: 2026-09-04
@@ -28,6 +28,8 @@ related_docs:
   - docs/architecture/module-map.md
   - docs/api/route-index.md
 ---
+
+> 历史 / 已被替代（2026-11-10）：旧 QQ Bot 实现已完整移除；本文仅留作历史设计记录，不描述当前能力，也不构成第二阶段实现要求。参见 [下线边界](../../features/current/qq-group-governance.md)。
 
 # QQ 机器人统一调度层：现状技术评审与重构方案
 

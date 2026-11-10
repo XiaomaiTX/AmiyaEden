@@ -171,3 +171,9 @@ source_of_truth:
 ## 军团技能管理查询
 
 - [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。
+
+## QQ Bot 下线
+
+- [当前下线边界](features/current/qq-group-governance.md)
+- [数据库清理与删除清单](guides/qq-bot-retirement-cleanup.md)
+- [第二阶段业务场景](specs/draft/qq-bot-business-scenarios.md)

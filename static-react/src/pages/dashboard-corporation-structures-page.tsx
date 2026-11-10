@@ -1,4 +1,3 @@
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -32,12 +31,9 @@ import {
   updateCorporationStructureAuthorizations,
   updateStructureServiceCatalog,
 } from '@/api/corporation-structures'
-import { runTask } from '@/api/task-manager'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import { fuelExpiryMonthOffset } from '@/lib/format'
 import type {
@@ -212,31 +208,24 @@ function normalizeServiceCatalog(
 
 export function DashboardCorporationStructuresPage() {
   const { t } = useI18n()
-  const { hasCapability } = useCorpCapability()
   const location = useLocation()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [savingAuthorizations, setSavingAuthorizations] = useState(false)
   const [savingServiceCatalog, setSavingServiceCatalog] = useState(false)
-  const [alertScanRunning, setAlertScanRunning] = useState(false)
   const [runningTaskCorpId, setRunningTaskCorpId] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
-  const [alertScanMessage, setAlertScanMessage] = useState<string | null>(null)
   const [settings, setSettings] = useState<CorporationStructuresSettings>({
     corporations: [],
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7,
-    alert_enabled: false,
-    alert_group_ids: [],
   })
   const [noticeThresholds, setNoticeThresholds] = useState({
     fuel_notice_threshold_days: 7,
     timer_notice_threshold_days: 7,
   })
-  const [alertEnabled, setAlertEnabled] = useState(false)
-  const [alertGroupIDsText, setAlertGroupIDsText] = useState('')
   const [authorizationByCorp, setAuthorizationByCorp] = useState<Record<number, number>>({})
   const [serviceCatalog, setServiceCatalog] = useState<StructureServiceCatalog>({
     modules: [],
@@ -297,7 +286,6 @@ export function DashboardCorporationStructuresPage() {
   }))
 
   const activeTab = normalizeTab(new URLSearchParams(location.search).get('tab'))
-  const canRunAlertScan = hasCapability('system.task.run')
 
   const setTab = (tab: ActiveTab) => {
     const searchParams = new URLSearchParams(location.search)
@@ -325,8 +313,6 @@ export function DashboardCorporationStructuresPage() {
         fuel_notice_threshold_days: data.fuel_notice_threshold_days,
         timer_notice_threshold_days: data.timer_notice_threshold_days,
       })
-      setAlertEnabled(data.alert_enabled)
-      setAlertGroupIDsText(data.alert_group_ids.join('\n'))
       const nextAuth: Record<number, number> = {}
       data.corporations.forEach((corp) => {
         nextAuth[corp.corporation_id] = corp.authorized_character_id || 0
@@ -378,8 +364,6 @@ export function DashboardCorporationStructuresPage() {
           fuel_notice_threshold_days: settingsData.fuel_notice_threshold_days,
           timer_notice_threshold_days: settingsData.timer_notice_threshold_days,
         })
-        setAlertEnabled(settingsData.alert_enabled)
-        setAlertGroupIDsText(settingsData.alert_group_ids.join('\n'))
         const nextAuth: Record<number, number> = {}
         settingsData.corporations.forEach((corp) => {
           nextAuth[corp.corporation_id] = corp.authorized_character_id || 0
@@ -546,8 +530,6 @@ export function DashboardCorporationStructuresPage() {
         })),
         fuel_notice_threshold_days: noticeThresholds.fuel_notice_threshold_days,
         timer_notice_threshold_days: noticeThresholds.timer_notice_threshold_days,
-        alert_enabled: alertEnabled,
-        alert_group_ids: parseAlertGroupIDs(alertGroupIDsText),
       })
       await loadSettings()
     } finally {
@@ -569,26 +551,6 @@ export function DashboardCorporationStructuresPage() {
       await loadSettings()
     } finally {
       setSavingServiceCatalog(false)
-    }
-  }
-
-  const handleRunAlertScan = async () => {
-    if (!window.confirm(t('corporationStructures.confirm.runAlertScan'))) {
-      return
-    }
-
-    setAlertScanRunning(true)
-    setSettingsError(null)
-    setAlertScanMessage(null)
-    try {
-      await runTask('corporation_structure_alert_scan')
-      setAlertScanMessage(t('corporationStructures.messages.alertScanTriggered'))
-    } catch (caughtError) {
-      setSettingsError(
-        getErrorMessage(caughtError, t('corporationStructures.messages.alertScanTriggerFailed'))
-      )
-    } finally {
-      setAlertScanRunning(false)
     }
   }
 
@@ -1224,9 +1186,6 @@ export function DashboardCorporationStructuresPage() {
           </div>
 
           {settingsError ? <p className="text-sm text-destructive">{settingsError}</p> : null}
-          {alertScanMessage ? (
-            <p className="text-sm text-muted-foreground">{alertScanMessage}</p>
-          ) : null}
           {settingsLoading ? (
             <p className="text-sm text-muted-foreground">{t('common.refresh')}</p>
           ) : null}
@@ -1249,40 +1208,6 @@ export function DashboardCorporationStructuresPage() {
               />
               <span className="text-sm text-muted-foreground">
                 {t('corporationStructures.settings.daysUnit')}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <label
-                className="flex items-center gap-2 text-sm text-muted-foreground"
-                htmlFor="corporation-structure-alert-enabled"
-              >
-                <Checkbox
-                  id="corporation-structure-alert-enabled"
-                  isSelected={alertEnabled}
-                  onChange={(selected) => setAlertEnabled(selected === true)}
-                />
-                {t('corporationStructures.settings.alertEnabled')}
-              </label>
-            </div>
-
-            <div className="flex flex-wrap items-start gap-3">
-              <label
-                className="text-sm text-muted-foreground"
-                htmlFor="corporation-structure-alert-groups"
-              >
-                {t('corporationStructures.settings.alertGroupIDs')}
-              </label>
-              <Textarea
-                id="corporation-structure-alert-groups"
-                className="min-h-20 w-80"
-                value={alertGroupIDsText}
-                disabled={!alertEnabled}
-                placeholder={t('corporationStructures.settings.alertGroupIDsPlaceholder')}
-                onChange={(event) => setAlertGroupIDsText(event.target.value)}
-              />
-              <span className="text-sm text-muted-foreground">
-                {t('corporationStructures.settings.alertGroupIDsHint')}
               </span>
             </div>
 
@@ -1323,16 +1248,6 @@ export function DashboardCorporationStructuresPage() {
             >
               {t('corporationStructures.actions.save')}
             </Button>
-            {canRunAlertScan ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void handleRunAlertScan()}
-                isDisabled={!settings.alert_enabled || alertScanRunning}
-              >
-                {t('corporationStructures.actions.runAlertScan')}
-              </Button>
-            ) : null}
           </div>
 
           <div className="overflow-hidden rounded-lg border">
@@ -1542,12 +1457,4 @@ export function DashboardCorporationStructuresPage() {
       ) : null}
     </section>
   )
-}
-
-function parseAlertGroupIDs(value: string): number[] {
-  return value
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-    .map((item) => Number(item))
 }

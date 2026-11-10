@@ -21,7 +21,7 @@ source_of_truth:
 - React API 封装调用：`static-react/src/api/*.ts`（27 个模块，含 `http-client.ts` 与 `response.ts`）。
 - React 子应用当前状态：已切换为本地契约文件，不再读取 Vue 类型文件；`static-react/src/types/api-contract.d.ts` 已移除 Vue 共享 import。
 - 业务域覆盖：auth、dashboard、eve-info、npc-kill、corporation-structures、fleet、fleet-config、alliance-pap、pap-exchange、skill-plan、shop、srp、ticket、welfare、newbro、mentor、system-manage、sys-wallet、sys-config、task-manager、audit、webhook、upload、tool-bookmark。
-- 漂移追赶：`qq-governance`、`galaxy-registry` 与 `fuel-officer-structures` 均已建立 React 本地类型和 API wrapper；Galaxy Registry 与 QQ Governance 的完整页面同构已关闭，后续字段变更按本方案同步维护。
+- 漂移追赶：`galaxy-registry` 与 `fuel-officer-structures` 均已建立 React 本地类型和 API wrapper；Galaxy Registry 的完整页面同构已关闭，后续字段变更按本方案同步维护。
 
 ## 迁移原则
 
@@ -42,7 +42,7 @@ source_of_truth:
 
 - `static-react/src/types/api/` 已按业务域建立 25 个类型文件。
 - 页面与组件只依赖模块导出，不再直接耦合 `Api.*`。
-- 后续新增业务域（如 `qq-governance`、`galaxy-registry`）必须沿用该结构新增类型文件。
+- 后续新增业务域（如 `galaxy-registry`）必须沿用该结构新增类型文件。
 
 ### Step 3：封装与页面迁移（持续）
 
@@ -66,3 +66,5 @@ source_of_truth:
 - 防护：静态检查禁止 `static/src` 引用和 `Api.` 全局命名空间残留。
 - 风险：Vue 侧持续新增业务域（如 2026-05 后的 `qq-governance`）造成 React 类型出口滞后。
 - 防护：将“漂移追赶项”纳入 `migration-scope-baseline.md`，每发现一个新业务域立即补建 React 类型出口与 wrapper，不留空白引用。
+
+历史范围变更（2026-11-10）：QQ 群治理已下线，不再属于双前端迁移或验收范围。

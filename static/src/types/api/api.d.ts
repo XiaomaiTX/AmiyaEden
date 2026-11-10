@@ -275,152 +275,6 @@ declare namespace Api {
     }
   }
 
-  namespace QQGovernance {
-    interface Policy {
-      id: number
-      group_id: number
-      enabled: boolean
-      allowed_corporation_ids: number[]
-      allowed_corporations: CorporationOption[]
-      allowed_role_codes: string[]
-      auto_reject_unmatched: boolean
-      member_violation_policy: 'review_only' | 'auto_kick_after_confirmed_mismatch'
-      card_template: string
-      card_sync_enabled: boolean
-      updated_by: number
-      updated_at: string
-    }
-    interface PageResult<T> {
-      list: T[]
-      total: number
-      page: number
-      page_size: number
-    }
-    interface MemberState {
-      id: number
-      group_id: number
-      qq: number
-      user_id: number
-      status: string
-      target_card: string
-      version: number
-      mismatch_count: number
-      unknown_count: number
-      last_checked_at: string
-    }
-    interface Review {
-      id: number
-      group_id: number
-      qq: number
-      source: string
-      decision: string
-      reason: string
-      user_id: number
-      nickname: string
-      primary_character_name: string
-      primary_corporation_name: string
-      created_at: string
-    }
-    interface ActionTask {
-      id: number
-      run_id: number
-      action_type: string
-      group_id: number
-      qq: number
-      target_version: number
-      status: string
-      priority: number
-      retry_count: number
-      retry_cause: string
-      run_after: string
-      last_error: string
-      source: string
-      created_at: string
-      completed_at?: string | null
-    }
-    interface Alert {
-      id: number
-      kind: string
-      group_id: number
-      qq: number
-      task_id: number
-      status: string
-      message: string
-      acknowledged_by: number
-      created_at: string
-    }
-    interface Metrics {
-      window_minutes: number
-      created: number
-      succeeded: number
-      failed: number
-      dead: number
-      failure_rate: number
-      connected: boolean
-      risk_level: number
-    }
-    interface Connection {
-      connected: boolean
-      risk_level: number
-      rate_limit: RateLimitStatus
-    }
-    interface RateLimitBucket {
-      capacity: number
-      tokens: number
-      wait_ms: number
-    }
-    interface RateLimitStatus {
-      available: boolean
-      global: RateLimitBucket
-      groups: Array<{ group_id: number; bucket: RateLimitBucket }>
-    }
-    interface RecoveryResult {
-      recovered_tasks: number
-    }
-    interface ReconcileResult {
-      status: 'created' | 'resumed' | 'running' | 'blocked'
-      recovered_tasks: number
-    }
-    interface Settings {
-      scan_interval_minutes: number
-      mismatch_confirmations: number
-      mismatch_observation_hours: number
-    }
-    interface GroupStatus {
-      group_id: number
-      group_name: string
-      enabled: boolean
-      member_count: number
-      max_member_count: number
-      bot_is_admin: boolean | null
-      valid_count: number
-      review_count: number
-      invalid_candidate_count: number
-      invalid_confirmed_count: number
-      last_synced_at: string | null
-      snapshot_state: 'fresh' | 'stale' | 'never_synced'
-      reconcile_run_status: 'pending' | 'running' | 'completed' | 'failed' | ''
-      reconcile_expected: number
-      reconcile_processed: number
-      reconcile_failed: number
-      reconcile_started_at: string | null
-      reconcile_completed_at: string | null
-    }
-    interface CorporationOption {
-      corporation_id: number
-      corporation_name: string
-    }
-    type PageParams = Partial<{
-      page: number
-      page_size: number
-      group_id: number
-      qq: number
-      status: string
-      decision: string
-      action_type: string
-    }>
-  }
-
   /** ESI 刷新队列类型 */
   namespace ESIRefresh {
     /** 任务定义信息 */
@@ -2185,8 +2039,6 @@ declare namespace Api {
       corporations: CorporationStructureManageCorporationOption[]
       fuel_notice_threshold_days: number
       timer_notice_threshold_days: number
-      alert_enabled: boolean
-      alert_group_ids: number[]
     }
 
     interface CorporationStructureAuthorizationBinding {
@@ -2198,8 +2050,6 @@ declare namespace Api {
       authorizations: CorporationStructureAuthorizationBinding[]
       fuel_notice_threshold_days?: number
       timer_notice_threshold_days?: number
-      alert_enabled?: boolean
-      alert_group_ids?: number[]
     }
 
     interface CorporationStructureRunTaskRequest {
@@ -3397,16 +3247,11 @@ declare namespace Api {
 
   /** Webhook 配置 */
   namespace Webhook {
-    type Type = 'discord' | 'feishu' | 'dingtalk' | 'onebot' | 'qq_governance_onebot' | string
     interface Config {
       url: string
       enabled: boolean
       type: Type
       fleet_template: string
-      ob_target_type: 'group' | 'private'
-      ob_target_id: number
-      ob_token: string
-      qq_governance_group_ids: number[]
     }
   }
 
@@ -3585,20 +3430,6 @@ declare namespace Api {
     interface UpdateAlliancePAPConfigParams {
       base_url?: string
       api_key?: string
-    }
-
-    interface OneBotConfig {
-      enabled: boolean
-      access_token: string
-      bot_qq: number
-      allowed_cidrs: string[]
-    }
-
-    interface UpdateOneBotConfigParams {
-      enabled?: boolean
-      access_token?: string
-      bot_qq?: number
-      allowed_cidrs?: string[]
     }
 
     interface SDEStatus {

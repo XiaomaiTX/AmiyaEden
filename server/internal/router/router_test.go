@@ -11,6 +11,7 @@ import (
 	"amiya-eden/pkg/jwt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,6 +57,12 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 	RegisterRoutes(r, newTaskRouterTestService(t))
 
 	routes := r.Routes()
+	for _, route := range routes {
+		if strings.Contains(route.Path, "onebot") || strings.Contains(route.Path, "qq-governance") {
+			t.Fatalf("retired QQ route is registered: %s", route.Path)
+		}
+	}
+
 	want := map[string]string{
 		http.MethodGet:  "/api/v1/tasks",
 		http.MethodPost: "/api/v1/tasks/:name/run",

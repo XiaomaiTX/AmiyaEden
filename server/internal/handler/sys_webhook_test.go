@@ -64,10 +64,7 @@ func TestWebhookHandlerSetConfigWritesAuditEvent(t *testing.T) {
 		"url":"https://discord.com/api/webhooks/1/token",
 		"enabled":true,
 		"type":"discord",
-		"fleet_template":"test",
-		"ob_target_type":"group",
-		"ob_target_id":42,
-		"ob_token":"token"
+		"fleet_template":"test"
 	}`)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/system/webhook/config", bytes.NewReader(reqBody))
@@ -110,10 +107,7 @@ func TestWebhookHandlerSetConfigRejectsInvalidURL(t *testing.T) {
 		"url":"https://example.com/webhook",
 		"enabled":true,
 		"type":"discord",
-		"fleet_template":"test",
-		"ob_target_type":"group",
-		"ob_target_id":42,
-		"ob_token":"token"
+		"fleet_template":"test"
 	}`)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/system/webhook/config", bytes.NewReader(reqBody))
@@ -139,9 +133,7 @@ func TestWebhookHandlerTestWebhookRejectsInvalidURL(t *testing.T) {
 
 	reqBody := []byte(`{
 		"url":"ftp://onebot.example.com",
-		"type":"onebot",
-		"ob_target_type":"group",
-		"ob_target_id":42
+		"type":"onebot"
 	}`)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/webhook/test", bytes.NewReader(reqBody))

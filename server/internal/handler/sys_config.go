@@ -119,42 +119,6 @@ func (h *SysConfigHandler) UpdateAlliancePAPConfig(c *gin.Context) {
 	response.OK(c, nil)
 }
 
-type OneBotConfigResponse struct {
-	Enabled      bool     `json:"enabled"`
-	AccessToken  string   `json:"access_token"`
-	BotQQ        int64    `json:"bot_qq"`
-	AllowedCIDRs []string `json:"allowed_cidrs"`
-}
-
-type UpdateOneBotConfigRequest struct {
-	Enabled      *bool     `json:"enabled"`
-	AccessToken  *string   `json:"access_token"`
-	BotQQ        *int64    `json:"bot_qq"`
-	AllowedCIDRs *[]string `json:"allowed_cidrs"`
-}
-
-func (h *SysConfigHandler) GetOneBotConfig(c *gin.Context) {
-	cfg := h.cfgSvc.GetOneBotConfig()
-	response.OK(c, OneBotConfigResponse{Enabled: cfg.Enabled, AccessToken: cfg.AccessToken, BotQQ: cfg.BotQQ, AllowedCIDRs: cfg.AllowedCIDRs})
-}
-
-func (h *SysConfigHandler) UpdateOneBotConfig(c *gin.Context) {
-	var req UpdateOneBotConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
-	if err := h.cfgSvc.UpdateOneBotConfig(req.Enabled, req.AccessToken, req.BotQQ, req.AllowedCIDRs); err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
-	}
-	h.recordConfigAudit(c, "onebot_config_update", model.SysConfigOneBotEnabled, map[string]any{
-		"enabled_updated": req.Enabled != nil, "bot_qq_updated": req.BotQQ != nil,
-		"allowed_cidrs_updated": req.AllowedCIDRs != nil, "access_token_updated": req.AccessToken != nil,
-	})
-	response.OK(c, nil)
-}
-
 func (h *SysConfigHandler) GetMumbleConfig(c *gin.Context) {
 	response.OK(c, h.cfgSvc.GetMumbleConfig())
 }

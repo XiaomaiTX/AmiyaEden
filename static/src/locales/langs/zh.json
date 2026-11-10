@@ -531,7 +531,6 @@
       "autoRole": "自动权限",
       "audit": "审计日志",
       "webhook": "Webhook 通知",
-      "qqGovernance": "QQ 群治理",
       "basicConfig": "@:setting.basics.title"
     },
     "fuxiHall": {
@@ -2688,9 +2687,8 @@
     },
     "actions": {
       "openFilters": "打开筛选",
-      "refreshSelected": "触发所选军团后台刷新任务",
-      "runAlertScan": "手动巡查 QQ 建筑预警"
-    },
+      "refreshSelected": "触发所选军团后台刷新任务"
+     },
     "serviceCatalog": {
       "title": "服务活动目录",
       "hint": "仅为新观察到的在线活动配置候选模块；系统映射已验证，并会与建筑实际安装的服务槽位模块交叉判定。",
@@ -2714,10 +2712,6 @@
       "noticeThresholds": "通知阈值",
       "fuelNoticeThreshold": "燃料剩余阈值",
       "timerNoticeThreshold": "增强时间阈值",
-      "alertEnabled": "启用 QQ 建筑预警",
-      "alertGroupIDs": "QQ 预警群号",
-      "alertGroupIDsPlaceholder": "每行一个 QQ 群号",
-      "alertGroupIDsHint": "启用预警时至少配置一个群号",
       "daysUnit": "天",
       "noticeThresholdHint": "0 = 关闭提醒"
     },
@@ -2773,8 +2767,6 @@
       "authorizationSaved": "授权配置已保存",
       "refreshQueued": "已触发后台任务，请稍后刷新列表查看结果",
       "refreshAlreadyRunning": "该军团建筑刷新任务正在执行，请稍后重试",
-      "alertScanTriggered": "QQ 建筑预警巡查已触发",
-      "alertScanTriggerFailed": "QQ 建筑预警巡查触发失败",
       "selectCorporationFirst": "请先选择一个军团"
     },
     "salary": {
@@ -2943,30 +2935,17 @@
     "providers": {
       "discord": "Discord",
       "feishu": "飞书 (Feishu)",
-      "dingtalk": "钉钉 (DingTalk)",
-      "onebot": "OneBot v11 (QQ)",
-      "qqGovernanceOnebot": "QQ 群治理 OneBot"
-    },
+      "dingtalk": "钉钉 (DingTalk)"
+     },
     "fields": {
       "enabled": "启用",
       "url": "Webhook URL",
       "urlPlaceholder": "https://discord.com/api/webhooks/...",
-      "obUrlPlaceholder": "http://127.0.0.1:5700",
       "type": "@:common.type",
       "template": "消息模板",
       "templatePlaceholder": "输入消息模板，支持变量替换",
-      "templateHint": "可用变量",
-      "obTargetType": "目标类型",
-      "obGroup": "群组",
-      "obPrivate": "私聊",
-      "obTargetId": "目标 ID",
-      "obTargetIdPlaceholder": "群号或用户 QQ",
-      "obToken": "Access Token",
-      "obTokenPlaceholder": "留空则不使用身份验证",
-      "qqGroupIds": "QQ 群号",
-      "qqGroupIdsPlaceholder": "每行一个 QQ 群号",
-      "qqGroupIdsHint": "使用 QQ 群治理已建立的反向 WebSocket 连接发送，无需填写 URL 或 Token。"
-    },
+      "templateHint": "可用变量"
+      },
     "test": {
       "title": "测试发送",
       "url": "测试 URL",
@@ -2974,12 +2953,9 @@
       "content": "测试内容",
       "contentPlaceholder": "留空则使用默认测试文本",
       "sendBtn": "发送测试",
-      "success": "测试消息已发送",
-      "qqGroupIdsHint": "测试发送只会将通知任务入队，是否成功送达由 QQ 群治理 Worker 与 OneBot 连接决定。"
-    },
+      "success": "测试消息已发送"
+     },
     "messages": {
-      "invalidQQGroupId": "QQ 群号必须为正整数",
-      "qqGroupIdsRequired": "请至少填写一个 QQ 群号"
     }
   },
   "system": {
@@ -3015,12 +2991,6 @@
       "alliancePapConfig": "联盟 PAP 配置",
       "alliancePapBaseUrl": "API 地址",
       "alliancePapApiKey": "API Key",
-      "oneBotConfig": "OneBot 群治理配置",
-      "oneBotEnabled": "启用反向连接",
-      "oneBotAccessToken": "Access Token",
-      "oneBotBotQQ": "机器人 QQ",
-      "oneBotAllowedCIDRs": "受控网段",
-      "oneBotAllowedCIDRsHint": "每行输入一个 CIDR；留空时 OneBot 连接会被拒绝。",
       "mumbleConfig": "Mumble 连接设置",
       "mumbleServerUrl": "Mumble 管理地址",
       "mumbleNodes": "服务器节点（对用户展示）",
@@ -3177,135 +3147,5 @@
         "rewardAmount": "请输入大于 0 的整数奖励数量"
       }
     }
-  },
-  "qqGovernance": {
-    "title": "QQ 群治理",
-    "description": "管理群准入、成员巡检、自动动作和运行风险。",
-    "tabs": {
-      "policies": "群规则",
-      "members": "成员与审查",
-      "tasks": "动作任务",
-      "alerts": "治理告警",
-      "runtime": "连接与指标"
-    },
-    "actions": {
-      "addPolicy": "新增群规则",
-      "edit": "编辑",
-      "delete": "删除",
-      "save": "保存规则",
-      "reconcile": "立即巡检",
-      "recoverDisconnected": "恢复连接阻塞任务",
-      "retry": "重试死信",
-      "ack": "确认告警",
-      "resetRisk": "解除熔断",
-      "approve": "批准",
-      "reject": "拒绝",
-      "card": "同步名片",
-      "kick": "清退"
-    },
-    "fields": {
-      "groupId": "群号",
-      "enabled": "启用",
-      "botAdmin": "机器人管理员",
-      "corporations": "允许军团",
-      "roles": "允许职权",
-      "autoReject": "自动拒绝不匹配申请",
-      "violationPolicy": "成员违规策略",
-      "scanInterval": "扫描间隔（分钟）",
-      "confirmations": "确认次数",
-      "observation": "观察期（小时）",
-      "cardTemplate": "群名片模板",
-      "cardSync": "巡检时同步名片",
-      "status": "状态",
-      "qq": "QQ",
-      "decision": "判断",
-      "reason": "原因",
-      "actionType": "动作类型",
-      "retryCount": "重试次数",
-      "error": "错误",
-      "message": "消息",
-      "risk": "风险等级",
-      "connection": "机器人连接",
-      "rateLimit": "限流状态",
-      "globalLimit": "全局限流",
-      "groupLimit": "群限流",
-      "failureRate": "失败率",
-      "dead": "死信任务"
-    },
-    "values": {
-      "reviewOnly": "仅审查",
-      "autoKick": "确认后自动清退",
-      "connected": "已连接",
-      "disconnected": "未连接",
-      "yes": "是",
-      "no": "否",
-      "unknown": "未知",
-      "normal": "正常",
-      "rateUnavailable": "不可用"
-    },
-    "placeholders": {
-      "corporations": "输入军团 ID 后回车",
-      "roles": "选择允许职权",
-      "cardTemplate": "例如 {nickname}-{primary_character_name}"
-    },
-    "messages": {
-      "saveSuccess": "群规则已保存",
-      "deleteConfirm": "确定删除该群规则吗？",
-      "actionSuccess": "治理动作已创建",
-      "reconcileSuccess": "巡检任务已创建",
-      "reconcileCreated": "巡检任务已创建",
-      "reconcileResumed": "已恢复被阻塞的巡检任务",
-      "reconcileRunning": "巡检已在运行中",
-      "reconcileBlocked": "巡检被非连接错误阻塞，请处理后重试死信任务",
-      "recoverDisconnectedConfirm": "确定恢复所有因 OneBot 断连而阻塞的任务吗？",
-      "recoverDisconnectedSuccess": "已恢复 {count} 个连接阻塞任务",
-      "rateLimitWaiting": "等待 {milliseconds} 毫秒",
-      "rateLimitAvailable": "可用令牌 {tokens} / {capacity}",
-      "riskReset": "熔断状态已解除"
-    },
-    "v2": {
-      "rules": "群治理规则",
-      "groups": "群运行情况",
-      "operations": "监控与任务",
-      "settings": "OneBot 与全局设置",
-      "groupName": "群名称",
-      "members": "当前人数",
-      "snapshot": "数据状态",
-      "valid": "有效成员",
-      "review": "待审查",
-      "invalid": "不匹配",
-      "lastSync": "最近同步",
-      "queue": "任务队列",
-      "history": "审查历史",
-      "globalSettings": "全局治理参数",
-      "saveSettings": "保存全局设置",
-      "settingsSaved": "全局设置已保存",
-      "templateHint": "可用占位符：{nickname}、{primary_character_name}、{primary_corporation_name}；最多 100 个字符。",
-      "cardSyncHint": "开启后，每次完整巡检都会按群名片模板更新匹配成员的名片。",
-      "corpSearch": "按军团名称搜索",
-      "notSynced": "从未同步",
-      "stale": "数据过期",
-      "fresh": "最新",
-      "memberCount": "成员数",
-      "overview": "监控概览",
-      "progress": "巡检进度",
-      "snapshotTask": "成员快照",
-      "groupInfoTask": "群资料刷新",
-      "computeTask": "批量核验",
-      "runPending": "待开始",
-      "runRunning": "进行中",
-      "runCompleted": "已完成",
-      "runFailed": "失败",
-      "statusPending": "待执行",
-      "statusRunning": "执行中",
-      "statusRetryWait": "等待重试",
-      "statusSucceeded": "已成功",
-      "statusDead": "已终止",
-      "statusOpen": "未确认",
-      "statusAcknowledged": "已确认",
-      "decisionMatched": "匹配",
-      "decisionUnmatched": "不匹配",
-      "decisionWait": "待审查"
-    }
   }
-}
+ }
