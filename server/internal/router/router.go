@@ -329,17 +329,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	info.POST("/npc-kills/all", requireInfoNpcKillsSelf, npcKillH.GetAllNpcKills)
 
 	// ─── 新人帮扶（用户/队长） ───
-	newbroUserH := handler.NewNewbroUserHandler()
-	newbro := login.Group("/newbro", requireMenuNewbro)
-	{
-		newbro.GET("/captains", newbroUserH.ListCaptains)
-		newbro.GET("/affiliation/me", newbroUserH.GetMyAffiliation)
-		newbro.GET("/affiliations/history", newbroUserH.ListMyAffiliationHistory)
-		newbro.POST("/affiliation/select", newbroUserH.SelectCaptain)
-		newbro.POST("/affiliation/end", newbroUserH.EndAffiliation)
-	}
-
-	// ─── 招募链接（用户）───
 	recruitUser := login.Group("/newbro/recruit", requireMenuNewbro)
 	{
 		recruitUser.POST("/link", recruitH.GenerateLink)
@@ -349,17 +338,13 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		recruitUser.POST("/direct-referral/confirm", recruitH.ConfirmDirectReferrer)
 	}
 
-	newbroCaptainH := handler.NewNewbroCaptainHandler()
-	newbroCaptain := login.Group("/newbro/captain", requireMenuNewbro, middleware.RequireRole(model.RoleCaptain))
-	{
-		newbroCaptain.GET("/overview", newbroCaptainH.GetOverview)
-		newbroCaptain.GET("/players", newbroCaptainH.GetPlayers)
-		newbroCaptain.GET("/attributions", newbroCaptainH.GetAttributions)
-		newbroCaptain.GET("/rewards", newbroCaptainH.GetRewardSettlements)
-		newbroCaptain.GET("/eligible-players", newbroCaptainH.ListEligiblePlayers)
-		newbroCaptain.POST("/enroll", newbroCaptainH.EnrollPlayer)
-		newbroCaptain.POST("/affiliation/end", newbroCaptainH.EndAffiliation)
-	}
+	refundH := handler.NewCaptainRefundHandler()
+	refunds := login.Group("/newbro/captain/refunds", requireMenuNewbro, middleware.RequireRole(model.RoleCaptain))
+	refunds.GET("/options", refundH.Options)
+	refunds.POST("/preview", refundH.Preview)
+	refunds.POST("", refundH.Create)
+	refunds.GET("", refundH.ListMine)
+	refunds.GET("/:id", refundH.DetailMine)
 
 	mentorMenteeH := handler.NewMentorMenteeHandler()
 	mentorMentee := login.Group("/mentor", requireMenuNewbro)
@@ -541,22 +526,20 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	newbroAdminH := handler.NewNewbroAdminHandler()
 	adminNewbro := admin.Group("/newbro", requireMenuNewbro)
 	{
-		adminNewbro.GET("/support-settings", newbroAdminH.GetSupportSettings)
-		adminNewbro.PUT("/support-settings", newbroAdminH.UpdateSupportSettings)
 		adminNewbro.GET("/recruit-settings", newbroAdminH.GetRecruitSettings)
 		adminNewbro.PUT("/recruit-settings", newbroAdminH.UpdateRecruitSettings)
-		adminNewbro.GET("/captains", newbroAdminH.ListCaptains)
-		adminNewbro.GET("/captains/:user_id", newbroAdminH.GetCaptainDetail)
 		// 招募链接管理
 		adminNewbro.GET("/recruit/links", recruitH.GetAdminLinks)
 	}
 
-	// 帮扶记录只读接口：管理员或队长均可访问
-	newbroRecords := login.Group("/system/newbro", requireMenuNewbro, middleware.RequireRole(model.RoleAdmin, model.RoleCaptain))
-	{
-		newbroRecords.GET("/affiliations/history", newbroAdminH.ListAffiliationHistory)
-		newbroRecords.GET("/rewards", newbroAdminH.ListRewardSettlements)
-	}
+	// Captain refunds are reviewed by administrators only.
+	adminRefunds := admin.Group("/newbro/refunds", requireMenuNewbro)
+	adminRefunds.GET("", refundH.ListAdmin)
+	adminRefunds.GET("/:id", refundH.DetailAdmin)
+	adminRefunds.POST("/:id/approve", refundH.Approve)
+	adminRefunds.POST("/:id/reject", refundH.Reject)
+	admin.GET("/config/newbro-refund", requireSystemManage, refundH.GetSettings)
+	admin.PUT("/config/newbro-refund", requireSystemManage, refundH.UpdateSettings)
 
 	mentorAdminH := handler.NewMentorAdminHandler()
 	adminMentor := admin.Group("/mentor", requireMenuNewbro)
@@ -564,8 +547,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminMentor.GET("/relationships", mentorAdminH.ListAllRelationships)
 		adminMentor.GET("/reward-distributions", mentorAdminH.ListRewardDistributions)
 		adminMentor.POST("/revoke", mentorAdminH.RevokeRelationship)
-		adminMentor.GET("/settings", mentorAdminH.GetSettings)
-		adminMentor.PUT("/settings", mentorAdminH.UpdateSettings)
 		adminMentor.GET("/reward-stages", mentorAdminH.GetRewardStages)
 		adminMentor.PUT("/reward-stages", mentorAdminH.UpdateRewardStages)
 		adminMentor.POST("/reward/process", mentorAdminH.RunRewardProcessing)

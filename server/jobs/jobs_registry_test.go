@@ -47,8 +47,6 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"auto_role_sync":                      {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 2/10 * * * *", hasRun: true},
 		"task_execution_history_cleanup":      {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 4 1 * *", hasRun: true},
 		"corp_access_check":                   {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0/5 * * * *", hasRun: true},
-		"captain_attribution_sync":            {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "@every 13h", hasRun: true},
-		"captain_reward_processing":           {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "@every 100h", hasRun: true},
 		"mentor_reward":                       {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 3 * * *", hasRun: true},
 		"auto_srp":                            {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeTriggered, cron: "", hasRun: false},
 		"recruit_link_check":                  {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 2 * * *", hasRun: true},

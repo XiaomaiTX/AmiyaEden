@@ -250,7 +250,7 @@ describe('router auth and route meta access flow', () => {
     })
   })
 
-  test('applies requiresNewbro constraint', async () => {
+  test('applies shared mentor eligibility constraint', async () => {
     useSessionStore.getState().setSessionSnapshot({
       isLoggedIn: true,
       accessToken: 'token-123',
@@ -262,7 +262,7 @@ describe('router auth and route meta access flow', () => {
     })
 
     const router = createMemoryRouter(appRoutes, {
-      initialEntries: ['/newbro/select-captain'],
+      initialEntries: ['/newbro/select-mentor'],
     })
 
     render(<RouterProvider router={router} />)

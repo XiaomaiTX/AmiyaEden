@@ -58,7 +58,6 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
   'welfare-my': lazyNamed(() => import('@/pages/welfare-my-page'), 'WelfareMyPage'),
   'welfare-approval': lazyNamed(() => import('@/pages/welfare-approval-page'), 'WelfareApprovalPage'),
   'welfare-settings': lazyNamed(() => import('@/pages/welfare-settings-page'), 'WelfareSettingsPage'),
-  'newbro-select-captain': lazyNamed(() => import('@/pages/newbro-select-captain-page'), 'NewbroSelectCaptainPage'),
   'newbro-select-mentor': lazyNamed(() => import('@/pages/newbro-select-mentor-page'), 'NewbroSelectMentorPage'),
   'newbro-captain': lazyNamed(() => import('@/pages/newbro-captain-page'), 'NewbroCaptainPage'),
   'newbro-mentor': lazyNamed(() => import('@/pages/newbro-mentor-page'), 'NewbroMentorPage'),
@@ -90,6 +89,7 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
   'system-auto-role': lazyNamed(() => import('@/pages/system-auto-role-page'), 'SystemAutoRolePage'),
   'system-user-center': lazyNamed(() => import('@/pages/system-user-center-page'), 'SystemUserCenterPage'),
   'system-webhook': lazyNamed(() => import('@/pages/system-webhook-page'), 'SystemWebhookPage'),
+  'system-newbro-settings': lazyNamed(() => import('@/pages/captain-refund-settings'), 'CaptainRefundSettingsPanel'),
   'system-basic-config': lazyNamed(() => import('@/pages/system-basic-config-page'), 'SystemBasicConfigPage'),
   'system-qq-governance': lazyNamed(
     () => import('@/pages/system-qq-governance-page'),

@@ -1,3 +1,4 @@
+import {refundEligibilityReasonKey} from '@/pages/captain-refund-text'
 import { useCallback, useEffect, useState } from 'react'
 import { applyForMentor, fetchMentorCandidates, fetchMyMentorStatus } from '@/api/mentor'
 import { Button } from '@/components/ui/button'
@@ -79,7 +80,7 @@ export function NewbroSelectMentorPage() {
               {!state?.is_eligible ? (
                 <div className="mt-1 text-muted-foreground">
                   {t('newbroSelectMentor.disqualifiedReason', {
-                    reason: state?.disqualified_reason || '-',
+                    reason: state?.disqualified_reason ? t(refundEligibilityReasonKey(state.disqualified_reason)) : '—',
                   })}
                 </div>
               ) : null}

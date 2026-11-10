@@ -10,21 +10,14 @@ import (
 )
 
 type MentorAdminHandler struct {
-	svc         *service.MentorService
-	rewardSvc   *service.MentorRewardService
-	settingsSvc mentorAdminSettingsService
-}
-
-type mentorAdminSettingsService interface {
-	GetSettings() service.MentorSettings
-	UpdateSettingsByOperator(cfg service.MentorSettings, operatorID uint) (service.MentorSettings, error)
+	svc       *service.MentorService
+	rewardSvc *service.MentorRewardService
 }
 
 func NewMentorAdminHandler() *MentorAdminHandler {
 	return &MentorAdminHandler{
-		svc:         service.NewMentorService(),
-		rewardSvc:   service.NewMentorRewardService(),
-		settingsSvc: service.NewMentorSettingsService(),
+		svc:       service.NewMentorService(),
+		rewardSvc: service.NewMentorRewardService(),
 	}
 }
 
@@ -85,34 +78,6 @@ func (h *MentorAdminHandler) GetRewardStages(c *gin.Context) {
 
 type updateRewardStagesRequest struct {
 	Stages []service.MentorRewardStageInput `json:"stages" binding:"required"`
-}
-
-type updateMentorSettingsRequest struct {
-	MaxCharacterSP    int64 `json:"max_character_sp" binding:"required,gt=0"`
-	MaxAccountAgeDays int   `json:"max_account_age_days" binding:"required,gt=0"`
-}
-
-func (h *MentorAdminHandler) GetSettings(c *gin.Context) {
-	response.OK(c, h.settingsSvc.GetSettings())
-}
-
-func (h *MentorAdminHandler) UpdateSettings(c *gin.Context) {
-	var req updateMentorSettingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "invalid request: "+err.Error())
-		return
-	}
-
-	updated, err := h.settingsSvc.UpdateSettingsByOperator(service.MentorSettings{
-		MaxCharacterSP:    req.MaxCharacterSP,
-		MaxAccountAgeDays: req.MaxAccountAgeDays,
-	}, middleware.GetUserID(c))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-
-	response.OK(c, updated)
 }
 
 func (h *MentorAdminHandler) UpdateRewardStages(c *gin.Context) {

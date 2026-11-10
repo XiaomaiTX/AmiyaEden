@@ -11,7 +11,6 @@ func RegisterAll(reg *taskregistry.Registry) {
 	registerESIRefreshTask(reg)
 	registerAutoSrpTask(reg)
 	registerAlliancePAPTasks(reg)
-	registerNewbroSupportTasks(reg)
 	registerCorpAccessCheckTask(reg)
 	registerAutoRoleSyncTask(reg)
 	registerTaskExecutionHistoryCleanupTask(reg)

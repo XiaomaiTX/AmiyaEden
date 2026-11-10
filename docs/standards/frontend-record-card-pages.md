@@ -7,7 +7,7 @@ source_of_truth:
   - static/src/assets/styles/core/app.scss
   - static/src/views/newbro/select-mentor/index.vue
   - static/src/views/newbro/mentor-manage/index.vue
-  - static/src/views/newbro/select-captain/index.vue
+  - static/src/views/newbro/captain/index.vue
   - static/src/views/info/assets/index.vue
   - static-react/src/pages
 ---

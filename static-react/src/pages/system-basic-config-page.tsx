@@ -150,7 +150,7 @@ export function SystemBasicConfigPage() {
     setMumbleForm((current) => ({
       ...current,
       public_nodes: current.public_nodes.map((node, i) =>
-        i === index ? { ...node, ...patch } : node,
+        i === index ? { ...node, ...patch } : node
       ),
     }))
   }
@@ -255,7 +255,7 @@ export function SystemBasicConfigPage() {
               onChange={(event) =>
                 setMumbleForm((current) => ({ ...current, server_url: event.target.value }))
               }
-              placeholder="http://go-mumble-server:64730"
+              placeholder={t('systemBasicConfig.mumble.serverUrlPlaceholder')}
             />
           </label>
           <div className="space-y-3 md:col-span-2">
@@ -264,10 +264,7 @@ export function SystemBasicConfigPage() {
             </span>
             <div className="flex flex-col gap-3">
               {mumbleForm.public_nodes.map((node, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
-                >
+                <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Input
                     className="sm:w-40"
                     maxLength={64}
@@ -279,7 +276,9 @@ export function SystemBasicConfigPage() {
                     className="sm:w-48"
                     maxLength={256}
                     value={node.description}
-                    onChange={(event) => updateMumbleNode(index, { description: event.target.value })}
+                    onChange={(event) =>
+                      updateMumbleNode(index, { description: event.target.value })
+                    }
                     placeholder={t('systemBasicConfig.mumble.nodeDescription')}
                   />
                   <Input
@@ -299,11 +298,7 @@ export function SystemBasicConfigPage() {
                     }
                     placeholder={t('systemBasicConfig.mumble.nodePort')}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => removeMumbleNode(index)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => removeMumbleNode(index)}>
                     {t('systemBasicConfig.mumble.removeNode')}
                   </Button>
                 </div>
@@ -326,9 +321,12 @@ export function SystemBasicConfigPage() {
             <Input
               value={mumbleForm.display_name_template}
               onChange={(event) =>
-                setMumbleForm((current) => ({ ...current, display_name_template: event.target.value }))
+                setMumbleForm((current) => ({
+                  ...current,
+                  display_name_template: event.target.value,
+                }))
               }
-              placeholder="{alliance_ticker}-{corporation_ticker}-{nickname}/{character_name}"
+              placeholder={t('systemBasicConfig.mumble.displayNameTemplatePlaceholder')}
             />
             <span className="text-xs text-muted-foreground">
               {t('systemBasicConfig.mumble.displayNameTemplateHint')}

@@ -13,7 +13,6 @@ type MeHandler struct {
 	userSvc              *service.UserService
 	roleSvc              *service.RoleService
 	cfgSvc               *service.SysConfigService
-	eligibilitySvc       *service.NewbroEligibilityService
 	mentorEligibilitySvc *service.MentorEligibilityService
 }
 
@@ -22,7 +21,6 @@ func NewMeHandler() *MeHandler {
 		userSvc:              service.NewUserService(),
 		roleSvc:              service.NewRoleService(),
 		cfgSvc:               service.NewSysConfigService(),
-		eligibilitySvc:       service.NewNewbroEligibilityService(),
 		mentorEligibilitySvc: service.NewMentorEligibilityService(),
 	}
 }
@@ -51,13 +49,10 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 		roles = []string{}
 	}
 	var isCurrentlyNewbro *bool
-	if state := h.eligibilitySvc.GetCachedState(userID); state != nil {
-		value := state.IsCurrentlyNewbro
-		isCurrentlyNewbro = &value
-	}
 	var isMentorMenteeEligible *bool
 	if result, err := h.mentorEligibilitySvc.EvaluateEligibility(userID); err == nil && result != nil {
 		value := result.IsEligible
+		isCurrentlyNewbro = &value
 		isMentorMenteeEligible = &value
 	}
 	enforceCharacterESIRestriction := h.cfgSvc.GetCharacterESIRestrictionConfig()

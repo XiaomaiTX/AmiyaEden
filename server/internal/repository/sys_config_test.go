@@ -66,8 +66,8 @@ func TestBuildSysConfigBatchUpsertQueryUsesSingleUpsertStatement(t *testing.T) {
 
 	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return buildSysConfigBatchUpsertQuery(tx, []SysConfigUpsertItem{
-			{Key: model.SysConfigNewbroMaxCharacterSP, Value: "20000000", Desc: "max"},
-			{Key: model.SysConfigNewbroBonusRate, Value: "20", Desc: "bonus"},
+			{Key: "newbro.refund_settings", Value: "20000000", Desc: "max"},
+			{Key: model.SysConfigNewbroRecruitRewardAmount, Value: "20", Desc: "bonus"},
 		})
 	})
 

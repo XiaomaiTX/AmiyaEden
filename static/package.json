@@ -12,6 +12,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "check:version": "node scripts/check-version-bump.js",
+    "check:i18n": "node scripts/check-i18n.mjs",
     "lint": "eslint",
     "test:unit": "tsx --test \"src/**/*.test.ts\" \"src/**/*.spec.ts\" \"src/**/*.test.tsx\" \"src/**/*.spec.tsx\"",
     "fix": "eslint --fix",

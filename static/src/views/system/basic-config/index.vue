@@ -563,7 +563,6 @@
       labelKey: 'system.basicConfig.corpCapabilityGroups.newbroMentor',
       capabilities: [
         'newbro.user.actions',
-        'newbro.captain.actions',
         'newbro.admin.read',
         'newbro.admin.manage',
         'mentor.user.actions',
@@ -623,7 +622,6 @@
     'skill_planning.personal.manage':
       'system.basicConfig.corpCapabilities.skillPlanningPersonalManage',
     'newbro.user.actions': 'system.basicConfig.corpCapabilities.newbroUserActions',
-    'newbro.captain.actions': 'system.basicConfig.corpCapabilities.newbroCaptainActions',
     'newbro.admin.read': 'system.basicConfig.corpCapabilities.newbroAdminRead',
     'newbro.admin.manage': 'system.basicConfig.corpCapabilities.newbroAdminManage',
     'mentor.user.actions': 'system.basicConfig.corpCapabilities.mentorUserActions',

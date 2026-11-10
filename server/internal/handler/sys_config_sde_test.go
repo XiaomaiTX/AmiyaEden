@@ -54,7 +54,7 @@ func TestUpdateSDEConfigRequestJSONTags(t *testing.T) {
 		if field.Tag.Get("json") != f.jsonTag {
 			t.Fatalf("field %s: json tag = %q, want %q", f.name, field.Tag.Get("json"), f.jsonTag)
 		}
-		if f.fieldType == "ptr" && field.Type.Kind() != reflect.Ptr {
+		if f.fieldType == "ptr" && field.Type.Kind() != reflect.Pointer {
 			t.Fatalf("field %s: type = %v, want ptr", f.name, field.Type.Kind())
 		}
 	}
