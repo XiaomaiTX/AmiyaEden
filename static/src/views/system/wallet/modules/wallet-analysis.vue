@@ -204,6 +204,7 @@
       'shop_purchase',
       'shop_refund',
       'newbro_captain_reward',
+      'captain_refund',
       'mentor_reward',
       'recruit_link_reward'
     ].map((value) => ({ value, label: t(`walletAdmin.refTypes.${value}`) }))

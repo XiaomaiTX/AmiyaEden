@@ -105,11 +105,16 @@ describe('route access evaluation', () => {
     expect(route?.meta?.corpCapabilitiesAny).toBeUndefined()
   })
 
-  test('keeps super-admin in specialist route declarations', () => {
-    for (const path of ['newbro/captain', 'newbro/mentor']) {
+  test('requires a real captain role and restricts refund review and settings to administrators', () => {
+    const captain = appRouteSpecs.find((item) => item.path === 'newbro/captain')
+    expect(hasRouteRolePermission(['super_admin'], captain?.meta?.roles)).toBe(false)
+    expect(hasRouteRolePermission(['captain'], captain?.meta?.roles)).toBe(true)
+    for (const path of ['newbro/manage', 'system/newbro-settings']) {
       const route = appRouteSpecs.find((item) => item.path === path)
-      expect(route?.meta?.roles).toContain('super_admin')
-      expect(hasRouteRolePermission(['super_admin'], route?.meta?.roles ?? [])).toBe(true)
+      expect(hasRouteRolePermission(['captain'], route?.meta?.roles)).toBe(false)
+      expect(hasRouteRolePermission(['admin'], route?.meta?.roles)).toBe(true)
     }
+    const mentor = appRouteSpecs.find((item) => item.path === 'newbro/mentor')
+    expect(hasRouteRolePermission(['super_admin'], mentor?.meta?.roles)).toBe(true)
   })
 })

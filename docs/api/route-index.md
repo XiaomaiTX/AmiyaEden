@@ -261,17 +261,6 @@ source_of_truth:
 
 ## Newbro Support
 
-### Newbro User Side
-
-| Method | Path                           | 说明                                 | 权限                   |
-| ------ | ------------------------------ | ------------------------------------ | ---------------------- |
-| GET    | `/newbro/captains`             | 当前新人可选择的队长列表             | `Login` + 当前新人资格 |
-| GET    | `/newbro/affiliation/me`       | 当前用户的新人资格快照与队长关联历史 | Login                  |
-| GET    | `/newbro/affiliations/history` | 当前用户的帮扶关系变更历史           | Login                  |
-| POST   | `/newbro/affiliation/select`   | 选择或切换队长                       | `Login` + 当前新人资格 |
-
-| POST | `/newbro/affiliation/end` | 结束当前与队长的帮扶关系 | `Login` + 当前新人资格 |
-
 ### Recruit Link User Side
 
 | Method | Path                                      | 说明                                              | 权限  |
@@ -281,18 +270,6 @@ source_of_truth:
 | GET    | `/newbro/recruit/direct-referral`         | 获取当前用户是否可补录推荐人                      | Login |
 | POST   | `/newbro/recruit/direct-referral/check`   | 按 QQ 检查直接推荐人                              | Login |
 | POST   | `/newbro/recruit/direct-referral/confirm` | 按推荐人 `user_id` 确认直接推荐并立即发放招募奖励 | Login |
-
-### Captain Side
-
-| Method | Path                               | 说明                         | 权限                   |
-| ------ | ---------------------------------- | ---------------------------- | ---------------------- |
-| GET    | `/newbro/captain/overview`         | 当前队长概览                 | `RequireRole(captain)` |
-| GET    | `/newbro/captain/players`          | 当前队长名下新人列表         | `RequireRole(captain)` |
-| GET    | `/newbro/captain/attributions`     | 当前队长赏金归因明细         | `RequireRole(captain)` |
-| GET    | `/newbro/captain/rewards`          | 当前队长奖励发放历史         | `RequireRole(captain)` |
-| GET    | `/newbro/captain/eligible-players` | 可加入帮扶的新人列表         | `RequireRole(captain)` |
-| POST   | `/newbro/captain/enroll`           | 手动加入新人到帮扶           | `RequireRole(captain)` |
-| POST   | `/newbro/captain/affiliation/end`  | 解除指定新人与当前队长的关系 | `RequireRole(captain)` |
 
 ### Recruit Link Admin Side
 
@@ -463,8 +440,6 @@ source_of_truth:
 | GET    | `/system/mentor/relationships`        | 全量导师关系列表                                      | `RequireRole(admin)` |
 | GET    | `/system/mentor/reward-distributions` | 导师奖励发放记录分页列表；关键字支持导师人物名 / 昵称 | `RequireRole(admin)` |
 | POST   | `/system/mentor/revoke`               | 撤销指定导师关系                                      | `RequireRole(admin)` |
-| GET    | `/system/mentor/settings`             | 导师学员资格阈值配置                                  | `RequireRole(admin)` |
-| PUT    | `/system/mentor/settings`             | 更新导师学员资格阈值配置                              | `RequireRole(admin)` |
 | GET    | `/system/mentor/reward-stages`        | 导师奖励阶段配置                                      | `RequireRole(admin)` |
 | PUT    | `/system/mentor/reward-stages`        | 更新导师奖励阶段配置                                  | `RequireRole(admin)` |
 | POST   | `/system/mentor/reward/process`       | 手动执行导师奖励处理                                  | `RequireRole(admin)` |
@@ -550,14 +525,25 @@ source_of_truth:
 
 | Method | Path                                  | 说明                                                | 权限                          |
 | ------ | ------------------------------------- | --------------------------------------------------- | ----------------------------- |
-| GET    | `/system/newbro/support-settings`     | 获取帮扶设置（资格阈值、刷新间隔、奖励比例）        | `RequireRole(admin)`          |
-| PUT    | `/system/newbro/support-settings`     | 更新帮扶设置（资格阈值、刷新间隔、奖励比例）        | `RequireRole(admin)`          |
 | GET    | `/system/newbro/recruit-settings`     | 获取招募链接设置（QQ 邀请链接、奖励金额、冷却天数） | `RequireRole(admin)`          |
 | PUT    | `/system/newbro/recruit-settings`     | 更新招募链接设置（QQ 邀请链接、奖励金额、冷却天数） | `RequireRole(admin)`          |
-| GET    | `/system/newbro/captains`             | 队长绩效列表                                        | `RequireRole(admin)`          |
-| GET    | `/system/newbro/captains/:user_id`    | 队长详情（概览、关联玩家、归因明细）                | `RequireRole(admin)`          |
-| GET    | `/system/newbro/affiliations/history` | 新人帮扶关系变更历史                                | `RequireRole(admin, captain)` |
-| GET    | `/system/newbro/rewards`              | 队长奖励发放历史                                    | `RequireRole(admin, captain)` |
+
+### Captain Refunds
+
+| Method | Path | 说明 | 权限 |
+| ------ | ---- | ---- | ---- |
+| GET | `/newbro/captain/refunds/options` | 本人角色及退税配置 | 真实 captain |
+| POST | `/newbro/captain/refunds/preview` | 核算预览与冲突 | 真实 captain |
+| POST | `/newbro/captain/refunds` | 重新核算并提交 | 真实 captain |
+| GET | `/newbro/captain/refunds` | 本人申请分页 | 真实 captain |
+| GET | `/newbro/captain/refunds/:id` | 本人申请详情 | 真实 captain |
+| GET | `/system/newbro/refunds` | 全量申请分页 | admin / super_admin |
+| GET | `/system/newbro/refunds/:id` | 申请详情 | admin / super_admin |
+| POST | `/system/newbro/refunds/:id/approve` | 批准并发奖 | admin / super_admin |
+| POST | `/system/newbro/refunds/:id/reject` | 拒绝并释放占用，reason 必填 | admin / super_admin |
+| GET/PUT | `/system/config/newbro-refund` | 统一新人资格及退税配置 | admin / super_admin |
+
+申请契约、时间边界、快照和防重规则见 [新人资格与队长退税](../features/current/newbro-support.md)。
 
 ### Shop Admin
 

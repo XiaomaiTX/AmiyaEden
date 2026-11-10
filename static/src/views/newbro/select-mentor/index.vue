@@ -189,18 +189,7 @@
     return t(`newbro.mentorStatus.${status}`)
   }
 
-  const formatEligibilityReason = (reason: string) => {
-    switch (reason) {
-      case 'account_too_old':
-        return t('newbro.selectMentor.ineligibleBecauseAccountTooOld')
-      case 'skill_points_too_high':
-        return t('newbro.selectMentor.ineligibleBecauseSkillPointsTooHigh')
-      case 'no_characters':
-        return t('newbro.selectMentor.ineligibleBecauseNoCharacters')
-      default:
-        return reason
-    }
-  }
+  const formatEligibilityReason = (reason: string) => (reason ? t('refund.reason.' + reason) : '')
 
   const isCurrentMentor = (mentor: Api.Mentor.MentorCandidate) => {
     return currentRelationship.value?.mentor_user_id === mentor.mentor_user_id

@@ -107,6 +107,20 @@ func TestParsePaginationQuerySupportsUnboundedSize(t *testing.T) {
 	}
 }
 
+func TestCaptainRefundPaginationDefaultsToLedgerPageSize(t *testing.T) {
+	ctx := newPaginationQueryTestContext("")
+	page, pageSize, err := parsePaginationQuery(ctx, 200, 200)
+	if err != nil {
+		t.Fatalf("parsePaginationQuery() error = %v, want nil", err)
+	}
+	if page != 1 {
+		t.Fatalf("page = %d, want 1", page)
+	}
+	if pageSize != 200 {
+		t.Fatalf("pageSize = %d, want 200", pageSize)
+	}
+}
+
 func TestParseUnboundedPaginationQueryCapsOversizedPageSize(t *testing.T) {
 	ctx := newPaginationQueryTestContext("?current=1&size=5000")
 	page, pageSize, err := parseUnboundedPaginationQuery(ctx, 20)

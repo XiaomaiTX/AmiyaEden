@@ -2,23 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   fetchAdminMentorRelationships,
   fetchAdminMentorRewardDistributions,
-  fetchMentorSettings,
   fetchMentorRewardStages,
   revokeMentorRelationship,
   runMentorRewardProcessing,
-  updateMentorSettings,
 } from '@/api/mentor'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { formatDateTime, formatNumber, getErrorMessage } from '@/pages/newbro-page-utils'
-import type {
-  MentorSettings,
-  RelationshipView,
-  RewardDistributionView,
-  RewardStage,
-  UpdateMentorSettingsParams,
-} from '@/types/api/mentor'
+import type { RelationshipView, RewardDistributionView, RewardStage } from '@/types/api/mentor'
 
 export function NewbroMentorManagePage() {
   const { t } = useI18n()
@@ -27,9 +18,7 @@ export function NewbroMentorManagePage() {
   const [relationships, setRelationships] = useState<RelationshipView[]>([])
   const [rewards, setRewards] = useState<RewardDistributionView[]>([])
   const [stages, setStages] = useState<RewardStage[]>([])
-  const [settings, setSettings] = useState<MentorSettings | null>(null)
   const [revokeId, setRevokeId] = useState<number | null>(null)
-  const [savingSettings, setSavingSettings] = useState(false)
   const [processingRewards, setProcessingRewards] = useState(false)
   const [refreshSeed, setRefreshSeed] = useState(0)
 
@@ -37,21 +26,18 @@ export function NewbroMentorManagePage() {
     setLoading(true)
     setError(null)
     try {
-      const [relationshipData, rewardData, stageList, settingsData] = await Promise.all([
+      const [relationshipData, rewardData, stageList] = await Promise.all([
         fetchAdminMentorRelationships({ current: 1, size: 20 }),
         fetchAdminMentorRewardDistributions({ current: 1, size: 20 }),
         fetchMentorRewardStages(),
-        fetchMentorSettings(),
       ])
       setRelationships(relationshipData.list ?? [])
       setRewards(rewardData.list ?? [])
       setStages(stageList)
-      setSettings(settingsData)
     } catch (caughtError) {
       setRelationships([])
       setRewards([])
       setStages([])
-      setSettings(null)
       setError(getErrorMessage(caughtError, t('newbroMentorManage.messages.loadFailed')))
     } finally {
       setLoading(false)
@@ -74,25 +60,6 @@ export function NewbroMentorManagePage() {
       setError(getErrorMessage(caughtError, t('newbroMentorManage.messages.revokeFailed')))
     } finally {
       setRevokeId(null)
-    }
-  }
-
-  const handleSaveSettings = async () => {
-    if (!settings) {
-      return
-    }
-
-    setSavingSettings(true)
-    try {
-      const payload: UpdateMentorSettingsParams = {
-        max_character_sp: settings.max_character_sp,
-        max_account_age_days: settings.max_account_age_days,
-      }
-      setSettings(await updateMentorSettings(payload))
-    } catch (caughtError) {
-      setError(getErrorMessage(caughtError, t('newbroMentorManage.messages.saveFailed')))
-    } finally {
-      setSavingSettings(false)
     }
   }
 
@@ -123,14 +90,20 @@ export function NewbroMentorManagePage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('newbroMentorManage.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('newbroMentorManage.loading')}</p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
         <div className="space-y-4">
           <div className="rounded-lg border bg-card p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">{t('newbroMentorManage.relationshipsSection')}</h2>
-              <span className="text-sm text-muted-foreground">{formatNumber(relationships.length)}</span>
+              <h2 className="text-base font-semibold">
+                {t('newbroMentorManage.relationshipsSection')}
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {formatNumber(relationships.length)}
+              </span>
             </div>
             <div className="mt-4 space-y-3">
               {relationships.map((relationship) => (
@@ -138,9 +111,12 @@ export function NewbroMentorManagePage() {
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="font-medium">{relationship.mentee_character_name}</div>
-                      <div className="text-sm text-muted-foreground">{relationship.mentor_character_name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {t('newbroMentorManage.appliedAt')}: {formatDateTime(relationship.applied_at)}
+                        {relationship.mentor_character_name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {t('newbroMentorManage.appliedAt')}:{' '}
+                        {formatDateTime(relationship.applied_at)}
                       </div>
                     </div>
                     <Button
@@ -177,7 +153,9 @@ export function NewbroMentorManagePage() {
                     <div>{formatNumber(item.reward_amount)}</div>
                   </div>
                   <div className="mt-1 text-muted-foreground">
-                    {t('newbroMentorManage.rewardMeta', { distributedAt: formatDateTime(item.distributed_at) })}
+                    {t('newbroMentorManage.rewardMeta', {
+                      distributedAt: formatDateTime(item.distributed_at),
+                    })}
                   </div>
                 </div>
               ))}
@@ -192,45 +170,10 @@ export function NewbroMentorManagePage() {
 
         <div className="space-y-4">
           <div className="rounded-lg border bg-card p-5">
-            <h2 className="text-base font-semibold">{t('newbroMentorManage.settingsSection')}</h2>
-            {settings ? (
-              <div className="mt-4 space-y-4">
-                <label className="block space-y-1">
-                  <span className="text-sm text-muted-foreground">
-                    {t('newbroMentorManage.fields.maxCharacterSp')}
-                  </span>
-                  <Input
-                    type="number"
-                    value={settings.max_character_sp}
-                    onChange={(event) =>
-                      setSettings({ ...settings, max_character_sp: Number(event.target.value) })
-                    }
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-sm text-muted-foreground">
-                    {t('newbroMentorManage.fields.maxAccountAgeDays')}
-                  </span>
-                  <Input
-                    type="number"
-                    value={settings.max_account_age_days}
-                    onChange={(event) =>
-                      setSettings({ ...settings, max_account_age_days: Number(event.target.value) })
-                    }
-                  />
-                </label>
-                <Button type="button" onClick={() => void handleSaveSettings()} isDisabled={savingSettings}>
-                  {savingSettings ? t('newbroMentorManage.saving') : t('newbroMentorManage.save')}
-                </Button>
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-muted-foreground">{t('newbroMentorManage.noSettings')}</p>
-            )}
-          </div>
-
-          <div className="rounded-lg border bg-card p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">{t('newbroMentorManage.rewardStagesSection')}</h2>
+              <h2 className="text-base font-semibold">
+                {t('newbroMentorManage.rewardStagesSection')}
+              </h2>
               <span className="text-sm text-muted-foreground">{formatNumber(stages.length)}</span>
             </div>
             <div className="mt-4 space-y-3">
@@ -255,8 +198,15 @@ export function NewbroMentorManagePage() {
               ) : null}
             </div>
             <div className="mt-4">
-              <Button type="button" variant="outline" onClick={() => void handleProcessRewards()} isDisabled={processingRewards}>
-                {processingRewards ? t('newbroMentorManage.processing') : t('newbroMentorManage.processRewards')}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleProcessRewards()}
+                isDisabled={processingRewards}
+              >
+                {processingRewards
+                  ? t('newbroMentorManage.processing')
+                  : t('newbroMentorManage.processRewards')}
               </Button>
             </div>
           </div>

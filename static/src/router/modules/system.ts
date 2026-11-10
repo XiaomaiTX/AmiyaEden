@@ -142,6 +142,17 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'newbro-settings',
+      name: 'NewbroSettings',
+      component: '/system/newbro-settings',
+      meta: {
+        title: 'refund.settings',
+        keepAlive: true,
+        roles: ['super_admin', 'admin'],
+        corpCapabilitiesAny: ['system.manage']
+      }
+    },
+    {
       path: 'basic-config',
       name: 'BasicConfig',
       component: '/system/basic-config',

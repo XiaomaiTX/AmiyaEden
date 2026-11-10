@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/main.go
   - server/global/global.go
@@ -38,7 +38,7 @@ source_of_truth:
 - `super_admin` 可配置每个 ESI 子任务的 active/inactive 刷新间隔（分钟粒度）；覆盖值持久化到 `system_config`（key `esi.task_intervals`），运行时通过内存缓存生效，无需重启
 - 通用任务的 cron/manual 执行都会写入 `task_executions`，执行历史页支持按任务名与状态筛选
 - 执行历史页会分别展示触发者昵称与触发者 ID；cron 触发的记录没有人工触发者信息
-- 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、星系登记结算、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、队长归因同步、队长奖励处理、导师奖励、自动 SRP 与建筑服务燃料率同步
+- 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、星系登记结算、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、导师奖励、自动 SRP 与建筑服务燃料率同步
 - `auto_srp` 属于事件驱动任务：会显示在任务页中，但没有手动触发入口，也不支持 cron 编辑
 - 服务启动时会注册任务定义、恢复 `task_schedules` 覆盖、恢复待执行的自动 SRP 延迟调度，并启动周期任务调度器
 - `/api/v1/tasks/:name/run` 与 ESI 管理页里会 fan-out 的后台触发入口会把执行交给共享后台任务管理器；服务进入关停后，这些入口会拒绝新任务而不是继续创建裸 goroutine
@@ -54,8 +54,6 @@ source_of_truth:
 | `auto_role_sync` | `system` | `recurring` | 是 | 同步自动职权 |
 | `task_execution_history_cleanup` | `system` | `recurring` | 是 | 清理超出保留期的任务执行历史 |
 | `corp_access_check` | `system` | `recurring` | 是 | 校验军团准入并调整基础职权 |
-| `captain_attribution_sync` | `operation` | `recurring` | 是 | 同步队长赏金归因，默认 `@every 13h` |
-| `captain_reward_processing` | `operation` | `recurring` | 是 | 处理队长归因奖励，默认 `@every 100h` |
 | `mentor_reward` | `operation` | `recurring` | 是 | 结算导师奖励 |
 | `structure_fuel_rate_sync` | `system` | `recurring` | 是 | 从 ESI 同步建筑服务模块每小时燃料消耗率，默认 `@every 240h`（10 天） |
 | `corporation_structure_alert_scan` | `system` | `recurring` | 是 | 巡查建筑快照的燃料与增强状态阈值并投递 QQ 预警，默认 `0 0 * * * *` |

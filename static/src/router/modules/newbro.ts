@@ -12,17 +12,6 @@ export const newbroRoutes: AppRouteRecord = {
   },
   children: [
     {
-      path: 'select-captain',
-      name: 'NewbroSelectCaptain',
-      component: '/newbro/select-captain',
-      meta: {
-        title: 'menus.newbro.selectCaptain',
-        keepAlive: true,
-        login: true,
-        requiresNewbro: true
-      }
-    },
-    {
       path: 'select-mentor',
       name: 'NewbroSelectMentor',
       component: '/newbro/select-mentor',
@@ -40,10 +29,7 @@ export const newbroRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.newbro.captain',
         keepAlive: true,
-        // super_admin is auto-passed by backend RequireRole; mirror that
-        // here so super-admin operators can see the entry without editing
-        // their own roles.
-        roles: ['super_admin', 'captain']
+        roles: ['captain']
       }
     },
     {
@@ -63,7 +49,7 @@ export const newbroRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.newbro.manage',
         keepAlive: true,
-        roles: ['super_admin', 'admin', 'captain']
+        roles: ['super_admin', 'admin']
       }
     },
     {

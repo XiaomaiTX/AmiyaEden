@@ -308,52 +308,6 @@
             </ElTableColumn>
           </ElTable>
         </ElCard>
-
-        <ElCard shadow="never" v-loading="settingsLoading">
-          <template #header>
-            <div class="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <div class="text-base font-semibold">{{
-                  t('system.mentorRewardStages.eligibilityTitle')
-                }}</div>
-                <div class="text-sm text-gray-500 mt-1">{{
-                  t('system.mentorRewardStages.eligibilityDescription')
-                }}</div>
-              </div>
-              <ElButton
-                type="primary"
-                :loading="settingsSaving"
-                :disabled="rewardStagesActionsDisabled"
-                @click="handleSaveEligibility"
-              >
-                {{ t('system.mentorRewardStages.saveEligibility') }}
-              </ElButton>
-            </div>
-          </template>
-
-          <ElForm label-width="220px" label-position="left" class="max-w-2xl">
-            <ElFormItem :label="t('system.mentorRewardStages.maxCharacterSP')">
-              <ElInputNumber
-                v-model="mentorSettings.max_character_sp"
-                :min="1"
-                :step="1000000"
-                :controls="false"
-                step-strictly
-                style="width: 100%"
-              />
-            </ElFormItem>
-            <ElFormItem :label="t('system.mentorRewardStages.maxAccountAgeDays')">
-              <ElInputNumber
-                v-model="mentorSettings.max_account_age_days"
-                :min="1"
-                :step="1"
-                :controls="false"
-                step-strictly
-                style="width: 100%"
-              />
-            </ElFormItem>
-          </ElForm>
-        </ElCard>
       </ElTabPane>
     </ElTabs>
   </div>
@@ -366,11 +320,9 @@
   import {
     fetchAdminMentorRelationships,
     fetchAdminMentorRewardDistributions,
-    fetchMentorSettings,
     fetchMentorRewardStages,
     revokeMentorRelationship,
     runMentorRewardProcessing,
-    updateMentorSettings,
     updateMentorRewardStages
   } from '@/api/mentor'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
@@ -399,8 +351,6 @@
   const rewardStagesLoadAttempted = ref(false)
   const saving = ref(false)
   const processing = ref(false)
-  const settingsLoading = ref(false)
-  const settingsSaving = ref(false)
   const revokingId = ref<number | null>(null)
   const rows = ref<Api.Mentor.RelationshipView[]>([])
   const rewardHistoryRows = ref<Api.Mentor.RewardDistributionView[]>([])
@@ -409,10 +359,7 @@
   const rewardHistoryPaginationOptions = {
     pageSizes: [50, 100, 200, 500, 1000]
   }
-  const mentorSettings = reactive<Api.Mentor.Settings>({
-    max_character_sp: 4_000_000,
-    max_account_age_days: 7
-  })
+
   const filters = reactive({
     keyword: '',
     status: 'all' as Api.Mentor.MenteeStatusFilter
@@ -446,7 +393,7 @@
   ])
 
   const refreshDisabled = computed(() => {
-    if (revokingId.value !== null || saving.value || processing.value || settingsSaving.value) {
+    if (revokingId.value !== null || saving.value || processing.value) {
       return true
     }
 
@@ -458,25 +405,15 @@
       return rewardHistoryLoading.value
     }
 
-    return rewardStagesLoading.value || settingsLoading.value
+    return rewardStagesLoading.value
   })
 
   const rewardStagesActionsDisabled = computed(
-    () =>
-      !rewardStagesLoaded.value ||
-      rewardStagesLoading.value ||
-      settingsLoading.value ||
-      saving.value ||
-      processing.value ||
-      settingsSaving.value
+    () => !rewardStagesLoaded.value || rewardStagesLoading.value || saving.value || processing.value
   )
 
   const rewardStagesLoadFailed = computed(
-    () =>
-      rewardStagesLoadAttempted.value &&
-      !rewardStagesLoaded.value &&
-      !rewardStagesLoading.value &&
-      !settingsLoading.value
+    () => rewardStagesLoadAttempted.value && !rewardStagesLoaded.value && !rewardStagesLoading.value
   )
 
   const rewardHistoryColumns = computed<ColumnOption<Api.Mentor.RewardDistributionView>[]>(() => [
@@ -633,29 +570,9 @@
     }
   }
 
-  async function loadMentorSettings() {
-    settingsLoading.value = true
-    try {
-      const data = await fetchMentorSettings()
-      mentorSettings.max_character_sp = data.max_character_sp
-      mentorSettings.max_account_age_days = data.max_account_age_days
-      return true
-    } catch (error) {
-      console.error('Failed to load mentor settings', error)
-      ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
-      return false
-    } finally {
-      settingsLoading.value = false
-    }
-  }
-
   async function loadRewardStageSettings() {
     rewardStagesLoadAttempted.value = true
-    const [stagesLoaded, settingsLoaded] = await Promise.all([
-      loadRewardStages(),
-      loadMentorSettings()
-    ])
-    rewardStagesLoaded.value = stagesLoaded && settingsLoaded
+    rewardStagesLoaded.value = await loadRewardStages()
   }
 
   async function ensureRewardHistoryLoaded() {
@@ -804,44 +721,6 @@
       }
     }
     return ''
-  }
-
-  function validateMentorSettings(settings: Api.Mentor.Settings) {
-    if (!Number.isInteger(settings.max_character_sp) || settings.max_character_sp <= 0) {
-      return t('system.mentorRewardStages.validation.maxCharacterSP')
-    }
-    if (!Number.isInteger(settings.max_account_age_days) || settings.max_account_age_days <= 0) {
-      return t('system.mentorRewardStages.validation.maxAccountAgeDays')
-    }
-    return ''
-  }
-
-  async function handleSaveEligibility() {
-    if (!ensureRewardStageSettingsReady()) {
-      return
-    }
-
-    const validationMessage = validateMentorSettings(mentorSettings)
-    if (validationMessage) {
-      ElMessage.warning(validationMessage)
-      return
-    }
-
-    settingsSaving.value = true
-    try {
-      const data = await updateMentorSettings({
-        max_character_sp: mentorSettings.max_character_sp,
-        max_account_age_days: mentorSettings.max_account_age_days
-      })
-      mentorSettings.max_character_sp = data.max_character_sp
-      mentorSettings.max_account_age_days = data.max_account_age_days
-      ElMessage.success(t('system.mentorRewardStages.saveEligibilitySuccess'))
-    } catch (error) {
-      console.error('Failed to save mentor settings', error)
-      ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
-    } finally {
-      settingsSaving.value = false
-    }
   }
 
   async function handleSaveRewardStages() {

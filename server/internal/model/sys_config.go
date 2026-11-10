@@ -46,7 +46,7 @@ const (
 	SysConfigMumbleServerURL                      = "mumble.server_url"
 	SysConfigMumbleRevalidateToken                = "mumble.revalidate_token"
 	SysConfigMumbleRevalidateTimeoutMS            = "mumble.revalidate_timeout_ms"
-	SysConfigMumblePublicNodes                   = "mumble.public_nodes" // 对用户展示的 Mumble 服务器节点列表 (JSON 数组)
+	SysConfigMumblePublicNodes                    = "mumble.public_nodes" // 对用户展示的 Mumble 服务器节点列表 (JSON 数组)
 	SysConfigMumbleDisplayNameTemplate            = "mumble.display_name_template"
 	SysConfigQQGovernanceScanIntervalMinutes      = "qq_governance.scan_interval_minutes"
 	SysConfigQQGovernanceMismatchConfirmations    = "qq_governance.mismatch_confirmations"
@@ -61,17 +61,9 @@ const (
 	SysConfigDashboardCorpStructuresAlertEnabled             = "dashboard.corporation_structures_alert_enabled"
 	SysConfigDashboardCorpStructuresAlertGroupIDs            = "dashboard.corporation_structures_alert_group_ids"
 
-	SysConfigNewbroMaxCharacterSP          = "newbro.max_character_sp"
-	SysConfigNewbroMultiCharacterSP        = "newbro.multi_character_sp"
-	SysConfigNewbroMultiCharacterThreshold = "newbro.multi_character_threshold"
-	SysConfigNewbroRefreshIntervalDays     = "newbro.refresh_interval_days"
-	SysConfigNewbroBonusRate               = "newbro.bonus_rate"
-	SysConfigNewbroRecruitQQURL            = "newbro.recruit_qq_url"
-	SysConfigNewbroRecruitRewardAmount     = "newbro.recruit_reward_amount"
-	SysConfigNewbroRecruitCooldownDays     = "newbro.recruit_cooldown_days"
-
-	SysConfigMenteeMaxCharacterSP    = "mentor.mentee_max_character_sp"
-	SysConfigMenteeMaxAccountAgeDays = "mentor.mentee_max_account_age_days"
+	SysConfigNewbroRecruitQQURL        = "newbro.recruit_qq_url"
+	SysConfigNewbroRecruitRewardAmount = "newbro.recruit_reward_amount"
+	SysConfigNewbroRecruitCooldownDays = "newbro.recruit_cooldown_days"
 
 	SysConfigWelfareAutoApproveFuxiCoinThreshold = "welfare.auto_approve_fuxi_coin_threshold"
 	SysConfigMulticharFullRewardCount            = "multichar.full_reward_count"    // 获得 100% 奖励的人物数（int）
@@ -95,15 +87,8 @@ const (
 	SysConfigDefaultQQGovernanceMismatchConfirmations          = 2
 	SysConfigDefaultQQGovernanceMismatchObservationHours       = 2
 
-	SysConfigDefaultNewbroMaxCharacterSP                            int64   = 20_000_000
-	SysConfigDefaultNewbroMultiCharacterSP                          int64   = 10_000_000
-	SysConfigDefaultNewbroMultiCharacterThreshold                           = 3
-	SysConfigDefaultNewbroRefreshIntervalDays                               = 7
-	SysConfigDefaultNewbroBonusRate                                 float64 = 20
 	SysConfigDefaultNewbroRecruitRewardAmount                       float64 = 50
 	SysConfigDefaultNewbroRecruitCooldownDays                               = 90
-	SysConfigDefaultMenteeMaxCharacterSP                            int64   = 4_000_000
-	SysConfigDefaultMenteeMaxAccountAgeDays                                 = 7
 	SysConfigDefaultWelfareAutoApproveFuxiCoinThreshold                     = 500
 	SysConfigDefaultPAPFCSalary                                     float64 = 400
 	SysConfigDefaultPAPFCSalaryLimit                                int     = 5

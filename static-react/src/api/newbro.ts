@@ -1,36 +1,16 @@
 import { requestJson } from '@/api/http-client'
 import { assertSuccess, type ApiResponse } from '@/api/response'
 import type {
-  AdminAffiliationHistoryParams,
-  AdminAffiliationHistoryResponse,
-  AdminCaptainDetail,
-  AdminCaptainsParams,
-  AdminCaptainsResponse,
   AdminRecruitLinksResponse,
   AdminRewardDistributionsParams,
   AdminRewardDistributionsResponse,
-  ApplyResponse,
   CheckDirectReferrerParams,
   ConfirmDirectReferrerParams,
   DirectReferralStatus,
   DirectReferrerCandidate,
   EmptyResponse,
-  EndAffiliationResponse,
   GenerateLinkResponse,
-  CaptainAttributionsParams,
-  CaptainAttributionsResponse,
-  CaptainEligiblePlayersParams,
-  CaptainEligiblePlayersResponse,
-  CaptainEnrollPlayerParams,
-  CaptainEndAffiliationParams,
-  CaptainOverview,
-  CaptainPlayersParams,
-  CaptainPlayersResponse,
-  CaptainRewardSettlementsParams,
-  CaptainRewardSettlementsResponse,
-  CaptainCandidate,
   MenteeListResponse,
-  MyAffiliationResponse,
   MyStatusResponse,
   AdminRelationshipsParams,
   AdminRelationshipsResponse,
@@ -38,17 +18,12 @@ import type {
   RelationshipActionParams,
   RewardProcessResult,
   RewardStage,
-  UpdateMentorSettingsParams,
   UpdateRecruitSettingsParams,
   UpdateRewardStagesParams,
-  UpdateSupportSettingsParams,
-  SupportSettings,
   RecruitSettings,
   RelationshipView,
-  MentorSettings,
   MentorMenteesParams,
   ApplyParams as MentorApplyParams,
-  MyAffiliationHistoryResponse,
   SubmitQQRequest,
   SubmitQQResponse,
   MentorCandidate,
@@ -85,194 +60,31 @@ export async function confirmDirectReferrer(data: ConfirmDirectReferrerParams) {
   return assertSuccess(response, 'confirm direct referrer failed')
 }
 
-export async function fetchNewbroCaptains() {
-  const response = await requestJson<ApiResult<CaptainCandidate[]>>('/api/v1/newbro/captains')
-  return assertSuccess(response, 'fetch newbro captains failed') ?? []
-}
-
-export async function fetchMyNewbroAffiliation() {
-  const response = await requestJson<ApiResult<MyAffiliationResponse>>('/api/v1/newbro/affiliation/me')
-  return assertSuccess(response, 'fetch my newbro affiliation failed')
-}
-
-export async function fetchMyAffiliationHistory(params: { current?: number; size?: number }) {
-  const searchParams = new URLSearchParams()
-  if (params.current) searchParams.set('current', String(params.current))
-  if (params.size) searchParams.set('size', String(params.size))
-
-  const response = await requestJson<ApiResult<MyAffiliationHistoryResponse>>(
-    `/api/v1/newbro/affiliations/history?${searchParams.toString()}`
-  )
-  return assertSuccess(response, 'fetch newbro affiliation history failed')
-}
-
-export async function fetchSelectCaptain(data: { captain_user_id: number }) {
-  const response = await requestJson<ApiResult<ApplyResponse>>('/api/v1/newbro/affiliation/select', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-  return assertSuccess(response, 'select captain failed')
-}
-
-export async function fetchEndAffiliation() {
-  const response = await requestJson<ApiResult<EndAffiliationResponse>>(
-    '/api/v1/newbro/affiliation/end',
-    { method: 'POST' }
-  )
-  return assertSuccess(response, 'end affiliation failed')
-}
-
-export async function fetchCaptainEndAffiliation(data: CaptainEndAffiliationParams) {
-  const response = await requestJson<ApiResult<EndAffiliationResponse>>(
-    '/api/v1/newbro/captain/affiliation/end',
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  )
-  return assertSuccess(response, 'end captain affiliation failed')
-}
-
-export async function fetchCaptainOverview() {
-  const response = await requestJson<ApiResult<CaptainOverview>>('/api/v1/newbro/captain/overview')
-  return assertSuccess(response, 'fetch captain overview failed')
-}
-
-export async function fetchCaptainPlayers(params?: CaptainPlayersParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.status) searchParams.set('status', params.status)
-
-  const response = await requestJson<ApiResult<CaptainPlayersResponse>>(
-    `/api/v1/newbro/captain/players${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch captain players failed')
-}
-
-export async function fetchCaptainAttributions(params?: CaptainAttributionsParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.player_user_id) searchParams.set('player_user_id', String(params.player_user_id))
-  if (params?.ref_type) searchParams.set('ref_type', params.ref_type)
-  if (params?.start_date) searchParams.set('start_date', params.start_date)
-  if (params?.end_date) searchParams.set('end_date', params.end_date)
-
-  const response = await requestJson<ApiResult<CaptainAttributionsResponse>>(
-    `/api/v1/newbro/captain/attributions${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch captain attributions failed')
-}
-
-export async function fetchCaptainRewardSettlements(params?: CaptainRewardSettlementsParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.keyword) searchParams.set('keyword', params.keyword)
-
-  const response = await requestJson<ApiResult<CaptainRewardSettlementsResponse>>(
-    `/api/v1/newbro/captain/rewards${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch captain reward settlements failed')
-}
-
-export async function fetchCaptainEligiblePlayers(params?: CaptainEligiblePlayersParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.keyword) searchParams.set('keyword', params.keyword)
-
-  const response = await requestJson<ApiResult<CaptainEligiblePlayersResponse>>(
-    `/api/v1/newbro/captain/eligible-players${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch captain eligible players failed')
-}
-
-export async function fetchCaptainEnrollPlayer(data: CaptainEnrollPlayerParams) {
-  const response = await requestJson<ApiResult<ApplyResponse>>('/api/v1/newbro/captain/enroll', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-  return assertSuccess(response, 'captain enroll player failed')
-}
-
-export async function fetchAdminCaptainList(params?: AdminCaptainsParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.keyword) searchParams.set('keyword', params.keyword)
-
-  const response = await requestJson<ApiResult<AdminCaptainsResponse>>(
-    `/api/v1/system/newbro/captains${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch admin captain list failed')
-}
-
-export async function fetchAdminCaptainDetail(userId: number) {
-  const response = await requestJson<ApiResult<AdminCaptainDetail>>(
-    `/api/v1/system/newbro/captains/${userId}`
-  )
-  return assertSuccess(response, 'fetch admin captain detail failed')
-}
-
-export async function fetchAdminAffiliationHistory(params?: AdminAffiliationHistoryParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.captain_search) searchParams.set('captain_search', params.captain_search)
-  if (params?.player_search) searchParams.set('player_search', params.player_search)
-  if (params?.change_start_date) searchParams.set('change_start_date', params.change_start_date)
-  if (params?.change_end_date) searchParams.set('change_end_date', params.change_end_date)
-
-  const response = await requestJson<ApiResult<AdminAffiliationHistoryResponse>>(
-    `/api/v1/system/newbro/affiliations/history${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch admin affiliation history failed')
-}
-
-export async function fetchAdminRewardSettlements(params?: AdminRewardDistributionsParams) {
-  const searchParams = new URLSearchParams()
-  if (params?.current) searchParams.set('current', String(params.current))
-  if (params?.size) searchParams.set('size', String(params.size))
-  if (params?.keyword) searchParams.set('keyword', params.keyword)
-
-  const response = await requestJson<ApiResult<AdminRewardDistributionsResponse>>(
-    `/api/v1/system/newbro/rewards${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-  )
-  return assertSuccess(response, 'fetch admin reward settlements failed')
-}
-
-export async function fetchAdminNewbroSupportSettings() {
-  const response = await requestJson<ApiResult<SupportSettings>>('/api/v1/system/newbro/support-settings')
-  return assertSuccess(response, 'fetch newbro support settings failed')
-}
-
-export async function updateAdminNewbroSupportSettings(data: UpdateSupportSettingsParams) {
-  const response = await requestJson<ApiResult<SupportSettings>>('/api/v1/system/newbro/support-settings', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
-  return assertSuccess(response, 'update newbro support settings failed')
-}
-
 export async function fetchAdminNewbroRecruitSettings() {
-  const response = await requestJson<ApiResult<RecruitSettings>>('/api/v1/system/newbro/recruit-settings')
+  const response = await requestJson<ApiResult<RecruitSettings>>(
+    '/api/v1/system/newbro/recruit-settings'
+  )
   return assertSuccess(response, 'fetch newbro recruit settings failed')
 }
 
 export async function updateAdminNewbroRecruitSettings(data: UpdateRecruitSettingsParams) {
-  const response = await requestJson<ApiResult<RecruitSettings>>('/api/v1/system/newbro/recruit-settings', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
+  const response = await requestJson<ApiResult<RecruitSettings>>(
+    '/api/v1/system/newbro/recruit-settings',
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  )
   return assertSuccess(response, 'update newbro recruit settings failed')
 }
 
 export async function generateRecruitLink() {
-  const response = await requestJson<ApiResult<GenerateLinkResponse>>('/api/v1/newbro/recruit/link', {
-    method: 'POST',
-  })
+  const response = await requestJson<ApiResult<GenerateLinkResponse>>(
+    '/api/v1/newbro/recruit/link',
+    {
+      method: 'POST',
+    }
+  )
   return assertSuccess(response, 'generate recruit link failed')
 }
 
@@ -293,10 +105,13 @@ export async function fetchAdminRecruitLinks(params: { current?: number; size?: 
 }
 
 export async function submitRecruitQQ(code: string, data: SubmitQQRequest) {
-  const response = await requestJson<ApiResult<SubmitQQResponse>>(`/api/v1/recruit/${code}/submit`, {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
+  const response = await requestJson<ApiResult<SubmitQQResponse>>(
+    `/api/v1/recruit/${code}/submit`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  )
   return assertSuccess(response, 'submit recruit qq failed')
 }
 
@@ -366,19 +181,6 @@ export async function fetchMentorRewardStages() {
   return assertSuccess(response, 'fetch mentor reward stages failed') ?? []
 }
 
-export async function fetchMentorSettings() {
-  const response = await requestJson<ApiResult<MentorSettings>>('/api/v1/system/mentor/settings')
-  return assertSuccess(response, 'fetch mentor settings failed')
-}
-
-export async function updateMentorSettings(data: UpdateMentorSettingsParams) {
-  const response = await requestJson<ApiResult<MentorSettings>>('/api/v1/system/mentor/settings', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
-  return assertSuccess(response, 'update mentor settings failed')
-}
-
 export async function fetchAdminMentorRelationships(params?: AdminRelationshipsParams) {
   const searchParams = new URLSearchParams()
   if (params?.current) searchParams.set('current', String(params.current))
@@ -413,10 +215,13 @@ export async function revokeMentorRelationship(data: RelationshipActionParams) {
 }
 
 export async function updateMentorRewardStages(data: UpdateRewardStagesParams) {
-  const response = await requestJson<ApiResult<RewardStage[]>>('/api/v1/system/mentor/reward-stages', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
+  const response = await requestJson<ApiResult<RewardStage[]>>(
+    '/api/v1/system/mentor/reward-stages',
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  )
   return assertSuccess(response, 'update mentor reward stages failed') ?? []
 }
 

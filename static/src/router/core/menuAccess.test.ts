@@ -25,16 +25,6 @@ const newbroRoutes: AppRouteRecord[] = [
     },
     children: [
       {
-        path: 'select-captain',
-        name: 'NewbroSelectCaptain',
-        component: '/newbro/select-captain',
-        meta: {
-          title: 'menus.newbro.selectCaptain',
-          login: true,
-          requiresNewbro: true
-        }
-      },
-      {
         path: 'select-mentor',
         name: 'NewbroSelectMentor',
         component: '/newbro/select-mentor',
@@ -100,23 +90,6 @@ test('router permission action titles use locale keys', () => {
   )
 })
 
-test('applyMenuAccessFilter hides requiresNewbro routes when status is unknown', () => {
-  const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], undefined)
-
-  assert.deepEqual(filtered, [
-    {
-      path: '/newbro',
-      name: 'NewbroRoot',
-      component: '/index/index',
-      meta: {
-        title: 'menus.newbro.title',
-        login: true
-      },
-      children: []
-    }
-  ])
-})
-
 test('pruneEmptyMenus removes directories whose children were fully filtered out', () => {
   const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], undefined)
   const pruned = pruneEmptyMenus(filtered)
@@ -155,7 +128,7 @@ test('applyMenuAccessFilter keeps top-level Characters for guest users', () => {
   assert.equal(filtered[0].path, '/characters')
 })
 
-test('applyMenuAccessFilter hides mentor selection routes when mentor eligibility is unknown', () => {
+test('applyMenuAccessFilter hides mentor selection when unified eligibility is unknown', () => {
   const filtered = applyMenuAccessFilter(newbroRoutes, ['user'], [], true, undefined)
 
   assert.equal(
@@ -172,10 +145,10 @@ test('newbro mentor selection route requires mentor mentee eligibility', () => {
   assert.equal(mentorRoute?.meta.requiresMentorMenteeEligibility, true)
 })
 
-test('newbro manage route keeps readonly menu access for captains', () => {
+test('newbro refund review route is restricted to administrators', () => {
   const manageRoute = actualNewbroRoutes.children?.find((route) => route.name === 'NewbroManage')
 
-  assert.deepEqual(manageRoute?.meta.roles, ['super_admin', 'admin', 'captain'])
+  assert.deepEqual(manageRoute?.meta.roles, ['super_admin', 'admin'])
 })
 
 test('newbro recruit link route is the last child under Newbro', () => {
@@ -465,12 +438,12 @@ test('applyMenuAccessFilter hides TicketManagement when AND list is only partial
   )
 })
 
-test('applyMenuAccessFilter gives super-admin entry to Captain and Mentor dashboards without capabilities', () => {
+test('applyMenuAccessFilter requires real captain role while preserving mentor dashboard access', () => {
   const filtered = applyMenuAccessFilter([actualNewbroRoutes], ['super_admin'], [])
 
   assert.equal(
     filtered[0].children?.some((route) => route.name === 'NewbroCaptainDashboard'),
-    true
+    false
   )
   assert.equal(
     filtered[0].children?.some((route) => route.name === 'NewbroMentorDashboard'),

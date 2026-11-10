@@ -46,7 +46,6 @@ const (
 	CorpCapabilitySkillPlanningPersonalRead   = "skill_planning.personal.read"
 	CorpCapabilitySkillPlanningPersonalManage = "skill_planning.personal.manage"
 	CorpCapabilityNewbroUserActions           = "newbro.user.actions"
-	CorpCapabilityNewbroCaptainActions        = "newbro.captain.actions"
 	CorpCapabilityNewbroAdminRead             = "newbro.admin.read"
 	CorpCapabilityNewbroAdminManage           = "newbro.admin.manage"
 	CorpCapabilityMentorUserActions           = "mentor.user.actions"
@@ -115,7 +114,6 @@ var validCorpCapabilities = map[string]struct{}{
 	CorpCapabilitySkillPlanningPersonalRead:   {},
 	CorpCapabilitySkillPlanningPersonalManage: {},
 	CorpCapabilityNewbroUserActions:           {},
-	CorpCapabilityNewbroCaptainActions:        {},
 	CorpCapabilityNewbroAdminRead:             {},
 	CorpCapabilityNewbroAdminManage:           {},
 	CorpCapabilityMentorUserActions:           {},

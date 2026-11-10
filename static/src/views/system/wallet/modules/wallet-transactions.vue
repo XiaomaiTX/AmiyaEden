@@ -26,6 +26,7 @@
         <ElOption :label="$t('walletAdmin.refTypes.welfare_payout')" value="welfare_payout" />
         <ElOption :label="$t('walletAdmin.refTypes.shop_purchase')" value="shop_purchase" />
         <ElOption :label="$t('walletAdmin.refTypes.shop_refund')" value="shop_refund" />
+        <ElOption :label="$t('walletAdmin.refTypes.captain_refund')" value="captain_refund" />
         <ElOption
           :label="$t('walletAdmin.refTypes.newbro_captain_reward')"
           value="newbro_captain_reward"
@@ -70,6 +71,7 @@
     welfare_payout: { label: t('walletAdmin.refTypes.welfare_payout'), tag: 'success' },
     shop_purchase: { label: t('walletAdmin.refTypes.shop_purchase'), tag: 'info' },
     shop_refund: { label: t('walletAdmin.refTypes.shop_refund'), tag: 'warning' },
+    captain_refund: { label: t('walletAdmin.refTypes.captain_refund'), tag: 'success' },
     newbro_captain_reward: {
       label: t('walletAdmin.refTypes.newbro_captain_reward'),
       tag: 'success'

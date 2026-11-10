@@ -2,13 +2,12 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/mentor_service.go
   - server/internal/service/mentor_reward.go
   - server/internal/service/mentor_eligibility.go
-  - server/internal/service/mentor_settings.go
   - server/internal/handler/mentor_mentee.go
   - server/internal/handler/mentor_mentor.go
   - server/internal/handler/mentor_admin.go
@@ -35,23 +34,14 @@ source_of_truth:
 - 当导师存在待处理学员申请时，`新人帮扶` 一级菜单与 `我是导师` 菜单会显示相同的待处理数量徽标
 - 管理员可在 `导师管理` 页面查看全部导师关系；对 `pending` 状态可取消学员申请，对 `active` 状态可撤销导师关系
 - 管理员可在 `导师管理` 页面查看导师奖励发放记录，按 ledger 方式分页展示，并支持按导师人物名或昵称搜索
-- 管理员可在 `导师管理` 页面的 `设置奖励阶段` tab 配置阶段化奖励规则、学员资格阈值，并手动执行一次奖励处理
+- 管理员可在 `导师管理` 页面的 `设置奖励阶段` tab 配置阶段化奖励规则，并手动执行一次奖励处理
 - 每日定时任务会自动扫描进行中的导师关系，按阶段顺序发放伏羲币奖励；当全部阶段都已发放后，关系会被标记为 `graduated`
 
 ## 学员资格判定
 
-当前规则由系统配置驱动，默认值为：
+与队长系统共用统一新人资格：用户全部绑定角色 SP 总和不超过默认 1000 万，最老角色年龄不超过默认 90 天，边界包含；缺少任一角色 SP 或生日资料时不符合资格。以游戏角色生日计算年龄，不使用网站注册时间。
 
-- 任一绑定人物 `total_sp < 4,000,000`
-- 账号注册时间 `<= 7` 天
-
-实现细节：
-
-- 资格判定读取用户全部已绑定人物的技能点快照
-- 当前数据模型没有持久化“加入允许军团的时间”，因此导师系统当前使用 `user.created_at` 作为账号年龄窗口，而不是 corp join timestamp
-- 管理员可在 `导师管理` 页面的 `设置奖励阶段` tab 修改上述两个阈值；保存后会立即作用于菜单资格快照、候选导师列表与申请校验
-- 候选导师列表与申请接口虽然挂在 `Login` 路由组下，但服务层会再次校验学员资格
-- 如果用户没有任何可评估人物，资格判定结果会返回 `no_characters`
+管理员在 `系统管理 / 新人资格与队长退税` 配置统一阈值，菜单、导师候选与申请接口实时读取本地资料判定。没有绑定角色返回 `no_characters`。配置调整不主动撤销已有导师关系，导师奖励阶段与奖励发放机制不变。完整规则见 [新人资格与队长退税](newbro-support.md)。
 
 ## 奖励阶段与发放
 
@@ -74,7 +64,7 @@ source_of_truth:
 - `static/src/views/newbro/mentor-manage` — 导师管理
   - 导师关系 tab：查看全部导师关系，支持按导师/学员人物名或昵称筛选
   - 奖励发放记录 tab：按 ledger 方式分页显示导师奖励发放记录，并支持按导师人物名或昵称搜索
-  - `设置奖励阶段` tab：配置奖励阶段、学员资格阈值，并支持手动执行一次奖励处理
+  - `设置奖励阶段` tab：配置奖励阶段，并支持手动执行一次奖励处理
 
 ### 后端路由
 
@@ -97,8 +87,6 @@ source_of_truth:
 - `GET /api/v1/system/mentor/relationships`
 - `GET /api/v1/system/mentor/reward-distributions`
 - `POST /api/v1/system/mentor/revoke`
-- `GET /api/v1/system/mentor/settings`
-- `PUT /api/v1/system/mentor/settings`
 - `GET /api/v1/system/mentor/reward-stages`
 - `PUT /api/v1/system/mentor/reward-stages`
 - `POST /api/v1/system/mentor/reward/process`
@@ -131,7 +119,6 @@ source_of_truth:
 - `server/internal/model/mentor.go`
 - `server/internal/repository/mentor.go`
 - `server/internal/service/mentor_eligibility.go`
-- `server/internal/service/mentor_settings.go`
 - `server/internal/service/mentor_service.go`
 - `server/internal/service/mentor_reward.go`
 - `server/internal/handler/mentor_mentee.go`

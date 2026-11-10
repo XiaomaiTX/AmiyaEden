@@ -55,7 +55,7 @@ source_of_truth:
 - RBAC：`user_role`
 - 自动权限映射：`esi_role_mapping`、`esi_title_mapping`、`eve_character_corp_role`
 - ESI 快照：资产、通知、技能、合同、装配、结构、钱包等 `eve_*` / `esi_*` 相关表
-- 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`welfare*`、`newbro_player_state`、`newbro_captain_affiliation`、`captain_bounty_attribution`、`captain_bounty_sync_state`、`alliance_pap*`、`system_wallet*`、`wallet_log`、`wallet_transaction`
+- 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`welfare*`、`captain_refund`、`captain_refund_claim`、`alliance_pap*`、`system_wallet*`、`wallet_log`、`wallet_transaction`
 - 基础设施：`operation_log`、`sde_versions`、`sys_config`
 
 ## 用户与认证
@@ -236,100 +236,15 @@ ESI 头衔到系统职权的映射表。
 
 ## 新人帮扶相关表
 
-### `newbro_player_state`
+### `captain_refund`
 
-缓存用户当前新人资格快照。
+保存申请人、状态、奖励、创建与审批时间、审批人、拒绝原因和钱包业务键。`snapshot` 是提交时冻结的 JSON，包含请求时间段和星系、成员及所属用户、资格判定资料、配置、赏金和匹配证据。审批不修改快照。
 
-关键列包括：
+### `captain_refund_claim`
 
-- `user_id`
-- `is_currently_newbro`
-- `evaluated_at`
-- `rule_version`
-- `disqualified_reason`
+以 `(character_id, journal_id)` 作为复合主键，保存占用申请 ID 和流水发生时间。待审核与已批准申请占用流水，拒绝在事务内释放占用，原快照保留。复合主键跨队长和角色身份防重。
 
-说明：
-
-- 这是快照，不是永久毕业标记
-- 当人物资料、技能快照或规则版本变化时，服务层会重新计算
-
-### `newbro_captain_affiliation`
-
-记录新人用户与队长用户之间的关联历史。
-
-关键列包括：
-
-- `player_user_id`
-- `player_primary_character_id_at_start`
-- `captain_user_id`
-- `started_at`
-- `ended_at`
-
-说明：
-
-- 同一时间一个新人只能有一条 active 关联
-- 更换队长时旧记录写入 `ended_at`，新关系另起一行
-
-### `captain_bounty_attribution`
-
-记录已持久化的队长赏金归因台账。
-
-关键列包括：
-
-- `affiliation_id`
-- `player_user_id`
-- `player_character_id`
-- `captain_user_id`
-- `captain_character_id`
-- `captain_wallet_journal_id`
-- `wallet_journal_id`
-- `ref_type`
-- `system_id`
-- `journal_at`
-- `amount`
-- `processed_at`
-
-说明：
-
-- `wallet_journal_id` 当前唯一，避免同一条新人赏金被重复归因
-- `captain_character_id` 在写入时冻结保存，后续队长主人物变化不会回改旧账
-- 当前只直接扫描并写入玩家侧 `bounty_prizes`
-- `processed_at IS NULL` 表示该条归因尚未参与队长奖励处理
-
-### `captain_reward_settlement`
-
-记录队长奖励处理历史；每次处理、每名队长写入一行。
-
-关键列包括：
-
-- `captain_user_id`
-- `attribution_count`
-- `attributed_isk_total`
-- `bonus_rate`
-- `credited_value`
-- `processed_at`
-- `wallet_ref_id`
-
-说明：
-
-- `bonus_rate` 按百分比保存，便于历史回溯时准确重建当次计算口径
-- `credited_value` 是最终发放到伏羲币的积分，保留两位小数
-- `wallet_ref_id` 对应伏羲币流水引用，当前使用 `newbro_captain_reward` 类型
-
-### `captain_bounty_sync_state`
-
-记录队长赏金归因增量同步进度。
-
-关键列包括：
-
-- `sync_key`
-- `last_wallet_journal_id`
-- `last_journal_at`
-
-说明：
-
-- 当前默认维护 `default` 同步游标
-- 当前归因回填窗口限制在最近 `30` 天
+统一资格不再使用缓存表。升级删除旧队长绑定、赏金归因、同步状态、资格缓存、结算表，保留钱包账目。详细不变量见 [新人资格与队长退税](../features/current/newbro-support.md)。
 
 ### 自动映射输入边界
 

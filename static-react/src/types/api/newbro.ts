@@ -18,22 +18,6 @@ export interface ConfirmDirectReferrerParams {
   referrer_user_id: number
 }
 
-export interface SupportSettings {
-  max_character_sp: number
-  multi_character_sp: number
-  multi_character_threshold: number
-  refresh_interval_days: number
-  bonus_rate: number
-}
-
-export interface UpdateSupportSettingsParams {
-  max_character_sp: number
-  multi_character_sp: number
-  multi_character_threshold: number
-  refresh_interval_days: number
-  bonus_rate: number
-}
-
 export interface RecruitSettings {
   recruit_qq_url: string
   recruit_reward_amount: number
@@ -84,11 +68,6 @@ export interface MyStatusResponse {
   current_relationship: RelationshipView | null
 }
 
-export interface MyAffiliationResponse {
-  is_currently_newbro: boolean
-  current_affiliation: CaptainEligiblePlayerCurrentAffiliation | null
-}
-
 export interface ApplyParams {
   mentor_user_id: number
 }
@@ -129,25 +108,11 @@ export interface MenteeListItem {
 
 export type MenteeListResponse = import('@/types/api/common').PaginatedResponse<MenteeListItem>
 
-export interface AffiliationSummary {
-  affiliation_id: number
-  captain_user_id: number
-  captain_character_id: number
-  captain_character_name: string
-  started_at: string
-  ended_at: string | null
-}
-
-export type MyAffiliationHistoryResponse = import('@/types/api/common').PaginatedResponse<AffiliationSummary>
-
 export interface RelationshipActionParams {
   relationship_id: number
 }
 
 export type EmptyResponse = Record<string, never>
-export type EndAffiliationResponse = EmptyResponse
-
-export type CaptainPlayerStatus = 'all' | 'active' | 'historical'
 
 export type MenteeStatusFilter = 'active' | 'pending' | 'rejected' | 'revoked' | 'graduated' | 'all'
 
@@ -164,7 +129,8 @@ export type AdminRelationshipsParams = Partial<{
   keyword: string
 }>
 
-export type AdminRelationshipsResponse = import('@/types/api/common').PaginatedResponse<RelationshipView>
+export type AdminRelationshipsResponse =
+  import('@/types/api/common').PaginatedResponse<RelationshipView>
 
 export interface RewardDistributionView {
   id: number
@@ -188,17 +154,8 @@ export type AdminRewardDistributionsParams = Partial<{
   keyword: string
 }>
 
-export type AdminRewardDistributionsResponse = import('@/types/api/common').PaginatedResponse<RewardDistributionView>
-
-export interface MentorSettings {
-  max_character_sp: number
-  max_account_age_days: number
-}
-
-export interface UpdateMentorSettingsParams {
-  max_character_sp: number
-  max_account_age_days: number
-}
+export type AdminRewardDistributionsResponse =
+  import('@/types/api/common').PaginatedResponse<RewardDistributionView>
 
 export type RewardConditionType = 'skill_points' | 'pap_count' | 'days_active'
 
@@ -232,194 +189,6 @@ export interface RewardProcessResult {
   graduated_count: number
 }
 
-export interface CaptainCandidate {
-  captain_user_id: number
-  captain_character_id: number
-  captain_character_name: string
-  captain_nickname: string
-  active_newbro_count: number
-  last_online_at: string | null
-}
-
-export interface CaptainOverview {
-  captain_user_id: number
-  captain_character_id: number
-  captain_character_name: string
-  captain_nickname: string
-  active_player_count: number
-  historical_player_count: number
-  attributed_bounty_total: number
-  attribution_record_count: number
-}
-
-export interface CaptainPlayerListItem {
-  player_user_id: number
-  player_character_id: number
-  player_character_name: string
-  player_nickname: string
-  started_at: string
-  ended_at: string | null
-  attributed_bounty_total: number
-}
-
-export type CaptainPlayersResponse = import('@/types/api/common').PaginatedResponse<CaptainPlayerListItem>
-
-export interface CaptainEligiblePlayerCurrentAffiliation {
-  affiliation_id: number
-  captain_user_id: number
-  captain_character_id: number
-  captain_character_name: string
-  captain_nickname: string
-  started_at: string
-}
-
-export interface CaptainEligiblePlayerListItem {
-  player_user_id: number
-  player_character_id: number
-  player_character_name: string
-  player_nickname: string
-  current_affiliation: CaptainEligiblePlayerCurrentAffiliation | null
-}
-
-export type CaptainEligiblePlayersResponse =
-  import('@/types/api/common').PaginatedResponse<CaptainEligiblePlayerListItem>
-
-export interface CaptainAttributionItem {
-  id: number
-  player_user_id: number
-  player_character_id: number
-  player_character_name: string
-  captain_character_id: number
-  captain_character_name: string
-  captain_wallet_journal_id: number
-  wallet_journal_id: number
-  ref_type: string
-  system_id: number
-  journal_at: string
-  amount: number
-  processed_at: string | null
-}
-
-export interface CaptainAttributionSummary {
-  attributed_bounty_total: number
-  record_count: number
-}
-
-export interface CaptainAttributionsResponse {
-  summary: CaptainAttributionSummary
-  list: CaptainAttributionItem[]
-  total: number
-  page: number
-  page_size: number
-}
-
-export interface CaptainRewardSettlementItem {
-  id: number
-  captain_user_id: number
-  captain_character_id: number
-  captain_character_name: string
-  captain_nickname: string
-  attribution_count: number
-  attributed_isk_total: number
-  bonus_rate: number
-  credited_value: number
-  processed_at: string
-}
-
-export interface CaptainRewardSummary {
-  settlement_count: number
-  total_credited_value: number
-  last_processed_at: string | null
-}
-
-export interface CaptainRewardSettlementsResponse {
-  summary: CaptainRewardSummary
-  list: CaptainRewardSettlementItem[]
-  total: number
-  page: number
-  page_size: number
-}
-
-export type CaptainPlayersParams = Partial<{
-  current: number
-  size: number
-  status: CaptainPlayerStatus
-}>
-
-export type CaptainEligiblePlayersParams = Partial<{
-  current: number
-  size: number
-  keyword: string
-}>
-
-export interface CaptainEnrollPlayerParams {
-  player_user_id: number
-}
-
-export interface CaptainEndAffiliationParams {
-  player_user_id: number
-}
-
-export type CaptainAttributionsParams = Partial<{
-  current: number
-  size: number
-  player_user_id: number
-  ref_type: string
-  start_date: string
-  end_date: string
-}>
-
-export type CaptainRewardSettlementsParams = Partial<{
-  current: number
-  size: number
-  keyword: string
-}>
-
-export type AdminCaptainsParams = Partial<{
-  current: number
-  size: number
-  keyword: string
-}>
-
-export type AdminCaptainsResponse = import('@/types/api/common').PaginatedResponse<CaptainOverview>
-
-export interface AdminCaptainDetail {
-  overview: CaptainOverview
-  players: CaptainPlayerListItem[]
-  players_total: number
-  attributions: CaptainAttributionItem[]
-  attributions_total: number
-  attribution_summary: CaptainAttributionSummary
-}
-
-export type AdminAffiliationHistoryParams = Partial<{
-  current: number
-  size: number
-  captain_search: string
-  player_search: string
-  change_start_date: string
-  change_end_date: string
-}>
-
-export interface AdminAffiliationHistoryItem {
-  affiliation_id: number
-  player_user_id: number
-  player_character_id: number
-  player_character_name: string
-  player_nickname: string
-  captain_user_id: number
-  captain_character_id: number
-  captain_character_name: string
-  captain_nickname: string
-  changed_by_character_name: string
-  started_at: string
-  ended_at: string | null
-  created_at: string
-}
-
-export type AdminAffiliationHistoryResponse =
-  import('@/types/api/common').PaginatedResponse<AdminAffiliationHistoryItem>
-
 export interface RecruitEntry {
   id: number
   qq: string
@@ -447,7 +216,8 @@ export type AdminRecruitLinksParams = Partial<{
   size: number
 }>
 
-export type AdminRecruitLinksResponse = import('@/types/api/common').PaginatedResponse<AdminRecruitLink>
+export type AdminRecruitLinksResponse =
+  import('@/types/api/common').PaginatedResponse<AdminRecruitLink>
 
 export interface GenerateLinkResponse {
   id: number
