@@ -44,6 +44,8 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		sso.GET("/login", ssoH.Login)
 		sso.GET("/callback", ssoH.Callback)
 		sso.GET("/scopes", ssoH.GetScopes)
+		sso.GET("/registration", ssoH.GetRegistration)
+		sso.POST("/registration", ssoH.CompleteRegistration)
 	}
 
 	// ─── SDE 公开查询 ──

@@ -69,6 +69,8 @@ func (h *EveSSOHandler) Login(c *gin.Context) {
 //
 // GET /api/v1/sso/eve/callback?code=xxx&state=xxx
 func (h *EveSSOHandler) Callback(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	c.Header("Referrer-Policy", "no-referrer")
 	code := c.Query("code")
 	state := c.Query("state")
 	errParam := c.Query("error")
@@ -114,6 +116,14 @@ func (h *EveSSOHandler) Callback(c *gin.Context) {
 		return
 	}
 
+	if result.RegistrationTicket != "" {
+		if result.RedirectURL != "" {
+			c.Redirect(302, result.RedirectURL+"?registration="+url.QueryEscape(result.RegistrationTicket))
+			return
+		}
+		response.OK(c, gin.H{"registration": result.RegistrationTicket})
+		return
+	}
 	h.recordSecurityEvent(c, "eve_sso_callback_success", model.AuditResultSuccess, map[string]any{
 		"user_id":      result.User.ID,
 		"character_id": result.Character.CharacterID,

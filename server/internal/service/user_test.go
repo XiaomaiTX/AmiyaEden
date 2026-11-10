@@ -69,7 +69,7 @@ func TestBuildUserPatchUpdates(t *testing.T) {
 	})
 
 	t.Run("admin can update status without forcing completion", func(t *testing.T) {
-		current := &model.User{}
+		current := &model.User{QQ: "123456"}
 		status := int8(0)
 
 		_, updates, err := buildUserPatchUpdates(current, UserPatch{Status: &status}, false)

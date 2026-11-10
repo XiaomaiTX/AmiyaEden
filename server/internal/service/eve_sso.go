@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -311,26 +312,6 @@ func (s *EveSSOService) resolveInitialSSOState(ctx context.Context, characterID 
 	return resolveInitialSSORole(affiliation.CorporationID, utils.GetAllowCorporations()), affiliation
 }
 
-func (s *EveSSOService) createDefaultSSOUser(ctx context.Context, primaryCharacterID int64, clientIP string, now time.Time, initialRole string) (*model.User, error) {
-	finalRole := initialRole
-	for _, adminCharID := range global.Config.App.SuperAdmins {
-		if adminCharID == primaryCharacterID {
-			finalRole = model.RoleSuperAdmin
-			global.Logger.Info("从配置文件授予超级管理员职权",
-				zap.Int64("character_id", primaryCharacterID))
-			break
-		}
-	}
-
-	user := buildDefaultSSOUser(primaryCharacterID, clientIP, now, finalRole)
-	if err := s.userRepo.Create(user); err != nil {
-		return nil, err
-	}
-
-	s.roleSvc.EnsureUserHasRole(ctx, user.ID, user.Role)
-	return user, nil
-}
-
 // SyncConfigSuperAdmins 根据配置文件同步用户的 super_admin 职权
 // 如果用户的任意人物 ID 在配置列表中则授予，否则移除
 func SyncConfigSuperAdmins(ctx context.Context, userID uint) {
@@ -446,8 +427,7 @@ func (s *EveSSOService) GetAuthURL(ctx context.Context, extraScopes []string, re
 	// 存入 Redis
 	data := stateData{ExtraScopes: extraScopes, RedirectURL: redirectURL}
 	if err := cache.Set(ctx, stateCachePrefix+state, data, stateCacheTTL); err != nil {
-		global.Logger.Warn("存储 SSO state 失败", zap.Error(err))
-		// Redis 不可用时仍允许继续（降级）
+		return "", errors.New("暂时无法开始登录，请稍后重试")
 	}
 
 	scopes := buildLoginScopes(extraScopes)
@@ -465,7 +445,7 @@ func (s *EveSSOService) GetBindAuthURL(ctx context.Context, userID uint, extraSc
 
 	data := stateData{ExtraScopes: extraScopes, RedirectURL: redirectURL, BindToUserID: userID}
 	if err := cache.Set(ctx, stateCachePrefix+state, data, stateCacheTTL); err != nil {
-		global.Logger.Warn("存储 SSO state 失败", zap.Error(err))
+		return "", errors.New("暂时无法开始绑定，请稍后重试")
 	}
 
 	scopes := buildLoginScopes(extraScopes)
@@ -558,7 +538,8 @@ type CallbackResult struct {
 	RedirectURL string              `json:"redirect_url"` // 前端跳转地址（可能为空）
 	// ReauthURL 非空时表示需要透明补授缺失的可选 scope：handler 应 302 到该 EVE 授权地址
 	// 而不是返回 JWT。EVE 对历史已授过的 scope 不再弹确认页，用户近乎无感。
-	ReauthURL string `json:"-"`
+	ReauthURL          string `json:"-"`
+	RegistrationTicket string `json:"-"`
 }
 
 // HandleCallback 处理 EVE SSO 回调，完成 Token 交换、用户创建/更新，颁发本系统 JWT
@@ -569,13 +550,14 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 	// 读取并删除 state（防重放）
 	var sd stateData
-	if err := cache.Get(ctx, stateCachePrefix+state, &sd); err != nil {
-		// state 不存在或已过期——记录但不强制失败（降级兼容）
-		global.Logger.Warn("EVE SSO state 未找到或已过期", zap.String("state", state))
-	} else {
-		_ = cache.Del(ctx, stateCachePrefix+state)
+	data, stateErr := global.Redis.GetDel(ctx, stateCachePrefix+state).Bytes()
+	if state == "" || stateErr != nil || json.Unmarshal(data, &sd) != nil {
+		return nil, errors.New("登录会话已失效，请重新登录")
 	}
 	if sd.BindToUserID > 0 {
+		if _, err := s.userRepo.GetByID(sd.BindToUserID); err != nil {
+			return nil, errors.New("绑定目标用户不存在")
+		}
 		if err := s.authorizeBindExtraScopes(ctx, sd.BindToUserID, sd.ExtraScopes); err != nil {
 			return nil, err
 		}
@@ -602,7 +584,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 	tokenExpiry := time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 	scopesStr := strings.Join(grantedScopes, " ")
-	initialRole, affiliation := s.resolveInitialSSOState(ctx, characterID)
+	_, affiliation := s.resolveInitialSSOState(ctx, characterID)
 
 	// 3. 查找或创建 EveCharacter
 	char, err := s.charRepo.GetByCharacterID(characterID)
@@ -660,41 +642,14 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 			return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
 		}
 
-		// ── 登录流程：首次登录，创建新用户 + 新人物 ──
-		user, err := s.createDefaultSSOUser(ctx, characterID, clientIP, now, initialRole)
-		if err != nil {
-			return nil, err
-		}
-
+		// First login remains outside the database until contact registration succeeds.
 		char = &model.EveCharacter{
-			CharacterID:   characterID,
-			CharacterName: claims.Name,
-			UserID:        user.ID,
-			AccessToken:   tokenResp.AccessToken,
-			RefreshToken:  tokenResp.RefreshToken,
-			TokenExpiry:   tokenExpiry,
-			Scopes:        scopesStr,
+			CharacterID: characterID, CharacterName: claims.Name,
+			AccessToken: tokenResp.AccessToken, RefreshToken: tokenResp.RefreshToken,
+			TokenExpiry: tokenExpiry, Scopes: scopesStr,
 		}
 		applyAffiliationToCharacter(char, affiliation)
-		if err := s.charRepo.Create(char); err != nil {
-			return nil, err
-		}
-
-		// 同步执行 affiliation / corp roles 拉取与权限重算，确保 JWT 生成前职权已正确设置
-		if OnNewCharacterSyncFunc != nil {
-			OnNewCharacterSyncFunc(characterID, user.ID)
-		}
-
-		// 触发新人物全量 ESI 刷新（后台异步）
-		if OnNewCharacterFunc != nil {
-			OnNewCharacterFunc(characterID, user.ID)
-		}
-
-		jwtToken, user, err := s.loadUserAndGenerateToken(user.ID)
-		if err != nil {
-			return nil, err
-		}
-		return &CallbackResult{Token: jwtToken, User: user, Character: char, RedirectURL: sd.RedirectURL}, nil
+		return s.beginRegistration(ctx, char, sd.RedirectURL)
 	}
 
 	// 已有人物
@@ -789,6 +744,16 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	}
 
 	// ── 登录流程：已有人物重新登录 ──
+	// An orphan character must complete the same contact registration as a new identity.
+	if _, ownerErr := s.userRepo.GetByID(char.UserID); ownerErr != nil {
+		if !errors.Is(ownerErr, gorm.ErrRecordNotFound) {
+			return nil, ownerErr
+		}
+		applyCallbackTokenFields(char, tokenResp.AccessToken, tokenResp.RefreshToken, tokenExpiry, claims.Name)
+		char.Scopes = scopesStr
+		applyAffiliationToCharacter(char, affiliation)
+		return s.beginRegistration(ctx, char, sd.RedirectURL)
+	}
 	var reauthScopes []string
 	char, err = s.updateExistingCharacterLocked(characterID, func(c *model.EveCharacter) error {
 		// 用合并前的库中快照计算缺失项，供本次回调后透明补授
@@ -807,33 +772,7 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 	// 更新用户最后登录信息
 	user, err := s.userRepo.GetByID(char.UserID)
 	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		}
-
-		oldUserID := char.UserID
-		orphanInitialRole := initialRole
-		if affiliation == nil {
-			orphanInitialRole = resolveInitialSSORole(char.CorporationID, utils.GetAllowCorporations())
-		}
-		user, err = s.createDefaultSSOUser(ctx, characterID, clientIP, now, orphanInitialRole)
-		if err != nil {
-			return nil, err
-		}
-
-		char, err = s.updateExistingCharacterLocked(characterID, func(c *model.EveCharacter) error {
-			c.UserID = user.ID
-			// 按新归属用户的职权重新合并，管理员专属可选 scope 会被剥离
-			return s.applyMergedScopes(ctx, c, grantedScopes)
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		global.Logger.Info("孤儿人物重新创建用户（登录流程）",
-			zap.Int64("characterID", characterID),
-			zap.Uint("oldUserID", oldUserID),
-			zap.Uint("newUserID", user.ID))
+		return nil, err
 	}
 	user.LastLoginAt = &now
 	user.LastLoginIP = clientIP

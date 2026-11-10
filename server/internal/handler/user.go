@@ -86,6 +86,9 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		DiscordID: req.DiscordID,
 		Status:    req.Status,
 	}); err != nil {
+		if contactConflictResponse(c, err) {
+			return
+		}
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}
