@@ -349,7 +349,6 @@
             <ElButton type="primary" :loading="savingAuthorizations" @click="saveAuthorizations">
               {{ $t('common.save') }}
             </ElButton>
-
           </div>
 
           <ElTable v-loading="settingsLoading" :data="settings.corporations" stripe border>
@@ -638,7 +637,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ElCheckbox, ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus'
+  import { ElCheckbox, ElLink, ElMessage, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
   import { useTable } from '@/hooks/core/useTable'
@@ -676,7 +675,7 @@
   const settings = ref<Api.Dashboard.CorporationStructuresSettings>({
     corporations: [],
     fuel_notice_threshold_days: 7,
-    timer_notice_threshold_days: 7,
+    timer_notice_threshold_days: 7
   })
   const noticeThresholds = reactive({
     fuel_notice_threshold_days: 7,
@@ -1231,7 +1230,7 @@
         ),
         timer_notice_threshold_days: normalizeThresholdDays(
           noticeThresholds.timer_notice_threshold_days
-        ),
+        )
       })
       await loadSettings()
       ElMessage.success(t('corporationStructures.messages.authorizationSaved'))

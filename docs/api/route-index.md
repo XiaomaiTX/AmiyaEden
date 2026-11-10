@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-10-12
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/corporation_capability.go
@@ -551,3 +551,17 @@ source_of_truth:
 | GET    | `/system/webhook/config`                   | 获取 Webhook 配置              | `RequireRole(super_admin)` |
 | PUT    | `/system/webhook/config`                   | 保存 Webhook 配置              | `RequireRole(super_admin)` |
 | POST   | `/system/webhook/test`                     | 测试 Webhook                   | `RequireRole(super_admin)` |
+
+## OneBot 统一调度
+
+- `GET /internal/onebot/v11/ws`：反向 Universal WebSocket；独立 Token、机器人身份及 TCP 源 CIDR 鉴权，不使用用户 JWT。只部署一个连接持有实例。
+- `/api/v1/system/qqbot` 全部要求登录、`super_admin` 与 `system.manage`（按现有超管能力规则）。
+- `GET/PUT /config`：统一接入和限流配置；Token 永不返回，省略 Token 保留旧值。
+- `GET /snapshot`：连接、读写风控、最近 200 操作/尝试/消费记录、最近 100 事件。
+- `POST /operations/:id/cancel`：标记取消；已执行操作不会伪装为撤回。
+- `POST /operations/:id/retry`：只允许有效期内耗尽明确临时失败预算的操作创建一个幂等重试子操作；禁止永久错误和未知写结果重试。
+- `POST /deliveries/:id/retry`：仅死信且累计尝试小于 10 次。
+- `PUT /circuits/:class`：手工暂停/恢复 read 或 write。
+
+无公开业务操作提交或任意 Action 透传。内部服务契约见 [设计](../architecture/qqbot-dispatch.md)。
+- `GET /operations/:id`：按操作 ID 查询当前状态和诚实终态；同样仅超管。快照同时暴露 Redis 可用性与全局桶剩余等待毫秒。

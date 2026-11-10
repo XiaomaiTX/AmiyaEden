@@ -224,11 +224,6 @@ func validateWebhookRequestTarget(cfg *WebhookConfig) error {
 		return fmt.Errorf("webhook 配置错误: 配置不能为空")
 	}
 
-	webhookType := strings.ToLower(strings.TrimSpace(cfg.Type))
-	if webhookType == "" {
-		webhookType = "discord"
-	}
-
 	_, err := buildValidatedWebhookRequestURL(cfg)
 	return err
 }

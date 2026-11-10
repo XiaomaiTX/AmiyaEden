@@ -60,6 +60,12 @@ func InitDB() {
 // autoMigrate 自动迁移数据库表结构
 func autoMigrate(db *gorm.DB) {
 	if err := db.AutoMigrate(
+		&model.QQBotOperation{},
+		&model.QQBotAttempt{},
+		&model.QQBotInbox{},
+		&model.QQBotDelivery{},
+		&model.QQBotCircuit{},
+		&model.QQBotSetting{},
 		&model.User{},
 		&model.MumbleIdentity{},
 		&model.OperationLog{},

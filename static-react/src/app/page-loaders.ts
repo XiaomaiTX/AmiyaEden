@@ -88,6 +88,7 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
   'system-pap': lazyNamed(() => import('@/pages/system-pap-page'), 'SystemPAPPage'),
   'system-auto-role': lazyNamed(() => import('@/pages/system-auto-role-page'), 'SystemAutoRolePage'),
   'system-user-center': lazyNamed(() => import('@/pages/system-user-center-page'), 'SystemUserCenterPage'),
+  'system-qqbot': lazyNamed(() => import('@/pages/system-qqbot-page'), 'SystemQQBotPage'),
   'system-webhook': lazyNamed(() => import('@/pages/system-webhook-page'), 'SystemWebhookPage'),
   'system-newbro-settings': lazyNamed(() => import('@/pages/captain-refund-settings'), 'CaptainRefundSettingsPanel'),
   'system-basic-config': lazyNamed(() => import('@/pages/system-basic-config-page'), 'SystemBasicConfigPage'),

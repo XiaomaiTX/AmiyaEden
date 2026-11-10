@@ -3147,5 +3147,39 @@
         "rewardAmount": "请输入大于 0 的整数奖励数量"
       }
     }
+  },
+  "qqbot": {
+    "rate": "Redis 限流状态 / 等待毫秒",
+    "title": "QQ 机器人调度",
+    "refresh": "刷新",
+    "save": "保存配置",
+    "enabled": "启用接入",
+    "bot": "机器人 QQ",
+    "cidrs": "允许的 CIDR（逗号分隔）",
+    "interval": "统一限流间隔（毫秒）",
+    "token": "新令牌（留空保留）",
+    "connected": "连接状态",
+    "online": "已连接",
+    "offline": "已断开",
+    "risk": "读写风控",
+    "operations": "操作队列（最近 200 条）",
+    "attempts": "尝试日志",
+    "events": "事件收件箱",
+    "deliveries": "消费者处理",
+    "cancel": "取消",
+    "retry": "受限重试",
+    "pause": "暂停",
+    "resume": "恢复",
+    "error": "操作失败",
+    "success": "操作完成",
+    "unknown": "未知结果不会自动重发消息；平台成功不代表用户已读。",
+    "status": "状态",
+    "key": "业务键",
+    "waiting": "等待原因",
+    "result": "结果",
+    "id": "标识",
+    "class": "类别",
+    "failures": "失败次数",
+    "detail": "详情"
   }
- }
+}

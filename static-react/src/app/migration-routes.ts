@@ -59,6 +59,7 @@ export type AppPageType =
   | 'system-auto-role'
   | 'system-user-center'
   | 'system-webhook'
+  | 'system-qqbot'
   | 'system-basic-config'
   | 'system-newbro-settings'
   | 'srp-apply'
@@ -81,6 +82,14 @@ export interface AppRouteSpec {
 }
 
 const unorderedAppRouteSpecs: AppRouteSpec[] = [
+  {
+    path: 'system/qqbot',
+    titleKey: 'qqbot.title',
+    pageType: 'system-qqbot',
+    menuGroup: 'nav.group.system',
+    menuIcon: 'system',
+    meta: { login: true, roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
+  },
   {
     path: 'characters',
     titleKey: 'nav.dashboard.characters',
@@ -861,6 +870,7 @@ const appRouteOrder = [
   'system/pap',
   'system/auto-role',
   'system/user-center',
+  'system/qqbot',
   'system/webhook',
   'system/newbro-settings',
   'system/basic-config',

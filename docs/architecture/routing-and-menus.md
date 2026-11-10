@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-08-01
+last_reviewed: 2026-11-10
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
@@ -104,4 +104,6 @@ Vue 通过 `v-auth` 或权限 hook 消费 `meta.authList` 语义。React 由叶�
 
 队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。系统管理的独立 `/system/newbro-settings` 入口配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
 
-QQ Bot 已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
+旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
+
+双前端新增 `/system/qqbot`，菜单 `qqbot.title`，仅 `super_admin`，能力 `system.manage`；全部读写按钮继承页面超管边界，后端逐路由同样保护。无公开 QQ 操作提交按钮。

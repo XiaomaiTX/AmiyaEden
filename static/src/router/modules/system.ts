@@ -18,6 +18,12 @@ export const systemRoutes: AppRouteRecord = {
   },
   children: [
     {
+      path: 'qqbot',
+      name: 'QQBot',
+      component: '/system/qqbot',
+      meta: { title: 'qqbot.title', roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] }
+    },
+    {
       path: 'user',
       name: 'User',
       component: '/system/user',

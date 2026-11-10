@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-04-23
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/main.go
   - server/global/global.go
@@ -67,7 +67,7 @@ SDE 检查更新当前行为：
   - 进入关停后，`background.Manager` 必须拒绝新任务，并向已跟踪任务广播取消；任务代码如果接收了上下文，就应把取消继续向下游传播。
 - 只有那些在 manager 已进入关停时仍必须完成同步语义的调用点，才允许通过 `background.RunOrSchedule` 明确回退为调用方上下文内联执行；不能静默丢弃任务。
 
-QQ Bot 已移除：启动不创建连接管理器或 QQ worker，cron 不注册治理及建筑 QQ 预警任务；数据库初始化不注册相关模型、迁移与索引。
+旧 QQ 治理与建筑预警业务已移除：cron 不注册这些业务任务，数据库不注册旧治理/预警模型及索引。新的独立调度基础设施生命周期见下文。
 
 ## 关键入口文件
 
@@ -93,3 +93,5 @@ QQ Bot 已移除：启动不创建连接管理器或 QQ worker，cron 不注册�
 - 任务管理相关的异步执行使用共享后台任务管理器；周期任务支持管理员查看与超级管理员重设 cron
 - SDE 缺失会直接影响舰队配置 EFT 解析、名称翻译、搜索等共享能力
 - `register` 页面源码仍在仓库中，但不是当前支持的登录架构；`forget-password` 页面已移除
+
+QQBot 在数据库及 Redis 初始化后、HTTP 路由启动前由 background.Manager 启动。只允许单实例持有反向连接；默认关闭，无业务消费者或自动写调用。关停先关闭 WebSocket 并结束 pending，再由后台管理器取消 worker。过期租约每轮回收，清理每小时运行；详见 [QQ 调度](../features/current/qqbot.md)。

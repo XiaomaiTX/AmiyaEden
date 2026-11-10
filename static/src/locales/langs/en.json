@@ -3400,5 +3400,39 @@
         "rewardAmount": "Enter an integer reward amount greater than 0"
       }
     }
+  },
+  "qqbot": {
+    "rate": "Redis limiter status / wait milliseconds",
+    "title": "QQ bot dispatcher",
+    "refresh": "Refresh",
+    "save": "Save configuration",
+    "enabled": "Enable connection",
+    "bot": "Bot QQ ID",
+    "cidrs": "Allowed CIDRs (comma separated)",
+    "interval": "Global interval (milliseconds)",
+    "token": "New token (blank keeps existing)",
+    "connected": "Connection",
+    "online": "Connected",
+    "offline": "Disconnected",
+    "risk": "Read / write circuits",
+    "operations": "Operations (latest 200)",
+    "attempts": "Attempt log",
+    "events": "Event inbox",
+    "deliveries": "Consumer deliveries",
+    "cancel": "Cancel",
+    "retry": "Restricted retry",
+    "pause": "Pause",
+    "resume": "Resume",
+    "error": "Operation failed",
+    "success": "Operation completed",
+    "unknown": "Unknown messages are not resent automatically. Platform success does not mean read by a user.",
+    "status": "Status",
+    "key": "Business key",
+    "waiting": "Waiting reason",
+    "result": "Result",
+    "id": "ID",
+    "class": "Class",
+    "failures": "Failures",
+    "detail": "Details"
   }
- }
+}

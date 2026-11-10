@@ -28,10 +28,7 @@
         </ElFormItem>
 
         <!-- Webhook URL -->
-        <ElFormItem
-          :label="$t('webhook.fields.url')"
-          prop="url"
-        >
+        <ElFormItem :label="$t('webhook.fields.url')" prop="url">
           <ElInput
             v-model="form.url"
             :placeholder="$t('webhook.fields.urlPlaceholder')"
@@ -79,10 +76,7 @@
           </ElSelect>
         </ElFormItem>
         <ElFormItem :label="$t('webhook.test.url')">
-          <ElInput
-            v-model="testForm.url"
-            :placeholder="$t('webhook.fields.urlPlaceholder')"
-          />
+          <ElInput v-model="testForm.url" :placeholder="$t('webhook.fields.urlPlaceholder')" />
         </ElFormItem>
         <ElFormItem :label="$t('webhook.test.content')">
           <ElInput
@@ -133,13 +127,13 @@
     url: '',
     enabled: false,
     type: 'discord',
-    fleet_template: '',
+    fleet_template: ''
   })
 
   const testForm = reactive({
     url: '',
     type: 'discord',
-    content: '',
+    content: ''
   })
 
   const canSubmitTest = computed(() => !!testForm.url)
@@ -182,7 +176,7 @@
       await testWebhook({
         url: testForm.url,
         type: testForm.type,
-        content: testForm.content,
+        content: testForm.content
       })
       ElMessage.success(t('webhook.test.success'))
     } catch {

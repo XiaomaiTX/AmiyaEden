@@ -3,6 +3,7 @@ package main
 import (
 	"amiya-eden/bootstrap"
 	"amiya-eden/global"
+	"amiya-eden/internal/service"
 	"amiya-eden/pkg/background"
 	"amiya-eden/pkg/jwt"
 	"context"
@@ -45,6 +46,9 @@ func main() {
 	// 初始化 Redis
 	bootstrap.InitRedis()
 
+	qqbot := service.DefaultQQBotService()
+	global.BackgroundTaskManager().Go("qqbot", qqbot.Run)
+
 	// 初始化定时任务
 	taskSvc := bootstrap.InitCron()
 
@@ -73,6 +77,7 @@ func main() {
 	<-quit
 
 	global.Logger.Info("正在关闭服务...")
+	qqbot.Close()
 	shutdownServer(srv, stopCronScheduler(), global.BackgroundTaskManager(), 5*time.Second)
 	global.Logger.Info("服务已退出")
 }
