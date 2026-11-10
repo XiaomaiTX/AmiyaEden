@@ -24,6 +24,7 @@
 import { AxiosError } from 'axios'
 import { ApiStatus } from './status'
 import { $t } from '@/locales'
+import { ElMessageBox } from 'element-plus'
 
 // 错误响应接口
 export interface ErrorResponse {
@@ -155,6 +156,22 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
  * @param showMessage 是否显示错误消息
  */
 export function showError(error: HttpError, showMessage: boolean = true): void {
+  const conflict = error.data as { contact?: string; primary_character_name?: string } | undefined
+  if (
+    showMessage &&
+    error.code === 409 &&
+    error.message === 'contact_already_bound' &&
+    conflict?.primary_character_name
+  ) {
+    void ElMessageBox.alert(
+      $t(conflict.contact === 'qq' ? 'registration.qqConflict' : 'registration.discordConflict', {
+        name: conflict.primary_character_name
+      }),
+      $t('registration.conflictTitle'),
+      { confirmButtonText: $t('registration.close'), type: 'warning' }
+    ).catch(() => {})
+    return
+  }
   if (showMessage) {
     ElMessage.error(error.message)
   }

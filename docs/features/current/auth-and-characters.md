@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-09-04
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/eve_sso.go
@@ -24,7 +24,7 @@ source_of_truth:
 ## 当前能力
 
 - 通过 EVE SSO 登录
-- 首次登录创建 / 关联用户
+- 首次 EVE 授权后先填写昵称及 QQ / Discord，提交成功才创建用户
 - 一个用户绑定多个人物
 - 设置主人物
 - 解绑人物
@@ -47,6 +47,8 @@ source_of_truth:
 - `GET /api/v1/sso/eve/login`
 - `GET /api/v1/sso/eve/callback`
 - `GET /api/v1/sso/eve/scopes`
+- `GET /api/v1/sso/eve/registration`
+- `POST /api/v1/sso/eve/registration`
 - `GET /api/v1/sso/eve/characters`
 - `GET /api/v1/sso/eve/bind`
 - `PUT /api/v1/sso/eve/primary/:character_id`
@@ -75,7 +77,7 @@ source_of_truth:
 - `/api/v1/me` 是前端启动权限上下文的关键接口；`GET` 必须返回 `profile_complete`，由后端按昵称和至少一种联系方式计算
 - `/api/v1/me` 不是"非 guest 才可访问"的业务接口，而是登录后立即可用的自助上下文接口
 - `/api/v1/me` 的自助注销能力只针对当前登录用户，不等同于 `/api/v1/system/user/:id` 管理端删除
-- 当前登录后必须完成昵称与联系方式资料，才允许继续访问其他业务页面
+- 新用户必须在登录回调页完成注册后才能取得应用 JWT；现有账号仍保留资料完成状态与前端资料锁
 - React 在后端滚动部署期间若暂时未收到 `profile_complete`，会按昵称与 QQ / Discord ID 重新计算，避免持久化会话误判资料未完成
 - QQ / Discord ID 的默认管理入口是 `/api/v1/me`；管理员侧 `/api/v1/system/user/:id` 仅允许 `super_admin` 维护非 `super_admin` 用户的联系方式
 - 当前登录后若系统配置 `auth.enforce_character_esi_restriction = true`，则还必须保证所有已绑定人物的 ESI 有效，才允许离开 `/dashboard/characters`
@@ -86,7 +88,9 @@ source_of_truth:
 - 管理员专属可选 scope（军团击杀邮件）在归属用户失去管理员职权后的下一次 SSO 回调写入时被剥离；普通可选 scope 不受职权影响
 - SSO 回调对已有人物的读-改-写与后台 token 刷新共用 per-character 互斥锁，防止轮换式 refresh token 被旧值覆盖；生日等旁路字段只做目标列更新，不做整行覆盖
 - 已有人物重新登录时，若历史授权含当前 token 链缺失的非管理员专属可选 scope，后端自动 302 引导到 EVE 授权页补授一次（state 携带 `scope_refresh_attempted` 标记防循环）；补授链仍缺 scope 时正常颁发 JWT
-- QQ / Discord ID 的唯一性由后端校验
+- QQ / Discord ID 的唯一性由后端和数据库索引共同校验，包括软删除账号占用的联系方式；本人可保留原值
+- QQ / Discord 已被其他账号占用时，Vue 与 React 显示本地化弹窗，使用占用账号的主人物名字，提示先登录该人物并点击“绑定新人物”添加当前人物；不自动转移或合并账号
+- 本人及管理员更新资料均不可清空最后一个联系方式；数据库 CHECK 同时拒绝空字符串、NULL 和纯空白组合
 - 职权编码与权限列表必须与后端返回保持一致，不做前端别名映射
 - 所有 EVE SSO 端点（授权、令牌、图片服务等）通过 `server/config/config.go` 中的 `EveSSOConfig` 配置管理，禁止硬编码 URL
 
@@ -96,10 +100,24 @@ source_of_truth:
 - `server/internal/handler/me.go`
 - `server/internal/service/eve_sso.go`
 - `server/internal/service/user.go`
+- `server/internal/service/registration.go`
+- `server/internal/repository/registration.go`
+- `server/bootstrap/user_contact_migration.go`
 - `server/internal/router/router.go`
 - `static/src/api/auth.ts`
 - `static/src/views/auth`
 - `static/src/views/dashboard/characters`
+
+## 注册状态与部署迁移
+
+- 未注册或原账号已删除的人物完成 SSO 后，仅在 Redis 保存待注册状态（包含 EVE 授权），有效期 15 分钟。应用 JWT、user、eve_character、user_role 均在验证联系方式后才创建；三类数据库记录在同一事务提交。
+- 注册票据是 256 位随机不透明值，只能通过 `X-Registration-Token` 使用注册接口。Vue / React 进入回调页后将票据移出地址栏，暂存 sessionStorage 以支持刷新；完成注册或返回登录时移除。票据过期、Redis 不可用或 state 无效时要求重新登录，不降级创建无联系方式用户。
+- Vue / React 注册页使用居中的人物资料卡片，提供中英文切换，切换语言保留表单和联系方式选择。昵称默认留空，去除首尾空白后须为 2–20 个字符，前后端均校验；昵称与当前联系方式标签使用红色星号表示必填。QQ / Discord 单选切换，默认 QQ；只显示并提交当前选择的联系方式。切换时保留已输入内容，当前选项为空时禁止注册，不使用隐藏选项的值代替。
+- 注册提交使用 Redis 票据锁及 PostgreSQL 人物事务锁；不同票据不能重复创建同一个人物。联系方式竞争由唯一索引兜底，失败事务不留下半个账号，冲突票据仍可重试。
+- 部署启动在 AutoMigrate 后、开始服务请求前运行 `20261110_require_user_contact`。迁移事务删除所有 QQ 与 Discord 均为空白的 user（包含软删除账号），以及所属人物授权、user_role、Mumble 身份和明确列出的个人 ESI 表记录。订单、账务、补损、福利、工单、PAP 和审计等业务历史保留。
+- 迁移建立 `chk_user_required_contact`、QQ / Discord 非空值唯一索引，成功后在 `schema_migration` 记版本；重复启动不再清理。若现存 Discord 重复或其他步骤失败，整个迁移回滚并阻止启动，须先修复冲突。
+- JWT 中间件在读取角色缓存前核实用户仍存在且启用，因此被迁移删除的账号即使持有旧 JWT / 角色缓存也无法认证。
+- 部署前备份 PostgreSQL。清理是物理删除；回滚须配合恢复部署前数据库备份及旧应用。被清理人物也可重新 SSO 授权，填写联系方式后注册。
 
 ## 前端实现映射（迁移期）
 

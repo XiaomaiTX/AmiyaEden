@@ -5,14 +5,17 @@ import { fetchGetUserInfo } from '@/api/auth'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
 import { toSessionSnapshot } from '@/auth'
+import { AuthRegistrationForm } from './auth-registration-form'
 
 type CallbackStatus = 'loading' | 'success' | 'error'
 const SSO_REDIRECT_STORAGE_KEY = 'auth:sso:redirect'
+const REGISTRATION_STORAGE_KEY = 'auth:registration'
 
 function useCallbackQuery(search: string) {
   const query = useMemo(() => new URLSearchParams(search), [search])
   return {
     token: query.get('token'),
+    registration: query.get('registration'),
     redirect: query.get('redirect'),
     error: query.get('error'),
     errorDescription: query.get('error_description'),
@@ -23,7 +26,13 @@ export function AuthCallbackPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
   const location = useLocation()
-  const { token, redirect, error, errorDescription } = useCallbackQuery(location.search)
+  const { token, registration, redirect, error, errorDescription } = useCallbackQuery(
+    location.search
+  )
+  const [ticket] = useState(
+    () =>
+      registration || (!token && !error ? sessionStorage.getItem(REGISTRATION_STORAGE_KEY) : null)
+  )
   const setSessionSnapshot = useSessionStore((state) => state.setSessionSnapshot)
   const clearSession = useSessionStore((state) => state.clearSession)
 
@@ -34,6 +43,11 @@ export function AuthCallbackPage() {
     let cancelled = false
 
     const run = async () => {
+      if (ticket && !token && !error) {
+        sessionStorage.setItem(REGISTRATION_STORAGE_KEY, ticket)
+        if (registration) navigate('/auth/callback', { replace: true })
+        return
+      }
       if (error) {
         setStatus('error')
         setErrorMessage(errorDescription || error)
@@ -47,6 +61,7 @@ export function AuthCallbackPage() {
       }
 
       try {
+        sessionStorage.removeItem(REGISTRATION_STORAGE_KEY)
         setSessionSnapshot({
           accessToken: token,
           isLoggedIn: true,
@@ -81,40 +96,71 @@ export function AuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [clearSession, error, errorDescription, navigate, redirect, setSessionSnapshot, t, token])
+  }, [
+    clearSession,
+    error,
+    errorDescription,
+    navigate,
+    redirect,
+    registration,
+    setSessionSnapshot,
+    t,
+    ticket,
+    token,
+  ])
+
+  if (ticket && !token && !error) {
+    return (
+      <main className="registration-page">
+        <AuthRegistrationForm
+          ticket={ticket}
+          onComplete={(newToken) => {
+            sessionStorage.removeItem(REGISTRATION_STORAGE_KEY)
+            navigate(`/auth/callback?token=${encodeURIComponent(newToken)}`, { replace: true })
+          }}
+          onLogin={() => {
+            sessionStorage.removeItem(REGISTRATION_STORAGE_KEY)
+            navigate('/auth/login', { replace: true })
+          }}
+        />
+      </main>
+    )
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 px-6">
       <section className="rounded-lg border bg-card p-6">
-        {status === 'loading' ? (
-          <h1 className="text-xl font-semibold">{t('auth.callbackLoading')}</h1>
-        ) : null}
-        {status === 'success' ? (
-          <h1 className="text-xl font-semibold">{t('auth.callbackSuccess')}</h1>
-        ) : null}
-        {status === 'error' ? (
-          <h1 className="text-xl font-semibold">{t('auth.callbackError')}</h1>
-        ) : null}
+        <>
+          {status === 'loading' ? (
+            <h1 className="text-xl font-semibold">{t('auth.callbackLoading')}</h1>
+          ) : null}
+          {status === 'success' ? (
+            <h1 className="text-xl font-semibold">{t('auth.callbackSuccess')}</h1>
+          ) : null}
+          {status === 'error' ? (
+            <h1 className="text-xl font-semibold">{t('auth.callbackError')}</h1>
+          ) : null}
 
-        {status === 'loading' ? (
-          <p className="mt-2 text-sm text-muted-foreground">{t('auth.callbackLoadingSub')}</p>
-        ) : null}
+          {status === 'loading' ? (
+            <p className="mt-2 text-sm text-muted-foreground">{t('auth.callbackLoadingSub')}</p>
+          ) : null}
 
-        {status === 'success' ? (
-          <p className="mt-2 text-sm text-muted-foreground">{t('auth.callbackSuccessSub')}</p>
-        ) : null}
+          {status === 'success' ? (
+            <p className="mt-2 text-sm text-muted-foreground">{t('auth.callbackSuccessSub')}</p>
+          ) : null}
 
-        {status === 'error' ? (
-          <p className="mt-2 text-sm text-destructive">{errorMessage}</p>
-        ) : null}
+          {status === 'error' ? (
+            <p className="mt-2 text-sm text-destructive">{errorMessage}</p>
+          ) : null}
 
-        {status === 'error' ? (
-          <div className="mt-4">
-            <Button type="button" onClick={() => navigate('/auth/login', { replace: true })}>
-              {t('auth.backToLogin')}
-            </Button>
-          </div>
-        ) : null}
+          {status === 'error' ? (
+            <div className="mt-4">
+              <Button type="button" onClick={() => navigate('/auth/login', { replace: true })}>
+                {t('auth.backToLogin')}
+              </Button>
+            </div>
+          ) : null}
+        </>
       </section>
     </main>
   )

@@ -1,5 +1,28 @@
 import { requestJson } from '@/api/http-client'
 import type { EveCharacter, MeResponse, RegisteredScope, UserInfo } from '@/types/api/auth'
+import type { RegistrationInfo, RegistrationInput } from '@/types/api/registration'
+
+export async function getRegistration(ticket: string) {
+  const response = await requestJson<ApiResponse<RegistrationInfo>>(
+    '/api/v1/sso/eve/registration',
+    {
+      headers: { 'X-Registration-Token': ticket },
+    }
+  )
+  return assertSuccess(response, 'registration expired')
+}
+
+export async function completeRegistration(ticket: string, data: RegistrationInput) {
+  const response = await requestJson<ApiResponse<{ token: string }>>(
+    '/api/v1/sso/eve/registration',
+    {
+      method: 'POST',
+      headers: { 'X-Registration-Token': ticket },
+      body: JSON.stringify(data),
+    }
+  )
+  return assertSuccess(response, 'registration failed')
+}
 
 interface ApiResponse<T> {
   code: number
@@ -73,7 +96,9 @@ export async function fetchGetUserInfo() {
     isCurrentlyNewbro:
       typeof data.is_currently_newbro === 'boolean' ? data.is_currently_newbro : undefined,
     isMentorMenteeEligible:
-      typeof data.is_mentor_mentee_eligible === 'boolean' ? data.is_mentor_mentee_eligible : undefined,
+      typeof data.is_mentor_mentee_eligible === 'boolean'
+        ? data.is_mentor_mentee_eligible
+        : undefined,
     characters: characters ?? [],
     primaryCharacterId: primaryChar?.character_id ?? user.primary_character_id ?? 0,
   } satisfies UserInfo
@@ -102,9 +127,12 @@ export async function setPrimaryCharacter(characterId: number) {
 }
 
 export async function unbindCharacter(characterId: number) {
-  const response = await requestJson<ApiResponse<null>>(`/api/v1/sso/eve/characters/${characterId}`, {
-    method: 'DELETE',
-  })
+  const response = await requestJson<ApiResponse<null>>(
+    `/api/v1/sso/eve/characters/${characterId}`,
+    {
+      method: 'DELETE',
+    }
+  )
 
   assertSuccess(response, 'unbind character failed')
 }

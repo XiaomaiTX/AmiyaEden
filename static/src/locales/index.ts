@@ -111,7 +111,7 @@ const i18n: I18n = createI18n(i18nOptions)
  * 翻译函数类型
  */
 interface Translation {
-  (key: string): string
+  (key: string, values?: Record<string, string | number>): string
 }
 
 /**

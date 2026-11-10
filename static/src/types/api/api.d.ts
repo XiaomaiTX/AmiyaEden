@@ -71,6 +71,20 @@ declare namespace Api {
 
   /** 认证类型 */
   namespace Auth {
+    interface RegistrationInfo {
+      character_id: number
+      character_name: string
+    }
+    interface RegistrationInput {
+      nickname: string
+      qq: string
+      discord_id: string
+    }
+    interface ContactConflict {
+      contact: 'qq' | 'discord_id'
+      primary_character_id: number
+      primary_character_name: string
+    }
     /** 登录参数（已废弃，仅保留兼容） */
     interface LoginParams {
       userName: string

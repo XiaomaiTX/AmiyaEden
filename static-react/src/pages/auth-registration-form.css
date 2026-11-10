@@ -1,0 +1,287 @@
+.registration-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  padding: 40px 20px;
+  background: #f3f6fb;
+}
+
+.contact-registration {
+  --reg-surface: #fff;
+  --reg-text: #203047;
+  --reg-muted: #64748b;
+  --reg-border: #e2e8f0;
+  --reg-tint: #f5f7fc;
+  --reg-accent: #4665d5;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 460px;
+  padding: 36px;
+  border: 1px solid var(--reg-border);
+  border-radius: 20px;
+  background: var(--reg-surface);
+  color: var(--reg-text);
+  box-shadow: 0 16px 48px -20px rgb(32 48 71 / 18%);
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.registration-heading h1 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+}
+
+.registration-heading p {
+  margin: 8px 0 0;
+  color: var(--reg-muted);
+  line-height: 1.8;
+}
+
+.registration-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 26px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--reg-tint);
+}
+
+.registration-portrait {
+  position: relative;
+  display: grid;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--reg-border);
+  color: var(--reg-muted);
+  font-size: 22px;
+}
+
+.registration-portrait img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.registration-character {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.registration-character > span {
+  color: var(--reg-muted);
+  font-size: 12px;
+}
+
+.registration-character strong {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.registration-field {
+  display: grid;
+  gap: 9px;
+}
+
+.registration-field > span,
+.registration-field > label,
+.registration-contact-method legend {
+  color: var(--reg-text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.registration-input {
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--reg-border);
+  border-radius: 8px;
+  background: var(--reg-surface);
+  color: var(--reg-text);
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.registration-input:focus-visible {
+  border-color: var(--reg-accent);
+  outline: 3px solid rgb(70 101 213 / 12%);
+}
+
+.registration-input::placeholder {
+  color: var(--reg-muted);
+}
+
+.registration-contact-method {
+  min-width: 0;
+  margin: 23px 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.registration-contact-method legend {
+  margin-bottom: 9px;
+  padding: 0;
+}
+
+.registration-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.registration-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--reg-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.registration-option[data-selected='true'] {
+  border-color: var(--reg-accent);
+  background: var(--reg-tint);
+  color: var(--reg-accent);
+}
+
+.registration-option:focus-within {
+  outline: 3px solid rgb(70 101 213 / 16%);
+  outline-offset: 2px;
+}
+
+.registration-option input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--reg-accent);
+}
+
+.registration-error {
+  margin: 14px 0 0;
+  color: #c33838;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.contact-registration .registration-submit {
+  width: 100%;
+  height: 44px;
+  margin: 28px 0 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--reg-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.contact-registration .registration-submit:hover:not(:disabled) {
+  background: #3854bd;
+}
+
+.contact-registration .registration-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.contact-registration .registration-login {
+  display: flex;
+  width: 100%;
+  height: 36px;
+  margin: 10px 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--reg-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.contact-registration .registration-login:hover {
+  background: var(--reg-tint);
+  color: var(--reg-text);
+}
+
+.dark .registration-page {
+  background: #141b27;
+}
+
+.dark .contact-registration {
+  --reg-surface: #1d2737;
+  --reg-text: #e6edf7;
+  --reg-muted: #a3b2c7;
+  --reg-border: #344156;
+  --reg-tint: #253146;
+  --reg-accent: #7593ff;
+}
+
+@media (max-width: 520px) {
+  .registration-page {
+    padding: 24px 16px;
+  }
+
+  .contact-registration {
+    padding: 28px 24px;
+    border-radius: 16px;
+  }
+
+  .registration-heading h1 {
+    font-size: 23px;
+  }
+}
+
+.registration-language {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin: -10px -8px 16px 0;
+}
+.registration-language button {
+  min-width: 38px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--reg-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.registration-language button[aria-pressed='true'] {
+  background: var(--reg-tint);
+  color: var(--reg-accent);
+  font-weight: 600;
+}
+.registration-language button:focus-visible {
+  outline: 2px solid var(--reg-accent);
+  outline-offset: 2px;
+}
+.registration-required {
+  margin-left: 4px;
+  color: #d3454f;
+}
+.registration-hint {
+  color: var(--reg-muted);
+  font-size: 12px;
+}
+
+.dark .contact-registration .registration-submit {
+  color: #142039;
+}
+.dark .contact-registration .registration-submit:hover:not(:disabled) {
+  background: #9ab0ff;
+}
