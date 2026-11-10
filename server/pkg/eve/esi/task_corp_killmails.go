@@ -3,8 +3,11 @@ package esi
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"amiya-eden/internal/repository"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -64,6 +67,9 @@ func (t *CorpKillmailsTask) Execute(ctx *TaskContext) error {
 		return nil
 	}
 	corpID := char.CorporationID
+	if char.TokenInvalid || !slices.Contains(strings.Fields(char.Scopes), "esi-killmails.read_corporation_killmails.v1") {
+		return ErrTaskSkipped
+	}
 
 	// 2. 预加载本军团已知人物 ID 集合（用于关联判断）
 	var charIDs []int64
@@ -79,9 +85,13 @@ func (t *CorpKillmailsTask) Execute(ctx *TaskContext) error {
 	recentPath := fmt.Sprintf("/corporations/%d/killmails/recent/", corpID)
 	var refs []KillmailRef
 	if _, err := ctx.Client.GetPaginated(bgCtx, recentPath, ctx.AccessToken, &refs); err != nil {
-		if IsHTTPStatus(err, http.StatusForbidden) {
-			// 授权记录仍在但当前 token 链未包含该 scope（管理员重新登录后链收缩），按跳过处理
-			global.Logger.Warn("[ESI] 军团击杀邮件：token 未包含所需 scope，跳过本次刷新",
+		if IsHTTPStatus(err, http.StatusUnauthorized) || IsHTTPStatus(err, http.StatusForbidden) {
+			if saveErr := repository.NewEveCharacterRepository().RemoveRejectedScope(
+				ctx.CharacterID, ctx.AccessToken, "esi-killmails.read_corporation_killmails.v1",
+			); saveErr != nil {
+				return fmt.Errorf("disable rejected corporation killmail scope: %w", saveErr)
+			}
+			global.Logger.Warn("[ESI] 军团击杀邮件：授权被拒绝，停用该 scope，等待人物重新授权",
 				zap.Int64("character_id", ctx.CharacterID))
 			return ErrTaskSkipped
 		}
