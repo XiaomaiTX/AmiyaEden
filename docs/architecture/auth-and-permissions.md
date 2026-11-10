@@ -31,6 +31,10 @@ source_of_truth:
 - 回调入口：`GET /api/v1/sso/eve/callback`
 - 前端页面：`/auth/login`、`/auth/callback`
 
+首次授权不创建账号或签发应用 JWT。前端回调页通过仅限注册的 15 分钟票据调用 `GET/POST /api/v1/sso/eve/registration`，填写昵称和至少一种联系方式后才原子创建账号、人物授权和职权。此票据不属于 `JWT` / `Login` 权限上下文。账号生命周期约束及部署清理见 [认证与人物绑定](../features/current/auth-and-characters.md#注册状态与部署迁移)。
+
+JWT 中间件在加载角色缓存前查询有效用户；不存在、已软删除或禁用账号返回 401。数据库同时约束账号至少保留一种非空白联系方式，管理员修改不例外。
+
 登录成功后，前端通过 `GET /api/v1/me` 获取：
 
 - 当前用户

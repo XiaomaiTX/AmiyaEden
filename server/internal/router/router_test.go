@@ -739,8 +739,13 @@ func newFuxiHallRouteTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.UserRole{}, &model.FuxiHallPage{}, &model.FuxiHallCard{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.UserRole{}, &model.FuxiHallPage{}, &model.FuxiHallCard{}); err != nil {
 		t.Fatalf("auto migrate fuxi hall router models: %v", err)
+	}
+	for id := uint(1); id <= 4; id++ {
+		if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: id}, DiscordID: "router-test-" + string(rune('0'+id)), Status: 1}).Error; err != nil {
+			t.Fatalf("seed authenticated user: %v", err)
+		}
 	}
 	return db
 }
