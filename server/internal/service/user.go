@@ -122,6 +122,7 @@ func (s *UserService) UpdateUserByAdmin(id uint, operatorID uint, operatorRoles 
 		}
 	}
 	if err := s.repo.UpdateFields(id, updates); err != nil {
+		err = s.contactWriteError(next, err)
 		s.recordAdminAudit("user_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return err
 	}
@@ -145,7 +146,7 @@ func (s *UserService) UpdateCurrentProfile(id uint, patch UserPatch) (*model.Use
 		return nil, err
 	}
 	if err := s.repo.UpdateFields(id, updates); err != nil {
-		return nil, err
+		return nil, s.contactWriteError(next, err)
 	}
 	return s.repo.GetByID(id)
 }
@@ -241,25 +242,25 @@ func (s *UserService) recordAdminAudit(action string, operatorID, targetUserID u
 
 func (s *UserService) validateUniqueContacts(user *model.User) error {
 	if user.QQ != "" {
-		owner, err := s.repo.GetByQQ(user.QQ)
+		owner, err := s.repo.GetContactOwner("qq", user.QQ)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if err == nil {
-			if err := validateContactOwner(user.ID, owner, "QQ 号码"); err != nil {
-				return err
+			if owner.ID != user.ID {
+				return s.contactConflict(owner, "qq")
 			}
 		}
 	}
 
 	if user.DiscordID != "" {
-		owner, err := s.repo.GetByDiscordID(user.DiscordID)
+		owner, err := s.repo.GetContactOwner("discord_id", user.DiscordID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if err == nil {
-			if err := validateContactOwner(user.ID, owner, "Discord ID"); err != nil {
-				return err
+			if owner.ID != user.ID {
+				return s.contactConflict(owner, "discord_id")
 			}
 		}
 	}
@@ -309,6 +310,9 @@ func buildUserPatchUpdates(current *model.User, patch UserPatch, requireComplete
 		updates["status"] = *patch.Status
 	}
 
+	if !next.HasRequiredContact() {
+		return nil, nil, errors.New("请至少填写 QQ 号码或 Discord ID")
+	}
 	if requireComplete {
 		if !next.HasNickname() {
 			return nil, nil, errors.New("昵称不能为空")

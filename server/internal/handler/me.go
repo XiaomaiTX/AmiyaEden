@@ -100,6 +100,9 @@ func (h *MeHandler) UpdateMe(c *gin.Context) {
 		DiscordID: req.DiscordID,
 	})
 	if err != nil {
+		if contactConflictResponse(c, err) {
+			return
+		}
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
 	}

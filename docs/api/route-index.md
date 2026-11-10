@@ -60,6 +60,12 @@ source_of_truth:
 | GET    | `/sso/eve/login`    | 获取 SSO 登录地址   | Public |
 | GET    | `/sso/eve/callback` | 处理 SSO 回调       | Public |
 | GET    | `/sso/eve/scopes`   | 获取当前注册 scopes | Public |
+| GET    | `/sso/eve/registration` | 获取待注册人物 ID / 名字 | Public + `X-Registration-Token` |
+| POST   | `/sso/eve/registration` | 提交 `nickname`、`qq`、`discord_id`，完成注册并返回 `{token}` | Public + `X-Registration-Token` |
+
+首次 SSO 回调返回前端 `?registration=<ticket>`（无 redirect 时返回 `{registration}`），不创建用户或签发 JWT。注册票据有效期 15 分钟，只授权上述两个接口；请求与响应禁止缓存，成功后不可重用。资料必须包含昵称和至少一种联系方式。
+
+注册、`PUT /me` 和管理端更新联系方式遇到冲突时，HTTP 200 的业务响应为 `code: 409`、`msg: "contact_already_bound"`，`data` 为 `{contact: "qq" | "discord_id", primary_character_id, primary_character_name}`。前端弹窗说明登录该主人物后使用“绑定新人物”；不自动合并账号。管理员与本人均不可清空最后一个联系方式。
 
 ### SDE
 
