@@ -989,6 +989,8 @@ func TestQQBotManagementRejectsNonSuperAdmin(t *testing.T) {
 	r, user, admin, _, _ := newFuxiHallManageRouteTestRouter(t)
 	for _, route := range []struct{ method, path string }{
 		{http.MethodGet, "/config"}, {http.MethodPut, "/config"}, {http.MethodGet, "/snapshot"}, {http.MethodGet, "/operations/test"},
+		{http.MethodGet, "/groups"}, {http.MethodPut, "/groups/rules"},
+		{http.MethodGet, "/notifications/channels"}, {http.MethodPut, "/notifications/channels/general"}, {http.MethodGet, "/notifications/targets"}, {http.MethodPost, "/notifications/test"},
 		{http.MethodPost, "/operations/test/cancel"}, {http.MethodPost, "/operations/test/retry"},
 		{http.MethodPost, "/deliveries/test/retry"}, {http.MethodPut, "/circuits/write"},
 	} {

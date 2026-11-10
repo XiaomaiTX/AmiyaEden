@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 type QQBotHandler struct{ svc *service.QQBotService }
@@ -90,4 +91,73 @@ func (h *QQBotHandler) GetOperation(c *gin.Context) {
 		return
 	}
 	response.OK(c, v)
+}
+
+func (h *QQBotHandler) NotificationChannels(c *gin.Context) {
+	v, e := h.svc.Notifications().Channels(c.Request.Context())
+	if e != nil {
+		response.Fail(c, response.CodeBizError, "notifications unavailable")
+		return
+	}
+	response.OK(c, v)
+}
+func (h *QQBotHandler) ConfigureNotifications(c *gin.Context) {
+	var v struct {
+		Enabled  bool    `json:"enabled"`
+		GroupIDs []int64 `json:"group_ids"`
+	}
+	if c.ShouldBindJSON(&v) != nil {
+		response.Fail(c, response.CodeParamError, "invalid configuration")
+		return
+	}
+	if e := h.svc.Notifications().Configure(c.Request.Context(), c.Param("channel"), v.Enabled, v.GroupIDs); e != nil {
+		response.Fail(c, response.CodeBizError, "invalid configuration")
+		return
+	}
+	response.OK(c, nil)
+}
+func (h *QQBotHandler) NotificationTargets(c *gin.Context) {
+	v, e := h.svc.Notifications().Targets(c.Request.Context())
+	if e != nil {
+		response.Fail(c, response.CodeBizError, "notifications unavailable")
+		return
+	}
+	response.OK(c, v)
+}
+func (h *QQBotHandler) TestNotification(c *gin.Context) {
+	var v struct {
+		Key       string    `json:"key"`
+		ExpiresAt time.Time `json:"expires_at"`
+	}
+	if c.ShouldBindJSON(&v) != nil {
+		response.Fail(c, response.CodeParamError, "invalid test")
+		return
+	}
+	targets, e := h.svc.Notifications().Test(c.Request.Context(), v.Key, v.ExpiresAt)
+	if e != nil {
+		response.Fail(c, response.CodeBizError, "test unavailable")
+		return
+	}
+	response.OK(c, targets)
+}
+
+func (h *QQBotHandler) GroupBusiness(c *gin.Context) {
+	v, e := h.svc.Groups().Audit(c.Request.Context())
+	if e != nil {
+		response.Fail(c, response.CodeBizError, "group business unavailable")
+		return
+	}
+	response.OK(c, v)
+}
+func (h *QQBotHandler) ConfigureGroupBusiness(c *gin.Context) {
+	v := model.QQGroupRule{MismatchConfirmations: 3, ObservationHours: 24}
+	if c.ShouldBindJSON(&v) != nil {
+		response.Fail(c, response.CodeParamError, "invalid rule")
+		return
+	}
+	if e := h.svc.Groups().Configure(c.Request.Context(), v); e != nil {
+		response.Fail(c, response.CodeBizError, "invalid rule")
+		return
+	}
+	response.OK(c, nil)
 }

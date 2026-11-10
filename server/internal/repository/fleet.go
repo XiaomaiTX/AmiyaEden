@@ -3,6 +3,7 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"context"
 	"time"
 
 	"gorm.io/gorm"
@@ -402,4 +403,11 @@ func (r *FleetRepository) ListInvitesByFleet(fleetID string) ([]model.FleetInvit
 	var invites []model.FleetInvite
 	err := global.DB.Where("fleet_id = ?", fleetID).Order("created_at DESC").Find(&invites).Error
 	return invites, err
+}
+
+func (r *FleetRepository) Transaction(ctx context.Context, fn func(*gorm.DB) error) error {
+	return global.DB.WithContext(ctx).Transaction(fn)
+}
+func (r *FleetRepository) CreateTx(tx *gorm.DB, fleet *model.Fleet) error {
+	return tx.Create(fleet).Error
 }

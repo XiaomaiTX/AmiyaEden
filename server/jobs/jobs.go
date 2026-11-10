@@ -19,6 +19,8 @@ func RegisterAll(reg *taskregistry.Registry) {
 	registerAuditArchiveTask(reg)
 	registerGalaxyRegistryValidationTask(reg)
 	registerStructureFuelRateSyncTask(reg)
+	registerQQStructureAlert(reg)
+	registerQQGroupBusiness(reg)
 	// registerCleanupJob(c)
 	// registerReportJob(c)
 }
