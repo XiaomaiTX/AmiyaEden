@@ -1,6 +1,22 @@
 import request from '@/utils/http'
 import { isUserProfileComplete } from './auth-helpers'
 
+export function getRegistration(ticket: string) {
+  return request.get<Api.Auth.RegistrationInfo>({
+    url: '/api/v1/sso/eve/registration',
+    headers: { 'X-Registration-Token': ticket },
+    showErrorMessage: false
+  })
+}
+
+export function completeRegistration(ticket: string, data: Api.Auth.RegistrationInput) {
+  return request.post<{ token: string }>({
+    url: '/api/v1/sso/eve/registration',
+    headers: { 'X-Registration-Token': ticket },
+    data
+  })
+}
+
 export {
   hasInvalidCharacterToken,
   hasInvalidPrimaryCharacterToken,

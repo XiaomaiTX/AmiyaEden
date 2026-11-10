@@ -1,8 +1,14 @@
 <!-- EVE Online SSO 回调页面 - 处理 OAuth 跳转回来后的 token -->
 <template>
   <div class="callback-page">
-    <div class="callback-card">
-      <template v-if="status === 'loading'">
+    <div class="callback-card" :class="{ 'registration-card': registrationTicket }">
+      <ContactRegistration
+        v-if="registrationTicket"
+        :ticket="registrationTicket"
+        @completed="finishRegistration"
+        @login="goLogin"
+      />
+      <template v-else-if="status === 'loading'">
         <div class="icon-wrap spin">
           <el-icon :size="48"><Loading /></el-icon>
         </div>
@@ -37,6 +43,7 @@
   import { useI18n } from 'vue-i18n'
   import { useUserStore } from '@/store/modules/user'
   import { fetchGetUserInfo, isUserProfileComplete } from '@/api/auth'
+  import ContactRegistration from './contact-registration.vue'
 
   defineOptions({ name: 'AuthCallback' })
 
@@ -49,8 +56,19 @@
   const route = useRoute()
   const router = useRouter()
   const userStore = useUserStore()
+  const registrationKey = 'auth:registration'
+  const registrationTicket = ref('')
 
-  const goLogin = () => router.replace({ name: 'Login' })
+  const goLogin = () => {
+    sessionStorage.removeItem(registrationKey)
+    return router.replace({ name: 'Login' })
+  }
+
+  async function finishRegistration(token: string) {
+    sessionStorage.removeItem(registrationKey)
+    registrationTicket.value = ''
+    await finishLogin(token)
+  }
 
   onMounted(async () => {
     const token = route.query.token as string
@@ -64,11 +82,23 @@
     }
 
     if (!token) {
+      const ticket = (route.query.registration as string) || sessionStorage.getItem(registrationKey)
+      if (ticket) {
+        registrationTicket.value = ticket
+        sessionStorage.setItem(registrationKey, ticket)
+        await router.replace({ path: route.path })
+        return
+      }
       status.value = 'error'
       errMsg.value = t('authCallback.missingToken')
       return
     }
 
+    sessionStorage.removeItem(registrationKey)
+    await finishLogin(token)
+  })
+
+  async function finishLogin(token: string) {
     try {
       // 1. 存储 token 并设置登录状态
       userStore.setToken(token)
@@ -95,17 +125,39 @@
       status.value = 'error'
       errMsg.value = err?.message ?? t('authCallback.verifyFailed')
     }
-  })
+  }
 </script>
 
 <style lang="scss" scoped>
   .callback-page {
-    @apply flex items-center justify-center w-full h-screen bg-default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 100svh;
+    padding: 40px 20px;
+    background: var(--el-fill-color-light, #f3f6fb);
   }
 
   .callback-card {
-    @apply flex flex-col items-center gap-3 p-12 rounded-2xl shadow-lg bg-default-box
-           w-[380px] max-w-[90vw];
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 380px;
+    max-width: 100%;
+    padding: 48px;
+    border-radius: 16px;
+    background: var(--el-bg-color, #fff);
+    box-shadow: 0 16px 48px -20px rgb(32 48 71 / 18%);
+
+    &.registration-card {
+      width: 460px;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+    }
 
     .icon-wrap {
       @apply mb-2;

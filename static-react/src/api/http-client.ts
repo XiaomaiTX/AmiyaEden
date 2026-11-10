@@ -40,7 +40,16 @@ export async function requestJson<T>(input: RequestInfo | URL, init?: RequestIni
 
   const contentType = response.headers.get('content-type') ?? ''
   if (contentType.includes('application/json')) {
-    return (await response.json()) as T
+    const data = await response.json()
+    if (
+      data?.code === 409 &&
+      data.msg === 'contact_already_bound' &&
+      data.data?.primary_character_name
+    ) {
+      window.dispatchEvent(new CustomEvent('auth:contact-conflict', { detail: data.data }))
+      throw new HttpError(409, data.msg)
+    }
+    return data as T
   }
 
   return (await response.text()) as T
