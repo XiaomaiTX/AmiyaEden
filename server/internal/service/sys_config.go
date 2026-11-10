@@ -375,20 +375,6 @@ func (s *SysConfigService) resolveCorporationNames(ctx context.Context, corporat
 	return nameMap, nil
 }
 
-// resolveCorporationNamesAllowMissing resolves as many corporation names as the
-// cache + ESI can provide and silently treats unresolved IDs as empty names.
-// Used on read paths where partial resolution must not break the listing.
-func (s *SysConfigService) resolveCorporationNamesAllowMissing(ctx context.Context, corporationIDs []int64) map[int64]string {
-	if len(corporationIDs) == 0 {
-		return map[int64]string{}
-	}
-	if s.entityNameResolver == nil {
-		s.entityNameResolver = NewEntityNameResolver()
-	}
-	resolved := s.entityNameResolver.Resolve(ctx, corporationIDs)
-	return resolved.Names
-}
-
 func (s *SysConfigService) GetCharacterESIRestrictionConfig() bool {
 	return s.repo.GetBool(
 		model.SysConfigEnforceCharacterESIRestriction,

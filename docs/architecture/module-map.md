@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/internal
   - server/pkg
@@ -160,4 +160,6 @@ React 迁移侧对应职责：
 4. 对应 repository / api wrapper
 5. 关联类型与文档边界
 
-QQ Bot 已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
+旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
+
+独立 QQ 调度基础设施现位于 `model/repository/service/handler/qqbot*.go`，运维页为双前端 `/system/qqbot`。旧治理模块继续下线，业务仅可使用新服务的类型化提交和持久消费契约，详见 [QQ 调度](../features/current/qqbot.md)。

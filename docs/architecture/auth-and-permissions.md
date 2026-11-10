@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-10-12
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -268,4 +268,6 @@ For super_admin rules, see "Super Admin 配置驱动机制" above. For role assi
 
 队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。系统管理的独立 `/system/newbro-settings` 入口配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
 
-QQ Bot 已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
+旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
+
+QQ 调度运维 `/system/qqbot` 及 `/api/v1/system/qqbot/*` 仅超管，使用 `system.manage`；反向 WebSocket 独立执行 Token、机器人 ID、Universal 角色和 TCP 源 CIDR 校验。配置 Token 不返回客户端，不写入尝试日志。未知写结果禁止运维重试。

@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-07-24
+last_reviewed: 2026-11-10
 source_of_truth:
   - server/bootstrap/db.go
   - server/internal/model
@@ -367,4 +367,8 @@ ESI 头衔到系统职权的映射表。
 
 应优先检查 `docs/architecture/auth-and-permissions.md` 与 `docs/features/current/administration.md` 是否也需要更新。
 
-QQ Bot 专属模型、索引和自动迁移已移除。现存旧表不会自动删除；清理范围及恢复要求见 [QQ Bot 数据库清理方案](../guides/qq-bot-retirement-cleanup.md)。共享 `user.qq` 及其唯一索引继续保留。
+旧 QQ 治理/预警专属模型、索引和自动迁移已移除，新基础设施采用下文独立 qqbot 表。现存旧表不会自动删除；清理范围及恢复要求见 [QQ Bot 数据库清理方案](../guides/qq-bot-retirement-cleanup.md)。共享 `user.qq` 及其唯一索引继续保留。
+
+## QQ 调度基础设施
+
+新独立表 `qqbot_operation`、`qqbot_attempt`、`qqbot_inbox`、`qqbot_delivery`、`qqbot_circuit`、`qqbot_setting` 由启动迁移注册，不复用旧治理表。业务键与消费复合键使用数据库唯一约束；租约 token 条件更新 fencing。操作终态与结果消费记录在同一事务提交。状态和保留语义见 [QQ 调度](../features/current/qqbot.md)。
