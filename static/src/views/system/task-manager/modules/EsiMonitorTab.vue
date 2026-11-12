@@ -120,6 +120,7 @@
   import { formatTime } from '@utils/common'
   import { fetchESIRefreshMonitor } from '@/api/esi-refresh'
   import { useTableColumns } from '@/hooks/core/useTableColumns'
+  import { getTaskDisplayName, getTaskDisplayDescription } from '../task-labels'
 
   const { t } = useI18n()
   const monitor = ref<Api.ESIRefresh.MonitorResponse>()
@@ -134,13 +135,17 @@
       prop: 'task_name',
       label: t('taskManager.columns.name'),
       minWidth: 180,
-      showOverflowTooltip: true
+      showOverflowTooltip: true,
+      formatter: (row: Api.ESIRefresh.MonitorTaskPanelItem) =>
+        getTaskDisplayName(t, row.task_name, row.task_name)
     },
     {
       prop: 'description',
       label: t('taskManager.columns.description'),
       minWidth: 180,
-      showOverflowTooltip: true
+      showOverflowTooltip: true,
+      formatter: (row: Api.ESIRefresh.MonitorTaskPanelItem) =>
+        getTaskDisplayDescription(t, row.task_name, row.description)
     },
     { prop: 'total', label: t('taskManager.esi.monitor.cards.total'), width: 100 },
     { prop: 'failed', label: t('taskManager.esi.monitor.cards.failed'), width: 100 },
@@ -166,7 +171,9 @@
       prop: 'task_name',
       label: t('taskManager.columns.name'),
       width: 160,
-      showOverflowTooltip: true
+      showOverflowTooltip: true,
+      formatter: (row: Api.ESIRefresh.MonitorFailureItem) =>
+        getTaskDisplayName(t, row.task_name, row.task_name)
     },
     { prop: 'character_name', label: t('common.name'), width: 150, showOverflowTooltip: true },
     { prop: 'character_id', label: t('taskManager.esi.columns.characterId'), width: 120 },
@@ -192,7 +199,9 @@
       prop: 'task_name',
       label: t('taskManager.columns.name'),
       width: 160,
-      showOverflowTooltip: true
+      showOverflowTooltip: true,
+      formatter: (row: Api.ESIRefresh.MonitorOverdueItem) =>
+        getTaskDisplayName(t, row.task_name, row.task_name)
     },
     { prop: 'character_name', label: t('common.name'), width: 150, showOverflowTooltip: true },
     { prop: 'character_id', label: t('taskManager.esi.columns.characterId'), width: 120 },

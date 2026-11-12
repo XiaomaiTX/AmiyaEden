@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
   import { useUserStore } from './store/modules/user'
+  import { useAdmissionStore } from './store/modules/admissions'
   import zh from 'element-plus/es/locale/lang/zh-cn'
   import en from 'element-plus/es/locale/lang/en'
   import { systemUpgrade } from './utils/sys'
@@ -14,6 +15,19 @@
   import { initializeTheme } from './hooks/core/useTheme'
 
   const userStore = useUserStore()
+  const admissions = useAdmissionStore()
+  watch(
+    () => ({ isLogin: userStore.isLogin, userId: userStore.info.userId, info: userStore.info }),
+    (current, previous) => {
+      if (!current.isLogin) {
+        admissions.clear()
+        return
+      }
+      if (!previous.isLogin || current.userId !== previous.userId) admissions.clear()
+      void admissions.refresh()
+    },
+    { deep: true, flush: 'sync' }
+  )
   const { language } = storeToRefs(userStore)
 
   const locales = {
