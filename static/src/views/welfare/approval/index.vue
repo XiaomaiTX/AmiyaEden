@@ -80,6 +80,7 @@
 <script setup lang="ts">
   import { ElTag, ElButton, ElInput, ElMessage, ElMessageBox, ElImage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
+  import { operationSalaryMessage } from '@/utils/operation-salary'
   import { formatTime } from '@utils/common'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
@@ -366,16 +367,18 @@
   }
 
   async function handleDeliver(row: AppRow) {
+    if (actionLoading.value) return
+    actionLoading.value = true
     try {
+      const salary = await operationSalaryMessage('welfare_delivery', 1, t)
       await ElMessageBox.confirm(
-        t('welfareApproval.deliverConfirm', { name: row.character_name }),
+        `${t('welfareApproval.deliverConfirm', { name: row.character_name })}\n\n${salary}`,
         { type: 'info' }
       )
     } catch {
+      actionLoading.value = false
       return
     }
-
-    actionLoading.value = true
     try {
       const result = await adminReviewApplication({ id: row.id, action: 'deliver' })
       if (result.outcome === 'auto_rejected') {

@@ -20,6 +20,15 @@
         <ElOption :label="$t('walletAdmin.refTypes.pap_reward')" value="pap_reward" />
         <ElOption :label="$t('walletAdmin.refTypes.pap_fc_salary')" value="pap_fc_salary" />
         <ElOption :label="$t('walletAdmin.refTypes.admin_adjust')" value="admin_adjust" />
+        <ElOption
+          :label="$t('walletAdmin.refTypes.welfare_delivery_salary')"
+          value="welfare_delivery_salary"
+        />
+        <ElOption
+          :label="$t('walletAdmin.refTypes.shop_delivery_salary')"
+          value="shop_delivery_salary"
+        />
+        <ElOption :label="$t('walletAdmin.refTypes.srp_payout_salary')" value="srp_payout_salary" />
         <ElOption :label="$t('walletAdmin.refTypes.admin_award')" value="admin_award" />
         <ElOption :label="$t('walletAdmin.refTypes.manual')" value="manual" />
         <ElOption :label="$t('walletAdmin.refTypes.srp_payout')" value="srp_payout" />
@@ -32,6 +41,10 @@
           value="newbro_captain_reward"
         />
         <ElOption :label="$t('walletAdmin.refTypes.mentor_reward')" value="mentor_reward" />
+        <ElOption
+          :label="$t('walletAdmin.refTypes.recruitment_invitation_salary')"
+          value="recruitment_invitation_salary"
+        />
       </ElSelect>
       <ElButton type="primary" @click="handleSearch">{{ $t('common.search') }}</ElButton>
     </template>
@@ -50,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+  import { walletReason } from '@/utils/wallet-reason'
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinAmount, formatTime } from '@utils/common'
@@ -62,7 +76,17 @@
   type WalletTransaction = Api.SysWallet.WalletTransaction
 
   const REF_TYPE_MAP: Record<string, { label: string; tag: string }> = {
+    welfare_delivery_salary: {
+      label: t('walletAdmin.refTypes.welfare_delivery_salary'),
+      tag: 'success'
+    },
+    shop_delivery_salary: { label: t('walletAdmin.refTypes.shop_delivery_salary'), tag: 'success' },
+    srp_payout_salary: { label: t('walletAdmin.refTypes.srp_payout_salary'), tag: 'success' },
     pap_reward: { label: t('walletAdmin.refTypes.pap_reward'), tag: 'success' },
+    recruitment_invitation_salary: {
+      label: t('walletAdmin.refTypes.recruitment_invitation_salary'),
+      tag: 'success'
+    },
     pap_fc_salary: { label: t('walletAdmin.refTypes.pap_fc_salary'), tag: 'success' },
     admin_adjust: { label: t('walletAdmin.refTypes.admin_adjust'), tag: 'warning' },
     admin_award: { label: t('walletAdmin.refTypes.admin_award'), tag: 'success' },
@@ -143,6 +167,7 @@
         },
         {
           prop: 'reason',
+          formatter: (row: WalletTransaction) => walletReason(row, t),
           label: t('common.reason'),
           minWidth: 200,
           showOverflowTooltip: true

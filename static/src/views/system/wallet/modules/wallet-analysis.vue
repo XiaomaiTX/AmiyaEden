@@ -206,7 +206,11 @@
       'newbro_captain_reward',
       'captain_refund',
       'mentor_reward',
-      'recruit_link_reward'
+      'recruit_link_reward',
+      'welfare_delivery_salary',
+      'shop_delivery_salary',
+      'srp_payout_salary',
+      'recruitment_invitation_salary'
     ].map((value) => ({ value, label: t(`walletAdmin.refTypes.${value}`) }))
   )
 

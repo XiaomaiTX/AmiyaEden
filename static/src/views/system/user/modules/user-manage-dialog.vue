@@ -88,6 +88,7 @@
               :label="role.code"
               :disabled="
                 role.code === 'super_admin' ||
+                role.code === 'recruiter' ||
                 (role.code === 'admin' && !(isSuperAdmin || isEditingSelf))
               "
             >

@@ -1,8 +1,9 @@
 import type { AppRouteRecord } from '../../types/router'
 import { RoutesAlias } from '../routesAlias'
 
+// The derived recruiter role only grants admission review, never membership.
 export function hasNonGuestRole(roles: string[]): boolean {
-  return roles.some((role) => role !== 'guest')
+  return roles.some((role) => role !== 'guest' && role !== 'recruiter')
 }
 
 /**

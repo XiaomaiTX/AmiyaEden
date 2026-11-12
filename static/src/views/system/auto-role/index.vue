@@ -302,7 +302,7 @@
     ])
     allEsiRoles.value = esiRoles
     // 过滤掉 super_admin（文档规定不可映射）
-    allSystemRoles.value = systemRoles.filter((r) => r.code !== 'super_admin')
+    allSystemRoles.value = systemRoles.filter((r) => !['super_admin', 'recruiter'].includes(r.code))
     allCorpTitles.value = corpTitles
   }
 

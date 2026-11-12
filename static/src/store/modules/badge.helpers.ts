@@ -1,6 +1,7 @@
 import type { AppRouteRecord } from '../../types/router'
 
 const routeBadgeFieldMap = {
+  AdmissionReview: 'admission_pending',
   NewbroMentorDashboard: 'mentor_pending_applications',
   WelfareMy: 'welfare_eligible',
   WelfareApproval: 'welfare_pending',
