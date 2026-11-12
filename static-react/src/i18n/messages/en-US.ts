@@ -603,6 +603,14 @@
         name: 'Admission evidence cleanup',
         description: 'Delete expired evidence from closed admission applications',
       },
+      qq_group_business: {
+        name: 'QQ group business recheck',
+        description: 'Rechecks QQ group admission, member card and inspection rules against current members.',
+      },
+      qq_structure_alert: {
+        name: 'QQ structure alerts',
+        description: 'Scans structures and sends QQ notifications for business alerts such as low fuel.',
+      },
       audit_archive_daily: {
         name: 'Daily audit archive',
         description: 'Archive and purge audit events older than the online retention window',
@@ -1061,6 +1069,7 @@
     actionLabels: {
       audit_export_create: 'Create audit export',
       audit_export_generated: 'Audit export generated',
+      captain_refund_settings_update: 'Update captain refund settings',
       audit_archive_daily: 'Daily audit archive',
       esi_role_mapping_create: 'Create ESI role mapping',
       esi_role_mapping_delete: 'Delete ESI role mapping',
@@ -1127,6 +1136,7 @@
       exports: 'Export Logs',
     },
     categories: {
+      captain_refund: 'Captain refund',
       permission: 'Permissions',
       fuxi_wallet: 'Wallet',
       config: 'Configuration',
