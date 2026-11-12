@@ -150,17 +150,17 @@ source_of_truth:
 | Method | Path | 说明 | 权限 |
 | --- | --- | --- | --- |
 | GET | `/admissions/context` | 任一人物成员资格、目标及可审核军团 | JWT，含 guest |
-| GET | `/admissions/applications/me` | 本人历史；`status`、`kind`、`target_corporation_id`、`current`、`size` 分页 | JWT，owner |
+| GET | `/admissions/applications/me` | 本人历史；`status`、`kind`、`target_corporation_id`、`current`、`size` 分页；行内 `blacklisted` 恒为 `false` | JWT，owner |
 | POST | `/admissions/applications` | 创建整单；multipart `payload` 和新人两图 `launcher`／`seat_profile` | JWT，服务校验新人／小号资格 |
-| GET | `/admissions/applications/:id` | 申请、证据元数据、历史及工资 | JWT，owner 或目标军团 reviewer |
+| GET | `/admissions/applications/:id` | 申请、证据元数据、历史及工资；`blacklist_hits` 为联盟黑名单命中（`kind`、`value`、`display`、`reason`），只在 reviewer 读取 pending 申请时计算，否则为空数组 | JWT，owner 或目标军团 reviewer |
 | PUT | `/admissions/applications/:id` | pending／rejected 修改，校验 `expected_version` | JWT，owner |
 | POST | `/admissions/applications/:id/resubmit` | rejected 原 ID 补正重提，校验 `expected_version` | JWT，owner |
 | GET | `/admissions/applications/:id/evidence/:kind` | 私有 JPEG；到期拒绝，`private, no-store` | JWT，owner 或目标军团 reviewer |
-| GET | `/system/admissions/applications` | 按军团 scope 过滤后计数分页；状态含 `processed`，支持种类／目标 | JWT（不要求 Login 成员资格）+ recruiter／admin；super_admin 通过 |
-| POST | `/system/admissions/applications/:id/invited` | 登记整单游戏内已邀请，`expected_version`；事务发薪 10 币 | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
+| GET | `/system/admissions/applications` | 按军团 scope 过滤后计数分页；状态含 `processed`，支持种类／目标；非本人 pending 行有黑名单命中时 `blacklisted` 为 `true` | JWT（不要求 Login 成员资格）+ recruiter／admin；super_admin 通过 |
+| POST | `/system/admissions/applications/:id/invited` | 登记整单游戏内已邀请，`expected_version`；事务发薪 10 币；事务内重新比对黑名单，有命中时拒绝（`admissions.errors.blacklisted`），驳回不受影响 | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
 | POST | `/system/admissions/applications/:id/reject` | 驳回，`expected_version` 与非空 `reason` | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
 
-只有 `launcher` 和 `seat_profile` 两类证据，无独立 QQ／Discord／技能点上传项；网站不执行游戏邀请。新人每图最多 2 MiB，multipart 总体最多 5 MiB；小号不接收图片。冲突、证据、资格、钱包禁用及内部失败返回 `admissions.errors.*` 业务错误键，两端本地化；钱包禁用不提交结案。审核组独立于现有 system admin 父组，不能只凭全局 recruiter 标签读取另一军团申请。
+只有 `launcher` 和 `seat_profile` 两类证据，无独立 QQ／Discord／技能点上传项；网站不执行游戏邀请。新人每图最多 2 MiB，multipart 总体最多 5 MiB；小号不接收图片。冲突、证据、资格、钱包禁用、黑名单命中及内部失败返回 `admissions.errors.*` 业务错误键，两端本地化；钱包禁用不提交结案。审核组独立于现有 system admin 父组，不能只凭全局 recruiter 标签读取另一军团申请。
 
 ## Operation
 
@@ -437,6 +437,17 @@ source_of_truth:
 | POST   | `/system/tool-bookmarks`     | 创建书签                 | `RequireRole(admin)` |
 | PUT    | `/system/tool-bookmarks/:id` | 更新书签                 | `RequireRole(admin)` |
 | DELETE | `/system/tool-bookmarks/:id` | 删除书签                 | `RequireRole(admin)` |
+
+### Blacklist
+
+| Method | Path | 说明 | 权限 |
+| ------ | ---- | ---- | ---- |
+| GET | `/system/blacklist` | 黑名单分页列表；`kind` 可选 `character`／`qq`／`discord`，非法值返回 `blacklist.errors.invalidQuery`；`keyword` 为纯数字时精确匹配人物 ID 与 QQ，否则模糊匹配人物名与 Discord | admin／super_admin；`system.manage` |
+| GET | `/system/blacklist/refresh` | 最近一次成功刷新摘要；从未刷新时 `data` 为 `null` | 同上 |
+| POST | `/system/blacklist/refresh` | 从联盟 Google Sheet 同步刷新，返回本次摘要；同时只允许一次刷新 | 同上 |
+
+刷新摘要含 `lookup_failed`：ESI 批次失败或超过 60 s 查询预算、延后至下次刷新的名字数。延后名字不写入无法解析缓存，其余条目在同一事务内对齐；若结果中没有任何人物，则仍中止并保留本地数据。
+摘要另含 `next_refresh_at`：完整刷新为完成时间加 24 小时，部分完成为 `null`。完整刷新后 24 小时内再次 POST 返回 `blacklist.errors.refreshCooldown`，不发起下载或 ESI 请求；部分完成可立即重试。
 
 ### Mentor Admin
 

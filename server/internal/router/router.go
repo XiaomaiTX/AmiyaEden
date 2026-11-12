@@ -601,6 +601,14 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 		adminToolBookmark.DELETE("/:id", toolBookmarkH.AdminDelete)
 	}
 
+	blacklistH := handler.NewBlacklistHandler()
+	adminBlacklist := admin.Group("/blacklist", requireSystemManage)
+	{
+		adminBlacklist.GET("", blacklistH.List)
+		adminBlacklist.GET("/refresh", blacklistH.LatestRefresh)
+		adminBlacklist.POST("/refresh", blacklistH.Refresh)
+	}
+
 	// 商店管理（管理员）
 	adminShopH := handler.NewShopHandler()
 	adminShopProduct := admin.Group("/shop/product", requireShopManage, requireShopAdminProductManage)
