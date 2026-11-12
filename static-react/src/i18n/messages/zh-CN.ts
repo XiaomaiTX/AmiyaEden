@@ -595,6 +595,14 @@
         name: '申请证据清理',
         description: '清理已过保留期的已结案入团申请证据',
       },
+      qq_group_business: {
+        name: 'QQ 群业务复查',
+        description: '按当前成员复查 QQ 群入群、名片与巡检规则。',
+      },
+      qq_structure_alert: {
+        name: 'QQ 建筑业务预警',
+        description: '扫描建筑状态，并为燃料不足等业务预警发送 QQ 通知。',
+      },
       audit_archive_daily: {
         name: '审计日志每日归档',
         description: '归档并清理超出在线保留期的审计事件',
@@ -1052,6 +1060,7 @@
     actionLabels: {
       audit_export_create: '创建审计导出',
       audit_export_generated: '审计导出生成完成',
+      captain_refund_settings_update: '更新队长退税设置',
       audit_archive_daily: '审计日志每日归档',
       esi_role_mapping_create: '创建 ESI 职权映射',
       esi_role_mapping_delete: '删除 ESI 职权映射',
@@ -1118,6 +1127,7 @@
       exports: '导出日志',
     },
     categories: {
+      captain_refund: '队长退税',
       permission: '权限',
       fuxi_wallet: '钱包',
       config: '配置',
