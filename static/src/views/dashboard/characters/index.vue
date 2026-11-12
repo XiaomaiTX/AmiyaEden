@@ -1,4 +1,4 @@
-<!-- EVE 人物管理页面 —— 绑定/解绑人物、切换主人物 -->
+<!-- 人物管理页面 —— 绑定/解绑人物、切换主人物 -->
 <template>
   <div class="w-full h-full p-0 bg-transparent border-none shadow-none">
     <div class="art-card-sm p-6 mb-4">
