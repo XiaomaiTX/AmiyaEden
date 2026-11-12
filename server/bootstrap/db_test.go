@@ -78,6 +78,14 @@ func TestUserQQUniqueIndexEnforcesUniqueNonEmptyQQ(t *testing.T) {
 	if err := db.Create(&model.User{Nickname: "D", QQ: ""}).Error; err != nil {
 		t.Fatalf("create second blank qq user: %v", err)
 	}
+
+	if err := db.Create(&model.User{Nickname: "E", DiscordID: "discord"}).Error; err != nil {
+		t.Fatalf("create first discord user: %v", err)
+	}
+
+	if err := db.Create(&model.User{Nickname: "F", DiscordID: "discord"}).Error; err == nil {
+		t.Fatal("expected duplicate discord insert to fail")
+	}
 }
 
 func TestCaptainCleanupIsIdempotentAndPreservesWalletAndOtherTasks(t *testing.T) {

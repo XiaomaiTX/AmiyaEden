@@ -91,14 +91,8 @@ func migrateRequiredUserContact(db *gorm.DB) error {
 				return err
 			}
 		}
-		for _, stmt := range []string{
-			`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_qq_unique ON "user" (qq) WHERE qq IS NOT NULL AND qq <> ''`,
-			`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_discord_unique ON "user" (discord_id) WHERE discord_id IS NOT NULL AND discord_id <> ''`,
-		} {
-			if err := tx.Exec(stmt).Error; err != nil {
-				return err
-			}
-		}
+		// Contact unique indexes stay best-effort in ensureCustomIndexes: legacy
+		// duplicate contacts must not make this fatal migration crash-loop startup.
 		if tx.Name() == "postgres" {
 			// Match strings.TrimSpace without depending on the database locale.
 			whitespace := `E' \u0009\u000a\u000b\u000c\u000d\u0085\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000'`

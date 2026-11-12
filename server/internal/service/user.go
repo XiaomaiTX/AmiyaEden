@@ -13,6 +13,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -55,6 +56,25 @@ func NewUserService() *UserService {
 
 func (s *UserService) GetUserByID(id uint) (*model.User, error) {
 	return s.repo.GetByID(id)
+}
+
+// ErrAccountInactive marks a removed or disabled account whose session must end.
+var ErrAccountInactive = errors.New("account removed or disabled")
+
+// EnsureActiveUser returns ErrAccountInactive for removed or disabled accounts.
+// Any other error is a transient lookup failure that must not end the session.
+func (s *UserService) EnsureActiveUser(userID uint) error {
+	user, err := s.repo.GetByID(userID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrAccountInactive
+	}
+	if err != nil {
+		return err
+	}
+	if user.Status != 1 {
+		return ErrAccountInactive
+	}
+	return nil
 }
 
 func (s *UserService) ListUserCharacters(userID uint) ([]model.EveCharacter, error) {
@@ -240,31 +260,24 @@ func (s *UserService) recordAdminAudit(action string, operatorID, targetUserID u
 	})
 }
 
+// validateUniqueContacts returns a *ContactConflictError when another account owns the contact.
 func (s *UserService) validateUniqueContacts(user *model.User) error {
-	if user.QQ != "" {
-		owner, err := s.repo.GetContactOwner("qq", user.QQ)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
+	for _, contact := range []struct{ column, value string }{{"qq", user.QQ}, {"discord_id", user.DiscordID}} {
+		if contact.value == "" {
+			continue
 		}
-		if err == nil {
-			if owner.ID != user.ID {
-				return s.contactConflict(owner, "qq")
-			}
+		owner, err := s.repo.GetContactOwner(contact.column, contact.value)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			continue
 		}
-	}
-
-	if user.DiscordID != "" {
-		owner, err := s.repo.GetContactOwner("discord_id", user.DiscordID)
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
+		if err != nil {
+			global.Logger.Error("查询联系方式归属失败", zap.String("contact", contact.column), zap.Error(err))
+			return errContactCheckFailed
 		}
-		if err == nil {
-			if owner.ID != user.ID {
-				return s.contactConflict(owner, "discord_id")
-			}
+		if owner.ID != user.ID {
+			return s.contactConflict(owner, contact.column)
 		}
 	}
-
 	return nil
 }
 

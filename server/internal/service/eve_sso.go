@@ -542,6 +542,10 @@ type CallbackResult struct {
 	RegistrationTicket string `json:"-"`
 }
 
+// consumeStateScript atomically reads and deletes the SSO state like GETDEL,
+// which is unavailable before Redis 6.2.
+const consumeStateScript = `local v = redis.call('get', KEYS[1]) if v then redis.call('del', KEYS[1]) end return v`
+
 // HandleCallback 处理 EVE SSO 回调，完成 Token 交换、用户创建/更新，颁发本系统 JWT
 func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientIP string) (*CallbackResult, error) {
 	if code == "" {
@@ -550,8 +554,8 @@ func (s *EveSSOService) HandleCallback(ctx context.Context, code, state, clientI
 
 	// 读取并删除 state（防重放）
 	var sd stateData
-	data, stateErr := global.Redis.GetDel(ctx, stateCachePrefix+state).Bytes()
-	if state == "" || stateErr != nil || json.Unmarshal(data, &sd) != nil {
+	data, stateErr := global.Redis.Eval(ctx, consumeStateScript, []string{stateCachePrefix + state}).Text()
+	if state == "" || stateErr != nil || json.Unmarshal([]byte(data), &sd) != nil {
 		return nil, errors.New("登录会话已失效，请重新登录")
 	}
 	if sd.BindToUserID > 0 {

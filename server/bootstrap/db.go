@@ -339,6 +339,7 @@ func newbroCustomIndexStatements() []string {
 func userCustomIndexStatements() []string {
 	return []string{
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_qq_unique ON "user" (qq) WHERE qq IS NOT NULL AND qq <> ''`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_user_discord_unique ON "user" (discord_id) WHERE discord_id IS NOT NULL AND discord_id <> ''`,
 	}
 }
 
