@@ -47,6 +47,11 @@ type ContactConflictError struct {
 
 func (e *ContactConflictError) Error() string { return "该联系方式已被其他用户使用" }
 
+var (
+	errContactCheckFailed = errors.New("联系方式校验失败，请稍后重试")
+	errUserSaveFailed     = errors.New("保存失败，请稍后重试")
+)
+
 func (s *UserService) contactWriteError(user *model.User, writeErr error) error {
 	var sqlErr interface{ SQLState() string }
 	if errors.As(writeErr, &sqlErr) {
@@ -59,7 +64,8 @@ func (s *UserService) contactWriteError(user *model.User, writeErr error) error 
 			}
 		}
 	}
-	return writeErr
+	global.Logger.Error("保存用户资料失败", zap.Uint("user_id", user.ID), zap.Error(writeErr))
+	return errUserSaveFailed
 }
 
 func (s *UserService) contactConflict(owner *model.User, contact string) error {
@@ -151,7 +157,8 @@ func (s *EveSSOService) CompleteRegistration(ctx context.Context, ticket string,
 	if err := s.userRepo.CreateRegistration(user, &character); err != nil {
 		// A concurrent account may have claimed the contact since the preflight check.
 		user.ID = 0
-		if conflict := userSvc.validateUniqueContacts(user); conflict != nil {
+		var conflict *ContactConflictError
+		if errors.As(userSvc.validateUniqueContacts(user), &conflict) {
 			return nil, conflict
 		}
 		if errors.Is(err, repository.ErrCharacterAlreadyRegistered) {
@@ -169,7 +176,8 @@ func (s *EveSSOService) CompleteRegistration(ctx context.Context, ticket string,
 	}
 	token, user, err := s.loadUserAndGenerateToken(user.ID)
 	if err != nil {
-		return nil, err
+		global.Logger.Error("注册后签发令牌失败", zap.Int64("character_id", character.CharacterID), zap.Error(err))
+		return nil, errors.New("注册已完成，请重新登录")
 	}
 	return &CallbackResult{Token: token, User: user, Character: &character, RedirectURL: pending.RedirectURL}, nil
 }

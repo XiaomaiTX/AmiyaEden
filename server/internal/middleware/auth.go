@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"amiya-eden/internal/model"
-	"amiya-eden/internal/repository"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/jwt"
 	"amiya-eden/pkg/response"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -27,6 +27,7 @@ const (
 func JWTAuth() gin.HandlerFunc {
 	roleSvc := service.NewRoleService()
 	corpPolicySvc := service.NewCorporationPolicyService()
+	userSvc := service.NewUserService()
 
 	return func(c *gin.Context) {
 		token := extractToken(c)
@@ -44,9 +45,14 @@ func JWTAuth() gin.HandlerFunc {
 		}
 
 		c.Set(ctxKeyUserID, claims.UserID)
-		user, userErr := repository.NewUserRepository().GetByID(claims.UserID)
-		if userErr != nil || user.Status != 1 {
-			response.Fail(c, response.CodeUnauthorized, "用户不存在或已禁用，请重新登录")
+		if err := userSvc.EnsureActiveUser(claims.UserID); err != nil {
+			if errors.Is(err, service.ErrAccountInactive) {
+				response.Fail(c, response.CodeUnauthorized, "用户不存在或已禁用，请重新登录")
+			} else {
+				// A transient lookup failure must not log the user out.
+				_ = c.Error(err)
+				response.Fail(c, response.CodeBizError, "服务器内部错误，请稍后重试")
+			}
 			c.Abort()
 			return
 		}
