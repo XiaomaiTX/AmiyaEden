@@ -134,6 +134,10 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
   'shop-wallet': lazyNamed(() => import('@/pages/shop-wallet-page'), 'ShopWalletPage'),
   'system-audit': lazyNamed(() => import('@/pages/system-audit-page'), 'SystemAuditPage'),
   'system-salary': lazyNamed(() => import('@/pages/system-salary-page'), 'SystemSalaryPage'),
+  'system-blacklist': lazyNamed(
+    () => import('@/pages/system-blacklist-page'),
+    'SystemBlacklistPage'
+  ),
   'system-pap-exchange': lazyNamed(
     () => import('@/pages/system-pap-exchange-page'),
     'SystemPAPExchangePage'

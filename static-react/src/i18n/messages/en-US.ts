@@ -67,14 +67,67 @@
     },
   },
 
+  blacklist: {
+    description:
+      "Data comes from the alliance's public blacklist sheet (The List). Characters, QQ, and Discord are three independent check sets. Each refresh mirrors the whole sheet, so entries removed from the sheet are also removed here.",
+    refresh: 'Update blacklist',
+    refreshing: 'Updating…',
+    refreshSuccess: 'Blacklist updated: {added} added, {updated} updated, {removed} removed',
+    lookupFailed:
+      '{count} names could not be looked up this time and will be retried on the next refresh',
+    characterValue: '{name} ({id})',
+    loading: 'Loading blacklist…',
+    empty: 'No blacklist entries',
+    kinds: {
+      all: 'All types',
+      character: 'Character',
+      qq: 'QQ',
+      discord: 'Discord',
+    },
+    filters: {
+      kind: 'Type',
+      keyword: 'Search character or Discord names; numbers match a QQ or character ID exactly',
+    },
+    columns: {
+      kind: 'Type',
+      value: 'Value',
+      reason: 'Reason',
+    },
+    summary: {
+      title: 'Latest refresh',
+      never: 'The blacklist has never been refreshed. Click Update blacklist to import it.',
+      finishedAt: 'Finished at',
+      nextRefreshAt: 'Next refresh (24 hours after a complete refresh)',
+      operator: 'Operator',
+      totals: 'Current entries',
+      totalsValue: '{characters} characters, {qqs} QQ, {discords} Discord',
+      changes: 'Changes',
+      changesValue: '{added} added, {updated} updated, {removed} removed',
+      unresolved: 'Unresolved names',
+      unresolvedValue: '{added} new, {skipped} skipped',
+      lookupFailed: 'Failed lookups',
+    },
+    errors: {
+      sourceUnavailable: 'Unable to download the blacklist sheet. Please retry later.',
+      sourceLayoutChanged:
+        'The blacklist sheet columns changed. The refresh stopped and local data is unchanged.',
+      emptyResult:
+        'The sheet produced no entries. The refresh stopped and local data is unchanged.',
+      refreshInProgress: 'A blacklist refresh is already running. Please retry shortly.',
+      refreshCooldown: 'The blacklist was fully refreshed. Please wait 24 hours after its completion.',
+      invalidQuery: 'Invalid query parameters.',
+      internal: 'The blacklist operation failed. Please retry.',
+    },
+  },
+
   salaryManagement: {
     confirmSalary:
-      'On successful completion, you will receive {amount} Fuxi coins in salary ({count} {unit} × {rate} each). Payment depends on successful completion and the settings at that time.',
+      'On successful completion, you will receive {amount} Fuxi coins in salary.',
     title: 'Salary management',
     description:
       'Recruitment, welfare and shop salaries are per application or order. SRP salary is per payout operation; a batch pays one salary. All authorized human operators earn equally. Automatic payouts earn no operator salary. Set an amount to 0 to disable it.',
     operations: 'Operation salaries',
-    recruitment: 'Recruitment (marked as invited)',
+    recruitment: 'Recruitment (new member marked as invited)',
     welfare_delivery: 'Welfare delivery',
     shop_delivery: 'Shop delivery',
     srp_payout: 'Final SRP payout',
@@ -85,8 +138,6 @@
       'Existing FC payout rules apply. A monthly count limit of 0 prevents new FC salary payments.',
     unit: 'Fuxi coins per item',
     perOperationUnit: 'Fuxi coins per operation',
-    operationUnit: 'operation(s)',
-    itemUnit: 'item(s)',
     loading: 'Loading salary settings…',
     loadFailed: 'Unable to load salary settings. Please retry.',
     saveFailed: 'Unable to save. Please retry.',
@@ -97,7 +148,7 @@
   },
   admissions: {
     walletReason: 'Corporation application #{id}',
-    title: 'Corporation applications',
+    title: 'Join corp',
     new_member: 'Join a corporation',
     alt: 'Apply for alts',
     history: 'My applications',
@@ -178,7 +229,13 @@
       evidence: 'Provide valid JPEG/PNG screenshots, each at most 2 MiB after compression.',
       walletDisabled:
         'Your wallet is disabled by corporation policy. The application remains pending. Contact a super admin to adjust the policy, then retry.',
+      blacklisted:
+        'The applicant matches the alliance blacklist and cannot be registered as invited. You can still reject.',
       internal: 'The operation was not completed. Refresh and retry.',
+    },
+    blacklist: {
+      warning: 'The applicant matches the alliance blacklist and cannot be registered as invited',
+      tag: 'Blacklisted',
     },
     kind: 'Application type',
   },
@@ -274,7 +331,7 @@
       characters: 'Characters',
       dashboard: 'Dashboard',
       shortcuts: 'Shortcuts',
-      info: 'EVE Character Info',
+      info: 'Character Info',
       operation: 'Fleet Operations',
       skillPlanning: 'Skill Planning',
       welfare: 'Corp Welfare',
@@ -287,7 +344,7 @@
     },
     dashboard: {
       console: 'Console',
-      characters: 'EVE Characters',
+      characters: 'Characters',
       npcKills: 'Corporation NPC Kills',
       corporationStructures: 'Corporation Structures',
       fuelOfficerStructures: 'My Fuel Structures',
@@ -360,6 +417,7 @@
     },
     system: {
       salary: 'Salary management',
+      blacklist: 'Blacklist',
       user: 'User Manage',
       taskManager: 'Task Manager',
       wallet: 'Wallet Management',
@@ -1128,6 +1186,7 @@
       admission_resubmit: 'Resubmit admission application',
       admission_reject: 'Reject admission application',
       admission_invited: 'Mark admission invitation sent',
+      blacklist_refresh: 'Refresh alliance blacklist',
     },
     title: 'Audit Logs',
     subtitle: 'Locate audit events by time, category, action, operator, and resource.',
@@ -1149,6 +1208,7 @@
       mumble: 'Mumble identity',
       system: 'System',
       corporation_admissions: 'Corporation admissions',
+      blacklist: 'Alliance blacklist',
     },
     results: {
       success: 'Success',
@@ -2502,7 +2562,7 @@
     },
   },
   characters: {
-    title: 'EVE Characters',
+    title: 'Characters',
     subTitle:
       'Manage EVE Online characters linked to your account. You can bind multiple characters and switch the primary one.',
     loading: 'Loading character data...',

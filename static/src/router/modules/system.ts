@@ -34,6 +34,17 @@ export const systemRoutes: AppRouteRecord = {
       }
     },
     {
+      path: 'blacklist',
+      name: 'SystemBlacklist',
+      component: '/system/blacklist',
+      meta: {
+        title: 'menus.system.blacklist',
+        keepAlive: true,
+        roles: ['super_admin', 'admin'],
+        corpCapabilitiesAny: ['system.manage']
+      }
+    },
+    {
       path: 'user',
       name: 'User',
       component: '/system/user',

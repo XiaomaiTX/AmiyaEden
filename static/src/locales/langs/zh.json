@@ -544,7 +544,7 @@
       "orderManage": "订单管理",
       "wallet": "我的钱包"
     },
-    "characters": { "title": "EVE 人物管理" },
+    "characters": { "title": "人物管理" },
     "mumble": { "title": "Mumble 凭据" },
     "operation": {
       "title": "舰队行动",
@@ -587,7 +587,7 @@
       "srpPrices": "补损价格表"
     },
     "info": {
-      "title": "EVE 人物信息",
+      "title": "人物信息",
       "wallet": "钱包流水",
       "skill": "技能列表",
       "ships": "可用舰船",
@@ -602,7 +602,7 @@
     "system": {
       "title": "系统管理",
       "user": "用户管理",
-      "characters": "EVE 人物管理",
+      "characters": "人物管理",
       "userCenter": "个人中心",
       "menu": "菜单管理",
       "taskManager": "任务管理",
@@ -617,7 +617,8 @@
       "audit": "审计日志",
       "webhook": "Webhook 通知",
       "basicConfig": "@:setting.basics.title",
-      "salary": "工资管理"
+      "salary": "工资管理",
+      "blacklist": "黑名单"
     },
     "fuxiHall": {
       "title": "伏羲大厅",
@@ -2992,7 +2993,8 @@
       "admission_edit": "编辑入团申请",
       "admission_resubmit": "重新提交入团申请",
       "admission_reject": "拒绝入团申请",
-      "admission_invited": "标记已邀请入团"
+      "admission_invited": "标记已邀请入团",
+      "blacklist_refresh": "刷新联盟黑名单"
     },
     "categories": {
       "captain_refund": "队长退税",
@@ -3007,7 +3009,8 @@
       "content_admin": "内容管理",
       "mumble": "Mumble 身份",
       "system": "系统",
-      "corporation_admissions": "军团加入申请"
+      "corporation_admissions": "军团加入申请",
+      "blacklist": "联盟黑名单"
     }
   },
   "dashboardConsole": {
@@ -3765,17 +3768,22 @@
       "conflict": "申请已变化或人物被其他待处理申请占用。请刷新后重试。",
       "evidence": "请提供有效的 JPEG/PNG 截图；压缩后每张不得超过 2 MiB。",
       "walletDisabled": "你的钱包当前被军团策略禁用，整单未结案。请联系超管调整配置后重试。",
+      "blacklisted": "申请人命中联盟黑名单，不能登记为已邀请；仍可驳回。",
       "internal": "操作未完成，请刷新后重试。"
+    },
+    "blacklist": {
+      "warning": "申请人命中联盟黑名单，不能登记为已邀请",
+      "tag": "黑名单"
     },
     "kind": "申请种类",
     "walletReason": "军团申请 #{id}"
   },
   "salaryManagement": {
-    "confirmSalary": "本次操作成功后，你将获得 {amount} 伏羲币工资（{count} {unit} × 每{unit} {rate} 伏羲币）。工资以成功完成的操作和当时的设置为准。",
+    "confirmSalary": "本次操作成功后，你将获得 {amount} 伏羲币工资。",
     "title": "工资管理",
     "description": "招新、福利、商城按申请或订单逐份计薪；补损按发放操作计薪，批量发放一次也只计一份工资。所有有权限的人工操作人领取相同工资，系统自动发放不计薪。金额设为 0 可停发该类工资。",
     "operations": "操作工资",
-    "recruitment": "招新（标记已邀请）",
+    "recruitment": "招新（新人申请标记已邀请）",
     "welfare_delivery": "福利发放",
     "shop_delivery": "商城发货",
     "srp_payout": "补损最终发放",
@@ -3785,8 +3793,6 @@
     "fcHint": "沿用现有 FC 工资发放规则；次数上限为 0 时不发放新的 FC 工资。",
     "unit": "伏羲币／份",
     "perOperationUnit": "伏羲币／次",
-    "operationUnit": "次",
-    "itemUnit": "份",
     "loading": "正在加载工资设置…",
     "loadFailed": "工资设置加载失败，请重试。",
     "saveFailed": "保存失败，请重试。",
@@ -3794,5 +3800,49 @@
     "refresh": "刷新",
     "save": "保存",
     "saving": "保存中…"
+  },
+  "blacklist": {
+    "description": "数据来自联盟公开黑名单表格（The List）。人物、QQ、Discord 是三个独立的核查集合，每次刷新完整同步表格，表格中已移除的条目也会在本地移除。",
+    "refresh": "更新黑名单",
+    "refreshSuccess": "黑名单已更新：新增 {added}，更新 {updated}，移除 {removed}",
+    "lookupFailed": "{count} 个人名本次查询失败，下次刷新重试",
+    "characterValue": "{name}（{id}）",
+    "kinds": {
+      "character": "人物",
+      "qq": "QQ",
+      "discord": "Discord"
+    },
+    "filters": {
+      "kind": "全部类型",
+      "keyword": "搜索人物名或 Discord；纯数字按 QQ 或人物 ID 精确匹配"
+    },
+    "columns": {
+      "kind": "类型",
+      "value": "值",
+      "reason": "理由"
+    },
+    "summary": {
+      "title": "最近一次刷新",
+      "never": "尚未刷新过黑名单，点击「更新黑名单」开始导入。",
+      "finishedAt": "完成时间",
+      "nextRefreshAt": "下次可刷新（完整刷新间隔 24 小时）",
+      "operator": "操作人",
+      "totals": "当前条目",
+      "totalsValue": "人物 {characters}，QQ {qqs}，Discord {discords}",
+      "changes": "本次变化",
+      "changesValue": "新增 {added}，更新 {updated}，移除 {removed}",
+      "unresolved": "无法解析的人名",
+      "unresolvedValue": "新发现 {added}，已跳过 {skipped}",
+      "lookupFailed": "本次查询失败"
+    },
+    "errors": {
+      "sourceUnavailable": "无法下载黑名单表格，请稍后重试。",
+      "sourceLayoutChanged": "黑名单表格的列结构已变化，已停止刷新，本地数据未改动。",
+      "emptyResult": "表格解析结果为空，已停止刷新，本地数据未改动。",
+      "refreshInProgress": "黑名单正在刷新中，请稍后再试。",
+      "refreshCooldown": "黑名单已完整刷新，请在上次完成 24 小时后再试。",
+      "invalidQuery": "查询参数无效。",
+      "internal": "黑名单操作失败，请重试。"
+    }
   }
 }

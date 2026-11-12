@@ -68,7 +68,7 @@ export function hasCorpCapabilityPermission(
 }
 
 // The derived recruiter role only grants admission review, never membership.
-function hasNonGuestRole(roles: string[]) {
+export function hasNonGuestRole(roles: string[]) {
   return roles.some((role) => role !== 'guest' && role !== 'recruiter')
 }
 
