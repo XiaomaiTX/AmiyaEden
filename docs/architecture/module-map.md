@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-11-11
+last_reviewed: 2026-11-12
 source_of_truth:
   - server/internal
   - server/pkg
@@ -178,3 +178,5 @@ QQ 通用通知业务位于 `model/repository/service/qq_notification.go`，双�
 QQ 群业务位于 `qq_group_business.go`（规则、申请、成员、名片）与 `qq_group_inspection.go`（冻结快照、检查点、清退）；建筑预警位于 `qq_structure_alert.go`。后台任务 `qq_group_business` 与 `qq_structure_alert` 只编排业务，协议操作仍由统一调度执行。
 
 统一工资管理：`service/salary.go`、`handler/salary.go`、`model/salary.go` 和 `bootstrap/salary_migration.go`；双端 `/system/salary`。各业务最终完成事务调用工资服务，不在审批初审或自动发放路径计操作工资；参见[工资管理](../features/current/operation-salaries.md)。
+
+联盟黑名单：`service/blacklist.go`（刷新编排与查询）、`blacklist_source.go`（Sheet 下载与解析）、`blacklist_esi.go`（ESI 批量解析人名），以及 `handler/blacklist.go`、`repository/blacklist.go`、`model/blacklist.go` 和 `bootstrap/blacklist_migration.go`；双端 `/system/blacklist`。参见[系统管理 · 联盟黑名单](../features/current/administration.md#联盟黑名单)。
