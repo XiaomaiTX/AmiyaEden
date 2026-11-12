@@ -69,20 +69,21 @@ func (WalletLog) TableName() string { return "wallet_log" }
 
 // 钱包流水类型常量
 const (
-	WalletRefPapReward           = "pap_reward"            // PAP 奖励
-	WalletRefPapFCSalary         = "pap_fc_salary"         // FC 工资
-	WalletRefAdminAward          = "admin_award"           // 管理发放奖励
-	WalletRefPapConvert          = "pap_convert"           // 联盟 PAP 月度兑换
-	WalletRefManual              = "manual"                // 手动操作
-	WalletRefAdminAdjust         = "admin_adjust"          // 管理员调整
-	WalletRefSrpPayout           = "srp_payout"            // SRP 补损发放
-	WalletRefWelfarePayout       = "welfare_payout"        // 福利审批发放
-	WalletRefShopBuy             = "shop_purchase"         // 商城购买
-	WalletRefShopRefund          = "shop_refund"           // 商城退款（拒绝订单）
-	WalletRefCaptainRefund       = "captain_refund"        // 队长退税
-	WalletRefNewbroCaptainReward = "newbro_captain_reward" // 队长帮扶奖励
-	WalletRefMentorReward        = "mentor_reward"         // 导师帮扶奖励
-	WalletRefRecruitReward       = "recruit_link_reward"   // 招募链接奖励
+	WalletRefPapReward           = "pap_reward"                    // PAP 奖励
+	WalletRefPapFCSalary         = "pap_fc_salary"                 // FC 工资
+	WalletRefAdminAward          = "admin_award"                   // 管理发放奖励
+	WalletRefPapConvert          = "pap_convert"                   // 联盟 PAP 月度兑换
+	WalletRefManual              = "manual"                        // 手动操作
+	WalletRefAdminAdjust         = "admin_adjust"                  // 管理员调整
+	WalletRefSrpPayout           = "srp_payout"                    // SRP 补损发放
+	WalletRefWelfarePayout       = "welfare_payout"                // 福利审批发放
+	WalletRefShopBuy             = "shop_purchase"                 // 商城购买
+	WalletRefShopRefund          = "shop_refund"                   // 商城退款（拒绝订单）
+	WalletRefCaptainRefund       = "captain_refund"                // 队长退税
+	WalletRefNewbroCaptainReward = "newbro_captain_reward"         // 队长帮扶奖励
+	WalletRefMentorReward        = "mentor_reward"                 // 导师帮扶奖励
+	WalletRefRecruitReward       = "recruit_link_reward"           // 招募链接奖励
+	WalletRefInvitationSalary    = "recruitment_invitation_salary" // 招新官工资
 )
 
 // 钱包操作日志动作

@@ -69,6 +69,23 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	auth := api.Group("", middleware.JWTAuth())
 	login := auth.Group("", middleware.RequireLoginUser())
 
+	admissionH := handler.NewAdmissionHandler()
+	admissions := auth.Group("/admissions")
+	admissions.GET("/context", admissionH.Context)
+	admissions.GET("/applications/me", admissionH.ListMine)
+	admissions.POST("/applications", admissionH.Create)
+	admissions.GET("/applications/:id", admissionH.Detail)
+	admissions.PUT("/applications/:id", admissionH.Edit)
+	admissions.POST("/applications/:id/resubmit", admissionH.Resubmit)
+	admissions.GET("/applications/:id/evidence/:kind", admissionH.Evidence)
+	// Deliberately outside the admin-only /system group and the Login group:
+	// recruiter is not membership (FMA reviewers may be outside the allowlist).
+	// Local corporation authority is checked again by the service on every request.
+	admissionReview := auth.Group("/system/admissions", middleware.RequireRole(model.RoleRecruiter, model.RoleAdmin))
+	admissionReview.GET("/applications", admissionH.ListReview)
+	admissionReview.POST("/applications/:id/invited", admissionH.Invited)
+	admissionReview.POST("/applications/:id/reject", admissionH.Reject)
+
 	// 福利（用户端 + 管理端共用 handler）
 	welfareH := handler.NewWelfareHandler()
 	requireMenuDashboard := middleware.RequireCorpCapability(model.CorpCapabilityMenuDashboard)
@@ -189,6 +206,7 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	}
 	badgeH := handler.NewBadgeHandler()
 	login.GET("/badge-counts", badgeH.GetBadgeCounts)
+	login.GET("/operation-salary-rates", handler.NewSalaryHandler().OperationRates)
 
 	// ─── 通知 ───
 	notifH := handler.NewNotificationHandler()
@@ -500,6 +518,10 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	papExchangeH := handler.NewPAPExchangeHandler()
 	admin.GET("/pap-exchange/rates", requireSystemManage, papExchangeH.GetRates)
 	admin.PUT("/pap-exchange/rates", requireSystemManage, papExchangeH.SetRates)
+	salaryH := handler.NewSalaryHandler()
+	salaryAdmin := admin.Group("/salary-settings", requireSystemManage, middleware.RequireRole(model.RoleAdmin, model.RoleSuperAdmin))
+	salaryAdmin.GET("", salaryH.Get)
+	salaryAdmin.PUT("", salaryH.Update)
 
 	// 职权定义（只读）
 	roleH := handler.NewRoleHandler()

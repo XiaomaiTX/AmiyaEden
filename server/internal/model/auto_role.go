@@ -29,9 +29,10 @@ func (EsiTitleMapping) TableName() string { return "esi_title_mapping" }
 
 // EveCharacterCorpRole 人物的 ESI 军团职权快照（去重后的完整列表）
 type EveCharacterCorpRole struct {
-	ID          uint   `gorm:"primarykey"                                                    json:"id"`
-	CharacterID int64  `gorm:"not null;index:idx_char_corp_role,unique"                       json:"character_id"`
-	CorpRole    string `gorm:"size:100;not null;index:idx_char_corp_role,unique"               json:"corp_role"` // ESI 军团职权名
+	CorporationID int64  `gorm:"not null;default:0;index" json:"corporation_id"`
+	ID            uint   `gorm:"primarykey"                                                    json:"id"`
+	CharacterID   int64  `gorm:"not null;index:idx_char_corp_role,unique"                       json:"character_id"`
+	CorpRole      string `gorm:"size:100;not null;index:idx_char_corp_role,unique"               json:"corp_role"` // ESI 军团职权名
 }
 
 func (EveCharacterCorpRole) TableName() string { return "eve_character_corp_role" }

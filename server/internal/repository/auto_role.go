@@ -3,6 +3,9 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"fmt"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"regexp"
 	"strings"
 )
@@ -113,26 +116,27 @@ func (r *AutoRoleRepository) ListCharacterCorpRoles(characterID int64) ([]string
 }
 
 // SyncCharacterCorpRoles 同步人物的 ESI 军团职权（先删后插）
-func (r *AutoRoleRepository) SyncCharacterCorpRoles(characterID int64, roles []string) error {
-	tx := global.DB.Begin()
-	if err := tx.Where("character_id = ?", characterID).Delete(&model.EveCharacterCorpRole{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	if len(roles) > 0 {
-		records := make([]model.EveCharacterCorpRole, 0, len(roles))
-		for _, role := range roles {
-			records = append(records, model.EveCharacterCorpRole{
-				CharacterID: characterID,
-				CorpRole:    role,
-			})
-		}
-		if err := tx.Create(&records).Error; err != nil {
-			tx.Rollback()
+func (r *AutoRoleRepository) SyncCharacterCorpRoles(characterID, corporationID int64, roles []string) error {
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		var character model.EveCharacter
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("character_id = ?", characterID).First(&character).Error; err != nil {
 			return err
 		}
-	}
-	return tx.Commit().Error
+		if character.CorporationID != corporationID {
+			return fmt.Errorf("corporation changed during role synchronization")
+		}
+		if err := tx.Where("character_id = ?", characterID).Delete(&model.EveCharacterCorpRole{}).Error; err != nil {
+			return err
+		}
+		if len(roles) == 0 {
+			return nil
+		}
+		records := make([]model.EveCharacterCorpRole, 0, len(roles))
+		for _, role := range roles {
+			records = append(records, model.EveCharacterCorpRole{CharacterID: characterID, CorporationID: corporationID, CorpRole: role})
+		}
+		return tx.Create(&records).Error
+	})
 }
 
 // ListAllCharacterCorpRoles 获取所有人物的 ESI 军团职权（用于批量刷新）

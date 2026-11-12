@@ -60,6 +60,9 @@ func (s *AutoRoleService) CreateEsiRoleMapping(esiRole string, roleCode string) 
 	if roleCode == model.RoleSuperAdmin {
 		return nil, errors.New("不可映射到超级管理员")
 	}
+	if roleCode == model.RoleRecruiter {
+		return nil, errors.New("recruiter is derived from corporation recruitment authority")
+	}
 
 	mapping := &model.EsiRoleMapping{
 		EsiRole:  esiRole,
@@ -199,6 +202,9 @@ func (s *AutoRoleService) fetchCorporationNames(ctx context.Context, titles []re
 
 // CreateEsiTitleMapping 创建 ESI 头衔映射
 func (s *AutoRoleService) CreateEsiTitleMapping(corpID int64, titleID int, titleName string, roleCode string) (*model.EsiTitleMapping, error) {
+	if roleCode == model.RoleRecruiter {
+		return nil, errors.New("recruiter is derived from corporation recruitment authority")
+	}
 	if !model.IsValidRoleCode(roleCode) {
 		return nil, errors.New("未知的系统职权编码")
 	}
@@ -283,6 +289,9 @@ func (s *AutoRoleService) DeleteEsiTitleMappingByOperator(id uint, operatorID ui
 
 // SyncUserAutoRoles 根据 ESI 军团职权 + 头衔，自动同步用户的系统职权
 func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) error {
+	if err := s.SyncRecruiterRole(ctx, userID); err != nil {
+		return err
+	}
 	currentCodes, err := s.roleRepo.GetUserRoleCodes(userID)
 	if err != nil {
 		return fmt.Errorf("get role codes for user %d: %w", userID, err)
@@ -340,6 +349,9 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 			global.Logger.Warn("[AutoRole] 查询 ESI 职权映射失败", zap.Error(err))
 		} else {
 			for _, m := range mappings {
+				if m.RoleCode == model.RoleRecruiter {
+					continue
+				}
 				autoRoleCodes[m.RoleCode] = struct{}{}
 			}
 		}
@@ -369,6 +381,9 @@ func (s *AutoRoleService) SyncUserAutoRoles(ctx context.Context, userID uint) er
 			continue
 		}
 		for _, m := range titleMappings {
+			if m.RoleCode == model.RoleRecruiter {
+				continue
+			}
 			autoRoleCodes[m.RoleCode] = struct{}{}
 		}
 	}

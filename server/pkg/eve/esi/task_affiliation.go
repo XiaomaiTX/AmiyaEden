@@ -78,6 +78,7 @@ func (t *AffiliationTask) fetchAffiliation(ctx context.Context, client *Client, 
 	}
 
 	// 入库：更新 eve_character 表的归属字段
+	updatedCharacters := make([]int64, 0, len(results))
 	for _, r := range results {
 		updates := map[string]interface{}{
 			"corporation_id": r.CorporationID,
@@ -91,8 +92,11 @@ func (t *AffiliationTask) fetchAffiliation(ctx context.Context, client *Client, 
 				zap.Int64("character_id", r.CharacterID),
 				zap.Error(err),
 			)
+		} else {
+			updatedCharacters = append(updatedCharacters, r.CharacterID)
 		}
 	}
+	notifyCorporationAuthorityChanged(ctx, updatedCharacters)
 	if err := t.refreshAffiliationTickerCache(ctx, client, results); err != nil {
 		return err
 	}

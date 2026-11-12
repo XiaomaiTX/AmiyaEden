@@ -374,11 +374,11 @@ func buildBatchPayoutApplicationsUpdateQuery(db *gorm.DB, applicationIDs []uint,
 }
 
 // BatchPayoutApplicationsByUser 将某用户所有已批准且待发放的申请标记为已发放
-func (r *SrpRepository) BatchPayoutApplicationsByUser(userID uint, payerID uint, paidAt time.Time) (*SrpBatchPayoutSummaryRow, []model.SrpApplication, error) {
+func (r *SrpRepository) BatchPayoutApplicationsByUserTx(tx *gorm.DB, userID uint, payerID uint, paidAt time.Time) (*SrpBatchPayoutSummaryRow, []model.SrpApplication, error) {
 	var summary *SrpBatchPayoutSummaryRow
 	var selectedApps []model.SrpApplication
 
-	err := global.DB.Transaction(func(tx *gorm.DB) error {
+	err := func() error {
 		var apps []model.SrpApplication
 		if err := buildApprovedUnpaidBatchPayoutApplicationsQuery(tx, userID).Find(&apps).Error; err != nil {
 			return err
@@ -399,7 +399,7 @@ func (r *SrpRepository) BatchPayoutApplicationsByUser(userID uint, payerID uint,
 		summary = &selectedSummary
 		selectedApps = append(selectedApps[:0], apps...)
 		return nil
-	})
+	}()
 	if err != nil {
 		return nil, nil, err
 	}
