@@ -1,4 +1,36 @@
 import { buildShellMenuGroups } from '@/layout/menu-config'
+import type { AdmissionContext } from '@/types/api/admissions'
+
+test('admission pending count appears only on visible review navigation and its parent', () => {
+  const session = {
+    isLoggedIn: true,
+    roles: ['user'],
+    corpCapabilities: [],
+    isCurrentlyNewbro: false,
+    isMentorMenteeEligible: false,
+  }
+  const context: AdmissionContext = {
+    is_member: true,
+    can_create_new_member: false,
+    can_create_alt: true,
+    qq: '',
+    discord_id: '',
+    characters: [],
+    targets: [],
+    reviewable_corporation_ids: [98824507],
+  }
+  const groups = buildShellMenuGroups(session, { admission_pending: 2 }, context)
+  const admissions = groups.find((group) => group.labelKey === 'admissions.title')
+  expect(admissions?.badge).toBe(2)
+  expect(admissions?.items.find((item) => item.to === '/admissions/review')?.badge).toBe(2)
+  expect(admissions?.items.find((item) => item.to === '/admissions/history')?.badge).toBeUndefined()
+  const noAuthority = buildShellMenuGroups(
+    session,
+    { admission_pending: 2 },
+    { ...context, reviewable_corporation_ids: [] }
+  )
+  expect(noAuthority.find((group) => group.labelKey === 'admissions.title')?.badge).toBeUndefined()
+})
 
 describe('menu config', () => {
   test('hides protected routes for anonymous visitor', () => {

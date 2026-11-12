@@ -17,9 +17,11 @@ import { buildShellMenuGroups } from '@/layout/menu-config'
 import { buildEveCharacterPortraitUrl, buildEveCorporationLogoUrl } from '@/lib/eve-image'
 import { SYSTEM_IDENTITY } from '@/constants/system-identity'
 import { useBadgeStore, useSessionStore } from '@/stores'
+import { useAdmissionContext } from '@/hooks/use-admission-context'
 
 export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const { t } = useI18n()
+  const { context: admissionContext } = useAdmissionContext()
   const characterName = useSessionStore((state) => state.characterName)
   const characterId = useSessionStore((state) => state.characterId)
   const primaryCharacterId = useSessionStore((state) => state.primaryCharacterId)
@@ -38,7 +40,8 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       isCurrentlyNewbro,
       isMentorMenteeEligible,
     },
-    badgeCounts
+    badgeCounts,
+    admissionContext
   ).map((group) => ({
     groupKey: group.key,
     title: group.labelKey,
@@ -57,15 +60,15 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" href="/">
-                <img
-                  className="size-8 rounded-lg object-cover"
-                  src={buildEveCorporationLogoUrl(SYSTEM_IDENTITY.corporationId)}
-                  alt={SYSTEM_IDENTITY.displayName}
-                />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{SYSTEM_IDENTITY.displayName}</span>
-                  <span className="truncate text-xs">{t('shell.subtitle')}</span>
-                </div>
+              <img
+                className="size-8 rounded-lg object-cover"
+                src={buildEveCorporationLogoUrl(SYSTEM_IDENTITY.corporationId)}
+                alt={SYSTEM_IDENTITY.displayName}
+              />
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{SYSTEM_IDENTITY.displayName}</span>
+                <span className="truncate text-xs">{t('shell.subtitle')}</span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
