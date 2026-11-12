@@ -1,4 +1,11 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   batchPayoutAsFuxiCoin,
@@ -12,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
+import { operationSalaryMessage } from '@/lib/operation-salary'
 import type { Application, BatchPayoutSummary } from '@/types/api/srp'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -36,8 +44,7 @@ export function SrpManagePage() {
         fetchApplicationList({
           current: 1,
           size: 200,
-          review_status:
-            activeTab === 'pending' ? 'submitted' : filter.status || undefined,
+          review_status: activeTab === 'pending' ? 'submitted' : filter.status || undefined,
           keyword: filter.keyword.trim() || undefined,
         }),
         fetchBatchPayoutSummary(),
@@ -70,7 +77,10 @@ export function SrpManagePage() {
   const approve = async (item: Application) => {
     setActionId(item.id)
     try {
-      await reviewApplication(item.id, { action: 'approve', final_amount: item.final_amount || item.recommended_amount })
+      await reviewApplication(item.id, {
+        action: 'approve',
+        final_amount: item.final_amount || item.recommended_amount,
+      })
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpManage.actionFailed')))
@@ -92,9 +102,14 @@ export function SrpManagePage() {
   }
 
   const payout = async (item: Application) => {
+    if (actionId !== null) return
     setActionId(item.id)
     try {
-      await payoutApplication(item.id, { final_amount: item.final_amount || item.recommended_amount })
+      const salary = await operationSalaryMessage('srp_payout', 1, t)
+      if (!window.confirm(`${t('srpManage.payoutBtn')}?\n\n${salary}`)) return
+      await payoutApplication(item.id, {
+        final_amount: item.final_amount || item.recommended_amount,
+      })
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpManage.actionFailed')))
@@ -111,14 +126,39 @@ export function SrpManagePage() {
   }
 
   const batchPayout = async () => {
-    if (!window.confirm(t('srpManage.batchPayoutConfirm'))) return
-    await batchPayoutAsFuxiCoin()
-    await loadData()
+    if (actionId !== null) return
+    setActionId(-1)
+    try {
+      const rows = await fetchBatchPayoutSummary()
+      const count = rows.reduce((sum, row) => sum + row.application_count, 0)
+      if (!count) return
+      const salary = await operationSalaryMessage('srp_payout', 1, t)
+      if (!window.confirm(`${t('srpManage.batchPayoutConfirm')}\n\n${salary}`)) return
+      await batchPayoutAsFuxiCoin()
+      await loadData()
+    } catch (error) {
+      setError(getErrorMessage(error, t('srpManage.actionFailed')))
+    } finally {
+      setActionId(null)
+    }
   }
 
   const batchPayoutBySelected = async (userId: number) => {
-    await batchPayoutByUser(userId)
-    await loadData()
+    if (actionId !== null) return
+    setActionId(-1)
+    try {
+      const rows = await fetchBatchPayoutSummary()
+      const count = rows.find((row) => row.user_id === userId)?.application_count ?? 0
+      if (!count) return
+      const salary = await operationSalaryMessage('srp_payout', 1, t)
+      if (!window.confirm(`${t('srpManage.batchPayoutConfirm')}\n\n${salary}`)) return
+      await batchPayoutByUser(userId)
+      await loadData()
+    } catch (error) {
+      setError(getErrorMessage(error, t('srpManage.actionFailed')))
+    } finally {
+      setActionId(null)
+    }
   }
 
   return (
@@ -132,7 +172,9 @@ export function SrpManagePage() {
           <div className="flex flex-wrap items-end gap-3">
             <Input
               value={filter.keyword}
-              onChange={(event) => setFilter((current) => ({ ...current, keyword: event.target.value }))}
+              onChange={(event) =>
+                setFilter((current) => ({ ...current, keyword: event.target.value }))
+              }
               placeholder={t('srpManage.keywordPlaceholder')}
             />
             <Button type="button" variant="outline" onClick={() => void loadData()}>
@@ -147,10 +189,18 @@ export function SrpManagePage() {
 
       <div className="rounded-lg border bg-card p-5">
         <div className="flex gap-2">
-          <Button type="button" variant={activeTab === 'pending' ? 'default' : 'outline'} onClick={() => setActiveTab('pending')}>
+          <Button
+            type="button"
+            variant={activeTab === 'pending' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('pending')}
+          >
             {t('srpManage.pendingTab')}
           </Button>
-          <Button type="button" variant={activeTab === 'history' ? 'default' : 'outline'} onClick={() => setActiveTab('history')}>
+          <Button
+            type="button"
+            variant={activeTab === 'history' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('history')}
+          >
             {t('srpManage.historyTab')}
           </Button>
           {activeTab === 'pending' ? (
@@ -187,23 +237,48 @@ export function SrpManagePage() {
                   </TableCell>
                   <TableCell className="px-3 py-2">{item.ship_name}</TableCell>
                   <TableCell className="px-3 py-2">{item.review_status}</TableCell>
-                  <TableCell className="px-3 py-2">{item.final_amount || item.recommended_amount}</TableCell>
+                  <TableCell className="px-3 py-2">
+                    {item.final_amount || item.recommended_amount}
+                  </TableCell>
                   <TableCell className="px-3 py-2">
                     {activeTab === 'pending' ? (
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" onClick={() => void approve(item)} isDisabled={actionId === item.id}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => void approve(item)}
+                          isDisabled={actionId === item.id}
+                        >
                           {t('srpManage.approveBtn')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void reject(item)} isDisabled={actionId === item.id}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void reject(item)}
+                          isDisabled={actionId === item.id}
+                        >
                           {t('srpManage.rejectBtn')}
                         </Button>
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => void payout(item)} isDisabled={actionId === item.id}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void payout(item)}
+                          isDisabled={actionId === item.id}
+                        >
                           {t('srpManage.payoutBtn')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void batchPayoutBySelected(item.user_id)} isDisabled={actionId === item.id}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void batchPayoutBySelected(item.user_id)}
+                          isDisabled={actionId === item.id}
+                        >
                           {t('srpManage.batchByUserBtn')}
                         </Button>
                       </div>

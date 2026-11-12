@@ -7,9 +7,6 @@ export interface RateItem {
 
 export interface ConfigResponse {
   rates: RateItem[]
-  fc_salary: number
-  fc_salary_monthly_limit: number
-  admin_award: number
   multichar_full_reward_count: number
   multichar_reduced_reward_count: number
   multichar_reduced_reward_pct: number
@@ -23,9 +20,6 @@ export interface UpdateRateItem {
 
 export interface UpdateConfigParams {
   rates: UpdateRateItem[]
-  fc_salary: number
-  fc_salary_monthly_limit: number
-  admin_award: number
   multichar_full_reward_count: number
   multichar_reduced_reward_count: number
   multichar_reduced_reward_pct: number

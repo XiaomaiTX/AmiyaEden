@@ -25,6 +25,7 @@ export interface TicketCategory {
   description: string
   sort_order: number
   enabled: boolean
+  retired_admission?: boolean
   created_at: string
   updated_at: string
 }

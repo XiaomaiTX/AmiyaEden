@@ -7,7 +7,7 @@ interface BadgeStoreState {
   loading: boolean
   loadingForCharacterId: number | null
   loadedForCharacterId: number | null
-  load: (characterId: number) => Promise<void>
+  load: (characterId: number, force?: boolean) => Promise<void>
   clear: () => void
 }
 
@@ -16,11 +16,11 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
   loading: false,
   loadingForCharacterId: null,
   loadedForCharacterId: null,
-  load: async (characterId) => {
+  load: async (characterId, force = false) => {
     const state = get()
     if (
       state.loadingForCharacterId === characterId ||
-      state.loadedForCharacterId === characterId
+      (!force && state.loadedForCharacterId === characterId)
     ) {
       return
     }

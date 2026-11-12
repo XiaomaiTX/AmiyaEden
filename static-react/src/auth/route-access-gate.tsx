@@ -6,12 +6,17 @@ import { RouteLoadingFallback } from '@/app/route-loading-fallback'
 import { getProfileLockReasons } from '@/auth/profile-lock'
 import { RoutePermissionProvider } from '@/auth/permission-gates'
 import { useSessionStore } from '@/stores'
+import { useAdmissionContext } from '@/hooks/use-admission-context'
+import { canAccessAdmission } from '@/lib/admissions'
+import { useI18n } from '@/i18n'
 
 interface RouteAccessGateProps extends PropsWithChildren {
   meta?: RouteAccessMeta
 }
 
 export function RouteAccessGate({ meta, children }: RouteAccessGateProps) {
+  const admissions = useAdmissionContext()
+  const { t } = useI18n()
   const location = useLocation()
   const isLoggedIn = useSessionStore((state) => state.isLoggedIn)
   const bootstrapRequired = useSessionStore((state) => state.bootstrapRequired)
@@ -47,10 +52,7 @@ export function RouteAccessGate({ meta, children }: RouteAccessGateProps) {
     return <Navigate to="/403" replace />
   }
 
-  if (
-    isLoggedIn &&
-    location.pathname !== '/characters'
-  ) {
+  if (isLoggedIn && location.pathname !== '/characters') {
     const lockReasons = getProfileLockReasons({
       profileComplete,
       enforceCharacterESIRestriction,
@@ -62,6 +64,18 @@ export function RouteAccessGate({ meta, children }: RouteAccessGateProps) {
     }
   }
 
+  if (meta?.admission) {
+    if (admissions.loading) return <RouteLoadingFallback />
+    if (admissions.error)
+      return (
+        <div role="alert">
+          {t('admissions.errors.internal')}{' '}
+          <button onClick={() => void admissions.reload()}>{t('admissions.retry')}</button>
+        </div>
+      )
+    if (!canAccessAdmission(admissions.context, meta.admission))
+      return <Navigate to="/admissions/history" replace />
+  }
   const content = children ?? <Outlet />
   return (
     <RoutePermissionProvider permissions={meta?.authList?.map((item) => item.authMark) ?? []}>
@@ -69,4 +83,3 @@ export function RouteAccessGate({ meta, children }: RouteAccessGateProps) {
     </RoutePermissionProvider>
   )
 }
-

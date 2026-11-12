@@ -17,6 +17,8 @@ import { appRouteSpecs } from '@/app/migration-routes'
 import { evaluateRouteAccess } from '@/app/route-access'
 import type { SessionSnapshot } from '@/stores'
 import type { BadgeCounts } from '@/types/api/badge'
+import type { AdmissionContext } from '@/types/api/admissions'
+import { canAccessAdmission } from '@/lib/admissions'
 
 export interface ShellMenuItem {
   to: string
@@ -34,6 +36,7 @@ export interface ShellMenuGroup {
 
 const groupIconMap: Record<string, LucideIcon> = {
   characters: UserRound,
+  admissions: UserRoundPlus,
   dashboard: LayoutDashboard,
   info: Info,
   operation: Ship,
@@ -56,18 +59,29 @@ function canAccessRoute(route: (typeof appRouteSpecs)[number], session: SessionA
   return evaluateRouteAccess(route.meta, session) === 'allow'
 }
 
-export function buildShellMenuGroups(session: SessionAccess, badgeCounts: BadgeCounts = {}) {
+export function buildShellMenuGroups(
+  session: SessionAccess,
+  badgeCounts: BadgeCounts = {},
+  admissionContext: AdmissionContext | null = null
+) {
   const grouped = new Map<string, ShellMenuGroup>()
 
   for (const route of appRouteSpecs) {
     if (!route.menuGroup || !route.menuIcon || route.menuHidden) continue
     if (!canAccessRoute(route, session)) continue
+    if (route.meta?.admission && !canAccessAdmission(admissionContext, route.meta.admission))
+      continue
 
     const icon = groupIconMap[route.menuIcon]
     if (!icon) continue
 
     if (!grouped.has(route.menuGroup)) {
-      grouped.set(route.menuGroup, { key: route.menuGroup, labelKey: route.menuGroup, icon, items: [] })
+      grouped.set(route.menuGroup, {
+        key: route.menuGroup,
+        labelKey: route.menuGroup,
+        icon,
+        items: [],
+      })
     }
 
     grouped.get(route.menuGroup)?.items.push({

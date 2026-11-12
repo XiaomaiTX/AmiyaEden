@@ -1,9 +1,21 @@
 import { Input } from '@/components/ui/input'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useState } from 'react'
-import { adminDeleteApplication, adminListApplications, adminReviewApplication } from '@/api/welfare'
+import {
+  adminDeleteApplication,
+  adminListApplications,
+  adminReviewApplication,
+} from '@/api/welfare'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
+import { operationSalaryMessage } from '@/lib/operation-salary'
 import type { AdminApplication } from '@/types/api/welfare'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -63,8 +75,13 @@ export function WelfareApprovalPage() {
   }, [loadData, keyword])
 
   const review = async (id: number, action: 'deliver' | 'reject') => {
+    if (actionId !== null) return
     setActionId(id)
     try {
+      if (action === 'deliver') {
+        const salary = await operationSalaryMessage('welfare_delivery', 1, t)
+        if (!window.confirm(`${t('welfareApproval.deliverBtn')}?\n\n${salary}`)) return
+      }
       const result = await adminReviewApplication({ id, action })
       if (result?.outcome === 'auto_rejected') {
         const reason = result.eligibility_reason
@@ -118,14 +135,24 @@ export function WelfareApprovalPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('welfareApproval.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('welfareApproval.loading')}</p>
+      ) : null}
 
       <div className="rounded-lg border bg-card p-5">
         <div className="flex gap-2">
-          <Button type="button" variant={activeTab === 'pending' ? 'default' : 'outline'} onClick={() => setActiveTab('pending')}>
+          <Button
+            type="button"
+            variant={activeTab === 'pending' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('pending')}
+          >
             {t('welfareApproval.pendingTab')}
           </Button>
-          <Button type="button" variant={activeTab === 'history' ? 'default' : 'outline'} onClick={() => setActiveTab('history')}>
+          <Button
+            type="button"
+            variant={activeTab === 'history' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('history')}
+          >
             {t('welfareApproval.historyTab')}
           </Button>
         </div>
@@ -134,11 +161,15 @@ export function WelfareApprovalPage() {
           <Table className="min-w-full text-sm">
             <TableHeader>
               <TableRow className="border-b bg-muted/40 text-left">
-                <TableHead className="px-3 py-2">{t('welfareApproval.columns.character')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('welfareApproval.columns.character')}
+                </TableHead>
                 <TableHead className="px-3 py-2">{t('welfareApproval.columns.welfare')}</TableHead>
                 <TableHead className="px-3 py-2">{t('welfareApproval.columns.status')}</TableHead>
                 <TableHead className="px-3 py-2">{t('welfareApproval.columns.reviewer')}</TableHead>
-                <TableHead className="px-3 py-2">{t('welfareApproval.columns.appliedAt')}</TableHead>
+                <TableHead className="px-3 py-2">
+                  {t('welfareApproval.columns.appliedAt')}
+                </TableHead>
                 <TableHead className="px-3 py-2">{t('welfareApproval.columns.actions')}</TableHead>
               </TableRow>
             </TableHeader>

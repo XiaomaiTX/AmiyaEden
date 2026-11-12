@@ -384,6 +384,9 @@ describe('shop pages', () => {
         })
       )
       .mockResolvedValueOnce(
+        jsonResponse({ recruitment: 10, welfare_delivery: 10, shop_delivery: 6.5, srp_payout: 10 })
+      )
+      .mockResolvedValueOnce(
         jsonResponse({
           id: 7,
           order_no: 'ORD-001',
@@ -489,16 +492,18 @@ describe('shop pages', () => {
     fireEvent.click(screen.getByRole('button', { name: '发放' }))
 
     const dialog = await screen.findByRole('dialog', { name: '发放订单' })
+    expect(within(dialog).getByText(/6.50 伏羲币工资/)).toBeInTheDocument()
     fireEvent.change(within(dialog).getByPlaceholderText('发放备注（可选）'), {
       target: { value: 'delivered in time' },
     })
     fireEvent.click(within(dialog).getByRole('button', { name: '确认发放' }))
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(5)
+      expect(fetchMock).toHaveBeenCalledTimes(6)
     })
 
-    const deliverCall = fetchMock.mock.calls[2]
+    expect(String(fetchMock.mock.calls[2][0])).toContain('/api/v1/operation-salary-rates')
+    const deliverCall = fetchMock.mock.calls[3]
     expect(String(deliverCall[0])).toContain('/api/v1/system/shop/order/deliver')
     expect(JSON.parse(String(deliverCall[1]?.body))).toEqual({
       order_id: 7,

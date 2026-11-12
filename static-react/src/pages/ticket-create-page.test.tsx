@@ -173,6 +173,7 @@ describe('ticket create page', () => {
       expect(triggers[0]).toBeEnabled()
     })
     const categorySelect = document.querySelector('[data-slot="select-trigger"]') as HTMLElement
+    await waitFor(() => expect(categorySelect).toBeEnabled())
     fireEvent.click(categorySelect)
     const option = await screen.findByRole('option', { name: 'Support' }, { timeout: 8000 })
     expect(option).toBeInTheDocument()

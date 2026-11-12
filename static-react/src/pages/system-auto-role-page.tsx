@@ -85,7 +85,9 @@ export function SystemAutoRolePage() {
 
   const systemRoles = useMemo(
     () =>
-      roleDefinitions.filter((role) => role.code !== 'super_admin').sort((a, b) => a.sort - b.sort),
+      roleDefinitions
+        .filter((role) => !['super_admin', 'recruiter'].includes(role.code))
+        .sort((a, b) => a.sort - b.sort),
     [roleDefinitions]
   )
   const corpTitleNameMap = useMemo(
@@ -436,8 +438,11 @@ export function SystemAutoRolePage() {
             </span>
             <Select
               selectedKey={String(esiRoleForm.esi_role ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setEsiRoleForm((current) => ({ ...current, esi_role: value })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => setEsiRoleForm((current) => ({ ...current, esi_role: value })))(
+                  String(key)
+                )
+              }
             >
               <SelectTrigger className="h-10 w-full">
                 <SelectValue />
@@ -458,8 +463,11 @@ export function SystemAutoRolePage() {
             </span>
             <Select
               selectedKey={String(esiRoleForm.role_code ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setEsiRoleForm((current) => ({ ...current, role_code: value })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => setEsiRoleForm((current) => ({ ...current, role_code: value })))(
+                  String(key)
+                )
+              }
             >
               <SelectTrigger className="h-10 w-full">
                 <SelectValue />
@@ -493,7 +501,11 @@ export function SystemAutoRolePage() {
             >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void createTitleMapping()} isDisabled={titleSaving}>
+            <Button
+              type="button"
+              onClick={() => void createTitleMapping()}
+              isDisabled={titleSaving}
+            >
               {titleSaving ? t('autoRolePage.messages.saving') : t('common.confirm')}
             </Button>
           </>
@@ -504,23 +516,25 @@ export function SystemAutoRolePage() {
             <span className="text-sm text-muted-foreground">{t('autoRolePage.fields.title')}</span>
             <Select
               selectedKey={String(titleForm.title_key ?? '')}
-              onSelectionChange={(key) => ((value) => {
-                const selected = corpTitles.find(
-                  (item) => `${item.corporation_id}_${item.title_id}` === value
-                )
-                if (!selected) {
-                  setTitleForm(defaultTitleForm)
-                  return
-                }
+              onSelectionChange={(key) =>
+                ((value) => {
+                  const selected = corpTitles.find(
+                    (item) => `${item.corporation_id}_${item.title_id}` === value
+                  )
+                  if (!selected) {
+                    setTitleForm(defaultTitleForm)
+                    return
+                  }
 
-                setTitleForm({
-                  title_key: value,
-                  corporation_id: selected.corporation_id,
-                  title_id: selected.title_id,
-                  title_name: selected.title_name,
-                  role_code: titleForm.role_code,
-                })
-              })(String(key))}
+                  setTitleForm({
+                    title_key: value,
+                    corporation_id: selected.corporation_id,
+                    title_id: selected.title_id,
+                    title_name: selected.title_name,
+                    role_code: titleForm.role_code,
+                  })
+                })(String(key))
+              }
             >
               <SelectTrigger className="h-10 w-full">
                 <SelectValue />
@@ -546,8 +560,11 @@ export function SystemAutoRolePage() {
             </span>
             <Select
               selectedKey={String(titleForm.role_code ?? '')}
-              onSelectionChange={(key) => ((value) =>
-                setTitleForm((current) => ({ ...current, role_code: value })))(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => setTitleForm((current) => ({ ...current, role_code: value })))(
+                  String(key)
+                )
+              }
             >
               <SelectTrigger className="h-10 w-full">
                 <SelectValue />

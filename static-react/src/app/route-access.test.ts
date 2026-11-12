@@ -25,6 +25,9 @@ describe('route access evaluation', () => {
   test('separates authentication, role, capability, and eligibility decisions', () => {
     expect(evaluateRouteAccess({ jwt: true }, { ...session, isLoggedIn: false })).toBe('login')
     expect(evaluateRouteAccess({ login: true }, { ...session, roles: ['guest'] })).toBe('forbidden')
+    expect(evaluateRouteAccess({ login: true }, { ...session, roles: ['recruiter'] })).toBe(
+      'forbidden'
+    )
     expect(evaluateRouteAccess({ roles: ['admin'] }, session)).toBe('forbidden')
     expect(
       evaluateRouteAccess({ corpCapabilitiesAll: ['menu.dashboard', 'dashboard.manage'] }, session)

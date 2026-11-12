@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePermission } from '@/hooks/use-permission'
 import { useI18n } from '@/i18n'
+import { operationSalaryMessage } from '@/lib/operation-salary'
 import type { Order } from '@/types/api/shop'
 import {
   formatCoin,
@@ -155,7 +156,20 @@ export function ShopOrderManagePage() {
     pendingPageSize,
   ])
 
-  const openReviewDialog = (order: Order, action: 'deliver' | 'reject') => {
+  const [reviewSalaryMessage, setReviewSalaryMessage] = useState('')
+  const openReviewDialog = async (order: Order, action: 'deliver' | 'reject') => {
+    if (reviewing) return
+    setReviewing(true)
+    try {
+      setReviewSalaryMessage(
+        action === 'deliver' ? await operationSalaryMessage('shop_delivery', 1, t) : ''
+      )
+    } catch (error) {
+      setError(getErrorMessage(error, t('salaryManagement.loadFailed')))
+      return
+    } finally {
+      setReviewing(false)
+    }
     setReviewOrder(order)
     setReviewAction(action)
     setReviewRemark('')
@@ -387,17 +401,19 @@ export function ShopOrderManagePage() {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(activeTab === 'orders' ? pendingPageSize : (historyPageSize ?? ''))}
-            onSelectionChange={(key) => ((value) => {
-              const nextSize = Number(value)
-              if (activeTab === 'orders') {
-                setPendingPageSize(nextSize)
-                setPendingPage(1)
-                return
-              }
+            onSelectionChange={(key) =>
+              ((value) => {
+                const nextSize = Number(value)
+                if (activeTab === 'orders') {
+                  setPendingPageSize(nextSize)
+                  setPendingPage(1)
+                  return
+                }
 
-              setHistoryPageSize(nextSize)
-              setHistoryPage(1)
-            })(String(key))}
+                setHistoryPageSize(nextSize)
+                setHistoryPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -446,6 +462,9 @@ export function ShopOrderManagePage() {
       >
         {reviewOrder ? (
           <div className="space-y-4 text-sm">
+            {reviewAction === 'deliver' && (
+              <p className="rounded-md bg-muted p-3">{reviewSalaryMessage}</p>
+            )}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-muted-foreground">

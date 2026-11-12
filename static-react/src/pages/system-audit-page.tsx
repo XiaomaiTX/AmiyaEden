@@ -20,6 +20,7 @@ import { fetchAuditEvents } from '@/api/audit'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { ShopDialog, formatDateTime, getErrorMessage } from './shop-page-utils'
 import { useI18n } from '@/i18n'
+import { getAuditActionLabel, getAuditCategoryLabel } from '@/lib/audit-labels'
 import type { AuditEvent, AuditEventSearchParams } from '@/types/api/audit'
 
 type AuditTab = 'events' | 'exports'
@@ -46,6 +47,12 @@ const categoryOptions = [
   'approval',
   'task_ops',
   'security',
+  'user_admin',
+  'ticket_admin',
+  'content_admin',
+  'mumble',
+  'system',
+  'corporation_admissions',
 ] as const
 
 export function SystemAuditPage() {
@@ -346,7 +353,11 @@ export function SystemAuditPage() {
                       <TableCell className="px-3 py-2">
                         {getAuditCategoryLabel(t, row.category)}
                       </TableCell>
-                      <TableCell className="px-3 py-2">{row.action}</TableCell>
+                      <TableCell className="px-3 py-2">
+                        <span title={row.action}>
+                          {getAuditActionLabel(t, row.action, row.category)}
+                        </span>
+                      </TableCell>
                       <TableCell className="px-3 py-2">{row.actor_user_id || '-'}</TableCell>
                       <TableCell className="px-3 py-2">{row.target_user_id || '-'}</TableCell>
                       <TableCell className="px-3 py-2">
@@ -452,8 +463,14 @@ export function SystemAuditPage() {
                 label={t('auditAdmin.columns.time')}
                 value={formatDateTime(currentEvent.occurred_at)}
               />
-              <KeyValue label={t('auditAdmin.columns.category')} value={currentEvent.category} />
-              <KeyValue label={t('auditAdmin.columns.action')} value={currentEvent.action} />
+              <KeyValue
+                label={t('auditAdmin.columns.category')}
+                value={`${getAuditCategoryLabel(t, currentEvent.category)} (${currentEvent.category})`}
+              />
+              <KeyValue
+                label={t('auditAdmin.columns.action')}
+                value={`${getAuditActionLabel(t, currentEvent.action, currentEvent.category)} (${currentEvent.action})`}
+              />
               <KeyValue
                 label={t('auditAdmin.columns.actorUserId')}
                 value={currentEvent.actor_user_id || '-'}
@@ -504,15 +521,6 @@ function prettyDetails(raw: string) {
   } catch {
     return raw
   }
-}
-
-function getAuditCategoryLabel(
-  t: (key: string, vars?: Record<string, string | number>) => string,
-  category: string
-) {
-  const key = `auditAdmin.categories.${category}`
-  const translated = t(key)
-  return translated === key ? category : translated
 }
 
 function KeyValue({ label, value }: { label: string; value: string | number }) {

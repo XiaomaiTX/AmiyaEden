@@ -4,6 +4,7 @@
 }
 
 export interface RouteAccessMeta {
+  admission?: 'new_member' | 'alt' | 'review'
   jwt?: boolean
   login?: boolean
   roles?: string[]
@@ -66,8 +67,9 @@ export function hasCorpCapabilityPermission(
   return true
 }
 
+// The derived recruiter role only grants admission review, never membership.
 function hasNonGuestRole(roles: string[]) {
-  return roles.some((role) => role !== 'guest')
+  return roles.some((role) => role !== 'guest' && role !== 'recruiter')
 }
 
 export function evaluateRouteAccess(

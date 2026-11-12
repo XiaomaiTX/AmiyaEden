@@ -15,7 +15,7 @@ export async function requestJson<T>(input: RequestInfo | URL, init?: RequestIni
   const accessToken = useSessionStore.getState().accessToken
   const headers = new Headers(init?.headers)
 
-  headers.set('Content-Type', 'application/json')
+  if (!(init?.body instanceof FormData)) headers.set('Content-Type', 'application/json')
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`)
   }
@@ -31,7 +31,8 @@ export async function requestJson<T>(input: RequestInfo | URL, init?: RequestIni
   }
 
   if (!response.ok) {
-    throw new HttpError(response.status, `Request failed: ${response.status}`)
+    const data = (await response.json().catch(() => null)) as { msg?: string } | null
+    throw new HttpError(response.status, data?.msg || `Request failed: ${response.status}`)
   }
 
   if (response.status === 204) {
@@ -53,4 +54,25 @@ export async function requestJson<T>(input: RequestInfo | URL, init?: RequestIni
   }
 
   return (await response.text()) as T
+}
+
+export async function requestBlob(input: RequestInfo | URL): Promise<Blob> {
+  const token = useSessionStore.getState().accessToken
+  const response = await fetch(input, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (response.status === 401) {
+    dispatchUnauthorized({ reason: 'http_401' })
+    throw new HttpError(401, 'Unauthorized')
+  }
+  if (!response.ok) throw new HttpError(response.status, 'admissions.errors.denied')
+  if (!response.headers.get('content-type')?.includes('image/jpeg')) {
+    const data = (await response.json()) as ApiBlobError
+    throw new Error(data.msg || 'admissions.errors.evidence')
+  }
+  return response.blob()
+}
+
+interface ApiBlobError {
+  msg?: string
 }

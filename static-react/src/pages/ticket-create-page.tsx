@@ -48,7 +48,9 @@ export function TicketCreatePage() {
           return
         }
 
-        const nextCategories = response ?? []
+        const nextCategories = (response ?? []).filter(
+          (category) => category.enabled && !category.retired_admission
+        )
         setCategories(nextCategories)
         setForm((current) => {
           if (
@@ -100,7 +102,8 @@ export function TicketCreatePage() {
       notifySuccess(t('ticketCreate.messages.created'))
       navigate('/ticket/my-tickets')
     } catch (caughtError) {
-      notifyError(getErrorMessage(caughtError, t('ticketCreate.messages.createFailed')))
+      const message = getErrorMessage(caughtError, t('ticketCreate.messages.createFailed'))
+      notifyError(message === 'ticket.errors.categoryDisabled' ? t(message) : message)
     } finally {
       setSubmitting(false)
     }
@@ -150,9 +153,11 @@ export function TicketCreatePage() {
               <Select
                 aria-label={t('ticketCreate.fields.category')}
                 selectedKey={String(form.category_id ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setForm((current) => ({ ...current, category_id: Number(value) }))
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setForm((current) => ({ ...current, category_id: Number(value) }))
+                  })(String(key))
+                }
               >
                 <SelectTrigger
                   aria-label={t('ticketCreate.fields.category')}
@@ -177,12 +182,14 @@ export function TicketCreatePage() {
               </span>
               <Select
                 selectedKey={String(form.priority ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setForm((current) => ({
-                    ...current,
-                    priority: value as TicketPriority,
-                  }))
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setForm((current) => ({
+                      ...current,
+                      priority: value as TicketPriority,
+                    }))
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-10 w-full">
                   <SelectValue />

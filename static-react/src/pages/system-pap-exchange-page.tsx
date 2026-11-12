@@ -1,4 +1,11 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,9 +18,6 @@ import { formatDateTime } from './shop-page-utils'
 
 const defaultConfig: ConfigResponse = {
   rates: [],
-  fc_salary: 400,
-  fc_salary_monthly_limit: 5,
-  admin_award: 10,
   multichar_full_reward_count: 3,
   multichar_reduced_reward_count: 3,
   multichar_reduced_reward_pct: 50,
@@ -84,56 +88,11 @@ export function SystemPAPExchangePage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('papExchange.messages.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('papExchange.messages.loading')}</p>
+      ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        <ConfigCard
-          title={t('papExchange.sections.fc')}
-          subtitle={t('papExchange.sections.fcSubtitle')}
-        >
-          <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('papExchange.fields.fcSalary')}</span>
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              value={String(config.fc_salary)}
-              onChange={(event) =>
-                setConfig((current) => ({ ...current, fc_salary: Number(event.target.value) }))
-              }
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">
-              {t('papExchange.fields.fcSalaryMonthlyLimit')}
-            </span>
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              value={String(config.fc_salary_monthly_limit)}
-              onChange={(event) =>
-                setConfig((current) => ({
-                  ...current,
-                  fc_salary_monthly_limit: Number(event.target.value),
-                }))
-              }
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm text-muted-foreground">{t('papExchange.fields.adminAward')}</span>
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              value={String(config.admin_award)}
-              onChange={(event) =>
-                setConfig((current) => ({ ...current, admin_award: Number(event.target.value) }))
-              }
-            />
-          </label>
-        </ConfigCard>
-
+      <div className="grid gap-4 xl:grid-cols-2">
         <ConfigCard
           title={t('papExchange.sections.multichar')}
           subtitle={t('papExchange.sections.multicharSubtitle')}
@@ -197,7 +156,6 @@ export function SystemPAPExchangePage() {
           subtitle={t('papExchange.sections.tipsSubtitle')}
         >
           <p className="text-sm text-muted-foreground">{t('papExchange.hints.rateEdit')}</p>
-          <p className="text-sm text-muted-foreground">{t('papExchange.hints.fcSalary')}</p>
           <p className="text-sm text-muted-foreground">{t('papExchange.hints.multichar')}</p>
         </ConfigCard>
       </div>
@@ -206,7 +164,9 @@ export function SystemPAPExchangePage() {
         <div className="flex flex-col gap-3 border-b px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-base font-semibold">{t('papExchange.sections.rates')}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t('papExchange.sections.ratesSubtitle')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t('papExchange.sections.ratesSubtitle')}
+            </p>
           </div>
           <PermissionGate permission="edit_exchange_rate">
             <Button type="button" onClick={() => void saveConfig()} isDisabled={saving || loading}>
@@ -257,7 +217,9 @@ export function SystemPAPExchangePage() {
                       }
                     />
                   </TableCell>
-                  <TableCell className="px-3 py-2 text-muted-foreground">{formatDateTime(rate.updated_at)}</TableCell>
+                  <TableCell className="px-3 py-2 text-muted-foreground">
+                    {formatDateTime(rate.updated_at)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -269,9 +231,7 @@ export function SystemPAPExchangePage() {
 }
 
 function updateRate(rates: RateItem[], index: number, patch: Partial<RateItem>) {
-  return rates.map((rate, currentIndex) =>
-    currentIndex === index ? { ...rate, ...patch } : rate
-  )
+  return rates.map((rate, currentIndex) => (currentIndex === index ? { ...rate, ...patch } : rate))
 }
 
 function ConfigCard({
