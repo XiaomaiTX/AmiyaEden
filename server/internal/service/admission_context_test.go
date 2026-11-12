@@ -16,7 +16,7 @@ import (
 
 func admissionServiceTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db := newServiceTestDB(t, "admission", &model.User{}, &model.EveCharacter{}, &model.UserRole{}, &model.EveCharacterCorpRole{}, &model.SystemConfig{}, &model.EsiRoleMapping{}, &model.EsiTitleMapping{}, &model.EveCharacterTitle{}, &model.AuditEvent{})
+	db := newServiceTestDB(t, "admission", &model.User{}, &model.EveCharacter{}, &model.UserRole{}, &model.EveCharacterCorpRole{}, &model.SystemConfig{}, &model.EsiRoleMapping{}, &model.EsiTitleMapping{}, &model.EveCharacterTitle{}, &model.AuditEvent{}, &model.BlacklistEntry{})
 	oldDB, oldRedis, oldLogger := global.DB, global.Redis, global.Logger
 	global.DB = db
 	global.Redis = redis.NewClient(&redis.Options{Addr: miniredis.RunT(t).Addr()})
