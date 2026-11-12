@@ -1,5 +1,6 @@
 import { fetchBadgeCounts } from '@/api/badge'
 import { useBadgeStore } from '@/stores/badge-store'
+import { useSessionStore } from '@/stores/session-store'
 
 vi.mock('@/api/badge', () => ({
   fetchBadgeCounts: vi.fn(),
@@ -9,7 +10,21 @@ describe('badge store', () => {
   beforeEach(() => {
     useBadgeStore.getState().clear()
     vi.mocked(fetchBadgeCounts).mockReset()
+    useSessionStore.setState({ roles: ['user'] })
   })
+
+  test.each([[['guest']], [['recruiter']], [['guest', 'recruiter']]])(
+    'skips the Login-only request for %j accounts',
+    async (roles) => {
+      useSessionStore.setState({ roles })
+
+      await useBadgeStore.getState().load(1001)
+
+      expect(fetchBadgeCounts).not.toHaveBeenCalled()
+      expect(useBadgeStore.getState().counts).toEqual({})
+      expect(useBadgeStore.getState().loadedForCharacterId).toBe(1001)
+    }
+  )
 
   test('loads badge counts once for the active character', async () => {
     vi.mocked(fetchBadgeCounts).mockResolvedValue({ order_pending: 2 })

@@ -34,6 +34,7 @@ source_of_truth:
 
 - `GET /api/v1/badge-counts`
 - 权限：`Login`
+- 两端前端在当前角色不含 Login 成员身份（仅 `guest` 和／或派生的 `recruiter`）时不发起该请求，直接视为空计数，避免入团申请者或仅招新官账号收到 403 提示
 
 ## 字段定义
 
