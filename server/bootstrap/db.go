@@ -193,6 +193,9 @@ func autoMigrate(db *gorm.DB) {
 	if err := migrateAdmissions(db); err != nil {
 		global.Logger.Fatal("军团申请迁移失败", zap.Error(err))
 	}
+	if err := migrateBlacklist(db); err != nil {
+		global.Logger.Fatal("联盟黑名单迁移失败", zap.Error(err))
+	}
 	if err := migrateRequiredUserContact(db); err != nil {
 		global.Logger.Fatal("强制用户联系方式迁移失败", zap.Error(err))
 	}

@@ -1,0 +1,17 @@
+,"Use the Google Sheet search (synthetic fixture)",,,,"使用Google表格搜索
+第二行说明",,,,,,
+Main/主角色,"Date Added/
+添加时间","Added By(Your name!)/
+添加人",Reason/理由,Verification Status if applicable/证据审核状态,known alt1/已知账号1,known alt2/已知账号2,known alt3/已知账号3,"Discord Tag/
+Discord名称",QQ (for CN),EvE Who Link (Auto-Filled),
+,,,,,,,,,,#ERROR!,
+Test Main One,2024-01-01,tester,"  Scam in hauling  ",,"Alt Alpha
+Alt Beta",,,,"10000001
+10000002",,
+Test Main Two,2024-01-02,tester,Spy,,,"Alt Gamma, Alt Delta,",,"@Mixed_Case
+ Legacy Name#1234 ",,,
+Corp Placeholder Industries,2024-01-03,tester,Corp awox,,,,,,"20000001/20000002, 20000003;20000004",,
+Bad/Name Here,2024-01-04,tester,Theft,,,,,,123 sirbalu 0123456 30000001,,
+,2024-01-05,tester,Contact only,,,,,Contact Person,"40000001
+40000002",,
+,,,,,,,,,,,
