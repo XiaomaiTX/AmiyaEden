@@ -56,6 +56,7 @@ export type AppPageType =
   | 'shop-wallet'
   | 'system-audit'
   | 'system-salary'
+  | 'system-blacklist'
   | 'system-pap-exchange'
   | 'system-pap'
   | 'system-auto-role'
@@ -712,6 +713,14 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
+    path: 'system/blacklist',
+    titleKey: 'nav.system.blacklist',
+    pageType: 'system-blacklist',
+    menuGroup: 'nav.group.system',
+    menuIcon: 'system',
+    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
+  },
+  {
     path: 'system/user',
     titleKey: 'nav.system.user',
     pageType: 'system-user',
@@ -926,6 +935,7 @@ const appRouteOrder = [
   'ticket/statistics',
   'ticket/admin-detail/:id',
   'system/salary',
+  'system/blacklist',
   'system/user',
   'system/task-manager',
   'system/wallet',

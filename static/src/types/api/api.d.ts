@@ -38,6 +38,8 @@ declare namespace Api {
     type Context = import('./admissions').AdmissionContext
     type Application = import('./admissions').AdmissionApplication
     type Detail = import('./admissions').AdmissionDetail
+    type ListItem = import('./admissions').AdmissionListItem
+    type BlacklistHit = import('./admissions').AdmissionBlacklistHit
     type WriteInput = import('./admissions').AdmissionWriteInput
   }
   /** 通用类型 */
@@ -3293,6 +3295,44 @@ declare namespace Api {
       description?: string
       is_enabled?: boolean
       sort_order?: number
+    }
+  }
+
+  /** 联盟黑名单：人物、QQ、Discord 三组相互独立的核查值 */
+  namespace Blacklist {
+    type Kind = 'character' | 'qq' | 'discord'
+
+    interface Entry {
+      kind: Kind
+      /** 匹配键：人物为 character_id，QQ 为号码，Discord 为小写名 */
+      value: string
+      /** 展示文本：人物为 ESI 规范名 */
+      display: string
+      /** 各来源行理由，换行分隔 */
+      reason: string
+      updated_at: string
+    }
+
+    interface ListParams extends Common.CommonSearchParams {
+      kind?: Kind
+      /** 纯数字精确匹配人物 ID 与 QQ，否则模糊匹配人物名与 Discord */
+      keyword?: string
+    }
+
+    interface RefreshSummary {
+      finished_at: string
+      operator_user_id: number
+      operator_name: string
+      characters: number
+      qqs: number
+      discords: number
+      added: number
+      updated: number
+      removed: number
+      new_unresolved: number
+      skipped_unresolved: number
+      lookup_failed: number
+      next_refresh_at: string | null
     }
   }
 

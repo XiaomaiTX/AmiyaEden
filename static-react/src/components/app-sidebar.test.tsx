@@ -49,7 +49,7 @@ describe('AppSidebar', () => {
   test('auto-expands the active route group and marks the active child', () => {
     renderSidebar('/info/assets')
 
-    expect(screen.getByRole('button', { name: 'EVE 人物信息' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '人物信息' })).toHaveAttribute(
       'aria-expanded',
       'true'
     )
@@ -61,7 +61,7 @@ describe('AppSidebar', () => {
     const user = userEvent.setup()
     const firstRender = renderSidebar('/dashboard/console')
 
-    const infoGroup = screen.getByRole('button', { name: 'EVE 人物信息' })
+    const infoGroup = screen.getByRole('button', { name: '人物信息' })
     await user.click(infoGroup)
 
     expect(useSidebarNavigationStore.getState().expandedMenuGroupKeys).toEqual(['nav.group.info'])
@@ -70,7 +70,7 @@ describe('AppSidebar', () => {
     firstRender.unmount()
     renderSidebar('/dashboard/console')
 
-    expect(screen.getByRole('button', { name: 'EVE 人物信息' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '人物信息' })).toHaveAttribute(
       'aria-expanded',
       'true'
     )
@@ -80,7 +80,7 @@ describe('AppSidebar', () => {
     const user = userEvent.setup()
     renderSidebar('/info/assets')
 
-    const infoGroup = screen.getByRole('button', { name: 'EVE 人物信息' })
+    const infoGroup = screen.getByRole('button', { name: '人物信息' })
     await user.click(infoGroup)
 
     expect(infoGroup).toHaveAttribute('aria-expanded', 'true')
