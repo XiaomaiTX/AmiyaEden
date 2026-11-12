@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-11-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/badge.go
@@ -45,12 +45,14 @@ source_of_truth:
 | `order_pending` | `super_admin` / `admin` / `shop_order_manage` | `status = 'requested'` 的商店订单数 |
 | `mentor_pending_applications` | `mentor` | 当前导师本人待处理的学员申请数 |
 | `corporation_structures_attention` | `super_admin` / `admin` | 当前可管理军团中需关注建筑数（去重后）；命中任一规则：1) `fuel_remaining_hours <= fuel_notice_threshold_days * 24`（阈值 > 0，含已到期）；2) `now <= state_timer_end <= now + timer_notice_threshold_days * 24h`（阈值 > 0） |
+| `admission_pending` | 实际可审核军团范围内的招新官，或 admin／super_admin | 仅对应目标军团 `status = pending` 的申请数，不含当前用户本人的申请；读取本地游戏权限快照，不信任 JWT recruiter 标签 |
 | `ticket_attention` | `super_admin` / `admin` | 待处理工单与当前管理员本人处理中工单的关注数 |
 
 ## 前端映射
 
 | 路由名 | 计数字段 |
 | --- | --- |
+| `AdmissionReview`（React `/admissions/review`） | `admission_pending` |
 | `WelfareMy` | `welfare_eligible` |
 | `WelfareApproval` | `welfare_pending` |
 | `SrpManage` | `srp_pending` |
@@ -70,8 +72,8 @@ source_of_truth:
 ## 刷新行为
 
 - 徽章只在登录后的动态路由初始化期间请求一次
-- 页面运行期间不轮询、不推送、不增量刷新
-- 底层业务数据变化后，用户需要重新刷新页面或重新进入初始化流程才会看到新计数
+- 页面运行期间不轮询、不推送；军团申请创建、编辑／重提、审核成功后主动重新请求全局计数
+- 其他来源的底层数据变化仍需刷新页面／重新初始化；无需为徽章触发实时 ESI 刷新
 
 ## 扩展约束
 

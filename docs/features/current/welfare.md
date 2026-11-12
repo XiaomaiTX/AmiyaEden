@@ -34,7 +34,7 @@ source_of_truth:
 - 导航栏福利徽章数使用进程内缓存；只会在用户进入“我的福利”页拉取 `/welfare/eligible` 成功后刷新，并在成功提交福利申请后尽力更新。普通 `/badge-counts` 请求本身不会重新计算福利资格；服务重启后或缓存条目过期后计数可为空
 - 申请状态流转：默认 `requested → delivered / rejected`；但当 `0 < pay_by_fuxi_coin < 当前自动审批阈值` 且申请人资格校验通过时，申请会直接写入 `delivered`。管理员点击人工发放时，系统会按发放当下的福利配置和用户数据重新检查资格；不满足时申请自动进入 `rejected`，不会执行钱包入账、管理员奖励或发放邮件。
 - 当福利当前配置 `pay_by_fuxi_coin > 0` 时，福利发放会同步给申请人钱包入账，流水 `ref_type = welfare_payout`；小额伏羲币福利会在申请提交事务内直接完成这一步
-- 当管理员在审批端执行人工 `requested -> delivered` 成功时，系统会按 PAP 兑换页的 `admin-award` 配置额外给执行人钱包入账一笔奖励，默认 10 伏羲币，流水 `ref_type = admin_award`；仅有 `welfare` 职权的福利官不会领取该奖励，系统自动发放的小额伏羲币福利也不会领取该奖励
+- 人工成功发放后，所有有权限的操作人按工资管理的福利类别逐份领取工资（默认 10，0 停发）；系统自动发放不计薪。详见 [工资管理](operation-salaries.md)。
 - 审批端执行 delivered 后，系统会以发放福利官的主人物为发件人异步尽力发送一封双语游戏内邮件；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果，也不会阻塞继续审批下一条申请
 - 我的福利页面"已领取福利" tab 展示审批福利官昵称；系统自动发放的小额伏羲币申请该列为空
 - 福利审批页面：福利官/管理员浏览待发放申请，执行发放或拒绝操作；待发放列表展示申请人上传的证明图片缩略图，并支持原页预览，行悬停时展示福利描述；历史记录不展示也不查询证明图片。`0 < pay_by_fuxi_coin < 当前自动审批阈值` 的小额伏羲币申请不会进入待发放队列，历史记录中的“福利官”列显示为“系统”
@@ -118,7 +118,7 @@ source_of_truth:
 - 伏羲军团服役年限检查按单个人物的累计服役时长判断，不要求任职区间连续；该人物的累计服役时长由 `character_corporation_history` 推导并缓存到 `eve_character.fuxi_legion_tenure_days`
 - `pay_by_fuxi_coin` 使用发放当下的福利配置，不在申请记录里冻结快照；自动审批是否生效同时取决于 `system_config.welfare.auto_approve_fuxi_coin_threshold` 的当前值；按人物发放且附带伏羲币的福利还会按当前 `multichar.*` 层级配置乘算奖励倍率；小额伏羲币福利的“发放当下”就是申请提交事务本身
 - 当 `pay_by_fuxi_coin > 0` 且申请记录包含 `user_id` 时，福利发放会在同一事务内写入一条 `wallet_transaction`，`ref_type = welfare_payout`
-- 当管理员在福利审批端执行人工发放且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `welfare` 职权的福利官不会写入，配置值为 `0` 时也不写入
+- 福利操作工资在申请最终发放事务中写入 `wallet_transaction`，`ref_type = welfare_delivery_salary`；普通福利官与管理员同额，0 不写工资流水，失败回滚发放。
 - 当福利官在审批端执行 `requested -> delivered` 成功后，服务会异步尽力向申请人主人物发送一封双语发放通知邮件，发件人为执行发放的福利官主人物；邮件失败只记录告警、不回滚发放，也不阻塞审批端继续处理下一条申请
 - 申请进入 `delivered` 状态后，服务会清空 `evidence_image`；后续审批历史查询不会读取证明图片字段
 - 福利审批接口的成功响应包含处理结果 `outcome`；当人工发放触发资格复核失败时，服务以 `auto_rejected` 成功结果返回，并附带 `eligibility_reason`。异步发放邮件路径下成功响应不等待即时邮件结果；具体字段以代码契约为准

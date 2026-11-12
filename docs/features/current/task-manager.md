@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-11-10
+last_reviewed: 2026-11-11
 source_of_truth:
   - server/main.go
   - server/global/global.go
@@ -38,6 +38,7 @@ source_of_truth:
 - `super_admin` 可配置每个 ESI 子任务的 active/inactive 刷新间隔（分钟粒度）；覆盖值持久化到 `system_config`（key `esi.task_intervals`），运行时通过内存缓存生效，无需重启
 - 通用任务的 cron/manual 执行都会写入 `task_executions`，执行历史页支持按任务名与状态筛选
 - 执行历史页会分别展示触发者昵称与触发者 ID；cron 触发的记录没有人工触发者信息
+- Vue 与 React 的任务定义、执行历史及 ESI 子任务展示均使用中英文任务名称和说明；筛选与执行请求继续使用内部任务标识符，未收录的任务保留服务端文案或原始标识符。
 - 任务定义来自运行时注册表，当前已覆盖 ESI 刷新、星系登记结算、联盟 PAP 抓取/归档、自动职权同步、执行历史清理、军团准入检查、导师奖励、自动 SRP 与建筑服务燃料率同步
 - `auto_srp` 属于事件驱动任务：会显示在任务页中，但没有手动触发入口，也不支持 cron 编辑
 - 服务启动时会注册任务定义、恢复 `task_schedules` 覆盖、恢复待执行的自动 SRP 延迟调度，并启动周期任务调度器
@@ -52,11 +53,16 @@ source_of_truth:
 | `alliance_pap_hourly` | `operation` | `recurring` | 是 | 抓取联盟 PAP 增量数据 |
 | `alliance_pap_archive` | `operation` | `recurring` | 是 | 执行联盟 PAP 月度归档 |
 | `auto_role_sync` | `system` | `recurring` | 是 | 同步自动职权 |
+| `admission_evidence_cleanup` | `system` | `recurring` | 是 | 每日清理到期的已结案申请证据，默认 `0 30 5 * * *`（调度器时区） |
 | `task_execution_history_cleanup` | `system` | `recurring` | 是 | 清理超出保留期的任务执行历史 |
 | `corp_access_check` | `system` | `recurring` | 是 | 校验军团准入并调整基础职权 |
 | `mentor_reward` | `operation` | `recurring` | 是 | 结算导师奖励 |
 | `structure_fuel_rate_sync` | `system` | `recurring` | 是 | 从 ESI 同步建筑服务模块每小时燃料消耗率，默认 `@every 240h`（10 天） |
 | `auto_srp` | `operation` | `triggered` | 否 | 跟踪 PAP 事件驱动的自动 SRP 处理 |
+
+## 申请证据清理
+
+`admission_evidence_cleanup` 每批至多锁定 100 份到期 closed 申请，删除其证据，保留申请、人物、处理历史、工资与审计。使用申请行锁及 `SKIP LOCKED`，与重提互斥且不阻塞另一清理实例；pending 不删除。失败保留未提交批次，下次周期或手动运行可重试；执行历史记录结果，日志记录已清理申请数。读取接口在精确期限到达后立即拒绝，不等待日常任务；双端教学静态图不在清理范围。期限规则见[军团申请](corporation-admissions.md#工资与证据期限)。
 
 ## 入口
 

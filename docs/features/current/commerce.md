@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-11
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/shop.go
@@ -21,7 +21,7 @@ source_of_truth:
 - 商品浏览、购买、订单
 - 管理员商品管理、订单发放/拒绝、订单历史；
 - `shop_order_manage` 仅开放订单管理 / 订单历史页及对应订单审批接口，不开放商品管理或钱包管理；
-- 商店订单管理页执行人工发放成功后，系统会按 PAP 兑换页的 `admin-award` 配置额外给管理员执行人钱包入账一笔奖励，默认 10 伏羲币，设为 `0` 可关闭，流水 `ref_type = admin_award`；仅有 `shop_order_manage` 职权的执行人不会领取该奖励
+- 商店订单人工发放成功后，所有有权限的执行人按工资管理的商城类别逐单领取工资；默认 10，0 停发，流水 `shop_delivery_salary`，与订单完成同一事务。详见 [工资管理](operation-salaries.md)。
 - 订单发放成功后，系统会以执行发放官员的主人物为发件人异步尽力发送一封双语游戏内邮件，并附带下单备注与发放备注（若有）；若发件人未绑定可用主人物、未授权 `esi-mail.send_mail.v1` 或 ESI 发送失败，不影响发放结果，也不会阻塞继续处理下一单
 - 管理员伏羲币调整、流水、日志
 - 管理员伏羲币分析概览（按时间窗聚合 summary / trend / ref_type / 异常面板）
@@ -138,6 +138,12 @@ source_of_truth:
 - 管理员执行订单人工发放成功且 `pap.admin_award > 0` 时，系统会在同一事务内给执行人写入一条 `wallet_transaction`，`ref_type = admin_award`；仅有 `shop_order_manage` 职权的执行人不会写入
 - `requested -> delivered` 成功后，服务会异步尽力向下单用户主人物发送一封双语发放通知邮件，发件人为执行发放的官员主人物；邮件失败只记录告警、不回滚订单发放，也不阻塞管理端继续处理下一单
 - 订单发放接口仍复用通用邮件结果结构，但异步路径下成功响应不等待即时邮件结果；具体字段以代码契约为准
+
+## 招新官工资
+
+军团申请人工登记 Invited 后，实际处理人即时获得工资管理所配置的整单工资（默认 10 伏羲币），新人／小号一致，管理员和超管也计薪。流水类型为 `recruitment_invitation_salary`，`ref_id=admission:<申请ID>`，工资表保存唯一流水关联；双端钱包筛选、标签和分析使用“招新官工资 / Recruiter salary”。
+
+工资不是招募链接奖励例外，遵守 `wallet.user.enabled`。钱包被军团策略禁用时整个结案事务回滚，提示联系超管调整后重试；不改变钱包清零及招募链接奖励既有规则。申请、工资、钱包、历史与必需审计必须原子提交，缺失审计表也不能结案。完整流程见[军团申请](corporation-admissions.md)。
 
 ## 主要代码文件
 
