@@ -168,7 +168,8 @@
     'content_admin',
     'mumble',
     'system',
-    'corporation_admissions'
+    'corporation_admissions',
+    'blacklist'
   ]
 
   const activeTab = ref('events')

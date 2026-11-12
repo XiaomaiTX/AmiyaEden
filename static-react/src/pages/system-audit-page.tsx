@@ -53,6 +53,7 @@ const categoryOptions = [
   'mumble',
   'system',
   'corporation_admissions',
+  'blacklist',
 ] as const
 
 export function SystemAuditPage() {
