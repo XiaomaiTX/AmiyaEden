@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/testutil"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -59,6 +60,46 @@ func TestAdmissionRecruiterProvenancePostgres(t *testing.T) {
 	}
 	if snapshot.CorporationID != model.AdmissionFMACorporationID || snapshot.CorpRole != "Director" {
 		t.Fatalf("failed sync overwrote previous snapshot: %+v", snapshot)
+	}
+}
+
+func TestAdmissionRepositoryScreeningReads(t *testing.T) {
+	// Plain unlocked reads, so the SQLite blacklist test database is enough.
+	db := newBlacklistRepoTestDB(t)
+	if err := db.AutoMigrate(&model.User{}, &model.EveCharacter{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range []any{
+		&model.User{BaseModel: model.BaseModel{ID: 1}, QQ: "12345678", DiscordID: "one"},
+		&model.User{BaseModel: model.BaseModel{ID: 2}, DiscordID: "two"},
+		&model.User{BaseModel: model.BaseModel{ID: 3}, QQ: "87654321"},
+		&model.EveCharacter{CharacterID: 9102, CharacterName: "B", UserID: 1},
+		&model.EveCharacter{CharacterID: 9101, CharacterName: "A", UserID: 1},
+		&model.EveCharacter{CharacterID: 9301, CharacterName: "C", UserID: 3},
+	} {
+		if err := db.Create(item).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Delete(&model.User{}, 3).Error; err != nil {
+		t.Fatal(err)
+	}
+	repo := NewAdmissionRepository()
+
+	bound, err := repo.BoundCharacterIDsByUsersTx(db, []uint{1, 2, 99})
+	if err != nil || fmt.Sprint(bound) != "map[1:[9101 9102]]" {
+		t.Fatalf("bound characters = %v, %v", bound, err)
+	}
+	contacts, err := repo.UserContactsTx(db, []uint{1, 2, 3, 99})
+	if err != nil || fmt.Sprint(contacts) != "[{1 12345678 one} {2  two}]" {
+		t.Fatalf("contacts = %v, %v", contacts, err)
+	}
+	// Nothing to look up: both return without touching the database.
+	if bound, err := repo.BoundCharacterIDsByUsersTx(nil, nil); err != nil || bound == nil || len(bound) != 0 {
+		t.Fatalf("empty bound = %v, %v", bound, err)
+	}
+	if contacts, err := repo.UserContactsTx(nil, []uint{}); err != nil || contacts == nil || len(contacts) != 0 {
+		t.Fatalf("empty contacts = %v, %v", contacts, err)
 	}
 }
 

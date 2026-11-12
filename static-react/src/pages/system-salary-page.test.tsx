@@ -28,7 +28,7 @@ function open() {
 test('loads independent values and preserves explicit zero when saving', async () => {
   vi.mocked(updateSalarySettings).mockImplementation(async (value) => value)
   open()
-  const input = await screen.findByLabelText('招新（标记已邀请）')
+  const input = await screen.findByLabelText('招新（新人申请标记已邀请）')
   fireEvent.change(input, { target: { value: '0' } })
   fireEvent.click(screen.getByRole('button', { name: '保存' }))
   await waitFor(() =>

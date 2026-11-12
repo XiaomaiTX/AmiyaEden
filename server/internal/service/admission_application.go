@@ -19,6 +19,7 @@ var (
 	ErrAdmissionInvalid        = errors.New("admissions.errors.invalid")
 	ErrAdmissionConflict       = errors.New("admissions.errors.conflict")
 	ErrAdmissionWalletDisabled = errors.New("admissions.errors.walletDisabled")
+	ErrAdmissionBlacklisted    = errors.New("admissions.errors.blacklisted")
 	ErrAdmissionInternal       = errors.New("admissions.errors.internal")
 )
 
@@ -36,6 +37,15 @@ type AdmissionDetail struct {
 	Salary      *model.AdmissionSalary           `json:"salary"`
 	CanReview   bool                             `json:"can_review"`
 	IsOwner     bool                             `json:"is_owner"`
+	// Only for a pending application the reader can review; empty otherwise.
+	BlacklistHits []BlacklistHit `json:"blacklist_hits"`
+}
+
+// AdmissionListItem is a list row; Blacklisted is set only for pending rows of
+// the review list.
+type AdmissionListItem struct {
+	model.AdmissionApplication
+	Blacklisted bool `json:"blacklisted"`
 }
 
 func admissionWriteError(err error) error {
@@ -53,12 +63,73 @@ func admissionWriteError(err error) error {
 	if errors.As(err, &sqlState) && sqlState.SQLState() == "23505" {
 		return ErrAdmissionConflict
 	}
-	for _, known := range []error{ErrAdmissionDenied, ErrAdmissionInvalid, ErrAdmissionConflict, ErrAdmissionEvidence, ErrAdmissionWalletDisabled} {
+	for _, known := range []error{ErrAdmissionDenied, ErrAdmissionInvalid, ErrAdmissionConflict, ErrAdmissionEvidence, ErrAdmissionWalletDisabled, ErrAdmissionBlacklisted} {
 		if errors.Is(err, known) {
 			return known
 		}
 	}
 	return ErrAdmissionInternal
+}
+
+// blacklistHitsTx screens applications against the local alliance blacklist
+// with at most three queries, however many applications are given. An
+// applicant is checked by the characters on the application plus those bound
+// to the account now, and by the contacts on the application plus the
+// account's current ones. Applications without hits are absent from the map.
+// The reads take no locks; Process already holds the applicant's character rows.
+func (s *AdmissionService) blacklistHitsTx(tx *gorm.DB, apps []model.AdmissionApplication) (map[uint][]BlacklistHit, error) {
+	hits := map[uint][]BlacklistHit{}
+	if len(apps) == 0 {
+		return hits, nil
+	}
+	userIDs := make([]uint, 0, len(apps))
+	for _, app := range apps {
+		userIDs = append(userIDs, app.UserID)
+	}
+	slices.Sort(userIDs)
+	userIDs = slices.Compact(userIDs)
+	bound, err := s.repo.BoundCharacterIDsByUsersTx(tx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	contacts, err := s.repo.UserContactsTx(tx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	contactByUser := make(map[uint]repository.AdmissionUserContact, len(contacts))
+	for _, contact := range contacts {
+		contactByUser[contact.ID] = contact
+	}
+	subjects := make([]blacklistSubject, len(apps))
+	for i, app := range apps {
+		subject := blacklistSubject{}
+		for _, character := range app.Characters {
+			subject.addCharacter(character.CharacterID)
+		}
+		subject.addQQ(app.QQ)
+		subject.addDiscord(app.DiscordID)
+		// A deleted account keeps its character rows, but only the application
+		// snapshot counts for it.
+		if contact, ok := contactByUser[app.UserID]; ok {
+			for _, id := range bound[app.UserID] {
+				subject.addCharacter(id)
+			}
+			subject.addQQ(contact.QQ)
+			subject.addDiscord(contact.DiscordID)
+		}
+		subjects[i] = subject
+	}
+	characters, qqs, discords := blacklistQueryValues(subjects)
+	entries, err := s.blacklistRepo.FindEntriesTx(tx, characters, qqs, discords)
+	if err != nil {
+		return nil, err
+	}
+	for i, app := range apps {
+		if matched := matchBlacklist(entries, subjects[i]); len(matched) > 0 {
+			hits[app.ID] = matched
+		}
+	}
+	return hits, nil
 }
 
 func (s *AdmissionService) validateSubmission(tx *gorm.DB, userID uint, in AdmissionWriteInput) (*model.User, []model.AdmissionCharacter, error) {
@@ -250,7 +321,7 @@ func (s *AdmissionService) Edit(userID, id uint, in AdmissionWriteInput, uploads
 	return app, admissionWriteError(err)
 }
 
-func (s *AdmissionService) List(userID uint, reviewer bool, status, kind string, target int64, page, size int) ([]model.AdmissionApplication, int64, error) {
+func (s *AdmissionService) List(userID uint, reviewer bool, status, kind string, target int64, page, size int) ([]AdmissionListItem, int64, error) {
 	if kind != "" && kind != model.AdmissionKindNewMember && kind != model.AdmissionKindAlt {
 		return nil, 0, ErrAdmissionInvalid
 	}
@@ -265,7 +336,7 @@ func (s *AdmissionService) List(userID uint, reviewer bool, status, kind string,
 	default:
 		return nil, 0, ErrAdmissionInvalid
 	}
-	var list []model.AdmissionApplication
+	var list []AdmissionListItem
 	var total int64
 	err := s.repo.InTx(func(tx *gorm.DB) error {
 		if reviewer {
@@ -279,9 +350,27 @@ func (s *AdmissionService) List(userID uint, reviewer bool, status, kind string,
 			filter.UserID = 0
 			filter.CorporationIDs = scope
 		}
-		var err error
-		list, total, err = s.repo.List(tx, filter, normalizePage(page), normalizeLedgerPageSize(size))
-		return err
+		apps, count, err := s.repo.List(tx, filter, normalizePage(page), normalizeLedgerPageSize(size))
+		if err != nil {
+			return err
+		}
+		total = count
+		// Only pending rows the reader may review are screened, as in detailTx.
+		screened := make([]model.AdmissionApplication, 0, len(apps))
+		for _, app := range apps {
+			if reviewer && app.Status == model.AdmissionStatusPending && app.UserID != userID {
+				screened = append(screened, app)
+			}
+		}
+		hits, err := s.blacklistHitsTx(tx, screened)
+		if err != nil {
+			return err
+		}
+		list = make([]AdmissionListItem, len(apps))
+		for i, app := range apps {
+			list[i] = AdmissionListItem{AdmissionApplication: app, Blacklisted: len(hits[app.ID]) > 0}
+		}
+		return nil
 	})
 	return list, total, admissionWriteError(err)
 }
@@ -340,7 +429,17 @@ func (s *AdmissionService) detailTx(tx *gorm.DB, userID, id uint) (*AdmissionDet
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		salary = nil
 	}
-	return &AdmissionDetail{Application: app, Evidence: evidence, Events: events, Salary: salary, CanReview: canReview, IsOwner: app.UserID == userID}, nil
+	hits := []BlacklistHit{}
+	if canReview && app.Status == model.AdmissionStatusPending {
+		found, err := s.blacklistHitsTx(tx, []model.AdmissionApplication{*app})
+		if err != nil {
+			return nil, ErrAdmissionInternal
+		}
+		if found[app.ID] != nil {
+			hits = found[app.ID]
+		}
+	}
+	return &AdmissionDetail{Application: app, Evidence: evidence, Events: events, Salary: salary, CanReview: canReview, IsOwner: app.UserID == userID, BlacklistHits: hits}, nil
 }
 
 func (s *AdmissionService) Evidence(userID, id uint, kind string) (*model.AdmissionEvidence, error) {
@@ -410,6 +509,17 @@ func (s *AdmissionService) Process(actorID, id, version uint, invited bool, reas
 				return ErrAdmissionInvalid
 			}
 		}
+		// Re-check here: the blacklist may have been refreshed after the reviewer
+		// loaded the page. Reject stays available for blacklisted applicants.
+		if invited {
+			hits, err := s.blacklistHitsTx(tx, []model.AdmissionApplication{*app})
+			if err != nil {
+				return err
+			}
+			if len(hits) > 0 {
+				return ErrAdmissionBlacklisted
+			}
+		}
 		now := time.Now().UTC()
 		deadline := admissionEvidenceDeadline(now)
 		app.HandledBy = &actorID
@@ -424,6 +534,9 @@ func (s *AdmissionService) Process(actorID, id, version uint, invited bool, reas
 			action = "invited"
 			app.Status = model.AdmissionStatusInvited
 			app.RejectionReason = ""
+		}
+		// 招新工资只奖励新成员入团；邀请现有成员的小号不计薪，也不受钱包能力开关限制。
+		if invited && app.Kind == model.AdmissionKindNewMember {
 			refID := fmt.Sprintf("admission:%d", id)
 			amount, salaryErr := salaryAmountTx(tx, model.SysConfigSalaryRecruitment, model.DefaultOperationSalary)
 			if salaryErr != nil {

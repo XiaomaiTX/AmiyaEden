@@ -14,10 +14,12 @@ type AdmissionService struct {
 	roleRepo *repository.RoleRepository
 	userRepo *repository.UserRepository
 	charRepo *repository.EveCharacterRepository
+	// blacklistRepo screens applicants; see blacklistHitsTx.
+	blacklistRepo *repository.BlacklistRepository
 }
 
 func NewAdmissionService() *AdmissionService {
-	return &AdmissionService{repo: repository.NewAdmissionRepository(), roleRepo: repository.NewRoleRepository(), userRepo: repository.NewUserRepository(), charRepo: repository.NewEveCharacterRepository()}
+	return &AdmissionService{repo: repository.NewAdmissionRepository(), roleRepo: repository.NewRoleRepository(), userRepo: repository.NewUserRepository(), charRepo: repository.NewEveCharacterRepository(), blacklistRepo: repository.NewBlacklistRepository()}
 }
 
 type AdmissionCharacterOption struct {

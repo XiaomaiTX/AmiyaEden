@@ -24,7 +24,7 @@ func TestAdmissionRealRoutesAllowGuestAndScopeRecruiter(t *testing.T) {
 	_ = global.Redis.Close()
 	global.Redis = redis.NewClient(&redis.Options{Addr: miniredis.RunT(t).Addr()})
 	db := global.DB
-	if err := db.AutoMigrate(&model.EveCharacter{}, &model.EveCharacterCorpRole{}, &model.SystemConfig{}, &model.AdmissionApplication{}, &model.AdmissionCharacter{}, &model.AdmissionCharacterClaim{}, &model.AdmissionEvidence{}, &model.AdmissionProcessingEvent{}, &model.AdmissionSalary{}, &model.AuditEvent{}); err != nil {
+	if err := db.AutoMigrate(&model.EveCharacter{}, &model.EveCharacterCorpRole{}, &model.SystemConfig{}, &model.AdmissionApplication{}, &model.AdmissionCharacter{}, &model.AdmissionCharacterClaim{}, &model.AdmissionEvidence{}, &model.AdmissionProcessingEvent{}, &model.AdmissionSalary{}, &model.AuditEvent{}, &model.BlacklistEntry{}); err != nil {
 		t.Fatal(err)
 	}
 	utils.InvalidateAllowCorporationsCache()

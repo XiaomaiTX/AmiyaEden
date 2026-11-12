@@ -80,3 +80,35 @@ func TestAdmissionUsesConfiguredSalaryAndZero(t *testing.T) {
 		})
 	}
 }
+
+func TestAdmissionAltInvitationPaysNoSalaryAndIgnoresWalletPolicy(t *testing.T) {
+	db := admissionApplicationDB(t, false)
+	char := seedAdmissionUser(t, db, 1, 1001, model.RoleGuest)
+	if err := db.Create(&model.EveCharacter{CharacterID: 9991, CharacterName: "Member", UserID: 1, CorporationID: model.SystemCorporationID}).Error; err != nil {
+		t.Fatal(err)
+	}
+	actor := seedAdmissionUser(t, db, 2, 2002, model.RoleAdmin)
+	if err := repository.NewSysConfigRepository().Set(model.SysConfigSalaryRecruitment, "4.25", "salary"); err != nil {
+		t.Fatal(err)
+	}
+	setWalletCapabilityPolicy(t, db, actor.CorporationID, false)
+	svc := NewAdmissionService()
+	input := newAdmissionInput(char.CharacterID)
+	input.Kind = model.AdmissionKindAlt
+	app, err := svc.Create(1, input, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if app, err = svc.Process(2, app.ID, app.Version, true, ""); err != nil {
+		t.Fatalf("alt invitation blocked: %v", err)
+	}
+	if app.Status != model.AdmissionStatusInvited {
+		t.Fatalf("status: %s", app.Status)
+	}
+	var salaries, transactions int64
+	db.Model(&model.AdmissionSalary{}).Count(&salaries)
+	db.Model(&model.WalletTransaction{}).Count(&transactions)
+	if salaries != 0 || transactions != 0 {
+		t.Fatalf("alt invitation paid salary: salaries=%d transactions=%d", salaries, transactions)
+	}
+}

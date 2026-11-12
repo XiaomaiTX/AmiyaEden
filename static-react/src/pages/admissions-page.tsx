@@ -16,14 +16,21 @@ import { operationSalaryMessage } from '@/lib/operation-salary'
 import { useSessionStore, useBadgeStore } from '@/stores'
 import type {
   AdmissionApplication,
+  AdmissionBlacklistHit,
   AdmissionContext,
   AdmissionDetail,
   AdmissionKind,
   AdmissionList,
+  AdmissionStatus,
   EvidenceKind,
 } from '@/types/api/admissions'
 
 const evidenceKinds: EvidenceKind[] = ['launcher', 'seat_profile']
+const statusBadgeClass: Record<AdmissionStatus, string> = {
+  pending: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  invited: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  rejected: 'bg-destructive/10 text-destructive',
+}
 const fieldClass = 'w-full rounded-md border border-input bg-background px-3 py-2'
 function errorKey(error: unknown) {
   return error instanceof Error && error.message.startsWith('admissions.errors.')
@@ -334,6 +341,8 @@ export function AdmissionsPage() {
   const [revision, setRevision] = useState(0)
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
+  // 处理失败后重新加载时保留的错误；加载开始会清空 error。
+  const errorAfterReload = useRef('')
   const isEditing = Boolean(id) && location.pathname.endsWith('/edit')
   const mode = location.pathname.includes('/review')
     ? 'review'
@@ -352,7 +361,8 @@ export function AdmissionsPage() {
         return
       }
       setLoading(true)
-      setError('')
+      setError(errorAfterReload.current)
+      errorAfterReload.current = ''
       setDetail(null)
       setList(null)
       const request = id
@@ -385,6 +395,17 @@ export function AdmissionsPage() {
     void reload()
     setRevision((value) => value + 1)
   }
+  const ownCharacterIDs = new Set(context?.characters.map((char) => char.character_id) ?? [])
+  // 小号申请无需核对截图，可在列表直接登记已邀请；本人申请由后端拒绝处理，列表不显示入口。
+  const canInviteFromList = (app: AdmissionApplication) =>
+    mode === 'review' &&
+    app.kind === 'alt' &&
+    app.status === 'pending' &&
+    !app.characters.some((char) => ownCharacterIDs.has(char.character_id))
+  const blacklistValue = (hit: AdmissionBlacklistHit) =>
+    hit.kind === 'character'
+      ? t('blacklist.characterValue', { name: hit.display, id: hit.value })
+      : hit.display
   const refreshBadges = () => {
     const characterId = useSessionStore.getState().characterId
     if (characterId !== null)
@@ -399,12 +420,18 @@ export function AdmissionsPage() {
     navigate(`/admissions/applications/${id}`)
     setRevision((value) => value + 1)
   }
-  const process = async (action: 'invited' | 'reject') => {
-    if (!detail || busy) return
+  const process = async (
+    action: 'invited' | 'reject',
+    application: AdmissionApplication | undefined = detail?.application
+  ) => {
+    if (!application || busy) return
     setBusy(true)
     setError('')
     try {
-      const salary = action === 'invited' ? await operationSalaryMessage('recruitment', 1, t) : ''
+      const salary =
+        action === 'invited' && application.kind === 'new_member'
+          ? await operationSalaryMessage('recruitment', 1, t)
+          : ''
       if (
         !window.confirm(
           [
@@ -416,11 +443,16 @@ export function AdmissionsPage() {
         )
       )
         return
-      await processAdmission(detail.application.id, detail.application.version, action, reason)
+      await processAdmission(application.id, application.version, action, detail ? reason : '')
       refreshBadges()
       setRevision((value) => value + 1)
     } catch (error) {
-      setError(errorKey(error))
+      const key = errorKey(error)
+      if (key === 'admissions.errors.blacklisted') {
+        // 黑名单可能在打开页面后刷新；重新加载以显示最新命中。
+        errorAfterReload.current = key
+        setRevision((value) => value + 1)
+      } else setError(key)
     } finally {
       setBusy(false)
     }
@@ -541,19 +573,13 @@ export function AdmissionsPage() {
             <table className="w-full text-left text-sm">
               <thead className="border-b bg-muted/40">
                 <tr>
-                  {[
-                    'applicant',
-                    'kind',
-                    'target',
-                    'characters',
-                    'status',
-                    'submitted',
-                    'detail',
-                  ].map((key) => (
-                    <th className="p-3" key={key}>
-                      {t(`admissions.${key}`)}
-                    </th>
-                  ))}
+                  <th className="p-3">{t('admissions.applicant')}</th>
+                  <th className="w-36 p-3">{t('admissions.kind')}</th>
+                  <th className="p-3">{t('admissions.target')}</th>
+                  <th className="p-3">{t('admissions.characters')}</th>
+                  <th className="w-40 p-3">{t('admissions.status')}</th>
+                  <th className="w-44 p-3">{t('admissions.submitted')}</th>
+                  <th className="w-52 p-3">{t('common.operation')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -567,8 +593,17 @@ export function AdmissionsPage() {
                     <td className="p-3">
                       {app.characters.map((char) => char.character_name).join(', ')}
                     </td>
-                    <td className="min-w-44 p-3">
-                      {t(`admissions.${app.status}`)}
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${statusBadgeClass[app.status]}`}
+                      >
+                        {t(`admissions.${app.status}`)}
+                      </span>
+                      {app.blacklisted && (
+                        <span className="ml-2 inline-flex rounded-md bg-destructive px-2 py-0.5 text-xs font-medium text-white">
+                          {t('admissions.blacklist.tag')}
+                        </span>
+                      )}
                       {app.closed_at && (
                         <div className="mt-1 space-y-1 text-xs text-muted-foreground">
                           <p>
@@ -578,7 +613,12 @@ export function AdmissionsPage() {
                             {new Date(app.closed_at).toLocaleString()}
                           </time>
                           {app.rejection_reason && (
-                            <p className="text-destructive">{app.rejection_reason}</p>
+                            <p
+                              className="line-clamp-2 text-destructive [overflow-wrap:anywhere]"
+                              title={app.rejection_reason}
+                            >
+                              {app.rejection_reason}
+                            </p>
                           )}
                         </div>
                       )}
@@ -587,20 +627,36 @@ export function AdmissionsPage() {
                       {new Date(app.submitted_at).toLocaleString()}
                     </td>
                     <td className="p-3">
-                      <Link
-                        className="text-primary underline"
-                        to={`/admissions/applications/${app.id}`}
-                      >
-                        {t('admissions.detail')}
-                      </Link>
-                      {mode === 'history' && app.status !== 'invited' && (
-                        <Link
-                          className="ml-3 inline-block text-primary underline"
-                          to={`/admissions/applications/${app.id}/edit`}
+                      <div className="flex flex-wrap gap-2">
+                        {canInviteFromList(app) && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            isDisabled={busy || app.blacklisted}
+                            onClick={() => void process('invited', app)}
+                          >
+                            {t('admissions.invited')}
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/admissions/applications/${app.id}`)}
                         >
-                          {t('admissions.editApplication')}
-                        </Link>
-                      )}
+                          {t('admissions.detail')}
+                        </Button>
+                        {mode === 'history' && app.status !== 'invited' && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/admissions/applications/${app.id}/edit`)}
+                          >
+                            {t('admissions.editApplication')}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -707,6 +763,26 @@ export function AdmissionsPage() {
                 <CardTitle>{t('admissions.reviewApplication')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {detail.blacklist_hits.length > 0 && (
+                  <div
+                    role="alert"
+                    className="rounded-md border border-destructive p-3 text-destructive"
+                  >
+                    <p className="font-semibold">{t('admissions.blacklist.warning')}</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {detail.blacklist_hits.map((hit) => (
+                        <li key={`${hit.kind}:${hit.value}`}>
+                          <strong>{t(`blacklist.kinds.${hit.kind}`)}</strong>: {blacklistValue(hit)}
+                          {hit.reason && (
+                            <p className="whitespace-pre-line [overflow-wrap:anywhere]">
+                              {hit.reason}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <p>{t('admissions.manual')}</p>
                 {detail.application.kind === 'new_member' && (
                   <p className="rounded-md bg-muted p-3 text-sm">
@@ -725,7 +801,10 @@ export function AdmissionsPage() {
                   />
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  <Button isDisabled={busy} onClick={() => void process('invited')}>
+                  <Button
+                    isDisabled={busy || detail.blacklist_hits.length > 0}
+                    onClick={() => void process('invited')}
+                  >
                     {t('admissions.invitedAction')}
                   </Button>
                   <Button
