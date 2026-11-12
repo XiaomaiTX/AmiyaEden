@@ -33,7 +33,7 @@
     >
       <ElForm label-width="140px">
         <ElFormItem :label="t('taskManager.columns.name')">
-          <span>{{ intervalForm.taskName }}</span>
+          <span>{{ getTaskDisplayName(t, intervalForm.taskName, intervalForm.taskName) }}</span>
         </ElFormItem>
         <ElFormItem :label="t('taskManager.esi.fields.activeMinutes')">
           <ElInputNumber
@@ -89,6 +89,7 @@
   import { useTableColumns } from '@/hooks/core/useTableColumns'
   import { useUserStore } from '@/store/modules/user'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
+  import { getTaskDisplayName, getTaskDisplayDescription } from '../task-labels'
 
   type TaskInfo = Api.ESIRefresh.TaskInfo
 
@@ -172,12 +173,19 @@
 
   const { columns: taskColumns, columnChecks: taskColumnChecks } = useTableColumns<TaskInfo>(() => [
     { type: 'index', width: 60, label: '#' },
-    { prop: 'name', label: t('taskManager.columns.name'), width: 200, showOverflowTooltip: true },
+    {
+      prop: 'name',
+      label: t('taskManager.columns.name'),
+      width: 200,
+      showOverflowTooltip: true,
+      formatter: (row: TaskInfo) => getTaskDisplayName(t, row.name, row.name)
+    },
     {
       prop: 'description',
       label: t('taskManager.columns.description'),
       minWidth: 180,
-      showOverflowTooltip: true
+      showOverflowTooltip: true,
+      formatter: (row: TaskInfo) => getTaskDisplayDescription(t, row.name, row.description)
     },
     {
       prop: 'priority',
@@ -265,7 +273,9 @@
   async function handleRunTaskByName(row: TaskInfo) {
     try {
       await ElMessageBox.confirm(
-        t('taskManager.esi.confirm.runTaskByName', { name: row.description }),
+        t('taskManager.esi.confirm.runTaskByName', {
+          name: getTaskDisplayName(t, row.name, row.description)
+        }),
         t('common.tips'),
         {
           confirmButtonText: t('common.confirm'),
@@ -280,9 +290,17 @@
     runningByName.value.add(row.name)
     try {
       await runESIRefreshTaskByName({ task_name: row.name })
-      ElMessage.success(t('taskManager.esi.messages.taskTriggeredAll', { name: row.description }))
+      ElMessage.success(
+        t('taskManager.esi.messages.taskTriggeredAll', {
+          name: getTaskDisplayName(t, row.name, row.description)
+        })
+      )
     } catch {
-      ElMessage.error(t('taskManager.esi.messages.taskTriggerFailedAll', { name: row.description }))
+      ElMessage.error(
+        t('taskManager.esi.messages.taskTriggerFailedAll', {
+          name: getTaskDisplayName(t, row.name, row.description)
+        })
+      )
     } finally {
       runningByName.value.delete(row.name)
     }

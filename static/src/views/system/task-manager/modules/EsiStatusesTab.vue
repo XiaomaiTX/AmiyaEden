@@ -35,7 +35,7 @@
               <ElOption
                 v-for="task in tasks"
                 :key="task.name"
-                :label="task.description"
+                :label="getTaskDisplayName(t, task.name, task.description)"
                 :value="task.name"
               />
             </ElSelect>
@@ -81,6 +81,7 @@
   } from '@/api/esi-refresh'
   import { useTable } from '@/hooks/core/useTable'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
+  import { getTaskDisplayName, getTaskDisplayDescription } from '../task-labels'
 
   type TaskInfo = Api.ESIRefresh.TaskInfo
   type TaskStatus = Api.ESIRefresh.TaskStatus
@@ -150,13 +151,16 @@
           prop: 'task_name',
           label: t('taskManager.columns.name'),
           width: 200,
-          showOverflowTooltip: true
+          showOverflowTooltip: true,
+          formatter: (row: TaskStatus) => getTaskDisplayName(t, row.task_name, row.task_name)
         },
         {
           prop: 'description',
           label: t('taskManager.columns.description'),
           minWidth: 160,
-          showOverflowTooltip: true
+          showOverflowTooltip: true,
+          formatter: (row: TaskStatus) =>
+            getTaskDisplayDescription(t, row.task_name, row.description)
         },
         {
           prop: 'character_name',
@@ -264,7 +268,7 @@
       await runESIRefreshTask({ task_name: row.task_name, character_id: row.character_id })
       ElMessage.success(
         t('taskManager.esi.messages.characterTaskTriggered', {
-          name: row.description,
+          name: getTaskDisplayName(t, row.task_name, row.description),
           characterId: row.character_id
         })
       )
@@ -272,7 +276,7 @@
     } catch {
       ElMessage.error(
         t('taskManager.esi.messages.characterTaskTriggerFailed', {
-          name: row.description,
+          name: getTaskDisplayName(t, row.task_name, row.description),
           characterId: row.character_id
         })
       )

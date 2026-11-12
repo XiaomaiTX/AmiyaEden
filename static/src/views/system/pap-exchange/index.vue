@@ -3,78 +3,6 @@
   <div class="pap-exchange-page">
     <ElCard shadow="never" class="mb-4">
       <template #header>
-        <h2 class="section-title">{{ t('papExchange.fcSection') }}</h2>
-      </template>
-
-      <ElForm label-width="150px" style="max-width: 680px" v-loading="loading">
-        <ElFormItem :label="t('papExchange.fcSalary')">
-          <div class="field-block">
-            <div class="field-row">
-              <ElInputNumber
-                v-model="form.fc_salary"
-                :min="0"
-                :precision="2"
-                :step="10"
-                :controls="false"
-                style="width: 180px"
-              />
-              <span class="text-sm text-secondary">{{ t('papExchange.fcSalaryUnit') }}</span>
-            </div>
-            <div class="form-hint">{{ t('papExchange.fcSalaryHint') }}</div>
-          </div>
-        </ElFormItem>
-
-        <ElFormItem :label="t('papExchange.fcSalaryMonthlyLimit')">
-          <div class="field-block">
-            <div class="field-row">
-              <ElInputNumber
-                v-model="form.fc_salary_monthly_limit"
-                :min="0"
-                :precision="0"
-                :step="1"
-                :controls="false"
-                style="width: 180px"
-              />
-              <span class="text-sm text-secondary">
-                {{ t('papExchange.fcSalaryMonthlyLimitUnit') }}
-              </span>
-            </div>
-            <div class="form-hint">{{ t('papExchange.fcSalaryMonthlyLimitHint') }}</div>
-          </div>
-        </ElFormItem>
-
-        <ElFormItem :label="t('papExchange.adminAward')">
-          <div class="field-block">
-            <div class="field-row">
-              <ElInputNumber
-                v-model="form.admin_award"
-                :min="0"
-                :precision="0"
-                :step="1"
-                :controls="false"
-                style="width: 180px"
-              />
-              <span class="text-sm text-secondary">{{ t('papExchange.fcSalaryUnit') }}</span>
-            </div>
-            <div class="form-hint">{{ t('papExchange.adminAwardHint') }}</div>
-          </div>
-        </ElFormItem>
-
-        <ElFormItem>
-          <ElButton
-            v-auth="'edit_exchange_rate'"
-            type="primary"
-            :loading="saving"
-            @click="handleSave"
-          >
-            {{ t('common.save') }}
-          </ElButton>
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
-
-    <ElCard shadow="never" class="mb-4">
-      <template #header>
         <h2 class="section-title">{{ t('papExchange.multicharSection') }}</h2>
       </template>
 
@@ -224,9 +152,6 @@
   const saving = ref(false)
   const form = reactive<PAPExchangeConfig>({
     rates: [],
-    fc_salary: 400,
-    fc_salary_monthly_limit: 5,
-    admin_award: 10,
     multichar_full_reward_count: 3,
     multichar_reduced_reward_count: 3,
     multichar_reduced_reward_pct: 50
@@ -237,9 +162,6 @@
     try {
       const config = await fetchPAPExchangeConfig()
       form.rates = config.rates
-      form.fc_salary = config.fc_salary
-      form.fc_salary_monthly_limit = config.fc_salary_monthly_limit
-      form.admin_award = config.admin_award
       form.multichar_full_reward_count = config.multichar_full_reward_count
       form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
       form.multichar_reduced_reward_pct = config.multichar_reduced_reward_pct
@@ -254,9 +176,6 @@
     saving.value = true
     try {
       const config = await updatePAPExchangeConfig({
-        fc_salary: form.fc_salary,
-        fc_salary_monthly_limit: form.fc_salary_monthly_limit,
-        admin_award: form.admin_award,
         multichar_full_reward_count: form.multichar_full_reward_count,
         multichar_reduced_reward_count: form.multichar_reduced_reward_count,
         multichar_reduced_reward_pct: form.multichar_reduced_reward_pct,
@@ -267,9 +186,6 @@
         }))
       })
       form.rates = config.rates
-      form.fc_salary = config.fc_salary
-      form.fc_salary_monthly_limit = config.fc_salary_monthly_limit
-      form.admin_award = config.admin_award
       form.multichar_full_reward_count = config.multichar_full_reward_count
       form.multichar_reduced_reward_count = config.multichar_reduced_reward_count
       form.multichar_reduced_reward_pct = config.multichar_reduced_reward_pct

@@ -33,6 +33,13 @@
  */
 
 declare namespace Api {
+  /** Corporation admissions contracts shared by API wrappers and views. */
+  namespace Admissions {
+    type Context = import('./admissions').AdmissionContext
+    type Application = import('./admissions').AdmissionApplication
+    type Detail = import('./admissions').AdmissionDetail
+    type WriteInput = import('./admissions').AdmissionWriteInput
+  }
   /** 通用类型 */
   namespace Common {
     /** 分页参数 */
@@ -191,6 +198,7 @@ declare namespace Api {
   /** 导航徽章类型 */
   namespace Badge {
     interface BadgeCounts {
+      admission_pending?: number
       welfare_eligible?: number
       srp_pending?: number
       welfare_pending?: number
@@ -666,9 +674,6 @@ declare namespace Api {
 
     interface ConfigResponse {
       rates: RateItem[]
-      fc_salary: number
-      fc_salary_monthly_limit: number
-      admin_award: number
       multichar_full_reward_count: number
       multichar_reduced_reward_count: number
       multichar_reduced_reward_pct: number
@@ -682,9 +687,6 @@ declare namespace Api {
 
     interface UpdateConfigParams {
       rates: UpdateRateItem[]
-      fc_salary: number
-      fc_salary_monthly_limit: number
-      admin_award: number
       multichar_full_reward_count: number
       multichar_reduced_reward_count: number
       multichar_reduced_reward_pct: number
@@ -3183,6 +3185,7 @@ declare namespace Api {
       name_en: string
       description: string
       sort_order: number
+      retired_admission?: boolean
       enabled: boolean
       created_at: string
       updated_at: string

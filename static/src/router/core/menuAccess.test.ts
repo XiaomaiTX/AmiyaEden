@@ -12,7 +12,12 @@ import { srpRoutes } from '../modules/srp'
 import { systemRoutes } from '../modules/system'
 import { ticketRoutes } from '../modules/ticket'
 import { welfareRoutes } from '../modules/welfare'
-import { applyMenuAccessFilter, hasCorpCapabilityPermission, pruneEmptyMenus } from './menuAccess'
+import {
+  applyMenuAccessFilter,
+  hasCorpCapabilityPermission,
+  hasNonGuestRole,
+  pruneEmptyMenus
+} from './menuAccess'
 
 const newbroRoutes: AppRouteRecord[] = [
   {
@@ -126,6 +131,12 @@ test('applyMenuAccessFilter keeps top-level Characters for guest users', () => {
   assert.equal(filtered.length, 1)
   assert.equal(filtered[0].name, 'Characters')
   assert.equal(filtered[0].path, '/characters')
+})
+
+test('hasNonGuestRole does not treat the derived recruiter role as membership', () => {
+  assert.equal(hasNonGuestRole(['recruiter']), false)
+  assert.equal(hasNonGuestRole(['guest', 'recruiter']), false)
+  assert.equal(hasNonGuestRole(['user', 'recruiter']), true)
 })
 
 test('applyMenuAccessFilter hides mentor selection when unified eligibility is unknown', () => {

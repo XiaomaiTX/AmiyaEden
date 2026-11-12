@@ -15,6 +15,7 @@ import {
 import { useClipboardCopy } from '@/hooks/core/useClipboardCopy'
 import { formatIskPlain, millionInputToIsk } from '@/utils/common'
 import { showMailAttemptMessage } from '@/utils/mailAttempt'
+import { operationSalaryMessage } from '@/utils/operation-salary'
 
 type SrpApp = Api.Srp.Application
 type BatchPayoutSummary = Api.Srp.BatchPayoutSummary
@@ -117,13 +118,19 @@ export function useSrpWorkflow(deps: {
   // ─── Payout Dialog ───
   const payoutDialogVisible = ref(false)
   const payoutTarget = ref<SrpApp | null>(null)
+  const payoutSalaryMessage = ref('')
 
   const convertISKToFuxiCoin = (amount: number) =>
     Math.round((Number(amount ?? 0) / 1_000_000) * 100) / 100
 
   const formatFuxiCoin = (amount: number) => convertISKToFuxiCoin(amount).toFixed(2)
 
-  const openPayoutDialog = (row: SrpApp) => {
+  const openPayoutDialog = async (row: SrpApp) => {
+    try {
+      payoutSalaryMessage.value = await operationSalaryMessage('srp_payout', 1, t)
+    } catch {
+      return
+    }
     payoutTarget.value = row
     payoutDialogVisible.value = true
     handleOpenInfoWindow()
@@ -131,17 +138,18 @@ export function useSrpWorkflow(deps: {
 
   const handlePayoutAction = async (row: SrpApp) => {
     if (deps.payoutMode.value === 'manual_transfer') {
-      openPayoutDialog(row)
+      await openPayoutDialog(row)
       return
     }
 
     try {
+      const salary = await operationSalaryMessage('srp_payout', 1, t)
       await ElMessageBox.confirm(
         t('srp.manage.fuxiPayoutConfirmText', {
           name: row.character_name,
           ship: getName(row.ship_type_id, `TypeID: ${row.ship_type_id}`, 'type'),
           amount: formatFuxiCoin(row.final_amount)
-        }),
+        }) + `\n\n${salary}`,
         t('srp.manage.fuxiPayoutConfirmTitle'),
         {
           type: 'warning',
@@ -214,8 +222,15 @@ export function useSrpWorkflow(deps: {
     }
 
     try {
+      const summary = await fetchBatchPayoutSummary()
+      const count = summary.reduce((sum, row) => sum + row.application_count, 0)
+      if (!count) {
+        ElMessage.warning(t('srp.manage.batchPayoutEmpty'))
+        return
+      }
+      const salary = await operationSalaryMessage('srp_payout', 1, t)
       await ElMessageBox.confirm(
-        t('srp.manage.fuxiBatchPayoutConfirmText'),
+        `${t('srp.manage.fuxiBatchPayoutConfirmText')}\n\n${salary}`,
         t('srp.manage.fuxiBatchPayoutConfirmTitle'),
         {
           type: 'warning',
@@ -271,11 +286,12 @@ export function useSrpWorkflow(deps: {
 
   const handleBatchPayout = async (row: BatchPayoutSummary) => {
     try {
+      const salary = await operationSalaryMessage('srp_payout', 1, t)
       await ElMessageBox.confirm(
         t('srp.manage.batchPayoutConfirmText', {
           name: row.main_character_name || t('srp.manage.unknownMainCharacter'),
           amount: deps.formatISK(row.total_amount)
-        }),
+        }) + `\n\n${salary}`,
         t('srp.manage.batchPayoutConfirmTitle'),
         {
           type: 'warning',
@@ -352,6 +368,7 @@ export function useSrpWorkflow(deps: {
     // payout
     payoutDialogVisible,
     payoutTarget,
+    payoutSalaryMessage,
     handlePayoutAction,
     handlePayout,
     // batch payout

@@ -12,6 +12,8 @@ import { useUserStore } from '@/store/modules/user'
 import { asyncRoutes } from '../routes/asyncRoutes'
 import { formatMenuTitle } from '@/utils'
 import { applyMenuAccessFilter, pruneEmptyMenus } from './menuAccess'
+import { useAdmissionStore } from '@/store/modules/admissions'
+import { admissionMenuVisibility } from '@/store/modules/admissions.helpers'
 
 export class MenuProcessor {
   /**
@@ -36,6 +38,9 @@ export class MenuProcessor {
     const corpCapabilities = userStore.info?.corpCapabilities ?? []
 
     let menuList = [...asyncRoutes]
+    const admissions = useAdmissionStore()
+    await admissions.refresh()
+    menuList = admissionMenuVisibility(menuList, admissions.context)
 
     // 根据静态路由访问边界过滤菜单
     menuList = this.filterMenuByAccess(menuList, roles, corpCapabilities)

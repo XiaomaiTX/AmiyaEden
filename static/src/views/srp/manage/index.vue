@@ -225,6 +225,7 @@
 
     <!-- 发放弹窗 -->
     <ElDialog v-model="payoutDialogVisible" :title="$t('srp.manage.payoutDialog')" width="480px">
+      <ElAlert :title="payoutSalaryMessage" type="info" :closable="false" class="mb-4" />
       <div class="payout-info-list" v-if="payoutTarget">
         <!-- 人物（可复制） -->
         <div class="payout-info-row">
@@ -445,6 +446,7 @@
     handleReview,
     payoutDialogVisible,
     payoutTarget,
+    payoutSalaryMessage,
     handlePayoutAction,
     handlePayout,
     batchPayoutDialogVisible,

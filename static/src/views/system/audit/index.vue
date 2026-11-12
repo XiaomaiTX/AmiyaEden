@@ -18,12 +18,12 @@
                 clearable
                 style="width: 160px"
               >
-                <ElOption value="permission" label="permission" />
-                <ElOption value="fuxi_wallet" label="fuxi_wallet" />
-                <ElOption value="config" label="config" />
-                <ElOption value="approval" label="approval" />
-                <ElOption value="task_ops" label="task_ops" />
-                <ElOption value="security" label="security" />
+                <ElOption
+                  v-for="category in categoryOptions"
+                  :key="category"
+                  :value="category"
+                  :label="getAuditCategoryLabel(t, category)"
+                />
               </ElSelect>
               <ElSelect
                 v-model="filterForm.result"
@@ -90,10 +90,10 @@
             formatTime(currentEvent.occurred_at)
           }}</ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('auditAdmin.columns.category')">{{
-            currentEvent.category
+            `${getAuditCategoryLabel(t, currentEvent.category)} (${currentEvent.category})`
           }}</ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('auditAdmin.columns.action')">{{
-            currentEvent.action
+            `${getAuditActionLabel(t, currentEvent.action, currentEvent.category)} (${currentEvent.action})`
           }}</ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('auditAdmin.columns.result')">
             <ElTag :type="currentEvent.result === 'success' ? 'success' : 'danger'">
@@ -144,6 +144,7 @@
   import { useTable } from '@/hooks/core/useTable'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { adminListAuditEvents } from '@/api/audit'
+  import { getAuditActionLabel, getAuditCategoryLabel } from '@/utils/audit-labels'
 
   defineOptions({ name: 'SystemAudit' })
   const { t } = useI18n()
@@ -154,6 +155,21 @@
   const canExport = computed(() => hasCapability('system.audit.export'))
 
   type AuditEvent = Api.Audit.AuditEvent
+
+  const categoryOptions = [
+    'permission',
+    'fuxi_wallet',
+    'config',
+    'approval',
+    'task_ops',
+    'security',
+    'user_admin',
+    'ticket_admin',
+    'content_admin',
+    'mumble',
+    'system',
+    'corporation_admissions'
+  ]
 
   const activeTab = ref('events')
   const filterForm = reactive<Api.Audit.AuditEventSearchParams>({
@@ -203,8 +219,19 @@
           minWidth: 180,
           formatter: (row: AuditEvent) => h('span', {}, formatTime(row.occurred_at))
         },
-        { prop: 'category', label: t('auditAdmin.columns.category'), width: 130 },
-        { prop: 'action', label: t('auditAdmin.columns.action'), minWidth: 180 },
+        {
+          prop: 'category',
+          label: t('auditAdmin.columns.category'),
+          width: 130,
+          formatter: (row: AuditEvent) => getAuditCategoryLabel(t, row.category)
+        },
+        {
+          prop: 'action',
+          label: t('auditAdmin.columns.action'),
+          minWidth: 180,
+          formatter: (row: AuditEvent) =>
+            h('span', { title: row.action }, getAuditActionLabel(t, row.action, row.category))
+        },
         { prop: 'actor_user_id', label: t('auditAdmin.columns.actorUserId'), width: 120 },
         { prop: 'target_user_id', label: t('auditAdmin.columns.targetUserId'), width: 120 },
         {

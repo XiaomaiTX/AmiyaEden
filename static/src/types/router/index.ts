@@ -27,6 +27,7 @@ import { RouteRecordRaw } from 'vue-router'
  * 定义路由的各种配置属性
  */
 export interface RouteMeta extends Record<string | number | symbol, unknown> {
+  admission?: 'new_member' | 'alt' | 'review'
   /** 路由标题 */
   title: string
   /** 路由图标 */

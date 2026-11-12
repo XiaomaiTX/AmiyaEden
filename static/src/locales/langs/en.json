@@ -227,11 +227,32 @@
     "processError": "Error processing code block:"
   },
   "table": {
-    "requestCancelled": "Request cancelled",
-    "fetchFailed": "Failed to load table data",
-    "searchCache": "search data",
-    "resetSearchCache": "reset search",
-    "unknownError": "Unknown error"
+    "form": {
+      "reset": "@:common.reset",
+      "submit": "Submit"
+    },
+    "searchBar": {
+      "reset": "@:common.reset",
+      "search": "@:common.search",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "searchInputPlaceholder": "Please enter",
+      "searchSelectPlaceholder": "Please select"
+    },
+    "selection": "Select",
+    "sizeOptions": {
+      "small": "Compact",
+      "default": "Default",
+      "large": "Loose"
+    },
+    "column": {
+      "selection": "Select",
+      "expand": "Expand",
+      "index": "Index"
+    },
+    "zebra": "Zebra",
+    "border": "Border",
+    "headerBackground": "Header BG"
   },
   "storage": {
     "invalidLocalData": "Local data looks invalid. Please sign in again to recover."
@@ -518,7 +539,8 @@
       "autoRole": "Auto Roles",
       "audit": "Audit Logs",
       "webhook": "Webhook Notifications",
-      "basicConfig": "@:setting.basics.title"
+      "basicConfig": "@:setting.basics.title",
+      "salary": "Salary management"
     },
     "ticket": {
       "title": "Ticket Center",
@@ -606,6 +628,15 @@
       "leadership": "Leadership",
       "contributors": "Major Contributors",
       "manage": "Fuxi Hall Management"
+    },
+    "admissions": {
+      "title": "Corporation applications",
+      "new_member": "Join a corporation",
+      "alt": "Apply for alts",
+      "history": "My applications",
+      "review": "Recruitment desk",
+      "detail": "View details",
+      "edit": "Edit application"
     }
   },
   "authActions": {
@@ -810,6 +841,102 @@
       "auto_srp": {
         "name": "Automatic SRP",
         "description": "Track event-driven automatic SRP processing"
+      },
+      "admission_evidence_cleanup": {
+        "name": "Admission evidence cleanup",
+        "description": "Delete expired evidence from closed admission applications"
+      },
+      "audit_archive_daily": {
+        "name": "Daily audit archive",
+        "description": "Archive and purge audit events older than the online retention window"
+      },
+      "recruit_link_check": {
+        "name": "Recruitment link check",
+        "description": "Check recruitment QQ entries and award coins for valid recruitments"
+      },
+      "galaxy_registry_validation": {
+        "name": "Galaxy registry settlement",
+        "description": "Auto-end overdue galaxy registrations and settle pending entries through the ESI wallet queue"
+      },
+      "structure_fuel_rate_sync": {
+        "name": "Structure fuel rate sync",
+        "description": "Sync hourly fuel consumption rates for structure service modules through ESI"
+      },
+      "corporation_structure_alert_scan": {
+        "name": "Corporation structure alert scan",
+        "description": "Check corporation structure fuel and reinforcement status and send QQ alerts"
+      },
+      "qq_group_governance_reconcile": {
+        "name": "QQ group member reconciliation",
+        "description": "Enqueue QQ group governance member reconciliation tasks"
+      },
+      "qq_governance_maintenance": {
+        "name": "QQ governance maintenance",
+        "description": "Maintain QQ governance tasks, logs, and retention data"
+      },
+      "character_assets": {
+        "name": "Character assets",
+        "description": "Refresh character items, locations, and names"
+      },
+      "character_affiliation": {
+        "name": "Character affiliation",
+        "description": "Refresh character corporation, alliance, and faction information"
+      },
+      "character_clones": {
+        "name": "Character clones",
+        "description": "Refresh character clones, implants, and jump fatigue"
+      },
+      "character_corporation_history": {
+        "name": "Character corporation history",
+        "description": "Refresh character corporation employment history"
+      },
+      "corporation_structures": {
+        "name": "Corporation structures",
+        "description": "Refresh corporation structure information"
+      },
+      "character_contracts": {
+        "name": "Character contracts",
+        "description": "Refresh character contracts, bids, and contract items"
+      },
+      "corporation_killmails": {
+        "name": "Corporation killmails",
+        "description": "Refresh corporation kill and loss mails with director authorization"
+      },
+      "character_corp_roles": {
+        "name": "Character corporation roles",
+        "description": "Refresh character corporation roles"
+      },
+      "character_fittings": {
+        "name": "Character fittings",
+        "description": "Refresh character fittings"
+      },
+      "character_killmails": {
+        "name": "Character killmails",
+        "description": "Refresh character kill and loss mails"
+      },
+      "character_notifications": {
+        "name": "Character notifications",
+        "description": "Refresh character notifications"
+      },
+      "character_online": {
+        "name": "Character online status",
+        "description": "Refresh character online status and activity"
+      },
+      "character_skill": {
+        "name": "Character skills",
+        "description": "Refresh character skill information"
+      },
+      "eve_structures": {
+        "name": "EVE structure details",
+        "description": "Refresh EVE structure details related to characters"
+      },
+      "character_wallet": {
+        "name": "Character wallet",
+        "description": "Refresh character wallet information"
+      },
+      "character_titles": {
+        "name": "Character corporation titles",
+        "description": "Refresh character corporation titles"
       }
     },
     "esi": {
@@ -1419,7 +1546,8 @@
       "welfare": "Welfare Officer",
       "fuel_officer": "Fuel Officer",
       "user": "Verified User",
-      "guest": "Guest"
+      "guest": "Guest",
+      "recruiter": "Recruiter"
     },
     "table": {
       "userInfo": "User Info",
@@ -2619,7 +2747,11 @@
       "shop_refund": "Shop Refund",
       "newbro_captain_reward": "Legacy Captain Support Reward",
       "mentor_reward": "Mentor Support Reward",
-      "recruit_link_reward": "Recruit Link Reward"
+      "recruit_link_reward": "Recruit Link Reward",
+      "recruitment_invitation_salary": "Recruiter salary",
+      "welfare_delivery_salary": "Welfare delivery salary",
+      "shop_delivery_salary": "Shop delivery salary",
+      "srp_payout_salary": "SRP payout salary"
     },
     "validation": {
       "targetUserId": "Please enter a target user ID",
@@ -2734,6 +2866,82 @@
         "done": "Export finished and ready to download",
         "failed": "Export failed"
       }
+    },
+    "actionLabels": {
+      "audit_export_create": "Create audit export",
+      "audit_export_generated": "Audit export generated",
+      "audit_archive_daily": "Daily audit archive",
+      "esi_role_mapping_create": "Create ESI role mapping",
+      "esi_role_mapping_delete": "Delete ESI role mapping",
+      "esi_title_mapping_create": "Create ESI title mapping",
+      "esi_title_mapping_delete": "Delete ESI title mapping",
+      "corp_structure_authorization_update": "Update corporation structure authorization",
+      "fuxi_card_create": "Create Fuxi Hall card",
+      "fuxi_card_update": "Update Fuxi Hall card",
+      "fuxi_card_delete": "Delete Fuxi Hall card",
+      "fuxi_card_sort": "Reorder Fuxi Hall cards",
+      "welfare_settings_update": "Update welfare settings",
+      "task_schedule_update": "Update task schedule",
+      "task_manual_run": "Run task manually",
+      "salary_settings_update": "Update salary settings",
+      "newbro_support_settings_update": "Update new pilot support settings",
+      "newbro_recruit_settings_update": "Update recruitment settings",
+      "webhook_config_update": "Update webhook configuration",
+      "set_user_roles": "Assign user roles",
+      "pap_exchange_config_update": "Update PAP exchange configuration",
+      "apply_wallet_delta": "Apply wallet balance change",
+      "admin_adjust": "Administrator wallet adjustment",
+      "user_update": "Update user",
+      "user_delete": "Delete user",
+      "user_identity_switch": "Switch user identity",
+      "srp_application_resubmit": "Resubmit SRP application",
+      "srp_application_reject": "Reject SRP application",
+      "srp_application_approve": "Approve SRP application",
+      "welfare_application_reject": "Reject welfare application",
+      "welfare_application_auto_reject": "Automatically reject welfare application",
+      "welfare_application_deliver": "Deliver welfare",
+      "tool_bookmark_create": "Create tool bookmark",
+      "tool_bookmark_update": "Update tool bookmark",
+      "tool_bookmark_delete": "Delete tool bookmark",
+      "qq_governance_policy_save": "Save QQ governance policy",
+      "qq_governance_policy_delete": "Delete QQ governance policy",
+      "qq_governance_settings_update": "Update QQ governance settings",
+      "qq_governance_alert_ack": "Acknowledge QQ governance alert",
+      "qq_governance_task_retry": "Retry QQ governance task",
+      "qq_governance_disconnected_tasks_recover": "Recover disconnected QQ tasks",
+      "qq_governance_reconcile_trigger": "Trigger QQ group reconciliation",
+      "shop_order_deliver": "Deliver shop order",
+      "shop_order_reject": "Reject shop order",
+      "ticket_reply": "Reply to ticket",
+      "ticket_status_update": "Update ticket status",
+      "ticket_category_create": "Create ticket category",
+      "ticket_category_update": "Update ticket category",
+      "ticket_category_delete": "Delete ticket category",
+      "mumble_credential_create": "Create Mumble credentials",
+      "mumble_credential_rotate": "Rotate Mumble credentials",
+      "mumble_credential_revoke": "Revoke Mumble credentials",
+      "mumble_login_deny": "Deny Mumble login",
+      "mumble_login_allow": "Allow Mumble login",
+      "mentor_settings_update": "Update mentor settings",
+      "admission_create": "Create admission application",
+      "admission_edit": "Edit admission application",
+      "admission_resubmit": "Resubmit admission application",
+      "admission_reject": "Reject admission application",
+      "admission_invited": "Mark admission invitation sent"
+    },
+    "categories": {
+      "permission": "Permissions",
+      "fuxi_wallet": "Wallet",
+      "config": "Configuration",
+      "approval": "Approvals",
+      "task_ops": "Tasks",
+      "security": "Security",
+      "user_admin": "User administration",
+      "ticket_admin": "Ticket administration",
+      "content_admin": "Content administration",
+      "mumble": "Mumble identity",
+      "system": "System",
+      "corporation_admissions": "Corporation admissions"
     }
   },
   "dashboardConsole": {
@@ -2832,6 +3040,9 @@
       "deleteFailed": "Failed to delete",
       "replyAdded": "Reply submitted",
       "replyFailed": "Failed to reply"
+    },
+    "errors": {
+      "categoryDisabled": "This category is retired. Use Corporation admissions to apply."
     }
   },
   "dashboardSkillReadiness": {
@@ -2892,7 +3103,7 @@
     "page": "Page {page} / {pages}"
   },
   "corporationStructures": {
-    "title": "Corporation Structures",
+    "title": "Filters",
     "subtitle": "Review structure snapshots for manageable corporations and configure one Director-authorized character per corporation for data refresh.",
     "tabs": {
       "list": "Structure List",
@@ -2964,7 +3175,9 @@
       "systemManaged": "System managed",
       "customManaged": "Administrator configured"
     },
-    "confirm": { "runAlertScan": "Run the QQ structure alert scan and enqueue notifications now?" },
+    "confirm": {
+      "runAlertScan": "Run the QQ structure alert scan and enqueue notifications now?"
+    },
     "settings": {
       "noticeThresholds": "Notification Thresholds",
       "fuelNoticeThreshold": "Fuel Remaining Threshold",
@@ -3000,7 +3213,6 @@
       "selectDirector": "Select a Director character",
       "keyword": "Search by structure/system/alias"
     },
-    "title": "Filters",
     "states": {
       "shield_vulnerable": "Online",
       "low_power": "Low Power",
@@ -3181,34 +3393,6 @@
       "noResult": "No results",
       "loading": "Searching…"
     }
-  },
-  "table": {
-    "form": {
-      "reset": "@:common.reset",
-      "submit": "Submit"
-    },
-    "searchBar": {
-      "reset": "@:common.reset",
-      "search": "@:common.search",
-      "expand": "Expand",
-      "collapse": "Collapse",
-      "searchInputPlaceholder": "Please enter",
-      "searchSelectPlaceholder": "Please select"
-    },
-    "selection": "Select",
-    "sizeOptions": {
-      "small": "Compact",
-      "default": "Default",
-      "large": "Loose"
-    },
-    "column": {
-      "selection": "Select",
-      "expand": "Expand",
-      "index": "Index"
-    },
-    "zebra": "Zebra",
-    "border": "Border",
-    "headerBackground": "Header BG"
   },
   "webhook": {
     "title": "Webhook Notification Settings",
@@ -3508,5 +3692,110 @@
     "class": "Class",
     "failures": "Failures",
     "detail": "Details"
+  },
+  "admissions": {
+    "title": "Corporation applications",
+    "new_member": "Join a corporation",
+    "alt": "Apply for alts",
+    "history": "My applications",
+    "review": "Recruitment desk",
+    "target": "Target corporation",
+    "characters": "Characters joining together",
+    "contacts": "Contact details",
+    "launcher": "Game launcher screenshot",
+    "seat_profile": "Completed alliance SeAT profile",
+    "seatHint": "Bind every character shown in your launcher screenshot to {seat}, and bind your QQ in {seat} — expand the images below for instructions. Recruiters will compare your launcher and {seat} screenshots to verify that your {seat} bindings are correct.",
+    "seat": "alliance SeAT",
+    "required": "Required",
+    "corporations": {
+      "98185110": "Fuxi Main Corporation (main character requires at least 7 million SP; existing Fuxi members have no SP requirement for alts)",
+      "98824507": "Fuxi Newcomer Corporation (Fuxi Military Academy)"
+    },
+    "altHint": "Bind all your alts to alliance SeAT before applying.",
+    "bindHint": "Use Bind another character to link every character joining together to this account first.",
+    "bind": "Manage bound characters",
+    "qqGuide": "How to fill in QQ",
+    "doneGuide": "Completed profile example",
+    "zoom": "View full image",
+    "submit": "Submit application",
+    "save": "Save changes",
+    "resubmit": "Correct and resubmit",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "denied": "Your current eligibility does not allow this action. Refresh eligibility or view your application history.",
+    "empty": "No applications yet",
+    "detail": "View details",
+    "back": "Back to list",
+    "pending": "Pending",
+    "invited": "Invited",
+    "rejected": "Rejected",
+    "processed": "Processed",
+    "all": "All",
+    "reason": "Rejection reason",
+    "invitedAction": "Mark as invited",
+    "editApplication": "Edit application",
+    "backToDetails": "Back to details",
+    "reviewApplication": "Review application",
+    "processedAt": "Processed at",
+    "reasonHint": "A reason is required to reject the application",
+    "rejectAction": "Reject",
+    "confirmInvited": "Have all characters in this application been invited in game?",
+    "confirmReject": "Reject this application?",
+    "manual": "Invite every character in game first, then mark the application as invited here.",
+    "reviewEvidence": "Compare the character counts in the launcher and alliance SeAT screenshots, and check that every character matches. Ask the applicant to bind any missing characters. You may reject the application if many characters are missing or the applicant is unwilling to complete binding.",
+    "expired": "Evidence has expired. Upload both screenshots before resubmitting.",
+    "expires": "Evidence expires",
+    "events": "Processing history",
+    "salary": "Application salary",
+    "operator": "Handled by",
+    "submitted": "Submitted",
+    "next": "Next",
+    "previous": "Previous",
+    "page": "Page",
+    "total": "Total",
+    "choose": "Choose image",
+    "selected": "Selected",
+    "status": "Status",
+    "applicant": "Applicant",
+    "create": "Created",
+    "edit": "Edited",
+    "reject": "Rejected",
+    "success": "Saved",
+    "errors": {
+      "denied": "You cannot access this application or are no longer eligible.",
+      "invalid": "Check the target, bound characters and required profile details.",
+      "conflict": "The application changed or a character is claimed by another pending application. Refresh and retry.",
+      "evidence": "Provide valid JPEG/PNG screenshots, each at most 2 MiB after compression.",
+      "walletDisabled": "Your wallet is disabled by corporation policy. The application remains pending. Contact a super admin to adjust the policy, then retry.",
+      "internal": "The operation was not completed. Refresh and retry."
+    },
+    "kind": "Application type",
+    "walletReason": "Corporation application #{id}"
+  },
+  "salaryManagement": {
+    "confirmSalary": "On successful completion, you will receive {amount} Fuxi coins in salary ({count} {unit} × {rate} each). Payment depends on successful completion and the settings at that time.",
+    "title": "Salary management",
+    "description": "Recruitment, welfare and shop salaries are per application or order. SRP salary is per payout operation; a batch pays one salary. All authorized human operators earn equally. Automatic payouts earn no operator salary. Set an amount to 0 to disable it.",
+    "operations": "Operation salaries",
+    "recruitment": "Recruitment (marked as invited)",
+    "welfare_delivery": "Welfare delivery",
+    "shop_delivery": "Shop delivery",
+    "srp_payout": "Final SRP payout",
+    "fcSection": "FC salary",
+    "fc_salary": "Salary per FC operation",
+    "fc_salary_monthly_limit": "Monthly count limit",
+    "fcHint": "Existing FC payout rules apply. A monthly count limit of 0 prevents new FC salary payments.",
+    "unit": "Fuxi coins per item",
+    "perOperationUnit": "Fuxi coins per operation",
+    "operationUnit": "operation(s)",
+    "itemUnit": "item(s)",
+    "loading": "Loading salary settings…",
+    "loadFailed": "Unable to load salary settings. Please retry.",
+    "saveFailed": "Unable to save. Please retry.",
+    "saved": "Salary settings saved",
+    "refresh": "Refresh",
+    "save": "Save",
+    "saving": "Saving…"
   }
 }

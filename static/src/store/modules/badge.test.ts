@@ -3,6 +3,38 @@ import test from 'node:test'
 import type { AppRouteRecord } from '../../types/router'
 import { applyBadgeCountsToMenu } from './badge.helpers'
 
+test('admission review count aggregates to its parent and disappears at zero', () => {
+  const menus: AppRouteRecord[] = [
+    {
+      path: '/admissions',
+      name: 'Admissions',
+      component: '/index/index',
+      meta: { title: 'admissions.title' },
+      children: [
+        {
+          path: 'review',
+          name: 'AdmissionReview',
+          component: '/admissions/index',
+          meta: { title: 'admissions.review' }
+        },
+        {
+          path: 'history',
+          name: 'AdmissionHistory',
+          component: '/admissions/index',
+          meta: { title: 'admissions.history' }
+        }
+      ]
+    }
+  ]
+  applyBadgeCountsToMenu(menus, { admission_pending: 3 })
+  assert.equal(menus[0].meta.showTextBadge, '3')
+  assert.equal(menus[0].children![0].meta.showTextBadge, '3')
+  assert.equal(menus[0].children![1].meta.showTextBadge, undefined)
+  applyBadgeCountsToMenu(menus, {})
+  assert.equal(menus[0].meta.showTextBadge, undefined)
+  assert.equal(menus[0].children![0].meta.showTextBadge, undefined)
+})
+
 function createMenuList(): AppRouteRecord[] {
   return [
     {

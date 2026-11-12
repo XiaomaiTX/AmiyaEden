@@ -38,6 +38,13 @@
     width="400px"
     destroy-on-close
   >
+    <ElAlert
+      v-if="reviewAction === 'deliver'"
+      :title="reviewSalaryMessage"
+      type="info"
+      :closable="false"
+      class="mb-4"
+    />
     <ElForm label-width="80px">
       <ElFormItem :label="$t('shopAdmin.orders.fields.orderNo')">
         <span class="font-medium">{{ reviewOrderNo }}</span>
@@ -78,6 +85,7 @@
   import { useTable } from '@/hooks/core/useTable'
   import { showMailAttemptMessage } from '@/utils/mailAttempt'
   import { resolveOrderIskTotal } from './order-isk'
+  import { operationSalaryMessage } from '@/utils/operation-salary'
 
   defineOptions({ name: 'ManageOrders' })
   const { t } = useI18n()
@@ -238,8 +246,18 @@
   const reviewOrderNo = ref('')
   const reviewRemark = ref('')
   const reviewSubmitting = ref(false)
+  const reviewSalaryMessage = ref('')
 
-  function openDeliverDialog(order: Order) {
+  async function openDeliverDialog(order: Order) {
+    if (reviewSubmitting.value) return
+    reviewSubmitting.value = true
+    try {
+      reviewSalaryMessage.value = await operationSalaryMessage('shop_delivery', 1, t)
+    } catch {
+      return
+    } finally {
+      reviewSubmitting.value = false
+    }
     reviewAction.value = 'deliver'
     reviewOrderId.value = order.id
     reviewOrderNo.value = order.order_no

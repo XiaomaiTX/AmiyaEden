@@ -24,6 +24,16 @@ export const systemRoutes: AppRouteRecord = {
       meta: { title: 'qqbot.title', roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] }
     },
     {
+      path: 'salary',
+      name: 'SystemSalary',
+      component: '/system/salary',
+      meta: {
+        title: 'menus.system.salary',
+        roles: ['super_admin', 'admin'],
+        corpCapabilitiesAny: ['system.manage']
+      }
+    },
+    {
       path: 'user',
       name: 'User',
       component: '/system/user',

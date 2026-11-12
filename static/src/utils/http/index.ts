@@ -82,7 +82,12 @@ axiosInstance.interceptors.request.use(
 
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse<BaseResponse>) => {
+  async (response: AxiosResponse<BaseResponse>) => {
+    if (response.config.responseType === 'blob' && response.data instanceof Blob) {
+      if (response.data.type.startsWith('image/jpeg')) return response
+      const errorBody = JSON.parse(await response.data.text()) as BaseResponse
+      throw new HttpError(errorBody.msg || 'admissions.errors.evidence', errorBody.code)
+    }
     const { code, msg } = response.data
     if (code === ApiStatus.success) return response
     if (code === ApiStatus.unauthorized) handleUnauthorizedError(msg)
@@ -182,7 +187,7 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
       showSuccess(res.data.msg)
     }
 
-    return res.data.data as T
+    return (config.responseType === 'blob' ? res.data : res.data.data) as T
   } catch (error) {
     if (error instanceof HttpError && error.code !== ApiStatus.unauthorized) {
       const showMsg = config.showErrorMessage !== false

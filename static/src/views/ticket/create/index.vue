@@ -51,7 +51,9 @@
   })
 
   const loadCategories = async () => {
-    categories.value = await listTicketCategories()
+    categories.value = (await listTicketCategories()).filter(
+      (category) => category.enabled && !category.retired_admission
+    )
     if (!form.category_id && categories.value.length > 0) {
       form.category_id = categories.value[0].id
     }
@@ -67,8 +69,13 @@
       await createTicket(form)
       ElMessage.success(t('ticket.messages.created'))
       router.push({ name: 'TicketMyList' })
-    } catch (error: any) {
-      ElMessage.error(error?.message || t('ticket.messages.createFailed'))
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : ''
+      ElMessage.error(
+        message === 'ticket.errors.categoryDisabled'
+          ? t(message)
+          : message || t('ticket.messages.createFailed')
+      )
     } finally {
       submitting.value = false
     }

@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+  import { walletReason } from '@/utils/wallet-reason'
   import { useI18n } from 'vue-i18n'
   import { Refresh } from '@element-plus/icons-vue'
   import { ElCard, ElButton, ElTag } from 'element-plus'
@@ -113,6 +114,7 @@
         },
         {
           prop: 'reason',
+          formatter: (row: WalletTransaction) => walletReason(row, t),
           label: t('fleet.wallet.reason'),
           minWidth: 200,
           showOverflowTooltip: true
