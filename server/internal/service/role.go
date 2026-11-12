@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"time"
 
 	"go.uber.org/zap"
@@ -164,7 +165,14 @@ func (s *RoleService) SetUserRoles(ctx context.Context, operatorID uint, operato
 		return err
 	}
 
-	if err := s.repo.SetUserRoles(userID, requestedCodes); err != nil {
+	if err := s.repo.InUserRoleTx(userID, func(tx *gorm.DB) error {
+		scope, err := NewAdmissionService().qualifyingRecruiterCorporations(tx, userID)
+		if err != nil {
+			return err
+		}
+		requestedCodes = derivedRecruiterRoles(requestedCodes, len(scope) > 0)
+		return s.repo.SetUserRolesTx(tx, userID, requestedCodes)
+	}); err != nil {
 		recordAuditFailed(err)
 		return err
 	}

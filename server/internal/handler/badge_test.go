@@ -155,7 +155,10 @@ func TestBadgeHandlerGetBadgeCountsReturnsSafeErrorMessage(t *testing.T) {
 	if result.Code != response.CodeBizError {
 		t.Fatalf("expected business error code, got %#v", result)
 	}
-	if result.Msg != "获取补损待审批数量失败" {
+	// Badge queries run concurrently; any failed query may report first.
+	switch result.Msg {
+	case "获取补损待审批数量失败", "获取可申请福利数量失败", "获取军团申请待处理数量失败":
+	default:
 		t.Fatalf("expected transport-safe message, got %#v", result)
 	}
 }

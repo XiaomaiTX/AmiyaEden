@@ -3,6 +3,8 @@ package repository
 import (
 	"amiya-eden/global"
 	"amiya-eden/internal/model"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type RoleRepository struct{}
@@ -15,8 +17,12 @@ func NewRoleRepository() *RoleRepository {
 
 // GetUserRoleCodes 获取用户的职权编码列表（按优先级降序）
 func (r *RoleRepository) GetUserRoleCodes(userID uint) ([]string, error) {
+	return r.GetUserRoleCodesTx(global.DB, userID)
+}
+
+func (r *RoleRepository) GetUserRoleCodesTx(db *gorm.DB, userID uint) ([]string, error) {
 	var codes []string
-	err := global.DB.Model(&model.UserRole{}).
+	err := db.Model(&model.UserRole{}).
 		Where("user_id = ?", userID).
 		Pluck("role_code", &codes).Error
 	if err != nil {
@@ -59,18 +65,29 @@ func (r *RoleRepository) GetUserRoleCodesByUserIDs(userIDs []uint) (map[uint][]s
 
 // SetUserRoles 设置用户的职权（替换所有）
 func (r *RoleRepository) SetUserRoles(userID uint, roleCodes []string) error {
-	tx := global.DB.Begin()
+	return global.DB.Transaction(func(tx *gorm.DB) error { return r.SetUserRolesTx(tx, userID, roleCodes) })
+}
+
+func (r *RoleRepository) InUserRoleTx(userID uint, fn func(*gorm.DB) error) error {
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		var user model.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, userID).Error; err != nil {
+			return err
+		}
+		return fn(tx)
+	})
+}
+
+func (r *RoleRepository) SetUserRolesTx(tx *gorm.DB, userID uint, roleCodes []string) error {
 	if err := tx.Where("user_id = ?", userID).Delete(&model.UserRole{}).Error; err != nil {
-		tx.Rollback()
 		return err
 	}
 	for _, code := range roleCodes {
 		if err := tx.Create(&model.UserRole{UserID: userID, RoleCode: code}).Error; err != nil {
-			tx.Rollback()
 			return err
 		}
 	}
-	return tx.Commit().Error
+	return nil
 }
 
 // AddUserRole 为用户添加一个职权

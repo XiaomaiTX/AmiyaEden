@@ -13,6 +13,7 @@ const (
 	RoleMentor      = "mentor"
 	RoleWelfare     = "welfare"
 	RoleFuelOfficer = "fuel_officer"
+	RoleRecruiter   = "recruiter"
 	RoleUser        = "user"
 	RoleGuest       = "guest"
 )
@@ -48,6 +49,7 @@ var SystemRoleDefinitions = []RoleDefinition{
 	{Code: RoleShopOrder, Name: "Order Management", I18nKey: "roles.shop_order_manage", Description: "Shop order review and history access", Sort: 55},
 	{Code: RoleWelfare, Name: "Welfare Officer", I18nKey: "roles.welfare", Description: "Corporation welfare approval and management", Sort: 50},
 	{Code: RoleFuelOfficer, Name: "Fuel Officer", I18nKey: "roles.fuel_officer", Description: "Assigned corporation structure fuel management", Sort: 45},
+	{Code: RoleRecruiter, Name: "Recruiter", I18nKey: "roles.recruiter", Description: "Derived from corporation recruitment authority", Sort: 40},
 	{Code: RoleCaptain, Name: "Captain", I18nKey: "roles.captain", Description: "Newbro mentor captain view permissions", Sort: 30},
 	{Code: RoleMentor, Name: "Mentor", I18nKey: "roles.mentor", Description: "Mentor support view permissions", Sort: 25},
 	{Code: RoleUser, Name: "Verified User", I18nKey: "roles.user", Description: "Authenticated user with basic access", Sort: 10},
@@ -112,10 +114,12 @@ func ContainsAnyRole(roleCodes []string, targets ...string) bool {
 	return false
 }
 
-// HasNonGuestRole 检查职权列表中是否存在任一非 guest 职权
+// HasNonGuestRole 检查职权列表中是否存在任一成员职权。
+// 派生的 recruiter 只授权军团申请审核，可能来自不在白名单内的 FMA 人物，
+// 因此不构成 Login 成员资格，也不阻止 guest 自动升级为 user。
 func HasNonGuestRole(roleCodes []string) bool {
 	for _, code := range roleCodes {
-		if code != RoleGuest {
+		if code != RoleGuest && code != RoleRecruiter {
 			return true
 		}
 	}

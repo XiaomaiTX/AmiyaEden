@@ -56,6 +56,22 @@ func registerESIRefreshTask(reg *taskregistry.Registry) {
 
 	rollSvc := service.NewRoleService()
 	autoRoleSvc := service.NewAutoRoleService()
+	esi.OnCorporationAuthorityChanged = func(ctx context.Context, characterIDs []int64) {
+		owners, err := repository.NewEveCharacterRepository().ListUserIDsByCharacterIDs(characterIDs)
+		if err != nil {
+			global.Logger.Warn("[ESI] 查询招新权限归属失败", zap.Error(err))
+			return
+		}
+		users := make(map[uint]struct{})
+		for _, userID := range owners {
+			users[userID] = struct{}{}
+		}
+		for userID := range users {
+			if err := autoRoleSvc.SyncRecruiterRole(ctx, userID); err != nil {
+				global.Logger.Warn("[ESI] 招新权限同步失败", zap.Uint("user_id", userID), zap.Error(err))
+			}
+		}
+	}
 
 	runSigninSecuritySync := func(characterID int64, userID uint) {
 		ctx := context.Background()

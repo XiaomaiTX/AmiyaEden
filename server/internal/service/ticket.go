@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	errTicketNotFound       = errors.New("工单不存在")
-	errTicketNoPermission   = errors.New("无权限访问该工单")
-	errInvalidTicketStatus  = errors.New("无效的工单状态")
-	errTicketCategoryAbsent = errors.New("工单分类不存在")
+	errTicketNotFound         = errors.New("工单不存在")
+	errTicketNoPermission     = errors.New("无权限访问该工单")
+	errInvalidTicketStatus    = errors.New("无效的工单状态")
+	errTicketCategoryAbsent   = errors.New("工单分类不存在")
+	errTicketCategoryDisabled = errors.New("ticket.errors.categoryDisabled")
 )
 
 type TicketService struct {
@@ -55,12 +56,15 @@ func (s *TicketService) CreateTicket(userID, categoryID uint, title, description
 	if title == "" || description == "" {
 		return nil, errors.New("标题和描述不能为空")
 	}
-	_, err := s.repo.GetCategoryByID(categoryID)
+	category, err := s.repo.GetCategoryByID(categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errTicketCategoryAbsent
 		}
 		return nil, err
+	}
+	if !category.Enabled || category.RetiredAdmission || isAdmissionTicketName(category.Name) {
+		return nil, errTicketCategoryDisabled
 	}
 	ticket := &model.Ticket{
 		UserID:      userID,
@@ -263,6 +267,9 @@ func (s *TicketService) ListCategories(enabledOnly bool) ([]model.TicketCategory
 }
 
 func (s *TicketService) CreateCategory(operatorID uint, category *model.TicketCategory) error {
+	if isAdmissionTicketName(category.Name) || category.RetiredAdmission {
+		return errTicketCategoryDisabled
+	}
 	if strings.TrimSpace(category.Name) == "" || strings.TrimSpace(category.NameEN) == "" {
 		s.recordTicketCategoryAudit("ticket_category_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": "empty_name"})
 		return errors.New("分类中英文名称不能为空")
@@ -294,6 +301,9 @@ func (s *TicketService) UpdateCategory(operatorID, id uint, req *model.TicketCat
 	}
 	category.Description = strings.TrimSpace(req.Description)
 	category.SortOrder = req.SortOrder
+	if category.RetiredAdmission || isAdmissionTicketName(category.Name) {
+		return nil, errTicketCategoryDisabled
+	}
 	category.Enabled = req.Enabled
 	if err := s.repo.UpdateCategory(category); err != nil {
 		s.recordTicketCategoryAudit("ticket_category_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
@@ -310,6 +320,14 @@ func (s *TicketService) DeleteCategory(operatorID, id uint) error {
 	}
 	s.recordTicketCategoryAudit("ticket_category_delete", operatorID, id, model.AuditResultSuccess, map[string]any{"deleted_category_id": id})
 	return nil
+}
+
+func isAdmissionTicketName(name string) bool {
+	switch strings.TrimSpace(name) {
+	case "加团申请", "加团", "小号加团":
+		return true
+	}
+	return false
 }
 
 func (s *TicketService) recordTicketAudit(action string, actorID, ticketID uint, result string, details map[string]any) {

@@ -64,3 +64,5 @@ logs/
 
 .claude/settings.local.json
 static/src/types/import/components.d.ts
+/openspec
+/server/uploads/

@@ -11,6 +11,9 @@ func TestHasNonGuestRole(t *testing.T) {
 		{name: "empty", roles: nil, want: false},
 		{name: "guest only", roles: []string{RoleGuest}, want: false},
 		{name: "user", roles: []string{RoleUser}, want: true},
+		{name: "derived recruiter only", roles: []string{RoleRecruiter}, want: false},
+		{name: "guest and recruiter", roles: []string{RoleGuest, RoleRecruiter}, want: false},
+		{name: "user and recruiter", roles: []string{RoleUser, RoleRecruiter}, want: true},
 		{name: "srp and guest", roles: []string{RoleGuest, RoleSRP}, want: true},
 		{name: "super admin", roles: []string{RoleSuperAdmin}, want: true},
 	}

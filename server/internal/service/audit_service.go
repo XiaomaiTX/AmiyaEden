@@ -62,6 +62,15 @@ func NewAuditService() *AuditService {
 }
 
 func (s *AuditService) RecordEventTx(tx *gorm.DB, in AuditRecordInput) error {
+	return s.recordEventTx(tx, in, false)
+}
+
+// RecordRequiredEventTx fails closed, including when the audit table is absent.
+func (s *AuditService) RecordRequiredEventTx(tx *gorm.DB, in AuditRecordInput) error {
+	return s.recordEventTx(tx, in, true)
+}
+
+func (s *AuditService) recordEventTx(tx *gorm.DB, in AuditRecordInput, required bool) error {
 	details, _ := json.Marshal(in.Details)
 	event := &model.AuditEvent{
 		EventID:      uuid.NewString(),
@@ -79,7 +88,7 @@ func (s *AuditService) RecordEventTx(tx *gorm.DB, in AuditRecordInput) error {
 		DetailsJSON:  string(details),
 	}
 	if err := s.repo.CreateTx(tx, event); err != nil {
-		if isAuditTableMissingError(err) {
+		if !required && isAuditTableMissingError(err) {
 			return nil
 		}
 		return err

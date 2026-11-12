@@ -1331,7 +1331,7 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 		switch tx.RefType {
 		case model.WalletRefWelfarePayout:
 			payoutTx = tx
-		case "admin_award":
+		case model.WalletRefWelfareSalary:
 			awardTx = tx
 		}
 	}
@@ -1353,11 +1353,11 @@ func TestAdminReviewApplicationDeliverCreditsConfiguredFuxiCoin(t *testing.T) {
 	if awardTx.Amount != 10 {
 		t.Fatalf("award wallet tx amount = %v, want 10", awardTx.Amount)
 	}
-	if awardTx.RefID != fmt.Sprintf("admin_welfare_delivery:%d", app.ID) {
+	if awardTx.RefID != fmt.Sprintf("welfare:%d", app.ID) {
 		t.Fatalf("award wallet tx ref_id = %q", awardTx.RefID)
 	}
-	if awardTx.OperatorID != 0 {
-		t.Fatalf("award wallet tx operator_id = %d, want 0", awardTx.OperatorID)
+	if awardTx.OperatorID != 77 {
+		t.Fatalf("award wallet tx operator_id = %d, want 77", awardTx.OperatorID)
 	}
 }
 
@@ -1650,8 +1650,8 @@ func TestAdminReviewApplicationDeliverWithoutConfiguredPayoutStillCreditsAdminAw
 	if txs[0].UserID != 77 {
 		t.Fatalf("wallet tx user_id = %d, want 77", txs[0].UserID)
 	}
-	if txs[0].RefType != "admin_award" {
-		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, "admin_award")
+	if txs[0].RefType != model.WalletRefWelfareSalary {
+		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, model.WalletRefWelfareSalary)
 	}
 	if txs[0].Amount != 10 {
 		t.Fatalf("wallet tx amount = %v, want 10", txs[0].Amount)
@@ -1729,7 +1729,7 @@ func TestAdminReviewApplicationDeliverUsesApprovalTimePayoutConfig(t *testing.T)
 		switch tx.RefType {
 		case model.WalletRefWelfarePayout:
 			payoutTx = tx
-		case "admin_award":
+		case model.WalletRefWelfareSalary:
 			awardTx = tx
 		}
 	}
@@ -2021,7 +2021,7 @@ func TestAdminReviewApplicationDeliverWithZeroAdminAwardSkipsAwardCredit(t *test
 	useWelfareServiceTestDB(t, db)
 
 	if err := db.Create(&model.SystemConfig{
-		Key:   "pap.admin_award",
+		Key:   model.SysConfigSalaryWelfare,
 		Value: "0",
 		Desc:  "admin award",
 	}).Error; err != nil {
@@ -2070,7 +2070,7 @@ func TestAdminReviewApplicationDeliverWithCustomAdminAwardUsesConfiguredAmount(t
 	useWelfareServiceTestDB(t, db)
 
 	if err := db.Create(&model.SystemConfig{
-		Key:   model.SysConfigPAPAdminAward,
+		Key:   model.SysConfigSalaryWelfare,
 		Value: "18",
 		Desc:  "admin award",
 	}).Error; err != nil {
@@ -2114,7 +2114,7 @@ func TestAdminReviewApplicationDeliverWithCustomAdminAwardUsesConfiguredAmount(t
 	}
 }
 
-func TestAdminReviewApplicationDeliverByWelfareOfficerSkipsAdminAward(t *testing.T) {
+func TestAdminReviewApplicationDeliverByWelfareOfficerEarnsSalary(t *testing.T) {
 	db := newWelfareServiceTestDB(t)
 	useWelfareServiceTestDB(t, db)
 
@@ -2160,14 +2160,25 @@ func TestAdminReviewApplicationDeliverByWelfareOfficerSkipsAdminAward(t *testing
 	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 1 {
-		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	if len(txs) != 2 {
+		t.Fatalf("wallet transaction count = %d, want 2", len(txs))
 	}
 	if txs[0].RefType != model.WalletRefWelfarePayout {
 		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, model.WalletRefWelfarePayout)
 	}
 	if txs[0].UserID != userID {
 		t.Fatalf("wallet tx user_id = %d, want %d", txs[0].UserID, userID)
+	}
+	if txs[1].UserID != 77 || txs[1].RefType != model.WalletRefWelfareSalary || txs[1].Amount != 10 {
+		t.Fatalf("officer salary: %+v", txs[1])
+	}
+	if _, err := svc.AdminReviewApplication(app.ID, 77, welfareOfficerReviewerRoles, &AdminReviewApplicationRequest{Action: "deliver"}); err == nil {
+		t.Fatal("duplicate delivery accepted")
+	}
+	var count int64
+	db.Model(&model.WalletTransaction{}).Count(&count)
+	if count != 2 {
+		t.Fatalf("duplicate salary: %d", count)
 	}
 }
 
@@ -2306,6 +2317,9 @@ func newWelfareServiceTestDB(t *testing.T) *gorm.DB {
 	db := newServiceTestDB(t, "welfare_service_test",
 		&model.Welfare{},
 		&model.WelfareSkillPlan{},
+		&model.UserRole{},
+		&model.EveCharacterCorpRole{},
+		&model.AdmissionApplication{},
 		&model.WelfareApplication{},
 		&model.SkillPlan{},
 		&model.SystemConfig{},

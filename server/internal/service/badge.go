@@ -16,6 +16,7 @@ const (
 	BadgeCountMentorPendingApplications      = "mentor_pending_applications"
 	BadgeCountCorporationStructuresAttention = "corporation_structures_attention"
 	BadgeCountTicketAttention                = "ticket_attention"
+	BadgeCountAdmissionPending               = "admission_pending"
 )
 
 type BadgeCounts map[string]int64
@@ -189,6 +190,22 @@ func (s *BadgeService) GetBadgeCounts(userID uint, userRoles []string) (BadgeCou
 		}()
 	}
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pending, err := NewAdmissionService().PendingReviewCount(userID)
+		mu.Lock()
+		defer mu.Unlock()
+		if err != nil {
+			if firstErr == nil {
+				firstErr = errors.New("获取军团申请待处理数量失败")
+			}
+			return
+		}
+		if pending > 0 {
+			counts[BadgeCountAdmissionPending] = pending
+		}
+	}()
 	wg.Wait()
 
 	if firstErr != nil {

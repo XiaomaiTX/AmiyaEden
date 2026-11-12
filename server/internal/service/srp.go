@@ -951,7 +951,13 @@ func (s *SrpService) Payout(payerID uint, callerRoles []string, appID uint, req 
 				return err
 			}
 			applySrpPayoutFinalAmount(lockedApp, req.FinalAmount)
+			if err := s.validateSrpAmountWithinLimit(callerRoles, lockedApp.FinalAmount); err != nil {
+				return err
+			}
 			if err := s.payoutApplicationWithFuxiCoinTx(tx, payerID, lockedApp); err != nil {
+				return err
+			}
+			if err := s.payPayoutSalaryTx(tx, payerID, lockedApp.ID); err != nil {
 				return err
 			}
 			*app = *lockedApp
@@ -963,10 +969,28 @@ func (s *SrpService) Payout(payerID uint, callerRoles []string, appID uint, req 
 		return app, s.attemptPayoutMail(payerID, []*model.SrpApplication{app}), nil
 	}
 
-	now := time.Now()
-	markSrpApplicationPaid(app, payerID, now)
-
-	if err := s.repo.UpdateApplication(app); err != nil {
+	if err := global.DB.Transaction(func(tx *gorm.DB) error {
+		lockedApp, err := s.repo.GetApplicationByIDForUpdate(tx, appID)
+		if err != nil {
+			return err
+		}
+		if err := validateSrpApplicationPayoutable(lockedApp); err != nil {
+			return err
+		}
+		applySrpPayoutFinalAmount(lockedApp, req.FinalAmount)
+		if err := s.validateSrpAmountWithinLimit(callerRoles, lockedApp.FinalAmount); err != nil {
+			return err
+		}
+		if err := s.payPayoutSalaryTx(tx, payerID, lockedApp.ID); err != nil {
+			return err
+		}
+		markSrpApplicationPaid(lockedApp, payerID, time.Now())
+		if err := s.repo.UpdateApplicationTx(tx, lockedApp); err != nil {
+			return err
+		}
+		*app = *lockedApp
+		return nil
+	}); err != nil {
 		return nil, MailAttemptSummary{}, err
 	}
 	return app, s.attemptPayoutMail(payerID, []*model.SrpApplication{app}), nil
@@ -981,7 +1005,21 @@ func (s *SrpService) BatchPayoutByUser(payerID uint, callerRoles []string, userI
 	}
 
 	now := time.Now()
-	summary, apps, err := s.repo.BatchPayoutApplicationsByUser(userID, payerID, now)
+	var summary *repository.SrpBatchPayoutSummaryRow
+	var apps []model.SrpApplication
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		var err error
+		summary, apps, err = s.repo.BatchPayoutApplicationsByUserTx(tx, userID, payerID, now)
+		if err != nil {
+			return err
+		}
+		for _, app := range apps {
+			if err := s.validateSrpAmountWithinLimit(callerRoles, app.FinalAmount); err != nil {
+				return err
+			}
+		}
+		return s.payBatchPayoutSalaryTx(tx, payerID, apps)
+	})
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrNoApprovedUnpaidBatchPayoutApplications):
@@ -1036,6 +1074,9 @@ func (s *SrpService) BatchPayoutAsFuxiCoin(payerID uint, callerRoles []string) (
 			userIDs[app.UserID] = struct{}{}
 		}
 
+		if err := s.payBatchPayoutSalaryTx(tx, payerID, apps); err != nil {
+			return err
+		}
 		paidApps = append(paidApps[:0], apps...)
 		return nil
 	})
@@ -1047,6 +1088,19 @@ func (s *SrpService) BatchPayoutAsFuxiCoin(payerID uint, callerRoles []string) (
 	summary.TotalISKAmount = math.Round(summary.TotalISKAmount*100) / 100
 	summary.TotalFuxiCoin = math.Round(summary.TotalFuxiCoin*100) / 100
 	return summary, s.attemptPayoutMail(payerID, srpApplicationPointers(paidApps)), nil
+}
+
+func (s *SrpService) payPayoutSalaryTx(tx *gorm.DB, payerID uint, appID uint) error {
+	return payOperationSalaryTx(tx, payerID, model.SysConfigSalarySRP, model.WalletRefSRPSalary,
+		fmt.Sprintf("srp:%d", appID), fmt.Sprintf("补损发放工资: 申请 #%d", appID))
+}
+
+func (s *SrpService) payBatchPayoutSalaryTx(tx *gorm.DB, payerID uint, apps []model.SrpApplication) error {
+	if len(apps) == 0 {
+		return nil
+	}
+	return payOperationSalaryTx(tx, payerID, model.SysConfigSalarySRP, model.WalletRefSRPSalary,
+		fmt.Sprintf("srp_batch:%d", apps[0].ID), fmt.Sprintf("补损批量发放工资: %d 份申请，起始申请 #%d", len(apps), apps[0].ID))
 }
 
 func srpApplicationPointers(apps []model.SrpApplication) []*model.SrpApplication {

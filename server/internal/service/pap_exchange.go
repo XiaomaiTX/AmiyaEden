@@ -36,9 +36,6 @@ func NewPAPExchangeService() *PAPExchangeService {
 // PAPExchangeConfigResponse PAP 兑换配置响应
 type PAPExchangeConfigResponse struct {
 	Rates                       []model.PAPTypeRate `json:"rates"`
-	FCSalary                    float64             `json:"fc_salary"`
-	FCSalaryMonthlyLimit        int                 `json:"fc_salary_monthly_limit"`
-	AdminAward                  int                 `json:"admin_award"`
 	MulticharFullRewardCount    int                 `json:"multichar_full_reward_count"`
 	MulticharReducedRewardCount int                 `json:"multichar_reduced_reward_count"`
 	MulticharReducedRewardPct   int                 `json:"multichar_reduced_reward_pct"`
@@ -53,9 +50,6 @@ func (s *PAPExchangeService) GetConfig() (*PAPExchangeConfigResponse, error) {
 	tierCfg := getMulticharRewardConfig(s.configRepo)
 	return &PAPExchangeConfigResponse{
 		Rates:                       rates,
-		FCSalary:                    s.getFCSalary(),
-		FCSalaryMonthlyLimit:        s.getFCSalaryMonthlyLimit(),
-		AdminAward:                  s.getAdminAward(),
 		MulticharFullRewardCount:    tierCfg.FullRewardCount,
 		MulticharReducedRewardCount: tierCfg.ReducedRewardCount,
 		MulticharReducedRewardPct:   tierCfg.ReducedRewardPct,
@@ -72,9 +66,6 @@ type SetRateRequest struct {
 // UpdateConfigRequest 更新 PAP 兑换配置请求
 type UpdateConfigRequest struct {
 	Rates                       []SetRateRequest `json:"rates" binding:"required"`
-	FCSalary                    *float64         `json:"fc_salary" binding:"required,gte=0"`
-	FCSalaryMonthlyLimit        *int             `json:"fc_salary_monthly_limit" binding:"required,gte=0"`
-	AdminAward                  *int             `json:"admin_award" binding:"required,gte=0"`
 	MulticharFullRewardCount    *int             `json:"multichar_full_reward_count" binding:"required,gte=0"`
 	MulticharReducedRewardCount *int             `json:"multichar_reduced_reward_count" binding:"required,gte=0"`
 	MulticharReducedRewardPct   *int             `json:"multichar_reduced_reward_pct" binding:"required,gte=0,lte=100"`
@@ -85,10 +76,7 @@ func (s *PAPExchangeService) UpdateConfig(req *UpdateConfigRequest) (*PAPExchang
 	if err := s.SetRates(req.Rates); err != nil {
 		return nil, err
 	}
-	items := newSysConfigBatch(6).
-		AddFloat64(model.SysConfigPAPFCSalary, *req.FCSalary, "FC工资").
-		AddInt(model.SysConfigPAPFCSalaryLimit, *req.FCSalaryMonthlyLimit, "FC工资每月上限次数").
-		AddInt(model.SysConfigPAPAdminAward, *req.AdminAward, "管理发放奖励").
+	items := newSysConfigBatch(3).
 		AddInt(model.SysConfigMulticharFullRewardCount, *req.MulticharFullRewardCount, "多人物满额奖励人物数").
 		AddInt(model.SysConfigMulticharReducedRewardCount, *req.MulticharReducedRewardCount, "多人物折扣奖励人物数").
 		AddInt(model.SysConfigMulticharReducedRewardPct, *req.MulticharReducedRewardPct, "多人物折扣奖励百分比").
@@ -108,9 +96,6 @@ func (s *PAPExchangeService) UpdateConfigByOperator(req *UpdateConfigRequest, op
 		details := map[string]any{
 			"operator_id":                     operatorID,
 			"rates":                           req.Rates,
-			"fc_salary":                       req.FCSalary,
-			"fc_salary_monthly_limit":         req.FCSalaryMonthlyLimit,
-			"admin_award":                     req.AdminAward,
 			"multichar_full_reward_count":     req.MulticharFullRewardCount,
 			"multichar_reduced_reward_count":  req.MulticharReducedRewardCount,
 			"multichar_reduced_reward_pct":    req.MulticharReducedRewardPct,
@@ -121,7 +106,7 @@ func (s *PAPExchangeService) UpdateConfigByOperator(req *UpdateConfigRequest, op
 			Action:       "pap_exchange_config_update",
 			ActorUserID:  operatorID,
 			ResourceType: "system_config",
-			ResourceID:   model.SysConfigPAPFCSalary,
+			ResourceID:   model.SysConfigMulticharFullRewardCount,
 			Result:       model.AuditResultSuccess,
 			Details:      details,
 		})
@@ -134,9 +119,6 @@ func compactPAPConfigForAudit(cfg *PAPExchangeConfigResponse) string {
 		return ""
 	}
 	blob, err := json.Marshal(map[string]any{
-		"fc_salary":                      cfg.FCSalary,
-		"fc_salary_monthly_limit":        cfg.FCSalaryMonthlyLimit,
-		"admin_award":                    cfg.AdminAward,
 		"multichar_full_reward_count":    cfg.MulticharFullRewardCount,
 		"multichar_reduced_reward_count": cfg.MulticharReducedRewardCount,
 		"multichar_reduced_reward_pct":   cfg.MulticharReducedRewardPct,
@@ -159,16 +141,4 @@ func (s *PAPExchangeService) SetRates(items []SetRateRequest) error {
 		})
 	}
 	return s.rateRepo.Save(rates)
-}
-
-func (s *PAPExchangeService) getFCSalary() float64 {
-	return s.configRepo.GetFloat(model.SysConfigPAPFCSalary, model.SysConfigDefaultPAPFCSalary)
-}
-
-func (s *PAPExchangeService) getFCSalaryMonthlyLimit() int {
-	return s.configRepo.GetInt(model.SysConfigPAPFCSalaryLimit, model.SysConfigDefaultPAPFCSalaryLimit)
-}
-
-func (s *PAPExchangeService) getAdminAward() int {
-	return configuredAdminAward(s.configRepo)
 }

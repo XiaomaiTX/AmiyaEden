@@ -361,14 +361,14 @@ func TestAdminDeliverOrderCreditsConfiguredAdminAward(t *testing.T) {
 	if txs[0].UserID != 77 {
 		t.Fatalf("wallet tx user_id = %d, want 77", txs[0].UserID)
 	}
-	if txs[0].RefType != "admin_award" {
-		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, "admin_award")
+	if txs[0].RefType != model.WalletRefShopSalary {
+		t.Fatalf("wallet tx ref_type = %q, want %q", txs[0].RefType, model.WalletRefShopSalary)
 	}
-	if txs[0].RefID != fmt.Sprintf("admin_shop_delivery:%d", order.ID) {
+	if txs[0].RefID != fmt.Sprintf("shop:%d", order.ID) {
 		t.Fatalf("wallet tx ref_id = %q", txs[0].RefID)
 	}
-	if txs[0].OperatorID != 0 {
-		t.Fatalf("wallet tx operator_id = %d, want 0", txs[0].OperatorID)
+	if txs[0].OperatorID != 77 {
+		t.Fatalf("wallet tx operator_id = %d, want 77", txs[0].OperatorID)
 	}
 
 	var auditEvents []model.AuditEvent
@@ -393,7 +393,7 @@ func TestAdminDeliverOrderWithZeroAdminAwardSkipsCredit(t *testing.T) {
 	useShopServiceTestDB(t, db)
 
 	if err := db.Create(&model.SystemConfig{
-		Key:   "pap.admin_award",
+		Key:   model.SysConfigSalaryShop,
 		Value: "0",
 		Desc:  "admin award",
 	}).Error; err != nil {
@@ -450,7 +450,7 @@ func TestAdminDeliverOrderWithCustomAdminAwardCreditsConfiguredAmount(t *testing
 	useShopServiceTestDB(t, db)
 
 	if err := db.Create(&model.SystemConfig{
-		Key:   model.SysConfigPAPAdminAward,
+		Key:   model.SysConfigSalaryShop,
 		Value: "18",
 		Desc:  "admin award",
 	}).Error; err != nil {
@@ -502,7 +502,7 @@ func TestAdminDeliverOrderWithCustomAdminAwardCreditsConfiguredAmount(t *testing
 	}
 }
 
-func TestAdminDeliverOrderByShopOrderManagerSkipsAdminAward(t *testing.T) {
+func TestAdminDeliverOrderByShopOrderManagerEarnsSalary(t *testing.T) {
 	db := newShopServiceTestDB(t)
 	useShopServiceTestDB(t, db)
 
@@ -546,8 +546,19 @@ func TestAdminDeliverOrderByShopOrderManagerSkipsAdminAward(t *testing.T) {
 	if err := db.Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 0 {
-		t.Fatalf("wallet transaction count = %d, want 0", len(txs))
+	if len(txs) != 1 {
+		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	}
+	if txs[0].UserID != 77 || txs[0].RefType != model.WalletRefShopSalary || txs[0].Amount != 10 {
+		t.Fatalf("manager salary: %+v", txs[0])
+	}
+	if _, _, err := svc.AdminDeliverOrder(order.ID, 77, shopOrderManagerOperatorRoles, "again"); err == nil {
+		t.Fatal("duplicate delivery accepted")
+	}
+	var count int64
+	db.Model(&model.WalletTransaction{}).Count(&count)
+	if count != 1 {
+		t.Fatalf("duplicate salary: %d", count)
 	}
 }
 

@@ -184,7 +184,7 @@ func (r *TicketRepository) ListCategories(enabledOnly bool) ([]model.TicketCateg
 	var categories []model.TicketCategory
 	query := global.DB.Model(&model.TicketCategory{})
 	if enabledOnly {
-		query = query.Where("enabled = ?", true)
+		query = query.Where("enabled = ? AND retired_admission = ?", true, false)
 	}
 	err := query.Order("sort_order ASC, id ASC").Find(&categories).Error
 	return categories, err

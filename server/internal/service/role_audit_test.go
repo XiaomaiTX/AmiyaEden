@@ -108,7 +108,7 @@ func newRoleAuditTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}, &model.UserRole{}, &model.AuditEvent{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.UserRole{}, &model.AuditEvent{}, &model.EveCharacter{}, &model.EveCharacterCorpRole{}, &model.SystemConfig{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 	return db

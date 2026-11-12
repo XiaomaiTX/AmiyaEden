@@ -14,6 +14,7 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"amiya-eden/internal/utils"
+	"amiya-eden/pkg/background"
 	"amiya-eden/pkg/eve/esi"
 
 	"go.uber.org/zap"
@@ -353,6 +354,11 @@ func (s *SysConfigService) UpdateAllowCorporations(allowCorporations []int64) er
 		return errors.New("更新允许的军团列表失败")
 	}
 	utils.InvalidateAllowCorporationsCache()
+	// Resyncing every user is slow; keep the admin save request bounded.
+	_ = background.RunOrSchedule(global.BackgroundContext(), global.BackgroundTaskManager(), "recruiter_role_resync", func(ctx context.Context) error {
+		NewAutoRoleService().SyncAllRecruiterRoles(ctx)
+		return nil
+	})
 	return nil
 }
 
