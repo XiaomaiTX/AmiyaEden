@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-11-10
+last_reviewed: 2026-11-11
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
@@ -98,6 +98,10 @@ Vue 通过 `v-auth` 或权限 hook 消费 `meta.authList` 语义。React 由叶�
 
 ## 当前不变量
 
+军团申请在双端新增 `/admissions/new`、`alt`、`history`、`applications/:id` 和 `review`。创建及审核入口使用 admission context，未知／失败时关闭并允许重试，会话或人物信息刷新后重新读取；历史入口始终为已登录 owner 保留。Vue 菜单仅更新可见性，不移除这些路由，以保证资格变化后的历史可达；React route gate 使用同一 context。审核范围最终由服务端执行，详见[军团申请](../features/current/corporation-admissions.md)。
+
+Vue 的 admission context 后台刷新保留当前账号已经取得的结果，合并并发请求；菜单权限未改变时保留菜单对象，不先隐藏再显示子项，申请表单也不因刷新而卸载。请求失败时关闭受限入口；退出或切换账号立即清空结果并忽略旧账号的迟到响应。管理与历史列表沿用 `ElCard`、`ElTabs`、`ArtTableHeader` 和 `ArtTable` 的现有页面样式。
+
 - `招新链接` 页面为 `admin` / `super_admin` 追加 `全部链接` 与 `链接设置` tab，但不新增独立系统管理路由
 - `导师奖励阶段` 不再是独立前端路由；管理员通过 `新人帮扶 / 导师管理` 页面的 `设置奖励阶段` tab 进入该管理能力，路由权限仍由 `newbro/mentor-manage` 的 `meta.roles` 控制
 - `伏羲中心 / Fuxi Center` 当前被前端路由标记为 `meta.isHide = true`，因此暂时不在导航和全局搜索中展示，但直达路由仍保留
@@ -109,3 +113,5 @@ Vue 通过 `v-auth` 或权限 hook 消费 `meta.authList` 语义。React 由叶�
 旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
 
 双前端新增 `/system/qqbot`，菜单 `qqbot.title`，仅 `super_admin`，能力 `system.manage`；全部读写按钮继承页面超管边界，后端逐路由同样保护。无公开 QQ 操作提交按钮。
+
+工资管理在 Vue／React 的 `/system/salary`，仅 admin／super_admin 并沿用 `system.manage` 能力边界。军团申请 `AdmissionReview`／`/admissions/review` 接入 `admission_pending`，由既有父菜单汇总。详情和 `/admissions/applications/:id/edit` 使用独立路由，编辑入口限 owner 且未已邀请。

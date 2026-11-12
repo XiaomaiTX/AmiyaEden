@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-30
+last_reviewed: 2026-11-11
 source_of_truth:
   - server/internal/model/ticket.go
   - server/internal/repository/ticket.go
@@ -88,6 +88,12 @@ source_of_truth:
 - 状态变更只有在状态值实际变化时才写入 `ticket_status_history`
 - 状态历史的操作人展示必须优先使用 `changed_by_nickname` / `changed_by_name` / `changed_by_character_name`，不得只展示 `changed_by` 数字 ID
 - 统计接口返回值至少包含 `total`、`status`、`category`、`recent_7d`、`recent_30d`、`pendingCount`
+
+## 加团工单切换
+
+军团加入改用独立[军团申请](corporation-admissions.md)。启动迁移幂等停用已有“加团申请”“加团”“小号加团”，持久化 `retired_admission` 标记，不创建缺失分类。后端拒绝 disabled／retired 分类的新工单，分类管理不能通过重新启用、重命名或重新创建旧名称恢复路径；双端新建列表过滤这类分类。
+
+已有工单的读取、回复、处理和权限保持原状，不迁移为申请、不补发招新工资。应用回退不自动解除退休标记；旧版本回退时也必须维持这些分类 disabled，并限制分类管理恢复旧创建路径。
 
 ## 当前非目标
 

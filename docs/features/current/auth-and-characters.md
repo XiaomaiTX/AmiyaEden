@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-11-10
+last_reviewed: 2026-11-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/handler/eve_sso.go
@@ -115,8 +115,10 @@ source_of_truth:
 - Vue / React 注册页使用居中的人物资料卡片，提供中英文切换，切换语言保留表单和联系方式选择。昵称默认留空，去除首尾空白后须为 2–20 个字符，前后端均校验；昵称与当前联系方式标签使用红色星号表示必填。QQ / Discord 单选切换，默认 QQ；只显示并提交当前选择的联系方式。切换时保留已输入内容，当前选项为空时禁止注册，不使用隐藏选项的值代替。
 - 注册提交使用 Redis 票据锁及 PostgreSQL 人物事务锁；不同票据不能重复创建同一个人物。联系方式竞争由唯一索引兜底，失败事务不留下半个账号，冲突票据仍可重试。
 - 部署启动在 AutoMigrate 后、开始服务请求前运行 `20261110_require_user_contact`。迁移事务删除所有 QQ 与 Discord 均为空白的 user（包含软删除账号），以及所属人物授权、user_role、Mumble 身份和明确列出的个人 ESI 表记录。订单、账务、补损、福利、工单、PAP 和审计等业务历史保留。
-- 迁移建立 `chk_user_required_contact`、QQ / Discord 非空值唯一索引，成功后在 `schema_migration` 记版本；重复启动不再清理。若现存 Discord 重复或其他步骤失败，整个迁移回滚并阻止启动，须先修复冲突。
-- JWT 中间件在读取角色缓存前核实用户仍存在且启用，因此被迁移删除的账号即使持有旧 JWT / 角色缓存也无法认证。
+- 迁移建立 `chk_user_required_contact`，成功后在 `schema_migration` 记版本；重复启动不再清理。任一步骤失败时整个迁移回滚并阻止启动。
+- QQ / Discord 非空值唯一索引不在该迁移事务内，由启动时的自定义索引步骤尽力创建：遗留重复联系方式只记录警告、不阻止启动；修复重复后下次启动自动补建。索引缺失期间，注册与资料修改仍由服务端预检拒绝重复。
+- JWT 中间件在读取角色缓存前核实用户仍存在且启用，因此被迁移删除的账号即使持有旧 JWT / 角色缓存也无法认证。查询失败等临时错误不视为账号失效，不会让用户登出。
+- 注册与资料修改的错误响应不包含数据库原始错误，细节只写入服务端日志。
 - 部署前备份 PostgreSQL。清理是物理删除；回滚须配合恢复部署前数据库备份及旧应用。被清理人物也可重新 SSO 授权，填写联系方式后注册。
 
 ## 前端实现映射（迁移期）
