@@ -14,7 +14,7 @@ import (
 // ─────────────────────────────────────────────
 //  Character Corporation Roles 军团职权权限
 //  GET /characters/{character_id}/roles/
-//  默认刷新间隔: 2 Hours / 不活跃: 1 Day
+//  默认刷新间隔: 24 Hours / 不活跃: 24 Hours
 //  需要 scope: esi-characters.read_corporation_roles.v1
 // ─────────────────────────────────────────────
 
@@ -53,6 +53,11 @@ type corpRolesResponse struct {
 func (t *CorpRolesTask) Execute(ctx *TaskContext) error {
 	bgCtx := ctx.ContextOrBackground()
 	path := fmt.Sprintf("/characters/%d/roles/", ctx.CharacterID)
+	character, err := repository.NewEveCharacterRepository().GetByCharacterID(ctx.CharacterID)
+	if err != nil {
+		return fmt.Errorf("query corporation before roles: %w", err)
+	}
+	corpID := character.CorporationID
 
 	var rolesResp corpRolesResponse
 	if err := ctx.Client.Get(bgCtx, path, ctx.AccessToken, &rolesResp); err != nil {
@@ -79,13 +84,6 @@ func (t *CorpRolesTask) Execute(ctx *TaskContext) error {
 		roles = append(roles, r)
 	}
 
-	var corpID int64
-	if err := global.DB.Model(&model.EveCharacter{}).
-		Where("character_id = ?", ctx.CharacterID).
-		Pluck("corporation_id", &corpID).Error; err != nil {
-		return fmt.Errorf("query corporation id: %w", err)
-	}
-
 	global.Logger.Debug("[ESI] 人物军团职权刷新完成",
 		zap.Int64("character_id", ctx.CharacterID),
 		zap.Int64("corporation_id", corpID),
@@ -95,19 +93,21 @@ func (t *CorpRolesTask) Execute(ctx *TaskContext) error {
 
 	// 入库：同步人物的军团职权
 	autoRoleRepo := repository.NewAutoRoleRepository()
-	if !isCorporationAllowed(corpID, utils.GetAllowCorporations()) {
-		if err := autoRoleRepo.SyncCharacterCorpRoles(ctx.CharacterID, nil); err != nil {
+	if corpID != model.AdmissionFMACorporationID && !isCorporationAllowed(corpID, utils.GetAllowCorporations()) {
+		if err := autoRoleRepo.SyncCharacterCorpRoles(ctx.CharacterID, corpID, nil); err != nil {
 			return fmt.Errorf("clear corp roles for disallowed corporation: %w", err)
 		}
 		global.Logger.Debug("[ESI] 人物所在军团不在 allow_corporations，已忽略军团职权信号",
 			zap.Int64("character_id", ctx.CharacterID),
 			zap.Int64("corporation_id", corpID))
+		notifyCorporationAuthorityChanged(bgCtx, []int64{ctx.CharacterID})
 		return nil
 	}
 
-	if err := autoRoleRepo.SyncCharacterCorpRoles(ctx.CharacterID, roles); err != nil {
+	if err := autoRoleRepo.SyncCharacterCorpRoles(ctx.CharacterID, corpID, roles); err != nil {
 		return fmt.Errorf("sync corp roles: %w", err)
 	}
+	notifyCorporationAuthorityChanged(bgCtx, []int64{ctx.CharacterID})
 
 	return nil
 }

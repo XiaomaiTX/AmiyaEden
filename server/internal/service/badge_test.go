@@ -419,6 +419,7 @@ func newBadgeServiceTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(
 		&model.User{},
 		&model.UserRole{},
+        &model.AdmissionApplication{},
 		&model.SystemConfig{},
 		&model.EveCharacter{},
 		&model.EveCharacterCorpRole{},

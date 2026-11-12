@@ -435,8 +435,8 @@ func TestPayoutFuxiCoinModeCreditsWalletAndMarksApplicationPaid(t *testing.T) {
 	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 1 {
-		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	if len(txs) != 2 {
+		t.Fatalf("wallet transaction count = %d, want 2", len(txs))
 	}
 	tx := txs[0]
 	if tx.Amount != 2.35 {
@@ -451,6 +451,9 @@ func TestPayoutFuxiCoinModeCreditsWalletAndMarksApplicationPaid(t *testing.T) {
 	wantReason := fmt.Sprintf("SRP#%d Guardian | 海燕护航", app.ID)
 	if tx.Reason != wantReason {
 		t.Fatalf("wallet tx reason = %q, want %q", tx.Reason, wantReason)
+	}
+	if txs[1].UserID != 77 || txs[1].RefType != model.WalletRefSRPSalary || txs[1].Amount != 10 {
+		t.Fatalf("SRP salary: %+v", txs[1])
 	}
 }
 
@@ -526,6 +529,7 @@ func TestBatchPayoutAsFuxiCoinCreditsApprovedRequestsAcrossUsers(t *testing.T) {
 	db := newSrpServiceTestDB(t)
 	oldDB := global.DB
 	global.DB = db
+	seedWalletCapabilityEnabledUserForTests(t, db, 88, 90000088, 1001)
 	t.Cleanup(func() { global.DB = oldDB })
 
 	fleetID := "fleet-batch"
@@ -676,8 +680,8 @@ func TestBatchPayoutAsFuxiCoinCreditsApprovedRequestsAcrossUsers(t *testing.T) {
 	if err := db.Model(&model.WalletTransaction{}).Count(&txCount).Error; err != nil {
 		t.Fatalf("count wallet txs: %v", err)
 	}
-	if txCount != 3 {
-		t.Fatalf("wallet transaction count = %d, want 3", txCount)
+	if txCount != 4 {
+		t.Fatalf("wallet transaction count = %d, want 4", txCount)
 	}
 }
 
@@ -685,6 +689,7 @@ func TestBatchPayoutByUserIgnoresPayoutMailErrors(t *testing.T) {
 	db := newSrpServiceTestDB(t)
 	oldDB := global.DB
 	global.DB = db
+	seedWalletCapabilityEnabledUserForTests(t, db, 88, 90000088, 1001)
 	t.Cleanup(func() { global.DB = oldDB })
 
 	seedWalletCapabilityEnabledUserForTests(t, db, 201, 90002001, 1001)
@@ -860,11 +865,14 @@ func TestPayoutAsFuxiCoinStoresPayerAsWalletOperator(t *testing.T) {
 	if err := db.Order("id ASC").Find(&txs).Error; err != nil {
 		t.Fatalf("load wallet transactions: %v", err)
 	}
-	if len(txs) != 1 {
-		t.Fatalf("wallet transaction count = %d, want 1", len(txs))
+	if len(txs) != 2 {
+		t.Fatalf("wallet transaction count = %d, want 2", len(txs))
 	}
 	if txs[0].OperatorID != 77 {
 		t.Fatalf("wallet transaction operator_id = %d, want 77", txs[0].OperatorID)
+	}
+	if txs[1].UserID != 77 || txs[1].RefType != model.WalletRefSRPSalary || txs[1].Amount != 10 {
+		t.Fatalf("SRP salary: %+v", txs[1])
 	}
 }
 

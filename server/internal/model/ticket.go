@@ -26,11 +26,12 @@ func (Ticket) TableName() string {
 
 type TicketCategory struct {
 	BaseModel
-	Name        string `gorm:"size:50;not null;uniqueIndex" json:"name"`
-	NameEN      string `gorm:"size:50;not null;uniqueIndex" json:"name_en"`
-	Description string `gorm:"size:200" json:"description"`
-	SortOrder   int    `gorm:"not null;default:0" json:"sort_order"`
-	Enabled     bool   `gorm:"not null;default:true" json:"enabled"`
+	Name             string `gorm:"size:50;not null;uniqueIndex" json:"name"`
+	NameEN           string `gorm:"size:50;not null;uniqueIndex" json:"name_en"`
+	Description      string `gorm:"size:200" json:"description"`
+	SortOrder        int    `gorm:"not null;default:0" json:"sort_order"`
+	Enabled          bool   `gorm:"not null;default:true" json:"enabled"`
+	RetiredAdmission bool   `gorm:"not null;default:false" json:"retired_admission"`
 }
 
 func (TicketCategory) TableName() string {

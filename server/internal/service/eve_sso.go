@@ -1018,7 +1018,15 @@ func (s *EveSSOService) UnbindCharacter(userID uint, characterID int64) error {
 		NotifyMumbleIdentityChanged(global.BackgroundContext(), userID)
 	}
 
-	return s.charRepo.Delete(char.ID)
+	if err := s.charRepo.Delete(char.ID); err != nil {
+		return err
+	}
+	// The unbind has committed; a failed resync must not report it as failed.
+	// Review scope is re-derived per request and the next auto-role sync retries.
+	if err := NewAutoRoleService().SyncRecruiterRole(global.BackgroundContext(), userID); err != nil {
+		global.Logger.Warn("[SSO] 解绑后同步 recruiter 职权失败", zap.Uint("user_id", userID), zap.Int64("character_id", characterID), zap.Error(err))
+	}
+	return nil
 }
 
 // GetRedirectURLFromState 仅读取 state 对应的前端 redirect URL（不删除 state）

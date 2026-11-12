@@ -1382,15 +1382,11 @@ func (s *WelfareService) AdminReviewApplication(appID uint, reviewerID uint, rev
 				return err
 			}
 			app.EvidenceImage = ""
-			if err := applyConfiguredAdminAwardTx(
-				tx,
-				s.cfgRepo,
-				reviewerRoles,
-				reviewerID,
-				fmt.Sprintf("管理员发放奖励: 福利 %s", welfare.Name),
-				buildWelfareAdminAwardRefID(app.ID),
+			if err := payOperationSalaryTx(
+				tx, reviewerID, model.SysConfigSalaryWelfare, model.WalletRefWelfareSalary,
+				fmt.Sprintf("welfare:%d", app.ID), fmt.Sprintf("福利发放工资: %s", welfare.Name),
 			); err != nil {
-				return fmt.Errorf("发放管理员奖励失败: %w", err)
+				return err
 			}
 
 			appCopy := *app

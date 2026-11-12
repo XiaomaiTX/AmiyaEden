@@ -41,6 +41,7 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		cron     string
 		hasRun   bool
 	}{
+		"admission_evidence_cleanup":     {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 30 5 * * *", hasRun: true},
 		"qq_group_business":              {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 1m", hasRun: true},
 		"qq_structure_alert":             {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 * * * *", hasRun: true},
 		"esi_refresh":                    {category: taskregistry.TaskCategoryESI, taskType: taskregistry.TaskTypeRecurring, cron: "0 */5 * * * *", hasRun: true},
