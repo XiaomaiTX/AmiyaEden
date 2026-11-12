@@ -2,10 +2,12 @@
 <template>
   <div
     :class="[
-      'inline-flex items-center justify-center min-w-8 h-8 px-2.5 text-sm c-p rounded-md align-middle',
+      'inline-flex items-center justify-center min-w-8 h-8 px-2.5 text-sm rounded-md align-middle',
+      disabled ? 'opacity-50 cursor-not-allowed' : 'c-p',
       buttonClass
     ]"
     :style="buttonStyle"
+    :aria-disabled="disabled || undefined"
     @click.stop.prevent="handleClick"
   >
     <ArtSvgIcon v-if="loading" icon="ri:loader-4-line" class="animate-spin" />
@@ -34,6 +36,8 @@
     label?: string
     /** 加载状态 */
     loading?: boolean
+    /** 禁用状态 */
+    disabled?: boolean
   }
 
   const props = withDefaults(defineProps<Props>(), {})
@@ -77,7 +81,7 @@
   })
 
   const handleClick = () => {
-    if (props.loading) return
+    if (props.loading || props.disabled) return
     emit('click')
   }
 </script>

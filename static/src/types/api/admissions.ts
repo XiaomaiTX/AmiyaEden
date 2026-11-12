@@ -75,9 +75,21 @@ export interface AdmissionDetail {
   salary: AdmissionSalary | null
   can_review: boolean
   is_owner: boolean
+  /** Only for a pending application the reader can review; empty otherwise. */
+  blacklist_hits: AdmissionBlacklistHit[]
+}
+export interface AdmissionBlacklistHit {
+  kind: Api.Blacklist.Kind
+  value: string
+  display: string
+  reason: string
+}
+/** `blacklisted` is set only on pending rows of the review list. */
+export interface AdmissionListItem extends AdmissionApplication {
+  blacklisted: boolean
 }
 export interface AdmissionList {
-  list: AdmissionApplication[]
+  list: AdmissionListItem[]
   total: number
   page: number
   pageSize: number

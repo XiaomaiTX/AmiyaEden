@@ -26,6 +26,42 @@ func (r *AdmissionRepository) BoundCharactersTx(tx *gorm.DB, userID uint) ([]mod
 	return chars, err
 }
 
+// AdmissionUserContact is an account's current contact details.
+type AdmissionUserContact struct {
+	ID        uint
+	QQ        string
+	DiscordID string
+}
+
+// BoundCharacterIDsByUsersTx reads, without locking, the characters currently
+// bound to each of the given accounts.
+func (r *AdmissionRepository) BoundCharacterIDsByUsersTx(tx *gorm.DB, userIDs []uint) (map[uint][]int64, error) {
+	bound := make(map[uint][]int64, len(userIDs))
+	if len(userIDs) == 0 {
+		return bound, nil
+	}
+	var rows []struct {
+		UserID      uint
+		CharacterID int64
+	}
+	err := tx.Model(&model.EveCharacter{}).Select("user_id", "character_id").Where("user_id IN ?", userIDs).Order("user_id, character_id").Find(&rows).Error
+	for _, row := range rows {
+		bound[row.UserID] = append(bound[row.UserID], row.CharacterID)
+	}
+	return bound, err
+}
+
+// UserContactsTx reads, without locking, the current contacts of the given
+// accounts; deleted accounts are absent.
+func (r *AdmissionRepository) UserContactsTx(tx *gorm.DB, userIDs []uint) ([]AdmissionUserContact, error) {
+	contacts := make([]AdmissionUserContact, 0, len(userIDs))
+	if len(userIDs) == 0 {
+		return contacts, nil
+	}
+	err := tx.Model(&model.User{}).Select("id", "qq", "discord_id").Where("id IN ?", userIDs).Order("id").Find(&contacts).Error
+	return contacts, err
+}
+
 func (r *AdmissionRepository) SalaryTransactionTx(tx *gorm.DB, userID uint, refID string) (*model.WalletTransaction, error) {
 	var transaction model.WalletTransaction
 	err := tx.Where("user_id = ? AND ref_type = ? AND ref_id = ?", userID, model.WalletRefInvitationSalary, refID).First(&transaction).Error

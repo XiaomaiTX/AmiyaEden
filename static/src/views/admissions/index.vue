@@ -108,8 +108,7 @@
         ><ElTableColumn
           prop="applicant_name"
           :label="t('admissions.applicant')"
-          min-width="140"
-        /><ElTableColumn :label="t('admissions.kind')" min-width="140"
+          min-width="140" /><ElTableColumn :label="t('admissions.kind')" width="140"
           ><template #default="{ row }"
             ><span v-if="row.id">{{ t(`admissions.${row.kind}`) }}</span></template
           ></ElTableColumn
@@ -121,7 +120,7 @@
           ><template #default="{ row }"
             ><span v-if="row.id">{{ characterNames(row) }}</span></template
           ></ElTableColumn
-        ><ElTableColumn :label="t('admissions.status')" min-width="180"
+        ><ElTableColumn :label="t('admissions.status')" width="170"
           ><template #default="{ row }">
             <ElTag
               v-if="row.id"
@@ -135,32 +134,41 @@
               effect="light"
               >{{ t(`admissions.${row.status}`) }}</ElTag
             >
+            <ElTag v-if="row.blacklisted" class="blacklist-tag" type="danger" effect="dark">{{
+              t('admissions.blacklist.tag')
+            }}</ElTag>
             <div v-if="row.closed_at" class="processing-result">
               <p>{{ t('admissions.operator') }}: {{ row.handler_name }}</p>
               <time :datetime="row.closed_at">{{ date(row.closed_at) }}</time>
-              <p v-if="row.rejection_reason" class="error">{{ row.rejection_reason }}</p>
+              <p
+                v-if="row.rejection_reason"
+                class="error rejection-reason"
+                :title="row.rejection_reason"
+                >{{ row.rejection_reason }}</p
+              >
             </div>
           </template></ElTableColumn
-        ><ElTableColumn :label="t('admissions.submitted')" min-width="180"
+        ><ElTableColumn :label="t('admissions.submitted')" width="170"
           ><template #default="{ row }">{{ date(row.submitted_at) }}</template></ElTableColumn
-        ><ElTableColumn :label="t('common.operation')" width="180" fixed="right"
+        ><ElTableColumn :label="t('common.operation')" width="200" fixed="right"
           ><template #default="{ row }"
-            ><ElButton
-              link
-              type="primary"
-              @click="router.push(`/admissions/applications/${row.id}`)"
-              >{{ t('admissions.detail') }}</ElButton
-            >
-            <ElButton
-              v-if="mode === 'history' && row.id && row.status !== 'invited'"
-              link
-              type="primary"
-              @click="router.push(`/admissions/applications/${row.id}/edit`)"
-              >{{ t('admissions.editApplication') }}</ElButton
-            >
-          </template></ElTableColumn
-        ></ArtTable
-      >
+            ><div v-if="row.id" class="row-actions"
+              ><ArtButtonTable
+                v-if="canInviteFromList(row)"
+                :label="t('admissions.invited')"
+                el-type="success"
+                :disabled="row.blacklisted"
+                @click="process('invited', row)" /><ArtButtonTable
+                :label="t('admissions.detail')"
+                el-type="primary"
+                @click="router.push(`/admissions/applications/${row.id}`)" /><ArtButtonTable
+                v-if="mode === 'history' && row.status !== 'invited'"
+                :label="t('admissions.editApplication')"
+                el-type="warning"
+                @click="
+                  router.push(`/admissions/applications/${row.id}/edit`)
+                " /></div></template></ElTableColumn
+      ></ArtTable>
     </ElCard>
 
     <template v-if="!loading && id && detail">
@@ -281,6 +289,21 @@
             ><h2>{{ t('admissions.reviewApplication') }}</h2></template
           >
           <div class="review-actions">
+            <ElAlert
+              v-if="detail.blacklist_hits.length"
+              type="error"
+              :closable="false"
+              show-icon
+              :title="t('admissions.blacklist.warning')"
+            >
+              <ul class="blacklist-hits">
+                <li v-for="hit in detail.blacklist_hits" :key="`${hit.kind}:${hit.value}`">
+                  <strong>{{ t(`blacklist.kinds.${hit.kind}`) }}</strong
+                  >: {{ blacklistValue(hit) }}
+                  <p v-if="hit.reason" class="blacklist-reason">{{ hit.reason }}</p>
+                </li>
+              </ul>
+            </ElAlert>
             <ElAlert type="info" :closable="false" show-icon :title="t('admissions.manual')" />
             <ElAlert
               v-if="detail.application.kind === 'new_member'"
@@ -301,9 +324,12 @@
                 />
               </ElFormItem>
               <div class="actions">
-                <ElButton type="success" :disabled="busy" @click="process('invited')">{{
-                  t('admissions.invitedAction')
-                }}</ElButton>
+                <ElButton
+                  type="success"
+                  :disabled="busy || detail.blacklist_hits.length > 0"
+                  @click="process('invited')"
+                  >{{ t('admissions.invitedAction') }}</ElButton
+                >
                 <ElButton
                   type="danger"
                   :disabled="busy || !reason.trim()"
@@ -344,9 +370,15 @@
   import { useBadgeStore } from '@/store/modules/badge'
   import { getAdmission, listAdmissions, processAdmission } from '@/api/admissions'
   import { useAdmissionStore } from '@/store/modules/admissions'
-  import type { AdmissionApplication, AdmissionDetail, AdmissionList } from '@/types/api/admissions'
+  import type {
+    AdmissionApplication,
+    AdmissionBlacklistHit,
+    AdmissionDetail,
+    AdmissionList
+  } from '@/types/api/admissions'
   import AdmissionForm from './admission-form.vue'
   import EvidenceImage from './evidence-image.vue'
+  import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { operationSalaryMessage } from '@/utils/operation-salary'
   const { t } = useI18n()
   const route = useRoute()
@@ -392,6 +424,19 @@
   const targetName = (id: number) => t(`admissions.corporations.${id}`)
   const characterNames = (app: AdmissionApplication) =>
     app.characters.map((char) => char.character_name).join(', ')
+  const blacklistValue = (hit: AdmissionBlacklistHit) =>
+    hit.kind === 'character'
+      ? t('blacklist.characterValue', { name: hit.display, id: hit.value })
+      : hit.display
+  const ownCharacterIDs = computed(
+    () => new Set(admissions.context?.characters.map((char) => char.character_id) ?? [])
+  )
+  // 小号申请无需核对截图，可在列表直接登记已邀请；本人申请由后端拒绝处理，列表不显示入口。
+  const canInviteFromList = (app: AdmissionApplication) =>
+    mode.value === 'review' &&
+    app.kind === 'alt' &&
+    app.status === 'pending' &&
+    !app.characters.some((char) => ownCharacterIDs.value.has(char.character_id))
   const errorKey = (value: unknown) =>
     value instanceof Error && value.message.startsWith('admissions.errors.')
       ? value.message
@@ -454,13 +499,15 @@
     await router.push(`/admissions/applications/${id}`)
     await load()
   }
-  async function process(action: 'invited' | 'reject') {
-    if (!detail.value || busy.value) return
-    const application = detail.value.application
-    const submittedReason = reason.value
+  async function process(action: 'invited' | 'reject', application = detail.value?.application) {
+    if (!application || busy.value) return
+    const submittedReason = detail.value ? reason.value : ''
     busy.value = true
     try {
-      const salary = action === 'invited' ? await operationSalaryMessage('recruitment', 1, t) : ''
+      const salary =
+        action === 'invited' && application.kind === 'new_member'
+          ? await operationSalaryMessage('recruitment', 1, t)
+          : ''
       await ElMessageBox.confirm(
         [t(action === 'invited' ? 'admissions.confirmInvited' : 'admissions.confirmReject'), salary]
           .filter(Boolean)
@@ -472,10 +519,9 @@
       busy.value = false
       return
     }
-    if (
-      detail.value?.application.id !== application.id ||
-      detail.value.application.version !== application.version
-    ) {
+    const latest =
+      detail.value?.application ?? list.value?.list.find((item) => item.id === application.id)
+    if (latest?.id !== application.id || latest.version !== application.version) {
       busy.value = false
       return
     }
@@ -487,7 +533,10 @@
         .catch(() => undefined)
       await load()
     } catch (value) {
-      error.value = errorKey(value)
+      const key = errorKey(value)
+      // 黑名单可能在打开页面后刷新；重新加载以显示最新命中。
+      if (key === 'admissions.errors.blacklisted') await load()
+      error.value = key
     } finally {
       busy.value = false
     }
@@ -585,6 +634,18 @@
     font-size: 12px;
     color: var(--el-text-color-secondary);
   }
+  .rejection-reason {
+    display: -webkit-box;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
   .review-actions {
     display: grid;
     gap: 16px;
@@ -599,6 +660,20 @@
   }
   .contact-value {
     margin-left: 12px;
+  }
+  .blacklist-tag {
+    margin-left: 6px;
+  }
+  .blacklist-hits {
+    display: grid;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding-left: 16px;
+    list-style: disc;
+  }
+  .blacklist-reason {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
   }
   .evidence-notice {
     margin-top: 16px;

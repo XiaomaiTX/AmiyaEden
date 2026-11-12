@@ -307,7 +307,11 @@ func TestAdmissionInvitedConcurrencyPostgres(t *testing.T) {
 			db.Find(&salaries)
 			var transactions []model.WalletTransaction
 			db.Find(&transactions)
-			if len(salaries) != 1 || len(transactions) != 1 || transactions[0].UserID != salaries[0].UserID || transactions[0].Amount != 10 {
+			if kind == model.AdmissionKindAlt {
+				if len(salaries) != 0 || len(transactions) != 0 {
+					t.Fatalf("alt invitation paid salary: %v %v", salaries, transactions)
+				}
+			} else if len(salaries) != 1 || len(transactions) != 1 || transactions[0].UserID != salaries[0].UserID || transactions[0].Amount != 10 {
 				t.Fatalf("duplicate/incorrect salary: %v %v", salaries, transactions)
 			}
 			if _, err := svc.Process(2, app.ID, 1, true, ""); !errors.Is(err, ErrAdmissionConflict) {
