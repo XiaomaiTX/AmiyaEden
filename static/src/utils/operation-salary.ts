@@ -14,11 +14,6 @@ export async function operationSalaryMessage(
     throw new Error(t('salaryManagement.loadFailed'))
   }
   return t('salaryManagement.confirmSalary', {
-    count,
-    unit: t(
-      category === 'srp_payout' ? 'salaryManagement.operationUnit' : 'salaryManagement.itemUnit'
-    ),
-    rate: rate.toFixed(2),
     amount: ((Math.round(rate * 100) * count) / 100).toFixed(2)
   })
 }
