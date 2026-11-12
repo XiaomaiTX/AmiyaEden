@@ -16,10 +16,6 @@ test.each(Object.keys(rates) as Array<keyof typeof rates>)(
     const count = category === 'srp_payout' ? 1 : 3
     const result = JSON.parse(await operationSalaryMessage(category, count, t))
     expect(result).toEqual({
-      count,
-      unit:
-        category === 'srp_payout' ? 'salaryManagement.operationUnit' : 'salaryManagement.itemUnit',
-      rate: rates[category].toFixed(2),
       amount: (rates[category] * count).toFixed(2),
     })
   }

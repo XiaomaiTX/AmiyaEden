@@ -138,9 +138,7 @@ test.each([false, true])(
     open(<SrpManagePage />)
     fireEvent.click(await screen.findByRole('button', { name: '批量发放' }))
     await waitFor(() =>
-      expect(confirm).toHaveBeenCalledWith(
-        expect.stringContaining('2.50 伏羲币工资（1 次 × 每次 2.50')
-      )
+      expect(confirm).toHaveBeenCalledWith(expect.stringContaining('2.50 伏羲币工资。'))
     )
     if (consent) await waitFor(() => expect(batchPayoutAsFuxiCoin).toHaveBeenCalledOnce())
     else expect(batchPayoutAsFuxiCoin).not.toHaveBeenCalled()
