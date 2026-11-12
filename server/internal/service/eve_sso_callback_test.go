@@ -17,6 +17,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -40,7 +41,7 @@ func buildTestEVEJWT(t *testing.T, characterID int64, name string, scopes []stri
 	t.Helper()
 	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
 	payload, err := json.Marshal(map[string]any{
-		"sub": fmt.Sprintf("CHARACTER:EVE:%d", characterID),
+		"sub":  fmt.Sprintf("CHARACTER:EVE:%d", characterID),
 		"name": name,
 		"scp":  scopes,
 		"iss":  "https://login.eveonline.com",
@@ -79,7 +80,7 @@ func newCallbackTestEnv(t *testing.T, grantedScopes []string) *callbackTestEnv {
 		global.Logger = originalLogger
 	})
 
-	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:eve_sso_callback_test_%d?mode=memory&cache=shared", time.Now().UnixNano())), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:eve_sso_callback_test_%d_%d?mode=memory&cache=shared", time.Now().UnixNano(), atomic.AddUint64(&serviceTestDBSeq, 1))), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
@@ -131,13 +132,13 @@ func (e *callbackTestEnv) seedUserAndCharacter(t *testing.T, scopes string) {
 		t.Fatalf("seed user: %v", err)
 	}
 	if err := e.db.Create(&model.EveCharacter{
-		CharacterID:  callbackTestCharacterID,
+		CharacterID:   callbackTestCharacterID,
 		CharacterName: "Director",
-		UserID:       callbackTestUserID,
-		AccessToken:  "at-old",
-		RefreshToken: "rt-old",
-		TokenExpiry:  time.Now().Add(10 * time.Minute),
-		Scopes:       scopes,
+		UserID:        callbackTestUserID,
+		AccessToken:   "at-old",
+		RefreshToken:  "rt-old",
+		TokenExpiry:   time.Now().Add(10 * time.Minute),
+		Scopes:        scopes,
 	}).Error; err != nil {
 		t.Fatalf("seed character: %v", err)
 	}
@@ -179,6 +180,9 @@ func TestHandleCallbackReLoginMergesOptionalScopes(t *testing.T) {
 	}
 	if result.Token == "" {
 		t.Fatal("expected platform JWT to be issued")
+	}
+	if _, err := env.svc.HandleCallback(context.Background(), "code", state, "127.0.0.1"); err == nil {
+		t.Fatal("expected consumed state to reject replay")
 	}
 
 	got := env.reloadCharacter(t)

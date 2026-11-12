@@ -114,18 +114,42 @@ func TestRequiredUserContactCleanup(t *testing.T) {
 
 func TestRequiredUserContactRollback(t *testing.T) {
 	db := contactMigrationTestDB(t, "")
+	if err := db.Create(&model.User{BaseModel: model.BaseModel{ID: 1}}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Create(&model.EveCharacter{UserID: 1, CharacterID: 9001, CharacterName: "Test"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	// A cleanup table without character_id makes the cleanup step fail mid-transaction.
+	for _, stmt := range []string{"DROP TABLE eve_character_skill", "CREATE TABLE eve_character_skill (other_id bigint)"} {
+		if err := db.Exec(stmt).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := migrateRequiredUserContact(db); err == nil {
+		t.Fatal("expected cleanup failure")
+	}
+	var count int64
+	db.Unscoped().Model(&model.User{}).Count(&count)
+	if count != 1 {
+		t.Fatal("cleanup survived failed migration")
+	}
+}
+
+func TestRequiredUserContactToleratesLegacyDuplicateContacts(t *testing.T) {
+	db := contactMigrationTestDB(t, "")
 	for _, user := range []model.User{{BaseModel: model.BaseModel{ID: 1}}, {DiscordID: "duplicate"}, {DiscordID: "duplicate"}} {
 		if err := db.Create(&user).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := migrateRequiredUserContact(db); err == nil {
-		t.Fatal("expected duplicate index failure")
+	if err := migrateRequiredUserContact(db); err != nil {
+		t.Fatalf("duplicate contacts must not block startup: %v", err)
 	}
 	var count int64
 	db.Unscoped().Model(&model.User{}).Count(&count)
-	if count != 3 {
-		t.Fatal("cleanup survived failed migration")
+	if count != 2 {
+		t.Fatalf("expected only the contactless user removed, got %d users", count)
 	}
 }
 
@@ -143,6 +167,11 @@ func TestRequiredUserContactPostgres(t *testing.T) {
 	}
 	if err := db.Model(&model.User{}).Where("id = ?", 1).Update("qq", "").Error; err == nil {
 		t.Fatal("last contact removal accepted")
+	}
+	for _, stmt := range userCustomIndexStatements() {
+		if err := db.Exec(stmt).Error; err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := db.Create(&model.User{DiscordID: "discord-only"}).Error; err == nil {
 		t.Fatal("duplicate Discord accepted")
