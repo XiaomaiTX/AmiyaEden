@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-11-10
+last_reviewed: 2026-11-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/middleware/auth.go
@@ -33,7 +33,7 @@ source_of_truth:
 
 首次授权不创建账号或签发应用 JWT。前端回调页通过仅限注册的 15 分钟票据调用 `GET/POST /api/v1/sso/eve/registration`，填写昵称和至少一种联系方式后才原子创建账号、人物授权和职权。此票据不属于 `JWT` / `Login` 权限上下文。账号生命周期约束及部署清理见 [认证与人物绑定](../features/current/auth-and-characters.md#注册状态与部署迁移)。
 
-JWT 中间件在加载角色缓存前查询有效用户；不存在、已软删除或禁用账号返回 401。数据库同时约束账号至少保留一种非空白联系方式，管理员修改不例外。
+JWT 中间件在加载角色缓存前经用户服务查询有效用户；不存在、已软删除或禁用账号返回 401。查询失败等临时错误返回业务错误码 500，不按账号失效处理，避免前端误登出。数据库同时约束账号至少保留一种非空白联系方式，管理员修改不例外。
 
 登录成功后，前端通过 `GET /api/v1/me` 获取：
 
@@ -87,6 +87,7 @@ React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资
 | `srp` | SRP 官员 | 60 |
 | `shop_order_manage` | 订单管理 | 55 |
 | `welfare` | 福利官 | 50 |
+| `recruiter` | 招新官（Recruiter，派生） | 40 |
 | `captain` | 新人队长 | 30 |
 | `mentor` | 导师 | 25 |
 | `user` | 认证用户 | 10 |
@@ -95,6 +96,8 @@ React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资
 不要再使用旧文档里的 `Administrator` 之类别名。
 
 ## 职权分配权限矩阵
+
+`recruiter` 是下述派生职权，不在人工分配矩阵内；Vue／React 展示为只读，后端按当前游戏职权重新计算，不接受人工添加／移除或通用 ESI role／title 映射绕过。
 
 职权分配接口 `PUT /api/v1/system/user/:id/roles` 位于 `admin` 路由组下，仅 `super_admin` 和 `admin` 可访问。
 
@@ -181,6 +184,20 @@ React 与 Vue 的人物门禁统一以 `/characters` 为自动锁定落点。资
 - 允许当前登录用户删除自己的账号，但不能代删其他用户
 
 `/api/v1/info/*` 当前不再属于 JWT-only 自助能力，而是 `RequireLoginUser()` 边界。
+
+### 军团申请与派生 recruiter
+
+成员判定读取账号全部绑定人物，任一人物命中 `allowed_corporations` 即可使用小号入口；无命中者使用新人入口。自助 `/api/v1/admissions/*` 挂在 JWT 基础组，允许 guest；本人历史不依赖当前军团成员资格。
+
+`recruiter` 自动由目标军团的 `Personnel_Manager` 或 `Director` 游戏职权派生，按 user 全部绑定人物汇总。军团职权快照必须记录 `corporation_id`，并与人物当前军团一致；来源为 0 或过期军团时不给审核范围。当前目标固定为伏羲 98185110 与 FMA 98824507，审核权限独立于成员 allowlist。
+
+成功同步角色或军团归属、绑定变化、allowlist 更新及周期自动职权同步会重新计算 recruiter（allowlist 保存后在后台任务中全量重算，不阻塞保存请求；解绑后的重算失败只记录警告，解绑本身已提交）；最后一个合格人物失权／解绑后撤销，仅此派生职权采用添加与撤销语义。同步更新职权缓存、主人物职权及身份钩子，不改变其他手工职权的既有行为。沿用现有 24 小时 ESI 周期，页面和审核动作不实时请求 ESI；游戏撤权最多可能延迟到下一轮成功同步，失败不伪造成功快照。
+
+派生 recruiter 只授权申请审核，不构成成员资格：后端 `HasNonGuestRole` 与 Vue／React 路由判定均忽略它，因此不在 allowlist 内的 FMA 招新官无法进入 Login 页面；同时持有 recruiter 的 guest 命中 allowlist 时仍按基线规则补为 `user`。
+
+管理端 `/api/v1/system/admissions/*` 从 JWT 基础组单独挂载 `RequireRole(recruiter, admin)`，不经 Login 组，也不继承 system admin 父组。服务重新读取数据库职权及游戏快照，将军团 scope 用于列表、计数、详情、证据和动作。admin／super_admin 绕过军团限制；只有 recruiter 标签或旧 JWT 不足以授权。任何人（含 admin）都不能审核或处理本人申请，因为结案会向处理人发放工资。授权回归用例见 `admission_context_test.go`、`recruiter_role_test.go`、`admission_boundaries_test.go` 与 `admission_routes_test.go`。
+
+申请列表关联人物、详情及私有图片在数据库事务内持有申请行共享锁，直到读取完关联数据；目标和材料修改必须等待同一行锁，防止先授权旧军团再读取新材料的并发泄露。
 
 ### RequireCorpCapability
 
@@ -275,3 +292,5 @@ For super_admin rules, see "Super Admin 配置驱动机制" above. For role assi
 旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
 
 QQ 调度运维 `/system/qqbot` 及 `/api/v1/system/qqbot/*` 仅超管，使用 `system.manage`；反向 WebSocket 独立执行 Token、机器人 ID、Universal 角色和 TCP 源 CIDR 校验。配置 Token 不返回客户端，不写入尝试日志。未知写结果禁止运维重试。
+
+工资设置仅 admin／super_admin 可修改，普通 admin 同时满足 `system.manage`。领取操作工资不依赖管理员身份，仅依赖来源操作授权。军团申请徽章复用审核服务从数据库计算的军团范围，不能根据缓存 recruiter 标签扩大计数范围。

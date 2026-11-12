@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-07-07
+last_reviewed: 2026-11-11
 source_of_truth:
   - server/internal/router/router.go
 ---
@@ -23,6 +23,7 @@ source_of_truth:
 - [badge-counts.md](current/badge-counts.md)
 - [commerce.md](current/commerce.md)
 - [corporation-access-policy.md](current/corporation-access-policy.md)
+- [corporation-admissions.md](current/corporation-admissions.md)
 - [corporation-structures.md](current/corporation-structures.md)
 - [dashboard-galaxy-registry.md](current/dashboard-galaxy-registry.md)
 - [fuxi-hall.md](current/fuxi-hall.md)
@@ -52,3 +53,5 @@ source_of_truth:
 - 真实权限边界与页面文案不一致时，以什么为准
 - 自动职权 / 自动权限提升依赖的真实输入信号是什么
 - 哪些“看起来像权限”的字段其实只是展示名称或兼容字段
+
+- [工资管理](current/operation-salaries.md)：统一招新、福利、商城、补损及 FC 工资设置。

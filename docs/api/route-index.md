@@ -2,7 +2,7 @@
 status: active
 doc_type: api
 owner: engineering
-last_reviewed: 2026-11-10
+last_reviewed: 2026-11-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/model/corporation_capability.go
@@ -65,7 +65,7 @@ source_of_truth:
 
 首次 SSO 回调返回前端 `?registration=<ticket>`（无 redirect 时返回 `{registration}`），不创建用户或签发 JWT。注册票据有效期 15 分钟，只授权上述两个接口；请求与响应禁止缓存，成功后不可重用。资料必须包含昵称和至少一种联系方式。
 
-注册、`PUT /me` 和管理端更新联系方式遇到冲突时，HTTP 200 的业务响应为 `code: 409`、`msg: "contact_already_bound"`，`data` 为 `{contact: "qq" | "discord_id", primary_character_id, primary_character_name}`。前端弹窗说明登录该主人物后使用“绑定新人物”；不自动合并账号。管理员与本人均不可清空最后一个联系方式。
+注册、`PUT /me` 和管理端更新联系方式遇到冲突时，HTTP 200 的业务响应为 `code: 409`、`msg: "contact_already_bound"`，`data` 为 `{contact: "qq" | "discord_id", primary_character_id, primary_character_name}`。前端弹窗说明登录该主人物后使用“绑定新人物”；不自动合并账号。返回主人物是有意设计：提交方已知该联系方式，而联系方式远比人物名称敏感，主人物名称不构成额外泄露。管理员与本人均不可清空最后一个联系方式。
 
 ### SDE
 
@@ -142,6 +142,25 @@ source_of_truth:
 | POST   | `/notification/unread-count`                                | 未读数                                                                                                                                                                                                                      | JWT                         |
 | POST   | `/notification/read`                                        | 标记已读                                                                                                                                                                                                                    | Login                       |
 | POST   | `/notification/read-all`                                    | 全部已读                                                                                                                                                                                                                    | Login                       |
+
+## Corporation Admissions
+
+以下路径均相对 `/api/v1`。新人及小号按 user 整单申请，业务与证据规则见[军团申请](../features/current/corporation-admissions.md)。
+
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/admissions/context` | 任一人物成员资格、目标及可审核军团 | JWT，含 guest |
+| GET | `/admissions/applications/me` | 本人历史；`status`、`kind`、`target_corporation_id`、`current`、`size` 分页 | JWT，owner |
+| POST | `/admissions/applications` | 创建整单；multipart `payload` 和新人两图 `launcher`／`seat_profile` | JWT，服务校验新人／小号资格 |
+| GET | `/admissions/applications/:id` | 申请、证据元数据、历史及工资 | JWT，owner 或目标军团 reviewer |
+| PUT | `/admissions/applications/:id` | pending／rejected 修改，校验 `expected_version` | JWT，owner |
+| POST | `/admissions/applications/:id/resubmit` | rejected 原 ID 补正重提，校验 `expected_version` | JWT，owner |
+| GET | `/admissions/applications/:id/evidence/:kind` | 私有 JPEG；到期拒绝，`private, no-store` | JWT，owner 或目标军团 reviewer |
+| GET | `/system/admissions/applications` | 按军团 scope 过滤后计数分页；状态含 `processed`，支持种类／目标 | JWT（不要求 Login 成员资格）+ recruiter／admin；super_admin 通过 |
+| POST | `/system/admissions/applications/:id/invited` | 登记整单游戏内已邀请，`expected_version`；事务发薪 10 币 | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
+| POST | `/system/admissions/applications/:id/reject` | 驳回，`expected_version` 与非空 `reason` | 同上，服务再次校验目标 scope；申请人不能处理本人申请 |
+
+只有 `launcher` 和 `seat_profile` 两类证据，无独立 QQ／Discord／技能点上传项；网站不执行游戏邀请。新人每图最多 2 MiB，multipart 总体最多 5 MiB；小号不接收图片。冲突、证据、资格、钱包禁用及内部失败返回 `admissions.errors.*` 业务错误键，两端本地化；钱包禁用不提交结案。审核组独立于现有 system admin 父组，不能只凭全局 recruiter 标签读取另一军团申请。
 
 ## Operation
 
@@ -405,6 +424,8 @@ source_of_truth:
 
 | Method | Path                         | 说明                      | 权限                 |
 | ------ | ---------------------------- | ------------------------- | -------------------- |
+| GET/PUT | `/system/salary-settings` | 六项统一工资配置（四类操作金额、FC 金额和月次数上限） | admin／super_admin；`system.manage` |
+| GET | `/operation-salary-rates` | 四类操作工资单价，供人工处理前确认，不含 FC 配置 | `RequireLoginUser`，guest 拒绝 |
 | GET    | `/system/pap-exchange/rates` | 获取 PAP 类型兑换汇率列表 | `RequireRole(admin)` |
 | PUT    | `/system/pap-exchange/rates` | 更新 PAP 类型兑换汇率     | `RequireRole(admin)` |
 
@@ -595,3 +616,5 @@ source_of_truth:
 | PUT | `/groups/rules` | `group_id`、`corporation_ids`、`roles`、`admission_enabled`、`auto_reject`、`card_enabled`、`card_template`、`inspection_enabled`、`auto_kick`、`mismatch_confirmations`、`observation_hours` |
 
 未传确认参数默认三轮、二十四小时；显式观察期零有效，确认次数 1–100，观察期 0–8760 小时。服务端管理版本号，重复相同规则不提高版本；规则变化取消旧操作并重置确认链。只有业务配置写入口，无人工申请处理、名片写入或清退入口。业务操作禁止通过通用操作重试生成脱离业务跟踪的子操作。
+
+工资配置详见 [工资管理](../features/current/operation-salaries.md)。`/system/pap-exchange/rates` 仅保留 rates 和三项 multichar 字段。`/badge-counts` 增加可审核军团范围内的 `admission_pending`，仅返回正数。
