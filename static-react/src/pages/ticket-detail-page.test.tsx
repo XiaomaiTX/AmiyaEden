@@ -20,8 +20,9 @@ describe('ticket detail page', () => {
     })
   })
 
-  test('loads ticket detail and submits a reply', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+  test.each(['medium', undefined] as const)('replies with priority %s', async (priority) => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -34,7 +35,7 @@ describe('ticket detail page', () => {
               title: '需要帮助',
               description: '请帮我确认工单流程。',
               status: 'pending',
-              priority: 'medium',
+              priority,
               created_at: '2026-05-01T00:00:00Z',
               updated_at: '2026-05-01T00:00:00Z',
             },
@@ -119,6 +120,7 @@ describe('ticket detail page', () => {
       expect(screen.getByRole('heading', { name: /#99 需要帮助/ })).toBeInTheDocument()
     })
     expect(screen.getByText('初始回复')).toBeInTheDocument()
+    expect(screen.queryByText('ticketMyTickets.priorities.undefined')).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByPlaceholderText('请输入回复内容'), {
       target: { value: '我来跟进' },

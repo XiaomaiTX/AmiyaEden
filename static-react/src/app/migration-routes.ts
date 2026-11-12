@@ -3,6 +3,7 @@ import type { BadgeCounts } from '@/types/api/badge'
 
 export type MigrationBatch = 'A' | 'B' | 'C' | 'D' | 'Tail'
 export type AppPageType =
+  | 'admissions'
   | 'dashboard-console'
   | 'dashboard-characters'
   | 'mumble-credentials'
@@ -54,6 +55,7 @@ export type AppPageType =
   | 'shop-order-manage'
   | 'shop-wallet'
   | 'system-audit'
+  | 'system-salary'
   | 'system-pap-exchange'
   | 'system-pap'
   | 'system-auto-role'
@@ -89,6 +91,53 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     menuGroup: 'nav.group.system',
     menuIcon: 'system',
     meta: { login: true, roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
+  },
+  {
+    path: 'admissions/new',
+    titleKey: 'admissions.new_member',
+    pageType: 'admissions',
+    menuGroup: 'admissions.title',
+    menuIcon: 'admissions',
+    meta: { jwt: true, admission: 'new_member' },
+  },
+  {
+    path: 'admissions/alt',
+    titleKey: 'admissions.alt',
+    pageType: 'admissions',
+    menuGroup: 'admissions.title',
+    menuIcon: 'admissions',
+    meta: { jwt: true, admission: 'alt' },
+  },
+  {
+    path: 'admissions/history',
+    titleKey: 'admissions.history',
+    pageType: 'admissions',
+    menuGroup: 'admissions.title',
+    menuIcon: 'admissions',
+    meta: { jwt: true },
+  },
+  {
+    path: 'admissions/review',
+    badgeKey: 'admission_pending',
+    titleKey: 'admissions.review',
+    pageType: 'admissions',
+    menuGroup: 'admissions.title',
+    menuIcon: 'admissions',
+    meta: { jwt: true, admission: 'review' },
+  },
+  {
+    path: 'admissions/applications/:id/edit',
+    titleKey: 'admissions.editApplication',
+    pageType: 'admissions',
+    menuHidden: true,
+    meta: { jwt: true },
+  },
+  {
+    path: 'admissions/applications/:id',
+    titleKey: 'admissions.detail',
+    pageType: 'admissions',
+    menuHidden: true,
+    meta: { jwt: true },
   },
   {
     path: 'characters',
@@ -655,6 +704,14 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
   },
 
   {
+    path: 'system/salary',
+    titleKey: 'nav.system.salary',
+    pageType: 'system-salary',
+    menuGroup: 'nav.group.system',
+    menuIcon: 'system',
+    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
+  },
+  {
     path: 'system/user',
     titleKey: 'nav.system.user',
     pageType: 'system-user',
@@ -811,6 +868,12 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
 const appRouteOrder = [
   'characters',
   'mumble',
+  'admissions/new',
+  'admissions/alt',
+  'admissions/history',
+  'admissions/review',
+  'admissions/applications/:id',
+  'admissions/applications/:id/edit',
   'dashboard/console',
   'dashboard/npc-kills',
   'dashboard/corporation-structures',
@@ -862,6 +925,7 @@ const appRouteOrder = [
   'ticket/categories',
   'ticket/statistics',
   'ticket/admin-detail/:id',
+  'system/salary',
   'system/user',
   'system/task-manager',
   'system/wallet',

@@ -1,3 +1,4 @@
+import { walletReason } from '@/lib/wallet-reason'
 import {
   Select,
   SelectContent,
@@ -153,7 +154,7 @@ export function ShopWalletPage() {
                   <TableCell className="px-3 py-2">
                     {formatCoin(row.balance_after)} {t('shop.currency')}
                   </TableCell>
-                  <TableCell className="px-3 py-2">{row.reason || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{walletReason(row, t)}</TableCell>
                   <TableCell className="px-3 py-2">
                     {row.operator_name || row.operator_id || '-'}
                   </TableCell>
@@ -197,10 +198,12 @@ export function ShopWalletPage() {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

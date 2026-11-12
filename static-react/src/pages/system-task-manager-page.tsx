@@ -61,7 +61,7 @@ const defaultScheduleForm: ScheduleFormState = {
 const everyExprPattern = /^@every\s+(\d+)([mh])$/i
 
 function taskDisplayKey(taskName: string) {
-  return `taskManager.taskNames.${taskName}`
+  return `taskManager.tasks.${taskName}.name`
 }
 
 function taskDisplayName(t: ReturnType<typeof useI18n>['t'], task: Pick<TaskItem, 'name'>) {
@@ -74,7 +74,7 @@ function taskDescription(
   t: ReturnType<typeof useI18n>['t'],
   task: Pick<TaskItem, 'name' | 'description'>
 ) {
-  const key = `taskManager.taskDescriptions.${task.name}`
+  const key = `taskManager.tasks.${task.name}.description`
   const translated = t(key)
   return translated === key ? task.description || task.name : translated
 }
@@ -610,7 +610,11 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
   const handleRunTaskByName = async (task: TaskInfo) => {
-    if (!window.confirm(t('taskManager.esi.confirm.runTaskByName', { name: task.description }))) {
+    if (
+      !window.confirm(
+        t('taskManager.esi.confirm.runTaskByName', { name: taskDisplayName(t, task) })
+      )
+    ) {
       return
     }
 
@@ -638,7 +642,13 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   }
 
   const handleRunTask = async (row: TaskStatus) => {
-    if (!window.confirm(t('taskManager.esi.confirm.runTaskByName', { name: row.description }))) {
+    if (
+      !window.confirm(
+        t('taskManager.esi.confirm.runTaskByName', {
+          name: taskDisplayName(t, { name: row.task_name }),
+        })
+      )
+    ) {
       return
     }
 
@@ -680,7 +690,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               onClick={() => void handleRunTaskByName(task)}
               isDisabled={!canRun}
             >
-              {task.description}
+              {taskDisplayName(t, task)}
             </Button>
           ))}
         </div>
@@ -703,7 +713,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               <SelectItem id="">{t('taskManager.esi.filters.taskName')}</SelectItem>
               {tasks.map((task) => (
                 <SelectItem key={task.name} id={String(task.name ?? '')}>
-                  {task.description}
+                  {taskDisplayName(t, task)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -757,8 +767,12 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                 return (
                   <TableRow key={key} className="border-b align-top">
                     <TableCell className="px-3 py-2">{index + 1}</TableCell>
-                    <TableCell className="px-3 py-2">{row.task_name}</TableCell>
-                    <TableCell className="px-3 py-2">{row.description}</TableCell>
+                    <TableCell className="px-3 py-2">
+                      <span title={row.task_name}>{taskDisplayName(t, { name: row.task_name })}</span>
+                    </TableCell>
+                    <TableCell className="px-3 py-2">
+                      {taskDescription(t, { name: row.task_name, description: row.description })}
+                    </TableCell>
                     <TableCell className="px-3 py-2">{row.character_name || '-'}</TableCell>
                     <TableCell className="px-3 py-2">{row.character_id}</TableCell>
                     <TableCell className="px-3 py-2">

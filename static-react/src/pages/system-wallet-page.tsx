@@ -1,3 +1,4 @@
+import { walletReason } from '@/lib/wallet-reason'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -553,6 +554,7 @@ function WalletTransactionsPanel({
             placeholder={t('walletAdmin.placeholders.targetUserId')}
           />
           <Select
+            aria-label={t('walletAdmin.placeholders.refType')}
             selectedKey={String(refType ?? '')}
             onSelectionChange={(key) => ((value) => setRefType(value))(String(key))}
           >
@@ -574,6 +576,10 @@ function WalletTransactionsPanel({
                 'newbro_captain_reward',
                 'captain_refund',
                 'mentor_reward',
+                'welfare_delivery_salary',
+                'shop_delivery_salary',
+                'srp_payout_salary',
+                'recruitment_invitation_salary',
               ].map((value) => (
                 <SelectItem key={value} id={String(value ?? '')}>
                   {refTypeLabel(t, value)}
@@ -657,7 +663,7 @@ function WalletTransactionsPanel({
                     </span>
                   </TableCell>
                   <TableCell className="px-3 py-2">{formatCoin(row.balance_after)}</TableCell>
-                  <TableCell className="px-3 py-2">{row.reason || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{walletReason(row, t)}</TableCell>
                   <TableCell className="px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${refTypeTone(row.ref_type)}`}
@@ -847,7 +853,7 @@ function WalletLogsPanel({
                   <TableCell className="px-3 py-2">{formatCoin(row.amount)}</TableCell>
                   <TableCell className="px-3 py-2">{formatCoin(row.before)}</TableCell>
                   <TableCell className="px-3 py-2">{formatCoin(row.after)}</TableCell>
-                  <TableCell className="px-3 py-2">{row.reason || '-'}</TableCell>
+                  <TableCell className="px-3 py-2">{walletReason(row, t)}</TableCell>
                   <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
                 </TableRow>
               ))}
@@ -906,6 +912,10 @@ function WalletAnalysisPanel({
     'captain_refund',
     'mentor_reward',
     'recruit_link_reward',
+    'welfare_delivery_salary',
+    'shop_delivery_salary',
+    'srp_payout_salary',
+    'recruitment_invitation_salary',
   ]
 
   const loadData = useCallback(async () => {

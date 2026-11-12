@@ -1,5 +1,16 @@
 import '@testing-library/jest-dom/vitest'
 
+// Existing page fixtures isolate sidebar eligibility from their ordered API
+// responses. Admissions tests override this mock to exercise their own context.
+vi.mock('@/hooks/use-admission-context', () => ({
+  useAdmissionContext: () => ({
+    context: null,
+    loading: false,
+    error: false,
+    reload: async () => {},
+  }),
+}))
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({

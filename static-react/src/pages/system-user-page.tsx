@@ -393,8 +393,11 @@ export function SystemUserPage() {
               <span className="text-sm text-muted-foreground">{t('common.status')}</span>
               <Select
                 selectedKey={String(searchDraft.status ?? '')}
-                onSelectionChange={(key) => ((value) =>
-                  setSearchDraft((current) => ({ ...current, status: value })))(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => setSearchDraft((current) => ({ ...current, status: value })))(
+                    String(key)
+                  )
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -410,8 +413,11 @@ export function SystemUserPage() {
               <span className="text-sm text-muted-foreground">{t('common.role')}</span>
               <Select
                 selectedKey={String(searchDraft.role ?? '')}
-                onSelectionChange={(key) => ((value) =>
-                  setSearchDraft((current) => ({ ...current, role: value })))(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => setSearchDraft((current) => ({ ...current, role: value })))(
+                    String(key)
+                  )
+                }
               >
                 <SelectTrigger className="h-10">
                   <SelectValue />
@@ -738,10 +744,12 @@ export function SystemUserPage() {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -847,8 +855,12 @@ export function SystemUserPage() {
                   <span className="text-sm text-muted-foreground">{t('common.status')}</span>
                   <Select
                     selectedKey={String(dialogForm.status)}
-                    onSelectionChange={(key) => ((value) =>
-                      setDialogForm((current) => ({ ...current, status: Number(value) })))(String(key))}
+                    onSelectionChange={(key) =>
+                      ((value) =>
+                        setDialogForm((current) => ({ ...current, status: Number(value) })))(
+                        String(key)
+                      )
+                    }
                   >
                     <SelectTrigger className="h-10">
                       <SelectValue />
@@ -868,7 +880,8 @@ export function SystemUserPage() {
                   {roleDefinitions.map((role) => {
                     const checked = dialogForm.roleCodes.includes(role.code)
                     const disabled =
-                      role.code === 'super_admin' || (role.code === 'admin' && !isSuperAdmin)
+                      ['super_admin', 'recruiter'].includes(role.code) ||
+                      (role.code === 'admin' && !isSuperAdmin)
                     return (
                       <label key={role.code} className="flex min-w-0 items-center gap-2 text-sm">
                         <Checkbox
