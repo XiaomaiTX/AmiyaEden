@@ -33,9 +33,15 @@ func TestSkillReadinessRegisteredRoutesAndPermissions(t *testing.T) {
 	if err := global.DB.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.SystemConfig{}, &model.SkillPlan{}); err != nil {
 		t.Fatal(err)
 	}
-	users := []model.User{{BaseModel: model.BaseModel{ID: 1}, PrimaryCharacterID: 1001}, {BaseModel: model.BaseModel{ID: 2}, PrimaryCharacterID: 1002}, {BaseModel: model.BaseModel{ID: 5}, PrimaryCharacterID: 1005}}
+	// The fixture already seeds users 1-4; authenticated users need contact details to keep their session.
+	for id, primary := range map[uint]int64{1: 1001, 2: 1002} {
+		if err := global.DB.Model(&model.User{}).Where("id = ?", id).Update("primary_character_id", primary).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	senior := model.User{BaseModel: model.BaseModel{ID: 5}, PrimaryCharacterID: 1005, DiscordID: "router-test-5", Status: 1}
 	chars := []model.EveCharacter{{CharacterID: 1001, UserID: 1, CorporationID: 10}, {CharacterID: 1002, UserID: 2, CorporationID: 10}, {CharacterID: 1005, UserID: 5, CorporationID: 10}}
-	for _, row := range []interface{}{&users, &chars, &model.UserRole{UserID: 5, RoleCode: model.RoleSeniorFC}} {
+	for _, row := range []interface{}{&senior, &chars, &model.UserRole{UserID: 5, RoleCode: model.RoleSeniorFC}} {
 		if err := global.DB.Create(row).Error; err != nil {
 			t.Fatal(err)
 		}
