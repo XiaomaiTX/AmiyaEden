@@ -138,6 +138,16 @@ func TestAnnouncementImages(t *testing.T) {
 		t.Fatal("image limit not reported", err)
 	}
 }
+func TestAnnouncementRejectsBlankBody(t *testing.T) {
+	for _, blank := range []string{"", "<p>   </p>", "<p>\n</p>", "<p>&nbsp;</p><p><br></p>"} {
+		if _, _, err := normalizeAnnouncementHTML(blank); !errors.Is(err, ErrAnnouncementInvalid) {
+			t.Fatalf("blank body %q accepted: %v", blank, err)
+		}
+	}
+	if _, _, err := normalizeAnnouncementHTML("<p> Hi </p>"); err != nil {
+		t.Fatal("padded text rejected", err)
+	}
+}
 func TestAnnouncementImagePersistence(t *testing.T) {
 	db := newServiceTestDB(t, "announcement_images", &model.Announcement{}, &model.AnnouncementRead{}, &model.AnnouncementImage{})
 	s := &AnnouncementService{repository.NewAnnouncementRepositoryWithDB(db)}
