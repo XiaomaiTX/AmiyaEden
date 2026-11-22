@@ -1,5 +1,6 @@
 export interface ToolBookmark {
   id: number
+  group_name: string
   name: string
   url: string
   description: string
@@ -13,6 +14,7 @@ export interface ToolBookmark {
 }
 
 export interface ToolBookmarkUpsertRequest {
+  group_name?: string
   name: string
   url: string
   description?: string

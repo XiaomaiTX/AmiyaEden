@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 )
@@ -29,11 +30,12 @@ type ToolBookmarkService struct {
 }
 
 type ToolBookmarkUpsertRequest struct {
-	Name        string `json:"name"`
-	URL         string `json:"url"`
-	Description string `json:"description"`
-	IsEnabled   *bool  `json:"is_enabled"`
-	SortOrder   *int   `json:"sort_order"`
+	GroupName   *string `json:"group_name"`
+	Name        string  `json:"name"`
+	URL         string  `json:"url"`
+	Description string  `json:"description"`
+	IsEnabled   *bool   `json:"is_enabled"`
+	SortOrder   *int    `json:"sort_order"`
 }
 
 func NewToolBookmarkService() *ToolBookmarkService {
@@ -75,6 +77,10 @@ func (s *ToolBookmarkService) AdminList() ([]model.ToolBookmark, error) {
 }
 
 func (s *ToolBookmarkService) AdminCreate(operatorID uint, req ToolBookmarkUpsertRequest) (*model.ToolBookmark, error) {
+	groupName, err := normalizeToolBookmarkGroup(req.GroupName)
+	if err != nil {
+		return nil, err
+	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
 		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": "empty_name"})
@@ -103,6 +109,7 @@ func (s *ToolBookmarkService) AdminCreate(operatorID uint, req ToolBookmarkUpser
 		sortOrder = *req.SortOrder
 	}
 	row := &model.ToolBookmark{
+		GroupName:   groupName,
 		Name:        name,
 		URL:         normalizedURL,
 		Description: strings.TrimSpace(req.Description),
@@ -116,7 +123,7 @@ func (s *ToolBookmarkService) AdminCreate(operatorID uint, req ToolBookmarkUpser
 		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
-	s.recordBookmarkAudit("tool_bookmark_create", operatorID, row.ID, model.AuditResultSuccess, map[string]any{"name": row.Name, "url": row.URL})
+	s.recordBookmarkAudit("tool_bookmark_create", operatorID, row.ID, model.AuditResultSuccess, map[string]any{"group_name": row.GroupName, "name": row.Name, "url": row.URL})
 	return row, nil
 }
 
@@ -130,9 +137,16 @@ func (s *ToolBookmarkService) AdminUpdate(operatorID, id uint, req ToolBookmarkU
 		s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
-	before := map[string]any{"name": row.Name, "url": row.URL, "description": row.Description, "is_enabled": row.IsEnabled, "sort_order": row.SortOrder}
+	before := map[string]any{"group_name": row.GroupName, "name": row.Name, "url": row.URL, "description": row.Description, "is_enabled": row.IsEnabled, "sort_order": row.SortOrder}
 
 	updates := map[string]interface{}{}
+	if req.GroupName != nil {
+		groupName, groupErr := normalizeToolBookmarkGroup(req.GroupName)
+		if groupErr != nil {
+			return nil, groupErr
+		}
+		updates["group_name"] = groupName
+	}
 	if strings.TrimSpace(req.Name) != "" {
 		updates["name"] = strings.TrimSpace(req.Name)
 	}
@@ -173,7 +187,7 @@ func (s *ToolBookmarkService) AdminUpdate(operatorID, id uint, req ToolBookmarkU
 		s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
-	s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultSuccess, map[string]any{"before": before, "after": map[string]any{"name": updated.Name, "url": updated.URL, "description": updated.Description, "is_enabled": updated.IsEnabled, "sort_order": updated.SortOrder}})
+	s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultSuccess, map[string]any{"before": before, "after": map[string]any{"group_name": updated.GroupName, "name": updated.Name, "url": updated.URL, "description": updated.Description, "is_enabled": updated.IsEnabled, "sort_order": updated.SortOrder}})
 	return updated, nil
 }
 
@@ -204,6 +218,17 @@ func (s *ToolBookmarkService) recordBookmarkAudit(action string, actorID, bookma
 		Result:       result,
 		Details:      details,
 	})
+}
+
+func normalizeToolBookmarkGroup(raw *string) (string, error) {
+	if raw == nil {
+		return "", nil
+	}
+	name := strings.TrimSpace(*raw)
+	if utf8.RuneCountInString(name) > 64 {
+		return "", NewUserVisibleError("分组名称不能超过64个字符")
+	}
+	return name, nil
 }
 
 func normalizeToolBookmarkURL(raw string) (string, *url.URL, error) {

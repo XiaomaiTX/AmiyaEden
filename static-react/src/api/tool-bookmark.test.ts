@@ -20,6 +20,7 @@ const bookmark = {
   description: '',
   logo_url: '',
   logo_source: '',
+  group_name: '',
   is_enabled: true,
   sort_order: 0,
   created_by: 1,

@@ -20,49 +20,79 @@
         v-if="!loading && bookmarks.length === 0"
         :description="t('info.toolBookmarksEmpty')"
       />
-      <div v-else class="bookmark-grid">
-        <div v-for="item in bookmarks" :key="item.id" class="bookmark-card">
-          <div class="bookmark-main">
-            <div class="bookmark-logo-wrap">
-              <img
-                v-if="item.logo_url"
-                :src="item.logo_url"
-                :alt="item.name"
-                class="bookmark-logo"
-                loading="lazy"
-              />
-              <div v-else class="bookmark-logo-fallback">{{ item.name.slice(0, 1) }}</div>
-            </div>
-            <div class="bookmark-content">
-              <div class="bookmark-title-row">
-                <a
-                  :href="item.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="bookmark-title-link"
-                >
-                  {{ item.name }}
-                </a>
-                <ElTag v-if="isAdmin && !item.is_enabled" type="info" size="small">
-                  {{ t('info.toolBookmarksDisabled') }}
-                </ElTag>
+      <div v-else class="bookmark-groups">
+        <section v-for="group in groups" :key="group.name" class="bookmark-group">
+          <h2 class="bookmark-group-title"
+            >{{ group.name || t('info.toolBookmarksUngrouped') }} ({{ group.items.length }})</h2
+          >
+          <div class="bookmark-grid">
+            <div v-for="item in group.items" :key="item.id" class="bookmark-card">
+              <div class="bookmark-main">
+                <div class="bookmark-logo-wrap">
+                  <img
+                    v-if="item.logo_url"
+                    :src="item.logo_url"
+                    :alt="item.name"
+                    class="bookmark-logo"
+                    loading="lazy"
+                  />
+                  <div v-else class="bookmark-logo-fallback">{{ item.name.slice(0, 1) }}</div>
+                </div>
+                <div class="bookmark-content">
+                  <div class="bookmark-title-row">
+                    <a
+                      :href="item.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="bookmark-title-link"
+                    >
+                      {{ item.name }}
+                    </a>
+                    <ElTag v-if="isAdmin && !item.is_enabled" type="info" size="small">
+                      {{ t('info.toolBookmarksDisabled') }}
+                    </ElTag>
+                  </div>
+                  <div v-if="item.description" class="bookmark-description">{{
+                    item.description
+                  }}</div>
+                  <div class="bookmark-url">{{ item.url }}</div>
+                </div>
               </div>
-              <div v-if="item.description" class="bookmark-description">{{ item.description }}</div>
-              <div class="bookmark-url">{{ item.url }}</div>
+              <div v-if="isAdmin" class="bookmark-admin-actions">
+                <ElButton size="small" @click="openEditDialog(item)">{{
+                  t('common.edit')
+                }}</ElButton>
+                <ElButton size="small" type="danger" @click="handleDelete(item.id)">
+                  {{ t('common.delete') }}
+                </ElButton>
+              </div>
             </div>
           </div>
-          <div v-if="isAdmin" class="bookmark-admin-actions">
-            <ElButton size="small" @click="openEditDialog(item)">{{ t('common.edit') }}</ElButton>
-            <ElButton size="small" type="danger" @click="handleDelete(item.id)">
-              {{ t('common.delete') }}
-            </ElButton>
-          </div>
-        </div>
+        </section>
       </div>
     </ElCard>
 
     <ElDialog v-model="dialogVisible" :title="dialogTitle" width="520px">
       <ElForm label-position="top">
+        <ElFormItem :label="t('info.toolBookmarksGroup')">
+          <ElSelect
+            v-model="form.group_name"
+            filterable
+            allow-create
+            default-first-option
+            clearable
+            :value-on-clear="''"
+            :placeholder="t('info.toolBookmarksGroupHint')"
+            class="w-full"
+          >
+            <ElOption
+              v-for="group in namedGroups"
+              :key="group.name"
+              :label="group.name"
+              :value="group.name"
+            />
+          </ElSelect>
+        </ElFormItem>
         <ElFormItem :label="t('info.toolBookmarksFormName')">
           <ElInput v-model="form.name" maxlength="128" />
         </ElFormItem>
@@ -101,6 +131,7 @@
     updateToolBookmark
   } from '@/api/tool-bookmark'
   import { useUserStore } from '@/store/modules/user'
+  import { groupToolBookmarks } from '@/utils/tool-bookmark-groups'
 
   defineOptions({ name: 'EveInfoToolBookmarks' })
 
@@ -109,6 +140,8 @@
   const loading = ref(false)
   const submitting = ref(false)
   const bookmarks = ref<Api.ToolBookmark.Bookmark[]>([])
+  const groups = computed(() => groupToolBookmarks(bookmarks.value))
+  const namedGroups = computed(() => groups.value.filter((group) => group.name))
   const dialogVisible = ref(false)
   const editingID = ref<number | null>(null)
 
@@ -121,6 +154,7 @@
   )
 
   const form = reactive<Api.ToolBookmark.UpsertParams>({
+    group_name: '',
     name: '',
     url: '',
     description: '',
@@ -145,6 +179,7 @@
   function openCreateDialog() {
     editingID.value = null
     form.name = ''
+    form.group_name = ''
     form.url = ''
     form.description = ''
     form.is_enabled = true
@@ -155,6 +190,7 @@
   function openEditDialog(item: Api.ToolBookmark.Bookmark) {
     editingID.value = item.id
     form.name = item.name
+    form.group_name = item.group_name
     form.url = item.url
     form.description = item.description
     form.is_enabled = item.is_enabled
@@ -205,6 +241,17 @@
 </script>
 
 <style scoped>
+  .bookmark-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .bookmark-group-title {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 600;
+  }
   .tool-bookmarks-header {
     display: flex;
     justify-content: space-between;

@@ -12,11 +12,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { confirmAction, notifyError, notifySuccess, notifyWarning } from '@/feedback'
 import { useI18n } from '@/i18n'
+import { groupToolBookmarks } from '@/lib/tool-bookmark-groups'
 import { useSessionStore } from '@/stores'
 import type { ToolBookmark, ToolBookmarkUpsertRequest } from '@/types/api/tool-bookmark'
 import { ShopDialog } from './shop-page-utils'
 
 const emptyForm: ToolBookmarkUpsertRequest = {
+  group_name: '',
   name: '',
   url: '',
   description: '',
@@ -39,6 +41,7 @@ export function InfoToolBookmarksPage() {
   const [saving, setSaving] = useState(false)
   const [editingBookmark, setEditingBookmark] = useState<ToolBookmark | null>(null)
   const [form, setForm] = useState<ToolBookmarkUpsertRequest>(emptyForm)
+  const groups = groupToolBookmarks(bookmarks)
 
   const loadBookmarks = useCallback(async () => {
     setLoading(true)
@@ -70,6 +73,7 @@ export function InfoToolBookmarksPage() {
   const openEditDialog = (bookmark: ToolBookmark) => {
     setEditingBookmark(bookmark)
     setForm({
+      group_name: bookmark.group_name,
       name: bookmark.name,
       url: bookmark.url,
       description: bookmark.description,
@@ -82,6 +86,7 @@ export function InfoToolBookmarksPage() {
   const submitForm = async () => {
     const data: ToolBookmarkUpsertRequest = {
       ...form,
+      group_name: form.group_name?.trim() ?? '',
       name: form.name.trim(),
       url: form.url.trim(),
       description: form.description?.trim() ?? '',
@@ -166,68 +171,82 @@ export function InfoToolBookmarksPage() {
       ) : null}
 
       {!loading && bookmarks.length > 0 ? (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {bookmarks.map((bookmark) => (
-            <article
-              key={bookmark.id}
-              className="flex flex-col gap-4 rounded-lg border bg-card p-4"
-            >
-              <div className="flex min-w-0 gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted text-sm font-semibold text-muted-foreground">
-                  {bookmark.logo_url ? (
-                    <img
-                      src={bookmark.logo_url}
-                      alt={bookmark.name}
-                      className="size-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    bookmark.name.slice(0, 1)
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <a
-                      className="font-semibold text-primary underline-offset-4 hover:underline"
-                      href={bookmark.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {bookmark.name}
-                    </a>
-                    {isAdmin && !bookmark.is_enabled ? (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {t('infoToolBookmarks.disabled')}
-                      </span>
+        <div className="space-y-6">
+          {groups.map((group) => (
+            <section key={group.name} className="space-y-3">
+              <h2 className="text-lg font-semibold">
+                {group.name || t('infoToolBookmarks.ungrouped')}{' '}
+                <span className="text-sm font-normal text-muted-foreground">
+                  ({group.items.length})
+                </span>
+              </h2>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {group.items.map((bookmark) => (
+                  <article
+                    key={bookmark.id}
+                    className="flex flex-col gap-4 rounded-lg border bg-card p-4"
+                  >
+                    <div className="flex min-w-0 gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted text-sm font-semibold text-muted-foreground">
+                        {bookmark.logo_url ? (
+                          <img
+                            src={bookmark.logo_url}
+                            alt={bookmark.name}
+                            className="size-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          bookmark.name.slice(0, 1)
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <a
+                            className="font-semibold text-primary underline-offset-4 hover:underline"
+                            href={bookmark.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {bookmark.name}
+                          </a>
+                          {isAdmin && !bookmark.is_enabled ? (
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                              {t('infoToolBookmarks.disabled')}
+                            </span>
+                          ) : null}
+                        </div>
+                        {bookmark.description ? (
+                          <p className="mt-2 text-sm">{bookmark.description}</p>
+                        ) : null}
+                        <p className="mt-2 break-all text-xs text-muted-foreground">
+                          {bookmark.url}
+                        </p>
+                      </div>
+                    </div>
+                    {isAdmin ? (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEditDialog(bookmark)}
+                        >
+                          {t('common.edit')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => void removeBookmark(bookmark)}
+                        >
+                          {t('common.delete')}
+                        </Button>
+                      </div>
                     ) : null}
-                  </div>
-                  {bookmark.description ? (
-                    <p className="mt-2 text-sm">{bookmark.description}</p>
-                  ) : null}
-                  <p className="mt-2 break-all text-xs text-muted-foreground">{bookmark.url}</p>
-                </div>
+                  </article>
+                ))}
               </div>
-              {isAdmin ? (
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openEditDialog(bookmark)}
-                  >
-                    {t('common.edit')}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => void removeBookmark(bookmark)}
-                  >
-                    {t('common.delete')}
-                  </Button>
-                </div>
-              ) : null}
-            </article>
+            </section>
           ))}
         </div>
       ) : null}
@@ -242,6 +261,25 @@ export function InfoToolBookmarksPage() {
           scrollable={false}
         >
           <div className="space-y-4">
+            <label className="block space-y-2">
+              <span className="text-sm text-muted-foreground">{t('infoToolBookmarks.group')}</span>
+              <Input
+                list="tool-bookmark-groups"
+                value={form.group_name ?? ''}
+                maxLength={64}
+                placeholder={t('infoToolBookmarks.groupHint')}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, group_name: event.target.value }))
+                }
+              />
+              <datalist id="tool-bookmark-groups">
+                {groups
+                  .filter((group) => group.name)
+                  .map((group) => (
+                    <option key={group.name} value={group.name} />
+                  ))}
+              </datalist>
+            </label>
             <label className="block space-y-2">
               <span className="text-sm text-muted-foreground">
                 {t('infoToolBookmarks.fields.name')}
