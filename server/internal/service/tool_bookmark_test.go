@@ -70,6 +70,45 @@ func TestToolBookmarkServiceCreateWithHTMLIcon(t *testing.T) {
 	}
 }
 
+func TestToolBookmarkServiceGroups(t *testing.T) {
+	db := newServiceTestDB(t, "tool_bookmark_groups", &model.ToolBookmark{})
+	originDB := global.DB
+	global.DB = db
+	t.Cleanup(func() { global.DB = originDB })
+	svc := NewToolBookmarkService()
+	svc.auditSvc = nil
+	svc.httpClient = stubHTTPClient{do: func(req *http.Request) (*http.Response, error) {
+		return newHTTPResponse(http.StatusOK, ""), nil
+	}}
+	group := "  工具  "
+	row, err := svc.AdminCreate(1, ToolBookmarkUpsertRequest{Name: "A", URL: "https://example.com", GroupName: &group})
+	if err != nil || row.GroupName != "工具" {
+		t.Fatalf("create group: row=%+v err=%v", row, err)
+	}
+	row, err = svc.AdminUpdate(1, row.ID, ToolBookmarkUpsertRequest{Name: "B"})
+	if err != nil || row.GroupName != "工具" {
+		t.Fatalf("omitted group: row=%+v err=%v", row, err)
+	}
+	group = "规章"
+	row, err = svc.AdminUpdate(1, row.ID, ToolBookmarkUpsertRequest{GroupName: &group})
+	if err != nil || row.GroupName != group {
+		t.Fatalf("move group: row=%+v err=%v", row, err)
+	}
+	rows, err := svc.ListVisibleBookmarks()
+	if err != nil || len(rows) != 1 || rows[0].GroupName != group {
+		t.Fatalf("visible groups: rows=%+v err=%v", rows, err)
+	}
+	group = strings.Repeat("组", 65)
+	if _, err = svc.AdminUpdate(1, row.ID, ToolBookmarkUpsertRequest{GroupName: &group}); !IsUserVisibleError(err) {
+		t.Fatalf("expected group length error, got %v", err)
+	}
+	group = "  "
+	row, err = svc.AdminUpdate(1, row.ID, ToolBookmarkUpsertRequest{GroupName: &group})
+	if err != nil || row.GroupName != "" {
+		t.Fatalf("clear group: row=%+v err=%v", row, err)
+	}
+}
+
 func TestToolBookmarkServiceCreateFallbackToFavicon(t *testing.T) {
 	db := newServiceTestDB(t, "tool_bookmark_fallback", &model.ToolBookmark{})
 	originDB := global.DB

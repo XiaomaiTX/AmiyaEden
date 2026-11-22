@@ -3,6 +3,7 @@ package model
 // ToolBookmark 常用工具网站书签
 type ToolBookmark struct {
 	BaseModel
+	GroupName   string `gorm:"size:64;not null;default:''" json:"group_name"`
 	Name        string `gorm:"size:128;not null"              json:"name"`
 	URL         string `gorm:"type:text;not null"             json:"url"`
 	Description string `gorm:"size:1024;not null;default:''"  json:"description"`

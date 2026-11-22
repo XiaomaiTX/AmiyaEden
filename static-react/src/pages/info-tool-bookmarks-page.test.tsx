@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { FeedbackHost } from '@/feedback/feedback-host'
@@ -24,6 +24,7 @@ import {
 } from '@/api/tool-bookmark'
 
 const bookmark = {
+  group_name: '',
   id: 1,
   name: 'EVE Tools',
   url: 'https://example.com',
@@ -58,6 +59,56 @@ function setRoles(roles: string[]) {
 }
 
 describe('info tool bookmarks page', () => {
+  test('groups interleaved bookmarks in API order and keeps ungrouped sites visible', async () => {
+    setRoles(['user'])
+    vi.mocked(fetchVisibleToolBookmarks).mockResolvedValueOnce([
+      { ...bookmark, id: 1, group_name: 'Tools', name: 'Tool A' },
+      { ...bookmark, id: 2, group_name: 'Resources', name: 'Resource B' },
+      { ...bookmark, id: 3, group_name: 'Tools', name: 'Tool C' },
+      { ...bookmark, id: 4, group_name: '', name: 'Other' },
+    ])
+    renderPage()
+    const tools = await screen.findByRole('heading', { name: 'Tools (2)' })
+    expect(
+      within(tools.parentElement!)
+        .getAllByRole('link')
+        .map((link) => link.textContent)
+    ).toEqual(['Tool A', 'Tool C'])
+    expect(
+      screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)
+    ).toEqual(['Tools (2)', 'Resources (1)', '未分组 (1)'])
+  })
+
+  test('allows moving a bookmark to another group and clearing its group', async () => {
+    setRoles(['admin'])
+    vi.mocked(fetchAdminToolBookmarks).mockResolvedValue([{ ...bookmark, group_name: 'Tools' }])
+    vi.mocked(updateToolBookmark).mockResolvedValue(bookmark)
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('link', { name: 'EVE Tools' })
+    await user.click(screen.getByRole('button', { name: '编辑' }))
+    const group = screen.getByLabelText('分组')
+    await user.clear(group)
+    await user.type(group, 'Resources')
+    await user.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() =>
+      expect(updateToolBookmark).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ group_name: 'Resources' })
+      )
+    )
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: '编辑' }))
+    await user.clear(screen.getByLabelText('分组'))
+    await user.click(screen.getByRole('button', { name: '保存' }))
+    await waitFor(() =>
+      expect(updateToolBookmark).toHaveBeenLastCalledWith(
+        1,
+        expect.objectContaining({ group_name: '' })
+      )
+    )
+  })
+
   beforeEach(() => {
     vi.mocked(fetchVisibleToolBookmarks).mockReset()
     vi.mocked(fetchAdminToolBookmarks).mockReset()
@@ -115,10 +166,7 @@ describe('info tool bookmarks page', () => {
     await user.click(screen.getByRole('button', { name: '编辑' }))
 
     expect(screen.getAllByRole('dialog')).toHaveLength(1)
-    expect(document.querySelector('[data-slot="dialog-content"]')).toHaveClass(
-      'w-full',
-      'max-w-sm'
-    )
+    expect(document.querySelector('[data-slot="dialog-content"]')).toHaveClass('w-full', 'max-w-sm')
     expect(screen.getByRole('dialog').querySelector('[data-slot="dialog-footer"]')).toBeNull()
     expect(document.querySelector('[data-slot="dialog-content"] .overflow-y-auto')).toBeNull()
   })
@@ -158,11 +206,14 @@ describe('info tool bookmarks page', () => {
     await screen.findByRole('link', { name: 'EVE Tools' })
 
     await user.click(screen.getByRole('button', { name: '新增书签' }))
-    const inputs = screen.getAllByRole('textbox')
-    await user.type(inputs[0], 'New Tool')
-    await user.type(inputs[1], 'https://new.example.com')
+    await user.type(screen.getByLabelText('分组'), 'Resources')
+    await user.type(screen.getByLabelText('名称'), 'New Tool')
+    await user.type(screen.getByLabelText('URL'), 'https://new.example.com')
     await user.click(screen.getByRole('button', { name: '保存' }))
     await waitFor(() => expect(createToolBookmark).toHaveBeenCalledOnce())
+    expect(createToolBookmark).toHaveBeenCalledWith(
+      expect.objectContaining({ group_name: 'Resources' })
+    )
 
     await user.click(screen.getByRole('button', { name: '编辑' }))
     await user.click(screen.getByRole('button', { name: '保存' }))
