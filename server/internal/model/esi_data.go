@@ -8,8 +8,6 @@ import esimodel "amiya-eden/internal/model/esi"
 
 type EveCharacterAsset = esimodel.EveCharacterAsset
 
-type EveCharacterNotification = esimodel.EveCharacterNotification
-
 type EveCharacterTitle = esimodel.EveCharacterTitle
 
 type EveCharacterCloneBaseInfo = esimodel.EveCharacterCloneBaseInfo
