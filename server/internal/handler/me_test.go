@@ -193,6 +193,61 @@ func TestMeHandlerGetMeFailsClosedWhenCharacterLoadErrors(t *testing.T) {
 	}
 }
 
+func TestMeHandlerGetMeReusesAuthUserFromContext(t *testing.T) {
+	db := newMeHandlerTestDB(t)
+	seedMeHandlerUser(t, db, false)
+	// Remove user row after seeding characters to verify GetMe uses authUser from context
+	// instead of executing a redundant user table lookup.
+	if err := db.Unscoped().Delete(&model.User{}, 1).Error; err != nil {
+		t.Fatalf("delete user: %v", err)
+	}
+
+	originalDB := global.DB
+	originalRedis := global.Redis
+	global.DB = db
+	global.Redis = redis.NewClient(&redis.Options{Addr: "127.0.0.1:0"})
+	defer func() {
+		global.DB = originalDB
+		if global.Redis != nil {
+			_ = global.Redis.Close()
+		}
+		global.Redis = originalRedis
+	}()
+
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/me", nil)
+	ctx.Set("userID", uint(1))
+	ctx.Set("authUser", &model.User{
+		BaseModel:          model.BaseModel{ID: 1},
+		Nickname:           "CachedAmiya",
+		QQ:                 "12345",
+		Role:               model.RoleUser,
+		PrimaryCharacterID: 9001,
+		Status:             1,
+	})
+	ctx.Set("roles", []string{model.RoleUser})
+
+	NewMeHandler().GetMe(ctx)
+
+	var result meHandlerResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if recorder.Code != http.StatusOK || result.Code != response.CodeOK {
+		t.Fatalf("expected success response, status=%d result=%#v", recorder.Code, result)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(result.Data, &payload); err != nil {
+		t.Fatalf("decode payload: %v", err)
+	}
+	userPayload, ok := payload["user"].(map[string]any)
+	if !ok || userPayload["nickname"] != "CachedAmiya" {
+		t.Fatalf("expected cached authUser nickname, got %#v", payload["user"])
+	}
+}
+
 func TestMeHandlerDeleteMe(t *testing.T) {
 	t.Run("returns unauthorized when user id missing", func(t *testing.T) {
 		recorder, result := performDeleteMeRequest(t, 0, []string{model.RoleUser})

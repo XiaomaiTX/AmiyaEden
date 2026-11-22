@@ -14,6 +14,7 @@ import (
 
 const (
 	ctxKeyUserID               = "userID"
+	ctxKeyUser                 = "authUser"
 	ctxKeyCharacterID          = "characterID"
 	ctxKeyRoles                = "roles"
 	ctxKeyPrimaryCorporationID = "primaryCorporationID"
@@ -45,7 +46,8 @@ func JWTAuth() gin.HandlerFunc {
 		}
 
 		c.Set(ctxKeyUserID, claims.UserID)
-		if err := userSvc.EnsureActiveUser(claims.UserID); err != nil {
+		user, err := userSvc.GetActiveUser(claims.UserID)
+		if err != nil {
 			if errors.Is(err, service.ErrAccountInactive) {
 				response.Fail(c, response.CodeUnauthorized, "用户不存在或已禁用，请重新登录")
 			} else {
@@ -56,6 +58,7 @@ func JWTAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		c.Set(ctxKeyUser, user)
 		c.Set(ctxKeyCharacterID, claims.CharacterID)
 
 		// 加载用户职权（带 Redis 缓存）
@@ -64,7 +67,7 @@ func JWTAuth() gin.HandlerFunc {
 			roles = []string{model.RoleGuest}
 		}
 		c.Set(ctxKeyRoles, roles)
-		corpCtx := corpPolicySvc.BuildUserPolicyContext(claims.UserID)
+		corpCtx := corpPolicySvc.BuildUserPolicyContextForUser(user)
 		c.Set(ctxKeyPrimaryCorporationID, corpCtx.PrimaryCorporationID)
 		c.Set(ctxKeyCorpCapabilities, corpCtx.Capabilities)
 		c.Set(ctxKeyCorpRules, corpCtx.Rules)
@@ -130,6 +133,15 @@ func RequireCorpCapability(capability string) gin.HandlerFunc {
 
 func GetUserID(c *gin.Context) uint {
 	return c.GetUint(ctxKeyUserID)
+}
+
+func GetAuthUser(c *gin.Context) *model.User {
+	v, exists := c.Get(ctxKeyUser)
+	if !exists {
+		return nil
+	}
+	user, _ := v.(*model.User)
+	return user
 }
 
 func GetCharacterID(c *gin.Context) int64 {
