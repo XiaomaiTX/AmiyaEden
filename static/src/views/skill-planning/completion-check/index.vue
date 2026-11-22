@@ -536,11 +536,12 @@
     }
   }
 
+  // Each saved selection is filtered against its own source list, so the two chains run in parallel.
   onMounted(async () => {
-    await loadCharacters()
-    await loadSavedSelection()
-    await loadAllPlans()
-    await loadSavedPlanSelection()
+    await Promise.all([
+      loadCharacters().then(loadSavedSelection),
+      loadAllPlans().then(loadSavedPlanSelection)
+    ])
   })
 </script>
 

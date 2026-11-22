@@ -94,7 +94,7 @@ export function SkillPlanManagementPage({
   const [plans, setPlans] = useState<SkillPlanListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(16)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<SkillPlanDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
@@ -145,6 +145,8 @@ export function SkillPlanManagementPage({
 
         const preferredId = selectedPlanIdRef.current ?? response.list?.[0]?.id ?? null
         if (preferredId) {
+          // The list is usable as soon as it arrives; the detail pane has its own loading state.
+          setLoading(false)
           await loadDetail(preferredId)
         } else {
           setSelectedPlan(null)
@@ -267,7 +269,7 @@ export function SkillPlanManagementPage({
 
   return (
     <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-      <div className="flex max-h-[70dvh] flex-col rounded-lg border bg-card p-4 xl:h-[clamp(480px,calc(100dvh-160px),900px)] xl:max-h-none">
+      <div className="flex max-h-[70dvh] flex-col rounded-lg border bg-card p-4 xl:h-[clamp(480px,calc(100dvh-160px),1100px)] xl:max-h-none">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold">{t(titleKey)}</h1>

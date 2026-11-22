@@ -210,8 +210,7 @@ export function DashboardCharactersPage() {
   const handleRefresh = async () => {
     setNotice(null)
     try {
-      await syncUserInfo()
-      await loadDirectReferralStatus()
+      await Promise.all([syncUserInfo(), loadDirectReferralStatus()])
     } catch (error) {
       setNotice({ kind: 'error', text: getErrorMessage(error, t('characters.loadFailed')) })
     }
@@ -231,8 +230,7 @@ export function DashboardCharactersPage() {
         qq: profileForm.qq.trim(),
         discord_id: profileForm.discordId.trim(),
       })
-      await syncUserInfo()
-      await loadDirectReferralStatus()
+      await Promise.all([syncUserInfo(), loadDirectReferralStatus()])
       setNotice({ kind: 'success', text: t('characters.profile.saveSuccess') })
     } catch (error) {
       setNotice({ kind: 'error', text: getErrorMessage(error, t('characters.profile.saveFailed')) })

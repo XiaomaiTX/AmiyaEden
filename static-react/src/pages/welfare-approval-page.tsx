@@ -89,8 +89,7 @@ export function WelfareApprovalPage() {
           : t('welfareApproval.eligibilityReasons.unknown')
         setError(t('welfareApproval.autoRejected', { reason }))
       }
-      await loadPending()
-      await loadHistory()
+      await Promise.all([loadPending(), loadHistory()])
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('welfareApproval.actionFailed')))
     } finally {
