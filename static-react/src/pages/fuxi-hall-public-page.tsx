@@ -79,7 +79,6 @@ export function FuxiHallPublicPage() {
           {data?.page.title || t('fuxiHall.fame.title')}
         </h1>
         {data?.page.subtitle && <p className="mt-3 text-muted-foreground">{data.page.subtitle}</p>}
-        <p className="mt-3 text-xs text-muted-foreground">{t('fuxiHall.contributions.daily')}</p>
       </header>
       {error && (
         <div role="alert" className="text-center text-destructive">
