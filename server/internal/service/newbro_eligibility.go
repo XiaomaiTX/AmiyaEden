@@ -1,6 +1,7 @@
 package service
 
 import (
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"math"
 	"time"
@@ -74,6 +75,31 @@ func (s *UnifiedNewbroService) Evaluate(userID uint, now time.Time) (*NewbroElig
 		return nil, err
 	}
 	return results[userID], nil
+}
+
+// EvaluateWithCharacters evaluates a user's unified newbro eligibility using
+// characters already loaded by the caller, avoiding a duplicate eve_character query.
+func (s *UnifiedNewbroService) EvaluateWithCharacters(characters []model.EveCharacter, now time.Time) (*NewbroEligibilityResult, error) {
+	cfg := NewCaptainRefundService().Settings()
+	if len(characters) == 0 {
+		r := EvaluateUnifiedNewbro(nil, cfg.MaxTotalSP, cfg.MaxAgeDays, now)
+		return &r, nil
+	}
+	ids := make([]int64, 0, len(characters))
+	for _, c := range characters {
+		ids = append(ids, c.CharacterID)
+	}
+	totals, err := repository.NewEveSkillRepository().GetSkillTotalsByCharacterIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+	snapshots := make([]NewbroCharacterSnapshot, 0, len(characters))
+	for _, c := range characters {
+		sp, ok := totals[c.CharacterID]
+		snapshots = append(snapshots, NewbroCharacterSnapshot{c.CharacterID, sp, ok, c.Birthday})
+	}
+	r := EvaluateUnifiedNewbro(snapshots, cfg.MaxTotalSP, cfg.MaxAgeDays, now)
+	return &r, nil
 }
 
 // EvaluateUsers batches character and skill reads and uses one consistent rule snapshot.

@@ -178,6 +178,47 @@ func TestCorporationPolicyServiceReadsFreshConfigAfterUpdate(t *testing.T) {
 	}
 }
 
+func TestCorporationPolicyServiceParsedCacheIsolatesCallersAndMatchesUserContext(t *testing.T) {
+	db := newCorpPolicyTestDB(t)
+	seedCorpPolicyUser(t, db, 1, 9001, 1001)
+
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	svc := NewCorporationPolicyService()
+	if err := svc.UpdatePolicies(CorporationPolicyConfig{
+		Version:     1,
+		DefaultMode: "deny",
+		Policies: []CorporationPolicy{{
+			CorporationID: 1001,
+			Capabilities:  []string{model.CorpCapabilitySRPUser},
+			Rules:         map[string]any{"flag": true},
+		}},
+	}); err != nil {
+		t.Fatalf("update policies: %v", err)
+	}
+
+	// Mutating a returned copy must not corrupt subsequent cached reads.
+	first := svc.GetPolicies()
+	first.Policies[0].Capabilities[0] = "tampered"
+	first.Policies[0].Rules["flag"] = false
+
+	second := svc.GetPolicies()
+	if second.Policies[0].Capabilities[0] != model.CorpCapabilitySRPUser {
+		t.Fatalf("expected isolated capability copy, got %q", second.Policies[0].Capabilities[0])
+	}
+	if second.Policies[0].Rules["flag"] != true {
+		t.Fatalf("expected isolated rules copy, got %#v", second.Policies[0].Rules["flag"])
+	}
+
+	user := &model.User{BaseModel: model.BaseModel{ID: 1}, PrimaryCharacterID: 9001}
+	ctx := svc.BuildUserPolicyContextForUser(user)
+	if ctx.PrimaryCorporationID != 1001 || len(ctx.Capabilities) != 1 || ctx.Capabilities[0] != model.CorpCapabilitySRPUser {
+		t.Fatalf("unexpected context from BuildUserPolicyContextForUser: %#v", ctx)
+	}
+}
+
 func TestCorporationPolicyServiceDefaultModeAllowGrantsUnmatchedCorporation(t *testing.T) {
 	db := newCorpPolicyTestDB(t)
 	seedCorpPolicyUser(t, db, 1, 9001, 1001)
