@@ -54,7 +54,7 @@ source_of_truth:
 - 认证与用户：`user`、`eve_character`、`mumble_identity`
 - RBAC：`user_role`
 - 自动权限映射：`esi_role_mapping`、`esi_title_mapping`、`eve_character_corp_role`
-- ESI 快照：资产、通知、技能、合同、装配、结构、钱包等 `eve_*` / `esi_*` 相关表
+- ESI 快照：资产、技能、合同、装配、结构、钱包等 `eve_*` / `esi_*` 相关表
 - 业务模块：`fleet*`、`srp*`、`shop*`、`skill_plan*`、`welfare*`、`captain_refund`、`captain_refund_claim`、`alliance_pap*`、`system_wallet*`、`wallet_log`、`wallet_transaction`
 - 基础设施：`operation_log`、`sde_versions`、`sys_config`
 
@@ -368,6 +368,8 @@ ESI 头衔到系统职权的映射表。
 应优先检查 `docs/architecture/auth-and-permissions.md` 与 `docs/features/current/administration.md` 是否也需要更新。
 
 旧 QQ 治理/预警专属模型、索引和自动迁移已移除，新基础设施采用下文独立 qqbot 表。现存旧表不会自动删除；清理范围及恢复要求见 [QQ Bot 数据库清理方案](../guides/qq-bot-retirement-cleanup.md)。共享 `user.qq` 及其唯一索引继续保留。
+
+人物游戏内通知（`eve_character_notification`）已整体下线，模型、ESI 刷新任务及 `/notification/*` 接口均已移除，历史表 `eve_character_notification` 已列入 `server/bootstrap/db.go` 的 `obsoleteTables()`，会在应用启动时自动删除以清理历史数据。
 
 ## QQ 调度基础设施
 

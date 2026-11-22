@@ -22,7 +22,7 @@ var contactCleanupCharacterTables = []string{
 	"character_corporation_history", "eve_character_asset", "eve_character_clone_base_info",
 	"eve_character_contract", "eve_character_contract_bid", "eve_character_contract_item",
 	"eve_character_corp_role", "eve_character_fitting", "eve_character_fitting_item",
-	"eve_character_implants", "eve_character_killmail", "eve_character_notification",
+	"eve_character_implants", "eve_character_killmail",
 	"eve_character_skill", "eve_character_skill_queue", "eve_character_skills",
 	"eve_character_title", "eve_character_wallet", "eve_character_wallet_journal",
 	"eve_character_wallet_transaction", "eve_killmail_list",

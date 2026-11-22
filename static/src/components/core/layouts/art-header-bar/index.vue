@@ -78,19 +78,6 @@
           </template>
         </ElDropdown>
 
-        <!-- 通知按钮 -->
-        <ArtIconButton
-          v-if="shouldShowNotification"
-          icon="ri:notification-2-line"
-          class="notice-button relative"
-          @click="visibleNotice"
-        >
-          <div
-            v-if="hasUnread"
-            class="absolute top-2 right-2 size-1.5 !bg-danger rounded-full"
-          ></div>
-        </ArtIconButton>
-
         <!-- 主题切换按钮 -->
         <ArtIconButton
           v-if="shouldShowThemeToggle"
@@ -105,9 +92,6 @@
 
     <!-- 标签页 -->
     <ArtWorkTab />
-
-    <!-- 通知 -->
-    <ArtNotification v-model:value="showNotice" ref="notice" @unread-change="onUnreadChange" />
   </div>
 </template>
 
@@ -120,11 +104,10 @@
   import { useUserStore } from '@/store/modules/user'
   import { useMenuStore } from '@/store/modules/menu'
   import { useSysConfigStore } from '@/store/modules/sys-config'
-  import { languageOptions } from '@/locales'
+  import { languageOptions, setAppLocale } from '@/locales'
   import { themeAnimation } from '@/utils/ui/animation'
   import { useCommon } from '@/hooks/core/useCommon'
   import { useHeaderBar } from '@/hooks/core/useHeaderBar'
-  import { useNotificationApi } from '@/hooks/core/useNotificationApi'
   import ArtUserMenu from './widget/ArtUserMenu.vue'
 
   defineOptions({ name: 'ArtHeaderBar' })
@@ -132,7 +115,6 @@
   const router = useRouter()
   const { locale } = useI18n()
   const { width } = useWindowSize()
-  const { fetchUnreadCount } = useNotificationApi()
 
   const settingStore = useSettingStore()
   const userStore = useUserStore()
@@ -144,7 +126,6 @@
     shouldShowMenuButton,
     shouldShowRefreshButton,
     shouldShowBreadcrumb,
-    shouldShowNotification,
     shouldShowLanguage,
     shouldShowThemeToggle
   } = useHeaderBar()
@@ -153,10 +134,6 @@
 
   const { language } = storeToRefs(userStore)
   const { menuList } = storeToRefs(menuStore)
-
-  const showNotice = ref(false)
-  const notice = ref(null)
-  const hasUnread = ref(false)
 
   // 菜单类型判断
   const isLeftMenu = computed(() => menuType.value === MenuTypeEnum.LEFT)
@@ -167,33 +144,8 @@
 
   onMounted(() => {
     initLanguage()
-    loadUnreadCount()
     sysConfigStore.ensureLoaded()
-    document.addEventListener('click', bodyCloseNotice)
   })
-
-  onUnmounted(() => {
-    document.removeEventListener('click', bodyCloseNotice)
-  })
-
-  /**
-   * 加载未读通知数量
-   */
-  const loadUnreadCount = async (): Promise<void> => {
-    try {
-      const data = await fetchUnreadCount()
-      hasUnread.value = (data?.unread_count ?? 0) > 0
-    } catch {
-      // 静默失败
-    }
-  }
-
-  /**
-   * 通知未读数变化回调
-   */
-  const onUnreadChange = (count: number): void => {
-    hasUnread.value = count > 0
-  }
 
   /**
    * 切换菜单显示/隐藏状态
@@ -226,43 +178,18 @@
    * 初始化语言设置
    */
   const initLanguage = (): void => {
-    locale.value = language.value
+    void setAppLocale(language.value)
   }
 
   /**
    * 切换系统语言
    * @param {LanguageEnum} lang - 目标语言类型
    */
-  const changeLanguage = (lang: LanguageEnum): void => {
+  const changeLanguage = async (lang: LanguageEnum): Promise<void> => {
     if (locale.value === lang) return
-    locale.value = lang
+    await setAppLocale(lang)
     userStore.setLanguage(lang)
     reload(50)
-  }
-
-  /**
-   * 点击页面其他区域关闭通知面板
-   * @param {Event} e - 点击事件对象
-   */
-  const bodyCloseNotice = (e: any): void => {
-    if (!showNotice.value) return
-
-    const target = e.target as HTMLElement
-
-    // 检查是否点击了通知按钮或通知面板内部
-    const isNoticeButton = target.closest('.notice-button')
-    const isNoticePanel = target.closest('.art-notification-panel')
-
-    if (!isNoticeButton && !isNoticePanel) {
-      showNotice.value = false
-    }
-  }
-
-  /**
-   * 切换通知面板显示状态
-   */
-  const visibleNotice = (): void => {
-    showNotice.value = !showNotice.value
   }
 </script>
 
@@ -378,10 +305,6 @@
 
   .exit-full-screen-btn:hover :deep(.art-svg-icon) {
     animation: shrink 0.6s forwards;
-  }
-
-  .notice-button:hover :deep(.art-svg-icon) {
-    animation: shake 0.5s ease-in-out;
   }
 
   .chat-button:hover :deep(.art-svg-icon) {
