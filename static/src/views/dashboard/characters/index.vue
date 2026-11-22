@@ -591,8 +591,7 @@
     try {
       await setPrimaryCharacter(char.character_id)
       ElMessage.success(t('characters.setPrimarySuccess', { name: char.character_name }))
-      await refreshUserInfo()
-      await loadCharacters()
+      await Promise.all([refreshUserInfo(), loadCharacters()])
     } catch {
       ElMessage.error(t('characters.setPrimaryFailed'))
     } finally {
@@ -620,8 +619,7 @@
     try {
       await unbindCharacter(char.character_id)
       ElMessage.success(t('characters.unbindSuccess', { name: char.character_name }))
-      await refreshUserInfo()
-      await loadCharacters()
+      await Promise.all([refreshUserInfo(), loadCharacters()])
     } catch {
       ElMessage.error(t('characters.unbindFailed'))
     } finally {

@@ -215,7 +215,7 @@
 
   const pagination = reactive({
     current: 1,
-    size: 10,
+    size: 16,
     total: 0
   })
 
@@ -235,20 +235,6 @@
         ...plans.value[index],
         ship_type_id: plan.ship_type_id
       }
-    }
-  }
-
-  async function hydratePlanListShipIcons(planIds: number[]) {
-    const uniqueIds = [...new Set(planIds.filter(Boolean))]
-    if (!uniqueIds.length) return
-
-    const results = await Promise.allSettled(
-      uniqueIds.map((id) => fetchSkillPlanDetail(id, currentLang.value))
-    )
-
-    for (const result of results) {
-      if (result.status !== 'fulfilled') continue
-      mergePlanDisplayState(result.value)
     }
   }
 
@@ -274,8 +260,9 @@
       const nextPlanId =
         targetId && plans.value.some((plan) => plan.id === targetId) ? targetId : plans.value[0].id
 
+      // The list is usable as soon as it arrives; the detail pane has its own loading state.
+      listLoading.value = false
       await loadPlanDetail(nextPlanId)
-      void hydratePlanListShipIcons(plans.value.map((plan) => plan.id))
     } catch {
       plans.value = []
       pagination.total = 0
@@ -421,7 +408,7 @@
   .skill-plan-list-card {
     flex: 0 0 320px;
     width: 320px;
-    height: clamp(480px, calc(100dvh - 160px), 900px);
+    height: clamp(480px, calc(100dvh - 160px), 1060px);
   }
 
   .skill-plan-detail-card {
