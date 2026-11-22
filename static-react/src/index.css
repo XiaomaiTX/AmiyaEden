@@ -51,40 +51,41 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
+    /* Light theme is deliberately off-white: pure white surfaces were too bright. */
+    --background: oklch(0.955 0.004 250);
+    --foreground: oklch(0.2 0.01 250);
+    --card: oklch(0.982 0.002 250);
+    --card-foreground: oklch(0.2 0.01 250);
+    --popover: oklch(0.985 0.002 250);
+    --popover-foreground: oklch(0.2 0.01 250);
+    --primary: oklch(0.25 0.01 250);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.93 0.005 250);
+    --secondary-foreground: oklch(0.25 0.01 250);
+    --muted: oklch(0.93 0.005 250);
+    --muted-foreground: oklch(0.5 0.01 250);
+    --accent: oklch(0.925 0.006 250);
+    --accent-foreground: oklch(0.25 0.01 250);
     --destructive: oklch(0.577 0.245 27.325);
-    --success: oklch(0.97 0.02 156);
+    --success: oklch(0.94 0.03 156);
     --success-foreground: oklch(0.3 0.08 156);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.88 0.005 250);
+    --input: oklch(0.86 0.005 250);
+    --ring: oklch(0.65 0.01 250);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar: oklch(0.94 0.005 250);
+    --sidebar-foreground: oklch(0.2 0.01 250);
+    --sidebar-primary: oklch(0.25 0.01 250);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar-accent: oklch(0.905 0.006 250);
+    --sidebar-accent-foreground: oklch(0.25 0.01 250);
+    --sidebar-border: oklch(0.88 0.005 250);
+    --sidebar-ring: oklch(0.65 0.01 250);
 }
 
 .dark {
@@ -133,4 +134,77 @@
   html {
     @apply font-sans;
     }
+}
+
+/* Sanitized announcement HTML; preflight resets these elements, so restore readable defaults. */
+@layer components {
+  .announcement-content {
+    @apply break-words text-[15px] leading-7 text-foreground/90;
+  }
+  .announcement-content > :first-child {
+    @apply mt-0;
+  }
+  .announcement-content p {
+    @apply mb-3;
+  }
+  .announcement-content :is(h1, h2, h3, h4) {
+    @apply mt-5 mb-2.5 font-semibold leading-snug text-foreground;
+  }
+  .announcement-content h1 {
+    @apply text-2xl;
+  }
+  .announcement-content h2 {
+    @apply text-xl;
+  }
+  .announcement-content h3 {
+    @apply text-lg;
+  }
+  .announcement-content h4 {
+    @apply text-base;
+  }
+  .announcement-content strong {
+    @apply font-semibold text-foreground;
+  }
+  .announcement-content a {
+    @apply text-blue-600 underline underline-offset-2 dark:text-blue-400;
+  }
+  .announcement-content ul {
+    @apply mb-3 list-disc pl-6;
+  }
+  .announcement-content ol {
+    @apply mb-3 list-decimal pl-6;
+  }
+  .announcement-content li {
+    @apply my-1 marker:text-blue-500;
+  }
+  .announcement-content blockquote {
+    @apply mb-3 rounded-r-md border-l-4 border-blue-500/70 bg-muted/60 px-4 py-2 text-muted-foreground;
+  }
+  .announcement-content blockquote > :last-child {
+    @apply mb-0;
+  }
+  .announcement-content code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em];
+  }
+  .announcement-content pre {
+    @apply mb-3 overflow-x-auto rounded-md bg-muted p-3;
+  }
+  .announcement-content pre code {
+    @apply bg-transparent p-0;
+  }
+  .announcement-content hr {
+    @apply my-5 border-border;
+  }
+  .announcement-content table {
+    @apply mb-3 w-full border-collapse text-sm;
+  }
+  .announcement-content :is(th, td) {
+    @apply border px-2.5 py-1.5 text-left;
+  }
+  .announcement-content th {
+    @apply bg-muted/60 font-semibold;
+  }
+  .announcement-content img {
+    @apply my-1 h-auto max-w-full rounded-md;
+  }
 }
