@@ -61,20 +61,28 @@ func (s *UserService) GetUserByID(id uint) (*model.User, error) {
 // ErrAccountInactive marks a removed or disabled account whose session must end.
 var ErrAccountInactive = errors.New("account removed or disabled")
 
+// GetActiveUser loads the user and returns ErrAccountInactive for removed or
+// disabled accounts. Any other error is a transient lookup failure that must
+// not end the session.
+func (s *UserService) GetActiveUser(userID uint) (*model.User, error) {
+	user, err := s.repo.GetByID(userID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrAccountInactive
+	}
+	if err != nil {
+		return nil, err
+	}
+	if user.Status != 1 {
+		return nil, ErrAccountInactive
+	}
+	return user, nil
+}
+
 // EnsureActiveUser returns ErrAccountInactive for removed or disabled accounts.
 // Any other error is a transient lookup failure that must not end the session.
 func (s *UserService) EnsureActiveUser(userID uint) error {
-	user, err := s.repo.GetByID(userID)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return ErrAccountInactive
-	}
-	if err != nil {
-		return err
-	}
-	if user.Status != 1 {
-		return ErrAccountInactive
-	}
-	return nil
+	_, err := s.GetActiveUser(userID)
+	return err
 }
 
 func (s *UserService) ListUserCharacters(userID uint) ([]model.EveCharacter, error) {

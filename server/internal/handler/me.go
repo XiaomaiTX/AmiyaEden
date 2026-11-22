@@ -29,10 +29,14 @@ func NewMeHandler() *MeHandler {
 func (h *MeHandler) GetMe(c *gin.Context) {
 	userID := c.GetUint("userID")
 
-	user, err := h.userSvc.GetUserByID(userID)
-	if err != nil {
-		response.Fail(c, response.CodeUnauthorized, "用户不存在")
-		return
+	user := middleware.GetAuthUser(c)
+	if user == nil || user.ID != userID {
+		var err error
+		user, err = h.userSvc.GetUserByID(userID)
+		if err != nil {
+			response.Fail(c, response.CodeUnauthorized, "用户不存在")
+			return
+		}
 	}
 
 	characters, err := h.userSvc.ListUserCharacters(userID)
@@ -50,7 +54,7 @@ func (h *MeHandler) GetMe(c *gin.Context) {
 	}
 	var isCurrentlyNewbro *bool
 	var isMentorMenteeEligible *bool
-	if result, err := h.mentorEligibilitySvc.EvaluateEligibility(userID); err == nil && result != nil {
+	if result, err := h.mentorEligibilitySvc.EvaluateEligibilityWithCharacters(characters); err == nil && result != nil {
 		value := result.IsEligible
 		isCurrentlyNewbro = &value
 		isMentorMenteeEligible = &value

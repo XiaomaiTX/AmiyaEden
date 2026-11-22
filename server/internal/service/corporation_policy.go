@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 
 	"gorm.io/gorm"
 )
@@ -24,6 +25,12 @@ const (
 
 var (
 	ErrInvalidCorporationAccessPolicy = errors.New("军团能力策略配置无效")
+	parsedCorpPolicyCache             struct {
+		mu  sync.RWMutex
+		raw string
+		cfg CorporationPolicyConfig
+		ok  bool
+	}
 )
 
 type CorporationPolicyConfig struct {
@@ -61,11 +68,11 @@ func NewCorporationPolicyService() *CorporationPolicyService {
 }
 
 func (s *CorporationPolicyService) GetPolicies() CorporationPolicyConfig {
-	return s.loadPolicies()
+	return cloneCorpPolicyConfig(s.loadPoliciesReadOnly())
 }
 
 func (s *CorporationPolicyService) GetPoliciesTx(tx *gorm.DB) CorporationPolicyConfig {
-	return s.loadPoliciesTx(tx)
+	return cloneCorpPolicyConfig(s.loadPoliciesTxReadOnly(tx))
 }
 
 func (s *CorporationPolicyService) UpdatePolicies(raw CorporationPolicyConfig) error {
@@ -94,17 +101,19 @@ func (s *CorporationPolicyService) UpdatePolicies(raw CorporationPolicyConfig) e
 func (s *CorporationPolicyService) InvalidateCache() {}
 
 func (s *CorporationPolicyService) BuildUserPolicyContext(userID uint) UserCorpPolicyContext {
-	ctx := UserCorpPolicyContext{
-		PrimaryCorporationID: 0,
-		Capabilities:         []string{},
-		Rules:                map[string]any{},
-		FullAccess:           false,
-	}
 	if userID == 0 {
-		return ctx
+		return emptyUserCorpPolicyContext()
 	}
 	user, err := s.userRepo.GetByID(userID)
-	if err != nil || user == nil || user.PrimaryCharacterID == 0 {
+	if err != nil || user == nil {
+		return emptyUserCorpPolicyContext()
+	}
+	return s.BuildUserPolicyContextForUser(user)
+}
+
+func (s *CorporationPolicyService) BuildUserPolicyContextForUser(user *model.User) UserCorpPolicyContext {
+	ctx := emptyUserCorpPolicyContext()
+	if user == nil || user.PrimaryCharacterID == 0 {
 		return ctx
 	}
 	primaryCharacter, err := s.charRepo.GetByCharacterID(user.PrimaryCharacterID)
@@ -116,7 +125,7 @@ func (s *CorporationPolicyService) BuildUserPolicyContext(userID uint) UserCorpP
 		return ctx
 	}
 
-	config := s.GetPolicies()
+	config := s.loadPoliciesReadOnly()
 	policy, matched := matchCorporationPolicy(config, ctx.PrimaryCorporationID)
 	if !matched {
 		if config.DefaultMode == corpPolicyDefaultModeAllow {
@@ -130,6 +139,15 @@ func (s *CorporationPolicyService) BuildUserPolicyContext(userID uint) UserCorpP
 		ctx.Rules = cloneAnyMap(policy.Rules)
 	}
 	return ctx
+}
+
+func emptyUserCorpPolicyContext() UserCorpPolicyContext {
+	return UserCorpPolicyContext{
+		PrimaryCorporationID: 0,
+		Capabilities:         []string{},
+		Rules:                map[string]any{},
+		FullAccess:           false,
+	}
 }
 
 func (s *CorporationPolicyService) BuildUserPolicyContextTx(tx *gorm.DB, userID uint) UserCorpPolicyContext {
@@ -155,7 +173,7 @@ func (s *CorporationPolicyService) BuildUserPolicyContextTx(tx *gorm.DB, userID 
 		return ctx
 	}
 
-	config := s.GetPoliciesTx(tx)
+	config := s.loadPoliciesTxReadOnly(tx)
 	policy, matched := matchCorporationPolicy(config, ctx.PrimaryCorporationID)
 	if !matched {
 		if config.DefaultMode == corpPolicyDefaultModeAllow {
@@ -183,7 +201,7 @@ func (s *CorporationPolicyService) GetRuleFloat(corporationID int64, key string,
 	if corporationID <= 0 || key == "" {
 		return defaultValue
 	}
-	config := s.GetPolicies()
+	config := s.loadPoliciesReadOnly()
 	policy, matched := matchCorporationPolicy(config, corporationID)
 	if !matched || policy.Rules == nil {
 		return defaultValue
@@ -222,7 +240,7 @@ func (s *CorporationPolicyService) GetRuleBool(corporationID int64, key string, 
 	if corporationID <= 0 || key == "" {
 		return defaultValue
 	}
-	config := s.GetPolicies()
+	config := s.loadPoliciesReadOnly()
 	policy, matched := matchCorporationPolicy(config, corporationID)
 	if !matched || policy.Rules == nil {
 		return defaultValue
@@ -332,20 +350,58 @@ func normalizeCorpPolicyConfig(raw CorporationPolicyConfig) (CorporationPolicyCo
 	return cfg, nil
 }
 
-func (s *CorporationPolicyService) loadPolicies() CorporationPolicyConfig {
+func (s *CorporationPolicyService) loadPoliciesReadOnly() CorporationPolicyConfig {
 	raw, err := s.cfgRepo.Get(model.SysConfigCorporationAccessPolicies, "")
 	if err != nil || raw == "" {
 		return defaultCorpPolicyConfig()
 	}
-	return parseStoredPolicies(raw)
+	return parseStoredPoliciesCached(raw)
 }
 
-func (s *CorporationPolicyService) loadPoliciesTx(tx *gorm.DB) CorporationPolicyConfig {
+func (s *CorporationPolicyService) loadPoliciesTxReadOnly(tx *gorm.DB) CorporationPolicyConfig {
 	raw, err := s.cfgRepo.GetTx(tx, model.SysConfigCorporationAccessPolicies, "")
 	if err != nil || raw == "" {
 		return defaultCorpPolicyConfig()
 	}
-	return parseStoredPolicies(raw)
+	return parseStoredPoliciesCached(raw)
+}
+
+// parseStoredPoliciesCached avoids repeating JSON decoding and normalization on
+// every authenticated request while preserving cross-instance freshness because
+// the cache key is the exact raw blob fetched from Redis/DB.
+func parseStoredPoliciesCached(raw string) CorporationPolicyConfig {
+	parsedCorpPolicyCache.mu.RLock()
+	if parsedCorpPolicyCache.ok && parsedCorpPolicyCache.raw == raw {
+		cfg := parsedCorpPolicyCache.cfg
+		parsedCorpPolicyCache.mu.RUnlock()
+		return cfg
+	}
+	parsedCorpPolicyCache.mu.RUnlock()
+
+	parsed := parseStoredPolicies(raw)
+	parsedCorpPolicyCache.mu.Lock()
+	parsedCorpPolicyCache.raw = raw
+	parsedCorpPolicyCache.cfg = parsed
+	parsedCorpPolicyCache.ok = true
+	parsedCorpPolicyCache.mu.Unlock()
+	return parsed
+}
+
+func cloneCorpPolicyConfig(cfg CorporationPolicyConfig) CorporationPolicyConfig {
+	policies := make([]CorporationPolicy, len(cfg.Policies))
+	for i, policy := range cfg.Policies {
+		policies[i] = CorporationPolicy{
+			CorporationID: policy.CorporationID,
+			FullAccess:    policy.FullAccess,
+			Capabilities:  slices.Clone(policy.Capabilities),
+			Rules:         cloneAnyMap(policy.Rules),
+		}
+	}
+	return CorporationPolicyConfig{
+		Version:     cfg.Version,
+		DefaultMode: cfg.DefaultMode,
+		Policies:    policies,
+	}
 }
 
 // parseStoredPolicies decodes a stored JSON blob into a policy config.
