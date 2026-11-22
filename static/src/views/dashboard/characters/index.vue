@@ -208,6 +208,8 @@
           <img
             :src="buildEveCharacterPortraitUrl(char.character_id)"
             :alt="char.character_name"
+            loading="lazy"
+            decoding="async"
             class="w-14 h-14 rounded-full object-cover border-2"
             :class="[
               isPrimary(char) ? 'border-primary' : 'border-g-200',

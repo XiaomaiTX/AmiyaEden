@@ -40,6 +40,7 @@ import { useWorktabStore } from './worktab'
 import { AppRouteRecord } from '@/types/router'
 import { setPageTitle } from '@/utils/router'
 import { resetRouterState } from '@/router/guards/beforeEach'
+import { invalidateCharactersGateStateFreshness } from '@/router/guards/charactersGate'
 import { useMenuStore } from './menu'
 import { StorageConfig } from '@/utils/storage/storage-config'
 
@@ -79,6 +80,9 @@ export const useUserStore = defineStore(
      * @param newInfo 新的用户信息
      */
     const setUserInfo = (newInfo: Api.Auth.UserInfo) => {
+      if (info.value.userId !== undefined && newInfo.userId !== info.value.userId) {
+        invalidateCharactersGateStateFreshness()
+      }
       info.value = newInfo
     }
 
@@ -129,6 +133,9 @@ export const useUserStore = defineStore(
      * @param newRefreshToken 刷新令牌（可选）
      */
     const setToken = (newAccessToken: string, newRefreshToken?: string) => {
+      if (newAccessToken !== accessToken.value) {
+        invalidateCharactersGateStateFreshness()
+      }
       accessToken.value = newAccessToken
       if (newRefreshToken) {
         refreshToken.value = newRefreshToken
@@ -164,6 +171,8 @@ export const useUserStore = defineStore(
       sessionStorage.removeItem('iframeRoutes')
       // 清空主页路径
       useMenuStore().setHomePath('')
+      // 立即失效角色门禁缓存，防止退出/切换账号后 500ms 延迟窗口内命中旧用户缓存
+      invalidateCharactersGateStateFreshness()
       // 重置路由状态
       resetRouterState(500)
       // 跳转到登录页，携带当前路由作为 redirect 参数

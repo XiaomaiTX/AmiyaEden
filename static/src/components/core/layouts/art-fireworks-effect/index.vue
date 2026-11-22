@@ -10,9 +10,6 @@
   import { useEventListener } from '@vueuse/core'
   import { mittBus } from '@/utils/sys'
   import type { Handler } from 'mitt'
-  import bp from '@/assets/images/ceremony/hb.png'
-  import sd from '@/assets/images/ceremony/sd.png'
-  import yd from '@/assets/images/ceremony/yd.png'
 
   defineOptions({ name: 'ArtFireworksEffect' })
 
@@ -270,19 +267,6 @@
     }
 
     /**
-     * 预加载所有需要的图片资源
-     * 在组件初始化时调用，确保图片ready
-     */
-    async preloadAllImages(): Promise<void> {
-      const imageUrls = [bp, sd, yd]
-      try {
-        await Promise.all(imageUrls.map((url) => this.preloadImage(url)))
-      } catch (error) {
-        console.error('Image preloading failed:', error)
-      }
-    }
-
-    /**
      * 创建烟花爆炸效果
      * @param imageUrl 可选的图片URL，如果提供则使用图片粒子
      */
@@ -327,6 +311,9 @@
 
       // 批量添加到活动粒子数组，减少多次数组操作
       this.activeParticles.push(...particles)
+
+      // 仅在存在活动粒子时启动动画循环，避免空闲帧持续占用 CPU/GPU
+      this.start()
     }
 
     /**
@@ -513,6 +500,12 @@
     private animate = (): void => {
       this.updateParticles() // 更新粒子状态
       this.render() // 渲染粒子
+
+      if (this.activeParticles.length === 0) {
+        this.animationId = 0
+        return
+      }
+
       this.animationId = requestAnimationFrame(this.animate) // 请求下一帧
     }
 
@@ -531,7 +524,8 @@
      * 启动动画循环
      */
     start(): void {
-      this.animate()
+      if (this.animationId || this.activeParticles.length === 0) return
+      this.animationId = requestAnimationFrame(this.animate)
     }
 
     /**
@@ -592,15 +586,22 @@
    * 通过 mittBus 事件总线接收触发指令
    * @param event 事件数据，可能包含图片URL
    */
-  const handleFireworkTrigger: Handler<unknown> = (event: unknown) => {
+  const handleFireworkTrigger: Handler<unknown> = async (event: unknown) => {
     const imageUrl = event as string | undefined
+    if (imageUrl) {
+      try {
+        await fireworkSystem.preloadImage(imageUrl)
+      } catch (error) {
+        console.error('Image preloading failed:', error)
+      }
+    }
     fireworkSystem.createFirework(imageUrl)
   }
 
   /**
    * 组件挂载时的初始化逻辑
    */
-  onMounted(async () => {
+  onMounted(() => {
     if (!canvasRef.value) return
 
     // 获取Canvas 2D绘制上下文
@@ -609,12 +610,6 @@
 
     // 设置初始画布大小
     resizeCanvas()
-
-    // 预加载所有图片资源
-    await fireworkSystem.preloadAllImages()
-
-    // 启动动画循环
-    fireworkSystem.start()
 
     // 注册事件监听器
     useEventListener(window, 'keydown', handleKeyPress) // 键盘快捷键

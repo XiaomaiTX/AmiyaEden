@@ -51,7 +51,7 @@ export const globalComponentsConfig: GlobalComponentConfig[] = [
     component: defineAsyncComponent(
       () => import('@/components/core/layouts/art-screen-lock/index.vue')
     ),
-    enabled: true
+    enabled: false
   },
   {
     name: '聊天窗口',
@@ -59,7 +59,7 @@ export const globalComponentsConfig: GlobalComponentConfig[] = [
     component: defineAsyncComponent(
       () => import('@/components/core/layouts/art-chat-window/index.vue')
     ),
-    enabled: true
+    enabled: false
   },
   {
     name: '礼花效果',

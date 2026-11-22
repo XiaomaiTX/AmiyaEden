@@ -39,7 +39,7 @@ export class MenuProcessor {
 
     let menuList = [...asyncRoutes]
     const admissions = useAdmissionStore()
-    await admissions.refresh()
+    await admissions.ensureLoaded()
     menuList = admissionMenuVisibility(menuList, admissions.context)
 
     // 根据静态路由访问边界过滤菜单

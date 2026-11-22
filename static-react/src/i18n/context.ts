@@ -1,13 +1,43 @@
-﻿import { createContext, useContext } from 'react'
-import enUS from '@/i18n/messages/en-US'
-import zhCN from '@/i18n/messages/zh-CN'
+import { createContext, useContext } from 'react'
 
-export const dictionaries = {
-  'zh-CN': zhCN,
-  'en-US': enUS,
-} as const
+export type I18nLocale = 'zh-CN' | 'en-US'
 
-export type I18nLocale = keyof typeof dictionaries
+type LocaleDictionary = Record<string, unknown>
+
+const localeLoaders: Record<I18nLocale, () => Promise<{ default: LocaleDictionary }>> = {
+  'zh-CN': () => import('@/i18n/messages/zh-CN') as Promise<{ default: LocaleDictionary }>,
+  'en-US': () => import('@/i18n/messages/en-US') as Promise<{ default: LocaleDictionary }>,
+}
+
+export const dictionaries: Partial<Record<I18nLocale, LocaleDictionary>> = {}
+
+const localeLoadsInFlight = new Map<I18nLocale, Promise<void>>()
+
+export function isLocaleLoaded(locale: I18nLocale): boolean {
+  return dictionaries[locale] !== undefined
+}
+
+export function ensureLocaleLoaded(locale: I18nLocale): Promise<void> {
+  if (isLocaleLoaded(locale)) {
+    return Promise.resolve()
+  }
+
+  const pending = localeLoadsInFlight.get(locale)
+  if (pending) {
+    return pending
+  }
+
+  const task = localeLoaders[locale]()
+    .then((mod) => {
+      dictionaries[locale] = mod.default
+    })
+    .finally(() => {
+      localeLoadsInFlight.delete(locale)
+    })
+
+  localeLoadsInFlight.set(locale, task)
+  return task
+}
 
 function getByPath(source: Record<string, unknown>, path: string): string | undefined {
   const value = path.split('.').reduce<unknown>((acc, segment) => {
@@ -31,7 +61,11 @@ function resolveReference(
 
   visited.add(key)
 
-  const dictionary = dictionaries[locale] as Record<string, unknown>
+  const dictionary =
+    dictionaries[locale] ?? dictionaries['zh-CN'] ?? dictionaries['en-US']
+  if (!dictionary) {
+    return undefined
+  }
   const value = getByPath(dictionary, key)
   if (value === undefined) {
     return undefined

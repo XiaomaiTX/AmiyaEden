@@ -6,28 +6,30 @@
         <ElCard class="art-table-card" shadow="never">
           <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="loadPrices">
             <template #left>
-              <ElInput
-                v-model="keyword"
-                :placeholder="$t('srp.prices.searchPlaceholder')"
-                clearable
-                style="width: 200px"
-                @keyup.enter="loadPrices"
-                @clear="loadPrices"
-              />
-              <ElButton v-if="canManagePrices" type="primary" :icon="Plus" @click="openAddDialog">
-                {{ $t('srp.prices.addPrice') }}
-              </ElButton>
-              <ArtExcelExport
-                :data="exportPricesData"
-                :headers="pricesExportHeaders"
-                :filename="`srp-prices_${new Date().toLocaleDateString()}`"
-                :sheet-name="$t('srp.prices.title')"
-                :button-text="$t('srp.prices.exportBtn')"
-                type="success"
-              />
-              <ArtExcelImport v-if="canManagePrices" @import-success="handleImport">
-                {{ $t('srp.prices.importBtn') }}
-              </ArtExcelImport>
+              <div class="srp-prices-toolbar flex flex-wrap items-center gap-2">
+                <ElInput
+                  v-model="keyword"
+                  :placeholder="$t('srp.prices.searchPlaceholder')"
+                  clearable
+                  style="width: 220px"
+                  @keyup.enter="loadPrices"
+                  @clear="loadPrices"
+                />
+                <ElButton v-if="canManagePrices" type="primary" :icon="Plus" @click="openAddDialog">
+                  {{ $t('srp.prices.addPrice') }}
+                </ElButton>
+                <ArtExcelExport
+                  :data="exportPricesData"
+                  :headers="pricesExportHeaders"
+                  :filename="`srp-prices_${new Date().toLocaleDateString()}`"
+                  :sheet-name="$t('srp.prices.title')"
+                  :button-text="$t('srp.prices.exportBtn')"
+                  type="success"
+                />
+                <ArtExcelImport v-if="canManagePrices" @import-success="handleImport">
+                  {{ $t('srp.prices.importBtn') }}
+                </ArtExcelImport>
+              </div>
             </template>
           </ArtTableHeader>
 
@@ -166,7 +168,7 @@
           width: 120,
           fixed: 'right',
           formatter: (row: ShipPrice) =>
-            h('div', { class: 'flex gap-1' }, [
+            h('div', { class: 'flex items-center gap-1' }, [
               h(ArtButtonTable, { type: 'edit', onClick: () => openEditDialog(row) }),
               h(ArtButtonTable, { type: 'delete', onClick: () => handleDelete(row) })
             ])
@@ -413,6 +415,36 @@
 </script>
 
 <style scoped>
+  .srp-prices-page :deep(.el-tabs) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .srp-prices-page :deep(.el-tabs__content) {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .srp-prices-page :deep(.el-tab-pane) {
+    height: 100%;
+  }
+
+  .srp-prices-page :deep(.art-table-card) {
+    height: 100%;
+    margin-top: 0;
+  }
+
+  .srp-prices-toolbar :deep(.el-button + .el-button) {
+    margin-left: 0;
+  }
+
+  .srp-prices-toolbar :deep(.el-upload) {
+    display: inline-flex;
+    align-items: center;
+  }
+
   .million-isk-input {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
