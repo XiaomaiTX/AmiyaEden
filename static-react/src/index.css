@@ -192,18 +192,6 @@
   .announcement-content pre code {
     @apply bg-transparent p-0;
   }
-  .announcement-content hr {
-    @apply my-5 border-border;
-  }
-  .announcement-content table {
-    @apply mb-3 w-full border-collapse text-sm;
-  }
-  .announcement-content :is(th, td) {
-    @apply border px-2.5 py-1.5 text-left;
-  }
-  .announcement-content th {
-    @apply bg-muted/60 font-semibold;
-  }
   .announcement-content img {
     @apply my-1 h-auto max-w-full rounded-md;
   }
