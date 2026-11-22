@@ -79,6 +79,7 @@ func (s *ToolBookmarkService) AdminList() ([]model.ToolBookmark, error) {
 func (s *ToolBookmarkService) AdminCreate(operatorID uint, req ToolBookmarkUpsertRequest) (*model.ToolBookmark, error) {
 	groupName, err := normalizeToolBookmarkGroup(req.GroupName)
 	if err != nil {
+		s.recordBookmarkAudit("tool_bookmark_create", operatorID, 0, model.AuditResultFailed, map[string]any{"reason": err.Error()})
 		return nil, err
 	}
 	name := strings.TrimSpace(req.Name)
@@ -143,6 +144,7 @@ func (s *ToolBookmarkService) AdminUpdate(operatorID, id uint, req ToolBookmarkU
 	if req.GroupName != nil {
 		groupName, groupErr := normalizeToolBookmarkGroup(req.GroupName)
 		if groupErr != nil {
+			s.recordBookmarkAudit("tool_bookmark_update", operatorID, id, model.AuditResultFailed, map[string]any{"reason": groupErr.Error()})
 			return nil, groupErr
 		}
 		updates["group_name"] = groupName
