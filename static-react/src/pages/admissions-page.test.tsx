@@ -68,6 +68,7 @@ function detail(status: 'pending' | 'rejected' | 'invited' = 'pending'): Admissi
       qq: '',
       discord_id: 'discord-only',
       submitted_at: '2026-11-10T00:00:00Z',
+      note: '',
       handled_by: null,
       handler_name: '',
       closed_at: null,
@@ -154,7 +155,9 @@ test('Discord-only multi-character application has exactly two image slots and p
   ).toBeInTheDocument()
   screen
     .getAllByRole('link', { name: '联盟SeAT' })
-    .forEach((link) => expect(link).toHaveAttribute('href', 'https://seat.winterco.org'))
+    .forEach((link) =>
+      expect(link).toHaveAttribute('href', 'https://seat.winterco.org/character/list')
+    )
   expect(document.querySelectorAll('input[type=file]')).toHaveLength(2)
   document
     .querySelectorAll('input[type=file]')
@@ -183,12 +186,49 @@ test('Discord-only multi-character application has exactly two image slots and p
   ).toBe(true)
   expect(screen.getByRole('combobox')).toHaveValue('98824507')
 })
-test('member alt form needs no evidence and shows SeAT binding reminder', () => {
+test('member can submit one alt with a note and open alliance SeAT', async () => {
   mocks.context = context(true)
+  mocks.save.mockRejectedValue(new Error('admissions.errors.conflict'))
+  usePreferenceStore.setState({ locale: 'en-US' })
   open('/admissions/alt')
   expect(document.querySelectorAll('input[type=file]')).toHaveLength(0)
-  expect(screen.getByText('请先把全部小号绑定到联盟 SeAT，再提交小号加团申请。')).toHaveClass(
-    'text-red-600'
+  expect(screen.getByRole('link', { name: 'alliance SeAT' })).toHaveAttribute(
+    'href',
+    'https://seat.winterco.org/character/list'
+  )
+  const note = screen.getByRole('textbox', { name: 'Application note (optional)' })
+  expect(note).toHaveAttribute('maxlength', '2000')
+  fireEvent.change(note, {
+    target: { value: 'Other alts: Pilot B, Pilot C\nAll bound to alliance SeAT.' },
+  })
+  fireEvent.click(screen.getAllByRole('checkbox')[0])
+  fireEvent.click(screen.getByRole('button', { name: 'Submit application' }))
+  await screen.findByRole('alert')
+  expect(mocks.save).toHaveBeenCalledWith(
+    expect.objectContaining({
+      kind: 'alt',
+      character_ids: [101],
+      note: 'Other alts: Pilot B, Pilot C\nAll bound to alliance SeAT.',
+    }),
+    {},
+    undefined,
+    false
+  )
+  expect(note).toHaveValue('Other alts: Pilot B, Pilot C\nAll bound to alliance SeAT.')
+})
+test('alt note is shown in detail and restored when editing', async () => {
+  mocks.context = context(true)
+  const value = detail('rejected')
+  value.application.kind = 'alt'
+  value.application.note = 'Pilot B\nPilot C'
+  mocks.detail.mockResolvedValue(value)
+  usePreferenceStore.setState({ locale: 'en-US' })
+  const view = open('/admissions/applications/17')
+  expect(await screen.findByText('Pilot B Pilot C')).toBeInTheDocument()
+  view.unmount()
+  open('/admissions/applications/17/edit')
+  expect(await screen.findByRole('textbox', { name: 'Application note (optional)' })).toHaveValue(
+    'Pilot B\nPilot C'
   )
 })
 test('rejected application resubmits the original ID and current version, preserving rejection history', async () => {

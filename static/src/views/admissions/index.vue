@@ -118,7 +118,10 @@
           ></ElTableColumn
         ><ElTableColumn :label="t('admissions.characters')" min-width="180"
           ><template #default="{ row }"
-            ><span v-if="row.id">{{ characterNames(row) }}</span></template
+            ><span v-if="row.id">{{ characterNames(row) }}</span>
+            <p v-if="row.note" class="admission-note"
+              >{{ t('admissions.note') }}: {{ row.note }}</p
+            ></template
           ></ElTableColumn
         ><ElTableColumn :label="t('admissions.status')" width="170"
           ><template #default="{ row }">
@@ -228,6 +231,12 @@
             <ElDescriptionsItem :label="t('admissions.characters')" :span="descriptionColumns">{{
               characterNames(detail.application)
             }}</ElDescriptionsItem>
+            <ElDescriptionsItem
+              v-if="detail.application.note"
+              :label="t('admissions.note')"
+              :span="descriptionColumns"
+              ><p class="admission-note">{{ detail.application.note }}</p></ElDescriptionsItem
+            >
             <ElDescriptionsItem
               v-if="detail.application.qq || detail.application.discord_id"
               :label="t('admissions.contacts')"
@@ -555,6 +564,11 @@
   })
 </script>
 <style scoped>
+  .admission-note {
+    margin-top: 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
   .admission-workspace {
     display: flex;
     flex-direction: column;

@@ -2,7 +2,7 @@
   <p v-if="!eligible" role="alert">{{ t('admissions.denied') }}</p>
   <form v-else class="admission-form" @submit.prevent="submit(mustResubmit)">
     <p
-      >{{ t('admissions.bindHint') }}
+      >{{ t(kind === 'alt' ? 'admissions.altBindHint' : 'admissions.bindHint') }}
       <RouterLink to="/characters">{{ t('admissions.bind') }}</RouterLink></p
     >
     <AdmissionInstructions :kind="kind" />
@@ -42,6 +42,19 @@
         ></ElCheckboxGroup
       ></fieldset
     >
+    <label v-if="kind === 'alt'" class="target-field">
+      <span>{{ t('admissions.note') }}</span>
+      <ElInput
+        v-model="note"
+        type="textarea"
+        :rows="5"
+        :maxlength="2000"
+        show-word-limit
+        :aria-label="t('admissions.note')"
+        :placeholder="t('admissions.noteHint')"
+        :disabled="busy"
+      />
+    </label>
     <template v-if="kind === 'new_member'">
       <div class="evidence-grid"
         ><label v-for="item in evidenceKinds" :key="item" class="upload-field"
@@ -119,6 +132,7 @@
   const target = ref(props.application?.target_corporation_id ?? 98824507)
   const selected = ref(props.application?.characters.map((char) => char.character_id) ?? [])
   const files = ref<Partial<Record<EvidenceKind, Blob>>>({})
+  const note = ref(props.application?.note ?? '')
   const busy = ref(false)
   const error = ref('')
   const eligible = computed(() => canAccessAdmission(props.context, props.kind))
@@ -164,6 +178,7 @@
           kind: props.kind,
           target_corporation_id: target.value,
           character_ids: selected.value,
+          ...(props.kind === 'alt' ? { note: note.value } : {}),
           expected_version: props.application?.version ?? 0
         },
         files.value,
