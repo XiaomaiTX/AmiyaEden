@@ -35,7 +35,7 @@
           :page-size="20"
           :total="total"
           layout="prev, pager, next"
-          @current-change="reload"
+          @current-change="reload()"
         />
       </aside>
       <section :aria-busy="busy">
@@ -148,12 +148,15 @@
   function created(editor: IDomEditor) {
     editorRef.value = editor
   }
-  async function reload() {
+  async function reload(openNewest = false) {
+    const token = request
     error.value = false
     try {
       const data = await listAnnouncements(page.value)
       rows.value = data.list
       total.value = data.total
+      // On entry show the newest post, unless the user already opened one or started publishing.
+      if (openNewest && token === request && data.list[0]) void open(data.list[0])
       await useBadgeStore().fetchBadgeCounts()
     } catch {
       error.value = true
@@ -164,19 +167,31 @@
     busy.value = true
     error.value = false
     editing.value = false
+    let data: Announcement
     try {
-      const data = await getAnnouncement(row.id)
-      if (token !== request) return
-      selected.value = data
-      await nextTick()
-      if (!data.hidden) {
-        await readAnnouncement(data.id, data.version)
-        if (token === request) await reload()
-      }
+      data = await getAnnouncement(row.id)
     } catch {
-      error.value = true
-    } finally {
-      if (token === request) busy.value = false
+      if (token === request) {
+        error.value = true
+        busy.value = false
+      }
+      return
+    }
+    if (token !== request) return
+    selected.value = data
+    busy.value = false
+    // Each request costs a full round trip, so acknowledgement runs in the background without
+    // locking the list, and is skipped when the displayed version is already read.
+    if (data.hidden || (!row.unread && data.version === row.version)) return
+    await nextTick()
+    if (token !== request) return
+    try {
+      await readAnnouncement(data.id, data.version)
+      row.unread = false
+      row.version = data.version
+      await useBadgeStore().fetchBadgeCounts()
+    } catch {
+      if (token === request) error.value = true
     }
   }
   function startEdit(create: boolean) {
@@ -212,7 +227,7 @@
       busy.value = false
     }
   }
-  onMounted(reload)
+  onMounted(() => reload(true))
   onBeforeUnmount(() => {
     request++
     editorRef.value?.destroy()
@@ -234,7 +249,9 @@
     font-size: 24px;
   }
   h2 {
-    font-size: 20px;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.4;
   }
   .board {
     display: grid;
@@ -339,15 +356,117 @@
     border: 1px solid var(--el-border-color);
   }
   .content {
-    margin-top: 20px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--el-border-color-lighter);
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--el-text-color-regular);
     overflow-wrap: anywhere;
+  }
+  .content > :deep(:first-child) {
+    margin-top: 0;
+  }
+  .content :deep(p) {
+    margin: 0 0 12px;
+  }
+  .content :deep(:is(h1, h2, h3, h4)) {
+    margin: 20px 0 10px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--el-text-color-primary);
+  }
+  .content :deep(h1) {
+    font-size: 22px;
+  }
+  .content :deep(h2) {
+    font-size: 19px;
+  }
+  .content :deep(h3) {
+    font-size: 17px;
+  }
+  .content :deep(h4) {
+    font-size: 15px;
+  }
+  .content :deep(strong) {
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+  .content :deep(a) {
+    color: var(--el-color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .content :deep(ul),
+  .content :deep(ol) {
+    margin: 0 0 12px;
+    padding-left: 1.6em;
+  }
+  .content :deep(ul) {
+    list-style: disc;
+  }
+  .content :deep(ol) {
+    list-style: decimal;
+  }
+  .content :deep(li) {
+    margin: 4px 0;
+  }
+  .content :deep(li::marker) {
+    color: var(--el-color-primary);
+  }
+  .content :deep(blockquote) {
+    margin: 0 0 12px;
+    padding: 8px 16px;
+    border-left: 4px solid var(--el-color-primary);
+    border-radius: 0 6px 6px 0;
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-secondary);
+  }
+  .content :deep(blockquote > :last-child) {
+    margin-bottom: 0;
+  }
+  .content :deep(code) {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--el-fill-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+  }
+  .content :deep(pre) {
+    margin: 0 0 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: var(--el-fill-color-light);
+    overflow-x: auto;
+  }
+  .content :deep(pre code) {
+    padding: 0;
+    background: none;
+  }
+  .content :deep(hr) {
+    margin: 20px 0;
+    border: 0;
+    border-top: 1px solid var(--el-border-color);
+  }
+  .content :deep(table) {
+    width: 100%;
+    margin: 0 0 12px;
+    border-collapse: collapse;
+  }
+  .content :deep(:is(th, td)) {
+    padding: 6px 10px;
+    border: 1px solid var(--el-border-color);
+    text-align: left;
+  }
+  .content :deep(th) {
+    background: var(--el-fill-color-light);
+    font-weight: 600;
   }
   .content :deep(img) {
     max-width: 100%;
     height: auto;
-  }
-  .content :deep(p) {
-    margin: 12px 0;
+    margin: 4px 0;
+    border-radius: 6px;
   }
   form > p {
     margin: 12px 0;

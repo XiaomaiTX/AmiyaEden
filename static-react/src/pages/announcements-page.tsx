@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
   listAnnouncements,
   getAnnouncement,
@@ -29,6 +29,7 @@ export function AnnouncementsPage() {
   // null = no error; '' = failure without a server message (generic text is shown).
   const [error, setError] = useState<string | null>(null)
   const request = useRef(0)
+  const autoOpened = useRef(false)
   const fail = (cause: unknown) => setError(cause instanceof Error ? cause.message : '')
   async function badges() {
     const id = useSessionStore.getState().characterId
@@ -39,14 +40,22 @@ export function AnnouncementsPage() {
     setRows(data.list)
     setTotal(data.total)
   }
+  // On entry show the newest post, unless the user already opened one or started publishing.
+  const openNewest = useEffectEvent((row: Announcement) => {
+    if (autoOpened.current) return
+    autoOpened.current = true
+    void open(row)
+  })
   useEffect(() => {
     let active = true
+    const token = request.current
     void listAnnouncements(page)
       .then(async (data) => {
         if (!active) return
         setError(null)
         setRows(data.list)
         setTotal(data.total)
+        if (token === request.current && data.list[0]) openNewest(data.list[0])
         await badges()
       })
       .catch((cause: unknown) => {
@@ -67,24 +76,36 @@ export function AnnouncementsPage() {
     setBusy(true)
     setError(null)
     setEditing(false)
+    let data: Announcement
     try {
-      const data = await getAnnouncement(row.id)
-      if (token !== request.current) return
-      setSelected(data)
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      )
-      if (token !== request.current) return
-      if (!data.hidden) {
-        await readAnnouncement(data.id, data.version)
-        if (token !== request.current) return
-        await load()
-        await badges()
+      data = await getAnnouncement(row.id)
+    } catch (cause) {
+      if (token === request.current) {
+        fail(cause)
+        setBusy(false)
       }
+      return
+    }
+    if (token !== request.current) return
+    setSelected(data)
+    setBusy(false)
+    // Each request costs a full round trip, so acknowledgement runs in the background without
+    // locking the list, and is skipped when the displayed version is already read.
+    if (data.hidden || (!row.unread && data.version === row.version)) return
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    )
+    if (token !== request.current) return
+    try {
+      await readAnnouncement(data.id, data.version)
+      setRows((current) =>
+        current.map((item) =>
+          item.id === data.id ? { ...item, unread: false, version: data.version } : item
+        )
+      )
+      await badges()
     } catch (cause) {
       if (token === request.current) fail(cause)
-    } finally {
-      if (token === request.current) setBusy(false)
     }
   }
   function edit() {
@@ -258,7 +279,7 @@ export function AnnouncementsPage() {
           ) : selected ? (
             <>
               <div className="flex items-start justify-between gap-4">
-                <h2 className="text-xl font-semibold">{selected.title}</h2>
+                <h2 className="text-2xl font-semibold leading-snug">{selected.title}</h2>
                 {manage && (
                   <Button variant="outline" isDisabled={busy} onPress={edit}>
                     {t('announcement.edit')}
@@ -269,7 +290,7 @@ export function AnnouncementsPage() {
                 {new Date(selected.created_at).toLocaleString()}
               </p>
               <div
-                className="prose max-w-none break-words dark:prose-invert [&_img]:h-auto [&_img]:max-w-full"
+                className="announcement-content border-t pt-4"
                 dangerouslySetInnerHTML={{ __html: selected.body_html ?? '' }}
               />
             </>

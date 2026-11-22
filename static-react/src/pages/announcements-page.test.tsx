@@ -48,21 +48,34 @@ beforeEach(() => {
   vi.mocked(getAnnouncement).mockResolvedValue(announcement)
   vi.mocked(readAnnouncement).mockResolvedValue(null)
 })
-test('leaves announcements unread until opened and acknowledges the displayed version', async () => {
+test('opens the newest announcement on entry and acknowledges the displayed version', async () => {
+  const older = { ...announcement, id: 2, title: 'Old notice', unread: false }
+  vi.mocked(listAnnouncements).mockResolvedValue({ list: [announcement, older], total: 2 })
   render(<AnnouncementsPage />)
-  const entry = await screen.findByRole('button', { name: /Fleet tonight/ })
-  expect(getAnnouncement).not.toHaveBeenCalled()
-  expect(readAnnouncement).not.toHaveBeenCalled()
-  expect(screen.queryByText('Form up at 19:00')).not.toBeInTheDocument()
-  fireEvent.click(entry)
   await screen.findByText('Form up at 19:00')
+  expect(getAnnouncement).toHaveBeenCalledTimes(1)
+  expect(getAnnouncement).toHaveBeenCalledWith(1)
   await waitFor(() => expect(readAnnouncement).toHaveBeenCalledWith(1, 2))
+  await waitFor(() => expect(screen.queryByText('announcement.unread')).not.toBeInTheDocument())
+  expect(listAnnouncements).toHaveBeenCalledTimes(1)
+})
+test('reopening an already-read announcement skips the read request', async () => {
+  vi.mocked(listAnnouncements).mockResolvedValue({
+    list: [{ ...announcement, unread: false }],
+    total: 1,
+  })
+  render(<AnnouncementsPage />)
+  await screen.findByText('Form up at 19:00')
+  fireEvent.click(screen.getByRole('button', { name: /Fleet tonight/ }))
+  await waitFor(() => expect(getAnnouncement).toHaveBeenCalledTimes(2))
+  expect(screen.getByRole('button', { name: /Fleet tonight/ })).toBeEnabled()
+  expect(readAnnouncement).not.toHaveBeenCalled()
 })
 test('a failed detail request keeps the announcement unread', async () => {
   vi.mocked(getAnnouncement).mockRejectedValueOnce(new Error('offline'))
   render(<AnnouncementsPage />)
-  fireEvent.click(await screen.findByRole('button', { name: /Fleet tonight/ }))
   await screen.findByRole('alert')
+  expect(screen.getByText('announcement.unread')).toBeInTheDocument()
   expect(readAnnouncement).not.toHaveBeenCalled()
 })
 test('a manager can publish a hidden announcement', async () => {
@@ -88,4 +101,6 @@ test('a manager can publish a hidden announcement', async () => {
     })
   )
   await screen.findByRole('button', { name: 'announcement.edit' })
+  // Starting to publish before the list arrives suppresses the automatic open.
+  expect(getAnnouncement).not.toHaveBeenCalled()
 })
