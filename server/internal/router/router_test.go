@@ -102,6 +102,16 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 	if routeExists(routes, http.MethodGet, "/api/v1/fuxi-admins") {
 		t.Fatal("expected legacy GET /api/v1/fuxi-admins route to be removed")
 	}
+	for _, path := range []string{
+		"/api/v1/notification/list",
+		"/api/v1/notification/unread-count",
+		"/api/v1/notification/read",
+		"/api/v1/notification/read-all",
+	} {
+		if routeExists(routes, http.MethodPost, path) {
+			t.Fatalf("expected retired POST %s route to be removed", path)
+		}
+	}
 }
 
 func routeExists(routes gin.RoutesInfo, method, path string) bool {
@@ -186,18 +196,15 @@ func TestSkillPlanReadAllowsLoggedInUserAndWriteStillRequiresManager(t *testing.
 
 func TestFuxiHallPublicPagesUseLoggedInRouteGroup(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-
 	router, userToken, guestToken, superAdminToken := newFuxiHallRouteTestRouter(t)
-
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership", http.StatusUnauthorized)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+userToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership?token="+superAdminToken, http.StatusOK)
-
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors", http.StatusUnauthorized)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+userToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors?token="+superAdminToken, http.StatusOK)
+	path := "/api/v1/fuxi-hall/hall-of-fame"
+	assertRouteStatus(t, router, http.MethodGet, path, http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, path+"?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, path+"?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, path+"?token="+superAdminToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodPut, "/api/v1/fuxi-hall/cards/1/profile", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/leadership", http.StatusNotFound)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/fuxi-hall/contributors", http.StatusNotFound)
 }
 
 func TestFuxiHallManageRoutesRequireAdminRole(t *testing.T) {
@@ -205,11 +212,15 @@ func TestFuxiHallManageRoutesRequireAdminRole(t *testing.T) {
 
 	router, userToken, adminToken, guestToken, superAdminToken := newFuxiHallManageRouteTestRouter(t)
 
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership", http.StatusUnauthorized)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+guestToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+userToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+adminToken, http.StatusForbidden)
-	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership?token="+superAdminToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/hall-of-fame", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/hall-of-fame?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/hall-of-fame?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/hall-of-fame?token="+adminToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodGet, "/api/v1/system/fuxi-hall/pages/hall-of-fame?token="+superAdminToken, http.StatusOK)
+	assertRouteStatus(t, router, http.MethodPost, "/api/v1/system/fuxi-hall/contributions/refresh", http.StatusUnauthorized)
+	assertRouteStatus(t, router, http.MethodPost, "/api/v1/system/fuxi-hall/contributions/refresh?token="+userToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodPost, "/api/v1/system/fuxi-hall/contributions/refresh?token="+guestToken, http.StatusForbidden)
+	assertRouteStatus(t, router, http.MethodPost, "/api/v1/system/fuxi-hall/contributions/refresh?token="+adminToken, http.StatusForbidden)
 }
 
 func TestSystemWebhookRequiresSuperAdmin(t *testing.T) {

@@ -23,12 +23,10 @@ var (
 
 var (
 	fuxiHallAllowedPageKeys = map[string]struct{}{
-		string(model.FuxiHallPageLeadership):   {},
-		string(model.FuxiHallPageContributors): {},
+		string(model.FuxiHallPageFame): {},
 	}
 	fuxiHallDefaultPageTitles = map[string]string{
-		string(model.FuxiHallPageLeadership):   "管理层",
-		string(model.FuxiHallPageContributors): "重大贡献成员",
+		string(model.FuxiHallPageFame): "伏羲名人堂",
 	}
 	fuxiHallAvatarShapes = map[string]struct{}{
 		"circle":  {},
@@ -42,9 +40,6 @@ type FuxiHallService struct {
 	repo               *repository.FuxiHallRepository
 	userRepo           *repository.UserRepository
 	eveCharacterRepo   *repository.EveCharacterRepository
-	fleetRepo          *repository.FleetRepository
-	welfareRepo        *repository.WelfareRepository
-	shopRepo           *repository.ShopRepository
 	resolveCharacterID func(ctx context.Context, characterName string) (int64, error)
 	auditSvc           *AuditService
 }
@@ -54,9 +49,6 @@ func NewFuxiHallService() *FuxiHallService {
 		repo:               repository.NewFuxiHallRepository(),
 		userRepo:           repository.NewUserRepository(),
 		eveCharacterRepo:   repository.NewEveCharacterRepository(),
-		fleetRepo:          repository.NewFleetRepository(),
-		welfareRepo:        repository.NewWelfareRepository(),
-		shopRepo:           repository.NewShopRepository(),
 		resolveCharacterID: resolveCharacterIDByNameFromESI,
 		auditSvc:           NewAuditService(),
 	}
@@ -68,40 +60,44 @@ type FuxiHallPublicPageResponse struct {
 }
 
 type FuxiHallUpdatePageRequest struct {
-	Title           *string `json:"title"`
-	Subtitle        *string `json:"subtitle"`
-	DescriptionHTML *string `json:"description_html"`
+	Floors          *[]model.FuxiHallFloor `json:"floors"`
+	Title           *string                `json:"title"`
+	Subtitle        *string                `json:"subtitle"`
+	DescriptionHTML *string                `json:"description_html"`
 }
 
 type FuxiHallCreateCardRequest struct {
-	PageKey           string   `json:"page_key"`
-	Nickname          string   `json:"nickname"`
-	MainCharacterName string   `json:"main_character_name"`
-	TitleTags         []string `json:"title_tags"`
-	DescriptionHTML   string   `json:"description_html"`
-	AccentColor       string   `json:"accent_color"`
-	AvatarShape       string   `json:"avatar_shape"`
-	FontScale         *int     `json:"font_scale"`
-	Visible           *bool    `json:"visible"`
+	ContributionOffsets *model.FuxiHallContributions `json:"contribution_offsets"`
+	FloorKey            string                       `json:"floor_key"`
+	IsCurrentManagement bool                         `json:"is_current_management"`
+	PageKey             string                       `json:"page_key"`
+	Nickname            string                       `json:"nickname"`
+	MainCharacterName   string                       `json:"main_character_name"`
+	TitleTags           []string                     `json:"title_tags"`
+	DescriptionHTML     string                       `json:"description_html"`
+	AccentColor         string                       `json:"accent_color"`
+	AvatarShape         string                       `json:"avatar_shape"`
+	FontScale           *int                         `json:"font_scale"`
+	Visible             *bool                        `json:"visible"`
 }
 
 type FuxiHallUpdateCardRequest struct {
-	Nickname              *string   `json:"nickname"`
-	MainCharacterName     *string   `json:"main_character_name"`
-	TitleTags             *[]string `json:"title_tags"`
-	DescriptionHTML       *string   `json:"description_html"`
-	AccentColor           *string   `json:"accent_color"`
-	AvatarShape           *string   `json:"avatar_shape"`
-	FontScale             *int      `json:"font_scale"`
-	Visible               *bool     `json:"visible"`
-	WelfareDeliveryOffset *int      `json:"welfare_delivery_offset"`
+	ContributionOffsets *model.FuxiHallContributions `json:"contribution_offsets"`
+	FloorKey            *string                      `json:"floor_key"`
+	IsCurrentManagement *bool                        `json:"is_current_management"`
+	Nickname            *string                      `json:"nickname"`
+	MainCharacterName   *string                      `json:"main_character_name"`
+	TitleTags           *[]string                    `json:"title_tags"`
+	DescriptionHTML     *string                      `json:"description_html"`
+	AccentColor         *string                      `json:"accent_color"`
+	AvatarShape         *string                      `json:"avatar_shape"`
+	FontScale           *int                         `json:"font_scale"`
+	Visible             *bool                        `json:"visible"`
 }
 
 type FuxiHallManageCard struct {
 	model.FuxiHallCard
-	FleetLedCount         int64 `json:"fleet_led_count"`
-	WelfareDeliveryCount  int64 `json:"welfare_delivery_count"`
-	WelfareDeliveryOffset int   `json:"welfare_delivery_offset"`
+	ContributionOffsets model.FuxiHallContributions `json:"contribution_offsets"`
 }
 
 type FuxiHallReorderRequest struct {
@@ -128,6 +124,9 @@ func (s *FuxiHallService) GetPublicPage(pageKey string) (*FuxiHallPublicPageResp
 		cards = []model.FuxiHallCard{}
 	}
 
+	for i := range cards {
+		cards[i].EnrichContributions()
+	}
 	return &FuxiHallPublicPageResponse{Page: *page, Cards: cards}, nil
 }
 
@@ -139,7 +138,7 @@ func (s *FuxiHallService) GetPageConfig(pageKey string) (*model.FuxiHallPage, er
 	return s.ensurePage(normalizedPageKey)
 }
 
-func (s *FuxiHallService) UpdatePageConfig(operatorID uint, pageKey string, req *FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error) {
+func (s *FuxiHallService) updatePageConfig(operatorID uint, pageKey string, req *FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error) {
 	normalizedPageKey, err := normalizeFuxiHallPageKey(pageKey)
 	if err != nil {
 		return nil, err
@@ -150,6 +149,9 @@ func (s *FuxiHallService) UpdatePageConfig(operatorID uint, pageKey string, req 
 		return nil, err
 	}
 
+	if req.Floors != nil {
+		page.Floors = *req.Floors
+	}
 	if req.Title != nil {
 		title := strings.TrimSpace(*req.Title)
 		if title == "" {
@@ -187,65 +189,26 @@ func (s *FuxiHallService) ListCards(pageKey string, visibleOnly bool) ([]model.F
 	if cards == nil {
 		return []model.FuxiHallCard{}, nil
 	}
+	for i := range cards {
+		cards[i].EnrichContributions()
+	}
 	return cards, nil
 }
 
 func (s *FuxiHallService) ListManageCards(pageKey string) ([]FuxiHallManageCard, error) {
-	normalizedPageKey, err := normalizeFuxiHallPageKey(pageKey)
-	if err != nil {
-		return nil, err
-	}
 	cards, err := s.ListCards(pageKey, false)
 	if err != nil {
 		return nil, err
 	}
 	result := make([]FuxiHallManageCard, len(cards))
 	for i := range cards {
-		result[i] = FuxiHallManageCard{
-			FuxiHallCard:          cards[i],
-			WelfareDeliveryOffset: cards[i].WelfareDeliveryOffset,
-		}
+		cards[i].EnrichContributions()
+		result[i] = FuxiHallManageCard{FuxiHallCard: cards[i], ContributionOffsets: cards[i].Offsets()}
 	}
-	if normalizedPageKey != string(model.FuxiHallPageLeadership) || len(cards) == 0 {
-		return result, nil
-	}
-
-	characterIDs := collectFuxiHallCharacterIDs(cards)
-	if len(characterIDs) == 0 {
-		return result, nil
-	}
-	characterToUser, err := s.resolveFuxiHallUsers(characterIDs)
-	if err != nil {
-		return nil, err
-	}
-	userIDs := collectFuxiHallUserIDs(characterToUser)
-	if len(userIDs) == 0 {
-		return result, nil
-	}
-
-	fleetCounts, err := s.fleetRepo.CountByCreatorUserIDs(userIDs)
-	if err != nil {
-		return nil, err
-	}
-	welfareCounts, err := s.welfareRepo.CountDeliveredByReviewers(userIDs)
-	if err != nil {
-		return nil, err
-	}
-	shopCounts, err := s.shopRepo.CountDeliveredByReviewers(userIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range result {
-		userID := characterToUser[result[i].MainCharacterID]
-		result[i].FleetLedCount = fleetCounts[userID]
-		result[i].WelfareDeliveryCount = welfareCounts[userID] + shopCounts[userID] + int64(result[i].WelfareDeliveryOffset)
-	}
-
 	return result, nil
 }
 
-func (s *FuxiHallService) CreateCard(operatorID uint, req *FuxiHallCreateCardRequest) (*model.FuxiHallCard, error) {
+func (s *FuxiHallService) createCard(operatorID uint, req *FuxiHallCreateCardRequest, mainCharacterID int64) (*model.FuxiHallCard, error) {
 	pageKey, err := normalizeFuxiHallPageKey(req.PageKey)
 	if err != nil {
 		return nil, err
@@ -262,16 +225,9 @@ func (s *FuxiHallService) CreateCard(operatorID uint, req *FuxiHallCreateCardReq
 	if mainCharacterName == "" {
 		return nil, NewUserVisibleError("主角色名称不能为空")
 	}
-	mainCharacterID, err := s.resolveCharacterID(context.Background(), mainCharacterName)
-	if err != nil {
-		return nil, err
-	}
 	titleTags, err := normalizeFuxiHallTitleTags(req.TitleTags)
 	if err != nil {
 		return nil, err
-	}
-	if len(titleTags) == 0 {
-		return nil, NewUserVisibleError("头衔标签不能为空")
 	}
 
 	accentColor, err := normalizeFuxiHallColor(req.AccentColor, "#3b82f6", "强调色")
@@ -298,26 +254,38 @@ func (s *FuxiHallService) CreateCard(operatorID uint, req *FuxiHallCreateCardReq
 	}
 
 	card := &model.FuxiHallCard{
-		PageKey:           pageKey,
-		Nickname:          nickname,
-		MainCharacterID:   mainCharacterID,
-		MainCharacterName: mainCharacterName,
-		TitleTags:         titleTags,
-		DescriptionHTML:   sanitizeRichTextHTML(req.DescriptionHTML),
-		AccentColor:       accentColor,
-		AvatarShape:       avatarShape,
-		FontScale:         fontScale,
-		Visible:           visible,
-		SortOrder:         maxSortOrder + 1,
+		FloorKey:            req.FloorKey,
+		IsCurrentManagement: req.IsCurrentManagement,
+		PageKey:             pageKey,
+		Nickname:            nickname,
+		MainCharacterID:     mainCharacterID,
+		MainCharacterName:   mainCharacterName,
+		TitleTags:           titleTags,
+		DescriptionHTML:     sanitizeRichTextHTML(req.DescriptionHTML),
+		AccentColor:         accentColor,
+		AvatarShape:         avatarShape,
+		FontScale:           fontScale,
+		Visible:             visible,
+		SortOrder:           maxSortOrder + 1,
+	}
+	if req.ContributionOffsets != nil {
+		if err := validateHallOffsets(*req.ContributionOffsets); err != nil {
+			return nil, err
+		}
+		v := *req.ContributionOffsets
+		card.FleetLedOffset = v.Fleets
+		card.WelfareDeliveryOffset = int(v.Welfare)
+		card.SRPOffset = v.SRP
+		card.RecruitmentOffset = v.Recruitment
+		card.MentoringOffset = v.Mentoring
 	}
 	if err := s.repo.CreateCard(card); err != nil {
 		return nil, err
 	}
-	s.recordFuxiCardAudit("fuxi_card_create", operatorID, card.ID, model.AuditResultSuccess, map[string]any{"page_key": card.PageKey, "nickname": card.Nickname})
 	return card, nil
 }
 
-func (s *FuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string, req *FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+func (s *FuxiHallService) updateCard(operatorID, id uint, operatorRoles []string, req *FuxiHallUpdateCardRequest, resolvedID int64) (*model.FuxiHallCard, error) {
 	card, err := s.repo.GetCardByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -327,6 +295,12 @@ func (s *FuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string
 	}
 
 	updates := map[string]interface{}{}
+	if req.FloorKey != nil {
+		updates["floor_key"] = *req.FloorKey
+	}
+	if req.IsCurrentManagement != nil {
+		updates["is_current_management"] = *req.IsCurrentManagement
+	}
 
 	if req.Nickname != nil {
 		value := strings.TrimSpace(*req.Nickname)
@@ -340,20 +314,17 @@ func (s *FuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string
 		if value == "" {
 			return nil, NewUserVisibleError("主角色名称不能为空")
 		}
-		resolvedID, err := s.resolveCharacterID(context.Background(), value)
-		if err != nil {
-			return nil, err
-		}
 		updates["main_character_name"] = value
 		updates["main_character_id"] = resolvedID
+		if resolvedID != card.MainCharacterID {
+			updates["contribution_counts"] = "{}"
+			updates["contributions_updated_at"] = nil
+		}
 	}
 	if req.TitleTags != nil {
 		value, err := normalizeFuxiHallTitleTags(*req.TitleTags)
 		if err != nil {
 			return nil, err
-		}
-		if len(value) == 0 {
-			return nil, NewUserVisibleError("头衔标签不能为空")
 		}
 		raw, err := json.Marshal(value)
 		if err != nil {
@@ -388,14 +359,13 @@ func (s *FuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string
 	if req.Visible != nil {
 		updates["visible"] = *req.Visible
 	}
-	if req.WelfareDeliveryOffset != nil {
-		if !model.IsSuperAdmin(operatorRoles) {
-			return nil, NewUserVisibleError("仅超级管理员可以修改福利发放次数偏移")
+	if req.ContributionOffsets != nil {
+		if err := validateHallOffsets(*req.ContributionOffsets); err != nil {
+			return nil, err
 		}
-		if *req.WelfareDeliveryOffset < 0 {
-			return nil, NewUserVisibleError("福利发放次数偏移不能为负数")
+		for key, value := range hallOffsetFields(*req.ContributionOffsets) {
+			updates[key] = value
 		}
-		updates["welfare_delivery_offset"] = *req.WelfareDeliveryOffset
 	}
 
 	if len(updates) == 0 {
@@ -413,7 +383,6 @@ func (s *FuxiHallService) UpdateCard(operatorID, id uint, operatorRoles []string
 	if err != nil {
 		return nil, err
 	}
-	s.recordFuxiCardAudit("fuxi_card_update", operatorID, id, model.AuditResultSuccess, map[string]any{"nickname": updated.Nickname})
 	return updated, nil
 }
 
@@ -559,7 +528,7 @@ func (s *FuxiHallService) recordFuxiCardAudit(action string, actorID, cardID uin
 func normalizeFuxiHallPageKey(pageKey string) (string, error) {
 	normalized := strings.TrimSpace(strings.ToLower(pageKey))
 	if _, exists := fuxiHallAllowedPageKeys[normalized]; !exists {
-		return "", NewUserVisibleError("page_key 仅支持 leadership 或 contributors")
+		return "", NewUserVisibleError("fuxiHall.errors.invalid")
 	}
 	return normalized, nil
 }
@@ -574,6 +543,7 @@ func (s *FuxiHallService) ensurePage(pageKey string) (*model.FuxiHallPage, error
 	}
 
 	def := &model.FuxiHallPage{
+		Floors:          model.DefaultFuxiHallFloors(),
 		PageKey:         pageKey,
 		Title:           fuxiHallDefaultPageTitles[pageKey],
 		Subtitle:        "",

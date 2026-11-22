@@ -98,6 +98,13 @@ func InitCron() *service.TaskService {
 // 仅当对应数据为空时触发，避免每次启动都跑。通过后台任务管理器派发，
 // 确保进程关停时能取消并等待。
 func triggerStartupOneShotTasks(taskSvc *service.TaskService) {
+	if jobs.FuxiHallContributionsNeedsFirstRun() {
+		if err := background.RunOrSchedule(global.BackgroundContext(), global.EnsureBackgroundTaskManager(), "fuxi_hall_contributions_initial", func(ctx context.Context) error {
+			return taskSvc.RunTask(ctx, jobs.FuxiHallContributionsTaskName, nil)
+		}); err != nil {
+			cronZapLogger().Warn("Unable to schedule initial hall contributions refresh", zap.Error(err))
+		}
+	}
 	// 燃料率映射表为空时，首次同步 structure_fuel_rate_sync。
 	if jobs.StructureFuelRateSyncNeedsFirstRun() {
 		taskName := jobs.StructureFuelRateSyncTaskName

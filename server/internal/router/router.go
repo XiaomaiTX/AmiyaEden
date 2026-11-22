@@ -208,19 +208,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	login.GET("/badge-counts", badgeH.GetBadgeCounts)
 	login.GET("/operation-salary-rates", handler.NewSalaryHandler().OperationRates)
 
-	// ─── 通知 ───
-	notifH := handler.NewNotificationHandler()
-	notification := auth.Group("/notification")
-	{
-		notification.POST("/list", notifH.ListNotifications)
-		notification.POST("/unread-count", notifH.GetUnreadCount)
-	}
-	notificationWrite := login.Group("/notification")
-	{
-		notificationWrite.POST("/read", notifH.MarkAsRead)
-		notificationWrite.POST("/read-all", notifH.MarkAllAsRead)
-	}
-
 	// ─── 舰队 ───
 	fleetH := handler.NewFleetHandler()
 	operation := login.Group("/operation", requireMenuOperation)
@@ -705,13 +692,14 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// 登录可见展示页
 	loginFuxiHall := login.Group("/fuxi-hall", requireMenuFuxiHall)
 	{
-		loginFuxiHall.GET("/leadership", fuxiHallH.GetLeadership)
-		loginFuxiHall.GET("/contributors", fuxiHallH.GetContributors)
+		loginFuxiHall.GET("/hall-of-fame", fuxiHallH.GetHall)
+		loginFuxiHall.PUT("/cards/:id/profile", fuxiHallH.UpdateOwnCard)
 	}
 
 	// 管理端点（admin group 已要求 RoleAdmin）
 	adminFuxiHall := admin.Group("/fuxi-hall", requireMenuFuxiHall)
 	{
+		adminFuxiHall.POST("/contributions/refresh", fuxiHallH.RefreshContributions)
 		adminFuxiHall.GET("/pages/:page_key", fuxiHallH.GetPageConfig)
 		adminFuxiHall.PUT("/pages/:page_key", fuxiHallH.UpdatePageConfig)
 		adminFuxiHall.GET("/cards/:page_key", fuxiHallH.ListCards)

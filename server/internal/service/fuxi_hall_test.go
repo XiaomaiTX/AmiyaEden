@@ -22,6 +22,11 @@ func useFuxiHallServiceTestDB(t *testing.T) {
 		&model.Fleet{},
 		&model.WelfareApplication{},
 		&model.ShopOrder{},
+		&model.SrpApplication{},
+		&model.AdmissionApplication{},
+		&model.MentorMenteeRelationship{},
+		&model.NewbroRecruitment{},
+		&model.NewbroRecruitmentEntry{},
 	)
 	oldDB := global.DB
 	global.DB = db
@@ -48,7 +53,7 @@ func TestFuxiHallCreateCardValidatesRequiredFields(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1001, nil })
 
 	_, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "",
 		MainCharacterName: "Main",
 		TitleTags:         []string{"Title"},
@@ -63,7 +68,7 @@ func TestFuxiHallCreateCardSanitizesDescriptionHTML(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1001, nil })
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Alpha",
 		MainCharacterName: "Main",
 		TitleTags:         []string{"Lead"},
@@ -82,7 +87,7 @@ func TestFuxiHallUpdateCardValidatesControlledStyle(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1002, nil })
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "contributors",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Beta",
 		MainCharacterName: "Main",
 		TitleTags:         []string{"Builder"},
@@ -103,7 +108,7 @@ func TestFuxiHallCreateCardIgnoresDeprecatedStyleFieldsFromJSON(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 1003, nil })
 
 	payload := []byte(`{
-		"page_key":"leadership",
+		"page_key":"hall-of-fame",
 		"nickname":"Legacy",
 		"main_character_name":"Legacy Main",
 		"title_tags":["Legacy Title"],
@@ -139,7 +144,7 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 	})
 
 	cardA, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "A",
 		MainCharacterName: "A",
 		TitleTags:         []string{"A"},
@@ -148,7 +153,7 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 		t.Fatalf("CreateCard A: %v", err)
 	}
 	cardB, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "B",
 		MainCharacterName: "B",
 		TitleTags:         []string{"B"},
@@ -158,14 +163,14 @@ func TestFuxiHallReorderCardsIsAtomic(t *testing.T) {
 	}
 
 	err = svc.ReorderCards(1, &FuxiHallReorderRequest{
-		PageKey:    "leadership",
+		PageKey:    "hall-of-fame",
 		OrderedIDs: []uint{cardB.ID, 999999},
 	})
 	if err == nil {
 		t.Fatal("expected reorder error for invalid id")
 	}
 
-	cards, err := svc.ListCards("leadership", false)
+	cards, err := svc.ListCards("hall-of-fame", false)
 	if err != nil {
 		t.Fatalf("ListCards: %v", err)
 	}
@@ -185,7 +190,7 @@ func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 2003, nil })
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Dup",
 		MainCharacterName: "Dup",
 		TitleTags:         []string{"Dup"},
@@ -195,7 +200,7 @@ func TestFuxiHallReorderRejectsDuplicateIDs(t *testing.T) {
 	}
 
 	err = svc.ReorderCards(1, &FuxiHallReorderRequest{
-		PageKey:    "leadership",
+		PageKey:    "hall-of-fame",
 		OrderedIDs: []uint{card.ID, card.ID},
 	})
 	if err == nil {
@@ -208,9 +213,10 @@ func TestFuxiHallCreateCardRequiresTitleTags(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3001, nil })
 
 	_, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
-		Nickname:          "NoTags",
-		MainCharacterName: "Main",
+		PageKey:             "hall-of-fame",
+		Nickname:            "NoTags",
+		MainCharacterName:   "Main",
+		IsCurrentManagement: true,
 	})
 	if err == nil {
 		t.Fatal("expected title_tags required error")
@@ -222,7 +228,7 @@ func TestFuxiHallCreateCardNormalizesTitleTags(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3002, nil })
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "contributors",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Tags",
 		MainCharacterName: "Main",
 		TitleTags:         []string{"  指挥  ", "", "后勤", "指挥"},
@@ -241,7 +247,7 @@ func TestFuxiHallCreateCardValidatesTitleTagsLimits(t *testing.T) {
 
 	longTag := strings.Repeat("长", 33)
 	_, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "contributors",
+		PageKey:           "hall-of-fame",
 		Nickname:          "TooLong",
 		MainCharacterName: "Main",
 		TitleTags:         []string{longTag},
@@ -252,7 +258,7 @@ func TestFuxiHallCreateCardValidatesTitleTagsLimits(t *testing.T) {
 
 	tooMany := []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"}
 	_, err = svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "contributors",
+		PageKey:           "hall-of-fame",
 		Nickname:          "TooMany",
 		MainCharacterName: "Main",
 		TitleTags:         tooMany,
@@ -267,7 +273,7 @@ func TestFuxiHallUpdateCardReplacesTitleTags(t *testing.T) {
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 3005, nil })
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Replace",
 		MainCharacterName: "Main",
 		TitleTags:         []string{"旧标签"},
@@ -296,7 +302,7 @@ func TestFuxiHallCreateCardResolvesMainCharacterIDFromName(t *testing.T) {
 	})
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Alpha",
 		MainCharacterName: "XiaomaiTX",
 		TitleTags:         []string{"Lead"},
@@ -316,7 +322,7 @@ func TestFuxiHallCreateCardBlocksWhenCharacterResolveFails(t *testing.T) {
 	})
 
 	_, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Alpha",
 		MainCharacterName: "NoSuchName",
 		TitleTags:         []string{"Lead"},
@@ -339,7 +345,7 @@ func TestFuxiHallUpdateCardReResolvesCharacterIDWhenNameChanged(t *testing.T) {
 	})
 
 	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Gamma",
 		MainCharacterName: "Old Name",
 		TitleTags:         []string{"Tag"},
@@ -375,7 +381,7 @@ func TestFuxiHallCardJSONContainsTitleTags(t *testing.T) {
 	}
 }
 
-func TestFuxiHallListManageCardsInjectsLeadershipStatsOnly(t *testing.T) {
+func TestFuxiHallListManageCardsUsesCachedContributions(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
 	svc := NewFuxiHallService()
 
@@ -386,12 +392,12 @@ func TestFuxiHallListManageCardsInjectsLeadershipStatsOnly(t *testing.T) {
 	if err := global.DB.Create(&model.EveCharacter{CharacterID: 9001, UserID: user.ID, CharacterName: "Leader"}).Error; err != nil {
 		t.Fatalf("create eve character: %v", err)
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	if err := global.DB.Create(&model.Fleet{
 		ID:              "fleet-1",
 		Title:           "Fleet",
 		StartAt:         now,
-		EndAt:           now.Add(time.Hour),
+		EndAt:           now.Add(-time.Hour),
 		Importance:      model.FleetImportanceOther,
 		FCUserID:        user.ID,
 		FCCharacterID:   9001,
@@ -427,7 +433,7 @@ func TestFuxiHallListManageCardsInjectsLeadershipStatsOnly(t *testing.T) {
 	}
 
 	if err := global.DB.Create(&model.FuxiHallCard{
-		PageKey:               "leadership",
+		PageKey:               "hall-of-fame",
 		Nickname:              "Leader",
 		MainCharacterID:       9001,
 		MainCharacterName:     "Leader",
@@ -442,7 +448,7 @@ func TestFuxiHallListManageCardsInjectsLeadershipStatsOnly(t *testing.T) {
 		t.Fatalf("create leadership card: %v", err)
 	}
 	if err := global.DB.Create(&model.FuxiHallCard{
-		PageKey:           "contributors",
+		PageKey:           "hall-of-fame",
 		Nickname:          "Contributor",
 		MainCharacterID:   9001,
 		MainCharacterName: "Leader",
@@ -456,64 +462,49 @@ func TestFuxiHallListManageCardsInjectsLeadershipStatsOnly(t *testing.T) {
 		t.Fatalf("create contributors card: %v", err)
 	}
 
-	leadershipCards, err := svc.ListManageCards("leadership")
+	if err := svc.RefreshContributions(context.Background(), 0); err != nil {
+		t.Fatal(err)
+	}
+	leadershipCards, err := svc.ListManageCards("hall-of-fame")
 	if err != nil {
 		t.Fatalf("ListManageCards leadership: %v", err)
 	}
-	if len(leadershipCards) != 1 {
+	if len(leadershipCards) != 2 {
 		t.Fatalf("expected 1 leadership card, got %d", len(leadershipCards))
 	}
-	if leadershipCards[0].FleetLedCount != 1 {
-		t.Fatalf("fleet led count = %d, want 1", leadershipCards[0].FleetLedCount)
+	if leadershipCards[0].Contributions.Fleets != 1 {
+		t.Fatalf("fleet led count = %d, want 1: %+v", leadershipCards[0].Contributions.Fleets, leadershipCards[0])
 	}
-	if leadershipCards[0].WelfareDeliveryCount != 4 {
-		t.Fatalf("welfare delivery count = %d, want 4", leadershipCards[0].WelfareDeliveryCount)
+	if leadershipCards[0].Contributions.Welfare != 4 {
+		t.Fatalf("welfare delivery count = %d, want 4", leadershipCards[0].Contributions.Welfare)
 	}
 
-	contributorCards, err := svc.ListManageCards("contributors")
-	if err != nil {
-		t.Fatalf("ListManageCards contributors: %v", err)
+	if leadershipCards[1].Contributions.Fleets != 1 || leadershipCards[1].Contributions.Welfare != 2 {
+		t.Fatalf("unified contributor statistics: %+v", leadershipCards[1])
 	}
-	if len(contributorCards) != 1 {
-		t.Fatalf("expected 1 contributor card, got %d", len(contributorCards))
-	}
-	if contributorCards[0].FleetLedCount != 0 || contributorCards[0].WelfareDeliveryCount != 0 {
-		t.Fatalf("contributors stats should not be injected, got fleet=%d welfare=%d",
-			contributorCards[0].FleetLedCount, contributorCards[0].WelfareDeliveryCount)
-	}
+
 }
 
-func TestFuxiHallUpdateCardWelfareOffsetPermission(t *testing.T) {
+func TestFuxiHallAdminCanAdjustEveryOffset(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 9010, nil })
-
-	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{
-		PageKey:           "leadership",
-		Nickname:          "Offset",
-		MainCharacterName: "Main",
-		TitleTags:         []string{"Admin"},
-	})
+	card, err := svc.CreateCard(1, &FuxiHallCreateCardRequest{PageKey: "hall-of-fame", Nickname: "Offset", MainCharacterName: "Main"})
 	if err != nil {
-		t.Fatalf("CreateCard: %v", err)
+		t.Fatal(err)
 	}
-
-	offset := 3
-	if _, err := svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{
-		WelfareDeliveryOffset: &offset,
-	}); err == nil {
-		t.Fatal("expected admin offset update to be rejected")
+	offsets := model.FuxiHallContributions{Fleets: 2, Welfare: 3, SRP: 4, Recruitment: 5, Mentoring: 6}
+	if _, err = svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{ContributionOffsets: &offsets}); err != nil {
+		t.Fatal(err)
 	}
-
-	if _, err := svc.UpdateCard(1, card.ID, []string{model.RoleSuperAdmin}, &FuxiHallUpdateCardRequest{
-		WelfareDeliveryOffset: &offset,
-	}); err != nil {
-		t.Fatalf("super admin update offset: %v", err)
+	hall, err := svc.PublicHall(1)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	negative := -1
-	if _, err := svc.UpdateCard(1, card.ID, []string{model.RoleSuperAdmin}, &FuxiHallUpdateCardRequest{
-		WelfareDeliveryOffset: &negative,
-	}); err == nil {
-		t.Fatal("expected negative offset to be rejected")
+	if hall.Cards[0].Contributions != offsets {
+		t.Fatalf("offset totals: %+v", hall.Cards[0].Contributions)
+	}
+	offsets.SRP = -1
+	if _, err = svc.UpdateCard(1, card.ID, []string{model.RoleAdmin}, &FuxiHallUpdateCardRequest{ContributionOffsets: &offsets}); err == nil {
+		t.Fatal("negative offset accepted")
 	}
 }

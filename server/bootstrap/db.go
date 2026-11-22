@@ -87,7 +87,6 @@ func autoMigrate(db *gorm.DB) {
 		&model.SdeVersion{},
 		// ESI 数据表
 		&model.EveCharacterAsset{},
-		&model.EveCharacterNotification{},
 		&model.EveCharacterTitle{},
 		&model.EveCharacterCloneBaseInfo{},
 		&model.EveCharacterImplants{},
@@ -200,6 +199,9 @@ func autoMigrate(db *gorm.DB) {
 		global.Logger.Fatal("强制用户联系方式迁移失败", zap.Error(err))
 	}
 	ensureFuxiHallSchema(db)
+	if err := migrateFuxiHall(db); err != nil {
+		global.Logger.Fatal("Failed to migrate Fuxi Hall", zap.Error(err))
+	}
 	ensureSkillPlanScopes(db)
 	dropObsoleteSchema(db)
 	ensureCustomIndexes(db)
@@ -309,6 +311,7 @@ func obsoleteTables() []string {
 		"shop_lottery_activity",
 		"shop_redeem_code",
 		"srp_payout_mail_log",
+		"eve_character_notification",
 	}
 }
 

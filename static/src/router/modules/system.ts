@@ -21,7 +21,7 @@ export const systemRoutes: AppRouteRecord = {
       path: 'qqbot',
       name: 'QQBot',
       component: '/system/qqbot',
-      meta: { title: 'qqbot.title', roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] }
+      meta: { title: 'menus.system.qqbot', roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] }
     },
     {
       path: 'salary',
@@ -162,7 +162,7 @@ export const systemRoutes: AppRouteRecord = {
       name: 'NewbroSettings',
       component: '/system/newbro-settings',
       meta: {
-        title: 'refund.settings',
+        title: 'menus.system.newbroSettings',
         keepAlive: true,
         roles: ['super_admin', 'admin'],
         corpCapabilitiesAny: ['system.manage']
