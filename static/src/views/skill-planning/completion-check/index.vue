@@ -471,7 +471,9 @@
         fetchSkillPlanList({ current: 1, size: 200 }),
         fetchPersonalSkillPlanList({ current: 1, size: 200 })
       ])
-      allPlans.value = [...(corpRes?.list ?? []), ...(personalRes?.list ?? [])]
+      allPlans.value = [...(corpRes?.list ?? []), ...(personalRes?.list ?? [])].filter(
+        (plan) => !plan.disabled
+      )
     } catch {
       allPlans.value = []
     }

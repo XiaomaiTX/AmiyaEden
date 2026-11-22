@@ -90,12 +90,16 @@ func (r *SkillPlanRepository) ListByScope(
 	keyword string,
 	planScope string,
 	createdBy *uint,
+	includeDisabled bool,
 ) ([]model.SkillPlan, int64, error) {
 	var plans []model.SkillPlan
 	var total int64
 
 	offset := (page - 1) * pageSize
 	db := global.DB.Model(&model.SkillPlan{}).Where("plan_scope = ?", planScope)
+	if !includeDisabled {
+		db = db.Where("disabled = ?", false)
+	}
 	if createdBy != nil {
 		db = db.Where("created_by = ?", *createdBy)
 	}
@@ -137,8 +141,7 @@ func (r *SkillPlanRepository) ListAllByScope(planScope string, createdBy *uint) 
 func (r *SkillPlanRepository) ListVisibleForUser(userID uint) ([]model.SkillPlan, error) {
 	var plans []model.SkillPlan
 	err := global.DB.
-		Where("plan_scope = ?", model.SkillPlanScopeCorp).
-		Or("plan_scope = ? AND created_by = ?", model.SkillPlanScopePersonal, userID).
+		Where("disabled = ? AND (plan_scope = ? OR (plan_scope = ? AND created_by = ?))", false, model.SkillPlanScopeCorp, model.SkillPlanScopePersonal, userID).
 		Order("sort_order ASC, id DESC").
 		Find(&plans).Error
 	return plans, err

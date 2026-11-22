@@ -37,6 +37,7 @@ type SkillPlanSkillReq struct {
 
 // CreateSkillPlanRequest 创建技能计划请求
 type CreateSkillPlanRequest struct {
+	Disabled    *bool               `json:"disabled"`
 	Title       string              `json:"title" binding:"required"`
 	Description string              `json:"description"`
 	ShipTypeID  *int                `json:"ship_type_id"`
@@ -46,6 +47,7 @@ type CreateSkillPlanRequest struct {
 
 // UpdateSkillPlanRequest 更新技能计划请求
 type UpdateSkillPlanRequest struct {
+	Disabled    *bool               `json:"disabled"`
 	Title       string              `json:"title" binding:"required"`
 	Description string              `json:"description"`
 	ShipTypeID  *int                `json:"ship_type_id"`
@@ -56,6 +58,7 @@ type UpdateSkillPlanRequest struct {
 
 // SkillPlanListItemResp 技能计划列表项
 type SkillPlanListItemResp struct {
+	Disabled    bool   `json:"disabled"`
 	ID          uint   `json:"id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -81,6 +84,7 @@ type SkillPlanSkillResp struct {
 
 // SkillPlanDetailResp 技能计划详情响应
 type SkillPlanDetailResp struct {
+	Disabled    bool                 `json:"disabled"`
 	ID          uint                 `json:"id"`
 	Title       string               `json:"title"`
 	Description string               `json:"description"`
@@ -185,6 +189,9 @@ func (s *SkillPlanService) createSkillPlanByScope(
 		ShipTypeID:  normalizeOptionalSkillPlanShipTypeID(req.ShipTypeID),
 		CreatedBy:   userID,
 	}
+	if req.Disabled != nil {
+		plan.Disabled = *req.Disabled
+	}
 	skills := buildSkillPlanModels(normalizedSkills)
 
 	if err := s.repo.Create(plan, skills); err != nil {
@@ -200,8 +207,8 @@ func (s *SkillPlanService) createSkillPlanByScope(
 }
 
 // ListSkillPlans 获取技能计划列表
-func (s *SkillPlanService) ListSkillPlans(page, pageSize int, keyword string) ([]SkillPlanListItemResp, int64, error) {
-	return s.listSkillPlansByScope(0, page, pageSize, keyword, model.SkillPlanScopeCorp)
+func (s *SkillPlanService) ListSkillPlans(page, pageSize int, keyword string, roles []string) ([]SkillPlanListItemResp, int64, error) {
+	return s.listSkillPlansByScope(0, page, pageSize, keyword, model.SkillPlanScopeCorp, canReadDisabledSkillPlans(roles))
 }
 
 func (s *SkillPlanService) ListPersonalSkillPlans(
@@ -209,7 +216,7 @@ func (s *SkillPlanService) ListPersonalSkillPlans(
 	page, pageSize int,
 	keyword string,
 ) ([]SkillPlanListItemResp, int64, error) {
-	return s.listSkillPlansByScope(userID, page, pageSize, keyword, model.SkillPlanScopePersonal)
+	return s.listSkillPlansByScope(userID, page, pageSize, keyword, model.SkillPlanScopePersonal, true)
 }
 
 func (s *SkillPlanService) listSkillPlansByScope(
@@ -217,6 +224,7 @@ func (s *SkillPlanService) listSkillPlansByScope(
 	page, pageSize int,
 	keyword string,
 	planScope string,
+	includeDisabled bool,
 ) ([]SkillPlanListItemResp, int64, error) {
 	normalizePageRequest(&page, &pageSize, 50, 100)
 
@@ -224,7 +232,7 @@ func (s *SkillPlanService) listSkillPlansByScope(
 	if planScope == model.SkillPlanScopePersonal {
 		createdBy = &userID
 	}
-	plans, total, err := s.repo.ListByScope(page, pageSize, strings.TrimSpace(keyword), planScope, createdBy)
+	plans, total, err := s.repo.ListByScope(page, pageSize, strings.TrimSpace(keyword), planScope, createdBy, includeDisabled)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -251,6 +259,7 @@ func (s *SkillPlanService) listSkillPlansByScope(
 			Title:       plan.Title,
 			Description: plan.Description,
 			PlanScope:   plan.PlanScope,
+			Disabled:    plan.Disabled,
 			ShipTypeID:  plan.ShipTypeID,
 			SortOrder:   plan.SortOrder,
 			CreatedBy:   plan.CreatedBy,
@@ -264,9 +273,9 @@ func (s *SkillPlanService) listSkillPlansByScope(
 }
 
 // GetSkillPlan 获取技能计划详情
-func (s *SkillPlanService) GetSkillPlan(id uint, lang string) (*SkillPlanDetailResp, error) {
+func (s *SkillPlanService) GetSkillPlan(id uint, lang string, roles []string) (*SkillPlanDetailResp, error) {
 	plan, err := s.repo.GetByID(id)
-	if err != nil || plan.PlanScope != model.SkillPlanScopeCorp {
+	if err != nil || plan.PlanScope != model.SkillPlanScopeCorp || (plan.Disabled && !canReadDisabledSkillPlans(roles)) {
 		return nil, errors.New("技能计划不存在")
 	}
 	return s.getSkillPlanByID(plan, lang)
@@ -339,6 +348,9 @@ func (s *SkillPlanService) updateSkillPlan(
 		plan.SortOrder = *req.SortOrder
 	}
 
+	if req.Disabled != nil {
+		plan.Disabled = *req.Disabled
+	}
 	skills := buildSkillPlanModels(normalizedSkills)
 	if err := s.repo.Update(plan, skills); err != nil {
 		return nil, err
@@ -689,6 +701,9 @@ var skillPlanMarkupPattern = regexp.MustCompile(`<[^>]+>`)
 func (s *SkillPlanService) normalizeSkillPlanInputs(skills []SkillPlanSkillReq, skillsText string, lang string) ([]SkillPlanSkillReq, error) {
 	trimmedText := strings.TrimSpace(skillsText)
 	if trimmedText != "" {
+		if strings.HasPrefix(trimmedText, "[") {
+			return s.parseSkillPlanEFT(trimmedText)
+		}
 		return s.parseSkillPlanText(trimmedText, lang)
 	}
 	return normalizeSkillPlanRequirements(skills), nil
@@ -1084,6 +1099,7 @@ func newSkillPlanDetailResp(plan *model.SkillPlan, shipName string, detailSkills
 		Title:       plan.Title,
 		Description: plan.Description,
 		PlanScope:   plan.PlanScope,
+		Disabled:    plan.Disabled,
 		ShipTypeID:  plan.ShipTypeID,
 		ShipName:    shipName,
 		SortOrder:   plan.SortOrder,
@@ -1221,4 +1237,8 @@ func compareSkillPlanRequirements(
 
 	resp.FullySatisfied = resp.MatchedSkills == resp.TotalSkills
 	return resp
+}
+
+func canReadDisabledSkillPlans(roles []string) bool {
+	return model.IsSuperAdmin(roles) || model.ContainsAnyRole(roles, model.RoleAdmin, model.RoleSeniorFC)
 }
