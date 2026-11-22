@@ -26,22 +26,18 @@ import type { I18n, I18nOptions } from 'vue-i18n'
 import { LanguageEnum } from '@/enums/appEnum'
 import { getSystemStorage } from '@/utils/storage'
 import { StorageKeyManager } from '@/utils/storage/storage-key-manager'
-
-// 同步导入语言文件
-import enMessages from './langs/en.json'
-import zhMessages from './langs/zh.json'
+import { createLazyLocaleManager } from './loader'
 
 /**
  * 存储键管理器实例
  */
 const storageKeyManager = new StorageKeyManager()
 
-/**
- * 语言消息对象
- */
-const messages = {
-  [LanguageEnum.EN]: enMessages,
-  [LanguageEnum.ZH]: zhMessages
+type LocaleMessageSchema = Record<string, unknown>
+
+const localeLoaders: Record<LanguageEnum, () => Promise<{ default: LocaleMessageSchema }>> = {
+  [LanguageEnum.ZH]: () => import('./langs/zh.json') as Promise<{ default: LocaleMessageSchema }>,
+  [LanguageEnum.EN]: () => import('./langs/en.json') as Promise<{ default: LocaleMessageSchema }>
 }
 
 /**
@@ -91,21 +87,42 @@ const getDefaultLanguage = (): LanguageEnum => {
   return LanguageEnum.ZH
 }
 
+export const defaultLanguage = getDefaultLanguage()
+
 /**
- * i18n 配置选项
+ * i18n 配置选项（语言包按需动态加载，同时保持 zh 回退语言可用）
  */
 const i18nOptions: I18nOptions = {
-  locale: getDefaultLanguage(),
+  locale: defaultLanguage,
   legacy: false,
   globalInjection: true,
   fallbackLocale: LanguageEnum.ZH,
-  messages
+  messages: {}
 }
 
 /**
  * i18n 实例
  */
 const i18n: I18n = createI18n(i18nOptions)
+
+const localeManager = createLazyLocaleManager<LanguageEnum, LocaleMessageSchema>(
+  async (lang) => {
+    const mod = await localeLoaders[lang]()
+    return mod.default
+  },
+  (lang, loadedMessages) => {
+    i18n.global.setLocaleMessage(lang, loadedMessages)
+  }
+)
+
+export function loadLocaleMessages(lang: LanguageEnum): Promise<void> {
+  return localeManager.ensureWithFallback(lang, LanguageEnum.ZH)
+}
+
+export async function setAppLocale(lang: LanguageEnum): Promise<void> {
+  await loadLocaleMessages(lang)
+  ;(i18n.global.locale as { value: string }).value = lang
+}
 
 /**
  * 翻译函数类型

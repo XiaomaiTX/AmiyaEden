@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { admissionMenuVisibility } from './admissions.helpers'
+import { admissionMenuVisibility, createAdmissionLoader } from './admissions.helpers'
 import type { AdmissionContext } from '../../types/api/admissions'
 import type { AppRouteRecord } from '../../types/router'
 
@@ -49,4 +49,58 @@ test('permission loss hides gated entries and preserves history and unrelated me
   })
   assert.equal(member[0].children?.[0].meta.isHide, true)
   assert.equal(member[0].children?.[1].meta.isHide, false)
+})
+
+test('failed admissions fetch keeps loaded false so ensureLoaded retries and recovers', async () => {
+  let calls = 0
+  let currentContext: AdmissionContext | null = null
+  let loading = false
+  let loaded = false
+  let error = false
+  const settled: Array<AdmissionContext | null> = []
+
+  const loader = createAdmissionLoader(
+    async () => {
+      calls += 1
+      if (calls === 1) {
+        throw new Error('timeout')
+      }
+      return context
+    },
+    {
+      setContext: (v) => {
+        currentContext = v
+      },
+      setLoading: (v) => {
+        loading = v
+      },
+      setLoaded: (v) => {
+        loaded = v
+      },
+      setError: (v) => {
+        error = v
+      },
+      onSettled: (v) => {
+        settled.push(v)
+      }
+    }
+  )
+
+  await loader.ensureLoaded()
+  assert.equal(calls, 1)
+  assert.equal(loaded, false)
+  assert.equal(loading, false)
+  assert.equal(error, true)
+  assert.equal(currentContext, null)
+
+  await loader.ensureLoaded()
+  assert.equal(calls, 2)
+  assert.equal(loaded, true)
+  assert.equal(error, false)
+  assert.deepEqual(currentContext, context)
+
+  // Subsequent ensureLoaded short-circuits once loaded
+  await loader.ensureLoaded()
+  assert.equal(calls, 2)
+  assert.equal(settled.length, 2)
 })

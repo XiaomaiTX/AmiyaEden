@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { resolveLocaleText } from '@/i18n'
+import { ensureLocaleLoaded, isLocaleLoaded, resolveLocaleText } from '@/i18n'
 
 describe('resolveLocaleText', () => {
   test('resolves Vue-style interpolation tokens', () => {
@@ -26,5 +26,12 @@ describe('resolveLocaleText', () => {
 
   test('falls back to the key when text is missing', () => {
     expect(resolveLocaleText('zh-CN', 'missing.path')).toBe('missing.path')
+  })
+
+  test('ensureLocaleLoaded marks requested locales as loaded idempotently', async () => {
+    await ensureLocaleLoaded('zh-CN')
+    await ensureLocaleLoaded('en-US')
+    expect(isLocaleLoaded('zh-CN')).toBe(true)
+    expect(isLocaleLoaded('en-US')).toBe(true)
   })
 })

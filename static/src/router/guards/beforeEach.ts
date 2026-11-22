@@ -42,6 +42,7 @@ import NProgress from 'nprogress'
 import { $t } from '@/locales'
 import { useSettingStore } from '@/store/modules/setting'
 import { useUserStore } from '@/store/modules/user'
+import { useAdmissionStore } from '@/store/modules/admissions'
 import { useBadgeStore } from '@/store/modules/badge'
 import { useMenuStore } from '@/store/modules/menu'
 import { setWorktab } from '@/utils/navigation'
@@ -59,6 +60,8 @@ import { loadBadgeCounts } from './badge'
 import {
   applyCharactersGateTransition,
   type CharactersGateReason,
+  invalidateCharactersGateStateFreshness,
+  markCharactersGateStateFresh,
   PROFILE_SETUP_PATH,
   resolveCharactersGateTransition,
   refreshCharactersGateState
@@ -110,6 +113,7 @@ export function getRouteInitFailed(): boolean {
 export function resetRouteInitState(): void {
   routeInitFailed = false
   routeInitInProgress = false
+  invalidateCharactersGateStateFreshness()
 }
 
 /**
@@ -226,7 +230,7 @@ async function handleRouteGuard(
   }
 
   // 4. 强制完成资料设置
-  if (await handleProfileSetupRedirect(to, userStore, next)) {
+  if (await handleProfileSetupRedirect(to, from, userStore, next)) {
     return
   }
 
@@ -312,10 +316,11 @@ async function handleDynamicRoutes(
   loadingService.showLoading()
 
   try {
-    // 1. 获取用户信息
-    await fetchUserInfo()
+    // 1. 并行预拉取用户信息与军团申请上下文，减少首屏串行等待
+    const admissions = useAdmissionStore()
+    await Promise.all([fetchUserInfo(), admissions.refresh()])
 
-    // 2. 获取菜单数据
+    // 2. 获取菜单数据（复用已完成的 admissions 上下文）
     const menuList = await menuProcessor.getMenuList()
 
     // 3. 验证菜单数据
@@ -331,8 +336,9 @@ async function handleDynamicRoutes(
     menuStore.setMenuList(menuList)
     menuStore.addRemoveRouteFns(routeRegistry?.getRemoveRouteFns() || [])
 
+    // 导航角标属于辅助计数，异步加载不阻塞首屏路由渲染
     const badgeStore = useBadgeStore()
-    await loadBadgeCounts(badgeStore)
+    void loadBadgeCounts(badgeStore)
 
     // 6. 保存 iframe 路由
     IframeRouteManager.getInstance().save()
@@ -449,12 +455,14 @@ async function fetchUserInfo(): Promise<void> {
   const userStore = useUserStore()
   const data = await fetchGetUserInfo()
   userStore.setUserInfo(data)
+  markCharactersGateStateFresh(data)
   // 检查并清理工作台标签页（如果是不同用户登录）
   userStore.checkAndClearWorktabs()
 }
 
 async function handleProfileSetupRedirect(
   to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
   userStore: ReturnType<typeof useUserStore>,
   next: NavigationGuardNext
 ): Promise<boolean> {
@@ -462,7 +470,8 @@ async function handleProfileSetupRedirect(
     return false
   }
 
-  const userInfo = await getCharactersGateUserInfo(to.path, userStore)
+  const forceRefresh = from.path === PROFILE_SETUP_PATH
+  const userInfo = await getCharactersGateUserInfo(to.path, userStore, forceRefresh)
 
   const gateTransition = resolveCharactersGateTransition(
     { isLogin: userStore.isLogin, path: to.path },
@@ -486,15 +495,24 @@ async function handleProfileSetupRedirect(
 
 async function getCharactersGateUserInfo(
   path: string,
-  userStore: ReturnType<typeof useUserStore>
+  userStore: ReturnType<typeof useUserStore>,
+  forceRefresh = false
 ): Promise<Api.Auth.UserInfo> {
   if (path === PROFILE_SETUP_PATH) {
     return userStore.getUserInfo as Api.Auth.UserInfo
   }
 
-  return refreshCharactersGateState(fetchGetUserInfo, (userInfo) => {
-    userStore.setUserInfo(userInfo)
-  })
+  const expectedUserId = userStore.getUserInfo.userId
+  return refreshCharactersGateState(
+    fetchGetUserInfo,
+    (userInfo) => {
+      userStore.setUserInfo(userInfo)
+    },
+    {
+      forceRefresh: forceRefresh || !expectedUserId,
+      expectedUserId
+    }
+  )
 }
 
 /**

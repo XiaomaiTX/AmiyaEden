@@ -76,7 +76,7 @@
   import { useUserStore } from '@/store/modules/user'
   import { useHeaderBar } from '@/hooks/core/useHeaderBar'
   import { themeAnimation } from '@/utils/ui/animation'
-  import { languageOptions } from '@/locales'
+  import { languageOptions, setAppLocale } from '@/locales'
   import { LanguageEnum } from '@/enums/appEnum'
   import { useSysConfigStore } from '@/store/modules/sys-config'
   import AppConfig from '@/config'
@@ -98,9 +98,9 @@
     sysConfigStore.ensureLoaded()
   })
 
-  const changeLanguage = (lang: LanguageEnum) => {
+  const changeLanguage = async (lang: LanguageEnum) => {
     if (locale.value === lang) return
-    locale.value = lang
+    await setAppLocale(lang)
     userStore.setLanguage(lang)
   }
 

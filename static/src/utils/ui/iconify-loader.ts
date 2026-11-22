@@ -1,31 +1,15 @@
 /**
  * 离线图标加载器
  *
- * 用于在内网环境下支持 Iconify 图标的离线加载。
- * 通过预加载图标集数据，避免运行时从 CDN 获取图标。
- *
- * 使用方式：
- * 1. 安装所需图标集：pnpm add -D @iconify-json/[icon-set-name]
- * 2. 在此文件中导入并注册图标集
- * 3. 在组件中使用：<ArtSvgIcon icon="ri:home-line" />
+ * 将项目实际使用的 Iconify 图标集在本地注册，避免运行时向 api.iconify.design 发外网请求。
+ * 未包含在离线集合中的图标仍由 @iconify/vue 自动回退在线拉取。
  *
  * @module utils/ui/iconify-loader
- * @author Art Design Pro Team
  */
 
-// import { addCollection } from '@iconify/vue'
+import { addCollection, type IconifyJSON } from '@iconify/vue'
+import offlineCollections from '@/assets/icons/offline-iconify.json'
 
-// // 导入离线图标数据
-
-// // 系统必要图标库
-// import riIcons from '@iconify-json/ri/icons.json'
-
-// // 演示图标库（可选，生产环境可移除）
-// import svgSpinners from '@iconify-json/svg-spinners/icons.json'
-// import lineMd from '@iconify-json/line-md/icons.json'
-
-// // 注册离线图标集
-
-// addCollection(riIcons)
-// addCollection(svgSpinners)
-// addCollection(lineMd)
+for (const collection of offlineCollections as unknown as IconifyJSON[]) {
+  addCollection(collection)
+}

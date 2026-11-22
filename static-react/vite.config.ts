@@ -27,5 +27,22 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            const pkgPath = id.split('node_modules').pop()
+            if (!pkgPath || pkgPath === id) return
+            if (
+              /^[\\/](react|react-dom|react-router|react-router-dom|scheduler|zustand)[\\/]/.test(
+                pkgPath
+              )
+            ) {
+              return 'react-vendor'
+            }
+          },
+        },
+      },
+    },
   }
 })

@@ -127,6 +127,7 @@
     mentor: { type: 'success', text: t('userAdmin.roles.mentor') },
     welfare: { type: 'primary', text: t('userAdmin.roles.welfare') },
     fuel_officer: { type: 'primary', text: t('userAdmin.roles.fuel_officer') },
+    recruiter: { type: 'primary', text: t('userAdmin.roles.recruiter') },
     user: { type: 'success', text: t('userAdmin.roles.user') },
     guest: { type: 'info', text: t('userAdmin.roles.guest') }
   }

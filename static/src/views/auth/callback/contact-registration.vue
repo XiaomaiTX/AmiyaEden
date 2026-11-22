@@ -131,14 +131,15 @@
   import { HttpError } from '@/utils/http/error'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { LanguageEnum } from '@/enums/appEnum'
+  import { setAppLocale } from '@/locales'
   import { useUserStore } from '@/store/modules/user'
 
   const props = defineProps<{ ticket: string }>()
   const emit = defineEmits<{ completed: [token: string]; login: [] }>()
   const { t, locale } = useI18n()
   const userStore = useUserStore()
-  function changeLanguage(language: LanguageEnum) {
-    locale.value = language
+  async function changeLanguage(language: LanguageEnum) {
+    await setAppLocale(language)
     userStore.setLanguage(language)
   }
   const form = reactive({ nickname: '', qq: '', discord_id: '' })

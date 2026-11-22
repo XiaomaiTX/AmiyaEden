@@ -16,17 +16,31 @@
 
   const userStore = useUserStore()
   const admissions = useAdmissionStore()
+  const admissionIdentityKey = computed(() => {
+    if (!userStore.isLogin) return ''
+    const info = userStore.info
+    const charKey = (info.characters ?? [])
+      .map((char) => `${char.character_id}:${char.corporation_id ?? 0}`)
+      .join(',')
+    return [
+      info.userId ?? '',
+      info.profileComplete ? '1' : '0',
+      info.qq ?? '',
+      info.discordId ?? '',
+      (info.roles ?? []).join(','),
+      charKey
+    ].join('|')
+  })
   watch(
-    () => ({ isLogin: userStore.isLogin, userId: userStore.info.userId, info: userStore.info }),
-    (current, previous) => {
-      if (!current.isLogin) {
+    () => [userStore.isLogin, userStore.info.userId, admissionIdentityKey.value] as const,
+    ([isLogin, userId], [prevIsLogin, prevUserId]) => {
+      if (!isLogin) {
         admissions.clear()
         return
       }
-      if (!previous.isLogin || current.userId !== previous.userId) admissions.clear()
+      if (!prevIsLogin || userId !== prevUserId) admissions.clear()
       void admissions.refresh()
-    },
-    { deep: true, flush: 'sync' }
+    }
   )
   const { language } = storeToRefs(userStore)
 
