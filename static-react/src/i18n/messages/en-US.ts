@@ -571,6 +571,7 @@ const enUS = {
       current: 'Current management',
       qq: 'QQ',
       copyQQ: 'Copy QQ number',
+      copyCharacterName: 'Copy character name',
       tenure: 'Main character total time in Fuxi',
       duration: '{years} years {months} months',
       unknown: 'No record yet',

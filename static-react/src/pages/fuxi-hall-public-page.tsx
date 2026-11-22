@@ -116,20 +116,26 @@ export function FuxiHallPublicPage() {
               </span>
             </div>
             <div
-              className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-start gap-4"
+              className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4"
               style={{ maxWidth: Math.max(1, cards.length) * 396 - 16 }}
             >
               {cards.map((card) => (
-                <div key={card.id} className="flex min-w-0 flex-col gap-2">
-                  <div className="min-w-0">
-                    <FuxiHallMemberCard card={card} />
-                  </div>
-                  {card.can_edit && (
-                    <Button variant="outline" size="sm" onClick={() => edit(card)}>
-                      {t('fuxiHall.fame.editMine')}
-                    </Button>
-                  )}
-                </div>
+                <FuxiHallMemberCard
+                  key={card.id}
+                  card={card}
+                  action={
+                    card.can_edit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => edit(card)}
+                      >
+                        {t('fuxiHall.fame.editMine')}
+                      </Button>
+                    )
+                  }
+                />
               ))}
             </div>
           </section>

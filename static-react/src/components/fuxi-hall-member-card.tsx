@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
@@ -15,16 +15,17 @@ const metricColors = {
   mentoring: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 ring-rose-500/20',
 }
 
-export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
+export function FuxiHallMemberCard({ card, action }: { card: FuxiHallCard; action?: ReactNode }) {
   const { t } = useI18n()
-  const [copyNotice, setCopyNotice] = useState('')
+  // Feedback is shown next to whichever value was copied.
+  const [copyNotice, setCopyNotice] = useState<{ target: 'name' | 'qq'; text: string } | null>(null)
   const qq = card.qq?.trim() || ''
-  const copyQQ = async () => {
+  const copy = async (target: 'name' | 'qq', text: string) => {
     try {
-      await navigator.clipboard.writeText(qq)
-      setCopyNotice(t('common.copied'))
+      await navigator.clipboard.writeText(text)
+      setCopyNotice({ target, text: t('common.copied') })
     } catch {
-      setCopyNotice(t('common.copyFailed'))
+      setCopyNotice({ target, text: t('common.copyFailed') })
     }
   }
   const visibleMetrics = metrics.filter((key) => (card.contributions?.[key] ?? 0) > 0)
@@ -36,10 +37,10 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
         : 'rounded-md'
   return (
     <article
-      className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card"
+      className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card"
       style={{ fontSize: `${card.font_scale}px`, borderTop: `2px solid ${card.accent_color}` }}
     >
-      <div className="space-y-3 p-4">
+      <div className="flex-1 space-y-3 p-4">
         <div className="flex items-start gap-3">
           {card.main_character_id > 0 && (
             <img
@@ -51,21 +52,40 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
           )}
           <div className="min-w-0 flex-1">
             <h3
-              className="break-words font-semibold leading-snug tracking-tight"
+              className="truncate font-semibold leading-snug tracking-tight"
               style={{ fontSize: `${card.font_scale + 4}px` }}
+              title={card.nickname}
             >
               {card.nickname}
             </h3>
-            <p className="mt-1 break-words text-xs text-muted-foreground">
-              {card.main_character_name}
-            </p>
-            {card.is_current_management && (
-              <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400">
-                <span aria-hidden="true" className="h-2 w-2 rounded-full bg-green-500" />
-                {t('fuxiHall.fame.current')}
-              </p>
-            )}
+            <div className="mt-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+              <span className="truncate" title={card.main_character_name}>
+                {card.main_character_name}
+              </span>
+              {card.main_character_name && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 shrink-0"
+                  aria-label={t('fuxiHall.fame.copyCharacterName')}
+                  onClick={() => void copy('name', card.main_character_name)}
+                >
+                  <Copy className="size-3" />
+                </Button>
+              )}
+              {copyNotice?.target === 'name' && (
+                <span role="status" className="shrink-0">
+                  {copyNotice.text}
+                </span>
+              )}
+            </div>
           </div>
+          {card.is_current_management && (
+            <p className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-green-500" />
+              {t('fuxiHall.fame.current')}
+            </p>
+          )}
         </div>
         {card.title_tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -100,11 +120,11 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
               size="icon"
               className="h-6 w-6"
               aria-label={t('fuxiHall.fame.copyQQ')}
-              onClick={() => void copyQQ()}
+              onClick={() => void copy('qq', qq)}
             >
               <Copy className="size-3.5" />
             </Button>
-            <span role="status">{copyNotice}</span>
+            {copyNotice?.target === 'qq' && <span role="status">{copyNotice.text}</span>}
           </div>
         )}
         {card.description_html && (
@@ -142,6 +162,7 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
           </dl>
         </div>
       )}
+      {action && <div className="px-4 pb-4">{action}</div>}
     </article>
   )
 }

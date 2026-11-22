@@ -11,24 +11,36 @@
           :alt="card.nickname"
         />
         <div class="fuxi-hall-member-card__identity">
-          <h3>{{ card.nickname }}</h3>
-          <p class="fuxi-hall-member-card__main-name">{{ card.main_character_name }}</p>
-          <p v-if="card.is_current_management" class="hall-current"
-            ><span aria-hidden="true" />{{ t('fuxiHall.fame.current') }}</p
-          >
-          <div v-if="card.title_tags.length > 0" class="fuxi-hall-member-card__title-tags">
-            <ElTag
-              v-for="tag in card.title_tags"
-              :key="`${card.id}-${tag}`"
+          <h3 :title="card.nickname">{{ card.nickname }}</h3>
+          <div class="fuxi-hall-member-card__main-name">
+            <span :title="card.main_character_name">{{ card.main_character_name }}</span>
+            <ElButton
+              v-if="card.main_character_name"
+              text
               size="small"
-              effect="plain"
-              round
-              :style="tagStyle"
+              class="hall-copy"
+              :aria-label="t('fuxiHall.fame.copyCharacterName')"
+              @click="copyText(card.main_character_name)"
             >
-              {{ tag }}
-            </ElTag>
+              <ArtSvgIcon icon="ri:file-copy-line" />
+            </ElButton>
           </div>
         </div>
+        <p v-if="card.is_current_management" class="hall-current"
+          ><span aria-hidden="true" />{{ t('fuxiHall.fame.current') }}</p
+        >
+      </div>
+      <div v-if="card.title_tags.length > 0" class="fuxi-hall-member-card__title-tags">
+        <ElTag
+          v-for="tag in card.title_tags"
+          :key="`${card.id}-${tag}`"
+          size="small"
+          effect="plain"
+          round
+          :style="tagStyle"
+        >
+          {{ tag }}
+        </ElTag>
       </div>
       <p class="hall-tenure"
         >{{ t('fuxiHall.fame.tenure') }}:
@@ -45,7 +57,13 @@
         <span
           >{{ t('fuxiHall.fame.qq') }}: <strong>{{ qq }}</strong></span
         >
-        <ElButton text size="small" :aria-label="t('fuxiHall.fame.copyQQ')" @click="copyText(qq)">
+        <ElButton
+          text
+          size="small"
+          class="hall-copy"
+          :aria-label="t('fuxiHall.fame.copyQQ')"
+          @click="copyText(qq)"
+        >
           <ArtSvgIcon icon="ri:file-copy-line" />
         </ElButton>
       </div>
@@ -74,6 +92,7 @@
         </div>
       </dl>
     </div>
+    <div v-if="$slots.action" class="fuxi-hall-member-card__action"><slot name="action" /></div>
   </article>
 </template>
 
@@ -121,17 +140,27 @@
     color: var(--el-text-color-primary);
     font-weight: 500;
   }
+  .hall-copy {
+    height: 20px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
   .hall-current {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
+    flex-shrink: 0;
+    gap: 6px;
+    margin: 0 0 0 auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--el-color-success-light-9);
     color: var(--el-color-success);
     font-size: 12px;
+    white-space: nowrap;
   }
   .hall-current span {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--el-color-success);
     flex-shrink: 0;
@@ -150,9 +179,12 @@
     border-radius: 12px;
     background: var(--el-bg-color);
     min-width: 0;
+    /* Fill the grid row so cards in one row share a height and contributions sit at the bottom. */
+    height: 100%;
   }
 
   .fuxi-hall-member-card__body {
+    flex: 1;
     padding: 16px;
     color: var(--el-text-color-regular);
     font-size: var(--member-font-size);
@@ -185,25 +217,42 @@
     border-radius: 8px;
   }
 
+  .fuxi-hall-member-card__identity h3,
+  .fuxi-hall-member-card__main-name span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .fuxi-hall-member-card__identity h3 {
     margin: 0;
-    overflow-wrap: anywhere;
     color: var(--el-text-color-primary);
     font-size: calc(var(--member-font-size) + 3px);
   }
 
   .fuxi-hall-member-card__main-name {
-    margin: 4px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    margin-top: 4px;
     color: var(--el-text-color-regular);
     font-size: 12px;
-    overflow-wrap: anywhere;
   }
 
   .fuxi-hall-member-card__title-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    margin-top: 6px;
+    margin-top: 10px;
+  }
+
+  .fuxi-hall-member-card__action {
+    padding: 0 16px 16px;
+  }
+
+  .fuxi-hall-member-card__action :deep(.el-button) {
+    width: 100%;
   }
 
   .fuxi-hall-member-card__description {
@@ -214,6 +263,7 @@
   }
 
   .fuxi-hall-member-card__identity {
+    flex: 1;
     min-width: 0;
   }
   .hall-contributions {
