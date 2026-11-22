@@ -10,17 +10,19 @@
     </div>
     <article v-if="page?.description_html" class="hall-intro" v-html="page.description_html" />
     <section
-      v-for="(floor, index) in page?.floors ?? []"
+      v-for="floor in page?.floors ?? []"
       :key="floor.key"
       class="hall-floor"
-      :class="{ 'hall-floor--top': index === 0, 'hall-floor--second': index === 1 }"
       :aria-label="floor.name || t(`fuxiHall.fame.floors.${floor.key}`)"
     >
       <div class="hall-floor-heading">
         <h2>{{ floor.name || t(`fuxiHall.fame.floors.${floor.key}`) }}</h2>
         <span>{{ t('fuxiHall.fame.memberCount', { count: floorCards(floor.key).length }) }}</span>
       </div>
-      <div class="hall-grid">
+      <div
+        class="hall-grid"
+        :style="{ maxWidth: `${Math.max(1, floorCards(floor.key).length) * 396 - 16}px` }"
+      >
         <div v-for="card in floorCards(floor.key)" :key="card.id" class="hall-card">
           <div class="hall-card-body"><FuxiHallMemberCard :card="card" /></div>
           <ElButton v-if="card.can_edit" size="small" @click="edit(card)">{{
@@ -157,13 +159,8 @@
   }
   .hall-floor {
     width: 100%;
+    max-width: 1440px;
     margin: 32px auto;
-  }
-  .hall-floor--top {
-    max-width: 960px;
-  }
-  .hall-floor--second {
-    max-width: 1200px;
   }
   .hall-floor-heading {
     display: flex;
@@ -183,14 +180,11 @@
   }
   .hall-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    margin-inline: auto;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    align-items: start;
     gap: 16px;
-  }
-  .hall-floor--top .hall-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .hall-floor--second .hall-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .hall-card {
     min-width: 0;
@@ -199,7 +193,6 @@
     gap: 8px;
   }
   .hall-card-body {
-    flex: 1;
     min-height: 0;
   }
   .hall-error {
@@ -210,20 +203,9 @@
     color: var(--el-text-color-secondary);
     padding: 48px 0;
   }
-  @media (max-width: 1199px) {
-    .hall-grid,
-    .hall-floor--second .hall-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
   @media (max-width: 639px) {
     .hall-page {
       padding: 16px;
-    }
-    .hall-grid,
-    .hall-floor--top .hall-grid,
-    .hall-floor--second .hall-grid {
-      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>

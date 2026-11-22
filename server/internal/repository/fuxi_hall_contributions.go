@@ -55,6 +55,19 @@ func (r *FuxiHallRepository) ContributionCounts(ids []uint, now time.Time) (map[
 			totals[row.UserID] = v
 		}
 	}
+	// Match the corporation PAP total: issued amounts across all fleet categories and characters.
+	var papRows []struct {
+		UserID uint
+		Total  float64
+	}
+	if err := r.db.Model(&model.FleetPapLog{}).Select("user_id, COALESCE(SUM(pap_count), 0) AS total").Where("user_id IN ?", ids).Group("user_id").Scan(&papRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range papRows {
+		v := totals[row.UserID]
+		v.CorpPAP = row.Total
+		totals[row.UserID] = v
+	}
 	return totals, nil
 }
 

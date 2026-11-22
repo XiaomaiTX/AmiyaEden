@@ -105,18 +105,6 @@
             }}</template></ElTableColumn
           >
           <ElTableColumn prop="nickname" :label="t('fuxiHall.manage.nickname')" min-width="140" />
-          <ElTableColumn :label="t('fuxiHall.contributions.title')" min-width="200"
-            ><template #default="{ row }"
-              ><div v-for="key in contributionKeys" :key="key"
-                >{{ t(`fuxiHall.contributions.${key}`) }}:
-                {{
-                  row.contributions_updated_at || (row.contributions?.[key] ?? 0) > 0
-                    ? (row.contributions?.[key] ?? 0).toLocaleString()
-                    : '—'
-                }}</div
-              ></template
-            ></ElTableColumn
-          >
           <ElTableColumn
             prop="main_character_name"
             :label="t('fuxiHall.manage.mainCharacterName')"
@@ -184,7 +172,12 @@
                 floor.capacity
               }}</h4
             >
-            <div class="fuxi-hall-manage__preview-grid">
+            <div
+              class="fuxi-hall-manage__preview-grid"
+              :style="{
+                maxWidth: `${Math.max(1, previewCards.filter((card) => card.floor_key === floor.key).length) * 396 - 16}px`
+              }"
+            >
               <FuxiHallMemberCard
                 v-for="card in previewCards.filter((item) => item.floor_key === floor.key)"
                 :key="card.id"
@@ -413,6 +406,7 @@
       is_current_management: cardForm.is_current_management,
       visible: cardForm.visible,
       contribution_offsets: { ...cardForm.contribution_offsets },
+      qq: cards.value.find((card) => card.id === editingCardId.value)?.qq ?? '',
       contributions: contributionKeys.reduce<Api.FuxiHall.Contributions>(
         (totals, key) => {
           const existing = cards.value.find((card) => card.id === editingCardId.value)
@@ -423,7 +417,16 @@
             ) + cardForm.contribution_offsets[key]
           return totals
         },
-        { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
+        {
+          corp_pap:
+            cards.value.find((card) => card.id === editingCardId.value)?.contributions?.corp_pap ??
+            0,
+          fleets: 0,
+          welfare: 0,
+          srp: 0,
+          recruitment: 0,
+          mentoring: 0
+        }
       ),
       contributions_updated_at: cards.value.find((card) => card.id === editingCardId.value)
         ?.contributions_updated_at,
@@ -841,7 +844,10 @@
 
   .fuxi-hall-manage__preview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    width: 100%;
+    margin-inline: auto;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    align-items: start;
     gap: 16px;
   }
 
@@ -856,10 +862,6 @@
   @media (max-width: 768px) {
     .fuxi-hall-manage {
       padding: 14px;
-    }
-
-    .fuxi-hall-manage__preview-grid {
-      grid-template-columns: minmax(0, 1fr);
     }
 
     .fuxi-hall-manage__tag-editor {

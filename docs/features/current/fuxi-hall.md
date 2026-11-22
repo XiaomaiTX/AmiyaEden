@@ -2,19 +2,20 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-23
 source_of_truth:
   - server/internal/service/fuxi_hall.go
   - server/internal/service/fuxi_hall_profile.go
   - server/bootstrap/fuxi_hall_migration.go
   - static/src/views/fuxi-hall
+  - static-react/src/pages/fuxi-hall-page.tsx
   - static-react/src/pages/fuxi-hall-public-page.tsx
   - static-react/src/pages/fuxi-hall-manage-page.tsx
 ---
 
 # 伏羲名人堂
 
-管理层与重大贡献成员统一在 `/fuxi-hall/hall-of-fame` 展示。两套前端共用同一接口，旧展示路径及 API 已移除，不保留重定向。管理页仍为 `/fuxi-hall/manage`。
+管理层与重大贡献成员统一在 `/fuxi-hall` 展示。两套前端的侧栏均为顶层直达入口，点击默认展示名人堂；`admin` / `super_admin` 可在页内切换名人堂与管理 tab，其他用户不显示管理 tab，也不挂载管理组件或请求管理接口。切回展示 tab 时重新加载展示数据。旧 `/fuxi-hall/hall-of-fame` 与 `/fuxi-hall/manage` 前端路由已移除，不保留重定向。两套前端共用原有 API。
 
 ## 路由与权限
 
@@ -30,11 +31,13 @@ source_of_truth:
 
 卡片 `floor_key` 指定所属楼层，`sort_order` 决定该层内部顺序。隐藏卡片仍占有所属楼层，但不计入可见人数；删除楼层前须迁出包括隐藏卡片在内的全部卡片。增加卡片、迁层、显示隐藏卡片及减少容量均在页面行锁事务中校验，不能超员。楼层设置须先保存，再将卡片分配到新层。
 
-公开页按楼层分区：高层较窄，低层较宽；桌面各层依次为2、3、4列，平板2列，手机1列。管理页按层预览当前草稿。
+公开页按楼层分区，各层使用相同的自适应网格，不再按楼层序号限定宽度和列数。楼层最大宽度1440px，卡片以300px为最小舒适宽度自动换行，窄于300px的容器使用单列；宽桌面8张卡可排为4列2行。少量卡片按每张380px加16px间距收拢居中，避免单张或两张卡被拉得过宽。管理页按相同的网格规则、根据预览容器实际宽度展示当前草稿。
 
 卡片必填昵称和主人物名称。管理员输入主人物名称，由 ESI 解析保存 `main_character_id`；头像由该 ID 生成。`is_current_management` 由管理员维护，在职管理至少需要一个 `title_tags` 头衔，公开卡片同时显示绿灯和“在职管理”文字。其他成员的头衔可为空。强调色、头像形状、字号继续使用既有受控范围。
 
 ## 累计在团时长
+
+卡片显示主人物当前绑定账号的 QQ 号，提供一键复制及成功／失败反馈；未填写或人物未绑定有效账号时整行不显示（无占位文字、无复制按钮）。QQ 不由名人堂单独维护，账号联系方式或人物绑定变化在下次读取时生效；不使用历史主人物关联，已删除的账号或人物不展示联系方式。该字段随原有登录及 `menu.fuxi_hall` 权限下的卡片接口返回，不额外开放公开入口。贡献项目以分类着色的紧凑标签展示，卡片高度随内容增长，不强制整行等高。
 
 按卡片主人物的 `EveCharacter.FuxiLegionTenureDays` 展示**历次累计**在伏羲的时间，离团重入不清零。该值来自现有 ESI 任职历史同步，查询名人堂时批量读取，避免逐卡请求 ESI。
 
@@ -46,7 +49,7 @@ source_of_truth:
 
 ## 贡献汇总与历史补录
 
-公开卡片和管理页读取持久化的 `contributions` 快照，与 `contribution_offsets` 相加后展示。五项口径如下：
+公开卡片和管理页读取持久化的 `contributions` 快照，五项贡献与 `contribution_offsets` 相加后展示。军团 PAP（`corp_pap`）直接显示快照：按卡片主人物当前所属账号汇总各人物已获发的军团 PAP，战略、散打和 CTA 合计，保留小数，不计联盟 PAP，不提供手动补录项。旧快照在下次每日汇总或手动重算后补齐。其余五项口径如下：
 
 | 字段 | 口径 |
 | --- | --- |
@@ -60,7 +63,7 @@ source_of_truth:
 
 管理员在新增或编辑卡片时可为五项分别设置0至10亿的基础 offset，用于补录系统未记录的历史贡献；原福利偏移保留。修改立即反映在展示总数中，重算只更新系统快照，不覆盖 offset。修改主人物为另一个人物时清空原快照，offset 由管理员重新核对。
 
-`fuxi_hall_contributions` 任务每天服务器时区06:00汇总一次，启动时对尚无快照的卡片安排首次汇总。管理员也可调用 `POST /api/v1/system/fuxi-hall/contributions/refresh` 手动重算。每次为所有卡片批量解析用户并执行固定七个分组查询，在事务内写入统一时间戳 `contributions_updated_at`。失败或取消保留上次完整快照；同一进程同时只运行一次，跨进程通过页面行锁串行化。公开读取不扫描业务历史，也不调用 ESI。
+`fuxi_hall_contributions` 任务每天服务器时区06:00汇总一次，启动时对尚无快照的卡片安排首次汇总。管理员也可调用 `POST /api/v1/system/fuxi-hall/contributions/refresh` 手动重算。每次为所有卡片批量解析用户并执行固定八个分组查询，在事务内写入统一时间戳 `contributions_updated_at`。失败或取消保留上次完整快照；同一进程同时只运行一次，跨进程通过页面行锁串行化。公开读取不扫描业务历史，也不调用 ESI。
 
 卡片贡献区使用小字号、标签与数值同行并自然换行，隐藏数值为0的项目；全部为0或尚无正数数据时隐藏整个贡献区。更新时间放入悬停提示，公开页统一说明每日汇总。管理表格仍可查看完整数值，便于核对补录。
 

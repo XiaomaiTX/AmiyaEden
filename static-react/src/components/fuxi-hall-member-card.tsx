@@ -1,11 +1,32 @@
+import { useState } from 'react'
+import { Copy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { useI18n } from '@/i18n'
 import type { FuxiHallCard } from '@/types/api/fuxi-hall'
 
-const metrics = ['fleets', 'welfare', 'srp', 'recruitment', 'mentoring'] as const
+const metrics = ['corp_pap', 'fleets', 'welfare', 'srp', 'recruitment', 'mentoring'] as const
+const metricColors = {
+  corp_pap: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 ring-amber-500/20',
+  fleets: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 ring-sky-500/20',
+  welfare: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 ring-emerald-500/20',
+  srp: 'bg-violet-500/10 text-violet-700 dark:text-violet-300 ring-violet-500/20',
+  recruitment: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 ring-cyan-500/20',
+  mentoring: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 ring-rose-500/20',
+}
 
 export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
   const { t } = useI18n()
+  const [copyNotice, setCopyNotice] = useState('')
+  const qq = card.qq?.trim() || ''
+  const copyQQ = async () => {
+    try {
+      await navigator.clipboard.writeText(qq)
+      setCopyNotice(t('common.copied'))
+    } catch {
+      setCopyNotice(t('common.copyFailed'))
+    }
+  }
   const visibleMetrics = metrics.filter((key) => (card.contributions?.[key] ?? 0) > 0)
   const avatarClass =
     card.avatar_shape === 'circle'
@@ -15,15 +36,15 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
         : 'rounded-md'
   return (
     <article
-      className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card"
+      className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card"
       style={{ fontSize: `${card.font_scale}px`, borderTop: `2px solid ${card.accent_color}` }}
     >
-      <div className="flex-1 space-y-4 p-5">
+      <div className="space-y-3 p-4">
         <div className="flex items-start gap-3">
           {card.main_character_id > 0 && (
             <img
               loading="lazy"
-              className={`h-14 w-14 shrink-0 object-cover ${avatarClass}`}
+              className={`h-12 w-12 shrink-0 object-cover ${avatarClass}`}
               src={buildEveCharacterPortraitUrl(card.main_character_id, 256)}
               alt={card.nickname}
             />
@@ -51,7 +72,7 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
             {card.title_tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded px-2 py-1 text-xs font-medium"
+                className="rounded px-2 py-0.5 text-xs font-medium"
                 style={{ color: card.accent_color, backgroundColor: `${card.accent_color}12` }}
               >
                 {tag}
@@ -68,6 +89,24 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
                 months: card.tenure_months % 12,
               })}
         </p>
+        {qq && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>
+              {t('fuxiHall.fame.qq')}:{' '}
+              <span className="font-medium tabular-nums text-foreground">{qq}</span>
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              aria-label={t('fuxiHall.fame.copyQQ')}
+              onClick={() => void copyQQ()}
+            >
+              <Copy className="size-3.5" />
+            </Button>
+            <span role="status">{copyNotice}</span>
+          </div>
+        )}
         {card.description_html && (
           <div
             className="break-words leading-relaxed text-foreground/80 [overflow-wrap:anywhere] [&_a]:text-primary [&_a]:underline [&_img]:max-w-full"
@@ -77,7 +116,7 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
       </div>
       {visibleMetrics.length > 0 && (
         <div
-          className="border-t border-border bg-muted/20 px-5 py-3"
+          className="border-t border-border/60 px-4 py-3"
           title={
             card.contributions_updated_at
               ? t('fuxiHall.contributions.updated', {
@@ -86,21 +125,16 @@ export function FuxiHallMemberCard({ card }: { card: FuxiHallCard }) {
               : t('fuxiHall.contributions.pending')
           }
         >
-          <dl
-            aria-label={t('fuxiHall.contributions.title')}
-            className="flex flex-wrap gap-x-5 gap-y-2"
-          >
+          <dl aria-label={t('fuxiHall.contributions.title')} className="flex flex-wrap gap-2">
             {visibleMetrics.map((key) => {
               const value = card.contributions?.[key] ?? 0
               return (
                 <div
                   key={key}
                   title={t(`fuxiHall.contributions.help.${key}`)}
-                  className="inline-flex items-baseline gap-1.5"
+                  className={`inline-flex items-baseline gap-2 rounded-md px-2.5 py-1 ring-1 ring-inset ${metricColors[key]}`}
                 >
-                  <dt className="text-xs text-muted-foreground">
-                    {t(`fuxiHall.contributions.${key}`)}
-                  </dt>
+                  <dt className="text-xs font-medium">{t(`fuxiHall.contributions.${key}`)}</dt>
                   <dd className="text-sm font-semibold tabular-nums">{value.toLocaleString()}</dd>
                 </div>
               )

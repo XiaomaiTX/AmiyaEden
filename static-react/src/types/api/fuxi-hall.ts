@@ -1,4 +1,5 @@
 export interface FuxiHallContributions {
+  corp_pap?: number
   fleets: number
   welfare: number
   srp: number
@@ -23,6 +24,7 @@ export interface FuxiHallPageConfig {
 }
 
 export interface FuxiHallCard {
+  qq?: string
   contributions?: FuxiHallContributions
   contribution_offsets?: FuxiHallContributions
   contributions_updated_at?: string | null

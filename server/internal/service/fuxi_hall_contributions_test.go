@@ -21,6 +21,12 @@ func TestFuxiHallContributionSnapshotAndAdditiveRecruitment(t *testing.T) {
 	create(&user)
 	create(&model.EveCharacter{CharacterID: 9100, UserID: user.ID})
 	now := time.Now().UTC()
+	for i, category := range []string{model.FleetImportanceStratOp, model.FleetImportanceCTA, model.FleetImportanceOther} {
+		fleetID := "pap-" + category
+		create(&model.Fleet{ID: fleetID, Importance: category})
+		create(&model.FleetPapLog{FleetID: fleetID, CharacterID: int64(9100 + i), UserID: user.ID, PapCount: 1.5})
+	}
+	create(&model.FleetPapLog{FleetID: "unrelated", UserID: user.ID + 1, PapCount: 100})
 	create(&model.Fleet{ID: "ended", FCUserID: user.ID, StartAt: now.Add(-2 * time.Hour), EndAt: now.Add(-time.Hour)})
 	create(&model.Fleet{ID: "future", FCUserID: user.ID, StartAt: now, EndAt: now.Add(time.Hour)})
 	create(&model.Fleet{ID: "deleted", FCUserID: user.ID, EndAt: now.Add(-time.Hour), DeletedAt: &now})
@@ -48,7 +54,7 @@ func TestFuxiHallContributionSnapshotAndAdditiveRecruitment(t *testing.T) {
 	if err := svc.RefreshContributions(context.Background(), 0); err != nil {
 		t.Fatal(err)
 	}
-	want := model.FuxiHallContributions{Fleets: 3, Welfare: 12, SRP: 4, Recruitment: 7, Mentoring: 6}
+	want := model.FuxiHallContributions{CorpPAP: 4.5, Fleets: 3, Welfare: 12, SRP: 4, Recruitment: 7, Mentoring: 6}
 	assertSnapshot := func() {
 		t.Helper()
 		hall, err := svc.PublicHall(user.ID)
