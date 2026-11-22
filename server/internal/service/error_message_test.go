@@ -70,28 +70,6 @@ func TestContractServiceGetContractDetailNotFoundMessage(t *testing.T) {
 	}
 }
 
-func TestNotificationServiceGetUnreadCountDoesNotLeakDatabaseError(t *testing.T) {
-	db := newServiceErrorMessageTestDB(t, &model.EveCharacter{})
-	useServiceErrorMessageTestDB(t, db)
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		t.Fatalf("get sql db: %v", err)
-	}
-	if err := sqlDB.Close(); err != nil {
-		t.Fatalf("close sql db: %v", err)
-	}
-
-	svc := &NotificationService{charRepo: repository.NewEveCharacterRepository()}
-	_, err = svc.GetUnreadCount(42)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-	if err.Error() != "获取人物列表失败" {
-		t.Fatalf("error = %q, want %q", err.Error(), "获取人物列表失败")
-	}
-}
-
 func newServiceErrorMessageTestDB(t *testing.T, models ...interface{}) *gorm.DB {
 	t.Helper()
 

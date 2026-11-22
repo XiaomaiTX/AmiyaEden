@@ -289,7 +289,7 @@ func (t *XxxTask) ExecuteBatch(client *Client, characterIDs []int64) error {
 | affiliation | 2h | 2h | ✗ |
 | titles / clones | 6h | 7d | ✗ |
 | wallet | 12h | 7d | ✓ |
-| assets / notifications / contracts | 1d | 7d | ✓/✗/✓ |
+| assets / contracts | 1d | 7d | ✓/✓ |
 
 ## 活跃度判定
 

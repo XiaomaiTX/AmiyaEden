@@ -18,7 +18,6 @@ source_of_truth:
   - server/pkg/eve/esi/task_affiliation.go
   - server/pkg/eve/esi/task_clones.go
   - server/pkg/eve/esi/task_contracts.go
-  - server/pkg/eve/esi/task_notifications.go
   - server/pkg/eve/esi/task_wallet.go
   - server/pkg/eve/esi/task_structure.go
   - server/pkg/eve/esi/task_corporation_structures.go
@@ -51,7 +50,6 @@ source_of_truth:
 | `character_affiliation` | 人物归属信息（军团/联盟/阵营） | 普通 | `6 Hours` | `6 Hours` | 无需权限 | 归属信息相对稳定，但需要比日更更快反映变更。 |
 | `character_clones` | 人物克隆体/植入体/跳跃疲劳 | 普通 | `12 Hours` | `7 Days` | `esi-clones.read_clones.v1` / `esi-clones.read_implants.v1` / `esi-characters.read_fatigue.v1` | 介于“变化不频繁”与“当天可见”之间，12 小时更平衡。 |
 | `character_contracts` | 人物合同（含竞标/物品） | 普通 | `12 Hours` | `7 Days` | `esi-contracts.read_character_contracts.v1` | 合同的可见性对日内操作更有价值，12 小时可接受。 |
-| `character_notifications` | 人物通知消息 | 普通 | `1 Day` | `7 Days` | `esi-characters.read_notifications.v1` | 通知更偏追溯型，不必高频。 |
 | `character_wallet` | 人物钱包信息 | 普通 | `12 Hours` | `7 Days` | `esi-wallet.read_character_wallet.v1` | 余额和流水都需要一定时效，但无需高频轮询。 |
 | `eve_structures` | EVE 建筑详情（个人相关） | 低 | `3 Days` | `7 Days` | `esi-universe.read_structures.v1` | 个人相关建筑通常作为补充信息即可。 |
 | `corporation_structures` | 军团建筑信息 | 高 | `6 Hours` | `1 Day` | `esi-corporations.read_structures.v1` / `esi-universe.read_structures.v1` | 比现有 1 天更积极，但仍不必收缩到 1 小时以内。 |

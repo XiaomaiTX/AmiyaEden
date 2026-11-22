@@ -1,11 +1,13 @@
 package bootstrap
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"strings"
 	"testing"
 
 	"github.com/glebarez/sqlite"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -43,6 +45,35 @@ func TestObsoleteTablesIncludeRemovedShopRedeemCodeTable(t *testing.T) {
 	}
 
 	t.Fatalf("expected obsoleteTables to include %q", "shop_redeem_code")
+}
+
+func TestObsoleteTablesIncludeDroppedCharacterNotificationTable(t *testing.T) {
+	found := false
+	for _, table := range obsoleteTables() {
+		if table == "eve_character_notification" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected obsoleteTables to include %q", "eve_character_notification")
+	}
+
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldLogger := global.CurrentLogger()
+	global.SetLogger(zap.NewNop())
+	t.Cleanup(func() { global.SetLogger(oldLogger) })
+
+	if err := db.Exec("CREATE TABLE eve_character_notification (id integer primary key)").Error; err != nil {
+		t.Fatal(err)
+	}
+	dropObsoleteSchema(db)
+	if db.Migrator().HasTable("eve_character_notification") {
+		t.Fatal("expected dropObsoleteSchema to drop eve_character_notification")
+	}
 }
 
 func TestUserQQUniqueIndexEnforcesUniqueNonEmptyQQ(t *testing.T) {
