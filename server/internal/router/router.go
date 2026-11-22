@@ -68,6 +68,13 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// ─── 需要登录 ───
 	auth := api.Group("", middleware.JWTAuth())
 	login := auth.Group("", middleware.RequireLoginUser())
+	announcementH := handler.NewAnnouncementHandler()
+	announcements := login.Group("/announcements")
+	announcements.GET("", announcementH.List)
+	announcements.GET("/:id", announcementH.Detail)
+	announcements.POST("/:id/read", announcementH.Read)
+	announcements.POST("", middleware.RequireRole(model.RoleAdmin, model.RoleSeniorFC), announcementH.Save)
+	announcements.PUT("/:id", middleware.RequireRole(model.RoleAdmin, model.RoleSeniorFC), announcementH.Save)
 
 	admissionH := handler.NewAdmissionHandler()
 	admissions := auth.Group("/admissions")

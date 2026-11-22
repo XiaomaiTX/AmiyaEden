@@ -164,7 +164,7 @@
       <!-- 页头 -->
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-xl font-medium">{{ $t('characters.title') }}</h1>
+          <h1 class="text-xl font-medium">{{ $t('menus.system.userCenter') }}</h1>
           <p class="mt-1 text-sm text-g-500">{{ $t('characters.subTitle') }}</p>
         </div>
         <ElButton type="primary" :loading="bindLoading" @click="handleBind">

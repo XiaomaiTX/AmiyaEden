@@ -294,3 +294,6 @@ For super_admin rules, see "Super Admin 配置驱动机制" above. For role assi
 QQ 调度运维 `/system/qqbot` 及 `/api/v1/system/qqbot/*` 仅超管，使用 `system.manage`；反向 WebSocket 独立执行 Token、机器人 ID、Universal 角色和 TCP 源 CIDR 校验。配置 Token 不返回客户端，不写入尝试日志。未知写结果禁止运维重试。
 
 工资设置仅 admin／super_admin 可修改，普通 admin 同时满足 `system.manage`。领取操作工资不依赖管理员身份，仅依赖来源操作授权。军团申请徽章复用审核服务从数据库计算的军团范围，不能根据缓存 recruiter 标签扩大计数范围。
+## 公告权限
+
+全站公告对 Login 成员可读，guest 和仅 recruiter 身份不能访问。admin、super_admin、senior_fc 可管理全部公告。隐藏项仅管理者可读，图片随正文权限读取。阅读记录绑定账号 user_id。

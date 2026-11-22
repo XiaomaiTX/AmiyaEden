@@ -86,7 +86,7 @@ source_of_truth:
 
 | Method | Path                      | 说明                                          | 权限  |
 | ------ | ------------------------- | --------------------------------------------- | ----- |
-| GET | `/fuxi-hall/hall-of-fame` | 名人堂配置、楼层和可见卡片（含本人编辑权限、累计在团时长） | Login |
+| GET | `/fuxi-hall/hall-of-fame` | 名人堂配置、楼层和可见卡片（含本人编辑权限、累计在团时长、当前绑定账号 `qq` 及 `contributions.corp_pap` 军团 PAP 合计快照） | Login |
 | PUT | `/fuxi-hall/cards/:id/profile` | 本人修改昵称和简介，按主人物当前绑定关系校验 | Login |
 
 ## Authenticated Base
@@ -626,3 +626,18 @@ source_of_truth:
 未传确认参数默认三轮、二十四小时；显式观察期零有效，确认次数 1–100，观察期 0–8760 小时。服务端管理版本号，重复相同规则不提高版本；规则变化取消旧操作并重置确认链。只有业务配置写入口，无人工申请处理、名片写入或清退入口。业务操作禁止通过通用操作重试生成脱离业务跟踪的子操作。
 
 工资配置详见 [工资管理](../features/current/operation-salaries.md)。`/system/pap-exchange/rates` 仅保留 rates 和三项 multichar 字段。`/badge-counts` 增加可审核军团范围内的 `admission_pending`，仅返回正数。
+
+### 技能规划导入和可见性
+
+技能规划创建与更新的 `skills_text` 接受技能列表或单份英文 EFT。请求可选 `disabled`，列表和详情响应包含 `disabled`。公共计划停用后，普通成员无法通过列表或详情接口读取，管理角色仍可读取。完成度检查排除已停用计划。具体规则参见 [技能规划](../features/current/skill-planning.md)。
+## 军团公告
+
+| 方法 | 路径 | 权限 | 契约 |
+| --- | --- | --- | --- |
+| GET | /api/v1/announcements?page=1 | Login | list、total，每页 20 条，仅管理者含隐藏项，列表省略 body_html |
+| GET | /api/v1/announcements/:id | Login | 公告详情和内嵌数据库图片，隐藏项仅管理者 |
+| POST | /api/v1/announcements | admin / senior_fc | title、body_html、hidden、remind、revision |
+| PUT | /api/v1/announcements/:id | admin / senior_fc | 同上，revision 必须匹配 |
+| POST | /api/v1/announcements/:id/read | Login | version 为实际显示版本，重复提交幂等 |
+
+super_admin 自动放行。详情包含 id、title、body_html、author_id、hidden、version、revision、created_at、updated_at，列表额外含 unread。

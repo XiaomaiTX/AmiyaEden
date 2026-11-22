@@ -1,4 +1,5 @@
 export interface BadgeCounts {
+  announcement_unread?: number
   admission_pending?: number
   welfare_eligible?: number
   srp_pending?: number

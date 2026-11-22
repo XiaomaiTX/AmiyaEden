@@ -13,6 +13,8 @@ interface BadgeStoreState {
   clear: () => void
 }
 
+let latestBadgeRequestId = 0
+
 export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
   counts: {},
   loading: false,
@@ -21,33 +23,36 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
   load: async (characterId, force = false) => {
     const state = get()
     if (
-      state.loadingForCharacterId === characterId ||
-      (!force && state.loadedForCharacterId === characterId)
+      !force &&
+      (state.loadingForCharacterId === characterId || state.loadedForCharacterId === characterId)
     ) {
       return
     }
 
+    const requestId = ++latestBadgeRequestId
     set({ loading: true, loadingForCharacterId: characterId })
     try {
       // badge-counts is a Login route; guests and recruiter-only accounts would only get a 403.
       const counts = hasNonGuestRole(useSessionStore.getState().roles) ? await fetchBadgeCounts() : {}
-      if (get().loadingForCharacterId === characterId) {
+      if (requestId === latestBadgeRequestId && get().loadingForCharacterId === characterId) {
         set({
           counts,
           loadedForCharacterId: characterId,
         })
       }
     } finally {
-      if (get().loadingForCharacterId === characterId) {
+      if (requestId === latestBadgeRequestId && get().loadingForCharacterId === characterId) {
         set({ loading: false, loadingForCharacterId: null })
       }
     }
   },
-  clear: () =>
+  clear: () => {
+    latestBadgeRequestId++
     set({
       counts: {},
       loading: false,
       loadingForCharacterId: null,
       loadedForCharacterId: null,
-    }),
+    })
+  },
 }))

@@ -271,6 +271,29 @@ func TestBadgeServiceGetBadgeCountsOmitsZeroCounts(t *testing.T) {
 	}
 }
 
+func TestBadgeServiceGetBadgeCountsSurvivesAnnouncementFailure(t *testing.T) {
+	db := newBadgeServiceTestDB(t)
+	originalDB := global.DB
+	global.DB = db
+	defer func() { global.DB = originalDB }()
+
+	if err := db.Migrator().DropTable(&model.AnnouncementRead{}); err != nil {
+		t.Fatalf("drop announcement_read: %v", err)
+	}
+	user := model.User{BaseModel: model.BaseModel{ID: 910004}, Nickname: "Pilot Four", QQ: "22222"}
+	if err := db.Create(&user).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	got, err := NewBadgeService().GetBadgeCounts(user.ID, []string{model.RoleUser})
+	if err != nil {
+		t.Fatalf("announcement failure must not fail other badges: %v", err)
+	}
+	if _, ok := got["announcement_unread"]; ok {
+		t.Fatalf("expected announcement badge to be omitted, got %#v", got)
+	}
+}
+
 func TestBadgeServiceGetBadgeCountsCountsPendingMentorApplicationsForCurrentMentor(t *testing.T) {
 	db := newBadgeServiceTestDB(t)
 	originalDB := global.DB
@@ -417,9 +440,10 @@ func newBadgeServiceTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	if err := db.AutoMigrate(
+		&model.Announcement{}, &model.AnnouncementRead{},
 		&model.User{},
 		&model.UserRole{},
-        &model.AdmissionApplication{},
+		&model.AdmissionApplication{},
 		&model.SystemConfig{},
 		&model.EveCharacter{},
 		&model.EveCharacterCorpRole{},

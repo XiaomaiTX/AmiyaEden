@@ -168,6 +168,10 @@ source_of_truth:
 
 根目录 `README.md` 是例外中的入口文档：应持续维护，但定位是 onboarding / product-facing guide，而不是与 `docs/ai/repo-rules.md` 并列的工程规则源。
 
+## 军团公告
+
+- [军团公告](features/current/announcements.md) 记录阅读版本、隐藏、图文存储和权限规则。
+
 ## 军团技能管理查询
 
 - [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。

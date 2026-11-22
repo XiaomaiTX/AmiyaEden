@@ -5,7 +5,8 @@ export const charactersRoutes: AppRouteRecord = {
   path: '/characters',
   component: '/dashboard/characters',
   meta: {
-    title: 'menus.characters.title',
+    title: 'menus.system.userCenter',
+    isHide: true,
     icon: 'ri:user-3-line',
     keepAlive: true
   }

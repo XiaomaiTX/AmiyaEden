@@ -1,11 +1,14 @@
 package service
 
 import (
+	"amiya-eden/global"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/repository"
 	"context"
 	"errors"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -48,6 +51,15 @@ func NewBadgeService() *BadgeService {
 
 func (s *BadgeService) GetBadgeCounts(userID uint, userRoles []string) (BadgeCounts, error) {
 	counts := BadgeCounts{}
+	// Announcement unread is informational; a failure drops only this badge, not the whole response.
+	unread, err := repository.NewAnnouncementRepository().Unread(userID)
+	if err != nil {
+		if logger := global.CurrentLogger(); logger != nil {
+			logger.Warn("获取公告未读数量失败", zap.Uint("user_id", userID), zap.Error(err))
+		}
+	} else if unread > 0 {
+		counts["announcement_unread"] = unread
+	}
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var firstErr error
