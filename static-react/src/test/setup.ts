@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom/vitest'
+import { ensureLocaleLoaded } from '@/i18n/context'
+
+await Promise.all([ensureLocaleLoaded('zh-CN'), ensureLocaleLoaded('en-US')])
 
 // Existing page fixtures isolate sidebar eligibility from their ordered API
 // responses. Admissions tests override this mock to exercise their own context.

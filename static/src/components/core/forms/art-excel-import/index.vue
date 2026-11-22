@@ -1,7 +1,8 @@
 <!-- 导入 Excel 文件 -->
 <template>
-  <div class="inline-block">
+  <div class="inline-flex items-center align-middle">
     <ElUpload
+      class="inline-flex items-center"
       :auto-upload="false"
       accept=".xlsx, .xls"
       :show-file-list="false"

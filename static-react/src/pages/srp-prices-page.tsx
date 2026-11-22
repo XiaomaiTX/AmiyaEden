@@ -4,6 +4,7 @@ import { deleteShipPrice, fetchSrpConfig, fetchShipPrices, updateSrpConfig, upse
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
+import { formatIskSmart } from '@/lib/isk'
 import type { ShipPrice, SrpConfig, UpsertShipPriceParams } from '@/types/api/srp'
 import { ShopDialog } from './shop-page-utils'
 
@@ -111,13 +112,14 @@ export function SrpPricesPage() {
   return (
     <section className="space-y-4">
       <div className="rounded-lg border bg-card p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-xl font-semibold">{t('srpPrices.title')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t('srpPrices.subtitle')}</p>
           </div>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
+              className="w-full sm:w-64"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder={t('srpPrices.searchPlaceholder')}
@@ -135,7 +137,7 @@ export function SrpPricesPage() {
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {loading ? <p className="text-sm text-muted-foreground">{t('srpPrices.loading')}</p> : null}
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid items-start gap-4 xl:grid-cols-3">
         <div className="rounded-lg border bg-card p-5 xl:col-span-2">
           <h2 className="text-lg font-semibold">{t('srpPrices.priceListTitle')}</h2>
           <div className="mt-4 overflow-x-auto">
@@ -145,19 +147,23 @@ export function SrpPricesPage() {
                   <TableHead className="px-3 py-2">{t('common.id')}</TableHead>
                   <TableHead className="px-3 py-2">{t('srpPrices.columns.typeId')}</TableHead>
                   <TableHead className="px-3 py-2">{t('srpPrices.columns.name')}</TableHead>
-                  <TableHead className="px-3 py-2">{t('srpPrices.columns.amount')}</TableHead>
-                  <TableHead className="px-3 py-2">{t('srpPrices.columns.actions')}</TableHead>
+                  <TableHead className="px-3 py-2 text-right">{t('srpPrices.columns.amount')}</TableHead>
+                  <TableHead className="w-px px-3 py-2 whitespace-nowrap">
+                    {t('srpPrices.columns.actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orderedPrices.map((price) => (
                   <TableRow key={price.id} className="border-b">
-                    <TableCell className="px-3 py-2">{price.id}</TableCell>
-                    <TableCell className="px-3 py-2">{price.ship_type_id}</TableCell>
+                    <TableCell className="px-3 py-2 tabular-nums">{price.id}</TableCell>
+                    <TableCell className="px-3 py-2 tabular-nums">{price.ship_type_id}</TableCell>
                     <TableCell className="px-3 py-2">{price.ship_name}</TableCell>
-                    <TableCell className="px-3 py-2">{price.amount}</TableCell>
-                    <TableCell className="px-3 py-2">
-                      <div className="flex gap-2">
+                    <TableCell className="px-3 py-2 text-right font-medium tabular-nums whitespace-nowrap">
+                      {formatIskSmart(price.amount)} {t('common.isk')}
+                    </TableCell>
+                    <TableCell className="px-3 py-2 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
                         <Button type="button" size="sm" variant="outline" onClick={() => openEdit(price)}>
                           {t('common.edit')}
                         </Button>
@@ -182,8 +188,8 @@ export function SrpPricesPage() {
 
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold">{t('srpPrices.configTitle')}</h2>
-          <div className="mt-4 space-y-3">
-            <label className="space-y-2 block">
+          <div className="mt-4 space-y-4">
+            <label className="block space-y-2">
               <span className="text-sm text-muted-foreground">{t('srpPrices.configAmountLimit')}</span>
               <Input
                 type="number"
@@ -191,9 +197,11 @@ export function SrpPricesPage() {
                 onChange={(event) => setConfig((current) => ({ ...current, amount_limit: Number(event.target.value) }))}
               />
             </label>
-            <Button type="button" onClick={() => void saveConfig()} isDisabled={configSaving}>
-              {configSaving ? t('srpPrices.saving') : t('srpPrices.saveConfig')}
-            </Button>
+            <div className="flex justify-end">
+              <Button type="button" onClick={() => void saveConfig()} isDisabled={configSaving}>
+                {configSaving ? t('srpPrices.saving') : t('srpPrices.saveConfig')}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
