@@ -1139,8 +1139,12 @@
   const loadSettings = async () => {
     settingsLoading.value = true
     try {
-      settings.value = await fetchCorporationStructureSettings()
-      serviceCatalog.value = await fetchStructureServiceCatalog()
+      const [nextSettings, nextCatalog] = await Promise.all([
+        fetchCorporationStructureSettings(),
+        fetchStructureServiceCatalog()
+      ])
+      settings.value = nextSettings
+      serviceCatalog.value = nextCatalog
       serviceCatalog.value.unmapped_activities.forEach((item) => {
         if (!activityModuleByName[item.activity_name]) {
           activityModuleByName[item.activity_name] = []
@@ -1564,12 +1568,10 @@
       })
     }
 
+    // Settings may reset the corporation filter, so they load first; the rest only read that filter.
     await loadSettings()
-    await loadFilterOptions()
-    await loadAssignments()
-    await loadFuelSalarySettings()
     copyFiltersToSearchParams()
-    await getData()
+    await Promise.all([loadFilterOptions(), loadAssignments(), loadFuelSalarySettings(), getData()])
   })
 </script>
 

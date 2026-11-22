@@ -194,8 +194,7 @@ export function ShopOrderManagePage() {
       }
 
       setReviewDialogOpen(false)
-      await loadPending()
-      await loadHistory()
+      await Promise.all([loadPending(), loadHistory()])
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('shopAdmin.orders.messages.actionFailed')))
     } finally {
