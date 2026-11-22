@@ -1,8 +1,12 @@
 <template>
-  <p v-if="kind === 'alt'" class="alt-reminder">{{ t('admissions.altHint') }}</p>
-  <I18nT v-else keypath="admissions.seatHint" tag="p" scope="global">
+  <I18nT
+    :keypath="kind === 'alt' ? 'admissions.altHint' : 'admissions.seatHint'"
+    tag="p"
+    scope="global"
+    :class="{ 'alt-reminder': kind === 'alt' }"
+  >
     <template #seat>
-      <a href="https://seat.winterco.org" target="_blank" rel="noreferrer">{{
+      <a href="https://seat.winterco.org/character/list" target="_blank" rel="noreferrer">{{
         t('admissions.seat')
       }}</a>
     </template>

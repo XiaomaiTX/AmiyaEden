@@ -40,18 +40,20 @@ function errorKey(error: unknown) {
 
 function AdmissionInstructions({ kind }: { kind: AdmissionKind }) {
   const { t } = useI18n()
-  if (kind === 'alt')
-    return <p className="font-semibold text-red-600 dark:text-red-400">{t('admissions.altHint')}</p>
   return (
-    <p className="text-muted-foreground">
-      {t('admissions.seatHint')
+    <p
+      className={
+        kind === 'alt' ? 'font-semibold text-red-600 dark:text-red-400' : 'text-muted-foreground'
+      }
+    >
+      {t(kind === 'alt' ? 'admissions.altHint' : 'admissions.seatHint')
         .split('{seat}')
         .map((text, index) => (
           <span key={index}>
             {index > 0 && (
               <a
                 className="text-blue-600 underline dark:text-blue-400"
-                href="https://seat.winterco.org"
+                href="https://seat.winterco.org/character/list"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -134,6 +136,7 @@ function AdmissionForm({
     application?.characters.map((char) => char.character_id) ?? []
   )
   const [files, setFiles] = useState<Partial<Record<EvidenceKind, Blob>>>({})
+  const [note, setNote] = useState(application?.note ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const eligible = canAccessAdmission(context, kind)
@@ -166,6 +169,7 @@ function AdmissionForm({
           kind,
           target_corporation_id: target,
           character_ids: characters,
+          ...(kind === 'alt' ? { note } : {}),
           expected_version: application?.version ?? 0,
         },
         files,
@@ -189,7 +193,7 @@ function AdmissionForm({
       }}
     >
       <p>
-        {t('admissions.bindHint')}{' '}
+        {t(kind === 'alt' ? 'admissions.altBindHint' : 'admissions.bindHint')}{' '}
         <Link className="text-primary underline" to="/characters">
           {t('admissions.bind')}
         </Link>
@@ -243,6 +247,20 @@ function AdmissionForm({
           </label>
         ))}
       </fieldset>
+      {kind === 'alt' && (
+        <label className="block space-y-2">
+          <span>{t('admissions.note')}</span>
+          <textarea
+            className={fieldClass}
+            rows={5}
+            maxLength={2000}
+            placeholder={t('admissions.noteHint')}
+            disabled={busy}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+          />
+        </label>
+      )}
       {kind === 'new_member' && (
         <>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -592,6 +610,11 @@ export function AdmissionsPage() {
                     </td>
                     <td className="p-3">
                       {app.characters.map((char) => char.character_name).join(', ')}
+                      {app.note && (
+                        <p className="mt-2 whitespace-pre-wrap break-words">
+                          {t('admissions.note')}: {app.note}
+                        </p>
+                      )}
                     </td>
                     <td className="p-3">
                       <span
@@ -728,6 +751,12 @@ export function AdmissionsPage() {
                 {detail.application.qq ? `QQ: ${detail.application.qq}` : ''}{' '}
                 {detail.application.discord_id ? `Discord: ${detail.application.discord_id}` : ''}
               </p>
+              {detail.application.note && (
+                <div className="mt-3">
+                  <h3 className="font-medium">{t('admissions.note')}</h3>
+                  <p className="whitespace-pre-wrap break-words">{detail.application.note}</p>
+                </div>
+              )}
               {detail.application.rejection_reason && (
                 <p className="mt-3 text-destructive">
                   {t('admissions.reason')}: {detail.application.rejection_reason}

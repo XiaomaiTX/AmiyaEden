@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gorm.io/gorm"
 )
@@ -27,6 +28,7 @@ type AdmissionWriteInput struct {
 	Kind                string  `json:"kind"`
 	TargetCorporationID int64   `json:"target_corporation_id"`
 	CharacterIDs        []int64 `json:"character_ids"`
+	Note                string  `json:"note"`
 	ExpectedVersion     uint    `json:"expected_version"`
 }
 
@@ -133,6 +135,9 @@ func (s *AdmissionService) blacklistHitsTx(tx *gorm.DB, apps []model.AdmissionAp
 }
 
 func (s *AdmissionService) validateSubmission(tx *gorm.DB, userID uint, in AdmissionWriteInput) (*model.User, []model.AdmissionCharacter, error) {
+	if utf8.RuneCountInString(strings.TrimSpace(in.Note)) > 2000 || (in.Kind != model.AdmissionKindAlt && strings.TrimSpace(in.Note) != "") {
+		return nil, nil, ErrAdmissionInvalid
+	}
 	if (in.Kind != model.AdmissionKindNewMember && in.Kind != model.AdmissionKindAlt) || (in.TargetCorporationID != model.SystemCorporationID && in.TargetCorporationID != model.AdmissionFMACorporationID) || len(in.CharacterIDs) == 0 || len(in.CharacterIDs) > 100 {
 		return nil, nil, ErrAdmissionInvalid
 	}
@@ -235,6 +240,7 @@ func (s *AdmissionService) Create(userID uint, in AdmissionWriteInput, uploads m
 			return err
 		}
 		app = &model.AdmissionApplication{UserID: userID, Kind: in.Kind, TargetCorporationID: in.TargetCorporationID, Status: model.AdmissionStatusPending, Version: 1, ApplicantName: user.Nickname, PrimaryCharacterID: user.PrimaryCharacterID, QQ: user.QQ, DiscordID: user.DiscordID, SubmittedAt: time.Now().UTC()}
+		app.Note = strings.TrimSpace(in.Note)
 		if err = s.repo.CreateTx(tx, app); err != nil {
 			return err
 		}
@@ -301,6 +307,7 @@ func (s *AdmissionService) Edit(userID, id uint, in AdmissionWriteInput, uploads
 		app.PrimaryCharacterID = user.PrimaryCharacterID
 		app.QQ = user.QQ
 		app.DiscordID = user.DiscordID
+		app.Note = strings.TrimSpace(in.Note)
 		action := "edit"
 		if resubmit {
 			action = "resubmit"

@@ -27,6 +27,7 @@ export interface AdmissionApplication {
   qq: string
   discord_id: string
   submitted_at: string
+  note: string
   handled_by: number | null
   handler_name: string
   closed_at: string | null
@@ -35,6 +36,7 @@ export interface AdmissionApplication {
   characters: AdmissionCharacter[]
 }
 export interface AdmissionWriteInput {
+  note?: string
   kind: AdmissionKind
   target_corporation_id: number
   character_ids: number[]

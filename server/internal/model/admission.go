@@ -27,6 +27,7 @@ type AdmissionApplication struct {
 	PrimaryCharacterID  int64                `json:"primary_character_id"`
 	QQ                  string               `gorm:"size:20" json:"qq"`
 	DiscordID           string               `gorm:"size:20" json:"discord_id"`
+	Note                string               `gorm:"type:text;not null;default:''" json:"note"`
 	SubmittedAt         time.Time            `gorm:"not null;index" json:"submitted_at"`
 	HandledBy           *uint                `json:"handled_by"`
 	HandlerName         string               `gorm:"size:128" json:"handler_name"`
