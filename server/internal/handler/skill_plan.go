@@ -66,7 +66,7 @@ func (h *SkillPlanHandler) ListSkillPlans(c *gin.Context) {
 	}
 	keyword := c.Query("keyword")
 
-	records, total, err := h.svc.ListSkillPlans(page, pageSize, keyword)
+	records, total, err := h.svc.ListSkillPlans(page, pageSize, keyword, middleware.GetUserRoles(c))
 	if err != nil {
 		response.Fail(c, response.CodeBizError, err.Error())
 		return
@@ -104,7 +104,7 @@ func (h *SkillPlanHandler) GetSkillPlan(c *gin.Context) {
 		return
 	}
 
-	result, err := h.svc.GetSkillPlan(id, resolveRequestLang(c))
+	result, err := h.svc.GetSkillPlan(id, resolveRequestLang(c), middleware.GetUserRoles(c))
 	if err != nil {
 		response.Fail(c, response.CodeNotFound, err.Error())
 		return

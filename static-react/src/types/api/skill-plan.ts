@@ -3,6 +3,7 @@ import type { PaginatedResponse } from '@/types/api/common'
 export type SkillPlanScope = 'corp' | 'personal'
 
 export interface SkillPlanListItem {
+  disabled: boolean
   id: number
   title: string
   description: string
@@ -26,6 +27,7 @@ export interface SkillRequirement {
 }
 
 export interface SkillPlanDetail {
+  disabled: boolean
   id: number
   title: string
   description: string
@@ -54,6 +56,7 @@ export interface SkillRequirementParams {
 }
 
 export interface CreateSkillPlanParams {
+  disabled?: boolean
   title: string
   description?: string
   ship_type_id?: number

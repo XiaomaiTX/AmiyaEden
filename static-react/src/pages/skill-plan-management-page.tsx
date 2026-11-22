@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import type {
@@ -40,6 +41,7 @@ interface SkillPlanManagementPageProps {
 }
 
 type SkillPlanFormState = {
+  disabled: boolean
   id: number
   title: string
   description: string
@@ -49,6 +51,7 @@ type SkillPlanFormState = {
 }
 
 const emptyForm: SkillPlanFormState = {
+  disabled: false,
   id: 0,
   title: '',
   description: '',
@@ -179,6 +182,7 @@ export function SkillPlanManagementPage({
 
     setForm({
       id: selectedPlan.id,
+      disabled: selectedPlan.disabled,
       title: selectedPlan.title,
       description: selectedPlan.description,
       ship_type_id: selectedPlan.ship_type_id ? String(selectedPlan.ship_type_id) : '',
@@ -199,6 +203,7 @@ export function SkillPlanManagementPage({
     setError(null)
     try {
       const payload: CreateSkillPlanParams = {
+        disabled: form.disabled,
         title,
         description: form.description.trim() || undefined,
         ship_type_id: form.ship_type_id ? Number(form.ship_type_id) : undefined,
@@ -262,7 +267,7 @@ export function SkillPlanManagementPage({
 
   return (
     <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-      <div className="rounded-lg border bg-card p-4">
+      <div className="flex max-h-[70dvh] flex-col rounded-lg border bg-card p-4 xl:h-[clamp(480px,calc(100dvh-160px),900px)] xl:max-h-none">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold">{t(titleKey)}</h1>
@@ -301,7 +306,7 @@ export function SkillPlanManagementPage({
           {t('skillPlan.listTitle')} ({total})
         </div>
 
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto">
           {loading ? (
             <p className="text-sm text-muted-foreground">{t('skillPlan.loading')}</p>
           ) : null}
@@ -310,7 +315,7 @@ export function SkillPlanManagementPage({
               key={plan.id}
               type="button"
               variant="outline"
-              className={`w-full p-3 text-left transition ${
+              className={`h-auto w-full flex-col items-stretch gap-1 whitespace-normal px-2.5 py-2 text-left transition ${
                 selectedPlanId === plan.id
                   ? 'border-primary bg-primary/10 text-foreground'
                   : 'text-foreground'
@@ -320,8 +325,10 @@ export function SkillPlanManagementPage({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-medium">{plan.title}</div>
-                  <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                  <div className="font-medium">
+                    {plan.title} {plan.disabled ? t('skillPlan.disabled') : ''}
+                  </div>
+                  <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                     {plan.description || t('skillPlan.descriptionEmpty')}
                   </div>
                 </div>
@@ -330,10 +337,10 @@ export function SkillPlanManagementPage({
                 </ShopBadge>
               </div>
               {canManage ? (
-                <div className="mt-3 flex gap-2">
+                <div className="flex gap-1">
                   <Button
                     type="button"
-                    size="sm"
+                    size="xs"
                     variant="outline"
                     isDisabled={reorderSaving || index === 0}
                     onClick={(event) => {
@@ -345,7 +352,7 @@ export function SkillPlanManagementPage({
                   </Button>
                   <Button
                     type="button"
-                    size="sm"
+                    size="xs"
                     variant="outline"
                     isDisabled={reorderSaving || index === plans.length - 1}
                     onClick={(event) => {
@@ -366,7 +373,7 @@ export function SkillPlanManagementPage({
           ) : null}
         </div>
 
-        <div className="mt-4 flex items-center gap-2 text-sm">
+        <div className="mt-3 flex shrink-0 items-center gap-2 text-sm">
           <span>
             {page}/{pageCount}
           </span>
@@ -506,7 +513,20 @@ export function SkillPlanManagementPage({
           </>
         }
       >
+        {error ? (
+          <p role="alert" className="mb-3 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
         <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex items-center gap-2 md:col-span-2">
+            <Checkbox
+              aria-label={t('skillPlan.disabled')}
+              isSelected={form.disabled}
+              onChange={(disabled) => setForm((current) => ({ ...current, disabled }))}
+            />
+            {t('skillPlan.disabled')}
+          </div>
           <label className="space-y-2 md:col-span-2">
             <span className="text-sm text-muted-foreground">{t('skillPlan.fields.title')}</span>
             <Input
@@ -559,7 +579,7 @@ export function SkillPlanManagementPage({
             <Textarea
               className="min-h-40"
               value={form.skills_text}
-              placeholder={t('skillPlan.fields.skillsTextPlaceholder')}
+              placeholder={t('skillPlan.eftHint')}
               onChange={(event) =>
                 setForm((current) => ({ ...current, skills_text: event.target.value }))
               }
