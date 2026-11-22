@@ -47,8 +47,24 @@ func (r *FuxiHallRepository) UpsertPage(page *model.FuxiHallPage) error {
 			"title",
 			"subtitle",
 			"description_html",
+			"floors",
 		}),
 	}).Create(page).Error
+}
+
+func (r *FuxiHallRepository) LockPage(pageKey string) (*model.FuxiHallPage, error) {
+	var page model.FuxiHallPage
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Where("page_key = ?", pageKey).First(&page).Error
+	return &page, err
+}
+
+func (r *FuxiHallRepository) Characters(ids []int64) ([]model.EveCharacter, error) {
+	var chars []model.EveCharacter
+	if len(ids) == 0 {
+		return chars, nil
+	}
+	err := r.db.Select("character_id", "user_id", "fuxi_legion_tenure_days").Where("character_id IN ?", ids).Find(&chars).Error
+	return chars, err
 }
 
 func (r *FuxiHallRepository) ListCardsByPage(pageKey string, visibleOnly bool) ([]model.FuxiHallCard, error) {
@@ -72,7 +88,24 @@ func (r *FuxiHallRepository) GetCardByID(id uint) (*model.FuxiHallCard, error) {
 }
 
 func (r *FuxiHallRepository) CreateCard(card *model.FuxiHallCard) error {
-	return r.db.Create(card).Error
+	visible := card.Visible
+	if err := r.db.Create(card).Error; err != nil {
+		return err
+	}
+	if !visible {
+		card.Visible = false
+		return r.db.Model(card).Update("visible", false).Error
+	}
+	return nil
+}
+
+func (r *FuxiHallRepository) OwnsCharacter(userID uint, characterID int64) (bool, error) {
+	var char model.EveCharacter
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).Select("character_id", "user_id").Where("character_id = ?", characterID).First(&char).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	return userID != 0 && char.UserID == userID, err
 }
 
 func (r *FuxiHallRepository) UpdateCardFields(id uint, fields map[string]interface{}) error {

@@ -1,73 +1,189 @@
-import { useEffect, useState } from 'react'
-import { fetchFuxiHallContributors, fetchFuxiHallLeadership } from '@/api/fuxi-hall'
+import { useCallback, useEffect, useState } from 'react'
+import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
 import { FuxiHallMemberCard } from '@/components/fuxi-hall-member-card'
+import { RichTextEditor } from '@/components/rich-text-editor'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
-import type { FuxiHallPublicPageResponse } from '@/types/api/fuxi-hall'
+import { ShopDialog } from './shop-page-utils'
+import type { FuxiHallCard, FuxiHallPublicPageResponse } from '@/types/api/fuxi-hall'
 
-export function FuxiHallPublicPage({ page }: { page: 'leadership' | 'contributors' }) {
+export function FuxiHallPublicPage() {
   const { t } = useI18n()
   const [data, setData] = useState<FuxiHallPublicPageResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  const [editing, setEditing] = useState<FuxiHallCard | null>(null)
+  const [nickname, setNickname] = useState('')
+  const [description, setDescription] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+  const message = useCallback(
+    (caught: unknown) => {
+      const value = caught instanceof Error ? caught.message : 'fuxiHall.errors.load'
+      return value.startsWith('fuxiHall.') ? t(value) : value
+    },
+    [t]
+  )
+  const load = useCallback(async () => {
+    setError('')
+    try {
+      setData(await fetchFuxiHall())
+    } catch (caught) {
+      setError(message(caught))
+    }
+  }, [message])
   useEffect(() => {
-    void (async () => {
-      try {
-        setError(null)
-        setData(
-          await (page === 'leadership' ? fetchFuxiHallLeadership() : fetchFuxiHallContributors())
-        )
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : t('fuxiHall.public.loadFailed'))
-      }
-    })()
-  }, [page, t])
-  const eyebrow =
-    page === 'leadership'
-      ? t('fuxiHall.public.leadershipEyebrow')
-      : t('fuxiHall.public.contributorsEyebrow')
-  const fallbackTitle =
-    page === 'leadership'
-      ? t('fuxiHall.public.defaultLeadershipTitle')
-      : t('fuxiHall.public.defaultContributorsTitle')
+    const timer = window.setTimeout(() => {
+      void load()
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [load])
+  const edit = (card: FuxiHallCard) => {
+    setEditing(card)
+    setNickname(card.nickname)
+    setDescription(card.description_html)
+    setEditError('')
+  }
+  const save = async () => {
+    if (!editing || saving) return
+    setSaving(true)
+    setEditError('')
+    try {
+      const card = await updateOwnFuxiHallCard(editing.id, {
+        nickname,
+        description_html: description,
+      })
+      setData((previous) =>
+        previous
+          ? {
+              ...previous,
+              cards: previous.cards.map((row) =>
+                row.id === card.id
+                  ? { ...row, nickname: card.nickname, description_html: card.description_html }
+                  : row
+              ),
+            }
+          : previous
+      )
+      setEditing(null)
+    } catch (caught) {
+      setEditError(message(caught))
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
-    <section className="min-h-full space-y-5 rounded-xl bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,.16),transparent_32%),radial-gradient(circle_at_top_right,rgba(2,132,199,.12),transparent_30%)] p-4 md:p-6">
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {!data && !error ? (
-        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
-      ) : null}
-      {data ? (
-        <div className="rounded-xl border bg-card p-5">
-          <header>
-            <p className="text-xs tracking-widest text-muted-foreground uppercase">{eyebrow}</p>
-            <h1 className="mt-2 text-3xl font-semibold">{data.page.title || fallbackTitle}</h1>
-            {data.page.subtitle ? (
-              <p className="mt-2 text-muted-foreground">{data.page.subtitle}</p>
-            ) : null}
-          </header>
-          {data.page.description_html ? (
-            <article
-              className="mt-5 rounded-xl bg-muted/50 p-4 leading-relaxed [&_a]:text-primary [&_a]:underline [&_img]:max-w-full"
-              dangerouslySetInnerHTML={{ __html: data.page.description_html }}
-            />
-          ) : null}
-          {data.cards.length ? (
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {data.cards.map((card) => (
-                <FuxiHallMemberCard key={card.id} card={card} />
+    <section className="min-w-0 space-y-8 p-4 md:p-6">
+      <header className="mx-auto max-w-5xl text-center">
+        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+          {data?.page.title || t('fuxiHall.fame.title')}
+        </h1>
+        {data?.page.subtitle && <p className="mt-3 text-muted-foreground">{data.page.subtitle}</p>}
+        <p className="mt-3 text-xs text-muted-foreground">{t('fuxiHall.contributions.daily')}</p>
+      </header>
+      {error && (
+        <div role="alert" className="text-center text-destructive">
+          {error}{' '}
+          <Button variant="outline" onClick={() => void load()}>
+            {t('fuxiHall.fame.retry')}
+          </Button>
+        </div>
+      )}
+      {!data && !error && <p>{t('common.loading')}</p>}
+      {data?.page.description_html && (
+        <article
+          className="mx-auto max-w-5xl leading-relaxed [&_img]:max-w-full"
+          dangerouslySetInnerHTML={{ __html: data.page.description_html }}
+        />
+      )}
+      {data && data.cards.length === 0 && (
+        <p className="py-12 text-center text-muted-foreground">{t('fuxiHall.public.emptyTitle')}</p>
+      )}
+      {data?.page.floors.map((floor, index) => {
+        const cards = data.cards.filter((card) => card.floor_key === floor.key)
+        return (
+          <section
+            key={floor.key}
+            aria-label={floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
+            className={`mx-auto space-y-4 ${index === 0 ? 'max-w-[960px]' : index === 1 ? 'max-w-[1200px]' : 'w-full'}`}
+          >
+            <div className="flex items-baseline justify-between border-b border-border pb-3">
+              <h2 className="text-xl font-semibold">
+                {floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                {t('fuxiHall.fame.memberCount', { count: cards.length })}
+              </span>
+            </div>
+            <div
+              className={`grid gap-4 sm:grid-cols-2 ${index === 0 ? '' : index === 1 ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}
+            >
+              {cards.map((card) => (
+                <div key={card.id} className="flex min-w-0 flex-col gap-2">
+                  <div className="min-h-0 flex-1">
+                    <FuxiHallMemberCard card={card} />
+                  </div>
+                  {card.can_edit && (
+                    <Button variant="outline" size="sm" onClick={() => edit(card)}>
+                      {t('fuxiHall.fame.editMine')}
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
-          ) : (
-            <div className="mt-5 rounded-xl border border-dashed p-8 text-center">
-              <h2 className="font-medium">{t('fuxiHall.public.emptyTitle')}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t('fuxiHall.public.emptySubtitle')}
-              </p>
+          </section>
+        )
+      })}
+      {editing && (
+        <ShopDialog
+          open
+          title={t('fuxiHall.fame.editMine')}
+          onClose={() => {
+            if (!saving) setEditing(null)
+          }}
+          closeLabel={t('common.cancel')}
+        >
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void save()
+            }}
+          >
+            <label className="block space-y-2">
+              <span>{t('fuxiHall.manage.nickname')}</span>
+              <Input
+                maxLength={256}
+                required
+                value={nickname}
+                disabled={saving}
+                onChange={(event) => setNickname(event.target.value)}
+              />
+            </label>
+            <div className="space-y-2">
+              <p>{t('fuxiHall.manage.cardDescription')}</p>
+              <RichTextEditor
+                ariaLabel={t('fuxiHall.manage.cardDescription')}
+                value={description}
+                onChange={setDescription}
+              />
             </div>
-          )}
-        </div>
-      ) : null}
+            {editError && (
+              <p role="alert" className="text-destructive">
+                {editError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" isDisabled={saving} onClick={() => setEditing(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" isDisabled={saving || !nickname.trim()}>
+                {t('common.save')}
+              </Button>
+            </div>
+          </form>
+        </ShopDialog>
+      )}
     </section>
   )
 }
-
-export const FuxiHallLeadershipPage = () => <FuxiHallPublicPage page="leadership" />
-export const FuxiHallContributorsPage = () => <FuxiHallPublicPage page="contributors" />

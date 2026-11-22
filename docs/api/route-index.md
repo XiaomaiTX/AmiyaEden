@@ -86,8 +86,8 @@ source_of_truth:
 
 | Method | Path                      | 说明                                          | 权限  |
 | ------ | ------------------------- | --------------------------------------------- | ----- |
-| GET    | `/fuxi-hall/leadership`   | 获取管理层展示页（页面配置 + 可见卡片）       | Login |
-| GET    | `/fuxi-hall/contributors` | 获取重大贡献成员展示页（页面配置 + 可见卡片） | Login |
+| GET | `/fuxi-hall/hall-of-fame` | 名人堂配置、楼层和可见卡片（含本人编辑权限、累计在团时长） | Login |
+| PUT | `/fuxi-hall/cards/:id/profile` | 本人修改昵称和简介，按主人物当前绑定关系校验 | Login |
 
 ## Authenticated Base
 
@@ -138,10 +138,6 @@ source_of_truth:
 | PUT    | `/dashboard/galaxy-registry/admin/entries/:id/validation`   | 人工覆盖已结束登记的校验结果；仅允许 `valid` / `violation`，违规时可附带 `violation_reason`                                                                                                                                 | `RequireRole(admin)`        |
 | GET    | `/dashboard/galaxy-registry/admin/analytics`                | 获取当前快照、近 7/30 天统计、Top 星系和最近违规记录；支持可选 `start_date` / `end_date`                                                                                                                                    | `RequireRole(admin)`        |
 | GET    | `/badge-counts`                                             | 导航徽章计数；仅返回当前登录用户可见且非零的计数字段。福利可申请数仅读取内存缓存，不会在该接口内重新计算资格。`super_admin/admin` 额外返回军团建筑提醒计数 `corporation_structures_attention`                               | Login                       |
-| POST   | `/notification/list`                                        | 通知列表                                                                                                                                                                                                                    | JWT                         |
-| POST   | `/notification/unread-count`                                | 未读数                                                                                                                                                                                                                      | JWT                         |
-| POST   | `/notification/read`                                        | 标记已读                                                                                                                                                                                                                    | Login                       |
-| POST   | `/notification/read-all`                                    | 全部已读                                                                                                                                                                                                                    | Login                       |
 
 ## Corporation Admissions
 
@@ -527,15 +523,16 @@ source_of_truth:
 
 管理端页面基于以下接口实现页面/卡片编辑，并提供未保存草稿的实时预览能力。
 
-| Method | Path                                | 说明                                                                                                                                                                         | 权限                 |
-| ------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | -------------------- |
-| GET    | `/system/fuxi-hall/pages/:page_key` | 获取页面配置（`page_key` 仅支持 `leadership                                                                                                                                  | contributors`）      | `RequireRole(admin)` |
-| PUT    | `/system/fuxi-hall/pages/:page_key` | 更新页面配置（标题/副标题/富文本说明）                                                                                                                                       | `RequireRole(admin)` |
-| GET    | `/system/fuxi-hall/cards/:page_key` | 获取页面卡片（含隐藏卡片）；当 `page_key=leadership` 时返回管理端统计字段：`fleet_led_count`、`welfare_delivery_count`、`welfare_delivery_offset`                            | `RequireRole(admin)` |
-| POST   | `/system/fuxi-hall/cards`           | 创建卡片（`main_character_name` 必填，服务端会通过 ESI `POST /universe/ids/` 自动解析并写入 `main_character_id`）                                                            | `RequireRole(admin)` |
-| PUT    | `/system/fuxi-hall/cards/:id`       | 更新卡片字段（基础信息/强调色/头像形状/字体大小/显隐；若更新 `main_character_name` 会同步重解析并覆盖 `main_character_id`）；`welfare_delivery_offset` 仅 `super_admin` 可写 | `RequireRole(admin)` |
-| PUT    | `/system/fuxi-hall/cards/reorder`   | 保存页面内手动排序（`ordered_ids`）                                                                                                                                          | `RequireRole(admin)` |
-| DELETE | `/system/fuxi-hall/cards/:id`       | 删除卡片                                                                                                                                                                     | `RequireRole(admin)` |
+| Method | Path | 说明 | 权限 |
+| --- | --- | --- | --- |
+| GET | `/system/fuxi-hall/pages/:page_key` | 获取名人堂配置及楼层；`page_key` 仅支持 `hall-of-fame` | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/pages/:page_key` | 更新标题、副标题、说明及楼层配置 | `RequireRole(admin)` |
+| GET | `/system/fuxi-hall/cards/:page_key` | 获取全部卡片、五项贡献快照、更新时间和历史 offset | `RequireRole(admin)` |
+| POST | `/system/fuxi-hall/cards` | 创建卡片，按主人物名称解析 ESI ID，配置楼层和管理状态 | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/cards/:id` | 更新卡片、五项 offset；修改主人物会重新解析 ID 并清空原快照 | `RequireRole(admin)` |
+| PUT | `/system/fuxi-hall/cards/reorder` | 保存卡片排序 | `RequireRole(admin)` |
+| DELETE | `/system/fuxi-hall/cards/:id` | 删除卡片 | `RequireRole(admin)` |
+| POST | `/system/fuxi-hall/contributions/refresh` | 手动重算五项贡献快照，保留历史 offset | `RequireRole(admin)` |
 
 ### Newbro Admin
 

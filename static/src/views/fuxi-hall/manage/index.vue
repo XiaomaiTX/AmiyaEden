@@ -1,14 +1,5 @@
 <template>
   <div class="fuxi-hall-manage" v-loading="loading">
-    <ElCard class="fuxi-hall-manage__toolbar art-table-card" shadow="never">
-      <div class="fuxi-hall-manage__toolbar-inner">
-        <ElTabs v-model="currentPageKey" @tab-change="() => void loadPage()">
-          <ElTabPane :label="t('fuxiHall.manage.leadershipTab')" name="leadership" />
-          <ElTabPane :label="t('fuxiHall.manage.contributorsTab')" name="contributors" />
-        </ElTabs>
-      </div>
-    </ElCard>
-
     <section class="fuxi-hall-manage__layout">
       <ElCard class="art-table-card" shadow="never">
         <template #header>
@@ -25,6 +16,54 @@
           <ElFormItem :label="t('fuxiHall.manage.pageDescription')">
             <ArtWangEditor v-model="pageForm.description_html" height="220px" />
           </ElFormItem>
+          <fieldset class="hall-floors">
+            <legend>{{ t('fuxiHall.fame.floorSettings') }}</legend
+            ><p>{{ t('fuxiHall.fame.floorHint') }}</p>
+            <div v-for="(floor, index) in pageForm.floors" :key="floor.key" class="hall-floor-row">
+              <ElInput
+                v-model="floor.name"
+                :aria-label="t('fuxiHall.fame.floorName')"
+                :maxlength="64"
+                :placeholder="
+                  ['top', 'second', 'first'].includes(floor.key)
+                    ? t(`fuxiHall.fame.floors.${floor.key}`)
+                    : t('fuxiHall.fame.floorName')
+                "
+              />
+              <ElInputNumber
+                v-model="floor.capacity"
+                :aria-label="t('fuxiHall.fame.capacity')"
+                :min="1"
+                :max="10000"
+              />
+              <ElButton
+                :aria-label="t('fuxiHall.fame.moveUp')"
+                :disabled="index === 0"
+                @click="moveFloor(index, -1)"
+                >↑</ElButton
+              >
+              <ElButton
+                :aria-label="t('fuxiHall.fame.moveDown')"
+                :disabled="index === pageForm.floors.length - 1"
+                @click="moveFloor(index, 1)"
+                >↓</ElButton
+              >
+              <ElButton @click="pageForm.floors.splice(index, 1)">{{
+                t('common.delete')
+              }}</ElButton>
+            </div>
+            <ElButton
+              :disabled="pageForm.floors.length >= 12"
+              @click="
+                pageForm.floors.push({
+                  key: `floor-${Date.now()}`,
+                  name: t('fuxiHall.fame.newFloor'),
+                  capacity: 12
+                })
+              "
+              >{{ t('fuxiHall.fame.addFloor') }}</ElButton
+            >
+          </fieldset>
           <ElFormItem>
             <ElButton type="primary" :loading="savingPage" @click="void savePage()">
               {{ t('common.save') }}
@@ -37,9 +76,16 @@
         <template #header>
           <div class="fuxi-hall-manage__card-header">
             <span>{{ t('fuxiHall.manage.cardList') }}</span>
-            <ElButton type="success" @click="openCreateCard">
-              {{ t('fuxiHall.manage.addCard') }}
-            </ElButton>
+            <div
+              ><ElButton
+                :loading="refreshing"
+                :disabled="refreshing || savingCard"
+                @click="refreshContributions"
+                >{{ t('fuxiHall.contributions.refresh') }}</ElButton
+              ><ElButton type="success" @click="openCreateCard">
+                {{ t('fuxiHall.manage.addCard') }}
+              </ElButton></div
+            >
           </div>
         </template>
 
@@ -52,22 +98,25 @@
               </div>
             </template>
           </ElTableColumn>
+          <ElTableColumn :label="t('fuxiHall.fame.floor')" min-width="120"
+            ><template #default="{ row }">{{
+              pageForm.floors.find((floor) => floor.key === row.floor_key)?.name ||
+              t(`fuxiHall.fame.floors.${row.floor_key}`)
+            }}</template></ElTableColumn
+          >
           <ElTableColumn prop="nickname" :label="t('fuxiHall.manage.nickname')" min-width="140" />
-          <ElTableColumn :label="t('fuxiHall.manage.stats')" min-width="180">
-            <template #default="{ row }">
-              <div
-                v-if="(row.fleet_led_count ?? 0) > 0 || (row.welfare_delivery_count ?? 0) > 0"
-                class="fuxi-hall-manage__stats"
-              >
-                <div v-if="(row.fleet_led_count ?? 0) > 0">
-                  {{ t('fuxiHall.manage.fleetLedCount') }}: {{ row.fleet_led_count }}
-                </div>
-                <div v-if="(row.welfare_delivery_count ?? 0) > 0">
-                  {{ t('fuxiHall.manage.welfareDeliveryCount') }}: {{ row.welfare_delivery_count }}
-                </div>
-              </div>
-            </template>
-          </ElTableColumn>
+          <ElTableColumn :label="t('fuxiHall.contributions.title')" min-width="200"
+            ><template #default="{ row }"
+              ><div v-for="key in contributionKeys" :key="key"
+                >{{ t(`fuxiHall.contributions.${key}`) }}:
+                {{
+                  row.contributions_updated_at || (row.contributions?.[key] ?? 0) > 0
+                    ? (row.contributions?.[key] ?? 0).toLocaleString()
+                    : '—'
+                }}</div
+              ></template
+            ></ElTableColumn
+          >
           <ElTableColumn
             prop="main_character_name"
             :label="t('fuxiHall.manage.mainCharacterName')"
@@ -128,16 +177,23 @@
             v-html="previewPage.description_html"
           />
 
-          <section v-if="previewCards.length > 0" class="fuxi-hall-manage__preview-grid">
-            <FuxiHallMemberCard
-              v-for="card in previewCards"
-              :key="card.id"
-              :card="card"
-              :show-stats="true"
-            />
+          <section v-for="floor in pageForm.floors" :key="floor.key">
+            <h4
+              >{{ floor.name || t(`fuxiHall.fame.floors.${floor.key}`) }} ·
+              {{ previewCards.filter((card) => card.floor_key === floor.key).length }}/{{
+                floor.capacity
+              }}</h4
+            >
+            <div class="fuxi-hall-manage__preview-grid">
+              <FuxiHallMemberCard
+                v-for="card in previewCards.filter((item) => item.floor_key === floor.key)"
+                :key="card.id"
+                :card="card"
+              />
+            </div>
           </section>
 
-          <section v-else class="fuxi-hall-manage__preview-empty">
+          <section v-if="!previewCards.length" class="fuxi-hall-manage__preview-empty">
             <span>{{ t('fuxiHall.manage.previewEmpty') }}</span>
           </section>
         </div>
@@ -147,13 +203,27 @@
     <ElDialog v-model="cardDialogOpen" :title="cardDialogTitle" width="860px" destroy-on-close>
       <ElForm label-position="top">
         <div class="fuxi-hall-manage__dialog-grid">
+          <ElFormItem :label="t('fuxiHall.fame.floor')"
+            ><ElSelect v-model="cardForm.floor_key"
+              ><ElOption
+                v-for="floor in pageForm.floors"
+                :key="floor.key"
+                :value="floor.key"
+                :label="floor.name || t(`fuxiHall.fame.floors.${floor.key}`)" /></ElSelect
+          ></ElFormItem>
+          <ElFormItem :label="t('fuxiHall.fame.current')"
+            ><ElSwitch v-model="cardForm.is_current_management"
+          /></ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.nickname')" required>
             <ElInput v-model="cardForm.nickname" />
           </ElFormItem>
           <ElFormItem :label="t('fuxiHall.manage.mainCharacterName')" required>
             <ElInput v-model="cardForm.main_character_name" />
           </ElFormItem>
-          <ElFormItem :label="t('fuxiHall.manage.title')" required>
+          <ElFormItem
+            :label="t('fuxiHall.manage.title')"
+            :required="cardForm.is_current_management"
+          >
             <div class="fuxi-hall-manage__tag-editor">
               <ElInput
                 v-model="titleTagInput"
@@ -198,12 +268,21 @@
           <ElFormItem :label="t('fuxiHall.manage.visible')">
             <ElSwitch v-model="cardForm.visible" />
           </ElFormItem>
-          <ElFormItem
-            v-if="editingCardId && isSuperAdmin"
-            :label="t('fuxiHall.manage.welfareDeliveryOffset')"
-          >
-            <ElInputNumber v-model="cardForm.welfare_delivery_offset" :min="0" />
-          </ElFormItem>
+          <fieldset class="hall-offsets">
+            <legend>{{ t('fuxiHall.contributions.offsets') }}</legend>
+            <p>{{ t('fuxiHall.contributions.offsetHint') }}</p>
+            <div
+              ><ElFormItem
+                v-for="key in contributionKeys"
+                :key="key"
+                :label="t(`fuxiHall.contributions.${key}`)"
+                ><ElInputNumber
+                  v-model="cardForm.contribution_offsets[key]"
+                  :min="0"
+                  :max="1000000000"
+                  :precision="0" /></ElFormItem
+            ></div>
+          </fieldset>
         </div>
 
         <ElFormItem :label="t('fuxiHall.manage.cardDescription')">
@@ -223,10 +302,11 @@
 
 <script setup lang="ts">
   import { computed, onMounted, reactive, ref } from 'vue'
-  import { ElMessage, ElMessageBox, ElTabPane, ElTabs } from 'element-plus'
+  import { ElMessage, ElMessageBox } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
   import {
+    refreshFuxiHallContributions,
     createFuxiHallCard,
     deleteFuxiHallCard,
     fetchFuxiHallCards,
@@ -235,16 +315,16 @@
     updateFuxiHallCard,
     updateFuxiHallPage
   } from '@/api/fuxi-hall'
-  import { useUserStore } from '@/store/modules/user'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
 
   const { t } = useI18n()
-  const userStore = useUserStore()
 
+  const contributionKeys = ['fleets', 'welfare', 'srp', 'recruitment', 'mentoring'] as const
+  const refreshing = ref(false)
   const loading = ref(false)
   const savingPage = ref(false)
   const savingCard = ref(false)
-  const currentPageKey = ref<Api.FuxiHall.PageKey>('leadership')
+  const currentPageKey = ref<Api.FuxiHall.PageKey>('hall-of-fame')
   const pageConfig = ref<Api.FuxiHall.PageConfig | null>(null)
   const cards = ref<Api.FuxiHall.Card[]>([])
 
@@ -256,6 +336,7 @@
     title: string
     subtitle: string
     description_html: string
+    floors: Api.FuxiHall.Floor[]
   }
 
   type CardFormState = {
@@ -268,17 +349,20 @@
     avatar_shape: Api.FuxiHall.AvatarShape
     font_scale: number
     visible: boolean
-    welfare_delivery_offset: number
+    floor_key: string
+    is_current_management: boolean
+    contribution_offsets: Api.FuxiHall.Contributions
   }
 
   const pageForm = reactive<PageFormState>({
     title: '',
     subtitle: '',
-    description_html: ''
+    description_html: '',
+    floors: []
   })
 
   const cardForm = reactive<CardFormState>({
-    page_key: 'leadership',
+    page_key: 'hall-of-fame',
     nickname: '',
     main_character_name: '',
     title_tags: [],
@@ -287,21 +371,19 @@
     avatar_shape: 'circle',
     font_scale: 14,
     visible: true,
-    welfare_delivery_offset: 0
+    floor_key: 'first',
+    is_current_management: false,
+    contribution_offsets: { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
   })
-  const isSuperAdmin = computed(() => {
-    const roles = userStore.getUserInfo?.roles ?? []
-    return roles.includes('super_admin')
-  })
-
-  const avatarShapeOptions = computed(() => [
-    { label: t('fuxiHall.manage.avatarShapeCircle'), value: 'circle' },
-    { label: t('fuxiHall.manage.avatarShapeRounded'), value: 'rounded' },
-    { label: t('fuxiHall.manage.avatarShapeSquare'), value: 'square' }
-  ])
 
   const cardDialogTitle = computed(() =>
-    editingCardId.value ? t('fuxiHall.manage.editCard') : t('fuxiHall.manage.addCard')
+    t(editingCardId.value ? 'fuxiHall.manage.editCard' : 'fuxiHall.manage.addCard')
+  )
+  const avatarShapeOptions = computed(() =>
+    ['circle', 'rounded', 'square'].map((value) => ({
+      value,
+      label: t(`fuxiHall.manage.avatarShape${value.charAt(0).toUpperCase() + value.slice(1)}`)
+    }))
   )
 
   const previewPage = computed(() => ({
@@ -327,10 +409,24 @@
       accent_color: cardForm.accent_color,
       avatar_shape: cardForm.avatar_shape,
       font_scale: cardForm.font_scale,
+      floor_key: cardForm.floor_key,
+      is_current_management: cardForm.is_current_management,
       visible: cardForm.visible,
-      fleet_led_count: 0,
-      welfare_delivery_count: 0,
-      welfare_delivery_offset: cardForm.welfare_delivery_offset,
+      contribution_offsets: { ...cardForm.contribution_offsets },
+      contributions: contributionKeys.reduce<Api.FuxiHall.Contributions>(
+        (totals, key) => {
+          const existing = cards.value.find((card) => card.id === editingCardId.value)
+          totals[key] =
+            Math.max(
+              0,
+              (existing?.contributions?.[key] ?? 0) - (existing?.contribution_offsets?.[key] ?? 0)
+            ) + cardForm.contribution_offsets[key]
+          return totals
+        },
+        { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
+      ),
+      contributions_updated_at: cards.value.find((card) => card.id === editingCardId.value)
+        ?.contributions_updated_at,
       sort_order: editingCardId.value ? 0 : visibleCards.length + 1,
       created_at: '',
       updated_at: ''
@@ -370,11 +466,18 @@
       ])
       pageConfig.value = nextPage
       cards.value = nextCards
+      pageForm.floors = nextPage.floors.map((floor) => ({ ...floor }))
       pageForm.title = nextPage.title
       pageForm.subtitle = nextPage.subtitle
       pageForm.description_html = nextPage.description_html
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.loadFailed'))
+      ElMessage.error(
+        error instanceof Error
+          ? error.message.startsWith('fuxiHall.')
+            ? t(error.message)
+            : error.message
+          : t('fuxiHall.manage.loadFailed')
+      )
     } finally {
       loading.value = false
     }
@@ -391,12 +494,19 @@
       const saved = await updateFuxiHallPage(currentPageKey.value, {
         title: pageForm.title.trim(),
         subtitle: pageForm.subtitle?.trim() || '',
+        floors: pageForm.floors,
         description_html: pageForm.description_html || ''
       })
       pageConfig.value = saved
       ElMessage.success(t('fuxiHall.manage.saveSuccess'))
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.saveFailed'))
+      ElMessage.error(
+        error instanceof Error
+          ? error.message.startsWith('fuxiHall.')
+            ? t(error.message)
+            : error.message
+          : t('fuxiHall.manage.saveFailed')
+      )
     } finally {
       savingPage.value = false
     }
@@ -404,6 +514,8 @@
 
   function resetCardForm() {
     cardForm.page_key = currentPageKey.value
+    cardForm.floor_key = pageForm.floors.at(-1)?.key ?? 'first'
+    cardForm.is_current_management = false
     cardForm.nickname = ''
     cardForm.main_character_name = ''
     cardForm.title_tags = []
@@ -412,7 +524,7 @@
     cardForm.avatar_shape = 'circle'
     cardForm.font_scale = 14
     cardForm.visible = true
-    cardForm.welfare_delivery_offset = 0
+    cardForm.contribution_offsets = { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
     titleTagInput.value = ''
   }
 
@@ -425,6 +537,8 @@
   function openEditCard(card: Api.FuxiHall.Card) {
     editingCardId.value = card.id
     cardForm.page_key = card.page_key
+    cardForm.floor_key = card.floor_key
+    cardForm.is_current_management = card.is_current_management
     cardForm.nickname = card.nickname
     cardForm.main_character_name = card.main_character_name
     cardForm.title_tags = [...card.title_tags]
@@ -433,7 +547,14 @@
     cardForm.avatar_shape = card.avatar_shape
     cardForm.font_scale = card.font_scale
     cardForm.visible = card.visible
-    cardForm.welfare_delivery_offset = card.welfare_delivery_offset ?? 0
+    cardForm.contribution_offsets = {
+      fleets: 0,
+      welfare: 0,
+      srp: 0,
+      recruitment: 0,
+      mentoring: 0,
+      ...card.contribution_offsets
+    }
     titleTagInput.value = ''
     cardDialogOpen.value = true
   }
@@ -442,7 +563,7 @@
     if (
       !cardForm.nickname.trim() ||
       !cardForm.main_character_name.trim() ||
-      cardForm.title_tags.length === 0
+      (cardForm.is_current_management && cardForm.title_tags.length === 0)
     ) {
       ElMessage.warning(t('fuxiHall.manage.requiredFields'))
       return
@@ -457,6 +578,9 @@
       accent_color: cardForm.accent_color,
       avatar_shape: cardForm.avatar_shape,
       font_scale: cardForm.font_scale,
+      floor_key: cardForm.floor_key,
+      is_current_management: cardForm.is_current_management,
+      contribution_offsets: { ...cardForm.contribution_offsets },
       visible: cardForm.visible
     }
 
@@ -464,9 +588,6 @@
     try {
       if (editingCardId.value) {
         const updatePayload: Api.FuxiHall.UpdateCardParams = { ...payload }
-        if (isSuperAdmin.value) {
-          updatePayload.welfare_delivery_offset = cardForm.welfare_delivery_offset
-        }
         await updateFuxiHallCard(editingCardId.value, updatePayload)
       } else {
         await createFuxiHallCard(payload)
@@ -475,12 +596,36 @@
       cardDialogOpen.value = false
       ElMessage.success(t('fuxiHall.manage.saveSuccess'))
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.saveFailed'))
+      ElMessage.error(
+        error instanceof Error
+          ? error.message.startsWith('fuxiHall.')
+            ? t(error.message)
+            : error.message
+          : t('fuxiHall.manage.saveFailed')
+      )
     } finally {
       savingCard.value = false
     }
   }
 
+  async function refreshContributions() {
+    refreshing.value = true
+    try {
+      await refreshFuxiHallContributions()
+      await loadCards()
+      ElMessage.success(t('fuxiHall.contributions.refreshed'))
+    } catch (error) {
+      ElMessage.error(
+        error instanceof Error
+          ? error.message.startsWith('fuxiHall.')
+            ? t(error.message)
+            : error.message
+          : t('fuxiHall.errors.refresh')
+      )
+    } finally {
+      refreshing.value = false
+    }
+  }
   async function loadCards() {
     cards.value = await fetchFuxiHallCards(currentPageKey.value)
   }
@@ -501,7 +646,13 @@
       await loadCards()
       ElMessage.success(t('fuxiHall.manage.deleteSuccess'))
     } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.saveFailed'))
+      ElMessage.error(
+        error instanceof Error
+          ? error.message.startsWith('fuxiHall.')
+            ? t(error.message)
+            : error.message
+          : t('fuxiHall.manage.saveFailed')
+      )
     }
   }
 
@@ -528,8 +679,19 @@
       })
     } catch (error) {
       cards.value = previous
-      ElMessage.error(error instanceof Error ? error.message : t('fuxiHall.manage.sortFailed'))
+      ElMessage.error(
+        error instanceof Error
+          ? error.message.startsWith('fuxiHall.')
+            ? t(error.message)
+            : error.message
+          : t('fuxiHall.manage.sortFailed')
+      )
     }
+  }
+
+  function moveFloor(index: number, delta: number) {
+    const floors = pageForm.floors
+    ;[floors[index], floors[index + delta]] = [floors[index + delta], floors[index]]
   }
 
   function addTitleTag() {
@@ -557,6 +719,32 @@
 </script>
 
 <style scoped>
+  .hall-offsets {
+    grid-column: 1 / -1;
+  }
+  .hall-offsets > p {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin: 8px 0 12px;
+  }
+  .hall-offsets > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .hall-floors {
+    margin-bottom: 20px;
+  }
+  .hall-floor-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .hall-floor-row .el-input {
+    flex: 1;
+    min-width: 120px;
+  }
   .fuxi-hall-manage {
     display: flex;
     flex-direction: column;

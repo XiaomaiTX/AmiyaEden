@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -26,9 +27,9 @@ type stubFuxiHallService struct {
 	deleteCard      func(uint, uint) error
 }
 
-func (s stubFuxiHallService) GetPublicPage(pageKey string) (*service.FuxiHallPublicPageResponse, error) {
+func (s stubFuxiHallService) PublicHall(viewerID uint) (*service.FuxiHallPublicPageResponse, error) {
 	if s.getPublicPage != nil {
-		return s.getPublicPage(pageKey)
+		return s.getPublicPage("hall-of-fame")
 	}
 	return nil, nil
 }
@@ -93,24 +94,24 @@ func (s stubFuxiHallService) DeleteCard(operatorID, id uint) error {
 	return nil
 }
 
-func TestFuxiHallHandlerGetLeadership(t *testing.T) {
+func TestFuxiHallHandlerGetHall(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/fuxi-hall/leadership", nil)
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/fuxi-hall/hall-of-fame", nil)
 
 	h := &FuxiHallHandler{svc: stubFuxiHallService{
 		getPublicPage: func(pageKey string) (*service.FuxiHallPublicPageResponse, error) {
-			if pageKey != "leadership" {
+			if pageKey != "hall-of-fame" {
 				t.Fatalf("unexpected page key: %s", pageKey)
 			}
 			return &service.FuxiHallPublicPageResponse{
-				Page: model.FuxiHallPage{PageKey: "leadership", Title: "管理层"},
+				Page: model.FuxiHallPage{PageKey: "hall-of-fame", Title: "管理层"},
 			}, nil
 		},
 	}}
 
-	h.GetLeadership(ctx)
+	h.GetHall(ctx)
 	resp := decodeFuxiHallResponse(t, recorder)
 	if resp.Code != response.CodeOK {
 		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
@@ -121,8 +122,8 @@ func TestFuxiHallHandlerGetPageConfigMasksInternalError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Params = gin.Params{{Key: "page_key", Value: "leadership"}}
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/pages/leadership", nil)
+	ctx.Params = gin.Params{{Key: "page_key", Value: "hall-of-fame"}}
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/pages/hall-of-fame", nil)
 
 	h := &FuxiHallHandler{svc: stubFuxiHallService{
 		getPageConfig: func(string) (*model.FuxiHallPage, error) {
@@ -144,7 +145,7 @@ func TestFuxiHallHandlerReorderCardsBindsJSON(t *testing.T) {
 	ctx.Request = httptest.NewRequest(
 		http.MethodPut,
 		"/api/v1/system/fuxi-hall/cards/reorder",
-		bytes.NewBufferString(`{"page_key":"leadership","ordered_ids":[1,2,3]}`),
+		bytes.NewBufferString(`{"page_key":"hall-of-fame","ordered_ids":[1,2,3]}`),
 	)
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
@@ -152,7 +153,7 @@ func TestFuxiHallHandlerReorderCardsBindsJSON(t *testing.T) {
 	h := &FuxiHallHandler{svc: stubFuxiHallService{
 		reorderCards: func(_ uint, req *service.FuxiHallReorderRequest) error {
 			called = true
-			if req.PageKey != "leadership" || len(req.OrderedIDs) != 3 {
+			if req.PageKey != "hall-of-fame" || len(req.OrderedIDs) != 3 {
 				t.Fatalf("unexpected reorder payload: %+v", req)
 			}
 			return nil
@@ -174,14 +175,14 @@ func TestFuxiHallHandlerListCardsUsesManageCardsEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Params = gin.Params{{Key: "page_key", Value: "leadership"}}
-	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/cards/leadership", nil)
+	ctx.Params = gin.Params{{Key: "page_key", Value: "hall-of-fame"}}
+	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/cards/hall-of-fame", nil)
 
 	called := false
 	h := &FuxiHallHandler{svc: stubFuxiHallService{
 		listManageCards: func(pageKey string) ([]service.FuxiHallManageCard, error) {
 			called = true
-			if pageKey != "leadership" {
+			if pageKey != "hall-of-fame" {
 				t.Fatalf("unexpected page key: %s", pageKey)
 			}
 			return []service.FuxiHallManageCard{}, nil
@@ -205,4 +206,12 @@ func decodeFuxiHallResponse(t *testing.T, recorder *httptest.ResponseRecorder) r
 		t.Fatalf("decode response: %v", err)
 	}
 	return resp
+}
+
+func (s stubFuxiHallService) UpdateOwnCard(userID, id uint, req *service.FuxiHallOwnCardRequest) (*model.FuxiHallCard, error) {
+	return nil, nil
+}
+
+func (s stubFuxiHallService) RefreshContributions(ctx context.Context, operatorID uint) error {
+	return nil
 }

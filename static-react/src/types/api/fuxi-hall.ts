@@ -1,4 +1,16 @@
-export type FuxiHallPageKey = 'leadership' | 'contributors'
+export interface FuxiHallContributions {
+  fleets: number
+  welfare: number
+  srp: number
+  recruitment: number
+  mentoring: number
+}
+export interface FuxiHallFloor {
+  key: string
+  name: string
+  capacity: number
+}
+export type FuxiHallPageKey = 'hall-of-fame'
 export type FuxiHallAvatarShape = 'circle' | 'rounded' | 'square'
 
 export interface FuxiHallPageConfig {
@@ -7,9 +19,17 @@ export interface FuxiHallPageConfig {
   title: string
   subtitle: string
   description_html: string
+  floors: FuxiHallFloor[]
 }
 
 export interface FuxiHallCard {
+  contributions?: FuxiHallContributions
+  contribution_offsets?: FuxiHallContributions
+  contributions_updated_at?: string | null
+  floor_key: string
+  is_current_management: boolean
+  can_edit?: boolean
+  tenure_months?: number | null
   id: number
   page_key: FuxiHallPageKey
   nickname: string
@@ -22,9 +42,6 @@ export interface FuxiHallCard {
   font_scale: number
   visible: boolean
   sort_order: number
-  fleet_led_count?: number
-  welfare_delivery_count?: number
-  welfare_delivery_offset?: number
   created_at: string
   updated_at: string
 }
@@ -35,12 +52,16 @@ export interface FuxiHallPublicPageResponse {
 }
 
 export interface FuxiHallPageConfigUpdate {
+  floors?: FuxiHallFloor[]
   title?: string
   subtitle?: string
   description_html?: string
 }
 
 export interface FuxiHallCardCreate {
+  contribution_offsets?: FuxiHallContributions
+  floor_key?: string
+  is_current_management?: boolean
   page_key: FuxiHallPageKey
   nickname: string
   main_character_name: string
@@ -54,7 +75,6 @@ export interface FuxiHallCardCreate {
 
 export type FuxiHallCardUpdate = Partial<FuxiHallCardCreate> & {
   title_tags?: string[]
-  welfare_delivery_offset?: number
 }
 
 export interface FuxiHallCardReorder {

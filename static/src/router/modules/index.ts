@@ -21,6 +21,7 @@ import { ticketRoutes } from './ticket'
 export const routeModules: AppRouteRecord[] = [
   charactersRoutes,
   mumbleRoutes,
+  fuxiHallRoutes,
   admissionsRoutes,
   dashboardRoutes,
   operationRoutes,
@@ -30,7 +31,6 @@ export const routeModules: AppRouteRecord[] = [
   newbroRoutes,
   shopRoutes,
   srpRoutes,
-  fuxiHallRoutes,
   ticketRoutes,
   systemRoutes,
   exceptionRoutes

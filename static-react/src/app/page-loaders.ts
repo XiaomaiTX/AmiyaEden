@@ -36,14 +36,7 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
     () => import('@/pages/dashboard-galaxy-registry-page'),
     'DashboardGalaxyRegistryPage'
   ),
-  'fuxi-hall-leadership': lazyNamed(
-    () => import('@/pages/fuxi-hall-public-page'),
-    'FuxiHallLeadershipPage'
-  ),
-  'fuxi-hall-contributors': lazyNamed(
-    () => import('@/pages/fuxi-hall-public-page'),
-    'FuxiHallContributorsPage'
-  ),
+  'fuxi-hall-fame': lazyNamed(() => import('@/pages/fuxi-hall-public-page'), 'FuxiHallPublicPage'),
   'fuxi-hall-manage': lazyNamed(
     () => import('@/pages/fuxi-hall-manage-page'),
     'FuxiHallManagePage'
