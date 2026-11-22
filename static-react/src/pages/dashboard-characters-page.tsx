@@ -362,7 +362,7 @@ export function DashboardCharactersPage() {
       <div className="rounded-lg border bg-card p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <h1 className="text-xl font-semibold">{t('characters.title')}</h1>
+            <h1 className="text-xl font-semibold">{t('nav.system.userCenter')}</h1>
             <p className="mt-1 text-sm text-muted-foreground">{t('characters.subTitle')}</p>
           </div>
           <div className="flex items-center gap-2">

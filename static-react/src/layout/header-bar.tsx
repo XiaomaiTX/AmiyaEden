@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { appRouteSpecs } from '@/app/migration-routes'
 import { ModeToggle } from '@/components/mode-toggle'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,9 @@ export function HeaderBar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <Link to="/characters" className="text-sm font-medium">
+          {t('nav.system.userCenter')}
+        </Link>
         <ModeToggle />
         <Button
           type="button"

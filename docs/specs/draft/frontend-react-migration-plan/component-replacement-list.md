@@ -107,6 +107,6 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 - [x] `dashboard/fuel-officer-structures`（fuel officer 专属建筑视图）
 - [x] `dashboard/galaxy-registry`（登记、延期、队长历史、管理员配置/分析/校验及超时通知已同构）
 - [x] `info/tool-bookmarks` -> React `InfoToolBookmarksPage`（普通书签列表与管理员 CRUD）
-- [x] `fuxi-hall/leadership`、`fuxi-hall/contributors`、`fuxi-hall/manage`（取代旧 `hall-of-fame` 模块；遗留 stub 已移除）
+- [x] `/fuxi-hall` 顶层直达名人堂，`admin` / `super_admin` 的管理能力合并为页内 tab（旧展示与管理路由已移除）
 
 历史范围变更（2026-11-10）：QQ 群治理已下线，不再属于双前端迁移或验收范围。

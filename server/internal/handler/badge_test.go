@@ -319,6 +319,7 @@ func newBadgeHandlerTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open sqlite: %v", err)
 	}
 	if err := db.AutoMigrate(
+		&model.Announcement{}, &model.AnnouncementRead{},
 		&model.User{},
 		&model.UserRole{},
 		&model.EveCharacter{},

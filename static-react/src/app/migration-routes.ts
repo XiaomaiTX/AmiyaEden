@@ -3,6 +3,7 @@ import type { BadgeCounts } from '@/types/api/badge'
 
 export type MigrationBatch = 'A' | 'B' | 'C' | 'D' | 'Tail'
 export type AppPageType =
+  | 'announcements'
   | 'admissions'
   | 'dashboard-console'
   | 'dashboard-characters'
@@ -12,8 +13,7 @@ export type AppPageType =
   | 'dashboard-skill-readiness'
   | 'dashboard-fuel-officer-structures'
   | 'dashboard-galaxy-registry'
-  | 'fuxi-hall-fame'
-  | 'fuxi-hall-manage'
+  | 'fuxi-hall'
   | 'info-wallet'
   | 'info-skill'
   | 'info-npc-kills'
@@ -85,6 +85,15 @@ export interface AppRouteSpec {
 
 const unorderedAppRouteSpecs: AppRouteSpec[] = [
   {
+    path: 'announcements',
+    titleKey: 'announcement.title',
+    pageType: 'announcements',
+    menuGroup: 'announcement.title',
+    menuIcon: 'ticket',
+    badgeKey: 'announcement_unread',
+    meta: { login: true },
+  },
+  {
     path: 'system/qqbot',
     titleKey: 'qqbot.title',
     pageType: 'system-qqbot',
@@ -141,8 +150,9 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
   },
   {
     path: 'characters',
-    titleKey: 'nav.dashboard.characters',
+    titleKey: 'nav.system.userCenter',
     pageType: 'dashboard-characters',
+    menuHidden: true,
     menuGroup: 'nav.group.characters',
     menuIcon: 'characters',
     meta: { jwt: true },
@@ -151,7 +161,7 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'mumble',
     titleKey: 'nav.mumble.credentials',
     pageType: 'mumble-credentials',
-    menuGroup: 'nav.group.characters',
+    menuGroup: 'nav.mumble.credentials',
     menuIcon: 'characters',
     meta: { jwt: true },
   },
@@ -219,20 +229,12 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     },
   },
   {
-    path: 'fuxi-hall/hall-of-fame',
+    path: 'fuxi-hall',
     titleKey: 'nav.fuxiHall.fame',
-    pageType: 'fuxi-hall-fame',
-    menuGroup: 'nav.group.fuxiHall',
+    pageType: 'fuxi-hall',
+    menuGroup: 'nav.fuxiHall.fame',
     menuIcon: 'fuxiHall',
     meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
-  },
-  {
-    path: 'fuxi-hall/manage',
-    titleKey: 'nav.fuxiHall.manage',
-    pageType: 'fuxi-hall-manage',
-    menuGroup: 'nav.group.fuxiHall',
-    menuIcon: 'fuxiHall',
-    meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
   },
 
   {
@@ -868,8 +870,8 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
 const appRouteOrder = [
   'characters',
   'mumble',
-  'fuxi-hall/hall-of-fame',
-  'fuxi-hall/manage',
+  'fuxi-hall',
+  'announcements',
   'admissions/new',
   'admissions/alt',
   'admissions/history',
@@ -934,8 +936,8 @@ const appRouteOrder = [
   'system/pap',
   'system/auto-role',
   'system/user-center',
-  'system/qqbot',
   'system/webhook',
+  'system/qqbot',
   'system/newbro-settings',
   'system/basic-config',
 ] as const

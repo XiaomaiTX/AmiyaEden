@@ -200,6 +200,7 @@ declare namespace Api {
   /** 导航徽章类型 */
   namespace Badge {
     interface BadgeCounts {
+      announcement_unread?: number
       admission_pending?: number
       welfare_eligible?: number
       srp_pending?: number
@@ -823,6 +824,7 @@ declare namespace Api {
 
     /** 技能计划列表项 */
     interface SkillPlanListItem {
+      disabled: boolean
       id: number
       title: string
       description: string
@@ -848,6 +850,7 @@ declare namespace Api {
 
     /** 技能计划详情 */
     interface SkillPlanDetail {
+      disabled: boolean
       id: number
       title: string
       description: string
@@ -880,6 +883,7 @@ declare namespace Api {
 
     /** 创建技能计划请求 */
     interface CreateSkillPlanParams {
+      disabled?: boolean
       title: string
       description?: string
       ship_type_id?: number
@@ -3234,6 +3238,7 @@ declare namespace Api {
   namespace ToolBookmark {
     interface Bookmark {
       id: number
+      group_name: string
       name: string
       url: string
       description: string
@@ -3249,6 +3254,7 @@ declare namespace Api {
     interface UpsertParams {
       name: string
       url: string
+      group_name?: string
       description?: string
       is_enabled?: boolean
       sort_order?: number
@@ -3474,6 +3480,7 @@ declare namespace Api {
 
   namespace FuxiHall {
     interface Contributions {
+      corp_pap?: number
       fleets: number
       welfare: number
       srp: number
@@ -3498,6 +3505,7 @@ declare namespace Api {
     }
 
     interface Card {
+      qq?: string
       contributions?: Contributions
       contribution_offsets?: Contributions
       contributions_updated_at?: string | null

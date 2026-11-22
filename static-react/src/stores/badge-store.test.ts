@@ -62,4 +62,25 @@ describe('badge store', () => {
     expect(useBadgeStore.getState().counts).toEqual({})
     expect(useBadgeStore.getState().loadedForCharacterId).toBeNull()
   })
+
+  test('forced refresh supersedes an in-flight load and ignores its stale response', async () => {
+    let resolveStale: (counts: { announcement_unread: number }) => void = () => undefined
+    vi.mocked(fetchBadgeCounts)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStale = resolve
+        })
+      )
+      .mockResolvedValueOnce({ announcement_unread: 0 })
+
+    const staleRequest = useBadgeStore.getState().load(1001)
+    const forcedRequest = useBadgeStore.getState().load(1001, true)
+    await forcedRequest
+    expect(useBadgeStore.getState().counts).toEqual({ announcement_unread: 0 })
+
+    resolveStale({ announcement_unread: 2 })
+    await staleRequest
+    expect(fetchBadgeCounts).toHaveBeenCalledTimes(2)
+    expect(useBadgeStore.getState().counts).toEqual({ announcement_unread: 0 })
+  })
 })

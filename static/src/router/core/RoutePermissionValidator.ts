@@ -21,6 +21,7 @@
  */
 
 import type { AppRouteRecord } from '@/types/router'
+import { PROFILE_SETUP_PATH } from '../guards/charactersGate'
 
 /**
  * 路由权限验证器
@@ -38,11 +39,39 @@ export class RoutePermissionValidator {
       return true
     }
 
+    // 人物/个人中心页对所有已登录用户可见，但在侧边栏通过 isHide 隐藏，仍需允许直达与锁门重定向
+    if (
+      targetPath === PROFILE_SETUP_PATH &&
+      this.hasRegisteredRoutePath(menuList, PROFILE_SETUP_PATH)
+    ) {
+      return true
+    }
+
     // 构建路径集合
     const pathSet = this.buildMenuPathSet(menuList)
 
     // 检查路径是否在集合中（精确匹配或前缀匹配）
     return pathSet.has(targetPath) || this.checkPathPrefix(targetPath, pathSet)
+  }
+
+  private static hasRegisteredRoutePath(menuList: AppRouteRecord[], targetPath: string): boolean {
+    if (!Array.isArray(menuList) || menuList.length === 0) {
+      return false
+    }
+
+    for (const menuItem of menuList) {
+      if (menuItem.path) {
+        const menuPath = menuItem.path.startsWith('/') ? menuItem.path : `/${menuItem.path}`
+        if (menuPath === targetPath) {
+          return true
+        }
+      }
+      if (menuItem.children?.length && this.hasRegisteredRoutePath(menuItem.children, targetPath)) {
+        return true
+      }
+    }
+
+    return false
   }
 
   /**

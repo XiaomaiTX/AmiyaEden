@@ -15,6 +15,7 @@ function lazyNamed(
 }
 
 export const appPageLoaders: Record<AppPageType, LazyRoute> = {
+ announcements: lazyNamed(() => import('@/pages/announcements-page'), 'AnnouncementsPage'),
   admissions: lazyNamed(() => import('@/pages/admissions-page'), 'AdmissionsPage'),
   'dashboard-console': lazyNamed(() => import('@/pages/dashboard-console-page'), 'DashboardConsolePage'),
   'dashboard-characters': lazyNamed(() => import('@/pages/dashboard-characters-page'), 'DashboardCharactersPage'),
@@ -36,11 +37,7 @@ export const appPageLoaders: Record<AppPageType, LazyRoute> = {
     () => import('@/pages/dashboard-galaxy-registry-page'),
     'DashboardGalaxyRegistryPage'
   ),
-  'fuxi-hall-fame': lazyNamed(() => import('@/pages/fuxi-hall-public-page'), 'FuxiHallPublicPage'),
-  'fuxi-hall-manage': lazyNamed(
-    () => import('@/pages/fuxi-hall-manage-page'),
-    'FuxiHallManagePage'
-  ),
+  'fuxi-hall': lazyNamed(() => import('@/pages/fuxi-hall-page'), 'FuxiHallPage'),
   'info-wallet': lazyNamed(() => import('@/pages/info-wallet-page'), 'InfoWalletPage'),
   'info-skill': lazyNamed(() => import('@/pages/info-skill-page'), 'InfoSkillPage'),
   'info-npc-kills': lazyNamed(() => import('@/pages/info-npc-kills-page'), 'InfoNpcKillsPage'),

@@ -18,16 +18,6 @@ export const systemRoutes: AppRouteRecord = {
   },
   children: [
     {
-      path: 'qqbot',
-      name: 'QQBot',
-      component: '/system/qqbot',
-      meta: {
-        title: 'menus.system.qqbot',
-        roles: ['super_admin'],
-        corpCapabilitiesAny: ['system.manage']
-      }
-    },
-    {
       path: 'salary',
       name: 'SystemSalary',
       component: '/system/salary',
@@ -157,6 +147,16 @@ export const systemRoutes: AppRouteRecord = {
       meta: {
         title: 'menus.system.webhook',
         keepAlive: true,
+        roles: ['super_admin'],
+        corpCapabilitiesAny: ['system.manage']
+      }
+    },
+    {
+      path: 'qqbot',
+      name: 'QQBot',
+      component: '/system/qqbot',
+      meta: {
+        title: 'menus.system.qqbot',
         roles: ['super_admin'],
         corpCapabilitiesAny: ['system.manage']
       }

@@ -23,6 +23,8 @@ source_of_truth:
   - static/src/views/system
 ---
 
+系统管理侧栏中，QQ Bot 管理紧接 Webhook 通知排列，Vue 与 React 前端保持一致。
+
 # System 管理模块
 
 ## 当前能力

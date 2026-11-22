@@ -104,9 +104,7 @@ source_of_truth:
 | `/dashboard/fuel-officer-structures` | `/dashboard/fuel-officer-structures` | 2026-05-11 | `corporation-structures.ts` | `roles: super_admin/fuel_officer` | 真实页 | FE-owner(TBD) |
 | `/dashboard/galaxy-registry` | `/dashboard/galaxy-registry` | 2026-06-04 | `galaxy-registry.ts` | `roles: super_admin/admin/captain/user` | 已完成同构 | FE-owner(TBD) |
 | `/info/tool-bookmarks` | `/info/tool-bookmarks` | 2026-05-13 | `tool-bookmarks.ts` | `login`, `corpCapabilitiesAny: menu.info` | 真实页 | FE-owner(TBD) |
-| `/fuxi-hall/leadership` | `/fuxi-hall/leadership` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
-| `/fuxi-hall/contributors` | `/fuxi-hall/contributors` | 2026-05-12 | `fuxi-hall.ts` | `login` | 真实页 | FE-owner(TBD) |
-| `/fuxi-hall/manage` | `/fuxi-hall/manage` | 2026-05-12 | `fuxi-hall.ts` | `roles: super_admin/admin` | 真实页 | FE-owner(TBD) |
+| 伏羲名人堂 | `/fuxi-hall`（顶层直达） | 2026-11-23 | `fuxi-hall.ts` | `login` + `menu.fuxi_hall`；页内管理 tab 仅 `super_admin/admin`，无独立管理路由 | 已完成同构 | FE-owner(TBD) |
 
 ### Vue 侧已删除（React 侧仍为遗留 stub）
 
