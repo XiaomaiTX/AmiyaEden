@@ -192,10 +192,13 @@ func normalizeAnnouncementHTML(input string, existing ...model.AnnouncementImage
 	root := findFirstHTMLElement(doc, "div")
 	images := []model.AnnouncementImage{}
 	textSize := 0
+	// Whitespace (including &nbsp;) still counts toward the size bound but does not make a body non-empty.
+	hasText := false
 	var visit func(*xhtml.Node) error
 	visit = func(n *xhtml.Node) error {
 		if n.Type == xhtml.TextNode {
 			textSize += len(n.Data)
+			hasText = hasText || strings.TrimSpace(n.Data) != ""
 		}
 		if n.Type == xhtml.ElementNode && n.Data == "img" {
 			var src string
@@ -238,7 +241,7 @@ func normalizeAnnouncementHTML(input string, existing ...model.AnnouncementImage
 	if err = visit(root); err != nil {
 		return "", nil, err
 	}
-	if textSize > 128000 || (textSize == 0 && len(images) == 0) {
+	if textSize > 128000 || (!hasText && len(images) == 0) {
 		return "", nil, ErrAnnouncementInvalid
 	}
 	var out bytes.Buffer
