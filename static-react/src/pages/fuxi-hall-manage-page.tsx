@@ -100,7 +100,14 @@ const asPreview = (
           ) + offsets[key]
         return totals
       },
-      { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
+      {
+        corp_pap: existing?.contributions?.corp_pap ?? 0,
+        fleets: 0,
+        welfare: 0,
+        srp: 0,
+        recruitment: 0,
+        mentoring: 0,
+      }
     ),
     ...form,
     font_scale: validateBoundedInteger(form.font_scale, FONT_SCALE_MIN, FONT_SCALE_MAX) ?? 14,
@@ -154,7 +161,14 @@ export function FuxiHallManagePage() {
   }, [load])
   const previewCards = useMemo(() => {
     if (!dialogOpen || !form.nickname.trim()) return cards.filter((card) => card.visible)
-    return withPreviewCard(cards, asPreview(form, pageKey, cards.find((card) => card.id === form.id)))
+    return withPreviewCard(
+      cards,
+      asPreview(
+        form,
+        pageKey,
+        cards.find((card) => card.id === form.id)
+      )
+    )
   }, [cards, dialogOpen, form, pageKey])
   const savePage = async () => {
     if (!page?.title.trim()) return notifyError(t('fuxiHall.manage.titleRequired'))
@@ -557,7 +571,18 @@ export function FuxiHallManagePage() {
                       {previewCards.filter((card) => card.floor_key === floor.key).length}/
                       {floor.capacity === '' ? '—' : floor.capacity}
                     </h4>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div
+                      className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-start gap-4"
+                      style={{
+                        maxWidth:
+                          Math.max(
+                            1,
+                            previewCards.filter((card) => card.floor_key === floor.key).length
+                          ) *
+                            396 -
+                          16,
+                      }}
+                    >
                       {previewCards
                         .filter((card) => card.floor_key === floor.key)
                         .map((card) => (
@@ -736,10 +761,7 @@ export function FuxiHallManagePage() {
                             ...form,
                             contribution_offsets: {
                               ...form.contribution_offsets,
-                              [key]: parseIntegerInput(
-                                event.target.value,
-                                CONTRIBUTION_OFFSET_MAX
-                              ),
+                              [key]: parseIntegerInput(event.target.value, CONTRIBUTION_OFFSET_MAX),
                             },
                           })
                         }

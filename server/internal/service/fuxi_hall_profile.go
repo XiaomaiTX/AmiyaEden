@@ -228,11 +228,16 @@ func (s *FuxiHallService) enrichCards(viewerID uint, cards []model.FuxiHallCard)
 		return err
 	}
 	byID := make(map[int64]model.EveCharacter, len(chars))
+	qqs, err := s.repo.CharacterQQs(collectFuxiHallCharacterIDs(cards))
+	if err != nil {
+		return err
+	}
 	for _, char := range chars {
 		byID[char.CharacterID] = char
 	}
 	for i := range cards {
 		card := &cards[i]
+		card.QQ = strings.TrimSpace(qqs[card.MainCharacterID])
 		card.EnrichContributions()
 		if char, found := byID[card.MainCharacterID]; found {
 			card.CanEdit = viewerID != 0 && char.UserID == viewerID

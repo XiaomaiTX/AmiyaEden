@@ -67,6 +67,25 @@ func (r *FuxiHallRepository) Characters(ids []int64) ([]model.EveCharacter, erro
 	return chars, err
 }
 
+// CharacterQQs reads current bindings only; deleted users and characters expose no contact.
+func (r *FuxiHallRepository) CharacterQQs(ids []int64) (map[int64]string, error) {
+	result := make(map[int64]string)
+	if len(ids) == 0 {
+		return result, nil
+	}
+	var rows []struct {
+		CharacterID int64
+		QQ          string
+	}
+	err := r.db.Table("eve_character AS ec").Select("ec.character_id, owner.qq").
+		Joins("JOIN \"user\" AS owner ON owner.id = ec.user_id AND owner.deleted_at IS NULL").
+		Where("ec.deleted_at IS NULL AND ec.character_id IN ?", ids).Scan(&rows).Error
+	for _, row := range rows {
+		result[row.CharacterID] = row.QQ
+	}
+	return result, err
+}
+
 func (r *FuxiHallRepository) ListCardsByPage(pageKey string, visibleOnly bool) ([]model.FuxiHallCard, error) {
 	var cards []model.FuxiHallCard
 	query := r.db.Model(&model.FuxiHallCard{}).Where("page_key = ?", pageKey)

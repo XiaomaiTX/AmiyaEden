@@ -41,6 +41,14 @@
               })
         }}</p
       >
+      <div v-if="qq" class="hall-contact">
+        <span
+          >{{ t('fuxiHall.fame.qq') }}: <strong>{{ qq }}</strong></span
+        >
+        <ElButton text size="small" :aria-label="t('fuxiHall.fame.copyQQ')" @click="copyText(qq)">
+          <ArtSvgIcon icon="ri:file-copy-line" />
+        </ElButton>
+      </div>
       <div class="fuxi-hall-member-card__description" v-html="card.description_html" />
     </div>
     <div
@@ -58,6 +66,7 @@
         <div
           v-for="key in visibleMetrics"
           :key="key"
+          :class="`is-${key}`"
           :title="t(`fuxiHall.contributions.help.${key}`)"
         >
           <dt>{{ t(`fuxiHall.contributions.${key}`) }}</dt>
@@ -71,17 +80,20 @@
 <script setup lang="ts">
   import { computed } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { useClipboardCopy } from '@/hooks/core/useClipboardCopy'
 
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
 
   const props = defineProps<{
     card: Api.FuxiHall.Card
   }>()
-  const metrics = ['fleets', 'welfare', 'srp', 'recruitment', 'mentoring'] as const
+  const metrics = ['corp_pap', 'fleets', 'welfare', 'srp', 'recruitment', 'mentoring'] as const
   const visibleMetrics = computed(() =>
     metrics.filter((key) => (props.card.contributions?.[key] ?? 0) > 0)
   )
   const { t } = useI18n()
+  const { copyText } = useClipboardCopy()
+  const qq = computed(() => props.card.qq?.trim() ?? '')
 
   const cardStyle = computed(() => ({
     '--accent-color': props.card.accent_color,
@@ -96,6 +108,19 @@
 </script>
 
 <style scoped>
+  .hall-contact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+  }
+  .hall-contact strong {
+    color: var(--el-text-color-primary);
+    font-weight: 500;
+  }
   .hall-current {
     display: flex;
     align-items: center;
@@ -119,7 +144,6 @@
   .fuxi-hall-member-card {
     display: flex;
     flex-direction: column;
-    height: 100%;
     overflow: hidden;
     border: 1px solid var(--el-border-color-light);
     border-top: 2px solid var(--accent-color);
@@ -129,8 +153,7 @@
   }
 
   .fuxi-hall-member-card__body {
-    padding: 20px;
-    flex: 1;
+    padding: 16px;
     color: var(--el-text-color-regular);
     font-size: var(--member-font-size);
   }
@@ -142,8 +165,8 @@
   }
 
   .fuxi-hall-member-card__avatar {
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
     object-fit: cover;
     flex-shrink: 0;
     border: 2px solid color-mix(in srgb, var(--accent-color), transparent 62%);
@@ -195,19 +218,40 @@
   }
   .hall-contributions {
     border-top: 1px solid var(--el-border-color-light);
-    background: var(--el-fill-color-extra-light);
-    padding: 12px 20px;
+    padding: 12px 16px;
   }
   .hall-contributions dl {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 20px;
+    gap: 8px;
     margin: 0;
   }
   .hall-contributions dl > div {
     display: inline-flex;
     align-items: baseline;
-    gap: 6px;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--metric-color), transparent 80%);
+    background: color-mix(in srgb, var(--metric-color), transparent 90%);
+  }
+  .is-corp_pap {
+    --metric-color: #d97706;
+  }
+  .is-fleets {
+    --metric-color: #0284c7;
+  }
+  .is-welfare {
+    --metric-color: #059669;
+  }
+  .is-srp {
+    --metric-color: #9333ea;
+  }
+  .is-recruitment {
+    --metric-color: #0891b2;
+  }
+  .is-mentoring {
+    --metric-color: #e11d48;
   }
   .hall-contributions dt {
     font-size: 12px;

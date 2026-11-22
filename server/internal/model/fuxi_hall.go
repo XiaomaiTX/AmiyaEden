@@ -34,6 +34,7 @@ func (FuxiHallPage) TableName() string { return "fuxi_hall_page" }
 // FuxiHallCard 伏羲大厅成员卡片
 type FuxiHallCard struct {
 	BaseModel
+	QQ                     string                `gorm:"-" json:"qq"`
 	ContributionCounts     FuxiHallContributions `gorm:"type:jsonb;not null;default:'{}';serializer:json" json:"-"`
 	Contributions          FuxiHallContributions `gorm:"-" json:"contributions"`
 	ContributionsUpdatedAt *time.Time            `json:"contributions_updated_at"`

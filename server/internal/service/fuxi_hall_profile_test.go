@@ -10,6 +10,55 @@ import (
 	"time"
 )
 
+func TestFuxiHallQQFollowsCurrentBinding(t *testing.T) {
+	useFuxiHallServiceTestDB(t)
+	owner := model.User{QQ: "123456"}
+	next := model.User{QQ: "987654"}
+	for _, user := range []*model.User{&owner, &next} {
+		if err := global.DB.Create(user).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	char := model.EveCharacter{CharacterID: 9001, UserID: owner.ID}
+	if err := global.DB.Create(&char).Error; err != nil {
+		t.Fatal(err)
+	}
+	svc := NewFuxiHallService()
+	check := func(want string) {
+		t.Helper()
+		cards := []model.FuxiHallCard{{MainCharacterID: 9001, QQ: "stale"}}
+		if err := svc.enrichCards(0, cards); err != nil {
+			t.Fatal(err)
+		}
+		if cards[0].QQ != want {
+			t.Fatalf("QQ = %q, want %q", cards[0].QQ, want)
+		}
+	}
+	check("123456")
+	if err := global.DB.Model(&char).Update("user_id", next.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	check("987654")
+	if err := global.DB.Model(&next).Update("qq", "").Error; err != nil {
+		t.Fatal(err)
+	}
+	check("")
+	if err := global.DB.Model(&next).Update("qq", "987654").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := global.DB.Delete(&next).Error; err != nil {
+		t.Fatal(err)
+	}
+	check("")
+	if err := global.DB.Model(&char).Update("user_id", owner.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := global.DB.Delete(&char).Error; err != nil {
+		t.Fatal(err)
+	}
+	check("")
+}
+
 func TestFuxiHallOwnProfileOwnershipAndTenure(t *testing.T) {
 	useFuxiHallServiceTestDB(t)
 	svc := newFuxiHallServiceWithResolver(func(context.Context, string) (int64, error) { return 9001, nil })
