@@ -20,6 +20,7 @@ func useFuxiHallServiceTestDB(t *testing.T) {
 		&model.User{},
 		&model.EveCharacter{},
 		&model.Fleet{},
+		&model.FleetPapLog{},
 		&model.WelfareApplication{},
 		&model.ShopOrder{},
 		&model.SrpApplication{},

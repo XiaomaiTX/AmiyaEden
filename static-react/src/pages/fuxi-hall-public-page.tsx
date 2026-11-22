@@ -99,13 +99,13 @@ export function FuxiHallPublicPage() {
       {data && data.cards.length === 0 && (
         <p className="py-12 text-center text-muted-foreground">{t('fuxiHall.public.emptyTitle')}</p>
       )}
-      {data?.page.floors.map((floor, index) => {
+      {data?.page.floors.map((floor) => {
         const cards = data.cards.filter((card) => card.floor_key === floor.key)
         return (
           <section
             key={floor.key}
             aria-label={floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
-            className={`mx-auto space-y-4 ${index === 0 ? 'max-w-[960px]' : index === 1 ? 'max-w-[1200px]' : 'w-full'}`}
+            className="mx-auto w-full max-w-[1440px] space-y-4"
           >
             <div className="flex items-baseline justify-between border-b border-border pb-3">
               <h2 className="text-xl font-semibold">
@@ -116,11 +116,12 @@ export function FuxiHallPublicPage() {
               </span>
             </div>
             <div
-              className={`grid gap-4 sm:grid-cols-2 ${index === 0 ? '' : index === 1 ? 'xl:grid-cols-3' : 'xl:grid-cols-4'}`}
+              className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-start gap-4"
+              style={{ maxWidth: Math.max(1, cards.length) * 396 - 16 }}
             >
               {cards.map((card) => (
                 <div key={card.id} className="flex min-w-0 flex-col gap-2">
-                  <div className="min-h-0 flex-1">
+                  <div className="min-w-0">
                     <FuxiHallMemberCard card={card} />
                   </div>
                   {card.can_edit && (

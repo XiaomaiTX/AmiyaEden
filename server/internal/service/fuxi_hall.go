@@ -201,6 +201,9 @@ func (s *FuxiHallService) ListManageCards(pageKey string) ([]FuxiHallManageCard,
 		return nil, err
 	}
 	result := make([]FuxiHallManageCard, len(cards))
+	if err := s.enrichCards(0, cards); err != nil {
+		return nil, err
+	}
 	for i := range cards {
 		cards[i].EnrichContributions()
 		result[i] = FuxiHallManageCard{FuxiHallCard: cards[i], ContributionOffsets: cards[i].Offsets()}
