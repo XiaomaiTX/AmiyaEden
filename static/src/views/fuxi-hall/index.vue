@@ -4,8 +4,11 @@
       <ElTabPane name="fame" :label="t('menus.fuxiHall.fame')" />
       <ElTabPane name="manage" :label="t('menus.fuxiHall.manage')" />
     </ElTabs>
-    <FuxiHallManage v-if="canManage && activeTab === 'manage'" />
-    <FuxiHallPublic v-else />
+    <!-- Keep both tabs mounted so switching does not refetch and flash a loading state. -->
+    <KeepAlive>
+      <FuxiHallManage v-if="canManage && activeTab === 'manage'" />
+      <FuxiHallPublic v-else />
+    </KeepAlive>
   </div>
 </template>
 

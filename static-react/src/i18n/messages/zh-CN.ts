@@ -553,6 +553,7 @@ const zhCN = {
       current: '在职管理',
       qq: 'QQ',
       copyQQ: '复制 QQ 号',
+      copyCharacterName: '复制角色名',
       tenure: '在团时长',
       duration: '{years}年{months}个月',
       unknown: '暂无记录',
