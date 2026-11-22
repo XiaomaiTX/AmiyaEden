@@ -6,7 +6,7 @@
       <p>{{ t('fuxiHall.contributions.daily') }}</p>
     </header>
     <div v-if="error" role="alert" class="hall-error">
-      {{ error }} <ElButton @click="loadPage">{{ t('fuxiHall.fame.retry') }}</ElButton>
+      {{ error }} <ElButton @click="loadPage()">{{ t('fuxiHall.fame.retry') }}</ElButton>
     </div>
     <article v-if="page?.description_html" class="hall-intro" v-html="page.description_html" />
     <section
@@ -23,12 +23,11 @@
         class="hall-grid"
         :style="{ maxWidth: `${Math.max(1, floorCards(floor.key).length) * 396 - 16}px` }"
       >
-        <div v-for="card in floorCards(floor.key)" :key="card.id" class="hall-card">
-          <div class="hall-card-body"><FuxiHallMemberCard :card="card" /></div>
-          <ElButton v-if="card.can_edit" size="small" @click="edit(card)">{{
-            t('fuxiHall.fame.editMine')
-          }}</ElButton>
-        </div>
+        <FuxiHallMemberCard v-for="card in floorCards(floor.key)" :key="card.id" :card="card">
+          <template v-if="card.can_edit" #action>
+            <ElButton size="small" @click="edit(card)">{{ t('fuxiHall.fame.editMine') }}</ElButton>
+          </template>
+        </FuxiHallMemberCard>
       </div>
     </section>
     <p v-if="!loading && !error && cards.length === 0" class="hall-empty">{{
@@ -68,7 +67,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { onActivated, onMounted, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
@@ -89,8 +88,9 @@
   function floorCards(key: string) {
     return cards.value.filter((card) => card.floor_key === key)
   }
-  async function loadPage() {
-    loading.value = true
+  // quiet refreshes keep the current cards on screen instead of showing the loading mask.
+  async function loadPage(quiet = false) {
+    loading.value = !quiet
     error.value = ''
     try {
       const result = await fetchFuxiHall()
@@ -129,7 +129,11 @@
       saving.value = false
     }
   }
-  onMounted(loadPage)
+  onMounted(() => void loadPage())
+  // Returning from the cached manage tab picks up card edits made there.
+  onActivated(() => {
+    if (page.value) void loadPage(true)
+  })
 </script>
 <style scoped>
   .hall-page {
@@ -183,17 +187,7 @@
     width: 100%;
     margin-inline: auto;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    align-items: start;
     gap: 16px;
-  }
-  .hall-card {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .hall-card-body {
-    min-height: 0;
   }
   .hall-error {
     color: var(--el-color-danger);

@@ -79,7 +79,7 @@ const emptyForm = (): CardForm => ({
   font_scale: 14,
   visible: true,
   floor_key: 'first',
-  is_current_management: false,
+  is_current_management: true,
   contribution_offsets: { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 },
 })
 const contributionKeys = CONTRIBUTION_KEYS
@@ -572,7 +572,7 @@ export function FuxiHallManagePage() {
                       {floor.capacity === '' ? '—' : floor.capacity}
                     </h4>
                     <div
-                      className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] items-start gap-4"
+                      className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4"
                       style={{
                         maxWidth:
                           Math.max(

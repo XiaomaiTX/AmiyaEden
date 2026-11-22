@@ -151,6 +151,9 @@ test('card offset input truncates decimals and blocks empty submission before AP
   const dialog = screen.getByRole('dialog')
   await user.type(within(dialog).getByLabelText('昵称'), 'Alpha')
   await user.type(within(dialog).getByLabelText('主角色名称'), 'MainChar')
+  const managementCheckbox = within(dialog).getByRole('checkbox', { name: '在职管理' })
+  expect(managementCheckbox).toBeChecked()
+  await user.click(managementCheckbox)
 
   const fleetsInput = within(dialog).getByLabelText('带队')
   fireEvent.change(fleetsInput, { target: { value: '7.9' } })
@@ -193,6 +196,7 @@ test('font scale input supports multi-digit typing like 16 and blocks out-of-ran
   const dialog = screen.getByRole('dialog')
   await user.type(within(dialog).getByLabelText('昵称'), 'Alpha')
   await user.type(within(dialog).getByLabelText('主角色名称'), 'MainChar')
+  await user.click(within(dialog).getByRole('checkbox', { name: '在职管理' }))
 
   const fontScaleInput = within(dialog).getByLabelText('字体大小')
   await user.clear(fontScaleInput)

@@ -193,7 +193,17 @@
       </ElCard>
     </section>
 
-    <ElDialog v-model="cardDialogOpen" :title="cardDialogTitle" width="860px" destroy-on-close>
+    <ElDialog
+      v-model="cardDialogOpen"
+      :title="cardDialogTitle"
+      width="min(1180px, 94vw)"
+      top="4vh"
+      class="fuxi-hall-card-dialog"
+      :close-on-click-modal="false"
+      :before-close="requestCloseCard"
+      destroy-on-close
+      @opened="snapshotCardForm"
+    >
       <ElForm label-position="top">
         <div class="fuxi-hall-manage__dialog-grid">
           <ElFormItem :label="t('fuxiHall.fame.floor')"
@@ -279,12 +289,12 @@
         </div>
 
         <ElFormItem :label="t('fuxiHall.manage.cardDescription')">
-          <ArtWangEditor v-model="cardForm.description_html" height="240px" />
+          <ArtWangEditor v-model="cardForm.description_html" height="220px" />
         </ElFormItem>
       </ElForm>
 
       <template #footer>
-        <ElButton @click="cardDialogOpen = false">{{ t('common.cancel') }}</ElButton>
+        <ElButton @click="void requestCloseCard()">{{ t('common.cancel') }}</ElButton>
         <ElButton type="primary" :loading="savingCard" @click="void submitCard()">
           {{ t('common.save') }}
         </ElButton>
@@ -294,7 +304,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { computed, onActivated, onMounted, reactive, ref } from 'vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -365,7 +375,7 @@
     font_scale: 14,
     visible: true,
     floor_key: 'first',
-    is_current_management: false,
+    is_current_management: true,
     contribution_offsets: { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
   })
 
@@ -459,6 +469,11 @@
   onMounted(() => {
     void loadPage()
   })
+  // Returning from the cached hall-of-fame tab picks up card edits made there. Only cards are
+  // refreshed so unsaved page-form edits survive; a failed background refresh keeps the current list.
+  onActivated(() => {
+    if (pageConfig.value) loadCards().catch(() => undefined)
+  })
 
   async function loadPage() {
     loading.value = true
@@ -518,7 +533,7 @@
   function resetCardForm() {
     cardForm.page_key = currentPageKey.value
     cardForm.floor_key = pageForm.floors.at(-1)?.key ?? 'first'
-    cardForm.is_current_management = false
+    cardForm.is_current_management = true
     cardForm.nickname = ''
     cardForm.main_character_name = ''
     cardForm.title_tags = []
@@ -596,6 +611,7 @@
         await createFuxiHallCard(payload)
       }
       await loadCards()
+      cardFormSnapshot = ''
       cardDialogOpen.value = false
       ElMessage.success(t('fuxiHall.manage.saveSuccess'))
     } catch (error) {
@@ -695,6 +711,30 @@
   function moveFloor(index: number, delta: number) {
     const floors = pageForm.floors
     ;[floors[index], floors[index + delta]] = [floors[index + delta], floors[index]]
+  }
+
+  // Snapshot after the dialog has opened: the rich-text editor normalizes its HTML on creation,
+  // so an earlier snapshot would make every untouched card look modified.
+  let cardFormSnapshot = ''
+  const serializeCardForm = () => JSON.stringify([cardForm, titleTagInput.value])
+  function snapshotCardForm() {
+    cardFormSnapshot = serializeCardForm()
+  }
+  async function requestCloseCard(done: () => void = () => (cardDialogOpen.value = false)) {
+    if (savingCard.value) return
+    if (cardFormSnapshot && serializeCardForm() !== cardFormSnapshot) {
+      try {
+        await ElMessageBox.confirm(t('fuxiHall.manage.discardConfirm'), t('common.tips'), {
+          type: 'warning',
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel')
+        })
+      } catch {
+        return
+      }
+    }
+    cardFormSnapshot = ''
+    done()
   }
 
   function addTitleTag() {
@@ -798,8 +838,8 @@
 
   .fuxi-hall-manage__dialog-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0 12px;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0 16px;
   }
 
   .fuxi-hall-manage__tag-editor {
@@ -847,7 +887,6 @@
     width: 100%;
     margin-inline: auto;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    align-items: start;
     gap: 16px;
   }
 
@@ -868,5 +907,21 @@
       flex-direction: column;
       align-items: stretch;
     }
+  }
+</style>
+
+<style>
+  /* The dialog is teleported to <body>, so this block is unscoped. It keeps the whole dialog
+     within one screen and scrolls only the form, leaving the save button always visible. */
+  .fuxi-hall-card-dialog {
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+    margin-bottom: 0;
+  }
+  .fuxi-hall-card-dialog .el-dialog__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 </style>
