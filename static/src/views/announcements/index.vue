@@ -111,6 +111,7 @@
   const editorRef = shallowRef<IDomEditor>()
   const editorKey = ref(0)
   let request = 0
+  let listRequest = 0
   const toolbarConfig = {
     toolbarKeys: [
       'bold',
@@ -150,16 +151,19 @@
   }
   async function reload(openNewest = false) {
     const token = request
+    // Fast page switching can resolve out of order; only the latest list request may apply.
+    const seq = ++listRequest
     error.value = false
     try {
       const data = await listAnnouncements(page.value)
+      if (seq !== listRequest) return
       rows.value = data.list
       total.value = data.total
       // On entry show the newest post, unless the user already opened one or started publishing.
       if (openNewest && token === request && data.list[0]) void open(data.list[0])
       await useBadgeStore().fetchBadgeCounts()
     } catch {
-      error.value = true
+      if (seq === listRequest) error.value = true
     }
   }
   async function open(row: Announcement) {
@@ -442,25 +446,6 @@
   .content :deep(pre code) {
     padding: 0;
     background: none;
-  }
-  .content :deep(hr) {
-    margin: 20px 0;
-    border: 0;
-    border-top: 1px solid var(--el-border-color);
-  }
-  .content :deep(table) {
-    width: 100%;
-    margin: 0 0 12px;
-    border-collapse: collapse;
-  }
-  .content :deep(:is(th, td)) {
-    padding: 6px 10px;
-    border: 1px solid var(--el-border-color);
-    text-align: left;
-  }
-  .content :deep(th) {
-    background: var(--el-fill-color-light);
-    font-weight: 600;
   }
   .content :deep(img) {
     max-width: 100%;
