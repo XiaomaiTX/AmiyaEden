@@ -80,13 +80,19 @@ export function SkillPlanCompletionCheckPage() {
           fetchSkillPlanCheckPlanSelection(),
         ])
 
-      const nextPlans = [...(corpPlans.list ?? []), ...(personalPlans.list ?? [])]
+      const nextPlans = [...(corpPlans.list ?? []), ...(personalPlans.list ?? [])].filter(
+        (plan) => !plan.disabled
+      )
+      const availablePlanIds = new Set(nextPlans.map((plan) => plan.id))
+      const validSavedPlanIds = (savedPlanSelection.plan_ids ?? []).filter((id) =>
+        availablePlanIds.has(id)
+      )
       setCharacters(characterList ?? [])
       setAllPlans(nextPlans)
       setSelectedCharacterIds(savedSelection.character_ids ?? [])
       setDraftCharacterIds(savedSelection.character_ids ?? [])
-      setSelectedPlanIds(savedPlanSelection.plan_ids ?? [])
-      setDraftPlanIds(savedPlanSelection.plan_ids ?? [])
+      setSelectedPlanIds(validSavedPlanIds)
+      setDraftPlanIds(validSavedPlanIds)
       setResult(null)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('httpMsg.requestFailed')))

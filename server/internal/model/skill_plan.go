@@ -9,6 +9,7 @@ const (
 
 // SkillPlan 技能计划
 type SkillPlan struct {
+	Disabled    bool      `gorm:"not null;default:false" json:"disabled"`
 	ID          uint      `gorm:"primarykey"         json:"id"`
 	Title       string    `gorm:"size:256;not null"  json:"title"`
 	Description string    `gorm:"type:text"          json:"description"`

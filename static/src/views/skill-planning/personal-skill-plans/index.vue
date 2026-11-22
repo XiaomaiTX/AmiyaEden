@@ -48,7 +48,12 @@
                     alt=""
                     loading="lazy"
                   />
-                  <span class="skill-plan-item__title">{{ plan.title }}</span>
+                  <span class="skill-plan-item__title"
+                    >{{ plan.title }}
+                    <ElTag v-if="plan.disabled" type="info">{{
+                      $t('skillPlan.disabled')
+                    }}</ElTag></span
+                  >
                 </div>
               </button>
             </VueDraggable>
@@ -405,6 +410,7 @@
   .skill-plan-list-card {
     flex: 0 0 320px;
     width: 320px;
+    height: clamp(480px, calc(100dvh - 160px), 900px);
   }
 
   .skill-plan-detail-card {
@@ -438,10 +444,11 @@
 
   .skill-plan-list {
     flex: 1;
+    min-height: 0;
     overflow: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
   }
 
   .skill-plan-item {
@@ -449,8 +456,8 @@
     cursor: pointer;
     appearance: none;
     border: 1px solid var(--el-border-color-light);
-    border-radius: 14px;
-    padding: 14px;
+    border-radius: 10px;
+    padding: 8px 10px;
     text-align: left;
     background: var(--el-bg-color);
     transition:
@@ -462,7 +469,7 @@
   .skill-plan-draggable {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
   }
 
   .skill-plan-drag-handle {
@@ -646,6 +653,8 @@
     .skill-plan-list-card {
       flex: 0 0 auto;
       width: 100%;
+      height: auto;
+      max-height: 70dvh;
     }
 
     .skill-plan-detail-card {

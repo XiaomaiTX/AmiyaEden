@@ -16,6 +16,9 @@
         />
       </ElFormItem>
 
+      <ElFormItem :label="$t('skillPlan.disabled')">
+        <ElSwitch v-model="formData.disabled" />
+      </ElFormItem>
       <ElFormItem :label="$t('skillPlan.fields.description')">
         <ElInput
           v-model="formData.description"
@@ -74,7 +77,7 @@
         />
         <div class="skills-text-hint">
           <div>{{ $t('skillPlan.fields.skillsTextGuide') }}</div>
-          {{ $t('skillPlan.fields.skillsTextHint') }}
+          {{ $t('skillPlan.eftHint') }}
         </div>
       </ElFormItem>
 
@@ -179,6 +182,7 @@
   const submitLoading = ref(false)
 
   const formData = reactive({
+    disabled: false,
     title: '',
     description: '',
     shipTypeId: null as number | null,
@@ -227,6 +231,7 @@
 
   function resetForm() {
     formData.title = props.editing?.title ?? ''
+    formData.disabled = props.editing?.disabled ?? false
     formData.description = props.editing?.description ?? ''
     formData.shipTypeId = props.editing?.ship_type_id ?? null
     formData.shipName = props.editing?.ship_name ?? ''
@@ -287,6 +292,7 @@
   function buildPayload(): Api.SkillPlan.CreateSkillPlanParams {
     return {
       title: formData.title.trim(),
+      disabled: formData.disabled,
       description: formData.description.trim(),
       ship_type_id: formData.shipTypeId ?? undefined,
       sort_order: formData.sortOrder,
