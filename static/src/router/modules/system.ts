@@ -21,7 +21,11 @@ export const systemRoutes: AppRouteRecord = {
       path: 'qqbot',
       name: 'QQBot',
       component: '/system/qqbot',
-      meta: { title: 'menus.system.qqbot', roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] }
+      meta: {
+        title: 'menus.system.qqbot',
+        roles: ['super_admin'],
+        corpCapabilitiesAny: ['system.manage']
+      }
     },
     {
       path: 'salary',
