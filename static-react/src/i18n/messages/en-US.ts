@@ -547,7 +547,6 @@ const enUS = {
       corp_pap: 'Corporation PAP',
       updated: 'Updated {date}',
       pending: 'History awaiting calculation',
-      daily: 'Contributions are updated daily and include manually recorded history.',
       offsets: 'Historical contribution offsets',
       offsetHint:
         'Add unrecorded contributions (0 to 1 billion). These are added to recorded history and retained when recalculating. Recruitment includes referrals and application processing; both can count.',

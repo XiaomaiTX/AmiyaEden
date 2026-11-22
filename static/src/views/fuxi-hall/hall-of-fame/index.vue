@@ -3,7 +3,6 @@
     <header class="hall-header">
       <h1>{{ page?.title || t('fuxiHall.fame.title') }}</h1>
       <p v-if="page?.subtitle">{{ page.subtitle }}</p>
-      <p>{{ t('fuxiHall.contributions.daily') }}</p>
     </header>
     <div v-if="error" role="alert" class="hall-error">
       {{ error }} <ElButton @click="loadPage()">{{ t('fuxiHall.fame.retry') }}</ElButton>
