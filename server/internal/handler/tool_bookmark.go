@@ -17,19 +17,21 @@ func NewToolBookmarkHandler() *ToolBookmarkHandler {
 }
 
 type toolBookmarkCreateRequest struct {
-	Name        string `json:"name" binding:"required"`
-	URL         string `json:"url" binding:"required"`
-	Description string `json:"description"`
-	IsEnabled   *bool  `json:"is_enabled"`
-	SortOrder   *int   `json:"sort_order"`
+	GroupName   *string `json:"group_name"`
+	Name        string  `json:"name" binding:"required"`
+	URL         string  `json:"url" binding:"required"`
+	Description string  `json:"description"`
+	IsEnabled   *bool   `json:"is_enabled"`
+	SortOrder   *int    `json:"sort_order"`
 }
 
 type toolBookmarkUpdateRequest struct {
-	Name        string `json:"name"`
-	URL         string `json:"url"`
-	Description string `json:"description"`
-	IsEnabled   *bool  `json:"is_enabled"`
-	SortOrder   *int   `json:"sort_order"`
+	GroupName   *string `json:"group_name"`
+	Name        string  `json:"name"`
+	URL         string  `json:"url"`
+	Description string  `json:"description"`
+	IsEnabled   *bool   `json:"is_enabled"`
+	SortOrder   *int    `json:"sort_order"`
 }
 
 func (h *ToolBookmarkHandler) ListVisible(c *gin.Context) {
@@ -57,6 +59,7 @@ func (h *ToolBookmarkHandler) AdminCreate(c *gin.Context) {
 		return
 	}
 	row, err := h.svc.AdminCreate(middleware.GetUserID(c), service.ToolBookmarkUpsertRequest{
+		GroupName:   req.GroupName,
 		Name:        req.Name,
 		URL:         req.URL,
 		Description: req.Description,
@@ -85,6 +88,7 @@ func (h *ToolBookmarkHandler) AdminUpdate(c *gin.Context) {
 		return
 	}
 	row, err := h.svc.AdminUpdate(middleware.GetUserID(c), id, service.ToolBookmarkUpsertRequest{
+		GroupName:   req.GroupName,
 		Name:        req.Name,
 		URL:         req.URL,
 		Description: req.Description,
