@@ -66,3 +66,4 @@ logs/
 static/src/types/import/components.d.ts
 /openspec
 /server/uploads/
+/static-react/.cache
