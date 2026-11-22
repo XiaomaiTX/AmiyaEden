@@ -2,105 +2,68 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-22
 source_of_truth:
-  - server/internal/router/router.go
-  - server/internal/handler/fuxi_hall.go
   - server/internal/service/fuxi_hall.go
-  - static/src/router/modules/fuxi-hall.ts
+  - server/internal/service/fuxi_hall_profile.go
+  - server/bootstrap/fuxi_hall_migration.go
   - static/src/views/fuxi-hall
+  - static-react/src/pages/fuxi-hall-public-page.tsx
+  - static-react/src/pages/fuxi-hall-manage-page.tsx
 ---
 
-# 伏羲大厅（fuxi-hall）
+# 伏羲名人堂
 
-## 目标
-
-以 `fuxi-hall` 模块替换旧的 `hall-of-fame` 与 `fuxi-admins` 实现，固定两组登录可见展示页：
-
-- `leadership`（管理层）
-- `contributors`（重大贡献成员）
-
-管理员通过独立管理页维护页面配置与卡片内容。
+管理层与重大贡献成员统一在 `/fuxi-hall/hall-of-fame` 展示。两套前端共用同一接口，旧展示路径及 API 已移除，不保留重定向。管理页仍为 `/fuxi-hall/manage`。
 
 ## 路由与权限
 
-### 登录可见
+- `GET /api/v1/fuxi-hall/hall-of-fame`：登录且具有 `menu.fuxi_hall` 能力，返回页面、楼层、可见卡片及查看者的 `can_edit`。
+- `PUT /api/v1/fuxi-hall/cards/:id/profile`：相同入口权限，服务层额外核验卡片主人物当前绑定的用户。请求仅包含 `nickname`、`description_html`，无法修改人物、头衔、楼层、排序、显隐或管理状态。
+- 管理端保留 `/api/v1/system/fuxi-hall/pages/:page_key`（GET/PUT）、`cards/:page_key`（GET）、`cards`（POST）、`cards/:id`（PUT/DELETE）、`cards/reorder`（PUT），要求管理员。`page_key` 仅接受 `hall-of-fame`。
 
-- `GET /api/v1/fuxi-hall/leadership`
-- `GET /api/v1/fuxi-hall/contributors`
+本人编辑以未删除的 `eve_character.user_id` 为依据，不使用主角色历史关联或管理员角色绕过所有权。转绑或解绑后立即失去编辑权；页面按钮只是提示，保存时重新校验。昵称不能为空，最长256字符；简介最多64000字节，服务层按既有富文本白名单清洗。
 
-要求 `Login`（非 guest）。
+## 楼层与卡片
 
-### 管理端
+页面 `floors` 是按展示顺序排列的 `{key,name,capacity}` 数组。默认顶楼8人、二楼12人、一楼33人；管理员可增加、删除、命名、调整容量及上下顺序。支持1至12层，key唯一且格式为小写字母开头的字母、数字或连字符（最长32），名称最长64字符，每层容量1至10000。
 
-- `GET /api/v1/system/fuxi-hall/pages/:page_key`
-- `PUT /api/v1/system/fuxi-hall/pages/:page_key`
-- `GET /api/v1/system/fuxi-hall/cards/:page_key`
-- `POST /api/v1/system/fuxi-hall/cards`
-- `PUT /api/v1/system/fuxi-hall/cards/:id`
-- `PUT /api/v1/system/fuxi-hall/cards/reorder`
-- `DELETE /api/v1/system/fuxi-hall/cards/:id`
+卡片 `floor_key` 指定所属楼层，`sort_order` 决定该层内部顺序。隐藏卡片仍占有所属楼层，但不计入可见人数；删除楼层前须迁出包括隐藏卡片在内的全部卡片。增加卡片、迁层、显示隐藏卡片及减少容量均在页面行锁事务中校验，不能超员。楼层设置须先保存，再将卡片分配到新层。
 
-要求 `RequireRole(admin)`。
+公开页按楼层分区：高层较窄，低层较宽；桌面各层依次为2、3、4列，平板2列，手机1列。管理页按层预览当前草稿。
 
-## 后端规则
+卡片必填昵称和主人物名称。管理员输入主人物名称，由 ESI 解析保存 `main_character_id`；头像由该 ID 生成。`is_current_management` 由管理员维护，在职管理至少需要一个 `title_tags` 头衔，公开卡片同时显示绿灯和“在职管理”文字。其他成员的头衔可为空。强调色、头像形状、字号继续使用既有受控范围。
 
-- `page_key` 仅允许 `leadership | contributors`
-- 卡片必填：`nickname`、`main_character_name`、`title_tags`
-- `main_character_id` 不再由管理端手工输入，服务层会基于 `main_character_name` 调用 ESI `POST /universe/ids/` 解析并存储
-- `welfare_delivery_offset` 仅存储于卡片表，默认 `0`，仅 `super_admin` 可在编辑已有卡片时修改，且不得为负数
-- `description_html` 在服务层白名单清洗后入库与返回
-- `sort_order` 作为页面内手动排序主键，由 `reorder` 接口维护
-- 管理端统计字段（仅 `leadership` 页）：
-  - `fleet_led_count`：按 `fleet.fc_user_id` 聚合
-  - `welfare_delivery_count`：`welfare delivered reviewer + shop delivered reviewer + welfare_delivery_offset`
-  - 无用户映射时统计值按 `0`
-- 样式约束：
-  - `accent_color` 仅允许十六进制颜色值
-  - `avatar_shape` 仅允许预设枚举值
-  - `font_scale` 有上下限
-  - `style_preset`、`badge_tone`、`cover_height` 已固定，不再通过接口暴露
+## 累计在团时长
 
-### 头衔字段
+按卡片主人物的 `EveCharacter.FuxiLegionTenureDays` 展示**历次累计**在伏羲的时间，离团重入不清零。该值来自现有 ESI 任职历史同步，查询名人堂时批量读取，避免逐卡请求 ESI。
 
-- `title_tags`（JSON 数组列）是唯一头衔字段。
-- 旧 `title` 字段链路已移除，不再出现在接口契约与前端类型中。
-- 历史数据不做自动迁移；新建与编辑提交必须满足 `title_tags` 非空。
+展示完整年月：总月数为 `floor(累计天数 × 12 / 365)`，再换算为 `x年x个月`。跨多段任职没有唯一的日历月起点，因此采用平均月长；结果也受最近一次 ESI 同步时间影响。没有人物记录或尚未同步天数时显示“暂无记录”，已同步0天显示0年0个月。
 
-## 前端结构
+## 旧数据迁移与统计
 
-- 路由模块：`static/src/router/modules/fuxi-hall.ts`
-- 页面：
-  - `static/src/views/fuxi-hall/leadership/index.vue`
-  - `static/src/views/fuxi-hall/contributors/index.vue`
-  - `static/src/views/fuxi-hall/manage/index.vue`
-- API：`static/src/api/fuxi-hall.ts`
+启动时在事务内将 `leadership`、`contributors` 卡片迁入 `hall-of-fame`，保留卡片ID、内容、显隐、样式、统计偏移和排序，不自动去重。旧管理层卡片标记为在职管理，其他卡片不标记；初始全部位于一楼，一楼容量至少等于旧卡片总数，确保保留全部内容。旧页面配置记录留存。迁移幂等，后续启动不覆盖管理员已经配置的楼层、卡片状态或排序。
 
-管理页能力固定为：
+## 贡献汇总与历史补录
 
-- 页面标题/副标题/富文本说明编辑
-- 卡片增删改
-- 头像统一由已存储的 `main_character_id` 生成 ESI 人物头像（不支持自定义头像上传）
-- 受控样式编辑（强调色/头像形状/字体大小）
-- 管理角色可查看每位成员的 `带队次数` 与 `福利发放次数`，且各字段仅在对应值大于 `0` 时展示
-- `福利发放次数偏移` 仅在编辑已有卡片时可见，且只有 `super_admin` 可编辑
-- 显隐切换
-- 手动排序（上移/下移）
-- 管理态实时预览（未保存草稿即时映射）
+公开卡片和管理页读取持久化的 `contributions` 快照，与 `contribution_offsets` 相加后展示。五项口径如下：
 
-公开页卡片排版与管理页实时预览保持一致，统一为头像与昵称/主角色名/头衔标签（badge）同区块展示，不再支持封面。
+| 字段 | 口径 |
+| --- | --- |
+| `fleets` | 本人带队、已结束且未删除的舰队次数 |
+| `welfare` | 本人完成发放的福利申请与商店订单次数之和 |
+| `srp` | 本人完成发放的补损申请次数 |
+| `recruitment` | 本人处理为已邀请的新号、小号申请数，加上本人成功邀请的不同新人用户数；邀请与处理申请可以叠加 |
+| `mentoring` | 本人曾接受的不同学员人数，包括在读、毕业及接受后解除的关系 |
 
-不包含画布拖拽布局。
+邀请新人从有效的招新登记统计，相同邀请人重复登记同一新人只计一次。带队炸鱼暂不统计、不展示，也不提供对应补录项，待统计口径明确后另行实现。
 
-## 数据模型
+管理员在新增或编辑卡片时可为五项分别设置0至10亿的基础 offset，用于补录系统未记录的历史贡献；原福利偏移保留。修改立即反映在展示总数中，重算只更新系统快照，不覆盖 offset。修改主人物为另一个人物时清空原快照，offset 由管理员重新核对。
 
-- `fuxi_hall_page`
-- `fuxi_hall_card`
+`fuxi_hall_contributions` 任务每天服务器时区06:00汇总一次，启动时对尚无快照的卡片安排首次汇总。管理员也可调用 `POST /api/v1/system/fuxi-hall/contributions/refresh` 手动重算。每次为所有卡片批量解析用户并执行固定七个分组查询，在事务内写入统一时间戳 `contributions_updated_at`。失败或取消保留上次完整快照；同一进程同时只运行一次，跨进程通过页面行锁串行化。公开读取不扫描业务历史，也不调用 ESI。
 
-旧 `hall_of_fame_*` 与 `fuxi_admin_*` 表不做迁移与兼容映射；新模块独立维护数据。
+卡片贡献区使用小字号、标签与数值同行并自然换行，隐藏数值为0的项目；全部为0或尚无正数数据时隐藏整个贡献区。更新时间放入悬停提示，公开页统一说明每日汇总。管理表格仍可查看完整数值，便于核对补录。
 
-## 前端实现映射（迁移期）
+主要数据表为 `fuxi_hall_page`、`fuxi_hall_card`；不读取更早的 `hall_of_fame_*`、`fuxi_admin_*` 表。
 
-- Vue 当前实现位于 `static/src/views/fuxi-hall`。
-- React 实现位于 `static-react/src/pages/fuxi-hall-public-page.tsx` 与 `static-react/src/pages/fuxi-hall-manage-page.tsx`，通过 `static-react/src/api/fuxi-hall.ts` 使用本地模块化契约。
-- React 与 Vue 共用既有后端接口和数据模型；历史 `hall-of-fame/*` React stub 已移除，旧路径不保留重定向或兼容页面。
+创建和修改卡片时，角色名称的 ESI 解析在页面行锁事务之前完成，并使用 30 秒超时。容量校验和卡片写入仍在事务内完成。审计记录在事务提交后写入，避免持锁期间再占用一个数据库连接，也避免回滚后留下审计。返回卡片的任职时长、贡献和 `can_edit` 补充在提交后进行；补充失败只记日志并返回已保存的卡片，不把已成功的保存报告为失败（否则重试会重复创建）。管理员保存已删除卡片时返回本地化的卡片不存在提示。Vue 由页面统一翻译并展示请求错误。

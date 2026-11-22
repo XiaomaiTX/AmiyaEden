@@ -2,8 +2,11 @@ package jobs
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/service"
 	"amiya-eden/internal/taskregistry"
 	"amiya-eden/pkg/eve/esi"
+	"context"
+	"errors"
 	"testing"
 
 	"go.uber.org/zap"
@@ -50,6 +53,7 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"auto_role_sync":                 {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 2/10 * * * *", hasRun: true},
 		"task_execution_history_cleanup": {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 4 1 * *", hasRun: true},
 		"corp_access_check":              {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0/5 * * * *", hasRun: true},
+		"fuxi_hall_contributions":        {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 6 * * *", hasRun: true},
 		"mentor_reward":                  {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 3 * * *", hasRun: true},
 		"auto_srp":                       {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeTriggered, cron: "", hasRun: false},
 		"recruit_link_check":             {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 2 * * *", hasRun: true},
@@ -121,5 +125,22 @@ func TestRegisterAutoSrpTaskRegistersTriggeredTask(t *testing.T) {
 	}
 	if global.DB == (*gorm.DB)(nil) {
 		t.Fatal("expected test database to remain configured")
+	}
+}
+
+func TestRunFuxiHallContributionsTaskSkipsWhenAlreadyRunning(t *testing.T) {
+	err := runFuxiHallContributionsTask(context.Background(), func(context.Context, uint) error {
+		return service.ErrFuxiHallRefreshRunning
+	})
+	if err != nil {
+		t.Fatalf("expected already-running refresh to be treated as skip, got: %v", err)
+	}
+
+	boom := errors.New("db error")
+	err = runFuxiHallContributionsTask(context.Background(), func(context.Context, uint) error {
+		return boom
+	})
+	if !errors.Is(err, boom) {
+		t.Fatalf("expected unexpected error to propagate, got: %v", err)
 	}
 }

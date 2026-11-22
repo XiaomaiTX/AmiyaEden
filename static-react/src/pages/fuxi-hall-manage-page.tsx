@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/select'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  refreshFuxiHallContributions,
   createFuxiHallCard,
   deleteFuxiHallCard,
   fetchFuxiHallCards,
@@ -22,14 +23,36 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { confirmAction, notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
-import { useSessionStore } from '@/stores'
 import type {
+  FuxiHallContributions,
   FuxiHallCard,
   FuxiHallCardCreate,
   FuxiHallPageConfig,
   FuxiHallPageKey,
 } from '@/types/api/fuxi-hall'
+import {
+  CONTRIBUTION_KEYS,
+  CONTRIBUTION_OFFSET_MAX,
+  CONTRIBUTION_OFFSET_MIN,
+  FLOOR_CAPACITY_MAX,
+  FLOOR_CAPACITY_MIN,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  normalizeOffsetDraftsForPreview,
+  parseIntegerInput,
+  validateBoundedInteger,
+  validateContributionOffsets,
+  validateFloorDrafts,
+  withPreviewCard,
+  type ContributionOffsetDrafts,
+  type NumericInputDraft,
+  type PageFloorDraft,
+} from './fuxi-hall-manage-helpers'
 import { ShopDialog } from './shop-page-utils'
+
+type PageDraft = Omit<FuxiHallPageConfig, 'floors'> & {
+  floors: PageFloorDraft[]
+}
 
 type CardForm = {
   id: number
@@ -39,9 +62,11 @@ type CardForm = {
   description_html: string
   accent_color: string
   avatar_shape: 'circle' | 'rounded' | 'square'
-  font_scale: number
+  font_scale: NumericInputDraft
   visible: boolean
-  welfare_delivery_offset: number
+  floor_key: string
+  is_current_management: boolean
+  contribution_offsets: ContributionOffsetDrafts
 }
 const emptyForm = (): CardForm => ({
   id: 0,
@@ -53,25 +78,48 @@ const emptyForm = (): CardForm => ({
   avatar_shape: 'circle',
   font_scale: 14,
   visible: true,
-  welfare_delivery_offset: 0,
+  floor_key: 'first',
+  is_current_management: false,
+  contribution_offsets: { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 },
 })
-const asPreview = (form: CardForm, pageKey: FuxiHallPageKey): FuxiHallCard => ({
-  ...form,
-  page_key: pageKey,
-  id: form.id || -1,
-  main_character_id: 0,
-  sort_order: 0,
-  created_at: '',
-  updated_at: '',
-})
+const contributionKeys = CONTRIBUTION_KEYS
+const asPreview = (
+  form: CardForm,
+  pageKey: FuxiHallPageKey,
+  existing?: FuxiHallCard
+): FuxiHallCard => {
+  const offsets = normalizeOffsetDraftsForPreview(form.contribution_offsets)
+  return {
+    ...existing,
+    contributions: contributionKeys.reduce<FuxiHallContributions>(
+      (totals, key) => {
+        totals[key] =
+          Math.max(
+            0,
+            (existing?.contributions?.[key] ?? 0) - (existing?.contribution_offsets?.[key] ?? 0)
+          ) + offsets[key]
+        return totals
+      },
+      { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }
+    ),
+    ...form,
+    font_scale: validateBoundedInteger(form.font_scale, FONT_SCALE_MIN, FONT_SCALE_MAX) ?? 14,
+    contribution_offsets: offsets,
+    page_key: pageKey,
+    id: form.id || -1,
+    main_character_id: 0,
+    sort_order: 0,
+    created_at: '',
+    updated_at: '',
+  }
+}
 
 export function FuxiHallManagePage() {
   const { t } = useI18n()
-  const roles = useSessionStore((state) => state.roles)
-  const isSuperAdmin = roles.includes('super_admin')
-  const [pageKey, setPageKey] = useState<FuxiHallPageKey>('leadership')
-  const [page, setPage] = useState<FuxiHallPageConfig | null>(null)
+  const pageKey: FuxiHallPageKey = 'hall-of-fame'
+  const [page, setPage] = useState<PageDraft | null>(null)
   const [cards, setCards] = useState<FuxiHallCard[]>([])
+  const [refreshing, setRefreshing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<CardForm>(emptyForm)
@@ -87,7 +135,13 @@ export function FuxiHallManagePage() {
       setPage(nextPage)
       setCards(nextCards)
     } catch (caught) {
-      notifyError(caught instanceof Error ? caught.message : t('fuxiHall.manage.loadFailed'))
+      notifyError(
+        caught instanceof Error
+          ? caught.message.startsWith('fuxiHall.')
+            ? t(caught.message)
+            : caught.message
+          : t('fuxiHall.manage.loadFailed')
+      )
     } finally {
       setLoading(false)
     }
@@ -99,15 +153,13 @@ export function FuxiHallManagePage() {
     return () => window.clearTimeout(timer)
   }, [load])
   const previewCards = useMemo(() => {
-    const visible = cards.filter((card) => card.visible)
-    if (!dialogOpen || !form.nickname.trim() || !form.visible) return visible
-    const preview = asPreview(form, pageKey)
-    return form.id
-      ? visible.map((card) => (card.id === form.id ? preview : card))
-      : [...visible, preview]
+    if (!dialogOpen || !form.nickname.trim()) return cards.filter((card) => card.visible)
+    return withPreviewCard(cards, asPreview(form, pageKey, cards.find((card) => card.id === form.id)))
   }, [cards, dialogOpen, form, pageKey])
   const savePage = async () => {
     if (!page?.title.trim()) return notifyError(t('fuxiHall.manage.titleRequired'))
+    const validatedFloors = validateFloorDrafts(page.floors)
+    if (!validatedFloors) return notifyError(t('fuxiHall.errors.floors'))
     setSaving(true)
     try {
       setPage(
@@ -115,17 +167,24 @@ export function FuxiHallManagePage() {
           title: page.title.trim(),
           subtitle: page.subtitle.trim(),
           description_html: page.description_html,
+          floors: validatedFloors,
         })
       )
       notifySuccess(t('fuxiHall.manage.saveSuccess'))
     } catch (caught) {
-      notifyError(caught instanceof Error ? caught.message : t('fuxiHall.manage.saveFailed'))
+      notifyError(
+        caught instanceof Error
+          ? caught.message.startsWith('fuxiHall.')
+            ? t(caught.message)
+            : caught.message
+          : t('fuxiHall.manage.saveFailed')
+      )
     } finally {
       setSaving(false)
     }
   }
   const openCreate = () => {
-    setForm(emptyForm())
+    setForm({ ...emptyForm(), floor_key: page?.floors.at(-1)?.key ?? 'first' })
     setTag('')
     setDialogOpen(true)
   }
@@ -140,14 +199,24 @@ export function FuxiHallManagePage() {
       avatar_shape: card.avatar_shape,
       font_scale: card.font_scale,
       visible: card.visible,
-      welfare_delivery_offset: card.welfare_delivery_offset ?? 0,
+      floor_key: card.floor_key,
+      is_current_management: card.is_current_management,
+      contribution_offsets: { ...emptyForm().contribution_offsets, ...card.contribution_offsets },
     })
     setTag('')
     setDialogOpen(true)
   }
   const submitCard = async () => {
-    if (!form.nickname.trim() || !form.main_character_name.trim() || !form.title_tags.length)
+    if (
+      !form.nickname.trim() ||
+      !form.main_character_name.trim() ||
+      (form.is_current_management && !form.title_tags.length)
+    )
       return notifyError(t('fuxiHall.manage.requiredFields'))
+    const fontScale = validateBoundedInteger(form.font_scale, FONT_SCALE_MIN, FONT_SCALE_MAX)
+    if (fontScale === null) return notifyError(t('fuxiHall.errors.invalid'))
+    const contributionOffsets = validateContributionOffsets(form.contribution_offsets)
+    if (!contributionOffsets) return notifyError(t('fuxiHall.errors.offsets'))
     setSaving(true)
     try {
       const payload: FuxiHallCardCreate = {
@@ -158,22 +227,26 @@ export function FuxiHallManagePage() {
         description_html: form.description_html,
         accent_color: form.accent_color,
         avatar_shape: form.avatar_shape,
-        font_scale: form.font_scale,
+        font_scale: fontScale,
+        contribution_offsets: contributionOffsets,
         visible: form.visible,
+        floor_key: form.floor_key,
+        is_current_management: form.is_current_management,
       }
       if (form.id) {
-        await updateFuxiHallCard(
-          form.id,
-          isSuperAdmin
-            ? { ...payload, welfare_delivery_offset: form.welfare_delivery_offset }
-            : payload
-        )
+        await updateFuxiHallCard(form.id, payload)
       } else await createFuxiHallCard(payload)
       setDialogOpen(false)
       await load()
       notifySuccess(t('fuxiHall.manage.saveSuccess'))
     } catch (caught) {
-      notifyError(caught instanceof Error ? caught.message : t('fuxiHall.manage.saveFailed'))
+      notifyError(
+        caught instanceof Error
+          ? caught.message.startsWith('fuxiHall.')
+            ? t(caught.message)
+            : caught.message
+          : t('fuxiHall.manage.saveFailed')
+      )
     } finally {
       setSaving(false)
     }
@@ -193,7 +266,13 @@ export function FuxiHallManagePage() {
       await load()
       notifySuccess(t('fuxiHall.manage.deleteSuccess'))
     } catch (caught) {
-      notifyError(caught instanceof Error ? caught.message : t('fuxiHall.manage.saveFailed'))
+      notifyError(
+        caught instanceof Error
+          ? caught.message.startsWith('fuxiHall.')
+            ? t(caught.message)
+            : caught.message
+          : t('fuxiHall.manage.saveFailed')
+      )
     }
   }
   const move = async (index: number, delta: number) => {
@@ -205,8 +284,32 @@ export function FuxiHallManagePage() {
     try {
       await reorderFuxiHallCards({ page_key: pageKey, ordered_ids: next.map((card) => card.id) })
     } catch (caught) {
-      notifyError(caught instanceof Error ? caught.message : t('fuxiHall.manage.sortFailed'))
+      notifyError(
+        caught instanceof Error
+          ? caught.message.startsWith('fuxiHall.')
+            ? t(caught.message)
+            : caught.message
+          : t('fuxiHall.manage.sortFailed')
+      )
       await load()
+    }
+  }
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await refreshFuxiHallContributions()
+      setCards(await fetchFuxiHallCards(pageKey))
+      notifySuccess(t('fuxiHall.contributions.refreshed'))
+    } catch (caught) {
+      notifyError(
+        caught instanceof Error
+          ? caught.message.startsWith('fuxiHall.')
+            ? t(caught.message)
+            : caught.message
+          : t('fuxiHall.errors.refresh')
+      )
+    } finally {
+      setRefreshing(false)
     }
   }
   const addTag = () => {
@@ -217,18 +320,6 @@ export function FuxiHallManagePage() {
   }
   return (
     <section className="space-y-4">
-      <div className="flex gap-2 border-b">
-        {(['leadership', 'contributors'] as const).map((key) => (
-          <Button
-            key={key}
-            type="button"
-            variant={pageKey === key ? 'default' : 'ghost'}
-            onClick={() => setPageKey(key)}
-          >
-            {t(`fuxiHall.manage.${key}Tab`)}
-          </Button>
-        ))}
-      </div>
       {loading ? <p className="text-sm text-muted-foreground">{t('common.loading')}</p> : null}
       {page ? (
         <div className="grid gap-4 xl:grid-cols-2">
@@ -260,6 +351,112 @@ export function FuxiHallManagePage() {
                     />
                   </div>
                 </div>
+                <fieldset className="space-y-3">
+                  <legend>{t('fuxiHall.fame.floorSettings')}</legend>
+                  <p className="text-sm text-muted-foreground">{t('fuxiHall.fame.floorHint')}</p>
+                  {page.floors.map((floor, index) => (
+                    <div key={floor.key} className="flex flex-wrap gap-2">
+                      <Input
+                        aria-label={t('fuxiHall.fame.floorName')}
+                        maxLength={64}
+                        placeholder={
+                          ['top', 'second', 'first'].includes(floor.key)
+                            ? t(`fuxiHall.fame.floors.${floor.key}`)
+                            : t('fuxiHall.fame.floorName')
+                        }
+                        value={floor.name}
+                        onChange={(event) =>
+                          setPage({
+                            ...page,
+                            floors: page.floors.map((item) =>
+                              item.key === floor.key ? { ...item, name: event.target.value } : item
+                            ),
+                          })
+                        }
+                      />
+                      <Input
+                        aria-label={t('fuxiHall.fame.capacity')}
+                        type="number"
+                        min={FLOOR_CAPACITY_MIN}
+                        max={FLOOR_CAPACITY_MAX}
+                        step={1}
+                        value={floor.capacity}
+                        onChange={(event) =>
+                          setPage({
+                            ...page,
+                            floors: page.floors.map((item) =>
+                              item.key === floor.key
+                                ? {
+                                    ...item,
+                                    capacity: parseIntegerInput(
+                                      event.target.value,
+                                      FLOOR_CAPACITY_MAX
+                                    ),
+                                  }
+                                : item
+                            ),
+                          })
+                        }
+                      />
+                      <Button
+                        type="button"
+                        aria-label={t('fuxiHall.fame.moveUp')}
+                        isDisabled={index === 0}
+                        onClick={() => {
+                          const floors = [...page.floors]
+                          ;[floors[index - 1], floors[index]] = [floors[index], floors[index - 1]]
+                          setPage({ ...page, floors })
+                        }}
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        type="button"
+                        aria-label={t('fuxiHall.fame.moveDown')}
+                        isDisabled={index === page.floors.length - 1}
+                        onClick={() => {
+                          const floors = [...page.floors]
+                          ;[floors[index + 1], floors[index]] = [floors[index], floors[index + 1]]
+                          setPage({ ...page, floors })
+                        }}
+                      >
+                        ↓
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          setPage({
+                            ...page,
+                            floors: page.floors.filter((item) => item.key !== floor.key),
+                          })
+                        }
+                      >
+                        {t('common.delete')}
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    isDisabled={page.floors.length >= 12}
+                    onClick={() =>
+                      setPage({
+                        ...page,
+                        floors: [
+                          ...page.floors,
+                          {
+                            key: `floor-${Date.now()}`,
+                            name: t('fuxiHall.fame.newFloor'),
+                            capacity: 12,
+                          },
+                        ],
+                      })
+                    }
+                  >
+                    {t('fuxiHall.fame.addFloor')}
+                  </Button>
+                </fieldset>
                 <Button type="button" onClick={() => void savePage()} isDisabled={saving}>
                   {t('common.save')}
                 </Button>
@@ -268,9 +465,23 @@ export function FuxiHallManagePage() {
             <div className="rounded-lg border bg-card p-5">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">{t('fuxiHall.manage.cardList')}</h2>
-                <Button type="button" onClick={openCreate}>
-                  {t('fuxiHall.manage.addCard')}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    isDisabled={refreshing || saving}
+                    onClick={() => void refresh()}
+                  >
+                    {t(
+                      refreshing
+                        ? 'fuxiHall.contributions.refreshing'
+                        : 'fuxiHall.contributions.refresh'
+                    )}
+                  </Button>
+                  <Button type="button" onClick={openCreate}>
+                    {t('fuxiHall.manage.addCard')}
+                  </Button>
+                </div>
               </div>
               <div className="mt-4 space-y-2">
                 {cards.map((card, index) => (
@@ -280,7 +491,11 @@ export function FuxiHallManagePage() {
                   >
                     <div>
                       <p className="font-medium">{card.nickname}</p>
-                      <p className="text-xs text-muted-foreground">{card.title_tags.join(' · ')}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {page.floors.find((floor) => floor.key === card.floor_key)?.name ||
+                          t(`fuxiHall.fame.floors.${card.floor_key}`)}{' '}
+                        · {card.title_tags.join(' · ')}
+                      </p>
                     </div>
                     <div className="flex gap-1">
                       <Button
@@ -335,8 +550,21 @@ export function FuxiHallManagePage() {
             ) : null}
             {previewCards.length ? (
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {previewCards.map((card) => (
-                  <FuxiHallMemberCard key={card.id} card={card} showStats />
+                {page.floors.map((floor) => (
+                  <section key={floor.key} className="col-span-full space-y-3">
+                    <h4>
+                      {floor.name || t(`fuxiHall.fame.floors.${floor.key}`)} ·{' '}
+                      {previewCards.filter((card) => card.floor_key === floor.key).length}/
+                      {floor.capacity === '' ? '—' : floor.capacity}
+                    </h4>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {previewCards
+                        .filter((card) => card.floor_key === floor.key)
+                        .map((card) => (
+                          <FuxiHallMemberCard key={card.id} card={card} />
+                        ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             ) : (
@@ -357,6 +585,31 @@ export function FuxiHallManagePage() {
         >
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span>{t('fuxiHall.fame.floor')}</span>
+                <Select
+                  selectedKey={form.floor_key}
+                  onSelectionChange={(key) => setForm({ ...form, floor_key: String(key) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {page?.floors.map((floor) => (
+                      <SelectItem key={floor.key} id={floor.key}>
+                        {floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  isSelected={form.is_current_management}
+                  onChange={(value) => setForm({ ...form, is_current_management: value })}
+                />
+                {t('fuxiHall.fame.current')}
+              </label>
               <label className="space-y-2">
                 <span className="text-sm">{t('fuxiHall.manage.nickname')}</span>
                 <Input
@@ -414,20 +667,20 @@ export function FuxiHallManagePage() {
                 <span className="text-sm">{t('fuxiHall.manage.avatarShape')}</span>
                 <Select
                   selectedKey={String(form.avatar_shape ?? '')}
-                  onSelectionChange={(key) => ((value) =>
-                    setForm({
-                      ...form,
-                      avatar_shape: value as CardForm['avatar_shape'],
-                    }))(String(key))}
+                  onSelectionChange={(key) =>
+                    ((value) =>
+                      setForm({
+                        ...form,
+                        avatar_shape: value as CardForm['avatar_shape'],
+                      }))(String(key))
+                  }
                 >
                   <SelectTrigger className="h-10 w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem id="circle">{t('fuxiHall.manage.avatarShapeCircle')}</SelectItem>
-                    <SelectItem id="rounded">
-                      {t('fuxiHall.manage.avatarShapeRounded')}
-                    </SelectItem>
+                    <SelectItem id="rounded">{t('fuxiHall.manage.avatarShapeRounded')}</SelectItem>
                     <SelectItem id="square">{t('fuxiHall.manage.avatarShapeSquare')}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -444,10 +697,16 @@ export function FuxiHallManagePage() {
                 <span className="text-sm">{t('fuxiHall.manage.fontScale')}</span>
                 <Input
                   type="number"
-                  min={12}
-                  max={20}
+                  min={FONT_SCALE_MIN}
+                  max={FONT_SCALE_MAX}
+                  step={1}
                   value={form.font_scale}
-                  onChange={(event) => setForm({ ...form, font_scale: Number(event.target.value) })}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      font_scale: parseIntegerInput(event.target.value, FONT_SCALE_MAX),
+                    })
+                  }
                 />
               </label>
               <label className="flex items-center gap-2 pt-7">
@@ -457,22 +716,38 @@ export function FuxiHallManagePage() {
                 />
                 {t('fuxiHall.manage.visible')}
               </label>
-              {form.id && isSuperAdmin ? (
-                <label className="space-y-2">
-                  <span className="text-sm">{t('fuxiHall.manage.welfareDeliveryOffset')}</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={form.welfare_delivery_offset}
-                    onChange={(event) =>
-                      setForm({
-                        ...form,
-                        welfare_delivery_offset: Math.max(0, Number(event.target.value)),
-                      })
-                    }
-                  />
-                </label>
-              ) : null}
+              <fieldset className="space-y-3 md:col-span-2">
+                <legend className="font-medium">{t('fuxiHall.contributions.offsets')}</legend>
+                <p className="text-xs text-muted-foreground">
+                  {t('fuxiHall.contributions.offsetHint')}
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {contributionKeys.map((key) => (
+                    <label key={key} className="space-y-1">
+                      <span className="text-sm">{t(`fuxiHall.contributions.${key}`)}</span>
+                      <Input
+                        type="number"
+                        min={CONTRIBUTION_OFFSET_MIN}
+                        max={CONTRIBUTION_OFFSET_MAX}
+                        step={1}
+                        value={form.contribution_offsets[key]}
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            contribution_offsets: {
+                              ...form.contribution_offsets,
+                              [key]: parseIntegerInput(
+                                event.target.value,
+                                CONTRIBUTION_OFFSET_MAX
+                              ),
+                            },
+                          })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <div className="space-y-2 md:col-span-2">
                 <span className="text-sm">{t('fuxiHall.manage.cardDescription')}</span>
                 <RichTextEditor

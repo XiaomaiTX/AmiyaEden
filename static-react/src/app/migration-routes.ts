@@ -12,8 +12,7 @@ export type AppPageType =
   | 'dashboard-skill-readiness'
   | 'dashboard-fuel-officer-structures'
   | 'dashboard-galaxy-registry'
-  | 'fuxi-hall-leadership'
-  | 'fuxi-hall-contributors'
+  | 'fuxi-hall-fame'
   | 'fuxi-hall-manage'
   | 'info-wallet'
   | 'info-skill'
@@ -220,17 +219,9 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     },
   },
   {
-    path: 'fuxi-hall/leadership',
-    titleKey: 'nav.fuxiHall.leadership',
-    pageType: 'fuxi-hall-leadership',
-    menuGroup: 'nav.group.fuxiHall',
-    menuIcon: 'fuxiHall',
-    meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
-  },
-  {
-    path: 'fuxi-hall/contributors',
-    titleKey: 'nav.fuxiHall.contributors',
-    pageType: 'fuxi-hall-contributors',
+    path: 'fuxi-hall/hall-of-fame',
+    titleKey: 'nav.fuxiHall.fame',
+    pageType: 'fuxi-hall-fame',
     menuGroup: 'nav.group.fuxiHall',
     menuIcon: 'fuxiHall',
     meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
@@ -877,6 +868,8 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
 const appRouteOrder = [
   'characters',
   'mumble',
+  'fuxi-hall/hall-of-fame',
+  'fuxi-hall/manage',
   'admissions/new',
   'admissions/alt',
   'admissions/history',
@@ -924,9 +917,6 @@ const appRouteOrder = [
   'srp/srp-apply',
   'srp/srp-manage',
   'srp/srp-prices',
-  'fuxi-hall/leadership',
-  'fuxi-hall/contributors',
-  'fuxi-hall/manage',
   'ticket/my-tickets',
   'ticket/create',
   'ticket/detail/:id',

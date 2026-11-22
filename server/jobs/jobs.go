@@ -8,6 +8,7 @@ import (
 
 // RegisterAll 统一注册所有定时任务
 func RegisterAll(reg *taskregistry.Registry) {
+	registerFuxiHallContributionsTask(reg)
 	registerESIRefreshTask(reg)
 	registerAutoSrpTask(reg)
 	registerAlliancePAPTasks(reg)

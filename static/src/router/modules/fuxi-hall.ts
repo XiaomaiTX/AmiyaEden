@@ -12,24 +12,10 @@ export const fuxiHallRoutes: AppRouteRecord = {
   },
   children: [
     {
-      path: 'leadership',
-      name: 'FuxiHallLeadership',
-      component: '/fuxi-hall/leadership',
-      meta: {
-        title: 'menus.fuxiHall.leadership',
-        keepAlive: true,
-        login: true
-      }
-    },
-    {
-      path: 'contributors',
-      name: 'FuxiHallContributors',
-      component: '/fuxi-hall/contributors',
-      meta: {
-        title: 'menus.fuxiHall.contributors',
-        keepAlive: true,
-        login: true
-      }
+      path: 'hall-of-fame',
+      name: 'FuxiHallFame',
+      component: '/fuxi-hall/hall-of-fame',
+      meta: { title: 'menus.fuxiHall.fame', keepAlive: true, login: true }
     },
     {
       path: 'manage',

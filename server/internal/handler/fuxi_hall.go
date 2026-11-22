@@ -5,12 +5,15 @@ import (
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"context"
 
 	"github.com/gin-gonic/gin"
 )
 
 type fuxiHallService interface {
-	GetPublicPage(pageKey string) (*service.FuxiHallPublicPageResponse, error)
+	RefreshContributions(ctx context.Context, operatorID uint) error
+	PublicHall(viewerID uint) (*service.FuxiHallPublicPageResponse, error)
+	UpdateOwnCard(userID, id uint, req *service.FuxiHallOwnCardRequest) (*model.FuxiHallCard, error)
 	GetPageConfig(pageKey string) (*model.FuxiHallPage, error)
 	UpdatePageConfig(operatorID uint, pageKey string, req *service.FuxiHallUpdatePageRequest) (*model.FuxiHallPage, error)
 	ListCards(pageKey string, visibleOnly bool) ([]model.FuxiHallCard, error)
@@ -19,6 +22,14 @@ type fuxiHallService interface {
 	UpdateCard(operatorID, id uint, operatorRoles []string, req *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error)
 	ReorderCards(operatorID uint, req *service.FuxiHallReorderRequest) error
 	DeleteCard(operatorID, id uint) error
+}
+
+func (h *FuxiHallHandler) RefreshContributions(c *gin.Context) {
+	if err := h.svc.RefreshContributions(c.Request.Context(), middleware.GetUserID(c)); err != nil {
+		respondFuxiHallError(c, err, "fuxiHall.errors.refresh")
+		return
+	}
+	response.OK(c, nil)
 }
 
 // FuxiHallHandler 伏羲大厅处理器
@@ -38,24 +49,31 @@ func respondFuxiHallError(c *gin.Context, err error, fallback string) {
 	response.Fail(c, response.CodeBizError, message)
 }
 
-// GetLeadership GET /api/v1/fuxi-hall/leadership
-func (h *FuxiHallHandler) GetLeadership(c *gin.Context) {
-	data, err := h.svc.GetPublicPage(string(model.FuxiHallPageLeadership))
+func (h *FuxiHallHandler) GetHall(c *gin.Context) {
+	data, err := h.svc.PublicHall(middleware.GetUserID(c))
 	if err != nil {
-		respondFuxiHallError(c, err, "获取管理层页面失败")
+		respondFuxiHallError(c, err, "fuxiHall.errors.load")
 		return
 	}
 	response.OK(c, data)
 }
 
-// GetContributors GET /api/v1/fuxi-hall/contributors
-func (h *FuxiHallHandler) GetContributors(c *gin.Context) {
-	data, err := h.svc.GetPublicPage(string(model.FuxiHallPageContributors))
-	if err != nil {
-		respondFuxiHallError(c, err, "获取重大贡献成员页面失败")
+func (h *FuxiHallHandler) UpdateOwnCard(c *gin.Context) {
+	id := requireUintID(c, "id", "card")
+	if id == 0 {
 		return
 	}
-	response.OK(c, data)
+	var req service.FuxiHallOwnCardRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Fail(c, response.CodeParamError, "fuxiHall.errors.invalid")
+		return
+	}
+	card, err := h.svc.UpdateOwnCard(middleware.GetUserID(c), id, &req)
+	if err != nil {
+		respondFuxiHallError(c, err, "fuxiHall.errors.save")
+		return
+	}
+	response.OK(c, card)
 }
 
 // GetPageConfig GET /api/v1/system/fuxi-hall/pages/:page_key

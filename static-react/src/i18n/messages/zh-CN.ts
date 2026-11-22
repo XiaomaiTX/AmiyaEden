@@ -1,4 +1,4 @@
-﻿const zhCN = {
+const zhCN = {
   refund: {
     isk: 'ISK',
     coin: '伏羲币',
@@ -118,8 +118,7 @@
   },
 
   salaryManagement: {
-    confirmSalary:
-      '本次操作成功后，你将获得 {amount} 伏羲币工资。',
+    confirmSalary: '本次操作成功后，你将获得 {amount} 伏羲币工资。',
     title: '工资管理',
     description:
       '招新、福利、商城按申请或订单逐份计薪；补损按发放操作计薪，批量发放一次也只计一份工资。所有有权限的人工操作人领取相同工资，系统自动发放不计薪。金额设为 0 可停发该类工资。',
@@ -162,7 +161,12 @@
       '98185110': '伏羲主团 （主号需7百万以上技能。已在伏羲的人，小号无要求）',
       '98824507': '伏羲新手团（Fuxi Military Academy）',
     },
-    altHint: '请先把全部小号绑定到联盟 SeAT，再提交小号加团申请。',
+    altHint:
+      '请先把全部小号绑定到{seat}，无需全部绑定军团 SeAT。可只用一个小号提交申请，在备注中列出其余小号及具体情况，由招新官核对后一起批准。',
+    altBindHint: '请先在本网站绑定用于提交申请的小号；其他小号可在备注中列出。',
+    note: '申请备注（选填）',
+    noteHint:
+      '请列出需要一起加团的小号名称，并说明联盟 SeAT 绑定情况及其他需要说明的情况（最多 2000 字）。',
     bindHint: '要一起入团的人物，须先通过“绑定其他人物”绑定到当前账号。',
     bind: '管理绑定人物',
     qqGuide: '填写 QQ 的方法',
@@ -418,8 +422,7 @@
       basicConfig: '基础配置',
     },
     fuxiHall: {
-      leadership: '管理层',
-      contributors: '重大贡献成员',
+      fame: '伏羲名人堂',
       manage: '伏羲大厅管理',
     },
   },
@@ -482,20 +485,77 @@
     page: '第 {page} / {pages} 页',
   },
   fuxiHall: {
+    contributions: {
+      title: '管理贡献',
+      fleets: '带队',
+      welfare: '福利',
+      srp: '补损',
+      recruitment: '招新',
+      mentoring: '导师',
+      updated: '数据更新于 {date}',
+      pending: '系统记录待汇总',
+      daily: '贡献每日汇总，包含管理员补录的历史记录。',
+      offsets: '历史贡献补录',
+      offsetHint:
+        '填写系统未记录的基础次数（0至10亿）；与系统记录相加，重算不会覆盖。招新包含邀请新人及处理入团申请，两者可以叠加。',
+      refresh: '重新计算贡献',
+      refreshing: '正在计算…',
+      refreshed: '贡献数据已更新',
+      help: {
+        fleets: '已结束且未删除的舰队次数',
+        welfare: '已发放福利申请与商店订单的合计次数',
+        srp: '本人完成发放的补损申请数',
+        recruitment: '已邀请新号或小号的申请数，加成功邀请的不同新人数量；邀请与处理申请可叠加',
+        mentoring: '已接收过的不同学员人数（包括已毕业或已解除的关系）',
+      },
+    },
+    fame: {
+      title: '伏羲名人堂',
+      current: '在职管理',
+      tenure: '主人物累计在团时长',
+      duration: '{years}年{months}个月',
+      unknown: '暂无记录',
+      editMine: '编辑我的昵称和简介',
+      retry: '重试',
+      memberCount: '{count}人',
+      floors: {
+        top: '顶楼',
+        second: '二楼',
+        first: '一楼',
+      },
+      floorHint:
+        '每层设置名称和可见人数上限。请先保存新增楼层，再分配卡片；删除前请先迁出全部卡片。',
+      floorSettings: '楼层配置（从上到下）',
+      floorName: '楼层名称',
+      capacity: '可见卡片人数上限',
+      moveUp: '上移',
+      moveDown: '下移',
+      newFloor: '新楼层',
+      addFloor: '添加楼层',
+      floor: '所属楼层',
+    },
+    errors: {
+      cardNotFound: '卡片不存在，请刷新列表。',
+      offsets: '历史补录次数须为0至10亿的整数',
+      refresh: '贡献数据重算失败，请重试',
+      refreshRunning: '贡献数据正在重算，请稍后重试',
+      load: '名人堂加载失败',
+      save: '保存失败，请重试',
+      invalid: '名人堂参数无效',
+      floors: '请设置1至12个有效楼层，每层人数上限为1至10000',
+      occupiedFloor: '请先将此楼层的全部卡片移至其他楼层',
+      capacity: '楼层可见卡片人数超过上限',
+      titleRequired: '在职管理至少需要一个头衔',
+      profile: '昵称不能为空且不超过256字，简介不能超过64000字节',
+      denied: '只能编辑当前绑定的主人物对应的卡片',
+    },
+
     public: {
-      leadershipEyebrow: '伏羲大厅 · 管理层',
-      contributorsEyebrow: '伏羲大厅 · 重大贡献成员',
-      defaultLeadershipTitle: '管理层',
-      defaultContributorsTitle: '重大贡献成员',
-      fleetLedCount: '带队次数',
-      welfareDeliveryCount: '福利发放次数',
       emptyTitle: '暂无成员',
       emptySubtitle: '管理员可在管理页添加卡片内容',
       loadFailed: '加载伏羲大厅页面失败',
     },
     manage: {
-      leadershipTab: '管理层',
-      contributorsTab: '重大贡献成员',
       addCard: '新增卡片',
       editCard: '编辑卡片',
       pageConfig: '页面配置',
@@ -515,13 +575,12 @@
       accentColor: '强调色',
       fontScale: '字体大小',
       visible: '显隐',
-      welfareDeliveryOffset: '福利发放次数偏移',
       cardDescription: '成员简介（富文本）',
       previewPanel: '实时预览',
       previewFallbackTitle: '未命名页面',
       previewEmpty: '当前无可见卡片，预览为空',
       titleRequired: '页面标题不能为空',
-      requiredFields: '昵称、主角色名称、头衔标签为必填项',
+      requiredFields: '请填写昵称、主人物名称；在职管理至少需要一个头衔',
       deleteConfirm: '确定删除这张卡片吗？',
       saveSuccess: '保存成功',
       saveFailed: '保存失败',
@@ -633,6 +692,10 @@
         name: '归因奖励处理',
         description: '处理队长归因奖励结算',
       },
+      fuxi_hall_contributions: {
+        name: '名人堂贡献汇总',
+        description: '每天汇总名人堂历史管理贡献',
+      },
       mentor_reward: {
         name: '导师奖励处理',
         description: '处理导师奖励结算',
@@ -724,10 +787,6 @@
       character_killmails: {
         name: '人物击杀与损失',
         description: '刷新人物击杀和损失邮件',
-      },
-      character_notifications: {
-        name: '人物通知',
-        description: '刷新人物通知消息',
       },
       character_online: {
         name: '人物在线状态',
@@ -1122,6 +1181,7 @@
       esi_title_mapping_delete: '删除 ESI 头衔映射',
       corp_structure_authorization_update: '更新军团建筑授权',
       fuxi_card_create: '创建伏羲堂卡片',
+      fuxi_contributions_refresh: '重算名人堂贡献',
       fuxi_card_update: '更新伏羲堂卡片',
       fuxi_card_delete: '删除伏羲堂卡片',
       fuxi_card_sort: '调整伏羲堂卡片顺序',

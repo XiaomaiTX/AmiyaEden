@@ -1788,49 +1788,6 @@ declare namespace Api {
     }
   }
 
-  /** 通知相关类型 */
-  namespace Notification {
-    /** 通知项 */
-    interface NotificationItem {
-      id: number
-      character_id: number
-      notification_id: number
-      sender_id: number
-      sender_type: string
-      text?: string
-      timestamp: string
-      type: string
-      is_read?: boolean
-    }
-
-    /** 通知列表请求参数 */
-    interface ListParams {
-      page?: number
-      page_size?: number
-      type?: string
-      is_read?: boolean
-    }
-
-    /** 通知列表响应 */
-    interface NotificationSummary {
-      list: NotificationItem[]
-      total: number
-      page: number
-      page_size: number
-      unread_count: number
-    }
-
-    /** 未读数响应 */
-    interface UnreadCountResponse {
-      unread_count: number
-    }
-
-    /** 标记已读请求 */
-    interface MarkAsReadParams {
-      notification_ids: number[]
-    }
-  }
-
   /** 工作台类型 */
   namespace Dashboard {
     /** 卡片统计数据 */
@@ -3516,7 +3473,19 @@ declare namespace Api {
   }
 
   namespace FuxiHall {
-    type PageKey = 'leadership' | 'contributors'
+    interface Contributions {
+      fleets: number
+      welfare: number
+      srp: number
+      recruitment: number
+      mentoring: number
+    }
+    interface Floor {
+      key: string
+      name: string
+      capacity: number
+    }
+    type PageKey = 'hall-of-fame'
     type AvatarShape = 'circle' | 'rounded' | 'square'
 
     interface PageConfig {
@@ -3525,9 +3494,17 @@ declare namespace Api {
       title: string
       subtitle: string
       description_html: string
+      floors: Floor[]
     }
 
     interface Card {
+      contributions?: Contributions
+      contribution_offsets?: Contributions
+      contributions_updated_at?: string | null
+      floor_key: string
+      is_current_management: boolean
+      can_edit?: boolean
+      tenure_months?: number | null
       id: number
       page_key: PageKey
       nickname: string
@@ -3540,9 +3517,6 @@ declare namespace Api {
       font_scale: number
       visible: boolean
       sort_order: number
-      fleet_led_count?: number
-      welfare_delivery_count?: number
-      welfare_delivery_offset?: number
       created_at: string
       updated_at: string
     }
@@ -3553,12 +3527,16 @@ declare namespace Api {
     }
 
     interface UpdatePageConfigParams {
+      floors?: Floor[]
       title?: string
       subtitle?: string
       description_html?: string
     }
 
     interface CreateCardParams {
+      contribution_offsets?: Contributions
+      floor_key?: string
+      is_current_management?: boolean
       page_key: PageKey
       nickname: string
       main_character_name: string
@@ -3572,7 +3550,6 @@ declare namespace Api {
 
     type UpdateCardParams = Partial<CreateCardParams> & {
       title_tags?: string[]
-      welfare_delivery_offset?: number
     }
 
     interface ReorderParams {

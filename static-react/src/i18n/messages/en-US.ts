@@ -1,4 +1,4 @@
-﻿const enUS = {
+const enUS = {
   refund: {
     isk: 'ISK',
     coin: 'Fuxi Coins',
@@ -114,15 +114,15 @@
       emptyResult:
         'The sheet produced no entries. The refresh stopped and local data is unchanged.',
       refreshInProgress: 'A blacklist refresh is already running. Please retry shortly.',
-      refreshCooldown: 'The blacklist was fully refreshed. Please wait 24 hours after its completion.',
+      refreshCooldown:
+        'The blacklist was fully refreshed. Please wait 24 hours after its completion.',
       invalidQuery: 'Invalid query parameters.',
       internal: 'The blacklist operation failed. Please retry.',
     },
   },
 
   salaryManagement: {
-    confirmSalary:
-      'On successful completion, you will receive {amount} Fuxi coins in salary.',
+    confirmSalary: 'On successful completion, you will receive {amount} Fuxi coins in salary.',
     title: 'Salary management',
     description:
       'Recruitment, welfare and shop salaries are per application or order. SRP salary is per payout operation; a batch pays one salary. All authorized human operators earn equally. Automatic payouts earn no operator salary. Set an amount to 0 to disable it.',
@@ -167,7 +167,13 @@
         'Fuxi Main Corporation (main character requires at least 7 million SP; existing Fuxi members have no SP requirement for alts)',
       '98824507': 'Fuxi Newcomer Corporation (Fuxi Military Academy)',
     },
-    altHint: 'Bind all your alts to alliance SeAT before applying.',
+    altHint:
+      'Bind all your alts to {seat}; they do not all need to be bound to corporation SeAT. You may submit an application with just one alt and list the others and your circumstances in the note for recruiters to check and approve together.',
+    altBindHint:
+      'Bind the alt used to submit this application to this website first. You can list your other alts in the note.',
+    note: 'Application note (optional)',
+    noteHint:
+      'List the names of the alts joining together, their alliance SeAT binding status, and any other details (up to 2000 characters).',
     bindHint:
       'Use Bind another character to link every character joining together to this account first.',
     bind: 'Manage bound characters',
@@ -430,8 +436,7 @@
       basicConfig: 'Basic Config',
     },
     fuxiHall: {
-      leadership: 'Leadership',
-      contributors: 'Major Contributors',
+      fame: 'Fuxi Hall of Fame',
       manage: 'Fuxi Hall Management',
     },
   },
@@ -494,20 +499,79 @@
     page: 'Page {page} / {pages}',
   },
   fuxiHall: {
+    contributions: {
+      title: 'Contributions',
+      fleets: 'Fleet command',
+      welfare: 'Deliveries',
+      srp: 'SRP payouts',
+      recruitment: 'Recruitment',
+      mentoring: 'Mentoring',
+      updated: 'Updated {date}',
+      pending: 'History awaiting calculation',
+      daily: 'Contributions are updated daily and include manually recorded history.',
+      offsets: 'Historical contribution offsets',
+      offsetHint:
+        'Add unrecorded contributions (0 to 1 billion). These are added to recorded history and retained when recalculating. Recruitment includes referrals and application processing; both can count.',
+      refresh: 'Recalculate contributions',
+      refreshing: 'Calculating…',
+      refreshed: 'Contribution data updated',
+      help: {
+        fleets: 'Completed fleets, excluding deleted fleets',
+        welfare: 'Delivered welfare applications plus shop orders',
+        srp: 'SRP applications paid out by this member',
+        recruitment:
+          'New member and alt applications marked invited, plus distinct successful referrals; referrals and application processing are additive',
+        mentoring:
+          'Distinct accepted mentees, including graduated and previously revoked relationships',
+      },
+    },
+    fame: {
+      title: 'Fuxi Hall of Fame',
+      current: 'Current management',
+      tenure: 'Main character total time in Fuxi',
+      duration: '{years} years {months} months',
+      unknown: 'No record yet',
+      editMine: 'Edit my nickname and bio',
+      retry: 'Retry',
+      memberCount: '{count} members',
+      floors: {
+        top: 'Top floor',
+        second: 'Second floor',
+        first: 'First floor',
+      },
+      floorHint:
+        'Set each floor name and visible card capacity. Save new floors before assigning cards; move all cards out before deleting a floor.',
+      floorSettings: 'Floors (top to bottom)',
+      floorName: 'Floor name',
+      capacity: 'Visible card capacity',
+      moveUp: 'Move up',
+      moveDown: 'Move down',
+      newFloor: 'New floor',
+      addFloor: 'Add floor',
+      floor: 'Floor',
+    },
+    errors: {
+      cardNotFound: 'Card not found. Refresh the list.',
+      offsets: 'Offsets must be integers between 0 and 1 billion',
+      refresh: 'Unable to recalculate contributions. Please retry',
+      refreshRunning: 'A contribution calculation is already running. Please retry shortly',
+      load: 'Unable to load the hall of fame',
+      save: 'Unable to save. Please retry',
+      invalid: 'Invalid hall of fame parameters',
+      floors: 'Configure 1–12 valid floors with capacities between 1 and 10000',
+      occupiedFloor: 'Move all cards out of this floor before removing it',
+      capacity: 'Visible cards exceed the floor capacity',
+      titleRequired: 'Current management must have at least one title',
+      profile: 'Nickname is required (up to 256 characters); bio must not exceed 64000 bytes',
+      denied: 'You can only edit a card for a main character currently bound to your account',
+    },
+
     public: {
-      leadershipEyebrow: 'Fuxi Hall · Leadership',
-      contributorsEyebrow: 'Fuxi Hall · Major Contributors',
-      defaultLeadershipTitle: 'Leadership',
-      defaultContributorsTitle: 'Major Contributors',
-      fleetLedCount: 'Fleet Leads',
-      welfareDeliveryCount: 'Welfare Deliveries',
       emptyTitle: 'No Members Yet',
       emptySubtitle: 'Admins can add cards from the management page',
       loadFailed: 'Failed to load Fuxi Hall page',
     },
     manage: {
-      leadershipTab: 'Leadership',
-      contributorsTab: 'Major Contributors',
       addCard: 'Add Card',
       editCard: 'Edit Card',
       pageConfig: 'Page Configuration',
@@ -527,13 +591,13 @@
       accentColor: 'Accent Color',
       fontScale: 'Font Scale',
       visible: 'Visibility',
-      welfareDeliveryOffset: 'Welfare Delivery Offset',
       cardDescription: 'Member Description (Rich Text)',
       previewPanel: 'Live Preview',
       previewFallbackTitle: 'Untitled Page',
       previewEmpty: 'No visible cards for preview',
       titleRequired: 'Page title is required',
-      requiredFields: 'Nickname, main character name, and title tags are required',
+      requiredFields:
+        'Enter a nickname and main character; current management also requires a title',
       deleteConfirm: 'Delete this card?',
       saveSuccess: 'Saved successfully',
       saveFailed: 'Save failed',
@@ -645,6 +709,10 @@
         name: 'Process Attribution Rewards',
         description: 'Process captain attribution rewards',
       },
+      fuxi_hall_contributions: {
+        name: 'Hall of fame contributions',
+        description: 'Calculate daily hall of fame contribution snapshots',
+      },
       mentor_reward: {
         name: 'Mentor Reward Processing',
         description: 'Process mentor reward settlements',
@@ -663,11 +731,13 @@
       },
       qq_group_business: {
         name: 'QQ group business recheck',
-        description: 'Rechecks QQ group admission, member card and inspection rules against current members.',
+        description:
+          'Rechecks QQ group admission, member card and inspection rules against current members.',
       },
       qq_structure_alert: {
         name: 'QQ structure alerts',
-        description: 'Scans structures and sends QQ notifications for business alerts such as low fuel.',
+        description:
+          'Scans structures and sends QQ notifications for business alerts such as low fuel.',
       },
       audit_archive_daily: {
         name: 'Daily audit archive',
@@ -737,10 +807,6 @@
       character_killmails: {
         name: 'Character killmails',
         description: 'Refresh character kill and loss mails',
-      },
-      character_notifications: {
-        name: 'Character notifications',
-        description: 'Refresh character notifications',
       },
       character_online: {
         name: 'Character online status',
@@ -1135,6 +1201,7 @@
       esi_title_mapping_delete: 'Delete ESI title mapping',
       corp_structure_authorization_update: 'Update corporation structure authorization',
       fuxi_card_create: 'Create Fuxi Hall card',
+      fuxi_contributions_refresh: 'Recalculate hall contributions',
       fuxi_card_update: 'Update Fuxi Hall card',
       fuxi_card_delete: 'Delete Fuxi Hall card',
       fuxi_card_sort: 'Reorder Fuxi Hall cards',
