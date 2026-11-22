@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { formatIskPlain, formatIskSmart } from '@/lib/isk'
 import { cn } from '@/lib/utils'
+import { formatJournalTypeLabel } from '@/lib/wallet-journal-type'
 import type { WalletAnalyticsResponse } from '@/types/api/eve-info'
 import {
   WALLET_ANALYTICS_PRESETS,
@@ -179,11 +180,11 @@ export function WalletAnalyticsSection({ characterId }: WalletAnalyticsSectionPr
   const incomeRefSeries = buildRefTypeSeries(analytics?.ref_type_breakdown ?? [], 'income')
   const expenseRefSeries = buildRefTypeSeries(analytics?.ref_type_breakdown ?? [], 'expense')
   const incomeRefData = incomeRefSeries.refTypes.map((refType, index) => ({
-    label: refType,
+    label: formatJournalTypeLabel(refType, t),
     value: incomeRefSeries.values[index] ?? 0,
   }))
   const expenseRefData = expenseRefSeries.refTypes.map((refType, index) => ({
-    label: refType,
+    label: formatJournalTypeLabel(refType, t),
     value: expenseRefSeries.values[index] ?? 0,
   }))
 

@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { fetchMyCharacters } from '@/api/auth'
 import { fetchInfoWallet } from '@/api/eve-info'
 import { useI18n } from '@/i18n'
+import { formatJournalTypeLabel } from '@/lib/wallet-journal-type'
 import type { EveCharacter } from '@/types/api/auth'
 import type { WalletResponse } from '@/types/api/eve-info'
 
@@ -132,7 +133,7 @@ export function InfoWalletPage() {
             <SelectItem id="">{t('infoWallet.allRefTypes')}</SelectItem>
             {refTypeOptions.map((refType) => (
               <SelectItem key={refType} id={String(refType ?? '')}>
-                {refType}
+                {formatJournalTypeLabel(refType, t)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -168,7 +169,9 @@ export function InfoWalletPage() {
                 {wallet.journals.map((row) => (
                   <TableRow key={row.id} className="border-b">
                     <TableCell className="px-3 py-2">{row.date}</TableCell>
-                    <TableCell className="px-3 py-2">{row.ref_type}</TableCell>
+                    <TableCell className="px-3 py-2">
+                      {formatJournalTypeLabel(row.ref_type, t)}
+                    </TableCell>
                     <TableCell className="px-3 py-2">{row.amount}</TableCell>
                     <TableCell className="px-3 py-2">{row.balance}</TableCell>
                     <TableCell className="px-3 py-2">{row.description}</TableCell>

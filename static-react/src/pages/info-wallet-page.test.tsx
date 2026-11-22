@@ -107,10 +107,12 @@ describe('info wallet page', () => {
     render(<RouterProvider router={router} />)
 
     await waitFor(() => {
-      expect(screen.getAllByText('player_donation').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('玩家转账').length).toBeGreaterThan(0)
     })
 
     expect(screen.getByText(/123,456\s*ISK/)).toBeInTheDocument()
+    expect(screen.queryByText('player_donation')).not.toBeInTheDocument()
+    expect(screen.getByText('demo')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(screen.getByText('收支分析')).toBeInTheDocument()
