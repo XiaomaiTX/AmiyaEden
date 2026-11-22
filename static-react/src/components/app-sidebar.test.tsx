@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
+import { RouterProvider as AriaRouterProvider } from 'react-aria-components'
 import { beforeEach, describe, expect, test } from 'vitest'
 import { AppSidebar } from '@/components/app-sidebar'
 import { ThemeProvider } from '@/components/theme-provider'
@@ -9,13 +10,22 @@ import { I18nProvider } from '@/i18n'
 import { usePreferenceStore, useSessionStore, useSidebarNavigationStore } from '@/stores'
 import { SIDEBAR_NAVIGATION_STORE_KEY } from '@/stores/persistence-keys'
 
+function RoutedSidebar() {
+  const navigate = useNavigate()
+  return (
+    <AriaRouterProvider navigate={(target) => navigate(target)}>
+      <AppSidebar />
+    </AriaRouterProvider>
+  )
+}
+
 function renderSidebar(initialPath: string) {
   return render(
     <ThemeProvider>
       <I18nProvider>
         <SidebarProvider>
           <MemoryRouter initialEntries={[initialPath]}>
-            <AppSidebar />
+            <RoutedSidebar />
           </MemoryRouter>
         </SidebarProvider>
       </I18nProvider>
@@ -91,5 +101,23 @@ describe('AppSidebar', () => {
 
     expect(screen.getByRole('button', { name: '仪表盘' })).toBeInTheDocument()
     expect(screen.queryByText('军团刷怪报表')).not.toBeInTheDocument()
+  })
+
+  test('Mumble and Fuxi Hall navigate directly without expandable parent menus', async () => {
+    const user = userEvent.setup()
+    useSessionStore.setState({ corpCapabilities: ['menu.fuxi_hall'] })
+    renderSidebar('/fuxi-hall')
+
+    const hall = screen.getByRole('link', { name: '伏羲名人堂' })
+    const mumble = screen.getByRole('link', { name: 'Mumble 凭据' })
+    expect(hall).toHaveAttribute('href', '/fuxi-hall')
+    expect(hall).toHaveAttribute('data-active', 'true')
+    expect(screen.queryByRole('button', { name: '伏羲名人堂' })).not.toBeInTheDocument()
+    expect(screen.queryByText('伏羲大厅管理')).not.toBeInTheDocument()
+
+    await user.click(mumble)
+    expect(mumble).toHaveAttribute('data-active', 'true')
+    await user.click(hall)
+    expect(hall).toHaveAttribute('data-active', 'true')
   })
 })

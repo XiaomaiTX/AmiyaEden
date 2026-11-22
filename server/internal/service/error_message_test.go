@@ -31,7 +31,7 @@ func TestSkillPlanServiceGetSkillPlanNotFoundMessage(t *testing.T) {
 	useServiceErrorMessageTestDB(t, db)
 
 	svc := &SkillPlanService{repo: repository.NewSkillPlanRepository()}
-	_, err := svc.GetSkillPlan(999, "zh")
+	_, err := svc.GetSkillPlan(999, "zh", nil)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

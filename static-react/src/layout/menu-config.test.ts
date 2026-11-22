@@ -33,6 +33,37 @@ test('admission pending count appears only on visible review navigation and its 
 })
 
 describe('menu config', () => {
+  test.each(['user', 'admin', 'super_admin'])(
+    'shows Fuxi Hall as one direct entry for %s',
+    (role) => {
+      const groups = buildShellMenuGroups({
+        isLoggedIn: true,
+        roles: [role],
+        corpCapabilities: role === 'super_admin' ? [] : ['menu.fuxi_hall'],
+        isCurrentlyNewbro: false,
+        isMentorMenteeEligible: false,
+      })
+      const hall = groups.find((group) => group.labelKey === 'nav.fuxiHall.fame')
+      expect(hall?.items).toEqual([
+        expect.objectContaining({ to: '/fuxi-hall', labelKey: 'nav.fuxiHall.fame' }),
+      ])
+      expect(groups.flatMap((group) => group.items).some((item) => item.to.startsWith('/fuxi-hall/')))
+        .toBe(false)
+    }
+  )
+
+  test('hides Fuxi Hall when the menu capability is missing', () => {
+    const groups = buildShellMenuGroups({
+      isLoggedIn: true,
+      roles: ['admin'],
+      corpCapabilities: [],
+      isCurrentlyNewbro: false,
+      isMentorMenteeEligible: false,
+    })
+    expect(groups.flatMap((group) => group.items).some((item) => item.to === '/fuxi-hall'))
+      .toBe(false)
+  })
+
   test('hides protected routes for anonymous visitor', () => {
     const groups = buildShellMenuGroups({
       isLoggedIn: false,
@@ -55,11 +86,11 @@ describe('menu config', () => {
     })
 
     const dashboard = groups.find((group) => group.labelKey === 'nav.group.dashboard')
-    const characters = groups.find((group) => group.labelKey === 'nav.group.characters')
+    const mumble = groups.find((group) => group.labelKey === 'nav.mumble.credentials')
     const info = groups.find((group) => group.labelKey === 'nav.group.info')
     expect(dashboard).toBeDefined()
-    expect(characters?.items).toEqual([
-      expect.objectContaining({ to: '/characters', labelKey: 'nav.dashboard.characters' }),
+    expect(groups.flatMap((group) => group.items).some((item) => item.to === '/characters')).toBe(false)
+    expect(mumble?.items).toEqual([
       expect.objectContaining({ to: '/mumble', labelKey: 'nav.mumble.credentials' }),
     ])
     expect(info).toBeDefined()

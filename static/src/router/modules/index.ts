@@ -13,6 +13,7 @@ import { shopRoutes } from './shop'
 import { infoRoutes } from './info'
 import { newbroRoutes } from './newbro'
 import { fuxiHallRoutes } from './fuxi-hall'
+import { announcementRoutes } from './announcements'
 import { ticketRoutes } from './ticket'
 
 /**
@@ -22,6 +23,7 @@ export const routeModules: AppRouteRecord[] = [
   charactersRoutes,
   mumbleRoutes,
   fuxiHallRoutes,
+  announcementRoutes,
   admissionsRoutes,
   dashboardRoutes,
   operationRoutes,

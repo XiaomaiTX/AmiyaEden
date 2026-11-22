@@ -87,3 +87,6 @@ source_of_truth:
 - Vue 使用 `static/src/store/modules/badge.ts` 和路由初始化流程。
 - React 使用 `useBadgeStore`，在 `/me` 启动刷新完成后按当前人物加载一次；切换人物或退出会清空旧计数，并丢弃已失效会话的并发响应。`menu-config.ts` 负责叶子映射和父菜单汇总。
 - 两端均不得把前端展示逻辑当作后端权限边界。
+## 军团公告未读数
+
+announcement_unread 对 Login 成员返回个人未读可见公告数量，排除隐藏项。该计数查询失败时只记录日志并省略此键，其余徽标照常返回。Announcements（两端 /announcements）为名人堂下方直接入口。进入公告页、读取正文并提交已读后、保存公告后主动刷新计数。普通编辑保留阅读版本，勾选重新提醒才提升版本。

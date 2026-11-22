@@ -19,6 +19,8 @@ source_of_truth:
   - static-react/src/pages/dashboard-characters-page.tsx
 ---
 
+个人资料和绑定人物操作统一由顶栏“个人中心”进入 `/characters`，侧栏隐藏重复的人物管理入口。Mumble 凭据继续提供独立菜单。
+
 # 认证与人物绑定
 
 ## 当前能力

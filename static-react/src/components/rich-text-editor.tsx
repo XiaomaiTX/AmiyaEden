@@ -17,24 +17,35 @@ import {
   Underline as UnderlineIcon,
   Undo2,
 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useI18n } from '@/i18n'
 import { Button } from '@/components/ui/button'
+
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 export function RichTextEditor({
   value,
   onChange,
   ariaLabel,
+  imageUploadLabel,
+  maxImages,
 }: {
   value: string
   onChange: (value: string) => void
+  /** Enables local PNG/JPEG upload as data URLs instead of prompting for an image URL. */
+  imageUploadLabel?: string
+  /** Upper bound on images in the whole document, checked before each upload. */
+  maxImages?: number
   ariaLabel: string
 }) {
+  const { t } = useI18n()
+  const [notice, setNotice] = useState('')
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3, 4] } }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3, 4] }, underline: false, link: false }),
       Underline,
       Link.configure({ openOnClick: false }),
-      Image,
+      Image.configure({ allowBase64: Boolean(imageUploadLabel) }),
     ],
     content: value,
     onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),
@@ -44,23 +55,68 @@ export function RichTextEditor({
       editor.commands.setContent(value, { emitUpdate: false })
   }, [editor, value])
   if (!editor) return null
+  const countImages = () => {
+    let count = 0
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === 'image') count++
+    })
+    return count
+  }
   const setLink = () => {
-    const url = window.prompt('URL')
+    const url = window.prompt(t('richTextEditor.linkPrompt'))
     if (url) editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
   }
   const setImage = () => {
-    const src = window.prompt('Image URL')
+    setNotice('')
+    if (imageUploadLabel) {
+      if (maxImages !== undefined && countImages() >= maxImages) {
+        setNotice(t('richTextEditor.tooManyImages', { count: maxImages }))
+        return
+      }
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/png,image/jpeg'
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) return
+        if (
+          (file.type !== 'image/png' && file.type !== 'image/jpeg') ||
+          file.size > MAX_IMAGE_BYTES
+        ) {
+          setNotice(t('richTextEditor.imageRejected'))
+          return
+        }
+        const reader = new FileReader()
+        reader.onload = () => {
+          if (editor.isDestroyed) return
+          if (maxImages !== undefined && countImages() >= maxImages) {
+            setNotice(t('richTextEditor.tooManyImages', { count: maxImages }))
+            return
+          }
+          editor
+            .chain()
+            .focus()
+            .setImage({ src: String(reader.result) })
+            .run()
+        }
+        reader.onerror = () => setNotice(t('richTextEditor.imageRejected'))
+        reader.readAsDataURL(file)
+      }
+      input.click()
+      return
+    }
+    const src = window.prompt(t('richTextEditor.imagePrompt'))
     if (src) editor.chain().focus().setImage({ src }).run()
   }
   const actions = [
     [Bold, () => editor.chain().focus().toggleBold().run(), 'bold'],
     [Italic, () => editor.chain().focus().toggleItalic().run(), 'italic'],
     [UnderlineIcon, () => editor.chain().focus().toggleUnderline().run(), 'underline'],
-    [Strikethrough, () => editor.chain().focus().toggleStrike().run(), 'strike'],
-    [List, () => editor.chain().focus().toggleBulletList().run(), 'bullet list'],
-    [ListOrdered, () => editor.chain().focus().toggleOrderedList().run(), 'ordered list'],
+    [Strikethrough, () => editor.chain().focus().toggleStrike().run(), 'strikethrough'],
+    [List, () => editor.chain().focus().toggleBulletList().run(), 'bulletList'],
+    [ListOrdered, () => editor.chain().focus().toggleOrderedList().run(), 'orderedList'],
     [Quote, () => editor.chain().focus().toggleBlockquote().run(), 'quote'],
-    [Code, () => editor.chain().focus().toggleCodeBlock().run(), 'code block'],
+    [Code, () => editor.chain().focus().toggleCodeBlock().run(), 'codeBlock'],
     [LinkIcon, setLink, 'link'],
     [ImagePlus, setImage, 'image'],
     [Undo2, () => editor.chain().focus().undo().run(), 'undo'],
@@ -69,19 +125,26 @@ export function RichTextEditor({
   return (
     <div className="rounded-lg border bg-background">
       <div className="flex flex-wrap gap-1 border-b p-2">
-        {actions.map(([Icon, action, label]) => (
+        {actions.map(([Icon, action, key]) => (
           <Button
-            key={label}
+            key={key}
             type="button"
             size="icon-xs"
             variant="ghost"
-            onClick={action}
-            aria-label={label}
+            onPress={action}
+            aria-label={
+              key === 'image' && imageUploadLabel ? imageUploadLabel : t(`richTextEditor.${key}`)
+            }
           >
             <Icon />
           </Button>
         ))}
       </div>
+      {notice && (
+        <p role="alert" className="border-b px-3 py-2 text-xs text-destructive">
+          {notice}
+        </p>
+      )}
       <EditorContent
         editor={editor}
         aria-label={ariaLabel}

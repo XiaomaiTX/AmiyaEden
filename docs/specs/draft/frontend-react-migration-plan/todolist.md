@@ -55,7 +55,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 - [x] `/dashboard/fuel-officer-structures` React 落地（`super_admin/fuel_officer`，含分页、加载/空/错误态）
 - [x] `/dashboard/galaxy-registry` React 同构完成；覆盖登记/结束/延期、队长历史筛选分页、管理员星系配置批量保存与删除、人工校验、分析和浏览器超时通知
 - [x] `/info/tool-bookmarks` React 落地（2026-05-13 Vue 落地；普通用户读取启用项，管理员可维护全部书签）
-- [x] `/fuxi-hall/leadership`、`/fuxi-hall/contributors`、`/fuxi-hall/manage` React 落地（取代旧 `hall-of-fame` 模块，2026-05-12 Vue 落地）
+- [x] `/fuxi-hall` React 顶层直达名人堂，与 Vue 同步为展示与管理员专用管理 tab（2026-11-23）
 - [x] 移除 React 侧历史遗留的 `hall-of-fame/{temple, manage, current-manage}` 三条 stub（Vue 已删除）
 
 ### 批次执行与验收节奏

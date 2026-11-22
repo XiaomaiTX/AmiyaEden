@@ -53,6 +53,26 @@ export function NavMain({
       <SidebarGroupLabel>{t('nav.home')}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
+          const singlePage = item.items?.length === 1 ? item.items[0] : undefined
+          if (singlePage && singlePage.title === item.title) {
+            return (
+              <SidebarMenuItem key={item.groupKey}>
+                <SidebarMenuButton
+                  href={singlePage.url}
+                  tooltip={t(item.title)}
+                  isActive={isActivePath(singlePage.url)}
+                >
+                  {item.icon}
+                  <span>{t(item.title)}</span>
+                  {item.badge ? (
+                    <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          }
           const isActiveGroup = item.items?.some((subItem) => isActivePath(subItem.url)) ?? false
           const isExpanded = isActiveGroup || persistedExpandedMenuGroupKeys.includes(item.groupKey)
 

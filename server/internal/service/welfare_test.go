@@ -2315,6 +2315,7 @@ func TestAdminUpdateWelfareRejectsNegativeMinimumFuxiLegionYears(t *testing.T) {
 
 func newWelfareServiceTestDB(t *testing.T) *gorm.DB {
 	db := newServiceTestDB(t, "welfare_service_test",
+		&model.Announcement{}, &model.AnnouncementRead{},
 		&model.Welfare{},
 		&model.WelfareSkillPlan{},
 		&model.UserRole{},
