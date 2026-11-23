@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FuxiHallMemberCard } from '@/components/fuxi-hall-member-card'
 import { I18nProvider } from '@/i18n'
@@ -21,6 +21,22 @@ const card = {
   created_at: '',
   updated_at: '',
 }
+
+test('uses the corporation insignia after a portrait fails and retries for a different pilot', () => {
+  const renderCard = (id: number) => (
+    <I18nProvider>
+      <FuxiHallMemberCard card={{ ...card, main_character_id: id }} />
+    </I18nProvider>
+  )
+  const { rerender } = render(renderCard(1001))
+  fireEvent.error(screen.getByRole('img', { name: card.nickname }))
+  expect(screen.queryByRole('img', { name: card.nickname })).not.toBeInTheDocument()
+  rerender(renderCard(1002))
+  expect(screen.getByRole('img', { name: card.nickname })).toHaveAttribute(
+    'src',
+    expect.stringContaining('1002')
+  )
+})
 
 test('shows QQ and copies it with success and failure feedback', async () => {
   const user = userEvent.setup()
