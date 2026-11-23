@@ -408,7 +408,6 @@
   .skill-plan-list-card {
     flex: 0 0 320px;
     width: 320px;
-    height: clamp(480px, calc(100dvh - 160px), 1060px);
   }
 
   .skill-plan-detail-card {
@@ -651,8 +650,6 @@
     .skill-plan-list-card {
       flex: 0 0 auto;
       width: 100%;
-      height: auto;
-      max-height: 70dvh;
     }
 
     .skill-plan-detail-card {
