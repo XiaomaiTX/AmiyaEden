@@ -1,25 +1,41 @@
 <template>
-  <div class="hall-page" v-loading="loading">
-    <header class="hall-header">
-      <h1>{{ page?.title || t('fuxiHall.fame.title') }}</h1>
-      <p v-if="page?.subtitle">{{ page.subtitle }}</p>
-    </header>
+  <div class="fx-gallery" v-loading="loading">
+    <FuxiHallBanner :title="page?.title || t('fuxiHall.fame.title')" :subtitle="page?.subtitle">
+      <nav
+        v-if="page && page.floors.length > 1"
+        class="fx-index"
+        :aria-label="t('fuxiHall.fame.floorIndex')"
+      >
+        <span>{{ t('fuxiHall.fame.floorIndex') }}</span>
+        <button
+          v-for="floor in page.floors"
+          :key="floor.key"
+          type="button"
+          :aria-controls="`fx-floor-${floor.key}`"
+          @click="showFloor(floor.key)"
+        >
+          {{ floor.name || t(`fuxiHall.fame.floors.${floor.key}`) }}
+        </button>
+      </nav>
+    </FuxiHallBanner>
     <div v-if="error" role="alert" class="hall-error">
       {{ error }} <ElButton @click="loadPage()">{{ t('fuxiHall.fame.retry') }}</ElButton>
     </div>
-    <article v-if="page?.description_html" class="hall-intro" v-html="page.description_html" />
+    <article v-if="page?.description_html" class="fx-intro" v-html="page.description_html" />
     <section
       v-for="floor in page?.floors ?? []"
       :key="floor.key"
-      class="hall-floor"
+      :id="`fx-floor-${floor.key}`"
+      tabindex="-1"
+      class="fx-floor"
       :aria-label="floor.name || t(`fuxiHall.fame.floors.${floor.key}`)"
     >
-      <div class="hall-floor-heading">
+      <div class="fx-floor__heading">
         <h2>{{ floor.name || t(`fuxiHall.fame.floors.${floor.key}`) }}</h2>
         <span>{{ t('fuxiHall.fame.memberCount', { count: floorCards(floor.key).length }) }}</span>
       </div>
       <div
-        class="hall-grid"
+        class="fx-grid"
         :style="{ maxWidth: `${Math.max(1, floorCards(floor.key).length) * 396 - 16}px` }"
       >
         <FuxiHallMemberCard v-for="card in floorCards(floor.key)" :key="card.id" :card="card">
@@ -70,7 +86,16 @@
   import { useI18n } from 'vue-i18n'
   import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
+  import FuxiHallBanner from '../components/FuxiHallBanner.vue'
   const { t } = useI18n()
+  function showFloor(key: string) {
+    const section = document.getElementById(`fx-floor-${key}`)
+    // The Vue header overlays both the desktop scroll pane and mobile document.
+    const headerHeight = document.getElementById('app-header')?.getBoundingClientRect().height ?? 0
+    section?.style.setProperty('--fx-sticky-header-height', `${headerHeight}px`)
+    section?.focus({ preventScroll: true })
+    section?.scrollIntoView({ block: 'start' })
+  }
   const page = ref<Api.FuxiHall.PageConfig | null>(null)
   const cards = ref<Api.FuxiHall.Card[]>([])
   const loading = ref(false)
@@ -135,59 +160,6 @@
   })
 </script>
 <style scoped>
-  .hall-page {
-    min-width: 0;
-    padding: 24px;
-  }
-  .hall-header {
-    max-width: 960px;
-    margin: 0 auto 32px;
-    text-align: center;
-  }
-  .hall-header h1 {
-    font-size: clamp(28px, 4vw, 36px);
-    font-weight: 600;
-  }
-  .hall-header p {
-    margin-top: 12px;
-    color: var(--el-text-color-secondary);
-  }
-  .hall-intro {
-    max-width: 960px;
-    margin: 24px auto;
-    line-height: 1.7;
-  }
-  .hall-intro :deep(img) {
-    max-width: 100%;
-  }
-  .hall-floor {
-    width: 100%;
-    max-width: 1440px;
-    margin: 32px auto;
-  }
-  .hall-floor-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    border-bottom: 1px solid var(--el-border-color);
-    padding-bottom: 12px;
-    margin-bottom: 16px;
-  }
-  .hall-floor-heading h2 {
-    font-size: 20px;
-    font-weight: 600;
-  }
-  .hall-floor-heading span {
-    font-size: 14px;
-    color: var(--el-text-color-secondary);
-  }
-  .hall-grid {
-    display: grid;
-    width: 100%;
-    margin-inline: auto;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    gap: 16px;
-  }
   .hall-error {
     color: var(--el-color-danger);
   }
@@ -195,10 +167,5 @@
     text-align: center;
     color: var(--el-text-color-secondary);
     padding: 48px 0;
-  }
-  @media (max-width: 639px) {
-    .hall-page {
-      padding: 16px;
-    }
   }
 </style>

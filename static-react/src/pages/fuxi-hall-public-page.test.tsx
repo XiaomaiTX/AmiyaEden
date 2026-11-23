@@ -87,6 +87,25 @@ test('groups cards by configured floors and displays management and cumulative t
   expect(screen.getAllByRole('button', { name: '编辑我的昵称和简介' })).toHaveLength(1)
 })
 
+test('opens a configured floor from the banner without changing routes', async () => {
+  const user = userEvent.setup()
+  render(
+    <I18nProvider>
+      <FuxiHallPublicPage />
+    </I18nProvider>
+  )
+  const floor = await screen.findByRole('region', { name: '一楼' })
+  const scroll = vi.fn()
+  floor.scrollIntoView = scroll
+  await user.click(
+    within(screen.getByRole('navigation', { name: '楼层导览' })).getByRole('button', {
+      name: '一楼',
+    })
+  )
+  expect(floor).toHaveFocus()
+  expect(scroll).toHaveBeenCalledWith({ block: 'start' })
+})
+
 test('self edit submits only nickname and bio and retains draft on failure', async () => {
   const user = userEvent.setup()
   vi.mocked(updateOwnFuxiHallCard)

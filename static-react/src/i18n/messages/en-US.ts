@@ -580,6 +580,7 @@ const enUS = {
       unknown: 'No record yet',
       editMine: 'Edit my nickname and bio',
       retry: 'Retry',
+      floorIndex: 'Browse floors',
       memberCount: '{count} members',
       floors: {
         top: 'Top floor',
