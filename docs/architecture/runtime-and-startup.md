@@ -94,4 +94,4 @@ SDE 检查更新当前行为：
 - SDE 缺失会直接影响舰队配置 EFT 解析、名称翻译、搜索等共享能力
 - `register` 页面源码仍在仓库中，但不是当前支持的登录架构；`forget-password` 页面已移除
 
-QQBot 在数据库及 Redis 初始化后、HTTP 路由启动前由 background.Manager 启动。只允许单实例持有反向连接；默认关闭，无业务消费者或自动写调用。关停先关闭 WebSocket 并结束 pending，再由后台管理器取消 worker。过期租约每轮回收，清理每小时运行；详见 [QQ 调度](../features/current/qqbot.md)。
+应用启动不再初始化 QQ Bot 连接、worker 或专属任务，也不自动删除历史 QQ Bot 数据。一般后台任务与 Redis 基础设施不受影响；见 [下线边界](../features/current/qq-group-governance.md)。

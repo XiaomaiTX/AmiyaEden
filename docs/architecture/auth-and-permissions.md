@@ -289,9 +289,7 @@ For super_admin rules, see "Super Admin 配置驱动机制" above. For role assi
 
 队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。系统管理的独立 `/system/newbro-settings` 入口配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
 
-旧 QQ 业务已移除：无群治理菜单、页面、按钮权限或后端治理路由。共享系统管理职权及用户 QQ 联系方式的管理边界继续保留。
-
-QQ 调度运维 `/system/qqbot` 及 `/api/v1/system/qqbot/*` 仅超管，使用 `system.manage`；反向 WebSocket 独立执行 Token、机器人 ID、Universal 角色和 TCP 源 CIDR 校验。配置 Token 不返回客户端，不写入尝试日志。未知写结果禁止运维重试。
+已移除 QQ Bot 专属运维路由、按钮权限及 OneBot 反向连接鉴权，不影响共享 `system.manage` 或用户 QQ 联系方式的访问边界。
 
 工资设置仅 admin／super_admin 可修改，普通 admin 同时满足 `system.manage`。领取操作工资不依赖管理员身份，仅依赖来源操作授权。军团申请徽章复用审核服务从数据库计算的军团范围，不能根据缓存 recruiter 标签扩大计数范围。
 ## 公告权限

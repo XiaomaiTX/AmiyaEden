@@ -109,4 +109,4 @@ Zustand 侧当前仅有 `session` 与 `preference` 两个 store，业务 store �
 - [x] `info/tool-bookmarks` -> React `InfoToolBookmarksPage`（普通书签列表与管理员 CRUD）
 - [x] `/fuxi-hall` 顶层直达名人堂，`admin` / `super_admin` 的管理能力合并为页内 tab（旧展示与管理路由已移除）
 
-历史范围变更（2026-11-10）：QQ 群治理已下线，不再属于双前端迁移或验收范围。
+范围变更：QQ Bot 运维、群治理和 QQ 通知均已下线，不再属于双前端迁移或验收范围。

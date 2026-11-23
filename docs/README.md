@@ -176,13 +176,9 @@ source_of_truth:
 
 - [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。
 
-## 旧 QQ Bot 业务下线
+## QQ Bot 下线
 
 - [当前下线边界](features/current/qq-group-governance.md)
-- [数据库清理与删除清单](guides/qq-bot-retirement-cleanup.md)
-- [第二阶段业务场景](specs/draft/qq-bot-business-scenarios.md)
-
-- [QQ 调度基础设施](features/current/qqbot.md)
-- [QQ 通用通知业务](features/current/qq-notifications.md)
-- [OneBot V11 PRD 与设计](architecture/qqbot-dispatch.md)
-- [QQ 调度验证与运行](guides/qqbot-verification.md)
+- [PostgreSQL / Redis 清理与恢复](guides/qq-bot-retirement-cleanup.md)
+- [待评审业务场景](specs/draft/qq-bot-business-scenarios.md)
+- 历史资料（不代表当前能力）：[OneBot V11 设计](architecture/qqbot-dispatch.md)、[验证记录](guides/qqbot-verification.md)、[调度说明](features/current/qqbot.md)、[通知与群业务说明](features/current/qq-notifications.md)

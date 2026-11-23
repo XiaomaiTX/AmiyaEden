@@ -367,16 +367,6 @@ ESI 头衔到系统职权的映射表。
 
 应优先检查 `docs/architecture/auth-and-permissions.md` 与 `docs/features/current/administration.md` 是否也需要更新。
 
-旧 QQ 治理/预警专属模型、索引和自动迁移已移除，新基础设施采用下文独立 qqbot 表。现存旧表不会自动删除；清理范围及恢复要求见 [QQ Bot 数据库清理方案](../guides/qq-bot-retirement-cleanup.md)。共享 `user.qq` 及其唯一索引继续保留。
+QQ 调度、通知和群业务专属模型及启动迁移均已移除，历史数据不会由应用启动删除。共享 `user.qq`、其唯一索引及任务执行记录保留。显式清理的精确白名单见 [清理指南](../guides/qq-bot-retirement-cleanup.md)。
 
 人物游戏内通知（`eve_character_notification`）已整体下线，模型、ESI 刷新任务及 `/notification/*` 接口均已移除，历史表 `eve_character_notification` 已列入 `server/bootstrap/db.go` 的 `obsoleteTables()`，会在应用启动时自动删除以清理历史数据。
-
-## QQ 调度基础设施
-
-新独立表 `qqbot_operation`、`qqbot_attempt`、`qqbot_inbox`、`qqbot_delivery`、`qqbot_circuit`、`qqbot_setting` 由启动迁移注册，不复用旧治理表。业务键与消费复合键使用数据库唯一约束；租约 token 条件更新 fencing。操作终态与结果消费记录在同一事务提交。状态和保留语义见 [QQ 调度](../features/current/qqbot.md)。
-
-## QQ 业务模型
-
-新业务独立注册 `qq_notification_channel`、`qq_notification`、`qq_notification_target`、`qq_structure_alert`、`qq_group_rule`、`qq_group_application`、`qq_group_member`、`qq_group_applied_event`、`qq_group_inspection`、`qq_group_inspection_item`，不复用旧治理表。通知 ID 由渠道和稳定业务键确定，逐群目标复合主键和操作 ID 唯一；申请 ID 由群、flag、subtype 确定；成员主键为群/QQ；巡检成员主键为轮次/QQ，done 是持久检查点。申请 flag 不在申请模型 JSON 中返回；调度原始请求仍仅限超管运维。业务副作用和调度 Submit 共享事务，消费副作用与消费 ack 共享事务。
-
-业务状态机和保留限制见 [QQ 业务](../features/current/qq-notifications.md)。资格读取复用 user、eve_character、user_role；名片军团名称只读取 eve_entity_name_cache 的 corporation 实体，不引入第二套身份表。

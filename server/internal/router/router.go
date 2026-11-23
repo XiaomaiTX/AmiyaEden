@@ -23,8 +23,6 @@ var (
 
 // RegisterRoutes 注册所有业务路由
 func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
-	qqbotH := handler.NewQQBotHandler()
-	r.GET("/internal/onebot/v11/ws", qqbotH.Reverse)
 	mumbleInternalH := handler.NewMumbleHandler()
 	mumbleInternal := r.Group("/api/internal/mumble/v1", middleware.RequireMumbleService())
 	{
@@ -667,22 +665,6 @@ func RegisterRoutes(r *gin.Engine, taskSvc *service.TaskService) {
 	// 自动权限映射管理（管理员）
 	autoRoleH := handler.NewAutoRoleHandler()
 	registerAdminAutoRoleRoutes(admin.Group("", requireSystemManage), autoRoleH)
-
-	qqbotAdmin := admin.Group("/qqbot", requireSystemManage, middleware.RequireRole(model.RoleSuperAdmin))
-	qqbotAdmin.GET("/groups", qqbotH.GroupBusiness)
-	qqbotAdmin.PUT("/groups/rules", qqbotH.ConfigureGroupBusiness)
-	qqbotAdmin.GET("/notifications/channels", qqbotH.NotificationChannels)
-	qqbotAdmin.PUT("/notifications/channels/:channel", qqbotH.ConfigureNotifications)
-	qqbotAdmin.GET("/notifications/targets", qqbotH.NotificationTargets)
-	qqbotAdmin.POST("/notifications/test", qqbotH.TestNotification)
-	qqbotAdmin.GET("/config", qqbotH.GetSetting)
-	qqbotAdmin.PUT("/config", qqbotH.SetSetting)
-	qqbotAdmin.GET("/snapshot", qqbotH.Snapshot)
-	qqbotAdmin.GET("/operations/:id", qqbotH.GetOperation)
-	qqbotAdmin.POST("/operations/:id/cancel", qqbotH.Cancel)
-	qqbotAdmin.POST("/operations/:id/retry", qqbotH.Retry)
-	qqbotAdmin.POST("/deliveries/:id/retry", qqbotH.RetryDelivery)
-	qqbotAdmin.PUT("/circuits/:class", qqbotH.Pause)
 
 	// Webhook 配置（仅 super_admin）
 	webhookH := handler.NewWebhookHandler()

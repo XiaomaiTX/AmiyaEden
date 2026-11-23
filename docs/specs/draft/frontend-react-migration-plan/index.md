@@ -71,4 +71,4 @@ source_of_truth:
 
 仪表盘新增 `/dashboard/skill-readiness`，Vue 与 React 路由、菜单、wrapper、类型、本地化和页面均已实现；权限为 Login、admin/super_admin、`menu.dashboard`。页面包含军团多选、共享军团方案单选、全范围统计、分页用户表格、角色展开及方案比对/全部技能详情；筛选与分页保存在 URL。行为和后端契约见 [军团技能达标查询](../../../features/current/dashboard-skill-readiness.md)。
 
-历史范围变更（2026-11-10）：QQ 群治理已下线，不再属于双前端迁移或验收范围。
+范围变更：QQ Bot 运维、群治理和 QQ 通知均已下线，不再属于双前端迁移或验收范围。

@@ -61,7 +61,6 @@ export type AppPageType =
   | 'system-auto-role'
   | 'system-user-center'
   | 'system-webhook'
-  | 'system-qqbot'
   | 'system-basic-config'
   | 'system-newbro-settings'
   | 'srp-apply'
@@ -92,14 +91,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     menuIcon: 'ticket',
     badgeKey: 'announcement_unread',
     meta: { login: true },
-  },
-  {
-    path: 'system/qqbot',
-    titleKey: 'qqbot.title',
-    pageType: 'system-qqbot',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
-    meta: { login: true, roles: ['super_admin'], corpCapabilitiesAny: ['system.manage'] },
   },
   {
     path: 'admissions/new',
@@ -937,7 +928,6 @@ const appRouteOrder = [
   'system/auto-role',
   'system/user-center',
   'system/webhook',
-  'system/qqbot',
   'system/newbro-settings',
   'system/basic-config',
 ] as const

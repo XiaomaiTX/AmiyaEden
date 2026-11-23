@@ -52,7 +52,8 @@ source_of_truth:
 - `discord` — Discord 频道 Webhook，URL 走 HTTPS 域名白名单
 - `feishu` — 飞书自定义机器人
 - `dingtalk` — 钉钉自定义机器人
-QQ Bot 通知已下线；旧类型配置需人工清理，不会映射到其他通知渠道。
+
+QQ Bot 通知已下线；旧类型不会映射到其他通知渠道。仅当现存类型为退役的 OneBot 类型时，才按 [清理指南](../../guides/qq-bot-retirement-cleanup.md) 关闭并清理共享 Webhook URL 和类型。
 
 ## 入口
 

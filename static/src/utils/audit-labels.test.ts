@@ -33,10 +33,6 @@ for (const locale of ['zh', 'en']) {
       getTaskDisplayDescription(t, 'audit_archive_daily', 'raw'),
       messages.taskManager.tasks.audit_archive_daily.description
     )
-    assert.equal(
-      getTaskDisplayName(t, 'qq_group_governance_reconcile', 'raw'),
-      messages.taskManager.tasks.qq_group_governance_reconcile.name
-    )
     assert.equal(getTaskDisplayName(t, 'unknown_task', 'raw'), 'raw')
     assert.equal(
       getTaskDisplayDescription(t, 'unknown_task', 'server description'),

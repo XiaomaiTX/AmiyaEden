@@ -587,43 +587,9 @@ source_of_truth:
 | PUT    | `/system/webhook/config`                   | 保存 Webhook 配置              | `RequireRole(super_admin)` |
 | POST   | `/system/webhook/test`                     | 测试 Webhook                   | `RequireRole(super_admin)` |
 
-## OneBot 统一调度
+## QQ Bot 下线
 
-- `GET /internal/onebot/v11/ws`：反向 Universal WebSocket；独立 Token、机器人身份及 TCP 源 CIDR 鉴权，不使用用户 JWT。只部署一个连接持有实例。
-- `/api/v1/system/qqbot` 全部要求登录、`super_admin` 与 `system.manage`（按现有超管能力规则）。
-- `GET/PUT /config`：统一接入和限流配置；Token 永不返回，省略 Token 保留旧值。
-- `GET /snapshot`：连接、读写风控、最近 200 操作/尝试/消费记录、最近 100 事件。
-- `POST /operations/:id/cancel`：标记取消；已执行操作不会伪装为撤回。
-- `POST /operations/:id/retry`：只允许有效期内耗尽明确临时失败预算的操作创建一个幂等重试子操作；禁止永久错误和未知写结果重试。
-- `POST /deliveries/:id/retry`：仅死信且累计尝试小于 10 次。
-- `PUT /circuits/:class`：手工暂停/恢复 read 或 write。
-
-无公开业务操作提交或任意 Action 透传。内部服务契约见 [设计](../architecture/qqbot-dispatch.md)。
-- `GET /operations/:id`：按操作 ID 查询当前状态和诚实终态；同样仅超管。快照同时暴露 Redis 可用性与全局桶剩余等待毫秒。
-
-### QQ 业务通知
-
-以下均位于 `/api/v1/system/qqbot/notifications`，要求登录、`super_admin` 和 `system.manage`：
-
-| 方法 | 路径 | 契约 |
-| --- | --- | --- |
-| GET | `/channels` | 渠道列表，`name/enabled/group_ids`（JSON 字符串）/`updated_at` |
-| PUT | `/channels/:channel` | `{enabled, group_ids: number[]}`；general/fleet/structure，最多 50 群 |
-| GET | `/targets` | 最近 200 个逐群业务结果，含通知 ID、群 ID、关联操作 ID、状态及结果 |
-| POST | `/test` | `{key, expires_at}`；固定纯文本、general 渠道、最多五分钟有效，返回逐群意图 |
-
-同业务键重试须保持期限及内容不变。配置读取不包含调度令牌；这些路由不提供任意 Action 或任意文本发送。
-
-### QQ 群业务与审计
-
-同属 `/api/v1/system/qqbot`，继承 `super_admin + system.manage`：
-
-| 方法 | 路径 | 契约 |
-| --- | --- | --- |
-| GET | `/groups` | `rules/applications/members/inspections/judgements`，关联调度操作 ID，申请 flag 不返回 |
-| PUT | `/groups/rules` | `group_id`、`corporation_ids`、`roles`、`admission_enabled`、`auto_reject`、`card_enabled`、`card_template`、`inspection_enabled`、`auto_kick`、`mismatch_confirmations`、`observation_hours` |
-
-未传确认参数默认三轮、二十四小时；显式观察期零有效，确认次数 1–100，观察期 0–8760 小时。服务端管理版本号，重复相同规则不提高版本；规则变化取消旧操作并重置确认链。只有业务配置写入口，无人工申请处理、名片写入或清退入口。业务操作禁止通过通用操作重试生成脱离业务跟踪的子操作。
+`/api/v1/system/qqbot/*` 和 `GET /internal/onebot/v11/ws` 已移除，无兼容接口。`/system/webhook` 仍仅支持 Discord、飞书和钉钉。见 [下线边界](../features/current/qq-group-governance.md)。
 
 工资配置详见 [工资管理](../features/current/operation-salaries.md)。`/system/pap-exchange/rates` 仅保留 rates 和三项 multichar 字段。`/badge-counts` 增加可审核军团范围内的 `admission_pending`，仅返回正数。
 

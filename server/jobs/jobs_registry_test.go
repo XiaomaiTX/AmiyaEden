@@ -45,8 +45,6 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		hasRun   bool
 	}{
 		"admission_evidence_cleanup":     {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 30 5 * * *", hasRun: true},
-		"qq_group_business":              {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 1m", hasRun: true},
-		"qq_structure_alert":             {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 * * * *", hasRun: true},
 		"esi_refresh":                    {category: taskregistry.TaskCategoryESI, taskType: taskregistry.TaskTypeRecurring, cron: "0 */5 * * * *", hasRun: true},
 		"alliance_pap_hourly":            {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 * * * *", hasRun: true},
 		"alliance_pap_archive":           {category: taskregistry.TaskCategoryOperation, taskType: taskregistry.TaskTypeRecurring, cron: "0 0 1 1 * *", hasRun: true},
@@ -62,7 +60,7 @@ func TestRegisterAllRegistersExpectedTaskDefinitions(t *testing.T) {
 		"structure_fuel_rate_sync":       {category: taskregistry.TaskCategorySystem, taskType: taskregistry.TaskTypeRecurring, cron: "@every 240h", hasRun: true},
 	}
 
-	for _, name := range []string{"qq_group_governance_reconcile", "qq_governance_maintenance", "corporation_structure_alert_scan"} {
+	for _, name := range []string{"qq_group_business", "qq_structure_alert", "qq_group_governance_reconcile", "qq_governance_maintenance", "corporation_structure_alert_scan"} {
 		if _, ok := reg.Get(name); ok {
 			t.Fatalf("retired task %s is registered", name)
 		}

@@ -25,18 +25,17 @@ var FleetAutoSRPFunc func(fleetID string, issuedAt time.Time)
 
 // FleetService 舰队业务逻辑层
 type FleetService struct {
-	notifications *QQNotificationService
-	repo          *repository.FleetRepository
-	papRepo       *repository.AlliancePAPRepository
-	userRepo      *repository.UserRepository
-	charRepo      *repository.EveCharacterRepository
-	configRepo    *repository.SysConfigRepository
-	walletRepo    *repository.SysWalletRepository
-	ssoSvc        *EveSSOService
-	walletSvc     *SysWalletService
-	webhookSvc    *WebhookService
-	rateRepo      *repository.PAPTypeRateRepository
-	esiClient     *esi.Client
+	repo       *repository.FleetRepository
+	papRepo    *repository.AlliancePAPRepository
+	userRepo   *repository.UserRepository
+	charRepo   *repository.EveCharacterRepository
+	configRepo *repository.SysConfigRepository
+	walletRepo *repository.SysWalletRepository
+	ssoSvc     *EveSSOService
+	walletSvc  *SysWalletService
+	webhookSvc *WebhookService
+	rateRepo   *repository.PAPTypeRateRepository
+	esiClient  *esi.Client
 }
 
 type MemberWithPap = repository.MemberWithPap
@@ -44,17 +43,17 @@ type PapLogDetail = repository.PapLogDetail
 
 func NewFleetService() *FleetService {
 	return &FleetService{
-		repo:          repository.NewFleetRepository(),
-		papRepo:       repository.NewAlliancePAPRepository(),
-		userRepo:      repository.NewUserRepository(),
-		charRepo:      repository.NewEveCharacterRepository(),
-		configRepo:    repository.NewSysConfigRepository(),
-		walletRepo:    repository.NewSysWalletRepository(),
-		ssoSvc:        NewEveSSOService(),
-		walletSvc:     NewSysWalletService(),
-		webhookSvc:    NewWebhookService(),
-		rateRepo:      repository.NewPAPTypeRateRepository(),
-		esiClient:     esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix),
+		repo:       repository.NewFleetRepository(),
+		papRepo:    repository.NewAlliancePAPRepository(),
+		userRepo:   repository.NewUserRepository(),
+		charRepo:   repository.NewEveCharacterRepository(),
+		configRepo: repository.NewSysConfigRepository(),
+		walletRepo: repository.NewSysWalletRepository(),
+		ssoSvc:     NewEveSSOService(),
+		walletSvc:  NewSysWalletService(),
+		webhookSvc: NewWebhookService(),
+		rateRepo:   repository.NewPAPTypeRateRepository(),
+		esiClient:  esi.NewClientWithConfig(global.Config.EveSSO.ESIBaseURL, global.Config.EveSSO.ESIAPIPrefix),
 	}
 }
 
@@ -109,7 +108,7 @@ type CreateFleetRequest struct {
 	Importance    string  `json:"importance" binding:"required,oneof=strat_op cta other"`
 	PapCount      float64 `json:"pap_count"`
 	CharacterID   int64   `json:"character_id" binding:"required"` // FC 人物 ID
-	SendPing      bool    `json:"send_ping"`                       // 是否发送 Ping 通知
+	SendPing      bool    `json:"send_ping"`                       // 是否发送非 QQ Webhook Ping
 	FleetConfigID *uint   `json:"fleet_config_id"`                 // 舰队配置 ID
 	AutoSrpMode   string  `json:"auto_srp_mode"`                   // disabled/submit_only/auto_approve
 }
@@ -171,7 +170,8 @@ func (s *FleetService) CreateFleet(userID uint, req *CreateFleetRequest) (*model
 		global.Logger.Warn("CreateFleet: 获取 Token 失败，跳过 ESI fleet_id", zap.Error(tokenErr))
 	}
 
-	if err := s.createFleetWithNotice(ctx, fleet, req.SendPing); err != nil {
+	fleet.CreatedAt = time.Now().UTC().Truncate(time.Microsecond)
+	if err := s.repo.Create(fleet); err != nil {
 		return nil, err
 	}
 

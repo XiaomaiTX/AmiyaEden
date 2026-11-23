@@ -91,6 +91,13 @@ describe('route access evaluation', () => {
     expect(readinessRoute?.meta?.corpCapabilitiesAny).toEqual(['menu.dashboard'])
   })
 
+  test('removes the bot route without removing non-QQ webhook settings', () => {
+    expect(appRouteSpecs.find(({ path }) => path === 'system/qqbot')).toBeUndefined()
+    expect(appRouteSpecs.find(({ path }) => path === 'system/webhook')?.pageType).toBe(
+      'system-webhook'
+    )
+  })
+
   test('keeps ticket category reads separate from category mutations', () => {
     const route = appRouteSpecs.find((item) => item.path === 'ticket/categories')
     expect(route?.meta?.corpCapabilitiesAll).toEqual([

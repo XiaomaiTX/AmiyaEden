@@ -34,17 +34,15 @@ beforeEach(() => {
 
 test('task definitions, execution history and ESI statuses display Chinese labels', async () => {
   vi.mocked(fetchTasks).mockResolvedValue(
-    ['admission_evidence_cleanup', 'audit_archive_daily', 'qq_group_governance_reconcile'].map(
-      (name) => ({
-        name,
-        description: 'Backend description',
-        category: 'system',
-        type: 'recurring',
-        runnable: true,
-        cron_expr: '0 0 5 * * *',
-        default_cron: '0 0 5 * * *',
-      })
-    )
+    ['admission_evidence_cleanup', 'audit_archive_daily'].map((name) => ({
+      name,
+      description: 'Backend description',
+      category: 'system',
+      type: 'recurring',
+      runnable: true,
+      cron_expr: '0 0 5 * * *',
+      default_cron: '0 0 5 * * *',
+    }))
   )
   vi.mocked(fetchTaskHistory).mockResolvedValue({
     list: [
@@ -86,7 +84,6 @@ test('task definitions, execution history and ESI statuses display Chinese label
   )
   expect(await screen.findByText('申请证据清理')).toBeInTheDocument()
   expect(screen.getByText('审计日志每日归档')).toBeInTheDocument()
-  expect(screen.getByText('QQ 群成员巡检')).toBeInTheDocument()
   expect(screen.getByText('清理已过保留期的已结案入团申请证据')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: '执行历史' }))
   expect((await screen.findAllByText('审计日志每日归档')).length).toBeGreaterThan(0)
@@ -104,7 +101,7 @@ test('audit list and details localize actions and categories while retaining ide
         occurred_at: '2026-11-12T00:00:00Z',
         created_at: '',
         category: 'system',
-        action: 'qq_governance_task_retry',
+        action: 'audit_archive_daily',
         actor_user_id: 1,
         target_user_id: 2,
         resource_type: 'task',
@@ -125,10 +122,8 @@ test('audit list and details localize actions and categories while retaining ide
       <SystemAuditPage />
     </I18nProvider>
   )
-  expect(await screen.findByText('重试 QQ 群治理任务')).toBeInTheDocument()
+  expect(await screen.findByText('审计日志每日归档')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: '详情' }))
-  expect(
-    await screen.findByText('重试 QQ 群治理任务 (qq_governance_task_retry)')
-  ).toBeInTheDocument()
+  expect(await screen.findByText('审计日志每日归档 (audit_archive_daily)')).toBeInTheDocument()
   expect(screen.getByText('系统 (system)')).toBeInTheDocument()
 })
