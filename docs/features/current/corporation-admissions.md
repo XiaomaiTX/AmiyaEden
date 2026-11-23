@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-23
 source_of_truth:
   - server/internal/model/admission.go
   - server/internal/repository/admission.go
@@ -26,6 +26,8 @@ Vue 和 React 均在“军团申请”提供 `/admissions/new`（新人）、`/a
 ## 申请与人工检查
 
 申请以账号为单位，选择伏羲 `98185110` 或 FMA `98824507`，并选择一个或多个已绑定人物。申请人须完成资料，至少登记 QQ 或 Discord；只有 Discord 也可申请。联系人沿用账号绑定规则，不为每个人物分别填写。
+
+两端表单的“本单加入人物”使用自适应多列胶囊圆角选择框，单项约44px高，显示28px圆形人物头像与名称，不展示人物ID；整项可点击并支持键盘多选。可选人物使用接近主题蓝的浅蓝色底色，选中后加强蓝色边框并显示勾选，已在目标军团的人物置灰禁选；切换目标军团清空本次勾选。
 
 中文目标军团显示为“伏羲新手团（Fuxi Military Academy）”（`98824507`）和“伏羲主团 （主号需7百万以上技能。已在伏羲的人，小号无要求）”（`98185110`）；新申请默认选择伏羲新手团，编辑已有申请保留原目标。新人表单不重复展示账号联系资料，说明中的“联盟SeAT”链接至 `https://seat.winterco.org/character/list`，引导绑定登录器截图中的所有人物及 QQ，并展开教学图核对。两个截图上传标签均以红色 `*` 和“必填”标明必交；账号只有 Discord 仍可申请，后端联系方式资格不变。
 
