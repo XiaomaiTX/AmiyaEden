@@ -72,13 +72,18 @@ test('renders compact contributions and hides zero metrics even after calculatio
   expect(screen.getByText('FC')).toBeInTheDocument()
   expect(screen.getByText('25')).toBeInTheDocument()
   expect(screen.getByText('101')).toBeInTheDocument()
-  expect(screen.getByText('军团 PAP')).toBeInTheDocument()
-  expect(screen.getByText('4.5')).toBeInTheDocument()
+  expect(screen.getByText('出勤')).toBeInTheDocument()
+  expect(screen.getByText('5')).toBeInTheDocument()
+  expect(screen.queryByText('4.5')).not.toBeInTheDocument()
   expect(screen.getAllByRole('definition')).toHaveLength(4)
   expect(screen.queryByText('0')).not.toBeInTheDocument()
 })
 
-test.each([undefined, { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 }])(
+test.each([
+  undefined,
+  { fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 },
+  { corp_pap: 0.3, fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 },
+])(
   'omits the entire contribution region when no positive metrics exist',
   (contributions) => {
     render(
