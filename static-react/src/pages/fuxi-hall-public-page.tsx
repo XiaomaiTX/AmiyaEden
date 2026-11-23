@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchFuxiHall, updateOwnFuxiHallCard } from '@/api/fuxi-hall'
 import { FuxiHallMemberCard } from '@/components/fuxi-hall-member-card'
+import { FuxiHallBanner } from '@/components/fuxi-hall-banner'
 import { RichTextEditor } from '@/components/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -73,13 +74,31 @@ export function FuxiHallPublicPage() {
     }
   }
   return (
-    <section className="min-w-0 space-y-8 p-4 md:p-6">
-      <header className="mx-auto max-w-5xl text-center">
-        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-          {data?.page.title || t('fuxiHall.fame.title')}
-        </h1>
-        {data?.page.subtitle && <p className="mt-3 text-muted-foreground">{data.page.subtitle}</p>}
-      </header>
+    <section className="fx-gallery">
+      <FuxiHallBanner
+        title={data?.page.title || t('fuxiHall.fame.title')}
+        subtitle={data?.page.subtitle}
+      >
+        {data && data.page.floors.length > 1 && (
+          <nav className="fx-index" aria-label={t('fuxiHall.fame.floorIndex')}>
+            <span>{t('fuxiHall.fame.floorIndex')}</span>
+            {data.page.floors.map((floor) => (
+              <button
+                key={floor.key}
+                type="button"
+                aria-controls={`fx-floor-${floor.key}`}
+                onClick={() => {
+                  const section = document.getElementById(`fx-floor-${floor.key}`)
+                  section?.focus({ preventScroll: true })
+                  section?.scrollIntoView({ block: 'start' })
+                }}
+              >
+                {floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
+              </button>
+            ))}
+          </nav>
+        )}
+      </FuxiHallBanner>
       {error && (
         <div role="alert" className="text-center text-destructive">
           {error}{' '}
@@ -91,7 +110,7 @@ export function FuxiHallPublicPage() {
       {!data && !error && <p>{t('common.loading')}</p>}
       {data?.page.description_html && (
         <article
-          className="mx-auto max-w-5xl leading-relaxed [&_img]:max-w-full"
+          className="fx-intro"
           dangerouslySetInnerHTML={{ __html: data.page.description_html }}
         />
       )}
@@ -104,20 +123,15 @@ export function FuxiHallPublicPage() {
           <section
             key={floor.key}
             aria-label={floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
-            className="mx-auto w-full max-w-[1440px] space-y-4"
+            id={`fx-floor-${floor.key}`}
+            tabIndex={-1}
+            className="fx-floor"
           >
-            <div className="flex items-baseline justify-between border-b border-border pb-3">
-              <h2 className="text-xl font-semibold">
-                {floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}
-              </h2>
-              <span className="text-sm text-muted-foreground">
-                {t('fuxiHall.fame.memberCount', { count: cards.length })}
-              </span>
+            <div className="fx-floor__heading">
+              <h2>{floor.name || t(`fuxiHall.fame.floors.${floor.key}`)}</h2>
+              <span>{t('fuxiHall.fame.memberCount', { count: cards.length })}</span>
             </div>
-            <div
-              className="mx-auto grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-4"
-              style={{ maxWidth: Math.max(1, cards.length) * 396 - 16 }}
-            >
+            <div className="fx-grid" style={{ maxWidth: Math.max(1, cards.length) * 396 - 16 }}>
               {cards.map((card) => (
                 <FuxiHallMemberCard
                   key={card.id}

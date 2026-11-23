@@ -1,0 +1,485 @@
+/* The two frontend images build independently. Keep this hall stylesheet and its artwork in sync. */
+.fx-gallery,
+.fx-card {
+  --fx-paper: #fbfaf7;
+  --fx-panel: #f0eee8;
+  --fx-ink: #202837;
+  --fx-muted: #586272;
+  --fx-edge: #d7d6cf;
+  --fx-brass: #865c31;
+}
+.dark .fx-gallery,
+.dark .fx-card {
+  --fx-paper: #1c2430;
+  --fx-panel: #242e3b;
+  --fx-ink: #eeeae2;
+  --fx-muted: #b6c0cd;
+  --fx-edge: #394452;
+  --fx-brass: #e5b57f;
+}
+.fx-gallery {
+  width: 100%;
+  min-width: 0;
+  max-width: 1496px;
+  margin-inline: auto;
+  padding: clamp(12px, 2.1vw, 28px);
+  box-sizing: border-box;
+}
+.fx-banner {
+  overflow: hidden;
+  color: #fffbf3;
+  background: #121923;
+  border-radius: 6px 22px 6px 6px;
+}
+.fx-banner__scene {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  min-height: clamp(218px, 23vw, 324px);
+  padding: clamp(24px, 4vw, 62px);
+  box-sizing: border-box;
+  background:
+    linear-gradient(90deg, #0e1421dd, #10162366 47%, transparent 72%),
+    url('./fleet.webp') center 49% / cover no-repeat;
+  overflow-wrap: anywhere;
+}
+.fx-banner__signature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font:
+    600 16px/1.2 Georgia,
+    'Times New Roman',
+    serif;
+  color: #f3d7ae;
+  letter-spacing: 0.05em;
+}
+.fx-banner__signature img {
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+}
+.fx-banner__title {
+  margin: 16px 0 0;
+  max-width: 78%;
+  color: #fffaf0;
+  font:
+    700 clamp(34px, 4.8vw, 72px) / 1.18 'STSong',
+    'Songti SC',
+    'Noto Serif CJK SC',
+    SimSun,
+    Georgia,
+    serif;
+  letter-spacing: 0.055em;
+  text-shadow: 0 2px 16px #080c16bd;
+  text-wrap: balance;
+}
+.fx-banner__subtitle {
+  margin: 12px 0 0;
+  max-width: min(58ch, 70%);
+  line-height: 1.6;
+  color: #f2eee8;
+  text-shadow: 0 1px 6px #080c16;
+}
+.fx-banner--preview .fx-banner__scene {
+  min-height: 152px;
+  padding: 22px;
+}
+.fx-banner--preview .fx-banner__title {
+  font-size: 30px;
+}
+.fx-index {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 6px clamp(16px, 3vw, 46px);
+  border-top: 1px solid #bc957452;
+  background: #19212e;
+}
+.fx-index > span {
+  margin-right: 6px;
+  color: #dfbd91;
+  font-size: 12px;
+}
+.fx-index button {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #e4e8f0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.fx-index button:hover,
+.fx-index button:focus-visible {
+  color: #fff3da;
+  background: #354053;
+}
+.fx-index button:focus-visible,
+.fx-copy:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+.fx-intro {
+  margin: 24px 0;
+  max-width: 78ch;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.fx-intro img,
+.fx-bio img {
+  max-width: 100%;
+  height: auto;
+}
+.fx-floor {
+  margin: clamp(26px, 4vw, 50px) auto 0;
+  scroll-margin-block-start: calc(var(--fx-sticky-header-height, 0px) + 20px);
+  min-width: 0;
+}
+.fx-floor:focus-visible {
+  outline: 2px solid var(--fx-brass);
+  outline-offset: 4px;
+}
+.fx-floor__heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  color: var(--fx-ink);
+}
+.fx-floor__heading::before {
+  content: '';
+  width: 10px;
+  height: 17px;
+  flex: none;
+  transform: skewX(-18deg);
+  background: linear-gradient(
+    90deg,
+    var(--fx-brass) 0 46%,
+    transparent 46% 65%,
+    var(--fx-brass) 65% 100%
+  );
+}
+.fx-floor__heading::after {
+  content: '';
+  order: 1;
+  flex: 1;
+  height: 1px;
+  background: var(--fx-edge);
+}
+.fx-floor__heading h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  font:
+    700 24px/1.35 'STSong',
+    'Songti SC',
+    SimSun,
+    Georgia,
+    serif;
+}
+.fx-floor__heading > span {
+  order: 2;
+  color: var(--fx-muted);
+  font-size: 13px;
+  flex: none;
+}
+.fx-grid {
+  display: grid;
+  width: 100%;
+  margin-inline: auto;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+}
+.fx-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--fx-paper);
+  color: var(--fx-ink);
+  border: 1px solid var(--fx-edge);
+  border-radius: 5px 15px 5px 5px;
+  box-shadow: 0 3px 10px #1722380d;
+}
+.fx-card__head {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px 16px;
+  min-height: 126px;
+  box-sizing: border-box;
+  color: #f7f6f1;
+  background: linear-gradient(
+    116deg,
+    color-mix(in srgb, var(--fx-accent) 28%, #172535),
+    #1c2634 58%,
+    #101b2a
+  );
+}
+.fx-card__head::before {
+  content: '';
+  z-index: -1;
+  position: absolute;
+  inset: 0;
+  background: repeating-radial-gradient(
+    circle at 108% 115%,
+    transparent 0 24px,
+    #e6c39129 25px,
+    transparent 26px 44px
+  );
+  mask-image: linear-gradient(90deg, transparent 5%, #0008 68%, black);
+}
+.fx-card__head::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--fx-accent) 0 29%, #c8ad80 29% 34%, #c8ad8030 34% 100%);
+}
+.fx-portrait {
+  width: clamp(66px, 6.2vw, 88px);
+  aspect-ratio: 1;
+  flex: none;
+  overflow: hidden;
+  background: #243040 url('./legion.png') center / cover;
+  border: 2px solid #dcc5a1;
+  box-shadow:
+    0 0 0 3px #14202e,
+    0 0 0 4px #e3d1b73b;
+}
+.fx-portrait--circle {
+  border-radius: 50%;
+}
+.fx-portrait--rounded {
+  border-radius: 16%;
+}
+.fx-portrait--square {
+  border-radius: 2px;
+}
+.fx-portrait img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.fx-identity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.fx-identity h3 {
+  max-width: 100%;
+  margin: 0;
+  font:
+    700 calc(var(--fx-size) + 9px) / 1.27 'STSong',
+    'Songti SC',
+    SimSun,
+    Georgia,
+    serif;
+  color: #fff9ed;
+}
+.fx-identity h3,
+.fx-character > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fx-current {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 5px;
+  margin: -6px 0 5px;
+  color: #c2e9d7;
+  font-size: 12px;
+}
+.fx-current::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #86dcb3;
+}
+.fx-character {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  color: #d7dce5;
+  font-size: 12px;
+}
+.fx-card button.fx-copy {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  box-shadow: none;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.fx-card button.fx-copy:hover {
+  background: color-mix(in srgb, currentColor 15%, transparent);
+}
+.fx-copy-status {
+  font-size: 12px;
+}
+.fx-card__body {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 17px;
+  font-size: var(--fx-size);
+}
+.fx-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.fx-roles span {
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-inline-start: 2px solid var(--fx-accent);
+  background: color-mix(in srgb, var(--fx-accent) 11%, var(--fx-paper));
+  color: color-mix(in srgb, var(--fx-accent) 18%, var(--fx-ink));
+  overflow-wrap: anywhere;
+}
+.fx-record,
+.fx-contact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 7px;
+  font-size: 12px;
+  color: var(--fx-muted);
+}
+.fx-record > :first-child {
+  color: var(--fx-brass);
+  font-size: 16px;
+}
+.fx-record strong {
+  margin-inline-start: auto;
+  color: var(--fx-ink);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.fx-contact {
+  margin-top: 4px;
+}
+.fx-contact strong {
+  color: var(--fx-ink);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.fx-bio {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--fx-edge);
+  color: var(--fx-ink);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.fx-bio a,
+.fx-intro a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.fx-contributions {
+  padding: 10px 16px;
+  border-top: 1px solid var(--fx-edge);
+  background: var(--fx-panel);
+}
+.fx-contributions dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.fx-contributions dl > div {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 1px 6px;
+  background: var(--fx-paper);
+  border: 1px solid var(--fx-edge);
+  border-inline-start: 2px solid var(--fx-metric);
+  border-radius: 3px;
+  color: var(--fx-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.fx-contributions dd {
+  margin: 0;
+  font-weight: 650;
+  color: var(--fx-ink);
+  font-variant-numeric: tabular-nums;
+}
+.fx-metric--corp_pap {
+  --fx-metric: #bd8d32;
+}
+.fx-metric--fleets {
+  --fx-metric: #4789ba;
+}
+.fx-metric--welfare {
+  --fx-metric: #468d72;
+}
+.fx-metric--srp {
+  --fx-metric: #8a71be;
+}
+.fx-metric--recruitment {
+  --fx-metric: #3a979d;
+}
+.fx-metric--mentoring {
+  --fx-metric: #bf7086;
+}
+.fx-card__action {
+  padding: 10px 16px;
+}
+.fx-card__action button {
+  width: 100%;
+}
+@media (max-width: 639px) {
+  .fx-banner__scene {
+    min-height: 218px;
+    padding: 22px;
+    background-position: 60% center;
+    background-image: linear-gradient(0deg, #0e1421f2, #10162344 80%), url('./fleet.webp');
+  }
+  .fx-banner__title,
+  .fx-banner__subtitle {
+    max-width: 100%;
+  }
+  .fx-banner__signature img {
+    width: 24px;
+    height: 24px;
+  }
+  .fx-index {
+    gap: 2px;
+    padding-inline: 12px;
+  }
+  .fx-floor__heading {
+    gap: 10px;
+  }
+}
