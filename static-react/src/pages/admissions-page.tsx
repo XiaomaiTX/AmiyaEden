@@ -13,6 +13,7 @@ import { useAdmissionContext } from '@/hooks/use-admission-context'
 import { useI18n } from '@/i18n'
 import { canAccessAdmission, compressAdmissionImage } from '@/lib/admissions'
 import { operationSalaryMessage } from '@/lib/operation-salary'
+import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import { useSessionStore, useBadgeStore } from '@/stores'
 import type {
   AdmissionApplication,
@@ -226,26 +227,50 @@ function AdmissionForm({
           ))}
         </select>
       </label>
-      <fieldset className="space-y-2">
+      <fieldset className="min-w-0 space-y-2">
         <legend className="mb-2 font-medium">{t('admissions.characters')}</legend>
-        {context.characters.map((char) => (
-          <label key={char.character_id} className="flex items-center gap-3 rounded-md border p-3">
-            <input
-              type="checkbox"
-              disabled={busy || char.corporation_id === target}
-              checked={characters.includes(char.character_id)}
-              onChange={(event) =>
-                setCharacters((previous) =>
-                  event.target.checked
-                    ? [...previous, char.character_id]
-                    : previous.filter((id) => id !== char.character_id)
-                )
-              }
-            />
-            <span>{char.character_name}</span>
-            <span className="ml-auto text-sm text-muted-foreground">{char.character_id}</span>
-          </label>
-        ))}
+        <div className="grid max-w-[960px] grid-cols-[repeat(auto-fill,minmax(min(100%,220px),1fr))] gap-2">
+          {context.characters.map((char) => {
+            const disabled = busy || char.corporation_id === target
+            const selected = characters.includes(char.character_id)
+            return (
+              <label
+                key={char.character_id}
+                title={char.character_name}
+                className={`flex min-h-11 min-w-0 items-center gap-2 rounded-full border px-2.5 py-[7px] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-blue-500 ${
+                  disabled
+                    ? 'cursor-not-allowed border-border bg-muted text-muted-foreground'
+                    : selected
+                      ? 'cursor-pointer border-blue-500 bg-blue-100 ring-1 ring-inset ring-blue-500 dark:border-blue-400 dark:bg-blue-950 dark:ring-blue-400'
+                      : 'cursor-pointer border-blue-200 bg-blue-50 hover:border-blue-500 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:hover:bg-blue-950'
+                }`}
+              >
+                <input
+                  className="size-4 shrink-0 cursor-[inherit] accent-blue-500"
+                  type="checkbox"
+                  disabled={disabled}
+                  checked={selected}
+                  onChange={(event) =>
+                    setCharacters((previous) =>
+                      event.target.checked
+                        ? [...previous, char.character_id]
+                        : previous.filter((id) => id !== char.character_id)
+                    )
+                  }
+                />
+                <img
+                  className={`size-7 shrink-0 rounded-full object-cover ${disabled ? 'opacity-50 grayscale' : ''}`}
+                  src={buildEveCharacterPortraitUrl(char.character_id, 64)}
+                  alt=""
+                  width={28}
+                  height={28}
+                  loading="lazy"
+                />
+                <span className="truncate text-[13px] font-medium leading-5">{char.character_name}</span>
+              </label>
+            )
+          })}
+        </div>
       </fieldset>
       {kind === 'alt' && (
         <label className="block space-y-2">

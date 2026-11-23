@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { I18nProvider } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
@@ -138,6 +139,38 @@ test('unknown eligibility never opens a creation form or duplicates sidebar navi
   open('/admissions/new')
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+})
+test('character tiles show portraits without IDs and support whole-tile multi-selection', async () => {
+  const user = userEvent.setup()
+  mocks.context!.characters.push({
+    character_id: 103,
+    character_name: 'Already joined',
+    corporation_id: 98824507,
+  })
+  open('/admissions/new')
+  const group = screen.getByRole('group', { name: '本单加入人物' })
+  const pilotA = within(group).getByRole('checkbox', { name: 'Pilot A' })
+  const pilotB = within(group).getByRole('checkbox', { name: 'Pilot B' })
+  expect(within(group).queryByText(/101|102|103/)).not.toBeInTheDocument()
+  expect(group.querySelectorAll('img')).toHaveLength(3)
+  expect(group.querySelector('img')).toHaveAttribute(
+    'src',
+    expect.stringContaining('/characters/101/portrait?size=64')
+  )
+  await user.click(within(group).getByText('Pilot A'))
+  await user.click(within(group).getByText('Pilot B'))
+  expect(pilotA).toBeChecked()
+  expect(pilotB).toBeChecked()
+  await user.click(within(group).getByText('Pilot A'))
+  expect(pilotA).not.toBeChecked()
+  expect(pilotB).toBeChecked()
+  const joined = within(group).getByRole('checkbox', { name: 'Already joined' })
+  await user.click(within(group).getByText('Already joined'))
+  expect(joined).toBeDisabled()
+  expect(joined).not.toBeChecked()
+  await user.selectOptions(screen.getByRole('combobox'), '98185110')
+  expect(pilotB).not.toBeChecked()
+  expect(joined).toBeEnabled()
 })
 test('Discord-only multi-character application has exactly two image slots and preserves input on conflict', async () => {
   mocks.save.mockRejectedValue(new Error('admissions.errors.conflict'))
