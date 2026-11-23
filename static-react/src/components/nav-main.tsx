@@ -65,7 +65,7 @@ export function NavMain({
                   {item.icon}
                   <span>{t(item.title)}</span>
                   {item.badge ? (
-                    <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+                    <span className="ml-auto mr-6 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
                       {item.badge}
                     </span>
                   ) : null}
@@ -90,11 +90,7 @@ export function NavMain({
               className="group/collapsible"
             >
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  slot="trigger"
-                  tooltip={t(item.title)}
-                  isActive={isActiveGroup}
-                >
+                <SidebarMenuButton slot="trigger" tooltip={t(item.title)} isActive={isActiveGroup}>
                   {item.icon}
                   <span>{t(item.title)}</span>
                   {item.badge ? (
@@ -102,14 +98,19 @@ export function NavMain({
                       {item.badge}
                     </span>
                   ) : null}
-                  <ChevronRightIcon className="ml-auto transition-transform group-data-[expanded]/collapsible:rotate-90" />
+                  <ChevronRightIcon
+                    className={`${item.badge ? '' : 'ml-auto '}shrink-0 transition-transform group-data-[expanded]/collapsible:rotate-90`}
+                  />
                 </SidebarMenuButton>
                 {item.items?.length ? (
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton href={subItem.url} isActive={isActivePath(subItem.url)}>
+                          <SidebarMenuSubButton
+                            href={subItem.url}
+                            isActive={isActivePath(subItem.url)}
+                          >
                             <span>{t(subItem.title)}</span>
                             {subItem.badge ? (
                               <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
