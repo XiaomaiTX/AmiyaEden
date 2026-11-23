@@ -268,8 +268,8 @@ export function SkillPlanManagementPage({
   }
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-      <div className="flex max-h-[70dvh] flex-col rounded-lg border bg-card p-4 xl:h-[clamp(480px,calc(100dvh-160px),1100px)] xl:max-h-none">
+    <section className="grid items-start gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="flex flex-col rounded-lg border bg-card p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold">{t(titleKey)}</h1>
