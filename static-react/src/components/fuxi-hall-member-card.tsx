@@ -28,7 +28,8 @@ export function FuxiHallMemberCard({ card, action }: { card: FuxiHallCard; actio
       setCopyNotice({ target, text: t('common.copyFailed') })
     }
   }
-  const visibleMetrics = metrics.filter((key) => (card.contributions?.[key] ?? 0) > 0)
+  // Values render without decimals, so filter on the rounded value to never show a "0" tag.
+  const visibleMetrics = metrics.filter((key) => Math.round(card.contributions?.[key] ?? 0) > 0)
   const avatarClass =
     card.avatar_shape === 'circle'
       ? 'rounded-full'
@@ -136,7 +137,7 @@ export function FuxiHallMemberCard({ card, action }: { card: FuxiHallCard; actio
       </div>
       {visibleMetrics.length > 0 && (
         <div
-          className="border-t border-border/60 px-4 py-3"
+          className="border-t border-border/60 px-4 py-2"
           title={
             card.contributions_updated_at
               ? t('fuxiHall.contributions.updated', {
@@ -145,17 +146,19 @@ export function FuxiHallMemberCard({ card, action }: { card: FuxiHallCard; actio
               : t('fuxiHall.contributions.pending')
           }
         >
-          <dl aria-label={t('fuxiHall.contributions.title')} className="flex flex-wrap gap-2">
+          <dl aria-label={t('fuxiHall.contributions.title')} className="flex flex-wrap gap-1.5">
             {visibleMetrics.map((key) => {
               const value = card.contributions?.[key] ?? 0
               return (
                 <div
                   key={key}
                   title={t(`fuxiHall.contributions.help.${key}`)}
-                  className={`inline-flex items-baseline gap-2 rounded-md px-2.5 py-1 ring-1 ring-inset ${metricColors[key]}`}
+                  className={`inline-flex items-baseline gap-1 rounded px-1.5 py-0.5 text-xs leading-4 ring-1 ring-inset ${metricColors[key]}`}
                 >
-                  <dt className="text-xs font-medium">{t(`fuxiHall.contributions.${key}`)}</dt>
-                  <dd className="text-sm font-semibold tabular-nums">{value.toLocaleString()}</dd>
+                  <dt className="text-xs font-medium leading-4">{t(`fuxiHall.contributions.${key}`)}</dt>
+                  <dd className="text-xs font-semibold leading-4 tabular-nums">
+                    {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </dd>
                 </div>
               )
             })}
