@@ -54,7 +54,11 @@
           {{ formatMenuTitle(item.meta.title) }}
         </span>
         <div v-if="item.meta.showBadge" class="art-badge" />
-        <div v-if="item.meta.showTextBadge && (level > 0 || menuOpen)" class="art-text-badge">
+        <div
+          v-if="item.meta.showTextBadge && (level > 0 || menuOpen)"
+          class="art-text-badge"
+          :class="{ 'art-text-badge-submenu': level === 0 }"
+        >
           {{ item.meta.showTextBadge }}
         </div>
       </template>
