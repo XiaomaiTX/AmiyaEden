@@ -562,6 +562,7 @@ const zhCN = {
       unknown: '暂无记录',
       editMine: '编辑我的昵称和简介',
       retry: '重试',
+      floorIndex: '楼层导览',
       memberCount: '{count}人',
       floors: {
         top: '顶楼',
