@@ -17,6 +17,7 @@ import {
   updateFuxiHallPage,
 } from '@/api/fuxi-hall'
 import { FuxiHallMemberCard } from '@/components/fuxi-hall-member-card'
+import { FuxiHallBanner } from '@/components/fuxi-hall-banner'
 import { RichTextEditor } from '@/components/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -552,10 +553,11 @@ export function FuxiHallManagePage() {
           </div>
           <div className="rounded-lg border bg-card p-5">
             <h2 className="font-semibold">{t('fuxiHall.manage.previewPanel')}</h2>
-            <h3 className="mt-4 text-xl font-semibold">
-              {page.title || t('fuxiHall.manage.previewFallbackTitle')}
-            </h3>
-            {page.subtitle ? <p className="text-muted-foreground">{page.subtitle}</p> : null}
+            <FuxiHallBanner
+              preview
+              title={page.title || t('fuxiHall.manage.previewFallbackTitle')}
+              subtitle={page.subtitle}
+            />
             {page.description_html ? (
               <div
                 className="mt-4 rounded bg-muted/50 p-3 [&_img]:max-w-full"

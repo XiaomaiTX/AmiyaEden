@@ -152,12 +152,11 @@
         </template>
 
         <div class="fuxi-hall-manage__preview">
-          <header class="fuxi-hall-manage__preview-header">
-            <h3>{{ previewPage.title || t('fuxiHall.manage.previewFallbackTitle') }}</h3>
-            <p v-if="previewPage.subtitle" class="fuxi-hall-manage__preview-subtitle">
-              {{ previewPage.subtitle }}
-            </p>
-          </header>
+          <FuxiHallBanner
+            preview
+            :title="previewPage.title || t('fuxiHall.manage.previewFallbackTitle')"
+            :subtitle="previewPage.subtitle"
+          />
 
           <article
             v-if="previewPage.description_html"
@@ -319,6 +318,7 @@
     updateFuxiHallPage
   } from '@/api/fuxi-hall'
   import FuxiHallMemberCard from '../components/FuxiHallMemberCard.vue'
+  import FuxiHallBanner from '../components/FuxiHallBanner.vue'
 
   const { t } = useI18n()
 
@@ -861,17 +861,6 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  .fuxi-hall-manage__preview-header h3 {
-    margin: 0;
-    font-size: 22px;
-    color: var(--el-text-color-primary);
-  }
-
-  .fuxi-hall-manage__preview-subtitle {
-    margin: 8px 0 0;
-    color: var(--el-text-color-regular);
   }
 
   .fuxi-hall-manage__preview-intro {
