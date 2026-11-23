@@ -28,18 +28,30 @@
     ></label>
     <fieldset
       ><legend>{{ t('admissions.characters') }}</legend
-      ><ElCheckboxGroup v-model="selected" class="character-list"
-        ><ElCheckbox
+      ><div class="character-list"
+        ><label
           v-for="char in context.characters"
           :key="char.character_id"
-          :value="char.character_id"
-          :label="char.character_id"
-          :disabled="busy || char.corporation_id === target"
-          border
-          ><span
-            >{{ char.character_name }} <small>{{ char.character_id }}</small></span
-          ></ElCheckbox
-        ></ElCheckboxGroup
+          class="character-option"
+          :class="{
+            'is-selected': selected.includes(char.character_id),
+            'is-disabled': busy || char.corporation_id === target
+          }"
+          :title="char.character_name"
+          ><input
+            v-model="selected"
+            type="checkbox"
+            :value="char.character_id"
+            :disabled="busy || char.corporation_id === target"
+          /><img
+            class="character-portrait"
+            :src="buildEveCharacterPortraitUrl(char.character_id, 64)"
+            alt=""
+            width="28"
+            height="28"
+            loading="lazy"
+          /><span class="character-name">{{ char.character_name }}</span></label
+        ></div
       ></fieldset
     >
     <label v-if="kind === 'alt'" class="target-field">
@@ -114,6 +126,7 @@
   import { useI18n } from 'vue-i18n'
   import { saveAdmission } from '@/api/admissions'
   import { canAccessAdmission, compressAdmissionImage } from '@/utils/admissions'
+  import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import type {
     AdmissionApplication,
     AdmissionContext,
@@ -212,16 +225,68 @@
   }
   .character-list {
     display: grid;
-    gap: 10px;
-    margin-top: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+    gap: 8px;
+    max-width: 960px;
+    margin-top: 8px;
   }
-  .character-list :deep(.el-checkbox) {
-    margin: 0;
-    padding: 18px 12px;
+  .character-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 10px;
+    border: 1px solid var(--el-color-primary-light-5);
+    border-radius: 999px;
+    background: var(--el-color-primary-light-9);
+    cursor: pointer;
   }
-  small {
-    margin-left: 12px;
+  .character-option:hover:not(.is-disabled) {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-8);
+  }
+  .character-option.is-selected:not(.is-disabled) {
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-8);
+    box-shadow: inset 0 0 0 1px var(--el-color-primary);
+  }
+  .character-option:focus-within {
+    outline: 2px solid var(--el-color-primary);
+    outline-offset: 2px;
+  }
+  .character-option.is-disabled {
+    border-color: var(--el-border-color);
+    background: var(--el-fill-color-light);
     color: var(--el-text-color-secondary);
+    cursor: not-allowed;
+  }
+  .character-option input {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--el-color-primary);
+    cursor: inherit;
+  }
+  .character-option .character-portrait {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .character-option.is-disabled .character-portrait {
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+  .character-name {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .required-marker,
   .error {
