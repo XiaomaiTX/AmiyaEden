@@ -88,7 +88,9 @@
           :title="t(`fuxiHall.contributions.help.${key}`)"
         >
           <dt>{{ t(`fuxiHall.contributions.${key}`) }}</dt>
-          <dd>{{ card.contributions?.[key]?.toLocaleString() }}</dd>
+          <dd>{{
+            card.contributions?.[key]?.toLocaleString(undefined, { maximumFractionDigits: 0 })
+          }}</dd>
         </div>
       </dl>
     </div>
@@ -107,8 +109,9 @@
     card: Api.FuxiHall.Card
   }>()
   const metrics = ['corp_pap', 'fleets', 'welfare', 'srp', 'recruitment', 'mentoring'] as const
+  // Values render without decimals, so filter on the rounded value to never show a "0" tag.
   const visibleMetrics = computed(() =>
-    metrics.filter((key) => (props.card.contributions?.[key] ?? 0) > 0)
+    metrics.filter((key) => Math.round(props.card.contributions?.[key] ?? 0) > 0)
   )
   const { t } = useI18n()
   const { copyText } = useClipboardCopy()
@@ -268,20 +271,22 @@
   }
   .hall-contributions {
     border-top: 1px solid var(--el-border-color-light);
-    padding: 12px 16px;
+    padding: 8px 16px;
   }
   .hall-contributions dl {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
   }
   .hall-contributions dl > div {
     display: inline-flex;
     align-items: baseline;
-    gap: 8px;
-    padding: 4px 10px;
-    border-radius: 6px;
+    gap: 4px;
+    padding: 1px 6px;
+    font-size: 12px;
+    line-height: 16px;
+    border-radius: 4px;
     border: 1px solid color-mix(in srgb, var(--metric-color), transparent 80%);
     background: color-mix(in srgb, var(--metric-color), transparent 90%);
   }
@@ -305,11 +310,13 @@
   }
   .hall-contributions dt {
     font-size: 12px;
+    line-height: 16px;
     color: var(--el-text-color-secondary);
   }
   .hall-contributions dd {
     margin: 0;
-    font-size: 14px;
+    font-size: 12px;
+    line-height: 16px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: var(--el-text-color-primary);
