@@ -1,5 +1,9 @@
 {
   "announcement": {
+    "archive": "公告列表",
+    "author": "发布者",
+    "publishedAt": "发布时间",
+    "unknownAuthor": "未知发布者",
     "title": "军团公告",
     "publish": "发布公告",
     "empty": "暂无公告",
@@ -700,7 +704,7 @@
       "srp": "补损",
       "recruitment": "招新",
       "mentoring": "导师",
-      "corp_pap": "军团 PAP",
+      "corp_pap": "出勤",
       "updated": "数据更新于 {date}",
       "pending": "系统记录待汇总",
       "offsets": "历史贡献补录",

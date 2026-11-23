@@ -34,6 +34,9 @@ const announcement = {
   title: 'Fleet tonight',
   body_html: '<p>Form up at 19:00</p>',
   author_id: 1,
+  author_nickname: '舰队指挥',
+  author_character_id: 90000001,
+  author_character_name: 'Fleet Commander',
   hidden: false,
   unread: true,
   version: 2,
@@ -59,6 +62,50 @@ test('opens the newest announcement on entry and acknowledges the displayed vers
   await waitFor(() => expect(screen.queryByText('announcement.unread')).not.toBeInTheDocument())
   expect(listAnnouncements).toHaveBeenCalledTimes(1)
 })
+
+test('shows the publisher nickname and primary character in the list and article', async () => {
+  render(<AnnouncementsPage />)
+  await screen.findByText('Form up at 19:00')
+  expect(screen.getAllByText('舰队指挥')).toHaveLength(2)
+  expect(screen.getAllByText('Fleet Commander')).toHaveLength(2)
+  expect(screen.getByText('舰队指挥', { selector: 'strong' }).parentElement).toHaveTextContent(
+    'Fleet Commander'
+  )
+  expect(screen.getByRole('button', { name: /Fleet tonight/ })).toHaveAttribute(
+    'aria-current',
+    'true'
+  )
+})
+
+test('keeps announcements readable when the publisher profile is unavailable', async () => {
+  const orphaned = {
+    ...announcement,
+    author_nickname: '',
+    author_character_id: 0,
+    author_character_name: '',
+  }
+  vi.mocked(listAnnouncements).mockResolvedValue({ list: [orphaned], total: 1 })
+  vi.mocked(getAnnouncement).mockResolvedValue(orphaned)
+  render(<AnnouncementsPage />)
+  await screen.findByText('Form up at 19:00')
+  expect(screen.getAllByText('announcement.unknownAuthor')).toHaveLength(2)
+  expect(screen.queryByRole('img')).not.toBeInTheDocument()
+})
+test('allows paging after ten announcements and disables next on the final page', async () => {
+  vi.mocked(listAnnouncements)
+    .mockResolvedValueOnce({ list: [announcement], total: 11 })
+    .mockResolvedValueOnce({ list: [{ ...announcement, id: 11, title: 'Last notice' }], total: 11 })
+  render(<AnnouncementsPage />)
+  await screen.findByText('Form up at 19:00')
+  const next = screen.getByRole('button', { name: 'announcement.next' })
+  expect(next).toBeEnabled()
+  fireEvent.click(next)
+  await screen.findByRole('button', { name: /Last notice/ })
+  expect(listAnnouncements).toHaveBeenLastCalledWith(2)
+  expect(next).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'announcement.previous' })).toBeEnabled()
+})
+
 test('reopening an already-read announcement skips the read request', async () => {
   vi.mocked(listAnnouncements).mockResolvedValue({
     list: [{ ...announcement, unread: false }],
