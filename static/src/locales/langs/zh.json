@@ -650,7 +650,6 @@
       "basicConfig": "@:setting.basics.title",
       "salary": "工资管理",
       "blacklist": "黑名单",
-      "qqbot": "@:qqbot.title",
       "newbroSettings": "@:refund.settings"
     },
     "fuxiHall": {
@@ -938,14 +937,6 @@
         "name": "申请证据清理",
         "description": "清理已过保留期的已结案入团申请证据"
       },
-      "qq_group_business": {
-        "name": "QQ 群业务复查",
-        "description": "按当前成员复查 QQ 群入群、名片与巡检规则。"
-      },
-      "qq_structure_alert": {
-        "name": "QQ 建筑业务预警",
-        "description": "扫描建筑状态，并为燃料不足等业务预警发送 QQ 通知。"
-      },
       "audit_archive_daily": {
         "name": "审计日志每日归档",
         "description": "归档并清理超出在线保留期的审计事件"
@@ -961,18 +952,6 @@
       "structure_fuel_rate_sync": {
         "name": "建筑燃料消耗率同步",
         "description": "通过 ESI 同步建筑服务模块每小时燃料消耗率"
-      },
-      "corporation_structure_alert_scan": {
-        "name": "军团建筑预警巡查",
-        "description": "巡查军团建筑燃料与增强状态并发送 QQ 预警"
-      },
-      "qq_group_governance_reconcile": {
-        "name": "QQ 群成员巡检",
-        "description": "创建 QQ 群治理成员巡检任务"
-      },
-      "qq_governance_maintenance": {
-        "name": "QQ 群治理数据维护",
-        "description": "维护 QQ 群治理任务、日志与保留期数据"
       },
       "character_assets": {
         "name": "人物资产",
@@ -3234,13 +3213,6 @@
       "tool_bookmark_create": "创建工具书签",
       "tool_bookmark_update": "更新工具书签",
       "tool_bookmark_delete": "删除工具书签",
-      "qq_governance_policy_save": "保存 QQ 群治理策略",
-      "qq_governance_policy_delete": "删除 QQ 群治理策略",
-      "qq_governance_settings_update": "更新 QQ 群治理设置",
-      "qq_governance_alert_ack": "确认 QQ 群治理告警",
-      "qq_governance_task_retry": "重试 QQ 群治理任务",
-      "qq_governance_disconnected_tasks_recover": "恢复 QQ 断线期间的任务",
-      "qq_governance_reconcile_trigger": "触发 QQ 群成员巡检",
       "shop_order_deliver": "商城订单发货",
       "shop_order_reject": "拒绝商城订单",
       "ticket_reply": "回复工单",
@@ -3446,9 +3418,6 @@
       "noMappings": "暂无已配置活动映射",
       "systemManaged": "系统托管",
       "customManaged": "管理员配置"
-    },
-    "confirm": {
-      "runAlertScan": "确定要立即巡查并投递 QQ 建筑预警吗？"
     },
     "settings": {
       "noticeThresholds": "通知阈值",
@@ -3883,86 +3852,6 @@
         "rewardAmount": "请输入大于 0 的整数奖励数量"
       }
     }
-  },
-  "qqbot": {
-    "groupBusiness": "群业务与审计",
-    "groupPolicy": "默认仅记录。资料不足不拒绝、不清退；军团与职权同时配置时必须同时满足。自动清退需要显式开启。",
-    "corporations": "允许的军团 ID（逗号分隔）",
-    "roles": "允许的职权编码（逗号分隔）",
-    "admission_enabled": "自动批准合格申请",
-    "auto_reject": "自动拒绝明确不匹配申请",
-    "card_enabled": "启用名片同步",
-    "inspection_enabled": "启用成员巡检",
-    "auto_kick": "启用自动清退",
-    "cardTemplate": "名片模板",
-    "cardVariables": "可用变量：character_name、corporation_name、nickname、qq；使用花括号包围变量。",
-    "confirmations": "连续不匹配确认轮数",
-    "observation": "观察期（小时）",
-    "rules": "群规则",
-    "version": "版本",
-    "editRule": "编辑规则",
-    "applications": "入群申请",
-    "members": "成员状态",
-    "inspections": "巡检记录",
-    "judgements": "成员判断",
-    "field_group_id": "群号",
-    "field_qq": "QQ",
-    "field_status": "状态",
-    "field_evidence": "判断依据",
-    "field_operation_id": "关联操作",
-    "field_present": "在群",
-    "field_confirmations": "确认次数",
-    "field_card_target": "目标名片",
-    "field_card_status": "名片结果",
-    "field_card_operation_id": "名片操作",
-    "field_kick_status": "清退结果",
-    "field_kick_operation_id": "清退操作",
-    "field_id": "巡检 ID",
-    "field_rule_version": "规则版本",
-    "field_run_id": "巡检 ID",
-    "field_done": "判断完成",
-    "field_decision": "判断",
-    "structureNotifications": "建筑 QQ 预警",
-    "fleetNotifications": "舰队 QQ 通知",
-    "notifications": "通用群通知",
-    "notificationEnabled": "启用此通知渠道",
-    "notificationGroups": "目标群（逗号分隔）",
-    "notificationTest": "发送固定测试（五分钟有效）",
-    "notificationNewTest": "新建测试意图",
-    "notificationID": "通知 ID",
-    "notificationGroup": "目标群",
-    "rate": "Redis 限流状态 / 等待毫秒",
-    "title": "QQ 机器人调度",
-    "refresh": "刷新",
-    "save": "保存配置",
-    "enabled": "启用接入",
-    "bot": "机器人 QQ",
-    "cidrs": "允许的 CIDR（逗号分隔）",
-    "interval": "统一限流间隔（毫秒）",
-    "token": "新令牌（留空保留）",
-    "connected": "连接状态",
-    "online": "已连接",
-    "offline": "已断开",
-    "risk": "读写风控",
-    "operations": "操作队列（最近 200 条）",
-    "attempts": "尝试日志",
-    "events": "事件收件箱",
-    "deliveries": "消费者处理",
-    "cancel": "取消",
-    "retry": "受限重试",
-    "pause": "暂停",
-    "resume": "恢复",
-    "error": "操作失败",
-    "success": "操作完成",
-    "unknown": "未知结果不会自动重发消息；平台成功不代表用户已读。",
-    "status": "状态",
-    "key": "业务键",
-    "waiting": "等待原因",
-    "result": "结果",
-    "id": "标识",
-    "class": "类别",
-    "failures": "失败次数",
-    "detail": "详情"
   },
   "admissions": {
     "title": "军团申请",

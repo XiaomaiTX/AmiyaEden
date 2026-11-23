@@ -186,6 +186,19 @@ test('applyMenuAccessFilter hides AutoRole from admins but keeps it for super ad
   )
 })
 
+test('system routes and menu omit the bot but keep webhook settings', () => {
+  const [systemMenu] = applyMenuAccessFilter([systemRoutes], ['super_admin'])
+
+  assert.equal(
+    systemRoutes.children?.some((route) => route.path === 'qqbot'),
+    false
+  )
+  assert.equal(
+    systemMenu.children?.some((route) => route.name === 'WebhookSettings'),
+    true
+  )
+})
+
 test('applyMenuAccessFilter enforces corp capability gates on SRP routes', () => {
   const withoutCaps = applyMenuAccessFilter([srpRoutes], ['admin'], [])
   const withCaps = applyMenuAccessFilter([srpRoutes], ['admin'], ['srp.manage'])

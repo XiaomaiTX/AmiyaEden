@@ -1,13 +1,11 @@
 ---
-status: active
+status: deprecated
 doc_type: feature
 owner: engineering
 last_reviewed: 2026-11-10
-source_of_truth:
-  - server/internal/service/qqbot.go
-  - server/internal/repository/qqbot.go
-  - server/internal/model/qqbot.go
 ---
+
+> 历史资料：QQ Bot 及全部独立业务已下线。本文保留当时的设计和验证背景，不是当前契约或部署指南。见 [下线边界](qq-group-governance.md)。
 
 # QQ 机器人调度基础设施
 

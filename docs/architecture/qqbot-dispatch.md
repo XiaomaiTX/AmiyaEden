@@ -1,9 +1,11 @@
 ---
-status: active
+status: deprecated
 doc_type: architecture
 owner: engineering
 last_reviewed: 2026-11-10
 ---
+
+> 历史资料：QQ Bot 及全部独立业务已下线。本文保留当时的设计和验证背景，不是当前契约或部署指南。见 [下线边界](../features/current/qq-group-governance.md)。
 
 # OneBot V11 基础设施 PRD 与设计
 

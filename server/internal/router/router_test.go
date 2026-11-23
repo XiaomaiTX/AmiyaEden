@@ -58,8 +58,8 @@ func TestRegisterRoutesIncludesTaskManagerEndpoints(t *testing.T) {
 
 	routes := r.Routes()
 	for _, route := range routes {
-		if strings.Contains(route.Path, "qq-governance") {
-			t.Fatalf("retired QQ route is registered: %s", route.Path)
+		if strings.Contains(route.Path, "qq-governance") || strings.Contains(route.Path, "qqbot") || strings.Contains(route.Path, "onebot") {
+			t.Fatalf("retired QQ Bot route is registered: %s", route.Path)
 		}
 	}
 
@@ -998,21 +998,4 @@ func containsRoleCode(codes []string, target string) bool {
 		}
 	}
 	return false
-}
-
-func TestQQBotManagementRejectsNonSuperAdmin(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r, user, admin, _, _ := newFuxiHallManageRouteTestRouter(t)
-	for _, route := range []struct{ method, path string }{
-		{http.MethodGet, "/config"}, {http.MethodPut, "/config"}, {http.MethodGet, "/snapshot"}, {http.MethodGet, "/operations/test"},
-		{http.MethodGet, "/groups"}, {http.MethodPut, "/groups/rules"},
-		{http.MethodGet, "/notifications/channels"}, {http.MethodPut, "/notifications/channels/general"}, {http.MethodGet, "/notifications/targets"}, {http.MethodPost, "/notifications/test"},
-		{http.MethodPost, "/operations/test/cancel"}, {http.MethodPost, "/operations/test/retry"},
-		{http.MethodPost, "/deliveries/test/retry"}, {http.MethodPut, "/circuits/write"},
-	} {
-		path := "/api/v1/system/qqbot" + route.path
-		assertRouteStatus(t, r, route.method, path, http.StatusUnauthorized)
-		assertRouteStatus(t, r, route.method, path+"?token="+user, http.StatusForbidden)
-		assertRouteStatus(t, r, route.method, path+"?token="+admin, http.StatusForbidden)
-	}
 }

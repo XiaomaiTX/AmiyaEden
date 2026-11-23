@@ -126,8 +126,6 @@ declare module 'vue' {
     MenuStyleSettings: typeof import('./../../components/core/layouts/art-settings-panel/widget/MenuStyleSettings.vue')['default']
     MumbleCredentialCard: typeof import('./../../components/mumble-credential-card.vue')['default']
     Page: typeof import('./../../components/captain-refund/Page.vue')['default']
-    QQGroupBusiness: typeof import('./../../components/QQGroupBusiness.vue')['default']
-    QQNotifications: typeof import('./../../components/QQNotifications.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SdeSearchSelect: typeof import('./../../components/business/SdeSearchSelect.vue')['default']
