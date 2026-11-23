@@ -12,6 +12,9 @@ import { useBadgeStore } from '@/stores/badge-store'
 import { useSessionStore } from '@/stores/session-store'
 import { RichTextEditor } from '@/components/rich-text-editor'
 import { Button } from '@/components/ui/button'
+import { Clock3, FileText, Megaphone, UserRound } from 'lucide-react'
+import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
+import './announcements.css'
 
 export function AnnouncementsPage() {
   const { t } = useI18n()
@@ -137,11 +140,17 @@ export function AnnouncementsPage() {
     }
   }
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t('announcement.title')}</h1>
+    <div className="announcement-board">
+      <header className="announcement-masthead">
+        <div className="announcement-heading">
+          <span className="announcement-mark">
+            <Megaphone aria-hidden="true" />
+          </span>
+          <h1>{t('announcement.title')}</h1>
+        </div>
         {manage && (
           <Button
+            className="announcement-publish"
             isDisabled={busy}
             onPress={() => {
               request.current++
@@ -162,50 +171,62 @@ export function AnnouncementsPage() {
           {error || t('announcement.error')}
         </p>
       )}
-      <div className="grid items-start gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="space-y-2">
-          {rows.length === 0 && <p>{t('announcement.empty')}</p>}
-          {rows.map((row) => {
-            const isUnread = Boolean(row.unread && !row.hidden)
-            return (
-              <button
-                key={row.id}
-                disabled={busy}
-                onClick={() => void open(row)}
-                className={`w-full rounded-lg border p-4 text-left transition-colors ${
-                  isUnread
-                    ? 'border-blue-500/50 border-l-4 border-l-blue-500 bg-blue-500/10 font-semibold text-foreground dark:border-blue-400/50 dark:border-l-blue-400 dark:bg-blue-400/15'
-                    : 'border-border bg-card text-foreground/80 hover:bg-muted/50'
-                } ${selected?.id === row.id ? 'ring-2 ring-primary' : ''}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="flex min-w-0 items-start gap-2">
+      <div className="announcement-layout">
+        <aside className="announcement-index">
+          <div className="announcement-index-heading">
+            <h2>
+              <FileText aria-hidden="true" />
+              {t('announcement.archive')}
+            </h2>
+            <span>{total}</span>
+          </div>
+          {rows.length === 0 && <p className="announcement-empty">{t('announcement.empty')}</p>}
+          <div className="announcement-entries">
+            {rows.map((row) => {
+              const isUnread = Boolean(row.unread && !row.hidden)
+              return (
+                <button
+                  key={row.id}
+                  disabled={busy}
+                  aria-current={selected?.id === row.id ? 'true' : undefined}
+                  onClick={() => void open(row)}
+                  className={`announcement-entry ${isUnread ? 'is-unread' : ''} ${selected?.id === row.id ? 'is-selected' : ''}`}
+                >
+                  <div className="announcement-entry-heading">
+                    <span className="announcement-entry-title">
+                      {isUnread && <span aria-hidden="true" className="announcement-unread-dot" />}
+                      <span className="announcement-title-text">{row.title}</span>
+                    </span>
                     {isUnread && (
-                      <span
-                        aria-hidden="true"
-                        className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500 dark:bg-blue-400"
-                      />
+                      <span className="announcement-status">{t('announcement.unread')}</span>
                     )}
-                    <span className="line-clamp-2 break-words">{row.title}</span>
+                    {row.hidden && (
+                      <span className="announcement-status is-hidden">
+                        {t('announcement.hidden')}
+                      </span>
+                    )}
+                  </div>
+                  <span className="announcement-entry-author">
+                    <span
+                      className="announcement-nickname"
+                      title={row.author_nickname || t('announcement.unknownAuthor')}
+                    >
+                      {row.author_nickname || t('announcement.unknownAuthor')}
+                    </span>
+                    {row.author_character_name && (
+                      <span className="announcement-character" title={row.author_character_name}>
+                        {row.author_character_name}
+                      </span>
+                    )}
                   </span>
-                  {isUnread && (
-                    <span className="shrink-0 rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white dark:bg-blue-400 dark:text-slate-950">
-                      {t('announcement.unread')}
-                    </span>
-                  )}
-                  {row.hidden && (
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                      {t('announcement.hidden')}
-                    </span>
-                  )}
-                </div>
-                <time className="mt-2 block text-xs font-normal text-muted-foreground">
-                  {new Date(row.created_at).toLocaleString()}
-                </time>
-              </button>
-            )
-          })}
-          <div className="flex justify-between">
+                  <time className="announcement-entry-time" dateTime={row.created_at}>
+                    {new Date(row.created_at).toLocaleString()}
+                  </time>
+                </button>
+              )
+            })}
+          </div>
+          <div className="announcement-pagination">
             <Button
               variant="outline"
               isDisabled={page === 1 || busy}
@@ -215,17 +236,17 @@ export function AnnouncementsPage() {
             </Button>
             <Button
               variant="outline"
-              isDisabled={page * 20 >= total || busy}
+              isDisabled={page * 10 >= total || busy}
               onPress={() => setPage(page + 1)}
             >
               {t('announcement.next')}
             </Button>
           </div>
         </aside>
-        <section aria-busy={busy} className="min-w-0 space-y-4 rounded-lg border p-5">
+        <section aria-busy={busy} className="announcement-reader">
           {editing ? (
             <form
-              className="space-y-4"
+              className="announcement-editor space-y-4"
               onSubmit={(e) => {
                 e.preventDefault()
                 void save()
@@ -278,24 +299,64 @@ export function AnnouncementsPage() {
             </form>
           ) : selected ? (
             <>
-              <div className="flex items-start justify-between gap-4">
-                <h2 className="text-2xl font-semibold leading-snug">{selected.title}</h2>
+              <header className="announcement-article-heading">
+                <h2>{selected.title}</h2>
                 {manage && (
                   <Button variant="outline" isDisabled={busy} onPress={edit}>
                     {t('announcement.edit')}
                   </Button>
                 )}
+              </header>
+              <div className="announcement-byline">
+                <div className="announcement-author">
+                  <span className="announcement-avatar">
+                    {selected.author_character_id > 0 ? (
+                      <img
+                        src={buildEveCharacterPortraitUrl(selected.author_character_id, 64)}
+                        alt=""
+                      />
+                    ) : (
+                      <UserRound aria-hidden="true" />
+                    )}
+                  </span>
+                  <div className="announcement-author-names">
+                    <span className="announcement-author-label">{t('announcement.author')}</span>
+                    <span className="announcement-author-identity">
+                      <strong
+                        className="announcement-nickname"
+                        title={selected.author_nickname || t('announcement.unknownAuthor')}
+                      >
+                        {selected.author_nickname || t('announcement.unknownAuthor')}
+                      </strong>
+                      {selected.author_character_name && (
+                        <span
+                          className="announcement-character"
+                          title={selected.author_character_name}
+                        >
+                          {selected.author_character_name}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <time className="announcement-published" dateTime={selected.created_at}>
+                  <Clock3 aria-hidden="true" />
+                  <span>
+                    {t('announcement.publishedAt')}
+                    <strong>{new Date(selected.created_at).toLocaleString()}</strong>
+                  </span>
+                </time>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {new Date(selected.created_at).toLocaleString()}
-              </p>
               <div
-                className="announcement-content border-t pt-4"
+                className="announcement-content announcement-body"
                 dangerouslySetInnerHTML={{ __html: selected.body_html ?? '' }}
               />
             </>
           ) : (
-            <p className="text-muted-foreground">{t('announcement.select')}</p>
+            <div className="announcement-reader-empty">
+              <Megaphone aria-hidden="true" />
+              <p>{t(rows.length ? 'announcement.select' : 'announcement.empty')}</p>
+            </div>
           )}
         </section>
       </div>

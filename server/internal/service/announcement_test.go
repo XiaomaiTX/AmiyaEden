@@ -5,6 +5,7 @@ import (
 	"amiya-eden/internal/repository"
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/glebarez/sqlite"
@@ -16,6 +17,64 @@ import (
 	"testing"
 )
 
+func TestAnnouncementPublisherProfile(t *testing.T) {
+	db := newServiceTestDB(t, "announcement_author", &model.User{}, &model.EveCharacter{}, &model.Announcement{}, &model.AnnouncementRead{}, &model.AnnouncementImage{})
+	publisher := model.User{Nickname: "发布者昵称", QQ: "private-contact", PrimaryCharacterID: 90000001}
+	editor := model.User{Nickname: "编辑者"}
+	for _, user := range []*model.User{&publisher, &editor} {
+		if err := db.Create(user).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	character := model.EveCharacter{CharacterID: publisher.PrimaryCharacterID, CharacterName: "Primary Pilot", UserID: publisher.ID}
+	if err := db.Create(&character).Error; err != nil {
+		t.Fatal(err)
+	}
+	s := &AnnouncementService{repository.NewAnnouncementRepositoryWithDB(db)}
+	roles := []string{model.RoleAdmin}
+	a, err := s.Save(publisher.ID, 0, roles, AnnouncementInput{Title: "Notice", BodyHTML: "<p>Body</p>"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertAuthor := func(nickname, name string, characterID int64) {
+		t.Helper()
+		detail, detailErr := s.Detail(a.ID, []string{model.RoleUser})
+		rows, total, listErr := s.repo.List(editor.ID, false, 1)
+		if detailErr != nil || listErr != nil || total != 1 || len(rows) != 1 {
+			t.Fatalf("load author: detail=%v list=%v total=%d rows=%d", detailErr, listErr, total, len(rows))
+		}
+		for _, author := range []repository.AnnouncementAuthor{detail.AnnouncementAuthor, rows[0].AnnouncementAuthor} {
+			if author.AuthorNickname != nickname || author.AuthorCharacterName != name || author.AuthorCharacterID != characterID {
+				t.Fatalf("unexpected author: %+v", author)
+			}
+		}
+		if detail.AuthorID != publisher.ID || rows[0].AuthorID != publisher.ID {
+			t.Fatal("editor replaced publisher")
+		}
+		encoded, marshalErr := json.Marshal(detail)
+		if marshalErr != nil || strings.Contains(string(encoded), "private-contact") {
+			t.Fatal("private profile data leaked", marshalErr)
+		}
+	}
+	if a.AuthorNickname != publisher.Nickname || a.AuthorCharacterName != character.CharacterName {
+		t.Fatal("save response missing author")
+	}
+	assertAuthor(publisher.Nickname, character.CharacterName, character.CharacterID)
+	if _, err = s.Save(editor.ID, a.ID, roles, AnnouncementInput{Title: "Edited", BodyHTML: "<p>Edited</p>", Revision: a.Revision}); err != nil {
+		t.Fatal(err)
+	}
+	assertAuthor(publisher.Nickname, character.CharacterName, character.CharacterID)
+	// A transferred character must no longer be presented as the publisher's primary.
+	if err = db.Model(&character).Update("user_id", editor.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	assertAuthor(publisher.Nickname, "", 0)
+	if err = db.Delete(&publisher).Error; err != nil {
+		t.Fatal(err)
+	}
+	assertAuthor("", "", 0)
+}
+
 func TestAnnouncementLifecycle(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
@@ -23,7 +82,7 @@ func TestAnnouncementLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = db.AutoMigrate(&model.Announcement{}, &model.AnnouncementRead{}, &model.AnnouncementImage{}); err != nil {
+	if err = db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.Announcement{}, &model.AnnouncementRead{}, &model.AnnouncementImage{}); err != nil {
 		t.Fatal(err)
 	}
 	repo := repository.NewAnnouncementRepositoryWithDB(db)
@@ -113,6 +172,40 @@ func TestAnnouncementLifecycle(t *testing.T) {
 		t.Fatal("repeat read of current version failed", err)
 	}
 }
+func TestAnnouncementPagination(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{SingularTable: true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = db.AutoMigrate(&model.User{}, &model.EveCharacter{}, &model.Announcement{}, &model.AnnouncementRead{}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i <= 21; i++ {
+		if err = db.Create(&model.Announcement{Title: fmt.Sprintf("Notice %d", i), Version: 1}).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	repo := repository.NewAnnouncementRepositoryWithDB(db)
+	seen := make(map[uint]bool)
+	for page, want := range []int{10, 10, 1} {
+		rows, total, listErr := repo.List(2, false, page+1)
+		if listErr != nil || total != 21 || len(rows) != want {
+			t.Fatalf("page %d: got %d rows, total %d: %v", page+1, len(rows), total, listErr)
+		}
+		for _, row := range rows {
+			if seen[row.ID] {
+				t.Fatalf("announcement %d repeated across pages", row.ID)
+			}
+			seen[row.ID] = true
+		}
+	}
+	if len(seen) != 21 {
+		t.Fatalf("pagination omitted announcements: got %d", len(seen))
+	}
+}
+
 func TestAnnouncementImages(t *testing.T) {
 	var out bytes.Buffer
 	if err := png.Encode(&out, image.NewRGBA(image.Rect(0, 0, 32, 32))); err != nil {
@@ -149,7 +242,7 @@ func TestAnnouncementRejectsBlankBody(t *testing.T) {
 	}
 }
 func TestAnnouncementImagePersistence(t *testing.T) {
-	db := newServiceTestDB(t, "announcement_images", &model.Announcement{}, &model.AnnouncementRead{}, &model.AnnouncementImage{})
+	db := newServiceTestDB(t, "announcement_images", &model.User{}, &model.EveCharacter{}, &model.Announcement{}, &model.AnnouncementRead{}, &model.AnnouncementImage{})
 	s := &AnnouncementService{repository.NewAnnouncementRepositoryWithDB(db)}
 	roles := []string{model.RoleAdmin}
 	var picture bytes.Buffer

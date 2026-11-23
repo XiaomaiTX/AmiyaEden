@@ -1,5 +1,9 @@
 const enUS = {
   announcement: {
+    archive: 'Announcements',
+    author: 'Published by',
+    publishedAt: 'Published',
+    unknownAuthor: 'Unknown author',
     title: 'Corporation announcements',
     publish: 'Publish announcement',
     empty: 'No announcements',
@@ -544,7 +548,7 @@ const enUS = {
       srp: 'SRP payouts',
       recruitment: 'Recruitment',
       mentoring: 'Mentoring',
-      corp_pap: 'Corporation PAP',
+      corp_pap: 'Attendance',
       updated: 'Updated {date}',
       pending: 'History awaiting calculation',
       offsets: 'Historical contribution offsets',
