@@ -1,45 +1,85 @@
 <template>
-  <div class="announcements">
-    <header
-      ><h1>{{ t('announcement.title') }}</h1
-      ><ElButton v-if="manage" :disabled="busy" @click="startEdit(true)">{{
-        t('announcement.publish')
-      }}</ElButton></header
-    >
+  <div class="announcement-board">
+    <header class="announcement-masthead">
+      <div class="announcement-heading">
+        <span class="announcement-mark"><ArtSvgIcon icon="ri:megaphone-line" /></span>
+        <h1>{{ t('announcement.title') }}</h1>
+      </div>
+      <ElButton
+        v-if="manage"
+        class="announcement-publish"
+        :disabled="busy"
+        @click="startEdit(true)"
+      >
+        {{ t('announcement.publish') }}
+      </ElButton>
+    </header>
     <p v-if="error" role="alert">{{ t('announcement.error') }}</p>
-    <div class="board">
-      <aside>
-        <p v-if="!rows.length">{{ t('announcement.empty') }}</p>
-        <button
-          v-for="row in rows"
-          :key="row.id"
-          :disabled="busy"
-          class="entry"
-          :class="{ unread: row.unread && !row.hidden, selected: selected?.id === row.id }"
-          @click="open(row)"
-        >
-          <div class="entry-head">
-            <span class="entry-title">
-              <span v-if="row.unread && !row.hidden" class="unread-dot" aria-hidden="true" />
-              <span class="title-text">{{ row.title }}</span>
+    <div class="announcement-layout">
+      <aside class="announcement-index">
+        <div class="announcement-index-heading">
+          <h2><ArtSvgIcon icon="ri:file-text-line" />{{ t('announcement.archive') }}</h2>
+          <span>{{ total }}</span>
+        </div>
+        <p v-if="!rows.length" class="announcement-empty">{{ t('announcement.empty') }}</p>
+        <div class="announcement-entries">
+          <button
+            v-for="row in rows"
+            :key="row.id"
+            :disabled="busy"
+            class="announcement-entry"
+            :class="{
+              'is-unread': row.unread && !row.hidden,
+              'is-selected': selected?.id === row.id
+            }"
+            :aria-current="selected?.id === row.id ? 'true' : undefined"
+            @click="open(row)"
+          >
+            <div class="announcement-entry-heading">
+              <span class="announcement-entry-title">
+                <span
+                  v-if="row.unread && !row.hidden"
+                  class="announcement-unread-dot"
+                  aria-hidden="true"
+                />
+                <span class="announcement-title-text">{{ row.title }}</span>
+              </span>
+              <span v-if="row.hidden" class="announcement-status is-hidden">{{
+                t('announcement.hidden')
+              }}</span>
+              <span v-else-if="row.unread" class="announcement-status">{{
+                t('announcement.unread')
+              }}</span>
+            </div>
+            <span class="announcement-entry-author">
+              <span
+                class="announcement-nickname"
+                :title="row.author_nickname || t('announcement.unknownAuthor')"
+                >{{ row.author_nickname || t('announcement.unknownAuthor') }}</span
+              >
+              <span
+                v-if="row.author_character_name"
+                class="announcement-character"
+                :title="row.author_character_name"
+                >{{ row.author_character_name }}</span
+              >
             </span>
-            <span v-if="row.hidden" class="badge badge-muted">{{ t('announcement.hidden') }}</span>
-            <span v-else-if="row.unread" class="badge badge-unread">{{
-              t('announcement.unread')
-            }}</span>
-          </div>
-          <time>{{ new Date(row.created_at).toLocaleString() }}</time>
-        </button>
+            <time class="announcement-entry-time" :datetime="row.created_at">{{
+              new Date(row.created_at).toLocaleString()
+            }}</time>
+          </button>
+        </div>
         <ElPagination
+          class="announcement-pagination"
           v-model:current-page="page"
-          :page-size="20"
+          :page-size="10"
           :total="total"
           layout="prev, pager, next"
           @current-change="reload()"
         />
       </aside>
-      <section :aria-busy="busy">
-        <form v-if="editing" :key="editorKey" @submit.prevent="save">
+      <section class="announcement-reader" :aria-busy="busy">
+        <form v-if="editing" :key="editorKey" class="announcement-editor" @submit.prevent="save">
           <label>{{ t('announcement.subject') }}<ElInput v-model="title" maxlength="200" /></label>
           <p>{{ t('announcement.imageHint') }}</p>
           <Toolbar :editor="editorRef" :default-config="toolbarConfig" mode="simple" />
@@ -60,16 +100,54 @@
           >
         </form>
         <template v-else-if="selected">
-          <header
-            ><h2>{{ selected.title }}</h2
-            ><ElButton v-if="manage" :disabled="busy" @click="startEdit(false)">{{
+          <header class="announcement-article-heading">
+            <h2>{{ selected.title }}</h2>
+            <ElButton v-if="manage" :disabled="busy" @click="startEdit(false)">{{
               t('announcement.edit')
-            }}</ElButton></header
-          >
-          <time>{{ new Date(selected.created_at).toLocaleString() }}</time>
-          <div class="content" v-html="selected.body_html" />
+            }}</ElButton>
+          </header>
+          <div class="announcement-byline">
+            <div class="announcement-author">
+              <span class="announcement-avatar">
+                <img
+                  v-if="selected.author_character_id > 0"
+                  :src="buildEveCharacterPortraitUrl(selected.author_character_id, 64)"
+                  alt=""
+                />
+                <ArtSvgIcon v-else icon="ri:user-line" />
+              </span>
+              <div class="announcement-author-names">
+                <span class="announcement-author-label">{{ t('announcement.author') }}</span>
+                <span class="announcement-author-identity">
+                  <strong
+                    class="announcement-nickname"
+                    :title="selected.author_nickname || t('announcement.unknownAuthor')"
+                    >{{ selected.author_nickname || t('announcement.unknownAuthor') }}</strong
+                  >
+                  <span
+                    v-if="selected.author_character_name"
+                    class="announcement-character"
+                    :title="selected.author_character_name"
+                    >{{ selected.author_character_name }}</span
+                  >
+                </span>
+              </div>
+            </div>
+            <time class="announcement-published" :datetime="selected.created_at">
+              <ArtSvgIcon icon="ri:time-line" />
+              <span
+                >{{ t('announcement.publishedAt')
+                }}<strong>{{ new Date(selected.created_at).toLocaleString() }}</strong></span
+              >
+            </time>
+          </div>
+          <div class="content announcement-body" v-html="selected.body_html" />
         </template>
-        <p v-else>{{ t('announcement.select') }}</p>
+        <div v-else class="announcement-reader-empty"
+          ><ArtSvgIcon icon="ri:megaphone-line" /><p>{{
+            t(rows.length ? 'announcement.select' : 'announcement.empty')
+          }}</p></div
+        >
       </section>
     </div>
   </div>
@@ -90,6 +168,7 @@
   import type { Announcement } from '@/types/announcement'
   import { useUserStore } from '@/store/modules/user'
   import { useBadgeStore } from '@/store/modules/badge'
+  import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   defineOptions({ name: 'Announcements' })
   const MAX_IMAGES = 6
   const { t } = useI18n()
@@ -237,122 +316,16 @@
     editorRef.value?.destroy()
   })
 </script>
+<style scoped src="./announcements.css" />
 <style scoped>
-  .announcements {
-    padding: 24px;
-  }
-  header,
   footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .announcement-editor > label {
+    display: block;
     margin-bottom: 16px;
-  }
-  h1 {
-    font-size: 24px;
-  }
-  h2 {
-    font-size: 22px;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-  .board {
-    display: grid;
-    grid-template-columns: 320px minmax(0, 1fr);
-    gap: 20px;
-  }
-  .entry {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 16px;
-    border: 1px solid var(--el-border-color);
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    background: var(--el-bg-color);
-    transition:
-      border-color 0.15s ease,
-      background-color 0.15s ease;
-  }
-  .entry:hover {
-    background: var(--el-fill-color-light);
-  }
-  .entry-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .entry-title {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    min-width: 0;
-  }
-  .title-text {
-    font-weight: 500;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    word-break: break-word;
-  }
-  .unread .title-text {
-    font-weight: 700;
-    color: var(--el-text-color-primary);
-  }
-  .unread-dot {
-    width: 8px;
-    height: 8px;
-    margin-top: 6px;
-    border-radius: 9999px;
-    background: var(--el-color-primary);
-    flex-shrink: 0;
-  }
-  .badge {
-    flex-shrink: 0;
-    padding: 2px 8px;
-    border-radius: 9999px;
-    font-size: 12px;
-    line-height: 1.4;
-    font-weight: 600;
-  }
-  .badge-unread {
-    background: var(--el-color-primary);
-    color: #fff;
-  }
-  .badge-muted {
-    background: var(--el-fill-color);
-    color: var(--el-text-color-secondary);
-    font-weight: 500;
-  }
-  .entry time,
-  time {
-    display: block;
-    font-size: 12px;
-    opacity: 0.7;
-    margin-top: 8px;
-  }
-  .unread {
-    border-color: var(--el-color-primary);
-    border-left: 4px solid var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
-  }
-  .unread:hover {
-    background: var(--el-color-primary-light-8);
-  }
-  .selected {
-    outline: 2px solid var(--el-color-primary);
-  }
-  section {
-    min-width: 0;
-    border: 1px solid var(--el-border-color);
-    border-radius: 8px;
-    padding: 20px;
   }
   .editor {
     height: 350px;
@@ -455,10 +428,5 @@
   }
   form > p {
     margin: 12px 0;
-  }
-  @media (max-width: 900px) {
-    .board {
-      grid-template-columns: 1fr;
-    }
   }
 </style>

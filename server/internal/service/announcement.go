@@ -62,7 +62,13 @@ func (s *AnnouncementService) List(user uint, roles []string, page int) (interfa
 		Total int64                        `json:"total"`
 	}{rows, total}, err
 }
-func (s *AnnouncementService) Detail(id uint, roles []string) (*model.Announcement, error) {
+
+type AnnouncementDetail struct {
+	model.Announcement
+	repository.AnnouncementAuthor
+}
+
+func (s *AnnouncementService) Detail(id uint, roles []string) (*AnnouncementDetail, error) {
 	a, images, err := s.repo.Load(id)
 	if err != nil {
 		return nil, announcementLoadError(err)
@@ -73,9 +79,13 @@ func (s *AnnouncementService) Detail(id uint, roles []string) (*model.Announceme
 	for _, im := range images {
 		a.BodyHTML = strings.ReplaceAll(a.BodyHTML, "announcement-image:"+im.Digest, "data:image/jpeg;base64,"+base64.StdEncoding.EncodeToString(im.Data))
 	}
-	return a, nil
+	author, err := s.repo.Author(id)
+	if err != nil {
+		return nil, err
+	}
+	return &AnnouncementDetail{Announcement: *a, AnnouncementAuthor: author}, nil
 }
-func (s *AnnouncementService) Save(user, id uint, roles []string, in AnnouncementInput) (*model.Announcement, error) {
+func (s *AnnouncementService) Save(user, id uint, roles []string, in AnnouncementInput) (*AnnouncementDetail, error) {
 	if !CanManageAnnouncements(roles) {
 		return nil, ErrAnnouncementForbidden
 	}

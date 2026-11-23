@@ -3,6 +3,9 @@ export interface Announcement {
   title: string
   body_html?: string
   author_id: number
+  author_nickname: string
+  author_character_id: number
+  author_character_name: string
   hidden: boolean
   version: number
   revision: number
