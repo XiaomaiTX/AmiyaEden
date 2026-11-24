@@ -31,7 +31,7 @@
     "react": "^19.2.5",
     "react-aria-components": "^1.19.0",
     "react-dom": "^19.2.5",
-    "react-router-dom": "^7.14.2",
+    "react-router-dom": "7.18.2",
     "recharts": "3.8.0",
     "shadcn": "^4.6.0",
     "tailwind-merge": "^3.5.0",
@@ -57,7 +57,7 @@
     "tailwindcss": "^4.2.4",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10",
+    "vite": "8.1.6",
     "vitest": "^4.1.5"
   },
   "packageManager": "pnpm@11.15.1+sha512.81350b07e53c9538a02f1f2303b4290fa2d7be04e56e2a970c4cc4b417dc761de196edabd49d55c7dc9580db81007c44143e4e3d7e462b3000d23c255122d065"
