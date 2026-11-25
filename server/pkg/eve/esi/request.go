@@ -226,9 +226,7 @@ func (rl *RateLimiter) Wait(ctx context.Context, group string) error {
 // doRequest 底层 GET 请求：发送请求、读取响应、解析元数据、限速更新
 // 遇到 420 限速错误会自动指数退避重试
 func (c *Client) doRequest(ctx context.Context, url string, accessToken string) ([]byte, *ResponseMeta, error) {
-	var lastErr error
-
-	for attempt := 0; attempt <= maxRetries; attempt++ {
+	for attempt := 0; ; attempt++ {
 		// 构造请求
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
@@ -261,30 +259,22 @@ func (c *Client) doRequest(ctx context.Context, url string, accessToken string) 
 			c.rateLimiter.Update(meta)
 		}
 
-		// 420 限速：指数退避重试
-		if resp.StatusCode == 420 {
-			delay := retryBaseDelay * time.Duration(1<<uint(attempt))
-			if delay > rateLimitMaxWait {
-				delay = rateLimitMaxWait
-			}
-			global.Logger.Warn("[ESI RateLimit] 收到 420 限速，退避重试",
-				zap.String("url", url),
-				zap.Int("attempt", attempt+1),
-				zap.Duration("delay", delay),
-			)
-			lastErr = fmt.Errorf("ESI rate limited (420) on %s", url)
-			select {
-			case <-time.After(delay):
-				continue
-			case <-ctx.Done():
-				return nil, meta, ctx.Err()
-			}
+		if resp.StatusCode != 420 || attempt == maxRetries {
+			return body, meta, nil
 		}
 
-		return body, meta, nil
+		delay := min(retryBaseDelay<<attempt, rateLimitMaxWait)
+		global.Logger.Warn("[ESI RateLimit] 收到 420 限速，退避重试",
+			zap.String("url", url),
+			zap.Int("attempt", attempt+1),
+			zap.Duration("delay", delay),
+		)
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return nil, meta, ctx.Err()
+		}
 	}
-
-	return nil, nil, fmt.Errorf("ESI rate limited after %d retries: %w", maxRetries, lastErr)
 }
 
 // GetWithMeta 发起 GET 请求并返回解码后的数据和响应元数据
