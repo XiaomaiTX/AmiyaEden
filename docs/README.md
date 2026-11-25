@@ -176,6 +176,10 @@ source_of_truth:
 
 - [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。
 
+## 2.0.0 升级清理
+
+- [手动清理 2.0.0 以前的残留](guides/pre-2.0-cleanup.md)
+
 ## QQ Bot 下线
 
 - [当前下线边界](features/current/qq-group-governance.md)

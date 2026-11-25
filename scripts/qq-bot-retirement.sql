@@ -26,6 +26,13 @@ SET TRANSACTION READ ONLY;
 \endif
 SET LOCAL search_path = pg_catalog;
 SET LOCAL lock_timeout = '5s';
+\if :{?cleanup_pre_2_0}
+\if :cleanup_pre_2_0
+-- Fail rather than silently count or delete only rows visible to an RLS policy.
+SET LOCAL row_security = off;
+SET LOCAL client_min_messages = notice;
+\endif
+\endif
 SELECT set_config('retirement.target_database', :'target_database', true) AS db,
        set_config('retirement.target_schema', :'target_schema', true) AS schema,
        set_config('retirement.apply', :'apply', true) AS mode \gset
@@ -153,6 +160,11 @@ BEGIN
     END IF;
 END;
 $cleanup$;
+\if :{?cleanup_pre_2_0}
+\if :cleanup_pre_2_0
+\ir cleanup-pre-2.0-extra.sql
+\endif
+\endif
 \if :apply
 COMMIT;
 \else
