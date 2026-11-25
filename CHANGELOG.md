@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **升级前备份数据库。** 启动迁移会删除 QQ 和 Discord 均为空白的账号（含已软删除账号）及指定关联资料，并使这些账号的旧会话失效；订单、账务等业务历史保留。详见[认证与人物绑定](docs/features/current/auth-and-characters.md#注册状态与部署迁移)。
 - 队长退税迁移会删除旧绑定、资格缓存、归因与结算数据及对应任务记录，保留钱包余额和历史流水。升级后在新人资格与队长退税设置中配置允许退税的星系，详见[新人资格与队长退税](docs/features/current/newbro-support.md)。旧入团和运营薪资流程分别改用[入团申请](docs/features/current/corporation-admissions.md)和[运营薪资](docs/features/current/operation-salaries.md)。
-- QQ Bot 旧数据不会自动删除。升级时停用旧 NapCat 连接；依赖 QQ 投递的系统需自行配置其他渠道，不会自动转投。仅在完成备份并经审批后，按 [QQ Bot 下线清理指南](docs/guides/qq-bot-retirement-cleanup.md)预览并选择是否清理 PostgreSQL 和 Redis 数据。
+- QQ Bot 旧数据不会自动删除。升级时停用旧 NapCat 连接；依赖 QQ 投递的系统需自行配置其他渠道，不会自动转投。完成启动迁移和备份后，按 [2.0.0 残留清理指南](docs/guides/pre-2.0-cleanup.md)预览并选择是否清理 PostgreSQL 和 Redis 数据；如只处理 QQ Bot，参见 [QQ Bot 下线清理指南](docs/guides/qq-bot-retirement-cleanup.md)。
 
 <!--
 发布范围核对：c7293b6d..61e91621，共 45 个提交。未单列的提交及分类：
