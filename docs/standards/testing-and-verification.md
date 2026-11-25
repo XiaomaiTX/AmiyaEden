@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-24
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/regression-test-plan.md
@@ -50,7 +50,7 @@ Vue：
 React：
 
 - `cd static-react && pnpm lint`
-- `cd static-react && pnpm exec tsc -b`
+- `cd static-react && pnpm exec tsc -b`（独立本地类型检查；React 构建已包含该检查）
 - `cd static-react && pnpm test`
 - `cd static-react && pnpm check:api-contract`
 - `cd static-react && pnpm build`
@@ -64,7 +64,7 @@ React：
 - 缺陷修复在可合理测试的前提下，必须新增或更新回归覆盖。
 - 后端逻辑变更应在同一 Go package 下补 `_test.go` 覆盖。
 - Repository 的分支、过滤、合并、查询与兜底逻辑必须为关键分支补 Go 测试。
-- 纯前端 helper 或 hook 逻辑应补 `pnpm test:unit` 覆盖。
+- 纯前端 helper 或 hook 逻辑应由对应前端的单测覆盖。
 - API 契约变更必须同时校验后端与前端，并在至少一侧补行为级覆盖。
 - 任何写入文档的测试命令必须能按字面运行。
 
@@ -86,9 +86,9 @@ React：
 
 ## 最低验证要求
 
-- 仅后端变更 -> 执行后端测试与构建命令
-- 仅前端变更 -> 执行前端 lint 与 typecheck，如相关再执行单测
-- 契约变更 -> 同时校验后端与前端
+- 后端变更 -> 执行[后端 lint、测试与构建](#后端)
+- 前端变更 -> 对每个受影响的前端执行 [lint 与 typecheck](#前端)；改动 helper、hook 等可单测逻辑时，执行对应前端的单测
+- API 契约变更 -> 执行上述后端和实际消费该契约的前端检查；React 消费该契约时，执行 React API 契约隔离检查
 - 新功能 -> 除非显式声明允许例外，必须为新增行为新增或更新相关自动化覆盖
 - 缺陷修复 -> 除非显式声明允许例外，必须新增或更新回归覆盖
 - 已有功能行为变更 -> 按需审查并更新现有测试，并为新增或变化的行为补覆盖，除非显式声明允许例外
@@ -111,6 +111,5 @@ React：
 
 - 新功能或变更的功能行为：是否新增或更新了相关覆盖？
 - 缺陷修复、契约变更、兜底变更、非平凡分支变更：是否新增或更新了回归覆盖？
-- 是否执行了最低要求的命令？
-- 若跳过了某项测试，原因是否写明？
+- 是否执行了最低要求的命令？若某项必要的检查或测试未执行，写明具体项目、原因和适用的后续补测位置。
 - 若新增了写入文档的测试命令，是否已在本地实际运行？
