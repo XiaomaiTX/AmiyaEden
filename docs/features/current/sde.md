@@ -54,13 +54,13 @@ source_of_truth:
 - **代理配置**：
   - 若配置了代理但代理不可达，下载器会自动回退为直连
 - **导入目标**：当前业务 PostgreSQL，而非独立的只读 SDE 库
-- **自动任务状态**：`server/jobs/sde.go` 中的启动检查与定时任务注册当前均已禁用
+- **自动任务状态**：[启动与任务注册](../../../server/bootstrap/cron.go)不注册 SDE 检查或导入任务
 - **手动运维能力**：
   - `POST /system/sde-config/check` 仅探测上游最新版本，不触发导入
   - `POST /system/sde-config/update` 执行手动导入（即使当前已是最新版本，也允许强制重导入）
   - `GET /system/sde-config/status` 返回状态快照（当前版本、最新版本、最近检查/更新时间与错误）
   - 状态快照保存在 `system_config`（键：`sde.status`）
-  - SDE 查询类错误（如名称/类型查询失败）由 repository 层统一写入状态快照，供基础配置页排障
+  - 物品查询、名称解析和物品模糊搜索，仅在缺表或缺列时尝试另一布局；连接、超时等错误直接记录到状态快照，供基础配置页排障
 
 ## 权限边界
 
