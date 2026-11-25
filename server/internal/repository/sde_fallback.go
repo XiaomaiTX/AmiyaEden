@@ -8,6 +8,24 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// querySDEWithLayout retries only when imported table or column naming may differ.
+func querySDEWithLayout[T any](operation string, query func(camelCase bool) (T, error)) (T, error) {
+	result, err := query(true)
+	if err == nil {
+		return result, nil
+	}
+	if shouldRetrySDELayoutFallback(err) {
+		fallback, fallbackErr := query(false)
+		if fallbackErr == nil {
+			return fallback, nil
+		}
+		err = wrapSDEFallbackError(err, fallbackErr)
+	}
+	reportSDEQueryError(operation, err)
+	var zero T
+	return zero, err
+}
+
 func shouldRetrySDELayoutFallback(err error) bool {
 	if err == nil {
 		return false
@@ -24,7 +42,8 @@ func shouldRetrySDELayoutFallback(err error) bool {
 	}
 
 	msg := strings.ToLower(err.Error())
-	return strings.Contains(msg, "relation") && strings.Contains(msg, "does not exist") ||
+	return strings.Contains(msg, "no such table:") || strings.Contains(msg, "no such column:") ||
+		strings.Contains(msg, "relation") && strings.Contains(msg, "does not exist") ||
 		strings.Contains(msg, "column") && strings.Contains(msg, "does not exist")
 }
 

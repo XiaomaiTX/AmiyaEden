@@ -20,17 +20,9 @@ type TypeInfo struct {
 
 // GetTypes 查询物品(组)信息
 func (r *SdeRepository) GetTypes(typeIDs []int, published *bool, languageID string) ([]TypeInfo, error) {
-	result, err := r.getTypesWithLayout(typeIDs, published, languageID, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getTypesWithLayout(typeIDs, published, languageID, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetTypes", err, fallbackErr)
+	return querySDEWithLayout("GetTypes", func(camelCase bool) ([]TypeInfo, error) {
+		return r.getTypesWithLayout(typeIDs, published, languageID, camelCase)
+	})
 }
 
 func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, languageID string, camelCase bool) ([]TypeInfo, error) {
@@ -92,17 +84,9 @@ func (r *SdeRepository) getTypesWithLayout(typeIDs []int, published *bool, langu
 // GetTypesByCategoryID 获取指定 categoryID 下所有已发布的物品（含翻译）
 // 主要用于技能模块获取 categoryID=16 的全量技能列表
 func (r *SdeRepository) GetTypesByCategoryID(categoryID int, languageID string) ([]TypeInfo, error) {
-	result, err := r.getTypesByCategoryIDWithLayout(categoryID, languageID, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getTypesByCategoryIDWithLayout(categoryID, languageID, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetTypesByCategoryID", err, fallbackErr)
+	return querySDEWithLayout("GetTypesByCategoryID", func(camelCase bool) ([]TypeInfo, error) {
+		return r.getTypesByCategoryIDWithLayout(categoryID, languageID, camelCase)
+	})
 }
 
 func (r *SdeRepository) getTypesByCategoryIDWithLayout(categoryID int, languageID string, camelCase bool) ([]TypeInfo, error) {
@@ -157,17 +141,9 @@ func (r *SdeRepository) GetTypeIDsByNames(names []string) (map[string]int64, err
 	if len(names) == 0 {
 		return map[string]int64{}, nil
 	}
-	result, err := r.getTypeIDsByNamesWithLayout(names, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getTypeIDsByNamesWithLayout(names, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetTypeIDsByNames", err, fallbackErr)
+	return querySDEWithLayout("GetTypeIDsByNames", func(camelCase bool) (map[string]int64, error) {
+		return r.getTypeIDsByNamesWithLayout(names, camelCase)
+	})
 }
 
 func (r *SdeRepository) getTypeIDsByNamesWithLayout(names []string, camelCase bool) (map[string]int64, error) {

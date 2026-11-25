@@ -24,17 +24,9 @@ type FuzzySearchItem struct {
 
 // FuzzySearch 模糊搜索 trnTranslations（物品名称）及成员名称
 func (r *SdeRepository) FuzzySearch(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool) ([]FuzzySearchItem, error) {
-	result, err := r.fuzzySearchWithLayout(keyword, languageID, categoryIDs, excludeCategoryIDs, limit, searchMember, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.fuzzySearchWithLayout(keyword, languageID, categoryIDs, excludeCategoryIDs, limit, searchMember, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("FuzzySearch", err, fallbackErr)
+	return querySDEWithLayout("FuzzySearch", func(camelCase bool) ([]FuzzySearchItem, error) {
+		return r.fuzzySearchWithLayout(keyword, languageID, categoryIDs, excludeCategoryIDs, limit, searchMember, camelCase)
+	})
 }
 
 func (r *SdeRepository) fuzzySearchWithLayout(keyword string, languageID string, categoryIDs []int, excludeCategoryIDs []int, limit int, searchMember bool, camelCase bool) ([]FuzzySearchItem, error) {
@@ -108,17 +100,9 @@ func (r *SdeRepository) fuzzySearchWithLayout(keyword string, languageID string,
 
 // GetFlags 批量查询 invFlags
 func (r *SdeRepository) GetFlags(flagIDs []int) ([]FlagInfo, error) {
-	result, err := r.getFlagsWithLayout(flagIDs, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getFlagsWithLayout(flagIDs, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetFlags", err, fallbackErr)
+	return querySDEWithLayout("GetFlags", func(camelCase bool) ([]FlagInfo, error) {
+		return r.getFlagsWithLayout(flagIDs, camelCase)
+	})
 }
 
 func (r *SdeRepository) getFlagsWithLayout(flagIDs []int, camelCase bool) ([]FlagInfo, error) {

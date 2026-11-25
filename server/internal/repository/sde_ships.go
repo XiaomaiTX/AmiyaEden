@@ -62,17 +62,9 @@ type MarketGroupNode struct {
 
 // GetShipsByCategoryID 获取 categoryID=6 的所有已发布舰船（含翻译、raceID、marketGroupID）
 func (r *SdeRepository) GetShipsByCategoryID(languageID string) ([]ShipInfo, error) {
-	result, err := r.getShipsByCategoryIDWithLayout(languageID, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getShipsByCategoryIDWithLayout(languageID, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetShipsByCategoryID", err, fallbackErr)
+	return querySDEWithLayout("GetShipsByCategoryID", func(camelCase bool) ([]ShipInfo, error) {
+		return r.getShipsByCategoryIDWithLayout(languageID, camelCase)
+	})
 }
 
 func (r *SdeRepository) getShipsByCategoryIDWithLayout(languageID string, camelCase bool) ([]ShipInfo, error) {
@@ -116,17 +108,9 @@ func (r *SdeRepository) getShipsByCategoryIDWithLayout(languageID string, camelC
 
 // GetShipSkillRequirements 批量获取舰船技能需求（含前置技能递归）
 func (r *SdeRepository) GetShipSkillRequirements(shipTypeIDs []int) ([]ShipSkillReq, error) {
-	result, err := r.getShipSkillRequirementsWithLayout(shipTypeIDs, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getShipSkillRequirementsWithLayout(shipTypeIDs, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetShipSkillRequirements", err, fallbackErr)
+	return querySDEWithLayout("GetShipSkillRequirements", func(camelCase bool) ([]ShipSkillReq, error) {
+		return r.getShipSkillRequirementsWithLayout(shipTypeIDs, camelCase)
+	})
 }
 
 func (r *SdeRepository) getShipSkillRequirementsWithLayout(shipTypeIDs []int, camelCase bool) ([]ShipSkillReq, error) {
@@ -228,17 +212,7 @@ func sdeRequiredSkillFilterSQL() string {
 
 // GetAllRaces 获取所有种族
 func (r *SdeRepository) GetAllRaces() ([]RaceInfo, error) {
-	result, err := r.getAllRacesWithLayout(true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getAllRacesWithLayout(false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetAllRaces", err, fallbackErr)
+	return querySDEWithLayout("GetAllRaces", r.getAllRacesWithLayout)
 }
 
 func (r *SdeRepository) getAllRacesWithLayout(camelCase bool) ([]RaceInfo, error) {
@@ -253,17 +227,7 @@ func (r *SdeRepository) getAllRacesWithLayout(camelCase bool) ([]RaceInfo, error
 
 // GetMarketGroupTree 获取所有市场分组的父子关系
 func (r *SdeRepository) GetMarketGroupTree() ([]MarketGroupNode, error) {
-	result, err := r.getMarketGroupTreeWithLayout(true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getMarketGroupTreeWithLayout(false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetMarketGroupTree", err, fallbackErr)
+	return querySDEWithLayout("GetMarketGroupTree", r.getMarketGroupTreeWithLayout)
 }
 
 func (r *SdeRepository) getMarketGroupTreeWithLayout(camelCase bool) ([]MarketGroupNode, error) {

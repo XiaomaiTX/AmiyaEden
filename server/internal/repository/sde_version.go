@@ -38,17 +38,9 @@ func (r *SdeRepository) GetTranslation(tcID int, keyID int, languageID string) (
 
 // GetNames 按 namespace 批量查询 id -> name 映射。
 func (r *SdeRepository) GetNames(ids map[string][]int, languageID string) (SdeNameMap, error) {
-	result, err := r.getNamesWithLayout(ids, languageID, true)
-	if err == nil {
-		return result, nil
-	}
-
-	fallbackResult, fallbackErr := r.getNamesWithLayout(ids, languageID, false)
-	if fallbackErr == nil {
-		return fallbackResult, nil
-	}
-
-	return nil, wrapAndReportSDEFallbackError("GetNames", err, fallbackErr)
+	return querySDEWithLayout("GetNames", func(camelCase bool) (SdeNameMap, error) {
+		return r.getNamesWithLayout(ids, languageID, camelCase)
+	})
 }
 
 func (r *SdeRepository) getNamesWithLayout(ids map[string][]int, languageID string, camelCase bool) (SdeNameMap, error) {
