@@ -910,7 +910,7 @@ const zhCN = {
     },
     confirm: {
       runTask: '确定要立即执行任务「{name}」吗？',
-      runAllEsi: '确定要执行全部 ESI 刷新任务吗？',
+      runAllEsi: '确定要为所有人物在后台执行全部 ESI 刷新任务吗？',
     },
     messages: {
       eventTriggered: '触发型任务无需手动执行',
@@ -949,7 +949,7 @@ const zhCN = {
         nextRun: '下次执行',
       },
       confirm: {
-        runTaskByName: '确定要执行任务「{name}」吗？',
+        runTaskByName: '确定要为所有人物在后台执行任务「{name}」吗？',
       },
       messages: {
         loadStatusesFailed: '加载 ESI 状态失败。',

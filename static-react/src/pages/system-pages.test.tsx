@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { appRoutes } from '@/app/router'
 import { useSessionStore } from '@/stores'
@@ -138,6 +138,106 @@ describe('system migration pages', () => {
     await waitFor(() => {
       expect(screen.getByText('Character Refresh')).toBeInTheDocument()
     })
+  })
+
+  test('ESI rows run directly, while both all-character actions require confirmation', async () => {
+    useSessionStore.setState({ roles: ['admin'], corpCapabilities: ['system.task.read'] })
+    const user = userEvent.setup()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    let resolveCharacter!: (response: Response) => void
+    const characterRequest = new Promise<Response>((resolve) => {
+      resolveCharacter = resolve
+    })
+    let resolveByName!: (response: Response) => void
+    const byNameRequest = new Promise<Response>((resolve) => {
+      resolveByName = resolve
+    })
+    const runCharacter = vi
+      .fn<(body: BodyInit | null | undefined) => Promise<Response>>()
+      .mockReturnValue(characterRequest)
+    const runByName = vi
+      .fn<(body: BodyInit | null | undefined) => Promise<Response>>()
+      .mockReturnValue(byNameRequest)
+    const runAll = vi.fn(async () => jsonResponse(null))
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const path = new URL(String(input), window.location.href).pathname
+      switch (path) {
+        case '/api/v1/tasks/esi/tasks':
+          return jsonResponse([{ name: 'refresh-pilot' }])
+        case '/api/v1/tasks/esi/statuses':
+          return jsonResponse({
+            list: [1001, 1002].map((character_id) => ({
+              task_name: 'refresh-pilot',
+              character_id,
+              character_name: `Pilot ${character_id}`,
+              priority: 50,
+              status: 'pending',
+            })),
+            total: 2,
+            page: 1,
+            pageSize: 20,
+          })
+        case '/api/v1/tasks/esi/run':
+          return runCharacter(init?.body)
+        case '/api/v1/tasks/esi/run-task':
+          return runByName(init?.body)
+        case '/api/v1/tasks/esi/run-all':
+          return runAll()
+        default:
+          return jsonResponse([])
+      }
+    })
+
+    const router = createMemoryRouter(appRoutes, { initialEntries: ['/system/task-manager'] })
+    render(<RouterProvider router={router} />)
+    await user.click(await screen.findByRole('button', { name: 'ESI 状态' }))
+
+    const runButtonFor = async (pilot: string) => {
+      const row = (await screen.findByText(pilot)).closest<HTMLElement>('[role="row"], tr')
+      if (!row) throw new Error(`Missing ESI status row for ${pilot}`)
+      return within(row).getByRole('button', { name: '执行' })
+    }
+    const rowRun = await runButtonFor('Pilot 1001')
+    const otherRun = await runButtonFor('Pilot 1002')
+    const byName = await screen.findByRole('button', { name: 'refresh-pilot' })
+    const all = screen.getByRole('button', { name: '执行全部 ESI' })
+    for (const button of [rowRun, byName, all]) expect(button).toBeDisabled()
+    act(() => {
+      useSessionStore.setState({ corpCapabilities: ['system.task.read', 'system.task.run'] })
+    })
+
+    await user.click(rowRun)
+    expect(confirm).not.toHaveBeenCalled()
+    expect(runCharacter).toHaveBeenCalledExactlyOnceWith(
+      JSON.stringify({ task_name: 'refresh-pilot', character_id: 1001 })
+    )
+    expect(rowRun).toBeDisabled()
+    expect(otherRun).toBeEnabled()
+    resolveCharacter(Response.json({ msg: 'Character refresh failed' }, { status: 500 }))
+    expect(await screen.findByText('Character refresh failed')).toBeInTheDocument()
+    expect(rowRun).toBeEnabled()
+
+    await user.click(byName)
+    await user.click(all)
+    expect(confirm).toHaveBeenNthCalledWith(
+      1,
+      '确定要为所有人物在后台执行任务「refresh-pilot」吗？'
+    )
+    expect(confirm).toHaveBeenNthCalledWith(2, '确定要为所有人物在后台执行全部 ESI 刷新任务吗？')
+    expect(runByName).not.toHaveBeenCalled()
+    expect(runAll).not.toHaveBeenCalled()
+
+    confirm.mockReturnValue(true)
+    await user.click(byName)
+    expect(runByName).toHaveBeenCalledExactlyOnceWith(JSON.stringify({ task_name: 'refresh-pilot' }))
+    expect(byName).toBeDisabled()
+    expect(all).toBeDisabled()
+    expect(rowRun).toBeEnabled()
+    resolveByName(jsonResponse(null))
+    await waitFor(() => expect(all).toBeEnabled())
+    await user.click(all)
+    expect(runAll).toHaveBeenCalledTimes(1)
   })
 
   test('system wallet page loads the wallet list tab', async () => {
