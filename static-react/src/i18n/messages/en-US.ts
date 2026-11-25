@@ -930,7 +930,7 @@ const enUS = {
     },
     confirm: {
       runTask: 'Run task "{name}" now?',
-      runAllEsi: 'Run all ESI refresh tasks now?',
+      runAllEsi: 'Run all ESI refresh tasks for all characters in the background?',
     },
     messages: {
       eventTriggered: 'Triggered tasks do not need manual execution',
@@ -969,7 +969,7 @@ const enUS = {
         nextRun: 'Next Run',
       },
       confirm: {
-        runTaskByName: 'Run task "{name}"?',
+        runTaskByName: 'Run task "{name}" for all characters in the background?',
       },
       messages: {
         loadStatusesFailed: 'Failed to load ESI statuses.',

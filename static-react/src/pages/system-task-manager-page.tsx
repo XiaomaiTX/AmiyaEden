@@ -556,6 +556,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
   const [runningKeys, setRunningKeys] = useState<string[]>([])
+  const [fanOutPending, setFanOutPending] = useState(false)
   const [refreshSeed, setRefreshSeed] = useState(0)
 
   const loadTasks = useCallback(async () => {
@@ -618,12 +619,15 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
       return
     }
 
+    setFanOutPending(true)
     setError(null)
     try {
       await runESIRefreshTaskByName({ task_name: task.name })
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('taskManager.esi.messages.taskTriggerFailedAll')))
+    } finally {
+      setFanOutPending(false)
     }
   }
 
@@ -632,26 +636,19 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
       return
     }
 
+    setFanOutPending(true)
     setError(null)
     try {
       await runESIRefreshAll()
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('taskManager.esi.messages.refreshTriggerFailed')))
+    } finally {
+      setFanOutPending(false)
     }
   }
 
   const handleRunTask = async (row: TaskStatus) => {
-    if (
-      !window.confirm(
-        t('taskManager.esi.confirm.runTaskByName', {
-          name: taskDisplayName(t, { name: row.task_name }),
-        })
-      )
-    ) {
-      return
-    }
-
     const key = `${row.task_name}_${row.character_id}`
     setRunningKeys((current) => [...current, key])
     setError(null)
@@ -678,7 +675,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
             type="button"
             variant="outline"
             onClick={() => void handleRunAll()}
-            isDisabled={!canRun}
+            isDisabled={!canRun || fanOutPending}
           >
             {t('taskManager.actions.runAllEsi')}
           </Button>
@@ -688,7 +685,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               type="button"
               variant="outline"
               onClick={() => void handleRunTaskByName(task)}
-              isDisabled={!canRun}
+              isDisabled={!canRun || fanOutPending}
             >
               {taskDisplayName(t, task)}
             </Button>
