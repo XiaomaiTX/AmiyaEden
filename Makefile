@@ -89,4 +89,5 @@ test: test-backend test-vue test-react
 
 build: build-backend build-vue build-react
 
-verify: lint typecheck test build check-react-contract
+# React's build already runs tsc -b.
+verify: lint typecheck-vue test build check-react-contract

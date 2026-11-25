@@ -1,11 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { getAdmissionContext } from '@/api/admissions'
 import { useSessionStore } from '@/stores'
 import { useAdmissionContext } from './use-admission-context'
 import type { AdmissionContext } from '@/types/api/admissions'
 
 vi.unmock('@/hooks/use-admission-context')
-vi.mock('@/api/admissions', () => ({ getAdmissionContext: vi.fn() }))
+const fetchMock = vi.fn<typeof fetch>()
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', fetchMock)
+})
 
 const context: AdmissionContext = {
   is_member: true,
@@ -18,15 +21,16 @@ const context: AdmissionContext = {
   reviewable_corporation_ids: [98185110],
 }
 
+const success = (data: AdmissionContext) => Response.json({ code: 200, msg: '', data })
+
 afterEach(() => {
   act(() => useSessionStore.getState().clearSession())
-  vi.resetAllMocks()
+  fetchMock.mockReset()
+  vi.unstubAllGlobals()
 })
 
 it('keeps eligibility closed on failure, retries, refreshes membership, and clears on logout', async () => {
-  vi.mocked(getAdmissionContext)
-    .mockRejectedValueOnce(new Error('offline'))
-    .mockResolvedValueOnce(context)
+  fetchMock.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(success(context))
   act(() =>
     useSessionStore.setState({ isLoggedIn: true, accessToken: 'context-retry', hydratedAt: '1' })
   )
@@ -35,21 +39,35 @@ it('keeps eligibility closed on failure, retries, refreshes membership, and clea
   await waitFor(() => expect(result.current.error).toBe(true))
   await act(() => result.current.reload())
   expect(result.current.context?.can_create_alt).toBe(true)
-  vi.mocked(getAdmissionContext).mockResolvedValueOnce({
-    ...context,
-    is_member: false,
-    can_create_alt: false,
-    can_create_new_member: true,
-  })
+  fetchMock.mockResolvedValueOnce(
+    success({ ...context, is_member: false, can_create_alt: false, can_create_new_member: true })
+  )
   act(() => useSessionStore.setState({ hydratedAt: '2' }))
   await waitFor(() => expect(result.current.context?.can_create_new_member).toBe(true))
   act(() => useSessionStore.getState().clearSession())
   expect(result.current.context).toBeNull()
 })
 
+it.each(['characters', 'targets', 'reviewable_corporation_ids'] as const)(
+  'keeps eligibility closed when context has invalid %s',
+  async (field) => {
+    fetchMock.mockResolvedValueOnce(success({ ...context, [field]: null }))
+    act(() =>
+      useSessionStore.setState({
+        isLoggedIn: true,
+        accessToken: `invalid-${field}`,
+        hydratedAt: '1',
+      })
+    )
+    const { result } = renderHook(() => useAdmissionContext())
+    await waitFor(() => expect(result.current.error).toBe(true))
+    expect(result.current.context).toBeNull()
+  }
+)
+
 it('does not let an older session response restore permissions after logout', async () => {
-  let finish!: (value: AdmissionContext) => void
-  vi.mocked(getAdmissionContext).mockReturnValue(
+  let finish!: (value: ReturnType<typeof success>) => void
+  fetchMock.mockReturnValue(
     new Promise((resolve) => {
       finish = resolve
     })
@@ -58,10 +76,10 @@ it('does not let an older session response restore permissions after logout', as
     useSessionStore.setState({ isLoggedIn: true, accessToken: 'context-stale', hydratedAt: '3' })
   )
   const { result } = renderHook(() => useAdmissionContext())
-  await waitFor(() => expect(getAdmissionContext).toHaveBeenCalled())
+  await waitFor(() => expect(fetchMock).toHaveBeenCalled())
   act(() => useSessionStore.getState().clearSession())
   await act(async () => {
-    finish(context)
+    finish(success(context))
   })
   expect(result.current.context).toBeNull()
   expect(result.current.loading).toBe(false)

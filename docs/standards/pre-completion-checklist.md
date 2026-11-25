@@ -2,113 +2,56 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-24
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/dependency-layering.md
   - docs/standards/documentation-governance.md
+  - docs/standards/testing-and-verification.md
 ---
 
 # 预完成核对清单
 
 ## 适用范围
 
-在把工作标记为完成之前，使用本清单核对。仅可跳过与当前改动无关的条目。
+完成前核对所有适用项。跨层变更同时核对涉及的各层；纯文档变更只核对通用项和文档项。
 
-## 核心规则
+## 通用核对
 
-- 本文件是完成门槛。
-- `docs/standards/testing-and-verification.md` 是命令、覆盖规则与允许例外的唯一权威来源。
-- 如跳过某项必要的检查或测试，必须明确写明原因。
-- 除非存在显式迁移要求，不得引入任何推测性的向后兼容别名、隐藏重定向、兜底载荷、废弃路由、重复端点/契约或影子页面。
-- 难以从代码直接看出的持久后端或架构决策，必须按 `docs/standards/documentation-governance.md` 写入最近的权威文档。
+- [ ] 改动聚焦于任务；替换契约或路由时，遵循[有意替换规则](../ai/repo-rules.md#non-negotiable-rules)处理旧入口。
+- [ ] 按[测试与验证规范](testing-and-verification.md#最低验证要求)完成适用的验证和回归覆盖，照其[完成核对](testing-and-verification.md#完成核对)记录未执行的必要检查。
+- [ ] 行为变化时更新相关 feature 文档；新增或修改路由、路由面或权限边界时更新[路由索引](../api/route-index.md)。
+- [ ] 难以从代码看出的持久后端或架构决策按[文档治理规范](documentation-governance.md#技术设计决策)记录在最近的权威文档中。
 
 ## 按变更类型核对
 
-### 仅后端变更
+### 后端变更
 
-- [ ] `cd server && golangci-lint run ./...`
-- [ ] `cd server && go build ./...`
-- [ ] `cd server && go test ./...`
-- [ ] 范围保持聚焦，未引入无关重构
-- [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底或重复契约
-- [ ] 未引入层级违反
-- [ ] 若为缺陷修复，已新增或更新回归测试
-- [ ] 若 API 契约发生变化，已更新前端 API wrapper 与类型
-- [ ] 若新增或修改路由，已更新 `docs/api/route-index.md`
-- [ ] 若行为发生变化，已更新相关 feature 文档
-- [ ] 若存在难以从代码看出的持久后端设计决策，最近的权威文档已记录决策、理由、不变量与主要代码文件
+- [ ] 改动符合[依赖分层规范](dependency-layering.md)。
 
-### 仅前端变更
+### 前端变更
 
-- [ ] Vue 变更执行 `cd static && pnpm lint .` 与 `cd static && pnpm exec vue-tsc --noEmit`
-- [ ] React 变更执行 `cd static-react && pnpm lint` 与 `cd static-react && pnpm exec tsc -b`
-- [ ] 若改动了 Vue helper/hook，执行 `cd static && pnpm test:unit`
-- [ ] 若改动了 React helper/hook，执行 `cd static-react && pnpm test`
-- [ ] 范围保持聚焦，未引入无关重构
-- [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底、隐藏重定向或影子页面
-- [ ] 未在 view 中直接发起 HTTP 调用
-- [ ] 所有新增用户可见文案已同时写入 `zh.json` 和 `en.json`
-- [ ] 若行为发生变化，已更新相关 feature 文档
-- [ ] Vue 通过 `@click` / `@change` 等绑定的事件处理器具有匹配的类型签名；React 通过 TypeScript 检查事件和组件 props
+- [ ] View 通过 API 层发出请求；新增用户可见文案已同步写入 `zh.json` 和 `en.json`。
+- [ ] Vue 事件处理器签名与绑定匹配；React 事件和组件 props 已通过 TypeScript 检查。
 
 ### 跨契约变更
 
-- [ ] `cd server && golangci-lint run ./...`
-- [ ] `cd server && go build ./...`
-- [ ] `cd server && go test ./...`
-- [ ] `cd static && pnpm lint .` 与 `cd static && pnpm exec vue-tsc --noEmit`（若 Vue 仍消费该契约）
-- [ ] `cd static-react && pnpm lint`、`pnpm exec tsc -b`、`pnpm check:api-contract`（若 React 消费该契约）
-- [ ] 如相关，执行对应前端的单测
-- [ ] 范围保持聚焦，未引入无关重构
-- [ ] 未在缺乏显式迁移要求的情况下引入推测性的向后兼容别名、兜底、隐藏重定向或重复契约
-- [ ] 已更新前端 API wrapper
-- [ ] 已更新共享 TypeScript 类型
-- [ ] 后端响应字段与前端类型字段一致
-- [ ] 若路由面或权限边界发生变化，已更新 `docs/api/route-index.md`
-- [ ] 若行为发生变化，已更新相关 feature 文档
-- [ ] 若存在难以从代码看出的持久后端或契约设计决策，最近的权威文档已记录决策、理由、不变量与主要代码文件
+- [ ] 后端与前端 wrapper、类型和 UI 用法已同步；后端响应字段与前端类型一致。
 
 ### 权限或角色变更
 
-- [ ] 已完成"跨契约变更"的所有适用项
-- [ ] 已按需更新后端路由保护
-- [ ] 已按需更新前端路由元信息
-- [ ] 已对齐 Vue `v-auth` 与 React permission gate/hook 等按钮权限用法
-- [ ] 若路由或页面访问模型发生变化，已更新 `docs/architecture/routing-and-menus.md`
-- [ ] 若权限模型或行为发生变化，已更新 `docs/architecture/auth-and-permissions.md`
-- [ ] `docs/features/current/badge-counts.md` 中的角标字段可见性仍与更新后的角色边界一致；若不一致需同步更新
+- [ ] 已按需更新后端路由保护、前端路由元信息及 Vue `v-auth` / React permission gate 或 hook 的按钮权限。
+- [ ] 路由或页面访问模型变化时更新[路由与菜单](../architecture/routing-and-menus.md)；权限模型或行为变化时更新[认证与权限](../architecture/auth-and-permissions.md)。
+- [ ] 若角色边界影响角标字段可见性，已核对并按需更新[角标文档](../features/current/badge-counts.md)。
 
 ### 仅文档变更
 
-- [ ] 范围保持聚焦，未引入无关重构
-- [ ] 已按需更新 front matter
-- [ ] 未引入失效引用或断链
-- [ ] 已按需更新索引文档
-- [ ] 当文档描述当前实现时，已核对当前代码
+- [ ] 已按需更新 front matter 和索引；新增或修改的引用可打开。
+- [ ] 描述当前实现时，已核对当前代码。
 
 ### 新功能或新模块
 
-- [ ] 已完成"跨契约变更"的所有适用项
-- [ ] 若新功能具有持久行为，已在 `docs/features/current/` 下创建 feature 文档
-- [ ] 已按需更新相关 feature 索引
-- [ ] 已在 `zh.json` 和 `en.json` 中完成本地化
-- [ ] 已按需新增前端路由与页面访问元信息
-- [ ] 已按需注册后端与前端路由
-- [ ] 改动遵循现有模块结构模式
-- [ ] 难以从代码看出的持久后端设计决策已记录在拥有该主题的 feature、API、architecture 或 standard 文档中
-- [ ] 除非另有明确说明，至少有一条回归测试覆盖关键行为
+- [ ] 持久行为已记录到对应 feature 文档，并按需更新索引。
+- [ ] 已按需注册后端与前端路由，补充页面访问元信息，并沿用现有模块结构。
 
-## 测试选型参考
-
-实践层面的测试放置与选型指导见 `docs/guides/testing-guide.md`。
-
-## 当某项测试被跳过时
-
-当某项通常预期的测试被跳过时：
-
-1. 写明被跳过的测试
-2. 写明跳过的原因
-3. 如适用，写明后续应在何处补测试
-
-不得在未记录原因的情况下跳过通常预期的测试。
+测试放置和选型见[测试指南](../guides/testing-guide.md)。

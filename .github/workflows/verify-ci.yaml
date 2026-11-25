@@ -144,10 +144,6 @@ jobs:
         working-directory: static-react
         run: pnpm lint
 
-      - name: Type check
-        working-directory: static-react
-        run: pnpm exec tsc -b
-
       - name: Unit tests
         working-directory: static-react
         run: pnpm test

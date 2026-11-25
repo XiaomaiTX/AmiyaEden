@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-11-10
+last_reviewed: 2026-11-24
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
@@ -22,27 +22,11 @@ source_of_truth:
 
 ## 目的
 
-`docs/` 是仓库规范化文档树，用来把”工程标准””当前架构””API 路由面””当前功能状态””未来提案”彻底分开，避免文档互相覆盖、过期后继续误导人或 AI。根目录的 `AGENTS.md` 和 `CLAUDE.md` 是代理入口文件，它们委托给 `docs/ai/repo-rules.md` 作为实际规则来源。
-
-根目录 `README.md` 仍然保留为面向人类的 onboarding / 产品入口，但它不是 repo-level engineering rule 的裁决来源；如与 `docs/ai/repo-rules.md` 或 `docs/` 冲突，以后者为准。
+本索引按任务指向工程标准、当前架构、API、模块行为和设计提案。[仓库首页](../README.md)是产品与上手入口；`AGENTS.md` 和 `CLAUDE.md` 指向[仓库规则](ai/repo-rules.md)。
 
 ## 信任顺序
 
-权威性排序的规范定义见 `docs/ai/repo-rules.md`「Authority Order」一节。
-
-简要概述（当多个文件描述同一件事时）：
-
-1. `docs/ai/repo-rules.md`（通过 `AGENTS.md` / `CLAUDE.md` 加载）
-2. `docs/standards/*.md`
-3. `docs/architecture/*.md`
-4. `docs/api/*.md`
-5. `docs/features/current/*.md`
-6. `docs/guides/*.md`
-7. `docs/specs/draft/*.md`
-
-说明：
-
-- 第 7 层只表示”计划 / 草案 / 未完成设计”，不能覆盖当前实现。
+来源冲突时，参照仓库规则中的[权威顺序](ai/repo-rules.md#authority-order)与[代码和文档的判定规则](ai/repo-rules.md#code-vs-docs-rule)。
 
 ## 受众分类
 
@@ -104,69 +88,19 @@ source_of_truth:
 
 ## 文档更新规则
 
-- 当前行为变化时，优先更新对应的 `docs/architecture`、`docs/api`、`docs/features/current`。
-- 持久的后端技术设计决策如果不能从代码直接看出，应在同一次变更中写入最近的权威文档，记录决策、理由、必须保留的不变量和主要代码文件。
-- 新增工程约束时，更新 `docs/ai/repo-rules.md` 或 `docs/standards`，不要把规则写进 feature doc。
-- 测试与验证规则优先维护在 `docs/ai/repo-rules.md` 与 `docs/standards/testing-and-verification.md`。
-- 新增尚未落地的设计时，只放进 `docs/specs/draft`。
-- 不要在多个文件里重复维护同一份职权定义、路由表、权限矩阵。
-- 不要创建泛化的 backend decision dump；如果已有 architecture / api / feature / standard 文档拥有该主题，应把设计说明放在那里。
-- 不要保留并行的“第二套文档入口”。
-- 仓库内允许存在少量模块级 `README.md` 作为局部实现说明，但它们不是 repo-level canonical doc，不能覆盖 `docs/ai/repo-rules.md` 与 `docs/`。
-- 根目录 `README.md` 应保持适合新开发者快速上手，但若涉及工程规则、当前架构边界、接口裁决，仍以 `docs/ai/repo-rules.md` 与 `docs/` 为准。
+文档与行为在同一次变更中同步；归属、设计决策记录及维护规则见[文档治理规范](standards/documentation-governance.md)。按实际影响更新：
 
-如果变更属于高风险行为边界，必须把 caveat 明确写出来，不能只靠上下文暗示。
+- **认证、鉴权、RBAC 职权提升或自动权限映射**：在[认证与权限](architecture/auth-and-permissions.md)记录变化的共享边界；模块文档说明该模块的影响，并链接共享规则。
+- **路由或契约**：在[路由索引](api/route-index.md)更新路由面与权限边界；按 [API 约定](api/conventions.md#合同同步顺序)更新契约字段，明确区分兼容字段与权威字段。模块有独立影响时，写明该影响并链接对应规则。
+- **数据库表、核心关系或历史兼容列**：更新[数据库 schema 文档](architecture/database-schema.md)；其他架构、API 或模块文档有独立影响时，在相应文档补充并链接。
 
-典型场景：
+## 按任务查阅
 
-- 认证 / 鉴权边界
-- RBAC 职权提升规则
-- 自动权限映射的特殊分支
-- 兼容字段与当前权威字段的区别
-
-这类 caveat 至少要同时落在：
-
-- `docs/architecture/*.md`，说明系统规则
-- `docs/features/current/*.md`，说明模块当前行为
-
-当前如果变更数据库表、核心关系或历史兼容列，应同时更新：
-
-- `docs/architecture/database-schema.md`
-- 受影响的 architecture / api / feature 文档
-
-## 推荐阅读顺序
-
-### 对人类开发者
-
-1. `README.md`
-   把它当作 onboarding / 产品入口，而不是工程规则裁决文件
-2. `docs/ai/repo-rules.md`
-3. 本文件
-4. 相关架构文档
-   如果只是先找代码落点，优先补读 `docs/architecture/module-map.md`
-5. 相关 feature doc
-6. 相关 API / guide
-
-### 对 AI Agent
-
-1. `docs/ai/repo-rules.md`（通过代理入口文件自动加载）
-2. `docs/ai/agent-onboarding.md`
-3. `docs/architecture/overview.md`
-4. `docs/architecture/module-map.md`
-5. 任务对应的标准文档
-   如果涉及测试、验证、回归保障，优先补读 `docs/standards/testing-and-verification.md`
-   如果涉及层级依赖或架构合规，优先补读 `docs/standards/dependency-layering.md`
-   完成任务前，参照 `docs/standards/pre-completion-checklist.md` 进行验证
-6. 任务对应的 feature / API 文档
-7. 只有在明确做规划工作时才读取 `docs/specs/draft/`
-8. 如任务已明确落在某个子目录，再补读该目录下的局部 `README.md`，但只把它当作实现注释而不是规范裁决来源
-9. 遇到问题时参照 `docs/guides/debugging-guide.md` 系统化排查
-
-## 维护原则
-
-`docs/ai/repo-rules.md` 与 `docs/` 是唯一维护中的 repo-level canonical Markdown 文档体系。`AGENTS.md` 和 `CLAUDE.md` 是代理入口文件，委托给 `docs/ai/repo-rules.md`。局部 `README.md` 可以存在，但只能补充子目录实现细节，不能重新建立影子规范树。
-
-根目录 `README.md` 是例外中的入口文档：应持续维护，但定位是 onboarding / product-facing guide，而不是与 `docs/ai/repo-rules.md` 并列的工程规则源。
+- **上手或配置环境**：[仓库首页](../README.md)、[本地开发指南](guides/local-development.md)。代理按[任务导航](ai/agent-onboarding.md#change-routing)查阅相关文档。
+- **定位实现或理解模块**：[模块图](architecture/module-map.md)、[当前功能索引](features/README.md)；跨模块变更可参考[架构概览](architecture/overview.md)。
+- **核对工程边界**：[依赖分层](standards/dependency-layering.md)、[API 约定](api/conventions.md)、[认证与权限](architecture/auth-and-permissions.md)，按改动范围选读。
+- **验证与排查**：[完成清单](standards/pre-completion-checklist.md)、[测试与验证](standards/testing-and-verification.md)、[调试指南](guides/debugging-guide.md)。
+- **规划未落地设计**：查阅 `specs/draft/`；局部 `README.md` 用于补充模块实现细节。
 
 ## 军团公告
 

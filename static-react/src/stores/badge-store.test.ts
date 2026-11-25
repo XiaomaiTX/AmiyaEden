@@ -1,17 +1,19 @@
-import { fetchBadgeCounts } from '@/api/badge'
+import type { BadgeCounts } from '@/types/api/badge'
 import { useBadgeStore } from '@/stores/badge-store'
 import { useSessionStore } from '@/stores/session-store'
 
-vi.mock('@/api/badge', () => ({
-  fetchBadgeCounts: vi.fn(),
-}))
+const fetchMock = vi.fn<typeof fetch>()
+const success = (data: BadgeCounts) => Response.json({ code: 200, msg: '', data })
 
 describe('badge store', () => {
   beforeEach(() => {
     useBadgeStore.getState().clear()
-    vi.mocked(fetchBadgeCounts).mockReset()
+    fetchMock.mockReset()
+    vi.stubGlobal('fetch', fetchMock)
     useSessionStore.setState({ roles: ['user'] })
   })
+
+  afterEach(() => vi.unstubAllGlobals())
 
   test.each([[['guest']], [['recruiter']], [['guest', 'recruiter']]])(
     'skips the Login-only request for %j accounts',
@@ -20,26 +22,29 @@ describe('badge store', () => {
 
       await useBadgeStore.getState().load(1001)
 
-      expect(fetchBadgeCounts).not.toHaveBeenCalled()
+      expect(fetchMock).not.toHaveBeenCalled()
       expect(useBadgeStore.getState().counts).toEqual({})
       expect(useBadgeStore.getState().loadedForCharacterId).toBe(1001)
     }
   )
 
   test('loads badge counts once for the active character', async () => {
-    vi.mocked(fetchBadgeCounts).mockResolvedValue({ order_pending: 2 })
+    fetchMock.mockResolvedValue(success({ order_pending: 2 }))
 
     await Promise.all([useBadgeStore.getState().load(1001), useBadgeStore.getState().load(1001)])
     await useBadgeStore.getState().load(1001)
 
-    expect(fetchBadgeCounts).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0] ?? []
+    expect(url).toBe('/api/v1/badge-counts')
+    expect(init?.method ?? 'GET').toBe('GET')
     expect(useBadgeStore.getState().counts).toEqual({ order_pending: 2 })
   })
 
   test('refreshes pending admissions after a mutation without clearing other badges', async () => {
-    vi.mocked(fetchBadgeCounts).mockResolvedValueOnce({ admission_pending: 2, order_pending: 3 })
+    fetchMock.mockResolvedValueOnce(success({ admission_pending: 2, order_pending: 3 }))
     await useBadgeStore.getState().load(1001)
-    vi.mocked(fetchBadgeCounts).mockResolvedValueOnce({ order_pending: 3 })
+    fetchMock.mockResolvedValueOnce(success({ order_pending: 3 }))
     const request = useBadgeStore.getState().load(1001, true)
     expect(useBadgeStore.getState().counts).toEqual({ admission_pending: 2, order_pending: 3 })
     await request
@@ -47,8 +52,8 @@ describe('badge store', () => {
   })
 
   test('discards a response after the session badge state is cleared', async () => {
-    let resolveRequest: (counts: { ticket_attention: number }) => void = () => undefined
-    vi.mocked(fetchBadgeCounts).mockReturnValue(
+    let resolveRequest: (response: Response) => void = () => undefined
+    fetchMock.mockReturnValue(
       new Promise((resolve) => {
         resolveRequest = resolve
       })
@@ -56,7 +61,7 @@ describe('badge store', () => {
 
     const request = useBadgeStore.getState().load(1001)
     useBadgeStore.getState().clear()
-    resolveRequest({ ticket_attention: 3 })
+    resolveRequest(success({ ticket_attention: 3 }))
     await request
 
     expect(useBadgeStore.getState().counts).toEqual({})
@@ -64,23 +69,23 @@ describe('badge store', () => {
   })
 
   test('forced refresh supersedes an in-flight load and ignores its stale response', async () => {
-    let resolveStale: (counts: { announcement_unread: number }) => void = () => undefined
-    vi.mocked(fetchBadgeCounts)
+    let resolveStale: (response: Response) => void = () => undefined
+    fetchMock
       .mockReturnValueOnce(
         new Promise((resolve) => {
           resolveStale = resolve
         })
       )
-      .mockResolvedValueOnce({ announcement_unread: 0 })
+      .mockResolvedValueOnce(success({ announcement_unread: 0 }))
 
     const staleRequest = useBadgeStore.getState().load(1001)
     const forcedRequest = useBadgeStore.getState().load(1001, true)
     await forcedRequest
     expect(useBadgeStore.getState().counts).toEqual({ announcement_unread: 0 })
 
-    resolveStale({ announcement_unread: 2 })
+    resolveStale(success({ announcement_unread: 2 }))
     await staleRequest
-    expect(fetchBadgeCounts).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(useBadgeStore.getState().counts).toEqual({ announcement_unread: 0 })
   })
 })

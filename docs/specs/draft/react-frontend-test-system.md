@@ -24,7 +24,7 @@ source_of_truth:
 - 测试基础设施：可用且轻量，但缺少共享测试装置与请求层 Mock 规范。
 - 测试资产：54 个测试文件、约 190 个用例；权限/路由守卫质量高，页面测试呈两极分化。
 - 缺失层级：无真实浏览器交互测试、无 E2E、无覆盖率报告、无测试专用 ESLint 规则。
-- CI：`verify-ci.yaml` 的 `frontend_react` job 已跑 lint + `tsc -b` + `vitest run` + `check:api-contract` + build，作为门禁已可用。
+- CI：`verify-ci.yaml` 的 `frontend_react` job 运行 lint、`vitest run`、`check:api-contract` 和 build；build 内执行 `tsc -b`。
 
 ## 2. 实际发现
 
@@ -40,7 +40,7 @@ source_of_truth:
 | 覆盖率 | 未配置 `coverage`，CI 无覆盖率产出 | `vitest.config.ts`、`verify-ci.yaml` |
 | 浏览器/E2E | 无 Playwright（lockfile 中仅为 `shadcn` 传递依赖）、无 vitest browser mode、无任何 E2E | `package.json`、全仓检索 |
 | ESLint 测试规则 | 无 `eslint-plugin-testing-library`、无 vitest 插件 | `static-react/eslint.config.js` |
-| CI 门禁 | lint、`tsc -b`、`vitest run`、`check:api-contract`、build，按 `static-react/**` 路径触发 | `.github/workflows/verify-ci.yaml` job `frontend_react` |
+| CI 门禁 | lint、单测、契约隔离检查、构建（含类型检查），按 React 路径触发 | `.github/workflows/verify-ci.yaml` job `frontend_react` |
 | 测试类型检查 | `tsconfig.spec.json` 独立覆盖 `*.test.*` | `static-react/tsconfig.spec.json` |
 
 ### 2.2 现有测试分类（按质量）
@@ -110,18 +110,9 @@ source_of_truth:
 3. **真实浏览器交互测试**（新增层，小而精）：仅用于 jsdom 不可靠的行为——React Aria Dialog 焦点圈定与恢复、Combobox/Menu 键盘导航、Portal/Overlay。用 vitest browser mode 实现，不为此引入 Playwright 全家桶。
 4. **关键流程 E2E**（本轮不建，见第 8 节）：迁移期双前端并行、E2E 需要真实后端与会话，投入产出比低，推迟到迁移收尾阶段再决策。
 
-## 6. 禁止或限制的测试模式
+## 6. 用例选型
 
-后续新增测试不得出现，存量按阶段清理：
-
-- 只验证"能 render"的冒烟用例（migration-drift-pages 类）。
-- 顺序依赖的 `mockResolvedValueOnce` 长链 + `mock.calls[N]` 下标断言（改为按 URL/method 分发的 Mock helper）。
-- `vi.mock` 自身 API 模块仅为省事（仅允许用于确实无法走 fetch 边界的场景，需注释原因）。
-- 表单字段按 `getAllByRole('textbox')` 下标定位（改用 label/name 关联）。
-- 断言硬编码 zh-CN 文案的 locale 依赖（新测试经 i18n 解析后断言，或显式固定 locale 并注明）。
-- 测试内部 state、Hook 调用次数、CSS class、DOM 层级。
-- 用固定 `sleep` 等待掩盖异步问题（竞态测试中的受控慢 Promise 不在此列）。
-- 只测成功路径；机械补展示组件测试；重复验证第三方库自身行为。
+按[前端行为测试建议](frontend-test-quality-standard.md)选择风险对应的断言与测试层。优先修复已经对正常修改造成阻塞的偶然顺序断言；存量用例由实际保护的行为决定保留、改写或删除。
 
 ## 7. 分阶段改进计划
 
@@ -134,7 +125,7 @@ source_of_truth:
   2. 将下标断言改为"按 URL 查找调用"的断言 helper；
   3. `migration-drift-pages.test.tsx` 的模块级 `vi.mock` 改走 fetch 边界；
   4. 表单下标定位改 label/name 定位。
-- **验收标准**：上述文件在请求顺序变化（如新增角标轮询）时不错位失败；`grep mockResolvedValueOnce | wc -l` 显著下降；全部通过 `pnpm test`。
+- **验收标准**：无业务依赖的读请求调序时用例仍通过；错误的写请求或额外写入仍使相关用例失败。
 - **依赖/风险**：无新依赖；改动纯测试代码，可逐文件独立提交。
 
 ### 阶段二：统一测试基础设施（优先级：高，与阶段一可并行）
@@ -145,10 +136,9 @@ source_of_truth:
   1. `renderApp(initialPath, { session, locale })`：统一 createMemoryRouter + Provider + store 重置（整合现有各文件的 beforeEach 样板，包括 `router.test.tsx:64-81`、`shop-pages.test.tsx:22-47`）；
   2. 阶段一的 `mock-api.ts` 提供 `expectRequest(url, method)` 断言与测试数据工厂（沉淀 shop/order/character 等重复 payload）；
   3. 覆盖率报告：`vitest.config.ts` 加 `coverage.provider: 'v8'`，CI 上传 artifact 仅作观测，不设阈值门禁；
-  4. 引入 `eslint-plugin-testing-library`（recommended），约束查询方式与 await 使用；
-  5. 全局 teardown 检查未处理 fetch Mock 与 `console.error`（React key/props warning 会使测试失败）。
-- **验收标准**：新页面测试只写"业务场景 + 断言"，脚手架不超过 3 行；CI 产出覆盖率 artifact；console.error 用例 demonstrated 有效（注入一个 warning 能红）。
-- **依赖/风险**：新增 2 个 devDependency（testing-library eslint 插件、必要时 @vitest/coverage-v8）；console.error 门禁需先清存量 warning，可先 warn 后 fail。
+  4. 在请求契约测试的 fake transport 上报意外请求；只有真实回归已被全局日志噪声掩盖时，才增加针对性的断言。
+- **验收标准**：共享装置替代实际重复的初始化，不隐藏用例的会话、语言或相关请求。覆盖率若收集，仅用于定位缺口。
+- **依赖/风险**：先复用现有工具，测量重复工作和信号质量再决定是否增加依赖。
 
 ### 阶段三：按风险补齐覆盖（优先级：高，持续多个迭代）
 
@@ -156,23 +146,16 @@ source_of_truth:
 
 1. **会话与身份**：`setPrimaryCharacter` 主号切换流（含失败 toast）；`http-client` 补 204、非 JSON、网络异常、`assertSuccess` 错误码分支。
 2. **高风险写操作页面**（每页至少：成功流 + 请求体断言 + 一条失败/空数据分支）：`srp-apply`、`srp-manage`、`welfare-approval`、`newbro-select-captain/mentor`、`ticket-management`（状态流转）、`skill-plan-management`（增删改）。
-3. **存量单用例页面补分支**：2.2 节列出的 10 个单用例页面各补失败态与空数据态。
+3. **存量页面补实际缺口**：错误或空状态由页面自己处理且有业务影响时才补用例；共享组件已覆盖的行为不逐页重测。
 4. **React Aria 浏览器层**：启用 vitest browser mode（chromium），首批仅 3 个用例：Dialog 打开后焦点圈定与 Esc/关闭后焦点恢复、Combobox 键盘筛选、Menu 方向键导航。文件放 `src/components/ui/*.browser.test.tsx` 并在 vitest 配置独立 workspace/glob。
 5. **纯逻辑补漏**：`menu-config` 已有测试，其余 hooks（`use-permission`、`use-mobile`、`use-galaxy-registry-timeout-notification`）按 testing-guide 的轻量单测标准评估，不值得测的明确跳过。
 
 - **验收标准**：第 1、2 项所列场景各至少 1 个行为级用例进入 CI；浏览器层用例在 CI 稳定运行（如 ubuntu runner 缺浏览器则用 `--browser.headless` + actions 缓存）。
 - **依赖/风险**：browser mode 需要 CI 装 chromium（`pnpm exec playwright install chromium` 级别的环境步骤）；写操作页面测试需先阅读对应 Vue 侧行为与 feature docs 对齐预期。
 
-### 阶段四：持续质量门禁（优先级：中，阶段二三落地后）
+### 阶段四：按回归信号维护
 
-- **要解决的问题**：防止覆盖质量回退与 flaky 积累。
-- **计划动作**：
-  1. 保持现有 CI 命令不变（已含 lint/typecheck/test/contract/build）；
-  2. 覆盖率从"观测"升级为"增量门禁"：对 `static-react/src/**` 变更文件要求行覆盖不下降（vitest coverage diff 或最低阈值 60% 起步、只对改动文件生效）；
-  3. console.error/未处理请求从 warn 升级为 fail（阶段二清完存量后）；
-  4. 每月例行：检索 `.skip/.todo/.only`、复查本机串行复跑记录、删除持续低价值用例。
-- **验收标准**：CI 中存在覆盖率 diff 门禁步骤；违规模式在 review checklist（`docs/standards/pre-completion-checklist.md` 增补测试小节）中有对应条目。
-- **依赖/风险**：增量门禁实现需选型（vitest 原生阈值 vs diff 工具），先观测一个迭代再启用。
+保留现有 CI。评审以所改行为和既有保障为准，遇到不稳定用例时先找原因并保留独有覆盖。没有具体漏测缺陷和可度量证据前，不增加覆盖率阈值、全局日志门禁和例行分级审计。
 
 ## 8. 不在本轮范围内
 
@@ -186,14 +169,11 @@ source_of_truth:
 
 - 配置：`static-react/vitest.config.ts`、`static-react/src/test/setup.ts`、`static-react/eslint.config.js`、`static-react/tsconfig.spec.json`、`.github/workflows/verify-ci.yaml`
 - 政策：`docs/standards/testing-and-verification.md`、`docs/guides/testing-guide.md`、`docs/standards/regression-test-plan.md`
-- 质量判定：`docs/specs/draft/frontend-test-quality-standard.md`（本路线图的配套质量标准与检验清单，阶段一清理与阶段四审计以其为判定依据）
+- 用例选型：[前端行为测试建议](frontend-test-quality-standard.md)
 - 范式参考：`static-react/src/pages/info-assets-page.test.tsx`（竞态）、`static-react/src/app/router.test.tsx`（守卫矩阵）、`static-react/src/pages/shop-pages.test.tsx`（请求体断言）、`static-react/src/pages/dashboard-characters-page.test.tsx`（URL 分发式 Mock）
 - 迁移上下文：`docs/specs/draft/frontend-react-migration-plan/index.md`
 
 ## 10. 待确认决策
 
 1. **浏览器层技术选型**：vitest browser mode（本草案假设）vs Playwright component testing；影响 CI 环境步骤与依赖体积。
-2. **locale 断言策略**：新测试统一走 i18n key 解析断言，还是显式固定 zh-CN？存量硬编码断言是否迁移？
-3. **覆盖率增量门禁实现方式**与起始阈值（草案建议改动文件 60% 起步）。
-4. **`vi.mock('@/api/*')` 模块级 Mock 的存废**：migration-drift-pages 清理后，是否在 ESLint 层面禁止该模式。
-5. console.error 门禁的清存量时间点。
+2. **优先补哪些业务回归**：按当前迁移与生产反馈更新阶段三的清单；不按测试写法统一迁移存量用例。

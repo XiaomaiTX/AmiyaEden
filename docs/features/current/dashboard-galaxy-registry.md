@@ -117,5 +117,5 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue `static/src` 仍承接本页完整行为。
-- React 已建立路由、API、模块化类型和基础业务页，覆盖状态总览、队长登记/结束、管理员登记列表、强制结束与重新校验。
-- React 尚未对齐预计结束时间修改、本人历史、管理员星系配置、人工校验、分析面板和浏览器超时通知，因此在迁移基线中仍标记为“部分对齐”，不得视为完成 DoD。
+- [React 页面](../../../static-react/src/pages/dashboard-galaxy-registry-page.tsx)已实现状态总览、队长登记/结束、预计结束时间修改、本人历史、管理员登记列表和星系配置、强制结束、重新校验、人工校验及分析面板。
+- React 浏览器超时通知由[路由运行时桥接](../../../static-react/src/app/router-runtime-bridge.tsx)挂载[通知 hook](../../../static-react/src/hooks/use-galaxy-registry-timeout-notification.ts)。上述功能已有实现，不等同于迁移验收已完成。
