@@ -75,8 +75,6 @@ export interface AppRouteSpec {
   titleKey: string
   pageType: AppPageType
   batch?: MigrationBatch
-  menuGroup?: string
-  menuIcon?: string
   menuHidden?: boolean
   badgeKey?: keyof BadgeCounts
   meta?: RouteAccessMeta
@@ -87,8 +85,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'announcements',
     titleKey: 'announcement.title',
     pageType: 'announcements',
-    menuGroup: 'announcement.title',
-    menuIcon: 'ticket',
     badgeKey: 'announcement_unread',
     meta: { login: true },
   },
@@ -96,24 +92,18 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'admissions/new',
     titleKey: 'admissions.new_member',
     pageType: 'admissions',
-    menuGroup: 'admissions.title',
-    menuIcon: 'admissions',
     meta: { jwt: true, admission: 'new_member' },
   },
   {
     path: 'admissions/alt',
     titleKey: 'admissions.alt',
     pageType: 'admissions',
-    menuGroup: 'admissions.title',
-    menuIcon: 'admissions',
     meta: { jwt: true, admission: 'alt' },
   },
   {
     path: 'admissions/history',
     titleKey: 'admissions.history',
     pageType: 'admissions',
-    menuGroup: 'admissions.title',
-    menuIcon: 'admissions',
     meta: { jwt: true },
   },
   {
@@ -121,8 +111,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     badgeKey: 'admission_pending',
     titleKey: 'admissions.review',
     pageType: 'admissions',
-    menuGroup: 'admissions.title',
-    menuIcon: 'admissions',
     meta: { jwt: true, admission: 'review' },
   },
   {
@@ -144,24 +132,18 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.userCenter',
     pageType: 'dashboard-characters',
     menuHidden: true,
-    menuGroup: 'nav.group.characters',
-    menuIcon: 'characters',
     meta: { jwt: true },
   },
   {
     path: 'mumble',
     titleKey: 'nav.mumble.credentials',
     pageType: 'mumble-credentials',
-    menuGroup: 'nav.mumble.credentials',
-    menuIcon: 'characters',
     meta: { jwt: true },
   },
   {
     path: 'dashboard/console',
     titleKey: 'nav.dashboard.console',
     pageType: 'dashboard-console',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
     meta: { login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
@@ -169,8 +151,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.dashboard.npcKills',
     pageType: 'dashboard-npc-kills',
     batch: 'A',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -182,8 +162,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.dashboard.corporationStructures',
     pageType: 'dashboard-corporation-structures',
     batch: 'A',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
     badgeKey: 'corporation_structures_attention',
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
@@ -191,16 +169,12 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'dashboard/skill-readiness',
     titleKey: 'nav.dashboard.skillReadiness',
     pageType: 'dashboard-skill-readiness',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['menu.dashboard'] },
   },
   {
     path: 'dashboard/fuel-officer-structures',
     titleKey: 'nav.dashboard.fuelOfficerStructures',
     pageType: 'dashboard-fuel-officer-structures',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
     meta: {
       roles: ['super_admin', 'fuel_officer'],
       login: true,
@@ -211,8 +185,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'dashboard/galaxy-registry',
     titleKey: 'nav.dashboard.galaxyRegistry',
     pageType: 'dashboard-galaxy-registry',
-    menuGroup: 'nav.group.dashboard',
-    menuIcon: 'dashboard',
     meta: {
       roles: ['super_admin', 'admin', 'captain', 'user'],
       login: true,
@@ -223,8 +195,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'fuxi-hall',
     titleKey: 'nav.fuxiHall.fame',
     pageType: 'fuxi-hall',
-    menuGroup: 'nav.fuxiHall.fame',
-    menuIcon: 'fuxiHall',
     meta: { login: true, corpCapabilitiesAny: ['menu.fuxi_hall'] },
   },
 
@@ -232,16 +202,12 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'info/wallet',
     titleKey: 'nav.info.wallet',
     pageType: 'info-wallet',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.wallet.read'] },
   },
   {
     path: 'info/skill',
     titleKey: 'nav.info.skill',
     pageType: 'info-skill',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.skills.read'] },
   },
   {
@@ -249,8 +215,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.npcKills',
     pageType: 'info-npc-kills',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.npc_kills.self'] },
   },
   {
@@ -258,8 +222,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.ships',
     pageType: 'info-ships',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
   {
@@ -267,8 +229,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.implants',
     pageType: 'info-implants',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
   {
@@ -276,8 +236,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.fittings',
     pageType: 'info-fittings',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.fittings.manage'] },
   },
   {
@@ -285,8 +243,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.assets',
     pageType: 'info-assets',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.assets.read'] },
   },
   {
@@ -294,8 +250,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.contracts',
     pageType: 'info-contracts',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAll: ['menu.info', 'info.contracts.read'] },
   },
   {
@@ -303,16 +257,12 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.info.esiCheck',
     pageType: 'info-esi-check',
     batch: 'A',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
   {
     path: 'info/tool-bookmarks',
     titleKey: 'nav.info.toolBookmarks',
     pageType: 'info-tool-bookmarks',
-    menuGroup: 'nav.group.info',
-    menuIcon: 'info',
     meta: { login: true, corpCapabilitiesAny: ['menu.info'] },
   },
 
@@ -321,8 +271,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.operation.fleets',
     pageType: 'operation-fleets',
     batch: 'D',
-    menuGroup: 'nav.group.operation',
-    menuIcon: 'operation',
     meta: {
       roles: ['super_admin', 'admin', 'fc', 'senior_fc'],
       login: true,
@@ -334,8 +282,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.operation.fleetConfigs',
     pageType: 'operation-fleet-configs',
     batch: 'D',
-    menuGroup: 'nav.group.operation',
-    menuIcon: 'operation',
     meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
   {
@@ -355,8 +301,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.operation.corporationPap',
     pageType: 'operation-corporation-pap',
     batch: 'D',
-    menuGroup: 'nav.group.operation',
-    menuIcon: 'operation',
     meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
   {
@@ -364,8 +308,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.operation.pap',
     pageType: 'operation-pap',
     batch: 'C',
-    menuGroup: 'nav.group.operation',
-    menuIcon: 'operation',
     meta: { login: true, corpCapabilitiesAny: ['menu.operation'] },
   },
   {
@@ -382,8 +324,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.skillPlanning.completionCheck',
     pageType: 'skill-plan-completion-check',
     batch: 'C',
-    menuGroup: 'nav.group.skillPlanning',
-    menuIcon: 'skillPlanning',
     meta: { login: true, corpCapabilitiesAny: ['menu.skill_planning'] },
   },
   {
@@ -391,8 +331,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.skillPlanning.skillPlans',
     pageType: 'skill-plans',
     batch: 'C',
-    menuGroup: 'nav.group.skillPlanning',
-    menuIcon: 'skillPlanning',
     meta: { login: true, corpCapabilitiesAny: ['menu.skill_planning'] },
   },
   {
@@ -400,8 +338,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.skillPlanning.personalSkillPlans',
     pageType: 'personal-skill-plans',
     batch: 'C',
-    menuGroup: 'nav.group.skillPlanning',
-    menuIcon: 'skillPlanning',
     meta: { login: true, corpCapabilitiesAny: ['menu.skill_planning'] },
   },
 
@@ -410,8 +346,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.welfare.my',
     pageType: 'welfare-my',
     batch: 'B',
-    menuGroup: 'nav.group.welfare',
-    menuIcon: 'welfare',
     badgeKey: 'welfare_eligible',
     meta: { login: true, corpCapabilitiesAny: ['welfare.user'] },
   },
@@ -420,8 +354,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.welfare.approval',
     pageType: 'welfare-approval',
     batch: 'B',
-    menuGroup: 'nav.group.welfare',
-    menuIcon: 'welfare',
     badgeKey: 'welfare_pending',
     meta: {
       roles: ['super_admin', 'admin', 'welfare'],
@@ -434,8 +366,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.welfare.settings',
     pageType: 'welfare-settings',
     batch: 'B',
-    menuGroup: 'nav.group.welfare',
-    menuIcon: 'welfare',
     meta: {
       roles: ['super_admin', 'admin', 'welfare'],
       login: true,
@@ -448,8 +378,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.newbro.selectMentor',
     pageType: 'newbro-select-mentor',
     batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
     meta: {
       login: true,
       requiresMentorMenteeEligibility: true,
@@ -461,8 +389,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.newbro.captain',
     pageType: 'newbro-captain',
     batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
     meta: {
       roles: ['captain'],
       login: true,
@@ -474,8 +400,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.newbro.mentor',
     pageType: 'newbro-mentor',
     batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
     badgeKey: 'mentor_pending_applications',
     meta: {
       roles: ['super_admin', 'mentor'],
@@ -488,8 +412,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.newbro.manage',
     pageType: 'newbro-manage',
     batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -501,8 +423,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.newbro.mentorManage',
     pageType: 'newbro-mentor-manage',
     batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -514,8 +434,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.newbro.recruitLink',
     pageType: 'newbro-recruit-link',
     batch: 'B',
-    menuGroup: 'nav.group.newbro',
-    menuIcon: 'newbro',
     meta: { login: true, corpCapabilitiesAny: ['menu.newbro'] },
   },
 
@@ -524,8 +442,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.shop.browse',
     pageType: 'shop-browse',
     batch: 'C',
-    menuGroup: 'nav.group.shop',
-    menuIcon: 'shop',
     meta: { login: true, corpCapabilitiesAll: ['menu.shop', 'shop.order.read_self'] },
   },
   {
@@ -533,8 +449,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.shop.manage',
     pageType: 'shop-manage',
     batch: 'C',
-    menuGroup: 'nav.group.shop',
-    menuIcon: 'shop',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -551,8 +465,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.shop.orderManage',
     pageType: 'shop-order-manage',
     batch: 'C',
-    menuGroup: 'nav.group.shop',
-    menuIcon: 'shop',
     badgeKey: 'order_pending',
     meta: {
       roles: ['super_admin', 'admin', 'shop_order_manage'],
@@ -566,8 +478,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.shop.wallet',
     pageType: 'shop-wallet',
     batch: 'C',
-    menuGroup: 'nav.group.shop',
-    menuIcon: 'shop',
     meta: { login: true, corpCapabilitiesAll: ['menu.shop', 'shop.wallet.read'] },
   },
 
@@ -576,8 +486,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.srp.apply',
     pageType: 'srp-apply',
     batch: 'B',
-    menuGroup: 'nav.group.srp',
-    menuIcon: 'srp',
     meta: { login: true, corpCapabilitiesAny: ['srp.user'] },
   },
   {
@@ -585,8 +493,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.srp.manage',
     pageType: 'srp-manage',
     batch: 'B',
-    menuGroup: 'nav.group.srp',
-    menuIcon: 'srp',
     badgeKey: 'srp_pending',
     meta: {
       roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
@@ -600,8 +506,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.srp.prices',
     pageType: 'srp-prices',
     batch: 'B',
-    menuGroup: 'nav.group.srp',
-    menuIcon: 'srp',
     meta: {
       roles: ['super_admin', 'admin', 'senior_fc', 'srp'],
       login: true,
@@ -614,8 +518,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.ticket.myTickets',
     pageType: 'ticket-my-tickets',
     batch: 'B',
-    menuGroup: 'nav.group.ticket',
-    menuIcon: 'ticket',
     meta: { login: true, corpCapabilitiesAny: ['menu.ticket'] },
   },
   {
@@ -623,8 +525,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.ticket.create',
     pageType: 'ticket-create',
     batch: 'B',
-    menuGroup: 'nav.group.ticket',
-    menuIcon: 'ticket',
     meta: { login: true, corpCapabilitiesAll: ['menu.ticket', 'ticket.user.create'] },
   },
   {
@@ -640,8 +540,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.ticket.management',
     pageType: 'ticket-management',
     batch: 'B',
-    menuGroup: 'nav.group.ticket',
-    menuIcon: 'ticket',
     badgeKey: 'ticket_attention',
     meta: {
       roles: ['super_admin', 'admin'],
@@ -654,8 +552,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.ticket.categories',
     pageType: 'ticket-categories',
     batch: 'B',
-    menuGroup: 'nav.group.ticket',
-    menuIcon: 'ticket',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -667,8 +563,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.ticket.statistics',
     pageType: 'ticket-statistics',
     batch: 'B',
-    menuGroup: 'nav.group.ticket',
-    menuIcon: 'ticket',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -692,16 +586,12 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     path: 'system/salary',
     titleKey: 'nav.system.salary',
     pageType: 'system-salary',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
     path: 'system/blacklist',
     titleKey: 'nav.system.blacklist',
     pageType: 'system-blacklist',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
@@ -709,8 +599,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.user',
     pageType: 'system-user',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -726,8 +614,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.taskManager',
     pageType: 'system-task-manager',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -743,8 +629,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.wallet',
     pageType: 'system-wallet',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -760,8 +644,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.audit',
     pageType: 'system-audit',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -774,8 +656,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.papExchange',
     pageType: 'system-pap-exchange',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -790,8 +670,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.pap',
     pageType: 'system-pap',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin', 'admin'],
       login: true,
@@ -804,8 +682,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.autoRole',
     pageType: 'system-auto-role',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: { roles: ['super_admin'] },
   },
   {
@@ -830,8 +706,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.webhook',
     pageType: 'system-webhook',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: { roles: ['super_admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
@@ -839,8 +713,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'refund.settings',
     pageType: 'system-newbro-settings',
     batch: 'B',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: { roles: ['super_admin', 'admin'], login: true, corpCapabilitiesAny: ['system.manage'] },
   },
   {
@@ -848,8 +720,6 @@ const unorderedAppRouteSpecs: AppRouteSpec[] = [
     titleKey: 'nav.system.basicConfig',
     pageType: 'system-basic-config',
     batch: 'D',
-    menuGroup: 'nav.group.system',
-    menuIcon: 'system',
     meta: {
       roles: ['super_admin'],
       login: true,
@@ -931,6 +801,8 @@ const appRouteOrder = [
   'system/newbro-settings',
   'system/basic-config',
 ] as const
+
+export type AppRoutePath = (typeof appRouteOrder)[number]
 
 const routesByPath = new Map(unorderedAppRouteSpecs.map((route) => [route.path, route]))
 

@@ -531,6 +531,24 @@
     "gohome": "返回首页"
   },
   "menus": {
+    "sidebar": {
+      "home": "首页",
+      "fleetReadiness": "舰队与战备",
+      "characterTools": "人物与工具",
+      "memberServices": "成员服务",
+      "corporationOperations": "军团运营",
+      "systemManagement": "系统管理",
+      "console": "控制台",
+      "tools": "实用工具",
+      "toolBookmarks": "工具书签",
+      "corporationData": "军团数据",
+      "territoryFacilities": "领地与设施",
+      "finance": "财务结算",
+      "iskWallet": "ISK 钱包流水",
+      "fuxiShop": "伏羲商店",
+      "fuxiWallet": "伏羲币钱包",
+      "fuxiWalletManagement": "伏羲币钱包管理"
+    },
     "login": {
       "title": "登录"
     },

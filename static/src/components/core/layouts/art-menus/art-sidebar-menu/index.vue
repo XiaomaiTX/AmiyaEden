@@ -3,7 +3,7 @@
   <div
     class="layout-sidebar"
     v-if="showLeftMenu || isDualMenu"
-    :class="{ 'no-border': menuList.length === 0 }"
+    :class="{ 'no-border': !hasMenuItems }"
   >
     <!-- 双列菜单（左侧） -->
     <div
@@ -61,7 +61,7 @@
 
     <!-- 左侧菜单 || 双列菜单（右侧） -->
     <div
-      v-show="menuList.length > 0"
+      v-show="hasMenuItems"
       class="menu-left"
       :class="`menu-left-${getMenuTheme.theme} menu-left-${!menuOpen ? 'close' : 'open'}`"
       :style="{ background: getMenuTheme.background }"
@@ -89,9 +89,11 @@
         </div>
 
         <ElMenu
+          :key="isSectionedSidebar ? 'sectioned' : 'legacy'"
+          ref="renderedMenu"
           :class="'el-menu-' + getMenuTheme.theme"
           :collapse="!menuOpen"
-          :default-active="routerPath"
+          :default-active="isSectionedSidebar ? sidebarActivePath : routerPath"
           :text-color="getMenuTheme.textColor"
           :unique-opened="uniqueOpened"
           :background-color="getMenuTheme.background"
@@ -100,7 +102,22 @@
           :show-timeout="50"
           :hide-timeout="50"
         >
+          <template v-if="isSectionedSidebar">
+            <!-- Keep menu entries as direct children for Element Plus icon-mode styling. -->
+            <template v-for="section in sidebarSections" :key="section.title">
+              <li v-if="menuOpen" class="sidebar-section-title" role="presentation">
+                {{ $t(section.title) }}
+              </li>
+              <SidebarSubmenu
+                :list="section.items"
+                :is-mobile="isMobileMode"
+                :theme="getMenuTheme"
+                @close="handleMenuClose"
+              />
+            </template>
+          </template>
           <SidebarSubmenu
+            v-else
             :list="menuList"
             :isMobile="isMobileMode"
             :theme="getMenuTheme"
@@ -139,6 +156,7 @@
   import { isIframe } from '@/utils/navigation'
   import { handleMenuJump } from '@/utils/navigation'
   import SidebarSubmenu from './widget/SidebarSubmenu.vue'
+  import { buildSidebarSections, findSidebarSelection } from './sidebar-sections'
   import { useCommon } from '@/hooks/core/useCommon'
   import { useWindowSize, useTimeoutFn } from '@vueuse/core'
 
@@ -157,7 +175,7 @@
     storeToRefs(settingStore)
 
   // 组件内部状态
-  const defaultOpenedMenus = ref<string[]>([])
+  const renderedMenu = ref<{ $el: Element | Comment; open: (index: string) => void }>()
   const isMobileMode = ref(false)
   const showMobileModal = ref(false)
 
@@ -174,6 +192,7 @@
     () => menuType.value === MenuTypeEnum.LEFT || menuType.value === MenuTypeEnum.TOP_LEFT
   )
   const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU)
+  const isSectionedSidebar = computed(() => menuType.value === MenuTypeEnum.LEFT)
   const siteTitle = computed(() => sysConfigStore.siteTitle)
 
   // 移动端屏幕判断（使用 computed 避免重复计算）
@@ -212,6 +231,40 @@
     const currentMenu = allMenus.find((menu) => menu.path === currentTopPath)
     return currentMenu?.children ?? []
   })
+
+  const sidebarSections = computed(() =>
+    isSectionedSidebar.value ? buildSidebarSections(menuList.value) : []
+  )
+  const hasMenuItems = computed(() =>
+    isSectionedSidebar.value ? sidebarSections.value.length > 0 : menuList.value.length > 0
+  )
+  const sidebarSelection = computed(() =>
+    findSidebarSelection(sidebarSections.value, routerPath.value)
+  )
+  const sidebarActivePath = computed(() => sidebarSelection.value?.path ?? '')
+  const defaultOpenedMenus = computed(() => sidebarSelection.value?.groups ?? [])
+  const activeGroup = computed(() => defaultOpenedMenus.value.at(-1))
+
+  // Element Plus opens the active item's parent when items mount (including after icon mode).
+  // During in-place navigation, open the projected parent only while the expanded menu is mounted.
+  watch(
+    [sidebarActivePath, activeGroup, renderedMenu],
+    async ([, group, menu]) => {
+      if (!group || !menu) return
+      // ElSubMenu registers with ElMenu in its mounted hook.
+      await nextTick()
+      if (
+        group === activeGroup.value &&
+        menu === renderedMenu.value &&
+        menuOpen.value &&
+        menu.$el instanceof Element &&
+        menu.$el.matches('.el-menu:not(.el-menu--collapse)')
+      ) {
+        menu.open(group)
+      }
+    },
+    { flush: 'post' }
+  )
 
   // 双列菜单收起时的滚动条样式
   const scrollbarStyle = computed(() => {

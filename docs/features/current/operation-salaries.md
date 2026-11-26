@@ -15,7 +15,7 @@ source_of_truth:
 
 # 工资管理
 
-Vue 和 React 的「系统管理 → 工资管理」（`/system/salary`）统一维护操作工资和 FC 工资。只有 admin／super_admin 可以读取和修改，普通 admin 同时须满足既有 `system.manage` 军团能力要求。
+Vue 和 React 左侧栏的「军团运营 → 财务结算 → 工资管理」（`/system/salary`；Vue 其他布局仍在「系统管理」）统一维护操作工资和 FC 工资。只有 admin／super_admin 可以读取和修改，普通 admin 同时须满足既有 `system.manage` 军团能力要求。
 
 | 类别 | 配置键 | 计薪时点 | 新安装默认 |
 | --- | --- | --- | --- |

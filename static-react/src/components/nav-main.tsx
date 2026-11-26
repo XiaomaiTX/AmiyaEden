@@ -13,23 +13,10 @@ import {
 import { ChevronRightIcon } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { useI18n } from '@/i18n'
+import type { ShellMenuSection } from '@/layout/menu-config'
 import { useSessionStore, useSidebarNavigationStore } from '@/stores'
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    groupKey: string
-    title: string
-    icon: React.ReactNode
-    badge?: number
-    items?: {
-      title: string
-      url: string
-      badge?: number
-    }[]
-  }[]
-}) {
+export function NavMain({ sections }: { sections: ShellMenuSection[] }) {
   const { t } = useI18n()
   const location = useLocation()
   const characterId = useSessionStore((state) => state.characterId)
@@ -48,22 +35,23 @@ export function NavMain({
   const persistedExpandedMenuGroupKeys =
     ownerCharacterId === characterId ? expandedMenuGroupKeys : []
 
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{t('nav.home')}</SidebarGroupLabel>
+  return sections.map(({ labelKey, entries }) => (
+    <SidebarGroup key={labelKey}>
+      <SidebarGroupLabel role="heading" aria-level={2}>
+        {t(labelKey)}
+      </SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => {
-          const singlePage = item.items?.length === 1 ? item.items[0] : undefined
-          if (singlePage && singlePage.title === item.title) {
+        {entries.map((item) => {
+          if (item.kind === 'link') {
             return (
-              <SidebarMenuItem key={item.groupKey}>
+              <SidebarMenuItem key={item.to}>
                 <SidebarMenuButton
-                  href={singlePage.url}
-                  tooltip={t(item.title)}
-                  isActive={isActivePath(singlePage.url)}
+                  href={item.to}
+                  tooltip={t(item.labelKey)}
+                  isActive={isActivePath(item.to)}
                 >
-                  {item.icon}
-                  <span>{t(item.title)}</span>
+                  <item.icon />
+                  <span>{t(item.labelKey)}</span>
                   {item.badge ? (
                     <span className="ml-auto mr-6 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
                       {item.badge}
@@ -73,26 +61,30 @@ export function NavMain({
               </SidebarMenuItem>
             )
           }
-          const isActiveGroup = item.items?.some((subItem) => isActivePath(subItem.url)) ?? false
-          const isExpanded = isActiveGroup || persistedExpandedMenuGroupKeys.includes(item.groupKey)
+          const isActiveGroup = item.items.some((subItem) => isActivePath(subItem.to))
+          const isExpanded = isActiveGroup || persistedExpandedMenuGroupKeys.includes(item.labelKey)
 
           return (
             <Collapsible
-              key={item.groupKey}
+              key={item.labelKey}
               isExpanded={isExpanded}
               onExpandedChange={(expanded) => {
                 if (expanded) {
-                  expandMenuGroup(item.groupKey)
+                  expandMenuGroup(item.labelKey)
                 } else if (!isActiveGroup) {
-                  collapseMenuGroup(item.groupKey)
+                  collapseMenuGroup(item.labelKey)
                 }
               }}
               className="group/collapsible"
             >
               <SidebarMenuItem>
-                <SidebarMenuButton slot="trigger" tooltip={t(item.title)} isActive={isActiveGroup}>
-                  {item.icon}
-                  <span>{t(item.title)}</span>
+                <SidebarMenuButton
+                  slot="trigger"
+                  tooltip={t(item.labelKey)}
+                  isActive={isActiveGroup}
+                >
+                  <item.icon />
+                  <span>{t(item.labelKey)}</span>
                   {item.badge ? (
                     <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
                       {item.badge}
@@ -102,32 +94,27 @@ export function NavMain({
                     className={`${item.badge ? '' : 'ml-auto '}shrink-0 transition-transform group-data-[expanded]/collapsible:rotate-90`}
                   />
                 </SidebarMenuButton>
-                {item.items?.length ? (
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {item.items.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton
-                            href={subItem.url}
-                            isActive={isActivePath(subItem.url)}
-                          >
-                            <span>{t(subItem.title)}</span>
-                            {subItem.badge ? (
-                              <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
-                                {subItem.badge}
-                              </span>
-                            ) : null}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                ) : null}
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {item.items.map((subItem) => (
+                      <SidebarMenuSubItem key={subItem.to}>
+                        <SidebarMenuSubButton href={subItem.to} isActive={isActivePath(subItem.to)}>
+                          <span>{t(subItem.labelKey)}</span>
+                          {subItem.badge ? (
+                            <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+                              {subItem.badge}
+                            </span>
+                          ) : null}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
               </SidebarMenuItem>
             </Collapsible>
           )
         })}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  ))
 }

@@ -531,6 +531,24 @@
     "gohome": "Go Home"
   },
   "menus": {
+    "sidebar": {
+      "home": "Home",
+      "fleetReadiness": "Fleet & Readiness",
+      "characterTools": "Characters & Tools",
+      "memberServices": "Member Services",
+      "corporationOperations": "Corporation Operations",
+      "systemManagement": "System Settings",
+      "console": "Console",
+      "tools": "Utilities",
+      "toolBookmarks": "Tool Bookmarks",
+      "corporationData": "Corporation Reports",
+      "territoryFacilities": "Territory & Facilities",
+      "finance": "Finance & Settlement",
+      "iskWallet": "ISK Wallet Journal",
+      "fuxiShop": "Fuxi Store",
+      "fuxiWallet": "Fuxi Coin Wallet",
+      "fuxiWalletManagement": "Fuxi Coin Wallet Management"
+    },
     "login": {
       "title": "Login"
     },

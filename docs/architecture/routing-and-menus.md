@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: frontend
-last_reviewed: 2026-11-23
+last_reviewed: 2026-11-26
 source_of_truth:
   - static/src/router/core
   - static/src/router/routes
@@ -13,7 +13,9 @@ source_of_truth:
   - static-react/src/auth/route-access-gate.tsx
   - static-react/src/auth/permission-gates.tsx
   - static-react/src/app/page-loaders.ts
+  - static-react/src/layout/menu-config.ts
   - static-react/src/components/nav-main.tsx
+  - static/src/components/core/layouts/art-menus/art-sidebar-menu
   - static-react/src/stores/sidebar-navigation-store.ts
   - static-react/src/hooks/use-corp-capability.ts
 ---
@@ -46,7 +48,7 @@ React 迁移侧的路由源是 `static-react/src/app/migration-routes.ts`，由 
 
 ### 迁移期的实现隔离
 
-Vue 与 React 没有路由、菜单或状态的代码级联系：不共享 manifest、运行时、组件、Pinia/Zustand 状态，也不以 AST、import 或脚本读取另一端的路由源码。两端并行行为的计划和定义只维护在 `docs/specs/draft/frontend-react-migration-plan/`；React 的 `migration-routes.ts`、React Router、Lucide 图标、`nav.*` i18n key、`RouteAccessGate` 和 `buildShellMenuGroups` 仍是 React 自己的实现。
+Vue 与 React 没有路由、菜单或状态的代码级联系：不共享 manifest、运行时、组件、Pinia/Zustand 状态，也不以 AST、import 或脚本读取另一端的路由源码。两端并行行为的计划和定义只维护在 `docs/specs/draft/frontend-react-migration-plan/`；React 的 `migration-routes.ts`、React Router、Lucide 图标、`nav.*` i18n key、`RouteAccessGate` 和 `buildShellMenuSections` 仍是 React 自己的实现。
 
 修改 Vue 或 React 路由时，先更新 migration spec draft 中的并行定义，再分别修改两端并执行各自的既有验证；CI 不读取或比较 Vue 路由代码。
 
@@ -76,6 +78,12 @@ React 侧边栏按人物持久化手动展开的菜单组；当前路由所属�
 - 配置页展示 capability 时必须使用 i18n 标签，不直接展示 `srp.user`、`menu.srp` 等原始 key。
 - 后端 enforced 目录变更时，必须同时更新 Vue 与 React 的 `migration-routes.ts` / `modules/*.ts`，避免双前端能力门禁漂移。
 - reserved capability 不得用于路由、菜单或按钮门禁；否则普通用户无法通过策略获得该 key，`full_access` 用户的 `/me` 也不会收到它。
+
+## 左侧导航分区
+
+双端左侧栏依次显示「首页」「舰队与战备」「人物与工具」「成员服务」「军团运营」「系统管理」。分区标题只负责视觉分隔，图标折叠时不显示；区内是直达链接和可折叠菜单组，最多展开一层。Vue 仅在左侧布局使用该分区；顶部、顶部混合和双列布局沿用原菜单层级。
+
+分区属于展示层，不参与路由注册、权限判定或默认路由选择。两端各自复用已有路由的可见性和叶子角标；没有可见页面的组与分区不渲染，组角标汇总当前组内可见页面。公告和名人堂保留直达，控制台在首页直达；报表和设施移至军团运营，新人资格与退税设置归入新人帮扶，URL 与权限保持不变。
 
 ## 按钮权限
 
@@ -109,11 +117,11 @@ Vue 的 admission context 后台刷新保留当前账号已经取得的结果，
 - 路由改动若涉及权限边界，必须同步更新 API / feature 文档
 - 路由架构说明只维护在 `docs/` 中
 
-队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。系统管理的独立 `/system/newbro-settings` 入口配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
+队长退税申请入口要求真实 `captain`，只读写本人申请；管理员审批入口仅 `admin` / `super_admin`，不向普通队长开放全量记录。独立 `/system/newbro-settings` 页面配置统一新人资格、税率与允许星系，不扩大基础配置页权限。导师入口资格使用同一新人服务。旧选队长与绑定页面、接口均已移除。
 
 双前端 `/system/qqbot`、QQ 群治理菜单及其按钮入口均已移除，无兼容路由。共享系统管理和用户 QQ 联系方式权限保持不变。
 
 工资管理在 Vue／React 的 `/system/salary`，仅 admin／super_admin 并沿用 `system.manage` 能力边界。军团申请 `AdmissionReview`／`/admissions/review` 接入 `admission_pending`，由既有父菜单汇总。详情和 `/admissions/applications/:id/edit` 使用独立路由，编辑入口限 owner 且未已邀请。
 ## 军团公告入口
 
-Vue Announcements 与 React /announcements 为名人堂之后的一级直达入口。使用 Login 成员门禁，管理按钮仅对 admin、super_admin、senior_fc 显示，后端对写接口独立校验角色。
+Vue `Announcements` 与 React `/announcements` 在左侧栏的「首页」分区直达；Vue 其他布局仍保留原一级入口。使用 Login 成员门禁，管理按钮仅对 admin、super_admin、senior_fc 显示，后端对写接口独立校验角色。

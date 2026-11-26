@@ -169,6 +169,14 @@
     border-right: 0;
   }
 
+  .sidebar-section-title {
+    padding: 12px 16px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--el-menu-text-color);
+    opacity: 0.7;
+  }
+
   // ElScrollbar owns scrolling; a nested scroll container traps wheel events.
   :deep(.el-scrollbar__wrap) {
     overscroll-behavior-y: contain;

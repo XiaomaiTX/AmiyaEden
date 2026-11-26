@@ -375,7 +375,17 @@ const enUS = {
   },
   nav: {
     home: 'Home',
+    section: {
+      fleet: 'Fleet & Readiness',
+      charactersAndTools: 'Characters & Tools',
+      memberServices: 'Member Services',
+      corpOperations: 'Corporation Operations',
+    },
     group: {
+      tools: 'Utilities',
+      corpData: 'Corporation Reports',
+      territoryFacilities: 'Territory & Facilities',
+      finance: 'Finance & Settlement',
       characters: 'Characters',
       dashboard: 'Dashboard',
       shortcuts: 'Shortcuts',
@@ -384,7 +394,7 @@ const enUS = {
       skillPlanning: 'Skill Planning',
       welfare: 'Corp Welfare',
       newbro: 'Newbro Support',
-      shop: 'Shop',
+      shop: 'Fuxi Store',
       srp: 'SRP',
       ticket: 'Ticket Center',
       system: 'System Settings',
@@ -403,7 +413,7 @@ const enUS = {
       credentials: 'Mumble Credentials',
     },
     info: {
-      wallet: 'Wallet',
+      wallet: 'ISK Wallet Journal',
       skill: 'Skill List',
       npcKills: 'NPC Kills',
       ships: 'Flyable Ships',
@@ -444,7 +454,7 @@ const enUS = {
       browse: 'Browse Products',
       manage: 'Shop Management',
       orderManage: 'Order Manage',
-      wallet: 'My Wallet',
+      wallet: 'Fuxi Coin Wallet',
     },
     srp: {
       apply: 'SRP Apply',
@@ -468,7 +478,7 @@ const enUS = {
       blacklist: 'Blacklist',
       user: 'User Manage',
       taskManager: 'Task Manager',
-      wallet: 'Wallet Management',
+      wallet: 'Fuxi Coin Wallet Management',
       audit: 'Audit Logs',
       papExchange: 'PAP Exchange',
       pap: 'Alliance PAP',
