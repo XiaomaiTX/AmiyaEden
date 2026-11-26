@@ -1,5 +1,20 @@
-import { buildShellMenuGroups } from '@/layout/menu-config'
+import { appRouteSpecs } from '@/app/migration-routes'
+import { buildShellMenuSections, type ShellMenuEntry } from '@/layout/menu-config'
 import type { AdmissionContext } from '@/api/generated/client'
+
+function buildMenuEntries(...args: Parameters<typeof buildShellMenuSections>) {
+  return buildShellMenuSections(...args).flatMap((section) => section.entries)
+}
+
+function menuItems(entries: ShellMenuEntry[]) {
+  return entries.flatMap((entry) => (entry.kind === 'group' ? entry.items : [entry]))
+}
+
+function findGroup(entries: ShellMenuEntry[], labelKey: string) {
+  return entries
+    .filter((entry) => entry.kind === 'group')
+    .find((entry) => entry.labelKey === labelKey)
+}
 
 test('admission pending count appears only on visible review navigation and its parent', () => {
   const session = {
@@ -19,53 +34,114 @@ test('admission pending count appears only on visible review navigation and its 
     targets: [],
     reviewable_corporation_ids: [98824507],
   }
-  const groups = buildShellMenuGroups(session, { admission_pending: 2 }, context)
-  const admissions = groups.find((group) => group.labelKey === 'admissions.title')
+  const entries = buildMenuEntries(session, { admission_pending: 2 }, context)
+  const admissions = findGroup(entries, 'admissions.title')
   expect(admissions?.badge).toBe(2)
   expect(admissions?.items.find((item) => item.to === '/admissions/review')?.badge).toBe(2)
   expect(admissions?.items.find((item) => item.to === '/admissions/history')?.badge).toBeUndefined()
-  const noAuthority = buildShellMenuGroups(
+  const noAuthority = buildMenuEntries(
     session,
     { admission_pending: 2 },
     { ...context, reviewable_corporation_ids: [] }
   )
-  expect(noAuthority.find((group) => group.labelKey === 'admissions.title')?.badge).toBeUndefined()
+  expect(findGroup(noAuthority, 'admissions.title')?.badge).toBeUndefined()
 })
 
 describe('menu config', () => {
+  test('lists each visible route once, in the intended sections', () => {
+    const sections = buildShellMenuSections(
+      {
+        isLoggedIn: true,
+        roles: ['super_admin', 'captain'],
+        corpCapabilities: [],
+        isCurrentlyNewbro: true,
+        isMentorMenteeEligible: true,
+      },
+      { corporation_structures_attention: 5 },
+      {
+        is_member: true,
+        can_create_new_member: true,
+        can_create_alt: true,
+        qq: '',
+        discord_id: '',
+        characters: [],
+        targets: [],
+        reviewable_corporation_ids: [98824507],
+      }
+    )
+    expect(sections.map((section) => section.labelKey)).toEqual([
+      'nav.home',
+      'nav.section.fleet',
+      'nav.section.charactersAndTools',
+      'nav.section.memberServices',
+      'nav.section.corpOperations',
+      'nav.group.system',
+    ])
+    const entries = sections.flatMap((section) => section.entries)
+    expect(
+      menuItems(entries)
+        .map((item) => item.to)
+        .sort()
+    ).toEqual(
+      appRouteSpecs
+        .filter((route) => !route.menuHidden)
+        .map((route) => `/${route.path}`)
+        .sort()
+    )
+    expect(findGroup(entries, 'nav.group.operation')?.items.map((item) => item.to)).toEqual([
+      '/operation/pap',
+      '/operation/corporation-pap',
+      '/operation/fleets',
+      '/operation/fleet-configs',
+    ])
+    expect(findGroup(entries, 'nav.group.newbro')?.items.at(-1)?.to).toBe('/system/newbro-settings')
+    expect(findGroup(entries, 'nav.group.territoryFacilities')?.badge).toBe(5)
+  })
+
+  test('drops sections and groups with no visible pages', () => {
+    const sections = buildShellMenuSections({
+      isLoggedIn: true,
+      roles: ['guest'],
+      corpCapabilities: [],
+      isCurrentlyNewbro: false,
+      isMentorMenteeEligible: false,
+    })
+    expect(
+      sections.map((section) => [section.labelKey, section.entries.map((entry) => entry.labelKey)])
+    ).toEqual([
+      ['nav.section.charactersAndTools', ['nav.group.tools']],
+      ['nav.section.memberServices', ['admissions.title']],
+    ])
+  })
   test.each(['user', 'admin', 'super_admin'])(
     'shows Fuxi Hall as one direct entry for %s',
     (role) => {
-      const groups = buildShellMenuGroups({
+      const entries = buildMenuEntries({
         isLoggedIn: true,
         roles: [role],
         corpCapabilities: role === 'super_admin' ? [] : ['menu.fuxi_hall'],
         isCurrentlyNewbro: false,
         isMentorMenteeEligible: false,
       })
-      const hall = groups.find((group) => group.labelKey === 'nav.fuxiHall.fame')
-      expect(hall?.items).toEqual([
-        expect.objectContaining({ to: '/fuxi-hall', labelKey: 'nav.fuxiHall.fame' }),
-      ])
-      expect(groups.flatMap((group) => group.items).some((item) => item.to.startsWith('/fuxi-hall/')))
-        .toBe(false)
+      const hall = entries.find((entry) => entry.labelKey === 'nav.fuxiHall.fame')
+      expect(hall).toMatchObject({ kind: 'link', to: '/fuxi-hall' })
+      expect(menuItems(entries).some((item) => item.to.startsWith('/fuxi-hall/'))).toBe(false)
     }
   )
 
   test('hides Fuxi Hall when the menu capability is missing', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['admin'],
       corpCapabilities: [],
       isCurrentlyNewbro: false,
       isMentorMenteeEligible: false,
     })
-    expect(groups.flatMap((group) => group.items).some((item) => item.to === '/fuxi-hall'))
-      .toBe(false)
+    expect(menuItems(entries).some((item) => item.to === '/fuxi-hall')).toBe(false)
   })
 
   test('hides protected routes for anonymous visitor', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: false,
       roles: [],
       corpCapabilities: [],
@@ -73,11 +149,11 @@ describe('menu config', () => {
       isMentorMenteeEligible: false,
     })
 
-    expect(groups.length).toBe(0)
+    expect(entries.length).toBe(0)
   })
 
-  test('shows dashboard and info menus for logged-in member', () => {
-    const groups = buildShellMenuGroups({
+  test('shows console, character information and utilities for a logged-in member', () => {
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['member'],
       corpCapabilities: ['menu.dashboard', 'menu.info'],
@@ -85,33 +161,35 @@ describe('menu config', () => {
       isMentorMenteeEligible: false,
     })
 
-    const dashboard = groups.find((group) => group.labelKey === 'nav.group.dashboard')
-    const mumble = groups.find((group) => group.labelKey === 'nav.mumble.credentials')
-    const info = groups.find((group) => group.labelKey === 'nav.group.info')
-    expect(dashboard).toBeDefined()
-    expect(groups.flatMap((group) => group.items).some((item) => item.to === '/characters')).toBe(false)
-    expect(mumble?.items).toEqual([
-      expect.objectContaining({ to: '/mumble', labelKey: 'nav.mumble.credentials' }),
+    expect(entries).toContainEqual(
+      expect.objectContaining({ kind: 'link', to: '/dashboard/console' })
+    )
+    expect(menuItems(entries).map((item) => item.to)).not.toContain('/characters')
+    const tools = findGroup(entries, 'nav.group.tools')
+    expect(tools?.items.map((item) => item.to)).toEqual([
+      '/mumble',
+      '/info/esi-check',
+      '/info/tool-bookmarks',
     ])
-    expect(info).toBeDefined()
-    expect(groups.find((group) => group.labelKey === 'nav.group.system')).toBeUndefined()
+    expect(findGroup(entries, 'nav.group.info')).toBeDefined()
+    expect(menuItems(entries).some((item) => item.to.startsWith('/system/'))).toBe(false)
   })
 
   test('does not expose hidden detail routes in menu', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['super_admin'],
       corpCapabilities: [],
       isCurrentlyNewbro: true,
       isMentorMenteeEligible: true,
     })
-    const allItems = groups.flatMap((group) => group.items)
+    const allItems = menuItems(entries)
     expect(allItems.some((item) => item.to.includes('/ticket/detail/'))).toBe(false)
     expect(allItems.some((item) => item.to.includes('/operation/fleet-detail/'))).toBe(false)
   })
 
   test('hides system routes when required corp capability is missing', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['admin'],
       corpCapabilities: [],
@@ -119,19 +197,15 @@ describe('menu config', () => {
       isMentorMenteeEligible: false,
     })
 
-    const system = groups.find((group) => group.labelKey === 'nav.group.system')
-    // Other system routes may not require corp capabilities, but the
-    // user/task-manager/wallet/audit entries must be gated.
-    if (system) {
-      expect(system.items.some((item) => item.to.endsWith('/system/user'))).toBe(false)
-      expect(system.items.some((item) => item.to.endsWith('/system/task-manager'))).toBe(false)
-      expect(system.items.some((item) => item.to.endsWith('/system/wallet'))).toBe(false)
-      expect(system.items.some((item) => item.to.endsWith('/system/audit'))).toBe(false)
-    }
+    const paths = menuItems(entries).map((item) => item.to)
+    expect(paths).not.toContain('/system/user')
+    expect(paths).not.toContain('/system/task-manager')
+    expect(paths).not.toContain('/system/wallet')
+    expect(paths).not.toContain('/system/audit')
   })
 
   test('shows system routes when required corp capability is present', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['admin'],
       corpCapabilities: [
@@ -145,16 +219,16 @@ describe('menu config', () => {
       isMentorMenteeEligible: false,
     })
 
-    const system = groups.find((group) => group.labelKey === 'nav.group.system')
-    expect(system).toBeDefined()
-    expect(system?.items.some((item) => item.to.endsWith('/system/user'))).toBe(true)
-    expect(system?.items.some((item) => item.to.endsWith('/system/task-manager'))).toBe(true)
-    expect(system?.items.some((item) => item.to.endsWith('/system/wallet'))).toBe(true)
-    expect(system?.items.some((item) => item.to.endsWith('/system/audit'))).toBe(true)
+    expect(entries.filter((entry) => entry.kind === 'link').map((entry) => entry.to)).toEqual(
+      expect.arrayContaining(['/system/user', '/system/task-manager', '/system/audit'])
+    )
+    expect(findGroup(entries, 'nav.group.finance')?.items.map((item) => item.to)).toContain(
+      '/system/wallet'
+    )
   })
 
   test('shows representative capability-gated routes across every migrated domain', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['admin', 'welfare', 'srp', 'captain'],
       corpCapabilities: [
@@ -177,7 +251,7 @@ describe('menu config', () => {
       isCurrentlyNewbro: true,
       isMentorMenteeEligible: true,
     })
-    const items = groups.flatMap((group) => group.items.map((item) => item.to))
+    const items = menuItems(entries).map((item) => item.to)
 
     expect(items).toEqual(
       expect.arrayContaining([
@@ -196,7 +270,7 @@ describe('menu config', () => {
   })
 
   test('super_admin bypasses corp capability gates for menu visibility', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['super_admin'],
       corpCapabilities: [],
@@ -204,19 +278,18 @@ describe('menu config', () => {
       isMentorMenteeEligible: false,
     })
 
-    const system = groups.find((group) => group.labelKey === 'nav.group.system')
-    expect(system).toBeDefined()
+    expect(entries).toContainEqual(expect.objectContaining({ kind: 'link', to: '/system/user' }))
   })
 
   test('requires real captain role for refund menu and preserves mentor access', () => {
-    const groups = buildShellMenuGroups({
+    const entries = buildMenuEntries({
       isLoggedIn: true,
       roles: ['super_admin'],
       corpCapabilities: [],
       isCurrentlyNewbro: true,
       isMentorMenteeEligible: true,
     })
-    const newbro = groups.find((group) => group.labelKey === 'nav.group.newbro')
+    const newbro = findGroup(entries, 'nav.group.newbro')
     const items = newbro?.items.map((item) => item.to) ?? []
 
     expect(items).not.toContain('/newbro/captain')
@@ -224,7 +297,7 @@ describe('menu config', () => {
   })
 
   test('maps leaf badge counts and aggregates them into the parent menu', () => {
-    const groups = buildShellMenuGroups(
+    const entries = buildMenuEntries(
       {
         isLoggedIn: true,
         roles: ['mentor'],
@@ -234,7 +307,7 @@ describe('menu config', () => {
       },
       { mentor_pending_applications: 4 }
     )
-    const newbro = groups.find((group) => group.labelKey === 'nav.group.newbro')
+    const newbro = findGroup(entries, 'nav.group.newbro')
 
     expect(newbro?.items.find((item) => item.to === '/newbro/mentor')?.badge).toBe(4)
     expect(newbro?.badge).toBe(4)

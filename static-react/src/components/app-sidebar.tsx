@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { useI18n } from '@/i18n'
-import { buildShellMenuGroups } from '@/layout/menu-config'
+import { buildShellMenuSections } from '@/layout/menu-config'
 import { buildEveCharacterPortraitUrl, buildEveCorporationLogoUrl } from '@/lib/eve-image'
 import { SYSTEM_IDENTITY } from '@/constants/system-identity'
 import { useBadgeStore, useSessionStore } from '@/stores'
@@ -32,7 +32,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const isMentorMenteeEligible = useSessionStore((state) => state.isMentorMenteeEligible)
   const badgeCounts = useBadgeStore((state) => state.counts)
 
-  const navMainItems = buildShellMenuGroups(
+  const sections = buildShellMenuSections(
     {
       isLoggedIn,
       roles,
@@ -42,17 +42,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
     },
     badgeCounts,
     admissionContext
-  ).map((group) => ({
-    groupKey: group.key,
-    title: group.labelKey,
-    icon: <group.icon />,
-    badge: group.badge,
-    items: group.items.map((item) => ({
-      title: item.labelKey,
-      url: item.to,
-      badge: item.badge,
-    })),
-  }))
+  )
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -74,7 +64,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMainItems} />
+        <NavMain sections={sections} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

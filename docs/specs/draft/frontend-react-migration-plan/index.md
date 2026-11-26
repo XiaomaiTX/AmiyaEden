@@ -2,7 +2,7 @@
 status: draft
 doc_type: draft
 owner: engineering
-last_reviewed: 2026-10-12
+last_reviewed: 2026-11-26
 source_of_truth:
   - static/src
   - static-react/src
@@ -67,8 +67,23 @@ source_of_truth:
   - 功能行为迁移到 `docs/features/current/`
   - 接口边界变化同步更新 `docs/api/`
 
+## 双端并行定义：侧边栏分区
+
+侧边栏按以下顺序展示分区。标题不可点击，不占用菜单折叠层级；权限过滤后不渲染空组和空分区。URL、注册路由、门禁和角标来源保持不变，角标归属随页面的菜单分组移动。
+
+| 分区 | 直达入口或折叠组（按顺序） |
+| --- | --- |
+| 首页 | 控制台、军团公告（均直达） |
+| 舰队与战备 | 舰队行动（我的 PAP、军团 PAP、舰队管理、舰队配置）、补损 SRP、技能规划（我的规划、军团规划、完成度检查） |
+| 人物与工具 | 人物信息（除 ESI 授权检查和工具书签）、实用工具（Mumble 凭据、ESI 授权检查、工具书签） |
+| 成员服务 | 军团申请、新人帮扶（含原系统管理中的新人／退税设置）、军团福利、伏羲商店（浏览商品、伏羲币钱包、商店管理、订单管理）、工单中心、伏羲名人堂（直达） |
+| 军团运营 | 军团数据（军团刷怪报表、军团技能达标）、领地与设施（星系登记、军团建筑、我的燃料建筑）、财务结算（工资、伏羲币钱包管理、联盟 PAP、PAP 兑换） |
+| 系统管理 | 用户管理、黑名单、自动权限、任务管理、审计日志、Webhook、基础配置；该分区标题下直接列出页面，不再重复套同名折叠组 |
+
+人物的 ISK 钱包流水与商店的伏羲币钱包使用不同名称。图标模式隐藏分区标题；Vue 的顶部菜单和双列模式维持原有层级。两端分别维护展示配置，不改变路由注册树或复用对方源码。
+
 ## 已实现：军团技能达标页面
 
-仪表盘新增 `/dashboard/skill-readiness`，Vue 与 React 路由、菜单、wrapper、类型、本地化和页面均已实现；权限为 Login、admin/super_admin、`menu.dashboard`。页面包含军团多选、共享军团方案单选、全范围统计、分页用户表格、角色展开及方案比对/全部技能详情；筛选与分页保存在 URL。行为和后端契约见 [军团技能达标查询](../../../features/current/dashboard-skill-readiness.md)。
+已新增 `/dashboard/skill-readiness`，Vue 与 React 路由、菜单、wrapper、类型、本地化和页面均已实现；权限为 Login、admin/super_admin、`menu.dashboard`。页面包含军团多选、共享军团方案单选、全范围统计、分页用户表格、角色展开及方案比对/全部技能详情；筛选与分页保存在 URL。行为和后端契约见 [军团技能达标查询](../../../features/current/dashboard-skill-readiness.md)。
 
 范围变更：QQ Bot 运维、群治理和 QQ 通知均已下线，不再属于双前端迁移或验收范围。

@@ -93,7 +93,7 @@ Vue 侧在 2026-05-01 冻结后陆续新增以下路由，React 侧尚未对齐�
 
 ### 路由与菜单并行契约（2026-07-30）
 
-- [x] React 路由与菜单保持独立实现：以 `migration-routes.ts`、React Router、Zustand 和 `buildShellMenuGroups` 为唯一 React 运行时来源。
+- [x] React 路由与菜单保持独立实现：以 `migration-routes.ts`、React Router、Zustand 和 `buildShellMenuSections` 为唯一 React 运行时来源。
 - [x] Vue 与 React 不建立代码联系：禁止共享路由包、manifest、运行时、AST 读取或源码比较；Vue 的既有行为仅通过本 draft 的并行契约进入迁移计划。
 - [x] 工单分类读路径为 `ticket.manage + ticket.admin.read`，创建、编辑、删除在页面内额外使用 `ticket.admin.manage` gate；自动角色页仅保留 `super_admin` 角色约束。
 

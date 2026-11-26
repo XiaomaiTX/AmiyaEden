@@ -64,7 +64,7 @@ describe('AppSidebar', () => {
       'true'
     )
     expect(screen.getByRole('link', { name: '人物资产' })).toHaveAttribute('data-active', 'true')
-    expect(screen.getByText('钱包流水')).toBeInTheDocument()
+    expect(screen.getByText('ISK 钱包流水')).toBeInTheDocument()
   })
 
   test('persists manual group expansion and restores it after remounting', async () => {
@@ -99,16 +99,23 @@ describe('AppSidebar', () => {
   test('filters routes that the current session cannot access', () => {
     renderSidebar('/dashboard/console')
 
-    expect(screen.getByRole('button', { name: '仪表盘' })).toBeInTheDocument()
-    expect(screen.queryByText('军团刷怪报表')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '首页' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '控制台' })).toHaveAttribute('data-active', 'true')
+    expect(screen.getByRole('link', { name: '军团公告' })).toHaveAttribute('href', '/announcements')
+    expect(screen.queryByRole('heading', { name: '军团运营' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '系统管理' })).not.toBeInTheDocument()
   })
 
-  test('Mumble and Fuxi Hall navigate directly without expandable parent menus', async () => {
+  test('Mumble is under Utilities while Fuxi Hall stays a direct link', async () => {
     const user = userEvent.setup()
     useSessionStore.setState({ corpCapabilities: ['menu.fuxi_hall'] })
     renderSidebar('/fuxi-hall')
 
     const hall = screen.getByRole('link', { name: '伏羲名人堂' })
+    const utilities = screen.getByRole('button', { name: '实用工具' })
+    expect(utilities).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: 'Mumble 凭据' })).not.toBeInTheDocument()
+    await user.click(utilities)
     const mumble = screen.getByRole('link', { name: 'Mumble 凭据' })
     expect(hall).toHaveAttribute('href', '/fuxi-hall')
     expect(hall).toHaveAttribute('data-active', 'true')

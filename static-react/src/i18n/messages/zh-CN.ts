@@ -362,7 +362,17 @@ const zhCN = {
   },
   nav: {
     home: '首页',
+    section: {
+      fleet: '舰队与战备',
+      charactersAndTools: '人物与工具',
+      memberServices: '成员服务',
+      corpOperations: '军团运营',
+    },
     group: {
+      tools: '实用工具',
+      corpData: '军团数据',
+      territoryFacilities: '领地与设施',
+      finance: '财务结算',
       characters: '人物管理',
       dashboard: '仪表盘',
       shortcuts: '快捷入口',
@@ -371,7 +381,7 @@ const zhCN = {
       skillPlanning: '技能规划',
       welfare: '军团福利',
       newbro: '新人帮扶',
-      shop: '商店',
+      shop: '伏羲商店',
       srp: '补损 SRP',
       ticket: '工单中心',
       system: '系统管理',
@@ -390,7 +400,7 @@ const zhCN = {
       credentials: 'Mumble 凭据',
     },
     info: {
-      wallet: '钱包流水',
+      wallet: 'ISK 钱包流水',
       skill: '技能列表',
       npcKills: '刷怪报表',
       ships: '可用舰船',
@@ -431,7 +441,7 @@ const zhCN = {
       browse: '浏览商品',
       manage: '商店管理',
       orderManage: '订单管理',
-      wallet: '我的钱包',
+      wallet: '伏羲币钱包',
     },
     srp: {
       apply: '补损申请',
@@ -453,7 +463,7 @@ const zhCN = {
       blacklist: '黑名单',
       user: '用户管理',
       taskManager: '任务管理',
-      wallet: '钱包管理',
+      wallet: '伏羲币钱包管理',
       audit: '审计日志',
       papExchange: 'PAP兑换',
       pap: '联盟 PAP',

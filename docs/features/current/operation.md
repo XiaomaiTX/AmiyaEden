@@ -65,9 +65,9 @@ source_of_truth:
 - 保存到游戏是把现有舰队配置装配导出到当前用户自己的 ESI 人物，不是系统配置写操作
 - 装配物品的装备设置通过独立「装备设置」对话框单独保存，不随主配置表单同一次接口提交
 - 舰队配置编辑会在同一装配条目内按 `flag + type_id + quantity` 保留未变化物品的装备设置（重要性、惩罚、替代品）；删除、替换、改槽位或改数量后，该物品按新条目处理，并重置为默认设置
-- 联盟 PAP 的用户侧展示在 Operation，管理员配置与导入在 System
+- 联盟 PAP 的用户侧展示在 Operation，管理员配置与导入在左侧栏的「军团运营 → 财务结算」（Vue 其他布局仍在「系统管理」）
 - 军团 PAP 页面属于多块统计 + 表格混排的分析页，当前明确允许不走 `useTable` / `ArtTable` 默认模板
-- 发放 PAP 时的伏羲币换算不再是固定 1:1，而是按舰队 `importance`（`cta` / `strat_op` / `other`）查询 `pap_type_rate` 表中对应汇率；若成员是舰队 FC，则优先发放固定 `FC工资`，并受 `FC工资上限次数` 约束，汇率配置入口在「系统管理 → PAP兑换」，详见 `docs/features/current/pap-exchange.md`
+- 发放 PAP 时的伏羲币换算不再是固定 1:1，而是按舰队 `importance`（`cta` / `strat_op` / `other`）查询 `pap_type_rate` 表中对应汇率；若成员是舰队 FC，则优先发放固定 `FC工资`，并受 `FC工资上限次数` 约束，汇率配置入口在左侧栏的「军团运营 → 财务结算 → PAP兑换」，详见 `docs/features/current/pap-exchange.md`
 - 发放 PAP 时的伏羲币奖励受多人物奖励限制：同一用户在同一舰队中的多个人物按配置递减奖励，详见 `docs/features/current/pap-exchange.md`
 - 舰队 `pap_count` 统一要求大于 `0` 且按 `0.5` 粒度；创建、编辑、发放都会执行该校验。历史不符合粒度的舰队不会被自动修正，需先编辑到合法值后才能发放。
 - 联盟 PAP 月度归档为纯归档操作，当前不进行钱包兑换（该能力预留为未来特性）
