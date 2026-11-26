@@ -72,12 +72,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { DashboardSrpItem } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { formatIskSmart, formatTime } from '@utils/common'
 
   const { t } = useI18n()
   defineProps<{
-    list: Api.Dashboard.SrpItem[]
+    list: DashboardSrpItem[]
   }>()
 
   const reviewStatusLabel = (status: string): string => {

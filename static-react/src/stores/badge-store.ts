@@ -1,8 +1,9 @@
 import { create } from 'zustand'
-import { fetchBadgeCounts } from '@/api/badge'
+import { getBadgeCounts } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { hasNonGuestRole } from '@/app/route-access'
 import { useSessionStore } from '@/stores/session-store'
-import type { BadgeCounts } from '@/types/api/badge'
+import type { BadgeCounts } from '@/api/generated/client'
 
 interface BadgeStoreState {
   counts: BadgeCounts
@@ -33,7 +34,9 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
     set({ loading: true, loadingForCharacterId: characterId })
     try {
       // badge-counts is a Login route; guests and recruiter-only accounts would only get a 403.
-      const counts = hasNonGuestRole(useSessionStore.getState().roles) ? await fetchBadgeCounts() : {}
+      const counts = hasNonGuestRole(useSessionStore.getState().roles)
+        ? (await unwrapContract(getBadgeCounts(), '') ?? {})
+        : {}
       if (requestId === latestBadgeRequestId && get().loadingForCharacterId === characterId) {
         set({
           counts,

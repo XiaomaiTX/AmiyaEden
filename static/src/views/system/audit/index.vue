@@ -125,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { AuditEvent as ContractAuditEvent } from '@/api/generated/client'
   import {
     ElAlert,
     ElButton,
@@ -143,7 +144,8 @@
   import { formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
-  import { adminListAuditEvents } from '@/api/audit'
+  import { listAuditEvents, type AuditEventSearchInput } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { getAuditActionLabel, getAuditCategoryLabel } from '@/utils/audit-labels'
 
   defineOptions({ name: 'SystemAudit' })
@@ -154,7 +156,7 @@
   // the missing capability explicitly.
   const canExport = computed(() => hasCapability('system.audit.export'))
 
-  type AuditEvent = Api.Audit.AuditEvent
+  type AuditEvent = ContractAuditEvent
 
   const categoryOptions = [
     'permission',
@@ -173,7 +175,7 @@
   ]
 
   const activeTab = ref('events')
-  const filterForm = reactive<Api.Audit.AuditEventSearchParams>({
+  const filterForm = reactive<AuditEventSearchInput>({
     keyword: '',
     category: '',
     result: undefined,
@@ -210,7 +212,8 @@
     handleCurrentChange
   } = useTable({
     core: {
-      apiFn: adminListAuditEvents,
+      apiFn: (params?: AuditEventSearchInput) =>
+        unwrapContract(listAuditEvents(params ?? { current: 1, size: 200 })),
       apiParams: { current: 1, size: 200 },
       columnsFactory: () => [
         { type: 'index', label: '#', width: 60 },

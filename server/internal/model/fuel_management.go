@@ -13,6 +13,14 @@ type CorpStructureAssignment struct {
 
 func (CorpStructureAssignment) TableName() string { return "corp_structure_assignment" }
 
+// FuelOfficerUserOption is a read projection for structure assignment options.
+type FuelOfficerUserOption struct {
+	UserID        uint   `json:"user_id"`
+	DisplayName   string `json:"display_name"`
+	CharacterID   int64  `json:"character_id"`
+	CharacterName string `json:"character_name"`
+}
+
 // FuelSalaryPayout stores monthly fuel salary payout records.
 type FuelSalaryPayout struct {
 	ID              uint      `gorm:"primaryKey" json:"id"`

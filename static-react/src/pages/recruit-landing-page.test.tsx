@@ -50,7 +50,7 @@ describe('recruit landing page', () => {
   test('submits successfully and shows redirect button', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ code: 0, msg: 'ok', data: { qq_url: 'https://qun.qq.com/join' } }),
+        JSON.stringify({ code: 200, msg: 'ok', data: { qq_url: 'https://qun.qq.com/join' } }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -94,7 +94,7 @@ describe('recruit landing page', () => {
   test('redirect button calls window.open with qq_url', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ code: 0, msg: 'ok', data: { qq_url: 'https://qun.qq.com/join' } }),
+        JSON.stringify({ code: 200, msg: 'ok', data: { qq_url: 'https://qun.qq.com/join' } }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },

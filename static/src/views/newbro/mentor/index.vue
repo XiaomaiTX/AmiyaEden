@@ -253,15 +253,17 @@
 </template>
 
 <script setup lang="ts">
+  import type { MentorMenteeItem, MentorRewardStage } from '@/api/generated/client'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
     acceptMentorApplication,
-    fetchMentorApplications,
-    fetchMentorDashboardRewardStages,
-    fetchMentorMentees,
+    getMentorDashboardRewardStages,
+    listMentorApplications,
+    listMentorMentees,
     rejectMentorApplication
-  } from '@/api/mentor'
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
   import MentorResponsibilitiesCard from '../components/mentor-responsibilities-card.vue'
@@ -277,9 +279,9 @@
   const loadingMentees = ref(false)
   const loadingRewardStages = ref(false)
   const actioningRelationshipId = ref<number | null>(null)
-  const applications = ref<Api.Mentor.MenteeListItem[]>([])
-  const mentees = ref<Api.Mentor.MenteeListItem[]>([])
-  const rewardStages = ref<Api.Mentor.RewardStage[]>([])
+  const applications = ref<MentorMenteeItem[]>([])
+  const mentees = ref<MentorMenteeItem[]>([])
+  const rewardStages = ref<MentorRewardStage[]>([])
   const statusFilter = ref<Api.Mentor.MenteeStatusFilter>('active')
   const page = reactive({ current: 1, size: 20, total: 0 })
 
@@ -341,7 +343,7 @@
   async function loadApplications() {
     loadingApplications.value = true
     try {
-      applications.value = await fetchMentorApplications()
+      applications.value = await unwrapContract(listMentorApplications())
     } catch (error) {
       console.error('Failed to load mentor applications', error)
       applications.value = []
@@ -354,7 +356,7 @@
   async function loadRewardStages() {
     loadingRewardStages.value = true
     try {
-      rewardStages.value = await fetchMentorDashboardRewardStages()
+      rewardStages.value = await unwrapContract(getMentorDashboardRewardStages())
     } catch (error) {
       console.error('Failed to load mentor reward stages', error)
       rewardStages.value = []
@@ -367,11 +369,13 @@
   async function loadMentees() {
     loadingMentees.value = true
     try {
-      const data = await fetchMentorMentees({
-        current: page.current,
-        size: page.size,
-        status: statusFilter.value
-      })
+      const data = await unwrapContract(
+        listMentorMentees({
+          current: page.current,
+          size: page.size,
+          status: statusFilter.value
+        })
+      )
       mentees.value = data.list
       page.total = data.total
     } catch (error) {
@@ -392,10 +396,10 @@
     actioningRelationshipId.value = relationshipId
     try {
       if (action === 'accept') {
-        await acceptMentorApplication({ relationship_id: relationshipId })
+        await unwrapContract(acceptMentorApplication({ relationship_id: relationshipId }))
         ElMessage.success(t('newbro.mentor.acceptSuccess'))
       } else {
-        await rejectMentorApplication({ relationship_id: relationshipId })
+        await unwrapContract(rejectMentorApplication({ relationship_id: relationshipId }))
         ElMessage.success(t('newbro.mentor.rejectSuccess'))
       }
       await reloadAll()

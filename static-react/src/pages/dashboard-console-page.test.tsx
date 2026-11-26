@@ -5,7 +5,7 @@ import { useSessionStore } from '@/stores'
 
 function mockDashboardResponse(payload: unknown) {
   vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(JSON.stringify({ code: 0, msg: 'ok', data: payload }), {
+    new Response(JSON.stringify({ code: 200, msg: 'ok', data: payload }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })

@@ -7,8 +7,9 @@ import {
 } from '@/components/ui/select'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { fetchMyCharacters } from '@/api/auth'
-import { joinFleet } from '@/api/fleet'
+import { listMyEveCharacters } from '@/api/generated/client'
+import { joinFleet } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
@@ -37,7 +38,8 @@ export function OperationJoinPage() {
 
     const timer = window.setTimeout(() => {
       setLoading(true)
-      void fetchMyCharacters()
+      void unwrapContract(listMyEveCharacters(), 'fetch characters failed')
+        .then((data) => data ?? [])
         .then((list) => {
           setCharacters(list ?? [])
           if ((list ?? []).length === 1) {
@@ -63,7 +65,10 @@ export function OperationJoinPage() {
     setSubmitLoading(true)
     setError(null)
     try {
-      await joinFleet({ code: inviteCode, character_id: Number(characterId) })
+      await unwrapContract(
+        joinFleet({ code: inviteCode, character_id: Number(characterId) }),
+        'join fleet failed'
+      )
       navigate('/operation/pap', { replace: true })
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('fleet.join.invalidCode')))
@@ -100,10 +105,7 @@ export function OperationJoinPage() {
                 selectedKey={String(characterId ?? '')}
                 onSelectionChange={(key) => ((value) => setCharacterId(Number(value)))(String(key))}
               >
-                <SelectTrigger
-                  className="h-10 w-full"
-                  isDisabled={loading}
-                >
+                <SelectTrigger className="h-10 w-full" isDisabled={loading}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

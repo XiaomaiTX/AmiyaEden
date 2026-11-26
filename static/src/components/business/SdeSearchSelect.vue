@@ -38,15 +38,15 @@
 </template>
 
 <script setup lang="ts">
+  import { searchSde, type SdeSearchItem } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
   import { User } from '@element-plus/icons-vue'
   import { useUserStore } from '@/store/modules/user'
-  import { useSdeSearch } from '@/hooks/core/useSdeSearch'
 
   useI18n()
   const userStore = useUserStore()
-  const { fuzzySearch } = useSdeSearch()
 
   interface Props {
     /** 需要搜索的分类 ID 列表（仅搜索这些分类） */
@@ -62,7 +62,7 @@
     /** 占位文本 */
     placeholder?: string
     /** 初始选项列表，用于编辑时回显已选项 */
-    initialOptions?: Api.Sde.FuzzySearchItem[]
+    initialOptions?: SdeSearchItem[]
     /** 是否展示 type 图标 */
     showTypeIcon?: boolean
   }
@@ -81,11 +81,11 @@
   const selectedId = defineModel<number | null>('modelValue', { default: null })
 
   const emit = defineEmits<{
-    select: [item: Api.Sde.FuzzySearchItem | null]
+    select: [item: SdeSearchItem | null]
   }>()
 
   const loading = ref(false)
-  const options = ref<Api.Sde.FuzzySearchItem[]>([...props.initialOptions])
+  const options = ref<SdeSearchItem[]>([...props.initialOptions])
 
   // 当 initialOptions 变化时（如打开编辑弹框）同步更新
   watch(
@@ -108,16 +108,18 @@
     debounceTimer = setTimeout(async () => {
       loading.value = true
       try {
-        const res = await fuzzySearch({
-          keyword: keyword.trim(),
-          language: userStore.language || props.language,
-          category_ids: props.categoryIds.length ? props.categoryIds : undefined,
-          exclude_category_ids: props.excludeCategoryIds.length
-            ? props.excludeCategoryIds
-            : undefined,
-          limit: props.limit,
-          search_member: props.searchMember
-        })
+        const res = await unwrapContract(
+          searchSde({
+            keyword: keyword.trim(),
+            language: userStore.language || props.language,
+            category_ids: props.categoryIds.length ? props.categoryIds : undefined,
+            exclude_category_ids: props.excludeCategoryIds.length
+              ? props.excludeCategoryIds
+              : undefined,
+            limit: props.limit,
+            search_member: props.searchMember
+          })
+        )
         options.value = res ?? []
       } catch {
         options.value = []

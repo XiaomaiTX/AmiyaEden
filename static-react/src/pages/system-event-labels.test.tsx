@@ -1,27 +1,27 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { fetchAuditEvents } from '@/api/audit'
 import {
-  fetchTasks,
-  fetchTaskHistory,
-  fetchESIRefreshTasks,
-  fetchESIRefreshStatuses,
-} from '@/api/task-manager'
+  listAuditEvents,
+  getManagedTasks,
+  listManagedTaskHistory,
+  listEsiRefreshTasks,
+  listEsiRefreshStatuses,
+} from '@/api/generated/client'
 import { I18nProvider } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import { SystemAuditPage } from './system-audit-page'
 import { SystemTaskManagerPage } from './system-task-manager-page'
 
-vi.mock('@/api/audit', () => ({ fetchAuditEvents: vi.fn() }))
-vi.mock('@/api/task-manager', () => ({
-  fetchTasks: vi.fn(),
-  fetchTaskHistory: vi.fn(),
-  fetchESIRefreshTasks: vi.fn(),
-  fetchESIRefreshStatuses: vi.fn(),
-  runESIRefreshAll: vi.fn(),
-  runESIRefreshTask: vi.fn(),
-  runESIRefreshTaskByName: vi.fn(),
-  runTask: vi.fn(),
-  updateTaskSchedule: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  listAuditEvents: vi.fn(),
+  getManagedTasks: vi.fn(),
+  listManagedTaskHistory: vi.fn(),
+  listEsiRefreshTasks: vi.fn(),
+  listEsiRefreshStatuses: vi.fn(),
+  runEsiRefreshAll: vi.fn(),
+  runEsiRefreshTask: vi.fn(),
+  runEsiRefreshTaskByName: vi.fn(),
+  runManagedTask: vi.fn(),
+  updateManagedTaskSchedule: vi.fn(),
 }))
 vi.mock('@/hooks/use-corp-capability', () => ({
   useCorpCapability: () => ({ hasCapability: () => true }),
@@ -33,8 +33,10 @@ beforeEach(() => {
 })
 
 test('task definitions, execution history and ESI statuses display Chinese labels', async () => {
-  vi.mocked(fetchTasks).mockResolvedValue(
-    ['admission_evidence_cleanup', 'audit_archive_daily'].map((name) => ({
+  vi.mocked(getManagedTasks).mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: ['admission_evidence_cleanup', 'audit_archive_daily'].map((name) => ({
       name,
       description: 'Backend description',
       category: 'system',
@@ -42,40 +44,49 @@ test('task definitions, execution history and ESI statuses display Chinese label
       runnable: true,
       cron_expr: '0 0 5 * * *',
       default_cron: '0 0 5 * * *',
-    }))
-  )
-  vi.mocked(fetchTaskHistory).mockResolvedValue({
-    list: [
-      {
-        id: 1,
-        task_name: 'audit_archive_daily',
-        trigger: 'cron',
-        status: 'success',
-        started_at: '2026-11-12T00:00:00Z',
-      },
-    ],
-    total: 1,
-    page: 1,
-    pageSize: 20,
+      last_execution: null,
+    })),
   })
-  vi.mocked(fetchESIRefreshTasks).mockResolvedValue([])
-  vi.mocked(fetchESIRefreshStatuses).mockResolvedValue({
-    list: [
-      {
-        task_name: 'character_wallet',
-        description: 'Backend wallet description',
-        character_id: 123,
-        character_name: 'Pilot',
-        priority: 50,
-        status: 'success',
-        last_run: '',
-        next_run: '',
-        error: '',
-      },
-    ],
-    total: 1,
-    page: 1,
-    pageSize: 20,
+  vi.mocked(listManagedTaskHistory).mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: {
+      list: [
+        {
+          id: 1,
+          task_name: 'audit_archive_daily',
+          trigger: 'cron',
+          status: 'success',
+          started_at: '2026-11-12T00:00:00Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    },
+  })
+  vi.mocked(listEsiRefreshTasks).mockResolvedValue({ code: 200, msg: 'ok', data: [] })
+  vi.mocked(listEsiRefreshStatuses).mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: {
+      list: [
+        {
+          task_name: 'character_wallet',
+          description: 'Backend wallet description',
+          character_id: 123,
+          character_name: 'Pilot',
+          priority: 50,
+          status: 'success',
+          last_run: '',
+          next_run: '',
+          error: '',
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    },
   })
   render(
     <I18nProvider>
@@ -93,29 +104,33 @@ test('task definitions, execution history and ESI statuses display Chinese label
 })
 
 test('audit list and details localize actions and categories while retaining identifiers', async () => {
-  vi.mocked(fetchAuditEvents).mockResolvedValue({
-    list: [
-      {
-        id: 1,
-        event_id: 'event-1',
-        occurred_at: '2026-11-12T00:00:00Z',
-        created_at: '',
-        category: 'system',
-        action: 'audit_archive_daily',
-        actor_user_id: 1,
-        target_user_id: 2,
-        resource_type: 'task',
-        resource_id: '3',
-        result: 'success',
-        request_id: '',
-        ip: '',
-        user_agent: '',
-        details_json: '{}',
-      },
-    ],
-    total: 1,
-    page: 1,
-    pageSize: 20,
+  vi.mocked(listAuditEvents).mockResolvedValue({
+    code: 200,
+    msg: 'success',
+    data: {
+      list: [
+        {
+          id: 1,
+          event_id: 'event-1',
+          occurred_at: '2026-11-12T00:00:00Z',
+          created_at: '',
+          category: 'system',
+          action: 'audit_archive_daily',
+          actor_user_id: 1,
+          target_user_id: 2,
+          resource_type: 'task',
+          resource_id: '3',
+          result: 'success',
+          request_id: '',
+          ip: '',
+          user_agent: '',
+          details_json: '{}',
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    },
   })
   render(
     <I18nProvider>

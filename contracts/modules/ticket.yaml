@@ -1,0 +1,521 @@
+paths:
+  /ticket/tickets:
+    post:
+      operationId: createTicket
+      x-gin-access: ["jwt", "login", "cap:menu.ticket", "cap:ticket.user.create"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketCreateInput' }
+      responses:
+        '200':
+          description: Created ticket or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketRecordSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /ticket/tickets/me:
+    get:
+      operationId: listMyTickets
+      x-gin-access: ["jwt", "login", "cap:menu.ticket"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 }, description: Page size capped at 100. }
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Own ticket page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketMemberPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /ticket/tickets/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: getMyTicket
+      x-gin-access: ["jwt", "login", "cap:menu.ticket"]
+      responses:
+        '200':
+          description: Own ticket or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketRecordSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /ticket/tickets/{id}/replies:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: listMyReplies
+      x-gin-access: ["jwt", "login", "cap:menu.ticket"]
+      responses:
+        '200':
+          description: Public replies to own ticket or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketRepliesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: addMyReply
+      x-gin-access: ["jwt", "login", "cap:menu.ticket", "cap:ticket.user.reply"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketReplyInput' }
+      responses:
+        '200':
+          description: Created public reply or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketReplySuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /ticket/categories:
+    get:
+      operationId: listCategories
+      x-gin-access: ["jwt", "login", "cap:menu.ticket"]
+      responses:
+        '200':
+          description: Categories available to members or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketCategoriesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/tickets:
+    get:
+      operationId: adminListTickets
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.read"]
+      parameters:
+        - { name: current, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 }, description: Page size capped at 100. }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: keyword, in: query, schema: { type: string } }
+        - { name: user_id, in: query, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+        - { name: category_id, in: query, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+      responses:
+        '200':
+          description: Administration ticket page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketAdminPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/tickets/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: adminGetTicket
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.read"]
+      responses:
+        '200':
+          description: Administration ticket details or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketAdminItemSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/tickets/{id}/status:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    put:
+      operationId: adminUpdateStatus
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketStatusInput' }
+      responses:
+        '200':
+          description: Updated ticket or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketRecordSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/tickets/{id}/replies:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: adminListReplies
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage"]
+      responses:
+        '200':
+          description: Public and internal replies or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketRepliesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: adminAddReply
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketAdminReplyInput' }
+      responses:
+        '200':
+          description: Created public or internal reply, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketReplySuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/tickets/{id}/status-history:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    get:
+      operationId: adminListStatusHistory
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage"]
+      responses:
+        '200':
+          description: Status change history or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketStatusHistorySuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/categories:
+    get:
+      operationId: adminListCategories
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.read"]
+      responses:
+        '200':
+          description: All categories or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketCategoriesSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: adminCreateCategory
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketCategoryInput' }
+      responses:
+        '200':
+          description: Created category or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketCategorySuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/categories/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint } }
+    put:
+      operationId: adminUpdateCategory
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TicketCategoryInput' }
+      responses:
+        '200':
+          description: Updated category or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketCategorySuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: adminDeleteCategory
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.manage"]
+      responses:
+        '200':
+          description: Category deleted or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/ticket/statistics:
+    get:
+      operationId: adminStatistics
+      x-gin-access: ["jwt", "login", "role:admin", "cap:ticket.manage", "cap:ticket.admin.read"]
+      responses:
+        '200':
+          description: Ticket statistics or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TicketStatisticsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    TicketStatus:
+      type: string
+      enum: [pending, in_progress, completed]
+    TicketCreateInput:
+      type: object
+      required: [category_id, title, description]
+      properties:
+        category_id: { type: integer, minimum: 1, x-go-type: uint, x-oapi-codegen-extra-tags: { binding: required } }
+        title: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        description: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+    TicketReplyInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+    TicketAdminReplyInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, x-oapi-codegen-extra-tags: { binding: required } }
+        is_internal: { type: boolean, default: false, x-go-type-skip-optional-pointer: true }
+    TicketStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          allOf:
+            - $ref: '#/components/schemas/TicketStatus'
+          description: Case and surrounding whitespace are normalized by the server.
+          x-oapi-codegen-extra-tags: { binding: required }
+    TicketCategoryInput:
+      type: object
+      description: Existing names are retained on update if omitted or blank; both names are required when creating a category.
+      properties:
+        id: { type: integer, x-go-type: uint, x-go-type-skip-optional-pointer: true }
+        name: { type: string, x-go-type-skip-optional-pointer: true }
+        name_en: { type: string, x-go-type-skip-optional-pointer: true }
+        description: { type: string, x-go-type-skip-optional-pointer: true }
+        sort_order: { type: integer, x-go-type-skip-optional-pointer: true }
+        enabled: { type: boolean, x-go-type-skip-optional-pointer: true }
+        retired_admission: { type: boolean, x-go-type-skip-optional-pointer: true }
+        created_at: { type: string, format: date-time, x-go-type-skip-optional-pointer: true }
+        updated_at: { type: string, format: date-time, x-go-type-skip-optional-pointer: true }
+    TicketRecord:
+      type: object
+      required: [id, user_id, category_id, title, description, status, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        user_id: { type: integer, x-go-type: uint }
+        category_id: { type: integer, x-go-type: uint }
+        title: { type: string }
+        description: { type: string }
+        status: { $ref: '#/components/schemas/TicketStatus' }
+        handled_by: { type: integer, x-go-type: uint }
+        handled_at: { type: string, format: date-time }
+        closed_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TicketAdminItem:
+      allOf:
+        - $ref: '#/components/schemas/TicketRecord'
+        - type: object
+          required: [user_nickname, requester_name, category_name, category_name_en]
+          properties:
+            user_nickname: { type: string }
+            handled_by_nickname: { type: string, x-go-type-skip-optional-pointer: true }
+            requester_name: { type: string }
+            requester_character_name: { type: string, x-go-type-skip-optional-pointer: true }
+            category_name: { type: string }
+            category_name_en: { type: string }
+    TicketCategory:
+      type: object
+      required: [id, name, name_en, description, sort_order, enabled, retired_admission, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        name: { type: string }
+        name_en: { type: string }
+        description: { type: string }
+        sort_order: { type: integer }
+        enabled: { type: boolean }
+        retired_admission: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TicketReply:
+      type: object
+      required: [id, ticket_id, user_id, content, is_internal, created_at, updated_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        ticket_id: { type: integer, x-go-type: uint }
+        user_id: { type: integer, x-go-type: uint }
+        user_nickname: { type: string, x-go-type-skip-optional-pointer: true }
+        reply_user_nickname: { type: string, x-go-type-skip-optional-pointer: true }
+        content: { type: string }
+        is_internal: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TicketStatusChange:
+      type: object
+      required: [id, ticket_id, from_status, to_status, changed_by, changed_by_name, changed_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        ticket_id: { type: integer, x-go-type: uint }
+        from_status: { type: string }
+        to_status: { $ref: '#/components/schemas/TicketStatus' }
+        changed_by: { type: integer, x-go-type: uint }
+        changed_by_nickname: { type: string, x-go-type-skip-optional-pointer: true }
+        changed_by_name: { type: string }
+        changed_by_character_name: { type: string, x-go-type-skip-optional-pointer: true }
+        changed_at: { type: string, format: date-time }
+    TicketStatistics:
+      type: object
+      required: [total, status, category, recent_7d, recent_30d, pendingCount]
+      properties:
+        total: { type: integer, format: int64 }
+        status:
+          type: object
+          description: Counts by status; always includes pending, in_progress, and completed.
+          additionalProperties: { type: integer, format: int64 }
+        category:
+          type: object
+          description: Counts keyed by category ID.
+          additionalProperties: { type: integer, format: int64 }
+          x-go-type: 'map[uint]int64'
+        recent_7d: { type: integer, format: int64, x-go-name: Recent7d }
+        recent_30d: { type: integer, format: int64, x-go-name: Recent30d }
+        pendingCount: { type: integer, format: int64, x-go-name: PendingCount }
+    TicketMemberPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/TicketRecord' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    TicketAdminPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/TicketAdminItem' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    TicketRecordSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketRecord' }
+    TicketAdminItemSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketAdminItem' }
+    TicketMemberPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketMemberPage' }
+    TicketAdminPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketAdminPage' }
+    TicketReplySuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketReply' }
+    TicketRepliesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/TicketReply' } }
+    TicketStatusHistorySuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/TicketStatusChange' } }
+    TicketCategorySuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketCategory' }
+    TicketCategoriesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/TicketCategory' } }
+    TicketStatisticsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/TicketStatistics' }

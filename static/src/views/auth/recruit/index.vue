@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { NewbroQQInput } from '@/api/generated/client'
   import { computed, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { useI18n } from 'vue-i18n'
@@ -68,7 +69,8 @@
     type FormInstance,
     type FormRules
   } from 'element-plus'
-  import { submitRecruitQQ } from '@/api/newbro'
+  import { submitRecruitQQ } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'RecruitLanding' })
 
@@ -82,11 +84,11 @@
   const submitError = ref('')
   const qqUrl = ref('')
 
-  const form = reactive<Api.Newbro.SubmitQQRequest>({
+  const form = reactive<NewbroQQInput>({
     qq: ''
   })
 
-  const rules: FormRules<Api.Newbro.SubmitQQRequest> = {
+  const rules: FormRules<NewbroQQInput> = {
     qq: [
       {
         required: true,
@@ -110,7 +112,9 @@
     loading.value = true
     submitError.value = ''
     try {
-      const data = await submitRecruitQQ(code.value, { qq: form.qq })
+      const data = await unwrapContract(
+        submitRecruitQQ(code.value, { qq: form.qq }, { showErrorMessage: false })
+      )
       qqUrl.value = data.qq_url
       submitted.value = true
     } catch (error) {

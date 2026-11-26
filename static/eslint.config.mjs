@@ -51,6 +51,23 @@ export default [
       'no-undef': 'off'
     }
   },
+  {
+    files: ['src/api/**/*.ts', 'src/views/**/*.vue'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/^\\x2fapi\\x2fv1(?:\\x2f|\\x3f|$)/]',
+          message: 'Use the generated client for /api/v1 calls.'
+        },
+        {
+          selector: 'TemplateElement[value.raw=/^\\x2fapi\\x2fv1(?:\\x2f|\\x3f|$)/]',
+          message: 'Use the generated client for /api/v1 calls.'
+        }
+      ]
+    }
+  },
   // vue 规则
   {
     files: ['**/*.vue'],
@@ -66,6 +83,7 @@ export default [
       'public',
       '.vscode/**',
       'src/assets/**',
+      'src/api/generated/**',
       'src/utils/console.ts'
     ]
   },

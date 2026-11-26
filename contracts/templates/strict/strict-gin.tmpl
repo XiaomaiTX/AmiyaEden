@@ -1,0 +1,204 @@
+// Derived from oapi-codegen v2.5.1 strict/strict-gin.tmpl.
+// StrictGinBindingPolicy controls body binding of one generated operation.
+// An allowed empty body is passed as nil. If malformed JSON is tolerated,
+// the typed, partially decoded value is passed with StrictGinJSONDecodeError.
+// Size limits are never bypassed; validation can only be relaxed by an
+// explicit operation policy for endpoints with a documented fallback.
+type StrictGinBindingPolicy struct {
+    MaxBodyBytes int64
+    AllowEmptyBody bool
+    AllowMalformedJSON bool
+    AllowInvalidBinding bool
+}
+
+const strictGinJSONDecodeErrorKey = "apicontract.strictGinJSONDecodeError"
+
+// StrictGinJSONDecodeError exposes a tolerated decode error to a handler that
+// needs to apply the contract's fallback to a partially decoded request.
+func StrictGinJSONDecodeError(ctx context.Context) error {
+    if c, ok := ctx.(*gin.Context); ok {
+        value, _ := c.Get(strictGinJSONDecodeErrorKey)
+        err, _ := value.(error)
+        return err
+    }
+    return nil
+}
+
+func NewStrictHandler(ssi StrictServerInterface) ServerInterface {
+    return &strictHandler{ssi: ssi}
+}
+
+type strictHandler struct {
+    ssi StrictServerInterface
+}
+
+func (sh *strictHandler) reportError(c *gin.Context, operation string, err error, statusCode int) {
+    value, _ := c.Get(ginOperationErrorHandlerKey)
+    handler, _ := value.(GinOperationErrorHandler)
+    reportGinOperationError(c, operation, err, statusCode, handler)
+}
+
+func matchesStrictGinContentType(want, got string) bool {
+    if want == got {
+        return true
+    }
+    before, after, hasWildcard := strings.Cut(want, "*")
+    return hasWildcard && strings.HasPrefix(got, before) && strings.HasSuffix(got, after)
+}
+
+{{range .}}
+    {{$opid := .OperationId}}
+    {{$operation := printf "%q" .Spec.OperationID}}
+    {{$bodyRequired := .BodyRequired}}
+    {{$ignored := false}}{{with index .Spec.Extensions "x-gin-body"}}{{with index . "ignored"}}{{$ignored = .}}{{end}}{{end}}
+    {{$multipleBodies := gt (len .Bodies) 1 -}}
+    {{$hasMasked := .HasMaskedRequestContentTypes -}}
+    // {{$opid}} adapts a generated Gin request to the strict server interface.
+    func (sh *strictHandler) {{$opid}}(ctx *gin.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params {{$opid}}Params{{end}}) {
+        var request {{$opid | ucFirst}}RequestObject
+        {{range .PathParams -}}
+            request.{{.GoName | ucFirst}} = {{.GoVariableName}}
+        {{end -}}
+        {{if .RequiresParamObject -}}
+            request.Params = params
+        {{end -}}
+        {{if and .Bodies (not $ignored)}}
+            policy := StrictGinBindingPolicy{
+                {{with index .Spec.Extensions "x-gin-body" -}}
+                    {{with index . "maxBytes"}}MaxBodyBytes: {{printf "%.0f" .}},{{end -}}
+                    {{with index . "allowEmpty"}}AllowEmptyBody: true,{{end -}}
+                    {{with index . "allowMalformedJSON"}}AllowMalformedJSON: true,{{end -}}
+                     {{with index . "allowInvalidBinding"}}AllowInvalidBinding: true,{{end -}}
+                {{end -}}
+            }
+            if ctx.Request.Body == nil || ctx.Request.Body == http.NoBody {
+                {{if $bodyRequired}}
+                if !policy.AllowEmptyBody {
+                    sh.reportError(ctx, {{$operation}}, io.EOF, http.StatusBadRequest)
+                    return
+                }
+                {{end}}
+            } else {
+                // Preserve only the operation's explicit legacy limit. JSON is
+                // decoded from the stream, as Gin ShouldBindJSON did.
+                if policy.MaxBodyBytes > 0 {
+                    ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, policy.MaxBodyBytes)
+                }
+                contentType, contentParams, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+                _ = contentParams
+                {{if or $multipleBodies (not (index .Bodies 0).IsJSON)}}
+                if err != nil && ctx.GetHeader("Content-Type") != "" {
+                    sh.reportError(ctx, {{$operation}}, err, http.StatusUnsupportedMediaType)
+                    return
+                }
+                {{else}}
+                // The legacy JSON-only endpoints use Gin ShouldBindJSON,
+                // independent of the header sent by the caller.
+                _ = err
+                contentType = {{printf "%q" (index .Bodies 0).ContentType}}
+                {{end}}
+                {{if $hasMasked}}request.ContentType = contentType{{end}}
+                switch {
+                {{range .Bodies}}
+                    case matchesStrictGinContentType({{printf "%q" .ContentType}}, contentType){{if and (not $multipleBodies) .IsJSON}} || contentType == ""{{end}}:
+                        {{if .IsJSON}}
+                            var body {{$opid}}{{.NameTag}}RequestBody
+                            if err := json.NewDecoder(ctx.Request.Body).Decode(&body); err != nil {
+                                var tooLarge *http.MaxBytesError
+                                if errors.As(err, &tooLarge) {
+                                    sh.reportError(ctx, {{$operation}}, err, http.StatusRequestEntityTooLarge)
+                                    return
+                                }
+                                if errors.Is(err, io.EOF) && (policy.AllowEmptyBody || {{if $bodyRequired}}false{{else}}true{{end}}) {
+                                    break
+                                }
+                                if !policy.AllowMalformedJSON {
+                                    sh.reportError(ctx, {{$operation}}, err, http.StatusBadRequest)
+                                    return
+                                }
+                                ctx.Set(strictGinJSONDecodeErrorKey, err)
+                            } else if err := binding.Validator.ValidateStruct(&body); err != nil && !policy.AllowInvalidBinding {
+                                sh.reportError(ctx, {{$operation}}, err, http.StatusBadRequest)
+                                return
+                            }
+                            request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = &body
+                        {{else if eq .NameTag "Formdata" -}}
+                            if err := ctx.Request.ParseForm(); err != nil {
+                                sh.reportError(ctx, {{$operation}}, err, http.StatusBadRequest)
+                                return
+                            }
+                            var body {{$opid}}{{.NameTag}}RequestBody
+                            if err := runtime.BindForm(&body, ctx.Request.PostForm, nil, nil); err != nil {
+                                sh.reportError(ctx, {{$operation}}, err, http.StatusBadRequest)
+                                return
+                            }
+                            request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = &body
+                        {{else if eq .NameTag "Multipart" -}}
+                            boundary := contentParams["boundary"]
+                            if boundary == "" {
+                                sh.reportError(ctx, {{$operation}}, http.ErrMissingBoundary, http.StatusBadRequest)
+                                return
+                            }
+                            request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = multipart.NewReader(ctx.Request.Body, boundary)
+                        {{else if eq .NameTag "Text" -}}
+                            data, err := io.ReadAll(ctx.Request.Body)
+                            if err != nil {
+                                sh.reportError(ctx, {{$operation}}, err, http.StatusBadRequest)
+                                return
+                            }
+                            body := {{$opid}}{{.NameTag}}RequestBody(data)
+                            request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = &body
+                        {{else -}}
+                            request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = ctx.Request.Body
+                        {{end}}
+                {{end}}
+                default:
+                    sh.reportError(ctx, {{$operation}}, fmt.Errorf("unsupported Content-Type: %q", contentType), http.StatusUnsupportedMediaType)
+                    return
+                }
+            }
+        {{end}}
+
+        result, err := sh.ssi.{{$opid}}(ctx, request)
+        if err != nil {
+            sh.reportError(ctx, {{$operation}}, err, http.StatusInternalServerError)
+            return
+        }
+        if result != nil {
+            if err := result.Visit{{$opid}}Response(ctx.Writer); err != nil {
+                sh.reportError(ctx, {{$operation}}, err, http.StatusInternalServerError)
+            }
+        } else if !ctx.Writer.Written() && !ctx.IsAborted() {
+            sh.reportError(ctx, {{$operation}}, errors.New("missing strict response"), http.StatusInternalServerError)
+        }
+    }
+
+    {{- /* The pinned upstream template emits unexported storage but no setters
+           for inline JSON unions, including inline component responses. */ -}}
+    {{range .Responses}}
+        {{$status := .StatusCode -}}
+        {{$hasHeaders := ne 0 (len .Headers) -}}
+        {{$fixedStatus := .HasFixedStatusCode -}}
+        {{$responseRef := .IsRef -}}
+        {{$external := .IsExternalRef -}}
+        {{range .Contents}}
+            {{if and .IsJSON (not $external) .Schema.UnionElements -}}
+                {{$hasBody := or $hasHeaders (not $fixedStatus) (not .IsSupported) -}}
+                {{if or $responseRef $hasBody (not .Schema.IsRef) -}}
+                    {{$responseType := printf "%s%s%sResponse" $opid $status .NameTagOrContentType -}}
+                    {{range .Schema.UnionElements}}
+                        // From{{.Method}} replaces the selected JSON response with a typed union variant.
+                        func (r *{{$responseType}}) From{{.Method}}(value {{.}}) error {
+                            data, err := json.Marshal(value)
+                            if err != nil {
+                                return err
+                            }
+                            r.{{if $hasBody}}Body.{{end}}union = data
+                            return nil
+                        }
+                    {{end}}
+                {{end}}
+            {{end}}
+        {{end}}
+    {{end}}
+{{end}}

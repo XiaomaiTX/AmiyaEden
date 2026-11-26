@@ -40,7 +40,7 @@ source_of_truth:
 | 覆盖率 | 未配置 `coverage`，CI 无覆盖率产出 | `vitest.config.ts`、`verify-ci.yaml` |
 | 浏览器/E2E | 无 Playwright（lockfile 中仅为 `shadcn` 传递依赖）、无 vitest browser mode、无任何 E2E | `package.json`、全仓检索 |
 | ESLint 测试规则 | 无 `eslint-plugin-testing-library`、无 vitest 插件 | `static-react/eslint.config.js` |
-| CI 门禁 | lint、单测、契约隔离检查、构建（含类型检查），按 React 路径触发 | `.github/workflows/verify-ci.yaml` job `frontend_react` |
+| CI 门禁 | lint、单测、契约隔离检查、构建（含类型检查），按 React 和共享契约路径触发 | `.github/workflows/verify-ci.yaml` job `frontend_react` |
 | 测试类型检查 | `tsconfig.spec.json` 独立覆盖 `*.test.*` | `static-react/tsconfig.spec.json` |
 
 ### 2.2 现有测试分类（按质量）

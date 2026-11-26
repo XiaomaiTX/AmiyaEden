@@ -4,17 +4,27 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { I18nProvider } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import { AdmissionsPage } from './admissions-page'
-import type { AdmissionContext, AdmissionDetail } from '@/types/api/admissions'
-import { fetchOperationSalaryRates } from '@/api/salary'
-vi.mock('@/api/salary', () => ({ fetchOperationSalaryRates: vi.fn() }))
+import type { AdmissionContext, AdmissionDetail } from '@/api/generated/client'
+import { operationRates } from '@/api/generated/client'
+vi.mock('@/api/generated/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/api/generated/client')>()),
+  operationRates: vi.fn(),
+  getAdmission: mocks.detail,
+  listAdmissionReviews: mocks.reviews,
+  listMyAdmissions: mocks.history,
+  inviteAdmission: mocks.invite,
+  rejectAdmission: mocks.reject,
+}))
 
 const mocks = vi.hoisted(() => ({
   context: null as AdmissionContext | null,
   reload: vi.fn(),
   save: vi.fn(),
   detail: vi.fn(),
-  list: vi.fn(),
-  process: vi.fn(),
+  reviews: vi.fn(),
+  history: vi.fn(),
+  invite: vi.fn(),
+  reject: vi.fn(),
   evidence: vi.fn(),
 }))
 vi.mock('@/hooks/use-admission-context', () => ({
@@ -27,15 +37,16 @@ vi.mock('@/hooks/use-admission-context', () => ({
 }))
 vi.mock('@/api/admissions', () => ({
   saveAdmission: mocks.save,
-  getAdmission: mocks.detail,
-  listAdmissions: mocks.list,
-  processAdmission: mocks.process,
   getAdmissionEvidence: mocks.evidence,
 }))
 vi.mock('@/lib/admissions', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/admissions')>()),
   compressAdmissionImage: async (file: File) => file,
 }))
+
+function success<T>(data: T) {
+  return { code: 200, msg: 'ok', data }
+}
 
 function context(member = false): AdmissionContext {
   return {
@@ -69,13 +80,15 @@ function detail(status: 'pending' | 'rejected' | 'invited' = 'pending'): Admissi
       qq: '',
       discord_id: 'discord-only',
       submitted_at: '2026-11-10T00:00:00Z',
+      created_at: '2026-11-10T00:00:00Z',
+      updated_at: '2026-11-10T00:00:00Z',
       note: '',
       handled_by: null,
       handler_name: '',
       closed_at: null,
       evidence_expires_at: null,
       rejection_reason: status === 'rejected' ? 'Bind missing pilot' : '',
-      characters: [{ character_id: 101, character_name: 'Pilot A' }],
+      characters: [{ application_id: 17, character_id: 101, character_name: 'Pilot A' }],
     },
     evidence: [],
     events: [
@@ -120,14 +133,22 @@ beforeEach(() => {
   vi.clearAllMocks()
   usePreferenceStore.setState({ locale: 'zh-CN' })
   mocks.context = context()
-  vi.mocked(fetchOperationSalaryRates).mockResolvedValue({
-    recruitment: 4.25,
-    welfare_delivery: 18,
-    shop_delivery: 6.5,
-    srp_payout: 10,
+  vi.mocked(operationRates).mockResolvedValue({
+    code: 200,
+    msg: '',
+    data: {
+      recruitment: 4.25,
+      welfare_delivery: 18,
+      shop_delivery: 6.5,
+      srp_payout: 10,
+    },
   })
-  mocks.list.mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 20 })
-  mocks.detail.mockResolvedValue(detail())
+  const emptyList = success({ list: [], total: 0, page: 1, pageSize: 20 })
+  mocks.reviews.mockResolvedValue(emptyList)
+  mocks.history.mockResolvedValue(emptyList)
+  mocks.invite.mockResolvedValue(success(detail().application))
+  mocks.reject.mockResolvedValue(success(detail('rejected').application))
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: detail() })
   mocks.evidence.mockResolvedValue(new Blob(['jpeg'], { type: 'image/jpeg' }))
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:admissions-test')
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
@@ -254,7 +275,7 @@ test('alt note is shown in detail and restored when editing', async () => {
   const value = detail('rejected')
   value.application.kind = 'alt'
   value.application.note = 'Pilot B\nPilot C'
-  mocks.detail.mockResolvedValue(value)
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: value })
   usePreferenceStore.setState({ locale: 'en-US' })
   const view = open('/admissions/applications/17')
   expect(await screen.findByText('Pilot B Pilot C')).toBeInTheDocument()
@@ -265,7 +286,7 @@ test('alt note is shown in detail and restored when editing', async () => {
   )
 })
 test('rejected application resubmits the original ID and current version, preserving rejection history', async () => {
-  mocks.detail.mockResolvedValue(detail('rejected'))
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: detail('rejected') })
   mocks.save.mockRejectedValue(new Error('admissions.errors.evidence'))
   open('/admissions/applications/17/edit')
   fireEvent.click(await screen.findByRole('button', { name: '补正并重新提交' }))
@@ -287,10 +308,10 @@ test('review has only Invited and Reject; wallet failure preserves pending and r
   pending.can_review = true
   pending.is_owner = false
   mocks.context = { ...context(true), reviewable_corporation_ids: [98185110] }
-  mocks.detail.mockResolvedValue(pending)
-  mocks.process
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: pending })
+  mocks.invite
     .mockRejectedValueOnce(new Error('admissions.errors.walletDisabled'))
-    .mockResolvedValueOnce({ ...pending.application, status: 'invited' })
+    .mockResolvedValueOnce(success({ ...pending.application, status: 'invited' }))
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   open('/admissions/applications/17')
   const invited = await screen.findByRole('button', { name: '已邀请' })
@@ -304,8 +325,8 @@ test('review has only Invited and Reject; wallet failure preserves pending and r
   )
   expect(await screen.findByRole('alert')).toHaveTextContent('请联系超管调整配置后重试')
   fireEvent.click(invited)
-  await waitFor(() => expect(mocks.process).toHaveBeenCalledTimes(2))
-  expect(mocks.process).toHaveBeenLastCalledWith(17, 3, 'invited', '')
+  await waitFor(() => expect(mocks.invite).toHaveBeenCalledTimes(2))
+  expect(mocks.invite).toHaveBeenLastCalledWith(17, { expected_version: 3, reason: '' })
 })
 test('English management filters include kind and only reviewable corporations', async () => {
   usePreferenceStore.setState({ locale: 'en-US' })
@@ -314,7 +335,14 @@ test('English management filters include kind and only reviewable corporations',
   fireEvent.change(await screen.findByRole('combobox', { name: 'Application type' }), {
     target: { value: 'alt' },
   })
-  await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(true, 1, 'pending', '', 'alt'))
+  await waitFor(() =>
+    expect(mocks.reviews).toHaveBeenLastCalledWith({
+      current: 1,
+      size: 20,
+      status: 'pending',
+      kind: 'alt',
+    })
+  )
   expect(
     screen.queryByRole('option', { name: 'Fuxi Newcomer Corporation' })
   ).not.toBeInTheDocument()
@@ -329,20 +357,27 @@ test('processed rows identify application kind and processing result without ope
     handler_name: 'Reviewer Seven',
     closed_at: '2026-11-11T00:00:00Z',
   }
-  mocks.list.mockResolvedValue({ list: [app], total: 1, page: 1, pageSize: 20 })
+  mocks.reviews.mockResolvedValue(success({ list: [app], total: 1, page: 1, pageSize: 20 }))
   open('/admissions/review')
   fireEvent.click(await screen.findByRole('tab', { name: 'Processed' }))
   expect(await screen.findByText('Handled by: Reviewer Seven')).toBeInTheDocument()
   expect(screen.getByText('Bind missing pilot')).toBeInTheDocument()
   expect(screen.getByRole('cell', { name: 'Apply for alts' })).toBeInTheDocument()
   expect(document.querySelector('time')).toHaveAttribute('dateTime', app.closed_at)
-  await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith(true, 1, 'processed', '', ''))
+  await waitFor(() =>
+    expect(mocks.reviews).toHaveBeenLastCalledWith({
+      current: 1,
+      size: 20,
+      status: 'processed',
+      kind: '',
+    })
+  )
 })
 
 test('expired rejected evidence uses the resubmit endpoint from the primary submit action', async () => {
   const rejected = detail('rejected')
   rejected.application.evidence_expires_at = '2025-01-01T00:00:00Z'
-  mocks.detail.mockResolvedValue(rejected)
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: rejected })
   mocks.save.mockResolvedValue(rejected.application)
   open('/admissions/applications/17/edit')
   const button = await screen.findByRole('button', { name: '补正并重新提交' })
@@ -367,7 +402,7 @@ test('owner details are read-only and do not show salary', async () => {
     wallet_transaction_id: 99,
     created_at: '2026-11-11T00:00:00Z',
   }
-  mocks.detail.mockResolvedValue(value)
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: value })
   open('/admissions/applications/17')
   await screen.findByText('Applicant', { exact: false })
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
@@ -382,7 +417,7 @@ test.each(['new_member', 'alt'] as const)(
     value.application.kind = kind
     value.can_review = true
     value.is_owner = false
-    mocks.detail.mockResolvedValue(value)
+    mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: value })
     open('/admissions/applications/17')
     await screen.findByRole('button', { name: '已邀请' })
     expect(
@@ -399,21 +434,28 @@ test.each([
   { status: 'invited' as const, owner: true },
   { status: 'pending' as const, owner: false },
 ])('edit route refuses $status / owner=$owner', async ({ status, owner }) => {
-  mocks.detail.mockResolvedValue({ ...detail(status), is_owner: owner })
+  mocks.detail.mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: { ...detail(status), is_owner: owner },
+  })
   open('/admissions/applications/17/edit')
   await screen.findByRole('alert')
   expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
 })
 
 test('history offers separate editing only for unfinished applications', async () => {
-  mocks.list.mockResolvedValue({
-    list: [detail().application, { ...detail('invited').application, id: 18 }],
-    total: 2,
-    page: 1,
-    pageSize: 20,
-  })
+  mocks.history.mockResolvedValue(
+    success({
+      list: [detail().application, { ...detail('invited').application, id: 18 }],
+      total: 2,
+      page: 1,
+      pageSize: 20,
+    })
+  )
   open('/admissions/history')
   const edit = await screen.findByRole('button', { name: '修改申请' })
+  expect(mocks.reviews).not.toHaveBeenCalled()
   expect(screen.getAllByRole('button', { name: '修改申请' })).toHaveLength(1)
   expect(screen.getAllByRole('button', { name: '查看详情' })).toHaveLength(2)
   expect(screen.queryByRole('button', { name: '已邀请' })).toBeNull()
@@ -433,30 +475,36 @@ test('review list invites pending alt applications directly, except the reviewer
   const own = { ...alt, id: 19 }
   own.characters = [{ character_id: 101, character_name: 'Pilot A' }]
   const processed = { ...alt, id: 20, status: 'invited' as const }
-  mocks.list.mockResolvedValue({
-    list: [{ ...detail().application, user_id: 5 }, alt, own, processed],
-    total: 4,
-    page: 1,
-    pageSize: 20,
-  })
-  mocks.process.mockResolvedValue({})
+  mocks.reviews.mockResolvedValue(
+    success({
+      list: [{ ...detail().application, user_id: 5 }, alt, own, processed],
+      total: 4,
+      page: 1,
+      pageSize: 20,
+    })
+  )
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
   open('/admissions/review')
   const invite = await screen.findAllByRole('button', { name: '已邀请' })
   expect(invite).toHaveLength(1)
   expect(screen.getAllByRole('button', { name: '查看详情' })).toHaveLength(4)
   fireEvent.click(invite[0])
-  await waitFor(() => expect(mocks.process).toHaveBeenCalledWith(18, 4, 'invited', ''))
+  await waitFor(() =>
+    expect(mocks.invite).toHaveBeenCalledWith(18, { expected_version: 4, reason: '' })
+  )
   expect(confirm).toHaveBeenCalledWith(expect.not.stringContaining('工资'))
-  expect(fetchOperationSalaryRates).not.toHaveBeenCalled()
-  await waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(2))
+  expect(operationRates).not.toHaveBeenCalled()
+  await waitFor(() => expect(mocks.reviews).toHaveBeenCalledTimes(2))
 })
 
 test.each([false, true])(
   'recruitment salary confirmation requires consent: %s',
   async (consent) => {
-    mocks.detail.mockResolvedValue({ ...detail(), can_review: true, is_owner: false })
-    mocks.process.mockResolvedValue({})
+    mocks.detail.mockResolvedValue({
+      code: 200,
+      msg: 'ok',
+      data: { ...detail(), can_review: true, is_owner: false },
+    })
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(consent)
     open('/admissions/applications/17')
     fireEvent.click(await screen.findByRole('button', { name: '已邀请' }))
@@ -464,30 +512,41 @@ test.each([false, true])(
       expect(confirm).toHaveBeenCalledWith(expect.stringContaining('4.25 伏羲币工资'))
     )
     if (consent)
-      await waitFor(() => expect(mocks.process).toHaveBeenCalledWith(17, 3, 'invited', ''))
-    else expect(mocks.process).not.toHaveBeenCalled()
+      await waitFor(() =>
+        expect(mocks.invite).toHaveBeenCalledWith(17, { expected_version: 3, reason: '' })
+      )
+    else expect(mocks.invite).not.toHaveBeenCalled()
   }
 )
 
 test('alt invitation confirmation shows no recruitment salary', async () => {
   const value = detail()
   value.application.kind = 'alt'
-  mocks.detail.mockResolvedValue({ ...value, can_review: true, is_owner: false })
-  mocks.process.mockResolvedValue({})
+  mocks.detail.mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: { ...value, can_review: true, is_owner: false },
+  })
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
   open('/admissions/applications/17')
   fireEvent.click(await screen.findByRole('button', { name: '已邀请' }))
-  await waitFor(() => expect(mocks.process).toHaveBeenCalledWith(17, 3, 'invited', ''))
+  await waitFor(() =>
+    expect(mocks.invite).toHaveBeenCalledWith(17, { expected_version: 3, reason: '' })
+  )
   expect(confirm).toHaveBeenCalledWith(expect.not.stringContaining('工资'))
-  expect(fetchOperationSalaryRates).not.toHaveBeenCalled()
+  expect(operationRates).not.toHaveBeenCalled()
 })
 
 test('blacklist hits warn the reviewer and disable only Invited', async () => {
   mocks.detail.mockResolvedValue({
-    ...detail(),
-    can_review: true,
-    is_owner: false,
-    blacklist_hits: blacklistHits,
+    code: 200,
+    msg: 'ok',
+    data: {
+      ...detail(),
+      can_review: true,
+      is_owner: false,
+      blacklist_hits: blacklistHits,
+    },
   })
   open('/admissions/applications/17')
   const invited = await screen.findByRole('button', { name: '已邀请' })
@@ -500,11 +559,22 @@ test('blacklist hits warn the reviewer and disable only Invited', async () => {
   fireEvent.change(screen.getByPlaceholderText('拒绝申请时必须填写原因'), {
     target: { value: 'No' },
   })
-  expect(screen.getByRole('button', { name: '拒绝' })).toBeEnabled()
+  const reject = screen.getByRole('button', { name: '拒绝' })
+  expect(reject).toBeEnabled()
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  fireEvent.click(reject)
+  await waitFor(() =>
+    expect(mocks.reject).toHaveBeenCalledWith(17, { expected_version: 3, reason: 'No' })
+  )
+  expect(mocks.invite).not.toHaveBeenCalled()
 })
 
 test('applicant view never shows the blacklist warning', async () => {
-  mocks.detail.mockResolvedValue({ ...detail(), blacklist_hits: blacklistHits })
+  mocks.detail.mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: { ...detail(), blacklist_hits: blacklistHits },
+  })
   open('/admissions/applications/17')
   await screen.findByText('Applicant', { exact: false })
   expect(screen.queryByText('申请人命中联盟黑名单', { exact: false })).not.toBeInTheDocument()
@@ -520,12 +590,14 @@ test('review list marks blacklisted rows and disables their Invited button', asy
     characters: [{ character_id: 201, character_name: 'Alt' }],
     blacklisted: false,
   }
-  mocks.list.mockResolvedValue({
-    list: [alt, { ...alt, id: 19, blacklisted: true }],
-    total: 2,
-    page: 1,
-    pageSize: 20,
-  })
+  mocks.reviews.mockResolvedValue(
+    success({
+      list: [alt, { ...alt, id: 19, blacklisted: true }],
+      total: 2,
+      page: 1,
+      pageSize: 20,
+    })
+  )
   open('/admissions/review')
   const invite = await screen.findAllByRole('button', { name: '已邀请' })
   expect(invite.map((button) => (button as HTMLButtonElement).disabled)).toEqual([false, true])
@@ -535,10 +607,12 @@ test('review list marks blacklisted rows and disables their Invited button', asy
 
 test('Invited refused for a newly blacklisted applicant reloads the detail', async () => {
   const clean = { ...detail(), can_review: true, is_owner: false }
-  mocks.detail
-    .mockResolvedValueOnce(clean)
-    .mockResolvedValueOnce({ ...clean, blacklist_hits: blacklistHits })
-  mocks.process.mockRejectedValue(new Error('admissions.errors.blacklisted'))
+  mocks.detail.mockResolvedValueOnce({ code: 200, msg: 'ok', data: clean }).mockResolvedValueOnce({
+    code: 200,
+    msg: 'ok',
+    data: { ...clean, blacklist_hits: blacklistHits },
+  })
+  mocks.invite.mockRejectedValue(new Error('admissions.errors.blacklisted'))
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   open('/admissions/applications/17')
   fireEvent.click(await screen.findByRole('button', { name: '已邀请' }))
@@ -551,12 +625,12 @@ test('Invited refused for a newly blacklisted applicant reloads the detail', asy
 })
 
 test('recruitment cannot submit when current salary cannot be read', async () => {
-  mocks.detail.mockResolvedValue({ ...detail(), can_review: true })
-  vi.mocked(fetchOperationSalaryRates).mockRejectedValueOnce(new Error('offline'))
+  mocks.detail.mockResolvedValue({ code: 200, msg: 'ok', data: { ...detail(), can_review: true } })
+  vi.mocked(operationRates).mockRejectedValueOnce(new Error('offline'))
   const confirm = vi.spyOn(window, 'confirm')
   open('/admissions/applications/17')
   fireEvent.click(await screen.findByRole('button', { name: '已邀请' }))
   await screen.findByRole('alert')
   expect(confirm).not.toHaveBeenCalled()
-  expect(mocks.process).not.toHaveBeenCalled()
+  expect(mocks.invite).not.toHaveBeenCalled()
 })

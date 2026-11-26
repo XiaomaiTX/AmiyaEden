@@ -126,23 +126,27 @@ func (s *CaptainRefundService) UpdateSettings(uid uint, cfg CaptainRefundSetting
 	}
 	return cfg, err
 }
-func (s *CaptainRefundService) Options(uid uint) (interface{}, error) {
+
+type CaptainRefundCharacter struct {
+	CharacterID   int64  `json:"character_id"`
+	CharacterName string `json:"character_name"`
+}
+
+type CaptainRefundOptions struct {
+	Characters []CaptainRefundCharacter `json:"characters"`
+	Settings   CaptainRefundSettings    `json:"settings"`
+}
+
+func (s *CaptainRefundService) Options(uid uint) (CaptainRefundOptions, error) {
 	if err := s.requireRole(uid, false); err != nil {
-		return nil, err
+		return CaptainRefundOptions{}, err
 	}
 	chars, err := repository.NewEveCharacterRepository().ListByUserID(uid)
-	type option struct {
-		CharacterID   int64  `json:"character_id"`
-		CharacterName string `json:"character_name"`
-	}
-	result := []option{}
+	result := make([]CaptainRefundCharacter, 0, len(chars))
 	for _, c := range chars {
-		result = append(result, option{c.CharacterID, c.CharacterName})
+		result = append(result, CaptainRefundCharacter{c.CharacterID, c.CharacterName})
 	}
-	return struct {
-		Characters []option              `json:"characters"`
-		Settings   CaptainRefundSettings `json:"settings"`
-	}{result, s.Settings()}, err
+	return CaptainRefundOptions{Characters: result, Settings: s.Settings()}, err
 }
 func validateRefundRequest(req CaptainRefundRequest, cfg CaptainRefundSettings, now time.Time) error {
 	if req.CaptainCharacterID <= 0 || !slices.Contains(cfg.AllowedSystemIDs, req.SystemID) {

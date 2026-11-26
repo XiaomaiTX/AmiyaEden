@@ -19,6 +19,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       frontend_react: ${{ steps.filter.outputs.frontend_react }}
+      contracts: ${{ steps.filter.outputs.contracts }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -30,10 +31,21 @@ jobs:
           filters: |
             backend:
               - 'server/**'
+              - 'contracts/**'
             frontend:
               - 'static/**'
+              - 'contracts/**'
             frontend_react:
               - 'static-react/**'
+              - 'contracts/**'
+            contracts:
+              - 'contracts/**'
+              - 'server/internal/apicontract/**'
+              - 'static/src/api/generated/**'
+              - 'static-react/src/api/generated/**'
+              - 'static/src/api/contract-transport.ts'
+              - 'static-react/src/api/contract-transport.ts'
+              - '.github/workflows/verify-ci.yaml'
 
   backend:
     name: Backend Verify
@@ -156,10 +168,32 @@ jobs:
         working-directory: static-react
         run: pnpm build
 
+  contracts:
+    name: OpenAPI Verify
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 11.15.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: contracts/pnpm-lock.yaml
+      - run: pnpm -C contracts install --frozen-lockfile
+      - run: pnpm -C contracts api:check
+
   ci-passed:
     name: CI Passed
     if: always()
-    needs: [changes, backend, frontend, frontend_react]
+    needs: [changes, backend, frontend, frontend_react, contracts]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -180,4 +214,8 @@ jobs:
             echo "::error::React frontend verification failed"
             exit 1
           fi
+          case "${{ needs.contracts.result }}" in
+            success|skipped) ;;
+            *) echo "::error::OpenAPI verification failed"; exit 1 ;;
+          esac
           echo "All required checks passed (or were skipped due to path filtering)"

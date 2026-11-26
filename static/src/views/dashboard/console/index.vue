@@ -30,8 +30,10 @@
 </template>
 
 <script setup lang="ts">
+  import type { DashboardResult } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
-  import { fetchDashboard } from '@/api/dashboard'
+  import { getDashboard } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import CardList from './modules/card-list.vue'
   import FleetList from './modules/fleet-list.vue'
   import PapChart from './modules/pap-chart.vue'
@@ -42,12 +44,12 @@
   const { t } = useI18n()
 
   const loading = ref(false)
-  const dashboardData = ref<Api.Dashboard.DashboardResult>()
+  const dashboardData = ref<DashboardResult>()
 
   const loadDashboard = async () => {
     loading.value = true
     try {
-      dashboardData.value = await fetchDashboard()
+      dashboardData.value = await unwrapContract(getDashboard())
     } catch (e) {
       console.error(t('console.dashboardLoadFailedLog'), e)
     } finally {

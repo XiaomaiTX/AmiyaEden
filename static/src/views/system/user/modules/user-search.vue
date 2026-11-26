@@ -11,8 +11,10 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemRoleDefinition } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
-  import { fetchGetRoleDefinitions } from '@/api/system-manage'
+  import { listRoleDefinitions } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useEnterSearch } from '@/hooks/core/useEnterSearch'
 
   interface Props {
@@ -37,7 +39,7 @@
 
   // 校验规则
   const rules = {}
-  const roleDefinitions = ref<Api.SystemManage.RoleDefinition[]>([])
+  const roleDefinitions = ref<SystemRoleDefinition[]>([])
 
   // 状态选项
   const statusOptions = [
@@ -87,7 +89,7 @@
 
   onMounted(async () => {
     try {
-      roleDefinitions.value = await fetchGetRoleDefinitions()
+      roleDefinitions.value = await unwrapContract(listRoleDefinitions())
     } catch (error) {
       console.error(error)
     }

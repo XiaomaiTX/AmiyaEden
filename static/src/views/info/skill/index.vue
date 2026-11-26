@@ -218,6 +218,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoSkillItem, InfoSkillQueueItem, InfoSkillResponse } from '@/api/generated/client'
   import { Refresh, Search, Download } from '@element-plus/icons-vue'
   import {
     ElCard,
@@ -231,8 +232,13 @@
     ElMessageBox,
     ElMessage
   } from 'element-plus'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoSkills, runMyCharacterESIRefresh } from '@/api/eve-info'
+
+  import {
+    listMyEveCharacters,
+    getCharacterSkills,
+    runMyCharacterTask
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useI18n } from 'vue-i18n'
@@ -245,7 +251,7 @@
   // ---- 数据 ----
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const selectedCharacterId = ref<number>()
-  const skillData = ref<Api.EveInfo.SkillResponse | null>(null)
+  const skillData = ref<InfoSkillResponse | null>(null)
   const loading = ref(false)
   const esiRefreshing = ref(false)
   const searchKeyword = ref('')
@@ -288,7 +294,7 @@
   interface SkillGroup {
     groupName: string
     count: number
-    skills: Api.EveInfo.SkillItem[]
+    skills: InfoSkillItem[]
     progress: number
   }
 
@@ -349,7 +355,7 @@
 
   /** 队列中 skill_id 集合（快速查找） */
   const queueSkillMap = computed(() => {
-    const map = new Map<number, Api.EveInfo.SkillQueueItem>()
+    const map = new Map<number, InfoSkillQueueItem>()
     for (const q of skillData.value?.skill_queue ?? []) {
       // 只保留第一个匹配（最近的）
       if (!map.has(q.skill_id)) map.set(q.skill_id, q)
@@ -368,7 +374,7 @@
   }
 
   /** 计算当前训练的时间进度百分比 */
-  const calcTimeProgress = (item: Api.EveInfo.SkillQueueItem): number => {
+  const calcTimeProgress = (item: InfoSkillQueueItem): number => {
     if (!item.start_date || !item.finish_date) return 0
     const now = Math.floor(Date.now() / 1000)
     const total = item.finish_date - item.start_date
@@ -400,7 +406,7 @@
 
   const loadCharacters = async () => {
     try {
-      characters.value = await fetchMyCharacters()
+      characters.value = await unwrapContract(listMyEveCharacters())
       if (characters.value.length > 0 && !selectedCharacterId.value) {
         selectedCharacterId.value = characters.value[0].character_id
         loadData()
@@ -432,10 +438,12 @@
 
     esiRefreshing.value = true
     try {
-      await runMyCharacterESIRefresh({
-        task_name: 'character_skill',
-        character_id: selectedCharacterId.value
-      })
+      await unwrapContract(
+        runMyCharacterTask({
+          task_name: 'character_skill',
+          character_id: selectedCharacterId.value
+        })
+      )
       ElMessage.success(t('info.skillESIRefreshSubmitted'))
     } catch (e: unknown) {
       const error = e as {
@@ -459,10 +467,12 @@
     if (!selectedCharacterId.value) return
     loading.value = true
     try {
-      skillData.value = await fetchInfoSkills({
-        character_id: selectedCharacterId.value,
-        language: userStore.language
-      })
+      skillData.value = await unwrapContract(
+        getCharacterSkills({
+          character_id: selectedCharacterId.value,
+          language: userStore.language
+        })
+      )
     } catch {
       skillData.value = null
     } finally {

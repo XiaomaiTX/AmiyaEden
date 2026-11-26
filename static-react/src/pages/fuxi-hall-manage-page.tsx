@@ -7,15 +7,16 @@ import {
 } from '@/components/ui/select'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  refreshFuxiHallContributions,
-  createFuxiHallCard,
-  deleteFuxiHallCard,
-  fetchFuxiHallCards,
-  fetchFuxiHallPage,
-  reorderFuxiHallCards,
-  updateFuxiHallCard,
-  updateFuxiHallPage,
-} from '@/api/fuxi-hall'
+  refreshContributions,
+  createCard,
+  deleteHallCard,
+  listHallCards,
+  getHallPageConfig,
+  reorderCards,
+  updateHallCard,
+  updateHallPageConfig,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { FuxiHallMemberCard } from '@/components/fuxi-hall-member-card'
 import { FuxiHallBanner } from '@/components/fuxi-hall-banner'
 import { RichTextEditor } from '@/components/rich-text-editor'
@@ -24,13 +25,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { confirmAction, notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
+import type { FuxiHallContributions, FuxiHallCard } from '@/types/api/fuxi-hall'
 import type {
-  FuxiHallContributions,
-  FuxiHallCard,
-  FuxiHallCardCreate,
-  FuxiHallPageConfig,
-  FuxiHallPageKey,
-} from '@/types/api/fuxi-hall'
+  HallCardCreate as FuxiHallCardCreate,
+  HallPage as FuxiHallPageConfig,
+  HallPageKey as FuxiHallPageKey,
+} from '@/api/generated/client'
 import {
   CONTRIBUTION_KEYS,
   CONTRIBUTION_OFFSET_MAX,
@@ -137,8 +137,8 @@ export function FuxiHallManagePage() {
     setLoading(true)
     try {
       const [nextPage, nextCards] = await Promise.all([
-        fetchFuxiHallPage(pageKey),
-        fetchFuxiHallCards(pageKey),
+        unwrapContract(getHallPageConfig(pageKey), 'Failed to load page configuration'),
+        unwrapContract(listHallCards(pageKey), 'Failed to load cards'),
       ])
       setPage(nextPage)
       setCards(nextCards)
@@ -178,12 +178,15 @@ export function FuxiHallManagePage() {
     setSaving(true)
     try {
       setPage(
-        await updateFuxiHallPage(pageKey, {
-          title: page.title.trim(),
-          subtitle: page.subtitle.trim(),
-          description_html: page.description_html,
-          floors: validatedFloors,
-        })
+        await unwrapContract(
+          updateHallPageConfig(pageKey, {
+            title: page.title.trim(),
+            subtitle: page.subtitle.trim(),
+            description_html: page.description_html,
+            floors: validatedFloors,
+          }),
+          'Failed to save page configuration'
+        )
       )
       notifySuccess(t('fuxiHall.manage.saveSuccess'))
     } catch (caught) {
@@ -249,8 +252,8 @@ export function FuxiHallManagePage() {
         is_current_management: form.is_current_management,
       }
       if (form.id) {
-        await updateFuxiHallCard(form.id, payload)
-      } else await createFuxiHallCard(payload)
+        await unwrapContract(updateHallCard(form.id, payload), 'Failed to save card')
+      } else await unwrapContract(createCard(payload), 'Failed to create card')
       setDialogOpen(false)
       await load()
       notifySuccess(t('fuxiHall.manage.saveSuccess'))
@@ -277,7 +280,7 @@ export function FuxiHallManagePage() {
     )
       return
     try {
-      await deleteFuxiHallCard(card.id)
+      await unwrapContract(deleteHallCard(card.id), 'Failed to delete card')
       await load()
       notifySuccess(t('fuxiHall.manage.deleteSuccess'))
     } catch (caught) {
@@ -297,7 +300,10 @@ export function FuxiHallManagePage() {
     ;[next[index], next[target]] = [next[target], next[index]]
     setCards(next)
     try {
-      await reorderFuxiHallCards({ page_key: pageKey, ordered_ids: next.map((card) => card.id) })
+      await unwrapContract(
+        reorderCards({ page_key: pageKey, ordered_ids: next.map((card) => card.id) }),
+        'Failed to reorder cards'
+      )
     } catch (caught) {
       notifyError(
         caught instanceof Error
@@ -312,8 +318,8 @@ export function FuxiHallManagePage() {
   const refresh = async () => {
     setRefreshing(true)
     try {
-      await refreshFuxiHallContributions()
-      setCards(await fetchFuxiHallCards(pageKey))
+      await unwrapContract(refreshContributions(), 'fuxiHall.errors.refresh')
+      setCards(await unwrapContract(listHallCards(pageKey), 'Failed to load cards'))
       notifySuccess(t('fuxiHall.contributions.refreshed'))
     } catch (caught) {
       notifyError(

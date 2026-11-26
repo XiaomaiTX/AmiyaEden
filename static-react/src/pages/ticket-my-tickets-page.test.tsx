@@ -20,7 +20,7 @@ describe('ticket my tickets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               list: [
@@ -31,7 +31,6 @@ describe('ticket my tickets page', () => {
                   title: 'Need help',
                   description: 'Please review',
                   status: 'pending',
-                  priority: 'high',
                   created_at: '2026-05-01T00:00:00Z',
                   updated_at: '2026-05-01T00:00:00Z',
                 },
@@ -42,7 +41,6 @@ describe('ticket my tickets page', () => {
                   title: 'Resolved issue',
                   description: 'Done',
                   status: 'completed',
-                  priority: 'low',
                   created_at: '2026-05-01T00:00:00Z',
                   updated_at: '2026-05-01T00:00:00Z',
                 },
@@ -58,7 +56,7 @@ describe('ticket my tickets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               list: [
@@ -69,7 +67,6 @@ describe('ticket my tickets page', () => {
                   title: 'Need help',
                   description: 'Please review',
                   status: 'pending',
-                  priority: 'high',
                   created_at: '2026-05-01T00:00:00Z',
                   updated_at: '2026-05-01T00:00:00Z',
                 },

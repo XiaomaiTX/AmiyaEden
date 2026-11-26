@@ -55,7 +55,7 @@ func TestGetAllowCorporationsReturnsNames(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	ctx, _ := newJSONContext(http.MethodGet, "/api/v1/system/basic-config/allow-corporations", nil, recorder)
 
-	NewSysConfigHandler().GetAllowCorporations(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).GetAllowCorporations(ctx)
 
 	var resp struct {
 		Code int `json:"code"`
@@ -120,7 +120,7 @@ func TestGetAllowCorporationsFallsBackToIDWhenNameLookupFails(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	ctx, _ := newJSONContext(http.MethodGet, "/api/v1/system/basic-config/allow-corporations", nil, recorder)
 
-	NewSysConfigHandler().GetAllowCorporations(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: NewSysConfigHandler()}).GetAllowCorporations(ctx)
 
 	var resp struct {
 		Code int `json:"code"`

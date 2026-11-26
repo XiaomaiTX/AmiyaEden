@@ -1,4 +1,4 @@
-import type { DashboardPapMonthly } from '@/types/api/dashboard'
+import type { DashboardPapMonthly } from '@/api/generated/client'
 
 export const PAP_TREND_MONTHS = 12
 

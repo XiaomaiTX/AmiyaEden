@@ -46,16 +46,18 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemWalletLog, SystemWalletLogListInput } from '@/api/generated/client'
   import { ElTag, ElButton, ElInput, ElSelect, ElOption } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinAmount, formatTime } from '@utils/common'
   import { useTable } from '@/hooks/core/useTable'
-  import { adminListWalletLogs } from '@/api/sys-wallet'
+  import { adminListSystemWalletLogs } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'WalletLogs' })
   const { t } = useI18n()
 
-  type WalletLog = Api.SysWallet.WalletLog
+  type WalletLog = SystemWalletLog
 
   const ACTION_MAP: Record<string, { label: string; tag: string }> = {
     add: { label: t('walletAdmin.actions.add'), tag: 'success' },
@@ -80,7 +82,8 @@
     searchParams
   } = useTable({
     core: {
-      apiFn: adminListWalletLogs,
+      apiFn: (params: SystemWalletLogListInput) =>
+        unwrapContract(adminListSystemWalletLogs(params ?? { current: 1, size: 200 })),
       apiParams: { current: 1, size: 200, sort_by: 'created_at', sort_order: 'desc' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },

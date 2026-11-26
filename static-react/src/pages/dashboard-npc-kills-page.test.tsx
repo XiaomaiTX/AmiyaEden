@@ -19,7 +19,7 @@ describe('dashboard npc kills page', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          code: 0,
+          code: 200,
           msg: 'ok',
           data: {
             summary: {

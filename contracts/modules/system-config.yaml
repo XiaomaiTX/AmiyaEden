@@ -1,0 +1,464 @@
+paths:
+  /system/basic-config:
+    get:
+      operationId: getBasicConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: System identity.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemBasicConfigSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/basic-config/allow-corporations:
+    get:
+      operationId: getAllowCorporations
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Allowed corporation IDs and display names.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemAllowedCorporationsSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateAllowCorporations
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin", "cap:system.basic_config.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemAllowedCorporationsInput' }
+      responses:
+        '200':
+          description: Allowed corporations saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/basic-config/corporation-access-policies:
+    get:
+      operationId: getCorporationAccessPolicies
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Current policies and enforced and legacy capabilities.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemCorporationAccessPoliciesSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateCorporationAccessPolicies
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin", "cap:system.basic_config.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemCorporationAccessPoliciesInput' }
+      responses:
+        '200':
+          description: Policies saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/basic-config/character-esi-restriction:
+    get:
+      operationId: getCharacterESIRestrictionConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Character ESI restriction settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemCharacterESIRestrictionSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateCharacterESIRestrictionConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin", "cap:system.basic_config.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemCharacterESIRestrictionInput' }
+      responses:
+        '200':
+          description: Character ESI restriction saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/basic-config/mumble:
+    get:
+      operationId: getMumbleConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Mumble integration settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMumbleConfigSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateMumbleConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin", "cap:system.basic_config.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemMumbleConfigInput' }
+      responses:
+        '200':
+          description: Mumble configuration saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/sde-config:
+    get:
+      operationId: getSDEConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: SDE import configuration.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemSDEConfigSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateSDEConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemSDEConfigInput' }
+      responses:
+        '200':
+          description: SDE configuration saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/sde-config/status:
+    get:
+      operationId: getSDEStatus
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: SDE import status or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemSDEStatusSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/sde-config/check:
+    post:
+      operationId: checkSDEVersion
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Status after checking for a newer SDE version, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemSDEStatusSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/sde-config/update:
+    post:
+      operationId: triggerSDEUpdate
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Status after a manual SDE update, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SystemSDEStatusSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/alliance-pap-config:
+    get:
+      operationId: getAlliancePAPConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      responses:
+        '200':
+          description: Alliance PAP integration configuration.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemAlliancePAPConfigSuccess' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateAlliancePAPConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.basic_config.read", "role:super_admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SystemAlliancePAPConfigInput' }
+      responses:
+        '200':
+          description: Alliance PAP configuration saved or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    SystemBasicConfig:
+      type: object
+      required: [corp_id, site_title]
+      properties:
+        corp_id: { type: integer, format: int64 }
+        site_title: { type: string }
+    SystemAllowedCorporations:
+      type: object
+      required: [allow_corporations, corporations]
+      properties:
+        allow_corporations: { type: array, items: { type: integer, format: int64 } }
+        corporations: { type: array, items: { $ref: '#/components/schemas/SystemConfigCorporationDisplay' } }
+    SystemConfigCorporationDisplay:
+      type: object
+      required: [corporation_id, corporation_name]
+      properties:
+        corporation_id: { type: integer, format: int64 }
+        corporation_name: { type: string }
+    SystemAllowedCorporationsInput:
+      type: object
+      properties:
+        allow_corporations:
+          type: array
+          nullable: true
+          items: { type: integer, format: int64, minimum: 1 }
+          x-go-type-skip-optional-pointer: true
+    SystemConfigPolicyMode:
+      type: string
+      enum: [allow, deny]
+    SystemConfigPolicyRules:
+      type: object
+      x-go-type: 'map[string]interface{}'
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+    SystemConfigCorporationPolicy:
+      type: object
+      required: [corporation_id, full_access, capabilities, rules]
+      properties:
+        corporation_id: { type: integer, format: int64 }
+        full_access: { type: boolean }
+        capabilities: { type: array, items: { type: string } }
+        rules: { $ref: '#/components/schemas/SystemConfigPolicyRules' }
+    SystemConfigCorporationPolicyInput:
+      type: object
+      required: [corporation_id]
+      properties:
+        corporation_id: { type: integer, format: int64, minimum: 1 }
+        full_access: { type: boolean, x-go-type-skip-optional-pointer: true }
+        capabilities: { type: array, items: { type: string }, x-go-type-skip-optional-pointer: true }
+        rules:
+          allOf:
+            - $ref: '#/components/schemas/SystemConfigPolicyRules'
+          x-go-type-skip-optional-pointer: true
+    SystemCorporationAccessPolicies:
+      type: object
+      required: [version, default_mode, policies, enforced_capabilities, legacy_capabilities]
+      properties:
+        version: { type: integer }
+        default_mode: { $ref: '#/components/schemas/SystemConfigPolicyMode' }
+        policies: { type: array, items: { $ref: '#/components/schemas/SystemConfigCorporationPolicy' } }
+        enforced_capabilities: { type: array, items: { type: string } }
+        legacy_capabilities:
+          type: object
+          description: Legacy capability codes keyed by corporation ID.
+          additionalProperties: { type: array, items: { type: string } }
+          x-go-type: 'map[int64][]string'
+    SystemCorporationAccessPoliciesInput:
+      type: object
+      properties:
+        version: { type: integer, x-go-type-skip-optional-pointer: true }
+        default_mode:
+          allOf:
+            - $ref: '#/components/schemas/SystemConfigPolicyMode'
+          x-go-type-skip-optional-pointer: true
+        policies:
+          type: array
+          items: { $ref: '#/components/schemas/SystemConfigCorporationPolicyInput' }
+          x-go-type-skip-optional-pointer: true
+    SystemCharacterESIRestriction:
+      type: object
+      required: [enforce_character_esi_restriction]
+      properties:
+        enforce_character_esi_restriction: { type: boolean, x-go-name: EnforceCharacterESIRestriction }
+    SystemCharacterESIRestrictionInput:
+      type: object
+      required: [enforce_character_esi_restriction]
+      properties:
+        enforce_character_esi_restriction:
+          type: boolean
+          x-go-name: EnforceCharacterESIRestriction
+          x-go-type: '*bool'
+    SystemMumbleConfig:
+      type: object
+      required: [service_token, server_url, revalidate_token, revalidate_timeout_ms, public_nodes, display_name_template]
+      properties:
+        service_token: { type: string }
+        server_url: { type: string, x-go-name: ServerURL }
+        revalidate_token: { type: string }
+        revalidate_timeout_ms: { type: integer, x-go-name: RevalidateTimeoutMS }
+        public_nodes: { type: array, items: { $ref: '#/components/schemas/MumblePublicNode' } }
+        display_name_template: { type: string }
+    SystemMumbleConfigInput:
+      type: object
+      required: [revalidate_timeout_ms]
+      properties:
+        service_token: { type: string, x-go-type-skip-optional-pointer: true }
+        server_url: { type: string, x-go-name: ServerURL, x-go-type-skip-optional-pointer: true }
+        revalidate_token: { type: string, x-go-type-skip-optional-pointer: true }
+        revalidate_timeout_ms: { type: integer, minimum: 100, maximum: 10000, x-go-name: RevalidateTimeoutMS }
+        public_nodes:
+          type: array
+          items: { $ref: '#/components/schemas/MumblePublicNode' }
+          x-go-type-skip-optional-pointer: true
+        display_name_template: { type: string, x-go-type-skip-optional-pointer: true }
+    SystemSDEConfig:
+      type: object
+      required: [api_key, proxy, download_url]
+      properties:
+        api_key: { type: string, x-go-name: APIKey }
+        proxy: { type: string }
+        download_url: { type: string, x-go-name: DownloadURL }
+    SystemSDEConfigInput:
+      type: object
+      properties:
+        api_key: { type: string, nullable: true, x-go-name: APIKey }
+        proxy: { type: string, nullable: true }
+        download_url: { type: string, nullable: true, x-go-name: DownloadURL }
+    SystemAlliancePAPConfig:
+      type: object
+      required: [base_url, api_key]
+      properties:
+        base_url: { type: string, x-go-name: BaseURL }
+        api_key: { type: string, x-go-name: APIKey }
+    SystemAlliancePAPConfigInput:
+      type: object
+      properties:
+        base_url: { type: string, nullable: true, x-go-name: BaseURL }
+        api_key: { type: string, nullable: true, x-go-name: APIKey }
+    SystemSDEUpdateStage:
+      type: string
+      enum: ['', checking, downloading, extracting, importing, recording, done, failed]
+    SystemSDEStatus:
+      type: object
+      required: [current_version, latest_version, has_update, last_query_error, last_query_error_at, last_query_error_source, last_check_at, last_check_success, last_check_error, last_update_at, last_update_success, last_update_error, is_updating, update_stage]
+      properties:
+        current_version: { type: string }
+        latest_version: { type: string }
+        has_update: { type: boolean }
+        last_query_error: { type: string }
+        last_query_error_at: { type: integer, format: int64 }
+        last_query_error_source: { type: string, x-go-name: LastQuerySource }
+        last_check_at: { type: integer, format: int64 }
+        last_check_success: { type: boolean }
+        last_check_error: { type: string }
+        last_update_at: { type: integer, format: int64 }
+        last_update_success: { type: boolean }
+        last_update_error: { type: string }
+        is_updating: { type: boolean }
+        update_stage: { $ref: '#/components/schemas/SystemSDEUpdateStage' }
+    SystemBasicConfigSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemBasicConfig' }
+    SystemAllowedCorporationsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemAllowedCorporations' }
+    SystemCorporationAccessPoliciesSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemCorporationAccessPolicies' }
+    SystemCharacterESIRestrictionSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemCharacterESIRestriction' }
+    SystemMumbleConfigSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemMumbleConfig' }
+    SystemSDEConfigSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemSDEConfig' }
+    SystemSDEStatusSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemSDEStatus' }
+    SystemAlliancePAPConfigSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SystemAlliancePAPConfig' }

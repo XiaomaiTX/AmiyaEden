@@ -84,16 +84,18 @@ type FittingsListResponse struct {
 
 // SaveFittingRequest 保存装配请求
 type SaveFittingRequest struct {
-	CharacterID int64  `json:"character_id" binding:"required"`
-	FittingID   *int64 `json:"fitting_id"` // 有值则先删后增
-	Name        string `json:"name" binding:"required,min=1,max=50"`
-	Description string `json:"description" binding:"max=500"`
-	ShipTypeID  int64  `json:"ship_type_id" binding:"required"`
-	Items       []struct {
-		TypeID   int64  `json:"type_id" binding:"required"`
-		Quantity int    `json:"quantity" binding:"required,min=1"`
-		Flag     string `json:"flag" binding:"required"`
-	} `json:"items" binding:"required,min=1"`
+	CharacterID int64
+	FittingID   *int64 // 有值则先删后增
+	Name        string
+	Description string
+	ShipTypeID  int64
+	Items       []SaveFittingItem
+}
+
+type SaveFittingItem struct {
+	TypeID   int64
+	Quantity int
+	Flag     string
 }
 
 // ─────────────────────────────────────────────

@@ -25,23 +25,24 @@ import {
   type SetStateAction,
 } from 'react'
 import {
-  adminAdjustWallet,
-  adminGetWalletAnalytics,
-  adminListTransactions,
-  adminListWalletLogs,
-  adminListWallets,
-} from '@/api/sys-wallet'
+  adminAdjustSystemWallet,
+  adminGetSystemWalletAnalytics,
+  adminListSystemWalletTransactions,
+  adminListSystemWalletLogs,
+  adminListSystemWallets,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import type {
-  AnalyticsParams,
-  Wallet,
-  WalletAnalytics,
-  WalletLog,
-  WalletTransaction,
-} from '@/types/api/sys-wallet'
+  SystemWalletAnalyticsInput,
+  SystemWalletListItem,
+  SystemWalletAnalytics,
+  SystemWalletLog,
+  ShopWalletTransaction,
+} from '@/api/generated/client'
 import {
   formatCoin,
   formatDateTime,
@@ -141,12 +142,15 @@ export function SystemWalletPage() {
     setAdjustSaving(true)
     setError(null)
     try {
-      await adminAdjustWallet({
-        target_uid: Number(adjustForm.targetUid),
-        action: adjustForm.action,
-        amount: adjustForm.amount,
-        reason: adjustForm.reason.trim(),
-      })
+      await unwrapContract(
+        adminAdjustSystemWallet({
+          target_uid: Number(adjustForm.targetUid),
+          action: adjustForm.action,
+          amount: adjustForm.amount,
+          reason: adjustForm.reason.trim(),
+        }),
+        'adjust wallet failed'
+      )
       setAdjustOpen(false)
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
@@ -312,7 +316,7 @@ function WalletListPanel({
 }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [users, setUsers] = useState<Wallet[]>([])
+  const [users, setUsers] = useState<SystemWalletListItem[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -325,11 +329,14 @@ function WalletListPanel({
     setLoading(true)
     setError(null)
     try {
-      const response = await adminListWallets({
-        current: page,
-        size: pageSize,
-        user_keyword: searchState.trim() || undefined,
-      })
+      const response = await unwrapContract(
+        adminListSystemWallets({
+          current: page,
+          size: pageSize,
+          user_keyword: searchState.trim() || undefined,
+        }),
+        'list wallet failed'
+      )
       setUsers(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -481,7 +488,7 @@ function WalletTransactionsPanel({
 }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [rows, setRows] = useState<WalletTransaction[]>([])
+  const [rows, setRows] = useState<ShopWalletTransaction[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -509,13 +516,16 @@ function WalletTransactionsPanel({
     setLoading(true)
     setError(null)
     try {
-      const response = await adminListTransactions({
-        current: page,
-        size: pageSize,
-        user_id: searchState.userId === '' ? undefined : searchState.userId,
-        user_keyword: searchState.userKeyword.trim() || undefined,
-        ref_type: searchState.refType || undefined,
-      })
+      const response = await unwrapContract(
+        adminListSystemWalletTransactions({
+          current: page,
+          size: pageSize,
+          user_id: searchState.userId === '' ? undefined : searchState.userId,
+          user_keyword: searchState.userKeyword.trim() || undefined,
+          ref_type: searchState.refType || undefined,
+        }),
+        'list wallet transactions failed'
+      )
       setRows(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -705,7 +715,7 @@ function WalletLogsPanel({
 }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [rows, setRows] = useState<WalletLog[]>([])
+  const [rows, setRows] = useState<SystemWalletLog[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -720,13 +730,16 @@ function WalletLogsPanel({
     setLoading(true)
     setError(null)
     try {
-      const response = await adminListWalletLogs({
-        current: page,
-        size: pageSize,
-        operator_id: searchState.operatorId === '' ? undefined : Number(searchState.operatorId),
-        target_uid: searchState.targetUid === '' ? undefined : Number(searchState.targetUid),
-        action: searchState.action || undefined,
-      })
+      const response = await unwrapContract(
+        adminListSystemWalletLogs({
+          current: page,
+          size: pageSize,
+          operator_id: searchState.operatorId === '' ? undefined : Number(searchState.operatorId),
+          target_uid: searchState.targetUid === '' ? undefined : Number(searchState.targetUid),
+          action: searchState.action || undefined,
+        }),
+        'list wallet logs failed'
+      )
       setRows(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -887,10 +900,10 @@ function WalletAnalysisPanel({
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [analytics, setAnalytics] = useState<WalletAnalytics | null>(null)
+  const [analytics, setAnalytics] = useState<SystemWalletAnalytics | null>(null)
   const [refTypes, setRefTypes] = useState<string[]>([])
   const [userKeyword, setUserKeyword] = useState('')
-  const [searchState, setSearchState] = useState<AnalyticsParams>({
+  const [searchState, setSearchState] = useState<SystemWalletAnalyticsInput>({
     start_date: dateRange[0],
     end_date: dateRange[1],
     ref_types: [],
@@ -923,13 +936,16 @@ function WalletAnalysisPanel({
     setError(null)
     try {
       setAnalytics(
-        await adminGetWalletAnalytics({
-          start_date: searchState.start_date,
-          end_date: searchState.end_date,
-          ref_types: searchState.ref_types,
-          user_keyword: searchState.user_keyword || undefined,
-          top_n: searchState.top_n,
-        })
+        await unwrapContract(
+          adminGetSystemWalletAnalytics({
+            start_date: searchState.start_date,
+            end_date: searchState.end_date,
+            ref_types: searchState.ref_types,
+            user_keyword: searchState.user_keyword || undefined,
+            top_n: searchState.top_n,
+          }),
+          'get wallet analytics failed'
+        )
       )
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('walletAdmin.analysis.loadFailed')))

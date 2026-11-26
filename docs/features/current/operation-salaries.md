@@ -43,7 +43,4 @@ Vue 和 React 的「系统管理 → 工资管理」（`/system/salary`）统一
 
 确认框通过 `GET /api/v1/operation-salary-rates` 读取四项当前单价，使用与全局角标相同的登录用户门槛（guest 不可读），不暴露 FC 配置，也不授予任何处理权限。各业务完成接口继续独立执行原权限校验。
 
-- `GET /api/v1/system/salary-settings`
-- `PUT /api/v1/system/salary-settings`
-
-读写结构均为 `recruitment`、`welfare_delivery`、`shop_delivery`、`srp_payout`、`fc_salary`、`fc_salary_monthly_limit`；更新必须完整提供六项，显式 0 有效。配置批量写入并记录 `salary_settings_update` 审计。
+[工资比率与配置 OpenAPI](../../../contracts/modules/badge-salary.yaml)。保存配置须完整提交，显式 0 有效；配置批量写入并记录 `salary_settings_update` 审计。

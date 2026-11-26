@@ -12,8 +12,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
-import { fetchWebhookConfig, setWebhookConfig, testWebhook } from '@/api/webhook'
-import type { WebhookConfig, WebhookTestParams } from '@/types/api/webhook'
+import { getWebhookConfig, setWebhookConfig, testWebhook } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
+import type { WebhookConfig, WebhookTestInput as WebhookTestParams } from '@/api/generated/client'
 
 const defaultWebhookConfig: WebhookConfig = {
   url: '',
@@ -41,7 +42,7 @@ export function SystemWebhookPage() {
     setLoading(true)
     setError(null)
     try {
-      const nextConfig = await fetchWebhookConfig()
+      const nextConfig = await unwrapContract(getWebhookConfig(), 'fetch webhook config failed')
       setConfig(nextConfig)
       setTestForm({
         url: nextConfig.url,
@@ -74,7 +75,7 @@ export function SystemWebhookPage() {
   const saveConfig = async () => {
     setSaving(true)
     try {
-      await setWebhookConfig(config)
+      await unwrapContract(setWebhookConfig(config), 'save webhook config failed')
       notifySuccess(t('webhook.messages.saveSuccess'))
     } catch {
       notifyError(t('webhook.messages.saveFailed'))
@@ -86,7 +87,7 @@ export function SystemWebhookPage() {
   const sendTest = async () => {
     setTesting(true)
     try {
-      await testWebhook(testForm)
+      await unwrapContract(testWebhook(testForm), 'test webhook failed')
       notifySuccess(t('webhook.test.success'))
     } catch {
       notifyError(t('webhook.test.failed'))

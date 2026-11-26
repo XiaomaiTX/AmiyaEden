@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-24
 source_of_truth:
   - docs/ai/repo-rules.md
   - server/internal
@@ -82,8 +82,8 @@ types → api → hooks/store → components → views/pages
 ### 前端规则
 
 - `types/`
-  允许 import：无；仅允许纯类型定义
-  禁止 import：`api/`、`hooks/`、`store/`、`components/`、`views/`、`pages/`
+  仅允许纯类型定义；可用 `import type`、`export type` 或 `import(...).Type` 引用 `api/generated/` 中的 OpenAPI 类型。
+  其余禁止 import：`api/`、`hooks/`、`store/`、`components/`、`views/`、`pages/`
 - `api/`
   允许 import：`types/`、HTTP client 工具
   禁止 import：`hooks/`、`store/`、`components/`、`views/`、`pages/`
@@ -110,14 +110,8 @@ types → api → hooks/store → components → views/pages
 
 ### 后端 ↔ 前端契约
 
-- 变更顺序：
-  1. 后端请求或响应结构
-  2. 如有需要，后端 service 逻辑
-  3. Vue `static/src/api/*.ts` 和/或 React `static-react/src/api/*.ts`
-  4. Vue `static/src/types/api/api.d.ts` 和/或 React `static-react/src/types/api/*.ts`
-  5. 调用方 view/page 或 component
-- 后端 JSON 字段名必须与前端类型定义完全一致
-- 不得跨边界悄悄重命名字段
+- `/api/v1` HTTP 接口按 [OpenAPI 契约流程](../api/conventions.md#契约同步顺序) 先更新契约并生成，再同步实现和调用方。
+- 保持契约、后端 JSON 字段和前端类型一致；字段重命名时同步所有受影响的调用方。
 
 ### 基础设施层（`pkg/*`）
 

@@ -144,10 +144,12 @@
 </template>
 
 <script setup lang="ts">
+  import type { MentorCandidate, MentorMyStatus } from '@/api/generated/client'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { useRouter } from 'vue-router'
-  import { applyForMentor, fetchMentorCandidates, fetchMyMentorStatus } from '@/api/mentor'
+  import { applyForMentor, getMyMentorStatus, listMentorCandidates } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
   import { useMenuStore } from '@/store/modules/menu'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
@@ -162,8 +164,8 @@
 
   const loading = ref(false)
   const applyingMentorId = ref<number | null>(null)
-  const state = ref<Api.Mentor.MyStatusResponse | null>(null)
-  const mentors = ref<Api.Mentor.MentorCandidate[]>([])
+  const state = ref<MentorMyStatus | null>(null)
+  const mentors = ref<MentorCandidate[]>([])
 
   const currentRelationship = computed(() => state.value?.current_relationship ?? null)
   const hasActiveRelationship = computed(() => currentRelationship.value?.status === 'active')
@@ -191,11 +193,11 @@
 
   const formatEligibilityReason = (reason: string) => (reason ? t('refund.reason.' + reason) : '')
 
-  const isCurrentMentor = (mentor: Api.Mentor.MentorCandidate) => {
+  const isCurrentMentor = (mentor: MentorCandidate) => {
     return currentRelationship.value?.mentor_user_id === mentor.mentor_user_id
   }
 
-  const mentorActionLabel = (mentor: Api.Mentor.MentorCandidate) => {
+  const mentorActionLabel = (mentor: MentorCandidate) => {
     if (!isCurrentMentor(mentor)) {
       return t('newbro.selectMentor.apply')
     }
@@ -208,7 +210,7 @@
   const loadData = async () => {
     loading.value = true
     try {
-      state.value = await fetchMyMentorStatus()
+      state.value = await unwrapContract(getMyMentorStatus())
       if (!state.value.is_eligible) {
         mentors.value = []
         ElMessage.warning(
@@ -222,7 +224,7 @@
         )
         return
       }
-      mentors.value = await fetchMentorCandidates()
+      mentors.value = await unwrapContract(listMentorCandidates())
     } catch (error) {
       console.error('Failed to load mentor selection data', error)
       state.value = null
@@ -239,7 +241,7 @@
     }
     applyingMentorId.value = mentorUserId
     try {
-      await applyForMentor({ mentor_user_id: mentorUserId })
+      await unwrapContract(applyForMentor({ mentor_user_id: mentorUserId }))
       ElMessage.success(t('newbro.selectMentor.applySuccess'))
       await loadData()
     } catch (error) {

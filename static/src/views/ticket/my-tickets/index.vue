@@ -30,7 +30,9 @@
 </template>
 
 <script setup lang="ts">
-  import { listMyTickets } from '@/api/ticket'
+  import type { ListMyTicketsParams, TicketStatus } from '@/api/generated/client'
+  import { listMyTickets } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
   import { formatTime } from '@utils/common'
@@ -42,7 +44,7 @@
   const { t } = useI18n()
   const router = useRouter()
 
-  const filters = ref<{ status?: Api.Ticket.TicketStatus | '' }>({ status: '' })
+  const filters = ref<{ status?: TicketStatus | '' }>({ status: '' })
 
   const {
     columns,
@@ -57,7 +59,7 @@
     handleCurrentChange
   } = useTable({
     core: {
-      apiFn: listMyTickets,
+      apiFn: (params?: ListMyTicketsParams) => unwrapContract(listMyTickets(params)),
       apiParams: {
         current: 1,
         size: 20,

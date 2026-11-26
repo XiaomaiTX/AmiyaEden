@@ -1,0 +1,299 @@
+paths:
+  /dashboard:
+    post:
+      operationId: getDashboard
+      x-gin-access: ["jwt", "cap:menu.dashboard"]
+      responses:
+        '200':
+          description: Dashboard data or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DashboardSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/skill-readiness/options:
+    get:
+      operationId: getSkillReadinessOptions
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200':
+          description: Corporation and shared plan options or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillReadinessOptionsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/skill-readiness/query:
+    post:
+      operationId: querySkillReadiness
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody: { $ref: '#/components/requestBodies/SkillReadinessBody' }
+      responses:
+        '200':
+          description: Full scope summary and paginated users, or parameter or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillReadinessQuerySuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/skill-readiness/users/{user_id}/characters:
+    post:
+      operationId: getSkillReadinessUserCharacters
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { type: integer, minimum: 1, x-go-type: uint } }
+      requestBody: { $ref: '#/components/requestBodies/SkillReadinessBody' }
+      responses:
+        '200':
+          description: Characters in scope (possibly an empty array), or parameter or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillReadinessUserCharactersSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/skill-readiness/characters/{character_id}/skills:
+    post:
+      operationId: getSkillReadinessCharacterSkills
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+        - { name: character_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      requestBody: { $ref: '#/components/requestBodies/SkillReadinessBody' }
+      responses:
+        '200':
+          description: Character comparison and synchronized skills, or parameter or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SkillReadinessCharacterSkillsSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  requestBodies:
+    SkillReadinessBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SkillReadinessRequest' }
+  schemas:
+    DashboardCards:
+      type: object
+      required: [eve_wallet_balance, eve_skill_points, system_wallet_balance, alliance_pap]
+      properties:
+        eve_wallet_balance: { type: number, format: double }
+        eve_skill_points: { type: integer, format: int64 }
+        system_wallet_balance: { type: number, format: double }
+        alliance_pap: { type: number, format: double, x-go-name: AlliancePap }
+    DashboardFleetSource:
+      type: string
+      enum: [internal, alliance]
+    DashboardFleetItem:
+      type: object
+      required: [source, id, title, start_at, pap_count]
+      properties:
+        source: { $ref: '#/components/schemas/DashboardFleetSource' }
+        id: { type: string }
+        title: { type: string }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        importance: { type: string, x-go-type-skip-optional-pointer: true }
+        pap_count: { type: number, format: double, x-go-name: PapCount }
+        ship_type_name: { type: string, x-go-type-skip-optional-pointer: true }
+        character_name: { type: string, x-go-type-skip-optional-pointer: true }
+    DashboardPapMonthly:
+      type: object
+      required: [year, month, total_pap]
+      properties:
+        year: { type: integer }
+        month: { type: integer }
+        total_pap: { type: number, format: double, x-go-name: TotalPap }
+    DashboardPapStats:
+      type: object
+      required: [alliance, internal]
+      properties:
+        alliance: { type: array, items: { $ref: '#/components/schemas/DashboardPapMonthly' } }
+        internal: { type: array, items: { $ref: '#/components/schemas/DashboardPapMonthly' } }
+    DashboardSrpItem:
+      type: object
+      required: [id, character_name, ship_name, solar_system_name, killmail_time, recommended_amount, final_amount, review_status, payout_status, created_at]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        character_name: { type: string }
+        ship_name: { type: string }
+        solar_system_name: { type: string }
+        killmail_time: { type: string, format: date-time }
+        recommended_amount: { type: number, format: double }
+        final_amount: { type: number, format: double }
+        review_status: { type: string }
+        payout_status: { type: string }
+        created_at: { type: string, format: date-time }
+    DashboardResult:
+      type: object
+      required: [cards, fleets, pap_stats, srp_list]
+      properties:
+        cards: { $ref: '#/components/schemas/DashboardCards' }
+        fleets: { type: array, items: { $ref: '#/components/schemas/DashboardFleetItem' } }
+        pap_stats: { $ref: '#/components/schemas/DashboardPapStats', x-go-name: PapStats }
+        srp_list: { type: array, items: { $ref: '#/components/schemas/DashboardSrpItem' }, x-go-name: SrpList }
+    DashboardSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/DashboardResult' }
+    SkillReadinessRequest:
+      type: object
+      required: [plan_id]
+      properties:
+        corporation_ids:
+          type: array
+          description: Omitted or empty selects all corporations.
+          items: { type: integer, format: int64, minimum: 1 }
+          x-go-name: CorporationIDs
+          x-go-type-skip-optional-pointer: true
+        plan_id: { type: integer, minimum: 1, x-go-type: uint }
+        page:
+          type: integer
+          minimum: 0
+          default: 1
+          description: Zero also selects the default. Does not paginate detail responses.
+          x-go-type-skip-optional-pointer: true
+        page_size:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 20
+          description: Zero also selects the default. Does not paginate detail responses.
+          x-go-type-skip-optional-pointer: true
+        language:
+          type: string
+          enum: [zh, en]
+          default: zh
+          description: Omitted or empty selects zh.
+          x-go-type-skip-optional-pointer: true
+    SkillReadinessOptions:
+      type: object
+      required: [corporations, plans]
+      properties:
+        corporations: { type: array, items: { $ref: '#/components/schemas/SkillReadinessCorporationOption' } }
+        plans: { type: array, items: { $ref: '#/components/schemas/SkillReadinessPlanOption' } }
+    SkillReadinessCorporationOption:
+      type: object
+      required: [corporation_id, corporation_name]
+      properties:
+        corporation_id: { type: integer, format: int64 }
+        corporation_name: { type: string }
+    SkillReadinessPlanOption:
+      type: object
+      required: [id, title, description, ship_type_id]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        title: { type: string }
+        description: { type: string }
+        ship_type_id: { type: integer, nullable: true }
+    SkillReadinessSummary:
+      type: object
+      required: [character_count, user_count, satisfied_user_count, satisfied_character_count, unknown_character_count]
+      properties:
+        character_count: { type: integer }
+        user_count: { type: integer }
+        satisfied_user_count: { type: integer }
+        satisfied_character_count: { type: integer }
+        unknown_character_count: { type: integer }
+    SkillReadinessUser:
+      type: object
+      required: [user_id, nickname, character_count, satisfied_character_count, unknown_character_count]
+      properties:
+        user_id: { type: integer, x-go-type: uint }
+        nickname: { type: string }
+        character_count: { type: integer }
+        satisfied_character_count: { type: integer }
+        unknown_character_count: { type: integer }
+    SkillReadinessResult:
+      type: object
+      required: [summary, list, total, page, pageSize]
+      properties:
+        summary: { $ref: '#/components/schemas/SkillReadinessSummary' }
+        list: { type: array, items: { $ref: '#/components/schemas/SkillReadinessUser' } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer, x-go-name: PageSize }
+    SkillReadinessStatus:
+      type: string
+      enum: [satisfied, unsatisfied, unknown]
+    SkillReadinessCharacter:
+      type: object
+      required: [user_id, character_id, character_name, corporation_id, corporation_name, status, matched_skills, total_skills, skill_updated_at, token_invalid]
+      properties:
+        user_id: { type: integer, x-go-type: uint }
+        character_id: { type: integer, format: int64 }
+        character_name: { type: string }
+        corporation_id: { type: integer, format: int64 }
+        corporation_name: { type: string }
+        status: { $ref: '#/components/schemas/SkillReadinessStatus' }
+        matched_skills: { type: integer }
+        total_skills: { type: integer }
+        skill_updated_at: { type: integer, format: int64, nullable: true }
+        token_invalid: { type: boolean }
+    SkillReadinessSkill:
+      type: object
+      required: [skill_type_id, skill_name, group_name, active_level, trained_level, skillpoints_in_skill, current_level]
+      properties:
+        skill_type_id: { type: integer }
+        skill_name: { type: string }
+        group_name: { type: string }
+        active_level: { type: integer, nullable: true }
+        trained_level: { type: integer, nullable: true }
+        skillpoints_in_skill: { type: integer, format: int64, nullable: true }
+        required_level: { type: integer }
+        current_level: { type: integer, nullable: true }
+        satisfied: { type: boolean }
+    SkillReadinessCharacterDetail:
+      type: object
+      required: [character, requirements, skills]
+      properties:
+        character: { $ref: '#/components/schemas/SkillReadinessCharacter' }
+        requirements: { type: array, items: { $ref: '#/components/schemas/SkillReadinessSkill' } }
+        skills: { type: array, items: { $ref: '#/components/schemas/SkillReadinessSkill' } }
+    SkillReadinessOptionsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillReadinessOptions' }
+    SkillReadinessQuerySuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillReadinessResult' }
+    SkillReadinessUserCharactersSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/SkillReadinessCharacter' } }
+    SkillReadinessCharacterSkillsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/SkillReadinessCharacterDetail' }

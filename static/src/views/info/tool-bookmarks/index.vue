@@ -121,15 +121,17 @@
 </template>
 
 <script setup lang="ts">
+  import type { ToolBookmark as ContractToolBookmark } from '@/api/generated/client'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
-    createToolBookmark,
+    adminCreate,
     deleteToolBookmark,
-    fetchAdminToolBookmarks,
-    fetchVisibleToolBookmarks,
+    listToolBookmarks,
+    listVisible,
     updateToolBookmark
-  } from '@/api/tool-bookmark'
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import { groupToolBookmarks } from '@/utils/tool-bookmark-groups'
 
@@ -139,7 +141,7 @@
   const userStore = useUserStore()
   const loading = ref(false)
   const submitting = ref(false)
-  const bookmarks = ref<Api.ToolBookmark.Bookmark[]>([])
+  const bookmarks = ref<ContractToolBookmark[]>([])
   const groups = computed(() => groupToolBookmarks(bookmarks.value))
   const namedGroups = computed(() => groups.value.filter((group) => group.name))
   const dialogVisible = ref(false)
@@ -166,8 +168,8 @@
     loading.value = true
     try {
       bookmarks.value = isAdmin.value
-        ? await fetchAdminToolBookmarks()
-        : await fetchVisibleToolBookmarks()
+        ? await unwrapContract(listToolBookmarks())
+        : await unwrapContract(listVisible())
     } catch (error) {
       ElMessage.error((error as Error).message || t('httpMsg.requestFailed'))
       bookmarks.value = []
@@ -187,7 +189,7 @@
     dialogVisible.value = true
   }
 
-  function openEditDialog(item: Api.ToolBookmark.Bookmark) {
+  function openEditDialog(item: ContractToolBookmark) {
     editingID.value = item.id
     form.name = item.name
     form.group_name = item.group_name
@@ -206,9 +208,9 @@
     submitting.value = true
     try {
       if (editingID.value) {
-        await updateToolBookmark(editingID.value, { ...form })
+        await unwrapContract(updateToolBookmark(editingID.value, { ...form }))
       } else {
-        await createToolBookmark({ ...form })
+        await unwrapContract(adminCreate({ ...form }))
       }
       ElMessage.success(t('info.toolBookmarksSaveSuccess'))
       dialogVisible.value = false
@@ -225,7 +227,7 @@
       await ElMessageBox.confirm(t('info.toolBookmarksDeleteConfirm'), t('common.warning'), {
         type: 'warning'
       })
-      await deleteToolBookmark(id)
+      await unwrapContract(deleteToolBookmark(id))
       ElMessage.success(t('info.toolBookmarksDeleteSuccess'))
       await loadData()
     } catch (error) {

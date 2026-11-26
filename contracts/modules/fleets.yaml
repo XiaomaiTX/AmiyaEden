@@ -1,0 +1,795 @@
+paths:
+  /operation/fleets:
+    get:
+      operationId: listFleets
+      x-gin-ignore-invalid-query: ["fc_user_id"]
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+          description: Page size capped at 100.
+        - name: importance
+          in: query
+          schema: { type: string }
+        - name: fc_user_id
+          in: query
+          schema: { type: integer, minimum: 0, x-go-type: uint, maximum: 4294967295 }
+          description: Invalid values are ignored.
+      responses:
+        '200': { $ref: '#/components/responses/FleetPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createFleet
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetCreateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/me:
+    get:
+      operationId: getMyFleets
+      x-gin-access: ["jwt", "login", "cap:menu.operation"]
+      responses:
+        '200': { $ref: '#/components/responses/MyFleetListResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getFleet
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateFleet
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteFleet
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/refresh-esi:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: refreshFleetESI
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getMembers
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetMemberListResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/members-pap:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getMembersWithPap
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 260 }
+          description: Page size capped at 260.
+      responses:
+        '200': { $ref: '#/components/responses/FleetMemberWithPapPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/members/manual:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: manualAddMembers
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetManualAddInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetManualAddResultDataResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/members/sync:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: syncESIMembers
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetESIMemberListResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/pap:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getPapLogs
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetPapLogListResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: issuePap
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/pap/me:
+    get:
+      operationId: getMyPapLogs
+      x-gin-access: ["jwt", "login", "cap:menu.operation"]
+      responses:
+        '200': { $ref: '#/components/responses/MyFleetPapLogListResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/pap/corporation:
+    get:
+      operationId: getCorporationPapSummary
+      x-gin-ignore-invalid-query: ["year"]
+      x-gin-access: ["jwt", "login", "cap:menu.operation"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 200 }
+          description: Page size capped at 1000.
+        - name: period
+          in: query
+          schema: { type: string, default: last_month }
+          description: Supported periods are current_month, last_month, at_year, and all; last_year is accepted as an alias.
+        - name: year
+          in: query
+          schema: { type: integer }
+          description: Missing or malformed values are handled as unspecified.
+        - name: corp_tickers
+          in: query
+          schema: { type: string }
+          description: Comma-separated corporate tickers.
+      responses:
+        '200': { $ref: '#/components/responses/FleetCorporationPapPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/pap/alliance:
+    get:
+      operationId: getMyAlliancePAP
+      x-gin-ignore-invalid-query: ["year", "month"]
+      x-gin-access: ["jwt", "login", "cap:menu.operation"]
+      parameters:
+        - name: year
+          in: query
+          schema: { type: integer }
+          description: Defaults to the current year when missing or malformed.
+        - name: month
+          in: query
+          schema: { type: integer }
+          description: Defaults to the current month when missing or malformed.
+      responses:
+        '200': { $ref: '#/components/responses/FleetAlliancePAPDataResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/invites:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getInvites
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetInviteListResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createInvite
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetInviteResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/invites/{invite_id}:
+    parameters:
+      - name: invite_id
+        in: path
+        required: true
+        schema: { type: integer, x-go-type: uint, minimum: 1, maximum: 4294967295 }
+    delete:
+      operationId: deactivateInvite
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/join:
+    post:
+      operationId: joinFleet
+      x-gin-access: ["jwt", "login", "cap:menu.operation"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetJoinInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/esi/{character_id}:
+    parameters:
+      - name: character_id
+        in: path
+        required: true
+        schema: { type: integer, format: int64 }
+    get:
+      operationId: getCharacterFleetInfo
+      x-gin-access: ["jwt", "login", "cap:menu.operation"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetCharacterInfoResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleets/{id}/ping:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: pingFleet
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,fc,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  responses:
+    FleetPageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetRecordResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetRecordSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    MyFleetListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/MyFleetListSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetNullResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/NullSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetMemberListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetMemberListSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetMemberWithPapPageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetMemberWithPapPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetManualAddResultDataResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetManualAddResultDataSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetESIMemberListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetESIMemberListSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetPapLogListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetPapLogListSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    MyFleetPapLogListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/MyFleetPapLogListSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetCorporationPapPageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetCorporationPapPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetAlliancePAPDataResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetAlliancePAPDataSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetInviteListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetInviteListSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetInviteResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetInviteSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetCharacterInfoResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetCharacterInfoSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+  schemas:
+    FleetPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetPage' }
+    FleetRecordSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetRecord' }
+    MyFleetListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetRecord' } }
+    FleetMemberListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetMember' } }
+    FleetMemberWithPapPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetMemberWithPapPage' }
+    FleetManualAddResultDataSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetManualAddResultData' }
+    FleetESIMemberListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetESIMember' } }
+    FleetPapLogListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetPapLog' } }
+    MyFleetPapLogListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetPapLogDetail' } }
+    FleetCorporationPapPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetCorporationPapPage' }
+    FleetAlliancePAPDataSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetAlliancePAPData' }
+    FleetInviteListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetInvite' } }
+    FleetInviteSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetInvite' }
+    FleetCharacterInfoSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetCharacterInfo' }
+    FleetCreateInput:
+      type: object
+      required: [title, start_at, end_at, importance, pap_count, character_id]
+      properties:
+        # Preserve Gin's validation error order from the original input struct.
+        title: { type: string, x-order: 1, x-oapi-codegen-extra-tags: { binding: 'required' } }
+        description: { type: string, x-order: 2, x-go-type-skip-optional-pointer: true }
+        start_at: { type: string, format: date-time, x-go-type: string, x-order: 3, x-oapi-codegen-extra-tags: { binding: 'required' } }
+        end_at: { type: string, format: date-time, x-go-type: string, x-order: 4, x-oapi-codegen-extra-tags: { binding: 'required' } }
+        importance: { type: string, enum: [strat_op, cta, other], x-go-type: string, x-order: 5, x-oapi-codegen-extra-tags: { binding: 'required,oneof=strat_op cta other' } }
+        pap_count: { type: number, format: double, minimum: 0, exclusiveMinimum: true, multipleOf: 0.5, x-order: 6 }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, x-order: 7, x-oapi-codegen-extra-tags: { binding: 'required' } }
+        send_ping: { type: boolean, x-order: 8, x-go-type-skip-optional-pointer: true }
+        fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID, x-order: 9, nullable: true }
+        auto_srp_mode: { type: string, x-go-name: AutoSrpMode, x-order: 10, x-go-type-skip-optional-pointer: true }
+    FleetUpdateInput:
+      type: object
+      properties:
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        start_at: { type: string, format: date-time, x-go-type: string, nullable: true }
+        end_at: { type: string, format: date-time, x-go-type: string, nullable: true }
+        importance: { type: string, nullable: true }
+        pap_count: { type: number, format: double, minimum: 0, exclusiveMinimum: true, multipleOf: 0.5, nullable: true }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, nullable: true }
+        esi_fleet_id: { type: integer, format: int64, x-go-name: ESIFleetID, nullable: true }
+        fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID, nullable: true }
+        auto_srp_mode: { type: string, x-go-name: AutoSrpMode, nullable: true }
+    FleetManualAddInput:
+      type: object
+      required: [character_names]
+      properties:
+        character_names: { type: array, items: { type: string }, x-oapi-codegen-extra-tags: { binding: 'required' } }
+    FleetJoinInput:
+      type: object
+      required: [code, character_id]
+      properties:
+        code: { type: string, x-oapi-codegen-extra-tags: { binding: 'required' } }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, x-oapi-codegen-extra-tags: { binding: 'required' } }
+    FleetRecord:
+      type: object
+      required: [id, title, description, start_at, end_at, importance, pap_count, fc_user_id, fc_character_id, fc_character_name, auto_srp_mode, created_at, updated_at]
+      properties:
+        id: { type: string, x-go-name: ID }
+        title: { type: string }
+        description: { type: string }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        importance: { type: string }
+        pap_count: { type: number, format: double }
+        fc_user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FCUserID }
+        fc_character_id: { type: integer, format: int64, x-go-name: FCCharacterID }
+        fc_character_name: { type: string, x-go-name: FCCharacterName }
+        esi_fleet_id: { type: integer, format: int64, x-go-name: ESIFleetID }
+        fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID }
+        auto_srp_mode: { type: string, enum: [disabled, submit_only, auto_approve], x-go-name: AutoSrpMode }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        deleted_at: { type: string, format: date-time }
+    FleetListItem:
+      type: object
+      required: [id, title, description, start_at, end_at, importance, pap_count, fc_user_id, fc_character_id, fc_character_name, auto_srp_mode, created_at, updated_at]
+      properties:
+        id: { type: string, x-go-name: ID }
+        title: { type: string }
+        description: { type: string }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        importance: { type: string }
+        pap_count: { type: number, format: double }
+        fc_user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FCUserID }
+        fc_character_id: { type: integer, format: int64, x-go-name: FCCharacterID }
+        fc_character_name: { type: string, x-go-name: FCCharacterName }
+        esi_fleet_id: { type: integer, format: int64, x-go-name: ESIFleetID }
+        fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID }
+        auto_srp_mode: { type: string, enum: [disabled, submit_only, auto_approve], x-go-name: AutoSrpMode }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        fc_display_name: { type: string, x-go-name: FCDisplayName }
+    FleetMember:
+      type: object
+      required: [id, fleet_id, character_id, character_name, user_id, joined_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        fleet_id: { type: string, x-go-name: FleetID }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID }
+        character_name: { type: string }
+        user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: UserID }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID }
+        km_refreshed_at: { type: string, format: date-time, x-go-name: KMRefreshedAt }
+        joined_at: { type: string, format: date-time }
+    FleetMemberWithPap:
+      type: object
+      required: [id, fleet_id, character_id, character_name, user_id, joined_at, pap_count, issued_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        fleet_id: { type: string, x-go-name: FleetID }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID }
+        character_name: { type: string }
+        user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: UserID }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID }
+        km_refreshed_at: { type: string, format: date-time, x-go-name: KMRefreshedAt }
+        joined_at: { type: string, format: date-time }
+        pap_count: { type: number, format: double, nullable: true }
+        issued_at: { type: string, format: date-time, nullable: true }
+    FleetManualAddResultData:
+      type: object
+      required: [added_character_names, missing_character_names]
+      properties:
+        added_character_names: { type: array, items: { type: string } }
+        missing_character_names: { type: array, items: { type: string } }
+    FleetESIMember:
+      type: object
+      required: [character_id, join_time, role, role_name, ship_type_id, solar_system_id, squad_id, wing_id]
+      properties:
+        character_id: { type: integer, format: int64, x-go-name: CharacterID }
+        join_time: { type: string }
+        role: { type: string }
+        role_name: { type: string }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID }
+        squad_id: { type: integer, format: int64, x-go-name: SquadID }
+        wing_id: { type: integer, format: int64, x-go-name: WingID }
+    FleetPapLog:
+      type: object
+      required: [id, fleet_id, character_id, user_id, pap_count, issued_by, issued_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        fleet_id: { type: string, x-go-name: FleetID }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID }
+        user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: UserID }
+        pap_count: { type: number, format: double }
+        issued_by: { type: integer, minimum: 0, x-go-type: uint }
+        issued_at: { type: string, format: date-time }
+    FleetPapLogDetail:
+      type: object
+      required: [id, fleet_id, character_id, user_id, pap_count, issued_by, issued_at, character_name, fleet_title, fleet_start_at, fc_character_name, fleet_importance, ship_type_id]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        fleet_id: { type: string, x-go-name: FleetID }
+        character_id: { type: integer, format: int64, x-go-name: CharacterID }
+        user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: UserID }
+        pap_count: { type: number, format: double }
+        issued_by: { type: integer, minimum: 0, x-go-type: uint }
+        issued_at: { type: string, format: date-time }
+        character_name: { type: string }
+        fleet_title: { type: string }
+        fleet_start_at: { type: string }
+        fc_character_name: { type: string, x-go-name: FCCharacterName }
+        fleet_importance: { type: string }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID, nullable: true }
+    FleetInvite:
+      type: object
+      required: [id, fleet_id, code, active, created_at, expires_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        fleet_id: { type: string, x-go-name: FleetID }
+        code: { type: string }
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    FleetCharacterInfo:
+      type: object
+      required: [fleet_id, fleet_boss_id, role, squad_id, wing_id]
+      properties:
+        fleet_id: { type: integer, format: int64, x-go-name: FleetID }
+        fleet_boss_id: { type: integer, format: int64, x-go-name: FleetBossID }
+        role: { type: string }
+        squad_id: { type: integer, format: int64, x-go-name: SquadID }
+        wing_id: { type: integer, format: int64, x-go-name: WingID }
+    FleetCorporationPapItem:
+      type: object
+      required: [user_id, nickname, corp_ticker, main_character_name, character_count, strat_op_paps, skirmish_paps, alliance_strat_paps]
+      properties:
+        user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: UserID }
+        nickname: { type: string }
+        corp_ticker: { type: string }
+        main_character_name: { type: string }
+        character_count: { type: integer }
+        strat_op_paps: { type: number, format: double }
+        skirmish_paps: { type: number, format: double }
+        alliance_strat_paps: { type: number, format: double }
+    FleetCorporationPapOverview:
+      type: object
+      required: [filtered_pap_total, filtered_strat_op_total, all_pap_total, filtered_user_count, period]
+      properties:
+        filtered_pap_total: { type: number, format: double }
+        filtered_strat_op_total: { type: number, format: double }
+        all_pap_total: { type: number, format: double }
+        filtered_user_count: { type: integer, format: int64 }
+        period: { type: string, enum: [current_month, last_month, at_year, all] }
+        year: { type: integer }
+    FleetCorporationPapPage:
+      type: object
+      required: [list, total, page, pageSize, overview]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/FleetCorporationPapItem' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+        overview: { $ref: '#/components/schemas/FleetCorporationPapOverview' }
+    FleetPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetListItem' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    FleetMemberWithPapPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetMemberWithPap' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    FleetAlliancePAPRecord:
+      type: object
+      required: [id, main_character, character_id, character_name, fleet_id, year, month, start_at, title, level, pap, ship_group_id, ship_group_name, ship_type_id, ship_type_name, is_archived, created_at, updated_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        main_character: { type: string }
+        character_id: { type: string, x-go-name: CharacterID }
+        character_name: { type: string }
+        fleet_id: { type: string, x-go-name: FleetID }
+        year: { type: integer }
+        month: { type: integer }
+        start_at: { type: string, format: date-time }
+        end_at: { type: string, format: date-time }
+        title: { type: string }
+        level: { type: string }
+        pap: { type: number, format: double }
+        ship_group_id: { type: string, x-go-name: ShipGroupID }
+        ship_group_name: { type: string }
+        ship_type_id: { type: string, x-go-name: ShipTypeID }
+        ship_type_name: { type: string }
+        is_archived: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    FleetAlliancePAPSummary:
+      type: object
+      nullable: true
+      required: [id, main_character, year, month, corporation_id, total_pap, yearly_total_pap, monthly_rank, yearly_rank, global_monthly_rank, global_yearly_rank, total_in_corp, total_global, calculated_at, is_archived, is_redeemed, wallet_issued, created_at, updated_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        main_character: { type: string }
+        year: { type: integer }
+        month: { type: integer }
+        corporation_id: { type: string, x-go-name: CorporationID }
+        total_pap: { type: number, format: double }
+        yearly_total_pap: { type: number, format: double }
+        monthly_rank: { type: integer }
+        yearly_rank: { type: integer }
+        global_monthly_rank: { type: integer }
+        global_yearly_rank: { type: integer }
+        total_in_corp: { type: integer }
+        total_global: { type: integer }
+        calculated_at: { type: string, format: date-time }
+        is_archived: { type: boolean }
+        is_redeemed: { type: boolean }
+        wallet_issued: { type: number, format: double }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    FleetAlliancePAPData:
+      type: object
+      required: [summary, fleets]
+      properties:
+        summary: { $ref: '#/components/schemas/FleetAlliancePAPSummary' }
+        fleets: { type: array, nullable: true, items: { $ref: '#/components/schemas/FleetAlliancePAPRecord' } }

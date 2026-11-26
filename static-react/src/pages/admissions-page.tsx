@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { getAdmissionEvidence, saveAdmission } from '@/api/admissions'
 import {
   getAdmission,
-  getAdmissionEvidence,
-  listAdmissions,
-  processAdmission,
-  saveAdmission,
-} from '@/api/admissions'
+  inviteAdmission,
+  listAdmissionReviews,
+  listMyAdmissions,
+  rejectAdmission,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAdmissionContext } from '@/hooks/use-admission-context'
@@ -21,10 +23,10 @@ import type {
   AdmissionContext,
   AdmissionDetail,
   AdmissionKind,
-  AdmissionList,
+  AdmissionPage as AdmissionList,
   AdmissionStatus,
-  EvidenceKind,
-} from '@/types/api/admissions'
+  AdmissionEvidenceKind as EvidenceKind,
+} from '@/api/generated/client'
 
 const evidenceKinds: EvidenceKind[] = ['launcher', 'seat_profile']
 const statusBadgeClass: Record<AdmissionStatus, string> = {
@@ -266,7 +268,9 @@ function AdmissionForm({
                   height={28}
                   loading="lazy"
                 />
-                <span className="truncate text-[13px] font-medium leading-5">{char.character_name}</span>
+                <span className="truncate text-[13px] font-medium leading-5">
+                  {char.character_name}
+                </span>
               </label>
             )
           })}
@@ -408,26 +412,29 @@ export function AdmissionsPage() {
       errorAfterReload.current = ''
       setDetail(null)
       setList(null)
-      const request = id
-        ? getAdmission(Number(id)).then((value) => {
-            if (!cancelled) setDetail(value)
-          })
-        : listAdmissions(
-            mode === 'review',
-            page,
-            mode === 'review' ? status : '',
-            target,
-            kind
-          ).then((value) => {
-            if (!cancelled) setList(value)
-          })
-      await request
-        .catch((error) => {
-          if (!cancelled) setError(errorKey(error))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
+      try {
+        if (id) {
+          const value = await unwrapContract(getAdmission(Number(id)), 'admissions.errors.internal')
+          if (!cancelled) setDetail(value)
+        } else {
+          const params = {
+            current: page,
+            size: 20,
+            status: mode === 'review' ? status : '',
+            kind,
+            ...(target ? { target_corporation_id: target } : {}),
+          }
+          const value = await unwrapContract(
+            mode === 'review' ? listAdmissionReviews(params) : listMyAdmissions(params),
+            'admissions.errors.internal'
+          )
+          if (!cancelled) setList(value)
+        }
+      } catch (error) {
+        if (!cancelled) setError(errorKey(error))
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
     void load()
     return () => {
@@ -486,7 +493,13 @@ export function AdmissionsPage() {
         )
       )
         return
-      await processAdmission(application.id, application.version, action, detail ? reason : '')
+      const input = { expected_version: application.version, reason: detail ? reason : '' }
+      await unwrapContract(
+        action === 'invited'
+          ? inviteAdmission(application.id, input)
+          : rejectAdmission(application.id, input),
+        'admissions.errors.internal'
+      )
       refreshBadges()
       setRevision((value) => value + 1)
     } catch (error) {

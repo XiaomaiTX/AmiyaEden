@@ -1,4 +1,4 @@
-import type { AdmissionContext, AdmissionKind } from '@/types/api/admissions'
+import type { AdmissionContext, AdmissionKind } from '@/api/generated/client'
 
 export function canAccessAdmission(
   context: AdmissionContext | null,

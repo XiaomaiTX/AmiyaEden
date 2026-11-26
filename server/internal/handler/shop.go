@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-
+	"context"
 	"github.com/gin-gonic/gin"
+	"io"
 )
 
 // ShopHandler 商店 HTTP 处理器
@@ -22,19 +24,8 @@ func NewShopHandler() *ShopHandler {
 //  用户端（全部 POST）
 // ─────────────────────────────────────────────
 
-// shopListRequest 通用分页请求
-type shopListRequest struct {
-	Current int    `json:"current"`
-	Size    int    `json:"size"`
-	Type    string `json:"type"`
-	Status  string `json:"status"`
-}
-
-// ListProducts POST /shop/products
-// 获取上架商品列表
-func (h *ShopHandler) ListProducts(c *gin.Context) {
-	var req shopListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *ShopHandler) listShopProducts(req apicontract.ListShopProductsJSONRequestBody, badBody bool) (apicontract.ShopProductPage, error) {
+	if badBody {
 		req.Current = 1
 		req.Size = 20
 	}
@@ -42,98 +33,49 @@ func (h *ShopHandler) ListProducts(c *gin.Context) {
 
 	list, total, err := h.svc.ListOnSaleProducts(req.Current, req.Size, req.Type)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopProductPage{}, err
 	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
+	listDTO := mapContractRows(list, shopProductDTO)
+	return apicontract.ShopProductPage{List: &listDTO, Total: total, Page: req.Current, PageSize: req.Size}, nil
 }
 
-// productDetailRequest 商品详情请求
-type productDetailRequest struct {
-	ProductID uint `json:"product_id" binding:"required"`
-}
-
-// GetProductDetail POST /shop/product/detail
-// 获取商品详情
-func (h *ShopHandler) GetProductDetail(c *gin.Context) {
-	var req productDetailRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
+func (h *ShopHandler) getShopProductDetail(req apicontract.GetShopProductDetailJSONRequestBody) (apicontract.ShopProduct, error) {
 	product, err := h.svc.GetProductDetail(req.ProductID)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopProduct{}, err
 	}
-	response.OK(c, product)
+	return shopProductDTO(*product), nil
 }
 
-// BuyProduct POST /shop/buy
-// 购买商品
-func (h *ShopHandler) BuyProduct(c *gin.Context) {
-	var req service.BuyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	userID := middleware.GetUserID(c)
-	order, err := h.svc.BuyProduct(userID, &req)
+func (h *ShopHandler) buyShopProduct(req apicontract.BuyShopProductJSONRequestBody, userID uint) (apicontract.ShopOrder, error) {
+	order, err := h.svc.BuyProduct(userID, &service.BuyRequest{
+		ProductID: req.ProductID, Quantity: req.Quantity, Remark: req.Remark,
+	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopOrder{}, err
 	}
-	response.OK(c, order)
+	return shopOrderDTO(*order), nil
 }
 
-// GetMyOrders POST /shop/orders
-// 获取我的订单
-func (h *ShopHandler) GetMyOrders(c *gin.Context) {
-	var req shopListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *ShopHandler) listMyShopOrders(req apicontract.ListMyShopOrdersJSONRequestBody, badBody bool, userID uint) (apicontract.ShopOrderPage, error) {
+	if badBody {
 		req.Current = 1
 		req.Size = 20
 	}
 	req.Current, req.Size = normalizePagination(req.Current, req.Size, 20, 100)
 
-	userID := middleware.GetUserID(c)
 	list, total, err := h.svc.GetMyOrders(userID, req.Current, req.Size, req.Status)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopOrderPage{}, err
 	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
+	return apicontract.ShopOrderPage{List: mapContractRows(list, shopOrderListItemDTO), Total: total, Page: req.Current, PageSize: req.Size}, nil
 }
 
 // ─────────────────────────────────────────────
 //  管理员端（全部 POST）
 // ─────────────────────────────────────────────
 
-// adminProductCreateRequest 创建商品请求
-type adminProductCreateRequest struct {
-	Name        string  `json:"name" binding:"required"`
-	Description string  `json:"description"`
-	Image       string  `json:"image"`
-	Price       float64 `json:"price" binding:"required,gt=0"`
-	Stock       int     `json:"stock"`        // -1=无限，>=0 有限
-	MaxPerUser  int     `json:"max_per_user"` // 0=不限购
-	LimitPeriod string  `json:"limit_period"` // forever / daily / weekly / monthly
-	Type        string  `json:"type" binding:"required,oneof=normal"`
-	Status      int8    `json:"status"`
-	SortOrder   int     `json:"sort_order"`
-}
-
-// AdminCreateProduct POST /system/shop/product/add
-// 管理员创建商品
-func (h *ShopHandler) AdminCreateProduct(c *gin.Context) {
-	var req adminProductCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
+func (h *ShopHandler) adminCreateShopProduct(req apicontract.AdminCreateShopProductJSONRequestBody) (apicontract.ShopProduct, error) {
 	product := &model.ShopProduct{
 		Name:        req.Name,
 		Description: req.Description,
@@ -148,70 +90,36 @@ func (h *ShopHandler) AdminCreateProduct(c *gin.Context) {
 	}
 
 	if err := h.svc.AdminCreateProduct(product); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopProduct{}, err
 	}
-	response.OK(c, product)
+	return shopProductDTO(*product), nil
 }
 
-// adminProductUpdateRequest 更新商品请求
-type adminProductUpdateRequest struct {
-	ID uint `json:"id" binding:"required"`
-	service.AdminProductUpdateRequest
-}
-
-// AdminUpdateProduct POST /system/shop/product/edit
-// 管理员更新商品
-func (h *ShopHandler) AdminUpdateProduct(c *gin.Context) {
-	var req adminProductUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	product, err := h.svc.AdminUpdateProduct(req.ID, &req.AdminProductUpdateRequest)
+func (h *ShopHandler) adminUpdateShopProduct(req apicontract.AdminUpdateShopProductJSONRequestBody) (apicontract.ShopProduct, error) {
+	product, err := h.svc.AdminUpdateProduct(req.ID, &service.AdminProductUpdateRequest{
+		Name:        req.Name,
+		Description: req.Description,
+		Image:       req.Image,
+		Price:       req.Price,
+		Stock:       req.Stock,
+		MaxPerUser:  req.MaxPerUser,
+		LimitPeriod: req.LimitPeriod,
+		Type:        req.Type,
+		Status:      req.Status,
+		SortOrder:   req.SortOrder,
+	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopProduct{}, err
 	}
-	response.OK(c, product)
+	return shopProductDTO(*product), nil
 }
 
-// adminProductDeleteRequest 删除商品请求
-type adminProductDeleteRequest struct {
-	ID uint `json:"id" binding:"required"`
+func (h *ShopHandler) adminDeleteShopProduct(req apicontract.AdminDeleteShopProductJSONRequestBody) error {
+	return h.svc.AdminDeleteProduct(req.ID)
 }
 
-// AdminDeleteProduct POST /system/shop/product/delete
-// 管理员删除商品
-func (h *ShopHandler) AdminDeleteProduct(c *gin.Context) {
-	var req adminProductDeleteRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	if err := h.svc.AdminDeleteProduct(req.ID); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
-}
-
-// adminProductListRequest 管理员商品列表请求
-type adminProductListRequest struct {
-	Current int    `json:"current"`
-	Size    int    `json:"size"`
-	Status  *int8  `json:"status"`
-	Type    string `json:"type"`
-	Name    string `json:"name"`
-}
-
-// AdminListProducts POST /system/shop/product/list
-// 管理员查询商品列表
-func (h *ShopHandler) AdminListProducts(c *gin.Context) {
-	var req adminProductListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *ShopHandler) adminListShopProducts(req apicontract.AdminListShopProductsJSONRequestBody, badBody bool) (apicontract.ShopProductPage, error) {
+	if badBody {
 		req.Current = 1
 		req.Size = 20
 	}
@@ -225,26 +133,14 @@ func (h *ShopHandler) AdminListProducts(c *gin.Context) {
 
 	list, total, err := h.svc.AdminListProducts(req.Current, req.Size, filter)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopProductPage{}, err
 	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
+	listDTO := mapContractRows(list, shopProductDTO)
+	return apicontract.ShopProductPage{List: &listDTO, Total: total, Page: req.Current, PageSize: req.Size}, nil
 }
 
-// adminOrderListRequest 管理员订单列表请求
-type adminOrderListRequest struct {
-	Current  int      `json:"current"`
-	Size     int      `json:"size"`
-	Keyword  string   `json:"keyword"`  // 商品名、主人物名或昵称
-	Statuses []string `json:"statuses"` // 多状态筛选（为空则用 status）
-	Status   string   `json:"status"`
-}
-
-// AdminListOrders POST /system/shop/order/list
-// 管理员查询订单列表
-func (h *ShopHandler) AdminListOrders(c *gin.Context) {
-	var req adminOrderListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *ShopHandler) adminListShopOrders(req apicontract.AdminListShopOrdersJSONRequestBody, badBody bool) (apicontract.ShopOrderPage, error) {
+	if badBody {
 		req.Current = 1
 		req.Size = 20
 	}
@@ -258,54 +154,240 @@ func (h *ShopHandler) AdminListOrders(c *gin.Context) {
 
 	list, total, err := h.svc.AdminListOrders(req.Current, req.Size, filter)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopOrderPage{}, err
 	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
+	return apicontract.ShopOrderPage{List: mapContractRows(list, shopOrderListItemDTO), Total: total, Page: req.Current, PageSize: req.Size}, nil
 }
 
-// adminOrderReviewRequest 发放/拒绝订单请求
-type adminOrderReviewRequest struct {
-	OrderID uint   `json:"order_id" binding:"required"`
-	Remark  string `json:"remark"`
-}
-
-// AdminDeliverOrder POST /system/shop/order/deliver
-// 管理员发放订单
-func (h *ShopHandler) AdminDeliverOrder(c *gin.Context) {
-	var req adminOrderReviewRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	operatorID := middleware.GetUserID(c)
-	operatorRoles := middleware.GetUserRoles(c)
+func (h *ShopHandler) adminDeliverShopOrder(req apicontract.AdminDeliverShopOrderJSONRequestBody, operatorID uint, operatorRoles []string) (apicontract.ShopOrderActionResultData, error) {
 	order, mailSummary, err := h.svc.AdminDeliverOrder(req.OrderID, operatorID, operatorRoles, req.Remark)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopOrderActionResultData{}, err
 	}
-	response.OK(c, service.ShopOrderActionResult{
-		ShopOrder:          *order,
-		MailAttemptSummary: mailSummary,
-	})
+	return shopOrderActionDTO(*order, mailSummary), nil
 }
 
-// AdminRejectOrder POST /system/shop/order/reject
-// 管理员拒绝订单（退款）
-func (h *ShopHandler) AdminRejectOrder(c *gin.Context) {
-	var req adminOrderReviewRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	operatorID := middleware.GetUserID(c)
+func (h *ShopHandler) adminRejectShopOrder(req apicontract.AdminRejectShopOrderJSONRequestBody, operatorID uint) (apicontract.ShopOrder, error) {
 	order, err := h.svc.AdminRejectOrder(req.OrderID, operatorID, req.Remark)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.ShopOrder{}, err
 	}
-	response.OK(c, order)
+	return shopOrderDTO(*order), nil
+}
+
+func shopProductDTO(product model.ShopProduct) apicontract.ShopProduct {
+	return apicontract.ShopProduct{
+		ID: product.ID, CreatedAt: product.CreatedAt, UpdatedAt: product.UpdatedAt,
+		Name: product.Name, Description: product.Description, Image: product.Image,
+		Price: product.Price, Stock: product.Stock, MaxPerUser: product.MaxPerUser,
+		LimitPeriod: product.LimitPeriod, Type: product.Type, Status: product.Status, SortOrder: product.SortOrder,
+	}
+}
+
+func shopOrderDTO(order model.ShopOrder) apicontract.ShopOrder {
+	return apicontract.ShopOrder{
+		ID: order.ID, CreatedAt: order.CreatedAt, UpdatedAt: order.UpdatedAt,
+		OrderNo: order.OrderNo, UserID: order.UserID, MainCharacterName: order.MainCharacterName,
+		Nickname: order.Nickname, QQ: order.QQ, DiscordID: order.DiscordID,
+		ProductID: order.ProductID, ProductName: order.ProductName, ProductType: order.ProductType,
+		Quantity: order.Quantity, UnitPrice: order.UnitPrice, TotalPrice: order.TotalPrice,
+		Status: order.Status, TransactionID: order.TransactionID, Remark: order.Remark,
+		ReviewedBy: order.ReviewedBy, ReviewedAt: order.ReviewedAt, ReviewRemark: order.ReviewRemark,
+	}
+}
+
+func shopOrderListItemDTO(order service.ShopOrderResponse) apicontract.ShopOrder {
+	item := shopOrderDTO(order.ShopOrder)
+	if order.ReviewerName != "" {
+		item.ReviewerName = &order.ReviewerName
+	}
+	return item
+}
+
+func shopOrderActionDTO(order model.ShopOrder, mail service.MailAttemptSummary) apicontract.ShopOrderActionResultData {
+	return apicontract.ShopOrderActionResultData{
+		ID: order.ID, CreatedAt: order.CreatedAt, UpdatedAt: order.UpdatedAt,
+		OrderNo: order.OrderNo, UserID: order.UserID, MainCharacterName: order.MainCharacterName,
+		Nickname: order.Nickname, QQ: order.QQ, DiscordID: order.DiscordID,
+		ProductID: order.ProductID, ProductName: order.ProductName, ProductType: order.ProductType,
+		Quantity: order.Quantity, UnitPrice: order.UnitPrice, TotalPrice: order.TotalPrice,
+		Status: order.Status, TransactionID: order.TransactionID, Remark: order.Remark,
+		ReviewedBy: order.ReviewedBy, ReviewedAt: order.ReviewedAt, ReviewRemark: order.ReviewRemark,
+		MailError:                  optionalContractValue(mail.MailError),
+		MailID:                     optionalContractValue(mail.MailID),
+		MailSenderCharacterID:      optionalContractValue(mail.MailSenderCharacterID),
+		MailSenderCharacterName:    optionalContractValue(mail.MailSenderCharacterName),
+		MailRecipientCharacterID:   optionalContractValue(mail.MailRecipientCharacterID),
+		MailRecipientCharacterName: optionalContractValue(mail.MailRecipientCharacterName),
+	}
+}
+
+func optionalContractValue[T comparable](value T) *T {
+	var zero T
+	if value == zero {
+		return nil
+	}
+	return &value
+}
+
+// Preserve both nil and empty slices because they have different JSON representations.
+func mapContractRows[T, U any](rows []T, dto func(T) U) []U {
+	if rows == nil {
+		return nil
+	}
+	result := make([]U, len(rows))
+	for i, row := range rows {
+		result[i] = dto(row)
+	}
+	return result
+}
+
+// The strict Gin adapter passes the same context used by the authorization middleware.
+func commerceIdentity(ctx context.Context) (uint, []string) {
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return 0, nil
+	}
+	return middleware.GetUserID(c), middleware.GetUserRoles(c)
+}
+
+// Optional lists can retain filters decoded before a JSON type error. Distinguish
+// a missing or malformed body from a valid JSON null (decoded as a zero value).
+func commerceOptionalBody[T any](ctx context.Context, body *T) (T, bool) {
+	if body == nil {
+		var zero T
+		return zero, true
+	}
+	return *body, apicontract.StrictGinJSONDecodeError(ctx) != nil
+}
+
+func commerceMissingBody() apicontract.BusinessError {
+	return contractBusinessError(response.CodeParamError, "请求参数错误: "+io.EOF.Error())
+}
+
+func (h *ShopHandler) ListShopProducts(ctx context.Context, request apicontract.ListShopProductsRequestObject) (apicontract.ListShopProductsResponseObject, error) {
+	out := &apicontract.ListShopProducts200JSONResponse{}
+	body, badBody := commerceOptionalBody(ctx, request.Body)
+	data, err := h.listShopProducts(body, badBody)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopProductPageSuccess(apicontract.ShopProductPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) GetShopProductDetail(_ context.Context, request apicontract.GetShopProductDetailRequestObject) (apicontract.GetShopProductDetailResponseObject, error) {
+	out := &apicontract.GetShopProductDetail200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	data, err := h.getShopProductDetail(*request.Body)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopProductSuccess(apicontract.ShopProductSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) BuyShopProduct(ctx context.Context, request apicontract.BuyShopProductRequestObject) (apicontract.BuyShopProductResponseObject, error) {
+	out := &apicontract.BuyShopProduct200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	userID, _ := commerceIdentity(ctx)
+	data, err := h.buyShopProduct(*request.Body, userID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopOrderSuccess(apicontract.ShopOrderSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) ListMyShopOrders(ctx context.Context, request apicontract.ListMyShopOrdersRequestObject) (apicontract.ListMyShopOrdersResponseObject, error) {
+	out := &apicontract.ListMyShopOrders200JSONResponse{}
+	body, badBody := commerceOptionalBody(ctx, request.Body)
+	userID, _ := commerceIdentity(ctx)
+	data, err := h.listMyShopOrders(body, badBody, userID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopOrderPageSuccess(apicontract.ShopOrderPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) AdminCreateShopProduct(_ context.Context, request apicontract.AdminCreateShopProductRequestObject) (apicontract.AdminCreateShopProductResponseObject, error) {
+	out := &apicontract.AdminCreateShopProduct200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	data, err := h.adminCreateShopProduct(*request.Body)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopProductSuccess(apicontract.ShopProductSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) AdminUpdateShopProduct(_ context.Context, request apicontract.AdminUpdateShopProductRequestObject) (apicontract.AdminUpdateShopProductResponseObject, error) {
+	out := &apicontract.AdminUpdateShopProduct200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	data, err := h.adminUpdateShopProduct(*request.Body)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopProductSuccess(apicontract.ShopProductSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) AdminDeleteShopProduct(_ context.Context, request apicontract.AdminDeleteShopProductRequestObject) (apicontract.AdminDeleteShopProductResponseObject, error) {
+	out := &apicontract.AdminDeleteShopProduct200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	if err := h.adminDeleteShopProduct(*request.Body); err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *ShopHandler) AdminListShopProducts(ctx context.Context, request apicontract.AdminListShopProductsRequestObject) (apicontract.AdminListShopProductsResponseObject, error) {
+	out := &apicontract.AdminListShopProducts200JSONResponse{}
+	body, badBody := commerceOptionalBody(ctx, request.Body)
+	data, err := h.adminListShopProducts(body, badBody)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopProductPageSuccess(apicontract.ShopProductPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) AdminListShopOrders(ctx context.Context, request apicontract.AdminListShopOrdersRequestObject) (apicontract.AdminListShopOrdersResponseObject, error) {
+	out := &apicontract.AdminListShopOrders200JSONResponse{}
+	body, badBody := commerceOptionalBody(ctx, request.Body)
+	data, err := h.adminListShopOrders(body, badBody)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopOrderPageSuccess(apicontract.ShopOrderPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) AdminDeliverShopOrder(ctx context.Context, request apicontract.AdminDeliverShopOrderRequestObject) (apicontract.AdminDeliverShopOrderResponseObject, error) {
+	out := &apicontract.AdminDeliverShopOrder200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	operatorID, operatorRoles := commerceIdentity(ctx)
+	data, err := h.adminDeliverShopOrder(*request.Body, operatorID, operatorRoles)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopOrderActionSuccess(apicontract.ShopOrderActionSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *ShopHandler) AdminRejectShopOrder(ctx context.Context, request apicontract.AdminRejectShopOrderRequestObject) (apicontract.AdminRejectShopOrderResponseObject, error) {
+	out := &apicontract.AdminRejectShopOrder200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	operatorID, _ := commerceIdentity(ctx)
+	data, err := h.adminRejectShopOrder(*request.Body, operatorID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromShopOrderSuccess(apicontract.ShopOrderSuccess{Code: response.CodeOK, Msg: "success", Data: data})
 }

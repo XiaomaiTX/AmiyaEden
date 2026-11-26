@@ -2,7 +2,7 @@
 status: active
 doc_type: standard
 owner: engineering
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-26
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/standards/dependency-layering.md
@@ -20,7 +20,7 @@ source_of_truth:
 
 - [ ] 改动聚焦于任务；替换契约或路由时，遵循[有意替换规则](../ai/repo-rules.md#non-negotiable-rules)处理旧入口。
 - [ ] 按[测试与验证规范](testing-and-verification.md#最低验证要求)完成适用的验证和回归覆盖，照其[完成核对](testing-and-verification.md#完成核对)记录未执行的必要检查。
-- [ ] 行为变化时更新相关 feature 文档；新增或修改路由、路由面或权限边界时更新[路由索引](../api/route-index.md)。
+- [ ] 行为变化时更新相关 feature 文档；接口路径与权限由契约承载，[路由索引](../api/route-index.md)只在业务域映射变化时同步。
 - [ ] 难以从代码看出的持久后端或架构决策按[文档治理规范](documentation-governance.md#技术设计决策)记录在最近的权威文档中。
 
 ## 按变更类型核对
@@ -36,6 +36,7 @@ source_of_truth:
 
 ### 跨契约变更
 
+- [ ] `/api/v1` HTTP 契约变更已按 [OpenAPI 契约流程](../api/conventions.md#契约同步顺序)更新契约与生成物。
 - [ ] 后端与前端 wrapper、类型和 UI 用法已同步；后端响应字段与前端类型一致。
 
 ### 权限或角色变更

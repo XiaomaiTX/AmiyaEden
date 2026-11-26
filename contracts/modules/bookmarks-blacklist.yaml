@@ -1,0 +1,262 @@
+paths:
+  /info/tool-bookmarks:
+    get:
+      operationId: listVisible
+      x-gin-access: ["jwt", "login", "cap:menu.info"]
+      responses:
+        '200':
+          description: Enabled tool bookmarks or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ToolBookmarkListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/tool-bookmarks:
+    get:
+      operationId: listToolBookmarks
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: All tool bookmarks, including disabled bookmarks, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ToolBookmarkListSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: adminCreate
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ToolBookmarkCreateInput' }
+      responses:
+        '200':
+          description: Created tool bookmark or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ToolBookmarkSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/tool-bookmarks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    put:
+      operationId: updateToolBookmark
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ToolBookmarkUpdateInput' }
+      responses:
+        '200':
+          description: Updated tool bookmark or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ToolBookmarkSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteToolBookmark
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: Tool bookmark deleted or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/blacklist:
+    get:
+      operationId: listBlacklist
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      parameters:
+        - name: current
+          in: query
+          description: Page number. Values below 1 select the first page.
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          description: Page size. Values below 1 select the default size; values above 100 are capped at 100.
+          schema: { type: integer, default: 20 }
+        - name: kind
+          in: query
+          description: Entry kind. Omit to include all kinds.
+          schema: { $ref: '#/components/schemas/BlacklistKind' }
+        - name: keyword
+          in: query
+          description: A numeric keyword matches a character ID or QQ number exactly; other terms search character and Discord names.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Blacklist page or business error (including invalid query parameters).
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BlacklistPageSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/blacklist/refresh:
+    get:
+      operationId: latestRefresh
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: Latest successful refresh summary, null if never refreshed, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BlacklistRefreshSuccess'
+                  - $ref: '#/components/schemas/NullSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: refresh
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200':
+          description: Synchronous refresh summary or business error. Only one refresh can run at a time.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BlacklistRefreshSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    ToolBookmark:
+      type: object
+      required: [id, created_at, updated_at, group_name, name, url, description, logo_url, logo_source, is_enabled, sort_order, created_by]
+      properties:
+        id: { type: integer, x-go-type: uint }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        group_name: { type: string }
+        name: { type: string }
+        url: { type: string }
+        description: { type: string }
+        logo_url: { type: string }
+        logo_source: { type: string }
+        is_enabled: { type: boolean }
+        sort_order: { type: integer }
+        created_by: { type: integer, x-go-type: uint }
+    ToolBookmarkCreateInput:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          x-oapi-codegen-extra-tags: { binding: required }
+        url:
+          type: string
+          minLength: 1
+          x-go-name: URL
+          x-oapi-codegen-extra-tags: { binding: required }
+        group_name: { type: string, nullable: true }
+        description: { type: string, x-go-type-skip-optional-pointer: true }
+        is_enabled: { type: boolean, nullable: true }
+        sort_order: { type: integer, nullable: true }
+    ToolBookmarkUpdateInput:
+      type: object
+      properties:
+        name: { type: string, x-go-type-skip-optional-pointer: true }
+        url: { type: string, x-go-name: URL, x-go-type-skip-optional-pointer: true }
+        group_name: { type: string, nullable: true }
+        description: { type: string, x-go-type-skip-optional-pointer: true }
+        is_enabled: { type: boolean, nullable: true }
+        sort_order: { type: integer, nullable: true }
+    ToolBookmarkListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/ToolBookmark' } }
+    ToolBookmarkSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/ToolBookmark' }
+    BlacklistKind:
+      type: string
+      enum: [character, qq, discord]
+    BlacklistEntry:
+      type: object
+      required: [kind, value, display, reason, updated_at]
+      properties:
+        kind: { $ref: '#/components/schemas/BlacklistKind' }
+        value:
+          description: Normalized match key (character ID, QQ number, or lowercased Discord name).
+          type: string
+        display: { type: string }
+        reason: { type: string }
+        updated_at: { type: string, format: date-time }
+    BlacklistPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/BlacklistEntry' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    BlacklistPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/BlacklistPage' }
+    BlacklistRefreshSummary:
+      type: object
+      required: [finished_at, operator_user_id, operator_name, characters, qqs, discords, added, updated, removed, new_unresolved, skipped_unresolved, lookup_failed, next_refresh_at]
+      properties:
+        finished_at: { type: string, format: date-time }
+        operator_user_id: { type: integer, x-go-type: uint }
+        operator_name: { type: string }
+        characters: { type: integer }
+        qqs: { type: integer }
+        discords: { type: integer }
+        added: { type: integer }
+        updated: { type: integer }
+        removed: { type: integer }
+        new_unresolved: { type: integer }
+        skipped_unresolved: { type: integer }
+        lookup_failed: { type: integer }
+        next_refresh_at: { type: string, format: date-time, nullable: true }
+    BlacklistRefreshSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/BlacklistRefreshSummary' }

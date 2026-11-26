@@ -52,15 +52,17 @@ type AnnouncementInput struct {
 	Revision uint   `json:"revision"`
 }
 
-func (s *AnnouncementService) List(user uint, roles []string, page int) (interface{}, error) {
+type AnnouncementList struct {
+	List  []repository.AnnouncementRow `json:"list"`
+	Total int64                        `json:"total"`
+}
+
+func (s *AnnouncementService) List(user uint, roles []string, page int) (AnnouncementList, error) {
 	rows, total, err := s.repo.List(user, CanManageAnnouncements(roles), page)
 	if rows == nil {
 		rows = []repository.AnnouncementRow{}
 	}
-	return struct {
-		List  []repository.AnnouncementRow `json:"list"`
-		Total int64                        `json:"total"`
-	}{rows, total}, err
+	return AnnouncementList{List: rows, Total: total}, err
 }
 
 type AnnouncementDetail struct {

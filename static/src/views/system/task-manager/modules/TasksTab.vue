@@ -59,8 +59,14 @@
 </template>
 
 <script setup lang="ts">
+  import type { ManagedTaskDefinition } from '@/api/generated/client'
   import { useUserStore } from '@/store/modules/user'
-  import { fetchTasks, runTask, updateTaskSchedule } from '@/api/task-manager'
+  import {
+    getManagedTasks,
+    runManagedTask,
+    updateManagedTaskSchedule
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import EsiControls from './EsiControls.vue'
   import { resolveTaskLoadErrorMessage } from './task-load-error'
@@ -96,7 +102,7 @@
   // only enforces `system.task.read`, so the button must gate separately.
   const canRun = computed(() => hasCapability('system.task.run'))
 
-  const tasks = ref<Api.TaskManager.TaskItem[]>([])
+  const tasks = ref<ManagedTaskDefinition[]>([])
   const loading = ref(false)
   const scheduleDialogVisible = ref(false)
   const scheduleSaving = ref(false)
@@ -123,13 +129,13 @@
     return roles.includes('super_admin')
   })
 
-  const taskDisplayName = (task: Pick<Api.TaskManager.TaskItem, 'name'>) =>
+  const taskDisplayName = (task: Pick<ManagedTaskDefinition, 'name'>) =>
     getTaskDisplayName(t, task.name, task.name)
 
-  const taskDisplayDescription = (task: Pick<Api.TaskManager.TaskItem, 'name' | 'description'>) =>
+  const taskDisplayDescription = (task: Pick<ManagedTaskDefinition, 'name' | 'description'>) =>
     getTaskDisplayDescription(t, task.name, task.description || task.name)
 
-  const categoryTagType = (category: Api.TaskManager.TaskItem['category']) => {
+  const categoryTagType = (category: ManagedTaskDefinition['category']) => {
     const map = {
       esi: 'primary',
       operation: 'warning',
@@ -139,7 +145,7 @@
     return map[category]
   }
 
-  const typeTagType = (type: Api.TaskManager.TaskItem['type']) => {
+  const typeTagType = (type: ManagedTaskDefinition['type']) => {
     const map = {
       recurring: 'success',
       triggered: 'info'
@@ -158,7 +164,7 @@
     return status ? map[status] : 'info'
   }
 
-  const scheduleText = (task: Api.TaskManager.TaskItem) => {
+  const scheduleText = (task: ManagedTaskDefinition) => {
     if (task.type === 'triggered') {
       return t('taskManager.messages.eventTriggered')
     }
@@ -166,9 +172,9 @@
     return task.cron_expr || task.default_cron || '-'
   }
 
-  const canRunTask = (task: Api.TaskManager.TaskItem) => task.runnable
+  const canRunTask = (task: ManagedTaskDefinition) => task.runnable
 
-  const openScheduleDialog = (task: Api.TaskManager.TaskItem) => {
+  const openScheduleDialog = (task: ManagedTaskDefinition) => {
     resetScheduleForm()
 
     const activeCronExpr = task.cron_expr || task.default_cron
@@ -188,7 +194,7 @@
     Object.assign(scheduleForm, createScheduleForm())
   }
 
-  const renderScheduleCell = (task: Api.TaskManager.TaskItem) => {
+  const renderScheduleCell = (task: ManagedTaskDefinition) => {
     const scheduleNode =
       task.type === 'triggered'
         ? h(ElTag, { type: 'info', size: 'small', effect: 'plain' }, () => scheduleText(task))
@@ -214,7 +220,7 @@
     return h('div', { class: 'flex items-center gap-2 flex-wrap' }, children)
   }
 
-  const renderLastStatus = (task: Api.TaskManager.TaskItem) => {
+  const renderLastStatus = (task: ManagedTaskDefinition) => {
     const status = task.last_execution?.status
     if (!status) {
       return h('span', { class: 'text-gray-400' }, '-')
@@ -225,7 +231,7 @@
     )
   }
 
-  const renderActions = (task: Api.TaskManager.TaskItem) => {
+  const renderActions = (task: ManagedTaskDefinition) => {
     if (!canRunTask(task)) {
       return h('span', { class: 'text-gray-400 text-xs' }, t('taskManager.messages.eventTriggered'))
     }
@@ -248,27 +254,27 @@
     )
   }
 
-  const { columns, columnChecks } = useTableColumns<Api.TaskManager.TaskItem>(() => [
+  const { columns, columnChecks } = useTableColumns<ManagedTaskDefinition>(() => [
     { type: 'index', width: 60, label: '#' },
     {
       prop: 'name',
       label: t('taskManager.columns.name'),
       minWidth: 180,
       showOverflowTooltip: true,
-      formatter: (row: Api.TaskManager.TaskItem) => taskDisplayName(row)
+      formatter: (row: ManagedTaskDefinition) => taskDisplayName(row)
     },
     {
       prop: 'description',
       label: t('taskManager.columns.description'),
       minWidth: 220,
       showOverflowTooltip: true,
-      formatter: (row: Api.TaskManager.TaskItem) => taskDisplayDescription(row)
+      formatter: (row: ManagedTaskDefinition) => taskDisplayDescription(row)
     },
     {
       prop: 'category',
       label: t('taskManager.columns.category'),
       width: 120,
-      formatter: (row: Api.TaskManager.TaskItem) =>
+      formatter: (row: ManagedTaskDefinition) =>
         h(ElTag, { type: categoryTagType(row.category), size: 'small', effect: 'plain' }, () =>
           t(`taskManager.category.${row.category}`)
         )
@@ -277,7 +283,7 @@
       prop: 'type',
       label: t('taskManager.columns.type'),
       width: 120,
-      formatter: (row: Api.TaskManager.TaskItem) =>
+      formatter: (row: ManagedTaskDefinition) =>
         h(ElTag, { type: typeTagType(row.type), size: 'small', effect: 'plain' }, () =>
           t(`taskManager.type.${row.type}`)
         )
@@ -292,7 +298,7 @@
       prop: 'last_execution.started_at',
       label: t('taskManager.columns.lastRun'),
       width: 190,
-      formatter: (row: Api.TaskManager.TaskItem) => formatTime(row.last_execution?.started_at)
+      formatter: (row: ManagedTaskDefinition) => formatTime(row.last_execution?.started_at)
     },
     {
       prop: 'last_execution.status',
@@ -312,7 +318,7 @@
   async function loadTasks() {
     loading.value = true
     try {
-      tasks.value = (await fetchTasks()) ?? []
+      tasks.value = (await unwrapContract(getManagedTasks())) ?? []
     } catch (error) {
       tasks.value = []
       ElMessage.error(resolveTaskLoadErrorMessage(error))
@@ -321,7 +327,7 @@
     }
   }
 
-  async function handleRunTask(task: Api.TaskManager.TaskItem) {
+  async function handleRunTask(task: ManagedTaskDefinition) {
     try {
       await ElMessageBox.confirm(
         t('taskManager.confirm.runTask', { name: taskDisplayName(task) }),
@@ -338,7 +344,7 @@
 
     runningTaskNames.value.add(task.name)
     try {
-      await runTask(task.name)
+      await unwrapContract(runManagedTask(task.name, { showErrorMessage: false }))
       ElMessage.success(t('taskManager.messages.taskTriggered', { name: taskDisplayName(task) }))
       window.setTimeout(() => {
         void loadTasks()
@@ -369,7 +375,13 @@
 
     scheduleSaving.value = true
     try {
-      await updateTaskSchedule(scheduleForm.name, { cron_expr: cronExpr })
+      await unwrapContract(
+        updateManagedTaskSchedule(
+          scheduleForm.name,
+          { cron_expr: cronExpr },
+          { showErrorMessage: false }
+        )
+      )
       ElMessage.success(t('taskManager.messages.scheduleUpdated'))
       scheduleDialogVisible.value = false
       await loadTasks()

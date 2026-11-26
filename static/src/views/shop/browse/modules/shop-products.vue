@@ -84,10 +84,12 @@
 </template>
 
 <script setup lang="ts">
+  import type { ShopProduct, ShopProductListInput } from '@/api/generated/client'
   import { Refresh, ShoppingBag } from '@element-plus/icons-vue'
   import { ElCard, ElButton, ElPagination, ElEmpty, ElTooltip } from 'element-plus'
   import { formatFuxiCoinAmount } from '@utils/common'
-  import { fetchProducts } from '@/api/shop'
+  import { listShopProducts } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
 
   defineOptions({ name: 'ShopProducts' })
@@ -95,7 +97,7 @@
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const props = defineProps<{ balance: number | null }>()
   const emit = defineEmits<{
-    (e: 'buy', product: Api.Shop.Product): void
+    (e: 'buy', product: ShopProduct): void
     (e: 'refreshed'): void
   }>()
 
@@ -110,7 +112,8 @@
   const { data, loading, pagination, handleSizeChange, handleCurrentChange, refreshData } =
     useTable({
       core: {
-        apiFn: fetchProducts,
+        apiFn: (params: ShopProductListInput) =>
+          unwrapContract(listShopProducts(params ?? { current: 1, size: 20 })),
         apiParams: { current: 1, size: 12 }
       }
     })

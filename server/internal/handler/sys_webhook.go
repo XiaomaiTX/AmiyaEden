@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"context"
+
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/middleware"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
@@ -17,48 +20,43 @@ func NewWebhookHandler() *WebhookHandler {
 	return &WebhookHandler{svc: service.NewWebhookService()}
 }
 
-// GetConfig GET /system/webhook/config
-func (h *WebhookHandler) GetConfig(c *gin.Context) {
+func (h *WebhookHandler) GetWebhookConfig(_ context.Context, _ apicontract.GetWebhookConfigRequestObject) (apicontract.GetWebhookConfigResponseObject, error) {
+	var out apicontract.GetWebhookConfig200JSONResponse
 	cfg, err := h.svc.GetConfig()
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
 	}
-	response.OK(c, cfg)
+	data := apicontract.WebhookConfig{
+		URL: cfg.URL, Enabled: cfg.Enabled, Type: cfg.Type, FleetTemplate: cfg.FleetTemplate,
+	}
+	return &out, out.FromWebhookConfigSuccess(apicontract.WebhookConfigSuccess{Code: response.CodeOK, Msg: "success", Data: data})
 }
 
-// SetConfig PUT /system/webhook/config
-func (h *WebhookHandler) SetConfig(c *gin.Context) {
-	var req service.WebhookConfig
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
+func (h *WebhookHandler) SetWebhookConfig(ctx context.Context, req apicontract.SetWebhookConfigRequestObject) (apicontract.SetWebhookConfigResponseObject, error) {
+	var out apicontract.SetWebhookConfig200JSONResponse
+	if req.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
 	}
-	if err := h.svc.SetConfigByOperator(&req, middleware.GetUserID(c)); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return apicontract.SetWebhookConfig401JSONResponse{UnauthorizedJSONResponse: apicontract.UnauthorizedJSONResponse{Code: response.CodeUnauthorized, Msg: "未登录"}}, nil
 	}
-	response.OK(c, nil)
+	cfg := service.WebhookConfig{
+		URL: req.Body.URL, Enabled: req.Body.Enabled, Type: req.Body.Type, FleetTemplate: req.Body.FleetTemplate,
+	}
+	if err := h.svc.SetConfigByOperator(&cfg, middleware.GetUserID(c)); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
 }
 
-// TestWebhook POST /system/webhook/test
-func (h *WebhookHandler) TestWebhook(c *gin.Context) {
-	var req struct {
-		URL     string `json:"url"`
-		Type    string `json:"type"`
-		Content string `json:"content"`
+func (h *WebhookHandler) TestWebhook(_ context.Context, req apicontract.TestWebhookRequestObject) (apicontract.TestWebhookResponseObject, error) {
+	var out apicontract.TestWebhook200JSONResponse
+	if req.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
+	if err := h.svc.SendTest(&service.WebhookConfig{URL: req.Body.URL, Type: req.Body.Type}, req.Body.Content); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, "发送失败: "+err.Error()))
 	}
-	cfg := &service.WebhookConfig{
-		URL:  req.URL,
-		Type: req.Type,
-	}
-	if err := h.svc.SendTest(cfg, req.Content); err != nil {
-		response.Fail(c, response.CodeBizError, "发送失败: "+err.Error())
-		return
-	}
-	response.OK(c, nil)
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
 }

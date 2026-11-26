@@ -1,49 +1,81 @@
 package handler
 
 import (
-	"bytes"
-	"math"
+	"amiya-eden/internal/apicontract"
+	"amiya-eden/internal/service"
+	"amiya-eden/pkg/response"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TestParseOptionalUintQueryParamRejectsInvalidInput(t *testing.T) {
-	if _, err := parseOptionalUintQueryParam("player_user_id", "not-a-number"); err == nil {
-		t.Fatal("expected invalid player_user_id to return an error")
-	}
-}
-
-func TestParseOptionalUintQueryParamRejectsOverflow(t *testing.T) {
-	overflow := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
-	if _, err := parseOptionalUintQueryParam("player_user_id", overflow); err == nil {
-		t.Fatal("expected overflow player_user_id to return an error")
-	}
-}
-
 func TestUpdateNewbroRecruitSettingsRequestAllowsZeroRewardAmount(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+	stub := &strictRecruitSettingsStub{}
+	adapter := apicontract.NewStrictHandler(strictNewbroTestOperations{
+		NewbroAdminHandler: &NewbroAdminHandler{settingsSvc: stub},
+	})
+	r := gin.New()
+	r.Use(func(c *gin.Context) { c.Set("userID", uint(42)) })
+	registerMigratedOperationRoutes(r, adapter, migratedOperationParamError)
 
-	recorder := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/newbro/recruit-settings", bytes.NewBufferString(`{
+	got := requestStrictNewbro(t, r, http.MethodPut, "/api/v1/system/newbro/recruit-settings", `{
 		"recruit_qq_url": "https://example.com/qq",
 		"recruit_reward_amount": 0,
 		"recruit_cooldown_days": 90
-	}`))
-	ctx.Request.Header.Set("Content-Type", "application/json")
+	}`)
+	var data apicontract.NewbroRecruitSettings
+	if err := json.Unmarshal(got.Data, &data); err != nil {
+		t.Fatal(err)
+	}
+	if got.Code != response.CodeOK || data.RecruitQQURL != "https://example.com/qq" || data.RecruitRewardAmount != 0 || data.RecruitCooldownDays != 90 || stub.operator != 42 {
+		t.Fatalf("unexpected settings response: code=%d data=%s actor=%d", got.Code, got.Data, stub.operator)
+	}
+}
 
-	var req UpdateNewbroRecruitSettingsRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		t.Fatalf("expected zero recruit_reward_amount to bind successfully, got %v", err)
+type strictNewbroTestOperations struct {
+	migratedOperationFallback
+	*NewbroAdminHandler
+	*CaptainRefundHandler
+}
+
+type newbroStrictTestResult struct {
+	Code int             `json:"code"`
+	Msg  string          `json:"msg"`
+	Data json.RawMessage `json:"data"`
+}
+
+func requestStrictNewbro(t *testing.T, r *gin.Engine, method, path, body string) newbroStrictTestResult {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(method, path, strings.NewReader(body))
+	// ShouldBindJSON did not depend on the incoming Content-Type header.
+	req.Header.Set("Content-Type", "text/plain")
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("HTTP %d %s; want 200", rec.Code, rec.Body)
 	}
-	if req.RecruitRewardAmount == nil || *req.RecruitRewardAmount != 0 {
-		t.Fatalf("expected recruit_reward_amount pointer to preserve explicit zero, got %#v", req.RecruitRewardAmount)
+	var result newbroStrictTestResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
 	}
-	if req.RecruitCooldownDays != 90 {
-		t.Fatalf("expected recruit_cooldown_days 90, got %d", req.RecruitCooldownDays)
-	}
+	return result
+}
+
+type strictRecruitSettingsStub struct {
+	settings service.NewbroRecruitSettings
+	operator uint
+}
+
+func (s *strictRecruitSettingsStub) GetRecruitSettings() service.NewbroRecruitSettings {
+	return s.settings
+}
+
+func (s *strictRecruitSettingsStub) UpdateRecruitSettingsByOperator(settings service.NewbroRecruitSettings, operator uint) (service.NewbroRecruitSettings, error) {
+	s.settings, s.operator = settings, operator
+	return settings, nil
 }

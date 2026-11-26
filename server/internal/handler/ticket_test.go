@@ -2,6 +2,7 @@ package handler
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/pkg/response"
 	"bytes"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,22 +52,6 @@ func seedTicketHandlerCategory(t *testing.T) model.TicketCategory {
 	return category
 }
 
-func newTicketHandlerTestRouter(userID uint) *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	h := NewTicketHandler()
-	r := gin.New()
-	r.Use(func(c *gin.Context) {
-		c.Set("userID", userID)
-		c.Next()
-	})
-
-	r.POST("/api/v1/ticket/tickets", h.CreateTicket)
-	r.GET("/api/v1/ticket/tickets/me", h.ListMyTickets)
-	r.GET("/api/v1/system/ticket/tickets", h.AdminListTickets)
-	r.GET("/api/v1/system/ticket/tickets/:id/status-history", h.AdminListStatusHistory)
-	return r
-}
-
 func decodeTicketHandlerResp(t *testing.T, recorder *httptest.ResponseRecorder) ticketHandlerResp {
 	t.Helper()
 	var out ticketHandlerResp
@@ -78,7 +64,7 @@ func decodeTicketHandlerResp(t *testing.T, recorder *httptest.ResponseRecorder) 
 func TestTicketHandlerCreateTicketSuccess(t *testing.T) {
 	setupTicketHandlerTestDB(t)
 	category := seedTicketHandlerCategory(t)
-	r := newTicketHandlerTestRouter(777)
+	r := newStrictTicketTestRouter(777)
 
 	body, _ := json.Marshal(map[string]any{
 		"category_id": category.ID,
@@ -101,7 +87,7 @@ func TestTicketHandlerCreateTicketSuccess(t *testing.T) {
 
 func TestTicketHandlerCreateTicketRejectsInvalidPayload(t *testing.T) {
 	setupTicketHandlerTestDB(t)
-	r := newTicketHandlerTestRouter(777)
+	r := newStrictTicketTestRouter(777)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/ticket/tickets", bytes.NewReader([]byte(`{"title":"x"}`)))
@@ -123,7 +109,7 @@ func TestTicketHandlerListMyTicketsReturnsPage(t *testing.T) {
 		t.Fatalf("create ticket: %v", err)
 	}
 
-	r := newTicketHandlerTestRouter(8080)
+	r := newStrictTicketTestRouter(8080)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/ticket/tickets/me?current=1&size=20", nil)
 	r.ServeHTTP(rec, req)
@@ -136,7 +122,7 @@ func TestTicketHandlerListMyTicketsReturnsPage(t *testing.T) {
 
 func TestTicketHandlerAdminListTicketsRejectsInvalidUserID(t *testing.T) {
 	setupTicketHandlerTestDB(t)
-	r := newTicketHandlerTestRouter(1)
+	r := newStrictTicketTestRouter(1)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/system/ticket/tickets?user_id=abc", nil)
@@ -150,7 +136,7 @@ func TestTicketHandlerAdminListTicketsRejectsInvalidUserID(t *testing.T) {
 
 func TestTicketHandlerAdminListTicketsRejectsOverflowUserID(t *testing.T) {
 	setupTicketHandlerTestDB(t)
-	r := newTicketHandlerTestRouter(1)
+	r := newStrictTicketTestRouter(1)
 
 	overflow := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
 	rec := httptest.NewRecorder()
@@ -165,7 +151,7 @@ func TestTicketHandlerAdminListTicketsRejectsOverflowUserID(t *testing.T) {
 
 func TestTicketHandlerAdminListTicketsRejectsOverflowCategoryID(t *testing.T) {
 	setupTicketHandlerTestDB(t)
-	r := newTicketHandlerTestRouter(1)
+	r := newStrictTicketTestRouter(1)
 
 	overflow := strconv.FormatUint(uint64(math.MaxUint32)+1, 10)
 	rec := httptest.NewRecorder()
@@ -208,7 +194,7 @@ func TestTicketHandlerAdminListStatusHistoryReturnsOperatorNames(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatalf("create history: %v", err)
 	}
-	r := newTicketHandlerTestRouter(operatorID)
+	r := newStrictTicketTestRouter(operatorID)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/system/ticket/tickets/%d/status-history", ticket.ID), nil)
 	r.ServeHTTP(rec, req)
@@ -231,5 +217,108 @@ func TestTicketHandlerAdminListStatusHistoryReturnsOperatorNames(t *testing.T) {
 	}
 	if history[0].ChangedByCharacterName != "Operator Character" {
 		t.Fatalf("ChangedByCharacterName = %q, want %q", history[0].ChangedByCharacterName, "Operator Character")
+	}
+}
+
+// Embed the fallback one level deeper so the ticket methods win method lookup.
+type ticketTestStrictFallback struct {
+	apicontract.StrictServerInterface
+}
+
+func newStrictTicketTestRouter(userID uint) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	strict := apicontract.NewStrictHandler(&struct {
+		*TicketHandler
+		ticketTestStrictFallback
+	}{TicketHandler: NewTicketHandler()})
+	r := gin.New()
+	apicontract.RegisterHandlersWithOptions(r, strict, apicontract.GinServerOptions{
+		BaseURL:                  "/api/v1",
+		ErrorHandlerForOperation: migratedOperationParamError,
+		MiddlewaresForOperation: func(_ string, chain []string) []gin.HandlerFunc {
+			if len(chain) == 0 {
+				return nil
+			}
+			return []gin.HandlerFunc{func(c *gin.Context) { c.Set("userID", userID) }}
+		},
+	})
+	return r
+}
+
+func TestStrictTicketHandlerPaginationDefaultsAndBounds(t *testing.T) {
+	setupTicketHandlerTestDB(t)
+	strict := newStrictTicketTestRouter(8080)
+	for _, path := range []string{"/api/v1/ticket/tickets/me", "/api/v1/system/ticket/tickets"} {
+		for _, tc := range []struct {
+			name, query string
+			page, size  int
+		}{
+			{name: "defaults", page: 1, size: 20},
+			{name: "nonpositive", query: "?current=-1&size=0", page: 1, size: 20},
+			{name: "max size", query: "?current=2&size=100", page: 2, size: 100},
+			{name: "oversized falls back", query: "?current=2&size=150", page: 2, size: 20},
+		} {
+			t.Run(path+"/"+tc.name, func(t *testing.T) {
+				rec := httptest.NewRecorder()
+				strict.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path+tc.query, nil))
+				result := decodeTicketHandlerResp(t, rec)
+				if rec.Code != http.StatusOK || result.Code != response.CodeOK {
+					t.Fatalf("unexpected response: %d %s", rec.Code, rec.Body)
+				}
+				var page struct {
+					Page     int `json:"page"`
+					PageSize int `json:"pageSize"`
+				}
+				if err := json.Unmarshal(result.Data, &page); err != nil {
+					t.Fatalf("decode page: %v", err)
+				}
+				if page.Page != tc.page || page.PageSize != tc.size {
+					t.Fatalf("page = %d/%d, want %d/%d", page.Page, page.PageSize, tc.page, tc.size)
+				}
+			})
+		}
+	}
+}
+
+func TestStrictTicketHandlerCreateAndPreserveOwnershipError(t *testing.T) {
+	setupTicketHandlerTestDB(t)
+	category := seedTicketHandlerCategory(t)
+	owner := newStrictTicketTestRouter(777)
+	payload := fmt.Sprintf(`{"category_id":%d,"title":"无法登录","description":"登录后立刻掉线"}`, category.ID)
+	created := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/ticket/tickets", strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	owner.ServeHTTP(created, req)
+	result := decodeTicketHandlerResp(t, created)
+	var record apicontract.TicketRecord
+	if err := json.Unmarshal(result.Data, &record); err != nil {
+		t.Fatalf("decode ticket: %v", err)
+	}
+	if created.Code != http.StatusOK || result.Code != response.CodeOK || record.Id == 0 || record.UserId != 777 || record.CategoryId != category.ID {
+		t.Fatalf("unexpected response: %d %s", created.Code, created.Body)
+	}
+
+	other := newStrictTicketTestRouter(888)
+	denied := httptest.NewRecorder()
+	path := fmt.Sprintf("/api/v1/ticket/tickets/%d", record.Id)
+	other.ServeHTTP(denied, httptest.NewRequest(http.MethodGet, path, nil))
+	result = decodeTicketHandlerResp(t, denied)
+	if denied.Code != http.StatusOK || result.Code != response.CodeBizError || string(result.Data) != "null" {
+		t.Fatalf("unexpected response: %d %s", denied.Code, denied.Body)
+	}
+}
+
+func TestStrictTicketHandlerRejectsInvalidAdminFilterBounds(t *testing.T) {
+	r := newStrictTicketTestRouter(1)
+	for _, query := range []string{"user_id=0", "user_id=4294967296", "category_id=0", "category_id=4294967296"} {
+		t.Run(query, func(t *testing.T) {
+			got := httptest.NewRecorder()
+			r.ServeHTTP(got, httptest.NewRequest(http.MethodGet, "/api/v1/system/ticket/tickets?"+query, nil))
+			result := decodeTicketHandlerResp(t, got)
+			field, _, _ := strings.Cut(query, "=")
+			if got.Code != http.StatusOK || result.Code != response.CodeParamError || result.Msg != "无效的 "+field {
+				t.Fatalf("unexpected response: %d %s", got.Code, got.Body)
+			}
+		})
 	}
 }

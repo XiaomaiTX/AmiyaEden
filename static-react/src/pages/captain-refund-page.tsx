@@ -1,19 +1,23 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
-  refundOptions,
-  previewRefund,
-  createRefund,
-  listRefunds,
-  getRefund,
-  reviewRefund,
-} from '@/api/captain-refund'
+  getCaptainRefundOptions,
+  previewCaptainRefund,
+  createCaptainRefund,
+  listAdminCaptainRefunds,
+  listMyCaptainRefunds,
+  getAdminCaptainRefund,
+  getMyCaptainRefund,
+  approveCaptainRefund,
+  rejectCaptainRefund,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import type {
-  RefundOptions,
-  RefundApplication,
-  RefundCalculation,
-  RefundRequest,
-} from '@/types/api/captain-refund'
+  CaptainRefundOptions as RefundOptions,
+  CaptainRefundApplication as RefundApplication,
+  CaptainRefundCalculation as RefundCalculation,
+  CaptainRefundInput as RefundRequest,
+} from '@/api/generated/client'
 import { useI18n } from '@/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,7 +51,13 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
   const load = useCallback(async () => {
     setHistoryLoading(true)
     try {
-      const data = await listRefunds(admin, page, LEDGER_PAGE_SIZE)
+      const data = await unwrapContract(
+        (admin ? listAdminCaptainRefunds : listMyCaptainRefunds)({
+          current: page,
+          size: LEDGER_PAGE_SIZE,
+        }),
+        'Request failed'
+      )
       setRows(data.list)
       setTotal(data.total)
     } finally {
@@ -71,7 +81,7 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
   useEffect(() => {
     if (admin) return
     let active = true
-    void refundOptions()
+    void unwrapContract(getCaptainRefundOptions(), 'Request failed')
       .then((value) => {
         if (active) {
           setOptions(value)
@@ -115,7 +125,12 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
 
   const openDetail = (row: RefundApplication) =>
     void run(async () => {
-      setSelected(await getRefund(admin, row.id))
+      setSelected(
+        await unwrapContract(
+          (admin ? getAdminCaptainRefund : getMyCaptainRefund)(row.id),
+          'Request failed'
+        )
+      )
       setReason('')
     })
 
@@ -146,7 +161,13 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
       id: 'operation',
       header: t('common.operation'),
       cell: ({ row }) => (
-        <Button type="button" variant="outline" size="sm" isDisabled={busy} onClick={() => openDetail(row.original)}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          isDisabled={busy}
+          onClick={() => openDetail(row.original)}
+        >
           {t('refund.details')}
         </Button>
       ),
@@ -239,7 +260,11 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
           </label>
           <Button
             isDisabled={busy || !captain || !system || !start || !end}
-            onClick={() => void run(async () => setPreview(await previewRefund(request())))}
+            onClick={() =>
+              void run(async () =>
+                setPreview(await unwrapContract(previewCaptainRefund(request()), 'Request failed'))
+              )
+            }
           >
             {t('refund.preview')}
           </Button>
@@ -252,16 +277,24 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
                   void run(async () => {
                     const payload = request()
                     try {
-                      const row = await createRefund(payload)
+                      const row = await unwrapContract(
+                        createCaptainRefund(payload),
+                        'Request failed'
+                      )
                       setSelected(row)
                       setPreview(null)
                       setSuccess(t('refund.submitted'))
                       await load()
                     } catch {
                       try {
-                        const latest = await previewRefund(payload)
+                        const latest = await unwrapContract(
+                          previewCaptainRefund(payload),
+                          'Request failed'
+                        )
                         setPreview(latest)
-                        setError(t(latest.conflicts.length > 0 ? 'refund.conflict' : 'refund.failed'))
+                        setError(
+                          t(latest.conflicts.length > 0 ? 'refund.conflict' : 'refund.failed')
+                        )
                       } catch {
                         setError(t('refund.failed'))
                       }
@@ -314,7 +347,8 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
           </h2>
           <RefundCalculationView value={selected.calculation} />
           <p>
-            {t('refund.reviewed')}: {selected.reviewed_by || '—'} · {formatTime(selected.reviewed_at)}
+            {t('refund.reviewed')}: {selected.reviewed_by || '—'} ·{' '}
+            {formatTime(selected.reviewed_at)}
           </p>
           {selected.reject_reason ? (
             <p>
@@ -332,8 +366,13 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
                   isDisabled={busy}
                   onClick={() =>
                     void run(async () => {
-                      await reviewRefund(selected.id, true, '')
-                      setSelected(await getRefund(true, selected.id))
+                      await unwrapContract(
+                        approveCaptainRefund(selected.id, { reason: '' }),
+                        'Request failed'
+                      )
+                      setSelected(
+                        await unwrapContract(getAdminCaptainRefund(selected.id), 'Request failed')
+                      )
                       await load()
                     })
                   }
@@ -345,8 +384,13 @@ export function CaptainRefundPage({ admin = false }: { admin?: boolean }) {
                   isDisabled={busy || !reason.trim()}
                   onClick={() =>
                     void run(async () => {
-                      await reviewRefund(selected.id, false, reason)
-                      setSelected(await getRefund(true, selected.id))
+                      await unwrapContract(
+                        rejectCaptainRefund(selected.id, { reason }),
+                        'Request failed'
+                      )
+                      setSelected(
+                        await unwrapContract(getAdminCaptainRefund(selected.id), 'Request failed')
+                      )
                       await load()
                     })
                   }

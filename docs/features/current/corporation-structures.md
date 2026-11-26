@@ -20,10 +20,10 @@ source_of_truth:
   - server/pkg/eve/esi/task_corporation_structures.go
   - server/jobs/structure_fuel_rate_sync.go
   - static/src/router/modules/dashboard.ts
-  - static/src/api/corporation-structures.ts
+  - static/src/api/generated/client.ts
   - static/src/views/dashboard/corporation-structures
   - static/src/store/modules/badge.helpers.ts
-  - static-react/src/api/corporation-structures.ts
+  - static-react/src/api/generated/client.ts
   - static-react/src/pages/dashboard-corporation-structures-page.tsx
   - static-react/src/pages/dashboard-fuel-officer-structures-page.tsx
 ---
@@ -73,21 +73,9 @@ source_of_truth:
 - `static/src/views/dashboard/corporation-structures`
 - `static/src/router/modules/dashboard.ts` 中的 `DashboardCorporationStructures`
 
-### 后端路由
+### 后端契约
 
-- `GET /api/v1/dashboard/corporation-structures/settings`
-- `PUT /api/v1/dashboard/corporation-structures/settings/authorizations`
-- `GET /api/v1/dashboard/corporation-structures/filter-options`
-- `POST /api/v1/dashboard/corporation-structures/list`
-- `POST /api/v1/dashboard/corporation-structures/run-task`
-- `GET /api/v1/dashboard/corporation-structures/assignments`
-- `PUT /api/v1/dashboard/corporation-structures/assignments`
-- `GET /api/v1/dashboard/corporation-structures/fuel-salary-settings`
-- `PUT /api/v1/dashboard/corporation-structures/fuel-salary-settings`
-- `POST /api/v1/dashboard/corporation-structures/fuel-salary-payouts/run`
-- `POST /api/v1/dashboard/corporation-structures/my-assigned-list`
-- `GET /api/v1/dashboard/corporation-structures/service-catalog`
-- `PUT /api/v1/dashboard/corporation-structures/service-catalog`
+[军团建筑 OpenAPI](../../../contracts/modules/corp-structures.yaml)。
 
 ### 关联展示
 
@@ -128,7 +116,7 @@ source_of_truth:
 - `server/internal/service/badge.go`
 - `server/internal/router/router.go`
 - `server/jobs/structure_fuel_rate_sync.go`
-- `static/src/api/corporation-structures.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/router/modules/dashboard.ts`
 - `static/src/views/dashboard/corporation-structures/index.vue`
 - `static/src/store/modules/badge.helpers.ts`

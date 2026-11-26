@@ -6,7 +6,7 @@ last_reviewed: 2026-10-12
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/skill_plan.go
-  - static/src/api/skill-plan.ts
+  - static/src/api/generated/client.ts
   - static/src/views/skill-planning
 ---
 
@@ -35,10 +35,9 @@ source_of_truth:
   - `static/src/views/skill-planning/skill-plans`
   - `static/src/views/skill-planning/completion-check`
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/skill-planning/skill-plans/*`
-- `/api/v1/skill-planning/personal-skill-plans/*`
+[技能规划 OpenAPI：军团与个人计划](../../../contracts/modules/skill-plans.yaml)。
 
 ## 权限边界
 
@@ -64,7 +63,7 @@ source_of_truth:
 
 - `server/internal/service/skill_plan.go`
 - `server/internal/router/router.go`
-- `static/src/api/skill-plan.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/router/modules/skill-planning.ts`
 - `static/src/views/skill-planning/skill-plans`
 - `static/src/views/skill-planning/personal-skill-plans`
@@ -78,7 +77,7 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 当前实现位于 `static/src`。
-- React 已承接技能计划、个人技能计划和完成度检查页面；类型与 API 以 `static-react/src/api/skill-plan.ts` 和对应类型为准。
+- React 已承接技能计划、个人技能计划和完成度检查页面；使用 [React 生成客户端](../../../static-react/src/api/generated/client.ts)中的操作与契约类型。
 - 解析、排序和权限行为由本文定义，迁移不改变后端契约。
 
 ## 仪表盘管理查询

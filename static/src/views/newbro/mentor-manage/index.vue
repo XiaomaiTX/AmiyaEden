@@ -314,25 +314,33 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    MentorDistribution,
+    MentorRelationshipView,
+    MentorRewardStage,
+    MentorRewardStageInput
+  } from '@/api/generated/client'
   import type { ColumnOption } from '@/types/component'
   import { ElButton, ElMessage, ElMessageBox, ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import {
-    fetchAdminMentorRelationships,
-    fetchAdminMentorRewardDistributions,
-    fetchMentorRewardStages,
-    revokeMentorRelationship,
-    runMentorRewardProcessing,
-    updateMentorRewardStages
-  } from '@/api/mentor'
+    adminGetMentorRewardStages,
+    adminListMentorRelationships,
+    adminListMentorRewardDistributions,
+    adminProcessMentorRewards,
+    adminRevokeMentorRelationship,
+    adminUpdateMentorRewardStages
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useEnterSearch } from '@/hooks/core/useEnterSearch'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
 
   defineOptions({ name: 'MentorManage' })
 
-  type StageRow = Api.Mentor.RewardStageInput & {
+  type StageRow = MentorRewardStageInput & {
     local_id: number
+    name: string
   }
 
   type MentorManageTab = 'relationships' | 'reward-records' | 'reward-stages'
@@ -352,8 +360,8 @@
   const saving = ref(false)
   const processing = ref(false)
   const revokingId = ref<number | null>(null)
-  const rows = ref<Api.Mentor.RelationshipView[]>([])
-  const rewardHistoryRows = ref<Api.Mentor.RewardDistributionView[]>([])
+  const rows = ref<MentorRelationshipView[]>([])
+  const rewardHistoryRows = ref<MentorDistribution[]>([])
   const stages = ref<StageRow[]>([])
   const rewardHistoryKeyword = ref('')
   const rewardHistoryPaginationOptions = {
@@ -416,7 +424,7 @@
     () => rewardStagesLoadAttempted.value && !rewardStagesLoaded.value && !rewardStagesLoading.value
   )
 
-  const rewardHistoryColumns = computed<ColumnOption<Api.Mentor.RewardDistributionView>[]>(() => [
+  const rewardHistoryColumns = computed<ColumnOption<MentorDistribution>[]>(() => [
     {
       prop: 'mentor_character_name',
       label: t('newbro.mentorManage.mentorColumn'),
@@ -469,7 +477,7 @@
     return t(`newbro.mentorStatus.${status}`)
   }
 
-  function toStageRow(stage?: Api.Mentor.RewardStage | Api.Mentor.RewardStageInput): StageRow {
+  function toStageRow(stage?: MentorRewardStage | MentorRewardStageInput): StageRow {
     return {
       local_id: nextLocalId++,
       stage_order: stage?.stage_order ?? stages.value.length + 1,
@@ -515,12 +523,14 @@
   async function loadData() {
     loading.value = true
     try {
-      const data = await fetchAdminMentorRelationships({
-        current: page.current,
-        size: page.size,
-        keyword: filters.keyword.trim() || undefined,
-        status: filters.status === 'all' ? undefined : filters.status
-      })
+      const data = await unwrapContract(
+        adminListMentorRelationships({
+          current: page.current,
+          size: page.size,
+          keyword: filters.keyword.trim() || undefined,
+          status: filters.status === 'all' ? undefined : filters.status
+        })
+      )
       rows.value = data.list
       page.total = data.total
     } catch (error) {
@@ -536,11 +546,13 @@
   async function loadRewardHistory() {
     rewardHistoryLoading.value = true
     try {
-      const data = await fetchAdminMentorRewardDistributions({
-        current: rewardHistoryPage.current,
-        size: rewardHistoryPage.size,
-        keyword: rewardHistoryKeyword.value.trim() || undefined
-      })
+      const data = await unwrapContract(
+        adminListMentorRewardDistributions({
+          current: rewardHistoryPage.current,
+          size: rewardHistoryPage.size,
+          keyword: rewardHistoryKeyword.value.trim() || undefined
+        })
+      )
       rewardHistoryRows.value = data.list
       rewardHistoryPage.total = data.total
       rewardHistoryLoaded.value = true
@@ -557,7 +569,7 @@
   async function loadRewardStages() {
     rewardStagesLoading.value = true
     try {
-      const data = await fetchMentorRewardStages()
+      const data = await unwrapContract(adminGetMentorRewardStages())
       stages.value = data.map((stage) => toStageRow(stage))
       return true
     } catch (error) {
@@ -747,7 +759,7 @@
             reward_amount
           }))
       }
-      const data = await updateMentorRewardStages(payload)
+      const data = await unwrapContract(adminUpdateMentorRewardStages(payload))
       stages.value = data.map((stage) => toStageRow(stage))
       ElMessage.success(t('system.mentorRewardStages.saveSuccess'))
     } catch (error) {
@@ -765,7 +777,7 @@
 
     processing.value = true
     try {
-      const data = await runMentorRewardProcessing()
+      const data = await unwrapContract(adminProcessMentorRewards())
       ElMessage.success(
         t('system.mentorRewardStages.runProcessSuccess', {
           relationships: data.processed_relationships,
@@ -789,7 +801,7 @@
     loadData()
   })
 
-  async function handleRevoke(row: Api.Mentor.RelationshipView) {
+  async function handleRevoke(row: MentorRelationshipView) {
     try {
       await ElMessageBox.confirm(
         `${row.mentor_character_name} -> ${row.mentee_character_name}`,
@@ -802,7 +814,7 @@
 
     revokingId.value = row.id
     try {
-      await revokeMentorRelationship({ relationship_id: row.id })
+      await unwrapContract(adminRevokeMentorRelationship({ relationship_id: row.id }))
       ElMessage.success(revokeActionSuccessMessage(row.status))
       await loadData()
     } catch (error) {

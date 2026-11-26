@@ -15,10 +15,11 @@ import {
 } from '@/components/ui/table'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listMyTickets } from '@/api/ticket'
+import { listMyTickets } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import type { TicketItem, TicketPriority, TicketStatus } from '@/types/api/ticket'
+import type { TicketRecord as TicketItem, TicketStatus } from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -42,25 +43,8 @@ function statusTone(status: TicketStatus) {
   }
 }
 
-function priorityTone(priority: TicketPriority) {
-  switch (priority) {
-    case 'high':
-      return 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
-    case 'medium':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-    case 'low':
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-}
-
 function statusLabel(t: ReturnType<typeof useI18n>['t'], status: TicketStatus) {
   return t(`ticketMyTickets.statuses.${status}`)
-}
-
-function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: TicketPriority) {
-  return t(`ticketMyTickets.priorities.${priority}`)
 }
 
 export function TicketMyTicketsPage() {
@@ -83,11 +67,14 @@ export function TicketMyTicketsPage() {
       setError(null)
 
       try {
-        const response = await listMyTickets({
-          current: page,
-          size: pageSize,
-          status: appliedStatusFilter as TicketStatus | '',
-        })
+        const response = await unwrapContract(
+          listMyTickets({
+            current: page,
+            size: pageSize,
+            status: (appliedStatusFilter || undefined) as TicketStatus | undefined,
+          }),
+          'list my tickets failed'
+        )
 
         if (cancelled) {
           return
@@ -183,7 +170,6 @@ export function TicketMyTicketsPage() {
                 <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.id')}</TableHead>
                 <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.title')}</TableHead>
                 <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.status')}</TableHead>
-                <TableHead className="px-3 py-2">{t('ticketMyTickets.columns.priority')}</TableHead>
                 <TableHead className="px-3 py-2">
                   {t('ticketMyTickets.columns.updatedAt')}
                 </TableHead>
@@ -207,13 +193,6 @@ export function TicketMyTicketsPage() {
                       {statusLabel(t, ticket.status)}
                     </span>
                   </TableCell>
-                  <TableCell className="px-3 py-2">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${priorityTone(ticket.priority)}`}
-                    >
-                      {priorityLabel(t, ticket.priority)}
-                    </span>
-                  </TableCell>
                   <TableCell className="px-3 py-2">{formatTime(ticket.updated_at)}</TableCell>
                   <TableCell className="px-3 py-2">
                     <Button
@@ -229,7 +208,7 @@ export function TicketMyTicketsPage() {
               ))}
               {!loading && tickets.length === 0 ? (
                 <TableRow>
-                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={6}>
+                  <TableCell className="px-3 py-6 text-center text-muted-foreground" colSpan={5}>
                     {t('ticketMyTickets.empty')}
                   </TableCell>
                 </TableRow>
@@ -265,10 +244,12 @@ export function TicketMyTicketsPage() {
           <span>{t('ticketMyTickets.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

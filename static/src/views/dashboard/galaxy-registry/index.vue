@@ -583,6 +583,17 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    GalaxyRegistryAdminAnalytics,
+    GalaxyRegistryAdminSystem,
+    GalaxyRegistryAdminUpdateValidationInput,
+    GalaxyRegistryCreateEntryInput,
+    GalaxyRegistryEntry,
+    GalaxyRegistrySdeSystem,
+    GalaxyRegistrySystemItem,
+    GalaxyRegistrySystemSummary,
+    SearchAdminSdeSystemsParams
+  } from '@/api/generated/client'
   import type { ColumnOption } from '@/types/component'
   import { h, computed, onMounted, reactive, ref, watch } from 'vue'
   import { ElButton, ElMessage, ElMessageBox, ElTag } from 'element-plus'
@@ -591,28 +602,29 @@
   import { useUserStore } from '@/store/modules/user'
   import { formatTime, toLocalOffsetISO } from '@/utils/common/time'
   import {
-    createAdminGalaxyRegistrySystem,
-    createGalaxyRegistryEntry,
-    deleteAdminGalaxyRegistrySystem,
-    endGalaxyRegistryEntry,
-    fetchAdminGalaxyRegistryAnalytics,
-    fetchAdminGalaxyRegistryEntries,
-    fetchAdminGalaxyRegistrySystems,
-    fetchGalaxyRegistrySystems,
-    fetchMyGalaxyRegistryEntries,
-    forceEndAdminGalaxyRegistryEntry,
-    revalidateAdminGalaxyRegistryEntry,
-    searchGalaxyRegistrySdeSystems,
-    updateAdminGalaxyRegistryEntryValidation,
-    updateAdminGalaxyRegistrySystem,
-    updateGalaxyRegistryEntryExpectedEndAt
-  } from '@/api/galaxy-registry'
+    createAdminSystem,
+    createEntry,
+    deleteAdminSystem,
+    endMyEntry,
+    forceEndAdminEntry,
+    getAdminAnalytics,
+    listAdminEntries,
+    listAdminSystems,
+    listMyEntries,
+    listSystems,
+    revalidateAdminEntry,
+    searchAdminSdeSystems,
+    updateAdminEntryValidation,
+    updateAdminSystem,
+    updateMyExpectedEndAt
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   defineOptions({ name: 'DashboardGalaxyRegistry' })
 
   type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
-  type AdminSystemDraft = Api.Dashboard.GalaxyRegistryAdminSystem & {
+  type AdminSystemDraft = GalaxyRegistryAdminSystem & {
     local_id: string
     is_new: boolean
     is_dirty: boolean
@@ -638,24 +650,24 @@
     analytics: false
   })
 
-  const systems = ref<Api.Dashboard.GalaxyRegistrySystemItem[]>([])
-  const systemsSummary = reactive<Api.Dashboard.GalaxyRegistrySystemSummary>({
+  const systems = ref<GalaxyRegistrySystemItem[]>([])
+  const systemsSummary = reactive<GalaxyRegistrySystemSummary>({
     idle_count: 0,
     busy_count: 0,
     overdue_count: 0
   })
-  const analytics = ref<Api.Dashboard.GalaxyRegistryAdminAnalytics | null>(null)
+  const analytics = ref<GalaxyRegistryAdminAnalytics | null>(null)
   const analyticsRange = ref<[string, string] | null>(null)
-  const sdeSystems = ref<Api.Dashboard.GalaxyRegistrySdeSystem[]>([])
+  const sdeSystems = ref<GalaxyRegistrySdeSystem[]>([])
   const adminSystems = ref<AdminSystemDraft[]>([])
-  const adminSystemSearch = reactive<Api.Dashboard.GalaxyRegistrySdeSystemSearchParams>({
+  const adminSystemSearch = reactive<SearchAdminSdeSystemsParams>({
     keyword: '',
     limit: 20
   })
 
   const createDialogVisible = ref(false)
-  const selectedSystem = ref<Api.Dashboard.GalaxyRegistrySystemItem | null>(null)
-  const createForm = reactive<Api.Dashboard.GalaxyRegistryCreateEntryRequest>({
+  const selectedSystem = ref<GalaxyRegistrySystemItem | null>(null)
+  const createForm = reactive<GalaxyRegistryCreateEntryInput>({
     system_config_id: 0,
     expected_end_at: ''
   })
@@ -670,7 +682,7 @@
 
   const validationDialogVisible = ref(false)
   const validationDialog = reactive<
-    Api.Dashboard.GalaxyRegistryAdminUpdateValidationRequest & {
+    GalaxyRegistryAdminUpdateValidationInput & {
       entry_id: number
       system_name: string
     }
@@ -698,7 +710,8 @@
 
   const myTable = useTable({
     core: {
-      apiFn: fetchMyGalaxyRegistryEntries,
+      apiFn: (params?: Api.Dashboard.GalaxyRegistryEntryListParams) =>
+        unwrapContract(listMyEntries(params)),
       apiParams: {
         current: 1,
         size: 200,
@@ -717,28 +730,25 @@
             prop: 'actual_start_at',
             label: t('galaxyRegistry.columns.actualStartAt'),
             width: 180,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatDateTime(row.actual_start_at)
+            formatter: (row: GalaxyRegistryEntry) => formatDateTime(row.actual_start_at)
           },
           {
             prop: 'actual_end_at',
             label: t('galaxyRegistry.columns.actualEndAt'),
             width: 180,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatDateTime(row.actual_end_at)
+            formatter: (row: GalaxyRegistryEntry) => formatDateTime(row.actual_end_at)
           },
           {
             prop: 'expected_end_at',
             label: t('galaxyRegistry.columns.expectedEndAt'),
             width: 180,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatDateTime(row.expected_end_at)
+            formatter: (row: GalaxyRegistryEntry) => formatDateTime(row.expected_end_at)
           },
           {
             prop: 'status',
             label: t('galaxyRegistry.columns.status'),
             width: 120,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
+            formatter: (row: GalaxyRegistryEntry) =>
               h(ElTag, { size: 'small', type: statusTagType(row.status) }, () =>
                 statusLabel(row.status)
               )
@@ -747,7 +757,7 @@
             prop: 'validation_status',
             label: t('galaxyRegistry.columns.validationStatus'),
             width: 120,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
+            formatter: (row: GalaxyRegistryEntry) =>
               h(ElTag, { size: 'small', type: validationTagType(row.validation_status) }, () =>
                 validationLabel(row.validation_status)
               )
@@ -756,21 +766,19 @@
             prop: 'validated_bounty_amount',
             label: t('galaxyRegistry.columns.validatedBounty'),
             width: 170,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatIsk(row.validated_bounty_amount)
+            formatter: (row: GalaxyRegistryEntry) => formatIsk(row.validated_bounty_amount)
           },
           {
             prop: 'violation_reason',
             label: t('galaxyRegistry.columns.violationReason'),
             minWidth: 180,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              violationReasonLabel(row.violation_reason)
+            formatter: (row: GalaxyRegistryEntry) => violationReasonLabel(row.violation_reason)
           },
           {
             label: t('common.operation'),
             width: 200,
             fixed: 'right',
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+            formatter: (row: GalaxyRegistryEntry) => {
               if (row.status !== 'active') {
                 return '--'
               }
@@ -796,7 +804,7 @@
               ])
             }
           }
-        ] as ColumnOption<Api.Dashboard.GalaxyRegistryEntryItem>[]
+        ] as ColumnOption<GalaxyRegistryEntry>[]
     },
     transform: {
       responseAdapter: adaptPage
@@ -805,7 +813,8 @@
 
   const adminTable = useTable({
     core: {
-      apiFn: fetchAdminGalaxyRegistryEntries,
+      apiFn: (params?: Api.Dashboard.GalaxyRegistryEntryListParams) =>
+        unwrapContract(listAdminEntries(params)),
       apiParams: {
         current: 1,
         size: 200,
@@ -825,14 +834,14 @@
             prop: 'captain_character_name',
             label: t('galaxyRegistry.columns.captain'),
             minWidth: 220,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
+            formatter: (row: GalaxyRegistryEntry) =>
               `${row.captain_nickname} (${row.captain_character_name})`
           },
           {
             prop: 'status',
             label: t('galaxyRegistry.columns.status'),
             width: 120,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
+            formatter: (row: GalaxyRegistryEntry) =>
               h(ElTag, { size: 'small', type: statusTagType(row.status) }, () =>
                 statusLabel(row.status)
               )
@@ -841,7 +850,7 @@
             prop: 'validation_status',
             label: t('galaxyRegistry.columns.validationStatus'),
             width: 120,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
+            formatter: (row: GalaxyRegistryEntry) =>
               h(ElTag, { size: 'small', type: validationTagType(row.validation_status) }, () =>
                 validationLabel(row.validation_status)
               )
@@ -850,28 +859,25 @@
             prop: 'actual_start_at',
             label: t('galaxyRegistry.columns.actualStartAt'),
             width: 180,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatDateTime(row.actual_start_at)
+            formatter: (row: GalaxyRegistryEntry) => formatDateTime(row.actual_start_at)
           },
           {
             prop: 'actual_end_at',
             label: t('galaxyRegistry.columns.actualEndAt'),
             width: 180,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatDateTime(row.actual_end_at)
+            formatter: (row: GalaxyRegistryEntry) => formatDateTime(row.actual_end_at)
           },
           {
             prop: 'validated_bounty_amount',
             label: t('galaxyRegistry.columns.validatedBounty'),
             width: 170,
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) =>
-              formatIsk(row.validated_bounty_amount)
+            formatter: (row: GalaxyRegistryEntry) => formatIsk(row.validated_bounty_amount)
           },
           {
             label: t('common.operation'),
             width: 320,
             fixed: 'right',
-            formatter: (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+            formatter: (row: GalaxyRegistryEntry) => {
               const actions = []
               if (row.status === 'active') {
                 actions.push(
@@ -912,7 +918,7 @@
               return actions.length ? h('div', { class: 'flex flex-wrap gap-2' }, actions) : '--'
             }
           }
-        ] as ColumnOption<Api.Dashboard.GalaxyRegistryEntryItem>[]
+        ] as ColumnOption<GalaxyRegistryEntry>[]
     },
     transform: {
       responseAdapter: adaptPage
@@ -954,7 +960,7 @@
   const loadSystems = async () => {
     loading.systems = true
     try {
-      const response = await fetchGalaxyRegistrySystems()
+      const response = await unwrapContract(listSystems())
       systems.value = response.items || []
       Object.assign(systemsSummary, response.summary || systemsSummary)
     } finally {
@@ -966,7 +972,7 @@
     if (!canAdminTab.value) return
     loading.adminSystems = true
     try {
-      const rows = (await fetchAdminGalaxyRegistrySystems()) || []
+      const rows = (await unwrapContract(listAdminSystems())) || []
       adminSystems.value = rows.map((row) => ({
         ...row,
         local_id: `persisted-${row.id}`,
@@ -982,23 +988,25 @@
     if (!canAdminTab.value) return
     loading.analytics = true
     try {
-      analytics.value = await fetchAdminGalaxyRegistryAnalytics({
-        start_date: analyticsRange.value?.[0],
-        end_date: analyticsRange.value?.[1]
-      })
+      analytics.value = await unwrapContract(
+        getAdminAnalytics({
+          start_date: analyticsRange.value?.[0],
+          end_date: analyticsRange.value?.[1]
+        })
+      )
     } finally {
       loading.analytics = false
     }
   }
 
   const searchSdeSystems = async () => {
-    if (!adminSystemSearch.keyword.trim()) {
+    if (!adminSystemSearch.keyword?.trim()) {
       sdeSystems.value = []
       return
     }
     loading.sdeSearch = true
     try {
-      sdeSystems.value = (await searchGalaxyRegistrySdeSystems(adminSystemSearch)) || []
+      sdeSystems.value = (await unwrapContract(searchAdminSdeSystems(adminSystemSearch))) || []
     } finally {
       loading.sdeSearch = false
     }
@@ -1078,7 +1086,7 @@
     return true
   }
 
-  const openCreateDialog = (row: Api.Dashboard.GalaxyRegistrySystemItem) => {
+  const openCreateDialog = (row: GalaxyRegistrySystemItem) => {
     selectedSystem.value = row
     createForm.system_config_id = row.system_config_id
     createForm.expected_end_at = ''
@@ -1109,10 +1117,12 @@
     }
     creatingEntry.value = true
     try {
-      await createGalaxyRegistryEntry({
-        system_config_id: createForm.system_config_id,
-        expected_end_at: toLocalOffsetISO(createForm.expected_end_at)
-      })
+      await unwrapContract(
+        createEntry({
+          system_config_id: createForm.system_config_id,
+          expected_end_at: toLocalOffsetISO(createForm.expected_end_at)
+        })
+      )
       ElMessage.success(t('galaxyRegistry.messages.entryCreated'))
       createDialogVisible.value = false
       await refreshCaptainViews()
@@ -1125,7 +1135,7 @@
     if (!entryId) return
     endingEntryId.value = entryId
     try {
-      await endGalaxyRegistryEntry(entryId)
+      await unwrapContract(endMyEntry(entryId))
       ElMessage.success(t('galaxyRegistry.messages.entryEnded'))
       await refreshCaptainViews()
       if (canAdminTab.value) {
@@ -1136,7 +1146,7 @@
     }
   }
 
-  const openExpectedEndDialogFromSystem = (row: Api.Dashboard.GalaxyRegistrySystemItem) => {
+  const openExpectedEndDialogFromSystem = (row: GalaxyRegistrySystemItem) => {
     if (!row.active_entry?.entry_id) return
     expectedEndDialog.entry_id = row.active_entry.entry_id
     expectedEndDialog.system_name = row.solar_system_name
@@ -1145,7 +1155,7 @@
     expectedEndDialogVisible.value = true
   }
 
-  const openExpectedEndDialogFromEntry = (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+  const openExpectedEndDialogFromEntry = (row: GalaxyRegistryEntry) => {
     expectedEndDialog.entry_id = row.id
     expectedEndDialog.system_name = row.solar_system_name
     expectedEndDialog.expected_end_at = row.expected_end_at
@@ -1161,9 +1171,11 @@
     if (!validateExpectedEndUpdate()) return
     updatingExpectedEnd.value = true
     try {
-      await updateGalaxyRegistryEntryExpectedEndAt(expectedEndDialog.entry_id, {
-        expected_end_at: toLocalOffsetISO(expectedEndDialog.expected_end_at)
-      })
+      await unwrapContract(
+        updateMyExpectedEndAt(expectedEndDialog.entry_id, {
+          expected_end_at: toLocalOffsetISO(expectedEndDialog.expected_end_at)
+        })
+      )
       ElMessage.success(t('galaxyRegistry.messages.expectedEndUpdated'))
       expectedEndDialogVisible.value = false
       await refreshCaptainViews()
@@ -1175,7 +1187,7 @@
   const hasSystemDraft = (solarSystemId: number) =>
     adminSystems.value.some((row) => row.solar_system_id === solarSystemId)
 
-  const handleAddSystemDraft = (row: Api.Dashboard.GalaxyRegistrySdeSystem) => {
+  const handleAddSystemDraft = (row: GalaxyRegistrySdeSystem) => {
     if (hasSystemDraft(row.solar_system_id)) {
       return
     }
@@ -1211,20 +1223,24 @@
     try {
       for (const row of adminSystems.value) {
         if (row.is_new) {
-          await createAdminGalaxyRegistrySystem({
-            solar_system_id: row.solar_system_id,
-            note: row.note,
-            min_bounty_amount: row.min_bounty_amount,
-            is_enabled: row.is_enabled
-          })
+          await unwrapContract(
+            createAdminSystem({
+              solar_system_id: row.solar_system_id,
+              note: row.note,
+              min_bounty_amount: row.min_bounty_amount,
+              is_enabled: row.is_enabled
+            })
+          )
           continue
         }
         if (row.is_dirty) {
-          await updateAdminGalaxyRegistrySystem(row.id, {
-            note: row.note,
-            min_bounty_amount: row.min_bounty_amount,
-            is_enabled: row.is_enabled
-          })
+          await unwrapContract(
+            updateAdminSystem(row.id, {
+              note: row.note,
+              min_bounty_amount: row.min_bounty_amount,
+              is_enabled: row.is_enabled
+            })
+          )
         }
       }
       ElMessage.success(t('galaxyRegistry.messages.systemSaved'))
@@ -1242,15 +1258,15 @@
     await ElMessageBox.confirm(t('galaxyRegistry.messages.deleteConfirm'), t('common.tips'), {
       type: 'warning'
     })
-    await deleteAdminGalaxyRegistrySystem(row.id)
+    await unwrapContract(deleteAdminSystem(row.id))
     ElMessage.success(t('galaxyRegistry.messages.systemDeleted'))
     await Promise.all([loadAdminSystems(), loadSystems()])
   }
 
-  const handleForceEndEntry = async (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+  const handleForceEndEntry = async (row: GalaxyRegistryEntry) => {
     forceEndingEntryId.value = row.id
     try {
-      await forceEndAdminGalaxyRegistryEntry(row.id)
+      await unwrapContract(forceEndAdminEntry(row.id))
       ElMessage.success(t('galaxyRegistry.messages.entryForceEnded'))
       await refreshAdminViews()
     } finally {
@@ -1258,10 +1274,10 @@
     }
   }
 
-  const handleRevalidateEntry = async (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+  const handleRevalidateEntry = async (row: GalaxyRegistryEntry) => {
     revalidatingEntryId.value = row.id
     try {
-      await revalidateAdminGalaxyRegistryEntry(row.id)
+      await unwrapContract(revalidateAdminEntry(row.id))
       ElMessage.success(t('galaxyRegistry.messages.entryRevalidated'))
       await refreshAdminViews()
     } finally {
@@ -1269,7 +1285,7 @@
     }
   }
 
-  const openValidationDialog = (row: Api.Dashboard.GalaxyRegistryEntryItem) => {
+  const openValidationDialog = (row: GalaxyRegistryEntry) => {
     validationDialog.entry_id = row.id
     validationDialog.system_name = row.solar_system_name
     validationDialog.validation_status =
@@ -1282,13 +1298,15 @@
     if (!validationDialog.entry_id) return
     updatingValidation.value = true
     try {
-      await updateAdminGalaxyRegistryEntryValidation(validationDialog.entry_id, {
-        validation_status: validationDialog.validation_status,
-        violation_reason:
-          validationDialog.validation_status === 'violation'
-            ? validationDialog.violation_reason || undefined
-            : undefined
-      })
+      await unwrapContract(
+        updateAdminEntryValidation(validationDialog.entry_id, {
+          validation_status: validationDialog.validation_status,
+          violation_reason:
+            validationDialog.validation_status === 'violation'
+              ? validationDialog.violation_reason || undefined
+              : undefined
+        })
+      )
       ElMessage.success(t('galaxyRegistry.messages.validationUpdated'))
       validationDialogVisible.value = false
       await Promise.all([refreshAdminEntries(), loadAnalytics()])
@@ -1297,13 +1315,13 @@
     }
   }
 
-  const canCreateEntry = (row: Api.Dashboard.GalaxyRegistrySystemItem) =>
+  const canCreateEntry = (row: GalaxyRegistrySystemItem) =>
     canCaptainTab.value &&
     row.is_enabled &&
     (row.status === 'idle' || (row.status === 'overdue' && !row.active_entry?.is_mine))
-  const canEndEntry = (row: Api.Dashboard.GalaxyRegistrySystemItem) =>
+  const canEndEntry = (row: GalaxyRegistrySystemItem) =>
     canCaptainTab.value && !!row.active_entry?.is_mine
-  const canEditExpectedEnd = (row: Api.Dashboard.GalaxyRegistrySystemItem) =>
+  const canEditExpectedEnd = (row: GalaxyRegistrySystemItem) =>
     canCaptainTab.value && !!row.active_entry?.is_mine
 
   const statusLabel = (status: string) => t(`galaxyRegistry.systemStatus.${status}`)

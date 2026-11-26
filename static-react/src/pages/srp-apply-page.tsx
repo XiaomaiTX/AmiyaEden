@@ -15,15 +15,16 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  fetchKillmailDetail,
-  fetchMyApplications,
-  fetchMyKillmails,
-  submitApplication,
-} from '@/api/srp'
+import { listMySrpApplications, getMySrpKillmails } from '@/api/generated/client'
+import { getSrpKillmailDetail, submitSrpApplication } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import type { Application, FleetKillmailItem, KillmailDetailResponse } from '@/types/api/srp'
+import type {
+  SrpApplication as Application,
+  SrpKillmail as FleetKillmailItem,
+  SrpKillmailDetail as KillmailDetailResponse,
+} from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -51,8 +52,14 @@ export function SrpApplyPage() {
     setError(null)
     try {
       const [killmailList, applicationList] = await Promise.all([
-        fetchMyKillmails({ limit: 50, exclude_submitted: true }),
-        fetchMyApplications({ current: 1, size: 20 }),
+        unwrapContract(
+          getMySrpKillmails({ limit: 50, exclude_submitted: true }),
+          'fetch my killmails failed'
+        ).then((data) => data ?? []),
+        unwrapContract(
+          listMySrpApplications({ current: 1, size: 20 }),
+          'fetch my srp applications failed'
+        ),
       ])
       setKillmails(killmailList ?? [])
       setApplications(applicationList.list ?? [])
@@ -90,7 +97,10 @@ export function SrpApplyPage() {
     const loadDetail = async () => {
       setDetailLoading(true)
       try {
-        const response = await fetchKillmailDetail({ killmail_id: selectedKillmailId })
+        const response = await unwrapContract(
+          getSrpKillmailDetail({ killmail_id: selectedKillmailId }),
+          'fetch killmail detail failed'
+        )
         if (!cancelled) setDetail(response)
       } catch (caughtError) {
         if (!cancelled) setError(getErrorMessage(caughtError, t('srpApply.detailLoadFailed')))
@@ -109,11 +119,14 @@ export function SrpApplyPage() {
     if (!selectedKillmail) return
     setSubmitting(true)
     try {
-      await submitApplication({
-        character_id: selectedKillmail.character_id,
-        killmail_id: selectedKillmail.killmail_id,
-        note: note.trim() || undefined,
-      })
+      await unwrapContract(
+        submitSrpApplication({
+          character_id: selectedKillmail.character_id,
+          killmail_id: selectedKillmail.killmail_id,
+          note: note.trim() || undefined,
+        }),
+        'submit srp application failed'
+      )
       setNote('')
       await loadData()
     } catch (caughtError) {
@@ -143,17 +156,16 @@ export function SrpApplyPage() {
               <span className="text-sm text-muted-foreground">{t('srpApply.killmail')}</span>
               <Select
                 selectedKey={String(selectedKillmailId ?? '')}
-                onSelectionChange={(key) => ((value) => setSelectedKillmailId(Number(value)))(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => setSelectedKillmailId(Number(value)))(String(key))
+                }
               >
                 <SelectTrigger className="h-10 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {killmails.map((killmail) => (
-                    <SelectItem
-                      key={killmail.killmail_id}
-                      id={String(killmail.killmail_id ?? '')}
-                    >
+                    <SelectItem key={killmail.killmail_id} id={String(killmail.killmail_id ?? '')}>
                       {killmail.killmail_id} - {killmail.victim_name} -{' '}
                       {formatTime(killmail.killmail_time)}
                     </SelectItem>

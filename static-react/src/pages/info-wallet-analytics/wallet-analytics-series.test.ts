@@ -8,14 +8,14 @@ import {
   resolveFlowAxisBound,
   shiftIsoDay,
 } from './wallet-analytics-series'
-import type { WalletAnalyticsDailyPoint, WalletAnalyticsRefTypeItem } from '@/types/api/eve-info'
+import type { InfoWalletDailyPoint, InfoWalletRefTypeItem } from '@/api/generated/client'
 
 function createPoint(
   date: string,
   income: number,
   expense: number,
   balance: number
-): WalletAnalyticsDailyPoint {
+): InfoWalletDailyPoint {
   return {
     date,
     income,
@@ -93,7 +93,7 @@ describe('wallet analytics series helpers', () => {
   })
 
   test('buildRefTypeSeries keeps only the requested direction, sorted and truncated', () => {
-    const breakdown: WalletAnalyticsRefTypeItem[] = [
+    const breakdown: InfoWalletRefTypeItem[] = [
       { ref_type: 'player_donation', income: 0, expense: 200, count: 1 },
       { ref_type: 'bounty_prizes', income: 80, expense: 0, count: 2 },
       { ref_type: 'market_transaction', income: 0, expense: 20, count: 1 },

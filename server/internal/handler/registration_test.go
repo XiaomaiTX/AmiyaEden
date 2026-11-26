@@ -1,21 +1,33 @@
 package handler
 
 import (
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/service"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestContactConflictResponse(t *testing.T) {
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
 	conflict := &service.ContactConflictError{Contact: "qq", PrimaryCharacterID: 9001, PrimaryCharacterName: "Primary Owner"}
-	if !contactConflictResponse(c, fmt.Errorf("wrapped: %w", conflict)) {
+	payload, ok := contactConflictPayload(fmt.Errorf("wrapped: %w", conflict))
+	if !ok {
 		t.Fatal("typed conflict not handled")
+	}
+	out := apicontract.CompleteEveRegistration200JSONResponse{
+		Headers: apicontract.CompleteEveRegistration200ResponseHeaders{CacheControl: "no-store"},
+	}
+	if err := out.FromContactConflict(payload); err != nil {
+		t.Fatal(err)
+	}
+	if err := out.VisitCompleteEveRegistrationResponse(w); err != nil {
+		t.Fatal(err)
+	}
+	if w.Code != http.StatusOK || w.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("status = %d, headers = %v", w.Code, w.Header())
 	}
 	var body struct {
 		Code int                          `json:"code"`

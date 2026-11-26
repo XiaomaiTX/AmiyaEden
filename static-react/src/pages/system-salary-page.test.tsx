@@ -2,8 +2,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
 import { SystemSalaryPage } from './system-salary-page'
-import { fetchSalarySettings, updateSalarySettings } from '@/api/salary'
-vi.mock('@/api/salary', () => ({ fetchSalarySettings: vi.fn(), updateSalarySettings: vi.fn() }))
+import { getSalarySettings, updateSalarySettings } from '@/api/generated/client'
+vi.mock('@/api/generated/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/api/generated/client')>()),
+  getSalarySettings: vi.fn(),
+  updateSalarySettings: vi.fn(),
+}))
 vi.mock('@/feedback', () => ({ notifySuccess: vi.fn() }))
 const settings = {
   recruitment: 10,
@@ -16,7 +20,7 @@ const settings = {
 beforeEach(() => {
   vi.resetAllMocks()
   usePreferenceStore.setState({ locale: 'zh-CN' })
-  vi.mocked(fetchSalarySettings).mockResolvedValue(settings)
+  vi.mocked(getSalarySettings).mockResolvedValue({ code: 200, msg: '', data: settings })
 })
 function open() {
   return render(
@@ -26,7 +30,7 @@ function open() {
   )
 }
 test('loads independent values and preserves explicit zero when saving', async () => {
-  vi.mocked(updateSalarySettings).mockImplementation(async (value) => value)
+  vi.mocked(updateSalarySettings).mockImplementation(async (data) => ({ code: 200, msg: '', data }))
   open()
   const input = await screen.findByLabelText('招新（新人申请标记已邀请）')
   fireEvent.change(input, { target: { value: '0' } })
@@ -37,7 +41,7 @@ test('loads independent values and preserves explicit zero when saving', async (
   expect(screen.getByLabelText('商城发货')).toHaveValue(6.5)
 })
 test('failed loading cannot save fallback defaults and can be retried', async () => {
-  vi.mocked(fetchSalarySettings).mockRejectedValueOnce(new Error('offline'))
+  vi.mocked(getSalarySettings).mockRejectedValueOnce(new Error('offline'))
   open()
   await screen.findByRole('alert')
   expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()

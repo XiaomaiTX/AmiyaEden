@@ -1,16 +1,16 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/react'
-import { fetchBlacklistEntries, fetchBlacklistSummary, refreshBlacklist } from '@/api/blacklist'
+import { latestRefresh, listBlacklist, refresh as refreshBlacklist } from '@/api/generated/client'
 import { notifyError, notifySuccess } from '@/feedback'
 import { I18nProvider } from '@/i18n'
 import { usePreferenceStore } from '@/stores'
-import type { BlacklistEntry, BlacklistRefreshSummary } from '@/types/api/blacklist'
+import type { BlacklistEntry, BlacklistRefreshSummary } from '@/api/generated/client'
 import { SystemBlacklistPage } from './system-blacklist-page'
 
-vi.mock('@/api/blacklist', () => ({
-  fetchBlacklistEntries: vi.fn(),
-  fetchBlacklistSummary: vi.fn(),
-  refreshBlacklist: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  listBlacklist: vi.fn(),
+  latestRefresh: vi.fn(),
+  refresh: vi.fn(),
 }))
 vi.mock('@/feedback', () => ({ notifyError: vi.fn(), notifySuccess: vi.fn() }))
 
@@ -42,6 +42,14 @@ const summary: BlacklistRefreshSummary = {
   next_refresh_at: '2020-01-01T00:00:00Z',
 }
 
+function success<T>(data: T) {
+  return { code: 200 as const, msg: 'ok', data }
+}
+
+function failure(msg: string) {
+  return { code: 400 as const, msg, data: null }
+}
+
 function page(list: BlacklistEntry[], total = list.length) {
   return { list, total, page: 1, pageSize: 20 }
 }
@@ -57,8 +65,8 @@ function open() {
 beforeEach(() => {
   vi.resetAllMocks()
   usePreferenceStore.setState({ locale: 'zh-CN' })
-  vi.mocked(fetchBlacklistEntries).mockResolvedValue(page(entries))
-  vi.mocked(fetchBlacklistSummary).mockResolvedValue(null)
+  vi.mocked(listBlacklist).mockResolvedValue(success(page(entries)))
+  vi.mocked(latestRefresh).mockResolvedValue(success(null))
 })
 
 test('renders all three kinds and the never-refreshed state', async () => {
@@ -77,7 +85,7 @@ test('renders all three kinds and the never-refreshed state', async () => {
   expect(
     await screen.findByText('尚未刷新过黑名单，点击「更新黑名单」开始导入。')
   ).toBeInTheDocument()
-  expect(fetchBlacklistEntries).toHaveBeenCalledWith({ current: 1, size: 20 })
+  expect(listBlacklist).toHaveBeenCalledWith({ current: 1, size: 20 })
 })
 
 test('sends the kind filter and trimmed keyword when searching', async () => {
@@ -91,7 +99,7 @@ test('sends the kind filter and trimmed keyword when searching', async () => {
   await user.click(screen.getByRole('button', { name: '搜索' }))
 
   await waitFor(() =>
-    expect(fetchBlacklistEntries).toHaveBeenLastCalledWith({
+    expect(listBlacklist).toHaveBeenLastCalledWith({
       current: 1,
       size: 20,
       kind: 'qq',
@@ -105,16 +113,17 @@ test('shows loading while refreshing, then the summary and a reloaded list', asy
   let finish: (value: BlacklistRefreshSummary) => void = () => {}
   vi.mocked(refreshBlacklist).mockReturnValue(
     new Promise((resolve) => {
-      finish = resolve
+      finish = (value) => resolve(success(value))
     })
   )
   open()
   await screen.findByText('Test Pilot（90000001）')
-  expect(fetchBlacklistEntries).toHaveBeenCalledTimes(1)
+  expect(listBlacklist).toHaveBeenCalledTimes(1)
 
   await user.click(screen.getByRole('button', { name: '更新黑名单' }))
   expect(screen.getByRole('button', { name: '正在更新…' })).toBeDisabled()
 
+  expect(refreshBlacklist).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) })
   finish(summary)
   await waitFor(() =>
     expect(notifySuccess).toHaveBeenCalledWith('黑名单已更新：新增 3，更新 0，移除 2')
@@ -124,7 +133,7 @@ test('shows loading while refreshing, then the summary and a reloaded list', asy
   expect(screen.getByText('Admin')).toBeInTheDocument()
   expect(screen.queryByText('本次查询失败')).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: '更新黑名单' })).toBeEnabled()
-  await waitFor(() => expect(fetchBlacklistEntries).toHaveBeenCalledTimes(2))
+  await waitFor(() => expect(listBlacklist).toHaveBeenCalledTimes(2))
 })
 
 test.each([
@@ -144,8 +153,8 @@ test.each([
   const user = userEvent.setup()
   usePreferenceStore.setState({ locale: copy.locale })
   const deferredSummary = { ...summary, lookup_failed: 7, next_refresh_at: null }
-  vi.mocked(fetchBlacklistSummary).mockResolvedValue(deferredSummary)
-  vi.mocked(refreshBlacklist).mockResolvedValue(deferredSummary)
+  vi.mocked(latestRefresh).mockResolvedValue(success(deferredSummary))
+  vi.mocked(refreshBlacklist).mockResolvedValue(success(deferredSummary))
   open()
 
   expect(await screen.findByText(copy.failure)).toBeInTheDocument()
@@ -156,17 +165,19 @@ test.each([
   expect(screen.getByText(copy.failure)).toBeInTheDocument()
 
   // A later successful refresh clears the previous failed-name warning.
-  vi.mocked(refreshBlacklist).mockResolvedValue(summary)
+  vi.mocked(refreshBlacklist).mockResolvedValue(success(summary))
   await user.click(screen.getByRole('button', { name: copy.button }))
   await waitFor(() => expect(notifySuccess).toHaveBeenLastCalledWith(copy.success))
   expect(screen.queryByText(copy.failure)).not.toBeInTheDocument()
 })
 
 test('disables refresh during the complete-refresh cooldown and shows its end time', async () => {
-  vi.mocked(fetchBlacklistSummary).mockResolvedValue({
-    ...summary,
-    next_refresh_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  })
+  vi.mocked(latestRefresh).mockResolvedValue(
+    success({
+      ...summary,
+      next_refresh_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    })
+  )
   open()
   expect(await screen.findByText('下次可刷新（完整刷新间隔 24 小时）')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: '更新黑名单' })).toBeDisabled()
@@ -175,10 +186,10 @@ test('disables refresh during the complete-refresh cooldown and shows its end ti
 
 test('localizes backend error keys and falls back for unknown errors', async () => {
   const user = userEvent.setup()
-  vi.mocked(fetchBlacklistEntries).mockRejectedValue(new Error('blacklist.errors.invalidQuery'))
+  vi.mocked(listBlacklist).mockResolvedValue(failure('blacklist.errors.invalidQuery'))
   vi.mocked(refreshBlacklist)
-    .mockRejectedValueOnce(new Error('blacklist.errors.refreshInProgress'))
-    .mockRejectedValueOnce(new Error('blacklist.errors.refreshCooldown'))
+    .mockResolvedValueOnce(failure('blacklist.errors.refreshInProgress'))
+    .mockResolvedValueOnce(failure('blacklist.errors.refreshCooldown'))
     .mockRejectedValueOnce(new Error('Failed to fetch'))
   open()
 

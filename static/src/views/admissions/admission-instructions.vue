@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
   import { I18nT, useI18n } from 'vue-i18n'
-  import type { AdmissionKind } from '@/types/api/admissions'
+  import type { AdmissionKind } from '@/api/generated/client'
 
   defineProps<{ kind: AdmissionKind }>()
   const { t } = useI18n()

@@ -17,9 +17,7 @@ source_of_truth:
   - server/internal/handler/sys_config.go
   - server/internal/utils/allow_corporations.go
   - static/src/constants/system-identity.ts
-  - static/src/api/sys-config.ts
-  - static/src/api/system-manage.ts
-  - static/src/api/webhook.ts
+  - static/src/api/generated/client.ts
   - static/src/views/system
 ---
 
@@ -67,19 +65,9 @@ QQ Bot 通知已下线；旧类型不会映射到其他通知渠道。仅当现�
 - `static/src/views/system/webhook`
 - `static/src/views/system/blacklist`（React：`static-react/src/pages/system-blacklist-page.tsx`）
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/system/basic-config`
-- `/api/v1/system/sde-config`
-- `/api/v1/system/basic-config/allow-corporations`
-- `/api/v1/system/basic-config/character-esi-restriction`
-- `/api/v1/system/role/definitions`
-- `/api/v1/system/user/*`
-- `/api/v1/system/auto-role/*`
-- `/api/v1/system/pap/*`
-- `/api/v1/system/pap-exchange/*`
-- `/api/v1/system/webhook/*`
-- `/api/v1/system/blacklist`、`/api/v1/system/blacklist/refresh`
+[系统配置](../../../contracts/modules/system-config.yaml)、[用户与角色](../../../contracts/modules/users.yaml)、[自动职权](../../../contracts/modules/auto-role.yaml)、[联盟 PAP](../../../contracts/modules/fleet-config-admin-pap.yaml)、[PAP 兑换](../../../contracts/modules/pap-exchange.yaml)、[审计与 Webhook](../../../contracts/modules/audit-webhook.yaml)、[书签与黑名单](../../../contracts/modules/bookmarks-blacklist.yaml)。
 
 ## 权限边界
 
@@ -159,9 +147,7 @@ For role assignment rules and super_admin protection, see `docs/architecture/aut
 - `server/internal/service/sys_webhook.go`
 - `server/internal/service/blacklist.go`、`blacklist_source.go`、`blacklist_esi.go`
 - `server/internal/repository/blacklist.go`、`server/internal/model/blacklist.go`、`server/bootstrap/blacklist_migration.go`
-- `static/src/api/system-manage.ts`
-- `static/src/api/pap-exchange.ts`
-- `static/src/api/webhook.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/views/system`
 
 ## 前端实现映射（迁移期）

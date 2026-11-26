@@ -15,12 +15,16 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { fetchMyAlliancePAP } from '@/api/alliance-pap'
-import { fetchMyPapLogs } from '@/api/fleet'
+import {
+  getMyAlliancePAP,
+  getMyPapLogs,
+  type FleetAlliancePAPRecord,
+  type FleetAlliancePAPSummary,
+  type FleetPapLogDetail,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import type { AlliancePAPFleet, AlliancePAPSummary } from '@/types/api/alliance-pap'
-import type { FleetPapLog } from '@/types/api/fleet'
 import { formatDateTime, getErrorMessage, ShopBadge } from './shop-page-utils'
 
 type ActiveTab = 'corporation' | 'alliance'
@@ -58,12 +62,12 @@ export function OperationPapPage() {
   const [loading, setLoading] = useState(true)
   const [allianceLoading, setAllianceLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [papLogs, setPapLogs] = useState<FleetPapLog[]>([])
+  const [papLogs, setPapLogs] = useState<FleetPapLogDetail[]>([])
   const [papPage, setPapPage] = useState(1)
   const [papPageSize, setPapPageSize] = useState(50)
   const [allianceMonth, setAllianceMonth] = useState(currentMonthValue())
-  const [allianceSummary, setAllianceSummary] = useState<AlliancePAPSummary | null>(null)
-  const [allianceFleets, setAllianceFleets] = useState<AlliancePAPFleet[]>([])
+  const [allianceSummary, setAllianceSummary] = useState<FleetAlliancePAPSummary>(null)
+  const [allianceFleets, setAllianceFleets] = useState<FleetAlliancePAPRecord[]>([])
   const [alliancePage, setAlliancePage] = useState(1)
   const [alliancePageSize, setAlliancePageSize] = useState(50)
 
@@ -92,7 +96,9 @@ export function OperationPapPage() {
     setLoading(true)
     setError(null)
     try {
-      const logs = await fetchMyPapLogs()
+      const logs = await unwrapContract(getMyPapLogs(), 'fetch my pap logs failed').then(
+        (data) => data ?? []
+      )
       setPapLogs(logs ?? [])
       setPapPage(1)
     } catch (caughtError) {
@@ -108,7 +114,10 @@ export function OperationPapPage() {
     setError(null)
     try {
       const [year, month] = allianceMonth.split('-').map((value) => Number(value))
-      const response = await fetchMyAlliancePAP({ year, month })
+      const response = await unwrapContract(
+        getMyAlliancePAP({ year, month }),
+        'fetch alliance pap failed'
+      )
       setAllianceSummary(response.summary ?? null)
       setAllianceFleets(response.fleets ?? [])
       setAlliancePage(1)
@@ -228,7 +237,7 @@ export function OperationPapPage() {
                     <TableCell className="px-3 py-2">
                       {row.fc_character_name || row.issued_by}
                     </TableCell>
-                    <TableCell className="px-3 py-2">{formatDateTime(row.created_at)}</TableCell>
+                    <TableCell className="px-3 py-2">{formatDateTime(row.issued_at)}</TableCell>
                   </TableRow>
                 ))}
                 {!loading && papLogs.length === 0 ? (
@@ -268,10 +277,12 @@ export function OperationPapPage() {
             </Button>
             <Select
               selectedKey={String(papPageSize ?? '')}
-              onSelectionChange={(key) => ((value) => {
-                setPapPageSize(Number(value))
-                setPapPage(1)
-              })(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => {
+                  setPapPageSize(Number(value))
+                  setPapPage(1)
+                })(String(key))
+              }
             >
               <SelectTrigger className="h-8">
                 <SelectValue />
@@ -437,10 +448,12 @@ export function OperationPapPage() {
             </Button>
             <Select
               selectedKey={String(alliancePageSize ?? '')}
-              onSelectionChange={(key) => ((value) => {
-                setAlliancePageSize(Number(value))
-                setAlliancePage(1)
-              })(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => {
+                  setAlliancePageSize(Number(value))
+                  setAlliancePage(1)
+                })(String(key))
+              }
             >
               <SelectTrigger className="h-8">
                 <SelectValue />

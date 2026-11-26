@@ -25,13 +25,14 @@
 </template>
 
 <script setup lang="ts">
+  import type { DashboardCards } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
 
   import { formatIskSmart } from '@/utils/common'
   import { humanizeNumber } from '@/utils/common/text'
 
   const props = defineProps<{
-    cards?: Api.Dashboard.Cards
+    cards?: DashboardCards
   }>()
   const { t } = useI18n()
 

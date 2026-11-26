@@ -56,13 +56,15 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoContractListItem, InfoContractsInput } from '@/api/generated/client'
   import { ElTag, ElSelect, ElOption } from 'element-plus'
   import { useTable } from '@/hooks/core/useTable'
   import { formatIskSmart, formatTime } from '@utils/common'
   import { useI18n } from 'vue-i18n'
   import { useUserStore } from '@/store/modules/user'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
-  import { fetchInfoContracts } from '@/api/eve-info'
+  import { getContracts } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import ContractDetailDialog from './modules/contract-detail-dialog.vue'
 
   defineOptions({ name: 'EveInfoContracts' })
@@ -70,7 +72,7 @@
   const { t } = useI18n()
   const userStore = useUserStore()
 
-  type ContractItem = Api.EveInfo.ContractItem
+  type ContractItem = InfoContractListItem
 
   const filterType = ref('')
   const filterStatus = ref('')
@@ -134,8 +136,8 @@
     reversed: t('info.contractStatusReversed')
   }
 
-  const fetchContractsList = (params: Api.EveInfo.ContractsRequest) =>
-    fetchInfoContracts({ ...params, language: userStore.language })
+  const fetchContractsList = (params: InfoContractsInput) =>
+    unwrapContract(getContracts({ ...params, language: userStore.language }))
 
   const {
     columns,
@@ -151,7 +153,7 @@
   } = useTable({
     core: {
       apiFn: fetchContractsList,
-      apiParams: { current: 1, size: 200, type: '', status: '' } as Api.EveInfo.ContractsRequest,
+      apiParams: { current: 1, size: 200, type: '', status: '' } as InfoContractsInput,
       columnsFactory: () => [
         { type: 'globalIndex', width: 60, label: '#', fixed: 'left' },
         {

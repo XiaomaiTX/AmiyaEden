@@ -2,10 +2,11 @@ package repository
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/model"
 	"strings"
 )
 
-func (r *SdeRepository) SearchSolarSystemsByKeyword(keyword string, exactSolarSystemID int64, limit int) ([]GalaxyRegistrySdeSystem, error) {
+func (r *SdeRepository) SearchSolarSystemsByKeyword(keyword string, exactSolarSystemID int64, limit int) ([]model.GalaxyRegistrySdeSystem, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -38,8 +39,8 @@ func (r *SdeRepository) searchSolarSystemsWithNaming(
 	keyword string,
 	exactSolarSystemID int64,
 	limit int,
-) ([]GalaxyRegistrySdeSystem, error) {
-	rows := make([]GalaxyRegistrySdeSystem, 0)
+) ([]model.GalaxyRegistrySdeSystem, error) {
+	rows := make([]model.GalaxyRegistrySdeSystem, 0)
 	query := global.DB.Table(naming.table("mapSolarSystems", "ms")).
 		Select(strings.Join([]string{
 			naming.col("ms", "solarSystemID") + " AS solar_system_id",

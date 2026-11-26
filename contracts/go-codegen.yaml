@@ -1,0 +1,19 @@
+package: apicontract
+generate:
+  models: true
+  gin-server: true
+  strict-server: true
+compatibility:
+  # The middleware and error callbacks take the OpenAPI operationId, not the Go method name.
+  preserve-original-operation-id-casing-in-embedded-spec: true
+additional-imports:
+  - package: strconv
+  - package: github.com/gin-gonic/gin/binding
+  - package: amiya-eden/pkg/response
+    alias: contractresponse
+output-options:
+  skip-prune: true
+  user-templates:
+    gin/gin-register.tmpl: templates/gin-register.tmpl
+    gin/gin-wrappers.tmpl: templates/gin-wrapper.tmpl
+    strict/strict-gin.tmpl: templates/strict/strict-gin.tmpl

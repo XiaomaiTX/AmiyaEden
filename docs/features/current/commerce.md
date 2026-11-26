@@ -7,8 +7,7 @@ source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/shop.go
   - server/internal/service/sys_wallet.go
-  - static/src/api/shop.ts
-  - static/src/api/sys-wallet.ts
+  - static/src/api/generated/client.ts
   - static/src/views/shop
   - static/src/views/system/wallet
 ---
@@ -44,14 +43,12 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 当前实现位于 `static/src`。
-- React 已承接商店浏览、商品管理、订单管理和系统钱包页面；React API 与类型以 `static-react/src/api/shop.ts`、`sys-wallet.ts` 及对应类型文件为准。
+- React 已承接商店浏览、商品管理、订单管理和系统钱包页面；商店与系统钱包页面使用 [React 生成客户端](../../../static-react/src/api/generated/client.ts)中的操作与契约类型。
 - 具体路由和回归状态以 React 迁移基线为唯一迁移清单。
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/shop/*`
-- `/api/v1/system/wallet/*`
-- `/api/v1/system/shop/*`
+[商城 OpenAPI](../../../contracts/modules/shop.yaml)、[钱包与福利 OpenAPI](../../../contracts/modules/wallet-welfare.yaml)。
 
 ## 权限边界
 
@@ -152,7 +149,6 @@ source_of_truth:
 - `server/internal/service/sys_wallet.go`
 - `server/internal/repository/shop.go`
 - `server/internal/router/router.go`
-- `static/src/api/shop.ts`
-- `static/src/api/sys-wallet.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/views/shop`
 - `static/src/views/system/wallet`

@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = path.resolve('src')
-const targets = ['api', 'pages', 'types']
+const root = fileURLToPath(new URL('../src', import.meta.url))
 const allowTests = /\.(test|spec)\.[jt]sx?$/
 const allowContractStub = /src[\\/]+types[\\/]+api-contract\.d\.ts$/
 const forbiddenPatterns = [
@@ -28,30 +28,23 @@ function walk(dir) {
 
 const violations = []
 
-for (const target of targets) {
-  const dir = path.join(root, target)
-  if (!fs.existsSync(dir)) {
+for (const file of walk(root)) {
+  const normalized = file.replace(/\\/g, '/')
+  if (allowTests.test(normalized) || allowContractStub.test(normalized)) {
     continue
   }
 
-  for (const file of walk(dir)) {
-    const normalized = file.replace(/\\/g, '/')
-    if (allowTests.test(normalized) || allowContractStub.test(normalized)) {
-      continue
-    }
-
-    const content = fs.readFileSync(file, 'utf8')
-    for (const pattern of forbiddenPatterns) {
-      if (pattern.test(content)) {
-        violations.push(normalized)
-        break
-      }
-    }
+  const content = fs.readFileSync(file, 'utf8')
+  if (forbiddenPatterns.some((pattern) => pattern.test(content))) {
+    violations.push(`${normalized}: forbidden Vue API contract reference`)
+  }
+  if (!normalized.includes('/api/generated/') && /["'`][/]api[/]v1(?:[/"'`?]|$)/m.test(content)) {
+    violations.push(`${normalized}: use the generated client for /api/v1 calls`)
   }
 }
 
 if (violations.length > 0) {
-  console.error('Forbidden Vue API contract references found:')
+  console.error('API contract violations found:')
   for (const file of violations) {
     console.error(`- ${file}`)
   }

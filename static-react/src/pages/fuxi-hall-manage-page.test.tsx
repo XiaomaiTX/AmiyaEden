@@ -10,23 +10,24 @@ import {
   withPreviewCard,
 } from '@/pages/fuxi-hall-manage-helpers'
 import {
-  createFuxiHallCard,
-  fetchFuxiHallCards,
-  fetchFuxiHallPage,
-  updateFuxiHallPage,
-} from '@/api/fuxi-hall'
+  createCard,
+  listHallCards,
+  getHallPageConfig,
+  updateHallPageConfig,
+} from '@/api/generated/client'
 import { notifyError, notifySuccess } from '@/feedback'
-import type { FuxiHallCard, FuxiHallPageConfig } from '@/types/api/fuxi-hall'
+import type { FuxiHallCard } from '@/types/api/fuxi-hall'
+import type { HallPage as FuxiHallPageConfig } from '@/api/generated/client'
 
-vi.mock('@/api/fuxi-hall', () => ({
-  refreshFuxiHallContributions: vi.fn(),
-  createFuxiHallCard: vi.fn(),
-  deleteFuxiHallCard: vi.fn(),
-  fetchFuxiHallCards: vi.fn(),
-  fetchFuxiHallPage: vi.fn(),
-  reorderFuxiHallCards: vi.fn(),
-  updateFuxiHallCard: vi.fn(),
-  updateFuxiHallPage: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  refreshContributions: vi.fn(),
+  createCard: vi.fn(),
+  deleteHallCard: vi.fn(),
+  listHallCards: vi.fn(),
+  getHallPageConfig: vi.fn(),
+  reorderCards: vi.fn(),
+  updateHallCard: vi.fn(),
+  updateHallPageConfig: vi.fn(),
 }))
 
 vi.mock('@/feedback', () => ({
@@ -62,17 +63,16 @@ const samplePage: FuxiHallPageConfig = {
   floors: [{ key: 'first', name: '一楼', capacity: 12 }],
 }
 
-const sampleCards: FuxiHallCard[] = []
-
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(fetchFuxiHallPage).mockResolvedValue(samplePage)
-  vi.mocked(fetchFuxiHallCards).mockResolvedValue(sampleCards)
-  vi.mocked(updateFuxiHallPage).mockResolvedValue(samplePage)
+  vi.mocked(getHallPageConfig).mockResolvedValue({ code: 200, msg: 'ok', data: samplePage })
+  vi.mocked(listHallCards).mockResolvedValue({ code: 200, msg: 'ok', data: [] })
+  vi.mocked(updateHallPageConfig).mockResolvedValue({ code: 200, msg: 'ok', data: samplePage })
 })
 
 test('floor preview applies visibility changes from the draft card', () => {
-  const card = (id: number, visible: boolean) => ({ id, visible, floor_key: 'first' }) as FuxiHallCard
+  const card = (id: number, visible: boolean) =>
+    ({ id, visible, floor_key: 'first' }) as FuxiHallCard
   const shown = card(1, true)
   const hidden = card(2, false)
   const ids = (cards: FuxiHallCard[]) => cards.map((item) => item.id)
@@ -124,8 +124,8 @@ test('floor capacity input truncates decimals and blocks empty submission before
   expect(capacityInput).toHaveValue(2)
 
   await user.click(screen.getByRole('button', { name: '保存' }))
-  await waitFor(() => expect(updateFuxiHallPage).toHaveBeenCalledTimes(1))
-  expect(updateFuxiHallPage).toHaveBeenCalledWith('hall-of-fame', {
+  await waitFor(() => expect(updateHallPageConfig).toHaveBeenCalledTimes(1))
+  expect(updateHallPageConfig).toHaveBeenCalledWith('hall-of-fame', {
     title: '伏羲名人堂',
     subtitle: '',
     description_html: '',
@@ -135,7 +135,7 @@ test('floor capacity input truncates decimals and blocks empty submission before
 
   fireEvent.change(capacityInput, { target: { value: '' } })
   await user.click(screen.getByRole('button', { name: '保存' }))
-  expect(updateFuxiHallPage).toHaveBeenCalledTimes(1)
+  expect(updateHallPageConfig).toHaveBeenCalledTimes(1)
   expect(notifyError).toHaveBeenCalledWith('请设置1至12个有效楼层，每层人数上限为1至10000')
 })
 
@@ -161,29 +161,39 @@ test('card offset input truncates decimals and blocks empty submission before AP
 
   fireEvent.change(fleetsInput, { target: { value: '' } })
   await user.click(within(dialog).getByRole('button', { name: '保存' }))
-  expect(createFuxiHallCard).not.toHaveBeenCalled()
+  expect(createCard).not.toHaveBeenCalled()
   expect(notifyError).toHaveBeenCalledWith('历史补录次数须为0至10亿的整数')
 })
 
 test('font scale input supports multi-digit typing like 16 and blocks out-of-range values on save', async () => {
   const user = userEvent.setup()
-  vi.mocked(createFuxiHallCard).mockResolvedValue({
-    id: 10,
-    page_key: 'hall-of-fame',
-    nickname: 'Alpha',
-    main_character_id: 1,
-    main_character_name: 'MainChar',
-    title_tags: [],
-    description_html: '',
-    accent_color: '#3b82f6',
-    avatar_shape: 'circle',
-    font_scale: 16,
-    visible: true,
-    floor_key: 'first',
-    is_current_management: false,
-    sort_order: 1,
-    created_at: '',
-    updated_at: '',
+  vi.mocked(createCard).mockResolvedValue({
+    code: 200,
+    msg: 'ok',
+    data: {
+      id: 10,
+      page_key: 'hall-of-fame',
+      nickname: 'Alpha',
+      main_character_id: 1,
+      main_character_name: 'MainChar',
+      qq: '',
+      avatar_image: '',
+      contributions: { corp_pap: 0, fleets: 0, welfare: 0, srp: 0, recruitment: 0, mentoring: 0 },
+      contributions_updated_at: null,
+      can_edit: false,
+      tenure_months: null,
+      title_tags: [],
+      description_html: '',
+      accent_color: '#3b82f6',
+      avatar_shape: 'circle',
+      font_scale: 16,
+      visible: true,
+      floor_key: 'first',
+      is_current_management: false,
+      sort_order: 1,
+      created_at: '',
+      updated_at: '',
+    },
   })
 
   render(
@@ -204,8 +214,8 @@ test('font scale input supports multi-digit typing like 16 and blocks out-of-ran
   expect(fontScaleInput).toHaveValue(16)
 
   await user.click(within(dialog).getByRole('button', { name: '保存' }))
-  await waitFor(() => expect(createFuxiHallCard).toHaveBeenCalledTimes(1))
-  expect(createFuxiHallCard).toHaveBeenCalledWith(
+  await waitFor(() => expect(createCard).toHaveBeenCalledTimes(1))
+  expect(createCard).toHaveBeenCalledWith(
     expect.objectContaining({
       font_scale: 16,
     })

@@ -19,10 +19,11 @@ source_of_truth:
   - server/jobs/esi_refresh.go
   - server/jobs/auto_srp_schedule.go
   - server/jobs/structure_fuel_rate_sync.go
+  - contracts/modules/tasks.yaml
   - static/src/router/modules/system.ts
-  - static/src/api/task-manager.ts
-  - static/src/api/esi-refresh.ts
-  - static/src/views/system/task-manager
+  - static/src/views/system/task-manager/modules/TasksTab.vue
+  - static/src/views/system/task-manager/modules/EsiStatusesTab.vue
+  - static-react/src/pages/system-task-manager-page.tsx
 ---
 
 # 任务管理
@@ -73,20 +74,13 @@ source_of_truth:
 ## 前端实现映射（迁移期）
 
 - Vue 当前实现位于 `static/src`。
-- React 已承接系统任务管理、ESI 状态与历史页面，使用 `static-react/src/api/task-manager.ts` 及对应类型。
+- [React 任务管理页](../../../static-react/src/pages/system-task-manager-page.tsx)已承接系统任务管理、ESI 状态与历史页面，使用生成的客户端操作与类型。
 - 执行、调度修改和 ESI 刷新权限仍由后端与路由/按钮元数据共同约束。
 - `static/src/router/modules/system.ts` 中的 `/system/task-manager`
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/tasks`
-- `/api/v1/tasks/history`
-- `/api/v1/tasks/:name/run`
-- `/api/v1/tasks/:name/schedule`
-- `/api/v1/tasks/esi/tasks/:name/interval`
-- `/api/v1/tasks/esi/*`
-- `/api/v1/info/esi-refresh`
-  - 其中 `/api/v1/tasks/esi/monitor` 返回 ESI 任务聚合监控快照
+[任务与 ESI 管理 OpenAPI](../../../contracts/modules/tasks.yaml)、[人物自助刷新 OpenAPI](../../../contracts/modules/info-character.yaml)。
 
 ## 权限边界
 
@@ -109,6 +103,7 @@ source_of_truth:
 
 ## 关键不变量
 
+- ESI 状态列表的超范围页返回空列表，保留总数；极大的页码不应使分页偏移溢出或导致请求失败。
 - 任务定义与执行锁属于运行时注册表；数据库只保存周期任务的调度覆盖和执行流水
 - 仅 `recurring` 任务允许修改调度；支持带秒字段的 6 段 cron 表达式，也支持 `@every <duration>` 描述符
 - 同一任务在同一进程内不会并发执行两次；手动触发冲突时返回 `409 Conflict`，cron 触发冲突时跳过本轮执行
@@ -135,6 +130,7 @@ source_of_truth:
 - `server/jobs/esi_refresh.go`
 - `server/jobs/auto_srp_schedule.go`
 - `server/jobs/structure_fuel_rate_sync.go`
-- `static/src/api/task-manager.ts`
-- `static/src/api/esi-refresh.ts`
-- `static/src/views/system/task-manager`
+- `contracts/modules/tasks.yaml`
+- `static/src/views/system/task-manager/modules/TasksTab.vue`
+- `static/src/views/system/task-manager/modules/EsiStatusesTab.vue`
+- `static-react/src/pages/system-task-manager-page.tsx`

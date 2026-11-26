@@ -144,6 +144,8 @@
 </template>
 
 <script setup lang="ts">
+  import type { ShopAdminProductListInput, ShopProduct } from '@/api/generated/client'
+  import type { SdeSearchItem } from '@/api/generated/client'
   import {
     ElTag,
     ElButton,
@@ -160,19 +162,20 @@
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
   import {
-    adminListProducts,
-    adminCreateProduct,
-    adminUpdateProduct,
-    adminDeleteProduct
-  } from '@/api/shop'
-  import { uploadImageAsDataUrl } from '@/api/upload'
+    uploadImage,
+    adminCreateShopProduct,
+    adminDeleteShopProduct,
+    adminListShopProducts,
+    adminUpdateShopProduct
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'ManageProducts' })
   const { t } = useI18n()
 
-  type Product = Api.Shop.Product
+  type Product = ShopProduct
 
   // ─── 商品类型/状态映射 ───
   const PRODUCT_STATUS_CONFIG = computed(
@@ -201,7 +204,8 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: adminListProducts,
+      apiFn: (params: ShopAdminProductListInput) =>
+        unwrapContract(adminListShopProducts(params ?? { current: 1, size: 20 })),
       apiParams: { current: 1, size: 20 },
       immediate: false,
       columnsFactory: () => [
@@ -368,10 +372,10 @@
     submitLoading.value = true
     try {
       if (editingProduct.value) {
-        await adminUpdateProduct({ id: editingProduct.value.id, ...formData })
+        await unwrapContract(adminUpdateShopProduct({ id: editingProduct.value.id, ...formData }))
         ElMessage.success(t('shop.manage.updateSuccess'))
       } else {
-        await adminCreateProduct({ ...formData })
+        await unwrapContract(adminCreateShopProduct({ ...formData }))
         ElMessage.success(t('shop.manage.createSuccess'))
       }
       dialogVisible.value = false
@@ -394,7 +398,7 @@
       }
     )
     try {
-      await adminDeleteProduct(row.id)
+      await unwrapContract(adminDeleteShopProduct({ id: row.id }))
       ElMessage.success(t('shop.manage.deleteSuccess'))
       refreshData()
     } catch (e: any) {
@@ -417,7 +421,7 @@
   async function handleImageUpload(options: UploadRequestOptions) {
     imageUploading.value = true
     try {
-      const res = (await uploadImageAsDataUrl(options.file as File)) as any
+      const res = await unwrapContract(uploadImage({ file: options.file as File }))
       formData.image = res?.url ?? ''
       ElMessage.success(t('shop.manage.uploadSuccess'))
     } catch (e: any) {
@@ -430,7 +434,7 @@
   // ─── SDE 物品搜索 ───
   const sdeTypeId = ref<number | null>(null)
 
-  function onSdeSelect(item: Api.Sde.FuzzySearchItem | null) {
+  function onSdeSelect(item: SdeSearchItem | null) {
     if (item) {
       if (!formData.name) {
         formData.name = item.name

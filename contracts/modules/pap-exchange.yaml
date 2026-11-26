@@ -1,0 +1,73 @@
+paths:
+  /system/pap-exchange/rates:
+    get:
+      operationId: getPapExchangeRates
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        '200': { $ref: '#/components/responses/PapExchangeResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: setPapExchangeRates
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PapExchangeInput' }
+      responses:
+        '200': { $ref: '#/components/responses/PapExchangeResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  responses:
+    PapExchangeResult:
+      description: PAP exchange settings or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/PapExchangeSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+  schemas:
+    PapExchangeSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/PapExchangeConfig' }
+    PapExchangeConfig:
+      type: object
+      required: [rates, multichar_full_reward_count, multichar_reduced_reward_count, multichar_reduced_reward_pct]
+      properties:
+        rates: { type: array, items: { $ref: '#/components/schemas/PapExchangeRate' } }
+        multichar_full_reward_count: { type: integer }
+        multichar_reduced_reward_count: { type: integer }
+        multichar_reduced_reward_pct: { type: integer }
+    PapExchangeRate:
+      type: object
+      required: [pap_type, display_name, rate, updated_at]
+      properties:
+        pap_type: { type: string }
+        display_name: { type: string }
+        rate: { type: number, format: double }
+        updated_at: { type: string, format: date-time }
+    PapExchangeInput:
+      type: object
+      required: [rates, multichar_full_reward_count, multichar_reduced_reward_count, multichar_reduced_reward_pct]
+      properties:
+        rates:
+          type: array
+          items: { $ref: '#/components/schemas/PapExchangeRateInput' }
+          x-oapi-codegen-extra-tags: { binding: required }
+        multichar_full_reward_count: { type: integer, minimum: 0, x-go-type: '*int', x-oapi-codegen-extra-tags: { binding: 'required,gte=0' } }
+        multichar_reduced_reward_count: { type: integer, minimum: 0, x-go-type: '*int', x-oapi-codegen-extra-tags: { binding: 'required,gte=0' } }
+        multichar_reduced_reward_pct: { type: integer, minimum: 0, maximum: 100, x-go-type: '*int', x-oapi-codegen-extra-tags: { binding: 'required,gte=0,lte=100' } }
+    PapExchangeRateInput:
+      type: object
+      required: [pap_type, rate]
+      properties:
+        pap_type: { type: string, minLength: 1, x-go-name: PapType, x-oapi-codegen-extra-tags: { binding: required } }
+        display_name: { type: string, x-go-type-skip-optional-pointer: true }
+        rate: { type: number, format: double, minimum: 0, exclusiveMinimum: true, x-oapi-codegen-extra-tags: { binding: 'required,gt=0' } }

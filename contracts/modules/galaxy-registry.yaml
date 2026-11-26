@@ -1,0 +1,533 @@
+paths:
+  /dashboard/galaxy-registry/systems:
+    get:
+      operationId: listSystems
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard"]
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistrySystemsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/entries:
+    post:
+      operationId: createEntry
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:captain"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GalaxyRegistryCreateEntryInput' }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/entries/{id}/end:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    post:
+      operationId: endMyEntry
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:captain"]
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/entries/{id}/expected-end-at:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    put:
+      operationId: updateMyExpectedEndAt
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:captain"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GalaxyRegistryUpdateExpectedEndAtInput' }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/my-entries:
+    get:
+      operationId: listMyEntries
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:captain"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 200 }
+          description: Page size capped at 1000.
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: validation_status
+          in: query
+          schema: { type: string }
+        - name: start_date
+          in: query
+          schema: { type: string }
+          description: Accepts RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD.
+        - name: end_date
+          in: query
+          schema: { type: string }
+          description: Accepts RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD. A date-only value includes the whole day.
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/sde-systems:
+    get:
+      operationId: searchAdminSdeSystems
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistrySdeSystemsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/systems:
+    get:
+      operationId: listAdminSystems
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryAdminSystemsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createAdminSystem
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GalaxyRegistryAdminCreateSystemInput' }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryAdminSystemResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/systems/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    put:
+      operationId: updateAdminSystem
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GalaxyRegistryAdminUpdateSystemInput' }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryAdminSystemResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteAdminSystem
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/entries:
+    get:
+      operationId: listAdminEntries
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 200 }
+          description: Page size capped at 1000.
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: validation_status
+          in: query
+          schema: { type: string }
+        - name: start_date
+          in: query
+          schema: { type: string }
+          description: Accepts RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD.
+        - name: end_date
+          in: query
+          schema: { type: string }
+          description: Accepts RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD. A date-only value includes the whole day.
+        - name: system_config_id
+          in: query
+          x-gin-trim-query: true
+          description: Leading and trailing whitespace is ignored; a blank value leaves the list unfiltered by system.
+          schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/entries/{id}/force-end:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    post:
+      operationId: forceEndAdminEntry
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/entries/{id}/revalidate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    post:
+      operationId: revalidateAdminEntry
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/entries/{id}/validation:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    put:
+      operationId: updateAdminEntryValidation
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GalaxyRegistryAdminUpdateValidationInput' }
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryEntryResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /dashboard/galaxy-registry/admin/analytics:
+    get:
+      operationId: getAdminAnalytics
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+        - name: start_date
+          in: query
+          schema: { type: string }
+          description: Accepts RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD.
+        - name: end_date
+          in: query
+          schema: { type: string }
+          description: Accepts RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD. A date-only value includes the whole day.
+      responses:
+        '200': { $ref: '#/components/responses/GalaxyRegistryAdminAnalyticsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  responses:
+    GalaxyRegistrySystemsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistrySystemsSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistryEntryResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistryEntrySuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistryEntryPageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistryEntryPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistrySdeSystemsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistrySdeSystemsSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistryAdminSystemsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistryAdminSystemsSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistryAdminSystemResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistryAdminSystemSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistryNullResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/NullSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    GalaxyRegistryAdminAnalyticsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/GalaxyRegistryAdminAnalyticsSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+  schemas:
+    GalaxyRegistrySystemsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/GalaxyRegistrySystems' }
+    GalaxyRegistryEntrySuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/GalaxyRegistryEntry' }
+    GalaxyRegistryEntryPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/GalaxyRegistryEntryPage' }
+    GalaxyRegistrySdeSystemsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/GalaxyRegistrySdeSystem' } }
+    GalaxyRegistryAdminSystemsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { type: array, items: { $ref: '#/components/schemas/GalaxyRegistryAdminSystem' } }
+    GalaxyRegistryAdminSystemSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/GalaxyRegistryAdminSystem' }
+    GalaxyRegistryAdminAnalyticsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/GalaxyRegistryAdminAnalytics' }
+    GalaxyRegistryCreateEntryInput:
+      type: object
+      required: [system_config_id, expected_end_at]
+      properties:
+        system_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: SystemConfigID, x-oapi-codegen-extra-tags: { binding: required }, x-order: 1 }
+        expected_end_at: { type: string, description: "RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD.", x-oapi-codegen-extra-tags: { binding: required }, x-order: 2 }
+    GalaxyRegistryUpdateExpectedEndAtInput:
+      type: object
+      required: [expected_end_at]
+      properties:
+        expected_end_at: { type: string, description: "RFC 3339, YYYY-MM-DD HH:mm:ss, or YYYY-MM-DD.", x-oapi-codegen-extra-tags: { binding: required } }
+    GalaxyRegistryAdminCreateSystemInput:
+      type: object
+      required: [solar_system_id]
+      properties:
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID, minimum: 1, x-oapi-codegen-extra-tags: { binding: required }, x-order: 1 }
+        note: { type: string, x-go-type-skip-optional-pointer: true, x-order: 2 }
+        min_bounty_amount: { type: number, format: double, minimum: 0, default: 10000000, description: "Omitted, null, or zero uses 10000000 at creation.", nullable: true, x-order: 3 }
+        is_enabled: { type: boolean, default: true, nullable: true, x-order: 4 }
+    GalaxyRegistryAdminUpdateSystemInput:
+      type: object
+      properties:
+        note: { type: string, nullable: true, x-order: 1 }
+        min_bounty_amount: { type: number, format: double, minimum: 0, nullable: true, x-order: 2 }
+        is_enabled: { type: boolean, nullable: true, x-order: 3 }
+    GalaxyRegistryAdminUpdateValidationInput:
+      type: object
+      required: [validation_status]
+      properties:
+        validation_status: { type: string, enum: [valid, violation], x-go-type: string, x-oapi-codegen-extra-tags: { binding: required }, x-order: 1 }
+        violation_reason: { type: string, nullable: true, x-order: 2 }
+    GalaxyRegistrySystemSummary:
+      type: object
+      required: [idle_count, busy_count, overdue_count]
+      properties:
+        idle_count: { type: integer, x-order: 1 }
+        busy_count: { type: integer, x-order: 2 }
+        overdue_count: { type: integer, x-order: 3 }
+    GalaxyRegistryCurrentSnapshot:
+      type: object
+      required: [idle_count, busy_count, overdue_count]
+      properties:
+        idle_count: { type: integer, format: int64, x-order: 1 }
+        busy_count: { type: integer, format: int64, x-order: 2 }
+        overdue_count: { type: integer, format: int64, x-order: 3 }
+    GalaxyRegistrySystemActiveEntry:
+      type: object
+      nullable: true
+      required: [entry_id, captain_user_id, captain_character_id, captain_character_name, captain_nickname, expected_end_at, actual_start_at, is_overdue, is_mine]
+      properties:
+        entry_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: EntryID, x-order: 1 }
+        captain_user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: CaptainUserID, x-order: 2 }
+        captain_character_id: { type: integer, format: int64, x-go-name: CaptainCharacterID, x-order: 3 }
+        captain_character_name: { type: string, x-order: 4 }
+        captain_nickname: { type: string, x-order: 5 }
+        expected_end_at: { type: string, format: date-time, x-order: 6 }
+        actual_start_at: { type: string, format: date-time, x-order: 7 }
+        is_overdue: { type: boolean, x-order: 8 }
+        is_mine: { type: boolean, x-order: 9 }
+    GalaxyRegistrySdeSystem:
+      type: object
+      required: [solar_system_id, solar_system_name, region_id, region_name, constellation_id, constellation_name, security]
+      properties:
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID, x-order: 1 }
+        solar_system_name: { type: string, x-order: 2 }
+        region_id: { type: integer, format: int64, x-go-name: RegionID, x-order: 3 }
+        region_name: { type: string, x-order: 4 }
+        constellation_id: { type: integer, format: int64, x-go-name: ConstellationID, x-order: 5 }
+        constellation_name: { type: string, x-order: 6 }
+        security: { type: number, format: double, x-order: 7 }
+    GalaxyRegistrySystemItem:
+      type: object
+      required: [system_config_id, solar_system_id, solar_system_name, region_id, region_name, constellation_id, constellation_name, security, note, min_bounty_amount, is_enabled, status, active_entry]
+      properties:
+        system_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID }
+        solar_system_name: { type: string }
+        region_id: { type: integer, format: int64, x-go-name: RegionID }
+        region_name: { type: string }
+        constellation_id: { type: integer, format: int64, x-go-name: ConstellationID }
+        constellation_name: { type: string }
+        security: { type: number, format: double }
+        note: { type: string }
+        min_bounty_amount: { type: number, format: double }
+        is_enabled: { type: boolean }
+        status: { type: string, enum: [idle, busy, overdue], x-go-type: string }
+        active_entry: { $ref: '#/components/schemas/GalaxyRegistrySystemActiveEntry' }
+    GalaxyRegistrySystems:
+      type: object
+      required: [summary, items]
+      properties:
+        summary: { $ref: '#/components/schemas/GalaxyRegistrySystemSummary' }
+        items: { type: array, items: { $ref: '#/components/schemas/GalaxyRegistrySystemItem' } }
+    GalaxyRegistryAdminSystem:
+      type: object
+      required: [id, created_at, updated_at, solar_system_id, solar_system_name, region_id, region_name, constellation_id, constellation_name, security, note, min_bounty_amount, is_enabled]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        created_at: { type: string, format: date-time, x-order: 2 }
+        updated_at: { type: string, format: date-time, x-order: 3 }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID, x-order: 4 }
+        solar_system_name: { type: string, x-order: 5 }
+        region_id: { type: integer, format: int64, x-go-name: RegionID, x-order: 6 }
+        region_name: { type: string, x-order: 7 }
+        constellation_id: { type: integer, format: int64, x-go-name: ConstellationID, x-order: 8 }
+        constellation_name: { type: string, x-order: 9 }
+        security: { type: number, format: double, x-order: 10 }
+        note: { type: string, x-order: 11 }
+        min_bounty_amount: { type: number, format: double, x-order: 12 }
+        is_enabled: { type: boolean, x-order: 13 }
+    GalaxyRegistryEntry:
+      type: object
+      required: [id, system_config_id, solar_system_id, solar_system_name, captain_user_id, captain_character_id, captain_character_name, captain_nickname, status, validation_status, expected_end_at, actual_start_at, actual_end_at, ended_by_user_id, force_ended_by_admin, frozen_min_bounty_amount, validated_at, validated_bounty_amount, validated_bounty_count, violation_reason, created_at, updated_at]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        system_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: SystemConfigID, x-order: 2 }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID, x-order: 3 }
+        solar_system_name: { type: string, x-order: 4 }
+        captain_user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: CaptainUserID, x-order: 5 }
+        captain_character_id: { type: integer, format: int64, x-go-name: CaptainCharacterID, x-order: 6 }
+        captain_character_name: { type: string, x-order: 7 }
+        captain_nickname: { type: string, x-order: 8 }
+        status: { type: string, enum: [active, completed], x-go-type: string, x-order: 9 }
+        validation_status: { type: string, enum: [pending, valid, violation], x-go-type: string, x-order: 10 }
+        expected_end_at: { type: string, format: date-time, x-order: 11 }
+        actual_start_at: { type: string, format: date-time, x-order: 12 }
+        actual_end_at: { type: string, format: date-time, nullable: true, x-order: 13 }
+        ended_by_user_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: EndedByUserID, x-order: 14 }
+        force_ended_by_admin: { type: boolean, x-order: 15 }
+        frozen_min_bounty_amount: { type: number, format: double, x-order: 16 }
+        validated_at: { type: string, format: date-time, nullable: true, x-order: 17 }
+        validated_bounty_amount: { type: number, format: double, x-order: 18 }
+        validated_bounty_count: { type: integer, x-order: 19 }
+        violation_reason: { type: string, x-order: 20 }
+        created_at: { type: string, format: date-time, x-order: 21 }
+        updated_at: { type: string, format: date-time, x-order: 22 }
+    GalaxyRegistryEntryPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/GalaxyRegistryEntry' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    GalaxyRegistryPeriodSummary:
+      type: object
+      required: [entry_count, valid_count, violation_count, pending_count, valid_rate]
+      properties:
+        entry_count: { type: integer, format: int64, x-order: 1 }
+        valid_count: { type: integer, format: int64, x-order: 2 }
+        violation_count: { type: integer, format: int64, x-order: 3 }
+        pending_count: { type: integer, format: int64, x-order: 4 }
+        valid_rate: { type: number, format: double, x-order: 5 }
+    GalaxyRegistryTopSystemStat:
+      type: object
+      required: [system_config_id, solar_system_id, solar_system_name, register_count]
+      properties:
+        system_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: SystemConfigID, x-order: 1 }
+        solar_system_id: { type: integer, format: int64, x-go-name: SolarSystemID, x-order: 2 }
+        solar_system_name: { type: string, x-order: 3 }
+        register_count: { type: integer, format: int64, x-order: 4 }
+    GalaxyRegistryAdminAnalytics:
+      type: object
+      required: [range_start, range_end, current_snapshot, recent_7d, recent_30d, top_systems, recent_violations]
+      properties:
+        range_start: { type: string, format: date-time, x-go-type: string }
+        range_end: { type: string, format: date-time, x-go-type: string }
+        current_snapshot: { $ref: '#/components/schemas/GalaxyRegistryCurrentSnapshot' }
+        recent_7d: { $ref: '#/components/schemas/GalaxyRegistryPeriodSummary' }
+        recent_30d: { $ref: '#/components/schemas/GalaxyRegistryPeriodSummary' }
+        top_systems: { type: array, items: { $ref: '#/components/schemas/GalaxyRegistryTopSystemStat' } }
+        recent_violations: { type: array, items: { $ref: '#/components/schemas/GalaxyRegistryEntry' } }

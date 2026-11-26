@@ -127,7 +127,9 @@
 
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n'
-  import { completeRegistration, getRegistration } from '@/api/auth'
+  import { unwrapContract } from '@/api/response'
+  import { completeEveRegistration, getEveRegistration } from '@/api/generated/client'
+
   import { HttpError } from '@/utils/http/error'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { LanguageEnum } from '@/enums/appEnum'
@@ -153,7 +155,9 @@
 
   onMounted(async () => {
     try {
-      const info = await getRegistration(props.ticket)
+      const info = await unwrapContract(
+        getEveRegistration({ 'X-Registration-Token': props.ticket }, { showErrorMessage: false })
+      )
       character.value = info.character_name
       characterId.value = info.character_id
       ready.value = true
@@ -175,11 +179,16 @@
     saving.value = true
     error.value = ''
     try {
-      const result = await completeRegistration(props.ticket, {
-        nickname: form.nickname,
-        qq: contactMethod.value === 'qq' ? form.qq : '',
-        discord_id: contactMethod.value === 'discord_id' ? form.discord_id : ''
-      })
+      const result = await unwrapContract(
+        completeEveRegistration(
+          {
+            nickname: form.nickname,
+            qq: contactMethod.value === 'qq' ? form.qq : '',
+            discord_id: contactMethod.value === 'discord_id' ? form.discord_id : ''
+          },
+          { 'X-Registration-Token': props.ticket }
+        )
+      )
       emit('completed', result.token)
     } catch (err) {
       if (!(err instanceof HttpError && err.code === 409))

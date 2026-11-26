@@ -1,17 +1,25 @@
 import { Textarea } from '@/components/ui/textarea'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import {
-  adminAddTicketReply,
-  adminGetTicket,
-  adminListTicketReplies,
-  adminListTicketStatusHistory,
-} from '@/api/ticket'
+import { adminListReplies, adminListStatusHistory } from '@/api/generated/client'
+import { adminAddReply, adminGetTicket } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useI18n } from '@/i18n'
-import type { TicketItem, TicketReply, TicketStatusHistory } from '@/types/api/ticket'
+import type {
+  TicketAdminItem,
+  TicketReply,
+  TicketStatusChange as TicketStatusHistory,
+} from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -36,19 +44,6 @@ function statusTone(status: string) {
   }
 }
 
-function priorityTone(priority: string) {
-  switch (priority) {
-    case 'high':
-      return 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
-    case 'medium':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-    case 'low':
-      return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-}
-
 export function TicketAdminDetailPage() {
   const { t } = useI18n()
   const params = useParams()
@@ -56,7 +51,7 @@ export function TicketAdminDetailPage() {
   const invalidId = !Number.isFinite(ticketId) || ticketId <= 0
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [ticket, setTicket] = useState<TicketItem | null>(null)
+  const [ticket, setTicket] = useState<TicketAdminItem | null>(null)
   const [replies, setReplies] = useState<TicketReply[]>([])
   const [histories, setHistories] = useState<TicketStatusHistory[]>([])
   const [content, setContent] = useState('')
@@ -73,9 +68,14 @@ export function TicketAdminDetailPage() {
       setError(null)
       try {
         const [ticketData, replyData, historyData] = await Promise.all([
-          adminGetTicket(ticketId),
-          adminListTicketReplies(ticketId),
-          adminListTicketStatusHistory(ticketId),
+          unwrapContract(adminGetTicket(ticketId), 'admin get ticket failed'),
+          unwrapContract(adminListReplies(ticketId), 'admin list ticket replies failed').then(
+            (data) => data ?? []
+          ),
+          unwrapContract(
+            adminListStatusHistory(ticketId),
+            'admin list ticket status history failed'
+          ).then((data) => data ?? []),
         ])
         if (!cancelled) {
           setTicket(ticketData)
@@ -105,14 +105,22 @@ export function TicketAdminDetailPage() {
 
     setSubmitting(true)
     try {
-      await adminAddTicketReply(ticketId, {
-        content: content.trim(),
-        is_internal: isInternal,
-      })
+      await unwrapContract(
+        adminAddReply(ticketId, {
+          content: content.trim(),
+          is_internal: isInternal,
+        }),
+        'admin add ticket reply failed'
+      )
       setContent('')
       const [replyData, historyData] = await Promise.all([
-        adminListTicketReplies(ticketId),
-        adminListTicketStatusHistory(ticketId),
+        unwrapContract(adminListReplies(ticketId), 'admin list ticket replies failed').then(
+          (data) => data ?? []
+        ),
+        unwrapContract(
+          adminListStatusHistory(ticketId),
+          'admin list ticket status history failed'
+        ).then((data) => data ?? []),
       ])
       setReplies(replyData)
       setHistories(historyData)
@@ -130,9 +138,13 @@ export function TicketAdminDetailPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t('ticketAdminDetail.subtitle')}</p>
       </div>
 
-      {invalidId ? <p className="text-sm text-destructive">{t('ticketAdminDetail.invalidId')}</p> : null}
+      {invalidId ? (
+        <p className="text-sm text-destructive">{t('ticketAdminDetail.invalidId')}</p>
+      ) : null}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {!invalidId && loading ? <p className="text-sm text-muted-foreground">{t('ticketAdminDetail.loading')}</p> : null}
+      {!invalidId && loading ? (
+        <p className="text-sm text-muted-foreground">{t('ticketAdminDetail.loading')}</p>
+      ) : null}
 
       {ticket ? (
         <div className="rounded-lg border bg-card p-5">
@@ -146,22 +158,25 @@ export function TicketAdminDetailPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(ticket.status)}`}>
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(ticket.status)}`}
+              >
                 {ticket.status}
-              </span>
-              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${priorityTone(ticket.priority)}`}>
-                {ticket.priority}
               </span>
             </div>
           </div>
 
           <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
             <div>
-              <span className="font-medium text-foreground">{t('ticketAdminDetail.fields.createdAt')}:</span>{' '}
+              <span className="font-medium text-foreground">
+                {t('ticketAdminDetail.fields.createdAt')}:
+              </span>{' '}
               {formatTime(ticket.created_at)}
             </div>
             <div>
-              <span className="font-medium text-foreground">{t('ticketAdminDetail.fields.updatedAt')}:</span>{' '}
+              <span className="font-medium text-foreground">
+                {t('ticketAdminDetail.fields.updatedAt')}:
+              </span>{' '}
               {formatTime(ticket.updated_at)}
             </div>
           </div>
@@ -181,7 +196,9 @@ export function TicketAdminDetailPage() {
                 <article key={reply.id} className="rounded-lg border bg-background p-4">
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="font-medium">
-                      {reply.is_internal ? t('ticketAdminDetail.replyInternal') : t('ticketAdminDetail.replyExternal')}
+                      {reply.is_internal
+                        ? t('ticketAdminDetail.replyInternal')
+                        : t('ticketAdminDetail.replyExternal')}
                     </span>
                     <span className="text-muted-foreground">{formatTime(reply.created_at)}</span>
                   </div>
@@ -195,7 +212,10 @@ export function TicketAdminDetailPage() {
 
           <div className="mt-5 space-y-3">
             <label className="flex items-center gap-2 text-sm">
-              <Checkbox isSelected={isInternal} onChange={(selected) => setIsInternal(selected === true)} />
+              <Checkbox
+                isSelected={isInternal}
+                onChange={(selected) => setIsInternal(selected === true)}
+              />
               <span>{t('ticketAdminDetail.internalNote')}</span>
             </label>
             <Textarea
@@ -204,8 +224,14 @@ export function TicketAdminDetailPage() {
               placeholder={t('ticketAdminDetail.replyPlaceholder')}
               onChange={(event) => setContent(event.target.value)}
             />
-            <Button type="button" onClick={() => void submitReply()} isDisabled={submitting || !content.trim()}>
-              {submitting ? t('ticketAdminDetail.replySubmitting') : t('ticketAdminDetail.replySubmit')}
+            <Button
+              type="button"
+              onClick={() => void submitReply()}
+              isDisabled={submitting || !content.trim()}
+            >
+              {submitting
+                ? t('ticketAdminDetail.replySubmitting')
+                : t('ticketAdminDetail.replySubmit')}
             </Button>
           </div>
         </div>
@@ -216,10 +242,18 @@ export function TicketAdminDetailPage() {
             <Table className="min-w-full text-sm">
               <TableHeader>
                 <TableRow className="border-b bg-muted/40 text-left">
-                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.fromStatus')}</TableHead>
-                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.toStatus')}</TableHead>
-                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.operator')}</TableHead>
-                  <TableHead className="px-3 py-2">{t('ticketAdminDetail.columns.changedAt')}</TableHead>
+                  <TableHead className="px-3 py-2">
+                    {t('ticketAdminDetail.columns.fromStatus')}
+                  </TableHead>
+                  <TableHead className="px-3 py-2">
+                    {t('ticketAdminDetail.columns.toStatus')}
+                  </TableHead>
+                  <TableHead className="px-3 py-2">
+                    {t('ticketAdminDetail.columns.operator')}
+                  </TableHead>
+                  <TableHead className="px-3 py-2">
+                    {t('ticketAdminDetail.columns.changedAt')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

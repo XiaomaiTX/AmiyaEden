@@ -41,33 +41,31 @@
   </div>
 </template>
 <script setup lang="ts">
-  import {
-    adminListTicketCategories,
-    adminListTickets,
-    adminUpdateTicketStatus
-  } from '@/api/ticket'
+  import type { AdminListTicketsParams, TicketCategory, TicketStatus } from '@/api/generated/client'
+  import { adminListCategories, adminListTickets, adminUpdateStatus } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@utils/common'
   import { ElButton, ElMessage, ElOption, ElSelect } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   defineOptions({ name: 'TicketManagementPage' })
   type TicketManagementTab = 'pending' | 'in_progress' | 'completed'
-  type TicketStatusQuery = Api.Ticket.AdminTicketListParams['status']
+  type TicketStatusQuery = AdminListTicketsParams['status']
   const { t, locale } = useI18n()
   const router = useRouter()
   const activeTab = ref<TicketManagementTab>('pending')
-  const statusTabs: Record<TicketManagementTab, Api.Ticket.TicketStatus> = {
+  const statusTabs: Record<TicketManagementTab, TicketStatus> = {
     pending: 'pending',
     in_progress: 'in_progress',
     completed: 'completed'
   }
   const getTabStatusQuery = (tab: TicketManagementTab): TicketStatusQuery => statusTabs[tab]
-  const categoryOptions = ref<Api.Ticket.TicketCategory[]>([])
+  const categoryOptions = ref<TicketCategory[]>([])
   const filters = reactive<{ keyword: string; category_id?: number }>({
     keyword: '',
     category_id: undefined
   })
-  const getCategoryLabel = (category: Api.Ticket.TicketCategory) =>
+  const getCategoryLabel = (category: TicketCategory) =>
     locale.value.startsWith('zh') ? category.name : category.name_en || category.name
   const getTicketCategoryLabel = (ticket: Api.Ticket.TicketItem) =>
     locale.value.startsWith('zh')
@@ -87,7 +85,7 @@
     handleCurrentChange
   } = useTable({
     core: {
-      apiFn: adminListTickets,
+      apiFn: (params?: AdminListTicketsParams) => unwrapContract(adminListTickets(params)),
       apiParams: {
         current: 1,
         size: 20,
@@ -130,7 +128,7 @@
               {
                 modelValue: row.status,
                 size: 'small',
-                onChange: (val: Api.Ticket.TicketStatus) => updateStatus(row.id, val)
+                onChange: (val: TicketStatus) => updateStatus(row.id, val)
               },
               () => [
                 h(ElOption, { label: t('ticket.status.pending'), value: 'pending' }),
@@ -164,9 +162,9 @@
       ]
     }
   })
-  const updateStatus = async (id: number, status: Api.Ticket.TicketStatus) => {
+  const updateStatus = async (id: number, status: TicketStatus) => {
     try {
-      await adminUpdateTicketStatus(id, { status })
+      await unwrapContract(adminUpdateStatus(id, { status }))
       ElMessage.success(t('ticket.messages.updated'))
       await refreshUpdate()
     } catch (error: any) {
@@ -189,7 +187,7 @@
   }
   const loadCategories = async () => {
     try {
-      categoryOptions.value = await adminListTicketCategories()
+      categoryOptions.value = await unwrapContract(adminListCategories())
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.loadFailed'))
     }

@@ -1,11 +1,29 @@
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { deleteShipPrice, fetchSrpConfig, fetchShipPrices, updateSrpConfig, upsertShipPrice } from '@/api/srp'
+import { listSrpShipPrices } from '@/api/generated/client'
+import {
+  deleteSrpShipPrice,
+  getSrpConfig,
+  updateSrpConfig,
+  upsertSrpShipPrice,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { formatIskSmart } from '@/lib/isk'
-import type { ShipPrice, SrpConfig, UpsertShipPriceParams } from '@/types/api/srp'
+import type {
+  SrpShipPrice as ShipPrice,
+  SrpConfig,
+  SrpShipPriceInput as UpsertShipPriceParams,
+} from '@/api/generated/client'
 import { ShopDialog } from './shop-page-utils'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -33,7 +51,13 @@ export function SrpPricesPage() {
     setLoading(true)
     setError(null)
     try {
-      const [priceList, configData] = await Promise.all([fetchShipPrices(keyword.trim() || undefined), fetchSrpConfig()])
+      const [priceList, configData] = await Promise.all([
+        unwrapContract(
+          listSrpShipPrices(keyword.trim() ? { keyword: keyword.trim() } : undefined),
+          'fetch ship prices failed'
+        ).then((data) => data ?? []),
+        unwrapContract(getSrpConfig(), 'fetch srp config failed'),
+      ])
       setPrices(priceList ?? [])
       setConfig(configData)
     } catch (caughtError) {
@@ -51,7 +75,10 @@ export function SrpPricesPage() {
     return () => window.clearTimeout(timer)
   }, [loadData])
 
-  const orderedPrices = useMemo(() => [...prices].sort((left, right) => left.ship_type_id - right.ship_type_id), [prices])
+  const orderedPrices = useMemo(
+    () => [...prices].sort((left, right) => left.ship_type_id - right.ship_type_id),
+    [prices]
+  )
 
   const openCreate = () => {
     setEditingId(0)
@@ -61,7 +88,12 @@ export function SrpPricesPage() {
 
   const openEdit = (row: ShipPrice) => {
     setEditingId(row.id)
-    setForm({ id: row.id, ship_type_id: row.ship_type_id, ship_name: row.ship_name, amount: row.amount })
+    setForm({
+      id: row.id,
+      ship_type_id: row.ship_type_id,
+      ship_name: row.ship_name,
+      amount: row.amount,
+    })
     setDialogVisible(true)
   }
 
@@ -73,11 +105,14 @@ export function SrpPricesPage() {
 
     setSaving(true)
     try {
-      await upsertShipPrice({
-        ...form,
-        ship_type_id: Number(form.ship_type_id),
-        ship_name: form.ship_name.trim(),
-      })
+      await unwrapContract(
+        upsertSrpShipPrice({
+          ...form,
+          ship_type_id: Number(form.ship_type_id),
+          ship_name: form.ship_name.trim(),
+        }),
+        'upsert ship price failed'
+      )
       setDialogVisible(false)
       await loadData()
     } catch (caughtError) {
@@ -90,7 +125,7 @@ export function SrpPricesPage() {
   const remove = async (id: number) => {
     if (!window.confirm(t('srpPrices.deleteConfirm'))) return
     try {
-      await deleteShipPrice(id)
+      await unwrapContract(deleteSrpShipPrice(id), 'delete ship price failed')
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpPrices.deleteFailed')))
@@ -100,8 +135,7 @@ export function SrpPricesPage() {
   const saveConfig = async () => {
     setConfigSaving(true)
     try {
-      const nextConfig = await updateSrpConfig(config)
-      setConfig(nextConfig)
+      await unwrapContract(updateSrpConfig(config), 'update srp config failed')
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('srpPrices.configSaveFailed')))
     } finally {
@@ -147,7 +181,9 @@ export function SrpPricesPage() {
                   <TableHead className="px-3 py-2">{t('common.id')}</TableHead>
                   <TableHead className="px-3 py-2">{t('srpPrices.columns.typeId')}</TableHead>
                   <TableHead className="px-3 py-2">{t('srpPrices.columns.name')}</TableHead>
-                  <TableHead className="px-3 py-2 text-right">{t('srpPrices.columns.amount')}</TableHead>
+                  <TableHead className="px-3 py-2 text-right">
+                    {t('srpPrices.columns.amount')}
+                  </TableHead>
                   <TableHead className="w-px px-3 py-2 whitespace-nowrap">
                     {t('srpPrices.columns.actions')}
                   </TableHead>
@@ -164,10 +200,20 @@ export function SrpPricesPage() {
                     </TableCell>
                     <TableCell className="px-3 py-2 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => openEdit(price)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEdit(price)}
+                        >
                           {t('common.edit')}
                         </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => void remove(price.id)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void remove(price.id)}
+                        >
                           {t('common.delete')}
                         </Button>
                       </div>
@@ -190,11 +236,15 @@ export function SrpPricesPage() {
           <h2 className="text-lg font-semibold">{t('srpPrices.configTitle')}</h2>
           <div className="mt-4 space-y-4">
             <label className="block space-y-2">
-              <span className="text-sm text-muted-foreground">{t('srpPrices.configAmountLimit')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('srpPrices.configAmountLimit')}
+              </span>
               <Input
                 type="number"
                 value={String(config.amount_limit)}
-                onChange={(event) => setConfig((current) => ({ ...current, amount_limit: Number(event.target.value) }))}
+                onChange={(event) =>
+                  setConfig((current) => ({ ...current, amount_limit: Number(event.target.value) }))
+                }
               />
             </label>
             <div className="flex justify-end">

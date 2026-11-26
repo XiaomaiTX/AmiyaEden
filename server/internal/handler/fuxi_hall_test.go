@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
@@ -8,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -94,6 +96,18 @@ func (s stubFuxiHallService) DeleteCard(operatorID, id uint) error {
 	return nil
 }
 
+type fuxiHallTestFallback struct {
+	apicontract.StrictServerInterface
+}
+
+func newFuxiHallTestWrapper(h *FuxiHallHandler) *apicontract.ServerInterfaceWrapper {
+	adapter := apicontract.NewStrictHandler(struct {
+		fuxiHallTestFallback
+		*FuxiHallHandler
+	}{FuxiHallHandler: h})
+	return &apicontract.ServerInterfaceWrapper{Handler: adapter}
+}
+
 func TestFuxiHallHandlerGetHall(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
@@ -111,7 +125,7 @@ func TestFuxiHallHandlerGetHall(t *testing.T) {
 		},
 	}}
 
-	h.GetHall(ctx)
+	newFuxiHallTestWrapper(h).GetHall(ctx)
 	resp := decodeFuxiHallResponse(t, recorder)
 	if resp.Code != response.CodeOK {
 		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
@@ -131,7 +145,7 @@ func TestFuxiHallHandlerGetPageConfigMasksInternalError(t *testing.T) {
 		},
 	}}
 
-	h.GetPageConfig(ctx)
+	newFuxiHallTestWrapper(h).GetHallPageConfig(ctx)
 	resp := decodeFuxiHallResponse(t, recorder)
 	if resp.Msg != "获取页面配置失败" {
 		t.Fatalf("response msg = %q, want fallback message", resp.Msg)
@@ -160,7 +174,7 @@ func TestFuxiHallHandlerReorderCardsBindsJSON(t *testing.T) {
 		},
 	}}
 
-	h.ReorderCards(ctx)
+	newFuxiHallTestWrapper(h).ReorderCards(ctx)
 
 	resp := decodeFuxiHallResponse(t, recorder)
 	if resp.Code != response.CodeOK {
@@ -175,7 +189,7 @@ func TestFuxiHallHandlerListCardsUsesManageCardsEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
-	ctx.Params = gin.Params{{Key: "page_key", Value: "hall-of-fame"}}
+	ctx.Params = gin.Params{{Key: "card_key", Value: "hall-of-fame"}}
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/system/fuxi-hall/cards/hall-of-fame", nil)
 
 	called := false
@@ -189,7 +203,7 @@ func TestFuxiHallHandlerListCardsUsesManageCardsEndpoint(t *testing.T) {
 		},
 	}}
 
-	h.ListCards(ctx)
+	newFuxiHallTestWrapper(h).ListHallCards(ctx)
 	resp := decodeFuxiHallResponse(t, recorder)
 	if resp.Code != response.CodeOK {
 		t.Fatalf("response code = %d, want %d", resp.Code, response.CodeOK)
@@ -214,4 +228,84 @@ func (s stubFuxiHallService) UpdateOwnCard(userID, id uint, req *service.FuxiHal
 
 func (s stubFuxiHallService) RefreshContributions(ctx context.Context, operatorID uint) error {
 	return nil
+}
+
+func TestFuxiHallOpenAPICardKeyDependsOnMethod(t *testing.T) {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	var pageKey string
+	var mutatedIDs []uint
+	h := &FuxiHallHandler{svc: stubFuxiHallService{
+		listManageCards: func(key string) ([]service.FuxiHallManageCard, error) {
+			pageKey = key
+			return nil, nil
+		},
+		updateCard: func(_ uint, id uint, _ []string, _ *service.FuxiHallUpdateCardRequest) (*model.FuxiHallCard, error) {
+			mutatedIDs = append(mutatedIDs, id)
+			return &model.FuxiHallCard{BaseModel: model.BaseModel{ID: id}}, nil
+		},
+		deleteCard: func(_ uint, id uint) error {
+			mutatedIDs = append(mutatedIDs, id)
+			return nil
+		},
+	}}
+
+	list, err := h.ListHallCards(context.Background(), apicontract.ListHallCardsRequestObject{CardKey: "hall-of-fame"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := recordStrictHallResponse(t, list.VisitListHallCardsResponse)
+	if data, ok := result.Data.([]any); pageKey != "hall-of-fame" || !ok || len(data) != 0 {
+		t.Fatalf("page key = %q, response = %#v; want hall-of-fame and an empty array", pageKey, result)
+	}
+
+	invalid, err := h.UpdateHallCard(ctx, apicontract.UpdateHallCardRequestObject{CardKey: 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result = recordStrictHallResponse(t, invalid.VisitUpdateHallCardResponse)
+	if result.Code != response.CodeParamError || result.Msg != "无效的卡片 ID" || len(mutatedIDs) != 0 {
+		t.Fatalf("invalid ID response = %#v, mutations = %v", result, mutatedIDs)
+	}
+
+	update, err := h.UpdateHallCard(ctx, apicontract.UpdateHallCardRequestObject{CardKey: math.MaxUint32, Body: &apicontract.HallCardUpdate{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result = recordStrictHallResponse(t, update.VisitUpdateHallCardResponse)
+	if result.Code != response.CodeOK || len(mutatedIDs) != 1 || mutatedIDs[0] != math.MaxUint32 {
+		t.Fatalf("update response = %#v, mutations = %v", result, mutatedIDs)
+	}
+
+	deleted, err := h.DeleteHallCard(ctx, apicontract.DeleteHallCardRequestObject{CardKey: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result = recordStrictHallResponse(t, deleted.VisitDeleteHallCardResponse)
+	if result.Code != response.CodeOK || result.Data != nil || len(mutatedIDs) != 2 || mutatedIDs[1] != 1 {
+		t.Fatalf("delete response = %#v, mutations = %v", result, mutatedIDs)
+	}
+}
+
+func TestFuxiHallOpenAPIRejectsMissingPageResult(t *testing.T) {
+	h := &FuxiHallHandler{svc: stubFuxiHallService{}}
+	out, err := h.GetHallPageConfig(context.Background(), apicontract.GetHallPageConfigRequestObject{PageKey: "hall-of-fame"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := recordStrictHallResponse(t, out.VisitGetHallPageConfigResponse)
+	if result.Code != response.CodeBizError || result.Msg != "获取页面配置失败" || result.Data != nil {
+		t.Fatalf("unexpected missing page result: %#v", result)
+	}
+}
+
+func recordStrictHallResponse(t *testing.T, visit func(http.ResponseWriter) error) response.Response {
+	t.Helper()
+	recorder := httptest.NewRecorder()
+	if err := visit(recorder); err != nil {
+		t.Fatal(err)
+	}
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("HTTP status = %d, want 200", recorder.Code)
+	}
+	return decodeFuxiHallResponse(t, recorder)
 }

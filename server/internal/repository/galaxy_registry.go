@@ -43,16 +43,6 @@ type GalaxyRegistryActiveEntryView struct {
 	ActualStartAt        time.Time `json:"actual_start_at"`
 }
 
-type GalaxyRegistrySdeSystem struct {
-	SolarSystemID     int64   `json:"solar_system_id"`
-	SolarSystemName   string  `json:"solar_system_name"`
-	RegionID          int64   `json:"region_id"`
-	RegionName        string  `json:"region_name"`
-	ConstellationID   int64   `json:"constellation_id"`
-	ConstellationName string  `json:"constellation_name"`
-	Security          float64 `json:"security"`
-}
-
 type GalaxyRegistryValidationCandidate struct {
 	ID                    uint
 	CaptainUserID         uint
@@ -60,13 +50,6 @@ type GalaxyRegistryValidationCandidate struct {
 	FrozenMinBountyAmount float64
 	ActualStartAt         time.Time
 	ActualEndAt           time.Time
-}
-
-type GalaxyRegistryTopSystemStat struct {
-	SystemConfigID  uint   `json:"system_config_id"`
-	SolarSystemID   int64  `json:"solar_system_id"`
-	SolarSystemName string `json:"solar_system_name"`
-	RegisterCount   int64  `json:"register_count"`
 }
 
 func (r *GalaxyRegistryRepository) CreateSystem(row *model.GalaxyRegistrySystem) error {
@@ -353,8 +336,8 @@ func (r *GalaxyRegistryRepository) CountEntriesByValidationBetween(status string
 	return count, err
 }
 
-func (r *GalaxyRegistryRepository) ListTopSystemsByRegistrations(start time.Time, end time.Time, limit int) ([]GalaxyRegistryTopSystemStat, error) {
-	rows := make([]GalaxyRegistryTopSystemStat, 0)
+func (r *GalaxyRegistryRepository) ListTopSystemsByRegistrations(start time.Time, end time.Time, limit int) ([]model.GalaxyRegistryTopSystemStat, error) {
+	rows := make([]model.GalaxyRegistryTopSystemStat, 0)
 	query := global.DB.Model(&model.GalaxyRegistryEntry{}).
 		Select("system_config_id, solar_system_id, solar_system_name, COUNT(*) AS register_count").
 		Where("actual_start_at >= ? AND actual_start_at < ?", start, end).

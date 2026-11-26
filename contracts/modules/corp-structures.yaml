@@ -1,0 +1,565 @@
+paths:
+  /dashboard/corporation-structures/settings:
+    get:
+      operationId: getCorpStructureSettings
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureSettingsResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/settings/authorizations:
+    put:
+      operationId: updateCorpStructureAuthorizations
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureAuthorizationInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/service-catalog:
+    get:
+      operationId: getCorpStructureServiceCatalog
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureCatalogResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      operationId: updateCorpStructureServiceCatalog
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureCatalogInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/filter-options:
+    get:
+      operationId: getCorpStructureFilterOptions
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+      - name: corporation_id
+        in: query
+        schema: {type: integer, format: int64, default: 0, x-go-name: CorporationID}
+        description: Zero or omitted uses the applicable corporations.
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureFiltersResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/list:
+    post:
+      operationId: listCorpStructures
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureListResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/run-task:
+    post:
+      operationId: runCorpStructureTask
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureTaskInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureTaskResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/assignments:
+    get:
+      operationId: getCorpStructureAssignments
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      parameters:
+      - name: corporation_id
+        in: query
+        schema: {type: integer, format: int64, default: 0, x-go-name: CorporationID}
+        description: Zero or omitted uses the applicable corporations.
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureAssignmentsResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      operationId: updateCorpStructureAssignments
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureAssignmentInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/fuel-salary-settings:
+    get:
+      operationId: getCorpStructureFuelSalarySettings
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureFuelSalarySettingsResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    put:
+      operationId: updateCorpStructureFuelSalarySettings
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureFuelSalaryInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureNullResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/fuel-salary-payouts/run:
+    post:
+      operationId: runCorpStructureFuelSalaryPayout
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:admin"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureFuelPayoutInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureFuelPayoutResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /dashboard/corporation-structures/my-assigned-list:
+    post:
+      operationId: listMyAssignedCorpStructures
+      x-gin-access: ["jwt", "login", "cap:menu.dashboard", "role:fuel_officer"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CorpStructureListInput'}
+      responses:
+        '200': {$ref: '#/components/responses/CorpStructureListResult'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+components:
+  responses:
+    CorpStructureSettingsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureSettingsSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureNullResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/NullSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureCatalogResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureCatalogSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureFiltersResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureFiltersSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureListResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureListSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureTaskResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureTaskSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureAssignmentsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureAssignmentsSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureFuelSalarySettingsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureFuelSalarySettingsSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+    CorpStructureFuelPayoutResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+            - {$ref: '#/components/schemas/CorpStructureFuelPayoutSuccess'}
+            - {$ref: '#/components/schemas/BusinessError'}
+  schemas:
+    CorpStructureSettingsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureSettings'}
+    CorpStructureCatalogSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureCatalog'}
+    CorpStructureFiltersSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureFilters'}
+    CorpStructureListSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureList'}
+    CorpStructureTaskSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureTask'}
+    CorpStructureAssignmentsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureAssignments'}
+    CorpStructureFuelSalarySettingsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureFuelSalarySettings'}
+    CorpStructureFuelPayoutSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: {type: integer, enum: [200]}
+        msg: {type: string}
+        data: {$ref: '#/components/schemas/CorpStructureFuelPayout'}
+    CorpStructureService:
+      type: object
+      required: [name, state]
+      properties:
+        name: {type: string}
+        state: {type: string}
+    CorpStructureRow:
+      type: object
+      required: [corporation_id, corporation_name, assigned_user_id, assigned_character_id, assigned_character_name, structure_id, name, type_id,
+        type_name, system_id, system_name, region_id, region_name, security, state, services, fuel_expires, fuel_remaining, fuel_remaining_hours,
+        fuel_per_hour, fuel_to_month_end, fuel_estimate_incomplete, fuel_unknown_services, fuel_estimate_status, reinforce_hour, state_timer_start,
+        state_timer_end, updated_at]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+        corporation_name: {type: string}
+        assigned_user_id: {type: integer, x-go-type: uint, x-go-name: AssignedUserID}
+        assigned_character_id: {type: integer, format: int64, x-go-name: AssignedCharacterID}
+        assigned_character_name: {type: string}
+        structure_id: {type: integer, format: int64, x-go-name: StructureID}
+        name: {type: string}
+        type_id: {type: integer, format: int64, x-go-name: TypeID}
+        type_name: {type: string}
+        system_id: {type: integer, format: int64, x-go-name: SystemID}
+        system_name: {type: string}
+        region_id: {type: integer, format: int64, x-go-name: RegionID}
+        region_name: {type: string}
+        security: {type: number, format: double}
+        state: {type: string}
+        services: {type: array, items: {$ref: '#/components/schemas/CorpStructureService'}}
+        fuel_expires: {type: string, description: 'Timestamp string, or an empty string when unavailable.'}
+        fuel_remaining: {type: string}
+        fuel_remaining_hours: {type: integer, nullable: true}
+        fuel_per_hour: {type: number, format: double, nullable: true}
+        fuel_to_month_end: {type: integer, nullable: true}
+        fuel_estimate_incomplete: {type: boolean}
+        fuel_unknown_services: {type: array, items: {type: string}, nullable: true}
+        fuel_estimate_status: {type: string, enum: ['', available, authorization_required, activity_mapping_required, module_mismatch, rate_unavailable,
+            ambiguous_module], x-go-type: string}
+        reinforce_hour: {type: integer}
+        state_timer_start: {type: string, description: 'Timestamp string, or an empty string when unavailable.'}
+        state_timer_end: {type: string, description: 'Timestamp string, or an empty string when unavailable.'}
+        updated_at: {type: integer, format: int64}
+    CorpStructureListInput:
+      type: object
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID, x-go-type-skip-optional-pointer: true, default: 0, description: Zero
+            uses the applicable corporations.}
+        page: {type: integer, x-go-type-skip-optional-pointer: true, default: 1, description: Nonpositive values use 1.}
+        page_size: {type: integer, x-go-type-skip-optional-pointer: true, default: 20, description: Nonpositive values use 20; maximum applied size
+            is 200.}
+        keyword: {type: string, x-go-type-skip-optional-pointer: true}
+        state_groups: {type: array, items: {type: string}, x-go-type-skip-optional-pointer: true}
+        fuel_bucket: {type: string, x-go-type-skip-optional-pointer: true}
+        fuel_min_hours: {type: integer, nullable: true}
+        fuel_max_hours: {type: integer, nullable: true}
+        system_ids: {type: array, items: {type: integer, format: int64}, x-go-name: SystemIDs, x-go-type-skip-optional-pointer: true}
+        region_ids: {type: array, items: {type: integer, format: int64}, x-go-name: RegionIDs, x-go-type-skip-optional-pointer: true}
+        security_bands: {type: array, items: {type: string}, x-go-type-skip-optional-pointer: true}
+        security_min: {type: number, format: double, nullable: true}
+        security_max: {type: number, format: double, nullable: true}
+        type_ids: {type: array, items: {type: integer, format: int64}, x-go-name: TypeIDs, x-go-type-skip-optional-pointer: true}
+        service_names: {type: array, items: {type: string}, x-go-type-skip-optional-pointer: true}
+        service_match_mode: {type: string, x-go-type-skip-optional-pointer: true}
+        timer_bucket: {type: string, x-go-type-skip-optional-pointer: true}
+        timer_start: {type: string, x-go-type-skip-optional-pointer: true}
+        timer_end: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_by: {type: string, x-go-type-skip-optional-pointer: true}
+        sort_order: {type: string, x-go-type-skip-optional-pointer: true}
+    CorpStructureList:
+      type: object
+      required: [items, total, page, page_size]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/CorpStructureRow'}}
+        total: {type: integer}
+        page: {type: integer}
+        page_size: {type: integer}
+    CorpStructureDirector:
+      type: object
+      required: [user_id, character_id, character_name]
+      properties:
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID}
+        character_id: {type: integer, format: int64, x-go-name: CharacterID}
+        character_name: {type: string}
+    CorpStructureCorporation:
+      type: object
+      required: [corporation_id, corporation_name, authorized_character_id, director_characters]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+        corporation_name: {type: string}
+        authorized_character_id: {type: integer, format: int64, x-go-name: AuthorizedCharacterID}
+        director_characters: {type: array, items: {$ref: '#/components/schemas/CorpStructureDirector'}}
+    CorpStructureSettings:
+      type: object
+      required: [corporations, fuel_notice_threshold_days, timer_notice_threshold_days]
+      properties:
+        corporations: {type: array, items: {$ref: '#/components/schemas/CorpStructureCorporation'}}
+        fuel_notice_threshold_days: {type: integer}
+        timer_notice_threshold_days: {type: integer}
+    CorpStructureAuthorization:
+      type: object
+      required: [corporation_id]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+        character_id: {type: integer, format: int64, x-go-name: CharacterID, x-go-type-skip-optional-pointer: true}
+    CorpStructureAuthorizationInput:
+      type: object
+      properties:
+        authorizations: {type: array, items: {$ref: '#/components/schemas/CorpStructureAuthorization'}, x-go-type-skip-optional-pointer: true}
+        fuel_notice_threshold_days: {type: integer, nullable: true}
+        timer_notice_threshold_days: {type: integer, nullable: true}
+    CorpStructureTaskInput:
+      type: object
+      required: [corporation_id]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+    CorpStructureTask:
+      type: object
+      required: [corporation_id, queued, running, message]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+        queued: {type: boolean}
+        running: {type: boolean}
+        message: {type: string}
+    CorpStructureAssignment:
+      type: object
+      required: [corporation_id, corporation_name, structure_id, structure_name, system_id, system_name, region_id, region_name, security, type_id,
+        type_name, assigned_user_id, assigned_character_id, assigned_character_name]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+        corporation_name: {type: string}
+        structure_id: {type: integer, format: int64, x-go-name: StructureID}
+        structure_name: {type: string}
+        system_id: {type: integer, format: int64, x-go-name: SystemID}
+        system_name: {type: string}
+        region_id: {type: integer, format: int64, x-go-name: RegionID}
+        region_name: {type: string}
+        security: {type: number, format: double}
+        type_id: {type: integer, format: int64, x-go-name: TypeID}
+        type_name: {type: string}
+        assigned_user_id: {type: integer, x-go-type: uint, x-go-name: AssignedUserID}
+        assigned_character_id: {type: integer, format: int64, x-go-name: AssignedCharacterID}
+        assigned_character_name: {type: string}
+    CorpStructureAssignments:
+      type: object
+      required: [items, fuel_officers]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/CorpStructureAssignment'}}
+        fuel_officers: {type: array, items: {$ref: '#/components/schemas/CorpStructureFuelOfficer'}}
+    CorpStructureAssignmentBinding:
+      type: object
+      required: [corporation_id, structure_id]
+      properties:
+        corporation_id: {type: integer, format: int64, x-go-name: CorporationID}
+        structure_id: {type: integer, format: int64, x-go-name: StructureID}
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID, x-go-type-skip-optional-pointer: true}
+    CorpStructureAssignmentInput:
+      type: object
+      properties:
+        assignments: {type: array, items: {$ref: '#/components/schemas/CorpStructureAssignmentBinding'}, x-go-type-skip-optional-pointer: true}
+    CorpStructureFuelSalarySettings:
+      type: object
+      required: [salary_per_structure_monthly]
+      properties:
+        salary_per_structure_monthly: {type: integer}
+    CorpStructureFuelSalaryInput:
+      type: object
+      properties:
+        salary_per_structure_monthly: {type: integer, x-go-type-skip-optional-pointer: true, default: 0, minimum: 0}
+    CorpStructureFuelPayoutInput:
+      type: object
+      required: [settlement_month]
+      properties:
+        settlement_month: {type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', description: Settlement month in YYYY-MM format.}
+    CorpStructureFuelPayoutItem:
+      type: object
+      required: [user_id, assigned_count, unit_salary, amount, wallet_ref_id]
+      properties:
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID}
+        assigned_count: {type: integer}
+        unit_salary: {type: integer}
+        amount: {type: integer}
+        wallet_ref_id: {type: string, x-go-name: WalletRefID}
+    CorpStructureFuelPayout:
+      type: object
+      required: [settlement_month, items]
+      properties:
+        settlement_month: {type: string}
+        items: {type: array, items: {$ref: '#/components/schemas/CorpStructureFuelPayoutItem'}}
+    CorpStructureSystem:
+      type: object
+      required: [system_id, system_name, region_id, region_name, security]
+      properties:
+        system_id: {type: integer, format: int64, x-go-name: SystemID}
+        system_name: {type: string}
+        region_id: {type: integer, format: int64, x-go-name: RegionID}
+        region_name: {type: string}
+        security: {type: number, format: double}
+    CorpStructureType:
+      type: object
+      required: [type_id, type_name]
+      properties:
+        type_id: {type: integer, format: int64, x-go-name: TypeID}
+        type_name: {type: string}
+    CorpStructureRegion:
+      type: object
+      required: [region_id, region_name]
+      properties:
+        region_id: {type: integer, format: int64, x-go-name: RegionID}
+        region_name: {type: string}
+    CorpStructureServiceName:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    CorpStructureFilters:
+      type: object
+      required: [systems, regions, types, services]
+      properties:
+        systems: {type: array, items: {$ref: '#/components/schemas/CorpStructureSystem'}}
+        regions: {type: array, items: {$ref: '#/components/schemas/CorpStructureRegion'}}
+        types: {type: array, items: {$ref: '#/components/schemas/CorpStructureType'}}
+        services: {type: array, items: {$ref: '#/components/schemas/CorpStructureServiceName'}}
+    CorpStructureFuelOfficer:
+      type: object
+      required: [user_id, display_name, character_id, character_name]
+      properties:
+        user_id: {type: integer, x-go-type: uint, x-go-name: UserID}
+        display_name: {type: string}
+        character_id: {type: integer, format: int64, x-go-name: CharacterID}
+        character_name: {type: string}
+    CorpStructureActivity:
+      type: object
+      required: [activity_name, type_ids, system_managed]
+      properties:
+        activity_name: {type: string}
+        type_ids: {type: array, items: {type: integer}, x-go-name: TypeIDs}
+        system_managed: {type: boolean}
+    CorpStructurePendingActivity:
+      type: object
+      required: [activity_name, structure_id, structure_name, installed_module_type_ids]
+      properties:
+        activity_name: {type: string}
+        structure_id: {type: integer, format: int64, x-go-name: StructureID}
+        structure_name: {type: string}
+        installed_module_type_ids: {type: array, items: {type: integer}, x-go-name: InstalledModuleTypeIDs}
+    CorpStructureCatalog:
+      type: object
+      required: [modules, activities, unmapped_activities]
+      properties:
+        modules: {type: array, items: {$ref: '#/components/schemas/CorpStructureCatalogModule'}}
+        activities: {type: array, items: {$ref: '#/components/schemas/CorpStructureActivity'}}
+        unmapped_activities: {type: array, items: {$ref: '#/components/schemas/CorpStructurePendingActivity'}}
+    CorpStructureCatalogInput:
+      type: object
+      properties:
+        modules: {type: array, items: {$ref: '#/components/schemas/CorpStructureCatalogModuleInput'}, x-go-type-skip-optional-pointer: true}
+        activities: {type: array, items: {$ref: '#/components/schemas/CorpStructureCatalogActivityInput'}, x-go-type-skip-optional-pointer: true}
+    CorpStructureCatalogModuleInput:
+      type: object
+      required: [service_name, type_id, fuel_category]
+      properties:
+        service_name: {type: string}
+        type_id: {type: integer, x-go-name: TypeID}
+        fuel_category: {type: string, enum: [other, citadel, engineering_complex, refinery], x-go-type: string}
+    CorpStructureCatalogActivityInput:
+      type: object
+      required: [activity_name, type_ids]
+      properties:
+        activity_name: {type: string}
+        type_ids: {type: array, items: {type: integer}, x-go-name: TypeIDs}
+    CorpStructureCatalogModule:
+      type: object
+      required: [id, created_at, updated_at, service_name, type_id, type_name, fuel_per_hour, fuel_category]
+      properties:
+        id: {type: integer, x-go-type: uint, x-go-name: ID}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        service_name: {type: string}
+        type_id: {type: integer, x-go-name: TypeID}
+        type_name: {type: string}
+        fuel_per_hour: {type: number, format: double}
+        fuel_category: {type: string, enum: [other, citadel, engineering_complex, refinery], x-go-type: string}

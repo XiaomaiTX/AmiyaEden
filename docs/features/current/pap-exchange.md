@@ -13,7 +13,7 @@ source_of_truth:
   - server/internal/service/fleet.go
   - server/internal/handler/pap_exchange.go
   - server/internal/router/router.go
-  - static/src/api/pap-exchange.ts
+  - static/src/api/generated/client.ts
   - static/src/views/system/pap-exchange
   - server/internal/service/multichar_reward.go
 ---
@@ -84,10 +84,9 @@ PAP 兑换汇率功能允许管理员为每种舰队行动类型（Skirmish / St
 
 - `static/src/views/system/pap-exchange`
 
-### 后端路由
+### 后端契约
 
-- `GET /api/v1/system/pap-exchange/rates`
-- `PUT /api/v1/system/pap-exchange/rates`
+[PAP 兑换汇率 OpenAPI](../../../contracts/modules/pap-exchange.yaml)。
 
 ## 主要代码文件
 
@@ -96,7 +95,7 @@ PAP 兑换汇率功能允许管理员为每种舰队行动类型（Skirmish / St
 - `server/internal/service/pap_exchange.go` — 汇率 CRUD 业务逻辑
 - `server/internal/service/fleet.go` — `papImportanceToWalletRate`、FC 工资上限、FC 工资与钱包差量计算
 - `server/internal/handler/pap_exchange.go` — HTTP 处理器
-- `static/src/api/pap-exchange.ts` — 前端 API 包装层
+- `static/src/api/generated/client.ts` — 生成的 Vue 客户端
 - `static/src/views/system/pap-exchange/index.vue` — 管理页面
 
 ## 回归测试
@@ -109,4 +108,4 @@ PAP 兑换汇率功能允许管理员为每种舰队行动类型（Skirmish / St
 
 - Vue 管理页面位于 `static/src`。
 - React 已承接 `/system/pap-exchange`；按钮权限必须与 Vue `v-auth` 的 `edit_exchange_rate` 语义一致。
-- API 类型和 wrapper 以 `static-react/src/api/pap-exchange.ts` 及对应类型为准。
+- [React 汇率管理页](../../../static-react/src/pages/system-pap-exchange-page.tsx)直接使用生成的客户端操作与契约类型。

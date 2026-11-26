@@ -266,8 +266,10 @@
 </template>
 
 <script setup lang="ts">
+  import type { NpcKillCorpData, NpcKillCorpInput } from '@/api/generated/client'
   import { ElDatePicker, ElOption, ElSelect, ElInputNumber } from 'element-plus'
-  import { fetchCorpNpcKills } from '@/api/npc-kill'
+  import { getCorpNpcKills } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatIskPlain } from '@/utils/common'
   import { useI18n } from 'vue-i18n'
 
@@ -285,7 +287,7 @@
   const characterIdInputs = ref<string[]>([])
   const minAmount = ref<number | undefined>()
   const maxAmount = ref<number | undefined>()
-  const reportData = ref<Api.NpcKill.NpcKillCorpResponse | null>(null)
+  const reportData = ref<NpcKillCorpData | null>(null)
   const loading = ref(false)
   const corpTickerOptions = computed(() =>
     Array.from(
@@ -311,7 +313,7 @@
   const loadData = async () => {
     loading.value = true
     try {
-      const params: Api.NpcKill.NpcKillCorpRequest = {}
+      const params: NpcKillCorpInput = {}
       if (dateRange.value) {
         params.start_date = dateRange.value[0]
         params.end_date = dateRange.value[1]
@@ -340,7 +342,7 @@
       }
       params.min_amount = minAmount.value
       params.max_amount = maxAmount.value
-      reportData.value = (await fetchCorpNpcKills(params)) ?? null
+      reportData.value = (await unwrapContract(getCorpNpcKills(params))) ?? null
     } catch {
       reportData.value = null
     } finally {

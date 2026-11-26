@@ -1,0 +1,332 @@
+paths:
+  /fuxi-hall/hall-of-fame:
+    get:
+      operationId: getHall
+      x-gin-access: ["jwt", "login", "cap:menu.fuxi_hall"]
+      responses:
+        '200': { $ref: '#/components/responses/HallPublicResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /fuxi-hall/cards/{id}/profile:
+    put:
+      operationId: updateHallOwnCard
+      x-gin-access: ["jwt", "login", "cap:menu.fuxi_hall"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {"type": "integer", "x-go-type": "uint"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/HallOwnCardInput"}
+      responses:
+        '200': { $ref: '#/components/responses/HallCardResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/fuxi-hall/contributions/refresh:
+    post:
+      operationId: refreshContributions
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      responses:
+        '200': { $ref: '#/components/responses/HallEmptyResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/fuxi-hall/pages/{page_key}:
+    get:
+      operationId: getHallPageConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      parameters:
+        - name: page_key
+          in: path
+          required: true
+          schema: {"type": "string"}
+      responses:
+        '200': { $ref: '#/components/responses/HallPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateHallPageConfig
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      parameters:
+        - name: page_key
+          in: path
+          required: true
+          schema: {"type": "string"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/HallPageInput"}
+      responses:
+        '200': { $ref: '#/components/responses/HallPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/fuxi-hall/cards/{card_key}:
+    get:
+      operationId: listHallCards
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      parameters:
+        - name: card_key
+          in: path
+          required: true
+          schema: {"type": "string", "description": "Hall page key."}
+      responses:
+        '200': { $ref: '#/components/responses/HallCardsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateHallCard
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      parameters:
+        - name: card_key
+          in: path
+          required: true
+          schema: {"type": "integer", "x-go-type": "uint", "description": "Numeric card ID."}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/HallCardUpdate"}
+      responses:
+        '200': { $ref: '#/components/responses/HallCardResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteHallCard
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      parameters:
+        - name: card_key
+          in: path
+          required: true
+          schema: {"type": "integer", "x-go-type": "uint", "description": "Numeric card ID."}
+      responses:
+        '200': { $ref: '#/components/responses/HallEmptyResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/fuxi-hall/cards:
+    post:
+      operationId: createCard
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/HallCardCreate"}
+      responses:
+        '200': { $ref: '#/components/responses/HallCardResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/fuxi-hall/cards/reorder:
+    put:
+      operationId: reorderCards
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.fuxi_hall"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/HallReorderInput"}
+      responses:
+        '200': { $ref: '#/components/responses/HallEmptyResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  responses:
+    HallPageResult:
+      description: Hall operation result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - {"$ref": "#/components/schemas/HallPageResultSuccess"}
+              - {"$ref": "#/components/schemas/BusinessError"}
+    HallCardResult:
+      description: Hall operation result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - {"$ref": "#/components/schemas/HallCardResultSuccess"}
+              - {"$ref": "#/components/schemas/BusinessError"}
+    HallCardsResult:
+      description: Hall operation result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - {"$ref": "#/components/schemas/HallCardsResultSuccess"}
+              - {"$ref": "#/components/schemas/BusinessError"}
+    HallPublicResult:
+      description: Hall operation result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - {"$ref": "#/components/schemas/HallPublicResultSuccess"}
+              - {"$ref": "#/components/schemas/BusinessError"}
+    HallEmptyResult:
+      description: Hall operation result or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - {"$ref": "#/components/schemas/NullSuccess"}
+              - {"$ref": "#/components/schemas/BusinessError"}
+  schemas:
+    HallPageKey:
+      type: "string"
+      enum: ["hall-of-fame"]
+    HallAvatarShape:
+      type: "string"
+      enum: ["circle", "rounded", "square"]
+    HallContributions:
+      type: "object"
+      required: ["corp_pap", "fleets", "welfare", "srp", "recruitment", "mentoring"]
+      properties:
+        corp_pap: {"type": "number", "format": "double"}
+        fleets: {"type": "integer", "format": "int64"}
+        welfare: {"type": "integer", "format": "int64"}
+        srp: {"type": "integer", "format": "int64"}
+        recruitment: {"type": "integer", "format": "int64"}
+        mentoring: {"type": "integer", "format": "int64"}
+    HallContributionInput:
+      type: "object"
+      properties:
+        corp_pap: {"type": "number", "format": "double", "x-go-type-skip-optional-pointer": true}
+        fleets: {"type": "integer", "format": "int64", "x-go-type-skip-optional-pointer": true}
+        welfare: {"type": "integer", "format": "int64", "x-go-type-skip-optional-pointer": true}
+        srp: {"type": "integer", "format": "int64", "x-go-type-skip-optional-pointer": true}
+        recruitment: {"type": "integer", "format": "int64", "x-go-type-skip-optional-pointer": true}
+        mentoring: {"type": "integer", "format": "int64", "x-go-type-skip-optional-pointer": true}
+    HallFloor:
+      type: "object"
+      required: ["key", "name", "capacity"]
+      properties:
+        key: {"type": "string"}
+        name: {"type": "string"}
+        capacity: {"type": "integer"}
+    HallPage:
+      type: "object"
+      required: ["id", "page_key", "title", "subtitle", "description_html", "floors"]
+      properties:
+        id: {"type": "integer", "x-go-type": "uint"}
+        page_key: {"$ref": "#/components/schemas/HallPageKey"}
+        title: {"type": "string"}
+        subtitle: {"type": "string"}
+        description_html: {"type": "string"}
+        floors: {"type": "array", "items": {"$ref": "#/components/schemas/HallFloor"}}
+    HallCard:
+      type: "object"
+      required: ["id", "page_key", "floor_key", "is_current_management", "nickname", "main_character_name", "title_tags", "description_html", "accent_color", "avatar_shape", "font_scale", "visible", "qq", "contributions", "contributions_updated_at", "can_edit", "tenure_months", "main_character_id", "avatar_image", "sort_order", "created_at", "updated_at"]
+      properties:
+        id: {"type": "integer", "x-go-type": "uint"}
+        page_key: {"$ref": "#/components/schemas/HallPageKey"}
+        floor_key: {"type": "string"}
+        is_current_management: {"type": "boolean"}
+        nickname: {"type": "string"}
+        main_character_name: {"type": "string"}
+        title_tags: {"type": "array", "items": {"type": "string"}}
+        description_html: {"type": "string"}
+        accent_color: {"type": "string"}
+        avatar_shape: {"$ref": "#/components/schemas/HallAvatarShape"}
+        font_scale: {"type": "integer"}
+        visible: {"type": "boolean"}
+        qq: {"type": "string"}
+        contributions: {"$ref": "#/components/schemas/HallContributions"}
+        contributions_updated_at: {"type": "string", "format": "date-time", "nullable": true}
+        can_edit: {"type": "boolean"}
+        tenure_months: {"type": "integer", "nullable": true}
+        main_character_id: {"type": "integer", "format": "int64"}
+        avatar_image: {"type": "string"}
+        sort_order: {"type": "integer"}
+        created_at: {"type": "string", "format": "date-time"}
+        updated_at: {"type": "string", "format": "date-time"}
+    HallManageCard:
+      allOf: [{"$ref": "#/components/schemas/HallCard"}, {"type": "object", "required": ["contribution_offsets"], "properties": {"contribution_offsets": {"$ref": "#/components/schemas/HallContributions"}}}]
+    HallManageCards:
+      type: "array"
+      items: {"$ref": "#/components/schemas/HallManageCard"}
+    HallPublic:
+      type: "object"
+      required: ["page", "cards"]
+      properties:
+        page: {"$ref": "#/components/schemas/HallPage"}
+        cards: {"type": "array", "items": {"$ref": "#/components/schemas/HallCard"}}
+    HallOwnCardInput:
+      type: "object"
+      required: ["nickname", "description_html"]
+      properties:
+        nickname: {"type": "string"}
+        description_html: {"type": "string"}
+    HallPageInput:
+      type: "object"
+      properties:
+        title: {"type": "string"}
+        subtitle: {"type": "string"}
+        description_html: {"type": "string"}
+        floors: {"type": "array", "items": {"$ref": "#/components/schemas/HallFloor"}}
+    HallCardCreate:
+      type: "object"
+      required: ["page_key", "nickname", "main_character_name"]
+      properties:
+        floor_key: {"type": "string", "x-go-type-skip-optional-pointer": true}
+        is_current_management: {"type": "boolean", "x-go-type-skip-optional-pointer": true}
+        nickname: {"type": "string", "x-go-type-skip-optional-pointer": true}
+        main_character_name: {"type": "string", "x-go-type-skip-optional-pointer": true}
+        title_tags: {"type": "array", "items": {"type": "string"}, "x-go-type-skip-optional-pointer": true}
+        description_html: {"type": "string", "x-go-type-skip-optional-pointer": true}
+        accent_color: {"type": "string", "x-go-type-skip-optional-pointer": true}
+        avatar_shape: {"type": "string", "x-go-type-skip-optional-pointer": true}
+        page_key: {"type": "string"}
+        font_scale: {"type": "integer"}
+        visible: {"type": "boolean"}
+        contribution_offsets: {"$ref": "#/components/schemas/HallContributionInput"}
+    HallCardUpdate:
+      type: "object"
+      properties:
+        floor_key: {"type": "string"}
+        is_current_management: {"type": "boolean"}
+        nickname: {"type": "string"}
+        main_character_name: {"type": "string"}
+        title_tags: {"type": "array", "items": {"type": "string"}}
+        description_html: {"type": "string"}
+        accent_color: {"type": "string"}
+        avatar_shape: {"type": "string"}
+        font_scale: {"type": "integer"}
+        visible: {"type": "boolean"}
+        contribution_offsets: {"$ref": "#/components/schemas/HallContributionInput"}
+    HallReorderInput:
+      type: "object"
+      required: ["page_key", "ordered_ids"]
+      properties:
+        page_key: {"type": "string"}
+        ordered_ids: {"type": "array", "items": {"type": "integer", "x-go-type": "uint"}}
+    HallPageResultSuccess:
+      type: "object"
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/HallPage"}
+    HallCardResultSuccess:
+      type: "object"
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/HallCard"}
+    HallCardsResultSuccess:
+      type: "object"
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/HallManageCards"}
+    HallPublicResultSuccess:
+      type: "object"
+      required: ["code", "msg", "data"]
+      properties:
+        code: {"type": "integer", "enum": [200]}
+        msg: {"type": "string"}
+        data: {"$ref": "#/components/schemas/HallPublic"}

@@ -144,7 +144,10 @@
 </template>
 
 <script setup lang="ts">
-  import { createPersonalSkillPlan, updatePersonalSkillPlan } from '@/api/skill-plan'
+  import type { SkillPlanDetail, SkillPlanRequirement } from '@/api/generated/client'
+  import type { SdeSearchItem } from '@/api/generated/client'
+  import { createPersonalSkillPlan, updatePersonalSkillPlan } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
   import { useUserStore } from '@/store/modules/user'
   import { createLocalUid } from '@/utils/id'
@@ -158,12 +161,12 @@
     skill_name: string
     group_name: string
     required_level: number
-    initialOption: Api.Sde.FuzzySearchItem | null
+    initialOption: SdeSearchItem | null
   }
 
   interface Props {
     visible: boolean
-    editing?: Api.SkillPlan.SkillPlanDetail | null
+    editing?: SkillPlanDetail | null
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -172,7 +175,7 @@
 
   const emit = defineEmits<{
     'update:visible': [visible: boolean]
-    success: [plan: Api.SkillPlan.SkillPlanDetail]
+    success: [plan: SkillPlanDetail]
   }>()
 
   const { t } = useI18n()
@@ -188,7 +191,7 @@
     shipTypeId: null as number | null,
     shipName: '',
     shipGroupName: '',
-    shipInitialOption: null as Api.Sde.FuzzySearchItem | null,
+    shipInitialOption: null as SdeSearchItem | null,
     skillsText: '',
     skills: [] as SkillFormItem[],
     sortOrder: 0
@@ -207,10 +210,7 @@
   const dialogTitle = computed(() => (props.editing ? t('skillPlan.edit') : t('skillPlan.create')))
   const usesTextInput = computed(() => formData.skillsText.trim().length > 0)
 
-  function buildSkillItem(
-    skill?: Api.SkillPlan.SkillRequirement | null,
-    fallbackLevel = 1
-  ): SkillFormItem {
+  function buildSkillItem(skill?: SkillPlanRequirement | null, fallbackLevel = 1): SkillFormItem {
     return {
       uid: createLocalUid('skill'),
       skill_type_id: skill?.skill_type_id ?? null,
@@ -268,7 +268,7 @@
     formData.skills.splice(index, 1)
   }
 
-  function onSkillSelect(index: number, item: Api.Sde.FuzzySearchItem | null) {
+  function onSkillSelect(index: number, item: SdeSearchItem | null) {
     const target = formData.skills[index]
     if (!target) return
 
@@ -278,7 +278,7 @@
     target.initialOption = item
   }
 
-  function onShipSelect(item: Api.Sde.FuzzySearchItem | null) {
+  function onShipSelect(item: SdeSearchItem | null) {
     formData.shipTypeId = item?.id ?? null
     formData.shipName = item?.name ?? ''
     formData.shipGroupName = item?.group_name ?? ''
@@ -344,8 +344,10 @@
     try {
       const lang = userStore.language || 'zh'
       const result = props.editing
-        ? await updatePersonalSkillPlan(props.editing.id, payload, lang)
-        : await createPersonalSkillPlan(payload, lang)
+        ? await unwrapContract(
+            updatePersonalSkillPlan(props.editing.id, payload, lang ? { lang } : undefined)
+          )
+        : await unwrapContract(createPersonalSkillPlan(payload, lang ? { lang } : undefined))
 
       ElMessage.success(t(props.editing ? 'skillPlan.updateSuccess' : 'skillPlan.createSuccess'))
       emit('success', result)

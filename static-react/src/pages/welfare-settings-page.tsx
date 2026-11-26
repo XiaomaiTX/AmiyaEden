@@ -21,15 +21,20 @@ import {
   adminListWelfares,
   adminReorderWelfares,
   adminUpdateWelfare,
-  fetchWelfareAutoApproveConfig,
-  updateWelfareAutoApproveConfig,
-  uploadWelfareEvidence,
-} from '@/api/welfare'
+  adminGetWelfareSettings,
+  adminUpdateWelfareSettings,
+  uploadEvidence,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
-import type { AutoApproveConfig, WelfareItem, CreateParams } from '@/types/api/welfare'
+import type {
+  WelfareSettings as AutoApproveConfig,
+  WelfareItem,
+  WelfareCreateInput as CreateParams,
+} from '@/api/generated/client'
 import { ShopDialog } from './shop-page-utils'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -69,8 +74,8 @@ export function WelfareSettingsPage() {
     setError(null)
     try {
       const [welfares, autoApproveConfig] = await Promise.all([
-        adminListWelfares({ current: 1, size: 200 }),
-        fetchWelfareAutoApproveConfig(),
+        unwrapContract(adminListWelfares({ current: 1, size: 200 }), 'list welfares failed'),
+        unwrapContract(adminGetWelfareSettings(), 'fetch welfare config failed'),
       ])
       setItems(welfares.list ?? [])
       setConfig(autoApproveConfig)
@@ -123,7 +128,7 @@ export function WelfareSettingsPage() {
       dist_mode: item.dist_mode,
       pay_by_fuxi_coin: item.pay_by_fuxi_coin,
       require_skill_plan: item.require_skill_plan,
-      skill_plan_ids: item.skill_plan_ids,
+      skill_plan_ids: item.skill_plan_ids ?? [],
       max_char_age_months: item.max_char_age_months,
       minimum_pap: item.minimum_pap,
       minimum_fuxi_legion_years: item.minimum_fuxi_legion_years,
@@ -149,9 +154,12 @@ export function WelfareSettingsPage() {
         example_evidence: form.require_evidence ? (form.example_evidence ?? '') : '',
       }
       if (editingId > 0) {
-        await adminUpdateWelfare({ id: editingId, ...payload })
+        await unwrapContract(
+          adminUpdateWelfare({ id: editingId, ...payload }),
+          'update welfare failed'
+        )
       } else {
-        await adminCreateWelfare(payload)
+        await unwrapContract(adminCreateWelfare(payload), 'create welfare failed')
       }
       setDialogVisible(false)
       await loadData()
@@ -165,7 +173,7 @@ export function WelfareSettingsPage() {
   const remove = async (id: number) => {
     if (!window.confirm(t('welfareSettings.deleteConfirm'))) return
     try {
-      await adminDeleteWelfare(id)
+      await unwrapContract(adminDeleteWelfare({ id }), 'delete welfare failed')
       await loadData()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('welfareSettings.deleteFailed')))
@@ -183,14 +191,17 @@ export function WelfareSettingsPage() {
     const [moved] = nextItems.splice(currentIndex, 1)
     nextItems.splice(swapIndex, 0, moved)
     setItems(nextItems.map((item, index) => ({ ...item, sort_order: index })))
-    await adminReorderWelfares(nextItems.map((item) => item.id))
+    await unwrapContract(
+      adminReorderWelfares({ ids: nextItems.map((item) => item.id) }),
+      'reorder welfare failed'
+    )
   }
 
   const handleExampleUpload = async (file: File) => {
     setExampleUploading(true)
     try {
-      const url = await uploadWelfareEvidence(file)
-      setForm((current) => ({ ...current, example_evidence: url }))
+      const data = await unwrapContract(uploadEvidence({ file }), 'upload image failed')
+      setForm((current) => ({ ...current, example_evidence: data.url }))
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('welfareSettings.uploadFailed')))
     } finally {
@@ -202,9 +213,12 @@ export function WelfareSettingsPage() {
     if (!config) return
     setConfigSaving(true)
     try {
-      const nextConfig = await updateWelfareAutoApproveConfig({
-        auto_approve_fuxi_coin_threshold: config.auto_approve_fuxi_coin_threshold,
-      })
+      const nextConfig = await unwrapContract(
+        adminUpdateWelfareSettings({
+          auto_approve_fuxi_coin_threshold: config.auto_approve_fuxi_coin_threshold,
+        }),
+        'update welfare config failed'
+      )
       setConfig(nextConfig)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('welfareSettings.saveFailed')))
@@ -394,11 +408,13 @@ export function WelfareSettingsPage() {
                 </span>
                 <Select
                   selectedKey={String(form.dist_mode ?? '')}
-                  onSelectionChange={(key) => ((value) =>
-                    setForm((current) => ({
-                      ...current,
-                      dist_mode: value as 'per_user' | 'per_character',
-                    })))(String(key))}
+                  onSelectionChange={(key) =>
+                    ((value) =>
+                      setForm((current) => ({
+                        ...current,
+                        dist_mode: value as 'per_user' | 'per_character',
+                      })))(String(key))
+                  }
                 >
                   <SelectTrigger className="h-10">
                     <SelectValue />
@@ -417,8 +433,11 @@ export function WelfareSettingsPage() {
                 </span>
                 <Select
                   selectedKey={String(form.status ?? 1)}
-                  onSelectionChange={(key) => ((value) =>
-                    setForm((current) => ({ ...current, status: Number(value) })))(String(key))}
+                  onSelectionChange={(key) =>
+                    ((value) => setForm((current) => ({ ...current, status: Number(value) })))(
+                      String(key)
+                    )
+                  }
                 >
                   <SelectTrigger className="h-10">
                     <SelectValue />

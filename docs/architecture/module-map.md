@@ -2,7 +2,7 @@
 status: active
 doc_type: architecture
 owner: engineering
-last_reviewed: 2026-11-12
+last_reviewed: 2026-11-26
 source_of_truth:
   - server/internal
   - server/pkg
@@ -90,13 +90,10 @@ React 迁移侧对应职责：
 
 通常需要一起看：
 
-1. `server/internal/router/`
-2. `server/internal/handler/`
-3. `server/internal/service/`
-4. `server/internal/repository/`
-5. `static/src/api/` and/or `static-react/src/api/`
-6. corresponding frontend types (`static/src/types/api/api.d.ts` or `static-react/src/types/api/`)
-7. `docs/api/route-index.md`
+1. [OpenAPI 根规范](../../contracts/openapi.yaml)或对应业务片段 — 遵循[契约同步流程](../api/conventions.md#契约同步顺序)。
+2. 对应 handler 及受影响的服务、仓储。
+3. 两端生成客户端和实际消费的页面、hook 或 store。
+4. 受影响的功能文档；[路由索引](../api/route-index.md)仅在业务域入口变化时同步。
 
 ### 修改后台任务、调度或执行历史
 
@@ -108,7 +105,7 @@ React 迁移侧对应职责：
 4. `server/internal/service/task.go`
 5. `server/internal/repository/task.go`
 6. `server/internal/model/task.go`
-7. `static/src/api/task-manager.ts`
+7. `static/src/api/generated/client.ts` 或 React 生成客户端
 8. `static/src/views/system/task-manager`
 9. `docs/features/current/task-manager.md`
 
@@ -143,11 +140,11 @@ React 迁移侧对应职责：
 3. `server/internal/service/corporation_structure.go`
 4. `server/internal/repository/corporation_structure.go`
 5. `server/internal/model/sys_config.go`
-6. `static/src/api/corporation-structures.ts`
-7. `static/src/views/dashboard/corporation-structures`
+6. `contracts/modules/corp-structures.yaml` 与两端生成客户端
+7. `static/src/views/dashboard/corporation-structures` 及 React 对应页面
 8. `docs/features/current/corporation-structures.md`
 9. `docs/features/current/badge-counts.md`
-10. `docs/api/route-index.md`
+10. `docs/api/route-index.md`（阅读索引）
 
 ### 修改表格页、卡片记录页或复杂筛选页
 

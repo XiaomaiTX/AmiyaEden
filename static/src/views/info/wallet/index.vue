@@ -87,11 +87,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { InfoWalletJournal } from '@/api/generated/client'
   import { useTable } from '@/hooks/core/useTable'
   import { ElTag, ElAvatar, ElSelect, ElOption, ElMessageBox, ElMessage } from 'element-plus'
   import { Download } from '@element-plus/icons-vue'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { fetchInfoWallet, runMyCharacterESIRefresh } from '@/api/eve-info'
+
+  import { listMyEveCharacters, getWalletJournal, runMyCharacterTask } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatIskPlain } from '@/utils/common'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useI18n } from 'vue-i18n'
@@ -101,7 +103,7 @@
 
   defineOptions({ name: 'EveInfoWallet' })
 
-  type WalletJournal = Api.EveInfo.WalletJournal
+  type WalletJournal = InfoWalletJournal
 
   const { t } = useI18n()
 
@@ -120,12 +122,14 @@
     if (!params.character_id) {
       return { list: [], total: 0, page: 1, pageSize: params.size }
     }
-    const res = await fetchInfoWallet({
-      character_id: params.character_id,
-      ref_types: params.ref_types?.length ? params.ref_types : undefined,
-      page: params.current,
-      page_size: params.size
-    })
+    const res = await unwrapContract(
+      getWalletJournal({
+        character_id: params.character_id,
+        ref_types: params.ref_types?.length ? params.ref_types : undefined,
+        page: params.current,
+        page_size: params.size
+      })
+    )
     walletBalance.value = res?.balance ?? null
     walletJournalTypes.value = res?.ref_types ?? []
     return {
@@ -260,10 +264,12 @@
 
     esiRefreshing.value = true
     try {
-      await runMyCharacterESIRefresh({
-        task_name: 'character_wallet',
-        character_id: selectedCharacterId.value
-      })
+      await unwrapContract(
+        runMyCharacterTask({
+          task_name: 'character_wallet',
+          character_id: selectedCharacterId.value
+        })
+      )
       ElMessage.success(t('info.walletESIRefreshSubmitted'))
     } catch (e: unknown) {
       const error = e as {
@@ -285,7 +291,7 @@
 
   const loadCharacters = async () => {
     try {
-      characters.value = (await fetchMyCharacters()) ?? []
+      characters.value = (await unwrapContract(listMyEveCharacters())) ?? []
       if (characters.value.length > 0) {
         selectedCharacterId.value = characters.value[0].character_id
         applyFilters()

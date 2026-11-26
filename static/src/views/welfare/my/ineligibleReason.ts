@@ -1,3 +1,4 @@
+import type { WelfareEligibleItem } from '@/api/generated/client'
 export interface WelfareReasonMessages {
   pap: string
   skill: string
@@ -14,7 +15,7 @@ interface ParsedWelfareReason {
 }
 
 function parseWelfareIneligibleReason(
-  reason: Api.Welfare.EligibleWelfare['ineligible_reason'] | undefined
+  reason: WelfareEligibleItem['ineligible_reason'] | undefined
 ): ParsedWelfareReason {
   const tokenSet = new Set((reason ?? '').split('_').filter(Boolean))
 
@@ -32,7 +33,7 @@ function parseWelfareIneligibleReason(
 }
 
 export function formatWelfareIneligibleReason(
-  reason: Api.Welfare.EligibleWelfare['ineligible_reason'] | undefined,
+  reason: WelfareEligibleItem['ineligible_reason'] | undefined,
   skillPlanNames: string[] | undefined,
   messages: WelfareReasonMessages
 ) {

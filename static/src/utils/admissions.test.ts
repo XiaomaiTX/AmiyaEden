@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { canAccessAdmission, compressAdmissionImage } from './admissions'
-import type { AdmissionContext } from '../types/api/admissions'
+import type { AdmissionContext } from '../api/generated/client'
 
 test('creation and review fail closed while owner history remains available', () => {
   for (const kind of ['new_member', 'alt', 'review'] as const)

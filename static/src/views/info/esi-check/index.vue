@@ -27,13 +27,16 @@
 </template>
 
 <script setup lang="ts">
-  import { fetchEveSSOScopes, fetchMyCharacters } from '@/api/auth'
+  import type { EveSsoScope } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
+  import { listEveSsoScopes, listMyEveCharacters } from '@/api/generated/client'
+
   import OverviewMatrix from './modules/overview-matrix.vue'
   import CharacterDetail from './modules/character-detail.vue'
 
   defineOptions({ name: 'EveInfoEsiCheck' })
 
-  const scopes = ref<Api.Auth.RegisteredScope[]>([])
+  const scopes = ref<EveSsoScope[]>([])
   const characters = ref<Api.Auth.EveCharacter[]>([])
   const loading = ref(true)
   const selectedCharacterId = ref<number>()
@@ -46,8 +49,8 @@
     loading.value = true
     try {
       const [scopesRes, charactersRes] = await Promise.all([
-        fetchEveSSOScopes(),
-        fetchMyCharacters()
+        unwrapContract(listEveSsoScopes()),
+        unwrapContract(listMyEveCharacters())
       ])
       scopes.value = scopesRes ?? []
       characters.value = charactersRes ?? []

@@ -3,12 +3,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { TicketStatus } from '@/api/generated/client'
   import { ElTag } from 'element-plus'
   import { computed } from 'vue'
   import { useI18n } from 'vue-i18n'
 
   const props = defineProps<{
-    status: Api.Ticket.TicketStatus
+    status: TicketStatus
   }>()
 
   const { t } = useI18n()

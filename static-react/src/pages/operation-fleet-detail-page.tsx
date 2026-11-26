@@ -1,23 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { getInvites, syncESIMembers } from '@/api/generated/client'
 import {
-  addFleetMembersByCharacterNames,
-  createFleetInvite,
-  deactivateFleetInvite,
-  fetchFleetDetail,
-  fetchFleetInvites,
+  manualAddMembers,
+  createInvite,
+  deactivateInvite,
+  getFleet,
   issuePap,
   pingFleet,
   refreshFleetESI,
-  syncESIFleetMembers,
-  fetchMembersWithPap,
-} from '@/api/fleet'
+  getMembersWithPap,
+  type FleetRecord,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { DataTable, type ColumnDef } from '@/components/ui/data-table'
 import { Textarea } from '@/components/ui/textarea'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
-import type { FleetInvite, FleetItem, MemberWithPap } from '@/types/api/fleet'
+import type { FleetInvite, FleetMemberWithPap as MemberWithPap } from '@/api/generated/client'
 import { formatDateTime, getErrorMessage, ShopBadge, ShopDialog } from './shop-page-utils'
 
 function importanceBadgeClass(value: string) {
@@ -37,7 +38,7 @@ export function OperationFleetDetailPage() {
   const params = useParams<{ id: string }>()
   const fleetId = params.id ?? ''
   const roles = useSessionStore((state) => state.roles)
-  const [fleet, setFleet] = useState<FleetItem | null>(null)
+  const [fleet, setFleet] = useState<FleetRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [membersLoading, setMembersLoading] = useState(true)
   const [invitesLoading, setInvitesLoading] = useState(true)
@@ -55,17 +56,19 @@ export function OperationFleetDetailPage() {
   const [manualLoading, setManualLoading] = useState(false)
   const [manualText, setManualText] = useState('')
 
-  const canManageFleet = roles.some((role) => ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role))
+  const canManageFleet = roles.some((role) =>
+    ['super_admin', 'admin', 'fc', 'senior_fc'].includes(role)
+  )
 
   const loadFleet = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
       try {
-        const refreshed = await refreshFleetESI(fleetId)
+        const refreshed = await unwrapContract(refreshFleetESI(fleetId), 'refresh fleet esi failed')
         setFleet(refreshed)
       } catch {
-        setFleet(await fetchFleetDetail(fleetId))
+        setFleet(await unwrapContract(getFleet(fleetId), 'fetch fleet detail failed'))
       }
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('fleet.detail.loadFailed')))
@@ -78,10 +81,13 @@ export function OperationFleetDetailPage() {
   const loadMembers = useCallback(async () => {
     setMembersLoading(true)
     try {
-      const response = await fetchMembersWithPap(fleetId, {
-        current: memberPage,
-        size: memberPageSize,
-      })
+      const response = await unwrapContract(
+        getMembersWithPap(fleetId, {
+          current: memberPage,
+          size: memberPageSize,
+        }),
+        'fetch fleet members with pap failed'
+      )
       setMembers(response.list ?? [])
       setMemberTotal(response.total ?? 0)
       setMemberPage(response.page ?? memberPage)
@@ -98,7 +104,11 @@ export function OperationFleetDetailPage() {
   const loadInvites = useCallback(async () => {
     setInvitesLoading(true)
     try {
-      setInvites(await fetchFleetInvites(fleetId))
+      setInvites(
+        await unwrapContract(getInvites(fleetId), 'fetch fleet invites failed').then(
+          (data) => data ?? []
+        )
+      )
     } catch {
       setInvites([])
     } finally {
@@ -118,7 +128,7 @@ export function OperationFleetDetailPage() {
   const handleSyncESI = useCallback(async () => {
     setSyncLoading(true)
     try {
-      await syncESIFleetMembers(fleetId)
+      await unwrapContract(syncESIMembers(fleetId), 'sync fleet members failed')
       setMemberPage(1)
       void loadMembers()
     } catch (caughtError) {
@@ -135,7 +145,7 @@ export function OperationFleetDetailPage() {
 
     setPapLoading(true)
     try {
-      await issuePap(fleetId)
+      await unwrapContract(issuePap(fleetId), 'issue pap failed')
       void loadMembers()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('fleet.detail.issuePapFailed')))
@@ -147,7 +157,7 @@ export function OperationFleetDetailPage() {
   const handlePing = useCallback(async () => {
     setPingLoading(true)
     try {
-      await pingFleet(fleetId)
+      await unwrapContract(pingFleet(fleetId), 'ping fleet failed')
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('fleet.detail.pingFailed')))
     } finally {
@@ -158,7 +168,7 @@ export function OperationFleetDetailPage() {
   const handleCreateInvite = useCallback(async () => {
     setInviteLoading(true)
     try {
-      await createFleetInvite(fleetId)
+      await unwrapContract(createInvite(fleetId), 'create fleet invite failed')
       await loadInvites()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('fleet.detail.inviteCreateFailed')))
@@ -174,7 +184,7 @@ export function OperationFleetDetailPage() {
       }
 
       try {
-        await deactivateFleetInvite(invite.id)
+        await unwrapContract(deactivateInvite(invite.id), 'deactivate fleet invite failed')
         await loadInvites()
       } catch (caughtError) {
         setError(getErrorMessage(caughtError, t('fleet.detail.inviteDeactivateFailed')))
@@ -200,7 +210,10 @@ export function OperationFleetDetailPage() {
 
     setManualLoading(true)
     try {
-      const result = await addFleetMembersByCharacterNames(fleetId, { character_names: names })
+      const result = await unwrapContract(
+        manualAddMembers(fleetId, { character_names: names }),
+        'add fleet members failed'
+      )
       setManualOpen(false)
       setManualText('')
       if (result.added_character_names.length || result.missing_character_names.length) {
@@ -213,14 +226,17 @@ export function OperationFleetDetailPage() {
     }
   }, [fleetId, loadMembers, manualText, t])
 
-  const copyInviteLink = useCallback(async (invite: FleetInvite) => {
-    const link = `${window.location.origin}/#/operation/join?code=${invite.code}`
-    try {
-      await navigator.clipboard.writeText(link)
-    } catch {
-      setError(t('common.copyFailed'))
-    }
-  }, [t])
+  const copyInviteLink = useCallback(
+    async (invite: FleetInvite) => {
+      const link = `${window.location.origin}/#/operation/join?code=${invite.code}`
+      try {
+        await navigator.clipboard.writeText(link)
+      } catch {
+        setError(t('common.copyFailed'))
+      }
+    },
+    [t]
+  )
 
   const refreshAll = useCallback(() => {
     void loadFleet()
@@ -231,20 +247,85 @@ export function OperationFleetDetailPage() {
   const memberColumns = useMemo<ColumnDef<MemberWithPap>[]>(
     () => [
       { accessorKey: 'character_name', header: t('fleet.members.characterName') },
-      { accessorKey: 'ship_type_id', header: t('fleet.members.shipType'), cell: ({ row }) => row.original.ship_type_id ?? '-' },
-      { accessorKey: 'solar_system_id', header: t('fleet.members.solarSystem'), cell: ({ row }) => row.original.solar_system_id ?? '-' },
-      { accessorKey: 'joined_at', header: t('fleet.members.joinedAt'), cell: ({ row }) => formatDateTime(row.original.joined_at) },
-      { accessorKey: 'pap_count', header: t('fleet.pap.count'), cell: ({ row }) => row.original.pap_count ?? '-' },
+      {
+        accessorKey: 'ship_type_id',
+        header: t('fleet.members.shipType'),
+        cell: ({ row }) => row.original.ship_type_id ?? '-',
+      },
+      {
+        accessorKey: 'solar_system_id',
+        header: t('fleet.members.solarSystem'),
+        cell: ({ row }) => row.original.solar_system_id ?? '-',
+      },
+      {
+        accessorKey: 'joined_at',
+        header: t('fleet.members.joinedAt'),
+        cell: ({ row }) => formatDateTime(row.original.joined_at),
+      },
+      {
+        accessorKey: 'pap_count',
+        header: t('fleet.pap.count'),
+        cell: ({ row }) => row.original.pap_count ?? '-',
+      },
     ],
     [t]
   )
 
   const inviteColumns = useMemo<ColumnDef<FleetInvite>[]>(
     () => [
-      { accessorKey: 'code', header: t('fleet.invite.code'), cell: ({ row }) => <code className="rounded bg-muted px-2 py-0.5 text-xs">{row.original.code}</code> },
-      { accessorKey: 'active', header: t('common.status'), cell: ({ row }) => <ShopBadge className={row.original.active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'}>{row.original.active ? t('fleet.invite.active') : t('fleet.invite.inactive')}</ShopBadge> },
-      { accessorKey: 'expires_at', header: t('fleet.invite.expiresAt'), cell: ({ row }) => formatDateTime(row.original.expires_at) },
-      { id: 'actions', header: t('common.operation'), cell: ({ row }) => <div className="flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => void copyInviteLink(row.original)}>{t('fleet.invite.copyLink')}</Button>{canManageFleet && row.original.active ? <Button type="button" size="sm" variant="outline" onClick={() => void handleDeactivateInvite(row.original)}>{t('fleet.invite.deactivate')}</Button> : null}</div> },
+      {
+        accessorKey: 'code',
+        header: t('fleet.invite.code'),
+        cell: ({ row }) => (
+          <code className="rounded bg-muted px-2 py-0.5 text-xs">{row.original.code}</code>
+        ),
+      },
+      {
+        accessorKey: 'active',
+        header: t('common.status'),
+        cell: ({ row }) => (
+          <ShopBadge
+            className={
+              row.original.active
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
+            }
+          >
+            {row.original.active ? t('fleet.invite.active') : t('fleet.invite.inactive')}
+          </ShopBadge>
+        ),
+      },
+      {
+        accessorKey: 'expires_at',
+        header: t('fleet.invite.expiresAt'),
+        cell: ({ row }) => formatDateTime(row.original.expires_at),
+      },
+      {
+        id: 'actions',
+        header: t('common.operation'),
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void copyInviteLink(row.original)}
+            >
+              {t('fleet.invite.copyLink')}
+            </Button>
+            {canManageFleet && row.original.active ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void handleDeactivateInvite(row.original)}
+              >
+                {t('fleet.invite.deactivate')}
+              </Button>
+            ) : null}
+          </div>
+        ),
+      },
     ],
     [canManageFleet, copyInviteLink, handleDeactivateInvite, t]
   )
@@ -264,7 +345,9 @@ export function OperationFleetDetailPage() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {loading ? <p className="text-sm text-muted-foreground">{t('fleet.detail.loading')}</p> : null}
+      {loading ? (
+        <p className="text-sm text-muted-foreground">{t('fleet.detail.loading')}</p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-lg border bg-card p-5">
@@ -282,12 +365,16 @@ export function OperationFleetDetailPage() {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border p-3">
                 <div className="text-xs text-muted-foreground">{t('fleet.fields.fc')}</div>
-                <div className="mt-1 font-medium">{fleet.fc_display_name || fleet.fc_character_name}</div>
+                <div className="mt-1 font-medium">
+                  {fleet.fc_character_name}
+                </div>
               </div>
               <div className="rounded-lg border p-3">
                 <div className="text-xs text-muted-foreground">{t('fleet.fields.importance')}</div>
                 <div className="mt-1">
-                  <ShopBadge className={importanceBadgeClass(fleet.importance)}>{fleet.importance}</ShopBadge>
+                  <ShopBadge className={importanceBadgeClass(fleet.importance)}>
+                    {fleet.importance}
+                  </ShopBadge>
                 </div>
               </div>
               <div className="rounded-lg border p-3">
@@ -317,19 +404,43 @@ export function OperationFleetDetailPage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold">{t('fleet.detail.actions')}</h2>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void handleSyncESI()} isDisabled={!canManageFleet || syncLoading}>
+            <Button
+              type="button"
+              onClick={() => void handleSyncESI()}
+              isDisabled={!canManageFleet || syncLoading}
+            >
               {t('fleet.members.syncESI')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleIssuePap()} isDisabled={!canManageFleet || papLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleIssuePap()}
+              isDisabled={!canManageFleet || papLoading}
+            >
               {t('fleet.pap.issue')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setManualOpen(true)} isDisabled={!canManageFleet}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setManualOpen(true)}
+              isDisabled={!canManageFleet}
+            >
               {t('fleet.members.manualAdd')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handlePing()} isDisabled={!canManageFleet || pingLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handlePing()}
+              isDisabled={!canManageFleet || pingLoading}
+            >
               {t('fleet.ping.send')}
             </Button>
-            <Button type="button" variant="outline" onClick={() => void handleCreateInvite()} isDisabled={!canManageFleet || inviteLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleCreateInvite()}
+              isDisabled={!canManageFleet || inviteLoading}
+            >
               {t('fleet.invite.create')}
             </Button>
           </div>
@@ -340,9 +451,38 @@ export function OperationFleetDetailPage() {
         </div>
       </div>
 
-      <DataTable columns={memberColumns} data={members} getRowId={(member) => String(member.id)} loading={membersLoading} error={error} loadingText={t('common.loading')} emptyText={t('fleet.detail.memberEmpty')} pagination={{ page: memberPage, pageSize: memberPageSize, total: memberTotal, onPageChange: setMemberPage, onPageSizeChange: (nextPageSize) => { setMemberPageSize(nextPageSize); setMemberPage(1) }, pageSizeOptions: [10, 20, 50], previousLabel: t('welfareMy.pagination.prev'), nextLabel: t('welfareMy.pagination.next'), pageSizeLabel: t('welfareMy.pageSize') }} />
+      <DataTable
+        columns={memberColumns}
+        data={members}
+        getRowId={(member) => String(member.id)}
+        loading={membersLoading}
+        error={error}
+        loadingText={t('common.loading')}
+        emptyText={t('fleet.detail.memberEmpty')}
+        pagination={{
+          page: memberPage,
+          pageSize: memberPageSize,
+          total: memberTotal,
+          onPageChange: setMemberPage,
+          onPageSizeChange: (nextPageSize) => {
+            setMemberPageSize(nextPageSize)
+            setMemberPage(1)
+          },
+          pageSizeOptions: [10, 20, 50],
+          previousLabel: t('welfareMy.pagination.prev'),
+          nextLabel: t('welfareMy.pagination.next'),
+          pageSizeLabel: t('welfareMy.pageSize'),
+        }}
+      />
 
-      <DataTable columns={inviteColumns} data={invites} getRowId={(invite) => String(invite.id)} loading={invitesLoading} loadingText={t('common.loading')} emptyText={t('fleet.invite.empty')} />
+      <DataTable
+        columns={inviteColumns}
+        data={invites}
+        getRowId={(invite) => String(invite.id)}
+        loading={invitesLoading}
+        loadingText={t('common.loading')}
+        emptyText={t('fleet.invite.empty')}
+      />
 
       <ShopDialog
         open={manualOpen}
@@ -351,10 +491,19 @@ export function OperationFleetDetailPage() {
         closeLabel={t('common.close')}
         footer={
           <>
-            <Button type="button" variant="outline" onClick={() => setManualOpen(false)} isDisabled={manualLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setManualOpen(false)}
+              isDisabled={manualLoading}
+            >
               {t('common.cancel')}
             </Button>
-            <Button type="button" onClick={() => void handleManualAddMembers()} isDisabled={manualLoading}>
+            <Button
+              type="button"
+              onClick={() => void handleManualAddMembers()}
+              isDisabled={manualLoading}
+            >
               {manualLoading ? t('fleet.members.manualAdding') : t('common.confirm')}
             </Button>
           </>

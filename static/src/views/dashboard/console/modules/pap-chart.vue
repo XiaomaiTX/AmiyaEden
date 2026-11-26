@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { DashboardPapMonthly } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import ArtLineChart from '@/components/core/charts/art-line-chart/index.vue'
   import { buildPapTrendSeries } from './pap-chart.utils'
@@ -30,7 +31,7 @@
   const { t } = useI18n()
   const props = defineProps<{
     title: string
-    data: Api.Dashboard.PapMonthly[]
+    data: DashboardPapMonthly[]
   }>()
 
   const chartData = computed(() => {

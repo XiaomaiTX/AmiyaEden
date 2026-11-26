@@ -1,0 +1,1268 @@
+paths:
+  /recruit/{code}/submit:
+    post:
+      operationId: submitRecruitQQ
+      x-gin-access: []
+      security: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewbroQQInput"
+      responses:
+        "200":
+          description: QQ registration result or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroSubmittedQQSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+  /newbro/recruit/link:
+    post:
+      operationId: generateLink
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      responses:
+        "200":
+          description: New or existing recruitment link or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroGeneratedLinkSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/recruit/links:
+    get:
+      operationId: getMyLinks
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      responses:
+        "200":
+          description: Current user’s recruitment links or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroRecruitLinkListSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/recruit/direct-referral:
+    get:
+      operationId: getDirectReferralStatus
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      responses:
+        "200":
+          description: Current user’s direct referral status or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroDirectReferralStatusSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/recruit/direct-referral/check:
+    post:
+      operationId: checkDirectReferrer
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewbroQQInput"
+      responses:
+        "200":
+          description: Matching referrer or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroDirectReferrerSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/recruit/direct-referral/confirm:
+    post:
+      operationId: confirmDirectReferrer
+      x-gin-access: ["jwt", "login", "cap:menu.newbro"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewbroConfirmReferrerInput"
+      responses:
+        "200":
+          description: Confirmed referrer or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroDirectReferrerSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/newbro/recruit-settings:
+    get:
+      operationId: getRecruitSettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      responses:
+        "200":
+          description: Current recruitment settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewbroRecruitSettingsSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      operationId: updateRecruitSettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNewbroRecruitSettingsRequest"
+      responses:
+        "200":
+          description: Updated recruitment settings or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroRecruitSettingsSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/newbro/recruit/links:
+    get:
+      operationId: listAdminRecruitLinks
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+        - name: current
+          in: query
+          description: Non-positive values select page 1.
+          schema:
+            type: integer
+            default: 1
+        - name: size
+          in: query
+          description: Non-positive values select the default; values above 100 are capped.
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Recruitment link page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/NewbroAdminRecruitLinkPageSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/captain/refunds/options:
+    get:
+      operationId: getCaptainRefundOptions
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:captain"]
+      responses:
+        "200":
+          description: Available owned characters and refund settings or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundOptionsSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/captain/refunds/preview:
+    post:
+      operationId: previewCaptainRefund
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:captain"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainRefundInput"
+      responses:
+        "200":
+          description: Refund calculation or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundCalculationSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/captain/refunds:
+    post:
+      operationId: createCaptainRefund
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:captain"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainRefundInput"
+      responses:
+        "200":
+          description: Pending refund application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundApplicationSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    get:
+      operationId: listMyCaptainRefunds
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:captain"]
+      parameters:
+        - name: current
+          in: query
+          description: Non-positive values select page 1.
+          schema:
+            type: integer
+            default: 1
+        - name: size
+          in: query
+          description: Non-positive values select the default; values above 200 are capped.
+          schema:
+            type: integer
+            default: 200
+      responses:
+        "200":
+          description: Current captain’s refund page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundPageSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /newbro/captain/refunds/{id}:
+    get:
+      operationId: getMyCaptainRefund
+      x-gin-access: ["jwt", "login", "cap:menu.newbro", "role:captain"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: uint
+            minimum: 1
+            maximum: 4294967295
+      responses:
+        "200":
+          description: Current captain’s refund application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundApplicationSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/newbro/refunds:
+    get:
+      operationId: listAdminCaptainRefunds
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+        - name: current
+          in: query
+          description: Non-positive values select page 1.
+          schema:
+            type: integer
+            default: 1
+        - name: size
+          in: query
+          description: Non-positive values select the default; values above 200 are capped.
+          schema:
+            type: integer
+            default: 200
+      responses:
+        "200":
+          description: Refund application page or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundPageSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/newbro/refunds/{id}:
+    get:
+      operationId: getAdminCaptainRefund
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: uint
+            minimum: 1
+            maximum: 4294967295
+      responses:
+        "200":
+          description: Refund application or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundApplicationSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/newbro/refunds/{id}/approve:
+    post:
+      operationId: approveCaptainRefund
+      x-gin-body: { ignored: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: uint
+            minimum: 1
+            maximum: 4294967295
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainRefundReviewInput"
+      responses:
+        "200":
+          description: Refund approved or business error; the optional body is ignored.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundReviewSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/newbro/refunds/{id}/reject:
+    post:
+      operationId: rejectCaptainRefund
+      x-gin-access: ["jwt", "login", "role:admin", "cap:menu.newbro"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            x-go-type: uint
+            minimum: 1
+            maximum: 4294967295
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainRefundReviewInput"
+      responses:
+        "200":
+          description: Refund rejected or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundReviewSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /system/config/newbro-refund:
+    get:
+      operationId: getCaptainRefundSettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      responses:
+        "200":
+          description: Current refund settings.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptainRefundSettingsSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      operationId: updateCaptainRefundSettings
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptainRefundSettingsInput"
+      responses:
+        "200":
+          description: Updated refund settings or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CaptainRefundSettingsSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  schemas:
+    NewbroQQInput:
+      type: object
+      required:
+        - qq
+      properties:
+        qq:
+          type: string
+          minLength: 1
+          x-go-name: QQ
+          x-oapi-codegen-extra-tags:
+            binding: required
+    NewbroConfirmReferrerInput:
+      type: object
+      required:
+        - referrer_user_id
+      properties:
+        referrer_user_id:
+          type: integer
+          x-go-type: uint
+          minimum: 1
+          x-oapi-codegen-extra-tags:
+            binding: required,gt=0
+    NewbroGeneratedLink:
+      type: object
+      required:
+        - id
+        - code
+        - generated_at
+        - is_new
+      properties:
+        id:
+          type: integer
+          x-go-type: uint
+        code:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        is_new:
+          type: boolean
+    NewbroSubmittedQQ:
+      type: object
+      required:
+        - qq_url
+      properties:
+        qq_url:
+          type: string
+          x-go-name: QQURL
+    NewbroDirectReferralStatus:
+      type: object
+      required:
+        - show_card
+        - needs_profile_qq
+      properties:
+        show_card:
+          type: boolean
+        needs_profile_qq:
+          type: boolean
+          x-go-name: NeedsProfileQQ
+    NewbroDirectReferrer:
+      type: object
+      required:
+        - user_id
+        - nickname
+        - primary_character_id
+        - primary_character_name
+      properties:
+        user_id:
+          type: integer
+          x-go-type: uint
+        nickname:
+          type: string
+        primary_character_id:
+          type: integer
+          format: int64
+        primary_character_name:
+          type: string
+    NewbroRecruitSettings:
+      type: object
+      required:
+        - recruit_qq_url
+        - recruit_reward_amount
+        - recruit_cooldown_days
+      properties:
+        recruit_qq_url:
+          type: string
+          x-go-name: RecruitQQURL
+        recruit_reward_amount:
+          type: number
+          format: double
+        recruit_cooldown_days:
+          type: integer
+    UpdateNewbroRecruitSettingsRequest:
+      type: object
+      required:
+        - recruit_reward_amount
+        - recruit_cooldown_days
+      properties:
+        recruit_qq_url:
+          type: string
+          x-go-type-skip-optional-pointer: true
+          x-go-name: RecruitQQURL
+        recruit_reward_amount:
+          type: number
+          format: double
+          minimum: 0
+          x-go-type: "*float64"
+          x-oapi-codegen-extra-tags:
+            binding: required,gte=0
+        recruit_cooldown_days:
+          type: integer
+          minimum: 1
+          x-oapi-codegen-extra-tags:
+            binding: required,gt=0
+    NewbroRecruitSource:
+      type: string
+      enum:
+        - link
+        - direct_referral
+    NewbroRecruitEntryStatus:
+      type: string
+      enum:
+        - ongoing
+        - valid
+        - stalled
+    NewbroRecruitEntry:
+      type: object
+      required:
+        - id
+        - qq
+        - entered_at
+        - source
+        - status
+        - matched_user_id
+        - rewarded_at
+      properties:
+        id:
+          type: integer
+          x-go-type: uint
+        qq:
+          type: string
+          x-go-name: QQ
+        entered_at:
+          type: string
+          format: date-time
+        source:
+          $ref: "#/components/schemas/NewbroRecruitSource"
+        status:
+          $ref: "#/components/schemas/NewbroRecruitEntryStatus"
+        matched_user_id:
+          type: integer
+          x-go-type: uint
+        matched_character_name:
+          type: string
+          x-go-type-skip-optional-pointer: true
+        rewarded_at:
+          type: string
+          format: date-time
+          nullable: true
+    NewbroRecruitLink:
+      type: object
+      required:
+        - id
+        - code
+        - source
+        - generated_at
+        - entries
+      properties:
+        id:
+          type: integer
+          x-go-type: uint
+        code:
+          type: string
+        source:
+          $ref: "#/components/schemas/NewbroRecruitSource"
+        generated_at:
+          type: string
+          format: date-time
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewbroRecruitEntry"
+    NewbroAdminRecruitLink:
+      allOf:
+        - $ref: "#/components/schemas/NewbroRecruitLink"
+        - type: object
+          required:
+            - user_id
+            - user_character_name
+          properties:
+            user_id:
+              type: integer
+              x-go-type: uint
+            user_character_name:
+              type: string
+    NewbroSubmittedQQSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewbroSubmittedQQ"
+    NewbroGeneratedLinkSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewbroGeneratedLink"
+    NewbroRecruitLinkListSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewbroRecruitLink"
+    NewbroDirectReferralStatusSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewbroDirectReferralStatus"
+    NewbroDirectReferrerSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewbroDirectReferrer"
+    NewbroRecruitSettingsSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewbroRecruitSettings"
+    NewbroAdminRecruitLinkPage:
+      type: object
+      required:
+        - list
+        - total
+        - page
+        - pageSize
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewbroAdminRecruitLink"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+    NewbroAdminRecruitLinkPageSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewbroAdminRecruitLinkPage"
+    CaptainRefundSettings:
+      type: object
+      required:
+        - max_total_sp
+        - max_age_days
+        - tax_rate
+        - allowed_system_ids
+      properties:
+        max_total_sp:
+          type: integer
+          format: int64
+          minimum: 0
+          x-go-name: MaxTotalSP
+        max_age_days:
+          type: integer
+          minimum: 0
+          maximum: 36500
+        tax_rate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+        allowed_system_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          x-go-name: AllowedSystemIDs
+    CaptainRefundSettingsInput:
+      type: object
+      properties:
+        max_total_sp:
+          type: integer
+          format: int64
+          minimum: 0
+          x-go-name: MaxTotalSP
+          x-go-type-skip-optional-pointer: true
+        max_age_days:
+          type: integer
+          minimum: 0
+          maximum: 36500
+          x-go-type-skip-optional-pointer: true
+        tax_rate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          x-go-type-skip-optional-pointer: true
+        allowed_system_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+          x-go-name: AllowedSystemIDs
+          x-go-type-skip-optional-pointer: true
+    CaptainRefundRequest:
+      type: object
+      required:
+        - captain_character_id
+        - member_names
+        - system_id
+        - start
+        - end
+      properties:
+        captain_character_id:
+          type: integer
+          format: int64
+        member_names:
+          type: array
+          items:
+            type: string
+          nullable: true
+          maxItems: 250
+          x-go-type-skip-optional-pointer: true
+        system_id:
+          type: integer
+          format: int64
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+    CaptainRefundInput:
+      type: object
+      required:
+        - captain_character_id
+        - system_id
+        - start
+        - end
+      properties:
+        captain_character_id:
+          type: integer
+          format: int64
+        member_names:
+          type: array
+          items:
+            type: string
+          nullable: true
+          maxItems: 250
+          x-go-type-skip-optional-pointer: true
+        system_id:
+          type: integer
+          format: int64
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+    CaptainRefundCharacter:
+      type: object
+      required:
+        - character_id
+        - character_name
+      properties:
+        character_id:
+          type: integer
+          format: int64
+        character_name:
+          type: string
+    CaptainRefundEligibilityCharacter:
+      type: object
+      required:
+        - character_id
+        - total_sp
+        - has_skill_data
+        - birthday
+      properties:
+        character_id:
+          type: integer
+          format: int64
+        total_sp:
+          type: integer
+          format: int64
+          x-go-name: TotalSP
+        has_skill_data:
+          type: boolean
+        birthday:
+          type: string
+          format: date-time
+          nullable: true
+    CaptainRefundEligibility:
+      type: object
+      required:
+        - is_currently_newbro
+        - disqualified_reason
+        - total_sp
+        - oldest_birthday
+        - max_total_sp
+        - max_age_days
+        - evaluated_at
+        - characters
+      properties:
+        is_currently_newbro:
+          type: boolean
+        disqualified_reason:
+          type: string
+        total_sp:
+          type: integer
+          format: int64
+          x-go-name: TotalSP
+        oldest_birthday:
+          type: string
+          format: date-time
+          nullable: true
+        max_total_sp:
+          type: integer
+          format: int64
+          x-go-name: MaxTotalSP
+        max_age_days:
+          type: integer
+        evaluated_at:
+          type: string
+          format: date-time
+        characters:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptainRefundEligibilityCharacter"
+    CaptainRefundMember:
+      type: object
+      required:
+        - character_id
+        - character_name
+        - user_id
+        - is_captain
+        - eligibility
+        - bounty
+        - wallet_updated_at
+      properties:
+        character_id:
+          type: integer
+          format: int64
+        character_name:
+          type: string
+        user_id:
+          type: integer
+          x-go-type: uint
+        is_captain:
+          type: boolean
+        eligibility:
+          $ref: "#/components/schemas/CaptainRefundEligibility"
+        bounty:
+          type: number
+          format: double
+        wallet_updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    CaptainRefundJournal:
+      type: object
+      required:
+        - character_id
+        - journal_id
+        - date
+        - amount
+        - match_journal_id
+        - match_date
+      properties:
+        character_id:
+          type: integer
+          format: int64
+        journal_id:
+          type: integer
+          format: int64
+        date:
+          type: string
+          format: date-time
+        amount:
+          type: number
+          format: double
+        match_journal_id:
+          type: integer
+          format: int64
+        match_date:
+          type: string
+          format: date-time
+          nullable: true
+    CaptainRefundConflict:
+      type: object
+      required:
+        - character_id
+        - journal_id
+        - journal_at
+        - refund_id
+      properties:
+        character_id:
+          type: integer
+          format: int64
+        journal_id:
+          type: integer
+          format: int64
+        journal_at:
+          type: string
+          format: date-time
+        refund_id:
+          type: integer
+          x-go-type: uint
+    CaptainRefundCalculation:
+      type: object
+      required:
+        - request
+        - settings
+        - members
+        - ignored_names
+        - journals
+        - conflicts
+        - bounty
+        - reward
+        - has_newbro
+        - can_submit
+      properties:
+        request:
+          $ref: "#/components/schemas/CaptainRefundRequest"
+        settings:
+          $ref: "#/components/schemas/CaptainRefundSettings"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptainRefundMember"
+        ignored_names:
+          type: array
+          items:
+            type: string
+        journals:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptainRefundJournal"
+        conflicts:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptainRefundConflict"
+        bounty:
+          type: number
+          format: double
+        reward:
+          type: number
+          format: double
+        has_newbro:
+          type: boolean
+        can_submit:
+          type: boolean
+    CaptainRefundStatus:
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+    CaptainRefundApplication:
+      type: object
+      required:
+        - id
+        - user_id
+        - status
+        - reward
+        - created_at
+        - reviewed_at
+        - reviewed_by
+        - reject_reason
+        - wallet_ref_id
+        - calculation
+      properties:
+        id:
+          type: integer
+          x-go-type: uint
+        user_id:
+          type: integer
+          x-go-type: uint
+        status:
+          $ref: "#/components/schemas/CaptainRefundStatus"
+        reward:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reviewed_by:
+          type: integer
+          x-go-type: uint
+        reject_reason:
+          type: string
+        wallet_ref_id:
+          type: string
+        calculation:
+          $ref: "#/components/schemas/CaptainRefundCalculation"
+    CaptainRefundOptions:
+      type: object
+      required:
+        - characters
+        - settings
+      properties:
+        characters:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptainRefundCharacter"
+        settings:
+          $ref: "#/components/schemas/CaptainRefundSettings"
+    CaptainRefundReviewInput:
+      type: object
+      properties:
+        reason:
+          type: string
+          x-go-type-skip-optional-pointer: true
+    CaptainRefundReviewSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          type: object
+          additionalProperties: false
+    CaptainRefundPage:
+      type: object
+      required:
+        - list
+        - total
+        - page
+        - pageSize
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptainRefundApplication"
+        total:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        pageSize:
+          type: integer
+    CaptainRefundPageSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/CaptainRefundPage"
+    CaptainRefundApplicationSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/CaptainRefundApplication"
+    CaptainRefundSettingsSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/CaptainRefundSettings"
+    CaptainRefundOptionsSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/CaptainRefundOptions"
+    CaptainRefundCalculationSuccess:
+      type: object
+      required:
+        - code
+        - msg
+        - data
+      properties:
+        code:
+          type: integer
+          enum:
+            - 200
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/CaptainRefundCalculation"

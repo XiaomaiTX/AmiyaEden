@@ -30,7 +30,8 @@
 <script setup lang="ts">
   import { ElAlert, ElTabPane, ElTabs } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import { fetchSDEStatus } from '@/api/sys-config'
+  import { getSDEStatus } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import EsiMonitorTab from './modules/EsiMonitorTab.vue'
   import EsiStatusesTab from './modules/EsiStatusesTab.vue'
   import HistoryTab from './modules/HistoryTab.vue'
@@ -56,7 +57,7 @@
 
   async function loadSDEStatus() {
     try {
-      const status = await fetchSDEStatus()
+      const status = await unwrapContract(getSDEStatus())
       Object.assign(sdeStatus, status)
     } catch {
       /* empty */

@@ -15,12 +15,22 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { buyProduct, fetchMyOrders, fetchMyWallet, fetchProducts } from '@/api/shop'
+import {
+  buyShopProduct,
+  listMyShopOrders,
+  getMyShopWallet,
+  listShopProducts,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
-import type { Order, Product, Wallet } from '@/types/api/shop'
+import type {
+  ShopOrder as Order,
+  ShopProduct as Product,
+  ShopWallet as Wallet,
+} from '@/api/generated/client'
 import {
   formatCoin,
   formatDateTime,
@@ -79,7 +89,7 @@ export function ShopBrowsePage() {
   const loadWallet = useCallback(async () => {
     setWalletLoading(true)
     try {
-      setWallet(await fetchMyWallet())
+      setWallet(await unwrapContract(getMyShopWallet(), 'fetch shop wallet failed'))
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('shopBrowse.loadWalletFailed')))
       setWallet(null)
@@ -93,7 +103,10 @@ export function ShopBrowsePage() {
       setProductLoading(true)
       setError(null)
       try {
-        const response = await fetchProducts({ current: nextPage, size: nextPageSize })
+        const response = await unwrapContract(
+          listShopProducts({ current: nextPage, size: nextPageSize }),
+          'fetch shop products failed'
+        )
         setProducts(response.list ?? [])
         setProductTotal(response.total ?? 0)
         setProductPage(response.page ?? nextPage)
@@ -114,11 +127,14 @@ export function ShopBrowsePage() {
       setOrderLoading(true)
       setError(null)
       try {
-        const response = await fetchMyOrders({
-          current: nextPage,
-          size: nextPageSize,
-          status: orderStatus || undefined,
-        })
+        const response = await unwrapContract(
+          listMyShopOrders({
+            current: nextPage,
+            size: nextPageSize,
+            status: orderStatus || undefined,
+          }),
+          'fetch shop orders failed'
+        )
         setOrders(response.list ?? [])
         setOrderTotal(response.total ?? 0)
         setOrderPage(response.page ?? nextPage)
@@ -175,11 +191,14 @@ export function ShopBrowsePage() {
     setBuyLoading(true)
     setError(null)
     try {
-      await buyProduct({
-        product_id: selectedProduct.id,
-        quantity: buyQuantity,
-        remark: buyRemark.trim() || undefined,
-      })
+      await unwrapContract(
+        buyShopProduct({
+          product_id: selectedProduct.id,
+          quantity: buyQuantity,
+          remark: buyRemark.trim() || undefined,
+        }),
+        'buy product failed'
+      )
       setSelectedProduct(null)
       await Promise.all([
         loadWallet(),
@@ -381,11 +400,13 @@ export function ShopBrowsePage() {
               <span>{t('welfareMy.pageSize')}</span>
               <Select
                 selectedKey={String(productPageSize ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  const nextSize = Number(value)
-                  setProductPageSize(nextSize)
-                  setProductPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    const nextSize = Number(value)
+                    setProductPageSize(nextSize)
+                    setProductPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -411,10 +432,12 @@ export function ShopBrowsePage() {
                 <span className="text-sm text-muted-foreground">{t('shop.allStatuses')}</span>
                 <Select
                   selectedKey={String(orderStatus ?? '')}
-                  onSelectionChange={(key) => ((value) => {
-                    setOrderStatus(value)
-                    setOrderPage(1)
-                  })(String(key))}
+                  onSelectionChange={(key) =>
+                    ((value) => {
+                      setOrderStatus(value)
+                      setOrderPage(1)
+                    })(String(key))
+                  }
                 >
                   <SelectTrigger className="h-10">
                     <SelectValue />
@@ -530,11 +553,13 @@ export function ShopBrowsePage() {
               <span>{t('welfareMy.pageSize')}</span>
               <Select
                 selectedKey={String(orderPageSize ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  const nextSize = Number(value)
-                  setOrderPageSize(nextSize)
-                  setOrderPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    const nextSize = Number(value)
+                    setOrderPageSize(nextSize)
+                    setOrderPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />
@@ -559,7 +584,12 @@ export function ShopBrowsePage() {
         closeLabel={t('common.close')}
         footer={
           <>
-            <Button type="button" variant="outline" onClick={closeBuyDialog} isDisabled={buyLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeBuyDialog}
+              isDisabled={buyLoading}
+            >
               {t('common.cancel')}
             </Button>
             <Button

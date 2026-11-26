@@ -28,7 +28,9 @@
 </template>
 
 <script setup lang="ts">
-  import { addMyTicketReply, getMyTicket, listMyTicketReplies } from '@/api/ticket'
+  import type { TicketReply } from '@/api/generated/client'
+  import { addMyReply, getMyTicket, listMyReplies } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import TicketReplyItem from '@/components/ticket/TicketReplyItem.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
@@ -49,15 +51,15 @@
   const loading = ref(false)
   const submitting = ref(false)
   const ticket = ref<Api.Ticket.TicketItem | null>(null)
-  const replies = ref<Api.Ticket.TicketReply[]>([])
+  const replies = ref<TicketReply[]>([])
   const content = ref('')
 
   const loadData = async () => {
     loading.value = true
     try {
       const [ticketData, replyData] = await Promise.all([
-        getMyTicket(ticketId.value),
-        listMyTicketReplies(ticketId.value)
+        unwrapContract(getMyTicket(ticketId.value)),
+        unwrapContract(listMyReplies(ticketId.value))
       ])
       ticket.value = ticketData
       replies.value = replyData
@@ -74,7 +76,7 @@
     }
     submitting.value = true
     try {
-      await addMyTicketReply(ticketId.value, { content: content.value })
+      await unwrapContract(addMyReply(ticketId.value, { content: content.value }))
       content.value = ''
       await loadData()
       ElMessage.success(t('ticket.messages.replyAdded'))

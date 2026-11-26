@@ -91,11 +91,9 @@ Stage 0A 之后，后端把 capability 目录分成两层：
 - 读取策略直接从 `sys_config`（共享 Redis 缓存 + DB fallback）拿；进程内 cache 已移除。
 - `SyncConfigSuperAdmins` 在 grant/revoke 后会调用 `roleSvc.InvalidateUserCache` 清掉对应用户的 `user_roles` 缓存，避免 super-admin 变更在下一次登录前才生效。
 
-## 主要接口
+## 后端契约
 
-- `GET /api/v1/system/basic-config/corporation-access-policies`（含 `enforced_capabilities`、`legacy_capabilities`）
-- `PUT /api/v1/system/basic-config/corporation-access-policies`
-- `GET /api/v1/me`（含 `primary_corporation_id`、`corp_capabilities`、`corp_rules`）
+[军团能力策略设置](../../../contracts/modules/system-config.yaml)、[当前用户能力上下文](../../../contracts/openapi.yaml)。
 
 ## 关键不变量
 

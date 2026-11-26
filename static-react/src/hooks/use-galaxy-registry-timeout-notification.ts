@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { fetchGalaxyRegistrySystems } from '@/api/galaxy-registry'
+import { listSystems } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { confirmAction } from '@/feedback'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
@@ -21,7 +22,7 @@ export function useGalaxyRegistryTimeoutNotification() {
     if (refreshing.current || typeof Notification === 'undefined') return
     refreshing.current = true
     try {
-      const systems = await fetchGalaxyRegistrySystems()
+      const systems = await unwrapContract(listSystems(), '')
       const candidates = systems.items.filter((system) => {
         const entry = system.active_entry
         const startedAt = entry ? parseTime(entry.actual_start_at) : null

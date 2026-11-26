@@ -131,8 +131,8 @@
     AdmissionApplication,
     AdmissionContext,
     AdmissionKind,
-    EvidenceKind
-  } from '@/types/api/admissions'
+    AdmissionEvidenceKind as EvidenceKind
+  } from '@/api/generated/client'
   import EvidenceImage from './evidence-image.vue'
   import AdmissionInstructions from './admission-instructions.vue'
   const props = defineProps<{

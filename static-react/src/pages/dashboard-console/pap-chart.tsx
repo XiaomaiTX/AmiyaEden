@@ -6,7 +6,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import { useI18n } from '@/i18n'
-import type { DashboardPapMonthly } from '@/types/api/dashboard'
+import type { DashboardPapMonthly } from '@/api/generated/client'
 import { buildPapTrendSeries } from './pap-trend'
 import { cn } from '@/lib/utils'
 

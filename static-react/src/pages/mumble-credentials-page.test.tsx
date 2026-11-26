@@ -37,7 +37,7 @@ function mockMeResponse() {
 }
 
 function jsonResponse(data: unknown) {
-  return new Response(JSON.stringify({ code: 0, msg: 'ok', data }), {
+  return new Response(JSON.stringify({ code: 200, msg: 'ok', data }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })

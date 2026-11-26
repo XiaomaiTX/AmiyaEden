@@ -15,23 +15,24 @@ import {
 } from '@/components/ui/table'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  fetchESIRefreshStatuses,
-  fetchESIRefreshTasks,
-  fetchTaskHistory,
-  fetchTasks,
-  runESIRefreshAll,
-  runESIRefreshTask,
-  runESIRefreshTaskByName,
-  runTask,
-  updateTaskSchedule,
-} from '@/api/task-manager'
+  listEsiRefreshStatuses,
+  listEsiRefreshTasks,
+  listManagedTaskHistory,
+  getManagedTasks,
+  runEsiRefreshAll,
+  runEsiRefreshTask,
+  runEsiRefreshTaskByName,
+  runManagedTask,
+  updateManagedTaskSchedule,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCorpCapability } from '@/hooks/use-corp-capability'
 import { useI18n } from '@/i18n'
 import { useSessionStore } from '@/stores'
-import type { TaskInfo, TaskStatus } from '@/types/api/esi-refresh'
-import type { TaskExecutionItem, TaskItem } from '@/types/api/task-manager'
+import type { EsiRefreshTask, EsiRefreshStatus } from '@/api/generated/client'
+import type { ManagedTaskExecution, ManagedTaskDefinition } from '@/api/generated/client'
 import { getErrorMessage, ShopDialog, formatDateTime } from './shop-page-utils'
 
 type TaskTab = 'tasks' | 'esi-statuses' | 'history'
@@ -64,7 +65,10 @@ function taskDisplayKey(taskName: string) {
   return `taskManager.tasks.${taskName}.name`
 }
 
-function taskDisplayName(t: ReturnType<typeof useI18n>['t'], task: Pick<TaskItem, 'name'>) {
+function taskDisplayName(
+  t: ReturnType<typeof useI18n>['t'],
+  task: Pick<ManagedTaskDefinition, 'name'>
+) {
   const key = taskDisplayKey(task.name)
   const translated = t(key)
   return translated === key ? task.name : translated
@@ -72,14 +76,14 @@ function taskDisplayName(t: ReturnType<typeof useI18n>['t'], task: Pick<TaskItem
 
 function taskDescription(
   t: ReturnType<typeof useI18n>['t'],
-  task: Pick<TaskItem, 'name' | 'description'>
+  task: Pick<ManagedTaskDefinition, 'name' | 'description'>
 ) {
   const key = `taskManager.tasks.${task.name}.description`
   const translated = t(key)
   return translated === key ? task.description || task.name : translated
 }
 
-function categoryTone(category: TaskItem['category']) {
+function categoryTone(category: ManagedTaskDefinition['category']) {
   switch (category) {
     case 'esi':
       return 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
@@ -90,13 +94,13 @@ function categoryTone(category: TaskItem['category']) {
   }
 }
 
-function typeTone(type: TaskItem['type']) {
+function typeTone(type: ManagedTaskDefinition['type']) {
   return type === 'recurring'
     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
     : 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
 }
 
-type TaskLastStatus = NonNullable<TaskItem['last_execution']>['status']
+type TaskLastStatus = NonNullable<ManagedTaskDefinition['last_execution']>['status']
 
 function statusTone(status?: TaskLastStatus) {
   switch (status) {
@@ -111,7 +115,7 @@ function statusTone(status?: TaskLastStatus) {
   }
 }
 
-function taskStatusTone(status: TaskStatus['status']) {
+function taskStatusTone(status: EsiRefreshStatus['status']) {
   switch (status) {
     case 'pending':
       return 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
@@ -126,7 +130,7 @@ function taskStatusTone(status: TaskStatus['status']) {
   }
 }
 
-function triggerTone(trigger: TaskExecutionItem['trigger']) {
+function triggerTone(trigger: ManagedTaskExecution['trigger']) {
   return trigger === 'cron'
     ? 'bg-slate-100 text-slate-700 dark:bg-slate-500/10 dark:text-slate-300'
     : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
@@ -178,7 +182,7 @@ function priorityLabel(t: ReturnType<typeof useI18n>['t'], priority: number) {
   return translated === key ? `P${priority}` : translated
 }
 
-function runTaskOptions(t: ReturnType<typeof useI18n>['t'], task: TaskItem) {
+function runTaskOptions(t: ReturnType<typeof useI18n>['t'], task: ManagedTaskDefinition) {
   if (task.type === 'triggered') {
     return t('taskManager.messages.eventTriggered')
   }
@@ -236,7 +240,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
   const canUpdateSchedule = roles.includes('super_admin')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tasks, setTasks] = useState<TaskItem[]>([])
+  const [tasks, setTasks] = useState<ManagedTaskDefinition[]>([])
   const [refreshSeed, setRefreshSeed] = useState(0)
   const [runningTaskNames, setRunningTaskNames] = useState<string[]>([])
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false)
@@ -247,7 +251,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
     setLoading(true)
     setError(null)
     try {
-      setTasks(await fetchTasks())
+      setTasks(await unwrapContract(getManagedTasks(), 'fetch tasks failed'))
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('taskManager.loadTasksFailed')))
       setTasks([])
@@ -263,7 +267,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
     return () => window.clearTimeout(timer)
   }, [loadTasks, refreshSeed])
 
-  const openScheduleDialog = (task: TaskItem) => {
+  const openScheduleDialog = (task: ManagedTaskDefinition) => {
     const activeCronExpr = task.cron_expr || task.default_cron
     const everyMatch = activeCronExpr.match(everyExprPattern)
     setScheduleForm({
@@ -292,7 +296,10 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
     setScheduleSaving(true)
     setError(null)
     try {
-      await updateTaskSchedule(scheduleForm.name, { cron_expr: cronExpr })
+      await unwrapContract(
+        updateManagedTaskSchedule(scheduleForm.name, { cron_expr: cronExpr }),
+        'update task schedule failed'
+      )
       setScheduleDialogOpen(false)
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
@@ -302,7 +309,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
     }
   }
 
-  const handleRunTask = async (task: TaskItem) => {
+  const handleRunTask = async (task: ManagedTaskDefinition) => {
     if (!window.confirm(t('taskManager.confirm.runTask', { name: taskDisplayName(t, task) }))) {
       return
     }
@@ -310,7 +317,7 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
     setRunningTaskNames((current) => [...current, task.name])
     setError(null)
     try {
-      await runTask(task.name)
+      await unwrapContract(runManagedTask(task.name), 'run task failed')
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('taskManager.messages.taskTriggerFailed')))
@@ -505,11 +512,13 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
                 </span>
                 <Select
                   selectedKey={String(scheduleForm.intervalUnit ?? '')}
-                  onSelectionChange={(key) => ((value) =>
-                    setScheduleForm((current) => ({
-                      ...current,
-                      intervalUnit: value as ScheduleIntervalUnit,
-                    })))(String(key))}
+                  onSelectionChange={(key) =>
+                    ((value) =>
+                      setScheduleForm((current) => ({
+                        ...current,
+                        intervalUnit: value as ScheduleIntervalUnit,
+                      })))(String(key))
+                  }
                 >
                   <SelectTrigger className="h-10">
                     <SelectValue />
@@ -544,11 +553,11 @@ function TasksPanel({ t, roles }: { t: ReturnType<typeof useI18n>['t']; roles: s
 function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const { hasCapability } = useCorpCapability()
   const canRun = hasCapability('system.task.run')
-  const [tasks, setTasks] = useState<TaskInfo[]>([])
+  const [tasks, setTasks] = useState<EsiRefreshTask[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [loadingStatuses, setLoadingStatuses] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [statusRows, setStatusRows] = useState<TaskStatus[]>([])
+  const [statusRows, setStatusRows] = useState<EsiRefreshStatus[]>([])
   const [taskName, setTaskName] = useState('')
   const [character, setCharacter] = useState('')
   const [status, setStatus] = useState('')
@@ -562,7 +571,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const loadTasks = useCallback(async () => {
     setLoadingTasks(true)
     try {
-      setTasks(await fetchESIRefreshTasks())
+      setTasks(await unwrapContract(listEsiRefreshTasks(), 'fetch esi tasks failed'))
     } catch {
       setTasks([])
     } finally {
@@ -574,13 +583,16 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     setLoadingStatuses(true)
     setError(null)
     try {
-      const response = await fetchESIRefreshStatuses({
-        current: page,
-        size: pageSize,
-        character: character.trim() || undefined,
-        task_name: taskName || undefined,
-        status: status || undefined,
-      })
+      const response = await unwrapContract(
+        listEsiRefreshStatuses({
+          current: page,
+          size: pageSize,
+          character: character.trim() || undefined,
+          task_name: taskName || undefined,
+          status: status || undefined,
+        }),
+        'fetch esi statuses failed'
+      )
       setStatusRows(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -610,7 +622,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
 
   const pageCount = useMemo(() => Math.max(1, Math.ceil(total / pageSize) || 1), [pageSize, total])
 
-  const handleRunTaskByName = async (task: TaskInfo) => {
+  const handleRunTaskByName = async (task: EsiRefreshTask) => {
     if (
       !window.confirm(
         t('taskManager.esi.confirm.runTaskByName', { name: taskDisplayName(t, task) })
@@ -622,7 +634,10 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     setFanOutPending(true)
     setError(null)
     try {
-      await runESIRefreshTaskByName({ task_name: task.name })
+      await unwrapContract(
+        runEsiRefreshTaskByName({ task_name: task.name }),
+        'run esi task by name failed'
+      )
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('taskManager.esi.messages.taskTriggerFailedAll')))
@@ -639,7 +654,7 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     setFanOutPending(true)
     setError(null)
     try {
-      await runESIRefreshAll()
+      await unwrapContract(runEsiRefreshAll(), 'run all esi refresh failed')
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('taskManager.esi.messages.refreshTriggerFailed')))
@@ -648,12 +663,15 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     }
   }
 
-  const handleRunTask = async (row: TaskStatus) => {
+  const handleRunTask = async (row: EsiRefreshStatus) => {
     const key = `${row.task_name}_${row.character_id}`
     setRunningKeys((current) => [...current, key])
     setError(null)
     try {
-      await runESIRefreshTask({ task_name: row.task_name, character_id: row.character_id })
+      await unwrapContract(
+        runEsiRefreshTask({ task_name: row.task_name, character_id: row.character_id }),
+        'run esi task failed'
+      )
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
       setError(
@@ -702,7 +720,10 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
             onChange={(event) => setCharacter(event.target.value)}
             placeholder={t('taskManager.esi.filters.character')}
           />
-          <Select selectedKey={String(taskName ?? '')} onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}>
+          <Select
+            selectedKey={String(taskName ?? '')}
+            onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}
+          >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
@@ -715,7 +736,10 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               ))}
             </SelectContent>
           </Select>
-          <Select selectedKey={String(status ?? '')} onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}>
+          <Select
+            selectedKey={String(status ?? '')}
+            onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}
+          >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
@@ -765,7 +789,9 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
                   <TableRow key={key} className="border-b align-top">
                     <TableCell className="px-3 py-2">{index + 1}</TableCell>
                     <TableCell className="px-3 py-2">
-                      <span title={row.task_name}>{taskDisplayName(t, { name: row.task_name })}</span>
+                      <span title={row.task_name}>
+                        {taskDisplayName(t, { name: row.task_name })}
+                      </span>
                     </TableCell>
                     <TableCell className="px-3 py-2">
                       {taskDescription(t, { name: row.task_name, description: row.description })}
@@ -840,10 +866,12 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -863,11 +891,11 @@ function EsiStatusesPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
 }
 
 function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
-  const [taskOptions, setTaskOptions] = useState<TaskItem[]>([])
+  const [taskOptions, setTaskOptions] = useState<ManagedTaskDefinition[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [rows, setRows] = useState<TaskExecutionItem[]>([])
+  const [rows, setRows] = useState<ManagedTaskExecution[]>([])
   const [taskName, setTaskName] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -877,7 +905,7 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
   const loadTasks = useCallback(async () => {
     setLoadingTasks(true)
     try {
-      setTaskOptions(await fetchTasks())
+      setTaskOptions(await unwrapContract(getManagedTasks(), 'fetch tasks failed'))
     } catch {
       setTaskOptions([])
     } finally {
@@ -889,12 +917,15 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
     setLoadingHistory(true)
     setError(null)
     try {
-      const response = await fetchTaskHistory({
-        current: page,
-        size: pageSize,
-        task_name: taskName || undefined,
-        status: status || undefined,
-      })
+      const response = await unwrapContract(
+        listManagedTaskHistory({
+          current: page,
+          size: pageSize,
+          task_name: taskName || undefined,
+          status: status || undefined,
+        }),
+        'fetch task history failed'
+      )
       setRows(response.list ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
@@ -929,7 +960,10 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
       <div className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium">{t('taskManager.tabs.history')}</span>
-          <Select selectedKey={String(taskName ?? '')} onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}>
+          <Select
+            selectedKey={String(taskName ?? '')}
+            onSelectionChange={(key) => ((value) => setTaskName(value))(String(key))}
+          >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
@@ -942,7 +976,10 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
               ))}
             </SelectContent>
           </Select>
-          <Select selectedKey={String(status ?? '')} onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}>
+          <Select
+            selectedKey={String(status ?? '')}
+            onSelectionChange={(key) => ((value) => setStatus(value))(String(key))}
+          >
             <SelectTrigger className="h-10">
               <SelectValue />
             </SelectTrigger>
@@ -1048,10 +1085,12 @@ function HistoryPanel({ t }: { t: ReturnType<typeof useI18n>['t'] }) {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

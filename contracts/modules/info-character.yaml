@@ -1,0 +1,349 @@
+paths:
+  /info/wallet:
+    post:
+      operationId: getWalletJournal
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.wallet.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoWalletRequest"}
+      responses:
+        '200':
+          description: Query or command result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoWalletSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/wallet/analytics:
+    post:
+      operationId: getWalletAnalytics
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.wallet.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoWalletAnalyticsRequest"}
+      responses:
+        '200':
+          description: Query or command result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoWalletAnalyticsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/skills:
+    post:
+      operationId: getCharacterSkills
+      x-gin-access: ["jwt", "login", "cap:menu.info", "cap:info.skills.read"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoSkillRequest"}
+      responses:
+        '200':
+          description: Query or command result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoSkillSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/ships:
+    post:
+      operationId: getCharacterShips
+      x-gin-access: ["jwt", "login", "cap:menu.info"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoShipRequest"}
+      responses:
+        '200':
+          description: Query or command result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoShipSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/implants:
+    post:
+      operationId: getCharacterImplants
+      x-gin-access: ["jwt", "login", "cap:menu.info"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/InfoImplantsRequest"}
+      responses:
+        '200':
+          description: Query or command result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/InfoImplantsSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /info/esi-refresh:
+    post:
+      operationId: runMyCharacterTask
+      x-gin-access: ["jwt", "login", "cap:menu.info"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref": "#/components/schemas/EsiRefreshRunInput"}
+      responses:
+        '200':
+          description: Query or command result, or business error.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - {"$ref": "#/components/schemas/TaskCommandSuccess"}
+                  - {"$ref": "#/components/schemas/BusinessError"}
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  schemas:
+    InfoWalletRequest:
+      type: object
+      required: ["character_id", "page", "page_size"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-oapi-codegen-extra-tags": {"binding": "required"}, "x-go-name": "CharacterID", "x-order": 1}
+        page: {"type": "integer", "x-oapi-codegen-extra-tags": {"binding": "required,min=1"}, "minimum": 1, "x-go-name": "Page", "x-order": 2}
+        page_size: {"type": "integer", "x-oapi-codegen-extra-tags": {"binding": "required,min=1,max=1000"}, "minimum": 1, "maximum": 1000, "x-go-name": "PageSize", "x-order": 3}
+        ref_types: {"type": "array", "items": {"type": "string"}, "x-go-type-skip-optional-pointer": true, "x-go-name": "RefTypes", "x-order": 4}
+    InfoWalletResponse:
+      type: object
+      required: ["balance", "journals", "ref_types", "total", "page", "page_size"]
+      properties:
+        balance: {"type": "number", "format": "double", "x-go-name": "Balance", "x-order": 1}
+        journals: {"type": "array", "items": {"$ref": "#/components/schemas/InfoWalletJournal"}, "x-go-name": "Journals", "x-order": 2}
+        ref_types: {"type": "array", "items": {"type": "string"}, "x-go-name": "RefTypes", "x-order": 3}
+        total: {"type": "integer", "format": "int64", "x-go-name": "Total", "x-order": 4}
+        page: {"type": "integer", "x-go-name": "Page", "x-order": 5}
+        page_size: {"type": "integer", "x-go-name": "PageSize", "x-order": 6}
+    InfoWalletJournal:
+      type: object
+      required: ["id", "amount", "balance", "date", "description", "first_party_id", "second_party_id", "ref_type", "reason"]
+      properties:
+        id: {"type": "integer", "format": "int64", "x-go-name": "ID", "x-order": 1}
+        amount: {"type": "number", "format": "double", "x-go-name": "Amount", "x-order": 2}
+        balance: {"type": "number", "format": "double", "x-go-name": "Balance", "x-order": 3}
+        date: {"type": "string", "x-go-name": "Date", "x-order": 4}
+        description: {"type": "string", "x-go-name": "Description", "x-order": 5}
+        first_party_id: {"type": "integer", "format": "int64", "x-go-name": "FirstPartyID", "x-order": 6}
+        second_party_id: {"type": "integer", "format": "int64", "x-go-name": "SecondPartyID", "x-order": 7}
+        ref_type: {"type": "string", "x-go-name": "RefType", "x-order": 8}
+        reason: {"type": "string", "x-go-name": "Reason", "x-order": 9}
+    InfoSkillRequest:
+      type: object
+      required: ["character_id"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-oapi-codegen-extra-tags": {"binding": "required"}, "x-go-name": "CharacterID", "x-order": 1}
+        language: {"type": "string", "x-go-type-skip-optional-pointer": true, "x-go-name": "Language", "x-order": 2}
+    InfoSkillItem:
+      type: object
+      required: ["skill_id", "skill_name", "group_id", "group_name", "active_level", "trained_level", "skillpoints_in_skill", "learned"]
+      properties:
+        skill_id: {"type": "integer", "x-go-name": "SkillID", "x-order": 1}
+        skill_name: {"type": "string", "x-go-name": "SkillName", "x-order": 2}
+        group_id: {"type": "integer", "x-go-name": "GroupID", "x-order": 3}
+        group_name: {"type": "string", "x-go-name": "GroupName", "x-order": 4}
+        active_level: {"type": "integer", "x-go-name": "ActiveLevel", "x-order": 5}
+        trained_level: {"type": "integer", "x-go-name": "TrainedLevel", "x-order": 6}
+        skillpoints_in_skill: {"type": "integer", "format": "int64", "x-go-name": "SkillpointsInSkill", "x-order": 7}
+        learned: {"type": "boolean", "x-go-name": "Learned", "x-order": 8}
+    InfoSkillQueueItem:
+      type: object
+      required: ["queue_position", "skill_id", "skill_name", "finished_level", "level_start_sp", "level_end_sp", "training_start_sp", "start_date", "finish_date"]
+      properties:
+        queue_position: {"type": "integer", "x-go-name": "QueuePosition", "x-order": 1}
+        skill_id: {"type": "integer", "x-go-name": "SkillID", "x-order": 2}
+        skill_name: {"type": "string", "x-go-name": "SkillName", "x-order": 3}
+        finished_level: {"type": "integer", "x-go-name": "FinishedLevel", "x-order": 4}
+        level_start_sp: {"type": "integer", "format": "int64", "x-go-name": "LevelStartSP", "x-order": 5}
+        level_end_sp: {"type": "integer", "format": "int64", "x-go-name": "LevelEndSP", "x-order": 6}
+        training_start_sp: {"type": "integer", "format": "int64", "x-go-name": "TrainingStartSP", "x-order": 7}
+        start_date: {"type": "integer", "format": "int64", "x-go-name": "StartDate", "x-order": 8}
+        finish_date: {"type": "integer", "format": "int64", "x-go-name": "FinishDate", "x-order": 9}
+    InfoSkillResponse:
+      type: object
+      required: ["total_sp", "unallocated_sp", "skill_count", "skills", "skill_queue"]
+      properties:
+        total_sp: {"type": "integer", "format": "int64", "x-go-name": "TotalSP", "x-order": 1}
+        unallocated_sp: {"type": "integer", "format": "int64", "x-go-name": "UnallocatedSP", "x-order": 2}
+        skill_count: {"type": "integer", "x-go-name": "SkillCount", "x-order": 3}
+        skills: {"type": "array", "items": {"$ref": "#/components/schemas/InfoSkillItem"}, "x-go-name": "Skills", "x-order": 4}
+        skill_queue: {"type": "array", "items": {"$ref": "#/components/schemas/InfoSkillQueueItem"}, "nullable": true, "x-go-name": "SkillQueue", "x-order": 5}
+    InfoShipRequest:
+      type: object
+      required: ["character_id"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-oapi-codegen-extra-tags": {"binding": "required"}, "x-go-name": "CharacterID", "x-order": 1}
+        language: {"type": "string", "x-go-type-skip-optional-pointer": true, "x-go-name": "Language", "x-order": 2}
+    InfoShipSkillReq:
+      type: object
+      required: ["skill_id", "skill_name", "required_level", "current_level", "met", "depth"]
+      properties:
+        skill_id: {"type": "integer", "x-go-name": "SkillID", "x-order": 1}
+        skill_name: {"type": "string", "x-go-name": "SkillName", "x-order": 2}
+        required_level: {"type": "integer", "x-go-name": "RequiredLevel", "x-order": 3}
+        current_level: {"type": "integer", "x-go-name": "CurrentLevel", "x-order": 4}
+        met: {"type": "boolean", "x-go-name": "Met", "x-order": 5}
+        depth: {"type": "integer", "x-go-name": "Depth", "x-order": 6}
+    InfoShipItem:
+      type: object
+      required: ["type_id", "type_name", "group_id", "group_name", "market_group_id", "market_group_name", "race_id", "race_name", "can_fly", "skill_reqs"]
+      properties:
+        type_id: {"type": "integer", "x-go-name": "TypeID", "x-order": 1}
+        type_name: {"type": "string", "x-go-name": "TypeName", "x-order": 2}
+        group_id: {"type": "integer", "x-go-name": "GroupID", "x-order": 3}
+        group_name: {"type": "string", "x-go-name": "GroupName", "x-order": 4}
+        market_group_id: {"type": "integer", "x-go-name": "MarketGroupID", "x-order": 5}
+        market_group_name: {"type": "string", "x-go-name": "MarketGroupName", "x-order": 6}
+        race_id: {"type": "integer", "x-go-name": "RaceID", "x-order": 7}
+        race_name: {"type": "string", "x-go-name": "RaceName", "x-order": 8}
+        can_fly: {"type": "boolean", "x-go-name": "CanFly", "x-order": 9}
+        skill_reqs: {"type": "array", "items": {"$ref": "#/components/schemas/InfoShipSkillReq"}, "x-go-name": "SkillReqs", "x-order": 10}
+    InfoShipResponse:
+      type: object
+      required: ["total_ships", "flyable_ships", "ships"]
+      properties:
+        total_ships: {"type": "integer", "x-go-name": "TotalShips", "x-order": 1}
+        flyable_ships: {"type": "integer", "x-go-name": "FlyableShips", "x-order": 2}
+        ships: {"type": "array", "items": {"$ref": "#/components/schemas/InfoShipItem"}, "x-go-name": "Ships", "x-order": 3}
+    InfoWalletAnalyticsRequest:
+      type: object
+      required: ["character_id"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-oapi-codegen-extra-tags": {"binding": "required"}, "x-go-name": "CharacterID", "x-order": 1}
+        from: {"type": "string", "x-go-type-skip-optional-pointer": true, "x-go-name": "From", "x-order": 2}
+        to: {"type": "string", "x-go-type-skip-optional-pointer": true, "x-go-name": "To", "x-order": 3}
+    InfoWalletAnalyticsSummary:
+      type: object
+      required: ["opening_balance", "closing_balance", "total_income", "total_expense", "total_net", "total_tax", "entry_count", "available_from", "available_to"]
+      properties:
+        opening_balance: {"type": "number", "format": "double", "nullable": true, "x-go-name": "OpeningBalance", "x-order": 1}
+        closing_balance: {"type": "number", "format": "double", "nullable": true, "x-go-name": "ClosingBalance", "x-order": 2}
+        total_income: {"type": "number", "format": "double", "x-go-name": "TotalIncome", "x-order": 3}
+        total_expense: {"type": "number", "format": "double", "x-go-name": "TotalExpense", "x-order": 4}
+        total_net: {"type": "number", "format": "double", "x-go-name": "TotalNet", "x-order": 5}
+        total_tax: {"type": "number", "format": "double", "x-go-name": "TotalTax", "x-order": 6}
+        entry_count: {"type": "integer", "format": "int64", "x-go-name": "EntryCount", "x-order": 7}
+        available_from: {"type": "string", "x-go-name": "AvailableFrom", "x-order": 8}
+        available_to: {"type": "string", "x-go-name": "AvailableTo", "x-order": 9}
+    InfoWalletDailyPoint:
+      type: object
+      required: ["date", "income", "expense", "net", "tax", "balance", "count"]
+      properties:
+        date: {"type": "string", "x-go-name": "Date", "x-order": 1}
+        income: {"type": "number", "format": "double", "x-go-name": "Income", "x-order": 2}
+        expense: {"type": "number", "format": "double", "x-go-name": "Expense", "x-order": 3}
+        net: {"type": "number", "format": "double", "x-go-name": "Net", "x-order": 4}
+        tax: {"type": "number", "format": "double", "x-go-name": "Tax", "x-order": 5}
+        balance: {"type": "number", "format": "double", "x-go-name": "Balance", "x-order": 6}
+        count: {"type": "integer", "format": "int64", "x-go-name": "Count", "x-order": 7}
+    InfoWalletRefTypeItem:
+      type: object
+      required: ["ref_type", "income", "expense", "count"]
+      properties:
+        ref_type: {"type": "string", "x-go-name": "RefType", "x-order": 1}
+        income: {"type": "number", "format": "double", "x-go-name": "Income", "x-order": 2}
+        expense: {"type": "number", "format": "double", "x-go-name": "Expense", "x-order": 3}
+        count: {"type": "integer", "format": "int64", "x-go-name": "Count", "x-order": 4}
+    InfoWalletAnalyticsResponse:
+      type: object
+      required: ["summary", "daily_series", "ref_type_breakdown"]
+      properties:
+        summary: {"allOf": [{"$ref": "#/components/schemas/InfoWalletAnalyticsSummary"}], "x-go-type": "InfoWalletAnalyticsSummary", "x-go-name": "Summary", "x-order": 1}
+        daily_series: {"type": "array", "items": {"$ref": "#/components/schemas/InfoWalletDailyPoint"}, "x-go-name": "DailySeries", "x-order": 2}
+        ref_type_breakdown: {"type": "array", "items": {"$ref": "#/components/schemas/InfoWalletRefTypeItem"}, "x-go-name": "RefTypeBreakdown", "x-order": 3}
+    InfoImplantsRequest:
+      type: object
+      required: ["character_id"]
+      properties:
+        character_id: {"type": "integer", "format": "int64", "x-oapi-codegen-extra-tags": {"binding": "required"}, "x-go-name": "CharacterID", "x-order": 1}
+        language: {"type": "string", "x-go-type-skip-optional-pointer": true, "x-go-name": "Language", "x-order": 2}
+    InfoImplantsResponse:
+      type: object
+      required: ["home_location", "active_implants", "jump_clones"]
+      properties:
+        home_location: {"x-go-type": "ImplantLocation", "nullable": true, "type": "object", "properties": {"location_id": {"type": "integer", "format": "int64"}, "location_type": {"type": "string"}, "location_name": {"type": "string"}}, "required": ["location_id", "location_type", "location_name"], "x-go-name": "HomeLocation", "x-order": 1}
+        last_clone_jump_date: {"type": "string", "format": "date-time", "x-go-name": "LastCloneJumpDate", "x-order": 2}
+        last_station_change_date: {"type": "string", "format": "date-time", "x-go-name": "LastStationChangeDate", "x-order": 3}
+        jump_fatigue_expire: {"type": "string", "format": "date-time", "x-go-name": "JumpFatigueExpire", "x-order": 4}
+        last_jump_date: {"type": "string", "format": "date-time", "x-go-name": "LastJumpDate", "x-order": 5}
+        active_implants: {"type": "array", "items": {"$ref": "#/components/schemas/ImplantItem"}, "x-go-name": "ActiveImplants", "x-order": 6}
+        jump_clones: {"type": "array", "items": {"$ref": "#/components/schemas/JumpCloneInfo"}, "x-go-name": "JumpClones", "x-order": 7}
+    ImplantLocation:
+      type: object
+      required: ["location_id", "location_type", "location_name"]
+      properties:
+        location_id: {"type": "integer", "format": "int64", "x-go-name": "LocationID", "x-order": 1}
+        location_type: {"type": "string", "x-go-name": "LocationType", "x-order": 2}
+        location_name: {"type": "string", "x-go-name": "LocationName", "x-order": 3}
+    ImplantItem:
+      type: object
+      required: ["implant_id", "implant_name"]
+      properties:
+        implant_id: {"type": "integer", "x-go-name": "ImplantID", "x-order": 1}
+        implant_name: {"type": "string", "x-go-name": "ImplantName", "x-order": 2}
+    JumpCloneInfo:
+      type: object
+      required: ["jump_clone_id", "location", "implants"]
+      properties:
+        jump_clone_id: {"type": "integer", "format": "int64", "x-go-name": "JumpCloneID", "x-order": 1}
+        location: {"allOf": [{"$ref": "#/components/schemas/ImplantLocation"}], "x-go-type": "ImplantLocation", "x-go-name": "Location", "x-order": 2}
+        implants: {"type": "array", "items": {"$ref": "#/components/schemas/ImplantItem"}, "x-go-name": "Implants", "x-order": 3}
+    InfoWalletSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: {"$ref": "#/components/schemas/InfoWalletResponse"}
+    InfoWalletAnalyticsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: {"$ref": "#/components/schemas/InfoWalletAnalyticsResponse"}
+    InfoSkillSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: {"$ref": "#/components/schemas/InfoSkillResponse"}
+    InfoShipSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: {"$ref": "#/components/schemas/InfoShipResponse"}
+    InfoImplantsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: {"$ref": "#/components/schemas/InfoImplantsResponse"}

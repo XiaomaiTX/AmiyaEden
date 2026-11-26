@@ -8,12 +8,17 @@ import {
 } from '@/components/ui/select'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createTicket, listTicketCategories } from '@/api/ticket'
+import { listCategories } from '@/api/generated/client'
+import { createTicket } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { notifyError, notifySuccess, notifyWarning } from '@/feedback/service'
 import { useI18n } from '@/i18n'
-import type { CreateTicketParams, TicketCategory, TicketPriority } from '@/types/api/ticket'
+import type {
+  TicketCreateInput as CreateTicketParams,
+  TicketCategory,
+} from '@/api/generated/client'
 import { getCategoryName } from '@/pages/ticket-category'
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -31,7 +36,6 @@ export function TicketCreatePage() {
     category_id: 0,
     title: '',
     description: '',
-    priority: 'medium',
   })
 
   useEffect(() => {
@@ -42,7 +46,10 @@ export function TicketCreatePage() {
       setLoadError(null)
 
       try {
-        const response = await listTicketCategories()
+        const response = await unwrapContract(
+          listCategories(),
+          'list ticket categories failed'
+        ).then((data) => data ?? [])
 
         if (cancelled) {
           return
@@ -93,12 +100,14 @@ export function TicketCreatePage() {
 
     setSubmitting(true)
     try {
-      await createTicket({
-        category_id: form.category_id,
-        title: form.title.trim(),
-        description: form.description.trim(),
-        priority: form.priority,
-      })
+      await unwrapContract(
+        createTicket({
+          category_id: form.category_id,
+          title: form.title.trim(),
+          description: form.description.trim(),
+        }),
+        'create ticket failed'
+      )
       notifySuccess(t('ticketCreate.messages.created'))
       navigate('/ticket/my-tickets')
     } catch (caughtError) {
@@ -172,32 +181,6 @@ export function TicketCreatePage() {
                       {getCategoryName(category, locale)}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm text-muted-foreground">
-                {t('ticketCreate.fields.priority')}
-              </span>
-              <Select
-                selectedKey={String(form.priority ?? '')}
-                onSelectionChange={(key) =>
-                  ((value) => {
-                    setForm((current) => ({
-                      ...current,
-                      priority: value as TicketPriority,
-                    }))
-                  })(String(key))
-                }
-              >
-                <SelectTrigger className="h-10 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem id="low">{t('ticketCreate.priorities.low')}</SelectItem>
-                  <SelectItem id="medium">{t('ticketCreate.priorities.medium')}</SelectItem>
-                  <SelectItem id="high">{t('ticketCreate.priorities.high')}</SelectItem>
                 </SelectContent>
               </Select>
             </label>

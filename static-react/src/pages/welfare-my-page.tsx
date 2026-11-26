@@ -17,13 +17,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   applyForWelfare,
   getEligibleWelfares,
-  getMyApplications,
-  uploadWelfareEvidence,
-} from '@/api/welfare'
+  listMyWelfareApplications,
+  uploadEvidence,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
-import type { EligibleWelfare, MyApplication } from '@/types/api/welfare'
+import type {
+  WelfareEligibleItem as EligibleWelfare,
+  WelfareMyApplication as MyApplication,
+} from '@/api/generated/client'
 import { ShopDialog } from './shop-page-utils'
 
 type EligibleRow = {
@@ -69,7 +73,7 @@ function flattenWelfares(welfares: EligibleWelfare[]) {
       continue
     }
 
-    for (const character of welfare.eligible_characters) {
+    for (const character of welfare.eligible_characters ?? []) {
       rows.push({
         ...shared,
         canApplyNow: character.can_apply_now,
@@ -102,8 +106,13 @@ export function WelfareMyPage() {
     setError(null)
     try {
       const [eligible, applicationsResponse] = await Promise.all([
-        getEligibleWelfares(),
-        getMyApplications({ current: appPage, size: appPageSize }),
+        unwrapContract(getEligibleWelfares(), 'fetch eligible welfares failed').then(
+          (items) => items ?? []
+        ),
+        unwrapContract(
+          listMyWelfareApplications({ current: appPage, size: appPageSize }),
+          'fetch welfare applications failed'
+        ),
       ])
       setEligibleRows(flattenWelfares(eligible ?? []))
       setApplications(applicationsResponse.list ?? [])
@@ -135,8 +144,8 @@ export function WelfareMyPage() {
   const handleEvidenceUpload = async (file: File) => {
     setEvidenceUploading(true)
     try {
-      const url = await uploadWelfareEvidence(file)
-      setEvidenceUrl(url)
+      const data = await unwrapContract(uploadEvidence({ file }), 'upload image failed')
+      setEvidenceUrl(data.url)
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('welfareMy.uploadFailed')))
     } finally {
@@ -147,11 +156,14 @@ export function WelfareMyPage() {
   const submitApply = async (row: EligibleRow) => {
     setApplying(true)
     try {
-      await applyForWelfare({
-        welfare_id: row.welfareId,
-        character_id: row.characterId,
-        evidence_image: row.requireEvidence ? evidenceUrl : undefined,
-      })
+      await unwrapContract(
+        applyForWelfare({
+          welfare_id: row.welfareId,
+          character_id: row.characterId,
+          evidence_image: row.requireEvidence ? evidenceUrl : undefined,
+        }),
+        'apply for welfare failed'
+      )
       setSelectedRow(null)
       setEvidenceUrl('')
       await loadData()
@@ -284,10 +296,12 @@ export function WelfareMyPage() {
               <span>{t('welfareMy.pageSize')}</span>
               <Select
                 selectedKey={String(appPageSize ?? '')}
-                onSelectionChange={(key) => ((value) => {
-                  setAppPageSize(Number(value))
-                  setAppPage(1)
-                })(String(key))}
+                onSelectionChange={(key) =>
+                  ((value) => {
+                    setAppPageSize(Number(value))
+                    setAppPage(1)
+                  })(String(key))
+                }
               >
                 <SelectTrigger className="h-8">
                   <SelectValue />

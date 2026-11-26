@@ -35,10 +35,7 @@
       <ElTable :data="histories">
         <ElTableColumn :label="t('ticket.columns.fromStatus')" width="160">
           <template #default="{ row }">
-            <TicketStatusBadge
-              v-if="row.from_status"
-              :status="row.from_status as Api.Ticket.TicketStatus"
-            />
+            <TicketStatusBadge v-if="row.from_status" :status="row.from_status as TicketStatus" />
             <span v-else>{{ t('ticket.statusHistoryEmpty') }}</span>
           </template>
         </ElTableColumn>
@@ -59,12 +56,14 @@
 </template>
 
 <script setup lang="ts">
+  import type { TicketReply, TicketStatus, TicketStatusChange } from '@/api/generated/client'
   import {
-    adminAddTicketReply,
+    adminAddReply,
     adminGetTicket,
-    adminListTicketReplies,
-    adminListTicketStatusHistory
-  } from '@/api/ticket'
+    adminListReplies,
+    adminListStatusHistory
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import TicketReplyItem from '@/components/ticket/TicketReplyItem.vue'
   import TicketStatusBadge from '@/components/ticket/TicketStatusBadge.vue'
   import { formatTime } from '@utils/common'
@@ -80,8 +79,8 @@
   const loading = ref(false)
   const submitting = ref(false)
   const ticket = ref<Api.Ticket.TicketItem | null>(null)
-  const replies = ref<Api.Ticket.TicketReply[]>([])
-  const histories = ref<Api.Ticket.TicketStatusHistory[]>([])
+  const replies = ref<TicketReply[]>([])
+  const histories = ref<TicketStatusChange[]>([])
   const content = ref('')
   const isInternal = ref(false)
   const getTicketCategoryLabel = (item: Api.Ticket.TicketItem) =>
@@ -93,7 +92,7 @@
     item.requester_name ||
     item.requester_character_name ||
     t('ticket.unknownUser')
-  const formatTicketHistoryOperator = (item: Api.Ticket.TicketStatusHistory) =>
+  const formatTicketHistoryOperator = (item: TicketStatusChange) =>
     item.changed_by_nickname ||
     item.changed_by_name ||
     item.changed_by_character_name ||
@@ -103,9 +102,9 @@
     loading.value = true
     try {
       const [ticketData, replyData, historyData] = await Promise.all([
-        adminGetTicket(ticketId.value),
-        adminListTicketReplies(ticketId.value),
-        adminListTicketStatusHistory(ticketId.value)
+        unwrapContract(adminGetTicket(ticketId.value)),
+        unwrapContract(adminListReplies(ticketId.value)),
+        unwrapContract(adminListStatusHistory(ticketId.value))
       ])
       ticket.value = ticketData
       replies.value = replyData
@@ -123,10 +122,12 @@
     }
     submitting.value = true
     try {
-      await adminAddTicketReply(ticketId.value, {
-        content: content.value,
-        is_internal: isInternal.value
-      })
+      await unwrapContract(
+        adminAddReply(ticketId.value, {
+          content: content.value,
+          is_internal: isInternal.value
+        })
+      )
       content.value = ''
       await loadData()
       ElMessage.success(t('ticket.messages.replyAdded'))

@@ -18,14 +18,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  fetchAllAlliancePAP,
+  getAllAlliancePAP,
   importAlliancePAP,
-  settleAlliancePAPMonth,
-  triggerAlliancePAPFetch,
-} from '@/api/alliance-pap'
+  settleMonth,
+  triggerFetch,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { notifyError, notifySuccess } from '@/feedback'
 import { useI18n } from '@/i18n'
-import type { AlliancePAPImportInfo, AlliancePAPSummary } from '@/types/api/alliance-pap'
+import type {
+  FleetAlliancePAPSummary,
+  PAPImportInfo as AlliancePAPImportInfo,
+} from '@/api/generated/client'
 import { ShopDialog, formatDateTime } from './shop-page-utils'
 
 const currentMonth = new Date().toISOString().slice(0, 7)
@@ -40,7 +44,7 @@ export function SystemPAPPage() {
   const [loading, setLoading] = useState(true)
   const [refreshSeed, setRefreshSeed] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [rows, setRows] = useState<AlliancePAPSummary[]>([])
+  const [rows, setRows] = useState<NonNullable<FleetAlliancePAPSummary>[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -61,13 +65,16 @@ export function SystemPAPPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetchAllAlliancePAP({
-        current: page,
-        size: pageSize,
-        year,
-        month: monthNumber,
-      })
-      setRows(response.list ?? [])
+      const response = await unwrapContract(
+        getAllAlliancePAP({
+          current: page,
+          size: pageSize,
+          year,
+          month: monthNumber,
+        }),
+        'fetch all alliance pap failed'
+      )
+      setRows(response.list?.filter((row) => row !== null) ?? [])
       setTotal(response.total ?? 0)
       setPage(response.page ?? page)
       setPageSize(response.pageSize ?? pageSize)
@@ -97,7 +104,10 @@ export function SystemPAPPage() {
   const handleFetch = async () => {
     setFetching(true)
     try {
-      await triggerAlliancePAPFetch({ year, month: monthNumber })
+      await unwrapContract(
+        triggerFetch({ year, month: monthNumber }),
+        'trigger alliance pap fetch failed'
+      )
       notifySuccess(t('alliancePap.messages.fetchTriggered'))
       setRefreshSeed((current) => current + 1)
     } catch {
@@ -114,7 +124,7 @@ export function SystemPAPPage() {
 
     setSettling(true)
     try {
-      await settleAlliancePAPMonth({ year, month: monthNumber })
+      await unwrapContract(settleMonth({ year, month: monthNumber }), 'settle alliance pap failed')
       notifySuccess(t('alliancePap.messages.settleSuccess'))
       setRefreshSeed((current) => current + 1)
     } catch {
@@ -135,11 +145,14 @@ export function SystemPAPPage() {
     let success = 0
     try {
       for (const item of rowsToImport) {
-        await importAlliancePAP({
-          year,
-          month: monthNumber,
-          data: item,
-        })
+        await unwrapContract(
+          importAlliancePAP({
+            year,
+            month: monthNumber,
+            data: item,
+          }),
+          'import alliance pap failed'
+        )
         success += 1
       }
       notifySuccess(t('alliancePap.messages.importSuccess', { count: success }))
@@ -305,10 +318,12 @@ export function SystemPAPPage() {
           <span>{t('welfareMy.pageSize')}</span>
           <Select
             selectedKey={String(pageSize ?? '')}
-            onSelectionChange={(key) => ((value) => {
-              setPageSize(Number(value))
-              setPage(1)
-            })(String(key))}
+            onSelectionChange={(key) =>
+              ((value) => {
+                setPageSize(Number(value))
+                setPage(1)
+              })(String(key))
+            }
           >
             <SelectTrigger className="h-8">
               <SelectValue />

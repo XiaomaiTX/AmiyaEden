@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-11-11
+last_reviewed: 2026-11-26
 source_of_truth:
   - server/internal/model/ticket.go
   - server/internal/repository/ticket.go
@@ -11,7 +11,7 @@ source_of_truth:
   - server/internal/router/router.go
   - server/bootstrap/db.go
   - docs/api/route-index.md
-  - static/src/api/ticket.ts
+  - static/src/api/generated/client.ts
   - static/src/router/modules/ticket.ts
   - static/src/views/ticket
   - static/src/views/system/ticket-management
@@ -49,36 +49,15 @@ source_of_truth:
 - `/ticket/statistics`
 - `/ticket/admin-detail/:id`
 
-### 后端路由
+### 后端契约
 
-成员侧：
-
-- `POST /api/v1/ticket/tickets`
-- `GET /api/v1/ticket/tickets/me`
-- `GET /api/v1/ticket/tickets/:id`
-- `POST /api/v1/ticket/tickets/:id/replies`
-- `GET /api/v1/ticket/tickets/:id/replies`
-- `GET /api/v1/ticket/categories`
-
-管理侧：
-
-- `GET /api/v1/system/ticket/tickets`
-- `GET /api/v1/system/ticket/tickets/:id`
-- `PUT /api/v1/system/ticket/tickets/:id/status`
-- `POST /api/v1/system/ticket/tickets/:id/replies`
-- `GET /api/v1/system/ticket/tickets/:id/replies`
-- `GET /api/v1/system/ticket/tickets/:id/status-history`
-- `GET /api/v1/system/ticket/categories`
-- `POST /api/v1/system/ticket/categories`
-- `PUT /api/v1/system/ticket/categories/:id`
-- `DELETE /api/v1/system/ticket/categories/:id`
-- `GET /api/v1/system/ticket/statistics`
+[工单 OpenAPI：成员与管理操作](../../../contracts/modules/ticket.yaml)。
 
 ## 权限边界
 
 - 成员侧能力要求 `Login`（非 guest）
 - 成员只能访问自己创建的工单
-- 管理侧能力要求 `RequireRole(admin)`（`super_admin` 通过角色匹配隐式可用）
+- 管理侧要求 `RequireRole(admin)`（`super_admin` 通过角色匹配隐式可用）和相应军团能力，见[工单 OpenAPI 定义](../../../contracts/modules/ticket.yaml)中的 `x-gin-access`。
 - 前端路由权限用于 UX，引导不构成安全边界；最终以后端鉴权为准
 
 ## 关键不变量
@@ -110,7 +89,7 @@ source_of_truth:
 - `server/internal/handler/ticket.go`
 - `server/internal/router/router.go`
 - `server/bootstrap/db.go`
-- `static/src/api/ticket.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/router/modules/ticket.ts`
 - `static/src/views/ticket`
 - `static/src/views/system/ticket-management`

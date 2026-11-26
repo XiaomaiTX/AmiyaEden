@@ -2,7 +2,7 @@
 status: active
 doc_type: guide
 owner: engineering
-last_reviewed: 2026-07-22
+last_reviewed: 2026-11-26
 source_of_truth:
   - Makefile
   - .air.toml
@@ -198,6 +198,6 @@ docker compose -f docker-compose.example.yml up -d frontend frontend-react
 
 - 目录职责：`docs/architecture/module-map.md`
 - 架构总览：`docs/architecture/overview.md`
-- 接口与路由：`docs/api/route-index.md`
+- 接口与路由：`contracts/`（阅读索引：`docs/api/route-index.md`）
 - 测试规范：`docs/standards/testing-and-verification.md`
 - 测试实践：`docs/guides/testing-guide.md`

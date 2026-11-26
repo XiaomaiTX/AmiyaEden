@@ -1,3 +1,5 @@
+import type { SdeNames } from '@/api/generated/client'
+
 export function filterUnresolvedNameIDs(
   ids: Record<string, number[]> | undefined,
   namesByNamespace: Record<string, Record<number, string>>
@@ -26,7 +28,7 @@ export function filterUnresolvedESIIDs(
 export function mergeResolvedNames(
   targetNamesByNamespace: Record<string, Record<number, string>>,
   targetFlatMap: Record<number, string>,
-  result: Api.Sde.ResolveNamesResponse | null | undefined
+  result: SdeNames | null | undefined
 ) {
   if (result?.names) {
     for (const [namespace, entries] of Object.entries(result.names)) {

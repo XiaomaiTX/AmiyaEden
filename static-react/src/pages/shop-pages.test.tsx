@@ -6,7 +6,7 @@ import { usePreferenceStore, useSessionStore } from '@/stores'
 function jsonResponse(data: unknown) {
   return new Response(
     JSON.stringify({
-      code: 0,
+      code: 200,
       msg: 'ok',
       data,
     }),

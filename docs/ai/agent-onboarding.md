@@ -2,7 +2,7 @@
 status: active
 doc_type: agent-guide
 owner: engineering
-last_reviewed: 2026-04-02
+last_reviewed: 2026-11-26
 source_of_truth:
   - docs/ai/repo-rules.md
   - docs/README.md
@@ -84,7 +84,7 @@ Use the authority order and code-vs-docs rule in `docs/ai/repo-rules.md`. If cod
 Update the following when applicable:
 
 - behavior changed -> update the relevant feature document
-- route surface or permission boundary changed -> update `docs/api/route-index.md`
+- business-domain or reading entry changed -> update `docs/api/route-index.md`; paths and permissions live in `contracts/`
 - runtime or startup behavior changed -> update `docs/architecture/runtime-and-startup.md`
 - repository-wide rule or engineering standard changed -> update `docs/ai/repo-rules.md` or the relevant file under `docs/standards/`
 

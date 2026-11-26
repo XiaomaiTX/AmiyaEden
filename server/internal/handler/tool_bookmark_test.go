@@ -11,10 +11,10 @@ import (
 
 func TestToolBookmarkHandlerCreateRejectsInvalidPayload(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := NewToolBookmarkHandler()
+	h := newMigratedOperationAdapter(migratedOperations{ToolBookmarkHandler: NewToolBookmarkHandler()})
 
 	r := gin.New()
-	r.POST("/api/v1/system/tool-bookmarks", h.AdminCreate)
+	registerMigratedOperationRoutes(r, h, migratedOperationParamError)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/system/tool-bookmarks", strings.NewReader(`{"name":"x"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -31,10 +31,10 @@ func TestToolBookmarkHandlerCreateRejectsInvalidPayload(t *testing.T) {
 
 func TestToolBookmarkHandlerUpdateRejectsInvalidID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	h := NewToolBookmarkHandler()
+	h := newMigratedOperationAdapter(migratedOperations{ToolBookmarkHandler: NewToolBookmarkHandler()})
 
 	r := gin.New()
-	r.PUT("/api/v1/system/tool-bookmarks/:id", h.AdminUpdate)
+	registerMigratedOperationRoutes(r, h, migratedOperationParamError)
 
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/system/tool-bookmarks/abc", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")

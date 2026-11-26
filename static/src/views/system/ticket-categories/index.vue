@@ -37,12 +37,14 @@
 </template>
 
 <script setup lang="ts">
+  import type { ListMyTicketsParams, TicketCategory } from '@/api/generated/client'
   import {
-    adminCreateTicketCategory,
-    adminDeleteTicketCategory,
-    adminListTicketCategories,
-    adminUpdateTicketCategory
-  } from '@/api/ticket'
+    adminCreateCategory,
+    adminDeleteCategory,
+    adminListCategories,
+    adminUpdateCategory
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import { ElButton, ElMessage, ElTag } from 'element-plus'
@@ -72,10 +74,10 @@
   }
 
   const listTicketCategoriesTable = async (
-    _params?: Api.Ticket.TicketListParams
-  ): Promise<Api.Common.PaginatedResponse<Api.Ticket.TicketCategory>> => {
+    _params?: ListMyTicketsParams
+  ): Promise<Api.Common.PaginatedResponse<TicketCategory>> => {
     void _params
-    const list = await adminListTicketCategories()
+    const list = await unwrapContract(adminListCategories())
 
     return {
       list,
@@ -130,7 +132,7 @@
     visible.value = true
   }
 
-  const openEdit = (item: Api.Ticket.TicketCategory) => {
+  const openEdit = (item: TicketCategory) => {
     if (!canManageCategories.value) return
     editingId.value = item.id
     form.name = item.name
@@ -149,9 +151,9 @@
     }
     try {
       if (editingId.value) {
-        await adminUpdateTicketCategory(editingId.value, form)
+        await unwrapContract(adminUpdateCategory(editingId.value, form))
       } else {
-        await adminCreateTicketCategory(form)
+        await unwrapContract(adminCreateCategory(form))
       }
       visible.value = false
       ElMessage.success(t('ticket.messages.updated'))
@@ -164,7 +166,7 @@
   const remove = async (id: number) => {
     if (!canManageCategories.value) return
     try {
-      await adminDeleteTicketCategory(id)
+      await unwrapContract(adminDeleteCategory(id))
       ElMessage.success(t('ticket.messages.deleted'))
       await refreshData()
     } catch (error: any) {

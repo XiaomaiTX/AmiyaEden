@@ -44,20 +44,9 @@ source_of_truth:
 - `/auth/login`
 - `/auth/callback`
 
-### 后端
+### 后端契约
 
-- `GET /api/v1/sso/eve/login`
-- `GET /api/v1/sso/eve/callback`
-- `GET /api/v1/sso/eve/scopes`
-- `GET /api/v1/sso/eve/registration`
-- `POST /api/v1/sso/eve/registration`
-- `GET /api/v1/sso/eve/characters`
-- `GET /api/v1/sso/eve/bind`
-- `PUT /api/v1/sso/eve/primary/:character_id`
-- `DELETE /api/v1/sso/eve/characters/:character_id`
-- `GET /api/v1/me`
-- `DELETE /api/v1/me`
-- `PUT /api/v1/me`
+[EVE SSO、注册与绑角](../../../contracts/modules/sso.yaml)、[当前用户](../../../contracts/openapi.yaml)。SSO 回调由浏览器导航。
 
 ## 权限边界
 

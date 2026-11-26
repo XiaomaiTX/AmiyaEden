@@ -87,6 +87,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemWalletAdjustInput } from '@/api/generated/client'
   import {
     ElCard,
     ElTabs,
@@ -104,7 +105,8 @@
     type FormRules
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import { adminAdjustWallet } from '@/api/sys-wallet'
+  import { adminAdjustSystemWallet } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useCorpCapability } from '@/hooks/core/useCorpCapability'
   import WalletList from './modules/wallet-list.vue'
   import WalletTransactions from './modules/wallet-transactions.vue'
@@ -143,7 +145,7 @@
   const adjustLoading = ref(false)
   const adjustFormRef = ref<FormInstance>()
 
-  const adjustForm = reactive<Api.SysWallet.AdjustParams>({
+  const adjustForm = reactive<SystemWalletAdjustInput>({
     target_uid: 0,
     action: 'add',
     amount: 0,
@@ -173,7 +175,7 @@
 
     adjustLoading.value = true
     try {
-      await adminAdjustWallet(adjustForm)
+      await unwrapContract(adminAdjustSystemWallet(adjustForm))
       ElMessage.success(t('walletAdmin.messages.adjustSuccess'))
       adjustDialogVisible.value = false
       walletListRef.value?.refreshData()

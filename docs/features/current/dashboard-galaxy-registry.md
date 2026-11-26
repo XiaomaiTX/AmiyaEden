@@ -11,10 +11,10 @@ source_of_truth:
   - server/internal/repository/sde_galaxy_registry.go
   - server/internal/model/galaxy_registry.go
   - static/src/router/modules/dashboard.ts
-  - static/src/api/galaxy-registry.ts
+  - static/src/api/generated/client.ts
   - static/src/views/dashboard/galaxy-registry/index.vue
   - static/src/hooks/galaxy-registry/useGalaxyRegistryTimeoutNotification.ts
-  - static-react/src/api/galaxy-registry.ts
+  - static-react/src/api/generated/client.ts
   - static-react/src/types/api/galaxy-registry.ts
   - static-react/src/pages/dashboard-galaxy-registry-page.tsx
 ---
@@ -54,23 +54,9 @@ source_of_truth:
 - `static/src/views/dashboard/galaxy-registry`
 - `static/src/router/modules/dashboard.ts` 中的 `DashboardGalaxyRegistry`
 
-### 后端路由
+### 后端契约
 
-- `GET /api/v1/dashboard/galaxy-registry/systems`
-- `POST /api/v1/dashboard/galaxy-registry/entries`
-- `POST /api/v1/dashboard/galaxy-registry/entries/:id/end`
-- `PUT /api/v1/dashboard/galaxy-registry/entries/:id/expected-end-at`
-- `GET /api/v1/dashboard/galaxy-registry/my-entries`
-- `GET /api/v1/dashboard/galaxy-registry/admin/sde-systems`
-- `GET /api/v1/dashboard/galaxy-registry/admin/systems`
-- `POST /api/v1/dashboard/galaxy-registry/admin/systems`
-- `PUT /api/v1/dashboard/galaxy-registry/admin/systems/:id`
-- `DELETE /api/v1/dashboard/galaxy-registry/admin/systems/:id`
-- `GET /api/v1/dashboard/galaxy-registry/admin/entries`
-- `POST /api/v1/dashboard/galaxy-registry/admin/entries/:id/force-end`
-- `POST /api/v1/dashboard/galaxy-registry/admin/entries/:id/revalidate`
-- `PUT /api/v1/dashboard/galaxy-registry/admin/entries/:id/validation`
-- `GET /api/v1/dashboard/galaxy-registry/admin/analytics`
+[星系登记 OpenAPI](../../../contracts/modules/galaxy-registry.yaml)。
 
 ## 权限边界
 
@@ -108,7 +94,7 @@ source_of_truth:
 - `server/internal/service/galaxy_registry.go`
 - `server/internal/handler/galaxy_registry.go`
 - `server/internal/router/router.go`
-- `static/src/api/galaxy-registry.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/router/modules/dashboard.ts`
 - `static/src/views/dashboard/galaxy-registry/index.vue`
 - `static/src/hooks/galaxy-registry/useGalaxyRegistryTimeoutNotification.ts`

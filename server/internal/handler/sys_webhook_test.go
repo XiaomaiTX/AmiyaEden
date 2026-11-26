@@ -48,17 +48,63 @@ func decodeWebhookResp(t *testing.T, recorder *httptest.ResponseRecorder) webhoo
 	return out
 }
 
+func TestWebhookHandlerRequiredBodiesFailInBinder(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	operations := []struct {
+		name   string
+		method string
+		path   string
+	}{
+		{"setWebhookConfig", http.MethodPut, "/api/v1/system/webhook/config"},
+		{"testWebhook", http.MethodPost, "/api/v1/system/webhook/test"},
+	}
+	for _, operation := range operations {
+		t.Run(operation.name, func(t *testing.T) {
+			for _, body := range []struct{ name, json string }{
+				{"empty", ""},
+				{"wrong type", `{"url":false}`},
+			} {
+				t.Run(body.name, func(t *testing.T) {
+					r := gin.New()
+					h := newMigratedOperationAdapter(migratedOperations{WebhookHandler: &WebhookHandler{}})
+					var called bool
+					registerMigratedOperationRoutes(r, h, func(c *gin.Context, op string, err error, status int) {
+						called = true
+						if op != operation.name || err == nil || status != http.StatusBadRequest {
+							t.Errorf("binder error: operation=%q status=%d error=%v", op, status, err)
+						}
+						migratedOperationParamError(c, op, err, status)
+					})
+
+					rec := httptest.NewRecorder()
+					req := httptest.NewRequest(operation.method, operation.path, bytes.NewBufferString(body.json))
+					req.Header.Set("Content-Type", "application/json")
+					r.ServeHTTP(rec, req)
+
+					if !called || rec.Code != http.StatusOK {
+						t.Fatalf("expected binder failure in business envelope, called=%t status=%d", called, rec.Code)
+					}
+					resp := decodeWebhookResp(t, rec)
+					if resp.Code != response.CodeParamError || resp.Msg != "请求参数错误" {
+						t.Fatalf("expected generic parameter error, got %+v", resp)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestWebhookHandlerSetConfigWritesAuditEvent(t *testing.T) {
 	setupWebhookHandlerTestDB(t)
 
 	gin.SetMode(gin.TestMode)
-	h := NewWebhookHandler()
+	h := newMigratedOperationAdapter(migratedOperations{WebhookHandler: NewWebhookHandler()})
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set("userID", uint(123))
 		c.Next()
 	})
-	r.PUT("/api/v1/system/webhook/config", h.SetConfig)
+	registerMigratedOperationRoutes(r, h, migratedOperationParamError)
 
 	reqBody := []byte(`{
 		"url":"https://discord.com/api/webhooks/1/token",
@@ -95,13 +141,13 @@ func TestWebhookHandlerSetConfigRejectsInvalidURL(t *testing.T) {
 	setupWebhookHandlerTestDB(t)
 
 	gin.SetMode(gin.TestMode)
-	h := NewWebhookHandler()
+	h := newMigratedOperationAdapter(migratedOperations{WebhookHandler: NewWebhookHandler()})
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set("userID", uint(123))
 		c.Next()
 	})
-	r.PUT("/api/v1/system/webhook/config", h.SetConfig)
+	registerMigratedOperationRoutes(r, h, migratedOperationParamError)
 
 	reqBody := []byte(`{
 		"url":"https://example.com/webhook",
@@ -127,9 +173,9 @@ func TestWebhookHandlerTestWebhookRejectsInvalidURL(t *testing.T) {
 	setupWebhookHandlerTestDB(t)
 
 	gin.SetMode(gin.TestMode)
-	h := NewWebhookHandler()
+	h := newMigratedOperationAdapter(migratedOperations{WebhookHandler: NewWebhookHandler()})
 	r := gin.New()
-	r.POST("/api/v1/system/webhook/test", h.TestWebhook)
+	registerMigratedOperationRoutes(r, h, migratedOperationParamError)
 
 	reqBody := []byte(`{
 		"url":"ftp://onebot.example.com",

@@ -20,7 +20,7 @@ describe('info assets page', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          code: 0,
+          code: 200,
           msg: 'ok',
           data: {
             total_locations: 1,
@@ -56,7 +56,7 @@ describe('info assets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               total_locations: 1,
@@ -79,7 +79,7 @@ describe('info assets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               location_id: 60003760,
@@ -142,7 +142,7 @@ describe('info assets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               total_locations: 2,
@@ -173,7 +173,7 @@ describe('info assets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               total_locations: 1,
@@ -224,7 +224,7 @@ describe('info assets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               total_locations: 1,
@@ -250,7 +250,7 @@ describe('info assets page', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            code: 0,
+            code: 200,
             msg: 'ok',
             data: {
               total_locations: 1,
@@ -295,7 +295,7 @@ describe('info assets page', () => {
     resolveSlow(
       new Response(
         JSON.stringify({
-          code: 0,
+          code: 200,
           msg: 'ok',
           data: {
             total_locations: 1,

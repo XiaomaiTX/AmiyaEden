@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+	"context"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -18,12 +17,6 @@ var evidenceAllowedMIME = map[string]bool{
 	"image/jpeg": true,
 	"image/png":  true,
 	"image/webp": true,
-}
-
-// UploadEvidence POST /welfare/upload-evidence
-// 接收图片文件，验证大小和类型，返回 base64 data URL（不写入文件系统）
-func (h *WelfareHandler) UploadEvidence(c *gin.Context) {
-	uploadImageAsDataURL(c, evidenceMaxBytes, evidenceAllowedMIME)
 }
 
 // WelfareHandler 福利 HTTP 处理器
@@ -48,31 +41,7 @@ func NewWelfareHandler() *WelfareHandler {
 //  管理员端（全部 POST）
 // ─────────────────────────────────────────────
 
-// adminWelfareCreateRequest 创建福利请求
-type adminWelfareCreateRequest struct {
-	Name                   string `json:"name" binding:"required"`
-	Description            string `json:"description"`
-	DistMode               string `json:"dist_mode" binding:"required,oneof=per_user per_character"`
-	PayByFuxiCoin          *int   `json:"pay_by_fuxi_coin"`
-	RequireSkillPlan       bool   `json:"require_skill_plan"`
-	SkillPlanIDs           []uint `json:"skill_plan_ids"`
-	MaxCharAgeMonths       *int   `json:"max_char_age_months"`
-	MinimumPap             *int   `json:"minimum_pap"`
-	MinimumFuxiLegionYears *int   `json:"minimum_fuxi_legion_years"`
-	RequireEvidence        bool   `json:"require_evidence"`
-	ExampleEvidence        string `json:"example_evidence"`
-	Status                 int8   `json:"status"`
-	SortOrder              int    `json:"sort_order"`
-}
-
-// AdminCreateWelfare POST /system/welfare/add
-func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
-	var req adminWelfareCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
+func (h *WelfareHandler) adminCreateWelfare(req apicontract.AdminCreateWelfareJSONRequestBody, userID uint) (apicontract.WelfareItem, error) {
 	w := &model.Welfare{
 		Name:                   req.Name,
 		Description:            req.Description,
@@ -87,70 +56,43 @@ func (h *WelfareHandler) AdminCreateWelfare(c *gin.Context) {
 		ExampleEvidence:        req.ExampleEvidence,
 		Status:                 req.Status,
 		SortOrder:              req.SortOrder,
-		CreatedBy:              middleware.GetUserID(c),
+		CreatedBy:              userID,
 	}
 
 	if err := h.svc.AdminCreateWelfare(w); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareItem{}, err
 	}
-	response.OK(c, w)
+	return welfareItemDTO(*w), nil
 }
 
-// adminWelfareUpdateRequest 更新福利请求
-type adminWelfareUpdateRequest struct {
-	ID uint `json:"id" binding:"required"`
-	service.AdminUpdateWelfareRequest
-}
-
-// AdminUpdateWelfare POST /system/welfare/edit
-func (h *WelfareHandler) AdminUpdateWelfare(c *gin.Context) {
-	var req adminWelfareUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	w, err := h.svc.AdminUpdateWelfare(req.ID, &req.AdminUpdateWelfareRequest)
+func (h *WelfareHandler) adminUpdateWelfare(req apicontract.AdminUpdateWelfareJSONRequestBody) (apicontract.WelfareItem, error) {
+	w, err := h.svc.AdminUpdateWelfare(req.ID, &service.AdminUpdateWelfareRequest{
+		Name:                   req.Name,
+		Description:            req.Description,
+		DistMode:               req.DistMode,
+		PayByFuxiCoin:          req.PayByFuxiCoin,
+		RequireSkillPlan:       req.RequireSkillPlan,
+		SkillPlanIDs:           req.SkillPlanIDs,
+		MaxCharAgeMonths:       req.MaxCharAgeMonths,
+		MinimumPap:             req.MinimumPap,
+		MinimumFuxiLegionYears: req.MinimumFuxiLegionYears,
+		RequireEvidence:        req.RequireEvidence,
+		ExampleEvidence:        req.ExampleEvidence,
+		Status:                 req.Status,
+		SortOrder:              req.SortOrder,
+	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareItem{}, err
 	}
-	response.OK(c, w)
+	return welfareItemDTO(*w), nil
 }
 
-// adminWelfareDeleteRequest 删除福利请求
-type adminWelfareDeleteRequest struct {
-	ID uint `json:"id" binding:"required"`
+func (h *WelfareHandler) adminDeleteWelfare(req apicontract.AdminDeleteWelfareJSONRequestBody) error {
+	return h.svc.AdminDeleteWelfare(req.ID)
 }
 
-// AdminDeleteWelfare POST /system/welfare/delete
-func (h *WelfareHandler) AdminDeleteWelfare(c *gin.Context) {
-	var req adminWelfareDeleteRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	if err := h.svc.AdminDeleteWelfare(req.ID); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
-}
-
-// adminWelfareListRequest 福利列表请求
-type adminWelfareListRequest struct {
-	Current int    `json:"current"`
-	Size    int    `json:"size"`
-	Status  *int8  `json:"status"`
-	Name    string `json:"name"`
-}
-
-// AdminListWelfares POST /system/welfare/list
-func (h *WelfareHandler) AdminListWelfares(c *gin.Context) {
-	var req adminWelfareListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *WelfareHandler) adminListWelfares(req apicontract.AdminListWelfaresJSONRequestBody, badBody bool) (apicontract.WelfarePage, error) {
+	if badBody {
 		req.Current = 1
 		req.Size = 20
 	}
@@ -163,104 +105,52 @@ func (h *WelfareHandler) AdminListWelfares(c *gin.Context) {
 
 	list, total, err := h.svc.AdminListWelfares(req.Current, req.Size, filter)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfarePage{}, err
 	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
+	listDTO := mapContractRows(list, welfareItemDTO)
+	return apicontract.WelfarePage{List: &listDTO, Total: total, Page: req.Current, PageSize: req.Size}, nil
 }
 
-type updateWelfareSettingsRequest struct {
-	AutoApproveFuxiCoinThreshold *int `json:"auto_approve_fuxi_coin_threshold" binding:"required,gte=0"`
+func (h *WelfareHandler) adminGetWelfareSettings() apicontract.WelfareSettings {
+	return welfareSettingsDTO(h.settingsSvc.GetSettings())
 }
 
-// AdminGetSettings GET /system/welfare/settings
-func (h *WelfareHandler) AdminGetSettings(c *gin.Context) {
-	response.OK(c, h.settingsSvc.GetSettings())
-}
-
-// AdminUpdateSettings PUT /system/welfare/settings
-func (h *WelfareHandler) AdminUpdateSettings(c *gin.Context) {
-	var req updateWelfareSettingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
+func (h *WelfareHandler) adminUpdateWelfareSettings(req apicontract.AdminUpdateWelfareSettingsJSONRequestBody, operatorID uint) (apicontract.WelfareSettings, error) {
 	updated, err := h.settingsSvc.UpdateSettingsByOperator(service.WelfareSettings{
 		AutoApproveFuxiCoinThreshold: *req.AutoApproveFuxiCoinThreshold,
-	}, middleware.GetUserID(c))
+	}, operatorID)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareSettings{}, err
 	}
 
-	response.OK(c, updated)
+	return welfareSettingsDTO(updated), nil
 }
 
-// adminWelfareReorderRequest 福利排序请求
-type adminWelfareReorderRequest struct {
-	IDs []uint `json:"ids" binding:"required"`
-}
-
-// AdminReorderWelfares POST /system/welfare/reorder
-func (h *WelfareHandler) AdminReorderWelfares(c *gin.Context) {
-	var req adminWelfareReorderRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-	if err := h.svc.AdminReorderWelfares(req.IDs); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
+func (h *WelfareHandler) adminReorderWelfares(req apicontract.AdminReorderWelfaresJSONRequestBody) error {
+	return h.svc.AdminReorderWelfares(req.IDs)
 }
 
 // ─────────────────────────────────────────────
 //  管理端 - 导入历史记录
 // ─────────────────────────────────────────────
 
-// adminImportRecordsRequest 导入历史记录请求
-type adminImportRecordsRequest struct {
-	WelfareID uint   `json:"welfare_id" binding:"required"`
-	CSV       string `json:"csv" binding:"required"`
-}
-
-// AdminImportRecords POST /system/welfare/import
-func (h *WelfareHandler) AdminImportRecords(c *gin.Context) {
-	var req adminImportRecordsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
+func (h *WelfareHandler) adminImportWelfareRecords(req apicontract.AdminImportWelfareRecordsJSONRequestBody) (apicontract.WelfareImportResult, error) {
 	count, err := h.svc.ImportWelfareRecords(&service.ImportWelfareRecordsRequest{
 		WelfareID: req.WelfareID,
 		CSV:       req.CSV,
 	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareImportResult{}, err
 	}
-	response.OK(c, gin.H{"count": count})
+	return apicontract.WelfareImportResult{Count: count}, nil
 }
 
 // ─────────────────────────────────────────────
 //  管理端 - 福利审批
 // ─────────────────────────────────────────────
 
-// adminApplicationListRequest 福利申请列表请求
-type adminApplicationListRequest struct {
-	Current int    `json:"current"`
-	Size    int    `json:"size"`
-	Status  string `json:"status"`
-	Keyword string `json:"keyword"`
-}
-
-// AdminListApplications POST /system/welfare/applications
-func (h *WelfareHandler) AdminListApplications(c *gin.Context) {
-	var req adminApplicationListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+func (h *WelfareHandler) adminListWelfareApplications(req apicontract.AdminListWelfareApplicationsJSONRequestBody, badBody bool) (apicontract.WelfareAdminApplicationPage, error) {
+	if badBody {
 		req.Current = 1
 		req.Size = 50
 	}
@@ -277,118 +167,329 @@ func (h *WelfareHandler) AdminListApplications(c *gin.Context) {
 
 	list, total, err := h.svc.AdminListApplications(req.Current, req.Size, filter)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareAdminApplicationPage{}, err
 	}
-	response.OKWithPage(c, list, total, req.Current, req.Size)
+	return apicontract.WelfareAdminApplicationPage{List: mapContractRows(list, welfareAdminApplicationDTO), Total: total, Page: req.Current, PageSize: req.Size}, nil
 }
 
-// adminDeleteApplicationRequest 删除申请记录请求
-type adminDeleteApplicationRequest struct {
-	ID uint `json:"id" binding:"required"`
+func (h *WelfareHandler) adminDeleteWelfareApplication(req apicontract.AdminDeleteWelfareApplicationJSONRequestBody) error {
+	return h.svc.AdminDeleteApplication(req.ID)
 }
 
-// AdminDeleteApplication POST /system/welfare/applications/delete
-func (h *WelfareHandler) AdminDeleteApplication(c *gin.Context) {
-	var req adminDeleteApplicationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-	if err := h.svc.AdminDeleteApplication(req.ID); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
-}
-
-// adminReviewApplicationRequest 审批请求
-type adminReviewApplicationRequest struct {
-	ID     uint   `json:"id" binding:"required"`
-	Action string `json:"action" binding:"required,oneof=deliver reject"`
-}
-
-// AdminReviewApplication POST /system/welfare/review
-func (h *WelfareHandler) AdminReviewApplication(c *gin.Context) {
-	var req adminReviewApplicationRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	reviewerID := middleware.GetUserID(c)
-	reviewerRoles := middleware.GetUserRoles(c)
+func (h *WelfareHandler) adminReviewWelfareApplication(req apicontract.AdminReviewWelfareApplicationJSONRequestBody, reviewerID uint, reviewerRoles []string) (apicontract.WelfareReviewResult, error) {
 	result, err := h.svc.AdminReviewApplication(req.ID, reviewerID, reviewerRoles, &service.AdminReviewApplicationRequest{
 		Action: req.Action,
 	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareReviewResult{}, err
 	}
-	response.OK(c, result)
+	return welfareReviewDTO(result), nil
 }
 
 // ─────────────────────────────────────────────
 //  用户端
 // ─────────────────────────────────────────────
 
-// GetEligibleWelfares POST /welfare/eligible
-func (h *WelfareHandler) GetEligibleWelfares(c *gin.Context) {
-	userID := middleware.GetUserID(c)
+func (h *WelfareHandler) getEligibleWelfares(userID uint) ([]apicontract.WelfareEligibleItem, error) {
 	result, err := h.svc.GetEligibleWelfares(userID)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return nil, err
 	}
-	response.OK(c, result)
+	return mapContractRows(result, welfareEligibleItemDTO), nil
 }
 
-// applyForWelfareRequest 申请福利请求
-type applyForWelfareRequest struct {
-	WelfareID     uint   `json:"welfare_id" binding:"required"`
-	CharacterID   int64  `json:"character_id"`
-	EvidenceImage string `json:"evidence_image"`
-}
-
-// ApplyForWelfare POST /welfare/apply
-func (h *WelfareHandler) ApplyForWelfare(c *gin.Context) {
-	var req applyForWelfareRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-
-	userID := middleware.GetUserID(c)
+func (h *WelfareHandler) applyForWelfare(req apicontract.ApplyForWelfareJSONRequestBody, userID uint) (apicontract.WelfareApplication, error) {
 	app, err := h.svc.ApplyForWelfare(userID, &service.ApplyForWelfareRequest{
 		WelfareID:     req.WelfareID,
 		CharacterID:   req.CharacterID,
 		EvidenceImage: req.EvidenceImage,
 	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareApplication{}, err
 	}
-	response.OK(c, app)
+	return welfareApplicationDTO(*app), nil
 }
 
-// myApplicationsRequest 查询我的申请请求
-type myApplicationsRequest struct {
-	Current int    `json:"current"`
-	Size    int    `json:"size"`
-	Status  string `json:"status"`
-}
-
-// ListMyApplications POST /welfare/my-applications
-func (h *WelfareHandler) ListMyApplications(c *gin.Context) {
-	var req myApplicationsRequest
-	_ = c.ShouldBindJSON(&req) // current/size/status are optional
+func (h *WelfareHandler) listMyWelfareApplications(req apicontract.ListMyWelfareApplicationsJSONRequestBody, userID uint) (apicontract.WelfareMyApplicationPage, error) {
 	req.Current, req.Size = normalizePagination(req.Current, req.Size, 10, 100)
 
-	userID := middleware.GetUserID(c)
 	result, total, err := h.svc.ListMyApplications(userID, req.Current, req.Size, req.Status)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.WelfareMyApplicationPage{}, err
 	}
-	response.OKWithPage(c, result, total, req.Current, req.Size)
+	return apicontract.WelfareMyApplicationPage{List: mapContractRows(result, welfareMyApplicationDTO), Total: total, Page: req.Current, PageSize: req.Size}, nil
+}
+
+func welfareItemDTO(value model.Welfare) apicontract.WelfareItem {
+	return apicontract.WelfareItem{
+		ID:                     value.ID,
+		CreatedAt:              value.CreatedAt,
+		UpdatedAt:              value.UpdatedAt,
+		Name:                   value.Name,
+		Description:            value.Description,
+		DistMode:               value.DistMode,
+		PayByFuxiCoin:          value.PayByFuxiCoin,
+		RequireSkillPlan:       value.RequireSkillPlan,
+		MaxCharAgeMonths:       value.MaxCharAgeMonths,
+		MinimumPap:             value.MinimumPap,
+		MinimumFuxiLegionYears: value.MinimumFuxiLegionYears,
+		RequireEvidence:        value.RequireEvidence,
+		ExampleEvidence:        value.ExampleEvidence,
+		Status:                 value.Status,
+		SortOrder:              value.SortOrder,
+		CreatedBy:              value.CreatedBy,
+		SkillPlanIDs:           &value.SkillPlanIDs,
+		SkillPlanNames:         &value.SkillPlanNames,
+	}
+}
+
+func welfareApplicationDTO(value model.WelfareApplication) apicontract.WelfareApplication {
+	return apicontract.WelfareApplication{
+		ID:            value.ID,
+		CreatedAt:     value.CreatedAt,
+		UpdatedAt:     value.UpdatedAt,
+		WelfareID:     value.WelfareID,
+		UserID:        value.UserID,
+		CharacterID:   value.CharacterID,
+		CharacterName: value.CharacterName,
+		QQ:            value.QQ,
+		DiscordID:     value.DiscordID,
+		EvidenceImage: value.EvidenceImage,
+		Status:        value.Status,
+		ReviewedBy:    value.ReviewedBy,
+		ReviewedAt:    value.ReviewedAt,
+	}
+}
+
+func welfareSettingsDTO(value service.WelfareSettings) apicontract.WelfareSettings {
+	return apicontract.WelfareSettings{
+		AutoApproveFuxiCoinThreshold: value.AutoApproveFuxiCoinThreshold,
+	}
+}
+
+func welfareAdminApplicationDTO(value service.AdminApplicationResp) apicontract.WelfareAdminApplication {
+	return apicontract.WelfareAdminApplication{
+		ID:                value.ID,
+		WelfareID:         value.WelfareID,
+		WelfareName:       value.WelfareName,
+		WelfareDesc:       value.WelfareDesc,
+		UserID:            value.UserID,
+		ApplicantNickname: value.ApplicantNickname,
+		CharacterName:     value.CharacterName,
+		QQ:                value.QQ,
+		DiscordID:         value.DiscordID,
+		EvidenceImage:     value.EvidenceImage,
+		Status:            value.Status,
+		ReviewedBy:        value.ReviewedBy,
+		ReviewerName:      value.ReviewerName,
+		CreatedAt:         value.CreatedAt,
+		ReviewedAt:        value.ReviewedAt,
+	}
+}
+
+func welfareMyApplicationDTO(value service.MyApplicationResp) apicontract.WelfareMyApplication {
+	return apicontract.WelfareMyApplication{
+		ID:            value.ID,
+		WelfareID:     value.WelfareID,
+		WelfareName:   value.WelfareName,
+		CharacterName: value.CharacterName,
+		Status:        value.Status,
+		ReviewerName:  value.ReviewerName,
+		CreatedAt:     value.CreatedAt,
+		ReviewedAt:    value.ReviewedAt,
+	}
+}
+
+func welfareEligibleCharacterDTO(value service.EligibleCharacterResp) apicontract.WelfareEligibleCharacter {
+	return apicontract.WelfareEligibleCharacter{
+		CharacterID:      value.CharacterID,
+		CharacterName:    value.CharacterName,
+		CanApplyNow:      value.CanApplyNow,
+		IneligibleReason: optionalContractValue(value.IneligibleReason),
+	}
+}
+
+func welfareEligibleItemDTO(value service.EligibleWelfareResp) apicontract.WelfareEligibleItem {
+	characters := mapContractRows(value.EligibleCharacters, welfareEligibleCharacterDTO)
+	return apicontract.WelfareEligibleItem{
+		ID:                 value.ID,
+		Name:               value.Name,
+		Description:        value.Description,
+		DistMode:           value.DistMode,
+		SkillPlanNames:     value.SkillPlanNames,
+		RequireEvidence:    value.RequireEvidence,
+		ExampleEvidence:    value.ExampleEvidence,
+		CanApplyNow:        value.CanApplyNow,
+		IneligibleReason:   optionalContractValue(value.IneligibleReason),
+		EligibleCharacters: &characters,
+	}
+}
+
+func welfareReviewDTO(value service.WelfareReviewResult) apicontract.WelfareReviewResult {
+	return apicontract.WelfareReviewResult{
+		Outcome:                    string(value.Outcome),
+		EligibilityReason:          optionalContractValue(string(value.EligibilityReason)),
+		MailError:                  optionalContractValue(value.MailError),
+		MailID:                     optionalContractValue(value.MailID),
+		MailSenderCharacterID:      optionalContractValue(value.MailSenderCharacterID),
+		MailSenderCharacterName:    optionalContractValue(value.MailSenderCharacterName),
+		MailRecipientCharacterID:   optionalContractValue(value.MailRecipientCharacterID),
+		MailRecipientCharacterName: optionalContractValue(value.MailRecipientCharacterName),
+	}
+}
+
+func (h *WelfareHandler) AdminCreateWelfare(ctx context.Context, request apicontract.AdminCreateWelfareRequestObject) (apicontract.AdminCreateWelfareResponseObject, error) {
+	out := &apicontract.AdminCreateWelfare200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	userID, _ := commerceIdentity(ctx)
+	data, err := h.adminCreateWelfare(*request.Body, userID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareItemSuccess(apicontract.WelfareItemSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminUpdateWelfare(_ context.Context, request apicontract.AdminUpdateWelfareRequestObject) (apicontract.AdminUpdateWelfareResponseObject, error) {
+	out := &apicontract.AdminUpdateWelfare200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	data, err := h.adminUpdateWelfare(*request.Body)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareItemSuccess(apicontract.WelfareItemSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminDeleteWelfare(_ context.Context, request apicontract.AdminDeleteWelfareRequestObject) (apicontract.AdminDeleteWelfareResponseObject, error) {
+	out := &apicontract.AdminDeleteWelfare200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	if err := h.adminDeleteWelfare(*request.Body); err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *WelfareHandler) AdminListWelfares(ctx context.Context, request apicontract.AdminListWelfaresRequestObject) (apicontract.AdminListWelfaresResponseObject, error) {
+	out := &apicontract.AdminListWelfares200JSONResponse{}
+	body, badBody := commerceOptionalBody(ctx, request.Body)
+	data, err := h.adminListWelfares(body, badBody)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfarePageSuccess(apicontract.WelfarePageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminGetWelfareSettings(_ context.Context, _ apicontract.AdminGetWelfareSettingsRequestObject) (apicontract.AdminGetWelfareSettingsResponseObject, error) {
+	out := &apicontract.AdminGetWelfareSettings200JSONResponse{}
+	data := h.adminGetWelfareSettings()
+	return out, out.FromWelfareSettingsSuccess(apicontract.WelfareSettingsSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminUpdateWelfareSettings(ctx context.Context, request apicontract.AdminUpdateWelfareSettingsRequestObject) (apicontract.AdminUpdateWelfareSettingsResponseObject, error) {
+	out := &apicontract.AdminUpdateWelfareSettings200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	operatorID, _ := commerceIdentity(ctx)
+	data, err := h.adminUpdateWelfareSettings(*request.Body, operatorID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareSettingsSuccess(apicontract.WelfareSettingsSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminReorderWelfares(_ context.Context, request apicontract.AdminReorderWelfaresRequestObject) (apicontract.AdminReorderWelfaresResponseObject, error) {
+	out := &apicontract.AdminReorderWelfares200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	if err := h.adminReorderWelfares(*request.Body); err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *WelfareHandler) AdminImportWelfareRecords(_ context.Context, request apicontract.AdminImportWelfareRecordsRequestObject) (apicontract.AdminImportWelfareRecordsResponseObject, error) {
+	out := &apicontract.AdminImportWelfareRecords200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	data, err := h.adminImportWelfareRecords(*request.Body)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareImportResultSuccess(apicontract.WelfareImportResultSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminListWelfareApplications(ctx context.Context, request apicontract.AdminListWelfareApplicationsRequestObject) (apicontract.AdminListWelfareApplicationsResponseObject, error) {
+	out := &apicontract.AdminListWelfareApplications200JSONResponse{}
+	body, badBody := commerceOptionalBody(ctx, request.Body)
+	data, err := h.adminListWelfareApplications(body, badBody)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareAdminApplicationPageSuccess(apicontract.WelfareAdminApplicationPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) AdminDeleteWelfareApplication(_ context.Context, request apicontract.AdminDeleteWelfareApplicationRequestObject) (apicontract.AdminDeleteWelfareApplicationResponseObject, error) {
+	out := &apicontract.AdminDeleteWelfareApplication200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	if err := h.adminDeleteWelfareApplication(*request.Body); err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *WelfareHandler) AdminReviewWelfareApplication(ctx context.Context, request apicontract.AdminReviewWelfareApplicationRequestObject) (apicontract.AdminReviewWelfareApplicationResponseObject, error) {
+	out := &apicontract.AdminReviewWelfareApplication200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	reviewerID, reviewerRoles := commerceIdentity(ctx)
+	data, err := h.adminReviewWelfareApplication(*request.Body, reviewerID, reviewerRoles)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareReviewResultSuccess(apicontract.WelfareReviewResultSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) GetEligibleWelfares(ctx context.Context, _ apicontract.GetEligibleWelfaresRequestObject) (apicontract.GetEligibleWelfaresResponseObject, error) {
+	out := &apicontract.GetEligibleWelfares200JSONResponse{}
+	userID, _ := commerceIdentity(ctx)
+	data, err := h.getEligibleWelfares(userID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareEligibleListSuccess(apicontract.WelfareEligibleListSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) ApplyForWelfare(ctx context.Context, request apicontract.ApplyForWelfareRequestObject) (apicontract.ApplyForWelfareResponseObject, error) {
+	out := &apicontract.ApplyForWelfare200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(commerceMissingBody())
+	}
+	userID, _ := commerceIdentity(ctx)
+	data, err := h.applyForWelfare(*request.Body, userID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareApplicationSuccess(apicontract.WelfareApplicationSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *WelfareHandler) ListMyWelfareApplications(ctx context.Context, request apicontract.ListMyWelfareApplicationsRequestObject) (apicontract.ListMyWelfareApplicationsResponseObject, error) {
+	out := &apicontract.ListMyWelfareApplications200JSONResponse{}
+	body, _ := commerceOptionalBody(ctx, request.Body)
+	userID, _ := commerceIdentity(ctx)
+	data, err := h.listMyWelfareApplications(body, userID)
+	if err != nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return out, out.FromWelfareMyApplicationPageSuccess(apicontract.WelfareMyApplicationPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
 }

@@ -1,15 +1,16 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { CaptainRefundSettingsPanel } from '@/pages/captain-refund-settings'
-import { getRefundSettings, saveRefundSettings } from '@/api/captain-refund'
-import type { RefundSettings } from '@/types/api/captain-refund'
+import { getCaptainRefundSettings, updateCaptainRefundSettings } from '@/api/generated/client'
+import type { CaptainRefundSettings as RefundSettings } from '@/api/generated/client'
 
 vi.mock('@/i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
-vi.mock('@/api/captain-refund', () => ({
-  getRefundSettings: vi.fn(),
-  saveRefundSettings: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  getCaptainRefundSettings: vi.fn(),
+  updateCaptainRefundSettings: vi.fn(),
 }))
 
+const success = <T,>(data: T) => ({ code: 200 as const, msg: 'ok', data })
 const settings: RefundSettings = {
   max_total_sp: 10_000_000,
   max_age_days: 90,
@@ -19,8 +20,10 @@ const settings: RefundSettings = {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(getRefundSettings).mockResolvedValue(settings)
-  vi.mocked(saveRefundSettings).mockImplementation(async (value) => value)
+  vi.mocked(getCaptainRefundSettings).mockResolvedValue(success(settings))
+  vi.mocked(updateCaptainRefundSettings).mockImplementation(async (value) =>
+    success({ ...settings, ...value })
+  )
 })
 
 describe('captain refund settings', () => {
@@ -31,7 +34,7 @@ describe('captain refund settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('refund.settingsInvalid')
-    expect(saveRefundSettings).not.toHaveBeenCalled()
+    expect(updateCaptainRefundSettings).not.toHaveBeenCalled()
   })
 
   test('deduplicates configured solar systems before saving', async () => {
@@ -41,7 +44,7 @@ describe('captain refund settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
 
     await waitFor(() =>
-      expect(saveRefundSettings).toHaveBeenCalledWith({
+      expect(updateCaptainRefundSettings).toHaveBeenCalledWith({
         ...settings,
         allowed_system_ids: [30_000_001],
       })

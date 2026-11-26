@@ -1,43 +1,9 @@
-import { requestJson } from '@/api/http-client'
-import type { EveCharacter, MeResponse, RegisteredScope, UserInfo } from '@/types/api/auth'
-import type { RegistrationInfo, RegistrationInput } from '@/types/api/registration'
+import * as api from './generated/client'
+import type { EveCharacter, UserInfo } from '@/types/api/auth'
 
-export async function getRegistration(ticket: string) {
-  const response = await requestJson<ApiResponse<RegistrationInfo>>(
-    '/api/v1/sso/eve/registration',
-    {
-      headers: { 'X-Registration-Token': ticket },
-    }
-  )
-  return assertSuccess(response, 'registration expired')
-}
+import { unwrapContract } from './response'
 
-export async function completeRegistration(ticket: string, data: RegistrationInput) {
-  const response = await requestJson<ApiResponse<{ token: string }>>(
-    '/api/v1/sso/eve/registration',
-    {
-      method: 'POST',
-      headers: { 'X-Registration-Token': ticket },
-      body: JSON.stringify(data),
-    }
-  )
-  return assertSuccess(response, 'registration failed')
-}
-
-interface ApiResponse<T> {
-  code: number
-  msg: string
-  data: T
-}
-
-function assertSuccess<T>(response: ApiResponse<T>, fallbackMessage: string) {
-  if (response.code !== 200 && response.code !== 0) {
-    throw new Error(response.msg || fallbackMessage)
-  }
-  return response.data
-}
-
-function resolveProfileComplete(data: MeResponse) {
+function resolveProfileComplete(data: api.Me) {
   if (typeof data.profile_complete === 'boolean') {
     return data.profile_complete
   }
@@ -50,31 +16,19 @@ function resolveProfileComplete(data: MeResponse) {
 
 export async function getEveSSOLoginURL(scopes?: string[]) {
   const callbackURL = `${window.location.origin}/#/auth/callback`
-
-  const params = new URLSearchParams({ redirect: callbackURL })
-  if (scopes && scopes.length > 0) {
-    params.set('scopes', scopes.join(','))
-  }
-
-  const response = await requestJson<ApiResponse<{ url: string }>>(
-    `/api/v1/sso/eve/login?${params.toString()}`
+  const response = await unwrapContract(
+    api.getEveSsoLogin({
+      redirect: callbackURL,
+      scopes: scopes?.length ? scopes.join(',') : undefined,
+    }),
+    'get eve sso login url failed'
   )
-  return assertSuccess(response, 'get eve sso login url failed').url
+  return response.url
 }
 
-export async function fetchMyCharacters() {
-  const response = await requestJson<ApiResponse<EveCharacter[]>>('/api/v1/sso/eve/characters')
-  return assertSuccess(response, 'fetch characters failed') ?? []
-}
-
-export async function fetchEveSSOScopes() {
-  const response = await requestJson<ApiResponse<RegisteredScope[]>>('/api/v1/sso/eve/scopes')
-  return assertSuccess(response, 'fetch scopes failed') ?? []
-}
-
-export async function fetchGetUserInfo() {
-  const response = await requestJson<ApiResponse<MeResponse>>('/api/v1/me')
-  const data = assertSuccess(response, 'fetch current user failed')
+export async function fetchGetUserInfo(): Promise<UserInfo & { characters: EveCharacter[] }> {
+  const data = await unwrapContract(api.getMe(), 'fetch current user failed')
+  if (!data) throw new Error('fetch current user failed')
 
   const { user, characters, roles: backendRoles } = data
   const primaryChar =
@@ -101,51 +55,17 @@ export async function fetchGetUserInfo() {
         : undefined,
     characters: characters ?? [],
     primaryCharacterId: primaryChar?.character_id ?? user.primary_character_id ?? 0,
-  } satisfies UserInfo
+  }
 }
 
 export async function getEveBindURL(scopes?: string[]) {
   const callbackURL = `${window.location.origin}/#/auth/callback`
-  const params = new URLSearchParams({ redirect: callbackURL })
-  if (scopes && scopes.length > 0) {
-    params.set('scopes', scopes.join(','))
-  }
-
-  const response = await requestJson<ApiResponse<{ url: string }>>(
-    `/api/v1/sso/eve/bind?${params.toString()}`
+  const response = await unwrapContract(
+    api.getEveSsoBind({
+      redirect: callbackURL,
+      scopes: scopes?.length ? scopes.join(',') : undefined,
+    }),
+    'get eve bind url failed'
   )
-
-  return assertSuccess(response, 'get eve bind url failed')?.url ?? ''
-}
-
-export async function setPrimaryCharacter(characterId: number) {
-  const response = await requestJson<ApiResponse<null>>(`/api/v1/sso/eve/primary/${characterId}`, {
-    method: 'PUT',
-  })
-
-  assertSuccess(response, 'set primary character failed')
-}
-
-export async function unbindCharacter(characterId: number) {
-  const response = await requestJson<ApiResponse<null>>(
-    `/api/v1/sso/eve/characters/${characterId}`,
-    {
-      method: 'DELETE',
-    }
-  )
-
-  assertSuccess(response, 'unbind character failed')
-}
-
-export async function updateMyProfile(data: {
-  nickname?: string
-  qq?: string
-  discord_id?: string
-}) {
-  const response = await requestJson<ApiResponse<null>>('/api/v1/me', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  })
-
-  assertSuccess(response, 'update my profile failed')
+  return response?.url ?? ''
 }

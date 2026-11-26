@@ -13,12 +13,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { TicketReply } from '@/api/generated/client'
   import { ElTag } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
 
   defineProps<{
-    reply: Api.Ticket.TicketReply
+    reply: TicketReply
   }>()
 
   const { t } = useI18n()

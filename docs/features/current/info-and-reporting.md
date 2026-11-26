@@ -9,8 +9,7 @@ source_of_truth:
   - server/internal/service/eve_wallet_analytics.go
   - server/internal/service/fittings.go
   - server/internal/service/npc_kill.go
-  - static/src/api/eve-info.ts
-  - static/src/api/npc-kill.ts
+  - static/src/api/generated/client.ts
   - static/src/views/info
   - static-react/src/pages/info-wallet-page.tsx
 ---
@@ -38,7 +37,7 @@ source_of_truth:
 - 植入体
 - 资产
 - 合同列表与详情
-- 装配列表与保存
+- 装配列表；装配保存仍是后端能力，Vue 与 React 当前不提供保存操作。
 - 个人 NPC 刷怪报表（详见 [npc-kills.md](npc-kills.md)）
 - 全量 NPC 刷怪报表（详见 [npc-kills.md](npc-kills.md)）
 - ESI 授权检查
@@ -78,24 +77,11 @@ source_of_truth:
 - `static/src/views/info/npc-kills`
 - `static/src/views/dashboard/npc-kills`
 
-### 后端路由
+### 后端契约
 
-- `/api/v1/info/wallet`
-- `/api/v1/info/wallet/analytics` - 钱包收支分析（按 UTC 自然日聚合，仅查询本地已同步流水，需 `Login` 权限）
-- `/api/v1/info/skills`
-- `/api/v1/info/ships`
-- `/api/v1/info/implants`
-- `/api/v1/info/assets`
-- `/api/v1/info/contracts`
-- `/api/v1/info/contracts/detail`
-- `/api/v1/info/esi-refresh` - 手动触发指定角色的 ESI 刷新（支持技能、钱包等任务，仅限自己的角色，需 `Login` 权限）
-- `/api/v1/info/fittings`
-- `/api/v1/info/fittings/save`
-- `/api/v1/info/npc-kills`
-- `/api/v1/info/npc-kills/all`
-- `/api/v1/info/tool-bookmarks`
-- `/api/v1/system/tool-bookmarks`
-- `/api/v1/system/npc-kills`
+[人物信息](../../../contracts/modules/info-character.yaml)、[资产与合同](../../../contracts/modules/info-assets-contracts.yaml)、[装配与 NPC 报表](../../../contracts/modules/info-fittings-npc.yaml)、[书签](../../../contracts/modules/bookmarks-blacklist.yaml)。
+
+钱包分析按 UTC 自然日聚合本地已同步流水；手动 ESI 刷新仅限用户自己的角色。装配保存失败只向调用方提示重新绑定人物或通用错误，上游诊断留在服务日志。
 
 ## 权限边界
 
@@ -131,8 +117,7 @@ source_of_truth:
 - `server/internal/service/npc_kill.go`
 - `server/internal/router/router.go`
 - `server/internal/repository/eve_wallet.go`
-- `static/src/api/eve-info.ts`
-- `static/src/api/npc-kill.ts`
+- `static/src/api/generated/client.ts`
 - `static/src/views/info`
 - `static-react/src/pages/info-wallet-analytics`
 

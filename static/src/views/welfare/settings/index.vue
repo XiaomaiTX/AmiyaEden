@@ -282,6 +282,12 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    SkillPlanRecord,
+    WelfareItem as ContractWelfareItem,
+    WelfareListInput,
+    WelfareSettings
+  } from '@/api/generated/client'
   import {
     ElTag,
     ElButton,
@@ -302,17 +308,18 @@
   import { useDraggable } from 'vue-draggable-plus'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import {
-    adminListWelfares,
+    uploadEvidence,
     adminCreateWelfare,
-    adminUpdateWelfare,
     adminDeleteWelfare,
+    adminGetWelfareSettings,
     adminImportWelfareRecords,
+    adminListWelfares,
     adminReorderWelfares,
-    fetchWelfareAutoApproveConfig,
-    updateWelfareAutoApproveConfig,
-    uploadWelfareEvidence
-  } from '@/api/welfare'
-  import { fetchSkillPlanList } from '@/api/skill-plan'
+    adminUpdateWelfare,
+    adminUpdateWelfareSettings
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
+  import { listSkillPlans } from '@/api/generated/client'
   import { useTable } from '@/hooks/core/useTable'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
@@ -326,8 +333,8 @@
     return roles.some((role) => ['super_admin', 'admin'].includes(role))
   })
 
-  type WelfareItem = Api.Welfare.WelfareItem
-  type WelfareAutoApproveConfig = Api.Welfare.AutoApproveConfig
+  type WelfareItem = ContractWelfareItem
+  type WelfareAutoApproveConfig = WelfareSettings
 
   const activeTab = ref<'welfares' | 'autoApproveConfig'>('welfares')
 
@@ -366,7 +373,8 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: adminListWelfares,
+      apiFn: (params: WelfareListInput) =>
+        unwrapContract(adminListWelfares(params ?? { current: 1, size: 20 })),
       apiParams: { current: 1, size: 50 },
       columnsFactory: () => [
         ...(canManage.value
@@ -512,7 +520,7 @@
   async function loadAutoApproveConfig() {
     configLoading.value = true
     try {
-      const config = await fetchWelfareAutoApproveConfig()
+      const config = await unwrapContract(adminGetWelfareSettings())
       autoApproveConfig.auto_approve_fuxi_coin_threshold = config.auto_approve_fuxi_coin_threshold
       configLoaded.value = true
     } catch (e: any) {
@@ -525,9 +533,11 @@
   async function handleSaveAutoApproveConfig() {
     configSaving.value = true
     try {
-      const config = await updateWelfareAutoApproveConfig({
-        auto_approve_fuxi_coin_threshold: autoApproveConfig.auto_approve_fuxi_coin_threshold
-      })
+      const config = await unwrapContract(
+        adminUpdateWelfareSettings({
+          auto_approve_fuxi_coin_threshold: autoApproveConfig.auto_approve_fuxi_coin_threshold
+        })
+      )
       autoApproveConfig.auto_approve_fuxi_coin_threshold = config.auto_approve_fuxi_coin_threshold
       configLoaded.value = true
       ElMessage.success(t('welfareSettings.saveConfigSuccess'))
@@ -545,7 +555,7 @@
   }
 
   // ─── 技能计划列表 ───
-  const skillPlans = ref<Api.SkillPlan.SkillPlanListItem[]>([])
+  const skillPlans = ref<SkillPlanRecord[]>([])
   const skillPlansLoading = ref(false)
 
   onMounted(() => loadSkillPlans())
@@ -554,7 +564,7 @@
     if (skillPlans.value.length > 0) return
     skillPlansLoading.value = true
     try {
-      const res = await fetchSkillPlanList({ current: 1, size: 200 })
+      const res = await unwrapContract(listSkillPlans({ current: 1, size: 200 }))
       skillPlans.value = res?.list ?? []
     } catch {
       skillPlans.value = []
@@ -590,7 +600,7 @@
   async function handleExampleEvidenceUpload(file: UploadRawFile) {
     exampleEvidenceUploading.value = true
     try {
-      const res = await uploadWelfareEvidence(file)
+      const res = await unwrapContract(uploadEvidence({ file }))
       formData.example_evidence = res.url
     } catch (e: any) {
       ElMessage.error(e?.message ?? t('welfareSettings.uploadFailed'))
@@ -682,10 +692,10 @@
         example_evidence: formData.require_evidence ? formData.example_evidence : ''
       }
       if (editingItem.value) {
-        await adminUpdateWelfare({ id: editingItem.value.id, ...payload })
+        await unwrapContract(adminUpdateWelfare({ id: editingItem.value.id, ...payload }))
         ElMessage.success(t('welfareSettings.updateSuccess'))
       } else {
-        await adminCreateWelfare(payload)
+        await unwrapContract(adminCreateWelfare(payload))
         ElMessage.success(t('welfareSettings.createSuccess'))
       }
       dialogVisible.value = false
@@ -713,10 +723,12 @@
     if (!importCSV.value.trim()) return
     importLoading.value = true
     try {
-      const res = await adminImportWelfareRecords({
-        welfare_id: importWelfareID.value,
-        csv: importCSV.value
-      })
+      const res = await unwrapContract(
+        adminImportWelfareRecords({
+          welfare_id: importWelfareID.value,
+          csv: importCSV.value
+        })
+      )
       ElMessage.success(t('welfareSettings.importSuccess', { count: res.count }))
       importDialogVisible.value = false
     } catch (e: any) {
@@ -737,7 +749,7 @@
       }
     )
     try {
-      await adminDeleteWelfare(row.id)
+      await unwrapContract(adminDeleteWelfare({ id: row.id }))
       ElMessage.success(t('welfareSettings.deleteSuccess'))
       refreshData()
     } catch (e: any) {
@@ -755,7 +767,7 @@
     onEnd: async () => {
       reorderSaving.value = true
       try {
-        await adminReorderWelfares(data.value.map((row) => row.id))
+        await unwrapContract(adminReorderWelfares({ ids: data.value.map((row) => row.id) }))
         await refreshData()
       } catch (e: any) {
         ElMessage.error(e?.message ?? t('welfareSettings.reorderFailed'))

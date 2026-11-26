@@ -1,0 +1,517 @@
+paths:
+  /operation/fleet-configs:
+    get:
+      operationId: listFleetConfigs
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "login"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+          description: Page size capped at 100.
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createFleetConfig
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetConfigCreateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleet-configs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    get:
+      operationId: getFleetConfig
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "login"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      operationId: updateFleetConfig
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetConfigUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigRecordResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      operationId: deleteFleetConfig
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,senior_fc"]
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleet-configs/{id}/eft:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    get:
+      operationId: getFittingEFT
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "login"]
+      parameters:
+        - name: lang
+          in: query
+          schema: { type: string, default: zh }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigEFTDataResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleet-configs/import-fitting:
+    post:
+      operationId: importFromUserFitting
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetConfigImportFittingInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigImportedFittingResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleet-configs/export-esi:
+    post:
+      operationId: exportToESI
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "login"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetConfigExportESIInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleet-configs/{id}/fittings/{fitting_id}/items:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+      - name: fitting_id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    get:
+      operationId: getFittingItems
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "login"]
+      parameters:
+        - name: lang
+          in: query
+          schema: { type: string, default: zh }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigFittingItemsResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /operation/fleet-configs/{id}/fittings/{fitting_id}/items/settings:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+      - name: fitting_id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1, maximum: 4294967295, x-go-type: uint }
+    put:
+      operationId: updateFittingItemsSettings
+      x-gin-access: ["jwt", "login", "cap:menu.operation", "role:admin,senior_fc"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FleetConfigUpdateItemSettingsInput' }
+      responses:
+        '200': { $ref: '#/components/responses/FleetConfigNullResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/pap:
+    get:
+      operationId: getAllAlliancePAP
+      x-gin-ignore-invalid-query: ["year", "month"]
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      parameters:
+        - name: current
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+          description: Page size capped at 1000.
+        - name: year
+          in: query
+          schema: { type: integer }
+          description: Defaults to the current year when missing or malformed.
+        - name: month
+          in: query
+          schema: { type: integer }
+          description: Defaults to the current month when missing or malformed.
+      responses:
+        '200': { $ref: '#/components/responses/AdminAlliancePAPPageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/pap/fetch:
+    post:
+      operationId: triggerFetch
+      x-gin-body: { allowMalformedJSON: true, allowInvalidBinding: true }
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      description: An absent, incomplete, or invalid JSON body silently uses the current year and month.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminAlliancePAPFetchInput' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminAlliancePAPMessageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/pap/import:
+    post:
+      operationId: importAlliancePAP
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminAlliancePAPImportInput' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminAlliancePAPMessageResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /system/pap/settle:
+    post:
+      operationId: settleMonth
+      x-gin-access: ["jwt", "login", "role:admin", "cap:system.manage"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminAlliancePAPSettleInput' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminAlliancePAPSettledMonthResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  responses:
+    FleetConfigPageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetConfigPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetConfigRecordResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetConfigRecordSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetConfigNullResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/NullSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetConfigEFTDataResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetConfigEFTDataSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetConfigImportedFittingResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetConfigImportedFittingSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    FleetConfigFittingItemsResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/FleetConfigFittingItemsSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    AdminAlliancePAPPageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/AdminAlliancePAPPageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    AdminAlliancePAPMessageResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/AdminAlliancePAPMessageSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+    AdminAlliancePAPSettledMonthResult:
+      description: Success or business error.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/AdminAlliancePAPSettledMonthSuccess'
+              - $ref: '#/components/schemas/BusinessError'
+  schemas:
+    FleetConfigPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetConfigPage' }
+    FleetConfigRecordSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetConfigRecord' }
+    FleetConfigEFTDataSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetConfigEFTData' }
+    FleetConfigImportedFittingSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetConfigImportedFitting' }
+    FleetConfigFittingItemsSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/FleetConfigFittingItems' }
+    AdminAlliancePAPPageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdminAlliancePAPPage' }
+    AdminAlliancePAPMessageSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdminAlliancePAPMessage' }
+    AdminAlliancePAPSettledMonthSuccess:
+      type: object
+      required: [code, msg, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        msg: { type: string }
+        data: { $ref: '#/components/schemas/AdminAlliancePAPSettledMonth' }
+    FleetConfigFittingReq:
+      type: object
+      required: [eft]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, nullable: true, x-order: 1 }
+        fitting_name: { type: string, default: '', x-go-type-skip-optional-pointer: true, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 2 }
+        eft: { type: string, x-go-name: EFT, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 3 }
+        srp_amount: { type: number, format: double, default: 0, x-go-type-skip-optional-pointer: true, x-order: 4 }
+    FleetConfigCreateInput:
+      type: object
+      required: [name, fittings]
+      properties:
+        name: { type: string, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        description: { type: string, x-go-type-skip-optional-pointer: true, x-order: 2 }
+        fittings: { type: array, items: { $ref: '#/components/schemas/FleetConfigFittingReq' }, minItems: 1, x-oapi-codegen-extra-tags: { binding: 'required,min=1' }, x-order: 3 }
+    FleetConfigUpdateInput:
+      type: object
+      properties:
+        name: { type: string, nullable: true, x-order: 1 }
+        description: { type: string, nullable: true, x-order: 2 }
+        fittings: { type: array, items: { $ref: '#/components/schemas/FleetConfigFittingReq' }, minItems: 1, nullable: true, x-order: 3 }
+    FleetConfigImportFittingInput:
+      type: object
+      required: [character_id, fitting_id]
+      properties:
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        fitting_id: { type: integer, format: int64, x-go-name: FittingID, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 2 }
+    FleetConfigExportESIInput:
+      type: object
+      required: [character_id, fleet_config_id, fitting_item_id]
+      properties:
+        character_id: { type: integer, format: int64, x-go-name: CharacterID, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 2 }
+        fitting_item_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FittingItemID, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 3 }
+    UpdateItemSettingsReq:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        importance: { type: string, x-go-type-skip-optional-pointer: true, x-order: 2 }
+        penalty: { type: string, x-go-type-skip-optional-pointer: true, x-order: 3 }
+        replacement_penalty: { type: string, x-go-type-skip-optional-pointer: true, x-order: 4 }
+        replacements: { type: array, items: { type: integer, format: int64 }, x-go-type-skip-optional-pointer: true, x-order: 5 }
+    FleetConfigUpdateItemSettingsInput:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/UpdateItemSettingsReq' }, minItems: 1, x-oapi-codegen-extra-tags: { binding: 'required,min=1' } }
+    FleetConfigFitting:
+      type: object
+      required: [id, fleet_config_id, ship_type_id, fitting_name, srp_amount]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        fleet_config_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FleetConfigID, x-order: 2 }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID, x-order: 3 }
+        fitting_name: { type: string, x-order: 4 }
+        srp_amount: { type: number, format: double, x-order: 5 }
+    FleetConfigRecord:
+      type: object
+      required: [id, name, description, created_by, created_at, updated_at, fittings]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        name: { type: string, x-order: 2 }
+        description: { type: string, x-order: 3 }
+        created_by: { type: integer, minimum: 0, x-go-type: uint, x-order: 4 }
+        created_at: { type: string, format: date-time, x-go-type: string, x-order: 5 }
+        updated_at: { type: string, format: date-time, x-go-type: string, x-order: 6 }
+        fittings: { type: array, items: { $ref: '#/components/schemas/FleetConfigFitting' }, x-order: 7 }
+    FleetConfigImportedFitting:
+      type: object
+      required: [fitting_name, eft, srp_amount]
+      properties:
+        fitting_name: { type: string, x-order: 1 }
+        eft: { type: string, x-go-name: EFT, x-order: 2 }
+        srp_amount: { type: number, format: double, x-order: 3 }
+    FleetConfigEFTFitting:
+      type: object
+      required: [id, eft]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        eft: { type: string, x-go-name: EFT, x-order: 2 }
+    FleetConfigEFTData:
+      type: object
+      required: [fittings]
+      properties:
+        fittings: { type: array, items: { $ref: '#/components/schemas/FleetConfigEFTFitting' } }
+    FleetConfigFittingReplacement:
+      type: object
+      required: [id, type_id, type_name]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        type_id: { type: integer, format: int64, x-go-name: TypeID, x-order: 2 }
+        type_name: { type: string, x-order: 3 }
+    FleetConfigFittingItem:
+      type: object
+      required: [id, type_id, type_name, quantity, flag, flag_group, importance, penalty, replacement_penalty, replacements]
+      properties:
+        id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: ID, x-order: 1 }
+        type_id: { type: integer, format: int64, x-go-name: TypeID, x-order: 2 }
+        type_name: { type: string, x-order: 3 }
+        quantity: { type: integer, x-order: 4 }
+        flag: { type: string, x-order: 5 }
+        flag_group: { type: string, x-order: 6 }
+        importance: { type: string, x-order: 7 }
+        penalty: { type: string, x-order: 8 }
+        replacement_penalty: { type: string, x-order: 9 }
+        replacements: { type: array, items: { $ref: '#/components/schemas/FleetConfigFittingReplacement' }, x-order: 10 }
+    FleetConfigFittingItems:
+      type: object
+      required: [fitting_id, fitting_name, ship_type_id, items]
+      properties:
+        fitting_id: { type: integer, minimum: 0, x-go-type: uint, x-go-name: FittingID, x-order: 1 }
+        fitting_name: { type: string, x-order: 2 }
+        ship_type_id: { type: integer, format: int64, x-go-name: ShipTypeID, x-order: 3 }
+        items: { type: array, items: { $ref: '#/components/schemas/FleetConfigFittingItem' }, x-order: 4 }
+    FleetConfigPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list: { type: array, items: { $ref: '#/components/schemas/FleetConfigRecord' } }
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    AdminAlliancePAPPage:
+      type: object
+      required: [list, total, page, pageSize]
+      properties:
+        list:
+          type: array
+          nullable: true
+          items:
+            type: object
+            allOf:
+              - $ref: '#/components/schemas/FleetAlliancePAPSummary'
+        total: { type: integer, format: int64 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    AdminAlliancePAPFetchInput:
+      type: object
+      properties:
+        year: { type: integer, x-oapi-codegen-extra-tags: { binding: 'required' }, x-go-type-skip-optional-pointer: true, x-order: 1 }
+        month: { type: integer, minimum: 1, maximum: 12, x-oapi-codegen-extra-tags: { binding: 'required,min=1,max=12' }, x-go-type-skip-optional-pointer: true, x-order: 2 }
+    PAPImportInfo:
+      type: object
+      required: [primary_character_name, calculated_at]
+      properties:
+        primary_character_name: { type: string, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        monthly_pap: { type: number, format: double, minimum: 0, default: 0, x-go-name: MonthlyPAP, x-go-type-skip-optional-pointer: true, x-oapi-codegen-extra-tags: { binding: 'gte=0' }, x-order: 2 }
+        calculated_at: { type: string, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 3 }
+    AdminAlliancePAPImportInput:
+      type: object
+      required: [year, month, data]
+      properties:
+        year: { type: integer, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        month: { type: integer, minimum: 1, maximum: 12, x-oapi-codegen-extra-tags: { binding: 'required,min=1,max=12' }, x-order: 2 }
+        data: { allOf: [{ $ref: '#/components/schemas/PAPImportInfo' }], x-go-name: PAPImportInfo, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 3 }
+    AdminAlliancePAPSettleInput:
+      type: object
+      required: [year, month]
+      properties:
+        year: { type: integer, x-oapi-codegen-extra-tags: { binding: 'required' }, x-order: 1 }
+        month: { type: integer, minimum: 1, maximum: 12, x-oapi-codegen-extra-tags: { binding: 'required,min=1,max=12' }, x-order: 2 }
+    AdminAlliancePAPMessage:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    AdminAlliancePAPSettledMonth:
+      type: object
+      required: [year, month]
+      properties:
+        year: { type: integer, x-order: 1 }
+        month: { type: integer, x-order: 2 }

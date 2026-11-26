@@ -51,12 +51,13 @@
 </template>
 
 <script setup lang="ts">
+  import type { DashboardFleetItem } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { formatTime } from '@utils/common'
 
   const { t } = useI18n()
   defineProps<{
-    fleets: Api.Dashboard.FleetItem[]
+    fleets: DashboardFleetItem[]
   }>()
 
   const importanceLabel = (importance: string): string => {

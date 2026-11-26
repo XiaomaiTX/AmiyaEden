@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"context"
+
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
 
@@ -16,45 +20,64 @@ func NewRoleHandler() *RoleHandler {
 	return &RoleHandler{svc: service.NewRoleService()}
 }
 
-// ListRoleDefinitions 返回系统职权定义列表（纯内存，不查库）
-func (h *RoleHandler) ListRoleDefinitions(c *gin.Context) {
-	response.OK(c, h.svc.ListRoleDefinitions())
+func (h *RoleHandler) listRoleDefinitions() []apicontract.SystemRoleDefinition {
+	return systemRoleDefinitions(h.svc.ListRoleDefinitions())
 }
 
 // ─── 用户职权管理 ───
 
-func (h *RoleHandler) GetUserRoles(c *gin.Context) {
-	id := requireUintID(c, "id", "用户ID")
-	if id == 0 {
-		return
+func (h *RoleHandler) getSystemUserRoles(id uint) ([]apicontract.SystemRoleDefinition, error) {
+	if err := validateSystemUserID(id); err != nil {
+		return nil, err
 	}
 	roles, err := h.svc.GetUserRoles(id)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return nil, err
 	}
-	response.OK(c, roles)
+	return systemRoleDefinitions(roles), nil
 }
 
-type setUserRolesRequest struct {
-	RoleCodes []string `json:"role_codes"`
+func (h *RoleHandler) setSystemUserRoles(ctx context.Context, userID, operatorID uint, operatorRoles []string, req *apicontract.SystemUserRolesInput) error {
+	if err := validateSystemUserID(userID); err != nil {
+		return err
+	}
+	if req == nil {
+		return errInvalidSystemUserInput
+	}
+	return h.svc.SetUserRoles(ctx, operatorID, operatorRoles, userID, req.RoleCodes)
 }
 
-func (h *RoleHandler) SetUserRoles(c *gin.Context) {
-	userID := requireUintID(c, "id", "用户ID")
-	if userID == 0 {
-		return
+func systemRoleDefinitions(definitions []model.RoleDefinition) []apicontract.SystemRoleDefinition {
+	rows := make([]apicontract.SystemRoleDefinition, 0, len(definitions))
+	for _, role := range definitions {
+		rows = append(rows, apicontract.SystemRoleDefinition{
+			Code: role.Code, Name: role.Name, I18nKey: role.I18nKey, Description: role.Description, Sort: role.Sort,
+		})
 	}
-	var req setUserRolesRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
+	return rows
+}
+
+func (h *RoleHandler) ListRoleDefinitions(_ context.Context, _ apicontract.ListRoleDefinitionsRequestObject) (apicontract.ListRoleDefinitionsResponseObject, error) {
+	return apicontract.ListRoleDefinitions200JSONResponse{
+		Code: response.CodeOK, Msg: "success", Data: h.listRoleDefinitions(),
+	}, nil
+}
+
+func (h *RoleHandler) GetSystemUserRoles(_ context.Context, request apicontract.GetSystemUserRolesRequestObject) (apicontract.GetSystemUserRolesResponseObject, error) {
+	data, err := h.getSystemUserRoles(request.Id)
+	var out apicontract.GetSystemUserRoles200JSONResponse
+	if err != nil {
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
 	}
-	operatorID := middleware.GetUserID(c)
-	operatorRoles := middleware.GetUserRoles(c)
-	if err := h.svc.SetUserRoles(c.Request.Context(), operatorID, operatorRoles, userID, req.RoleCodes); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+	return &out, out.FromSystemRoleDefinitionListSuccess(apicontract.SystemRoleDefinitionListSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *RoleHandler) SetSystemUserRoles(ctx context.Context, request apicontract.SetSystemUserRolesRequestObject) (apicontract.SetSystemUserRolesResponseObject, error) {
+	c := ctx.(*gin.Context)
+	err := h.setSystemUserRoles(c.Request.Context(), request.Id, middleware.GetUserID(c), middleware.GetUserRoles(c), request.Body)
+	var out apicontract.SetSystemUserRoles200JSONResponse
+	if err != nil {
+		return &out, out.FromBusinessError(systemUserBusinessError(err))
 	}
-	response.OK(c, nil)
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
 }

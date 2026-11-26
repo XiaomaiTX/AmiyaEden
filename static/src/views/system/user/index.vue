@@ -70,18 +70,25 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemUserListItem } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
   import { useTable } from '@/hooks/core/useTable'
   import { formatTime } from '@utils/common'
-  import { fetchGetUserList, fetchDeleteUser, fetchImpersonateUser } from '@/api/system-manage'
+  import {
+    deleteSystemUser,
+    impersonateSystemUser,
+    listSystemUsers,
+    type ListSystemUsersParams
+  } from '@/api/generated/client'
   import { fetchGetUserInfo } from '@/api/auth'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import {
-    fetchCharacterESIRestrictionConfig,
+    getCharacterESIRestrictionConfig,
     updateCharacterESIRestrictionConfig
-  } from '@/api/sys-config'
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
   import UserSearch from './modules/user-search.vue'
   import UserManageDialog from './modules/user-manage-dialog.vue'
@@ -91,7 +98,7 @@
   defineOptions({ name: 'User' })
   const { t } = useI18n()
 
-  type UserListItem = Api.SystemManage.UserListItem
+  type UserListItem = SystemUserListItem
 
   const userStore = useUserStore()
 
@@ -300,7 +307,7 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: fetchGetUserList,
+      apiFn: (params?: ListSystemUsersParams) => unwrapContract(listSystemUsers(params)),
       apiParams: {
         current: 1,
         size: 200,
@@ -455,7 +462,7 @@
 
     characterEsiRestrictionLoading.value = true
     try {
-      const config = await fetchCharacterESIRestrictionConfig()
+      const config = await unwrapContract(getCharacterESIRestrictionConfig())
       characterEsiRestrictionEnabled.value = config.enforce_character_esi_restriction
       syncCharacterEsiRestrictionStoreState(config.enforce_character_esi_restriction)
     } catch {
@@ -470,9 +477,11 @@
 
     characterEsiRestrictionSaving.value = true
     try {
-      await updateCharacterESIRestrictionConfig({
-        enforce_character_esi_restriction: nextValue
-      })
+      await unwrapContract(
+        updateCharacterESIRestrictionConfig({
+          enforce_character_esi_restriction: nextValue
+        })
+      )
       syncCharacterEsiRestrictionStoreState(nextValue)
       ElMessage.success(t('userAdmin.characterEsiRestriction.saveSuccess'))
       return true
@@ -545,7 +554,7 @@
     )
       .then(async () => {
         try {
-          await fetchDeleteUser(row.id)
+          await unwrapContract(deleteSystemUser(row.id))
           ElMessage.success(t('userAdmin.deleteSuccess'))
           refreshData()
         } catch (error) {
@@ -568,7 +577,7 @@
     )
       .then(async () => {
         try {
-          const res = await fetchImpersonateUser(row.id)
+          const res = await unwrapContract(impersonateSystemUser(row.id))
           userStore.setToken(res.token)
           userStore.setLoginStatus(true)
           const userInfo = await fetchGetUserInfo()

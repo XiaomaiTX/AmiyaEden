@@ -1,5 +1,5 @@
 import { useI18n } from '@/i18n'
-import type { RefundCalculation } from '@/types/api/captain-refund'
+import type { CaptainRefundCalculation as RefundCalculation } from '@/api/generated/client'
 import { formatTime } from '@/lib/format'
 import { refundEligibilityReasonKey } from '@/pages/captain-refund-text'
 import {

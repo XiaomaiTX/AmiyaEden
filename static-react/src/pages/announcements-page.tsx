@@ -1,11 +1,13 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import {
+  createAnnouncement,
+  updateAnnouncement,
   listAnnouncements,
   getAnnouncement,
-  saveAnnouncement,
   readAnnouncement,
-} from '@/api/announcements'
-import type { Announcement } from '@/types/api/announcement'
+  type Announcement as WireAnnouncement,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
 import { useRole } from '@/hooks/use-permission'
 import { useBadgeStore } from '@/stores/badge-store'
@@ -15,6 +17,8 @@ import { Button } from '@/components/ui/button'
 import { Clock3, FileText, Megaphone, UserRound } from 'lucide-react'
 import { buildEveCharacterPortraitUrl } from '@/lib/eve-image'
 import './announcements.css'
+
+type Announcement = WireAnnouncement & { unread?: boolean }
 
 export function AnnouncementsPage() {
   const { t } = useI18n()
@@ -39,7 +43,7 @@ export function AnnouncementsPage() {
     if (id) await useBadgeStore.getState().load(id, true)
   }
   async function load() {
-    const data = await listAnnouncements(page)
+    const data = await unwrapContract(listAnnouncements({ page }), '')
     setRows(data.list)
     setTotal(data.total)
   }
@@ -52,7 +56,7 @@ export function AnnouncementsPage() {
   useEffect(() => {
     let active = true
     const token = request.current
-    void listAnnouncements(page)
+    void unwrapContract(listAnnouncements({ page }), '')
       .then(async (data) => {
         if (!active) return
         setError(null)
@@ -81,7 +85,7 @@ export function AnnouncementsPage() {
     setEditing(false)
     let data: Announcement
     try {
-      data = await getAnnouncement(row.id)
+      data = await unwrapContract(getAnnouncement(row.id), '')
     } catch (cause) {
       if (token === request.current) {
         fail(cause)
@@ -100,7 +104,7 @@ export function AnnouncementsPage() {
     )
     if (token !== request.current) return
     try {
-      await readAnnouncement(data.id, data.version)
+      await unwrapContract(readAnnouncement(data.id, { version: data.version }), '')
       setRows((current) =>
         current.map((item) =>
           item.id === data.id ? { ...item, unread: false, version: data.version } : item
@@ -122,13 +126,17 @@ export function AnnouncementsPage() {
     setBusy(true)
     setError(null)
     try {
-      const data = await saveAnnouncement(selected?.id ?? null, {
+      const input = {
         title,
         body_html: body,
         hidden,
         remind,
         revision: selected?.revision ?? 0,
-      })
+      }
+      const data = await unwrapContract(
+        selected ? updateAnnouncement(selected.id, input) : createAnnouncement(input),
+        ''
+      )
       setSelected(data)
       setEditing(false)
       await load()

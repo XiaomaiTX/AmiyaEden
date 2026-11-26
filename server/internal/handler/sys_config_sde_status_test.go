@@ -45,7 +45,7 @@ func TestGetSDEStatus(t *testing.T) {
 			LastCheckSuccess: true,
 		},
 	})
-	handler.GetSDEStatus(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: handler}).GetSDEStatus(ctx)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status code = %d, want %d", rec.Code, http.StatusOK)
@@ -69,7 +69,7 @@ func TestCheckSDEVersionReturnsBizErrorOnFailure(t *testing.T) {
 	handler := newSysConfigHandlerWithDeps(service.NewSysConfigService(), stubSDEStatusService{
 		checkErr: errors.New("upstream down"),
 	})
-	handler.CheckSDEVersion(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: handler}).CheckSDEVersion(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
@@ -89,7 +89,7 @@ func TestTriggerSDEUpdateReturnsBizErrorOnFailure(t *testing.T) {
 	handler := newSysConfigHandlerWithDeps(service.NewSysConfigService(), stubSDEStatusService{
 		updateErr: errors.New("import failed"),
 	})
-	handler.TriggerSDEUpdate(ctx)
+	newMigratedOperationAdapter(migratedOperations{SysConfigHandler: handler}).TriggerSDEUpdate(ctx)
 
 	var resp response.Response
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {

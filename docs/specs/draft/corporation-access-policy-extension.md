@@ -20,7 +20,7 @@ source_of_truth:
 
 # 军团能力策略扩展草案（基于 allow_corporations）
 
-> 实现状态（2026-07-23）：Stage 0A 已落地。当前实现以 `docs/features/current/corporation-access-policy.md`、`docs/architecture/auth-and-permissions.md`、`docs/architecture/routing-and-menus.md` 和 `docs/api/route-index.md` 为准。本草案保留原始设计讨论；其中把 `menu.srp`、`menu.welfare`、`menu.role`、`menu.system` 当作前端门禁，或使用旧 `meta.corpCapabilities` 的段落均已被当前实现取代，不得作为实现依据。
+> 实现状态（2026-07-23）：Stage 0A 已落地。当前实现以 `docs/features/current/corporation-access-policy.md`、`docs/architecture/auth-and-permissions.md`、`docs/architecture/routing-and-menus.md` 为准。现行 HTTP 契约见 [OpenAPI 业务索引](../../api/route-index.md)，不沿用本草案中的手写 API 路由、包装或类型实施指引。本草案保留原始设计讨论；其中把 `menu.srp`、`menu.welfare`、`menu.role`、`menu.system` 当作前端门禁，或使用旧 `meta.corpCapabilities` 的段落均已被当前实现取代，不得作为实现依据。
 
 > ⚠️ 实现差异说明（2026-07-07）：本草案原设计为 **默认 `deny`**（最小权限）。**实际落地为默认 `allow`** —— 代码 `server/internal/service/corporation_policy.go`（`DefaultMode = corpPolicyDefaultModeAllow`）与 `docs/features/current/corporation-access-policy.md` 均使用 `default_mode: "allow"`。下文出现的「默认 deny / 一期固定使用 deny」是历史设计意图，保留作决策记录；**以 feature doc 与代码为准**。
 
@@ -301,13 +301,12 @@ source_of_truth:
 
 | 文件 | 变更点 | 目标 |
 | --- | --- | --- |
-| `static/src/types/api/api.d.ts` / `static-react/src/types/api/*` | 扩展 `/me` 与策略类型 | 双端类型契约同步 |
+| [根规范](../../../contracts/openapi.yaml)与[系统配置契约](../../../contracts/modules/system-config.yaml) | 生成 `/me` 与策略读写的操作和类型 | 双端消费同一契约 |
 | `static/src/api/auth.ts` | 映射 `/me` 新字段到 `UserInfo` | 登录态能力数据注入 |
 | `static/src/types/router/index.ts` | `RouteMeta` 增加 `corpCapabilities?: string[]` | 路由元数据承载能力要求 |
 | `static/src/router/core/menuAccess.ts` | 菜单过滤增加 capability 判定 | 菜单收敛 |
 | `static/src/router/modules/srp.ts` | 标注 `menu.srp`、`srp.user`、`srp.manage` | SRP 页面能力门禁 |
 | `static/src/router/modules/welfare.ts` | 标注 `menu.welfare`、`welfare.user`、`welfare.approval`、`welfare.settings` | 福利页面能力门禁 |
-| `static/src/api/sys-config.ts` | 新增策略 GET/PUT API 包装 | 配置页接口接入 |
 | `static/src/views/system/basic-config/index.vue` | 新增“军团能力策略”编辑区（能力勾选 + 规则编辑 + 保存） | 超管可视化配置 |
 | Vue locale / `static-react/src/i18n/messages/*` | 补齐策略配置与校验文案键 | 双端文案与 i18n 完整 |
 

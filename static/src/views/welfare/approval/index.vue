@@ -78,6 +78,10 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    WelfareAdminApplication,
+    WelfareAdminApplicationListInput
+  } from '@/api/generated/client'
   import { ElTag, ElButton, ElInput, ElMessage, ElMessageBox, ElImage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { operationSalaryMessage } from '@/utils/operation-salary'
@@ -87,10 +91,11 @@
   import { useEnterSearch } from '@/hooks/core/useEnterSearch'
   import { useTable } from '@/hooks/core/useTable'
   import {
-    adminListApplications,
-    adminReviewApplication,
-    adminDeleteApplication
-  } from '@/api/welfare'
+    adminDeleteWelfareApplication,
+    adminListWelfareApplications,
+    adminReviewWelfareApplication
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatWelfareHistoryReviewerName } from '../reviewerName'
   import { useUserStore } from '@/store/modules/user'
   import { showMailAttemptMessage } from '@/utils/mailAttempt'
@@ -109,7 +114,7 @@
   const activeTab = ref('pending')
   const historyKeyword = ref('')
 
-  type AppRow = Api.Welfare.AdminApplication
+  type AppRow = WelfareAdminApplication
 
   const STATUS_CONFIG = computed(
     () =>
@@ -261,7 +266,8 @@
     getData: loadPending
   } = useTable({
     core: {
-      apiFn: adminListApplications,
+      apiFn: (data?: WelfareAdminApplicationListInput) =>
+        unwrapContract(adminListWelfareApplications(data ?? { current: 1, size: 50 })),
       apiParams: { current: 1, size: 200, status: 'requested' },
       columnsFactory: () => [
         ...buildBaseColumns({ includeEvidenceImage: true }).filter(
@@ -304,7 +310,8 @@
     searchParams: historySearchParams
   } = useTable({
     core: {
-      apiFn: adminListApplications,
+      apiFn: (data?: WelfareAdminApplicationListInput) =>
+        unwrapContract(adminListWelfareApplications(data ?? { current: 1, size: 50 })),
       apiParams: { current: 1, size: 200, status: 'delivered,rejected' },
       immediate: false,
       columnsFactory: () => [
@@ -380,7 +387,9 @@
       return
     }
     try {
-      const result = await adminReviewApplication({ id: row.id, action: 'deliver' })
+      const result = await unwrapContract(
+        adminReviewWelfareApplication({ id: row.id, action: 'deliver' })
+      )
       if (result.outcome === 'auto_rejected') {
         ElMessage.warning(autoRejectMessage(result.eligibility_reason))
       } else {
@@ -406,7 +415,7 @@
 
     actionLoading.value = true
     try {
-      await adminReviewApplication({ id: row.id, action: 'reject' })
+      await unwrapContract(adminReviewWelfareApplication({ id: row.id, action: 'reject' }))
       ElMessage.success(t('welfareApproval.rejectSuccess'))
       await Promise.all([loadPending(), loadHistory()])
     } catch {
@@ -426,7 +435,7 @@
       return
     }
     try {
-      await adminDeleteApplication(row.id)
+      await unwrapContract(adminDeleteWelfareApplication({ id: row.id }))
       ElMessage.success(t('welfareApproval.deleteHistorySuccess'))
       loadHistory()
     } catch {

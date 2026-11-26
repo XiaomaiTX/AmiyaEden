@@ -2,7 +2,8 @@ import { ElMessageBox } from 'element-plus'
 import { computed, onMounted, onUnmounted, watch, type WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { fetchGalaxyRegistrySystems } from '@/api/galaxy-registry'
+import { listSystems } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import {
   createBrowserNotificationClient,
   sendBrowserNotification
@@ -102,7 +103,7 @@ export const useGalaxyRegistryTimeoutNotification = () => {
 
     refreshing = true
     try {
-      const response = await fetchGalaxyRegistrySystems()
+      const response = await unwrapContract(listSystems())
       const storage = getLocalStorage()
       const candidates = findGalaxyRegistryTimeoutCandidates(response.items || []).filter(
         (candidate) => !hasGalaxyRegistryTimeoutNotified(storage, candidate.entryId)

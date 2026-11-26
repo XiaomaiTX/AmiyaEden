@@ -1,4 +1,5 @@
-import { fetchNames } from '@/api/sde'
+import { getSdeNames, type SdeNamesInput } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useUserStore } from '@/store/modules/user'
 import {
   filterUnresolvedESIIDs,
@@ -34,7 +35,7 @@ export function useNameResolver() {
    * 批量解析 ID → 名称。
    * 结果会合并进 nameMap（不会清除之前已有的映射）。
    */
-  async function resolve(params: Api.Sde.ResolveNamesRequest) {
+  async function resolve(params: SdeNamesInput) {
     // 过滤掉空数组 & 已解析过的 ID，减少请求体积
     const ids = filterUnresolvedNameIDs(params.ids, namesByNamespace.value)
     const esi = filterUnresolvedESIIDs(params.esi, namesByNamespace.value)
@@ -47,11 +48,13 @@ export function useNameResolver() {
 
     loading.value = true
     try {
-      const result = await fetchNames({
-        language,
-        ids: Object.keys(ids).length ? ids : undefined,
-        esi: esi.length ? esi : undefined
-      })
+      const result = await unwrapContract(
+        getSdeNames({
+          language,
+          ids: Object.keys(ids).length ? ids : undefined,
+          esi: esi.length ? esi : undefined
+        })
+      )
       mergeResolvedNames(namesByNamespace.value, nameMap.value, result)
     } catch (e) {
       console.warn('[useNameResolver] 名称解析失败', e)

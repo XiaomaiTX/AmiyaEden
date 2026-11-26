@@ -27,16 +27,18 @@
 </template>
 
 <script setup lang="ts">
+  import type { SystemWalletListInput, SystemWalletListItem } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import { useTable } from '@/hooks/core/useTable'
-  import { adminListWallets } from '@/api/sys-wallet'
+  import { adminListSystemWallets } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatFuxiCoinAmount, formatTime } from '@utils/common'
 
   defineOptions({ name: 'WalletList' })
   const { t } = useI18n()
 
-  type Wallet = Api.SysWallet.Wallet
+  type Wallet = SystemWalletListItem
   const userKeywordFilter = ref('')
 
   const emit = defineEmits<{
@@ -57,7 +59,8 @@
     searchParams
   } = useTable({
     core: {
-      apiFn: adminListWallets,
+      apiFn: (params: SystemWalletListInput) =>
+        unwrapContract(adminListSystemWallets(params ?? { current: 1, size: 200 })),
       apiParams: { current: 1, size: 200, sort_by: 'updated_at', sort_order: 'desc' },
       columnsFactory: () => [
         { type: 'index', width: 60, label: '#' },

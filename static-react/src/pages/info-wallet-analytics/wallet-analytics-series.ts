@@ -7,7 +7,7 @@
  *
  * @module pages/info-wallet-analytics/wallet-analytics-series
  */
-import type { WalletAnalyticsDailyPoint, WalletAnalyticsRefTypeItem } from '@/types/api/eve-info'
+import type { InfoWalletDailyPoint, InfoWalletRefTypeItem } from '@/api/generated/client'
 
 export type WalletAnalyticsPreset = '1d' | '7d' | '30d' | '90d' | 'all'
 
@@ -90,19 +90,17 @@ export function resolveAnalyticsRange(
   return { from: from < availableFrom ? availableFrom : from, to: availableTo }
 }
 
-function sortByDayAsc(points: WalletAnalyticsDailyPoint[]): WalletAnalyticsDailyPoint[] {
+function sortByDayAsc(points: InfoWalletDailyPoint[]): InfoWalletDailyPoint[] {
   return [...points].sort((left, right) => left.date.localeCompare(right.date))
 }
 
 /** 每日日终余额折线数值（按日期升序） */
-export function buildBalanceSeries(points: WalletAnalyticsDailyPoint[]): number[] {
+export function buildBalanceSeries(points: InfoWalletDailyPoint[]): number[] {
   return sortByDayAsc(points).map((point) => point.balance)
 }
 
 /** 每日收支对比数据（按日期升序，支出以正数返回，由图表决定绘制方向） */
-export function buildDailyFlowSeries(
-  points: WalletAnalyticsDailyPoint[]
-): WalletAnalyticsFlowSeries {
+export function buildDailyFlowSeries(points: InfoWalletDailyPoint[]): WalletAnalyticsFlowSeries {
   const sorted = sortByDayAsc(points)
   return {
     labels: sorted.map((point) => formatDayLabel(point.date)),
@@ -131,7 +129,7 @@ export function resolveFlowAxisBound(income: number[], expense: number[]): numbe
 
 /** 收入 / 支出类型构成 Top N（按金额降序，仅保留该方向有金额的类型） */
 export function buildRefTypeSeries(
-  breakdown: WalletAnalyticsRefTypeItem[],
+  breakdown: InfoWalletRefTypeItem[],
   direction: 'income' | 'expense',
   limit: number = WALLET_ANALYTICS_TOP_REF_TYPES
 ): WalletAnalyticsRefTypeSeries {

@@ -2,7 +2,7 @@
 status: active
 doc_type: feature
 owner: engineering
-last_reviewed: 2026-10-12
+last_reviewed: 2026-11-26
 source_of_truth:
   - server/internal/router/router.go
   - server/internal/service/skill_readiness.go
@@ -37,24 +37,12 @@ source_of_truth:
 
 ## 接口契约
 
-完整后端路由及权限见 [API 路由索引](../../api/route-index.md)。前缀为 `/api/v1/dashboard/skill-readiness`。Vue 路径为 `/dashboard/skill-readiness`；React 使用其 hash 路由对应页面。
+方法、访问链、输入和输出见[技能达标 OpenAPI](../../../contracts/modules/dashboard-readiness.yaml)。Vue 路径为 `/dashboard/skill-readiness`；React 使用对应的 hash 路由。
 
-所有 POST 请求接受：
-
-```json
-{"corporation_ids": [10, 20], "plan_id": 1, "page": 1, "page_size": 20, "language": "zh"}
-```
-
-`plan_id` 必填正整数；军团 ID 必须为正整数。分页省略或 0 使用默认值（1、20），负值或 `page_size>100` 拒绝。语言仅支持 `zh`、`en`，默认 `zh`。明细接口接受同一范围请求，分页字段不影响明细。
-
-- `GET /options`：`corporations[{corporation_id, corporation_name}]` 与 `plans[{id, title, description, ship_type_id}]`，完整候选而非分页切片。军团取有效用户绑定角色的正数军团 ID；方案按 `sort_order ASC, id DESC` 排序。名称解析失败返回空名称，调用方显示军团 ID。候选中的空方案会在执行查询时被拒绝。
-- `POST /query`：返回 `summary`、`list`、`total`、`page`、`pageSize`。summary 为 `character_count`、`user_count`、`satisfied_user_count`、`satisfied_character_count`、`unknown_character_count`；不受分页影响。list 行为 `user_id`、`nickname`、`character_count`、`satisfied_character_count`、`unknown_character_count`，按达标角色数降序、用户 ID 升序。`total` 是用户行数。没有昵称时返回空字符串，调用方显示用户 ID。
-- `POST /users/:user_id/characters`：返回范围内角色数组，包含 `user_id`、`character_id`、`character_name`、`corporation_id`、`corporation_name`、`status`、`matched_skills`、`total_skills`、`skill_updated_at`、`token_invalid`。按角色名、角色 ID 升序。无有效用户或没有范围内角色时返回空数组。
-- `POST /characters/:character_id/skills`：返回 `character`、`requirements`、`skills`。必须仍为有效绑定且符合军团范围的角色。requirements 包含全部方案技能，skills 包含全部已同步技能，按技能 ID 升序。
-
-技能行：`skill_type_id`、`skill_name`、`group_name`、`active_level`、`trained_level`、`skillpoints_in_skill`、`current_level`。要求技能行额外包含 `required_level`、`satisfied`。未同步时等级、技能点为 null，`satisfied` 不返回，全部技能为空数组，避免把未知误呈现为真实 0 级。技能名称复用技能规划的 SDE 查询及既有英文/Type ID 兜底。
-
-外层使用统一 `{code,msg,data}`。参数错误为 code 400；无效方案、越界角色及内部读取失败为 code 500；权限/认证使用 HTTP 403/401。内部异常不向调用方泄漏。空范围正常返回零统计、空列表；越界页返回空列表而保留总统计。
+- 候选项不分页。军团来自有效绑定角色，方案按 `sort_order ASC, id DESC` 排序。军团名称缺失时页面显示军团 ID；空方案不可用于实际查询。
+- 概览统计覆盖完整范围，不受用户列表分页影响；用户按达标角色数降序、用户 ID 升序。缺少昵称时显示用户 ID。空范围返回零统计，越界页返回空列表并保留总统计。
+- 用户角色明细不分页，按角色名、角色 ID 升序。无有效用户或无范围内角色时返回空数组。技能明细仅接受仍有效绑定且符合军团范围的角色，技能按 ID 升序。
+- 未同步时等级与技能点为 null，缺省达标标志并返回空的全部技能列表，避免把未知呈现为真实 0 级。技能名称复用 SDE 的英文和 Type ID 兜底；内部异常不向调用方泄漏。
 
 ## 查询一致性与性能决策
 

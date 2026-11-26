@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
-	"fmt"
-	"strconv"
-
+	"context"
 	"github.com/gin-gonic/gin"
+	"math"
 )
 
 // SrpHandler 补损 HTTP 处理器
@@ -21,397 +22,605 @@ func NewSrpHandler() *SrpHandler {
 	}
 }
 
-// ─────────────────────────────────────────────
-//  舰船价格表
-// ─────────────────────────────────────────────
+func srpValue[T any](value *T) T {
+	if value != nil {
+		return *value
+	}
+	var zero T
+	return zero
+}
 
-// ListShipPrices GET /srp/prices
-func (h *SrpHandler) ListShipPrices(c *gin.Context) {
-	keyword := c.Query("keyword")
+func srpMap[T, U any](values []T, convert func(T) U) []U {
+	if values == nil {
+		return nil
+	}
+	result := make([]U, len(values))
+	for i, value := range values {
+		result[i] = convert(value)
+	}
+	return result
+}
+
+func srpShipPriceDTO(price model.SrpShipPrice) apicontract.SrpShipPrice {
+	return apicontract.SrpShipPrice{
+		Id: price.ID, ShipTypeId: price.ShipTypeID, ShipName: price.ShipName, Amount: price.Amount,
+		CreatedBy: price.CreatedBy, UpdatedBy: price.UpdatedBy, CreatedAt: price.CreatedAt, UpdatedAt: price.UpdatedAt,
+	}
+}
+
+func srpApplicationDTO(app model.SrpApplication) apicontract.SrpApplication {
+	return apicontract.SrpApplication{
+		Id: app.ID, UserId: app.UserID, CharacterId: app.CharacterID, CharacterName: app.CharacterName,
+		KillmailId: app.KillmailID, FleetId: app.FleetID, Note: app.Note, ShipTypeId: app.ShipTypeID,
+		ShipName: app.ShipName, SolarSystemId: app.SolarSystemID, SolarSystemName: app.SolarSystemName,
+		KillmailTime: app.KillmailTime, CorporationId: app.CorporationID, CorporationName: app.CorporationName,
+		AllianceId: app.AllianceID, AllianceName: app.AllianceName, RecommendedAmount: app.RecommendedAmount,
+		FinalAmount: app.FinalAmount, ReviewStatus: apicontract.SrpReviewStatus(app.ReviewStatus),
+		ReviewedBy: app.ReviewedBy, ReviewedAt: app.ReviewedAt, ReviewNote: app.ReviewNote,
+		PayoutStatus: apicontract.SrpPayoutStatus(app.PayoutStatus), PaidBy: app.PaidBy, PaidAt: app.PaidAt,
+		CreatedAt: app.CreatedAt, UpdatedAt: app.UpdatedAt,
+	}
+}
+
+func srpApplicationResponseDTO(app service.SrpApplicationResponse) apicontract.SrpApplication {
+	dto := srpApplicationDTO(app.SrpApplication)
+	dto.FleetTitle = app.FleetTitle
+	dto.FleetFcName = app.FleetFCName
+	dto.Nickname = app.Nickname
+	dto.LastActorNickname = app.LastActorNickname
+	return dto
+}
+
+func srpApplicationPageDTO(list []service.SrpApplicationResponse, total int64, page, pageSize int) apicontract.SrpApplicationPage {
+	return apicontract.SrpApplicationPage{
+		List: srpMap(list, srpApplicationResponseDTO), Total: total, Page: page, PageSize: pageSize,
+	}
+}
+
+func srpBatchPayoutSummaryDTO(summary service.SrpBatchPayoutSummaryResponse) apicontract.SrpBatchPayoutSummary {
+	return apicontract.SrpBatchPayoutSummary{
+		UserId: summary.UserID, Nickname: summary.Nickname, MainCharacterId: summary.MainCharacterID,
+		MainCharacterName: summary.MainCharacterName, TotalAmount: summary.TotalAmount, ApplicationCount: summary.ApplicationCount,
+	}
+}
+
+func srpMailAttemptDTO(summary service.MailAttemptSummary) apicontract.SrpMailAttempt {
+	return apicontract.SrpMailAttempt{
+		MailError: summary.MailError, MailId: summary.MailID,
+		MailSenderCharacterId: summary.MailSenderCharacterID, MailSenderCharacterName: summary.MailSenderCharacterName,
+		MailRecipientCharacterId: summary.MailRecipientCharacterID, MailRecipientCharacterName: summary.MailRecipientCharacterName,
+	}
+}
+
+func srpKillmailDTO(km service.FleetKillmailItem) apicontract.SrpKillmail {
+	return apicontract.SrpKillmail{
+		KillmailId: km.KillmailID, KillmailTime: km.KillmailTime, ShipTypeId: km.ShipTypeID,
+		SolarSystemId: km.SolarSystemID, CharacterId: km.CharacterID, VictimName: km.VictimName,
+	}
+}
+
+func srpKillmailDetailDTO(km service.KillmailDetailResponse) apicontract.SrpKillmailDetail {
+	return apicontract.SrpKillmailDetail{
+		KillmailId: km.KillmailID, KillmailTime: km.KillmailTime, ShipTypeId: km.ShipTypeID, ShipName: km.ShipName,
+		SolarSystemId: km.SolarSystemID, SystemName: km.SystemName, CharacterId: km.CharacterID,
+		CharacterName: km.CharacterName, JaniceAmount: km.JaniceAmount,
+		Slots: srpMap(km.Slots, func(slot service.KillmailSlotGroup) apicontract.SrpKillmailSlotGroup {
+			return apicontract.SrpKillmailSlotGroup{
+				FlagId: slot.FlagID, FlagName: slot.FlagName, FlagText: slot.FlagText, OrderId: slot.OrderID,
+				Items: srpMap(slot.Items, func(item service.KillmailSlotItem) apicontract.SrpKillmailSlotItem {
+					return apicontract.SrpKillmailSlotItem{ItemId: item.ItemID, ItemName: item.ItemName, Quantity: item.Quantity, Dropped: item.Dropped}
+				}),
+			}
+		}),
+	}
+}
+
+func strictSrpActor(ctx context.Context) (uint, []string) {
+	// The generated adapter passes the Gin context resolved by authentication.
+	if c, ok := ctx.(*gin.Context); ok && c != nil {
+		return middleware.GetUserID(c), middleware.GetUserRoles(c)
+	}
+	return 0, nil
+}
+
+func validSrpPathID(id uint) bool { return id > 0 && id <= math.MaxUint32 }
+
+func (h *SrpHandler) ListSrpShipPrices(_ context.Context, request apicontract.ListSrpShipPricesRequestObject) (apicontract.ListSrpShipPricesResponseObject, error) {
+	out := &apicontract.ListSrpShipPrices200JSONResponse{}
+	data, failure := h.listSrpShipPrices(request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpShipPricesSuccess(apicontract.SrpShipPricesSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) UpsertSrpShipPrice(ctx context.Context, request apicontract.UpsertSrpShipPriceRequestObject) (apicontract.UpsertSrpShipPriceResponseObject, error) {
+	out := &apicontract.UpsertSrpShipPrice200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	actorID, _ := strictSrpActor(ctx)
+	data, failure := h.upsertSrpShipPrice(actorID, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpShipPriceSuccess(apicontract.SrpShipPriceSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) DeleteSrpShipPrice(_ context.Context, request apicontract.DeleteSrpShipPriceRequestObject) (apicontract.DeleteSrpShipPriceResponseObject, error) {
+	out := &apicontract.DeleteSrpShipPrice200JSONResponse{}
+	if !validSrpPathID(request.Id) {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "无效的 ID"))
+	}
+	if failure := h.deleteSrpShipPrice(request.Id); failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SrpHandler) GetSrpConfig(_ context.Context, _ apicontract.GetSrpConfigRequestObject) (apicontract.GetSrpConfigResponseObject, error) {
+	out := &apicontract.GetSrpConfig200JSONResponse{}
+	data := h.getSrpConfig()
+	return out, out.FromSrpConfigSuccess(apicontract.SrpConfigSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) UpdateSrpConfig(_ context.Context, request apicontract.UpdateSrpConfigRequestObject) (apicontract.UpdateSrpConfigResponseObject, error) {
+	out := &apicontract.UpdateSrpConfig200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	if failure := h.updateSrpConfig(*request.Body); failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SrpHandler) SubmitSrpApplication(ctx context.Context, request apicontract.SubmitSrpApplicationRequestObject) (apicontract.SubmitSrpApplicationResponseObject, error) {
+	out := &apicontract.SubmitSrpApplication200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	actorID, _ := strictSrpActor(ctx)
+	data, failure := h.submitSrpApplication(actorID, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpApplicationSuccess(apicontract.SrpApplicationSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) ListMySrpApplications(ctx context.Context, request apicontract.ListMySrpApplicationsRequestObject) (apicontract.ListMySrpApplicationsResponseObject, error) {
+	out := &apicontract.ListMySrpApplications200JSONResponse{}
+	actorID, _ := strictSrpActor(ctx)
+	data, failure := h.listMySrpApplications(actorID, request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpApplicationPageSuccess(apicontract.SrpApplicationPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) GetMySrpKillmails(ctx context.Context, request apicontract.GetMySrpKillmailsRequestObject) (apicontract.GetMySrpKillmailsResponseObject, error) {
+	out := &apicontract.GetMySrpKillmails200JSONResponse{}
+	actorID, _ := strictSrpActor(ctx)
+	data, failure := h.getMySrpKillmails(actorID, request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpKillmailsSuccess(apicontract.SrpKillmailsSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) GetSrpFleetKillmails(ctx context.Context, request apicontract.GetSrpFleetKillmailsRequestObject) (apicontract.GetSrpFleetKillmailsResponseObject, error) {
+	out := &apicontract.GetSrpFleetKillmails200JSONResponse{}
+	if request.FleetId == "" {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "缺少 fleet_id 参数"))
+	}
+	actorID, _ := strictSrpActor(ctx)
+	data, failure := h.getSrpFleetKillmails(actorID, request.FleetId, request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpKillmailsSuccess(apicontract.SrpKillmailsSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) ListSrpApplications(_ context.Context, request apicontract.ListSrpApplicationsRequestObject) (apicontract.ListSrpApplicationsResponseObject, error) {
+	out := &apicontract.ListSrpApplications200JSONResponse{}
+	data, failure := h.listSrpApplications(request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpApplicationPageSuccess(apicontract.SrpApplicationPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) ListSrpFleetOptions(_ context.Context, _ apicontract.ListSrpFleetOptionsRequestObject) (apicontract.ListSrpFleetOptionsResponseObject, error) {
+	out := &apicontract.ListSrpFleetOptions200JSONResponse{}
+	data, failure := h.listSrpFleetOptions()
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpFleetOptionsSuccess(apicontract.SrpFleetOptionsSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) ListSrpBatchPayoutSummary(_ context.Context, _ apicontract.ListSrpBatchPayoutSummaryRequestObject) (apicontract.ListSrpBatchPayoutSummaryResponseObject, error) {
+	out := &apicontract.ListSrpBatchPayoutSummary200JSONResponse{}
+	data, failure := h.listSrpBatchPayoutSummary()
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpBatchPayoutSummariesSuccess(apicontract.SrpBatchPayoutSummariesSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) RunSrpFleetAutoApproval(ctx context.Context, request apicontract.RunSrpFleetAutoApprovalRequestObject) (apicontract.RunSrpFleetAutoApprovalResponseObject, error) {
+	out := &apicontract.RunSrpFleetAutoApproval200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	actorID, roles := strictSrpActor(ctx)
+	data, failure := h.runSrpFleetAutoApproval(actorID, roles, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpAutoApproveSuccess(apicontract.SrpAutoApproveSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) GetSrpApplication(_ context.Context, request apicontract.GetSrpApplicationRequestObject) (apicontract.GetSrpApplicationResponseObject, error) {
+	out := &apicontract.GetSrpApplication200JSONResponse{}
+	if !validSrpPathID(request.Id) {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "无效的 ID"))
+	}
+	data, failure := h.getSrpApplication(request.Id)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpApplicationSuccess(apicontract.SrpApplicationSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) ReviewSrpApplication(ctx context.Context, request apicontract.ReviewSrpApplicationRequestObject) (apicontract.ReviewSrpApplicationResponseObject, error) {
+	out := &apicontract.ReviewSrpApplication200JSONResponse{}
+	if !validSrpPathID(request.Id) {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "无效的 ID"))
+	}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	actorID, roles := strictSrpActor(ctx)
+	data, failure := h.reviewSrpApplication(request.Id, actorID, roles, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpApplicationSuccess(apicontract.SrpApplicationSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) PayoutSrpApplication(ctx context.Context, request apicontract.PayoutSrpApplicationRequestObject) (apicontract.PayoutSrpApplicationResponseObject, error) {
+	out := &apicontract.PayoutSrpApplication200JSONResponse{}
+	if !validSrpPathID(request.Id) {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "无效的 ID"))
+	}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	actorID, roles := strictSrpActor(ctx)
+	data, failure := h.payoutSrpApplication(request.Id, actorID, roles, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpPayoutSuccess(apicontract.SrpPayoutSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) BatchPayoutSrpByUser(ctx context.Context, request apicontract.BatchPayoutSrpByUserRequestObject) (apicontract.BatchPayoutSrpByUserResponseObject, error) {
+	out := &apicontract.BatchPayoutSrpByUser200JSONResponse{}
+	if !validSrpPathID(request.UserId) {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "无效的用户 ID"))
+	}
+	actorID, roles := strictSrpActor(ctx)
+	data, failure := h.batchPayoutSrpByUser(request.UserId, actorID, roles)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpBatchPayoutSuccess(apicontract.SrpBatchPayoutSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) BatchPayoutSrpAsFuxiCoin(ctx context.Context, _ apicontract.BatchPayoutSrpAsFuxiCoinRequestObject) (apicontract.BatchPayoutSrpAsFuxiCoinResponseObject, error) {
+	out := &apicontract.BatchPayoutSrpAsFuxiCoin200JSONResponse{}
+	actorID, roles := strictSrpActor(ctx)
+	data, failure := h.batchPayoutSrpAsFuxiCoin(actorID, roles)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpFuxiPayoutSuccess(apicontract.SrpFuxiPayoutSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) OpenSrpInfoWindow(ctx context.Context, request apicontract.OpenSrpInfoWindowRequestObject) (apicontract.OpenSrpInfoWindowResponseObject, error) {
+	out := &apicontract.OpenSrpInfoWindow200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	actorID, _ := strictSrpActor(ctx)
+	if failure := h.openSrpInfoWindow(actorID, *request.Body); failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SrpHandler) GetSrpKillmailDetail(_ context.Context, request apicontract.GetSrpKillmailDetailRequestObject) (apicontract.GetSrpKillmailDetailResponseObject, error) {
+	out := &apicontract.GetSrpKillmailDetail200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	data, failure := h.getSrpKillmailDetail(*request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return out, out.FromSrpKillmailDetailSuccess(apicontract.SrpKillmailDetailSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *SrpHandler) listSrpShipPrices(params apicontract.ListSrpShipPricesParams) ([]apicontract.SrpShipPrice, *contractOperationFailure) {
+	keyword := srpValue(params.Keyword)
 	list, err := h.svc.ListShipPrices(keyword)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return nil, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, list)
+	return srpMap(list, srpShipPriceDTO), nil
 }
 
-// UpsertShipPrice POST /srp/prices
-func (h *SrpHandler) UpsertShipPrice(c *gin.Context) {
-	var req service.UpsertShipPriceRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	userID := middleware.GetUserID(c)
-	p, err := h.svc.UpsertShipPrice(userID, &req)
+func (h *SrpHandler) upsertSrpShipPrice(userID uint, req apicontract.SrpShipPriceInput) (apicontract.SrpShipPrice, *contractOperationFailure) {
+	p, err := h.svc.UpsertShipPrice(userID, &service.UpsertShipPriceRequest{
+		ID: req.Id, ShipTypeID: req.ShipTypeID, ShipName: req.ShipName, Amount: req.Amount,
+	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SrpShipPrice{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, p)
+	return srpShipPriceDTO(*p), nil
 }
 
-// DeleteShipPrice DELETE /srp/prices/:id
-func (h *SrpHandler) DeleteShipPrice(c *gin.Context) {
-	id := requireUintID(c, "id", " ID")
-	if id == 0 {
-		return
-	}
+func (h *SrpHandler) deleteSrpShipPrice(id uint) *contractOperationFailure {
 	if err := h.svc.DeleteShipPrice(id); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, nil)
+	return nil
 }
 
-// ─────────────────────────────────────────────
-//  SRP 配置（仅 admin）
-// ─────────────────────────────────────────────
-
-// SrpConfigResponse SRP 配置响应
-type SrpConfigResponse struct {
-	AmountLimit float64 `json:"amount_limit"` // SRP 职权单笔上限（ISK）
-}
-
-// UpdateSrpConfigRequest 更新 SRP 配置请求
-type UpdateSrpConfigRequest struct {
-	AmountLimit *float64 `json:"amount_limit" binding:"required,min=0"`
-}
-
-// GetSrpConfig GET /srp/config
-func (h *SrpHandler) GetSrpConfig(c *gin.Context) {
+func (h *SrpHandler) getSrpConfig() apicontract.SrpConfig {
 	amountLimit := h.svc.GetSrpAmountLimit()
-	response.OK(c, SrpConfigResponse{AmountLimit: amountLimit})
+	return apicontract.SrpConfig{AmountLimit: amountLimit}
 }
 
-// UpdateSrpConfig PUT /srp/config
-func (h *SrpHandler) UpdateSrpConfig(c *gin.Context) {
-	var req UpdateSrpConfigRequest
-	if !bindJSON(c, &req) {
-		return
+func (h *SrpHandler) updateSrpConfig(req apicontract.SrpConfigInput) *contractOperationFailure {
+	if req.AmountLimit == nil {
+		return &contractOperationFailure{code: response.CodeParamError, message: "请求参数错误"}
 	}
 	if err := h.svc.UpdateSrpAmountLimit(*req.AmountLimit); err != nil {
-		response.Fail(c, response.CodeBizError, "更新 SRP 配置失败")
-		return
+		return &contractOperationFailure{code: response.CodeBizError, message: "更新 SRP 配置失败"}
 	}
-	response.OK(c, nil)
+	return nil
 }
 
-// ─────────────────────────────────────────────
-//  申请（用户端）
-// ─────────────────────────────────────────────
-
-// SubmitApplication POST /srp/applications
-func (h *SrpHandler) SubmitApplication(c *gin.Context) {
-	var req service.SubmitApplicationRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	userID := middleware.GetUserID(c)
-	app, err := h.svc.SubmitApplication(userID, &req)
+func (h *SrpHandler) submitSrpApplication(userID uint, req apicontract.SrpSubmitInput) (apicontract.SrpApplication, *contractOperationFailure) {
+	app, err := h.svc.SubmitApplication(userID, &service.SubmitApplicationRequest{
+		CharacterID: req.CharacterID, KillmailID: req.KillmailID, FleetID: req.FleetId, Note: req.Note,
+	})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SrpApplication{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, app)
+	return srpApplicationDTO(*app), nil
 }
 
-// ListMyApplications GET /srp/applications/my
-func (h *SrpHandler) ListMyApplications(c *gin.Context) {
-	page, pageSize, err := parsePaginationQuery(c, 20, 100)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
-	}
-	userID := middleware.GetUserID(c)
+func (h *SrpHandler) listMySrpApplications(userID uint, params apicontract.ListMySrpApplicationsParams) (apicontract.SrpApplicationPage, *contractOperationFailure) {
+	page, pageSize := normalizePagination(srpValue(params.Current), srpValue(params.Size), 20, 100)
 
 	list, total, err := h.svc.ListMyApplications(userID, page, pageSize)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SrpApplicationPage{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OKWithPage(c, list, total, page, pageSize)
+	return srpApplicationPageDTO(list, total, page, pageSize), nil
 }
 
-// GetMyKillmails GET /srp/killmails/me?character_id=xxx
-func (h *SrpHandler) GetMyKillmails(c *gin.Context) {
-	userID := middleware.GetUserID(c)
-	options, err := parseSrpKillmailListOptions(c)
+func (h *SrpHandler) getMySrpKillmails(userID uint, params apicontract.GetMySrpKillmailsParams) ([]apicontract.SrpKillmail, *contractOperationFailure) {
+	options := srpKillmailOptions(srpValue(params.Limit), srpValue(params.ExcludeSubmitted))
+	kms, err := h.svc.GetMyKillmails(userID, srpValue(params.CharacterId), options)
 	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
+		return nil, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	var characterID int64
-	if cidStr := c.Query("character_id"); cidStr != "" {
-		if cid, err := strconv.ParseInt(cidStr, 10, 64); err == nil {
-			characterID = cid
-		}
-	}
-	kms, err := h.svc.GetMyKillmails(userID, characterID, options)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, kms)
+	return srpMap(kms, srpKillmailDTO), nil
 }
 
-// GetFleetKillmails GET /srp/killmails/fleet/:fleet_id
-func (h *SrpHandler) GetFleetKillmails(c *gin.Context) {
-	fleetID := c.Param("fleet_id")
-	if fleetID == "" {
-		response.Fail(c, response.CodeParamError, "缺少 fleet_id 参数")
-		return
-	}
-	options, err := parseSrpKillmailListOptions(c)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
-	}
-	userID := middleware.GetUserID(c)
+func (h *SrpHandler) getSrpFleetKillmails(userID uint, fleetID string, params apicontract.GetSrpFleetKillmailsParams) ([]apicontract.SrpKillmail, *contractOperationFailure) {
+	options := srpKillmailOptions(srpValue(params.Limit), srpValue(params.ExcludeSubmitted))
 	kms, err := h.svc.GetFleetKillmails(userID, fleetID, options)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return nil, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, kms)
+	return srpMap(kms, srpKillmailDTO), nil
 }
 
-func parseSrpKillmailListOptions(c *gin.Context) (service.KillmailListOptions, error) {
-	limit, err := parseIntQuery(c, "limit", 200)
+func (h *SrpHandler) listSrpApplications(params apicontract.ListSrpApplicationsParams) (apicontract.SrpApplicationPage, *contractOperationFailure) {
+	page := normalizePage(srpValue(params.Current))
+	pageSize := srpValue(params.Size)
+	if pageSize < 1 {
+		pageSize = 20
+	} else {
+		pageSize = normalizeLedgerPageSize(pageSize)
+	}
+	// The legacy binder treats an explicitly empty fleet filter as absent.
+	if srpValue(params.FleetId) == "" {
+		params.FleetId = nil
+	}
+	filter := service.SrpApplicationFilter{
+		Tab: srpValue(params.Tab), ReviewStatus: srpValue(params.ReviewStatus), PayoutStatus: srpValue(params.PayoutStatus),
+		Keyword: srpValue(params.Keyword), SortBy: srpValue(params.SortBy), SortOrder: srpValue(params.SortOrder),
+		FleetID: params.FleetId, CharacterID: params.CharacterId, CorporationID: params.CorporationId,
+		ShipTypeID: params.ShipTypeId, SolarSystemID: params.SolarSystemId, HasRecommendedMatch: params.HasRecommendedMatch,
+	}
+	list, total, err := h.svc.ListApplications(page, pageSize, filter)
 	if err != nil {
-		return service.KillmailListOptions{}, err
+		return apicontract.SrpApplicationPage{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	if limit < 1 {
-		limit = 200
-	}
-	if limit > 200 {
-		limit = 200
-	}
+	return srpApplicationPageDTO(list, total, page, pageSize), nil
+}
 
-	excludeSubmitted := false
-	if raw := c.Query("exclude_submitted"); raw != "" {
-		parsed, err := strconv.ParseBool(raw)
-		if err != nil {
-			return service.KillmailListOptions{}, fmt.Errorf("invalid exclude_submitted query parameter: expected boolean")
-		}
-		excludeSubmitted = parsed
+func (h *SrpHandler) listSrpFleetOptions() ([]apicontract.SrpFleetOption, *contractOperationFailure) {
+	list, err := h.svc.ListFleetOptions()
+	if err != nil {
+		return nil, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
+	return srpMap(list, func(option service.SrpFleetOptionResponse) apicontract.SrpFleetOption {
+		return apicontract.SrpFleetOption{FleetId: option.FleetID, FleetTitle: option.FleetTitle, FleetFcName: option.FleetFCName}
+	}), nil
+}
 
-	return service.KillmailListOptions{
-		Limit:            limit,
-		ExcludeSubmitted: excludeSubmitted,
+func (h *SrpHandler) listSrpBatchPayoutSummary() ([]apicontract.SrpBatchPayoutSummary, *contractOperationFailure) {
+	list, err := h.svc.ListBatchPayoutSummary()
+	if err != nil {
+		return nil, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
+	}
+	return srpMap(list, srpBatchPayoutSummaryDTO), nil
+}
+
+func (h *SrpHandler) runSrpFleetAutoApproval(reviewerID uint, callerRoles []string, req apicontract.SrpAutoApproveInput) (apicontract.SrpAutoApproveSummary, *contractOperationFailure) {
+	result, err := h.svc.RunFleetAutoApproval(reviewerID, callerRoles, req.FleetID)
+	if err != nil {
+		return apicontract.SrpAutoApproveSummary{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
+	}
+	return apicontract.SrpAutoApproveSummary{
+		CheckedCount: result.CheckedCount, ApprovedCount: result.ApprovedCount, SkippedCount: result.SkippedCount,
 	}, nil
 }
 
-// ─────────────────────────────────────────────
-//  申请管理（管理端：srp/fc/admin）
-// ─────────────────────────────────────────────
-
-// ListApplications GET /srp/manage/applications
-func (h *SrpHandler) ListApplications(c *gin.Context) {
-	page, pageSize, err := parseLedgerPaginationQuery(c, 20)
-	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
-	}
-
-	filter := service.SrpApplicationFilter{
-		Tab:          c.Query("tab"),
-		ReviewStatus: c.Query("review_status"),
-		PayoutStatus: c.Query("payout_status"),
-		Keyword:      c.Query("keyword"),
-		SortBy:       c.Query("sort_by"),
-		SortOrder:    c.Query("sort_order"),
-	}
-	if fleetID := c.Query("fleet_id"); fleetID != "" {
-		filter.FleetID = &fleetID
-	}
-	if charIDStr := c.Query("character_id"); charIDStr != "" {
-		if cid, err := strconv.ParseInt(charIDStr, 10, 64); err == nil {
-			filter.CharacterID = &cid
-		}
-	}
-	if corporationIDStr := c.Query("corporation_id"); corporationIDStr != "" {
-		if corporationID, err := strconv.ParseInt(corporationIDStr, 10, 64); err == nil {
-			filter.CorporationID = &corporationID
-		}
-	}
-	if shipTypeIDStr := c.Query("ship_type_id"); shipTypeIDStr != "" {
-		if shipTypeID, err := strconv.ParseInt(shipTypeIDStr, 10, 64); err == nil {
-			filter.ShipTypeID = &shipTypeID
-		}
-	}
-	if solarSystemIDStr := c.Query("solar_system_id"); solarSystemIDStr != "" {
-		if solarSystemID, err := strconv.ParseInt(solarSystemIDStr, 10, 64); err == nil {
-			filter.SolarSystemID = &solarSystemID
-		}
-	}
-	if hasRecommendedMatchStr := c.Query("has_recommended_match"); hasRecommendedMatchStr != "" {
-		if hasRecommendedMatch, err := strconv.ParseBool(hasRecommendedMatchStr); err == nil {
-			filter.HasRecommendedMatch = &hasRecommendedMatch
-		}
-	}
-
-	list, total, err := h.svc.ListApplications(page, pageSize, filter)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OKWithPage(c, list, total, page, pageSize)
-}
-
-// ListFleetOptions GET /srp/applications/fleet-options
-func (h *SrpHandler) ListFleetOptions(c *gin.Context) {
-	list, err := h.svc.ListFleetOptions()
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, list)
-}
-
-// ListBatchPayoutSummary GET /srp/applications/batch-payout-summary
-func (h *SrpHandler) ListBatchPayoutSummary(c *gin.Context) {
-	list, err := h.svc.ListBatchPayoutSummary()
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, list)
-}
-
-// RunFleetAutoApproval PUT /srp/applications/auto-approve
-func (h *SrpHandler) RunFleetAutoApproval(c *gin.Context) {
-	var req service.RunFleetAutoApprovalRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	reviewerID := middleware.GetUserID(c)
-	callerRoles := middleware.GetUserRoles(c)
-	result, err := h.svc.RunFleetAutoApproval(reviewerID, callerRoles, req.FleetID)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, result)
-}
-
-// GetApplication GET /srp/manage/applications/:id
-func (h *SrpHandler) GetApplication(c *gin.Context) {
-	id := requireUintID(c, "id", " ID")
-	if id == 0 {
-		return
-	}
+func (h *SrpHandler) getSrpApplication(id uint) (apicontract.SrpApplication, *contractOperationFailure) {
 	app, err := h.svc.GetApplication(id)
 	if err != nil {
-		response.Fail(c, response.CodeNotFound, "申请不存在")
-		return
+		return apicontract.SrpApplication{}, &contractOperationFailure{code: response.CodeNotFound, message: "申请不存在"}
 	}
-	response.OK(c, app)
+	return srpApplicationResponseDTO(*app), nil
 }
 
-// ReviewApplication PATCH /srp/manage/applications/:id/review
-func (h *SrpHandler) ReviewApplication(c *gin.Context) {
-	id := requireUintID(c, "id", " ID")
-	if id == 0 {
-		return
-	}
-	var req service.ReviewApplicationRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	reviewerID := middleware.GetUserID(c)
-	callerRoles := middleware.GetUserRoles(c)
-	app, err := h.svc.ReviewApplication(reviewerID, callerRoles, id, &req)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, app)
-}
-
-// Payout PATCH /srp/manage/applications/:id/payout
-func (h *SrpHandler) Payout(c *gin.Context) {
-	id := requireUintID(c, "id", " ID")
-	if id == 0 {
-		return
-	}
-	var req service.SrpPayoutRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	payerID := middleware.GetUserID(c)
-	callerRoles := middleware.GetUserRoles(c)
-	app, mailSummary, err := h.svc.Payout(payerID, callerRoles, id, &req)
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, service.SrpPayoutActionResult{
-		SrpApplication:     *app,
-		MailAttemptSummary: mailSummary,
+func (h *SrpHandler) reviewSrpApplication(id, reviewerID uint, callerRoles []string, req apicontract.SrpReviewInput) (apicontract.SrpApplication, *contractOperationFailure) {
+	app, err := h.svc.ReviewApplication(reviewerID, callerRoles, id, &service.ReviewApplicationRequest{
+		Action: string(req.Action), ReviewNote: req.ReviewNote, FinalAmount: req.FinalAmount,
 	})
+	if err != nil {
+		return apicontract.SrpApplication{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
+	}
+	return srpApplicationDTO(*app), nil
 }
 
-// BatchPayoutByUser PUT /srp/applications/users/:user_id/payout
-func (h *SrpHandler) BatchPayoutByUser(c *gin.Context) {
-	userID := requireUintID(c, "user_id", "用户 ID")
-	if userID == 0 {
-		return
+func (h *SrpHandler) payoutSrpApplication(id, payerID uint, callerRoles []string, req apicontract.SrpPayoutInput) (apicontract.SrpPayoutResult, *contractOperationFailure) {
+	app, mailSummary, err := h.svc.Payout(payerID, callerRoles, id, &service.SrpPayoutRequest{FinalAmount: req.FinalAmount, Mode: string(req.Mode)})
+	if err != nil {
+		return apicontract.SrpPayoutResult{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	payerID := middleware.GetUserID(c)
-	callerRoles := middleware.GetUserRoles(c)
+	return srpPayoutResultDTO(srpApplicationDTO(*app), srpMailAttemptDTO(mailSummary)), nil
+}
+
+func (h *SrpHandler) batchPayoutSrpByUser(userID, payerID uint, callerRoles []string) (apicontract.SrpBatchPayoutResult, *contractOperationFailure) {
 	result, mailSummary, err := h.svc.BatchPayoutByUser(payerID, callerRoles, userID)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SrpBatchPayoutResult{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, service.SrpBatchPayoutActionResult{
-		SrpBatchPayoutSummaryResponse: *result,
-		MailAttemptSummary:            mailSummary,
-	})
+	return srpBatchPayoutResultDTO(srpBatchPayoutSummaryDTO(*result), srpMailAttemptDTO(mailSummary)), nil
 }
 
-// BatchPayoutAsFuxiCoin PUT /srp/applications/fuxi-payout
-func (h *SrpHandler) BatchPayoutAsFuxiCoin(c *gin.Context) {
-	payerID := middleware.GetUserID(c)
-	callerRoles := middleware.GetUserRoles(c)
+func (h *SrpHandler) batchPayoutSrpAsFuxiCoin(payerID uint, callerRoles []string) (apicontract.SrpFuxiPayoutResult, *contractOperationFailure) {
 	result, mailSummary, err := h.svc.BatchPayoutAsFuxiCoin(payerID, callerRoles)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SrpFuxiPayoutResult{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, service.SrpBatchFuxiPayoutActionResult{
-		SrpBatchFuxiPayoutSummary: *result,
-		MailAttemptSummary:        mailSummary,
-	})
+	return srpFuxiPayoutResultDTO(apicontract.SrpFuxiPayoutSummary{
+		ApplicationCount: result.ApplicationCount, UserCount: result.UserCount,
+		TotalIskAmount: result.TotalISKAmount, TotalFuxiCoin: result.TotalFuxiCoin,
+	}, srpMailAttemptDTO(mailSummary)), nil
 }
 
-// OpenInfoWindow POST /srp/open-info-window
-// 通过 ESI 在客户端打开人物信息窗口
-func (h *SrpHandler) OpenInfoWindow(c *gin.Context) {
-	var req service.OpenInfoWindowRequest
-	if !bindJSON(c, &req) {
-		return
+func (h *SrpHandler) openSrpInfoWindow(userID uint, req apicontract.SrpOpenInfoInput) *contractOperationFailure {
+	if err := h.svc.OpenInfoWindow(userID, &service.OpenInfoWindowRequest{CharacterID: req.CharacterID, TargetID: req.TargetID}); err != nil {
+		return &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	userID := middleware.GetUserID(c)
-	if err := h.svc.OpenInfoWindow(userID, &req); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OK(c, nil)
+	return nil
 }
 
-// GetKillmailDetail POST /srp/killmails/detail
-func (h *SrpHandler) GetKillmailDetail(c *gin.Context) {
-	var req service.KillmailDetailRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	detail, err := h.svc.GetKillmailDetail(&req)
+func (h *SrpHandler) getSrpKillmailDetail(req apicontract.SrpKillmailDetailInput) (apicontract.SrpKillmailDetail, *contractOperationFailure) {
+	detail, err := h.svc.GetKillmailDetail(&service.KillmailDetailRequest{KillmailID: req.KillmailID, Language: req.Language})
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.SrpKillmailDetail{}, &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, detail)
+	return srpKillmailDetailDTO(*detail), nil
+}
+
+func srpKillmailOptions(limit int, excludeSubmitted bool) service.KillmailListOptions {
+	if limit < 1 || limit > 200 {
+		limit = 200
+	}
+	return service.KillmailListOptions{Limit: limit, ExcludeSubmitted: excludeSubmitted}
+}
+
+func srpPayoutResultDTO(data apicontract.SrpApplication, mail apicontract.SrpMailAttempt) apicontract.SrpPayoutResult {
+	return apicontract.SrpPayoutResult{
+		AllianceId:                 data.AllianceId,
+		AllianceName:               data.AllianceName,
+		CharacterId:                data.CharacterId,
+		CharacterName:              data.CharacterName,
+		CorporationId:              data.CorporationId,
+		CorporationName:            data.CorporationName,
+		CreatedAt:                  data.CreatedAt,
+		FinalAmount:                data.FinalAmount,
+		FleetFcName:                data.FleetFcName,
+		FleetId:                    data.FleetId,
+		FleetTitle:                 data.FleetTitle,
+		Id:                         data.Id,
+		KillmailId:                 data.KillmailId,
+		KillmailTime:               data.KillmailTime,
+		LastActorNickname:          data.LastActorNickname,
+		Nickname:                   data.Nickname,
+		Note:                       data.Note,
+		PaidAt:                     data.PaidAt,
+		PaidBy:                     data.PaidBy,
+		PayoutStatus:               data.PayoutStatus,
+		RecommendedAmount:          data.RecommendedAmount,
+		ReviewNote:                 data.ReviewNote,
+		ReviewStatus:               data.ReviewStatus,
+		ReviewedAt:                 data.ReviewedAt,
+		ReviewedBy:                 data.ReviewedBy,
+		ShipName:                   data.ShipName,
+		ShipTypeId:                 data.ShipTypeId,
+		SolarSystemId:              data.SolarSystemId,
+		SolarSystemName:            data.SolarSystemName,
+		UpdatedAt:                  data.UpdatedAt,
+		UserId:                     data.UserId,
+		MailError:                  mail.MailError,
+		MailId:                     mail.MailId,
+		MailRecipientCharacterId:   mail.MailRecipientCharacterId,
+		MailRecipientCharacterName: mail.MailRecipientCharacterName,
+		MailSenderCharacterId:      mail.MailSenderCharacterId,
+		MailSenderCharacterName:    mail.MailSenderCharacterName,
+	}
+}
+
+func srpBatchPayoutResultDTO(data apicontract.SrpBatchPayoutSummary, mail apicontract.SrpMailAttempt) apicontract.SrpBatchPayoutResult {
+	return apicontract.SrpBatchPayoutResult{
+		ApplicationCount:           data.ApplicationCount,
+		MainCharacterId:            data.MainCharacterId,
+		MainCharacterName:          data.MainCharacterName,
+		Nickname:                   data.Nickname,
+		TotalAmount:                data.TotalAmount,
+		UserId:                     data.UserId,
+		MailError:                  mail.MailError,
+		MailId:                     mail.MailId,
+		MailRecipientCharacterId:   mail.MailRecipientCharacterId,
+		MailRecipientCharacterName: mail.MailRecipientCharacterName,
+		MailSenderCharacterId:      mail.MailSenderCharacterId,
+		MailSenderCharacterName:    mail.MailSenderCharacterName,
+	}
+}
+
+func srpFuxiPayoutResultDTO(data apicontract.SrpFuxiPayoutSummary, mail apicontract.SrpMailAttempt) apicontract.SrpFuxiPayoutResult {
+	return apicontract.SrpFuxiPayoutResult{
+		ApplicationCount:           data.ApplicationCount,
+		TotalFuxiCoin:              data.TotalFuxiCoin,
+		TotalIskAmount:             data.TotalIskAmount,
+		UserCount:                  data.UserCount,
+		MailError:                  mail.MailError,
+		MailId:                     mail.MailId,
+		MailRecipientCharacterId:   mail.MailRecipientCharacterId,
+		MailRecipientCharacterName: mail.MailRecipientCharacterName,
+		MailSenderCharacterId:      mail.MailSenderCharacterId,
+		MailSenderCharacterName:    mail.MailSenderCharacterName,
+	}
 }

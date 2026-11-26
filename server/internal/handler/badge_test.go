@@ -2,6 +2,7 @@ package handler
 
 import (
 	"amiya-eden/global"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
@@ -163,6 +164,10 @@ func TestBadgeHandlerGetBadgeCountsReturnsSafeErrorMessage(t *testing.T) {
 	}
 }
 
+type badgeTestFallback struct {
+	apicontract.StrictServerInterface
+}
+
 type badgeHandlerResponse struct {
 	Code int              `json:"code"`
 	Msg  string           `json:"msg"`
@@ -179,7 +184,11 @@ func performBadgeHandlerRequest(t *testing.T, userID uint, roles []string) badge
 	ctx.Set("userID", userID)
 	ctx.Set("roles", roles)
 
-	NewBadgeHandler().GetBadgeCounts(ctx)
+	adapter := apicontract.NewStrictHandler(struct {
+		*BadgeHandler
+		badgeTestFallback
+	}{BadgeHandler: NewBadgeHandler()})
+	adapter.GetBadgeCounts(ctx)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected http status 200, got %d", recorder.Code)

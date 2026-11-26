@@ -191,13 +191,19 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    InfoAssetListItem,
+    InfoAssetLocations,
+    InfoAssetLocationSummary
+  } from '@/api/generated/client'
   import { Refresh, Search } from '@element-plus/icons-vue'
   import { ElCard, ElButton, ElEmpty, ElInput, ElAlert, ElPagination } from 'element-plus'
   import {
-    fetchInfoAssetLocations,
-    fetchInfoAssetLocationItems,
-    fetchInfoAssetChildren
-  } from '@/api/eve-info'
+    getAssetChildren,
+    getAssetLocationItems,
+    getAssetLocations
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useUserStore } from '@/store/modules/user'
 
   import { useI18n } from 'vue-i18n'
@@ -211,11 +217,11 @@
   const searchKeyword = ref('')
 
   // 位置摘要列表
-  const locationsData = ref<Api.EveInfo.AssetLocationsResponse | null>(null)
+  const locationsData = ref<InfoAssetLocations | null>(null)
   const expandedLocations = ref(new Set<number>())
 
   // 每个位置的物品缓存
-  const locationItemsMap = reactive<Record<number, Api.EveInfo.AssetListItemNode[]>>({})
+  const locationItemsMap = reactive<Record<number, InfoAssetListItem[]>>({})
   const locationLoadingMap = reactive<Record<number, boolean>>({})
   const locationErrors = reactive<Record<number, string>>({})
   const locationPaginationMap = reactive<
@@ -224,7 +230,7 @@
 
   // 子物品缓存
   const expandedItems = ref(new Set<number>())
-  const childrenMap = reactive<Record<number, Api.EveInfo.AssetListItemNode[]>>({})
+  const childrenMap = reactive<Record<number, InfoAssetListItem[]>>({})
   const childrenLoadingMap = reactive<Record<number, boolean>>({})
   const childrenErrors = reactive<Record<number, string>>({})
 
@@ -252,12 +258,14 @@
     loading.value = true
     errorMessage.value = ''
     try {
-      locationsData.value = await fetchInfoAssetLocations({
-        language: userStore.language,
-        page: 1,
-        page_size: 20,
-        keyword: searchKeyword.value || undefined
-      })
+      locationsData.value = await unwrapContract(
+        getAssetLocations({
+          language: userStore.language,
+          page: 1,
+          page_size: 20,
+          keyword: searchKeyword.value || undefined
+        })
+      )
       // 清除所有展开缓存
       expandedLocations.value = new Set()
       Object.keys(locationItemsMap).forEach((k) => delete locationItemsMap[Number(k)])
@@ -278,7 +286,7 @@
   }
 
   /** 展开/折叠位置 → 加载根物品 */
-  const toggleLocation = async (loc: Api.EveInfo.AssetLocationSummary) => {
+  const toggleLocation = async (loc: InfoAssetLocationSummary) => {
     if (expandedLocations.value.has(loc.location_id)) {
       expandedLocations.value.delete(loc.location_id)
       expandedLocations.value = new Set(expandedLocations.value)
@@ -293,16 +301,18 @@
   }
 
   /** 加载指定位置的根物品 */
-  const loadLocationItems = async (loc: Api.EveInfo.AssetLocationSummary, page: number) => {
+  const loadLocationItems = async (loc: InfoAssetLocationSummary, page: number) => {
     locationLoadingMap[loc.location_id] = true
     locationErrors[loc.location_id] = ''
     try {
-      const result = await fetchInfoAssetLocationItems({
-        language: userStore.language,
-        location_id: loc.location_id,
-        page,
-        page_size: 50
-      })
+      const result = await unwrapContract(
+        getAssetLocationItems({
+          language: userStore.language,
+          location_id: loc.location_id,
+          page,
+          page_size: 50
+        })
+      )
       locationItemsMap[loc.location_id] = result.items
       locationPaginationMap[loc.location_id] = {
         page,
@@ -317,7 +327,7 @@
   }
 
   /** 展开/折叠容器 → 加载子物品 */
-  const toggleChildren = async (item: Api.EveInfo.AssetListItemNode) => {
+  const toggleChildren = async (item: InfoAssetListItem) => {
     if (expandedItems.value.has(item.item_id)) {
       expandedItems.value.delete(item.item_id)
       expandedItems.value = new Set(expandedItems.value)
@@ -330,10 +340,12 @@
       childrenLoadingMap[item.item_id] = true
       childrenErrors[item.item_id] = ''
       try {
-        const result = await fetchInfoAssetChildren({
-          language: userStore.language,
-          parent_item_id: item.item_id
-        })
+        const result = await unwrapContract(
+          getAssetChildren({
+            language: userStore.language,
+            parent_item_id: item.item_id
+          })
+        )
         childrenMap[item.item_id] = result.items
       } catch (err: any) {
         childrenErrors[item.item_id] = err?.message || t('info.assetChildrenLoadFailed')

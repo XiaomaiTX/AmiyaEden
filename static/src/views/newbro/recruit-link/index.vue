@@ -206,6 +206,11 @@
 </template>
 
 <script setup lang="ts">
+  import type {
+    NewbroAdminRecruitLink,
+    NewbroRecruitEntry,
+    NewbroRecruitLink
+  } from '@/api/generated/client'
   import type { ColumnOption } from '@/types/component'
   import { computed, h, onMounted, ref, watch } from 'vue'
   import { useI18n } from 'vue-i18n'
@@ -220,7 +225,13 @@
     ElTag
   } from 'element-plus'
   import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
-  import { fetchAdminRecruitLinks, fetchMyRecruitLinks, generateRecruitLink } from '@/api/newbro'
+  import {
+    generateLink,
+    getMyLinks,
+    listAdminRecruitLinks,
+    type ListAdminRecruitLinksParams
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { useNewbroFormatters } from '@/hooks/newbro/useNewbroFormatters'
   import { useUserStore } from '@/store/modules/user'
@@ -236,11 +247,11 @@
   const activeTab = ref<'my' | 'admin' | 'settings'>('my')
   const generating = ref(false)
   const myLinksLoading = ref(false)
-  const myLinks = ref<Api.Newbro.RecruitLink[]>([])
+  const myLinks = ref<NewbroRecruitLink[]>([])
   const adminLoaded = ref(false)
   const successRecruitDialogVisible = ref(false)
   const selectedRecruiterName = ref('')
-  const selectedSuccessfulEntries = ref<Api.Newbro.RecruitEntry[]>([])
+  const selectedSuccessfulEntries = ref<NewbroRecruitEntry[]>([])
 
   const roles = computed(() => userStore.getUserInfo?.roles ?? [])
   const isAdmin = computed(() =>
@@ -251,7 +262,7 @@
   const fullLinkUrl = (code: string) =>
     `${window.location.origin}${window.location.pathname}#/r/${code}`
 
-  const statusTagType = (status: Api.Newbro.RecruitEntry['status']) => {
+  const statusTagType = (status: NewbroRecruitEntry['status']) => {
     switch (status) {
       case 'valid':
         return 'success' as const
@@ -262,7 +273,7 @@
     }
   }
 
-  const openSuccessfulRecruitDialog = (row: Api.Newbro.AdminRecruitLink) => {
+  const openSuccessfulRecruitDialog = (row: NewbroAdminRecruitLink) => {
     selectedRecruiterName.value = row.user_character_name
     selectedSuccessfulEntries.value = row.entries.filter(
       (entry) => entry.status === 'valid' && entry.matched_user_id > 0
@@ -270,7 +281,7 @@
     successRecruitDialogVisible.value = true
   }
 
-  const adminColumns = computed<ColumnOption<Api.Newbro.AdminRecruitLink>[]>(() => [
+  const adminColumns = computed<ColumnOption<NewbroAdminRecruitLink>[]>(() => [
     {
       prop: 'user_character_name',
       label: t('newbro.recruitLink.colUserCharacter'),
@@ -365,7 +376,8 @@
     getData: loadAdminLinks
   } = useTable({
     core: {
-      apiFn: fetchAdminRecruitLinks,
+      apiFn: (params: ListAdminRecruitLinksParams) =>
+        unwrapContract(listAdminRecruitLinks(params, { showErrorMessage: false })),
       apiParams: { current: 1, size: 20 },
       immediate: false,
       columnsFactory: () => adminColumns.value
@@ -380,7 +392,7 @@
   const loadMyLinks = async () => {
     myLinksLoading.value = true
     try {
-      myLinks.value = await fetchMyRecruitLinks()
+      myLinks.value = await unwrapContract(getMyLinks({ showErrorMessage: false }))
     } catch (error) {
       myLinks.value = []
       ElMessage.error((error as Error)?.message || t('httpMsg.requestFailed'))
@@ -392,7 +404,7 @@
   const handleGenerate = async () => {
     generating.value = true
     try {
-      await generateRecruitLink()
+      await unwrapContract(generateLink({ showErrorMessage: false }))
       ElMessage.success(t('newbro.recruitLink.generateSuccess'))
       await loadMyLinks()
     } catch (error) {

@@ -1,36 +1,46 @@
 package handler
 
 import (
-	"bytes"
+	"amiya-eden/internal/apicontract"
+	"amiya-eden/pkg/response"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
+	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestRefundHandlerRejectsInvalidTimeAndID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	for _, path := range []string{"/preview", "/bad"} {
-		router := gin.New()
-		h := NewCaptainRefundHandler()
-		router.POST("/preview", h.Preview)
-		router.GET("/:id", h.DetailMine)
-		method := "GET"
-		if path == "/preview" {
-			method = "POST"
-		}
-		request := httptest.NewRequest(method, path, bytes.NewBufferString(`{"start":"not-a-time"}`))
-		request.Header.Set("Content-Type", "application/json")
-		recorder := httptest.NewRecorder()
-		router.ServeHTTP(recorder, request)
-		var payload struct {
-			Code int `json:"code"`
-		}
-		if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
-			t.Fatal(err)
-		}
-		if payload.Code != 400 {
-			t.Fatalf("invalid request returned %s", recorder.Body.String())
-		}
+	adapter := apicontract.NewStrictHandler(strictNewbroTestOperations{
+		CaptainRefundHandler: NewCaptainRefundHandler(),
+	})
+	wrapper := apicontract.ServerInterfaceWrapper{Handler: adapter}
+	router := gin.New()
+	const base = "/api/v1/newbro/captain/refunds"
+	router.POST(base+"/preview", wrapper.PreviewCaptainRefund)
+	router.GET(base+"/:id", wrapper.GetMyCaptainRefund)
+
+	for _, tc := range []struct{ name, method, path, body string }{
+		{"invalid time", http.MethodPost, base + "/preview", `{"start":"not-a-time"}`},
+		{"invalid ID", http.MethodGet, base + "/bad", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+			request.Header.Set("Content-Type", "application/json")
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, request)
+			var payload struct {
+				Code int `json:"code"`
+			}
+			if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+				t.Fatal(err)
+			}
+			if recorder.Code != http.StatusOK || payload.Code != response.CodeParamError {
+				t.Fatalf("invalid request returned HTTP %d: %s", recorder.Code, recorder.Body)
+			}
+		})
 	}
 }

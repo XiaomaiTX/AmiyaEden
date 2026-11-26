@@ -44,7 +44,9 @@
 </template>
 
 <script setup lang="ts">
-  import { adminTicketStatistics } from '@/api/ticket'
+  import type { TicketStatistics } from '@/api/generated/client'
+  import { adminStatistics } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { ElMessage } from 'element-plus'
   import { useI18n } from 'vue-i18n'
 
@@ -52,12 +54,12 @@
 
   const { t } = useI18n()
   const loading = ref(false)
-  const stats = ref<Api.Ticket.Statistics | null>(null)
+  const stats = ref<TicketStatistics | null>(null)
 
   const loadStats = async () => {
     loading.value = true
     try {
-      stats.value = await adminTicketStatistics()
+      stats.value = await unwrapContract(adminStatistics())
     } catch (error: any) {
       ElMessage.error(error?.message || t('ticket.messages.loadFailed'))
     } finally {

@@ -1,4 +1,4 @@
-import type { TicketCategory } from '@/types/api/ticket'
+import type { TicketCategory } from '@/api/generated/client'
 
 export function getCategoryName(category: TicketCategory, locale: string) {
   if (locale === 'en-US' && category.name_en.trim()) {

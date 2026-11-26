@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { fetchSalarySettings, updateSalarySettings } from '@/api/salary'
+import { getSalarySettings, updateSalarySettings } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
 import { notifySuccess } from '@/feedback'
-import type { SalarySettings } from '@/types/api/salary'
+import type { SalarySettings } from '@/api/generated/client'
 
 const operationKeys = ['recruitment', 'welfare_delivery', 'shop_delivery', 'srp_payout'] as const
 export function SystemSalaryPage() {
@@ -17,7 +18,7 @@ export function SystemSalaryPage() {
   const [revision, setRevision] = useState(0)
   useEffect(() => {
     let active = true
-    void fetchSalarySettings()
+    void unwrapContract(getSalarySettings(), 'fetch salary settings failed')
       .then((value) => {
         if (active) setForm(value)
       })
@@ -37,7 +38,7 @@ export function SystemSalaryPage() {
     setSaving(true)
     setError('')
     try {
-      setForm(await updateSalarySettings(form))
+      setForm(await unwrapContract(updateSalarySettings(form), 'update salary settings failed'))
       notifySuccess(t('salaryManagement.saved'))
     } catch {
       setError('saveFailed')

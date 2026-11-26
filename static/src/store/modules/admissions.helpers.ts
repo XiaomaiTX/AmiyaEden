@@ -1,5 +1,5 @@
 import { canAccessAdmission } from '../../utils/admissions'
-import type { AdmissionContext } from '../../types/api/admissions'
+import type { AdmissionContext } from '../../api/generated/client'
 import type { AppRouteRecord } from '../../types/router'
 
 export interface AdmissionLoaderTarget {

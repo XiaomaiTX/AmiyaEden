@@ -30,18 +30,20 @@
 </template>
 
 <script setup lang="ts">
+  import type { ShopAdminOrderListInput, ShopOrder } from '@/api/generated/client'
   import { ElTag, ElButton, ElInput } from 'element-plus'
   import { useI18n } from 'vue-i18n'
   import { formatFuxiCoinWhole, formatIskSmart, formatTime } from '@utils/common'
   import ArtCopyButton from '@/components/core/forms/art-copy-button/index.vue'
-  import { adminListOrderHistory } from '@/api/shop'
+  import { adminListShopOrders } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { useTable } from '@/hooks/core/useTable'
   import { resolveOrderIskTotal } from './order-isk'
 
   defineOptions({ name: 'ManageOrderHistory' })
   const { t } = useI18n()
 
-  type Order = Api.Shop.Order
+  type Order = ShopOrder
 
   const ORDER_STATUS_CONFIG: Record<string, { label: string; type: string }> = {
     delivered: { label: t('shopAdmin.orders.status.delivered'), type: 'success' },
@@ -70,7 +72,8 @@
     refreshData
   } = useTable({
     core: {
-      apiFn: adminListOrderHistory,
+      apiFn: (data?: ShopAdminOrderListInput) =>
+        unwrapContract(adminListShopOrders({ ...data, statuses: ['delivered', 'rejected'] })),
       apiParams: { current: 1, size: 200 },
       immediate: false,
       columnsFactory: () => [

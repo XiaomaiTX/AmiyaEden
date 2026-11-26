@@ -9,14 +9,15 @@ import {
 } from '@/components/ui/table'
 import { useCallback, useEffect, useState } from 'react'
 import {
-  adminDeleteApplication,
-  adminListApplications,
-  adminReviewApplication,
-} from '@/api/welfare'
+  adminDeleteWelfareApplication,
+  adminListWelfareApplications,
+  adminReviewWelfareApplication,
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { operationSalaryMessage } from '@/lib/operation-salary'
-import type { AdminApplication } from '@/types/api/welfare'
+import type { WelfareAdminApplication as AdminApplication } from '@/api/generated/client'
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback
@@ -39,17 +40,23 @@ export function WelfareApprovalPage() {
   const [actionId, setActionId] = useState<number | null>(null)
 
   const loadPending = useCallback(async () => {
-    const response = await adminListApplications({ current: 1, size: 200, status: 'requested' })
+    const response = await unwrapContract(
+      adminListWelfareApplications({ current: 1, size: 200, status: 'requested' }),
+      'list welfare applications failed'
+    )
     setPending(response.list ?? [])
   }, [])
 
   const loadHistory = useCallback(async () => {
-    const response = await adminListApplications({
-      current: 1,
-      size: 200,
-      status: 'delivered,rejected',
-      keyword: keyword.trim() || undefined,
-    })
+    const response = await unwrapContract(
+      adminListWelfareApplications({
+        current: 1,
+        size: 200,
+        status: 'delivered,rejected',
+        keyword: keyword.trim() || undefined,
+      }),
+      'list welfare applications failed'
+    )
     setHistory(response.list ?? [])
   }, [keyword])
 
@@ -82,7 +89,10 @@ export function WelfareApprovalPage() {
         const salary = await operationSalaryMessage('welfare_delivery', 1, t)
         if (!window.confirm(`${t('welfareApproval.deliverBtn')}?\n\n${salary}`)) return
       }
-      const result = await adminReviewApplication({ id, action })
+      const result = await unwrapContract(
+        adminReviewWelfareApplication({ id, action }),
+        'review welfare application failed'
+      )
       if (result?.outcome === 'auto_rejected') {
         const reason = result.eligibility_reason
           ? t(`welfareApproval.eligibilityReasons.${result.eligibility_reason}`)
@@ -102,7 +112,10 @@ export function WelfareApprovalPage() {
 
     setActionId(id)
     try {
-      await adminDeleteApplication(id)
+      await unwrapContract(
+        adminDeleteWelfareApplication({ id }),
+        'delete welfare application failed'
+      )
       await loadHistory()
     } catch (caughtError) {
       setError(getErrorMessage(caughtError, t('welfareApproval.deleteFailed')))

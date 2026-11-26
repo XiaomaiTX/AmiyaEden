@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { fetchDashboard } from '@/api/dashboard'
+import { getDashboard } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
-import type { DashboardResult } from '@/types/api/dashboard'
+import type { DashboardResult } from '@/api/generated/client'
 import { DashboardCardList } from './dashboard-console/card-list'
 import { DashboardFleetList } from './dashboard-console/fleet-list'
 import { DashboardPapChart } from './dashboard-console/pap-chart'
@@ -21,7 +22,7 @@ export function DashboardConsolePage() {
       setLoading(true)
       setError(null)
       try {
-        const result = await fetchDashboard()
+        const result = await unwrapContract(getDashboard(), 'dashboard request failed')
         if (!cancelled) {
           setData(result)
         }

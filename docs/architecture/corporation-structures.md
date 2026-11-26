@@ -13,10 +13,9 @@ source_of_truth:
   - server/jobs
   - server/pkg/background/manager.go
   - static/src/router/modules/dashboard.ts
-  - static/src/api/corporation-structures.ts
+  - contracts/modules/corp-structures.yaml
   - static/src/views/dashboard/corporation-structures
   - static-react/src/pages/dashboard-corporation-structures-page.tsx
-  - static-react/src/api/corporation-structures.ts
 ---
 
 # 军团建筑管理架构
@@ -92,7 +91,7 @@ source_of_truth:
 - `server/pkg/background/manager.go`
 - `server/jobs`
 - `static/src/router/modules/dashboard.ts`
-- `static/src/api/corporation-structures.ts`
+- [军团建筑 OpenAPI](../../contracts/modules/corp-structures.yaml)
 - `static/src/views/dashboard/corporation-structures`
 - `static-react/src/pages/dashboard-corporation-structures-page.tsx`
 

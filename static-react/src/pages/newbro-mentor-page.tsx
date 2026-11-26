@@ -16,30 +16,26 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import {
   acceptMentorApplication,
-  fetchMentorApplications,
-  fetchMentorMentees,
-  fetchMentorRewardStages,
-  fetchMyMentorStatus,
+  listMentorApplications,
+  listMentorMentees,
+  getMentorDashboardRewardStages,
+  getMyMentorStatus,
   rejectMentorApplication,
-} from '@/api/mentor'
+} from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { formatDateTime, formatNumber, getErrorMessage } from '@/pages/newbro-page-utils'
-import type {
-  MenteeListItem,
-  MyStatusResponse,
-  RelationshipView,
-  RewardStage,
-} from '@/types/api/mentor'
+import type { MentorMenteeItem, MentorMyStatus, MentorRewardStage } from '@/api/generated/client'
 
 export function NewbroMentorPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [status, setStatus] = useState<MyStatusResponse | null>(null)
-  const [applications, setApplications] = useState<RelationshipView[]>([])
-  const [mentees, setMentees] = useState<MenteeListItem[]>([])
-  const [rewardStages, setRewardStages] = useState<RewardStage[]>([])
+  const [status, setStatus] = useState<MentorMyStatus | null>(null)
+  const [applications, setApplications] = useState<MentorMenteeItem[]>([])
+  const [mentees, setMentees] = useState<MentorMenteeItem[]>([])
+  const [rewardStages, setRewardStages] = useState<MentorRewardStage[]>([])
   const [statusFilter, setStatusFilter] = useState<
     'active' | 'pending' | 'rejected' | 'revoked' | 'graduated' | 'all'
   >('active')
@@ -51,15 +47,18 @@ export function NewbroMentorPage() {
     setError(null)
     try {
       const [mentorStatus, applicationList, menteeList, stageList] = await Promise.all([
-        fetchMyMentorStatus(),
-        fetchMentorApplications(),
-        fetchMentorMentees({ current: 1, size: 20, status: statusFilter }),
-        fetchMentorRewardStages(),
+        unwrapContract(getMyMentorStatus(), 'fetch mentor status failed'),
+        unwrapContract(listMentorApplications(), 'fetch mentor applications failed'),
+        unwrapContract(
+          listMentorMentees({ current: 1, size: 20, status: statusFilter }),
+          'fetch mentor mentees failed'
+        ),
+        unwrapContract(getMentorDashboardRewardStages(), 'fetch mentor reward stages failed'),
       ])
       setStatus(mentorStatus)
-      setApplications(applicationList)
+      setApplications(applicationList ?? [])
       setMentees(menteeList.list ?? [])
-      setRewardStages(stageList)
+      setRewardStages(stageList ?? [])
     } catch (caughtError) {
       setStatus(null)
       setApplications([])
@@ -82,9 +81,15 @@ export function NewbroMentorPage() {
     setActioningRelationshipId(relationshipId)
     try {
       if (action === 'accept') {
-        await acceptMentorApplication({ relationship_id: relationshipId })
+        await unwrapContract(
+          acceptMentorApplication({ relationship_id: relationshipId }),
+          'accept mentor application failed'
+        )
       } else {
-        await rejectMentorApplication({ relationship_id: relationshipId })
+        await unwrapContract(
+          rejectMentorApplication({ relationship_id: relationshipId }),
+          'reject mentor application failed'
+        )
       }
       setRefreshSeed((current) => current + 1)
     } catch (caughtError) {
@@ -164,7 +169,7 @@ export function NewbroMentorPage() {
           </div>
           <div className="mt-4 space-y-3">
             {applications.map((application) => (
-              <div key={application.id} className="rounded-md border p-4">
+              <div key={application.relationship_id} className="rounded-md border p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="font-medium">{application.mentee_character_name}</div>
@@ -179,15 +184,19 @@ export function NewbroMentorPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      isDisabled={actioningRelationshipId === application.id}
-                      onClick={() => void handleApplicationAction('reject', application.id)}
+                      isDisabled={actioningRelationshipId === application.relationship_id}
+                      onClick={() =>
+                        void handleApplicationAction('reject', application.relationship_id)
+                      }
                     >
                       {t('newbroMentor.reject')}
                     </Button>
                     <Button
                       type="button"
-                      isDisabled={actioningRelationshipId === application.id}
-                      onClick={() => void handleApplicationAction('accept', application.id)}
+                      isDisabled={actioningRelationshipId === application.relationship_id}
+                      onClick={() =>
+                        void handleApplicationAction('accept', application.relationship_id)
+                      }
                     >
                       {t('newbroMentor.accept')}
                     </Button>
@@ -210,10 +219,12 @@ export function NewbroMentorPage() {
             <h2 className="text-base font-semibold">{t('newbroMentor.menteesSection')}</h2>
             <Select
               selectedKey={String(statusFilter ?? '')}
-              onSelectionChange={(key) => ((value) => {
-                setStatusFilter(value as typeof statusFilter)
-                setRefreshSeed((current) => current + 1)
-              })(String(key))}
+              onSelectionChange={(key) =>
+                ((value) => {
+                  setStatusFilter(value as typeof statusFilter)
+                  setRefreshSeed((current) => current + 1)
+                })(String(key))
+              }
             >
               <SelectTrigger className="h-9">
                 <SelectValue />

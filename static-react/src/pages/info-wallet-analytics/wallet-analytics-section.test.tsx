@@ -1,16 +1,16 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { fetchInfoWalletAnalytics } from '@/api/eve-info'
+import { getWalletAnalytics } from '@/api/generated/client'
 import { I18nProvider } from '@/i18n'
-import type { WalletAnalyticsResponse } from '@/types/api/eve-info'
+import type { InfoWalletAnalyticsResponse } from '@/api/generated/client'
 import { WalletAnalyticsSection } from './wallet-analytics-section'
 
-vi.mock('@/api/eve-info', () => ({
-  fetchInfoWalletAnalytics: vi.fn(),
+vi.mock('@/api/generated/client', () => ({
+  getWalletAnalytics: vi.fn(),
 }))
 
-const mockedFetchAnalytics = vi.mocked(fetchInfoWalletAnalytics)
+const mockedFetchAnalytics = vi.mocked(getWalletAnalytics)
 
-const analyticsPayload: WalletAnalyticsResponse = {
+const analyticsPayload: InfoWalletAnalyticsResponse = {
   summary: {
     available_from: '2026-08-24',
     available_to: '2026-09-23',
@@ -71,7 +71,7 @@ describe('wallet analytics section', () => {
   })
 
   test('renders the summary, resolved range and per-day charts for the selected character', async () => {
-    mockedFetchAnalytics.mockResolvedValue(analyticsPayload)
+    mockedFetchAnalytics.mockResolvedValue({ code: 200, msg: 'ok', data: analyticsPayload })
 
     renderSection(1001)
 
@@ -96,19 +96,23 @@ describe('wallet analytics section', () => {
 
   test('falls back to an empty state when the character has no collected entries', async () => {
     mockedFetchAnalytics.mockResolvedValue({
-      summary: {
-        available_from: '',
-        available_to: '',
-        opening_balance: null,
-        closing_balance: null,
-        total_income: 0,
-        total_expense: 0,
-        total_net: 0,
-        total_tax: 0,
-        entry_count: 0,
+      code: 200,
+      msg: 'ok',
+      data: {
+        summary: {
+          available_from: '',
+          available_to: '',
+          opening_balance: null,
+          closing_balance: null,
+          total_income: 0,
+          total_expense: 0,
+          total_net: 0,
+          total_tax: 0,
+          entry_count: 0,
+        },
+        daily_series: [],
+        ref_type_breakdown: [],
       },
-      daily_series: [],
-      ref_type_breakdown: [],
     })
 
     renderSection(1001)

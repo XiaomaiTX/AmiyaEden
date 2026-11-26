@@ -2,7 +2,7 @@
 status: active
 doc_type: index
 owner: engineering
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-26
 source_of_truth:
   - docs/ai/repo-rules.md
 ---
@@ -91,7 +91,7 @@ source_of_truth:
 文档与行为在同一次变更中同步；归属、设计决策记录及维护规则见[文档治理规范](standards/documentation-governance.md)。按实际影响更新：
 
 - **认证、鉴权、RBAC 职权提升或自动权限映射**：在[认证与权限](architecture/auth-and-permissions.md)记录变化的共享边界；模块文档说明该模块的影响，并链接共享规则。
-- **路由或契约**：在[路由索引](api/route-index.md)更新路由面与权限边界；按 [API 约定](api/conventions.md#合同同步顺序)更新契约字段，明确区分兼容字段与权威字段。模块有独立影响时，写明该影响并链接对应规则。
+- **路由或契约**：按 [API 约定](api/conventions.md#契约同步顺序)更新契约与生成物；[路由索引](api/route-index.md)只维护业务域入口映射，不重复记录路径和权限。模块有独立影响时，写明该影响并链接对应规则。
 - **数据库表、核心关系或历史兼容列**：更新[数据库 schema 文档](architecture/database-schema.md)；其他架构、API 或模块文档有独立影响时，在相应文档补充并链接。
 
 ## 按任务查阅
@@ -108,7 +108,7 @@ source_of_truth:
 
 ## 军团技能管理查询
 
-- [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：已实现后端统计与技能明细接口，双前端待实现。
+- [仪表盘军团技能达标查询](features/current/dashboard-skill-readiness.md)：后端提供统计和技能明细，Vue 与 React 均使用生成客户端。
 
 ## 2.0.0 升级清理
 

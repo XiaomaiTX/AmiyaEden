@@ -16,7 +16,7 @@ describe('auth callback page', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          code: 0,
+          code: 200,
           msg: 'ok',
           data: {
             user: {
@@ -128,7 +128,7 @@ describe('auth callback page', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          code: 0,
+          code: 200,
           msg: 'ok',
           data: {
             user: {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { completeRegistration, getRegistration } from '@/api/auth'
+import { getEveRegistration, completeEveRegistration } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { HttpError } from '@/api/http-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,7 +30,7 @@ export function AuthRegistrationForm({
   const [error, setError] = useState('')
   useEffect(() => {
     let cancelled = false
-    getRegistration(ticket)
+    unwrapContract(getEveRegistration({ 'X-Registration-Token': ticket }), 'registration expired')
       .then((info) => {
         if (cancelled) return
         setCharacter(info.character_name)
@@ -63,11 +64,17 @@ export function AuthRegistrationForm({
         setSaving(true)
         setError('')
         try {
-          const result = await completeRegistration(ticket, {
-            nickname: form.nickname,
-            qq: contactMethod === 'qq' ? form.qq : '',
-            discord_id: contactMethod === 'discord_id' ? form.discord_id : '',
-          })
+          const result = await unwrapContract(
+            completeEveRegistration(
+              {
+                nickname: form.nickname,
+                qq: contactMethod === 'qq' ? form.qq : '',
+                discord_id: contactMethod === 'discord_id' ? form.discord_id : '',
+              },
+              { 'X-Registration-Token': ticket }
+            ),
+            'registration failed'
+          )
           onComplete(result.token)
         } catch (err) {
           if (!(err instanceof HttpError && err.status === 409))

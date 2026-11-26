@@ -1,3 +1,4 @@
+import type { SystemBasicConfig } from '@/api/generated/client'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { SYSTEM_IDENTITY } from '@/constants/system-identity'
@@ -5,7 +6,7 @@ import { SYSTEM_IDENTITY } from '@/constants/system-identity'
 export const useSysConfigStore = defineStore(
   'sysConfig',
   () => {
-    const config = ref<Api.SysConfig.BasicConfig>({
+    const config = ref<SystemBasicConfig>({
       corp_id: SYSTEM_IDENTITY.corporationId,
       site_title: SYSTEM_IDENTITY.displayName
     })

@@ -95,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+  import type { EveSsoScope } from '@/api/generated/client'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { getEveBindURL } from '@/api/auth'
   import { ElMessage } from 'element-plus'
@@ -103,7 +104,7 @@
   defineOptions({ name: 'CharacterDetail' })
 
   const props = defineProps<{
-    scopes: Api.Auth.RegisteredScope[]
+    scopes: EveSsoScope[]
     characters: Api.Auth.EveCharacter[]
     selectedCharacterId?: number
   }>()

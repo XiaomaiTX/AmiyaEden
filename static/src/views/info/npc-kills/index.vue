@@ -144,7 +144,7 @@
         <template #header>
           <span class="font-medium">{{ $t('npcKill.byNpc') }}</span>
         </template>
-        <ElTable :data="reportData.by_npc" stripe border max-height="400">
+        <ElTable :data="reportData.by_npc ?? []" stripe border max-height="400">
           <ElTableColumn type="index" width="55" label="#" align="center" />
           <ElTableColumn
             prop="npc_name"
@@ -247,17 +247,19 @@
 </template>
 
 <script setup lang="ts">
+  import type { NpcKillData, NpcKillJournalItem } from '@/api/generated/client'
   import { useTable } from '@/hooks/core/useTable'
   import { ElTag, ElAvatar, ElSelect, ElOption, ElDatePicker, ElInputNumber } from 'element-plus'
-  import { fetchMyCharacters } from '@/api/auth'
-  import { fetchNpcKills, fetchNpcKillsAll } from '@/api/npc-kill'
+
+  import { listMyEveCharacters, getNpcKills, getAllNpcKills } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import { formatIskPlain } from '@/utils/common'
   import { buildEveCharacterPortraitUrl } from '@/utils/eve-image'
   import { useI18n } from 'vue-i18n'
 
   defineOptions({ name: 'NpcKillReport' })
 
-  type JournalItem = Api.NpcKill.JournalItem
+  type JournalItem = NpcKillJournalItem
 
   const { t } = useI18n()
 
@@ -271,7 +273,7 @@
   const characterIdInputs = ref<string[]>([])
   const minAmount = ref<number | undefined>()
   const maxAmount = ref<number | undefined>()
-  const reportData = ref<Api.NpcKill.NpcKillResponse | null>(null)
+  const reportData = ref<NpcKillData | null>(null)
 
   // ─── REF_TYPE 配置 ───
   const REF_TYPE_CONFIG: Record<string, { type: string; text: string }> = {
@@ -312,25 +314,29 @@
   }): Promise<Api.Common.PaginatedResponse<JournalItem>> => {
     const charId = params.character_id ?? 0
     const filters = buildFilterPayload()
-    let res: Api.NpcKill.NpcKillResponse | undefined
+    let res: NpcKillData | undefined
     if (charId === 0) {
       // 全部人物汇总
-      res = await fetchNpcKillsAll({
-        start_date: params.start_date,
-        end_date: params.end_date,
-        page: params.current,
-        page_size: params.size,
-        ...filters
-      })
+      res = await unwrapContract(
+        getAllNpcKills({
+          start_date: params.start_date,
+          end_date: params.end_date,
+          page: params.current,
+          page_size: params.size,
+          ...filters
+        })
+      )
     } else {
-      res = await fetchNpcKills({
-        character_id: charId,
-        start_date: params.start_date,
-        end_date: params.end_date,
-        page: params.current,
-        page_size: params.size,
-        ...filters
-      })
+      res = await unwrapContract(
+        getNpcKills({
+          character_id: charId,
+          start_date: params.start_date,
+          end_date: params.end_date,
+          page: params.current,
+          page_size: params.size,
+          ...filters
+        })
+      )
     }
     reportData.value = res ?? null
     return {
@@ -461,7 +467,7 @@
   // ─── 初始化 ───
   const loadCharacters = async () => {
     try {
-      characters.value = (await fetchMyCharacters()) ?? []
+      characters.value = (await unwrapContract(listMyEveCharacters())) ?? []
       // 不自动选中第一个人物，保持默认"全部人物"模式
     } catch {
       characters.value = []

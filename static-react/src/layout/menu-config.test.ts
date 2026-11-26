@@ -1,5 +1,5 @@
 import { buildShellMenuGroups } from '@/layout/menu-config'
-import type { AdmissionContext } from '@/types/api/admissions'
+import type { AdmissionContext } from '@/api/generated/client'
 
 test('admission pending count appears only on visible review navigation and its parent', () => {
   const session = {

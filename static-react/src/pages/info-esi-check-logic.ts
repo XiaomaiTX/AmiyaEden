@@ -1,4 +1,5 @@
-import type { EveCharacter, RegisteredScope } from '@/types/api/auth'
+import type { EveCharacter } from '@/types/api/auth'
+import type { EveSsoScope as RegisteredScope } from '@/api/generated/client'
 
 export interface ScopeRow extends RegisteredScope {
   authorized: boolean

@@ -178,7 +178,7 @@ func TestRunMyCharacterTask_RejectsMissingParameters(t *testing.T) {
 	ctx.Set("userID", uint(1))
 	ctx.Set("roles", []string{model.RoleUser})
 
-	NewESIRefreshHandler().RunMyCharacterTask(ctx)
+	serveESIRefreshTestRequest(recorder, ctx)
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected http status 200, got %d", recorder.Code)
@@ -510,7 +510,7 @@ func TestRunTaskByName_RejectsSchedulingWhenBackgroundManagerIsStopping(t *testi
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/tasks/esi/run-task", bytes.NewBuffer(bodyBytes))
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
-	NewESIRefreshHandler().RunTaskByName(ctx)
+	serveESIRefreshTestRequest(recorder, ctx)
 
 	var result esiRefreshHandlerResponse
 	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
@@ -546,7 +546,7 @@ func TestRunAll_RejectsSchedulingWhenBackgroundManagerIsStopping(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/tasks/esi/run-all", nil)
 
-	NewESIRefreshHandler().RunAll(ctx)
+	serveESIRefreshTestRequest(recorder, ctx)
 
 	var result esiRefreshHandlerResponse
 	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
@@ -577,7 +577,7 @@ func performRunMyCharacterTaskRequest(t *testing.T, userID uint, characterID int
 	ctx.Set("userID", userID)
 	ctx.Set("roles", []string{model.RoleUser})
 
-	NewESIRefreshHandler().RunMyCharacterTask(ctx)
+	serveESIRefreshTestRequest(recorder, ctx)
 
 	return recorder
 }
@@ -590,7 +590,7 @@ func performGetStatusesRequest(t *testing.T, target string) *httptest.ResponseRe
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, target, nil)
 
-	NewESIRefreshHandler().GetStatuses(ctx)
+	serveESIRefreshTestRequest(recorder, ctx)
 
 	return recorder
 }
@@ -603,9 +603,22 @@ func performGetMonitorRequest(t *testing.T) *httptest.ResponseRecorder {
 	ctx, _ := gin.CreateTestContext(recorder)
 	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/tasks/esi/monitor", nil)
 
-	NewESIRefreshHandler().GetMonitor(ctx)
+	serveESIRefreshTestRequest(recorder, ctx)
 
 	return recorder
+}
+
+func serveESIRefreshTestRequest(recorder *httptest.ResponseRecorder, ctx *gin.Context) {
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		for _, key := range []string{"userID", "roles"} {
+			if value, exists := ctx.Get(key); exists {
+				c.Set(key, value)
+			}
+		}
+	})
+	registerMigratedOperationRoutes(r, newMigratedOperationAdapter(migratedOperations{ESIRefreshHandler: NewESIRefreshHandler()}), migratedOperationParamError)
+	r.ServeHTTP(recorder, ctx.Request)
 }
 
 func newESIRefreshHandlerTestDB(t *testing.T) *gorm.DB {

@@ -60,10 +60,10 @@ func TestMergeGetNamesESIMisses(t *testing.T) {
 	result := newGetNamesResponse()
 	mergeGetNamesESIMisses(&result, []int64{9, 7})
 
-	if result.Miss == nil {
+	if result.Misses == nil {
 		t.Fatal("expected misses to be present")
 	}
-	if len(result.Miss.ESI) != 2 || result.Miss.ESI[0] != 9 || result.Miss.ESI[1] != 7 {
-		t.Fatalf("misses.esi = %v, want [9 7]", result.Miss.ESI)
+	if len(result.Misses.Esi) != 2 || result.Misses.Esi[0] != 9 || result.Misses.Esi[1] != 7 {
+		t.Fatalf("misses.esi = %v, want [9 7]", result.Misses.Esi)
 	}
 }

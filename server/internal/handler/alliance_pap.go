@@ -2,15 +2,13 @@ package handler
 
 import (
 	"amiya-eden/global"
-	"amiya-eden/internal/middleware"
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/internal/utils"
 	"amiya-eden/pkg/response"
-	"strconv"
+	"context"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // AlliancePAPHandler 联盟 PAP HTTP 处理器
@@ -19,149 +17,128 @@ type AlliancePAPHandler struct {
 }
 
 func NewAlliancePAPHandler() *AlliancePAPHandler {
-	return &AlliancePAPHandler{
-		svc: service.NewAlliancePAPService(),
-	}
+	return &AlliancePAPHandler{svc: service.NewAlliancePAPService()}
 }
 
-// getAllowCorpFilter 根据调用者职权返回军团过滤列表
-// super_admin 返回 nil（不过滤），admin 返回配置的 allow_corporations
-func getAllowCorpFilter(c *gin.Context) []int64 {
-	roles := middleware.GetUserRoles(c)
+func (h *AlliancePAPHandler) GetMyAlliancePAP(ctx context.Context, request apicontract.GetMyAlliancePAPRequestObject) (apicontract.GetMyAlliancePAPResponseObject, error) {
+	out := &apicontract.GetMyAlliancePAP200JSONResponse{}
+	userID, _ := fleetStrictActor(ctx)
+	data, failure := h.getMyAlliancePAP(userID, request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.contract())
+	}
+	return out, out.FromFleetAlliancePAPDataSuccess(apicontract.FleetAlliancePAPDataSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *AlliancePAPHandler) GetAllAlliancePAP(ctx context.Context, request apicontract.GetAllAlliancePAPRequestObject) (apicontract.GetAllAlliancePAPResponseObject, error) {
+	out := &apicontract.GetAllAlliancePAP200JSONResponse{}
+	_, roles := fleetStrictActor(ctx)
+	data, failure := h.getAllAlliancePAP(roles, request.Params)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.contract())
+	}
+	return out, out.FromAdminAlliancePAPPageSuccess(apicontract.AdminAlliancePAPPageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *AlliancePAPHandler) TriggerFetch(ctx context.Context, request apicontract.TriggerFetchRequestObject) (apicontract.TriggerFetchResponseObject, error) {
+	out := &apicontract.TriggerFetch200JSONResponse{}
+	data := h.triggerAlliancePAPFetch(request.Body, apicontract.StrictGinJSONDecodeError(ctx))
+	return out, out.FromAdminAlliancePAPMessageSuccess(apicontract.AdminAlliancePAPMessageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *AlliancePAPHandler) ImportAlliancePAP(_ context.Context, request apicontract.ImportAlliancePAPRequestObject) (apicontract.ImportAlliancePAPResponseObject, error) {
+	out := &apicontract.ImportAlliancePAP200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	data, failure := h.importAlliancePAP(*request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.contract())
+	}
+	return out, out.FromAdminAlliancePAPMessageSuccess(apicontract.AdminAlliancePAPMessageSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+func (h *AlliancePAPHandler) SettleMonth(ctx context.Context, request apicontract.SettleMonthRequestObject) (apicontract.SettleMonthResponseObject, error) {
+	out := &apicontract.SettleMonth200JSONResponse{}
+	if request.Body == nil {
+		return out, out.FromBusinessError(contractBusinessError(response.CodeParamError, "请求参数错误"))
+	}
+	_, roles := fleetStrictActor(ctx)
+	data, failure := h.settleMonth(roles, *request.Body)
+	if failure != nil {
+		return out, out.FromBusinessError(failure.contract())
+	}
+	return out, out.FromAdminAlliancePAPSettledMonthSuccess(apicontract.AdminAlliancePAPSettledMonthSuccess{Code: response.CodeOK, Msg: "success", Data: data})
+}
+
+// A super admin can operate on all corporations; other roles are scoped to the allowlist.
+func getAllowCorpFilter(roles []string) []int64 {
 	if model.IsSuperAdmin(roles) {
 		return nil
 	}
 	return utils.GetAllowCorporations()
 }
 
-// GetMyAlliancePAP  GET /operation/pap/alliance
-// 查询当前登录用户主人物的联盟 PAP 数据（默认当月）
-func (h *AlliancePAPHandler) GetMyAlliancePAP(c *gin.Context) {
+func (h *AlliancePAPHandler) getMyAlliancePAP(userID uint, params apicontract.GetMyAlliancePAPParams) (apicontract.FleetAlliancePAPData, *fleetOperationFailure) {
 	now := time.Now()
-	year := now.Year()
-	month := int(now.Month())
-
-	if y := c.Query("year"); y != "" {
-		if v, err := strconv.Atoi(y); err == nil {
-			year = v
-		}
-	}
-	if m := c.Query("month"); m != "" {
-		if v, err := strconv.Atoi(m); err == nil {
-			month = v
-		}
-	}
-
-	userID := middleware.GetUserID(c)
+	year, month := fleetValueOr(params.Year, now.Year()), fleetValueOr(params.Month, int(now.Month()))
 	result, err := h.svc.GetMyPAPByUserID(userID, year, month)
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.FleetAlliancePAPData{}, &fleetOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, result)
+	return fleetAlliancePAPDTO(*result), nil
 }
 
-// GetAllAlliancePAP  GET /system/pap
-// 分页查询所有成员某月的联盟 PAP 汇总（管理员）
-func (h *AlliancePAPHandler) GetAllAlliancePAP(c *gin.Context) {
+func (h *AlliancePAPHandler) getAllAlliancePAP(roles []string, params apicontract.GetAllAlliancePAPParams) (apicontract.AdminAlliancePAPPage, *fleetOperationFailure) {
 	now := time.Now()
-	year := now.Year()
-	month := int(now.Month())
-	page, pageSize, err := parseLedgerPaginationQuery(c, 20)
+	year, month := fleetValueOr(params.Year, now.Year()), fleetValueOr(params.Month, int(now.Month()))
+	page, pageSize := normalizePage(fleetValue(params.Current)), fleetValue(params.Size)
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	pageSize = normalizeLedgerPageSize(pageSize)
+	list, total, err := h.svc.GetAllPAPPaged(year, month, page, pageSize, getAllowCorpFilter(roles))
 	if err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
+		return apicontract.AdminAlliancePAPPage{}, &fleetOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-
-	if y := c.Query("year"); y != "" {
-		if v, err := strconv.Atoi(y); err == nil {
-			year = v
-		}
-	}
-	if m := c.Query("month"); m != "" {
-		if v, err := strconv.Atoi(m); err == nil {
-			month = v
-		}
-	}
-
-	list, total, err := h.svc.GetAllPAPPaged(year, month, page, pageSize, getAllowCorpFilter(c))
-	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-	response.OKWithPage(c, list, total, page, pageSize)
+	return apicontract.AdminAlliancePAPPage{
+		List: fleetNullableDTOs(list, alliancePAPSummaryDTO), Page: page, PageSize: pageSize, Total: total,
+	}, nil
 }
 
-// TriggerFetch  POST /system/pap/fetch
-// 手动触发拉取（管理员，可指定 year/month）
-type triggerFetchRequest struct {
-	Year  int `json:"year"  binding:"required"`
-	Month int `json:"month" binding:"required,min=1,max=12"`
+func alliancePAPFetchMonth(now time.Time, req *apicontract.AdminAlliancePAPFetchInput, bindingErr error) (int, int) {
+	if bindingErr == nil && req != nil && req.Year != 0 && req.Month >= 1 && req.Month <= 12 {
+		return req.Year, req.Month
+	}
+	return now.Year(), int(now.Month())
 }
 
-func (h *AlliancePAPHandler) TriggerFetch(c *gin.Context) {
-	now := time.Now()
-	year := now.Year()
-	month := int(now.Month())
-
-	var req triggerFetchRequest
-	if err := c.ShouldBindJSON(&req); err == nil {
-		year = req.Year
-		month = req.Month
-	}
-
+func (h *AlliancePAPHandler) triggerAlliancePAPFetch(req *apicontract.AdminAlliancePAPFetchInput, bindingErr error) apicontract.AdminAlliancePAPMessage {
+	year, month := alliancePAPFetchMonth(time.Now(), req, bindingErr)
 	go func() {
 		global.Logger.Info("手动触发联盟 PAP 拉取")
 		h.svc.FetchAllUsers(year, month)
 	}()
-
-	response.OK(c, gin.H{"message": "已触发后台拉取任务"})
+	return apicontract.AdminAlliancePAPMessage{Message: "已触发后台拉取任务"}
 }
 
-// ImportAlliancePAP  POST /system/pap/import
-// 导入联盟 PAP 数据（管理员，可指定 year/month）
-type importAlliancePAPRequest struct {
-	Year          int                   `json:"year"  binding:"required"`
-	Month         int                   `json:"month" binding:"required,min=1,max=12"`
-	PAPImportInfo service.PAPImportInfo `json:"data" binding:"required"`
-}
-
-func (h *AlliancePAPHandler) ImportAlliancePAP(c *gin.Context) {
-	var req importAlliancePAPRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.PAPImportInfo.CalculatedAt == "" {
-		if err != nil {
-			response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-			return
-		}
-		response.Fail(c, response.CodeParamError, "请求参数错误: 缺少数据时间")
-		return
+func (h *AlliancePAPHandler) importAlliancePAP(req apicontract.AdminAlliancePAPImportInput) (apicontract.AdminAlliancePAPMessage, *fleetOperationFailure) {
+	if req.PAPImportInfo.CalculatedAt == "" {
+		return apicontract.AdminAlliancePAPMessage{}, &fleetOperationFailure{code: response.CodeParamError, message: "请求参数错误: 缺少数据时间"}
 	}
-
-	if err := h.svc.ImportAlliancePAPByPrimaryCharacter(req.Year, req.Month, &req.PAPImportInfo); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+	if err := h.svc.ImportAlliancePAPByPrimaryCharacter(req.Year, req.Month, &service.PAPImportInfo{
+		PrimaryCharacterName: req.PAPImportInfo.PrimaryCharacterName, MonthlyPAP: req.PAPImportInfo.MonthlyPAP,
+		CalculatedAt: req.PAPImportInfo.CalculatedAt,
+	}); err != nil {
+		return apicontract.AdminAlliancePAPMessage{}, &fleetOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, gin.H{"message": "导入成功"})
+	return apicontract.AdminAlliancePAPMessage{Message: "导入成功"}, nil
 }
 
-// settleMonthRequest 月度结算请求
-type settleMonthRequest struct {
-	Year  int `json:"year"  binding:"required"`
-	Month int `json:"month" binding:"required,min=1,max=12"`
-}
-
-// SettleMonth  POST /system/pap/settle
-// 管理员触发月度归档
-func (h *AlliancePAPHandler) SettleMonth(c *gin.Context) {
-	var req settleMonthRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误: "+err.Error())
-		return
-	}
-	result, err := h.svc.SettleMonth(req.Year, req.Month, getAllowCorpFilter(c))
+func (h *AlliancePAPHandler) settleMonth(roles []string, req apicontract.AdminAlliancePAPSettleInput) (apicontract.AdminAlliancePAPSettledMonth, *fleetOperationFailure) {
+	result, err := h.svc.SettleMonth(req.Year, req.Month, getAllowCorpFilter(roles))
 	if err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return apicontract.AdminAlliancePAPSettledMonth{}, &fleetOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-	response.OK(c, result)
+	return apicontract.AdminAlliancePAPSettledMonth{Year: result.Year, Month: result.Month}, nil
 }

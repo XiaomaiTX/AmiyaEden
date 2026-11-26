@@ -1,14 +1,23 @@
 package handler
 
 import (
-	"errors"
-
 	"amiya-eden/internal/middleware"
+	"context"
+	"errors"
+	"github.com/gin-gonic/gin"
+
+	"amiya-eden/internal/apicontract"
 	"amiya-eden/internal/model"
 	"amiya-eden/internal/service"
 	"amiya-eden/pkg/response"
+)
 
-	"github.com/gin-gonic/gin"
+const (
+	sysConfigInvalidInputMessage = "请求参数错误"
+	sysConfigSuperAdminMessage   = "仅超级管理员可修改该配置"
+	sysConfigSDEStatusMessage    = "读取 SDE 状态失败"
+	sysConfigSDECheckPrefix      = "检查 SDE 版本失败: "
+	sysConfigSDETriggerPrefix    = "执行 SDE 更新失败: "
 )
 
 type SysConfigHandler struct {
@@ -42,267 +51,328 @@ func newSysConfigHandlerWithDeps(
 	}
 }
 
-func (h *SysConfigHandler) GetBasicConfig(c *gin.Context) {
-	response.OK(c, model.DefaultSystemIdentity())
+func systemBasicConfig() apicontract.SystemBasicConfig {
+	identity := model.DefaultSystemIdentity()
+	return apicontract.SystemBasicConfig{CorpId: identity.CorpID, SiteTitle: identity.SiteTitle}
 }
 
-// SDEConfigResponse SDE 配置响应
-type SDEConfigResponse struct {
-	APIKey      string `json:"api_key"`
-	Proxy       string `json:"proxy"`
-	DownloadURL string `json:"download_url"`
-}
-
-// UpdateSDEConfigRequest 更新 SDE 配置请求
-type UpdateSDEConfigRequest struct {
-	APIKey      *string `json:"api_key"`
-	Proxy       *string `json:"proxy"`
-	DownloadURL *string `json:"download_url"`
-}
-
-func (h *SysConfigHandler) GetSDEConfig(c *gin.Context) {
+func (h *SysConfigHandler) getSDEConfig() apicontract.SystemSDEConfig {
 	config := h.cfgSvc.GetSDEConfig()
-
-	response.OK(c, SDEConfigResponse{
+	return apicontract.SystemSDEConfig{
 		APIKey:      config.APIKey,
 		Proxy:       config.Proxy,
 		DownloadURL: config.DownloadURL,
-	})
+	}
 }
 
-func (h *SysConfigHandler) UpdateSDEConfig(c *gin.Context) {
-	var req UpdateSDEConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
-
+func (h *SysConfigHandler) updateSDEConfig(ctx context.Context, actorID uint, req apicontract.SystemSDEConfigInput) error {
 	if err := h.cfgSvc.UpdateSDEConfig(req.APIKey, req.Proxy, req.DownloadURL); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return err
 	}
-	h.recordConfigAudit(c, "sde_config_update", model.SysConfigSDEAPIKey, map[string]any{
+	h.recordConfigAudit(ctx, actorID, "sde_config_update", model.SysConfigSDEAPIKey, map[string]any{
 		"proxy_updated": req.Proxy != nil, "download_url_updated": req.DownloadURL != nil, "api_key_updated": req.APIKey != nil,
 	})
-
-	response.OK(c, nil)
+	return nil
 }
 
-type AlliancePAPConfigResponse struct {
-	BaseURL string `json:"base_url"`
-	APIKey  string `json:"api_key"`
-}
-
-type UpdateAlliancePAPConfigRequest struct {
-	BaseURL *string `json:"base_url"`
-	APIKey  *string `json:"api_key"`
-}
-
-func (h *SysConfigHandler) GetAlliancePAPConfig(c *gin.Context) {
+func (h *SysConfigHandler) getAlliancePAPConfig() apicontract.SystemAlliancePAPConfig {
 	cfg := h.cfgSvc.GetAlliancePAPConfig()
-	response.OK(c, AlliancePAPConfigResponse{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey})
+	return apicontract.SystemAlliancePAPConfig{BaseURL: cfg.BaseURL, APIKey: cfg.APIKey}
 }
 
-func (h *SysConfigHandler) UpdateAlliancePAPConfig(c *gin.Context) {
-	var req UpdateAlliancePAPConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
+func (h *SysConfigHandler) updateAlliancePAPConfig(ctx context.Context, actorID uint, req apicontract.SystemAlliancePAPConfigInput) error {
 	if err := h.cfgSvc.UpdateAlliancePAPConfig(req.BaseURL, req.APIKey); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return err
 	}
-	h.recordConfigAudit(c, "alliance_pap_config_update", model.SysConfigAlliancePAPBaseURL, map[string]any{
+	h.recordConfigAudit(ctx, actorID, "alliance_pap_config_update", model.SysConfigAlliancePAPBaseURL, map[string]any{
 		"base_url_updated": req.BaseURL != nil, "api_key_updated": req.APIKey != nil,
 	})
-	response.OK(c, nil)
+	return nil
 }
 
-func (h *SysConfigHandler) GetMumbleConfig(c *gin.Context) {
-	response.OK(c, h.cfgSvc.GetMumbleConfig())
+func (h *SysConfigHandler) getMumbleConfig() apicontract.SystemMumbleConfig {
+	cfg := h.cfgSvc.GetMumbleConfig()
+	nodes := make([]apicontract.MumblePublicNode, 0, len(cfg.PublicNodes))
+	for _, node := range cfg.PublicNodes {
+		nodes = append(nodes, apicontract.MumblePublicNode{
+			Name: node.Name, Description: node.Description, Address: node.Address, Port: node.Port,
+		})
+	}
+	return apicontract.SystemMumbleConfig{
+		ServiceToken: cfg.ServiceToken, ServerURL: cfg.ServerURL, RevalidateToken: cfg.RevalidateToken,
+		RevalidateTimeoutMS: cfg.RevalidateTimeoutMS, PublicNodes: nodes,
+		DisplayNameTemplate: cfg.DisplayNameTemplate,
+	}
 }
 
-func (h *SysConfigHandler) UpdateMumbleConfig(c *gin.Context) {
-	var req service.MumbleRuntimeConfig
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
+func (h *SysConfigHandler) updateMumbleConfig(ctx context.Context, actorID uint, req apicontract.SystemMumbleConfigInput) error {
+	nodes := make([]service.MumblePublicNode, 0, len(req.PublicNodes))
+	for _, node := range req.PublicNodes {
+		nodes = append(nodes, service.MumblePublicNode{
+			Name: node.Name, Description: node.Description, Address: node.Address, Port: node.Port,
+		})
 	}
-	if err := h.cfgSvc.UpdateMumbleConfig(req); err != nil {
-		response.Fail(c, response.CodeParamError, err.Error())
-		return
+	if err := h.cfgSvc.UpdateMumbleConfig(service.MumbleRuntimeConfig{
+		ServiceToken: req.ServiceToken, ServerURL: req.ServerURL, RevalidateToken: req.RevalidateToken,
+		RevalidateTimeoutMS: req.RevalidateTimeoutMS, PublicNodes: nodes,
+		DisplayNameTemplate: req.DisplayNameTemplate,
+	}); err != nil {
+		return err
 	}
-	h.recordConfigAudit(c, "mumble_config_update", model.SysConfigMumbleServerURL, map[string]any{
+	h.recordConfigAudit(ctx, actorID, "mumble_config_update", model.SysConfigMumbleServerURL, map[string]any{
 		"server_url_updated": true, "service_token_updated": true, "revalidate_token_updated": true,
 		"revalidate_timeout_ms": req.RevalidateTimeoutMS, "display_name_template": req.DisplayNameTemplate,
 		"public_nodes": len(req.PublicNodes),
 	})
-	response.OK(c, nil)
+	return nil
 }
 
-func (h *SysConfigHandler) recordConfigAudit(c *gin.Context, action, resourceID string, details map[string]any) {
+func (h *SysConfigHandler) recordConfigAudit(ctx context.Context, actorID uint, action, resourceID string, details map[string]any) {
 	if h.auditSvc == nil {
 		return
 	}
-	_ = h.auditSvc.RecordEvent(c.Request.Context(), service.AuditRecordInput{
-		Category: "config", Action: action, ActorUserID: middleware.GetUserID(c), ResourceType: "system_config",
+	_ = h.auditSvc.RecordEvent(ctx, service.AuditRecordInput{
+		Category: "config", Action: action, ActorUserID: actorID, ResourceType: "system_config",
 		ResourceID: resourceID, Result: model.AuditResultSuccess, Details: details,
 	})
 }
 
-func (h *SysConfigHandler) GetSDEStatus(c *gin.Context) {
-	status, err := h.sdeSvc.GetStatus()
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "读取 SDE 状态失败")
-		return
+func systemSDEStatus(status service.SDEStatus) apicontract.SystemSDEStatus {
+	return apicontract.SystemSDEStatus{
+		CurrentVersion: status.CurrentVersion, LatestVersion: status.LatestVersion, HasUpdate: status.HasUpdate,
+		LastQueryError: status.LastQueryError, LastQueryErrorAt: status.LastQueryErrorAt, LastQuerySource: status.LastQuerySource,
+		LastCheckAt: status.LastCheckAt, LastCheckSuccess: status.LastCheckSuccess, LastCheckError: status.LastCheckError,
+		LastUpdateAt: status.LastUpdateAt, LastUpdateSuccess: status.LastUpdateSuccess, LastUpdateError: status.LastUpdateError,
+		IsUpdating: status.IsUpdating, UpdateStage: apicontract.SystemSDEUpdateStage(status.UpdateStage),
 	}
-	response.OK(c, status)
 }
 
-func (h *SysConfigHandler) CheckSDEVersion(c *gin.Context) {
-	status, err := h.sdeSvc.CheckLatestVersion()
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "检查 SDE 版本失败: "+err.Error())
-		return
+func (h *SysConfigHandler) getAllowCorporations(ctx context.Context) apicontract.SystemAllowedCorporations {
+	allowed := h.cfgSvc.GetAllowCorporations()
+	displays := h.cfgSvc.GetAllowCorporationDisplays(ctx)
+	corporations := make([]apicontract.SystemConfigCorporationDisplay, 0, len(displays))
+	for _, display := range displays {
+		corporations = append(corporations, apicontract.SystemConfigCorporationDisplay{
+			CorporationId: display.CorporationID, CorporationName: display.CorporationName,
+		})
 	}
-	response.OK(c, status)
+	return apicontract.SystemAllowedCorporations{AllowCorporations: allowed, Corporations: corporations}
 }
 
-func (h *SysConfigHandler) TriggerSDEUpdate(c *gin.Context) {
-	status, err := h.sdeSvc.TriggerManualUpdateWithStatus()
-	if err != nil {
-		response.Fail(c, response.CodeBizError, "执行 SDE 更新失败: "+err.Error())
-		return
-	}
-	response.OK(c, status)
-}
-
-type AllowCorporationsResponse struct {
-	AllowCorporations []int64                      `json:"allow_corporations"`
-	Corporations      []service.CorporationDisplay `json:"corporations"`
-}
-
-type UpdateAllowCorporationsRequest struct {
-	AllowCorporations []int64 `json:"allow_corporations"`
-}
-
-type CharacterESIRestrictionConfigResponse struct {
-	EnforceCharacterESIRestriction bool `json:"enforce_character_esi_restriction"`
-}
-
-type UpdateCharacterESIRestrictionConfigRequest struct {
-	EnforceCharacterESIRestriction *bool `json:"enforce_character_esi_restriction"`
-}
-
-type CorporationAccessPoliciesResponse struct {
-	Version              int                         `json:"version"`
-	DefaultMode          string                      `json:"default_mode"`
-	Policies             []service.CorporationPolicy `json:"policies"`
-	EnforcedCapabilities []string                    `json:"enforced_capabilities"`
-	LegacyCapabilities   map[int64][]string          `json:"legacy_capabilities"`
-}
-
-type UpdateCorporationAccessPoliciesRequest struct {
-	Version     int                         `json:"version"`
-	DefaultMode string                      `json:"default_mode"`
-	Policies    []service.CorporationPolicy `json:"policies"`
-}
-
-func (h *SysConfigHandler) GetAllowCorporations(c *gin.Context) {
-	response.OK(c, AllowCorporationsResponse{
-		AllowCorporations: h.cfgSvc.GetAllowCorporations(),
-		Corporations:      h.cfgSvc.GetAllowCorporationDisplays(c.Request.Context()),
-	})
-}
-
-func (h *SysConfigHandler) UpdateAllowCorporations(c *gin.Context) {
-	var req UpdateAllowCorporationsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
+func (h *SysConfigHandler) updateAllowCorporations(req apicontract.SystemAllowedCorporationsInput) *contractOperationFailure {
 	if err := h.cfgSvc.UpdateAllowCorporations(req.AllowCorporations); err != nil {
 		if errors.Is(err, service.ErrInvalidAllowCorporations) {
-			response.Fail(c, response.CodeParamError, err.Error())
-			return
+			return &contractOperationFailure{code: response.CodeParamError, message: err.Error()}
 		}
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
-
-	response.OK(c, nil)
+	return nil
 }
 
-func (h *SysConfigHandler) GetCharacterESIRestrictionConfig(c *gin.Context) {
-	response.OK(c, CharacterESIRestrictionConfigResponse{
+func (h *SysConfigHandler) getCharacterESIRestrictionConfig() apicontract.SystemCharacterESIRestriction {
+	return apicontract.SystemCharacterESIRestriction{
 		EnforceCharacterESIRestriction: h.cfgSvc.GetCharacterESIRestrictionConfig(),
-	})
+	}
 }
 
-func (h *SysConfigHandler) UpdateCharacterESIRestrictionConfig(c *gin.Context) {
-	if !model.IsSuperAdmin(middleware.GetUserRoles(c)) {
-		response.Fail(c, response.CodeForbidden, "仅超级管理员可修改该配置")
-		return
-	}
-
-	var req UpdateCharacterESIRestrictionConfigRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
-	if req.EnforceCharacterESIRestriction == nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
-
-	if err := h.cfgSvc.UpdateCharacterESIRestrictionConfig(*req.EnforceCharacterESIRestriction); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
-	}
-
-	response.OK(c, nil)
-}
-
-func (h *SysConfigHandler) GetCorporationAccessPolicies(c *gin.Context) {
+func (h *SysConfigHandler) getCorporationAccessPolicies() apicontract.SystemCorporationAccessPolicies {
 	policies := h.corpPolicySvc.GetPolicies()
-	response.OK(c, CorporationAccessPoliciesResponse{
+	rows := make([]apicontract.SystemConfigCorporationPolicy, 0, len(policies.Policies))
+	for _, policy := range policies.Policies {
+		rows = append(rows, apicontract.SystemConfigCorporationPolicy{
+			CorporationId: policy.CorporationID, FullAccess: policy.FullAccess,
+			Capabilities: policy.Capabilities, Rules: policy.Rules,
+		})
+	}
+	return apicontract.SystemCorporationAccessPolicies{
 		Version:              policies.Version,
-		DefaultMode:          policies.DefaultMode,
-		Policies:             policies.Policies,
+		DefaultMode:          apicontract.SystemConfigPolicyMode(policies.DefaultMode),
+		Policies:             rows,
 		EnforcedCapabilities: model.EnforcedCorpCapabilities(),
 		LegacyCapabilities:   h.corpPolicySvc.StoredLegacyCapabilities(),
-	})
+	}
 }
 
-func (h *SysConfigHandler) UpdateCorporationAccessPolicies(c *gin.Context) {
-	var req UpdateCorporationAccessPoliciesRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, response.CodeParamError, "请求参数错误")
-		return
-	}
+func (h *SysConfigHandler) updateCorporationAccessPolicies(ctx context.Context, actorID uint, req apicontract.SystemCorporationAccessPoliciesInput) *contractOperationFailure {
 	before := h.corpPolicySvc.GetPolicies()
+	policies := make([]service.CorporationPolicy, 0, len(req.Policies))
+	for _, policy := range req.Policies {
+		policies = append(policies, service.CorporationPolicy{
+			CorporationID: policy.CorporationId, FullAccess: policy.FullAccess,
+			Capabilities: policy.Capabilities, Rules: policy.Rules,
+		})
+	}
 	config := service.CorporationPolicyConfig{
 		Version:     req.Version,
-		DefaultMode: req.DefaultMode,
-		Policies:    req.Policies,
+		DefaultMode: string(req.DefaultMode),
+		Policies:    policies,
 	}
 	if err := h.corpPolicySvc.UpdatePolicies(config); err != nil {
 		if errors.Is(err, service.ErrInvalidCorporationAccessPolicy) {
-			response.Fail(c, response.CodeParamError, err.Error())
-			return
+			return &contractOperationFailure{code: response.CodeParamError, message: err.Error()}
 		}
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
 	if err := h.walletSvc.ForceZeroBalancesForUsersWithoutWalletCapability(); err != nil {
-		response.Fail(c, response.CodeBizError, err.Error())
-		return
+		return &contractOperationFailure{code: response.CodeBizError, message: err.Error()}
 	}
 	after := h.corpPolicySvc.GetPolicies()
-	h.recordConfigAudit(c, "corporation_access_policy_update", model.SysConfigCorporationAccessPolicies, map[string]any{
+	h.recordConfigAudit(ctx, actorID, "corporation_access_policy_update", model.SysConfigCorporationAccessPolicies, map[string]any{
 		"before": before,
 		"after":  after,
 	})
-	response.OK(c, nil)
+	return nil
+}
+
+func sysConfigUnauthorized() apicontract.UnauthorizedJSONResponse {
+	return apicontract.UnauthorizedJSONResponse{Code: response.CodeUnauthorized, Msg: "未登录"}
+}
+
+func (h *SysConfigHandler) GetBasicConfig(_ context.Context, _ apicontract.GetBasicConfigRequestObject) (apicontract.GetBasicConfigResponseObject, error) {
+	return apicontract.GetBasicConfig200JSONResponse{Code: response.CodeOK, Msg: "success", Data: systemBasicConfig()}, nil
+}
+
+func (h *SysConfigHandler) GetSDEConfig(_ context.Context, _ apicontract.GetSDEConfigRequestObject) (apicontract.GetSDEConfigResponseObject, error) {
+	return apicontract.GetSDEConfig200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getSDEConfig()}, nil
+}
+
+func (h *SysConfigHandler) UpdateSDEConfig(ctx context.Context, request apicontract.UpdateSDEConfigRequestObject) (apicontract.UpdateSDEConfigResponseObject, error) {
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return apicontract.UpdateSDEConfig401JSONResponse{UnauthorizedJSONResponse: sysConfigUnauthorized()}, nil
+	}
+	var out apicontract.UpdateSDEConfig200JSONResponse
+	if request.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, sysConfigInvalidInputMessage))
+	}
+	if err := h.updateSDEConfig(c.Request.Context(), middleware.GetUserID(c), *request.Body); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SysConfigHandler) GetAlliancePAPConfig(_ context.Context, _ apicontract.GetAlliancePAPConfigRequestObject) (apicontract.GetAlliancePAPConfigResponseObject, error) {
+	return apicontract.GetAlliancePAPConfig200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getAlliancePAPConfig()}, nil
+}
+
+func (h *SysConfigHandler) UpdateAlliancePAPConfig(ctx context.Context, request apicontract.UpdateAlliancePAPConfigRequestObject) (apicontract.UpdateAlliancePAPConfigResponseObject, error) {
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return apicontract.UpdateAlliancePAPConfig401JSONResponse{UnauthorizedJSONResponse: sysConfigUnauthorized()}, nil
+	}
+	var out apicontract.UpdateAlliancePAPConfig200JSONResponse
+	if request.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, sysConfigInvalidInputMessage))
+	}
+	if err := h.updateAlliancePAPConfig(c.Request.Context(), middleware.GetUserID(c), *request.Body); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SysConfigHandler) GetMumbleConfig(_ context.Context, _ apicontract.GetMumbleConfigRequestObject) (apicontract.GetMumbleConfigResponseObject, error) {
+	return apicontract.GetMumbleConfig200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getMumbleConfig()}, nil
+}
+
+func (h *SysConfigHandler) UpdateMumbleConfig(ctx context.Context, request apicontract.UpdateMumbleConfigRequestObject) (apicontract.UpdateMumbleConfigResponseObject, error) {
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return apicontract.UpdateMumbleConfig401JSONResponse{UnauthorizedJSONResponse: sysConfigUnauthorized()}, nil
+	}
+	var out apicontract.UpdateMumbleConfig200JSONResponse
+	if request.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, sysConfigInvalidInputMessage))
+	}
+	if err := h.updateMumbleConfig(c.Request.Context(), middleware.GetUserID(c), *request.Body); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, err.Error()))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SysConfigHandler) GetSDEStatus(_ context.Context, _ apicontract.GetSDEStatusRequestObject) (apicontract.GetSDEStatusResponseObject, error) {
+	var out apicontract.GetSDEStatus200JSONResponse
+	status, err := h.sdeSvc.GetStatus()
+	if err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, sysConfigSDEStatusMessage))
+	}
+	return &out, out.FromSystemSDEStatusSuccess(apicontract.SystemSDEStatusSuccess{Code: response.CodeOK, Msg: "success", Data: systemSDEStatus(status)})
+}
+
+func (h *SysConfigHandler) CheckSDEVersion(_ context.Context, _ apicontract.CheckSDEVersionRequestObject) (apicontract.CheckSDEVersionResponseObject, error) {
+	var out apicontract.CheckSDEVersion200JSONResponse
+	status, err := h.sdeSvc.CheckLatestVersion()
+	if err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, sysConfigSDECheckPrefix+err.Error()))
+	}
+	return &out, out.FromSystemSDEStatusSuccess(apicontract.SystemSDEStatusSuccess{Code: response.CodeOK, Msg: "success", Data: systemSDEStatus(status)})
+}
+
+func (h *SysConfigHandler) TriggerSDEUpdate(_ context.Context, _ apicontract.TriggerSDEUpdateRequestObject) (apicontract.TriggerSDEUpdateResponseObject, error) {
+	var out apicontract.TriggerSDEUpdate200JSONResponse
+	status, err := h.sdeSvc.TriggerManualUpdateWithStatus()
+	if err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, sysConfigSDETriggerPrefix+err.Error()))
+	}
+	return &out, out.FromSystemSDEStatusSuccess(apicontract.SystemSDEStatusSuccess{Code: response.CodeOK, Msg: "success", Data: systemSDEStatus(status)})
+}
+
+func (h *SysConfigHandler) GetAllowCorporations(ctx context.Context, _ apicontract.GetAllowCorporationsRequestObject) (apicontract.GetAllowCorporationsResponseObject, error) {
+	if c, ok := ctx.(*gin.Context); ok && c != nil {
+		ctx = c.Request.Context()
+	}
+	return apicontract.GetAllowCorporations200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getAllowCorporations(ctx)}, nil
+}
+
+func (h *SysConfigHandler) UpdateAllowCorporations(_ context.Context, request apicontract.UpdateAllowCorporationsRequestObject) (apicontract.UpdateAllowCorporationsResponseObject, error) {
+	var out apicontract.UpdateAllowCorporations200JSONResponse
+	if request.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, sysConfigInvalidInputMessage))
+	}
+	if failure := h.updateAllowCorporations(*request.Body); failure != nil {
+		return &out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SysConfigHandler) GetCharacterESIRestrictionConfig(_ context.Context, _ apicontract.GetCharacterESIRestrictionConfigRequestObject) (apicontract.GetCharacterESIRestrictionConfigResponseObject, error) {
+	return apicontract.GetCharacterESIRestrictionConfig200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getCharacterESIRestrictionConfig()}, nil
+}
+
+func (h *SysConfigHandler) UpdateCharacterESIRestrictionConfig(ctx context.Context, request apicontract.UpdateCharacterESIRestrictionConfigRequestObject) (apicontract.UpdateCharacterESIRestrictionConfigResponseObject, error) {
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return apicontract.UpdateCharacterESIRestrictionConfig401JSONResponse{UnauthorizedJSONResponse: sysConfigUnauthorized()}, nil
+	}
+	if !model.IsSuperAdmin(middleware.GetUserRoles(c)) {
+		return apicontract.UpdateCharacterESIRestrictionConfig403JSONResponse{
+			ForbiddenJSONResponse: apicontract.ForbiddenJSONResponse{Code: response.CodeForbidden, Msg: sysConfigSuperAdminMessage},
+		}, nil
+	}
+	var out apicontract.UpdateCharacterESIRestrictionConfig200JSONResponse
+	if request.Body == nil || request.Body.EnforceCharacterESIRestriction == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, sysConfigInvalidInputMessage))
+	}
+	if err := h.cfgSvc.UpdateCharacterESIRestrictionConfig(*request.Body.EnforceCharacterESIRestriction); err != nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeBizError, err.Error()))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
+}
+
+func (h *SysConfigHandler) GetCorporationAccessPolicies(_ context.Context, _ apicontract.GetCorporationAccessPoliciesRequestObject) (apicontract.GetCorporationAccessPoliciesResponseObject, error) {
+	return apicontract.GetCorporationAccessPolicies200JSONResponse{Code: response.CodeOK, Msg: "success", Data: h.getCorporationAccessPolicies()}, nil
+}
+
+func (h *SysConfigHandler) UpdateCorporationAccessPolicies(ctx context.Context, request apicontract.UpdateCorporationAccessPoliciesRequestObject) (apicontract.UpdateCorporationAccessPoliciesResponseObject, error) {
+	c, _ := ctx.(*gin.Context)
+	if c == nil {
+		return apicontract.UpdateCorporationAccessPolicies401JSONResponse{UnauthorizedJSONResponse: sysConfigUnauthorized()}, nil
+	}
+	var out apicontract.UpdateCorporationAccessPolicies200JSONResponse
+	if request.Body == nil {
+		return &out, out.FromBusinessError(contractBusinessError(response.CodeParamError, sysConfigInvalidInputMessage))
+	}
+	if failure := h.updateCorporationAccessPolicies(c.Request.Context(), middleware.GetUserID(c), *request.Body); failure != nil {
+		return &out, out.FromBusinessError(contractBusinessError(failure.code, failure.message))
+	}
+	return &out, out.FromNullSuccess(apicontract.NullSuccess{Code: response.CodeOK, Msg: "success"})
 }

@@ -45,7 +45,8 @@
     type FormRules
   } from 'element-plus'
   import { useI18n } from 'vue-i18n'
-  import { settleAlliancePAPMonth, type SettleMonthResult } from '@/api/alliance-pap'
+  import { settleMonth, type AdminAlliancePAPSettledMonth } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
 
   const { t } = useI18n()
 
@@ -53,7 +54,7 @@
 
   const formRef = ref<FormInstance>()
   const settling = ref(false)
-  const settleResult = ref<SettleMonthResult | null>(null)
+  const settleResult = ref<AdminAlliancePAPSettledMonth | null>(null)
 
   const now = new Date()
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -75,10 +76,12 @@
     settling.value = true
     settleResult.value = null
     try {
-      const result = await settleAlliancePAPMonth({
-        year: Number(yearStr),
-        month: Number(monthStr)
-      })
+      const result = await unwrapContract(
+        settleMonth({
+          year: Number(yearStr),
+          month: Number(monthStr)
+        })
+      )
       settleResult.value = result
       ElMessage.success(t('alliancePap.settle.settleSuccess'))
     } catch (e: any) {

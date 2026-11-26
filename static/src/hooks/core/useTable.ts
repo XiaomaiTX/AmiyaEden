@@ -40,7 +40,7 @@ import { $t } from '@/locales'
 // 类型推导工具类型
 type InferApiParams<T> = T extends (params: infer P) => any ? P : never
 type InferApiResponse<T> = T extends (params: any) => Promise<infer R> ? R : never
-type InferRecordType<T> = T extends Api.Common.PaginatedResponse<infer U> ? U : never
+type InferRecordType<T> = T extends { list: readonly (infer U)[] | null } ? U : never
 
 // 优化的配置接口 - 支持自动类型推导
 export interface UseTableConfig<

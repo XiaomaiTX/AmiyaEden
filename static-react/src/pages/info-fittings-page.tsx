@@ -10,20 +10,21 @@ import {
 } from '@/components/ui/select'
 import { useMemo, useState } from 'react'
 import { useEffect } from 'react'
-import { fetchInfoFittings } from '@/api/eve-info'
+import { getFittings } from '@/api/generated/client'
+import { unwrapContract } from '@/api/response'
 import { useI18n } from '@/i18n'
-import type { FittingResponse, FittingsListResponse } from '@/types/api/eve-info'
+import type { InfoFitting, InfoFittings } from '@/api/generated/client'
 
 export function InfoFittingsPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<FittingsListResponse | null>(null)
+  const [data, setData] = useState<InfoFittings | null>(null)
   const [selectedRace, setSelectedRace] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
   const [keyword, setKeyword] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
-  const [selectedFitting, setSelectedFitting] = useState<FittingResponse | null>(null)
+  const [selectedFitting, setSelectedFitting] = useState<InfoFitting | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -31,7 +32,10 @@ export function InfoFittingsPage() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetchInfoFittings({ language: 'en' })
+        const response = await unwrapContract(
+          getFittings({ language: 'en' }),
+          'fetch fittings failed'
+        )
         if (!cancelled) setData(response)
       } catch {
         if (!cancelled) {
@@ -76,7 +80,7 @@ export function InfoFittingsPage() {
   }, [data?.fittings, keyword, selectedGroup, selectedRace])
 
   const grouped = useMemo(() => {
-    const map = new Map<string, FittingResponse[]>()
+    const map = new Map<string, InfoFitting[]>()
     for (const item of filtered) {
       const group = item.group_name || 'Unknown'
       if (!map.has(group)) map.set(group, [])
@@ -185,7 +189,7 @@ export function InfoFittingsPage() {
           <p className="text-sm font-medium">{selectedFitting.name}</p>
           <p className="text-xs text-muted-foreground">{selectedFitting.ship_name}</p>
           <div className="mt-3 space-y-2">
-            {selectedFitting.slots.map((slot) => (
+            {(selectedFitting.slots ?? []).map((slot) => (
               <div key={slot.flag_name} className="rounded border p-2">
                 <p className="text-xs font-medium">{slot.flag_text || slot.flag_name}</p>
                 <ul className="mt-1 space-y-1">

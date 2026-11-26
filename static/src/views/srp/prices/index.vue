@@ -109,6 +109,8 @@
 </template>
 
 <script setup lang="ts">
+  import type { SrpConfig, SrpShipPrice } from '@/api/generated/client'
+  import type { SdeSearchItem } from '@/api/generated/client'
   import { useI18n } from 'vue-i18n'
   import { Plus } from '@element-plus/icons-vue'
   import { formatIskSmart, formatTime, iskToMillionInput, millionInputToIsk } from '@utils/common'
@@ -133,12 +135,13 @@
   import ArtExcelImport from '@/components/core/forms/art-excel-import/index.vue'
   import { useUserStore } from '@/store/modules/user'
   import {
-    fetchShipPrices,
-    upsertShipPrice,
-    deleteShipPrice,
-    fetchSrpConfig,
-    updateSrpConfig
-  } from '@/api/srp'
+    deleteSrpShipPrice,
+    getSrpConfig,
+    listSrpShipPrices,
+    updateSrpConfig,
+    upsertSrpShipPrice
+  } from '@/api/generated/client'
+  import { unwrapContract } from '@/api/response'
   import SdeSearchSelect from '@/components/business/SdeSearchSelect.vue'
   import type { ColumnOption } from '@/types/component'
 
@@ -149,7 +152,7 @@
 
   const activeTab = ref('prices')
 
-  type ShipPrice = Api.Srp.ShipPrice
+  type ShipPrice = SrpShipPrice
   const canManagePrices = computed(() => {
     const roles = userStore.getUserInfo?.roles ?? []
     return roles.some((role) => ['super_admin', 'admin', 'senior_fc'].includes(role))
@@ -241,7 +244,7 @@
     let success = 0
     try {
       for (const item of items) {
-        await upsertShipPrice(item)
+        await unwrapContract(upsertSrpShipPrice(item))
         success++
       }
       ElMessage.success(t('srp.prices.importSuccess', { count: success }))
@@ -261,7 +264,9 @@
   const loadPrices = async () => {
     loading.value = true
     try {
-      const list = await fetchShipPrices(keyword.value || undefined)
+      const list = await unwrapContract(
+        listSrpShipPrices(keyword.value ? { keyword: keyword.value } : undefined)
+      )
       prices.value = list ?? []
     } catch {
       prices.value = []
@@ -275,11 +280,11 @@
   const saving = ref(false)
   const formRef = ref<FormInstance>()
   const editTarget = ref<ShipPrice | null>(null)
-  const dialogInitialOptions = ref<Api.Sde.FuzzySearchItem[]>([])
+  const dialogInitialOptions = ref<SdeSearchItem[]>([])
 
   const form = reactive({ id: 0, ship_type_id: 0 as number | null, ship_name: '', amount: 0 })
 
-  function onShipSelect(item: Api.Sde.FuzzySearchItem | null) {
+  function onShipSelect(item: SdeSearchItem | null) {
     if (item) {
       form.ship_type_id = item.id
       form.ship_name = item.name
@@ -339,7 +344,7 @@
     await formRef.value?.validate()
     saving.value = true
     try {
-      await upsertShipPrice({ ...form, ship_type_id: form.ship_type_id! })
+      await unwrapContract(upsertSrpShipPrice({ ...form, ship_type_id: form.ship_type_id! }))
       ElMessage.success(
         editTarget.value ? t('srp.prices.updateSuccess') : t('srp.prices.addSuccess')
       )
@@ -362,7 +367,7 @@
       type: 'warning'
     })
     try {
-      await deleteShipPrice(row.id)
+      await unwrapContract(deleteSrpShipPrice(row.id))
       ElMessage.success(t('srp.prices.deleteSuccess'))
       loadPrices()
     } catch {
@@ -375,7 +380,7 @@
   // ─── SRP 配置 ───
   const configFormRef = ref<FormInstance>()
   const configSaving = ref(false)
-  const configForm = reactive<Api.Srp.SrpConfig>({ amount_limit: 0 })
+  const configForm = reactive<SrpConfig>({ amount_limit: 0 })
 
   const configRules: FormRules = {
     amount_limit: [
@@ -389,7 +394,7 @@
 
   const loadConfig = async () => {
     try {
-      const data = await fetchSrpConfig()
+      const data = await unwrapContract(getSrpConfig())
       configForm.amount_limit = data?.amount_limit ?? 0
     } catch {
       /* handled */
@@ -400,7 +405,7 @@
     await configFormRef.value?.validate()
     configSaving.value = true
     try {
-      await updateSrpConfig({ amount_limit: configForm.amount_limit })
+      await unwrapContract(updateSrpConfig({ amount_limit: configForm.amount_limit }))
       ElMessage.success(t('srp.config.updateSuccess'))
     } catch {
       /* handled */

@@ -2,7 +2,7 @@
 status: active
 doc_type: agent-rules
 owner: engineering
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-26
 source_of_truth:
   - AGENTS.md
   - CLAUDE.md
@@ -152,19 +152,9 @@ When changing roles, menus, routes, or button permissions, keep the following al
 - frontend route metadata
 - button permission usage such as Vue `v-auth` or React permission gates/hooks
 
-### API Change Order
+### API Contract Changes
 
-When changing an endpoint, update in this order:
-
-1. backend request or response shape
-2. frontend API wrappers in `static/src/api` and/or `static-react/src/api`
-3. Vue shared types in `static/src/types/api/api.d.ts` and React local module types in `static-react/src/types/api/`
-4. UI usage in the frontend(s) that consume the contract
-5. `docs/api/route-index.md` if the route surface or permission boundary changed
-
-Do not allow contract drift across backend, API wrappers, shared types, and UI usage.
-
-If the old contract is intentionally being removed, remove superseded wrappers, routes, and docs in the same change rather than preserving a compatibility shim by default.
+For `/api/v1` HTTP contract changes, start with [the OpenAPI contract workflow](../api/conventions.md#契约同步顺序) before changing implementation. Keep backend behavior, frontend wrappers, types and UI usage, tests, and relevant docs in sync in the same change. The [route index](../api/route-index.md) only maps business domains to contracts and feature docs; do not maintain a second copy of paths or permissions there.
 
 ## Repository-Specific Rules
 
